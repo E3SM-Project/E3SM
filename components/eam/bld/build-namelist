@@ -3750,7 +3750,8 @@ add_default($nl, 'zmconv_trigdcape_ull');
 # These no more needed for EAM, including uwshcu_rpen. No need to reset for 'cam5'
 #add_default($nl, 'hkconv_cmftau');
 #add_default($nl, 'hkconv_c0');
-if ($phys eq 'cam5') {
+#MMF still uses UW scheme in the background and check for this parameter during runtime
+if ($phys eq 'cam5' || $phys eq 'default') {
   add_default($nl, 'uwshcu_rpen');
 }
 
