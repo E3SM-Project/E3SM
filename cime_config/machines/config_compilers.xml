@@ -1966,6 +1966,12 @@ flags should be captured within MPAS CMake files.
   </FFLAGS>
   <CXX_LINKER>CXX</CXX_LINKER>
   <KOKKOS_OPTIONS> --gcc-toolchain=/opt/gcc/9.3.0/snos --with-serial </KOKKOS_OPTIONS>
+  <CXXFLAGS>
+    <base> -std=c++14 </base>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+    <append DEBUG="TRUE"> -g -Wall </append>
+    <append DEBUG="FALSE"> -O1 </append>
+  </CXXFLAGS>
 </compiler>
 
 <compiler MACH="jlse" COMPILER="intel">
