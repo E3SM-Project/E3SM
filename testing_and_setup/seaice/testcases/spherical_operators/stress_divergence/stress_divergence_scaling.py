@@ -82,69 +82,77 @@ def get_resolution(filename, latitudeLimit):
 
 #--------------------------------------------------------
 
-mpl.rc('font', family='Times New Roman', size=8)
-mpl.rc('text', usetex=True)
-mpl.rcParams['axes.linewidth'] = 0.5
+def stress_divergence_scaling():
 
-resolutions = [2562,10242,40962,163842]
+    mpl.rc('font', family='Times New Roman', size=8)
+    mpl.rc('text', usetex=True)
+    mpl.rcParams['axes.linewidth'] = 0.5
 
-methods = ["wachspress", "pwl", "weak", "wachspress_alt", "pwl_alt"]
+    resolutions = [2562,10242,40962,163842]
 
-
-lineColours = ["black","black","grey","red","red"]
-lineStyles  = ["-","--","-","-","--"]
-
-latitudeLimit = 20.0
-
-xMin = 6e-3
-xMax = 1e-1
-
-# quadratic scaling
-#scale = 3e-5 / math.pow(xMin,2)
-#scaleMin = math.pow(xMin,2) * scale
-#scaleMax = math.pow(xMax,2) * scale
-
-# linear scaling
-scale = 2.5e-3 / math.pow(xMin,1)
-scaleMin = math.pow(xMin,1) * scale
-scaleMax = math.pow(xMax,1) * scale
+    methods = ["wachspress", "pwl", "weak", "wachspress_alt", "pwl_alt"]
 
 
-plt.figure(figsize=(4,3))
+    lineColours = ["black","black","grey","red","red"]
+    lineStyles  = ["-","--","-","-","--"]
 
-plt.loglog([xMin, xMax],[scaleMin,scaleMax],linestyle=':', color='k')
+    latitudeLimit = 20.0
 
-iPlot = 0
-for method in methods:
+    xMin = 6e-3
+    xMax = 1e-1
 
-    x = []
-    y = []
+    # quadratic scaling
+    #scale = 3e-5 / math.pow(xMin,2)
+    #scaleMin = math.pow(xMin,2) * scale
+    #scaleMax = math.pow(xMax,2) * scale
 
-    for resolution in resolutions:
+    # linear scaling
+    scale = 2.5e-3 / math.pow(xMin,1)
+    scaleMin = math.pow(xMin,1) * scale
+    scaleMax = math.pow(xMax,1) * scale
 
-        filename = "./output_%s_%i/output.2000.nc" %(method,resolution)
-        filenameIC = "./ic_%i.nc" %(resolution)
 
-        print(filename, filenameIC)
+    plt.figure(figsize=(4,3))
 
-        normU, normV = get_norm(filenameIC, filename, latitudeLimit)
+    plt.loglog([xMin, xMax],[scaleMin,scaleMax],linestyle=':', color='k')
 
-        x.append(get_resolution(filename, latitudeLimit))
-        y.append(normU)
+    iPlot = 0
+    for method in methods:
 
-    plt.loglog(x,y, marker='o', color=lineColours[iPlot], ls=lineStyles[iPlot], markersize=5.0)
+        x = []
+        y = []
 
-    iPlot = iPlot + 1
+        for resolution in resolutions:
 
-#legendLabels = ["Quadratic scaling","Wachspress", "PWL", "Weak"]
-legendLabels = ["Linear scaling","Wachspress", "PWL", "Weak", "Wachs. alt", "PWL alt."]
+            filename = "./output_%s_%i/output.2000.nc" %(method,resolution)
+            filenameIC = "./ic_%i.nc" %(resolution)
 
-plt.legend(legendLabels, frameon=False, loc=2, fontsize=8, handlelength=4)
+            print(filename, filenameIC)
 
-ax = plt.gca()
-ax.set_xlabel("Grid resolution")
-ax.set_ylabel(r"$L_2$ error norm")
-ax.set_xlim([xMin, xMax])
+            normU, normV = get_norm(filenameIC, filename, latitudeLimit)
 
-plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
-plt.savefig("stress_divergence_scaling.png",dpi=400)
+            x.append(get_resolution(filename, latitudeLimit))
+            y.append(normU)
+
+        plt.loglog(x,y, marker='o', color=lineColours[iPlot], ls=lineStyles[iPlot], markersize=5.0)
+
+        iPlot = iPlot + 1
+
+    #legendLabels = ["Quadratic scaling","Wachspress", "PWL", "Weak"]
+    legendLabels = ["Linear scaling","Wachspress", "PWL", "Weak", "Wachs. alt", "PWL alt."]
+
+    plt.legend(legendLabels, frameon=False, loc=2, fontsize=8, handlelength=4)
+
+    ax = plt.gca()
+    ax.set_xlabel("Grid resolution")
+    ax.set_ylabel(r"$L_2$ error norm")
+    ax.set_xlim([xMin, xMax])
+
+    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
+    plt.savefig("stress_divergence_scaling.png",dpi=400)
+
+#-------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    stress_divergence_scaling()

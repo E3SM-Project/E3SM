@@ -635,150 +635,158 @@ def latlon_from_xyz(x, y, z, r):
 
 #-------------------------------------------------------------------------------
 
-mu = 3
-lu = 5
+def create_ic():
 
-mv = 2
-lv = 4
+    mu = 3
+    lu = 5
 
-gridSizes = [2562, 10242, 40962, 163842]
+    mv = 2
+    lv = 4
 
-rotateCartesianGrid = True
-r = 1.0
+    gridSizes = [2562, 10242, 40962, 163842]
 
-for gridSize in gridSizes:
+    rotateCartesianGrid = True
+    r = 1.0
 
-    print("  Gridsize: ", gridSize)
+    for gridSize in gridSizes:
 
-    # input
-    filenameIn = "x1.%i.grid.nc" %(gridSize)
+        print("  Gridsize: ", gridSize)
 
-    fileIn = Dataset(filenameIn,"r")
+        # input
+        filenameIn = "x1.%i.grid.nc" %(gridSize)
 
-    nCells = len(fileIn.dimensions["nCells"])
-    nVertices = len(fileIn.dimensions["nVertices"])
-    maxEdges = len(fileIn.dimensions["maxEdges"])
+        fileIn = Dataset(filenameIn,"r")
 
-    nEdgesOnCell = fileIn.variables["nEdgesOnCell"][:]
-    verticesOnCell = fileIn.variables["verticesOnCell"][:]
-    verticesOnCell[:] = verticesOnCell[:] - 1
+        nCells = len(fileIn.dimensions["nCells"])
+        nVertices = len(fileIn.dimensions["nVertices"])
+        maxEdges = len(fileIn.dimensions["maxEdges"])
 
-    xCell = fileIn.variables["xCell"][:]
-    yCell = fileIn.variables["yCell"][:]
-    zCell = fileIn.variables["zCell"][:]
+        nEdgesOnCell = fileIn.variables["nEdgesOnCell"][:]
+        verticesOnCell = fileIn.variables["verticesOnCell"][:]
+        verticesOnCell[:] = verticesOnCell[:] - 1
 
-    xVertex = fileIn.variables["xVertex"][:]
-    yVertex = fileIn.variables["yVertex"][:]
-    zVertex = fileIn.variables["zVertex"][:]
+        xCell = fileIn.variables["xCell"][:]
+        yCell = fileIn.variables["yCell"][:]
+        zCell = fileIn.variables["zCell"][:]
 
-    latCell = fileIn.variables["latCell"][:]
-    lonCell = fileIn.variables["lonCell"][:]
+        xVertex = fileIn.variables["xVertex"][:]
+        yVertex = fileIn.variables["yVertex"][:]
+        zVertex = fileIn.variables["zVertex"][:]
 
-    latVertex = fileIn.variables["latVertex"][:]
-    lonVertex = fileIn.variables["lonVertex"][:]
+        latCell = fileIn.variables["latCell"][:]
+        lonCell = fileIn.variables["lonCell"][:]
 
-    fileIn.close()
+        latVertex = fileIn.variables["latVertex"][:]
+        lonVertex = fileIn.variables["lonVertex"][:]
 
-    # velocities
-    uVelocity = np.zeros(nVertices)
-    vVelocity = np.zeros(nVertices)
+        fileIn.close()
 
-    strain11VertexAnalytical = np.zeros(nVertices)
-    strain22VertexAnalytical = np.zeros(nVertices)
-    strain12VertexAnalytical = np.zeros(nVertices)
+        # velocities
+        uVelocity = np.zeros(nVertices)
+        vVelocity = np.zeros(nVertices)
 
-    stressDivergenceUAnalytical = np.zeros(nVertices)
-    stressDivergenceVAnalytical = np.zeros(nVertices)
+        strain11VertexAnalytical = np.zeros(nVertices)
+        strain22VertexAnalytical = np.zeros(nVertices)
+        strain12VertexAnalytical = np.zeros(nVertices)
 
-    for iVertex in range(0, nVertices):
+        stressDivergenceUAnalytical = np.zeros(nVertices)
+        stressDivergenceVAnalytical = np.zeros(nVertices)
 
-        #print("iVertex: ", iVertex, latVertex[iVertex], lonVertex[iVertex])
+        for iVertex in range(0, nVertices):
 
-        xp, yp, zp = grid_rotation_forward(xVertex[iVertex], yVertex[iVertex], zVertex[iVertex], rotateCartesianGrid)
-        lat, lon = latlon_from_xyz(xp, yp, zp, r)
+            #print("iVertex: ", iVertex, latVertex[iVertex], lonVertex[iVertex])
 
-        u, v, strain11, strain22, strain12, divu, divv = velocities_strains_analytical(lat, lon, mu, lu, mv, lv)
+            xp, yp, zp = grid_rotation_forward(xVertex[iVertex], yVertex[iVertex], zVertex[iVertex], rotateCartesianGrid)
+            lat, lon = latlon_from_xyz(xp, yp, zp, r)
 
-        uVelocity[iVertex] = u
-        vVelocity[iVertex] = v
+            u, v, strain11, strain22, strain12, divu, divv = velocities_strains_analytical(lat, lon, mu, lu, mv, lv)
 
-        strain11VertexAnalytical[iVertex] = strain11
-        strain22VertexAnalytical[iVertex] = strain22
-        strain12VertexAnalytical[iVertex] = strain12
+            uVelocity[iVertex] = u
+            vVelocity[iVertex] = v
 
-        stressDivergenceUAnalytical[iVertex] = divu
-        stressDivergenceVAnalytical[iVertex] = divv
+            strain11VertexAnalytical[iVertex] = strain11
+            strain22VertexAnalytical[iVertex] = strain22
+            strain12VertexAnalytical[iVertex] = strain12
 
-    strain11CellAnalytical = np.zeros(nCells)
-    strain22CellAnalytical = np.zeros(nCells)
-    strain12CellAnalytical = np.zeros(nCells)
+            stressDivergenceUAnalytical[iVertex] = divu
+            stressDivergenceVAnalytical[iVertex] = divv
 
-    for iCell in range(0, nCells):
+        strain11CellAnalytical = np.zeros(nCells)
+        strain22CellAnalytical = np.zeros(nCells)
+        strain12CellAnalytical = np.zeros(nCells)
 
-        #print("iCell: ", iCell, latCell[iCell], lonCell[iCell])
+        for iCell in range(0, nCells):
 
-        xp, yp, zp = grid_rotation_forward(xCell[iCell], yCell[iCell], zCell[iCell], rotateCartesianGrid)
-        lat, lon = latlon_from_xyz(xp, yp, zp, r)
+            #print("iCell: ", iCell, latCell[iCell], lonCell[iCell])
 
-        u, v, strain11, strain22, strain12, divu, divv = velocities_strains_analytical(lat, lon, mu, lu, mv, lv)
+            xp, yp, zp = grid_rotation_forward(xCell[iCell], yCell[iCell], zCell[iCell], rotateCartesianGrid)
+            lat, lon = latlon_from_xyz(xp, yp, zp, r)
 
-        strain11CellAnalytical[iCell] = strain11
-        strain22CellAnalytical[iCell] = strain22
-        strain12CellAnalytical[iCell] = strain12
+            u, v, strain11, strain22, strain12, divu, divv = velocities_strains_analytical(lat, lon, mu, lu, mv, lv)
 
-    solveVelocityPrevious = np.ones(nVertices,dtype="i")
+            strain11CellAnalytical[iCell] = strain11
+            strain22CellAnalytical[iCell] = strain22
+            strain12CellAnalytical[iCell] = strain12
 
-    strain11CellVarAnalytical = np.zeros((nCells,maxEdges))
-    strain22CellVarAnalytical = np.zeros((nCells,maxEdges))
-    strain12CellVarAnalytical = np.zeros((nCells,maxEdges))
+        solveVelocityPrevious = np.ones(nVertices,dtype="i")
 
-    for iCell in range(0, nCells):
-        for iVertexOnCell in range(0,nEdgesOnCell[iCell]):
-            iVertex = verticesOnCell[iCell,iVertexOnCell]
-            strain11CellVarAnalytical[iCell,iVertexOnCell] = strain11VertexAnalytical[iVertex]
-            strain22CellVarAnalytical[iCell,iVertexOnCell] = strain22VertexAnalytical[iVertex]
-            strain12CellVarAnalytical[iCell,iVertexOnCell] = strain12VertexAnalytical[iVertex]
+        strain11CellVarAnalytical = np.zeros((nCells,maxEdges))
+        strain22CellVarAnalytical = np.zeros((nCells,maxEdges))
+        strain12CellVarAnalytical = np.zeros((nCells,maxEdges))
 
-    # output
-    filenameOut = "ic_%i.nc" %(gridSize)
+        for iCell in range(0, nCells):
+            for iVertexOnCell in range(0,nEdgesOnCell[iCell]):
+                iVertex = verticesOnCell[iCell,iVertexOnCell]
+                strain11CellVarAnalytical[iCell,iVertexOnCell] = strain11VertexAnalytical[iVertex]
+                strain22CellVarAnalytical[iCell,iVertexOnCell] = strain22VertexAnalytical[iVertex]
+                strain12CellVarAnalytical[iCell,iVertexOnCell] = strain12VertexAnalytical[iVertex]
 
-    fileOut = Dataset(filenameOut, "w", format="NETCDF3_CLASSIC")
+        # output
+        filenameOut = "ic_%i.nc" %(gridSize)
 
-    fileOut.createDimension("nVertices", nVertices)
-    fileOut.createDimension("nCells", nCells)
-    fileOut.createDimension("maxEdges", maxEdges)
+        fileOut = Dataset(filenameOut, "w", format="NETCDF3_CLASSIC")
 
-    var = fileOut.createVariable("uVelocity","d",dimensions=["nVertices"])
-    var[:] = uVelocity[:]
+        fileOut.createDimension("nVertices", nVertices)
+        fileOut.createDimension("nCells", nCells)
+        fileOut.createDimension("maxEdges", maxEdges)
 
-    var = fileOut.createVariable("vVelocity","d",dimensions=["nVertices"])
-    var[:] = vVelocity[:]
+        var = fileOut.createVariable("uVelocity","d",dimensions=["nVertices"])
+        var[:] = uVelocity[:]
 
-    var = fileOut.createVariable("solveVelocityPrevious","i",dimensions=["nVertices"])
-    var[:] = solveVelocityPrevious[:]
+        var = fileOut.createVariable("vVelocity","d",dimensions=["nVertices"])
+        var[:] = vVelocity[:]
 
-    var = fileOut.createVariable("stress11var","d",dimensions=["nCells","maxEdges"])
-    var[:] = strain11CellVarAnalytical[:]
+        var = fileOut.createVariable("solveVelocityPrevious","i",dimensions=["nVertices"])
+        var[:] = solveVelocityPrevious[:]
 
-    var = fileOut.createVariable("stress22var","d",dimensions=["nCells","maxEdges"])
-    var[:] = strain22CellVarAnalytical[:]
+        var = fileOut.createVariable("stress11var","d",dimensions=["nCells","maxEdges"])
+        var[:] = strain11CellVarAnalytical[:]
 
-    var = fileOut.createVariable("stress12var","d",dimensions=["nCells","maxEdges"])
-    var[:] = strain12CellVarAnalytical[:]
+        var = fileOut.createVariable("stress22var","d",dimensions=["nCells","maxEdges"])
+        var[:] = strain22CellVarAnalytical[:]
 
-    var = fileOut.createVariable("stress11weak","d",dimensions=["nCells"])
-    var[:] = strain11CellAnalytical[:]
+        var = fileOut.createVariable("stress12var","d",dimensions=["nCells","maxEdges"])
+        var[:] = strain12CellVarAnalytical[:]
 
-    var = fileOut.createVariable("stress22weak","d",dimensions=["nCells"])
-    var[:] = strain22CellAnalytical[:]
+        var = fileOut.createVariable("stress11weak","d",dimensions=["nCells"])
+        var[:] = strain11CellAnalytical[:]
 
-    var = fileOut.createVariable("stress12weak","d",dimensions=["nCells"])
-    var[:] = strain12CellAnalytical[:]
+        var = fileOut.createVariable("stress22weak","d",dimensions=["nCells"])
+        var[:] = strain22CellAnalytical[:]
 
-    var = fileOut.createVariable("stressDivergenceUAnalytical","d",dimensions=["nVertices"])
-    var[:] = stressDivergenceUAnalytical[:]
+        var = fileOut.createVariable("stress12weak","d",dimensions=["nCells"])
+        var[:] = strain12CellAnalytical[:]
 
-    var = fileOut.createVariable("stressDivergenceVAnalytical","d",dimensions=["nVertices"])
-    var[:] = stressDivergenceVAnalytical[:]
+        var = fileOut.createVariable("stressDivergenceUAnalytical","d",dimensions=["nVertices"])
+        var[:] = stressDivergenceUAnalytical[:]
 
-    fileOut.close()
+        var = fileOut.createVariable("stressDivergenceVAnalytical","d",dimensions=["nVertices"])
+        var[:] = stressDivergenceVAnalytical[:]
+
+        fileOut.close()
+
+#-------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    create_ic()

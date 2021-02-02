@@ -1,14 +1,24 @@
 import subprocess
 
-filenames = ["square_mesh_80x80_culled.nc"]
+#-------------------------------------------------------------------------------
 
-dirName = "https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-seaice/testcases/square/"
+def get_testcase_data():
 
-for filename in filenames:
+    filenames = ["square_mesh_80x80_culled.nc"]
 
-    args = ["wget", dirName+filename]
+    dirName = "https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-seaice/testcases/square/"
 
-    process = subprocess.Popen(args, stdout=subprocess.PIPE)
+    for filename in filenames:
 
-    while process.poll() is None:
-        line = process.stdout.readline()
+        args = ["wget", dirName+filename]
+
+        process = subprocess.Popen(args, stdout=subprocess.PIPE)
+
+        while process.poll() is None:
+            line = process.stdout.readline()
+
+#-------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    get_testcase_data()

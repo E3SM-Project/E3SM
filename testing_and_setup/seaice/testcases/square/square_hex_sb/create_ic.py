@@ -37,7 +37,7 @@ def ice_concentration(x, y, Lx, Ly):
 
 #-------------------------------------------------------------
 
-def make_testcase(n, plot=False):
+def create_ic_grid(n, plot=False):
 
     # load grid file
     gridfile = "grid_%4.4i.nc" %(n)
@@ -138,9 +138,17 @@ def make_testcase(n, plot=False):
 
 #-------------------------------------------------------------
 
-#ns = [51,101,201,401,801,1601]
-ns = [51]
+def create_ic():
 
-for n in ns:
+    #ns = [51,101,201,401,801,1601]
+    ns = [51]
 
-    make_testcase(n)
+    for n in ns:
+
+        create_ic_grid(n)
+
+#-------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    create_ic()

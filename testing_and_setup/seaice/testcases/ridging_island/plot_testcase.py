@@ -5,105 +5,115 @@ from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 import numpy as np
 
-iTime = -1
+#-------------------------------------------------------------------------------
 
-# read in file
-filein = Dataset("./output/output.2000.nc","r")
+def plot_testcase():
 
-nCells = len(filein.dimensions["nCells"])
-nVertices = len(filein.dimensions["nVertices"])
-vertexDegree = len(filein.dimensions["vertexDegree"])
+    iTime = -1
 
-nEdgesOnCell = filein.variables["nEdgesOnCell"][:]
+    # read in file
+    filein = Dataset("./output_island/output.2000.nc","r")
 
-verticesOnCell = filein.variables["verticesOnCell"][:]
-verticesOnCell -= 1
+    nCells = len(filein.dimensions["nCells"])
+    nVertices = len(filein.dimensions["nVertices"])
+    vertexDegree = len(filein.dimensions["vertexDegree"])
 
-cellsOnVertex = filein.variables["cellsOnVertex"][:]
-cellsOnVertex -= 1
+    nEdgesOnCell = filein.variables["nEdgesOnCell"][:]
 
-xVertex = filein.variables["xVertex"][:]
-yVertex = filein.variables["yVertex"][:]
+    verticesOnCell = filein.variables["verticesOnCell"][:]
+    verticesOnCell -= 1
 
-xCell = filein.variables["xCell"][:]
-yCell = filein.variables["yCell"][:]
+    cellsOnVertex = filein.variables["cellsOnVertex"][:]
+    cellsOnVertex -= 1
 
-uVelocity = filein.variables["uVelocity"][iTime,:]
-vVelocity = filein.variables["vVelocity"][iTime,:]
+    xVertex = filein.variables["xVertex"][:]
+    yVertex = filein.variables["yVertex"][:]
 
-iceAreaCell = filein.variables["iceAreaCell"][iTime,:]
-iceVolumeCell = filein.variables["iceVolumeCell"][iTime,:]
+    xCell = filein.variables["xCell"][:]
+    yCell = filein.variables["yCell"][:]
 
-filein.close()
+    uVelocity = filein.variables["uVelocity"][iTime,:]
+    vVelocity = filein.variables["vVelocity"][iTime,:]
 
-xmin = np.amin(xCell)
-xmax = np.amax(xCell)
-ymin = np.amin(yCell)
-ymax = np.amax(yCell)
+    iceAreaCell = filein.variables["iceAreaCell"][iTime,:]
+    iceVolumeCell = filein.variables["iceVolumeCell"][iTime,:]
 
-# get patches list
-patchesCell = []
-for iCell in range(0,nCells):
-    vertices = []
-    for iVertexOnCell in range(0,nEdgesOnCell[iCell]):
-        iVertex = verticesOnCell[iCell,iVertexOnCell]
-        vertices.append((xVertex[iVertex],yVertex[iVertex]))
-    patchesCell.append(Polygon(vertices,True))
+    filein.close()
 
-patchesVertex = []
-deletedVertices = []
-for iVertex in range(0,nVertices):
-    vertices = []
-    useVertex = True
-    for iCellOnVertex in range(0,vertexDegree):
-        iCell = cellsOnVertex[iVertex,iCellOnVertex]
-        if (iCell != -1):
-            vertices.append((xCell[iCell],yCell[iCell]))
+    xmin = np.amin(xCell)
+    xmax = np.amax(xCell)
+    ymin = np.amin(yCell)
+    ymax = np.amax(yCell)
+
+    # get patches list
+    patchesCell = []
+    for iCell in range(0,nCells):
+        vertices = []
+        for iVertexOnCell in range(0,nEdgesOnCell[iCell]):
+            iVertex = verticesOnCell[iCell,iVertexOnCell]
+            vertices.append((xVertex[iVertex],yVertex[iVertex]))
+        patchesCell.append(Polygon(vertices,True))
+
+    patchesVertex = []
+    deletedVertices = []
+    for iVertex in range(0,nVertices):
+        vertices = []
+        useVertex = True
+        for iCellOnVertex in range(0,vertexDegree):
+            iCell = cellsOnVertex[iVertex,iCellOnVertex]
+            if (iCell != -1):
+                vertices.append((xCell[iCell],yCell[iCell]))
+            else:
+                useVertex = False
+        if (useVertex):
+            patchesVertex.append(Polygon(vertices,True))
         else:
-            useVertex = False
-    if (useVertex):
-        patchesVertex.append(Polygon(vertices,True))
-    else:
-        deletedVertices.append(iVertex)
-deletedVertices = np.array(deletedVertices)
+            deletedVertices.append(iVertex)
+    deletedVertices = np.array(deletedVertices)
 
-uVelocity = np.delete(uVelocity, deletedVertices)
-vVelocity = np.delete(vVelocity, deletedVertices)
+    uVelocity = np.delete(uVelocity, deletedVertices)
+    vVelocity = np.delete(vVelocity, deletedVertices)
 
-# patch collections
-pcUVelocity = PatchCollection(patchesVertex, cmap=plt.get_cmap("jet"))
-pcUVelocity.set_array(uVelocity)
+    # patch collections
+    pcUVelocity = PatchCollection(patchesVertex, cmap=plt.get_cmap("jet"))
+    pcUVelocity.set_array(uVelocity)
 
-pcVVelocity = PatchCollection(patchesVertex, cmap=plt.get_cmap("jet"))
-pcVVelocity.set_array(vVelocity)
+    pcVVelocity = PatchCollection(patchesVertex, cmap=plt.get_cmap("jet"))
+    pcVVelocity.set_array(vVelocity)
 
-pcIceAreaCell = PatchCollection(patchesCell, cmap=plt.get_cmap("jet"))
-pcIceAreaCell.set_array(iceAreaCell)
+    pcIceAreaCell = PatchCollection(patchesCell, cmap=plt.get_cmap("jet"))
+    pcIceAreaCell.set_array(iceAreaCell)
 
-pcIceVolumeCell = PatchCollection(patchesCell, cmap=plt.get_cmap("jet"))
-pcIceVolumeCell.set_array(iceVolumeCell)
+    pcIceVolumeCell = PatchCollection(patchesCell, cmap=plt.get_cmap("jet"))
+    pcIceVolumeCell.set_array(iceVolumeCell)
 
-# plot
-fig, axes = plt.subplots(2,2)
+    # plot
+    fig, axes = plt.subplots(2,2)
 
-axes[0,0].add_collection(pcIceAreaCell)
-axes[0,0].set_xlim((xmin,xmax))
-axes[0,0].set_ylim((ymin,ymax))
-axes[0,0].set_aspect('equal')
+    axes[0,0].add_collection(pcIceAreaCell)
+    axes[0,0].set_xlim((xmin,xmax))
+    axes[0,0].set_ylim((ymin,ymax))
+    axes[0,0].set_aspect('equal')
 
-axes[0,1].add_collection(pcIceVolumeCell)
-axes[0,1].set_xlim((xmin,xmax))
-axes[0,1].set_ylim((ymin,ymax))
-axes[0,1].set_aspect('equal')
+    axes[0,1].add_collection(pcIceVolumeCell)
+    axes[0,1].set_xlim((xmin,xmax))
+    axes[0,1].set_ylim((ymin,ymax))
+    axes[0,1].set_aspect('equal')
 
-axes[1,0].add_collection(pcUVelocity)
-axes[1,0].set_xlim((xmin,xmax))
-axes[1,0].set_ylim((ymin,ymax))
-axes[1,0].set_aspect('equal')
+    axes[1,0].add_collection(pcUVelocity)
+    axes[1,0].set_xlim((xmin,xmax))
+    axes[1,0].set_ylim((ymin,ymax))
+    axes[1,0].set_aspect('equal')
 
-axes[1,1].add_collection(pcVVelocity)
-axes[1,1].set_xlim((xmin,xmax))
-axes[1,1].set_ylim((ymin,ymax))
-axes[1,1].set_aspect('equal')
+    axes[1,1].add_collection(pcVVelocity)
+    axes[1,1].set_xlim((xmin,xmax))
+    axes[1,1].set_ylim((ymin,ymax))
+    axes[1,1].set_aspect('equal')
 
-plt.savefig("plot.png",dpi=300)
+    plt.savefig("plot.png",dpi=300)
+
+#-------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    plot_testcase()

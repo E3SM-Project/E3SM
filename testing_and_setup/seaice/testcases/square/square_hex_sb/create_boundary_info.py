@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 #-------------------------------------------------------------------------------
 
-def create_boundary_info(nx, plot=False):
+def create_boundary_info_grid(nx, plot=False):
 
     gridname = "grid_%4.4i.nc" %(nx)
 
@@ -307,8 +307,16 @@ def create_boundary_info(nx, plot=False):
 
 #-------------------------------------------------------------------------------
 
-#nxs = [51,101,201,401,801,1601]
-nxs = [51]
+def create_boundary_info():
 
-for nx in nxs:
-     create_boundary_info(nx)
+    #nxs = [51,101,201,401,801,1601]
+    nxs = [51]
+
+    for nx in nxs:
+        create_boundary_info_grid(nx)
+
+#-------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    create_boundary_info()
