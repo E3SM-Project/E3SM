@@ -28,6 +28,7 @@ module ocn_meridional_heat_transport
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -312,7 +313,6 @@ contains
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       ! REGION POOL
       type (mpas_pool_type), pointer :: regionPool
 
@@ -325,7 +325,6 @@ contains
       real (kind=RKIND) :: div_huT
       real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryMerHeatTrans, dvEdge
       real (kind=RKIND), dimension(:), pointer ::  merHeatTransLat
-      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge, normalTransportVelocity
       real (kind=RKIND), dimension(:,:), pointer :: merHeatTransLatZ
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       real (kind=RKIND), dimension(:,:), allocatable :: mht_meridional_integral
@@ -424,7 +423,6 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
@@ -440,8 +438,6 @@ contains
          call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
-         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
-         call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
 
          if(config_AM_meridionalHeatTransport_region_group /= '') then
             call mpas_pool_get_array(regionPool, 'regionCellMasks', regionCellMasks)
@@ -474,7 +470,7 @@ contains
                      div_huT = 0.0_RKIND
                      do i = 1, nEdgesOnCell(iCell)
                         iEdge = edgesOnCell(i, iCell)
-                        div_huT = div_huT - layerThicknessEdge(k, iEdge) * normalTransportVelocity(k, iEdge) &
+                        div_huT = div_huT - layerThickEdge(k, iEdge) * normalTransportVelocity(k, iEdge) &
                              * 0.5_RKIND * (activeTracers(indexTemperature,k,cellsOnEdge(1,iEdge)) &
                              + activeTracers(indexTemperature,k,cellsOnEdge(2,iEdge))) &
                              * edgeSignOnCell(i, iCell) * dvEdge(iEdge)

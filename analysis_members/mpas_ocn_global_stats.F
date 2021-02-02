@@ -27,6 +27,7 @@ module ocn_global_stats
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -221,7 +222,6 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: tracersSurfaceFluxPool
       type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool
@@ -237,7 +237,6 @@ contains
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot, &
          landiceMask
 
-      character (len=StrKIND), pointer :: xtime, simulationStartTime
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
       type (MPAS_TimeInterval_type) :: timeStep
 
@@ -247,11 +246,9 @@ contains
                                     absoluteFreshWaterConservation, relativeFreshWaterConservation, &
                                     landIceFloatingAreaSum
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge, landIceFloatingArea
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, &
-            relativeVorticity, kineticEnergyCell, normalizedRelativeVorticityEdge, &
-            normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, &
-            vertAleTransportTop, vertVelocityTop, lowFreqDivergence, highFreqThickness, &
-            density, layerThicknessPreviousTimestep, activeTracersSurfaceFlux, &
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, &
+            lowFreqDivergence, highFreqThickness, &
+            layerThicknessPreviousTimestep, activeTracersSurfaceFlux, &
             activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
@@ -264,7 +261,6 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: frazilLayerThicknessTendency
 
-      real (kind=RKIND), pointer :: daysSinceStartOfSim
       real (kind=RKIND), dimension(:), pointer :: minGlobalStats,maxGlobalStats,sumGlobalStats, averages, rms, verticalSumMins, &
           verticalSumMaxes
       real (kind=RKIND), dimension(kMaxVariables) :: sumSquares, reductions, sums, mins, maxes
@@ -332,7 +328,6 @@ contains
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
 
@@ -357,21 +352,6 @@ contains
             call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence, 1)
             call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThickness, 1)
          end if
-
-         call mpas_pool_get_array(diagnosticsPool, 'density', density)
-         call mpas_pool_get_array(diagnosticsPool, 'montgomeryPotential', montgomeryPotential)
-         call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
-         call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity)
-         call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdge)
-         call mpas_pool_get_array(diagnosticsPool, 'normalizedPlanetaryVorticityEdge', normalizedPlanetaryVorticityEdge)
-         call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
-         call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
-         call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
-         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
-         call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
-         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
-         call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime',simulationStartTime)
-         call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim',daysSinceStartOfSim)
 
          call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
          call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
@@ -427,7 +407,7 @@ contains
          variableIndex = variableIndex + 1
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nEdgesSolve, &
                               maxLevelEdgeTop(1:nEdgesSolve), areaEdge(1:nEdgesSolve), &
-                              layerThicknessEdge(:,1:nEdgesSolve), &
+                              layerThickEdge(:,1:nEdgesSolve), &
                               normalVelocity(:,1:nEdgesSolve), sums_tmp(variableIndex), &
                               sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
                               maxes_tmp(variableIndex), &
@@ -444,7 +424,7 @@ contains
          variableIndex = variableIndex + 1
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nEdgesSolve, &
                               maxLevelEdgeTop(1:nEdgesSolve), areaEdge(1:nEdgesSolve), &
-                              layerThicknessEdge(:,1:nEdgesSolve), &
+                              layerThickEdge(:,1:nEdgesSolve), &
                               tangentialVelocity(:,1:nEdgesSolve), &
                               sums_tmp(variableIndex), sumSquares_tmp(variableIndex), &
                               mins_tmp(variableIndex), maxes_tmp(variableIndex), &
@@ -461,7 +441,7 @@ contains
          variableIndex = variableIndex + 1
          call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nEdgesSolve, &
                             maxLevelEdgeTop(1:nEdgesSolve), areaEdge(1:nEdgesSolve), &
-                            layerThicknessEdge(:,1:nEdgesSolve), sums_tmp(variableIndex), &
+                            layerThickEdge(:,1:nEdgesSolve), sums_tmp(variableIndex), &
                             sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
                             maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
                             verticalSumMaxes_tmp(variableIndex))
@@ -527,12 +507,12 @@ contains
 
          ! normalizedAbsoluteVorticity
          allocate(normalizedAbsoluteVorticity(nVertLevels,nEdgesSolve))
-         normalizedAbsoluteVorticity(:,:) = normalizedRelativeVorticityEdge(:,1:nEdgesSolve) &
-  + normalizedPlanetaryVorticityEdge(:,1:nEdgesSolve)
+         normalizedAbsoluteVorticity(:,:) = normRelVortEdge(:,1:nEdgesSolve) &
+  + normPlanetVortEdge(:,1:nEdgesSolve)
          variableIndex = variableIndex + 1
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nEdgesSolve, &
                               maxLevelEdgeTop(1:nEdgesSolve), areaEdge(1:nEdgesSolve), &
-                              layerThicknessEdge(:,1:nEdgesSolve), &
+                              layerThickEdge(:,1:nEdgesSolve), &
                               normalizedAbsoluteVorticity(:,1:nEdgesSolve), &
                               sums_tmp(variableIndex), sumSquares_tmp(variableIndex), &
                               mins_tmp(variableIndex), maxes_tmp(variableIndex), &
@@ -1362,9 +1342,6 @@ contains
       sumGlobalStats(1:nVariables) =  sums(1:nVariables)
 
       if (config_AM_globalStats_text_file) then
-
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
 
          ! write out the data to files
          if (dminfo % my_proc_id == IO_NODE) then
