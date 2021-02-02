@@ -29,6 +29,7 @@ module ocn_water_mass_census
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -158,7 +159,6 @@ contains
       type (mpas_pool_type), pointer :: waterMassCensusAMPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: regionPool
 
@@ -177,8 +177,6 @@ contains
 
       ! pointers to data in pools required for T/S water mass census
       real (kind=RKIND), dimension(:,:),   pointer :: layerThickness
-      real (kind=RKIND), dimension(:,:),   pointer :: potentialDensity
-      real (kind=RKIND), dimension(:,:),   pointer :: zMid
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       ! pointers to data in mesh pool
@@ -370,7 +368,6 @@ contains
          ! get pointers to pools
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
          ! get indices for T and S
@@ -385,8 +382,6 @@ contains
 
          ! get pointers to data needed for analysis
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
-         call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
-         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
          if (config_AM_waterMassCensus_region_group == '') then

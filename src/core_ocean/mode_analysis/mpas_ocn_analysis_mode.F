@@ -35,6 +35,7 @@ module ocn_analysis_mode
    use ocn_analysis_driver
    use ocn_init_routines
    use ocn_diagnostics
+   use ocn_diagnostics_variables
    use ocn_equation_of_state
    use ocn_constants
    use ocn_config
@@ -66,7 +67,6 @@ module ocn_analysis_mode
       integer :: ierr
 
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: diagnosticsPool
 
       integer :: err_tmp
 
@@ -74,8 +74,6 @@ module ocn_analysis_mode
 
       ! remove dt later
       real (kind=RKIND) :: dt
-      character (len=StrKIND), pointer :: xtime, simulationStartTime
-      real (kind=RKIND), pointer :: daysSinceStartOfSim
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
       type (MPAS_Time_Type) :: startTime
 
@@ -121,9 +119,6 @@ module ocn_analysis_mode
 
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
-
          call ocn_init_routines_block(block, dt, ierr)
          if(ierr.eq.1) then
              call mpas_log_write('An error was encountered in ocn_init_routines_block', MPAS_LOG_CRIT)
@@ -132,7 +127,6 @@ module ocn_analysis_mode
          xtime = startTimeStamp
 
          ! Set simulationStartTime only if that variable is not read from the restart file.
-         call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime', simulationStartTime)
          if (trim(simulationStartTime)=="no_date_available") then
             simulationStartTime = startTimeStamp
          end if
@@ -143,11 +137,7 @@ module ocn_analysis_mode
       !$omp master
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
-
          ! compute time since start of simulation, in days
-         call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim',daysSinceStartOfSim)
          call mpas_set_time(xtime_timeType, dateTimeString=xtime)
          call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
          call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
@@ -239,7 +229,6 @@ module ocn_analysis_mode
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: scratchPool
 
       type (MPAS_timeInterval_type) :: timeStep
@@ -265,7 +254,6 @@ module ocn_analysis_mode
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 1)

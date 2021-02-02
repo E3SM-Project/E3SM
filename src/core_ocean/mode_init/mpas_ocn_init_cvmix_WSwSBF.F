@@ -84,7 +84,7 @@ contains
       type (block_type), pointer :: block_ptr
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool
-      type (mpas_pool_type), pointer :: diagnosticsPool, forcingPool
+      type (mpas_pool_type), pointer :: forcingPool
 
       type (mpas_pool_type), pointer :: tracersPool, &
                                         tracersSurfaceRestoringFieldsPool, &
@@ -130,7 +130,6 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
 
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
