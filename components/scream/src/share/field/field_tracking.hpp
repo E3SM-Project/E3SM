@@ -55,7 +55,7 @@ public:
   using atm_proc_set_type = ekat::WeakPtrSet<AtmosphereProcess>;
 
   FieldTracking() = delete;
-  FieldTracking(const std::string& name);
+  explicit FieldTracking(const std::string& name);
   FieldTracking(const FieldTracking&) = default;
   FieldTracking(const std::string& name,
                 const std::shared_ptr<FieldTracking>& parent);
@@ -94,7 +94,7 @@ public:
   void add_to_group (const std::string& group_name);
 
   // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
-  // NOTE: if the field has 'children' (see below), their ts will be udpated too.
+  // NOTE: if the field has 'children' (see below), their ts will be updated too.
   //       However, if the field has a 'parent' (see below), the parent's ts will not be updated.
   void update_time_stamp (const TimeStamp& ts);
 
