@@ -12,46 +12,51 @@ from acme_diags import container
 from acme_diags.derivations.default_regions import regions_specs, points_specs
 import errno
 
+
 def strictly_increasing(L):
-    return all(x<y for x, y in zip(L, L[1:]))
+    return all(x < y for x, y in zip(L, L[1:]))
+
 
 def strictly_decreasing(L):
-    return all(x>y for x, y in zip(L, L[1:]))
+    return all(x > y for x, y in zip(L, L[1:]))
+
 
 def monotonically_decreasing(L):
-    return all(x>=y for x, y in zip(L, L[1:]))
+    return all(x >= y for x, y in zip(L, L[1:]))
+
 
 def monotonically_increasing(L):
-    return all(x<=y for x, y in zip(L, L[1:]))
+    return all(x <= y for x, y in zip(L, L[1:]))
+
 
 def monotonic(L):
-        return monotonically_increasing(L) or monotonically_decreasing(L)
+    return monotonically_increasing(L) or monotonically_decreasing(L)
 
 
 def adjust_time_from_time_bounds(var):
     """
-    Redefine time to be in the middle of the time interval, and rewrite 
+    Redefine time to be in the middle of the time interval, and rewrite
     the time axis. This is important for data where the absolute time doesn't fall in the middle of the time interval, such as E3SM, the time was recorded at the end of each time Bounds.
     """
     var_time = var.getTime()
     tbounds = var_time.getBounds()
-    var_time[:] = 0.5*(tbounds[:,0]+tbounds[:,1])
+    var_time[:] = 0.5 * (tbounds[:, 0] + tbounds[:, 1])
     var_time_absolute = var_time.asComponentTime()
     time2 = cdms2.createAxis(var_time)
     time2.designateTime()
-    #.designateTime() needs to be set before attributes changes.
+    # .designateTime() needs to be set before attributes changes.
     time2.units = var_time.units
     time2.calendar = var_time.calendar
     time2.setBounds(tbounds)
-    #time2.calendar = cdtime.NoLeapCalendar
-    time2.id = 'time'
-    var.setAxis(0,time2)
-#    cdutil.setTimeBoundsMonthly(var)
- 
+    # time2.calendar = cdtime.NoLeapCalendar
+    time2.id = "time"
+    var.setAxis(0, time2)
+    #    cdutil.setTimeBoundsMonthly(var)
+
     return var
 
 
-def get_name_and_yrs(parameters, dataset, season=''):
+def get_name_and_yrs(parameters, dataset, season=""):
     """
     Given either test or ref data, get the name of the data
     (test_name or reference_name), along with the years averaged.
@@ -60,10 +65,10 @@ def get_name_and_yrs(parameters, dataset, season=''):
     name = get_name(parameters, dataset)
     yrs_averaged = get_yrs(dataset, season)
     if yrs_averaged:
-        name_yrs = '{} ({})'.format(name, yrs_averaged)
+        name_yrs = "{} ({})".format(name, yrs_averaged)
     else:
         name_yrs = name
-    
+
     return name_yrs
 
 
@@ -83,16 +88,16 @@ def get_name(parameters, dataset):
     return name
 
 
-def get_yrs(dataset, season=''):
+def get_yrs(dataset, season=""):
     if dataset.is_climo():
         try:
-            yrs_averaged = dataset.get_attr_from_climo('yrs_averaged', season)
+            yrs_averaged = dataset.get_attr_from_climo("yrs_averaged", season)
         except:
-            #print("No 'yrs_averaged' exists in the global attributes.")
-            yrs_averaged = ''
+            # print("No 'yrs_averaged' exists in the global attributes.")
+            yrs_averaged = ""
     else:
         start_yr, end_yr, sub_monthly = dataset.get_start_and_end_years()
-        yrs_averaged = '{}-{}'.format(start_yr, end_yr)
+        yrs_averaged = "{}-{}".format(start_yr, end_yr)
     return yrs_averaged
 
 
@@ -103,35 +108,43 @@ def convert_to_pressure_levels(mv, plevs, dataset, var, season):
     """
     mv_plv = mv.getLevel()
     # var(time,lev,lon,lat) convert from hybrid level to pressure
-    if mv_plv.long_name.lower().find('hybrid') != -1:
-        extra_vars = ['hyam', 'hybm', 'PS']
-        hyam, hybm, ps = dataset.get_extra_variables_only(var, season, extra_vars=extra_vars)
+    if mv_plv.long_name.lower().find("hybrid") != -1:
+        extra_vars = ["hyam", "hybm", "PS"]
+        hyam, hybm, ps = dataset.get_extra_variables_only(
+            var, season, extra_vars=extra_vars
+        )
         mv_p = hybrid_to_plevs(mv, hyam, hybm, ps, plevs)
 
     # levels are pressure levels
-    elif mv_plv.long_name.lower().find('pressure') != -1 or mv_plv.long_name.lower().find('isobaric') != -1:
+    elif (
+        mv_plv.long_name.lower().find("pressure") != -1
+        or mv_plv.long_name.lower().find("isobaric") != -1
+    ):
         mv_p = pressure_to_plevs(mv, plevs)
 
     else:
         raise RuntimeError(
-            "Vertical level is neither hybrid nor pressure. Aborting.")
-            
+            "Vertical level is neither hybrid nor pressure. Aborting."
+        )
+
     return mv_p
 
 
 def hybrid_to_plevs(var, hyam, hybm, ps, plev):
     """Convert from hybrid pressure coordinate to desired pressure level(s)."""
-    p0 = 1000.  # mb
-    ps = ps / 100.  # convert unit from 'Pa' to mb
+    p0 = 1000.0  # mb
+    ps = ps / 100.0  # convert unit from 'Pa' to mb
     levels_orig = cdutil.vertical.reconstructPressureFromHybrid(
-        ps, hyam, hybm, p0)
-    levels_orig.units = 'mb'
+        ps, hyam, hybm, p0
+    )
+    levels_orig.units = "mb"
     # Make sure z is positive down
     if var.getLevel()[0] > var.getLevel()[-1]:
         var = var(lev=slice(-1, None, -1))
         levels_orig = levels_orig(lev=slice(-1, None, -1))
     var_p = cdutil.vertical.logLinearInterpolation(
-        var(squeeze=1), levels_orig(squeeze=1), plev)
+        var(squeeze=1), levels_orig(squeeze=1), plev
+    )
 
     return var_p
 
@@ -140,8 +153,8 @@ def pressure_to_plevs(var, plev):
     """Convert from pressure coordinate to desired pressure level(s)."""
     # Construct pressure level for interpolation
     var_plv = var.getLevel()
-    if var_plv.units == 'Pa':
-        var_plv[:] = var_plv[:]/100.0 #convert Pa to mb
+    if var_plv.units == "Pa":
+        var_plv[:] = var_plv[:] / 100.0  # convert Pa to mb
     levels_orig = MV2.array(var_plv[:])
     levels_orig.setAxis(0, var_plv)
     # grow 1d levels_orig to mv dimention
@@ -155,7 +168,8 @@ def pressure_to_plevs(var, plev):
         var = var(lev=slice(-1, None, -1))
         levels_orig = levels_orig(lev=slice(-1, None, -1))
     var_p = cdutil.vertical.logLinearInterpolation(
-        var(squeeze=1), levels_orig(squeeze=1), plev)
+        var(squeeze=1), levels_orig(squeeze=1), plev
+    )
 
     return var_p
 
@@ -164,33 +178,36 @@ def select_region(region, var, land_frac, ocean_frac, parameter):
     """Select desired regions from transient variables."""
     domain = None
     # if region != 'global':
-    if region.find('land') != -1 or region.find('ocean') != -1:
-        if region.find('land') != -1:
+    if region.find("land") != -1 or region.find("ocean") != -1:
+        if region.find("land") != -1:
             land_ocean_frac = land_frac
-        elif region.find('ocean') != -1:
+        elif region.find("ocean") != -1:
             land_ocean_frac = ocean_frac
-        region_value = regions_specs[region]['value']
+        region_value = regions_specs[region]["value"]
 
         land_ocean_frac = land_ocean_frac.regrid(
-            var.getGrid(), regridTool=parameter.regrid_tool, regridMethod=parameter.regrid_method)
+            var.getGrid(),
+            regridTool=parameter.regrid_tool,
+            regridMethod=parameter.regrid_method,
+        )
 
-        var_domain = mask_by(
-            var, land_ocean_frac, low_limit=region_value)
+        var_domain = mask_by(var, land_ocean_frac, low_limit=region_value)
     else:
         var_domain = var
 
     try:
         # if region.find('global') == -1:
-        domain = regions_specs[region]['domain']
-        #print('Domain: ', domain)
+        domain = regions_specs[region]["domain"]
+        # print('Domain: ', domain)
     except:
         pass
-        #print("No domain selector.")
+        # print("No domain selector.")
 
     var_domain_selected = var_domain(domain)
     var_domain_selected.units = var.units
 
     return var_domain_selected
+
 
 def select_point(region, var):
     """Select desired point from transient variables."""
@@ -200,10 +217,13 @@ def select_point(region, var):
     select = points_specs[region][2]
 
     try:
-        var_selected = var(latitude = (lat, lat, select), longitude = (lon, lon, select), squeeze = 1)
+        var_selected = var(
+            latitude=(lat, lat, select),
+            longitude=(lon, lon, select),
+            squeeze=1,
+        )
     except:
         print("No point selected.")
-
 
     return var_selected
 
@@ -219,15 +239,17 @@ def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
     if len(axes1[1]) <= len(axes2[1]):
         mv_grid = mv1.getGrid()
         mv1_reg = mv1
-        mv2_reg = mv2.regrid(mv_grid, regridTool=regrid_tool,
-                             regridMethod=regrid_method)
+        mv2_reg = mv2.regrid(
+            mv_grid, regridTool=regrid_tool, regridMethod=regrid_method
+        )
         mv2_reg.units = mv2.units
 
     else:
         mv_grid = mv2.getGrid()
         mv2_reg = mv2
-        mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool,
-                             regridMethod=regrid_method)
+        mv1_reg = mv1.regrid(
+            mv_grid, regridTool=regrid_tool, regridMethod=regrid_method
+        )
         mv1_reg.units = mv1.units
 
     return mv1_reg, mv2_reg
@@ -257,7 +279,9 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
     return var
 
 
-def save_transient_variables_to_netcdf(set_num, variables_dict, label, parameter):
+def save_transient_variables_to_netcdf(
+    set_num, variables_dict, label, parameter
+):
     """
     Save the transient variables to nc file.
     """
@@ -275,14 +299,18 @@ def save_transient_variables_to_netcdf(set_num, variables_dict, label, parameter
             try:
                 variable.id = parameter.var_id
             except AttributeError:
-                print('Could not save variable.id for {}'.format(variable_name))
-            file_name = '{}_{}_{}.nc'.format(parameter.output_file, variable_name, label)
+                print(
+                    "Could not save variable.id for {}".format(variable_name)
+                )
+            file_name = "{}_{}_{}.nc".format(
+                parameter.output_file, variable_name, label
+            )
             test_pth = os.path.join(path, file_name)
-            with cdms2.open(test_pth, 'w+') as file_test:
+            with cdms2.open(test_pth, "w+") as file_test:
                 try:
                     file_test.write(variable)
                 except AttributeError:
-                    print('Could not write variable {}'.format(variable_name))
+                    print("Could not write variable {}".format(variable_name))
 
 
 def save_ncfiles(set_num, test, ref, diff, parameter):
@@ -303,20 +331,20 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
 
         # Save test file
         test.id = parameter.var_id
-        test_pth = os.path.join(pth, parameter.output_file + '_test.nc')
-        with cdms2.open(test_pth, 'w+') as file_test:
+        test_pth = os.path.join(pth, parameter.output_file + "_test.nc")
+        with cdms2.open(test_pth, "w+") as file_test:
             file_test.write(test)
 
         # Save reference file
         ref.id = parameter.var_id
-        ref_pth = os.path.join(pth, parameter.output_file + '_ref.nc')
-        with cdms2.open(ref_pth, 'w+') as file_ref:
+        ref_pth = os.path.join(pth, parameter.output_file + "_ref.nc")
+        with cdms2.open(ref_pth, "w+") as file_ref:
             file_ref.write(ref)
 
         # Save difference file
-        diff.id = parameter.var_id + '(test - reference)'
-        diff_pth = os.path.join(pth, parameter.output_file + '_diff.nc')
-        with cdms2.open(diff_pth, 'w+') as file_diff:
+        diff.id = parameter.var_id + "(test - reference)"
+        diff_pth = os.path.join(pth, parameter.output_file + "_diff.nc")
+        with cdms2.open(diff_pth, "w+") as file_diff:
             file_diff.write(diff)
 
 
@@ -329,9 +357,8 @@ def get_output_dir(set_num, parameter, ignore_container=False):
     results_dir = parameter.results_dir
     if ignore_container and container.is_container():
         results_dir = parameter.orig_results_dir
-    
-    pth = os.path.join(results_dir,
-                       '{}'.format(set_num), parameter.case_id)
+
+    pth = os.path.join(results_dir, "{}".format(set_num), parameter.case_id)
     if not os.path.exists(pth):
         # When running diags in parallel, sometimes another process will create the dir.
         try:

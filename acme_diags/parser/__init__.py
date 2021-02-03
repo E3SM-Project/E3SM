@@ -6,20 +6,19 @@ from .enso_diags_parser import EnsoDiagsParser
 from .qbo_parser import QboParser
 from .streamflow_parser import StreamflowParser
 from .diurnal_cycle_parser import DiurnalCycleParser
-from .arm_diags_parser import ARMDiagsParser 
+from .arm_diags_parser import ARMDiagsParser
 
 SET_TO_PARSER = {
-    'zonal_mean_xy': CoreParser,
-    'zonal_mean_2d': ZonalMean2dParser,
-    'meridional_mean_2d': MeridionalMean2dParser,
-    'lat_lon': CoreParser,
-    'polar': CoreParser,
-    'cosp_histogram': CoreParser,
-    'area_mean_time_series': AreaMeanTimeSeriesParser,
-    'enso_diags': EnsoDiagsParser,
-    'qbo': QboParser,
-    'streamflow': StreamflowParser,
-    'diurnal_cycle': DiurnalCycleParser,
-    'arm_diags':ARMDiagsParser,
+    "zonal_mean_xy": CoreParser,
+    "zonal_mean_2d": ZonalMean2dParser,
+    "meridional_mean_2d": MeridionalMean2dParser,
+    "lat_lon": CoreParser,
+    "polar": CoreParser,
+    "cosp_histogram": CoreParser,
+    "area_mean_time_series": AreaMeanTimeSeriesParser,
+    "enso_diags": EnsoDiagsParser,
+    "qbo": QboParser,
+    "streamflow": StreamflowParser,
+    "diurnal_cycle": DiurnalCycleParser,
+    "arm_diags": ARMDiagsParser,
 }
-

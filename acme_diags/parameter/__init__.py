@@ -9,16 +9,16 @@ from .diurnal_cycle_parameter import DiurnalCycleParameter
 from .arm_diags_parameter import ARMDiagsParameter
 
 SET_TO_PARAMETERS = {
-    'zonal_mean_xy': CoreParameter,
-    'zonal_mean_2d': ZonalMean2dParameter,
-    'meridional_mean_2d': MeridionalMean2dParameter,
-    'lat_lon': CoreParameter,
-    'polar': CoreParameter,
-    'cosp_histogram': CoreParameter,
-    'area_mean_time_series': AreaMeanTimeSeriesParameter,
-    'enso_diags': EnsoDiagsParameter,
-    'qbo': QboParameter,
-    'streamflow': StreamflowParameter,
-    'diurnal_cycle': DiurnalCycleParameter,
-    'arm_diags': ARMDiagsParameter,
+    "zonal_mean_xy": CoreParameter,
+    "zonal_mean_2d": ZonalMean2dParameter,
+    "meridional_mean_2d": MeridionalMean2dParameter,
+    "lat_lon": CoreParameter,
+    "polar": CoreParameter,
+    "cosp_histogram": CoreParameter,
+    "area_mean_time_series": AreaMeanTimeSeriesParameter,
+    "enso_diags": EnsoDiagsParameter,
+    "qbo": QboParameter,
+    "streamflow": StreamflowParameter,
+    "diurnal_cycle": DiurnalCycleParameter,
+    "arm_diags": ARMDiagsParameter,
 }

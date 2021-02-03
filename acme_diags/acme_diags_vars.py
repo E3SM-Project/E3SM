@@ -20,32 +20,40 @@ from acme_diags.derivations.acme import derived_variables
 # turn off MPI in cdms2 -- not currently supported by e3sm_diags
 cdms2.tvariable.HAVE_MPI = False
 
+
 def main():
     vars_in_e3sm_diags = list_of_vars_in_e3sm_diags()
     vars_with_derived_vars = sorted(check_for_derived_vars(vars_in_e3sm_diags))
-    print('Below are the variables needed to run all of the diagnostics in e3sm_diags.')
-    print('NOTE: This list doesn\'t include auxiliary variables such as hyam, hybm, PS, etc.')
+    print(
+        "Below are the variables needed to run all of the diagnostics in e3sm_diags."
+    )
+    print(
+        "NOTE: This list doesn't include auxiliary variables such as hyam, hybm, PS, etc."
+    )
     print(vars_with_derived_vars)
+
 
 def list_of_vars_in_user_file():
     """
     Given a path to an nc file, return all of the variables in it.
     """
-    #parser = argparse.ArgumentParser()
-    #parser.add_argument("path")
-    #path = parser.parse_args().path
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("path")
+    # path = parser.parse_args().path
     # path = DUMMY_FILE_PATH
     path = parser.parse_args().path
-    print('Using the file: {}'.format(path))
+    print("Using the file: {}".format(path))
 
     if not os.path.exists(path):
-        msg = 'The file ({}) does not exist.'.format(path)
+        msg = "The file ({}) does not exist.".format(path)
         raise RuntimeError(msg)
     with cdms2.open(path) as f:
         return f.variables.keys()
 
+
 parser = CoreParser()
-parser.add_argument('path', default=DUMMY_FILE_PATH, nargs='?')
+parser.add_argument("path", default=DUMMY_FILE_PATH, nargs="?")
+
 
 def list_of_vars_in_e3sm_diags():
     """
@@ -56,32 +64,35 @@ def list_of_vars_in_e3sm_diags():
 
     # Get all of the 'variables' parameter from each file.
     vars_used = []
-    #print('hi')
-    #args = parser.parse_args()
-    #print(dir(args))
+    # print('hi')
+    # args = parser.parse_args()
+    # print(dir(args))
     try:
-        print('something')
+        print("something")
         parameters = get_parameters(parser)
-        print('USING USER ARGUMENTS')
+        print("USING USER ARGUMENTS")
     except Exception as e:
         print(e)
         # Looks for these files in their installed location.
         pth = os.path.join(acme_diags.INSTALL_PATH)
         # The first '*' is the folder of the set, the second is the actual file.
         # Ex: {acme_diags.INSTALL_PATH}/lat_lon/lat_lon_model_vs_obs.cfg
-        file_paths = [p for p in glob.glob(pth + '*/*.cfg')]
+        file_paths = [p for p in glob.glob(pth + "*/*.cfg")]
         ## NOT NEEDED:
         ## parser.add_argument('path')  # Needed so the filename can be passed in.
-        #parser.add_args_and_values([DUMMY_FILE_PATH])
-        parameters = parser.get_other_parameters(files_to_open=file_paths, check_values=False)
+        # parser.add_args_and_values([DUMMY_FILE_PATH])
+        parameters = parser.get_other_parameters(
+            files_to_open=file_paths, check_values=False
+        )
 
     for p in parameters:
-        print('p.variables', p.variables)
+        print("p.variables", p.variables)
         vars_used.extend(p.variables)
 
     # print('vars_used', sorted(list(set(vars_used))))
     # We convert to a set because we only want one of each variable.
     return set(vars_used)
+
 
 def check_for_derived_vars(e3sm_vars):
     """
@@ -107,7 +118,9 @@ def check_for_derived_vars(e3sm_vars):
 
             var_added = False
             for list_of_vars in possible_vars:
-                if not var_added and vars_in_user_file.issuperset(list_of_vars):
+                if not var_added and vars_in_user_file.issuperset(
+                    list_of_vars
+                ):
                     # All of the variables (list_of_vars) are in the input file.
                     # These are needed.
                     vars_used.extend(list_of_vars)
@@ -124,5 +137,5 @@ def check_for_derived_vars(e3sm_vars):
     return list(set(vars_used))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

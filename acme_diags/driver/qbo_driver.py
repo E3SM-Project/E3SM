@@ -10,27 +10,28 @@ from acme_diags.driver import utils
 from acme_diags.plot.cartopy.qbo_plot import plot
 import MV2
 
+
 def unify_plev(var):
     """
-    Given a data set with a z-axis (plev), 
+    Given a data set with a z-axis (plev),
     convert to the plev with units: hPa and make sure plev is in ascending order(same as model data)
     """
     var_plv = var.getLevel()
-    if var_plv.units == 'Pa':
-        var_plv[:] = var_plv[:]/100.0 #convert Pa to mb
-        var_plv.units = 'hPa'
+    if var_plv.units == "Pa":
+        var_plv[:] = var_plv[:] / 100.0  # convert Pa to mb
+        var_plv.units = "hPa"
         var.setAxis(1, var_plv)
 
-    #Make plev in ascending order
+    # Make plev in ascending order
     if var.getLevel()[0] > var.getLevel()[-1]:
         var = var(lev=slice(-1, None, -1))
 
 
 def process_u_for_time_height(data_region):
     # Average over longitude (i.e., each latitude's average in data_region)
-    data_lon_average = cdutil.averager(data_region, axis='x')
+    data_lon_average = cdutil.averager(data_region, axis="x")
     # Average over latitude (i.e., average for entire data_region)
-    data_lon_lat_average = cdutil.averager(data_lon_average, axis='y')
+    data_lon_lat_average = cdutil.averager(data_lon_average, axis="y")
     # Get data by vertical level
     level_data = data_lon_lat_average.getAxis(1)
     return data_lon_lat_average, level_data
@@ -75,11 +76,13 @@ def get_20to40month_fft_amplitude(qboN, levelN):
         n = len(y)
         frequency = np.arange(n / 2) / n
         period = 1 / frequency
-        values = y[0:int(np.floor(n / 2))]
+        values = y[0 : int(np.floor(n / 2))]
         fyy = values * np.conj(values)
         # Choose the range 20 - 40 months that captures most QBOs (in nature)
         psd_sumN[ilev] = 2 * np.nansum(fyy[(period <= 40) & (period >= 20)])
-        amplitudeN[ilev] = np.sqrt(2 * psd_sumN[ilev]) * (frequency[1] - frequency[0])
+        amplitudeN[ilev] = np.sqrt(2 * psd_sumN[ilev]) * (
+            frequency[1] - frequency[0]
+        )
     return psd_sumN, amplitudeN
 
 
@@ -88,12 +91,16 @@ def process_u_for_power_spectral_density(data_region):
     level_bottom = 22
     level_top = 18
     # Average over lat and lon
-    data_lat_lon_average = cdutil.averager(data_region, axis='xy')
+    data_lat_lon_average = cdutil.averager(data_region, axis="xy")
     # Average over vertical
     try:
         average = data_lat_lon_average(level=(level_top, level_bottom))
     except:
-        raise Exception('No levels found between {}hPa and {}hPa'.format(level_top, level_bottom))
+        raise Exception(
+            "No levels found between {}hPa and {}hPa".format(
+                level_top, level_bottom
+            )
+        )
     x0 = np.nanmean(np.array(average), axis=1)
     # x0 should now be 1D
     return x0
@@ -107,7 +114,7 @@ def ceil_log2(x):
         ceil_log2(16) = 4
         ceil_log2(17) = 5
     """
-    return np.ceil(np.log2(x)).astype('int')
+    return np.ceil(np.log2(x)).astype("int")
 
 
 def get_psd_from_deseason(xraw, period_new):
@@ -129,7 +136,7 @@ def get_psd_from_deseason(xraw, period_new):
     period0 = 1 / frequency0
 
     # Calculate amplitude as a function of frequency
-    amplitude0 = 2 * abs(x0[0:int(NFFT0 / 2 + 1)])
+    amplitude0 = 2 * abs(x0[0 : int(NFFT0 / 2 + 1)])
     # Calculate power spectral density as a function of frequency
     psd_x0 = amplitude0 ** 2 / L0
     period_end0 = period0 * L0
@@ -143,15 +150,19 @@ def get_psd_from_deseason(xraw, period_new):
     amplitude0_flipped = amplitude0[::-1]
     psd_x0_flipped = psd_x0[::-1]
 
-    amplitude_new0 = np.interp(period_new, period0_flipped[:-1], amplitude0_flipped[:-1])
-    psd_x_new0 = np.interp(period_new, period0_flipped[:-1], psd_x0_flipped[:-1])
+    amplitude_new0 = np.interp(
+        period_new, period0_flipped[:-1], amplitude0_flipped[:-1]
+    )
+    psd_x_new0 = np.interp(
+        period_new, period0_flipped[:-1], psd_x0_flipped[:-1]
+    )
     return psd_x_new0, amplitude_new0
 
 
 def run_diag(parameter):
     variables = parameter.variables
     # The region will always be 5S5N
-    region = '5S5N'
+    region = "5S5N"
     test_data = utils.dataset.Dataset(parameter, test=True)
     ref_data = utils.dataset.Dataset(parameter, ref=True)
     # Get the years of the data.
@@ -159,18 +170,17 @@ def run_diag(parameter):
     parameter.ref_yrs = utils.general.get_yrs(ref_data)
     for variable in variables:
         if parameter.print_statements:
-            print('Variable={}'.format(variable))
+            print("Variable={}".format(variable))
         test_var = test_data.get_timeseries_variable(variable)
         ref_var = ref_data.get_timeseries_variable(variable)
-        qbo_region = default_regions.regions_specs[region]['domain']
+        qbo_region = default_regions.regions_specs[region]["domain"]
 
         test_region = test_var(qbo_region)
         ref_region = ref_var(qbo_region)
 
-        #Convert plevs of test and ref for unified units and direction
+        # Convert plevs of test and ref for unified units and direction
         unify_plev(test_region)
         unify_plev(ref_region)
-        
 
         test = {}
         ref = {}
@@ -179,68 +189,89 @@ def run_diag(parameter):
         # Richter, J. H., Chen, C. C., Tang, Q., Xie, S., & Rasch, P. J. (2019). Improved Simulation of the QBO in E3SMv1. Journal of Advances in Modeling Earth Systems, 11(11), 3403-3418.
         # https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2019MS001763
         # U = "Monthly mean zonal mean zonal wind averaged between 5S and 5N as a function of pressure and time" (p. 3406)
-        test['qbo'], test['level'] = process_u_for_time_height(test_region)
-        ref['qbo'], ref['level'] = process_u_for_time_height(ref_region)
+        test["qbo"], test["level"] = process_u_for_time_height(test_region)
+        ref["qbo"], ref["level"] = process_u_for_time_height(ref_region)
 
         # Diagnostic 2: calculate and plot the amplitude of wind variations with a 20-40 month period
-        test['psd_sum'], test['amplitude'] = get_20to40month_fft_amplitude(np.squeeze(np.array(test['qbo'])), test['level'])
-        ref['psd_sum'], ref['amplitude'] = get_20to40month_fft_amplitude(np.squeeze(np.array(ref['qbo'])), ref['level'])
+        test["psd_sum"], test["amplitude"] = get_20to40month_fft_amplitude(
+            np.squeeze(np.array(test["qbo"])), test["level"]
+        )
+        ref["psd_sum"], ref["amplitude"] = get_20to40month_fft_amplitude(
+            np.squeeze(np.array(ref["qbo"])), ref["level"]
+        )
 
         # Diagnostic 3: calculate the Power Spectral Density
         # Pre-process data to average over lat,lon,height
         x_test = process_u_for_power_spectral_density(test_region)
         x_ref = process_u_for_power_spectral_density(ref_region)
         # Calculate the PSD and interpolate to period_new. Specify periods to plot
-        period_new = np.concatenate((np.arange(2, 33), np.arange(34, 100, 2)), axis=0)
-        test['psd_x_new'], test['amplitude_new'] = get_psd_from_deseason(x_test, period_new)
-        ref['psd_x_new'], ref['amplitude_new'] = get_psd_from_deseason(x_ref, period_new)
+        period_new = np.concatenate(
+            (np.arange(2, 33), np.arange(34, 100, 2)), axis=0
+        )
+        test["psd_x_new"], test["amplitude_new"] = get_psd_from_deseason(
+            x_test, period_new
+        )
+        ref["psd_x_new"], ref["amplitude_new"] = get_psd_from_deseason(
+            x_ref, period_new
+        )
 
         parameter.var_id = variable
-        parameter.main_title = 'QBO index, amplitude, and power spectral density for {}'.format(variable)
+        parameter.main_title = (
+            "QBO index, amplitude, and power spectral density for {}".format(
+                variable
+            )
+        )
         parameter.viewer_descr[variable] = parameter.main_title
 
-        test['name'] = utils.general.get_name(parameter, test_data)
-        ref['name'] = utils.general.get_name(parameter, ref_data)
+        test["name"] = utils.general.get_name(parameter, test_data)
+        ref["name"] = utils.general.get_name(parameter, ref_data)
 
         test_nc = {}
         ref_nc = {}
         test_json = {}
         ref_json = {}
         for key in test.keys():
-            if key in ['qbo', 'level']:
+            if key in ["qbo", "level"]:
                 test_nc[key] = test[key]
                 ref_nc[key] = ref[key]
             else:
-                if key == 'name':
+                if key == "name":
                     test_json[key] = test[key]
                     ref_json[key] = ref[key]
                 else:
                     test_json[key] = list(test[key])
                     ref_json[key] = list(ref[key])
 
-        parameter.output_file = 'qbo_diags'
+        parameter.output_file = "qbo_diags"
         # TODO: Check the below works properly by using ncdump on Cori
-        utils.general.save_transient_variables_to_netcdf(parameter.current_set, test_nc, 'test', parameter)
-        utils.general.save_transient_variables_to_netcdf(parameter.current_set, ref_nc, 'ref', parameter)
+        utils.general.save_transient_variables_to_netcdf(
+            parameter.current_set, test_nc, "test", parameter
+        )
+        utils.general.save_transient_variables_to_netcdf(
+            parameter.current_set, ref_nc, "ref", parameter
+        )
 
         # Saving the other data as json.
-        for dict_type in ['test', 'ref']:
+        for dict_type in ["test", "ref"]:
             json_output_file_name = os.path.join(
                 utils.general.get_output_dir(parameter.current_set, parameter),
-                parameter.output_file + '_{}.json'.format(dict_type))
-            with open(json_output_file_name, 'w') as outfile:
-                if dict_type == 'test':
+                parameter.output_file + "_{}.json".format(dict_type),
+            )
+            with open(json_output_file_name, "w") as outfile:
+                if dict_type == "test":
                     json_dict = test_json
                 else:
                     json_dict = ref_json
-                json.dump(json_dict,  outfile)
+                json.dump(json_dict, outfile)
             # Get the file name that the user has passed in and display that.
             # When running in a container, the paths are modified.
             json_output_file_name = os.path.join(
-                utils.general.get_output_dir(parameter.current_set,
-                                             parameter, ignore_container=True),
-                parameter.output_file + '_{}.json'.format(dict_type))
-            print('Metrics saved in: {}'.format(json_output_file_name))
+                utils.general.get_output_dir(
+                    parameter.current_set, parameter, ignore_container=True
+                ),
+                parameter.output_file + "_{}.json".format(dict_type),
+            )
+            print("Metrics saved in: {}".format(json_output_file_name))
 
         plot(period_new, parameter, test, ref)
     return parameter

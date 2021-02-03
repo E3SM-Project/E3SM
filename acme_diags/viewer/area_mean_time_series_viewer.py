@@ -14,11 +14,11 @@ def create_viewer(root_dir, parameters):
     viewer = OutputViewer(path=root_dir)
 
     # The name that's displayed on the viewer.
-    display_name = 'Area Mean Time Series'
-    set_name = 'area_mean_time_series'
-    cols = ['Description', 'Plot']
+    display_name = "Area Mean Time Series"
+    set_name = "area_mean_time_series"
+    cols = ["Description", "Plot"]
     viewer.add_page(display_name, short_name=set_name, columns=cols)
-    viewer.add_group('Variable')
+    viewer.add_group("Variable")
 
     for param in parameters:
         for var in param.variables:
@@ -28,9 +28,15 @@ def create_viewer(root_dir, parameters):
             viewer.add_col(param.viewer_descr[var])
 
             ext = param.output_format[0]
-            file_name = os.path.join('..', set_name, param.case_id, '{}.{}'.format(var, ext))
-            viewer.add_col(file_name, is_file=True, title='Plot',
-                meta=create_metadata(param))
+            file_name = os.path.join(
+                "..", set_name, param.case_id, "{}.{}".format(var, ext)
+            )
+            viewer.add_col(
+                file_name,
+                is_file=True,
+                title="Plot",
+                meta=create_metadata(param),
+            )
 
     url = viewer.generate_page()
     add_header(root_dir, os.path.join(root_dir, url), parameters)

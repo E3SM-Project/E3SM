@@ -8,16 +8,16 @@ from acme_diags.parameter import SET_TO_PARAMETERS
 from acme_diags.parameter.core_parameter import CoreParameter
 
 
-class Run():
+class Run:
     """
     Used to run diagnostics.
     A class is needed because we often need to store some
     state regarding what we need to run, like the sets selected.
     """
+
     def __init__(self):
         self.sets_to_run = CoreParameter().sets
         self.parser = CoreParser()
-
 
     def run_diags(self, parameters):
         """
@@ -25,12 +25,11 @@ class Run():
         """
         final_params = self.get_final_parameters(parameters)
         if not final_params:
-            msg = 'No parameters we able to be extracted.'
-            msg += ' Please check the parameters you defined.'
+            msg = "No parameters we able to be extracted."
+            msg += " Please check the parameters you defined."
             raise RuntimeError(msg)
 
         main(final_params)
-
 
     def get_final_parameters(self, parameters):
         """
@@ -38,14 +37,14 @@ class Run():
         get the final list of paremeters to run the diags on.
         """
         if not parameters or not isinstance(parameters, list):
-            msg = 'You must pass in a list of parameter objects.'
+            msg = "You must pass in a list of parameter objects."
             raise RuntimeError(msg)
-        
+
         # For each of the passed in parameters, we can only have one of
         # each type.
         types = set([p.__class__ for p in parameters])
         if len(types) != len(parameters):
-            msg = 'You passed in two or more parameters of the same type.'
+            msg = "You passed in two or more parameters of the same type."
             raise RuntimeError(msg)
 
         self._add_parent_attrs_to_children(parameters)
@@ -56,8 +55,9 @@ class Run():
             other_params = self._get_other_diags(parameters[0].run_type)
 
             # For each of the set_names, get the corresponding parameter.
-            param = self._get_instance_of_param_class(SET_TO_PARAMETERS[set_name], parameters)
-            
+            param = self._get_instance_of_param_class(
+                SET_TO_PARAMETERS[set_name], parameters
+            )
 
             # Since each parameter will have lots of default values, we want to remove them.
             # Otherwise when calling get_parameters(), these default values
@@ -65,9 +65,13 @@ class Run():
             self._remove_attrs_with_default_values(param)
             param.sets = [set_name]
 
-            params = self.parser.get_parameters(orig_parameters=param, other_parameters=other_params,
-                cmd_default_vars=False, argparse_vals_only=False)
-           
+            params = self.parser.get_parameters(
+                orig_parameters=param,
+                other_parameters=other_params,
+                cmd_default_vars=False,
+                argparse_vals_only=False,
+            )
+
             # Makes sure that any parameters that are selectors
             # will be in param.
             self._add_attrs_with_default_values(param)
@@ -76,19 +80,17 @@ class Run():
             # We just call it manually with the parameter object param.
             params = self.parser.select(param, params)
 
-
             final_params.extend(params)
 
         self.parser.check_values_of_params(final_params)
 
         return final_params
 
-
     def _add_parent_attrs_to_children(self, parameters):
         """
         For any parameter class that's inherited from another, copy
         the attributes of the parent to the child.
-        
+
         Ex: If the user wants to run set-specific parameters for
         'zonal_mean_2d', they'd pass in a ZonalMean2dParameter
         and a CoreParameter.
@@ -105,10 +107,12 @@ class Run():
             """
             try:
                 parent_class = param.__class__.__mro__[1]
-                parent = self._get_instance_of_param_class(parent_class, parameters)
+                parent = self._get_instance_of_param_class(
+                    parent_class, parameters
+                )
             except RuntimeError:
                 parent = None
-            
+
             return parent
 
         for i in range(len(parameters)):
@@ -122,38 +126,45 @@ class Run():
             # removing the default values before addition)
             # make a deepcopy first.
             parent = copy.deepcopy(parent)
-            #find attributes that are not defaults
+            # find attributes that are not defaults
 
-            nondefault_param_parent = self._find_attrs_with_nondefault_values(parent)
-            nondefault_param_child = self._find_attrs_with_nondefault_values(parameters[i])
-
+            nondefault_param_parent = self._find_attrs_with_nondefault_values(
+                parent
+            )
+            nondefault_param_child = self._find_attrs_with_nondefault_values(
+                parameters[i]
+            )
 
             self._remove_attrs_with_default_values(parent)
- 
 
-            #Simply copy over all attribute from parent to children
-            #parameters[i] += parent
-             
+            # Simply copy over all attribute from parent to children
+            # parameters[i] += parent
+
             for attr in dir(parent):
-                if not attr.startswith('_') and not hasattr(parameters[i], attr):
+                if not attr.startswith("_") and not hasattr(
+                    parameters[i], attr
+                ):
                     # This attr of parent is a user-defined one and does not
                     # already exist in the parameters[i] parameter object.
                     attr_value = getattr(parent, attr)
                     setattr(parameters[i], attr, attr_value)
 
-            print(list(set(nondefault_param_parent) - \
-                set(nondefault_param_child)))
-            for attr in list(set(nondefault_param_parent) - \
-                set(nondefault_param_child)):
+            print(
+                list(
+                    set(nondefault_param_parent) - set(nondefault_param_child)
+                )
+            )
+            for attr in list(
+                set(nondefault_param_parent) - set(nondefault_param_child)
+            ):
                 #'seasons' is a corner case that don't need to get in to none-core sets, Ex. area mean time series
-                if attr != 'seasons':
+                if attr != "seasons":
                     attr_value = getattr(parent, attr)
                     setattr(parameters[i], attr, attr_value)
 
-        #for i in range(len(parameters)):
+        # for i in range(len(parameters)):
         #    attrs = vars(parameters[i])
         #    print('all parameters', ','.join("%s: %s" % item for item in attrs.items()))
-
 
     def _add_attrs_with_default_values(self, param):
         """
@@ -163,13 +174,12 @@ class Run():
         new_instance = param.__class__()
         for attr in dir(new_instance):
             # Ignore any of the hidden attributes.
-            if attr.startswith('_'):
+            if attr.startswith("_"):
                 continue
-            
+
             if not hasattr(param, attr):
                 val = getattr(new_instance, attr)
                 setattr(param, attr, val)
-    
 
     def _remove_attrs_with_default_values(self, param):
         """
@@ -179,11 +189,12 @@ class Run():
         new_instance = param.__class__()
         for attr in dir(param):
             # Ignore any of the hidden attributes.
-            if attr.startswith('_'):
+            if attr.startswith("_"):
                 continue
-            
-            if hasattr(new_instance, attr) and \
-                getattr(new_instance, attr) == getattr(param, attr):
+
+            if hasattr(new_instance, attr) and getattr(
+                new_instance, attr
+            ) == getattr(param, attr):
                 delattr(param, attr)
 
     def _find_attrs_with_nondefault_values(self, param):
@@ -195,11 +206,14 @@ class Run():
         new_instance = param.__class__()
         for attr in dir(param):
             # Ignore any of the hidden attributes.
-            if attr.startswith('_'):
+            if attr.startswith("_"):
                 continue
-            
-            if hasattr(new_instance, attr) and \
-                getattr(new_instance, attr) != getattr(param, attr):   # This is only valid when the attr values are lists not numpy array
+
+            if hasattr(new_instance, attr) and getattr(
+                new_instance, attr
+            ) != getattr(
+                param, attr
+            ):  # This is only valid when the attr values are lists not numpy array
                 nondefault_attr.append(attr)
         return nondefault_attr
 
@@ -223,10 +237,9 @@ class Run():
             for p in parameters:
                 if type(p) == cls_type:
                     return p
-        
-        msg = "There's weren\'t any class of types {} in your parameters."
-        raise RuntimeError(msg.format(class_types))
 
+        msg = "There's weren't any class of types {} in your parameters."
+        raise RuntimeError(msg.format(class_types))
 
     def _get_other_diags(self, run_type):
         """
@@ -239,16 +252,20 @@ class Run():
         if args.other_parameters:
             params = self.parser.get_other_parameters(argparse_vals_only=False)
         else:
-            default_diags_paths = [get_default_diags_path(set_name, run_type, False) for set_name in self.sets_to_run]
-            params = self.parser.get_other_parameters(files_to_open=default_diags_paths, argparse_vals_only=False)
+            default_diags_paths = [
+                get_default_diags_path(set_name, run_type, False)
+                for set_name in self.sets_to_run
+            ]
+            params = self.parser.get_other_parameters(
+                files_to_open=default_diags_paths, argparse_vals_only=False
+            )
 
         # For each of the params, add in the default values
         # using the parameter classes in SET_TO_PARAMETERS.
         for i in range(len(params)):
             params[i] = SET_TO_PARAMETERS[params[i].sets[0]]() + params[i]
-        
+
         return params
 
 
 runner = Run()
-
