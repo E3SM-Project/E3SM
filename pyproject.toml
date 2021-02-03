@@ -1,0 +1,28 @@
+# This config file is required for Black.
+# Unforunately, black does not support setup.cfg (refer to link).
+# https://github.com/psf/black/issues/683#issuecomment-490236406
+
+[tool.black]
+line-length = 79
+target-version = ['py36']
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.idea
+    | venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | docs
+    | config
+    | conda
+  )/
+)
+'''
