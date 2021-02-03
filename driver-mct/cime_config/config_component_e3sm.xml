@@ -795,15 +795,6 @@
     <desc>2**n relative cost of machine (DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="CASE_GROUP">
-    <type>char</type>
-    <group>run_desc</group>
-    <file>env_run.xml</file>
-    <desc>
-      Optional string denoting that this case is part of a case group
-    </desc>
-  </entry>
-
   <description>
     <desc compset="BGC%BPRP">BGC CO2=prog, rad CO2=prog:</desc>
     <desc compset="BGC%BDRD">BGC CO2=diag, rad CO2=diag:</desc>

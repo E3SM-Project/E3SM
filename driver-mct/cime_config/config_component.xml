@@ -169,6 +169,16 @@
     <desc>username of user who created case</desc>
   </entry>
 
+  <entry id="CASE_GROUP">
+    <type>char</type>
+    <default_value></default_value>
+    <group>case_desc</group>
+    <file>env_case.xml</file>
+    <desc>
+      Optional string denoting that this case is part of a case group
+    </desc>
+  </entry>
+
   <!-- ===================================================================== -->
   <!-- definitions runtimes -->
   <!-- ===================================================================== -->
