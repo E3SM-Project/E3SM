@@ -100,12 +100,12 @@ public:
           // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top to bottom and determine if the rain fraction needs to
           // be updated to match the cloud fraction in the layer above.  It is necessary to calculate the location of the layer directly above this one,
           // labeled ipack_m1 and ivec_m1 respectively.  Note, the top layer has no layer above it, which is why we have the kstr index in the loop.
-          Int col = ipack*Spack::n + ivec;
-          Int ipack_m1 = (col - 1) / Spack::n;
-          Int ivec_m1  = (col - 1) % Spack::n;
-          Int ipack_p1 = (col + 1) / Spack::n;
-          Int ivec_p1  = (col + 1) % Spack::n;
-          if (col!=0) { /* Not applicable at the very top layer */
+          Int lev = ipack*Spack::n + ivec;  // Determine the level at this pack/vec location.
+          Int ipack_m1 = (lev - 1) / Spack::n;
+          Int ivec_m1  = (lev - 1) % Spack::n;
+          Int ipack_p1 = (lev + 1) / Spack::n;
+          Int ivec_p1  = (lev + 1) % Spack::n;
+          if (lev != 0) { /* Not applicable at the very top layer */
             cld_frac_r(icol,ipack)[ivec] = ast(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ? 
                                               ast(icol,ipack_m1)[ivec_m1] :
                                               cld_frac_r(icol,ipack)[ivec];
