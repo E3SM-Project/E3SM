@@ -171,7 +171,6 @@
 
   <entry id="CASE_GROUP">
     <type>char</type>
-    <default_value></default_value>
     <group>case_desc</group>
     <file>env_case.xml</file>
     <desc>
