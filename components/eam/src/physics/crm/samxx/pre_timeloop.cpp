@@ -139,6 +139,13 @@ void pre_timeloop() {
   auto &crm_output_jt_crm        = :: crm_output_jt_crm;
   auto &crm_output_mx_crm        = :: crm_output_mx_crm;
   auto &ncrms                    = :: ncrms;
+  auto &crm_input_t_vt          = :: crm_input_t_vt;
+  auto &crm_input_q_vt          = :: crm_input_q_vt;
+  auto &t_vt_tend               = :: t_vt_tend;
+  auto &q_vt_tend               = :: q_vt_tend;
+  auto &t_vt                    = :: t_vt;
+  auto &q_vt                    = :: q_vt;
+  
 
   crm_accel_ceaseflag = false;
 
@@ -356,6 +363,8 @@ void pre_timeloop() {
     yakl::atomicAdd(tke0(k,icrm) , sgs_field(0,k,j+offy_s,i+offx_s,icrm));
   });
 
+  if (use_VT) { VT_diagnose(); }
+
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
@@ -381,6 +390,11 @@ void pre_timeloop() {
     vg0  (k,icrm) = vln(l,icrm);
     tg0  (k,icrm) = crm_input_tl(l,icrm)+gamaz(k,icrm)-fac_cond*crm_input_qccl(l,icrm)-fac_sub*crm_input_qiil(l,icrm);
     qg0  (k,icrm) = crm_input_ql(l,icrm)+crm_input_qccl(l,icrm)+crm_input_qiil(l,icrm);
+    if (use_VT) { 
+      // variance transport input forcing
+      t_vt_tend(k,icrm) = ( crm_input_t_vt(l,icrm) - t_vt(k,icrm) )*idt_gl ;
+      q_vt_tend(k,icrm) = ( crm_input_q_vt(l,icrm) - q_vt(k,icrm) )*idt_gl ;
+    }
   });
 
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {

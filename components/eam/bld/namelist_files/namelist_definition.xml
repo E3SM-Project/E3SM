@@ -4018,7 +4018,13 @@ Default: false
 <!-- MMF -->
 <entry id="use_MMF" type="logical"  category="conv"
        group="phys_ctl_nl" valid_values="" >
-Turn on super parameterized CAM
+Turn on multiscale modelling framework
+Default: false
+</entry>
+
+<entry id="use_MMF_VT" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on MMF variance transport
 Default: false
 </entry>
 
@@ -4036,14 +4042,22 @@ Default: false
 
 <entry id="MMF_microphysics_scheme" type="char*16" category="conv"
        group="phys_ctl_nl" valid_values="m2005, sam1mom" >
-Type of SPCAM microphysics scheme employed.
+Type of E3SM-MMF microphysics scheme employed.
 Default: sam1mom
+</entry>
+
+<entry id="MMF_VT_wn_max" type="real" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Wavenumber cutoff for filtered MMF variance transport. 
+A value of 0 disables filtering so that the total
+variance is transported
+Default: 0
 </entry>
 
 <!-- MMF Mean State Acceleration(MSA) definitions -->
 <entry id="use_crm_accel" type="logical" category="conv"
        group="phys_ctl_nl" valid_values="">
-Enables CRM mean-state acceleration when using SPCAM.
+Enables CRM mean-state acceleration when using E3SM-MMF.
 Default: true
 </entry>
 
