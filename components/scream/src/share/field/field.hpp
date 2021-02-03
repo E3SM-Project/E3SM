@@ -100,6 +100,20 @@ public:
   get_reshaped_view () const;
 
   // Returns a subview of this field, slicing at entry k along dimension idim
+  // NOTES:
+  //   - the output field stores *the same* 1d view as this field. In order
+  //     to get the N-1 dimensional view, call get_reshaped_view<DT>(), using
+  //     the correct N-1 dimensional data type DT.
+  //   - when calling get_reshaped_view<DT>() on the N-1 dimensional subfield,
+  //     we first get an N-dimensional view, then subview it at index k along
+  //     dimension idim.
+  //   - idim must be either 0 or 1. This is b/c we cannot subview an N-dim
+  //     view along idim=2+ while keeping LayoutRight. Kokkos would force the
+  //     resulting view to have layout stride, which would conflict with the
+  //     return type of get_reshaped_view<DT>().
+  //   - If the field rank is 2, then idim cannot be 1. This is b/c Kokkos
+  //     specializes view's traits for LayoutRight of rank 1, not allowing
+  //     to store a stride for the slowest dimension.
   field_type subfield (const std::string& sf_name, const int idim, const int k) const;
   field_type subfield (const int idim, const int k) const;
 
