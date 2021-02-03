@@ -1,9 +1,11 @@
 #include "shoc_functions_f90.hpp"
 
+#include "shoc_f90.hpp"
+
 #include "ekat/ekat_assert.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
-#include "shoc_f90.hpp"
+#include "ekat/kokkos/ekat_subview_utils.hpp"
 
 #include <random>
 
