@@ -1223,6 +1223,9 @@
     <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
+    <environment_variables mpilib="openmpi">
+      <env name="UCX_TLS">sm,ud</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="blues">
