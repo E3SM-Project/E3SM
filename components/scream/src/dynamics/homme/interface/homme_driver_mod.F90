@@ -141,9 +141,8 @@ contains
     ! If this is a standalone run, we need to copy initial f90 states to C++
     if (standalone) then
       call prim_init_state_views(elem)
+      call prim_printstate(elem, tl, hybrid,hvcoord,1, nelemd)
     endif
-
-    call prim_printstate(elem, tl, hybrid,hvcoord,1, nelemd)
 
     is_model_inited = .true.
 

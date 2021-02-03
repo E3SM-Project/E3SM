@@ -85,8 +85,11 @@ protected:
     // Index of the field inside the coupler 2d array
     int cpl_idx;
 
-    // Stride between two columns, i.e., number of scalars in a column (including padding)
-    int col_size;
+    // Stride between the 1st entry of two consecutive columns to be imported/exported.
+    // Note: this is >= that number of scalars in a column. E.g., for a vector field layout like
+    //       (ncols,2,nlevs), where we import/export only the 1st vector component, the stride
+    //       is 2*nlevs
+    int col_stride;
 
     // Offset to surface field from the column start. Should be 0 for scalar fields, but
     // may be non-zero for vector quantities for which we import/export the 2nd (or larger)

@@ -300,6 +300,12 @@ if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
 
+# Generate scream_config.h and scream_config.f
+include (EkatUtils)
+EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
+               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+
 # Build any tools in the scripts/ dir.
 add_subdirectory(scripts)
 
