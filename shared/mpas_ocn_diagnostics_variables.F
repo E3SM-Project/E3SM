@@ -89,6 +89,7 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), dimension(:), pointer :: surfaceBuoyancyForcing
    real (kind=RKIND), dimension(:), pointer :: surfaceFrictionVelocity
+   real (kind=RKIND), dimension(:), pointer :: surfacePressure
 
    real (kind=RKIND), dimension(:,:), pointer :: &
       transportVelocityX, transportVelocityY, transportVelocityZ, transportVelocityZonal, &
@@ -284,6 +285,7 @@ contains
       !
       call mpas_pool_get_array(diagnosticsPool, 'surfaceBuoyancyForcing', surfaceBuoyancyForcing)
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFrictionVelocity', surfaceFrictionVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'surfacePressure', surfacePressure)
 
       call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
       call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerTemperature', indexBLT)
