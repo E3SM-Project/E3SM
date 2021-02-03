@@ -75,24 +75,6 @@ public:
   // Structure to handle the local generation of data needed by p3_main in run_impl
   struct p3_preamble {
     p3_preamble() = default; 
-    p3_preamble(const int ncol, const int npack, view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_) : 
-      m_ncol(ncol),
-      m_npack(npack),
-      // IN
-      pmid(pmid_),
-      T_atm(T_atm_),
-      ast(ast_),
-      zi(zi_),
-      // OUT
-      exner("exner",ncol,npack),
-      th_atm("th_atm",ncol,npack),
-      cld_frac_l("cld_frac_l",ncol,npack),
-      cld_frac_i("cld_frac_i",ncol,npack),
-      cld_frac_r("cld_frac_r",ncol,npack),
-      dz("dz",ncol,npack)
-    {
-      // Nothing else to initialize at the moment.
-    };
     // Functor for Kokkos loop to pre-process every run step
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
@@ -134,7 +116,7 @@ public:
         }
         //
       }
-    }
+    } // operator
     // Local variables
     int m_ncol, m_npack;
     Real mincld = 0.0001;  // TODO: These should be stored somewhere as more universal constants.  Or maybe in the P3 class hpp
@@ -168,7 +150,63 @@ public:
       cld_frac_i = cld_frac_i_;
       cld_frac_r = cld_frac_r_;
       dz = dz_;
-    }
+    } // set_values
+  }; // p3_preamble
+  /* --------------------------------------------------------------------------------------------*/
+  // Most individual processes have a post-processing step that derives variables needed by the rest
+  // of the model, using outputs from this process.
+  // Structure to handle the generation of data needed by the rest of the model based on output from
+  // p3_main.
+  struct p3_postamble {
+    p3_postamble() = default; 
+    // Functor for Kokkos loop to pre-process every run step
+    KOKKOS_INLINE_FUNCTION
+    void operator()(const int icol) const {
+      for (int ipack=0;ipack<m_npack;ipack++) {
+        // Update the atmospheric temperature and the previous temperature.
+        const Spack oexner(exner(icol,ipack));
+        const Smask oexner_mask(!isnan(oexner) and oexner>0.0);
+        const Spack oth_atm(th_atm(icol,ipack));
+        const Smask oth_atm_mask(!isnan(oth_atm) and oth_atm>0.0);
+        auto oT = physics_fun::th_to_T(oth_atm,oexner,oth_atm_mask);
+        T_prev(icol,ipack) = T_atm(icol,ipack);
+        T_atm(icol,ipack)  = oT;
+        // Update qv_prev
+        qv_prev(icol,ipack) = qv(icol,ipack);
+      } // for ipack
+    } // operator
+    // Local variables
+    int m_ncol, m_npack;
+    view_2d       T_atm;
+    view_2d       exner;
+    view_2d       th_atm;
+    view_2d       T_prev;
+    view_2d       qv;
+    view_2d       qv_prev;
+    // Assigning local values
+    void set_values(const int ncol, const int npack,
+                    view_2d th_atm_, view_2d exner_, view_2d T_atm_, view_2d T_prev_,
+                    view_2d qv_, view_2d qv_prev_
+                   )
+    {
+      m_ncol  = ncol;
+      m_npack = npack;
+      // IN
+      th_atm = th_atm_;
+      exner  = exner_;
+      qv     = qv_;
+      // OUT
+      T_atm  = T_atm_;
+      T_prev = T_prev_;
+      qv_prev = qv_prev_;
+      // TODO: This is a list of variables not yet defined for post-processing, but are
+      // defined in the F90 p3 interface code.  So this list will need to be checked as
+      // new processes come online to make sure their requirements from p3 are being met.
+      // qme, vap_liq_exchange
+      // ENERGY Conservation: prec_str, snow_str
+      // RAD Vars: icinc, icwnc, icimrst, icwmrst, rel, rei, dei
+      // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffrain, reffsnow  
+    } // set_values 
   }; // p3_preamble
   /* --------------------------------------------------------------------------------------------*/
 
@@ -214,6 +252,7 @@ protected:
   P3F::P3HistoryOnly       history_only;
   P3F::P3Infrastructure    infrastructure;
   p3_preamble              p3_preproc;
+  p3_postamble             p3_postproc;
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
   // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs. 
 

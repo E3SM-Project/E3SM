@@ -140,6 +140,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   view_2d cld_frac_i("cld_frac_i",m_num_cols,nk_pack);
   view_2d cld_frac_r("cld_frac_r",m_num_cols,nk_pack);
   view_2d dz("dz",m_num_cols,nk_pack);
+  // -- Set values for the post-amble structure
   p3_preproc.set_values(m_num_cols,nk_pack,pmid,T_atm,ast,zi,
                         exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
   // --Prognostic State Variables:
@@ -160,13 +161,15 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   diag_inputs.inv_qc_relvar   = m_p3_fields_in["inv_qc_relvar"].get_reshaped_view<const Pack**>();
   diag_inputs.pres            = m_p3_fields_in["pmid"].get_reshaped_view<const Pack**>();
   diag_inputs.dpres           = m_p3_fields_in["dp"].get_reshaped_view<const Pack**>();
-  diag_inputs.qv_prev         = m_p3_fields_out["qv_prev"].get_reshaped_view<Pack**>();
-  diag_inputs.t_prev          = m_p3_fields_out["T_prev"].get_reshaped_view<Pack**>();
-  diag_inputs.cld_frac_l = p3_preproc.cld_frac_l;
-  diag_inputs.cld_frac_i = p3_preproc.cld_frac_i;
-  diag_inputs.cld_frac_r = p3_preproc.cld_frac_r;
-  diag_inputs.dz         = p3_preproc.dz;
-  diag_inputs.exner      = p3_preproc.exner;
+  auto qv_prev                = m_p3_fields_out["qv_prev"].get_reshaped_view<Pack**>();
+  diag_inputs.qv_prev         = qv_prev;
+  auto t_prev                 = m_p3_fields_out["T_prev"].get_reshaped_view<Pack**>();
+  diag_inputs.t_prev          = t_prev;
+  diag_inputs.cld_frac_l      = p3_preproc.cld_frac_l;
+  diag_inputs.cld_frac_i      = p3_preproc.cld_frac_i;
+  diag_inputs.cld_frac_r      = p3_preproc.cld_frac_r;
+  diag_inputs.dz              = p3_preproc.dz;
+  diag_inputs.exner           = p3_preproc.exner;
   // --Diagnostic Outputs
   view_1d precip_liq_surf("precip_liq_surf",m_num_cols);
   view_1d precip_ice_surf("precip_ice_surf",m_num_cols);
@@ -204,6 +207,8 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   history_only.liq_ice_exchange = m_p3_fields_out["liq_ice_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_liq_exchange = m_p3_fields_out["vap_liq_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_ice_exchange = m_p3_fields_out["vap_ice_exchange"].get_reshaped_view<Pack**>();
+  // -- Set values for the post-amble structure
+  p3_postproc.set_values(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev);
 
   // We may have to init some fields from within P3. This can be the case in a P3 standalone run.
   // Some options:
@@ -292,20 +297,18 @@ void P3Microphysics::run_impl (const Real dt)
   infrastructure.dt = dt;
   infrastructure.it++;
 
-//ASD  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
-//ASD  view_2d th_temp("th_temp",m_num_cols,nk_pack);
-//ASD  Kokkos::deep_copy(th_temp,prog_state.qc);
-
   // Run p3 main
   P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
                                        history_only, m_num_cols, m_num_levs);
-//ASD  printf(" it=%2d \n",infrastructure.it);
-//ASD  for (int kk=0;kk<m_num_levs;kk++)
-//ASD  {
-//ASD    int ipack = kk / Spack::n;
-//ASD    int ivec  = kk % Spack::n;
-//ASD    printf("ASD - (%d) = %e, %e, %e\n",kk,th_temp(0,ipack)[ivec],prog_state.qc(0,ipack)[ivec],p3_preproc.th_atm(0,ipack)[ivec]);
-//ASD  }
+
+  // Conduct the post-processing of the p3_main output.
+  Kokkos::parallel_for(
+    "p3_main_local_vals",
+    Kokkos::RangePolicy<>(0,m_num_cols),
+    p3_postproc
+  ); // Kokkos::parallel_for(p3_main_local_vals)
+  Kokkos::fence();
+
   // Get a copy of the current timestamp (at the beginning of the step) and
   // advance it, updating the p3 fields.
   auto ts = timestamp();
