@@ -442,6 +442,11 @@ module elm_varctl
    integer, public :: budget_ann   = 1
    integer, public :: budget_ltann = 1
    integer, public :: budget_ltend = 0
+
+   !----------------------------------------------------------
+   ! land river two way coupling
+   !----------------------------------------------------------
+   logical, public :: use_lnd_rof_two_way = .false.
 contains
 
   !---------------------------------------------------------------------------

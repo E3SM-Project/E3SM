@@ -29,6 +29,7 @@ contains
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file
     use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn, use_fates
     use elm_varctl       , only: startdate_add_temperature, startdate_add_co2
+    use elm_varctl       , only: use_lnd_rof_two_way
     use elm_varcon       , only: rair, o2_molar_const, c13ratio
     use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
@@ -175,7 +176,6 @@ contains
     ! by 1000 mm/m resulting in an overall factor of unity.
     ! Below the units are therefore given in mm/s.
 
-    thisng = bounds%endg - bounds%begg + 1
     do g = bounds%begg,bounds%endg
        i = 1 + (g - bounds%begg)
        
@@ -189,6 +189,11 @@ contains
        atm2lnd_vars%volrmch_grc(g)= x2l(index_x2l_Flrr_volrmch,i) * (ldomain%area(g) * 1.e6_r8)
        atm2lnd_vars%supply_grc(g) = x2l(index_x2l_Flrr_supply,i)
        atm2lnd_vars%deficit_grc(g) = x2l(index_x2l_Flrr_deficit,i)
+
+       if (use_lnd_rof_two_way) then
+         atm2lnd_vars%h2orof_grc(g) = x2l(index_x2l_Sr_h2orof,i)
+         atm2lnd_vars%frac_h2orof_grc(g) = x2l(index_x2l_Sr_frac_h2orof,i)
+       endif
 
        ! Determine required receive fields
 
@@ -1313,6 +1318,7 @@ contains
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
     use elm_varctl         , only : iulog, create_glacier_mec_landunit
+    use elm_varctl         , only : use_lnd_rof_two_way
     use clm_time_manager   , only : get_nstep, get_step_size  
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep
@@ -1406,6 +1412,11 @@ contains
        l2x(index_l2x_Flrl_Tqsur,i)  = lnd2atm_vars%Tqsur_grc(g)
        l2x(index_l2x_Flrl_Tqsub,i)  = lnd2atm_vars%Tqsub_grc(g)
        l2x(index_l2x_coszen_str,i) = lnd2atm_vars%coszen_str(g)
+
+       if (use_lnd_rof_two_way) then
+          l2x(index_l2x_Flrl_inundinf,i) = lnd2atm_vars%qflx_h2orof_drain_grc(g)
+       endif
+
        ! glc coupling
 
        if (create_glacier_mec_landunit) then

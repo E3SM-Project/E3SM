@@ -97,6 +97,9 @@ module RunoffMod
      real(r8), pointer :: runoff(:,:)      ! coupler return mosart basin derived flow [m3/s]
      real(r8), pointer :: direct(:,:)      ! coupler return direct flow [m3/s]
 
+     ! land river two way coupling
+     real(r8), pointer :: inundinf(:)      ! coupler return drainage from floodplain inundation  [mm/s]
+
      !    - history (currently needed)
      real(r8), pointer :: runofflnd_nt1(:)
      real(r8), pointer :: runofflnd_nt2(:)
@@ -152,6 +155,7 @@ module RunoffMod
                                   ! i.e., if the time step of the incoming runoff data is 3-hr, and num_dt is set to 10, 
                                   ! then deltaT = 3*3600/10 = 1080 seconds
      real(r8) :: DeltaT           ! Time step in seconds 
+     real(r8) :: coupling_period  ! couping period of rof in seconds
      integer  :: DLevelH2R        ! The base number of channel routing sub-time-steps within one hillslope routing step. 
                                   ! Usually channel routing requires small time steps than hillslope routing.
      integer  :: DLevelR          ! The number of channel routing sub-time-steps at a higher level within one channel routing step at a lower level. 
@@ -536,6 +540,7 @@ contains
              rtmCTL%fthresh(begr:endr),           &
              rtmCTL%flood(begr:endr),             &
              rtmCTL%direct(begr:endr,nt_rtm),     &
+             rtmCTL%inundinf(begr:endr),          & ! land river two way coupling
              rtmCTL%wh(begr:endr,nt_rtm),         &
              rtmCTL%wt(begr:endr,nt_rtm),         &
              rtmCTL%wr(begr:endr,nt_rtm),         &
@@ -561,6 +566,7 @@ contains
     rtmCTL%volr(:,:)       = 0._r8
     rtmCTL%flood(:)        = 0._r8
     rtmCTL%direct(:,:)     = 0._r8
+    rtmCTL%inundinf(:)     = 0._r8
     rtmCTL%inundwf(:)      = 0._r8
     rtmCTL%inundhf(:)      = 0._r8
     rtmCTL%inundff(:)      = 0._r8

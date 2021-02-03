@@ -1923,4 +1923,13 @@ Toggle to turn on the soil erosion model.
 Toggle to turn on the soil erosion and OM pools feedback.
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- Namelist options for land river coulping                                                  -->
+<!-- ========================================================================================  -->
+
+<entry id="use_lnd_rof_two_way" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on land-river two way coupling.
+</entry>
+
 </namelist_definition>

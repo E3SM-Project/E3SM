@@ -41,6 +41,7 @@ module rof_cpl_indices
   integer, public :: index_x2r_Faxa_swvdf = 0   ! atm->rof shorwave visible diffus flux
   integer, public :: index_x2r_Faxa_swndr = 0   ! atm->rof shorwave near-ir direct flux
   integer, public :: index_x2r_Faxa_swndf = 0   ! atm->rof shorwave near-ir diffus flux
+  integer, public :: index_x2r_Flrl_inundinf = 0! lnd->rof infiltration from floodplain inundation
   integer, public :: nflds_x2r = 0
 
   integer, public :: index_x2r_coszen_str  = 0   ! lnd->rof Cosine of Zenith
@@ -60,6 +61,8 @@ module rof_cpl_indices
   integer, public :: index_r2x_Flrr_volrmch = 0 ! rof->lnd volr main channel back to land
   integer, public :: index_r2x_Flrr_supply = 0  ! rof->lnd supply flux for land use
   integer, public :: index_r2x_Flrr_deficit = 0 ! rof->lnd supply deficit
+  integer, public :: index_r2x_Sr_h2orof      = 0  ! rof->lnd floodplain inundation volume
+  integer, public :: index_r2x_Sr_frac_h2orof = 0  ! rof->lnd floodplain inundation fraction
   integer, public :: nflds_r2x = 0
 
 !=======================================================================
@@ -118,6 +121,7 @@ contains
     endif
 
     index_x2r_coszen_str  = mct_avect_indexra(avtmp,'coszen_str')
+    index_x2r_Flrl_inundinf =  mct_avect_indexra(avtmp,'Flrl_inundinf')
 
     nflds_x2r = mct_avect_nRattr(avtmp)
 
@@ -127,13 +131,15 @@ contains
 
     call mct_aVect_init(avtmp, rList=seq_flds_r2x_fields, lsize=1)
 
-    index_r2x_Forr_rofl  = mct_avect_indexra(avtmp,'Forr_rofl')
-    index_r2x_Forr_rofi  = mct_avect_indexra(avtmp,'Forr_rofi')
-    index_r2x_Flrr_flood = mct_avect_indexra(avtmp,'Flrr_flood')
-    index_r2x_Flrr_volr  = mct_avect_indexra(avtmp,'Flrr_volr')
+    index_r2x_Forr_rofl    = mct_avect_indexra(avtmp,'Forr_rofl')
+    index_r2x_Forr_rofi    = mct_avect_indexra(avtmp,'Forr_rofi')
+    index_r2x_Flrr_flood   = mct_avect_indexra(avtmp,'Flrr_flood')
+    index_r2x_Flrr_volr    = mct_avect_indexra(avtmp,'Flrr_volr')
     index_r2x_Flrr_volrmch = mct_avect_indexra(avtmp,'Flrr_volrmch')
-    index_r2x_Flrr_supply = mct_avect_indexra(avtmp,'Flrr_supply')
+    index_r2x_Flrr_supply  = mct_avect_indexra(avtmp,'Flrr_supply')
     index_r2x_Flrr_deficit = mct_avect_indexra(avtmp,'Flrr_deficit')
+    index_r2x_Sr_h2orof       = mct_avect_indexra(avtmp,'Sr_h2orof')
+    index_r2x_Sr_frac_h2orof  = mct_avect_indexra(avtmp,'Sr_frac_h2orof')
     nflds_r2x = mct_avect_nRattr(avtmp)
 
     call mct_aVect_clean(avtmp)

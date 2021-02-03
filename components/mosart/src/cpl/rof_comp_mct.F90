@@ -21,10 +21,11 @@ module rof_comp_mct
                                 seq_infodata_start_type_start, seq_infodata_start_type_cont,   &
                                 seq_infodata_start_type_brnch
   use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
-  use RunoffMod        , only : rtmCTL, TRunoff, THeat, TUnit
+  use RunoffMod        , only : rtmCTL, TRunoff, THeat, TUnit, Tctl
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
-                                inst_index, inst_suffix, inst_name, RtmVarSet, wrmflag, heatflag
+                                inst_index, inst_suffix, inst_name, RtmVarSet, &
+                                wrmflag, heatflag, inundflag, use_lnd_rof_two_way
   use RtmSpmd          , only : masterproc, mpicom_rof, npes, iam, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size
@@ -47,7 +48,9 @@ module rof_comp_mct
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
                                 index_x2r_coszen_str, &
-                                index_r2x_Flrr_supply, index_r2x_Flrr_deficit
+                                index_r2x_Flrr_supply, index_r2x_Flrr_deficit, &
+                                index_r2x_Sr_h2orof, index_r2x_Sr_frac_h2orof, &
+                                index_x2r_Flrl_inundinf
 
   use mct_mod
   use ESMF
@@ -601,6 +604,7 @@ contains
        else
           rtmCTL%qdem(n,nliq) = 0.0_r8
        endif
+       rtmCTL%qdem(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_demand,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsur(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
@@ -625,6 +629,10 @@ contains
           THeat%forc_vp(n)   = shum * THeat%forc_pbot(n)  / (0.622_r8 + 0.378_r8 * shum)
           THeat%coszen(n)    = x2r_r%rAttr(index_x2r_coszen_str,n2)
        end if
+
+       if (use_lnd_rof_two_way) then
+          rtmCTL%inundinf(n) = x2r_r%rAttr(index_x2r_Flrl_inundinf,n2) * (rtmCTL%area(n)*0.001_r8)
+       endif
     enddo
 
   end subroutine rof_import_mct
@@ -727,6 +735,15 @@ contains
           r2x_r%rattr(index_r2x_Flrr_deficit,ni)  = (abs(rtmCTL%qdem(n,nliq)) - abs(StorWater%Supply(n))) / (rtmCTL%area(n)*0.001_r8)   !send deficit back to ELM
        endif
     end do
+
+    ni = 0
+    if ( use_lnd_rof_two_way ) then
+      do n = rtmCTL%begr, rtmCTL%endr
+        ni = ni + 1
+        r2x_r%rattr(index_r2x_Sr_h2orof,ni)      = rtmCTL%inundwf(n) / (rtmCTL%area(n)*0.001_r8) ! m^3 to mm
+        r2x_r%rattr(index_r2x_Sr_frac_h2orof,ni) = rtmCTL%inundff(n)
+      enddo
+    endif
 
   end subroutine rof_export_mct
 

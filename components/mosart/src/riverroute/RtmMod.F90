@@ -19,8 +19,8 @@ module RtmMod
                                frivinp_rtm, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
-                               smat_option, decomp_option, barrier_timers, heatflag, sediflag, &
-                               isgrid2d
+                               use_lnd_rof_two_way, smat_option, decomp_option, &
+                               barrier_timers, heatflag, sediflag, isgrid2d
   use RtmFileUtils    , only : getfil, getavu, relavu
   use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date, advance_timestep
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
@@ -247,7 +247,8 @@ contains
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
          inundflag, smat_option, delt_mosart, barrier_timers, &
-         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag
+         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, &
+         use_lnd_rof_two_way
 
     namelist /inund_inparm / opt_inund, &
          opt_truedw, opt_calcnr, nr_max, nr_min, &
@@ -265,6 +266,7 @@ contains
     ngeom       = 50  
     nlayers     = 30				  
     inundflag   = .false.
+    use_lnd_rof_two_way = .false.
     sediflag    = .false.
     heatflag    = .false.
     barrier_timers = .false.
@@ -326,6 +328,9 @@ contains
           end do
           call relavu( unitn )
        end if
+       if (.not. inundflag .and. use_lnd_rof_two_way) then
+          call shr_sys_abort(trim(subname)//' inundation model must be turned on for land river two way coupling')
+       end if
     end if
 
     call mpi_bcast (coupling_period,   1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -351,6 +356,7 @@ contains
     call mpi_bcast (ngeom,          1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (nlayers,        1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (inundflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (use_lnd_rof_two_way, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
     call mpi_bcast (rtmhist_nhtfrq, size(rtmhist_nhtfrq), MPI_INTEGER,   0, mpicom_rof, ier)
@@ -2024,6 +2030,17 @@ contains
              !budget_terms(bv_fp_i, 1) = budget_terms(bv_fp_i, 1) + rtmCTL%inundwf(nr)        ! 17-6-7
            endif
 
+           ! land river two way coupling, update floodplain inundation volume with drainage from lnd
+           if (use_lnd_rof_two_way) then
+             TRunoff%wf_ini(nr) = TRunoff%wf_ini(nr) - rtmCTL%inundinf(nr) * coupling_period
+
+             if ( TRunoff%wf_ini(nr) < 0 ) then
+               TRunoff%wr(nr, 1) = TRunoff%wr(nr, 1) + TRunoff%wf_ini(nr)
+               TRunoff%wf_ini(nr) = 0._r8
+               TRunoff%yr(nr, 1) = TRunoff%wr(nr, 1) / TUnit%rlen(nr) / TUnit%rwidth(nr)
+             endif
+           endif
+
          end do
        end if
 
@@ -3577,8 +3594,9 @@ contains
 
           ! --------------------------------- 
           ! (assign elevation values to TUnit%e_eprof_in2( :, : ) ).
-
-          call read_elevation_profile(ncid, 'ele', TUnit%e_eprof_in2)
+          if ( Tctl%OPT_elevProf .eq. 1 ) then 
+            call read_elevation_profile(ncid, 'ele', TUnit%e_eprof_in2)
+          endif
      
           ! --------------------------------- 
 
