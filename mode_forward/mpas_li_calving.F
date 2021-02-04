@@ -1761,7 +1761,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
 
          !SFP: copied to vel mod but left here because used at the end below
-         call mpas_pool_get_field(scratchPool, 'meanFlowParamAVar',  meanFlowParamAVar) 
+         call mpas_pool_get_field(scratchPool, 'meanFlowParamA',  meanFlowParamAVar) 
          call mpas_allocate_scratch_field(meanFlowParamAVar, .true.)
          meanFlowParamA => meanFlowParamAVar % array
 
@@ -1788,9 +1788,9 @@ module li_calving
 !         call mpas_allocate_scratch_field(sigmaminVar, .true.)
 !         sigmamin => sigmaminVar % array
 
-!         call mpas_pool_get_field(scratchPool, 'alphaVar', alphaVar )
-!         call mpas_allocate_scratch_field(alphaVar, .true.)
-!         alpha => alphaVar % array
+         call mpas_pool_get_field(scratchPool, 'alpha', alphaVar )
+         call mpas_allocate_scratch_field(alphaVar, .true.)
+         alpha => alphaVar % array
 
          !SFP: leave this struct here for now but eventually remove
 !         call mpas_pool_get_array(velocityPool, 'exx', exx)
@@ -1853,10 +1853,6 @@ module li_calving
              config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*sigmamax*config_ocean_density)
          endwhere
 
-
-         print *, 'alpha= '
-         print *, alpha
-             
          !alpha(:) = sigmamin(:) / (sigmamax(:))
          !epsmax(:) = sigmamax(:) / (2.0d0*effectiveViscosity(:))
          !s0(:) =
@@ -2009,9 +2005,6 @@ module li_calving
                         realArgs=(/minval(alpha), maxval(alpha)/))
         end if
         ! temporary message output in the log file
-
-         print *, 'damage= '
-         print *, damage
 
 
          call mpas_deallocate_scratch_field(meanFlowParamAVar, .true.) !SFP: still needed here since used immediately above
