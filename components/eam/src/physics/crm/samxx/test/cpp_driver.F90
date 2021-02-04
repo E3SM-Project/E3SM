@@ -350,8 +350,8 @@ program driver
         call dmdf_write( crm_output%qp_evp        (icrm,:)     , 1 , fprefix , trim('output_qp_evp       ') , (/'nlev'/)                                 , .false. , .false. )
         call dmdf_write( crm_output%t_ls          (icrm,:)     , 1 , fprefix , trim('output_t_ls         ') , (/'nlev'/)                                 , .false. , .false. )
 #ifdef MMF_ESMT
-        call dmdr_write( crm_output%u_tend_esmt   (icrm,:)     , 1 , fprefix , trim('output_u_tend_esmt  ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdr_write( crm_output%v_tend_esmt   (icrm,:)     , 1 , fprefix , trim('output_v_tend_esmt  ') , (/'nlev'/)                                 , .false. , .false. )
+        call dmdf_write( crm_output%u_tend_esmt   (icrm,:)     , 1 , fprefix , trim('output_u_tend_esmt  ') , (/'nlev'/)                                 , .false. , .false. )
+        call dmdf_write( crm_output%v_tend_esmt   (icrm,:)     , 1 , fprefix , trim('output_v_tend_esmt  ') , (/'nlev'/)                                 , .false. , .false. )
 #endif
         call dmdf_write( crm_output%prectend      (icrm)       , 1 , fprefix , trim('output_prectend     ')                                              ,.false. , .false. )
         call dmdf_write( crm_output%precstend     (icrm)       , 1 , fprefix , trim('output_precstend    ')                                              , .false. , .false. )
