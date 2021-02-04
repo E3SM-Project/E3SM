@@ -360,9 +360,8 @@ auto Field<RealType>::get_reshaped_view () const
   // to something like a pack), or to a view of the correct rank
   constexpr int DstRank = DstView::rank;
 
-  EKAT_REQUIRE_MSG(DstRank==field_layout.rank() || DstRank==1,
-      "Error! You can only reshape to a 1d view (possibly with different value tyep),\n"
-      "       or to a view of the correct rank (equal to the FieldLayout's one).\n");
+  EKAT_REQUIRE_MSG(DstRank==field_layout.rank(),
+      "Error! You can only reshape to a view of the correct rank (equal to the FieldLayout's one).\n");
 
   // Check the reinterpret cast makes sense for the Dst value types (need integer sizes ratio)
   EKAT_REQUIRE_MSG(alloc_prop.template is_compatible<DstValueType>(),
