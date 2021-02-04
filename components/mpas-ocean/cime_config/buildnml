@@ -233,6 +233,12 @@ def buildnml(case, caseroot, compname):
         decomp_date += '200904'
         decomp_prefix += 'mpas-o.graph.info.'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
+    elif ocn_grid == 'ECwISC30to60E2r1':
+        ic_date += '200916'
+        ic_prefix += 'ocean.ECwISC30to60E2r1'
+        decomp_date += '200915'
+        decomp_prefix += 'mpas-o.graph.info.'
+        analysis_mask_file += 'ECwISC30to60E2r1_moc_masks_and_transects.nc'
     elif ocn_grid == 'WC14to60E2r3':
         ic_date += '200714'
         ic_prefix += 'ocean.WC14to60E2r3'
