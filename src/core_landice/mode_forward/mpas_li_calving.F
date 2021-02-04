@@ -1632,8 +1632,6 @@ module li_calving
       ! local variables
       !-----------------------------------------------------------------
 
-!SFP: note some of these in the next block may be removed 
-!if/when stress calc goes to vel mod
       type (block_type), pointer :: block           
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: thermalPool 
@@ -1644,45 +1642,43 @@ module li_calving
       real(kind=RKIND), pointer :: config_calving_eigencalving_parameter_scalar_value
       real(kind=RKIND), pointer :: config_damage_preserve_threshold, config_damage_calving_threshold
       character (len=StrKIND), pointer :: config_damage_gl_setting
-      real(kind=RKIND), pointer :: config_default_flowParamA   !SFP: need to leave because meanFlowParamA used at end?
+      real(kind=RKIND), pointer :: config_default_flowParamA   
       character (len=StrKIND), pointer :: config_calving_eigencalving_parameter_source
       logical, pointer :: config_print_calving_info
       real (kind=RKIND), pointer :: config_sea_level
-      real (kind=RKIND), dimension(:), pointer :: thickness !SFP: may not be needed if stress calcs moved to vel mod
+
+!SFP: may not be needed if stress calcs moved to vel mod
+      real (kind=RKIND), dimension(:), pointer :: thickness 
+
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: eigencalvingParameter
       real (kind=RKIND), dimension(:), pointer :: calvingThickness
       real (kind=RKIND), dimension(:), pointer :: requiredCalvingVolumeRate
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
-      real (kind=RKIND), dimension(:), pointer :: eMax!, eMin, exx, exy, eyx, eyy !SFP: remove eventually (won't need because sigmas come in directly)
-      real (kind=RKIND), dimension(:), pointer :: sigmamax, sigmamin, sigmaxx, sigmaxy, sigmayx, sigmayy !SFP: added -- these should now come in from vel mod 
-      real (kind=RKIND), dimension(:,:), pointer :: flowParamA !SFP: need to leave because meanFlowParamA used at end?
-      real (kind=RKIND), dimension(:,:), pointer :: temperature !SFP: may not be needed if stress calcs moved to vel mod
+      real (kind=RKIND), dimension(:), pointer :: eMax
+      real (kind=RKIND), dimension(:), pointer :: sigmamax, sigmamin, sigmaxx, sigmaxy, sigmayx, sigmayy 
+
+!SFP: need to leave because meanFlowParamA used at end?
+!      real (kind=RKIND), dimension(:,:), pointer :: flowParamA 
+!SFP: may not be needed if stress calcs moved to vel mod
+!      real (kind=RKIND), dimension(:,:), pointer :: temperature 
+
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer :: damage
       real (kind=RKIND), dimension(:), pointer :: ddamagedt
-      real (kind=RKIND), dimension(:), pointer :: s0, nstar, epsmax !effectiveViscosity, sigmamax !SFP: move some of these to vel mod; epsmax redundant w/ eMax?
+      real (kind=RKIND), dimension(:), pointer :: s0, nstar
       real (kind=RKIND), dimension(:), pointer :: damageSource
       real (kind=RKIND), dimension(:), pointer :: damage_nye
       real (kind=RKIND), dimension(:), pointer :: damageMax
-!      real (kind=RKIND), dimension(:), pointer :: stiffnessFactor !SFP: not used anymore; moved to vel mod
       real (kind=RKIND), pointer ::  &
            config_ice_density,            & ! ice density
            config_ocean_density             ! ocean density
 
-      type (field1dReal), pointer :: meanFlowParamAVar !SFP: copied to vel mod but left here because used at end 
-      real, dimension(:), pointer :: meanFlowParamA    !SFP: copied to vel mod but left here because used at end
-!      type (field1dReal), pointer :: sigmayxVar
-!      real, dimension(:), pointer :: sigmayx
-!      type (field1dReal), pointer :: sigmaxyVar
-!      real, dimension(:), pointer :: sigmaxy
-!      type (field1dReal), pointer :: sigmaxxVar
-!      real, dimension(:), pointer :: sigmaxx
-!      type (field1dReal), pointer :: sigmayyVar
-!      real, dimension(:), pointer :: sigmayy
-!      type (field1dReal), pointer :: sigmaminVar
-!      real, dimension(:), pointer :: sigmamin
+!SFP: copied to vel mod but left here because used at end
+!      type (field1dReal), pointer :: meanFlowParamAVar 
+!      real, dimension(:), pointer :: meanFlowParamA    
+
       type (field1dReal), pointer :: alphaVar
       real, dimension(:), pointer :: alpha
 
@@ -1707,7 +1703,10 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_damage_preserve_threshold', config_damage_preserve_threshold)
       call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
-      call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA) !SFP: still needed here since meanFlowParamA used at end
+
+!SFP: still needed here since meanFlowParamA used at end
+!      call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA) 
+
       call mpas_pool_get_config(liConfigs, 'config_damage_gl_setting', config_damage_gl_setting)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
@@ -1736,7 +1735,7 @@ module li_calving
          call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-         call mpas_pool_get_array(geometryPool, 'thickness', thickness) !SFP: moved to vel mod for stress calc ... still needed?
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness) 
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
          call mpas_pool_get_array(geometryPool, 'eigencalvingParameter', eigencalvingParameter)
@@ -1745,61 +1744,26 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'ddamagedt', ddamagedt)
          call mpas_pool_get_array(geometryPool, 's0', s0)
          call mpas_pool_get_array(geometryPool, 'nstar', nstar)
-         call mpas_pool_get_array(geometryPool, 'epsmax', epsmax) !SFP: note redundant with eMax from vel mod
-         !call mpas_pool_get_array(geometryPool, 'effectiveViscosity', effectiveViscosity) !SFP: no longer needed if use eMax instead of epsmax
-         !call mpas_pool_get_array(geometryPool, 'sigmamax', sigmamax) !SFP: now !in vel pool; imported below
          call mpas_pool_get_array(geometryPool, 'damageSource', damageSource)
          call mpas_pool_get_array(geometryPool, 'damage_nye', damage_nye)
          call mpas_pool_get_array(geometryPool, 'damageMax', damageMax)
-
          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
-         call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA) !SFP: need to leave here as meanFlowParamA used at end
-         !call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor) !SFP: move to vel mod
 
-         !call mpas_pool_get_array(thermalPool, 'temperature', temperature) !SFP: not needed if moved to vel mod?
+!SFP: need to leave here as meanFlowParamA used at end
+!         call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA) 
 
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
 
-         !SFP: copied to vel mod but left here because used at the end below
-         call mpas_pool_get_field(scratchPool, 'meanFlowParamA',  meanFlowParamAVar) 
-         call mpas_allocate_scratch_field(meanFlowParamAVar, .true.)
-         meanFlowParamA => meanFlowParamAVar % array
-
-         !SFP: following 5 can be removed later as these will be imported from
-         !vel mod; need to copy these to vel mod?
-         !call mpas_pool_get_field(scratchPool, 'sigmaxyVar', sigmaxyVar )
-!         call mpas_pool_get_field(scratchPool, 'sigmaxyVar', sigmaxyVar )
-!         call mpas_allocate_scratch_field(sigmaxyVar, .true.)
-!         sigmaxy => sigmaxyVar % array
-
-!         call mpas_pool_get_field(scratchPool, 'sigmayxVar', sigmayxVar )
-!         call mpas_allocate_scratch_field(sigmayxVar, .true.)
-!         sigmayx => sigmayxVar % array
-
-!         call mpas_pool_get_field(scratchPool, 'sigmaxxVar', sigmaxxVar )
-!         call mpas_allocate_scratch_field(sigmaxxVar, .true.)
-!         sigmaxx => sigmaxxVar % array
-
-!         call mpas_pool_get_field(scratchPool, 'sigmayyVar', sigmayyVar )
-!         call mpas_allocate_scratch_field(sigmayyVar, .true.)
-!         sigmayy => sigmayyVar % array
-
-!         call mpas_pool_get_field(scratchPool, 'sigmaminVar', sigmaminVar )
-!         call mpas_allocate_scratch_field(sigmaminVar, .true.)
-!         sigmamin => sigmaminVar % array
+!SFP: copied to vel mod but left here because used at the end below
+!         call mpas_pool_get_field(scratchPool, 'meanFlowParamA',  meanFlowParamAVar) 
+!         call mpas_allocate_scratch_field(meanFlowParamAVar, .true.)
+!         meanFlowParamA => meanFlowParamAVar % array
 
          call mpas_pool_get_field(scratchPool, 'alpha', alphaVar )
          call mpas_allocate_scratch_field(alphaVar, .true.)
          alpha => alphaVar % array
 
-         !SFP: leave this struct here for now but eventually remove
-!         call mpas_pool_get_array(velocityPool, 'exx', exx)
-!         call mpas_pool_get_array(velocityPool, 'eyy', eyy)
-!         call mpas_pool_get_array(velocityPool, 'exy', exy)
-!         call mpas_pool_get_array(velocityPool, 'eyx', eyx)
-         call mpas_pool_get_array(velocityPool, 'eMax', eMax) !SFP: used below (in place of epsmax) 
-!         !call mpas_pool_get_array(velocityPool, 'eMin', eMin) !SFP: not used here as far as I can tell
-
+         call mpas_pool_get_array(velocityPool, 'eMax', eMax) 
          call mpas_pool_get_array(velocityPool, 'sigmaxx', sigmaxx)
          call mpas_pool_get_array(velocityPool, 'sigmayy', sigmayy)
          call mpas_pool_get_array(velocityPool, 'sigmaxy', sigmaxy)
@@ -1808,50 +1772,23 @@ module li_calving
          call mpas_pool_get_array(velocityPool, 'sigmamin', sigmamin)
 
 ! SFP: copied to vel module but also needed here because flowParmA is used to calc meanFlowParamA used below
-         call li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err_tmp)
-         err = ior(err, err_tmp)
+!         call li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err_tmp)
+!         err = ior(err, err_tmp)
 
-! SFP: copied to vel module but also needed here becuase used near end of ! subroutine
-         meanFlowParamA(:) = sum(flowParamA(:,:), dim=1)/REAL(nVertLevels)      
+! SFP: copied to vel module but also needed here becuase used near end of subroutine
          ! calculate the depth-averaged flow parameter A
-
-! SFP: moved to vel module
-!         where (thickness == 0.0_RKIND)
-!             effectiveViscosity = 0.0_RKIND
-!         elsewhere
-!             effectiveViscosity = &
-!             0.5_RKIND*stiffnessFactor*meanFlowParamA**(-1.0_RKIND/3.0_RKIND)*(sqrt(exx**2.0_RKIND+eyy**2.0_RKIND + &
-!             exx*eyy + 0.25_RKIND*(exy+eyx)**2.0_RKIND))**((1.0_RKIND-3.0_RKIND)/3.0_RKIND)
-!         endwhere
-         ! recover effective viscosity from vel. and temp. fields
-
-!SFP: moved all stress calcs to vel mod
-!         sigmaxy(:) = 2.0_RKIND*effectiveViscosity(:)*(exy(:)+eyx(:))/2.0_RKIND
-!         sigmayx(:) = 2.0_RKIND*effectiveViscosity(:)*(eyx(:)+exy(:))/2.0_RKIND
-
-!         sigmaxx(:) = 2.0_RKIND*effectiveViscosity(:)*exx(:)
-!         sigmayy(:) = 2.0_RKIND*effectiveViscosity(:)*eyy(:)
-         !deviatoric stress
-
-!         sigmamin(:) = &
-!         (sigmaxx(:)+sigmayy(:))/2.0_RKIND-sqrt(((sigmaxx(:)-sigmayy(:))/2.0_RKIND)**2.0_RKIND+((sigmaxy(:)+sigmayx(:))/2.0_RKIND)**2.0_RKIND)
-!         sigmamax(:) = &
-!         (sigmaxx(:)+sigmayy(:))/2.0_RKIND+sqrt(((sigmaxx(:)-sigmayy(:))/2.0_RKIND)**2.0_RKIND+((sigmaxy(:)+sigmayx(:))/2.0_RKIND)**2.0_RKIND)
-         !deviatoric principal stress
+!         meanFlowParamA(:) = sum(flowParamA(:,:), dim=1)/REAL(nVertLevels)      
 
          where (thickness == 0.0_RKIND)
              alpha = 0.0_RKIND
-             epsmax = 0.0_RKIND
              s0 = 0.0_RKIND
          elsewhere
              alpha = sigmamin / sigmamax !SFP: leave here but import sigmas from vel mod
-!             epsmax = sigmamax / (2.0_RKIND*effectiveViscosity) 
-             !SFP: above looks redundant w/ eMax from the vel mod; correct calcs below
-             ! if using 'eMax' instead no longer need to calc. eff. visc. at all in this subroutine
-             epsmax = eMax
              s0 = &
              config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*sigmamax*config_ocean_density)
          endwhere
+
+!SFP: Below here is a lot of commented out code from Tong. Needs cleaning up still?
 
          !alpha(:) = sigmamin(:) / (sigmamax(:))
          !epsmax(:) = sigmamax(:) / (2.0d0*effectiveViscosity(:))
@@ -1879,7 +1816,9 @@ module li_calving
          if (thickness(iCell) == 0.0_RKIND) then
              damageSource(iCell) = 0.0_RKIND
          else
-             damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*epsmax(iCell)-floatingBasalMassBal(iCell)/config_ice_density/(thickness(iCell))
+!SFP: substituted 'eMax' for internal var 'epsmax' here (allows us to remove / not calc epsmax)
+             !damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*epsmax(iCell)-floatingBasalMassBal(iCell)/config_ice_density/(thickness(iCell))
+             damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*eMax(iCell)-floatingBasalMassBal(iCell)/config_ice_density/(thickness(iCell))
          endif
          enddo
 
@@ -1999,26 +1938,18 @@ module li_calving
                         realArgs=(/minval(sigmamax), maxval(sigmamax)/))
              call mpas_log_write("damage value range: Min=$r, Max=$r", &
                         realArgs=(/minval(damage), maxval(damage)/))
-             call mpas_log_write("A value range: Min=$r, Max=$r", &
-                        realArgs=(/minval(meanFlowParamA), maxval(meanFlowParamA)/)) !SFP: note meanFlowParamA used here so still needs to be calc above
+!SFP: if not needed here than we can remove 'meanFlowParamA' calcs and use from this entire subroutine
+!             call mpas_log_write("A value range: Min=$r, Max=$r", &
+!                        realArgs=(/minval(meanFlowParamA), maxval(meanFlowParamA)/)) 
              call mpas_log_write("alpha value range: Min=$r, Max=$r", &
                         realArgs=(/minval(alpha), maxval(alpha)/))
         end if
         ! temporary message output in the log file
 
 
-         call mpas_deallocate_scratch_field(meanFlowParamAVar, .true.) !SFP: still needed here since used immediately above
-         !call mpas_deallocate_scratch_field(sigmaxxVar, .true.)
-         !call mpas_deallocate_scratch_field(sigmayyVar, .true.)
-         !call mpas_deallocate_scratch_field(sigmaminVar, .true.)
-         !call mpas_deallocate_scratch_field(sigmamaxVar, .true.)
+!SFP: below line still needed since 'meanFlowParamAVar' is used immediately above
+!         call mpas_deallocate_scratch_field(meanFlowParamAVar, .true.) 
          call mpas_deallocate_scratch_field(alphaVar, .true.)
-         !call mpas_deallocate_scratch_field(epsmaxVar, .true.)
-         !call mpas_deallocate_scratch_field(nstarVar, .true.)
-         !call mpas_deallocate_scratch_field(s0Var, .true.)
-         !call mpas_deallocate_scratch_field(damageSourceVar, .true.)
-         !call mpas_deallocate_scratch_field(ddamagedtVar, .true.)
-         ! call mpas_deallocate_scratch_field(damageVar, .true.)
 
          block => block % next
              
