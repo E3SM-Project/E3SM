@@ -45,29 +45,22 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     atm_grid = case.get_value("ATM_GRID")
     grid = case.get_value("GRID")
     if get_model() != "e3sm":
-        clm_usrdat_name = case.get_value("CLM_USRDAT_NAME")
+        lm_name = "CLM"
     else:
-        elm_usrdat_name = case.get_value("ELM_USRDAT_NAME")
+        lm_name = "ELM"
+    lm_usrdat_name = case.get_value(lm_name + "_USRDAT_NAME")
+    lm_grid_name = lm_name + "USRDAT"
 
     #----------------------------------------------------
     # Check for incompatible options.
     #----------------------------------------------------
-    if get_model() != "e3sm":
-        if "CLM" in datm_mode and case.get_value("COMP_LND") == "clm":
-             expect(datm_presaero != "none",
-                     "A DATM_MODE for CLM is incompatible with DATM_PRESAERO=none.")
-             expect(datm_topo != "none",
-                    "A DATM_MODE for CLM is incompatible with DATM_TOPO=none.")
-        expect(grid != "CLM_USRDAT" or clm_usrdat_name in ("", "UNSET"),
-                "GRID=CLM_USRDAT and CLM_USRDAT_NAME is NOT set.")
-    else:
-        if "ELM" in datm_mode and case.get_value("COMP_LND") == "elm":
-             expect(datm_presaero != "none",
-                     "A DATM_MODE for ELM is incompatible with DATM_PRESAERO=none.")
-             expect(datm_topo != "none",
-                     "A DATM_MODE for ELM is incompatible with DATM_TOPO=none.")
-        expect(grid != "ELM_USRDAT" or elm_usrdat_name in ("", "UNSET"),
-                "GRID=ELM_USRDAT and ELM_USRDAT_NAME is NOT set.")
+    if lm_name in datm_mode and case.get_value("COMP_LND") == lm_name.lower():
+        expect(datm_presaero != "none",
+                 "A DATM_MODE for the land model is incompatible with DATM_PRESAERO=none.")
+        expect(datm_topo != "none",
+                 "A DATM_MODE for the land model is incompatible with DATM_TOPO=none.")
+        expect(grid != lm_grid_name or lm_usrdat_name in ("", "UNSET"),
+                "GRID=" + lm_grid_name + " and " + lm_name + "_USRDAT_NAME is NOT set.")
 
     #----------------------------------------------------
     # Log some settings.
