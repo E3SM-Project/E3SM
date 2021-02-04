@@ -337,7 +337,7 @@ contains
       endif
 
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(density, p, p2, tracerTemp, tracerSalt)
+      !$acc enter data copyin(p, p2, tracerTemp, tracerSalt)
       !$acc parallel loop gang vector collapse(2) &
       !$acc&   present(density, p, p2, tracerTemp, tracerSalt)
 #else
@@ -391,9 +391,10 @@ contains
 
       end do
       end do
+      call mpas_log_write('leaving eq of state')
 #ifdef MPAS_OPENACC
       !$acc update host(density)
-      !$acc exit data delete(density, p, p2, tracerTemp, tracerSalt)
+      !$acc exit data delete(p, p2, tracerTemp, tracerSalt)
 #else
       !$omp end do
       !$omp end parallel
@@ -608,7 +609,7 @@ contains
       endif
 
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(density, p, p2, tracerTemp, tracerSalt, &
+      !$acc enter data copyin(p, p2, tracerTemp, tracerSalt, &
       !$acc&                  thermalExpansionCoeff,  &
       !$acc&                  salineContractionCoeff)
       !$acc parallel loop gang vector collapse(2)     &
@@ -716,7 +717,7 @@ contains
       !$acc update host(density,                &
       !$acc&            thermalExpansionCoeff,  &
       !$acc&            salineContractionCoeff)
-      !$acc exit data delete(density, p, p2, tracerTemp, tracerSalt, &
+      !$acc exit data delete(p, p2, tracerTemp, tracerSalt, &
       !$acc&                 thermalExpansionCoeff,  &
       !$acc&                 salineContractionCoeff)
 #else

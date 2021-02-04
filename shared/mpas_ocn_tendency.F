@@ -291,8 +291,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
          normalVelocity,     &! normal velocity
-         layerThickness, &
-         circulation
+         layerThickness
 
       real (kind=RKIND), dimension(:,:,:), pointer, contiguous :: &
          activeTracers
@@ -336,15 +335,17 @@ contains
                                              sfcStressMag)
 
       !*** Transfer data to device
+      !$acc update device(zMid, divergence, relativeVorticity, normPlanetVortEdge, &
+      !$acc               density, normRelVortEdge, montgomeryPotential, pressure, &
+      !$acc               thermExpCoeff, salineContractCoeff, tangentialVelocity, &
+      !$acc               layerThickEdge, kineticEnergyCell, sfcFlxAttCoeff)
       !$acc enter data &
       !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
-      !$acc    sfcFlxAttCoeff, ssh, layerThickEdge, normalVelocity, &
-      !$acc    tangentialVelocity, density, potentialDensity, zMid, &
-      !$acc    pressure, layerThickness, circulation, activeTracers, &
-      !$acc    relativeVorticity, kineticEnergyCell, normRelVortEdge, &
-      !$acc    normPlanetVortEdge, montgomeryPotential, &
-      !$acc    vertAleTransportTop, divergence, vertViscTopOfEdge, &
-      !$acc    thermExpCoeff, salineContractCoeff, wettingVelocity)
+      !$acc    ssh, normalVelocity, &
+      !$acc    potentialDensity, &
+      !$acc    layerThickness, activeTracers, &
+      !$acc    vertAleTransportTop, vertViscTopOfEdge, &
+      !$acc    wettingVelocity)
 
       !*** Set output variables to zero before accumulating results
       
@@ -451,13 +452,11 @@ contains
       !$acc exit data &
       !$acc    copyout(tendVel, sfcStress, sfcStressMag) &
       !$acc    delete( &
-      !$acc    sfcFlxAttCoeff, ssh, layerThickEdge, normalVelocity, &
-      !$acc    tangentialVelocity, density, potentialDensity, zMid, &
-      !$acc    pressure, layerThickness, circulation, activeTracers, &
-      !$acc    relativeVorticity, kineticEnergyCell, normRelVortEdge, &
-      !$acc    normPlanetVortEdge, montgomeryPotential, &
-      !$acc    vertAleTransportTop, divergence, vertViscTopOfEdge, &
-      !$acc    thermExpCoeff, salineContractCoeff, wettingVelocity)
+      !$acc    ssh, normalVelocity, &
+      !$acc    potentialDensity, &
+      !$acc    layerThickness, activeTracers, &
+      !$acc    vertAleTransportTop, vertViscTopOfEdge, &
+      !$acc    wettingVelocity)
 
       ! stop the timer and exit
 

@@ -150,6 +150,11 @@ contains
       nCells = nCellsAll
       nVertices = nVerticesAll
 
+!#ifdef MPAS_OPENACC
+!      !$acc enter data copyin(normalVelocity)
+!#endif
+
+      ! debug, mdt :: this is run only on the host
       call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, layerThickEdge)
 
       coef_3rd_order = config_coef_3rd_order
@@ -164,7 +169,16 @@ contains
       activeTracers(indexTemperature,:,nCells+1) = -1e34
       activeTracers(indexSalinity,:,nCells+1) = -1e34
 
-      call ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)
+!#ifdef MPAS_OPENACC
+!      !$acc update device(normalVelocity)
+!#endif
+
+      call ocn_relativeVorticity_circulation(relativeVorticity, circulation, normalVelocity, err)
+
+!#ifdef MPAS_OPENACC
+!      !$acc update self(relativeVorticity, circulation)
+!      !$acc exit data delete(normalVelocity)
+!#endif
 
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdge, normalVelocity, normalTransportVelocity, &
@@ -301,16 +315,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)!{{{
+   subroutine ocn_relativeVorticity_circulation(relativeVorticity, circulation, normalVelocity, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity
@@ -336,31 +347,14 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iVertex, iEdge, i, k
-      integer, pointer :: nEdges, nVertices, vertexDegree
-      integer, dimension(:), pointer :: maxLevelVertexBot, minLevelVertexTop
-      integer, dimension(:,:), pointer :: edgesOnVertex, edgeSignOnVertex
 
       real (kind=RKIND) :: invAreaTri1, r_tmp
-      real (kind=RKIND), dimension(:), pointer :: &
-              dcEdge, areaTriangle
-
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
-      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
-
-      call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
-      call mpas_pool_get_array(meshPool, 'minLevelVertexTop', minLevelVertexTop)
-      call mpas_pool_get_array(meshPool, 'edgesOnVertex', edgesOnVertex)
-      call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', edgeSignOnVertex)
-
-      call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
-      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
       err = 0
 
       !$omp parallel
       !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp)
-      do iVertex = 1, nVertices
+      do iVertex = 1, nVerticesAll
          circulation(:, iVertex) = 0.0_RKIND
          relativeVorticity(:, iVertex) = 0.0_RKIND
          invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
@@ -1986,11 +1980,23 @@ contains
       ! Only need to compute over the 0 and 1 halos
       nCells = nCellsHalo( 2 )
 
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(densitySurfaceDisplaced, &
+      !$acc                   thermalExpansionCoeff,   &
+      !$acc                   salineContractionCoeff)
+#endif
+
       ! compute EOS by displacing SST/SSS to every vertical layer in column
       call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
                                          nCells, 0, 'surfaceDisplaced', densitySurfaceDisplaced, &
                                          err, thermalExpansionCoeff, salineContractionCoeff, &
                                          timeLevel)
+
+#ifdef MPAS_OPENACC
+      !$acc exit data copyout( &
+      !$acc                   thermalExpansionCoeff,   &
+      !$acc                   salineContractionCoeff)
+#endif
 
       !$omp parallel
       !$omp do schedule(runtime) &
@@ -2053,6 +2059,12 @@ contains
       enddo
       !$omp end do
       !$omp end parallel
+
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(densitySurfaceDisplaced, &
+      !$acc                   thermalExpansionCoeff,   &
+      !$acc                   salineContractionCoeff)
+#endif
 
       ! deallocate scratch space
       deallocate(thermalExpansionCoeff, &

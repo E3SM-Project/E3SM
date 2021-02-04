@@ -205,6 +205,7 @@ module ocn_diagnostics_variables
    !--------------------------------------------------------------------
 
    public :: ocn_diagnostics_variables_init
+   public :: ocn_diagnostics_variables_destroy
 
 !***********************************************************************
 
@@ -465,9 +466,203 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'CGvec_zh1', CGvec_zh1)
       end if
 
+      ! Copy diagnostic variables to accelerator
+      if ( trim(config_land_ice_flux_mode) /= 'off' ) then
+         !$acc enter data copyin(                                  &
+         !$acc                   topDrag,                          &
+         !$acc                   topDragMag,                       &
+         !$acc                   landIceBoundaryLayerTracers,      &
+         !$acc                   landIceTracerTransferVelocities,  &
+         !$acc                   landIceFrictionVelocity)
+      end if
+      if ( trim(config_ocean_run_mode) == 'init' ) then
+         !$acc enter data copyin(                    &
+         !$acc                   rx1Edge,            &
+         !$acc                   rx1Cell,            &
+         !$acc                   rx1MaxEdge,         &
+         !$acc                   rx1MaxCell,         &
+         !$acc                   globalRx1Max)
+         ! debug, mdt :: rx1MaxCell and globalRx1Max are in both initMode and debugDiagnosticsAMPKG 
+         !               package, but I can't find a config option for debugDiagnosticsAMPKG
+      end if
+      !$acc enter data copyin( &
+      !$acc                   zMid,                    &
+      !$acc                   zTop,                    &
+      !$acc                   divergence,              &
+      !$acc                   circulation,             &
+      !$acc                   relativeVorticity,       &
+      !$acc                   relativeVorticityCell,   &
+      !$acc                   normPlanetVortEdge,      &
+      !$acc                   normRelVortEdge,      &
+      !$acc                   normalizedRelativeVorticityCell,      &
+      !$acc                   potentialDensity,      &
+      !$acc                   displacedDensity,      &
+      !$acc                   density,      &
+      !$acc                   montgomeryPotential,      &
+      !$acc                   pressure,      &
+      !$acc                   thermExpCoeff,      &
+      !$acc                   salineContractCoeff,      &
+      !$acc                   BruntVaisalaFreqTop,      &
+      !$acc                   tangentialVelocity,      &
+      !$acc                   layerThickEdge,      &
+      !$acc                   kineticEnergyCell,      &
+      !$acc                   vertVelocityTop,      &
+      !$acc                   vertTransportVelocityTop,      &
+      !$acc                   vertGMBolusVelocityTop,      &
+      !$acc                   normalTransportVelocity,      &
+      !$acc                   normalGMBolusVelocity,      &
+      !$acc                   RiTopOfCell,      &
+      !$acc                   RiTopOfEdge,      &
+      !$acc                   gradSSH,      &
+      !$acc                   pressureAdjustedSSH,      &
+      !$acc                   tracersSurfaceValue,      &
+      !$acc                   tracersSurfaceLayerValue,      &
+      !$acc                   normalVelocitySurfaceLayer,      &
+      !$acc                   indexSurfaceLayerDepth,      &
+      !$acc                   sfcFlxAttCoeff,      &
+      !$acc                   surfaceFluxAttenuationCoefficientRunoff,      &
+      !$acc                   indexBLT,      &
+      !$acc                   indexBLS,      &
+      !$acc                   indexHeatTrans,      &
+      !$acc                   indexSaltTrans,      &
+      !$acc                   surfaceBuoyancyForcing,      &
+      !$acc                   penetrativeTemperatureFluxOBL,      &
+      !$acc                   surfaceFrictionVelocity,            &
+      !$acc                   transportVelocityX,            &
+      !$acc                   transportVelocityY,            &
+      !$acc                   transportVelocityZ,            &
+      !$acc                   transportVelocityZonal,            &
+      !$acc                   transportVelocityMeridional,            &
+      !$acc                   GMBolusVelocityX,            &
+      !$acc                   GMBolusVelocityY,            &
+      !$acc                   GMBolusVelocityZ,            &
+      !$acc                   GMBolusVelocityZonal,            &
+      !$acc                   GMBolusVelocityMeridional,            &
+      !$acc                   gmStreamFuncTopOfEdge,            &
+      !$acc                   GMStreamFuncX,            &
+      !$acc                   GMStreamFuncY,            &
+      !$acc                   GMStreamFuncZ,            &
+      !$acc                   GMStreamFuncZonal,            &
+      !$acc                   GMStreamFuncMeridional,            &
+      !$acc                   gmStreamFuncTopOfCell             &
+      !$acc                   )
+      ! debug, mdt :: not all diagnostics variables are being copied yet....
+
     end subroutine ocn_diagnostics_variables_init!}}}
 
-!***********************************************************************
+!*******************************************************************************
+!
+!  ocn_diagnostics_variables_destroy
+!
+!> \brief Remove diagnostics variables from device
+!> \author Rob Aulwes and Phil Jones
+!> \date   14 Jan 2020
+!> \details
+!> This module removes the diagnostics variables from the device
+!
+!-------------------------------------------------------------------------------
+
+   subroutine ocn_diagnostics_variables_destroy(err) !{{{
+
+      ! Input variables                                                                                      
+                                                                                                             
+      ! Output variables                                                                                     
+                                                                                                             
+      integer, intent(out) :: &                                                                              
+         err                   ! returned error flag                                                         
+                                                                                                             
+      ! Local variables                                                                                      
+                                                                                                             
+      !***                                                                                                   
+      !*** end of preamble, begin code                                                                       
+      !***                                                                                                   
+                                                                                                             
+      err = 0
+
+      ! Remove data from the device
+      if ( config_land_ice_flux_mode /= 'off' ) then
+         !$acc exit data delete(                                   &
+         !$acc                  topDrag,                           &
+         !$acc                  topDragMag,                        &
+         !$acc                  landIceBoundaryLayerTracers,       &
+         !$acc                  landIceTracerTransferVelocities,   &
+         !$acc                  landIceFrictionVelocity)
+      end if
+      if ( trim(config_ocean_run_mode) == 'init' ) then
+         !$acc exit data delete(                    &
+         !$acc                  rx1Edge,            &
+         !$acc                  rx1Cell,            &
+         !$acc                  rx1MaxEdge,         &
+         !$acc                  rx1MaxCell,         &
+         !$acc                  globalRx1Max)
+      end if
+      !$acc exit data delete( &
+      !$acc                   zMid,                    &
+      !$acc                   zTop,                    &
+      !$acc                   divergence,              &
+      !$acc                   circulation,             &
+      !$acc                   relativeVorticity,       &
+      !$acc                   relativeVorticityCell,   &
+      !$acc                   normPlanetVortEdge,      &
+      !$acc                   normRelVortEdge,      &
+      !$acc                   normalizedRelativeVorticityCell,      &
+      !$acc                   displacedDensity,      &
+      !$acc                   potentialDensity,      &
+      !$acc                   density,      &
+      !$acc                   montgomeryPotential,      &
+      !$acc                   pressure,      &
+      !$acc                   thermExpCoeff,      &
+      !$acc                   salineContractCoeff,      &
+      !$acc                   BruntVaisalaFreqTop,      &
+      !$acc                   tangentialVelocity,      &
+      !$acc                   layerThickEdge,      &
+      !$acc                   kineticEnergyCell,      &
+      !$acc                   vertVelocityTop,      &
+      !$acc                   vertTransportVelocityTop,      &
+      !$acc                   vertGMBolusVelocityTop,      &
+      !$acc                   normalTransportVelocity,      &
+      !$acc                   normalGMBolusVelocity,      &
+      !$acc                   RiTopOfCell,      &
+      !$acc                   RiTopOfEdge,      &
+      !$acc                   gradSSH,      &
+      !$acc                   pressureAdjustedSSH,      &
+      !$acc                   tracersSurfaceValue,      &
+      !$acc                   tracersSurfaceLayerValue,      &
+      !$acc                   normalVelocitySurfaceLayer,      &
+      !$acc                   indexSurfaceLayerDepth,      &
+      !$acc                   sfcFlxAttCoeff,      &
+      !$acc                   surfaceFluxAttenuationCoefficientRunoff,      &
+      !$acc                   indexBLT,      &
+      !$acc                   indexBLS,      &
+      !$acc                   indexHeatTrans,      &
+      !$acc                   indexSaltTrans,      &
+      !$acc                   surfaceBuoyancyForcing,      &
+      !$acc                   penetrativeTemperatureFluxOBL,      &
+      !$acc                   surfaceFrictionVelocity,      &
+      !$acc                   transportVelocityX,            &
+      !$acc                   transportVelocityY,            &
+      !$acc                   transportVelocityZ,            &
+      !$acc                   transportVelocityZonal,            &
+      !$acc                   transportVelocityMeridional,            &
+      !$acc                   GMBolusVelocityX,            &
+      !$acc                   GMBolusVelocityY,            &
+      !$acc                   GMBolusVelocityZ,            &
+      !$acc                   GMBolusVelocityZonal,            &
+      !$acc                   GMBolusVelocityMeridional,            &
+      !$acc                   gmStreamFuncTopOfEdge,            &
+      !$acc                   GMStreamFuncX,            &
+      !$acc                   GMStreamFuncY,            &
+      !$acc                   GMStreamFuncZ,            &
+      !$acc                   GMStreamFuncZonal,            &
+      !$acc                   GMStreamFuncMeridional,            &
+      !$acc                   gmStreamFuncTopOfCell             &
+      !$acc                   )
+      ! debug, mdt :: not all diagnostics variables are being copied yet....
+
+      ! Nullify pointers
+      ! debug, mdt :: still need to do this
+
+    end subroutine ocn_diagnostics_variables_destroy!}}}
 
 end module ocn_diagnostics_variables
 
