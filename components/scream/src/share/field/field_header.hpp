@@ -79,7 +79,7 @@ public:
         FieldAllocProp& get_alloc_properties ()       { return m_alloc_prop; }
 
   // Get parent (if any)
-  std::weak_ptr<FieldHeader> get_parent () { return m_parent; }
+  std::weak_ptr<FieldHeader> get_parent () const { return m_parent; }
 
   // Get the extra data
   const extra_data_type& get_extra_data () const { return m_extra_data; }
