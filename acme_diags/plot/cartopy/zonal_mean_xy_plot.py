@@ -1,14 +1,15 @@
 from __future__ import print_function
 
 import os
+
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
-import matplotlib
+
+from acme_diags.driver.utils.general import get_output_dir
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from cartopy.mpl.ticker import LatitudeFormatter
-from acme_diags.driver.utils.general import get_output_dir
 
 plotTitle = {"fontsize": 12.5}
 plotSideTitle = {"fontsize": 11.5}

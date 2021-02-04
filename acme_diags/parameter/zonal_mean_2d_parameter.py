@@ -1,6 +1,8 @@
 import numpy
-from .core_parameter import CoreParameter
+
 from acme_diags.driver.utils.general import monotonic
+
+from .core_parameter import CoreParameter
 
 
 class ZonalMean2dParameter(CoreParameter):

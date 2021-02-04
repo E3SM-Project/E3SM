@@ -1,19 +1,21 @@
 from __future__ import print_function
 
-import matplotlib
-import numpy as np
-import numpy.ma as ma
 import os
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.colors import hsv_to_rgb
-import cartopy.feature as cfeature
 import cartopy.crs as ccrs
-from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+import cartopy.feature as cfeature
 import cdutil
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+import numpy.ma as ma
+from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
+from matplotlib.colors import hsv_to_rgb
+
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.driver.utils.general import get_output_dir
+
+matplotlib.use("Agg")
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -61,7 +63,8 @@ def determine_tick_step(degrees_covered):
 def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
 
     normalize_test_amp = parameter.normalize_test_amp
-    lon = var.getLongitude()
+    # FIXME: F841 - assigned but unused
+    # lon = var.getLongitude()
     lat = var.getLatitude()
     var = ma.squeeze(var.asma())
     max_amp = amp.max()

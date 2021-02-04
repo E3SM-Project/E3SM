@@ -1,7 +1,4 @@
 from .core_parser import CoreParser
-from acme_diags.parameter.meridional_mean_2d_parameter import (
-    MeridionalMean2dParameter,
-)
 
 
 class MeridionalMean2dParser(CoreParser):

@@ -1,9 +1,8 @@
-import unittest
 import os
 import re
-import shlex
 import shutil
 import subprocess
+import unittest
 
 
 def count_images(directory, file_type="png"):

@@ -163,7 +163,7 @@ regions_specs = {
         )
     },
     # Below is for RRM(regionally refined model) domains.
-    #'CONUS_RRM': {'domain': cdutil.region.domain(latitude=(20., 50., 'ccb'), longitude=(-125., -65., 'ccb'))},For RRM dataset, negative value won't work
+    # 'CONUS_RRM': {'domain': cdutil.region.domain(latitude=(20., 50., 'ccb'), longitude=(-125., -65., 'ccb'))},For RRM dataset, negative value won't work
     "CONUS_RRM": {
         "domain": cdutil.region.domain(
             latitude=(20.0, 50.0, "ccb"), longitude=(235.0, 295.0, "ccb")

@@ -1,18 +1,18 @@
 from __future__ import print_function
 
 import csv
-import numpy
 import os
-import scipy.io
 
 import cdms2
 import cdutil
+import numpy
+import scipy.io
 
 from acme_diags.driver import utils
 from acme_diags.plot.cartopy.streamflow_plot import (
-    plot_seasonality_map,
     plot_annual_map,
     plot_annual_scatter,
+    plot_seasonality_map,
 )
 
 
@@ -90,7 +90,8 @@ def get_seasonality(monthly):
     return seasonality_index, peak_month
 
 
-def run_diag(parameter):
+# FIXME:C901 'run_diag' is too complex (57)
+def run_diag(parameter):  # noqa
     # Assume `model` will always be a `nc` file.
     # Assume `obs` will always be a `mat` file.
     using_test_mat_file = False
@@ -235,7 +236,8 @@ def run_diag(parameter):
             test_mat_file = "{}/{}".format(
                 parameter.test_data_path.rstrip("/"), mat_file
             )
-            parameter.test_name_yrs = "{} ({}-{})".format(
+            # FIXME: F524 '...'.format(...) is missing argument(s) for placeholder(s): 2
+            parameter.test_name_yrs = "{} ({}-{})".format(  # noqa
                 parameter.test_start_yr, parameter.test_end_yr
             )
             data_mat = scipy.io.loadmat(test_mat_file)

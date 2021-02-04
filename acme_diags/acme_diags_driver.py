@@ -1,7 +1,21 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+import importlib
 import os
+import subprocess
+import sys
+import traceback
+
+import cdms2.tvariable
+import cdp.cdp_run
+
+import acme_diags
+from acme_diags import container
+from acme_diags.parameter.core_parameter import CoreParameter
+from acme_diags.parser import SET_TO_PARSER
+from acme_diags.parser.core_parser import CoreParser
+from acme_diags.viewer.main import create_viewer
 
 # Must be done before any CDAT library is called.
 os.environ["UVCDAT_ANONYMOUS_LOG"] = "no"
@@ -12,22 +26,6 @@ os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 # Used by numpy, causes too many threads to spawn otherwise.
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
-
-import sys
-import getpass
-import datetime
-import importlib
-import traceback
-import subprocess
-import cdp.cdp_run
-import acme_diags
-import cdms2.tvariable
-from acme_diags.parameter.core_parameter import CoreParameter
-from acme_diags.parser import SET_TO_PARSER
-from acme_diags.parser.core_parser import CoreParser
-from acme_diags.viewer.main import create_viewer
-from acme_diags.driver import utils
-from acme_diags import container
 
 
 # turn off MPI in cdms2 -- not currently supported by e3sm_diags
@@ -204,7 +202,7 @@ def save_provenance(results_dir, parser):
         f.write(contents)
     try:
         _save_env_yml(results_dir)
-    except:
+    except Exception:
         traceback.print_exc()
 
     _save_parameter_files(results_dir, parser)
@@ -296,7 +294,7 @@ def run_diag(parameters):
             single_result = module.run_diag(parameters)
             print("")
             results.append(single_result)
-        except:
+        except Exception:
             print("Error in {}".format(mod_str))
             traceback.print_exc()
             if parameters.debug:

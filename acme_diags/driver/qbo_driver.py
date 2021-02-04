@@ -1,14 +1,15 @@
 from __future__ import print_function
 
 import json
-import numpy as np
 import os
-import scipy.fftpack
+
 import cdutil
-from acme_diags.derivations import acme, default_regions
+import numpy as np
+import scipy.fftpack
+
+from acme_diags.derivations import default_regions
 from acme_diags.driver import utils
 from acme_diags.plot.cartopy.qbo_plot import plot
-import MV2
 
 
 def unify_plev(var):
@@ -95,7 +96,7 @@ def process_u_for_power_spectral_density(data_region):
     # Average over vertical
     try:
         average = data_lat_lon_average(level=(level_top, level_bottom))
-    except:
+    except Exception:
         raise Exception(
             "No levels found between {}hPa and {}hPa".format(
                 level_top, level_bottom
@@ -125,7 +126,8 @@ def get_psd_from_deseason(xraw, period_new):
     # Calculate the period as a function of frequency
     period0 = 1 / sampling_frequency
     L0 = len(xraw)
-    t0 = np.arange(0, L0) * period0
+    # FIXME: F841 - assigned but unused
+    # t0 = np.arange(0, L0) * period0
     NFFT0 = 2 ** ceil_log2(L0)
 
     # Apply fft on x_deseasoned with n = NFFT
@@ -139,9 +141,11 @@ def get_psd_from_deseason(xraw, period_new):
     amplitude0 = 2 * abs(x0[0 : int(NFFT0 / 2 + 1)])
     # Calculate power spectral density as a function of frequency
     psd_x0 = amplitude0 ** 2 / L0
-    period_end0 = period0 * L0
+    # FIXME: F841 - assigned but unused
+    # period_end0 = period0 * L0
     # Total spectral power
-    Pxf0 = period_end0 * np.sum(psd_x0)
+    # FIXME: F841 - assigned but unused
+    # Pxf0 = period_end0 * np.sum(psd_x0)
     # In the next code block, we will perform an interpolation using the period
     # (interpolating values of amplitude0_flipped and psd_x0_flipped from period0_flipped to period_new).
     # For that interpolation, we want the period to be increasing.

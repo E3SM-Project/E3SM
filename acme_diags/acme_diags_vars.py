@@ -5,17 +5,16 @@ Pass in an E3SM model output file.
 It's assumed that this file will have all of the E3SM variables in it.
 This is used to get the correct variable names from the derived variables dictionary.
 """
-import os
-import argparse
 import glob
-import traceback
-import cdms2
-import acme_diags
-import cdms2.tvariable
-from acme_diags.acme_diags_driver import get_parameters
-from acme_diags.parser.core_parser import CoreParser
-from acme_diags.derivations.acme import derived_variables
+import os
 
+import cdms2
+import cdms2.tvariable
+
+import acme_diags
+from acme_diags.acme_diags_driver import get_parameters
+from acme_diags.derivations.acme import derived_variables
+from acme_diags.parser.core_parser import CoreParser
 
 # turn off MPI in cdms2 -- not currently supported by e3sm_diags
 cdms2.tvariable.HAVE_MPI = False
@@ -52,7 +51,8 @@ def list_of_vars_in_user_file():
 
 
 parser = CoreParser()
-parser.add_argument("path", default=DUMMY_FILE_PATH, nargs="?")
+# FIXME: DUMMY_FILE_PATH does not exist
+# parser.add_argument("path", default=DUMMY_FILE_PATH, nargs="?")
 
 
 def list_of_vars_in_e3sm_diags():
@@ -78,8 +78,8 @@ def list_of_vars_in_e3sm_diags():
         # The first '*' is the folder of the set, the second is the actual file.
         # Ex: {acme_diags.INSTALL_PATH}/lat_lon/lat_lon_model_vs_obs.cfg
         file_paths = [p for p in glob.glob(pth + "*/*.cfg")]
-        ## NOT NEEDED:
-        ## parser.add_argument('path')  # Needed so the filename can be passed in.
+        # NOT NEEDED:
+        # parser.add_argument('path')  # Needed so the filename can be passed in.
         # parser.add_args_and_values([DUMMY_FILE_PATH])
         parameters = parser.get_other_parameters(
             files_to_open=file_paths, check_values=False

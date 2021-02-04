@@ -1,7 +1,8 @@
-from .core_parser import CoreParser
 from acme_diags.parameter.area_mean_time_series_parameter import (
     AreaMeanTimeSeriesParameter,
 )
+
+from .core_parser import CoreParser
 
 
 class AreaMeanTimeSeriesParser(CoreParser):

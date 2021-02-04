@@ -3,14 +3,16 @@ Get a variable from input data (either reference or test data).
 This data can either be climatology files or timeseries files.
 Derived variables are also supported.
 """
-import os
-import glob
-import re
 import collections
-import traceback
+import glob
+import os
+import re
+
 import cdms2
+
 import acme_diags.derivations.acme
 from acme_diags.driver import utils
+
 from . import climo
 
 

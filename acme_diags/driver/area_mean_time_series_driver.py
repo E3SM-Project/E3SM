@@ -1,8 +1,10 @@
-import os
 import collections
+import json
+import os
+
 import cdms2
 import cdutil
-import json
+
 import acme_diags
 from acme_diags.driver import utils
 from acme_diags.metrics import mean
@@ -121,7 +123,7 @@ def run_diag(parameter):
                     save_data[ref_name] = ref_domain_year.asma().tolist()
 
                     refs.append(ref_domain_year)
-                except:
+                except Exception:
                     print(
                         "No valid value for reference datasets available for the specified time range"
                     )

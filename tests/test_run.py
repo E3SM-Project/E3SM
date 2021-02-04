@@ -1,6 +1,6 @@
-import unittest
 import collections
-from acme_diags.run import Run
+import unittest
+
 from acme_diags.parameter.area_mean_time_series_parameter import (
     AreaMeanTimeSeriesParameter,
 )
@@ -8,6 +8,7 @@ from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
 from acme_diags.parameter.streamflow_parameter import StreamflowParameter
 from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
+from acme_diags.run import Run
 
 
 class TestRun(unittest.TestCase):

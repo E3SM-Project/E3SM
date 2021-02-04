@@ -1,16 +1,17 @@
 from __future__ import print_function
 
 import os
-import numpy
-import cdutil
+
 import cdms2
+import cdutil
 import MV2
+import numpy
+
 import acme_diags
-from acme_diags.plot import plot
-from acme_diags.derivations import acme
-from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
 from acme_diags.driver import utils
+from acme_diags.metrics import corr, max_cdms, mean, min_cdms, rmse
 from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
+from acme_diags.plot import plot
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
@@ -85,7 +86,7 @@ def run_diag(parameter):
         try:
             land_frac = test_data.get_climo_variable("LANDFRAC", season)
             ocean_frac = test_data.get_climo_variable("OCNFRAC", season)
-        except:
+        except Exception:
             mask_path = os.path.join(
                 acme_diags.INSTALL_PATH, "acme_ne30_ocean_land_mask.nc"
             )

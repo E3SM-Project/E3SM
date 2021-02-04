@@ -1,4 +1,5 @@
 import os
+
 from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.run import runner
 
@@ -18,7 +19,7 @@ param.short_test_name = "beta0.FC5COSP.ne30"
 param.sets = ["lat_lon"]
 # Name of the folder where the results are stored.
 # Change `prefix` to use your directory.
-# prefix = '/global/cfs/cdirs/e3sm/www/<your directory>/examples'
+prefix = "/global/cfs/cdirs/e3sm/www/<your directory>/examples"
 param.results_dir = os.path.join(prefix, "ex5_model_to_obs")
 
 # Below are more optional arguments.
@@ -29,7 +30,7 @@ param.backend = "mpl"
 param.diff_title = "Model - Obs."
 # Save the netcdf files for each of the ref, test, and diff plot.
 param.save_netcdf = True
-## For running with multiprocessing.
+# For running with multiprocessing.
 # param.multiprocessing = True
 # param.num_workers = 32
 

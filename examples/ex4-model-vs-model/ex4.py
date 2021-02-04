@@ -1,4 +1,5 @@
 import os
+
 from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.run import runner
 
@@ -22,7 +23,7 @@ param.short_test_name = "Test: beta0_FC5COSP_ne30"
 param.sets = ["lat_lon"]
 # Name of the folder where the results are stored.
 # Change `prefix` to use your directory.
-# prefix = '/global/cfs/cdirs/e3sm/www/<your directory>/examples'
+prefix = "/global/cfs/cdirs/e3sm/www/<your directory>/examples"
 param.results_dir = os.path.join(prefix, "ex4_model_to_model")
 # This parameter modifies the software to accommodate model vs model runs.
 # The default setting for run_type is 'model_vs_obs'.

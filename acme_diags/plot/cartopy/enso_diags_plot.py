@@ -1,20 +1,22 @@
 from __future__ import print_function
 
-import matplotlib
-import numpy as np
-import numpy.ma as ma
-from numpy.polynomial.polynomial import polyfit
 import os
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 import cartopy.crs as ccrs
-from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 import cdutil
+import matplotlib
+import matplotlib.colors as colors
+import matplotlib.pyplot as plt
+import numpy as np
+import numpy.ma as ma
+from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
+from numpy.polynomial.polynomial import polyfit
+
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
+
+matplotlib.use("Agg")
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -175,7 +177,7 @@ def plot_panel_map(
             fmt = "%6.1f"
             pad = 30
         cbar.set_ticks(levels[1:-1])
-        labels = [fmt % l for l in levels[1:-1]]
+        labels = [fmt % level for level in levels[1:-1]]
         cbar.ax.set_yticklabels(labels, ha="right")
         cbar.ax.tick_params(labelsize=9.0, pad=pad, length=0)
 

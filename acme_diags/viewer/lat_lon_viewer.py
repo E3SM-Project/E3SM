@@ -3,18 +3,19 @@ Functionality to create the Taylor diagrams and
 metrics table for the Latitude-Longitude set.
 """
 
-import os
 import csv
-import json
-import collections
-import matplotlib
+import os
 
-matplotlib.use("Agg")
+import matplotlib
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
+
 import acme_diags
 from acme_diags.plot.cartopy.taylor_diagram import TaylorDiagram
+
 from . import utils
+
+matplotlib.use("Agg")
 
 
 def generate_lat_lon_metrics_table(

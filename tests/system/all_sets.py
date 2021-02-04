@@ -1,6 +1,5 @@
 # Running the software with the API:
 #    python all_sets.py -d all_sets.py
-import numpy
 from acme_diags.parameter.area_mean_time_series_parameter import (
     AreaMeanTimeSeriesParameter,
 )

@@ -1,4 +1,5 @@
 import os
+
 from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.run import runner
 
@@ -31,7 +32,7 @@ param.short_ref_name = "historical_H1"
 param.run_type = "model_vs_model"
 # Name of the folder where the results are stored.
 # Change `prefix` to use your directory.
-# prefix = '/global/cfs/cdirs/e3sm/www/<your directory>/examples'
+prefix = "/global/cfs/cdirs/e3sm/www/<your directory>/examples"
 param.results_dir = os.path.join(prefix, "ex1_modTS_vs_modTS_3years")
 
 # Below are more optional arguments.
@@ -44,7 +45,7 @@ param.sets = ["lat_lon"]
 param.seasons = ["ANN"]
 # Title of the difference plots.
 param.diff_title = "Model (2011-2013) - Model (1850-1852)"
-## For running with multiprocessing.
+# For running with multiprocessing.
 # param.multiprocessing = True
 # param.num_workers = 32
 

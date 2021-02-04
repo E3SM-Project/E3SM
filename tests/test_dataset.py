@@ -1,10 +1,11 @@
-import unittest
 import os
+import unittest
+
 import cdms2
-from collections import OrderedDict
+
 from acme_diags.derivations import acme as acme_derivations
-from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.driver.utils.dataset import Dataset
+from acme_diags.parameter.core_parameter import CoreParameter
 
 
 def get_abs_file_path(relative_path):

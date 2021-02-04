@@ -3,11 +3,11 @@
 A standalone script that prepares a set of input to e3sm_diags
 to be ran as a container, and then runs e3sm_diags as a container.
 """
-import os
-import sys
-import importlib
 import argparse
+import importlib
+import os
 import subprocess
+import sys
 
 # Change these commands if needed.
 SHIFTER_COMMAND = "shifter --volume=$REFERENCE_DATA_PATH:/reference_data_path"
@@ -43,7 +43,8 @@ def run_cmd(cmd):
     """
     print("Using the command: {}".format(cmd))
     # p = subprocess.Popen(cmd, shell=True)
-    p = subprocess.Popen(cmd, shell=True).wait()
+    # FIXME: F841 - assigned but unused
+    p = subprocess.Popen(cmd, shell=True).wait()  # noqa
     # This doesn't work: p = subprocess.Popen(cmd.split(), shell=True)
 
 

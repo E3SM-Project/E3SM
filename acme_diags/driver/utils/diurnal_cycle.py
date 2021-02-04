@@ -1,7 +1,6 @@
+import MV2
 import numpy
 import numpy.ma as ma
-import cdms2
-import MV2
 
 
 def composite_diurnal_cycle(var, season, fft=True):

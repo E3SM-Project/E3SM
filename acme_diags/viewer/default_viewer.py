@@ -3,14 +3,16 @@ The viewer for the current plotsets supported by
 E3SM Diagnostics as of v1.7.0.
 """
 
-import os
 import collections
 import json
+import os
+
 import numpy
 from cdp.cdp_viewer import OutputViewer
+
 from acme_diags.parser import SET_TO_PARSER
-import acme_diags
-from . import utils, lat_lon_viewer
+
+from . import lat_lon_viewer, utils
 
 # A dictionary of the sets to a better name which
 # is displayed in the viewer.

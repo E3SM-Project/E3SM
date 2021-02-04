@@ -50,71 +50,62 @@ cosp_histogram_files += get_all_files_in_dir(
     "acme_diags/driver/default_diags/legacy_diags", "cosp_histogram*"
 )
 
-area_mean_time_series = get_all_files_in_dir('acme_diags/driver/default_diags', 'area_mean_time_series*')
-qbo = get_all_files_in_dir('acme_diags/driver/default_diags', 'qbo*')
-streamflow = get_all_files_in_dir('acme_diags/driver/default_diags', 'streamflow*')
-enso_diags_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'enso_*')
-diurnal_cycle_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'diurnal_cycle_*')
-arm_diags_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'arm_diags_*')
-rgb_files = get_all_files_in_dir('acme_diags/plot/colormaps', '*.rgb')
-control_runs_files = get_all_files_in_dir('acme_diags/driver/control_runs', '*.csv')
+area_mean_time_series = get_all_files_in_dir(
+    "acme_diags/driver/default_diags", "area_mean_time_series*"
+)
+qbo = get_all_files_in_dir("acme_diags/driver/default_diags", "qbo*")
+streamflow = get_all_files_in_dir(
+    "acme_diags/driver/default_diags", "streamflow*"
+)
+enso_diags_files = get_all_files_in_dir(
+    "acme_diags/driver/default_diags", "enso_*"
+)
+diurnal_cycle_files = get_all_files_in_dir(
+    "acme_diags/driver/default_diags", "diurnal_cycle_*"
+)
+arm_diags_files = get_all_files_in_dir(
+    "acme_diags/driver/default_diags", "arm_diags_*"
+)
+rgb_files = get_all_files_in_dir("acme_diags/plot/colormaps", "*.rgb")
+control_runs_files = get_all_files_in_dir(
+    "acme_diags/driver/control_runs", "*.csv"
+)
 
 INSTALL_PATH = "share/e3sm_diags/"
 
 data_files = [
-    (os.path.join(INSTALL_PATH, 'zonal_mean_xy'),
-     zonal_mean_xy_files
-     ),
-    (os.path.join(INSTALL_PATH, 'zonal_mean_2d'),
-     zonal_mean_2d_files
-     ),
-    (os.path.join(INSTALL_PATH, 'meridional_mean_2d'),
-     meridional_mean_2d_files
-     ),
-    (os.path.join(INSTALL_PATH, 'lat_lon'),
-     lat_lon_files
-     ),
-    (os.path.join(INSTALL_PATH, 'polar'),
-     polar_files
-     ),
-    (os.path.join(INSTALL_PATH, 'lat_lon_vector'),
-     lat_lon_vector_files
-     ),
-    (os.path.join(INSTALL_PATH, 'cosp_histogram'),
-     cosp_histogram_files
-     ),
-    (os.path.join(INSTALL_PATH, 'area_mean_time_series'),
-     area_mean_time_series
-     ),
-    (os.path.join(INSTALL_PATH, 'enso_diags'),
-     enso_diags_files
-     ),
-    (os.path.join(INSTALL_PATH, 'qbo'),
-     qbo
-     ),
-    (os.path.join(INSTALL_PATH, 'streamflow'),
-     streamflow
-     ),
-    (os.path.join(INSTALL_PATH, 'diurnal_cycle'),
-     diurnal_cycle_files
-     ),
-    (os.path.join(INSTALL_PATH, 'arm_diags'),
-     arm_diags_files
-     ),
-
-    (INSTALL_PATH,
-     ['acme_diags/driver/acme_ne30_ocean_land_mask.nc',
-      'misc/e3sm_logo.png'
-      ]),
-    (os.path.join(INSTALL_PATH, 'colormaps'),
-     rgb_files
-     ),
-    (os.path.join(INSTALL_PATH, 'control_runs'),
-     control_runs_files
-     ),
-    (os.path.join(INSTALL_PATH, 'viewer'),
-     ['acme_diags/viewer/index_template.html'
-      ])
+    (os.path.join(INSTALL_PATH, "zonal_mean_xy"), zonal_mean_xy_files),
+    (os.path.join(INSTALL_PATH, "zonal_mean_2d"), zonal_mean_2d_files),
+    (
+        os.path.join(INSTALL_PATH, "meridional_mean_2d"),
+        meridional_mean_2d_files,
+    ),
+    (os.path.join(INSTALL_PATH, "lat_lon"), lat_lon_files),
+    (os.path.join(INSTALL_PATH, "polar"), polar_files),
+    (os.path.join(INSTALL_PATH, "lat_lon_vector"), lat_lon_vector_files),
+    (os.path.join(INSTALL_PATH, "cosp_histogram"), cosp_histogram_files),
+    (
+        os.path.join(INSTALL_PATH, "area_mean_time_series"),
+        area_mean_time_series,
+    ),
+    (os.path.join(INSTALL_PATH, "enso_diags"), enso_diags_files),
+    (os.path.join(INSTALL_PATH, "qbo"), qbo),
+    (os.path.join(INSTALL_PATH, "streamflow"), streamflow),
+    (os.path.join(INSTALL_PATH, "diurnal_cycle"), diurnal_cycle_files),
+    (os.path.join(INSTALL_PATH, "arm_diags"), arm_diags_files),
+    (
+        INSTALL_PATH,
+        [
+            "acme_diags/driver/acme_ne30_ocean_land_mask.nc",
+            "misc/e3sm_logo.png",
+        ],
+    ),
+    (os.path.join(INSTALL_PATH, "colormaps"), rgb_files),
+    (os.path.join(INSTALL_PATH, "control_runs"), control_runs_files),
+    (
+        os.path.join(INSTALL_PATH, "viewer"),
+        ["acme_diags/viewer/index_template.html"],
+    ),
 ]
 
 setup(

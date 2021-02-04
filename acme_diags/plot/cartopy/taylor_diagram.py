@@ -8,12 +8,10 @@ http://www-pcmdi.llnl.gov/about/staff/Taylor/CV/Taylor_diagram_primer.htm
 __version__ = "Time-stamp: <2012-02-17 20:59:35 ycopin>"
 __author__ = "Yannick Copin <yannick.copin@laposte.net>"
 
-import numpy as np
-from numpy import genfromtxt
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 
 class TaylorDiagram(object):
@@ -28,9 +26,9 @@ class TaylorDiagram(object):
         the reference standard deviation to be compared to.
         """
 
-        from matplotlib.projections import PolarAxes
         import mpl_toolkits.axisartist.floating_axes as FA
         import mpl_toolkits.axisartist.grid_finder as GF
+        from matplotlib.projections import PolarAxes
 
         self.refstd = refstd  # Reference standard deviation
 

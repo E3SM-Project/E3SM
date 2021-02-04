@@ -7,8 +7,7 @@ line-length = 79
 target-version = ['py36']
 include = '\.pyi?$'
 exclude = '''
-(
-  /(
+/(
       \.eggs
     | \.git
     | \.hg
@@ -23,6 +22,6 @@ exclude = '''
     | docs
     | config
     | conda
-  )/
-)
+    | analysis_data_preprocess
+ )/
 '''

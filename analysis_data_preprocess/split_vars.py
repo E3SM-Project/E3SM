@@ -1,5 +1,7 @@
+import datetime
+
 import cdms2
-import pytz, time, datetime
+import pytz
 
 # Set nc classic as outputs
 cdms2.setCompressionWarnings(0)
@@ -56,7 +58,7 @@ for var in vars:
     fout.title = fin.title
     try:
         fout.Version = fin.Version
-    except:
+    except Exception:
         fout.Version = fin.version
     fout.institution = fin.institution
     fout.close()

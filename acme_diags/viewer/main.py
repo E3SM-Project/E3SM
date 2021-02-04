@@ -1,17 +1,19 @@
-import os
 import collections
+import os
+
 from bs4 import BeautifulSoup
+
+import acme_diags
+
 from . import (
-    default_viewer,
-    utils,
     area_mean_time_series_viewer,
-    mean_2d_viewer,
+    default_viewer,
     enso_diags_viewer,
+    mean_2d_viewer,
     qbo_viewer,
     streamflow_viewer,
     arm_diags_viewer,
 )
-import acme_diags
 
 # A mapping of each diagnostics set to the viewer
 # that handles creating of the HTML pages.

@@ -1,21 +1,22 @@
 from __future__ import print_function
 
-import matplotlib
-import matplotlib.lines as lines
-import numpy as np
 import os
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-import numpy
-import scipy.stats
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 import cdutil
+import matplotlib
+import matplotlib.colors as colors
+import matplotlib.lines as lines
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.stats
+from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
+
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.driver.utils.general import get_output_dir
+
+matplotlib.use("Agg")
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -368,7 +369,8 @@ def plot_seasonality_map(export, parameter):
     plt.close()
 
 
-def plot_panel_annual_map(
+# FIXME: C901 - 'plot_panel_annual_map' is too complex (29)
+def plot_panel_annual_map(  # noqa
     panel_index, fig, proj, export, bias_array, panel, parameter
 ):
     if panel_index == 0:
@@ -426,8 +428,8 @@ def plot_panel_annual_map(
         norm = matplotlib.colors.LogNorm(vmin=value_min, vmax=value_max)
     elif panel_type == "bias":
         if parameter.print_statements:
-            value_min = numpy.floor(numpy.min(bias_array))
-            value_max = numpy.ceil(numpy.max(bias_array))
+            value_min = np.floor(np.min(bias_array))
+            value_max = np.ceil(np.max(bias_array))
             print(
                 "Bias of mean annual discharge {} min={}, max={}".format(
                     panel_type, value_min, value_max
@@ -451,7 +453,7 @@ def plot_panel_annual_map(
             value = bias_array[i]
         else:
             raise Exception("Invalid panel_type={}".format(panel_type))
-        if numpy.isnan(value):
+        if np.isnan(value):
             continue
         if value < value_min:
             value = value_min
@@ -459,9 +461,9 @@ def plot_panel_annual_map(
             value = value_max
         if panel_type in ["test", "ref"]:
             # Logarithmic Rescale (min-max normalization) to [-1,1] range
-            normalized_value = (
-                numpy.log10(value) - numpy.log10(value_min)
-            ) / (numpy.log10(value_max) - numpy.log10(value_min))
+            normalized_value = (np.log10(value) - np.log10(value_min)) / (
+                np.log10(value_max) - np.log10(value_min)
+            )
         elif panel_type == "bias":
             # Rescale (min-max normalization) to [-1,1] range
             normalized_value = (value - value_min) / (value_max - value_min)
@@ -547,7 +549,7 @@ def plot_panel_annual_map(
         pass
     elif panel_type == "bias":
         step_size = (value_max - value_min) // 5
-        ticks = numpy.arange(
+        ticks = np.arange(
             int(value_min), int(value_max) + step_size, step_size
         )
         cbar.ax.tick_params(labelsize=9.0, length=0)
@@ -680,11 +682,11 @@ def plot_annual_scatter(xs, ys, zs, parameter):
     cbar = fig.colorbar(matplotlib.cm.ScalarMappable(cmap=cmap), cax=cbax)
     cbar.ax.set_ylabel(cbar_label, fontsize=12)
     w, h = get_ax_size(fig, cbax)
-    zs_max = numpy.ceil(numpy.max(zs))
-    zs_min = numpy.floor(numpy.min(zs))
+    zs_max = np.ceil(np.max(zs))
+    zs_min = np.floor(np.min(zs))
     step_size = (zs_max - zs_min) // 5
     try:
-        ticks = numpy.arange(zs_min, zs_max + step_size, step_size)
+        ticks = np.arange(zs_min, zs_max + step_size, step_size)
         cbar.ax.set_yticklabels(ticks)
     except ValueError:
         # `zs` has invalid values (likely from no area_upstream being found).

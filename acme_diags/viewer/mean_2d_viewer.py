@@ -1,7 +1,9 @@
 import os
-from .utils import add_header, h1_to_h3
-from .default_viewer import create_metadata, seasons_used, SEASONS
+
 from cdp.cdp_viewer import OutputViewer
+
+from .default_viewer import SEASONS, create_metadata, seasons_used
+from .utils import add_header, h1_to_h3
 
 
 def create_viewer(root_dir, parameters):

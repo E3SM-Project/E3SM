@@ -1,11 +1,12 @@
 import os
-from acme_diags.run import runner
-from acme_diags.parameter.core_parameter import CoreParameter
+
 from acme_diags.parameter.area_mean_time_series_parameter import (
     AreaMeanTimeSeriesParameter,
 )
+from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
 from acme_diags.parameter.qbo_parameter import QboParameter
+from acme_diags.run import runner
 
 # See https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-general.html
 # Compy

@@ -1,4 +1,5 @@
 import os
+
 from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.run import runner
 
@@ -34,7 +35,7 @@ param.short_test_name = "CESM1-CAM5-historical"
 # param.run_type = 'model_vs_model'
 # Name of the folder where the results are stored.
 # Change `prefix` to use your directory.
-# prefix = '/global/cfs/cdirs/e3sm/www/<your directory>/examples'
+prefix = "/global/cfs/cdirs/e3sm/www/<your directory>/examples"
 param.results_dir = os.path.join(prefix, "ex3_modTS_CMIP_vs_obs_2years")
 
 # Below are more optional arguments.

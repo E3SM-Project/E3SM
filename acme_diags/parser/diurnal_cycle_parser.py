@@ -1,5 +1,6 @@
-from .core_parser import CoreParser
 from acme_diags.parameter.diurnal_cycle_parameter import DiurnalCycleParameter
+
+from .core_parser import CoreParser
 
 
 class DiurnalCycleParser(CoreParser):

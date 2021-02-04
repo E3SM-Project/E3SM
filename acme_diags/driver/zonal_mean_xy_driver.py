@@ -1,15 +1,13 @@
 from __future__ import print_function
 
-import os
-import numpy
 import cdms2
-import MV2
 import cdutil
-import acme_diags
-from acme_diags.plot import plot
-from acme_diags.derivations import acme
-from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean
+import MV2
+import numpy
+
 from acme_diags.driver import utils
+from acme_diags.metrics import corr, max_cdms, mean, min_cdms, rmse
+from acme_diags.plot import plot
 
 
 def regrid_to_lower_res_1d(mv1, mv2):

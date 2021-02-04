@@ -1,5 +1,6 @@
-from .core_parser import CoreParser
 from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
+
+from .core_parser import CoreParser
 
 
 class ZonalMean2dParser(CoreParser):

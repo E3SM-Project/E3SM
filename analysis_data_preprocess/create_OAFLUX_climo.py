@@ -1,3 +1,4 @@
+# flake8: noqa
 #!/usr/bin/env cdat
 """
 This script takes an observational dataset that contains monthly data
@@ -25,20 +26,29 @@ Modified by Jill Zhang (zhang40@llnl.gov) 08-27-2018
 """
 
 # Upload the following libraries to call in this script
-import argparse, datetime, gc, re, sys, time
-import cdat_info, cdtime, code, inspect, os, re, string, sys, pytz
-import cdms2 as cdm
-import MV2 as MV  # functions for dealing with masked values.
-import cdutil as cdu
+import argparse
+import code
+import datetime
+import gc
 import glob
+import inspect
 import os
+import re
+import string
+import sys
+import time
 from socket import gethostname
-
-# from string import replace
-import numpy
-
 # import metrics.computation.reductions as reductions       # primarily for reconcile units
 from subprocess import call  # for calling NCO functions
+
+import cdat_info
+import cdms2 as cdm
+import cdtime
+import cdutil as cdu
+import MV2 as MV  # functions for dealing with masked values.
+# from string import replace
+import numpy
+import pytz
 
 # Set nc classic as outputs
 cdm.setCompressionWarnings(0)

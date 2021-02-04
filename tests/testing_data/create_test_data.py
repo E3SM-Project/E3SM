@@ -2,6 +2,11 @@
 Script used to create the test data in this directory.
 """
 
+import os
+import subprocess
+
+import cdms2
+
 
 class FileAndVars:
     def __init__(self, remote_uri, local_uri, vars_to_keep, time_slice=()):
@@ -17,10 +22,6 @@ def run_cmd(cmd):
     p = subprocess.Popen(cmd)
     p.communicate()
 
-
-import os
-import subprocess
-import cdms2
 
 # The data is on Cooley @ ALCF.
 prefix = "/lus/theta-fs0/projects/ClimateEnergy_3/e3sm_diags/"

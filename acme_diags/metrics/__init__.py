@@ -1,6 +1,6 @@
-import numpy
-import genutil
 import cdutil
+import genutil
+import numpy
 
 
 def corr(model, obs, axis="xy"):

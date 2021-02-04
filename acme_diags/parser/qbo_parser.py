@@ -1,5 +1,6 @@
-from .core_parser import CoreParser
 from acme_diags.parameter.qbo_parameter import QboParameter
+
+from .core_parser import CoreParser
 
 
 class QboParser(CoreParser):

@@ -1,10 +1,12 @@
 import os
-import matplotlib
 
-matplotlib.use("agg")
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+
 from acme_diags.driver.utils.general import get_output_dir
+
+matplotlib.use("agg")
 
 
 def plot(var, regions_to_data, parameter):
@@ -13,8 +15,10 @@ def plot(var, regions_to_data, parameter):
     # test data, and metrics for that region.
 
     # plot time series
-    plotTitle = {"fontsize": 8.5}
-    plotSideTitle = {"fontsize": 6.5}
+    # FIXME: F841 - assigned but unused
+    # plotTitle = {"fontsize": 8.5}
+    # FIXME: F841 - assigned but unused
+    # plotSideTitle = {"fontsize": 6.5}
 
     line_color = ["r", "b", "g", "m", "c", "y"]
 
@@ -44,9 +48,11 @@ def plot(var, regions_to_data, parameter):
     num_year = end_time - start_time + 1
 
     s = parameter.test_name_yrs
-    years = s[s.find("(") + 1 : s.find(")")]
+    # FIXME: F841 - assigned but unused
+    # years = s[s.find("(") + 1 : s.find(")")]
+    # FIXME: F841 - assigned but unused
     test_name = s.split("(")[0].replace(" ", "")
-    if test_name is "":
+    if test_name == "":
         test_name = "test data"
 
     for i_region, data_set_for_region in enumerate(regions_to_data.values()):

@@ -2,11 +2,13 @@
 Utilities that are used by many different viewers.
 """
 
+import datetime
 import os
 import shutil
-import datetime
-import acme_diags
+
 from bs4 import BeautifulSoup
+
+import acme_diags
 
 CURRENT_TIMESTAMP = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -75,7 +77,7 @@ def add_header(root_dir, path, parameters):
 
     soup = BeautifulSoup(open(path), "lxml")
     old_header = soup.find_all("nav", "navbar navbar-default")
-    if len(old_header) is not 0:
+    if len(old_header) != 0:
         old_header[0].decompose()
 
     header_div = soup.new_tag(

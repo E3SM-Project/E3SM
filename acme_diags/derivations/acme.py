@@ -2,9 +2,10 @@ from __future__ import print_function
 
 import copy
 from collections import OrderedDict
-from genutil import udunits
+
 import MV2
 import numpy as np
+from genutil import udunits
 
 
 def rename(new_name):
@@ -311,7 +312,8 @@ def netflux6(rsds, rsus, rlds, rlus, hfls, hfss):
     return var
 
 
-def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):
+# FIXME: C901 'cosp_bin_sum' is too complex (22)
+def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):  # noqa
     """sum of cosp bins to calculate cloud fraction in specified cloud top pressure and
     cloud thickness bins, input variable has dimention (cosp_prs,cosp_tau,lat,lon)"""
     prs = cld.getAxis(0)

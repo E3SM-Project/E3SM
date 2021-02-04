@@ -1,6 +1,6 @@
+import cdms2
 import numpy as np
 import numpy.ma as ma
-import cdms2
 
 
 def climo(var, season):

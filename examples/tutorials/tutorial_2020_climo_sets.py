@@ -1,6 +1,7 @@
 import os
-from acme_diags.run import runner
+
 from acme_diags.parameter.core_parameter import CoreParameter
+from acme_diags.run import runner
 
 # See https://e3sm-project.github.io/e3sm_diags/docs/html/quickguides/quick-guide-general.html
 # Compy

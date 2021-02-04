@@ -1,6 +1,6 @@
-import cdms2
 from pathlib import Path
 
+import cdms2
 
 datapath = "/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/TRMM/climatology_diurnal_cycle/"
 for path in Path(datapath).rglob("*.nc"):

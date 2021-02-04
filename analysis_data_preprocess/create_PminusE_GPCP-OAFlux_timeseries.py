@@ -1,9 +1,6 @@
 # This script is to combine precipication from GPCP and evaporation from OAFlux to derive P minus E variable
 # Generated Oct25th by Jill Zhang
-
 import cdms2
-import os
-import numpy
 
 # Set nc classic as outputs
 cdms2.setCompressionWarnings(0)

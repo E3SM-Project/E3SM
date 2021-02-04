@@ -4,13 +4,12 @@
 # https://daac.ornl.gov/ISLSCP_II/guides/comp_runoff_monthly_xdeg.html
 # Aug 1st, 2019 by Jill Chengzhu Zhang
 
-import cdms2
-import MV2
-import glob
-import numpy
-import cdutil
 from calendar import monthrange
 
+import cdms2
+import cdutil
+import MV2
+import numpy
 
 basedir = "/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/ISLSCPII_GRDC/"
 datapath = basedir + "original_data/data/comp_runoff_hdeg/"

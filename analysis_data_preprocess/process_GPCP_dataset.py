@@ -1,4 +1,4 @@
-
+# flake8: noqa
 #!/usr/bin/env cdat
 """
 This script takes the GPCP dataset with monthly data on it from
@@ -10,17 +10,28 @@ UVCDAT needs to be downloaded onto the system to run this.
 Author: Chris Terai (terai1@llnl.gov) 2015-08-03
 Modified for GPCP v2.3 by Jill Zhang (zhang40@llnl.gov) 2018-08-15
 """
-import argparse,datetime,gc,re,sys,time
-import cdat_info,cdtime,code,inspect,os,re,string,sys,pytz
-import cdms2 as cdm
-import MV2 as MV #stuff for dealing with masked values.
-import cdutil as cdu
+import argparse
+import code
+import datetime
+import gc
 import glob
+import inspect
 import os
+import re
+import string
+import sys
+import time
 from socket import gethostname
 from string import replace
-import numpy
 from subprocess import call
+
+import cdat_info
+import cdms2 as cdm
+import cdtime
+import cdutil as cdu
+import MV2 as MV  # stuff for dealing with masked values.
+import numpy
+import pytz
 
 # Set nc classic as outputs
 cdm.setCompressionWarnings(0) ; # Suppress warnings
@@ -80,7 +91,7 @@ for fi in fisc:
         dattable.units='mm/d'
         dattable.long_name='Average Monthly Rate of Precipitation'
         var_missing_value=dattable.missing_value
-    
+
     if data_name =='GPCP_v2.2':
         #right side up the globe
         lat=dattable.getAxis(1)
@@ -92,7 +103,7 @@ for fi in fisc:
     if filecount==0:
         outfile="".join([output_hostpath,output_filename])
         f_out=cdm.open(outfile,'w')
-        
+
         att_keys = f_in.attributes.keys()
         att_dic = {}
         for i in range(len(att_keys)):
@@ -113,10 +124,10 @@ for fi in fisc:
         f_out.contact    = "Physical Sciences Division: Data Management, NOAA/ESRL/PSD, esrl.psd.data@noaa.gov // Processed by: Chris Terai; terai1@llnl.gov; +1 925 422 8830"
         f_out.host            = "".join([gethostname(),'; UVCDAT version: ',".".join(["%s" % el for el in cdat_info.version()]),
                                            '; Python version: ',replace(replace(sys.version,'\n','; '),') ;',');')])
-        
-        
-    
-    f_out.write(dattable) ; 
+
+
+
+    f_out.write(dattable) ;
     print "".join(["** Finished processing: ",fi," **"])
     filecount = filecount + 1; filecount_s = '%06d' % filecount
     f_index=f_index + 1

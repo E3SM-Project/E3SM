@@ -1,4 +1,5 @@
 import os
+
 from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.run import runner
 
@@ -20,7 +21,7 @@ param.test_name = "ceres_ebaf_toa_v4.0"
 
 # Name of the folder where the results are stored.
 # Change `prefix` to use your directory.
-# prefix = '/global/cfs/cdirs/e3sm/www/<your directory>/examples'
+prefix = "/global/cfs/cdirs/e3sm/www/<your directory>/examples"
 param.results_dir = os.path.join(prefix, "ex7_obs_vs_obs")
 # What plotsets to run the diags on.
 param.sets = ["lat_lon"]

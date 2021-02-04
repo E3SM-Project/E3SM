@@ -1,5 +1,6 @@
-from .core_parser import CoreParser
 from acme_diags.parameter.streamflow_parameter import StreamflowParameter
+
+from .core_parser import CoreParser
 
 
 class StreamflowParser(CoreParser):

@@ -1,13 +1,14 @@
 from __future__ import print_function
 
-import os
 import copy
-import pwd
-import grp
-import cdutil
-import MV2
-import genutil
+import errno
+import os
+
 import cdms2
+import cdutil
+import genutil
+import MV2
+
 from acme_diags import container
 from acme_diags.derivations.default_regions import regions_specs, points_specs
 import errno
@@ -41,7 +42,8 @@ def adjust_time_from_time_bounds(var):
     var_time = var.getTime()
     tbounds = var_time.getBounds()
     var_time[:] = 0.5 * (tbounds[:, 0] + tbounds[:, 1])
-    var_time_absolute = var_time.asComponentTime()
+    # FIXME: F841 - assigned but unused
+    # var_time_absolute = var_time.asComponentTime()
     time2 = cdms2.createAxis(var_time)
     time2.designateTime()
     # .designateTime() needs to be set before attributes changes.
@@ -92,7 +94,7 @@ def get_yrs(dataset, season=""):
     if dataset.is_climo():
         try:
             yrs_averaged = dataset.get_attr_from_climo("yrs_averaged", season)
-        except:
+        except Exception:
             # print("No 'yrs_averaged' exists in the global attributes.")
             yrs_averaged = ""
     else:
@@ -199,7 +201,7 @@ def select_region(region, var, land_frac, ocean_frac, parameter):
         # if region.find('global') == -1:
         domain = regions_specs[region]["domain"]
         # print('Domain: ', domain)
-    except:
+    except Exception:
         pass
         # print("No domain selector.")
 

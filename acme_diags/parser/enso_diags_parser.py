@@ -1,5 +1,6 @@
-from .core_parser import CoreParser
 from acme_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
+
+from .core_parser import CoreParser
 
 
 class EnsoDiagsParser(CoreParser):

@@ -2,15 +2,17 @@ from __future__ import print_function
 
 import json
 import math
-import numpy
 import os
-import scipy.stats
+
 import cdms2
 import cdutil
+import numpy
+import scipy.stats
+
 import acme_diags
-from acme_diags.derivations import acme, default_regions
+from acme_diags.derivations import default_regions
 from acme_diags.driver import utils
-from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean, std
+from acme_diags.metrics import corr, max_cdms, mean, min_cdms, rmse, std
 from acme_diags.plot.cartopy.enso_diags_plot import plot_map, plot_scatter
 
 
@@ -41,7 +43,7 @@ def calculate_nino_index(nino_region_str, parameter, test=False, ref=False):
     try:
         start_ind = numpy.where(sst_years == start)[0][0]
         end_ind = numpy.where(sst_years == end)[0][0]
-    except:
+    except Exception:
         msg = "Requested years are outside of available sst obs records."
         raise RuntimeError(msg)
 
@@ -229,7 +231,7 @@ def run_diag_map(parameter):
         try:
             land_frac = test_data.get_climo_variable("LANDFRAC", season)
             ocean_frac = test_data.get_climo_variable("OCNFRAC", season)
-        except:
+        except Exception:
             mask_path = os.path.join(
                 acme_diags.INSTALL_PATH, "acme_ne30_ocean_land_mask.nc"
             )

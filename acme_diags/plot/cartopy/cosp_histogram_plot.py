@@ -1,14 +1,16 @@
 from __future__ import print_function
 
 import os
-import numpy as np
-import matplotlib
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+import matplotlib
 import matplotlib.colors as colors
+import matplotlib.pyplot as plt
+import numpy as np
+
 from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
+
+matplotlib.use("Agg")
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -162,7 +164,7 @@ def plot_panel(n, fig, _, var, clevels, cmap, title, parameters, stats=None):
 
     else:
         cbar.set_ticks(levels[1:-1])
-        labels = ["%4.1f" % l for l in levels[1:-1]]
+        labels = ["%4.1f" % level for level in levels[1:-1]]
         cbar.ax.set_yticklabels(labels, ha="right")
         # cbar.ax.set_yticklabels(labels,ha='right')
         cbar.ax.tick_params(labelsize=9.0, pad=25, length=0)

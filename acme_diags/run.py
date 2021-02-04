@@ -1,11 +1,9 @@
-import os
 import copy
-import cdp.cdp_run
-import acme_diags
-from acme_diags.acme_diags_driver import main, get_default_diags_path
-from acme_diags.parser.core_parser import CoreParser
+
+from acme_diags.acme_diags_driver import get_default_diags_path, main
 from acme_diags.parameter import SET_TO_PARAMETERS
 from acme_diags.parameter.core_parameter import CoreParameter
+from acme_diags.parser.core_parser import CoreParser
 
 
 class Run:
@@ -118,7 +116,7 @@ class Run:
         for i in range(len(parameters)):
             parent = get_parent(parameters[i])
             # Make sure that the new object is actually a parent.
-            if not parent or type(parent) == type(parameters[i]):
+            if not parent or type(parent).isinstance(type(parameters[i])):
                 continue
 
             # Otherwise, add the the parent's attributes.
@@ -157,7 +155,7 @@ class Run:
             for attr in list(
                 set(nondefault_param_parent) - set(nondefault_param_child)
             ):
-                #'seasons' is a corner case that don't need to get in to none-core sets, Ex. area mean time series
+                # 'seasons' is a corner case that don't need to get in to none-core sets, Ex. area mean time series
                 if attr != "seasons":
                     attr_value = getattr(parent, attr)
                     setattr(parameters[i], attr, attr_value)

@@ -1,20 +1,22 @@
 from __future__ import print_function
 
 import os
-import numpy as np
-import numpy.ma as ma
-import matplotlib
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-from acme_diags.derivations.default_regions import regions_specs
 import cdutil
-from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+import matplotlib
+import matplotlib.colors as colors
+import matplotlib.pyplot as plt
+import numpy as np
+import numpy.ma as ma
+from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
+
+from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
+
+matplotlib.use("Agg")
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -181,7 +183,7 @@ def plot_panel(
             fmt = "%6.1f"
             pad = 30
         cbar.set_ticks(levels[1:-1])
-        labels = [fmt % l for l in levels[1:-1]]
+        labels = [fmt % level for level in levels[1:-1]]
         cbar.ax.set_yticklabels(labels, ha="right")
         cbar.ax.tick_params(labelsize=9.0, pad=pad, length=0)
 

@@ -1,4 +1,5 @@
 import os
+
 from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
 from acme_diags.run import runner
@@ -14,7 +15,7 @@ param.seasons = ["ANN"]
 
 # Name of the folder where the results are stored.
 # Change `prefix` to use your directory.
-# prefix = '/global/cfs/cdirs/e3sm/www/<your directory>/examples'
+prefix = "/global/cfs/cdirs/e3sm/www/<your directory>/examples"
 param.results_dir = os.path.join(prefix, "ex6_zonal_mean_2d_and_lat_lon_demo")
 
 # Uncomment the two lines below to just
