@@ -15,14 +15,10 @@ for the iac data in the e3sm distribution
 <!-- Default mosart namelist -->
 
 <namelist_defaults>
-<iac_npts>17</iac_npts>
-
+<iac_npft>17</iac_npft>
 <!--
 Grid files - for different grids, we can qualify in the attribute name
 i.e. <
 -->
 <gcam_gridfile>iac/giac/glm2iac/landuse.timeseries_0.9x1.25_template_simyr2015-2100_c201021.nc</gcam_gridfile>
-
-
-
 </namelist_defaults>
