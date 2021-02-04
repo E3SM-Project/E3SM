@@ -106,6 +106,10 @@ void timeloop() {
         sgs_mom();
       }
 
+#ifdef MMF_ESMT
+      scalar_momentum_tend();
+#endif
+
       //-----------------------------------------------------------
       //       Coriolis force:
       if (docoriolis) {

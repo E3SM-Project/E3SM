@@ -74,6 +74,12 @@ void pre_timeloop() {
   auto &sgs_field                = :: sgs_field;
   auto &uln                      = :: uln;
   auto &vln                      = :: vln;
+#ifdef MMF_ESMT
+  auto &u_esmt                   = :: u_esmt;
+  auto &v_esmt                   = :: v_esmt;
+  auto &uln_esmt                 = :: uln_esmt;
+  auto &vln_esmt                 = :: vln_esmt;
+#endif
   auto &ttend                    = :: ttend;
   auto &qtend                    = :: qtend;
   auto &crm_input_qccl           = :: crm_input_qccl;
@@ -97,6 +103,10 @@ void pre_timeloop() {
   auto &crm_output_precstend     = :: crm_output_precstend;
   auto &crm_input_ul             = :: crm_input_ul;
   auto &crm_input_vl             = :: crm_input_vl;
+#ifdef MMF_ESMT
+  auto &crm_input_ul_esmt        = :: crm_input_ul_esmt;
+  auto &crm_input_vl_esmt        = :: crm_input_vl_esmt;
+#endif
   auto &crm_output_cld           = :: crm_output_cld; 
   auto &crm_output_cldtop        = :: crm_output_cldtop; 
   auto &crm_output_gicewp        = :: crm_output_gicewp; 
@@ -275,6 +285,10 @@ void pre_timeloop() {
     v(k,j+offy_v,i+offx_v,icrm) = crm_state_v_wind(k,j,i,icrm)*YES3D;
     w(k,j+offy_w,i+offx_w,icrm) = crm_state_w_wind(k,j,i,icrm);
     tabs(k,j,i,icrm) = crm_state_temperature(k,j,i,icrm);
+#if defined(MMF_ESMT)
+    u_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_ul_esmt(plev-k-1,icrm);
+    v_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_vl_esmt(plev-k-1,icrm);
+#endif /* MMF_ESMT */
   });
 
   // limit the velocity at the very first step:

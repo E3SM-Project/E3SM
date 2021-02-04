@@ -13,12 +13,20 @@ void post_timeloop() {
   auto &qiiln                   = :: qiiln;
   auto &uln                     = :: uln;
   auto &vln                     = :: vln;
+#ifdef MMF_ESMT
+  auto &uln_esmt                = :: uln_esmt;
+  auto &vln_esmt                = :: vln_esmt;                     
+#endif
   auto &crm_input_tl            = :: crm_input_tl;
   auto &crm_input_ql            = :: crm_input_ql;
   auto &crm_input_qccl          = :: crm_input_qccl;
   auto &crm_input_qiil          = :: crm_input_qiil;
   auto &crm_input_ul            = :: crm_input_ul;
   auto &crm_input_vl            = :: crm_input_vl;
+#ifdef MMF_ESMT
+  auto &crm_input_ul_esmt       = :: crm_input_ul_esmt;
+  auto &crm_input_vl_esmt       = :: crm_input_vl_esmt;
+#endif
   auto &colprec                 = :: colprec;
   auto &colprecs                = :: colprecs;
   auto &qpl                     = :: qpl;
@@ -28,6 +36,10 @@ void post_timeloop() {
   auto &qv                      = :: qv;
   auto &u                       = :: u;
   auto &v                       = :: v;
+#ifdef MMF_ESMT
+  auto &u_esmt                  = :: u_esmt;
+  auto &v_esmt                  = :: v_esmt;
+#endif
   auto &qcl                     = :: qcl;
   auto &qci                     = :: qci;
   auto &factor_xyt              = :: factor_xyt;
@@ -40,6 +52,10 @@ void post_timeloop() {
 #ifdef MMF_MOMENTUM_FEEDBACK
   auto &crm_output_ultend       = :: crm_output_ultend;
   auto &crm_output_vltend       = :: crm_output_vltend;
+#endif
+#ifdef MMF_ESMT
+  auto &crm_output_u_tend_esmt  = :: crm_output_u_tend_esmt;
+  auto &crm_output_v_tend_esmt  = :: crm_output_v_tend_esmt;
 #endif
   auto &icrm_run_time           = :: icrm_run_time;
   auto &crm_output_prectend     = :: crm_output_prectend;
@@ -203,6 +219,23 @@ void post_timeloop() {
     colprecs(icrm)=0;
   });
 
+#ifdef MMF_ESMT
+ // do k = 1,ptop-1
+ //   do icrm = 1 , ncrms
+ parallel_for( SimpleBounds<2>(ptop-1,ncrms), YAKL_LAMBDA (int k, int icrm) {
+    uln_esmt(k, icrm)  = crm_input_ul_esmt(k, icrm);
+    vln_esmt(k, icrm)  = crm_input_vl_esmt(k, icrm);
+ });
+
+ // do k = ptop,plev
+ //   do icrm = 1 , ncrms
+ parallel_for( SimpleBounds<2>(plev-ptop+1, ncrms), YAKL_LAMBDA (int k, int icrm) {
+    k = ptop+k-1;
+    uln_esmt(k, icrm) = 0.0;
+    vln_esmt(k, icrm) = 0.0;
+ });
+#endif
+
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int j=0; j<ny; j++) {
@@ -221,6 +254,10 @@ void post_timeloop() {
     yakl::atomicAdd(qiiln(l,icrm) , qci(k,j,i,icrm));
     yakl::atomicAdd(uln(l,icrm) , u(k,j+offy_u,i+offx_u,icrm));
     yakl::atomicAdd(vln(l,icrm) , v(k,j+offy_v,i+offx_v,icrm));
+#ifdef MMF_ESMT
+    yakl::atomicAdd(uln_esmt(l,icrm), u_esmt(k,j+offy_u,i+offx_u,icrm));
+    yakl::atomicAdd(vln_esmt(l,icrm), v_esmt(k,j+offy_u,i+offx_u,icrm));
+#endif
   });
 
   // for (int k=0; k<plev-ptop+1; k++) {
@@ -228,12 +265,16 @@ void post_timeloop() {
   parallel_for( SimpleBounds<2>(plev-ptop+1,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     k = ptop+k-1;
 
-    tln  (k,icrm) = tln  (k,icrm) * factor_xy;
-    qln  (k,icrm) = qln  (k,icrm) * factor_xy;
-    qccln(k,icrm) = qccln(k,icrm) * factor_xy;
-    qiiln(k,icrm) = qiiln(k,icrm) * factor_xy;
-    uln  (k,icrm) = uln  (k,icrm) * factor_xy;
-    vln  (k,icrm) = vln  (k,icrm) * factor_xy;
+    tln  (k,icrm)    = tln  (k,icrm) * factor_xy;
+    qln  (k,icrm)    = qln  (k,icrm) * factor_xy;
+    qccln(k,icrm)    = qccln(k,icrm) * factor_xy;
+    qiiln(k,icrm)    = qiiln(k,icrm) * factor_xy;
+    uln  (k,icrm)    = uln  (k,icrm) * factor_xy;
+    vln  (k,icrm)    = vln  (k,icrm) * factor_xy;
+#ifdef MMF_ESMT
+    uln_esmt(k,icrm) = uln_esmt(k,icrm) * factor_xy;
+    vln_esmt(k,icrm) = vln_esmt(k,icrm) * factor_xy;
+#endif
   });
 
   // for (int k=0; k<plev; k++) {
@@ -247,6 +288,10 @@ void post_timeloop() {
     crm_output_ultend (k,icrm) =      (uln  (k,icrm) - crm_input_ul  (k,icrm)) * icrm_run_time;
     crm_output_vltend (k,icrm) =      (vln  (k,icrm) - crm_input_vl  (k,icrm)) * icrm_run_time;
 #endif
+#ifdef MMF_ESMT
+    crm_output_u_tend_esmt(k,icrm) = (uln_esmt(k,icrm) - crm_input_ul_esmt(k,icrm))*icrm_run_time;
+    crm_output_v_tend_esmt(k,icrm) = (vln_esmt(k,icrm) - crm_input_vl_esmt(k,icrm))*icrm_run_time;
+#endif    
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
@@ -270,6 +315,10 @@ void post_timeloop() {
 #ifdef MMF_MOMENTUM_FEEDBACK
     crm_output_ultend (k,icrm) = 0.0;
     crm_output_vltend (k,icrm) = 0.0;
+#endif
+#ifdef MMF_ESMT
+    crm_output_u_tend_esmt(k,icrm) = 0.0;
+    crm_output_v_tend_esmt(k,icrm) = 0.0;
 #endif
   });
 
