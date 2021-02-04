@@ -200,14 +200,12 @@ TEST_CASE("field", "") {
     // Wrong rank for the subfield f2
     REQUIRE_THROWS(f2.get_reshaped_view<Real****>());
 
-    auto v4dh = Kokkos::create_mirror_view(v4d);
-    auto v3dh = Kokkos::create_mirror_view(v3d);
-    Kokkos::deep_copy(v4dh,v4d);
-    Kokkos::deep_copy(v3dh,v3d);
+    auto v4d_h = f1.get_reshaped_view<Real****,HostDevice>();
+    auto v3d_h = f2.get_reshaped_view<Real***,HostDevice>();
     for (int i=0; i<d1[0]; ++i)
       for (int j=0; j<d1[2]; ++j)
         for (int k=0; k<d1[3]; ++k) {
-          REQUIRE (v4dh(i,ivar,j,k)==v3dh(i,j,k));
+          REQUIRE (v4d_h(i,ivar,j,k)==v3d_h(i,j,k));
         }
   }
 
