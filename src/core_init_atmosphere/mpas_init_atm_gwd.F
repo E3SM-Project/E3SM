@@ -21,7 +21,7 @@ module mpas_init_atm_gwd
 
    interface
       subroutine read_geogrid(fname, rarray, nx, ny, nz, isigned, endian, &
-                              scalefactor, wordsize, status) bind(C)
+                              wordsize, status) bind(C)
          use iso_c_binding, only : c_char, c_int, c_float, c_ptr
          character (c_char), dimension(*), intent(in) :: fname
          type (c_ptr), value :: rarray
@@ -30,7 +30,6 @@ module mpas_init_atm_gwd
          integer (c_int), intent(in), value :: nz
          integer (c_int), intent(in), value :: isigned
          integer (c_int), intent(in), value :: endian
-         real (c_float), intent(in), value :: scalefactor
          integer (c_int), intent(in), value :: wordsize
          integer (c_int), intent(inout) :: status
       end subroutine read_geogrid
@@ -377,7 +376,8 @@ module mpas_init_atm_gwd
                                                                                       iy, '-', (iy+tile_y-1)
          call mpas_f_to_c_string(filename, c_filename)
          call read_geogrid(c_filename, tile_ptr, nx, ny, nz, isigned, endian, &
-                           scalefactor, wordsize, istatus)
+                           wordsize, istatus)
+         tile(:,:,:) = tile(:,:,:) * scalefactor
          if (istatus /= 0) then
             call mpas_log_write('Error reading topography tile '//trim(filename), messageType=MPAS_LOG_ERR)
             iErr = 1
@@ -446,7 +446,8 @@ module mpas_init_atm_gwd
                                                                                       iy, '-', (iy+tile_y-1)
          call mpas_f_to_c_string(filename, c_filename)
          call read_geogrid(c_filename, tile_ptr, nx, ny, nz, isigned, endian, &
-                           scalefactor, wordsize, istatus)
+                           wordsize, istatus)
+         tile(:,:,:) = tile(:,:,:) * scalefactor
          if (istatus /= 0) then
             call mpas_log_write('Error reading landuse tile '//trim(filename))
             iErr = 1

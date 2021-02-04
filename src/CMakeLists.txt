@@ -9,6 +9,16 @@
 
 # Source CIME-generated Macros
 include(${CASEROOT}/Macros.cmake)
+# Load machine/compiler specific settings
+set(COMPILER_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${COMPILER}.cmake)
+set(MACHINE_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.cmake)
+set(PLATFORM_SPECIFIC_DEPENDS ${CASEROOT}/Depends.${MACH}.${COMPILER}.cmake)
+set(TRY_TO_LOAD ${COMPILER_SPECIFIC_DEPENDS} ${MACHINE_SPECIFIC_DEPENDS} ${PLATFORM_SPECIFIC_DEPENDS})
+foreach(ITEM IN LISTS TRY_TO_LOAD)
+  if (EXISTS ${ITEM})
+    include(${ITEM})
+  endif()
+endforeach()
 
 #
 # General setup

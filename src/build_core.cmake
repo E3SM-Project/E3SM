@@ -48,7 +48,7 @@ function(build_core CORE)
   add_custom_command(
     OUTPUT ${INC_DIR}/core_variables.inc
     COMMAND ${CMAKE_BINARY_DIR}/mpas-source/src/tools/parse < ${CORE_BLDDIR}/Registry_processed.xml
-    DEPENDS ${CORE_BLDDIR}/Registry_processed.xml
+    DEPENDS parse ${CORE_BLDDIR}/Registry_processed.xml
     WORKING_DIRECTORY ${INC_DIR}
   )
 
@@ -59,23 +59,6 @@ function(build_core CORE)
       string(REPLACE "${SOURCE_EXT}" ".f90" SOURCE_F90 ${DISABLE_QSMP_FILE})
       set_property(SOURCE ${CMAKE_BINARY_DIR}/${SOURCE_F90} APPEND_STRING PROPERTY COMPILE_FLAGS " -qnosmp")
     endforeach()
-  endif()
-
-  # Additional compiler flags
-  if (${MACH} STREQUAL "summit")
-    if (${COMPILER} STREQUAL "pgigpu")
-      list(APPEND CPPDEFS "-DMPAS_OPENACC")
-      foreach(ACC_FILE IN LISTS ADD_ACC_FLAGS)
-       message(STATUS "Adding '-acc -ta=nvidia,cc70,pinned -Minfo=accel' to compilation of ${CMAKE_BINARY_DIR}/${ACC_FILE}")
-       set_property(SOURCE ${CMAKE_BINARY_DIR}/${ACC_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS "-acc -ta=nvidia,cc70,pinned -Minfo=accel")
-      endforeach()
-    elseif (${COMPILER} STREQUAL "ibmgpu")
-      list(APPEND CPPDEFS "-DMPAS_OPENMP_OFFLOAD")
-      foreach(ACC_FILE IN LISTS ADD_ACC_FLAGS)
-        message(STATUS "Adding '-qsmp -qoffload' to compilation of ${CMAKE_BINARY_DIR}/${ACC_FILE}")
-        set_property(SOURCE ${CMAKE_BINARY_DIR}/${ACC_FILE} APPEND_STRING PROPERTY COMPILE_FLAGS "-qsmp -qoffload")
-      endforeach()
-    endif()
   endif()
 
   genf90_targets("${RAW_SOURCES}" "${INCLUDES}" "${CPPDEFS}" "${NO_PREPROCESS}" "${INC_DIR}")

@@ -14,6 +14,10 @@ endif
 # End duplicated logic
 
 include $(CASEROOT)/Macros.make
+# Load machine/compiler specific settings
+-include $(CASEROOT)/Depends.$(COMPILER)
+-include $(CASEROOT)/Depends.$(MACH)
+-include $(CASEROOT)/Depends.$(MACH).$(COMPILER)
 
 ifneq ($(wildcard core_$(CORE)/build_options.mk), ) # Check for build_options.mk
     include core_$(CORE)/build_options.mk
