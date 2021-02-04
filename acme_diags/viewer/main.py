@@ -7,12 +7,12 @@ import acme_diags
 
 from . import (
     area_mean_time_series_viewer,
+    arm_diags_viewer,
     default_viewer,
     enso_diags_viewer,
     mean_2d_viewer,
     qbo_viewer,
     streamflow_viewer,
-    arm_diags_viewer,
 )
 
 # A mapping of each diagnostics set to the viewer

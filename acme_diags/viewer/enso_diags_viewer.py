@@ -1,4 +1,5 @@
 import os
+from typing import Dict, List
 
 from cdp.cdp_viewer import OutputViewer
 
@@ -22,7 +23,7 @@ def create_viewer(root_dir, parameters):
     # Appears in the second and third columns of the bolded rows.
     cols = ["Description", "Plot"]
     viewer.add_page(display_name, short_name=set_name, columns=cols)
-    param_dict = {}
+    param_dict = {}  # type: Dict[str, List[str]]
     for param in parameters:
         key = param.plot_type
         if key not in param_dict.keys():

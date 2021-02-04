@@ -7,6 +7,7 @@ This is used to get the correct variable names from the derived variables dictio
 """
 import glob
 import os
+from typing import Any, Dict, List
 
 import cdms2
 import cdms2.tvariable
@@ -94,7 +95,7 @@ def list_of_vars_in_e3sm_diags():
     return set(vars_used)
 
 
-def check_for_derived_vars(e3sm_vars):
+def check_for_derived_vars(e3sm_vars: Dict[Any, Any]):
     """
     For any of the e3sm_vars which are derived variables, we need
     to check whether any of the original variables are actually in the user's file.
@@ -107,14 +108,14 @@ def check_for_derived_vars(e3sm_vars):
     Given a path to a file, we get the vars in that file and
     decided whether to use ('pr',) or ('PRECC', 'PRECL').
     """
-    vars_used = []
+    vars_used = []  # type: List[Any]
     vars_in_user_file = set(list_of_vars_in_user_file())
     for var in e3sm_vars:
         if var in derived_variables:
             # Ex: {('PRECC', 'PRECL'): func, ('pr',): func1, ...}.
             vars_to_func_dict = derived_variables[var]
             # Ex: [('pr',), ('PRECC', 'PRECL')].
-            possible_vars = vars_to_func_dict.keys()
+            possible_vars = vars_to_func_dict.keys()  # type: ignore
 
             var_added = False
             for list_of_vars in possible_vars:

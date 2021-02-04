@@ -128,7 +128,8 @@ def run_diag(parameter):
                         "No valid value for reference datasets available for the specified time range"
                     )
 
-            metrics_dict = []
+            # FIXME: variable is never reassigned
+            metrics_dict = []  # type: ignore
 
             # save data for potential later use
             parameter.output_file = "-".join([var, region])

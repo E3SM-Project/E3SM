@@ -291,7 +291,8 @@ def run_diag(parameters):
         mod_str = "acme_diags.driver.{}_driver".format(set_name)
         try:
             module = importlib.import_module(mod_str)
-            single_result = module.run_diag(parameters)
+            # FIXME: error: Module has no attribute "run_diag"
+            single_result = module.run_diag(parameters)  # type: ignore
             print("")
             results.append(single_result)
         except Exception:

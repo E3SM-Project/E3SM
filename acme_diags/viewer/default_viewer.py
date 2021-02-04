@@ -6,6 +6,8 @@ E3SM Diagnostics as of v1.7.0.
 import collections
 import json
 import os
+from collections import OrderedDict
+from typing import Dict
 
 import numpy
 from cdp.cdp_viewer import OutputViewer
@@ -49,9 +51,13 @@ def create_viewer(root_dir, parameters):
     #       }
     #   }
     # }
-    ROW_INFO = collections.OrderedDict()
+    ROW_INFO = (
+        collections.OrderedDict()
+    )  # type: OrderedDict[str, Dict[str, Dict[str, Dict[str, Dict[str, str]]]]]
     # A similar dict, but for creating the lat-lon tables.
-    LAT_LON_TABLE_INFO = collections.OrderedDict()
+    LAT_LON_TABLE_INFO = (
+        collections.OrderedDict()
+    )  # type: OrderedDict[str, Dict[str, Dict[str, Dict[str, str]]]]
 
     # Since we're only having one set for each
     # create_viewer() call, this works.
@@ -230,7 +236,8 @@ def create_metadata(parameter):
     parser = SET_TO_PARSER[set_name]()
     cmd = "e3sm_diags {} --no_viewer ".format(set_name)
 
-    args = parser.view_args()
+    # FIXME: "object" has no attribute "view_args"
+    args = parser.view_args()  # type: ignore
     supported_cmd_args = list(args.__dict__.keys())
 
     if "other_parameters" in supported_cmd_args:

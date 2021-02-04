@@ -237,8 +237,10 @@ def run_diag(parameter):  # noqa
                 parameter.test_data_path.rstrip("/"), mat_file
             )
             # FIXME: F524 '...'.format(...) is missing argument(s) for placeholder(s): 2
-            parameter.test_name_yrs = "{} ({}-{})".format(  # noqa
-                parameter.test_start_yr, parameter.test_end_yr
+            parameter.test_name_yrs = (
+                "{} ({}-{})".format(  # type:ignore # noqa
+                    parameter.test_start_yr, parameter.test_end_yr
+                )
             )
             data_mat = scipy.io.loadmat(test_mat_file)
             if "E3SMflow" in data_mat.keys():

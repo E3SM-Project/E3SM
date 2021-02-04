@@ -38,7 +38,8 @@ def create_viewer(root_dir, parameters):
             # This is why we don't use get_output_dir() as in the plotting script
             # to get the file name.
             ext = param.output_format[0]
-            formatted_files = []
+            # FIXME: variable is never reassigned
+            formatted_files = []  # type: ignore
             # TODO: will param.variables ever be longer than one variable?
             #  If so, we'll need to create unique image_relative_paths
             for var in param.variables:

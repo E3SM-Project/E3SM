@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import cdutil
 
 regions_specs = {

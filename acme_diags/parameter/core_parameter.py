@@ -11,7 +11,6 @@ class CoreParameter(cdp.cdp_parameter.CDPParameter):
         # self.test_data_path = ''
         self.ref_timeseries_input = False
         self.test_timeseries_input = False
-        self.viewer_descr = {}
 
         self.sets = [
             "zonal_mean_xy",

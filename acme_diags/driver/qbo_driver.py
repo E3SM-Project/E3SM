@@ -150,7 +150,7 @@ def get_psd_from_deseason(xraw, period_new):
     # (interpolating values of amplitude0_flipped and psd_x0_flipped from period0_flipped to period_new).
     # For that interpolation, we want the period to be increasing.
     # Therefore, we will flip the following values:
-    period0_flipped = period0[::-1]
+    period0_flipped = period0[::-1]  # type: ignore
     amplitude0_flipped = amplitude0[::-1]
     psd_x0_flipped = psd_x0[::-1]
 

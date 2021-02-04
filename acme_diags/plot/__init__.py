@@ -21,7 +21,8 @@ def _get_plot_fcn(backend, set_name):
 
         mod_str = "acme_diags.plot.{}.{}_plot".format(backend, set_name)
         module = importlib.import_module(mod_str)
-        return module.plot
+        # FIXME: error: Module has no attribute "plot"
+        return module.plot  # type: ignore
 
     except ModuleNotFoundError:
         print(
