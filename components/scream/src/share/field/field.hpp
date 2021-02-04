@@ -217,9 +217,7 @@ protected:
   if_t<(N<=2),
        get_view_type<view_ND_type<T,N-1>,Space>>
   get_subview_1 (const get_view_type<view_ND_type<T,N>,Space>&, const int) const {
-    get_view_type<view_ND_type<T,N-1>,Space> sv;
     EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second dimension without losing LayoutRight.\n");
-    return sv;
   }
 
   template<typename Space,typename T,int N>

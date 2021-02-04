@@ -69,8 +69,11 @@ protected:
   std::map<std::string,const_field_type>  m_zm_fields_in;
   std::map<std::string,field_type>        m_zm_fields_out;
 
-  using host_view_in_type  = const_field_type::view_type<const_field_type::RT*>;
-  using host_view_out_type =       field_type::view_type<      field_type::RT*>;
+  template<typename T>
+  using view_1d = field_type::view_type<T*>;
+
+  using host_view_in_type  = typename view_1d<const_field_type::RT>::HostMirror;
+  using host_view_out_type = typename view_1d<field_type::RT>::HostMirror;
 
   std::map<std::string,host_view_in_type>   m_zm_host_views_in;
   std::map<std::string,host_view_out_type>  m_zm_host_views_out;
