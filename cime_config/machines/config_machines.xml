@@ -2856,6 +2856,7 @@
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi.*">
         <command name="load">pgi/19.9</command>
+        <command name="load">pgi-cxx14/default</command>
       </modules>
       <modules compiler="pgigpu">
         <command name="load">cuda/10.1.243</command>
