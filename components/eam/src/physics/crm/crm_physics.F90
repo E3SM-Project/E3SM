@@ -1295,8 +1295,13 @@ subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
    ! initialize ptend
    lq(:) = .false.
    lq(1) = .true.
+#if defined(MMF_FRICTION_BYPASS)
+   call physics_ptend_init(ptend, state%psetcols, 'MMF_FLUX_BYPASS', &
+                           lu=.true., lv=.true., ls=.true., lq=lq)
+#else
    call physics_ptend_init(ptend, state%psetcols, 'MMF_FLUX_BYPASS', &
                            lu=.false., lv=.false., ls=.true., lq=lq)
+#endif
 
    ! apply fluxes to bottom layer
    do ii = 1,ncol
@@ -1310,6 +1315,17 @@ subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
 #endif
       ptend%q(ii,pver,1) = g_dp * cam_in%cflx(ii,1)
    end do
+
+#if defined(MMF_FRICTION_BYPASS)
+   ! apply friction to bottom layer
+   do ii = 1,ncol
+      g_dp = gravit * state%rpdel(ii,pver)             ! note : rpdel = 1./pdel
+      ptend%u(ii,:) = 0.
+      ptend%v(ii,:) = 0.
+      ptend%u(ii,pver) = g_dp*cam_in%wsx(ii)
+      ptend%v(ii,pver) = g_dp*cam_in%wsy(ii)
+   end do
+#endif
 
 end subroutine crm_surface_flux_bypass_tend
 

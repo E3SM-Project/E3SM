@@ -489,13 +489,12 @@
 
          ! 2. Do 'normal stress' explicitly
 
-! whannah - bypass adding surface stress here when CRM handles subgrid momentum tendencies
-! #if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_USE_ESMT)
-!       ! Do nothing...
-! #else
+#if defined(MMF_FRICTION_BYPASS)
+      ! Do nothing...
+#else
            u(:ncol,pver) = u(:ncol,pver) + tmp1(:ncol)*taux(:ncol)
            v(:ncol,pver) = v(:ncol,pver) + tmp1(:ncol)*tauy(:ncol)
-! #endif
+#endif
        end if  ! End of 'do iss' ( implicit surface stress )
 
        ! --------------------------------------------------------------------------------------- !
@@ -513,15 +512,16 @@
                           zero  , ntop , nbot  , decomp)
 
 ! whannah - bypass vertical diffusion of momentum when CRM handles subgrid momentum tendencies
-! #if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_USE_ESMT)
-!       ! Do nothing...
-! #else
+! #if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_USE_ESMT) || defined(NO_GCM_DIFF)
+#if defined(NO_GCM_DIFF)
+      ! Do nothing...
+#else
        call vd_lu_solve(  pcols , pver  , ncol  ,                        &
                           u     , decomp, ntop  , nbot , zero )
 
        call vd_lu_solve(  pcols , pver  , ncol  ,                        &
                           v     , decomp, ntop  , nbot , zero )
-! #endif
+#endif
        ! ---------------------------------------------------------------------- !
        ! Calculate 'total' ( tautotx ) and 'tms' ( tautmsx ) stresses that      !
        ! have been actually added into the atmosphere at the current time step. ! 
@@ -571,9 +571,13 @@
               endif
 
           else
-
+#if defined(MMF_FRICTION_BYPASS)
+              tautotx(i) = tautmsx(i)
+              tautoty(i) = tautmsy(i)
+#else
               tautotx(i) = tautmsx(i) + taux(i)
               tautoty(i) = tautmsy(i) + tauy(i)
+#endif
               tauresx(i) = 0._r8
               tauresy(i) = 0._r8
 
@@ -676,7 +680,7 @@
      ! often lead to an error to be thrown in the energy balance check.
      !   MMF_FLUX_BYPASS - only sensible and latent heat fluxes are affected
 
-#if defined( MMF_FLUX_BYPASS )
+#if defined( MMF_FLUX_BYPASS ) || defined( MMF_CRM_SFC_FLUX )
       if (do_MMF_bypass) then
         dse(:ncol,pver) = dse(:ncol,pver) - tmp1(:ncol) * shflx(:ncol)
       endif
@@ -717,6 +721,9 @@
        !---------------------------------------------------
        ! Solve for temperature using thermal conductivity 
        !---------------------------------------------------
+! #if defined(NO_GCM_DIFF)
+!   ! do nothing
+! #else
        if ( kvt_returned ) then 
 
          call vd_lu_decomp( pcols , pver , ncol  ,                         &
@@ -740,6 +747,7 @@
          enddo
 
        endif
+! #endif
 
     endif
 
@@ -789,7 +797,7 @@
       q(:ncol,pver,m) = q(:ncol,pver,m) + tmp1(:ncol) * cflx(:ncol,m) 
         
 
-#if defined( MMF_FLUX_BYPASS )
+#if defined( MMF_FLUX_BYPASS ) || defined( MMF_CRM_SFC_FLUX )
         if (do_MMF_bypass) then
           if ( m .eq. 1 ) q(:ncol,pver,m) = q(:ncol,pver,m) - tmp1(:ncol) * cflx(:ncol,m) 
         endif
@@ -828,13 +836,13 @@
                endif
            end if
 
-#if defined( MMF_USE_DIFF )
-           if (.true.) then
-#else
-           if (.not. use_MMF) then
-#endif
-             call vd_lu_solve(  pcols , pver , ncol  ,                         &
-                                q(1,1,m) , decomp    , ntop  , nbot  , cd_top )
+! #if defined( MMF_USE_DIFF )
+!            if (.true.) then
+! #else
+!            if (.not. use_MMF) then
+! #endif
+           if ( m .gt. 1 ) then
+             call vd_lu_solve( pcols, pver, ncol, q(1,1,m), decomp, ntop, nbot, cd_top )
            endif
        end if
     end do
