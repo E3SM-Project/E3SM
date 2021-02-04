@@ -1647,9 +1647,7 @@ module li_calving
       logical, pointer :: config_print_calving_info
       real (kind=RKIND), pointer :: config_sea_level
 
-!SFP: may not be needed if stress calcs moved to vel mod
       real (kind=RKIND), dimension(:), pointer :: thickness 
-
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: eigencalvingParameter
@@ -1658,12 +1656,6 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: eMax
       real (kind=RKIND), dimension(:), pointer :: sigmamax, sigmamin, sigmaxx, sigmaxy, sigmayx, sigmayy 
-
-!SFP: need to leave because meanFlowParamA used at end?
-!      real (kind=RKIND), dimension(:,:), pointer :: flowParamA 
-!SFP: may not be needed if stress calcs moved to vel mod
-!      real (kind=RKIND), dimension(:,:), pointer :: temperature 
-
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer :: damage
       real (kind=RKIND), dimension(:), pointer :: ddamagedt
@@ -1675,10 +1667,6 @@ module li_calving
            config_ice_density,            & ! ice density
            config_ocean_density             ! ocean density
 
-!SFP: copied to vel mod but left here because used at end
-!      type (field1dReal), pointer :: meanFlowParamAVar 
-!      real, dimension(:), pointer :: meanFlowParamA    
-
       type (field1dReal), pointer :: alphaVar
       real, dimension(:), pointer :: alpha
 
@@ -1688,7 +1676,7 @@ module li_calving
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:,:), pointer :: edgesOnCell
       real (kind=RKIND), dimension(:), pointer :: xCell, dvEdge
-      integer, pointer :: nCells, nVertLevels    !SFP may not need nvert levels if moving stress calcs to vel mod?
+      integer, pointer :: nCells    
       integer :: iCell, jCell, iNeighbor, n_damage_downstream
       real(kind=RKIND) :: damage_downstream, damage_tmp, cellCalvingFrontLength, cellCalvingFrontHeight, seconds, R, A01, A02, Q1, Q2
       real(kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
@@ -1703,10 +1691,6 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_damage_preserve_threshold', config_damage_preserve_threshold)
       call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
-
-!SFP: still needed here since meanFlowParamA used at end
-!      call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA) 
-
       call mpas_pool_get_config(liConfigs, 'config_damage_gl_setting', config_damage_gl_setting)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
@@ -1724,8 +1708,6 @@ module li_calving
 
          ! get fields
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-
          call mpas_pool_get_array(meshPool, 'xCell', xCell)
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          call mpas_pool_get_array(meshPool, 'daysSinceStart', daysSinceStart)
@@ -1748,16 +1730,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'damage_nye', damage_nye)
          call mpas_pool_get_array(geometryPool, 'damageMax', damageMax)
          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
-
-!SFP: need to leave here as meanFlowParamA used at end
-!         call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA) 
-
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
-
-!SFP: copied to vel mod but left here because used at the end below
-!         call mpas_pool_get_field(scratchPool, 'meanFlowParamA',  meanFlowParamAVar) 
-!         call mpas_allocate_scratch_field(meanFlowParamAVar, .true.)
-!         meanFlowParamA => meanFlowParamAVar % array
 
          call mpas_pool_get_field(scratchPool, 'alpha', alphaVar )
          call mpas_allocate_scratch_field(alphaVar, .true.)
@@ -1771,19 +1744,11 @@ module li_calving
          call mpas_pool_get_array(velocityPool, 'sigmamax', sigmamax)
          call mpas_pool_get_array(velocityPool, 'sigmamin', sigmamin)
 
-! SFP: copied to vel module but also needed here because flowParmA is used to calc meanFlowParamA used below
-!         call li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err_tmp)
-!         err = ior(err, err_tmp)
-
-! SFP: copied to vel module but also needed here becuase used near end of subroutine
-         ! calculate the depth-averaged flow parameter A
-!         meanFlowParamA(:) = sum(flowParamA(:,:), dim=1)/REAL(nVertLevels)      
-
          where (thickness == 0.0_RKIND)
              alpha = 0.0_RKIND
              s0 = 0.0_RKIND
          elsewhere
-             alpha = sigmamin / sigmamax !SFP: leave here but import sigmas from vel mod
+             alpha = sigmamin / sigmamax 
              s0 = &
              config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*sigmamax*config_ocean_density)
          endwhere
@@ -1816,8 +1781,6 @@ module li_calving
          if (thickness(iCell) == 0.0_RKIND) then
              damageSource(iCell) = 0.0_RKIND
          else
-!SFP: substituted 'eMax' for internal var 'epsmax' here (allows us to remove / not calc epsmax)
-             !damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*epsmax(iCell)-floatingBasalMassBal(iCell)/config_ice_density/(thickness(iCell))
              damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*eMax(iCell)-floatingBasalMassBal(iCell)/config_ice_density/(thickness(iCell))
          endif
          enddo
@@ -1938,17 +1901,11 @@ module li_calving
                         realArgs=(/minval(sigmamax), maxval(sigmamax)/))
              call mpas_log_write("damage value range: Min=$r, Max=$r", &
                         realArgs=(/minval(damage), maxval(damage)/))
-!SFP: if not needed here than we can remove 'meanFlowParamA' calcs and use from this entire subroutine
-!             call mpas_log_write("A value range: Min=$r, Max=$r", &
-!                        realArgs=(/minval(meanFlowParamA), maxval(meanFlowParamA)/)) 
              call mpas_log_write("alpha value range: Min=$r, Max=$r", &
                         realArgs=(/minval(alpha), maxval(alpha)/))
         end if
         ! temporary message output in the log file
 
-
-!SFP: below line still needed since 'meanFlowParamAVar' is used immediately above
-!         call mpas_deallocate_scratch_field(meanFlowParamAVar, .true.) 
          call mpas_deallocate_scratch_field(alphaVar, .true.)
 
          block => block % next
