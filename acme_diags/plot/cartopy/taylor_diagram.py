@@ -124,9 +124,7 @@ class TaylorDiagram(object):
             np.linspace(self.smin, self.smax), np.linspace(0, np.pi / 2)
         )
         # Compute centered RMS difference
-        rms = np.sqrt(
-            self.refstd ** 2 + rs ** 2 - 2 * self.refstd * rs * np.cos(ts)
-        )
+        rms = np.sqrt(self.refstd ** 2 + rs ** 2 - 2 * self.refstd * rs * np.cos(ts))
 
         contours = self.ax.contour(ts, rs, rms, levels, **kwargs)
 

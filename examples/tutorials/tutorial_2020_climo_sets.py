@@ -13,9 +13,7 @@ html_prefix = "/global/cfs/cdirs/e3sm/www/<username>"  # Change <username>
 
 param = CoreParameter()
 
-param.reference_data_path = os.path.join(
-    data_prefix, "obs_for_e3sm_diags/climatology"
-)
+param.reference_data_path = os.path.join(data_prefix, "obs_for_e3sm_diags/climatology")
 param.test_data_path = os.path.join(
     data_prefix, "test_model_data_for_acme_diags/climatology/"
 )

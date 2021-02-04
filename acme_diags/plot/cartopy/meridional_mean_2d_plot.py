@@ -2,9 +2,7 @@ from __future__ import print_function
 
 import os
 
-import matplotlib
-import matplotlib.colors as colors
-import matplotlib.pyplot as plt
+import matplotlib  # noqa: E402
 import numpy as np
 import numpy.ma as ma
 
@@ -12,6 +10,9 @@ from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
 
 matplotlib.use("Agg")
+import matplotlib.colors as colors  # isort:skip  # noqa: E402
+import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
+
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -41,9 +42,7 @@ def get_ax_size(fig, ax):
     return width, height
 
 
-def plot_panel(
-    n, fig, proj, var, clevels, cmap, title, parameters, stats=None
-):
+def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
 
     #    var_min = float(var.min())
     #    var_max = float(var.max())
@@ -82,9 +81,7 @@ def plot_panel(
         ax.set_title(title[1], fontdict=plotTitle)
     if title[2] is not None:
         ax.set_title(title[2], loc="right", fontdict=plotSideTitle)
-    ax.set_xticks(
-        [0, 60, 120, 180, 240, 300, 359.99]
-    )  # , crs=ccrs.PlateCarree())
+    ax.set_xticks([0, 60, 120, 180, 240, 300, 359.99])  # , crs=ccrs.PlateCarree())
     ax.set_xticklabels(["0", "60E", "120E", 180, "120W", "60W", "0"])
     # ax.set_xticks([-180, -120, -60, 0, 60, 120, 180], crs=ccrs.PlateCarree())
     # ax.set_xticks([-90, -60, -30, 0, 30, 60, 90])  # , crs=ccrs.PlateCarree())
@@ -108,9 +105,7 @@ def plot_panel(
     ax.set_ylabel("Pressure (mb)")
 
     # Color bar
-    cbax = fig.add_axes(
-        (panel[n][0] + 0.6635, panel[n][1] + 0.0215, 0.0326, 0.1792)
-    )
+    cbax = fig.add_axes((panel[n][0] + 0.6635, panel[n][1] + 0.0215, 0.0326, 0.1792))
     cbar = fig.colorbar(p1, cax=cbax)
     w, h = get_ax_size(fig, cbax)
 
@@ -241,9 +236,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
         # Get the filename that the user has passed in and display that.
         # When running in a container, the paths are modified.
         fnm = os.path.join(
-            get_output_dir(
-                parameter.current_set, parameter, ignore_container=True
-            ),
+            get_output_dir(parameter.current_set, parameter, ignore_container=True),
             parameter.output_file + "." + f,
         )
         print("Plot saved in: " + fnm)
@@ -268,9 +261,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
             plt.savefig(fname, bbox_inches=extent)
 
             orig_fnm = os.path.join(
-                get_output_dir(
-                    parameter.current_set, parameter, ignore_container=True
-                ),
+                get_output_dir(parameter.current_set, parameter, ignore_container=True),
                 parameter.output_file,
             )
             fname = orig_fnm + ".%i." % (i) + f

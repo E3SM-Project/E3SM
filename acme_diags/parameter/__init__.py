@@ -1,12 +1,12 @@
 from .area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
+from .arm_diags_parameter import ARMDiagsParameter
 from .core_parameter import CoreParameter
 from .diurnal_cycle_parameter import DiurnalCycleParameter
 from .enso_diags_parameter import EnsoDiagsParameter
 from .meridional_mean_2d_parameter import MeridionalMean2dParameter
 from .qbo_parameter import QboParameter
 from .streamflow_parameter import StreamflowParameter
-from .diurnal_cycle_parameter import DiurnalCycleParameter
-from .arm_diags_parameter import ARMDiagsParameter
+from .zonal_mean_2d_parameter import ZonalMean2dParameter
 
 SET_TO_PARAMETERS = {
     "zonal_mean_xy": CoreParameter,

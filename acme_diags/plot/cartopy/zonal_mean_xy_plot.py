@@ -3,13 +3,14 @@ from __future__ import print_function
 import os
 
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
 
 from acme_diags.driver.utils.general import get_output_dir
 
 matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
+
 
 plotTitle = {"fontsize": 12.5}
 plotSideTitle = {"fontsize": 11.5}
@@ -56,9 +57,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
     test_title = "Test" if parameter.test_title == "" else parameter.test_title
     test_title += " : {}".format(parameter.test_name_yrs)
     ref_title = (
-        "Reference"
-        if parameter.reference_title == ""
-        else parameter.reference_title
+        "Reference" if parameter.reference_title == "" else parameter.reference_title
     )
     ref_title += " : {}".format(parameter.ref_name_yrs)
     fig.text(
@@ -103,9 +102,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
         # Get the filename that the user has passed in and display that.
         # When running in a container, the paths are modified.
         fnm = os.path.join(
-            get_output_dir(
-                parameter.current_set, parameter, ignore_container=True
-            ),
+            get_output_dir(parameter.current_set, parameter, ignore_container=True),
             parameter.output_file + "." + f,
         )
         print("Plot saved in: " + fnm)
@@ -130,9 +127,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
             plt.savefig(fname, bbox_inches=extent)
 
             orig_fnm = os.path.join(
-                get_output_dir(
-                    parameter.current_set, parameter, ignore_container=True
-                ),
+                get_output_dir(parameter.current_set, parameter, ignore_container=True),
                 parameter.output_file,
             )
             fname = orig_fnm + ".%i." % (i) + f

@@ -63,9 +63,7 @@ def run_diag(parameter):
                     region, ref, land_frac, ocean_frac, parameter
                 )
 
-                parameter.output_file = "-".join(
-                    [ref_name, var, season, region]
-                )
+                parameter.output_file = "-".join([ref_name, var, season, region])
                 parameter.main_title = str(
                     " ".join([var, "Diurnal Cycle ", season, region])
                 )
@@ -74,18 +72,14 @@ def run_diag(parameter):
                     test_cmean,
                     test_amplitude,
                     test_maxtime,
-                ) = utils.diurnal_cycle.composite_diurnal_cycle(
-                    test_domain, season
-                )
+                ) = utils.diurnal_cycle.composite_diurnal_cycle(test_domain, season)
                 (
                     ref_cmean,
                     ref_amplitude,
                     ref_maxtime,
-                ) = utils.diurnal_cycle.composite_diurnal_cycle(
-                    ref_domain, season
-                )
+                ) = utils.diurnal_cycle.composite_diurnal_cycle(ref_domain, season)
                 # FIXME: F841 - assigned but unused
-                # metrics_dict = {}
+                metrics_dict = {}  # noqa
                 parameter.var_region = region
                 plot(
                     parameter.current_set,

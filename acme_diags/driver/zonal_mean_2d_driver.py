@@ -174,9 +174,7 @@ def run_diag(parameter):
                     mv2_reg = mv2_p.crossSectionRegrid(lev_out, lat_out)
                     # Apply the mask back, since crossSectionRegrid
                     # doesn't preserve the mask.
-                    mv2_reg = MV2.masked_where(
-                        mv2_reg == mv2_reg.fill_value, mv2_reg
-                    )
+                    mv2_reg = MV2.masked_where(mv2_reg == mv2_reg.fill_value, mv2_reg)
                 elif len(mv1_p.getLatitude()) > len(mv2_p.getLatitude()):
                     mv2_reg = mv2_p
                     lev_out = mv2_p.getLevel()
@@ -184,17 +182,13 @@ def run_diag(parameter):
                     mv1_reg = mv1_p.crossSectionRegrid(lev_out, lat_out)
                     # Apply the mask back, since crossSectionRegrid
                     # doesn't preserve the mask.
-                    mv1_reg = MV2.masked_where(
-                        mv1_reg == mv1_reg.fill_value, mv1_reg
-                    )
+                    mv1_reg = MV2.masked_where(mv1_reg == mv1_reg.fill_value, mv1_reg)
                 else:
                     mv1_reg = mv1_p
                     mv2_reg = mv2_p
 
                 diff = mv1_reg - mv2_reg
-                metrics_dict = create_metrics(
-                    mv2_p, mv1_p, mv2_reg, mv1_reg, diff
-                )
+                metrics_dict = create_metrics(mv2_p, mv1_p, mv2_reg, mv1_reg, diff)
 
                 parameter.var_region = "global"
 
@@ -222,9 +216,7 @@ def run_diag(parameter):
                         region, mv2, land_frac, ocean_frac, parameter
                     )
 
-                    parameter.output_file = "-".join(
-                        [ref_name, var, season, region]
-                    )
+                    parameter.output_file = "-".join([ref_name, var, season, region])
                     parameter.main_title = str(" ".join([var, season, region]))
 
                     # Regrid towards the lower resolution of the two

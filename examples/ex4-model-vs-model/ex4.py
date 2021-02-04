@@ -6,14 +6,18 @@ from acme_diags.run import runner
 param = CoreParameter()
 
 # Location of the ref data.
-param.reference_data_path = "/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology/"
+param.reference_data_path = (
+    "/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology/"
+)
 # Name of the ref model data, used to find the climo files.
 param.ref_name = "20161118.beta0.F1850COSP.ne30_ne30.edison"
 # An optional, shorter name to be used instead of the ref_name.
 param.short_ref_name = "Ref: beta0.F1850COSP_ne30"
 
 # Location of the test data.
-param.test_data_path = "/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology"
+param.test_data_path = (
+    "/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology"
+)
 # Name of the test model data, used to find the climo files.
 param.test_name = "20161118.beta0.FC5COSP.ne30_ne30.edison"
 # An optional, shorter name to be used instead of the test_name.

@@ -5,9 +5,7 @@ from acme_diags.parameter.area_mean_time_series_parameter import (
 )
 from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
-from acme_diags.parameter.meridional_mean_2d_parameter import (
-    MeridionalMean2dParameter,
-)
+from acme_diags.parameter.meridional_mean_2d_parameter import MeridionalMean2dParameter
 from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
 from acme_diags.run import Run
 

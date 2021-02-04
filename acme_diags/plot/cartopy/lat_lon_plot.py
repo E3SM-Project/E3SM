@@ -6,8 +6,6 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import cdutil
 import matplotlib
-import matplotlib.colors as colors
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
 from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
@@ -17,6 +15,9 @@ from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
 
 matplotlib.use("Agg")
+import matplotlib.colors as colors  # isort:skip  # noqa: E402
+import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
+
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -59,9 +60,7 @@ def determine_tick_step(degrees_covered):
         return 1
 
 
-def plot_panel(
-    n, fig, proj, var, clevels, cmap, title, parameters, stats=None
-):
+def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
 
     var = add_cyclic(var)
     lon = var.getLongitude()
@@ -80,9 +79,9 @@ def plot_panel(
     region = regions_specs[region_str]
     global_domain = True
     full_lon = True
-    if "domain" in region.keys():
+    if "domain" in region.keys():  # type: ignore
         # Get domain to plot
-        domain = region["domain"]
+        domain = region["domain"]  # type: ignore
         global_domain = False
     else:
         # Assume global domain
@@ -151,9 +150,7 @@ def plot_panel(
         ax.set_title(title[2], loc="right", fontdict=plotSideTitle)
     ax.set_xticks(xticks, crs=ccrs.PlateCarree())
     ax.set_yticks(yticks, crs=ccrs.PlateCarree())
-    lon_formatter = LongitudeFormatter(
-        zero_direction_label=True, number_format=".0f"
-    )
+    lon_formatter = LongitudeFormatter(zero_direction_label=True, number_format=".0f")
     lat_formatter = LatitudeFormatter()
     ax.xaxis.set_major_formatter(lon_formatter)
     ax.yaxis.set_major_formatter(lat_formatter)
@@ -162,9 +159,7 @@ def plot_panel(
     ax.yaxis.set_ticks_position("left")
 
     # Color bar
-    cbax = fig.add_axes(
-        (panel[n][0] + 0.6635, panel[n][1] + 0.0215, 0.0326, 0.1792)
-    )
+    cbax = fig.add_axes((panel[n][0] + 0.6635, panel[n][1] + 0.0215, 0.0326, 0.1792))
     cbar = fig.colorbar(p1, cax=cbax)
     w, h = get_ax_size(fig, cbax)
 
@@ -303,9 +298,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
         # Get the filename that the user has passed in and display that.
         # When running in a container, the paths are modified.
         fnm = os.path.join(
-            get_output_dir(
-                parameter.current_set, parameter, ignore_container=True
-            ),
+            get_output_dir(parameter.current_set, parameter, ignore_container=True),
             parameter.output_file + "." + f,
         )
         print("Plot saved in: " + fnm)
@@ -330,9 +323,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
             plt.savefig(fname, bbox_inches=extent)
 
             orig_fnm = os.path.join(
-                get_output_dir(
-                    parameter.current_set, parameter, ignore_container=True
-                ),
+                get_output_dir(parameter.current_set, parameter, ignore_container=True),
                 parameter.output_file,
             )
             fname = orig_fnm + ".%i." % (i) + f

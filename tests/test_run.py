@@ -24,12 +24,8 @@ class TestRun(unittest.TestCase):
         # just testing if the parameters are created correctly.
         self.core_param.reference_data_path = "/this/can/be/whatever/for/"
         self.core_param.reference_data_path += "testing/obs_for_acme_diags/"
-        self.core_param.test_data_path = (
-            "/this/can//also/be/whatever/for/testing/"
-        )
-        self.core_param.test_data_path += (
-            "test_model_data_for_acme_diags/climatology/"
-        )
+        self.core_param.test_data_path = "/this/can//also/be/whatever/for/testing/"
+        self.core_param.test_data_path += "test_model_data_for_acme_diags/climatology/"
         self.core_param.test_name = (
             "SomeTimeStamp.beta?.SomeModelThing.ne30_ne30.somemachine"
         )
@@ -73,8 +69,8 @@ class TestRun(unittest.TestCase):
         )
         # Counts the number of each set and each seasons to run the diags on.
         set_counter, season_counter = (
-            collections.Counter(),
-            collections.Counter(),
+            collections.Counter(),  # type: ignore
+            collections.Counter(),  # type: ignore
         )
         for param in parameters:
             for set_name in param.sets:
@@ -93,13 +89,9 @@ class TestRun(unittest.TestCase):
         # So, reduce the ANN count by the number of times these appear
         all_season_counts[0] -= set_counter["enso_diags"]
         all_season_counts[0] -= set_counter["streamflow"]
-        if not all(
-            all_season_counts[0] == count for count in all_season_counts
-        ):
+        if not all(all_season_counts[0] == count for count in all_season_counts):
             self.fail(
-                "Counts for the seasons don't match: {}".format(
-                    all_season_counts
-                )
+                "Counts for the seasons don't match: {}".format(all_season_counts)
             )
 
     def test_zonal_mean_2d(self):

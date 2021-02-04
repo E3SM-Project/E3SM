@@ -1,3 +1,4 @@
+# flake8:noqa
 # This is a data conversion script to convert ISLSCPII_COMP_RUNOFF from ASCII to netcdf files
 # for use with e3sm_diags package
 # The data was taken from the ASCII format original data available from NASA EARTH DATA

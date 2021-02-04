@@ -13,6 +13,7 @@ from . import (
     mean_2d_viewer,
     qbo_viewer,
     streamflow_viewer,
+    utils,
 )
 
 # A mapping of each diagnostics set to the viewer
@@ -58,9 +59,7 @@ def create_index(root_dir, title_and_url_list):
         td.append(a)
         row_obj.append(td)
 
-    path = os.path.join(
-        acme_diags.INSTALL_PATH, "viewer", "index_template.html"
-    )
+    path = os.path.join(acme_diags.INSTALL_PATH, "viewer", "index_template.html")
     output = os.path.join(root_dir, "index.html")
 
     soup = BeautifulSoup(open(path), "lxml")

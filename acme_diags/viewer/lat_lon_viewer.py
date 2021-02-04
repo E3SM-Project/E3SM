@@ -7,7 +7,6 @@ import csv
 import os
 
 import matplotlib
-import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 
 import acme_diags
@@ -16,6 +15,7 @@ from acme_diags.plot.cartopy.taylor_diagram import TaylorDiagram
 from . import utils
 
 matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
 
 
 def generate_lat_lon_metrics_table(
@@ -25,9 +25,7 @@ def generate_lat_lon_metrics_table(
     For each season in lat_lon_table_info, create a csv,
     convert it to an html and append that html to the viewer.
     """
-    table_dir = os.path.join(
-        root_dir, "table-data"
-    )  # output_dir/viewer/table-data
+    table_dir = os.path.join(root_dir, "table-data")  # output_dir/viewer/table-data
 
     if not os.path.exists(table_dir):
         os.mkdir(table_dir)
@@ -61,18 +59,14 @@ def generate_lat_lon_metrics_table(
 
         lat_lon_table_info[season]["html_path"] = html_path
 
-    url = _create_lat_lon_table_index(
-        lat_lon_table_info, seasons, viewer, root_dir
-    )
+    url = _create_lat_lon_table_index(lat_lon_table_info, seasons, viewer, root_dir)
     utils.add_header(root_dir, os.path.join(root_dir, url), parameters)
     _edit_table_html(lat_lon_table_info, seasons, root_dir)
 
     return "Table", url
 
 
-def _create_csv_from_dict(
-    lat_lon_table_info, output_dir, season, test_name, run_type
-):
+def _create_csv_from_dict(lat_lon_table_info, output_dir, season, test_name, run_type):
     """
     Create a csv for a season in lat_lon_table_info
     in output_dir and return the path to it.
@@ -109,8 +103,7 @@ def _create_csv_from_dict(
                 round(metrics["test_regrid"]["mean"], 3),
                 round(metrics["ref_regrid"]["mean"], 3),
                 round(
-                    metrics["test_regrid"]["mean"]
-                    - metrics["ref_regrid"]["mean"],
+                    metrics["test_regrid"]["mean"] - metrics["ref_regrid"]["mean"],
                     3,
                 ),
                 round(metrics["test_regrid"]["std"], 3),
@@ -172,9 +165,7 @@ def _create_lat_lon_table_index(lat_lon_table_info, seasons, viewer, root_dir):
 
     for s in seasons:
         if s in lat_lon_table_info:
-            viewer.add_col(
-                lat_lon_table_info[s]["html_path"], is_file=True, title=s
-            )
+            viewer.add_col(lat_lon_table_info[s]["html_path"], is_file=True, title=s)
         else:
             viewer.add_col("-----", is_file=True, title="-----")
 
@@ -276,9 +267,7 @@ def _create_csv_from_dict_taylor_diag(
             if run_type == "model_vs_obs":
                 if (
                     key.split()[0] in var_list_1
-                    and "_".join(
-                        (key.split()[0], key.split()[2].split("_")[0])
-                    )
+                    and "_".join((key.split()[0], key.split()[2].split("_")[0]))
                     in var_list_2
                 ):
                     metrics = metrics_dic["metrics"]
@@ -359,9 +348,9 @@ def _create_csv_from_dict_taylor_diag(
             for irow in range(1, row_count):
                 if data[irow][0] in keys_control_runs:
                     control_irow = keys_control_runs.index(data[irow][0])
-                    std_norm = float(
-                        control_runs_data[control_irow][1]
-                    ) / float(control_runs_data[control_irow][2])
+                    std_norm = float(control_runs_data[control_irow][1]) / float(
+                        control_runs_data[control_irow][2]
+                    )
                     correlation = float(control_runs_data[control_irow][3])
                     taylordiag.add_sample(
                         std_norm,
@@ -411,9 +400,7 @@ def _create_csv_from_dict_taylor_diag(
             )
 
         plt.title(season + ": Spatial Variability", y=1.08)
-        fig.savefig(
-            os.path.join(output_dir, season + "_metrics_taylor_diag.png")
-        )
+        fig.savefig(os.path.join(output_dir, season + "_metrics_taylor_diag.png"))
 
     return taylor_diag_path
 

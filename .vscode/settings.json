@@ -1,0 +1,15 @@
+{
+  "[python]": {
+    // [comments, max line length, wrap line length]
+    // Black does not wrap comments.
+    "editor.rulers": [80, 88, 120],
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 120,
+    "editor.defaultFormatter": "ms-python.python"
+  },
+  "python.formatting.provider": "black",
+  "python.linting.flake8Enabled": true,
+  "python.linting.flake8Args": ["--config=setup.cfg"],
+  "python.linting.mypyEnabled": true,
+  "python.pythonPath": "/opt/miniconda3/envs/e3sm_diags/bin/python"
+}

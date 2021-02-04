@@ -8,9 +8,7 @@ class DiurnalCycleParser(CoreParser):
         if "parameter_cls" in kwargs:
             super().__init__(*args, **kwargs)
         else:
-            super().__init__(
-                parameter_cls=DiurnalCycleParameter, *args, **kwargs
-            )
+            super().__init__(parameter_cls=DiurnalCycleParameter, *args, **kwargs)
 
     def load_default_args(self, files=[]):
         # This has '-p' and '--parameter' reserved.

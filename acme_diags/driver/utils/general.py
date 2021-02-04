@@ -10,8 +10,7 @@ import genutil
 import MV2
 
 from acme_diags import container
-from acme_diags.derivations.default_regions import regions_specs, points_specs
-import errno
+from acme_diags.derivations.default_regions import points_specs, regions_specs
 
 
 def strictly_increasing(L):
@@ -43,7 +42,7 @@ def adjust_time_from_time_bounds(var):
     tbounds = var_time.getBounds()
     var_time[:] = 0.5 * (tbounds[:, 0] + tbounds[:, 1])
     # FIXME: F841 - assigned but unused
-    # var_time_absolute = var_time.asComponentTime()
+    var_time_absolute = var_time.asComponentTime()  # noqa
     time2 = cdms2.createAxis(var_time)
     time2.designateTime()
     # .designateTime() needs to be set before attributes changes.
@@ -125,9 +124,7 @@ def convert_to_pressure_levels(mv, plevs, dataset, var, season):
         mv_p = pressure_to_plevs(mv, plevs)
 
     else:
-        raise RuntimeError(
-            "Vertical level is neither hybrid nor pressure. Aborting."
-        )
+        raise RuntimeError("Vertical level is neither hybrid nor pressure. Aborting.")
 
     return mv_p
 
@@ -136,9 +133,7 @@ def hybrid_to_plevs(var, hyam, hybm, ps, plev):
     """Convert from hybrid pressure coordinate to desired pressure level(s)."""
     p0 = 1000.0  # mb
     ps = ps / 100.0  # convert unit from 'Pa' to mb
-    levels_orig = cdutil.vertical.reconstructPressureFromHybrid(
-        ps, hyam, hybm, p0
-    )
+    levels_orig = cdutil.vertical.reconstructPressureFromHybrid(ps, hyam, hybm, p0)
     levels_orig.units = "mb"
     # Make sure z is positive down
     if var.getLevel()[0] > var.getLevel()[-1]:
@@ -185,7 +180,7 @@ def select_region(region, var, land_frac, ocean_frac, parameter):
             land_ocean_frac = land_frac
         elif region.find("ocean") != -1:
             land_ocean_frac = ocean_frac
-        region_value = regions_specs[region]["value"]
+        region_value = regions_specs[region]["value"]  # type: ignore
 
         land_ocean_frac = land_ocean_frac.regrid(
             var.getGrid(),
@@ -199,7 +194,7 @@ def select_region(region, var, land_frac, ocean_frac, parameter):
 
     try:
         # if region.find('global') == -1:
-        domain = regions_specs[region]["domain"]
+        domain = regions_specs[region]["domain"]  # type: ignore
         # print('Domain: ', domain)
     except Exception:
         pass
@@ -224,7 +219,7 @@ def select_point(region, var):
             longitude=(lon, lon, select),
             squeeze=1,
         )
-    except:
+    except Exception:
         print("No point selected.")
 
     return var_selected
@@ -281,9 +276,7 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
     return var
 
 
-def save_transient_variables_to_netcdf(
-    set_num, variables_dict, label, parameter
-):
+def save_transient_variables_to_netcdf(set_num, variables_dict, label, parameter):
     """
     Save the transient variables to nc file.
     """
@@ -301,9 +294,7 @@ def save_transient_variables_to_netcdf(
             try:
                 variable.id = parameter.var_id
             except AttributeError:
-                print(
-                    "Could not save variable.id for {}".format(variable_name)
-                )
+                print("Could not save variable.id for {}".format(variable_name))
             file_name = "{}_{}_{}.nc".format(
                 parameter.output_file, variable_name, label
             )

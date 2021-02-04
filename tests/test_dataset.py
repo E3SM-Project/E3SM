@@ -9,9 +9,7 @@ from acme_diags.parameter.core_parameter import CoreParameter
 
 
 def get_abs_file_path(relative_path):
-    return os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), relative_path
-    )
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
 
 
 class TestDataset(unittest.TestCase):
@@ -19,9 +17,7 @@ class TestDataset(unittest.TestCase):
         self.parameter = CoreParameter()
 
     def test_convert_units(self):
-        with cdms2.open(
-            get_abs_file_path("unit_test_data/precc.nc")
-        ) as precc_file:
+        with cdms2.open(get_abs_file_path("unit_test_data/precc.nc")) as precc_file:
             var = precc_file("PRECC")
 
         new_var = acme_derivations.convert_units(var, "mm/day")
@@ -43,9 +39,7 @@ class TestDataset(unittest.TestCase):
         # ('PRECT', 'A_NEW_VAR', etc) is an OrderedDict.
         # We must check that what the user inserted is
         # first, so it's used first.
-        self.assertTrue(
-            list(data.derived_vars["PRECT"].keys())[0] == ("MY_PRECT",)
-        )
+        self.assertTrue(list(data.derived_vars["PRECT"].keys())[0] == ("MY_PRECT",))
 
     def test_is_timeseries(self):
         self.parameter.ref_timeseries_input = True
@@ -88,9 +82,7 @@ class TestDataset(unittest.TestCase):
         self.parameter.reference_data_path = "./unit_test_data"
         self.parameter.ref_file = "ta_ERA-Interim_ANN_198001_201401_climo.nc"
         data = Dataset(self.parameter, ref=True)
-        self.assertEqual(
-            data.get_attr_from_climo("Conventions", "ANN"), "CF-1.0"
-        )
+        self.assertEqual(data.get_attr_from_climo("Conventions", "ANN"), "CF-1.0")
 
     """
     def test_process_derived_var_passes(self):

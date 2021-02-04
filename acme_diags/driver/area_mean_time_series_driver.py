@@ -10,9 +10,7 @@ from acme_diags.driver import utils
 from acme_diags.metrics import mean
 from acme_diags.plot.cartopy import area_mean_time_series_plot
 
-RefsTestMetrics = collections.namedtuple(
-    "RefsTestMetrics", ["refs", "test", "metrics"]
-)
+RefsTestMetrics = collections.namedtuple("RefsTestMetrics", ["refs", "test", "metrics"])
 
 
 def create_metrics(ref_domain):
@@ -93,9 +91,7 @@ def run_diag(parameter):
             test_domain_year.long_name = test.long_name
             test_domain_year.units = test.units
 
-            save_data[
-                parameter.test_name_yrs
-            ] = test_domain_year.asma().tolist()
+            save_data[parameter.test_name_yrs] = test_domain_year.asma().tolist()
 
             refs = []
 

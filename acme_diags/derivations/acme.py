@@ -94,11 +94,7 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
 
 
 def qflxconvert_units(var):
-    if (
-        var.units == "kg/m2/s"
-        or var.units == "kg m-2 s-1"
-        or var.units == "mm/s"
-    ):
+    if var.units == "kg/m2/s" or var.units == "kg m-2 s-1" or var.units == "mm/s":
         # need to find a solution for units not included in udunits
         # var = convert_units( var, 'kg/m2/s' )
         var = var * 3600.0 * 24  # convert to mm/day
@@ -117,11 +113,7 @@ def qflx_convert_to_lhflx(qflx):
 
 
 def pminuse_convert_units(var):
-    if (
-        var.units == "kg/m2/s"
-        or var.units == "kg m-2 s-1"
-        or var.units == "kg/s/m^2"
-    ):
+    if var.units == "kg/m2/s" or var.units == "kg m-2 s-1" or var.units == "kg/s/m^2":
         # need to find a solution for units not included in udunits
         # var = convert_units( var, 'kg/m2/s' )
         var = var * 3600.0 * 24  # convert to mm/day
@@ -345,14 +337,10 @@ def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):  # noqa
         tau_lim = str(tau_low) + "< tau < " + str(tau_high)
 
     if cld.id == "FISCCP1_COSP":  # ISCCP model
-        cld_bin = cld(
-            cosp_prs=(prs_low, prs_high), cosp_tau=(tau_low, tau_high)
-        )
+        cld_bin = cld(cosp_prs=(prs_low, prs_high), cosp_tau=(tau_low, tau_high))
         simulator = "ISCCP"
     if cld.id == "CLISCCP":  # ISCCP obs
-        cld_bin = cld(
-            isccp_prs=(prs_low, prs_high), isccp_tau=(tau_low, tau_high)
-        )
+        cld_bin = cld(isccp_prs=(prs_low, prs_high), isccp_tau=(tau_low, tau_high))
 
     if cld.id == "CLMODIS":  # MODIS
         try:
@@ -373,9 +361,7 @@ def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):  # noqa
             )  # MODIS obs
 
     if cld.id == "CLD_MISR":  # MISR model
-        cld_bin = cld(
-            cosp_htmisr=(prs_low, prs_high), cosp_tau=(tau_low, tau_high)
-        )
+        cld_bin = cld(cosp_htmisr=(prs_low, prs_high), cosp_tau=(tau_low, tau_high))
         if prs_low == 7:
             prs_lim = "high cloud fraction"
         if prs_high == 7 and prs_low == 3:
@@ -384,9 +370,7 @@ def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):  # noqa
             prs_lim = "low cloud fraction"
         simulator = "MISR"
     if cld.id == "CLMISR":  # MISR obs
-        cld_bin = cld(
-            misr_cth=(prs_low, prs_high), misr_tau=(tau_low, tau_high)
-        )
+        cld_bin = cld(misr_cth=(prs_low, prs_high), misr_tau=(tau_low, tau_high))
 
     cld_bin_sum = MV2.sum(MV2.sum(cld_bin, axis=1), axis=0)
     try:
@@ -675,9 +659,7 @@ derived_variables = {
             ),
             (
                 ("FSNS", "FSNSC", "FLNSC", "FLNS"),
-                lambda fsns, fsnsc, flnsc, flns: netcf4srf(
-                    fsns, fsnsc, flnsc, flns
-                ),
+                lambda fsns, fsnsc, flnsc, flns: netcf4srf(fsns, fsnsc, flnsc, flns),
             ),
         ]
     ),
@@ -741,9 +723,7 @@ derived_variables = {
         [
             (
                 ("FSNS", "FLNS", "LHFLX", "SHFLX"),
-                lambda fsns, flns, lhflx, shflx: netflux4(
-                    fsns, flns, lhflx, shflx
-                ),
+                lambda fsns, flns, lhflx, shflx: netflux4(fsns, flns, lhflx, shflx),
             ),
             (
                 ("FSNS", "FLNS", "QFLX", "SHFLX"),
@@ -820,9 +800,7 @@ derived_variables = {
         [
             (
                 ("zg",),
-                lambda zg: convert_units(
-                    rename(zg), target_units="hectometer"
-                ),
+                lambda zg: convert_units(rename(zg), target_units="hectometer"),
             ),
             (("Z3",), lambda z3: convert_units(z3, target_units="hectometer")),
         ]
@@ -913,9 +891,7 @@ derived_variables = {
             (("PREH2O_OCEAN",), lambda x: convert_units(x, target_units="mm")),
             (
                 ("TMQ", "OCNFRAC"),
-                lambda preh2o, ocnfrac: mask_by(
-                    preh2o, ocnfrac, low_limit=0.65
-                ),
+                lambda preh2o, ocnfrac: mask_by(preh2o, ocnfrac, low_limit=0.65),
             ),
         ]
     ),
@@ -1268,15 +1244,11 @@ derived_variables = {
             (("od550aer",), rename),
             (
                 ("AODVIS",),
-                lambda aod: convert_units(
-                    rename(aod), target_units="dimensionless"
-                ),
+                lambda aod: convert_units(rename(aod), target_units="dimensionless"),
             ),
             (
                 ("AOD_550_ann",),
-                lambda aod: convert_units(
-                    rename(aod), target_units="dimensionless"
-                ),
+                lambda aod: convert_units(rename(aod), target_units="dimensionless"),
             ),
         ]
     ),

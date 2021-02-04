@@ -14,9 +14,6 @@ repos:
     rev: 20.8b1
     hooks:
       - id: black
-        # Black still formats specific folders on pre-commit
-        # https://stackoverflow.com/a/61046953
-        exclude: analysis_data_preprocess
 
   - repo: https://github.com/timothycrosley/isort
     rev: 5.7.0

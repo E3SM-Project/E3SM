@@ -9,7 +9,9 @@ param = CoreParameter()
 param.reference_data_path = (
     "/global/cfs/cdirs/e3sm/acme_diags/obs_for_e3sm_diags/climatology/"
 )
-param.test_data_path = "/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology/"
+param.test_data_path = (
+    "/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/climatology/"
+)
 param.test_name = "20161118.beta0.FC5COSP.ne30_ne30.edison"
 param.seasons = ["ANN"]
 

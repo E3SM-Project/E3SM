@@ -1,3 +1,4 @@
+# flake8:noqa
 import cdms2
 import cdutil
 import MV2
@@ -13,9 +14,7 @@ cdms2.setNetcdfDeflateFlag(1)  # was 0 130717
 cdms2.setNetcdfDeflateLevelFlag(9)  # was 0 130717
 cdms2.setAutoBounds(1)  # Ensure bounds on time and depth axes are generated
 
-filepath = (
-    "/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/HadISST/original_data/"
-)
+filepath = "/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/HadISST/original_data/"
 filename1 = "HadISST_ice.nc"
 filename2 = "HadISST_sst.nc"
 fin1 = cdms2.open(filepath + filename1)

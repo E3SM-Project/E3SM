@@ -1,5 +1,3 @@
-from typing import Any, Dict
-
 import cdutil
 
 regions_specs = {
@@ -7,9 +5,7 @@ regions_specs = {
     "SHEX": {"domain": cdutil.region.domain(latitude=(-90.0, -30, "ccb"))},
     "TROPICS": {"domain": cdutil.region.domain(latitude=(-30.0, 30, "ccb"))},
     "global": {},
-    "TRMM_region": {
-        "domain": cdutil.region.domain(latitude=(-38.0, 38, "ccb"))
-    },
+    "TRMM_region": {"domain": cdutil.region.domain(latitude=(-38.0, 38, "ccb"))},
     "90S50S": {"domain": cdutil.region.domain(latitude=(-90.0, -50, "ccb"))},
     "50S20S": {"domain": cdutil.region.domain(latitude=(-50.0, -20, "ccb"))},
     "20S20N": {"domain": cdutil.region.domain(latitude=(-20.0, 20, "ccb"))},
@@ -57,9 +53,7 @@ regions_specs = {
     },
     # follow AMWG polar range,more precise selector
     "polar_N": {"domain": cdutil.region.domain(latitude=(50.0, 90.0, "ccb"))},
-    "polar_S": {
-        "domain": cdutil.region.domain(latitude=(-90.0, -55.0, "ccb"))
-    },
+    "polar_S": {"domain": cdutil.region.domain(latitude=(-90.0, -55.0, "ccb"))},
     # To match AMWG results, the bounds is not as precise in this case
     # 'polar_N_AMWG':{'domain': Selector(latitude=(50., 90.))},
     # 'polar_S_AMWG':{'domain': Selector(latitude=(-90., -55.))},

@@ -1,10 +1,13 @@
 from __future__ import print_function
 
+import os
+
 import cdms2
 import cdutil
 import MV2
 import numpy
 
+import acme_diags
 from acme_diags.driver import utils
 from acme_diags.metrics import corr, max_cdms, mean, min_cdms, rmse
 from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
@@ -68,7 +71,7 @@ def run_diag(parameter):
     seasons = parameter.seasons
     ref_name = getattr(parameter, "ref_name", "")
     # FIXME: F841 - assigned but unused
-    # regions = parameter.regions
+    regions = parameter.regions  # noqa
 
     test_data = utils.dataset.Dataset(parameter, test=True)
     ref_data = utils.dataset.Dataset(parameter, ref=True)
@@ -83,17 +86,18 @@ def run_diag(parameter):
         )
 
         # Get land/ocean fraction for masking.
-        # FIXME: F841 - assigned but unused (land_frac and ocean_frac)
-        # try:
-        #     land_frac = test_data.get_climo_variable("LANDFRAC", season)
-        #     ocean_frac = test_data.get_climo_variable("OCNFRAC", season)
-        # except Exception:
-        #     mask_path = os.path.join(
-        #         acme_diags.INSTALL_PATH, "acme_ne30_ocean_land_mask.nc"
-        #     )
-        #     with cdms2.open(mask_path) as f:
-        #         land_frac = f("LANDFRAC")
-        #         ocean_frac = f("OCNFRAC")
+        try:
+            land_frac = test_data.get_climo_variable("LANDFRAC", season)
+            ocean_frac = test_data.get_climo_variable("OCNFRAC", season)
+        except Exception:
+            mask_path = os.path.join(
+                acme_diags.INSTALL_PATH, "acme_ne30_ocean_land_mask.nc"
+            )
+            with cdms2.open(mask_path) as f:
+                # FIXME: F841 - assigned but unused (land_frac and ocean_frac)
+                land_frac = f("LANDFRAC")  # noqa
+                # FIXME: F841 - assigned but unused (land_frac and ocean_frac)
+                ocean_frac = f("OCNFRAC")  # noqa
 
         for var in variables:
             print("Variable: {}".format(var))
@@ -154,14 +158,10 @@ def run_diag(parameter):
                     for i, ax in enumerate(mv2_p.getAxisList()):
                         mv2_reg.setAxis(i, ax)
 
-                    mv2_reg = mv2_reg.regrid(grid, regridTool="regrid2")[
-                        ..., 0
-                    ]
+                    mv2_reg = mv2_reg.regrid(grid, regridTool="regrid2")[..., 0]
                     # Apply the mask back, since crossSectionRegrid
                     # doesn't preserve the mask.
-                    mv2_reg = MV2.masked_where(
-                        mv2_reg == mv2_reg.fill_value, mv2_reg
-                    )
+                    mv2_reg = MV2.masked_where(mv2_reg == mv2_reg.fill_value, mv2_reg)
                 elif len(mv1_p.getLongitude()) > len(mv2_p.getLongitude()):
                     mv2_reg = mv2_p
                     lev_out = mv2_p.getLevel()
@@ -181,22 +181,16 @@ def run_diag(parameter):
                     for i, ax in enumerate(mv1_p.getAxisList()):
                         mv1_reg.setAxis(i, ax)
 
-                    mv1_reg = mv1_reg.regrid(grid, regridTool="regrid2")[
-                        ..., 0
-                    ]
+                    mv1_reg = mv1_reg.regrid(grid, regridTool="regrid2")[..., 0]
                     # Apply the mask back, since crossSectionRegrid
                     # doesn't preserve the mask.
-                    mv1_reg = MV2.masked_where(
-                        mv1_reg == mv1_reg.fill_value, mv1_reg
-                    )
+                    mv1_reg = MV2.masked_where(mv1_reg == mv1_reg.fill_value, mv1_reg)
                 else:
                     mv1_reg = mv1_p
                     mv2_reg = mv2_p
 
                 diff = mv1_reg - mv2_reg
-                metrics_dict = create_metrics(
-                    mv2_p, mv1_p, mv2_reg, mv1_reg, diff
-                )
+                metrics_dict = create_metrics(mv2_p, mv1_p, mv2_reg, mv1_reg, diff)
 
                 parameter.var_region = "global"
 

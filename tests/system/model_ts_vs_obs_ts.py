@@ -1,7 +1,5 @@
 reference_data_path = "../testing_data/obs_for_e3sm_diags/time-series"
-test_data_path = (
-    "../testing_data/test_model_data_for_e3sm_diags/time-series/E3SM_v1"
-)
+test_data_path = "../testing_data/test_model_data_for_e3sm_diags/time-series/E3SM_v1"
 
 test_name = "E3SM_v1"  # Needed so it can be shown on the plots.
 results_dir = "model_ts_vs_obs_ts_results"

@@ -1,6 +1,5 @@
 import glob
 import os
-import sys
 
 from setuptools import find_packages, setup
 
@@ -27,9 +26,7 @@ meridional_mean_2d_files = get_all_files_in_dir(
     "acme_diags/driver/default_diags", "meridional_mean_2d*"
 )
 
-lat_lon_files = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "lat_lon*"
-)
+lat_lon_files = get_all_files_in_dir("acme_diags/driver/default_diags", "lat_lon*")
 lat_lon_files += get_all_files_in_dir(
     "acme_diags/driver/default_diags/legacy_diags", "lat_lon*"
 )
@@ -54,22 +51,14 @@ area_mean_time_series = get_all_files_in_dir(
     "acme_diags/driver/default_diags", "area_mean_time_series*"
 )
 qbo = get_all_files_in_dir("acme_diags/driver/default_diags", "qbo*")
-streamflow = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "streamflow*"
-)
-enso_diags_files = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "enso_*"
-)
+streamflow = get_all_files_in_dir("acme_diags/driver/default_diags", "streamflow*")
+enso_diags_files = get_all_files_in_dir("acme_diags/driver/default_diags", "enso_*")
 diurnal_cycle_files = get_all_files_in_dir(
     "acme_diags/driver/default_diags", "diurnal_cycle_*"
 )
-arm_diags_files = get_all_files_in_dir(
-    "acme_diags/driver/default_diags", "arm_diags_*"
-)
+arm_diags_files = get_all_files_in_dir("acme_diags/driver/default_diags", "arm_diags_*")
 rgb_files = get_all_files_in_dir("acme_diags/plot/colormaps", "*.rgb")
-control_runs_files = get_all_files_in_dir(
-    "acme_diags/driver/control_runs", "*.csv"
-)
+control_runs_files = get_all_files_in_dir("acme_diags/driver/control_runs", "*.csv")
 
 INSTALL_PATH = "share/e3sm_diags/"
 

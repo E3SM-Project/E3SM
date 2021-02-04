@@ -90,9 +90,7 @@ def run_diag(parameter):
                     region, mv2, land_frac, ocean_frac, parameter
                 )
 
-                parameter.output_file = "-".join(
-                    [ref_name, var, season, region]
-                )
+                parameter.output_file = "-".join([ref_name, var, season, region])
                 parameter.main_title = str(" ".join([var, season, region]))
 
                 mv1_domain_mean = mean(mv1_domain)

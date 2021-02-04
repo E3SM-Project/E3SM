@@ -33,8 +33,6 @@ dependencies:
   - esmf=8.0.1
   - esmpy=8.0.1
   - expat=2.2.9
-  - flake8=3.8.4
-  - flake8-isort=4.0.0
   - freetype=2.10.4
   - fsspec=0.8.4
   - future=0.18.2
@@ -46,8 +44,6 @@ dependencies:
   - heapdict=1.0.1
   - icu=67.1
   - idna=2.10
-  - isort=5.7.0
-  - importlib-metadata=3.1.0
   - importlib_metadata=3.1.0
   - ipython_genutils=0.2.0
   - jasper=1.900.1

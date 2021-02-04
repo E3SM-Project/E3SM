@@ -29,9 +29,7 @@ def regrid_to_lower_res_1d(mv1, mv2):
     if len(axis1) <= len(axis2):
         missing = mv2.get_fill_value()
         mv1_reg = mv1
-        b0 = numpy.interp(
-            axis1[:], axis2[:], mv2[:], left=missing, right=missing
-        )
+        b0 = numpy.interp(axis1[:], axis2[:], mv2[:], left=missing, right=missing)
         b0_mask = numpy.interp(
             axis1[:], axis2[:], mv2.mask[:], left=missing, right=missing
         )
@@ -45,9 +43,7 @@ def regrid_to_lower_res_1d(mv1, mv2):
         )
     else:
         missing = mv1.get_fill_value()
-        a0 = numpy.interp(
-            axis2[:], axis1[:], mv1[:], left=missing, right=missing
-        )
+        a0 = numpy.interp(axis2[:], axis1[:], mv1[:], left=missing, right=missing)
         a0_mask = numpy.interp(
             axis2[:], axis1[:], mv1.mask[:], left=missing, right=missing
         )
@@ -181,9 +177,7 @@ def run_diag(parameter):
 
                         # Regrid towards the lower resolution of the two
                         # variables for calculating the difference.
-                        mv1_reg, mv2_reg = regrid_to_lower_res_1d(
-                            mv1_zonal, mv2_zonal
-                        )
+                        mv1_reg, mv2_reg = regrid_to_lower_res_1d(mv1_zonal, mv2_zonal)
 
                         diff = mv1_reg - mv2_reg
                         parameter.output_file = "-".join(
@@ -231,15 +225,11 @@ def run_diag(parameter):
                     mv1_zonal = cdutil.averager(mv1, axis="x")
                     mv2_zonal = cdutil.averager(mv2, axis="x")
 
-                    mv1_reg, mv2_reg = regrid_to_lower_res_1d(
-                        mv1_zonal, mv2_zonal
-                    )
+                    mv1_reg, mv2_reg = regrid_to_lower_res_1d(mv1_zonal, mv2_zonal)
 
                     diff = mv1_reg - mv2_reg
 
-                    parameter.output_file = "-".join(
-                        [ref_name, var, season, region]
-                    )
+                    parameter.output_file = "-".join([ref_name, var, season, region])
                     parameter.main_title = str(" ".join([var, season, region]))
 
                     parameter.var_region = region

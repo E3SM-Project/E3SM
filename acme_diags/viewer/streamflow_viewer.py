@@ -61,14 +61,10 @@ def create_viewer(root_dir, parameters):
                 # to match the file_path determined in
                 # acme_diags/plot/cartopy/streamflow_plot.py.
                 # Otherwise, the plot will not be properly linked from the viewer.
-                relative_path = os.path.join(
-                    "..", set_name, param.case_id, output_file
-                )
+                relative_path = os.path.join("..", set_name, param.case_id, output_file)
                 image_relative_path = "{}.{}".format(relative_path, ext)
                 if param.print_statements:
-                    print(
-                        "image_relative_path: {}".format(image_relative_path)
-                    )
+                    print("image_relative_path: {}".format(image_relative_path))
                 # Appears in the first column of the non-bolded rows.
                 # To match the output_dir determined by get_output_dir in acme_diags/plot/cartopy/streamflow_plot.py,
                 # the row name should be param.case_id.

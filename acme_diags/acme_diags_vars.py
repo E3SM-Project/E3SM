@@ -24,9 +24,7 @@ cdms2.tvariable.HAVE_MPI = False
 def main():
     vars_in_e3sm_diags = list_of_vars_in_e3sm_diags()
     vars_with_derived_vars = sorted(check_for_derived_vars(vars_in_e3sm_diags))
-    print(
-        "Below are the variables needed to run all of the diagnostics in e3sm_diags."
-    )
+    print("Below are the variables needed to run all of the diagnostics in e3sm_diags.")
     print(
         "NOTE: This list doesn't include auxiliary variables such as hyam, hybm, PS, etc."
     )
@@ -119,9 +117,7 @@ def check_for_derived_vars(e3sm_vars: Dict[Any, Any]):
 
             var_added = False
             for list_of_vars in possible_vars:
-                if not var_added and vars_in_user_file.issuperset(
-                    list_of_vars
-                ):
+                if not var_added and vars_in_user_file.issuperset(list_of_vars):
                     # All of the variables (list_of_vars) are in the input file.
                     # These are needed.
                     vars_used.extend(list_of_vars)

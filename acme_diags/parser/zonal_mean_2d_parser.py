@@ -8,9 +8,7 @@ class ZonalMean2dParser(CoreParser):
         if "parameter_cls" in kwargs:
             super().__init__(*args, **kwargs)
         else:
-            super().__init__(
-                parameter_cls=ZonalMean2dParameter, *args, **kwargs
-            )
+            super().__init__(parameter_cls=ZonalMean2dParameter, *args, **kwargs)
 
     def load_default_args(self, files=[]):
         # This has '-p' and '--parameter' reserved.

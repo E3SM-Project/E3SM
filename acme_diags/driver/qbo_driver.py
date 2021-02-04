@@ -81,9 +81,7 @@ def get_20to40month_fft_amplitude(qboN, levelN):
         fyy = values * np.conj(values)
         # Choose the range 20 - 40 months that captures most QBOs (in nature)
         psd_sumN[ilev] = 2 * np.nansum(fyy[(period <= 40) & (period >= 20)])
-        amplitudeN[ilev] = np.sqrt(2 * psd_sumN[ilev]) * (
-            frequency[1] - frequency[0]
-        )
+        amplitudeN[ilev] = np.sqrt(2 * psd_sumN[ilev]) * (frequency[1] - frequency[0])
     return psd_sumN, amplitudeN
 
 
@@ -98,9 +96,7 @@ def process_u_for_power_spectral_density(data_region):
         average = data_lat_lon_average(level=(level_top, level_bottom))
     except Exception:
         raise Exception(
-            "No levels found between {}hPa and {}hPa".format(
-                level_top, level_bottom
-            )
+            "No levels found between {}hPa and {}hPa".format(level_top, level_bottom)
         )
     x0 = np.nanmean(np.array(average), axis=1)
     # x0 should now be 1D
@@ -127,7 +123,7 @@ def get_psd_from_deseason(xraw, period_new):
     period0 = 1 / sampling_frequency
     L0 = len(xraw)
     # FIXME: F841 - assigned but unused
-    # t0 = np.arange(0, L0) * period0
+    t0 = np.arange(0, L0) * period0  # noqa
     NFFT0 = 2 ** ceil_log2(L0)
 
     # Apply fft on x_deseasoned with n = NFFT
@@ -142,10 +138,10 @@ def get_psd_from_deseason(xraw, period_new):
     # Calculate power spectral density as a function of frequency
     psd_x0 = amplitude0 ** 2 / L0
     # FIXME: F841 - assigned but unused
-    # period_end0 = period0 * L0
+    period_end0 = period0 * L0  # noqa
     # Total spectral power
     # FIXME: F841 - assigned but unused
-    # Pxf0 = period_end0 * np.sum(psd_x0)
+    Pxf0 = period_end0 * np.sum(psd_x0)  # noqa
     # In the next code block, we will perform an interpolation using the period
     # (interpolating values of amplitude0_flipped and psd_x0_flipped from period0_flipped to period_new).
     # For that interpolation, we want the period to be increasing.
@@ -157,9 +153,7 @@ def get_psd_from_deseason(xraw, period_new):
     amplitude_new0 = np.interp(
         period_new, period0_flipped[:-1], amplitude0_flipped[:-1]
     )
-    psd_x_new0 = np.interp(
-        period_new, period0_flipped[:-1], psd_x0_flipped[:-1]
-    )
+    psd_x_new0 = np.interp(period_new, period0_flipped[:-1], psd_x0_flipped[:-1])
     return psd_x_new0, amplitude_new0
 
 
@@ -177,7 +171,7 @@ def run_diag(parameter):
             print("Variable={}".format(variable))
         test_var = test_data.get_timeseries_variable(variable)
         ref_var = ref_data.get_timeseries_variable(variable)
-        qbo_region = default_regions.regions_specs[region]["domain"]
+        qbo_region = default_regions.regions_specs[region]["domain"]  # type: ignore
 
         test_region = test_var(qbo_region)
         ref_region = ref_var(qbo_region)
@@ -209,9 +203,7 @@ def run_diag(parameter):
         x_test = process_u_for_power_spectral_density(test_region)
         x_ref = process_u_for_power_spectral_density(ref_region)
         # Calculate the PSD and interpolate to period_new. Specify periods to plot
-        period_new = np.concatenate(
-            (np.arange(2, 33), np.arange(34, 100, 2)), axis=0
-        )
+        period_new = np.concatenate((np.arange(2, 33), np.arange(34, 100, 2)), axis=0)
         test["psd_x_new"], test["amplitude_new"] = get_psd_from_deseason(
             x_test, period_new
         )
@@ -221,9 +213,7 @@ def run_diag(parameter):
 
         parameter.var_id = variable
         parameter.main_title = (
-            "QBO index, amplitude, and power spectral density for {}".format(
-                variable
-            )
+            "QBO index, amplitude, and power spectral density for {}".format(variable)
         )
         parameter.viewer_descr[variable] = parameter.main_title
 

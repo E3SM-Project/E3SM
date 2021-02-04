@@ -138,18 +138,14 @@ class Dataset:
         if self.ref and self.is_timeseries():
             # Get the reference variable from timeseries files.
             data_path = self.parameters.reference_data_path
-            timeseries_vars = self._get_timeseries_var(
-                data_path, *args, **kwargs
-            )
+            timeseries_vars = self._get_timeseries_var(data_path, *args, **kwargs)
             # Run climo on the variables.
             variables = [self.climo_fcn(v, season) for v in timeseries_vars]
 
         elif self.test and self.is_timeseries():
             # Get the test variable from timeseries files.
             data_path = self.parameters.test_data_path
-            timeseries_vars = self._get_timeseries_var(
-                data_path, *args, **kwargs
-            )
+            timeseries_vars = self._get_timeseries_var(data_path, *args, **kwargs)
             # Run climo on the variables.
             variables = [self.climo_fcn(v, season) for v in timeseries_vars]
 
@@ -214,13 +210,9 @@ class Dataset:
                 var, season, extra_vars, extra_vars_only=True
             )
         else:
-            return self.get_timeseries_variable(
-                var, extra_vars, extra_vars_only=True
-            )
+            return self.get_timeseries_variable(var, extra_vars, extra_vars_only=True)
 
-        return self.get_climo_variable(
-            var, season, extra_vars, extra_vars_only=True
-        )
+        return self.get_climo_variable(var, season, extra_vars, extra_vars_only=True)
 
     def get_attr_from_climo(self, attr, season):
         """
@@ -228,9 +220,7 @@ class Dataset:
         from the corresponding climo file.
         """
         if self.is_timeseries():
-            raise RuntimeError(
-                "Cannot get a global attribute from timeseries files."
-            )
+            raise RuntimeError("Cannot get a global attribute from timeseries files.")
 
         if self.ref:
             filename = self.get_ref_filename_climo(season)
@@ -310,9 +300,7 @@ class Dataset:
 
         if not os.path.exists(fnm):
             raise IOError(
-                "No file found for {} and {} in {}".format(
-                    data_name, season, path
-                )
+                "No file found for {} and {} in {}".format(data_name, season, path)
             )
 
         return fnm
@@ -378,10 +366,8 @@ class Dataset:
 
                 # Otherwise, there's an error.
                 else:
-                    msg = (
-                        "Variable '{}' was not in the file {}, nor was".format(
-                            var, data_file.uri
-                        )
+                    msg = "Variable '{}' was not in the file {}, nor was".format(
+                        var, data_file.uri
                     )
                     msg += " it defined in the derived variables dictionary."
                     raise RuntimeError(msg)
@@ -418,9 +404,7 @@ class Dataset:
             return {(var,): lambda x: x}
 
         # Otherwise, there's no way to get the variable.
-        msg = "Neither does {} nor the variables in {}".format(
-            var, possible_vars
-        )
+        msg = "Neither does {} nor the variables in {}".format(var, possible_vars)
         msg += " exist in the file {}.".format(data_file.uri)
         raise RuntimeError(msg)
 
@@ -543,8 +527,7 @@ class Dataset:
         for list_of_vars in possible_vars:
             # Check that there are files in data_path that exist for all variables in list_of_vars.
             if all(
-                self._get_timeseries_file_path(var, data_path)
-                for var in list_of_vars
+                self._get_timeseries_file_path(var, data_path) for var in list_of_vars
             ):
                 # All of the variables (list_of_vars) have files in data_path.
                 # Return the corresponding dict.
@@ -558,9 +541,7 @@ class Dataset:
             return {(self.var,): lambda x: x}
 
         # Otherwise, there's no way to get the variable.
-        msg = "Neither does {} nor the variables in {}".format(
-            self.var, possible_vars
-        )
+        msg = "Neither does {} nor the variables in {}".format(self.var, possible_vars)
         msg += " have valid files in {}.".format(data_path)
         raise RuntimeError(msg)
 
@@ -603,9 +584,7 @@ class Dataset:
             msg = "For the variable {} you have two timeseries files in the ".format(
                 var
             )
-            msg += "directory: {} This currently isn't supported.".format(
-                data_path
-            )
+            msg += "directory: {} This currently isn't supported.".format(data_path)
             raise RuntimeError(msg)
 
         # If nothing was found, try looking for the file with
@@ -631,9 +610,7 @@ class Dataset:
             msg = "For the variable {} you have two timeseries files in the ".format(
                 var
             )
-            msg += "directory: {} This currently isn't supported.".format(
-                data_path
-            )
+            msg += "directory: {} This currently isn't supported.".format(data_path)
             raise RuntimeError(msg)
         else:
             return ""
@@ -706,8 +683,6 @@ class Dataset:
             #    return var_time
             # For xml files using above with statement won't work because the Dataset object returned doesn't have attribute __enter__ for content management.
             fin = cdms2.open(fnm)
-            var_time = fin(var, time=(start_time, end_time, slice_flag))(
-                squeeze=1
-            )
+            var_time = fin(var, time=(start_time, end_time, slice_flag))(squeeze=1)
             fin.close()
             return var_time

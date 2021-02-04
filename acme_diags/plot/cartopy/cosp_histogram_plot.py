@@ -3,14 +3,15 @@ from __future__ import print_function
 import os
 
 import matplotlib
-import matplotlib.colors as colors
-import matplotlib.pyplot as plt
 import numpy as np
 
 from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
 
 matplotlib.use("Agg")
+import matplotlib.colors as colors  # isort:skip  # noqa: E402
+import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
+
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -101,9 +102,7 @@ def plot_panel(n, fig, _, var, clevels, cmap, title, parameters, stats=None):
                         fontsize=25,
                     )
                 else:
-                    cld_3x3[j, i] = var[
-                        2 * j : 2 * j + 2, 2 * i : 2 * i + 2
-                    ].sum()
+                    cld_3x3[j, i] = var[2 * j : 2 * j + 2, 2 * i : 2 * i + 2].sum()
                     ax.text(
                         i * 2 + 1,
                         j * 2 + 1,
@@ -153,9 +152,7 @@ def plot_panel(n, fig, _, var, clevels, cmap, title, parameters, stats=None):
     # ax.set_ylabel('Cloud Top Height (km)')
 
     # Color bar
-    cbax = fig.add_axes(
-        (panel[n][0] + 0.6635, panel[n][1] + 0.0215, 0.0326, 0.1792)
-    )
+    cbax = fig.add_axes((panel[n][0] + 0.6635, panel[n][1] + 0.0215, 0.0326, 0.1792))
     cbar = fig.colorbar(p1, cax=cbax, extend="both")
     w, h = get_ax_size(fig, cbax)
 
@@ -235,9 +232,7 @@ def plot(reference, test, diff, _, parameter):
         # Get the filename that the user has passed in and display that.
         # When running in a container, the paths are modified.
         fnm = os.path.join(
-            get_output_dir(
-                parameter.current_set, parameter, ignore_container=True
-            ),
+            get_output_dir(parameter.current_set, parameter, ignore_container=True),
             parameter.output_file + "." + f,
         )
         print("Plot saved in: " + fnm)
@@ -262,9 +257,7 @@ def plot(reference, test, diff, _, parameter):
             plt.savefig(fname, bbox_inches=extent)
 
             orig_fnm = os.path.join(
-                get_output_dir(
-                    parameter.current_set, parameter, ignore_container=True
-                ),
+                get_output_dir(parameter.current_set, parameter, ignore_container=True),
                 parameter.output_file,
             )
             fname = orig_fnm + ".%i." % (i) + f

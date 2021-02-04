@@ -240,9 +240,7 @@ def run_diag(parameter):
                         region, mv2, land_frac, ocean_frac, parameter
                     )
 
-                    parameter.output_file = "-".join(
-                        [ref_name, var, season, region]
-                    )
+                    parameter.output_file = "-".join([ref_name, var, season, region])
                     parameter.main_title = str(" ".join([var, season, region]))
 
                     # Regrid towards the lower resolution of the two
@@ -273,9 +271,7 @@ def run_diag(parameter):
                     # Saving the metrics as a json.
                     metrics_dict["unit"] = mv1_reg.units
                     fnm = os.path.join(
-                        utils.general.get_output_dir(
-                            parameter.current_set, parameter
-                        ),
+                        utils.general.get_output_dir(parameter.current_set, parameter),
                         parameter.output_file + ".json",
                     )
                     with open(fnm, "w") as outfile:

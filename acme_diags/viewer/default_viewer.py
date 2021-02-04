@@ -87,9 +87,7 @@ def create_viewer(root_dir, parameters):
                             row_name = "{} {}".format(var, region)
                         else:
                             row_name = "{} {} {}".format(var, region, ref_name)
-                        fnm = "{}-{}-{}-{}".format(
-                            ref_name, var, season, region
-                        )
+                        fnm = "{}-{}-{}-{}".format(ref_name, var, season, region)
                         row_name_and_filename.append((row_name, fnm))
                     else:  # 3d variables.
                         for plev in parameter.plevs:
@@ -139,10 +137,7 @@ def create_viewer(root_dir, parameters):
                             ROW_INFO[set_name][
                                 parameter.case_id
                             ] = collections.OrderedDict()
-                        if (
-                            row_name
-                            not in ROW_INFO[set_name][parameter.case_id]
-                        ):
+                        if row_name not in ROW_INFO[set_name][parameter.case_id]:
                             ROW_INFO[set_name][parameter.case_id][
                                 row_name
                             ] = collections.OrderedDict()
@@ -150,18 +145,16 @@ def create_viewer(root_dir, parameters):
                                 "descr"
                             ] = _get_description(var, parameter)
                         # Each season has a image_path and metadata linked to it, thus we use a dict.
-                        ROW_INFO[set_name][parameter.case_id][row_name][
-                            season
-                        ] = {}
+                        ROW_INFO[set_name][parameter.case_id][row_name][season] = {}
                         # Format the filename to support relative paths.
-                        ROW_INFO[set_name][parameter.case_id][row_name][
-                            season
-                        ]["image_path"] = os.path.join(
+                        ROW_INFO[set_name][parameter.case_id][row_name][season][
+                            "image_path"
+                        ] = os.path.join(
                             "..", "{}".format(set_name), parameter.case_id, fnm
                         )
-                        ROW_INFO[set_name][parameter.case_id][row_name][
-                            season
-                        ]["metadata"] = create_metadata(parameter)
+                        ROW_INFO[set_name][parameter.case_id][row_name][season][
+                            "metadata"
+                        ] = create_metadata(parameter)
 
     save_netcdf = parameters[0].save_netcdf
     ext = parameters[0].output_format[0]
@@ -207,9 +200,7 @@ def _get_description(var, parameters):
     return var
 
 
-def _add_to_lat_lon_metrics_table(
-    lat_lon_table_info, metrics_path, season, row_name
-):
+def _add_to_lat_lon_metrics_table(lat_lon_table_info, metrics_path, season, row_name):
     """
     Add the metrics for the current season and
     row_name to the lat-lon table.
@@ -236,7 +227,6 @@ def create_metadata(parameter):
     parser = SET_TO_PARSER[set_name]()
     cmd = "e3sm_diags {} --no_viewer ".format(set_name)
 
-    # FIXME: "object" has no attribute "view_args"
     args = parser.view_args()  # type: ignore
     supported_cmd_args = list(args.__dict__.keys())
 
@@ -271,9 +261,7 @@ def create_metadata(parameter):
             elif isinstance(param, bool):
                 # ex: --multiprocessing
                 # note there's no value after the parameter, it's just a flag
-                if (
-                    param
-                ):  # command is True, so add --command to set it to True
+                if param:  # command is True, so add --command to set it to True
                     cmd += "--{} ".format(param_name)
 
             elif isinstance(param, str) and param.isdigit():
@@ -286,9 +274,7 @@ def create_metadata(parameter):
     return metadata
 
 
-def _add_information_to_viewer(
-    viewer, row_info, set_name, save_netcdf, ext="png"
-):
+def _add_information_to_viewer(viewer, row_info, set_name, save_netcdf, ext="png"):
     """
     Based on the information in row_info,
     add the rows/cols to the viewer object.
@@ -318,18 +304,14 @@ def _add_information_to_viewer(
                     metadata = row_info[set_name][group][row_name][col_season][
                         "metadata"
                     ]
-                    fnm = row_info[set_name][group][row_name][col_season][
-                        "image_path"
-                    ]
+                    fnm = row_info[set_name][group][row_name][col_season]["image_path"]
                     formatted_files = []
                     if save_netcdf:
                         nc_files = [
                             fnm + nc_ext
                             for nc_ext in ["_test.nc", "_ref.nc", "_diff.nc"]
                         ]
-                        formatted_files = [
-                            {"url": f, "title": f} for f in nc_files
-                        ]
+                        formatted_files = [{"url": f, "title": f} for f in nc_files]
                     viewer.add_col(
                         fnm + "." + ext,
                         is_file=True,

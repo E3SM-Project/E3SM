@@ -11,28 +11,22 @@ import sys
 
 # Change these commands if needed.
 SHIFTER_COMMAND = "shifter --volume=$REFERENCE_DATA_PATH:/reference_data_path"
-SHIFTER_COMMAND += " --volume=$TEST_DATA_PATH:/test_data_path --volume=$RESULTS_DIR:/results_dir"
+SHIFTER_COMMAND += (
+    " --volume=$TEST_DATA_PATH:/test_data_path --volume=$RESULTS_DIR:/results_dir"
+)
 SHIFTER_COMMAND += " --image=docker:e3sm/e3sm_diags:{}"
 # Shifter doesn't use the entrypoint defined in the Dockerfile, so we need to specify what command to use.
 SHIFTER_COMMAND += " -- e3sm_diags"
 
 DOCKER_COMMAND = "docker run --mount type=bind,source=$REFERENCE_DATA_PATH,target=/reference_data_path"
-DOCKER_COMMAND += (
-    " --mount type=bind,source=$TEST_DATA_PATH,target=/test_data_path"
-)
+DOCKER_COMMAND += " --mount type=bind,source=$TEST_DATA_PATH,target=/test_data_path"
 DOCKER_COMMAND += " --mount type=bind,source=$RESULTS_DIR,target=/results_dir"
 # Docker needs the cwd mounted as well, otherwise the input parameter files will not be found.
-DOCKER_COMMAND += (
-    ' --mount type=bind,source="$(pwd)",target=/e3sm_diags_container_cwd'
-)
+DOCKER_COMMAND += ' --mount type=bind,source="$(pwd)",target=/e3sm_diags_container_cwd'
 DOCKER_COMMAND += " e3sm/e3sm_diags:{}"
 
-SINGULARITY_COMMAND = (
-    "singularity run -B $REFERENCE_DATA_PATH:/reference_data_path,"
-)
-SINGULARITY_COMMAND += (
-    "$TEST_DATA_PATH:/test_data_path,$RESULTS_DIR:/results_dir "
-)
+SINGULARITY_COMMAND = "singularity run -B $REFERENCE_DATA_PATH:/reference_data_path,"
+SINGULARITY_COMMAND += "$TEST_DATA_PATH:/test_data_path,$RESULTS_DIR:/results_dir "
 # It seems like Singularity doesn't automatically look in $SINGULARITY_PULLFOLDER.
 SINGULARITY_COMMAND += "$SINGULARITY_PULLFOLDER/e3sm_diags-{}.simg"
 
@@ -107,9 +101,7 @@ def set_env_vars(args):
     # If they are empty, try to get them from the Python file.
     param_file = args.parameters
     if not reference_data_path:
-        reference_data_path = get_parameter_from_file(
-            param_file, "reference_data_path"
-        )
+        reference_data_path = get_parameter_from_file(param_file, "reference_data_path")
     if not test_data_path:
         test_data_path = get_parameter_from_file(param_file, "test_data_path")
     if not results_dir:

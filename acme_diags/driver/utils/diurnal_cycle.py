@@ -85,11 +85,10 @@ def composite_diurnal_cycle(var, season, fft=True):
             ],
             dtype=numpy.int,
         ).nonzero()
-        var_diurnal[n,] = ma.average(
+        var_diurnal[n,] = ma.average(  # noqa
             numpy.reshape(
                 v[idx],
-                (int(v[idx].shape[0] / time_freq), time_freq)
-                + v[idx].shape[1:],
+                (int(v[idx].shape[0] / time_freq), time_freq) + v[idx].shape[1:],
             ),
             axis=0,
         )

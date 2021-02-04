@@ -1,12 +1,12 @@
 import os
 
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 
 from acme_diags.driver.utils.general import get_output_dir
 
 matplotlib.use("agg")
+import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
 
 
 def plot(var, regions_to_data, parameter):
@@ -16,9 +16,9 @@ def plot(var, regions_to_data, parameter):
 
     # plot time series
     # FIXME: F841 - assigned but unused
-    # plotTitle = {"fontsize": 8.5}
+    plotTitle = {"fontsize": 8.5}  # noqa
     # FIXME: F841 - assigned but unused
-    # plotSideTitle = {"fontsize": 6.5}
+    plotSideTitle = {"fontsize": 6.5}  # noqa
 
     line_color = ["r", "b", "g", "m", "c", "y"]
 
@@ -49,7 +49,7 @@ def plot(var, regions_to_data, parameter):
 
     s = parameter.test_name_yrs
     # FIXME: F841 - assigned but unused
-    # years = s[s.find("(") + 1 : s.find(")")]
+    years = s[s.find("(") + 1 : s.find(")")]  # noqa
     # FIXME: F841 - assigned but unused
     test_name = s.split("(")[0].replace(" ", "")
     if test_name == "":
@@ -95,10 +95,7 @@ def plot(var, regions_to_data, parameter):
 
     # Figure title.
     fig.suptitle(
-        "Annual mean "
-        + var
-        + " time series over regions "
-        + parameter.test_name_yrs,
+        "Annual mean " + var + " time series over regions " + parameter.test_name_yrs,
         x=0.3,
         y=0.98,
         fontsize=15,
@@ -116,9 +113,7 @@ def plot(var, regions_to_data, parameter):
         # Get the filename that the user has passed in and display that.
         # When running in a container, the paths are modified.
         fnm = os.path.join(
-            get_output_dir(
-                parameter.current_set, parameter, ignore_container=True
-            ),
+            get_output_dir(parameter.current_set, parameter, ignore_container=True),
             output_file_name + "." + f,
         )
         print("Plot saved in: " + fnm)
@@ -143,9 +138,7 @@ def plot(var, regions_to_data, parameter):
             plt.savefig(fname, bbox_inches=extent)
 
             orig_fnm = os.path.join(
-                get_output_dir(
-                    parameter.current_set, parameter, ignore_container=True
-                ),
+                get_output_dir(parameter.current_set, parameter, ignore_container=True),
                 parameter.output_file,
             )
             fname = orig_fnm + ".%i." % (i) + f

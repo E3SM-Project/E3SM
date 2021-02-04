@@ -6,9 +6,6 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import cdutil
 import matplotlib
-import matplotlib.colors as colors
-import matplotlib.lines as lines
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
 from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
@@ -17,6 +14,10 @@ from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.driver.utils.general import get_output_dir
 
 matplotlib.use("Agg")
+import matplotlib.colors as colors  # isort:skip  # noqa: E402
+import matplotlib.lines as lines  # isort:skip  # noqa: E402
+import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
+
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -70,9 +71,9 @@ def plot_panel_seasonality_map(
     ax = fig.add_axes(panel[panel_index], projection=proj)
     region_str = parameter.regions[0]
     region = regions_specs[region_str]
-    if "domain" in region.keys():
+    if "domain" in region.keys():  # type: ignore
         # Get domain to plot
-        domain = region["domain"]
+        domain = region["domain"]  # type: ignore
     else:
         # Assume global domain
         domain = cdutil.region.domain(latitude=(-90.0, 90, "ccb"))
@@ -116,9 +117,7 @@ def plot_panel_seasonality_map(
         elif seasonality_index <= 12:
             markersize = si_large
         else:
-            raise Exception(
-                "Invalid seasonality index={}".format(seasonality_index)
-            )
+            raise Exception("Invalid seasonality index={}".format(seasonality_index))
         if seasonality_index == 1:
             color = "black"
         else:
@@ -136,9 +135,7 @@ def plot_panel_seasonality_map(
         )
         # NOTE: the "plt.annotate call" does not have a "transform=" keyword,
         # so for this one we transform the coordinates with a Cartopy call.
-        at_x, at_y = ax.projection.transform_point(
-            lon, lat, src_crs=proj_function()
-        )
+        at_x, at_y = ax.projection.transform_point(lon, lat, src_crs=proj_function())
     # https://matplotlib.org/3.1.1/gallery/text_labels_and_annotations/custom_legends.html
     legend_elements = [
         lines.Line2D(
@@ -197,9 +194,7 @@ def plot_panel_seasonality_map(
         ax.set_title(title[2], loc="right", fontdict=plotSideTitle)
     ax.set_xticks(xticks, crs=proj_function())
     ax.set_yticks(yticks, crs=proj_function())
-    lon_formatter = LongitudeFormatter(
-        zero_direction_label=True, number_format=".0f"
-    )
+    lon_formatter = LongitudeFormatter(zero_direction_label=True, number_format=".0f")
     lat_formatter = LatitudeFormatter()
     ax.xaxis.set_major_formatter(lon_formatter)
     ax.yaxis.set_major_formatter(lat_formatter)
@@ -297,19 +292,13 @@ def plot_seasonality_map(export, parameter):
     ]
 
     # First panel
-    plot_panel_seasonality_map(
-        "test", fig, proj, export, color_list, panel, parameter
-    )
+    plot_panel_seasonality_map("test", fig, proj, export, color_list, panel, parameter)
 
     # Second panel
-    plot_panel_seasonality_map(
-        "ref", fig, proj, export, color_list, panel, parameter
-    )
+    plot_panel_seasonality_map("ref", fig, proj, export, color_list, panel, parameter)
 
     # Figure title
-    fig.suptitle(
-        parameter.main_title_seasonality_map, x=0.5, y=0.97, fontsize=15
-    )
+    fig.suptitle(parameter.main_title_seasonality_map, x=0.5, y=0.97, fontsize=15)
 
     # Prepare to save figure
     # get_output_dir => {parameter.results_dir}/{set_name}/{parameter.case_id}
@@ -388,9 +377,9 @@ def plot_panel_annual_map(  # noqa
     ax = fig.add_axes(panel[panel_index], projection=proj)
     region_str = parameter.regions[0]
     region = regions_specs[region_str]
-    if "domain" in region.keys():
+    if "domain" in region.keys():  # type: ignore
         # Get domain to plot
-        domain = region["domain"]
+        domain = region["domain"]  # type: ignore
     else:
         # Assume global domain
         domain = cdutil.region.domain(latitude=(-90.0, 90, "ccb"))
@@ -419,9 +408,7 @@ def plot_panel_annual_map(  # noqa
     # `export` is the array of gauges. Each gauge has multiple fields -- e.g., lat is index 7
     # Continuous colormap
     colormap = plt.get_cmap("jet_r")
-    color_list = list(
-        map(lambda index: colormap(index)[:3], range(colormap.N))
-    )
+    color_list = list(map(lambda index: colormap(index)[:3], range(colormap.N)))
     if panel_type in ["test", "ref"]:
         value_min, value_max = 1, 1e4
         # https://matplotlib.org/3.2.1/tutorials/colors/colormapnorms.html
@@ -485,9 +472,7 @@ def plot_panel_annual_map(  # noqa
         )
         # NOTE: the "plt.annotate call" does not have a "transform=" keyword,
         # so for this one we transform the coordinates with a Cartopy call.
-        at_x, at_y = ax.projection.transform_point(
-            lon, lat, src_crs=proj_function()
-        )
+        at_x, at_y = ax.projection.transform_point(lon, lat, src_crs=proj_function())
 
     # Full world would be aspect 360/(2*180) = 1
     ax.set_aspect((lon_east - lon_west) / (2 * (lat_north - lat_south)))
@@ -510,9 +495,7 @@ def plot_panel_annual_map(  # noqa
         ax.set_title(title[2], loc="right", fontdict=plotSideTitle)
     ax.set_xticks(xticks, crs=proj_function())
     ax.set_yticks(yticks, crs=proj_function())
-    lon_formatter = LongitudeFormatter(
-        zero_direction_label=True, number_format=".0f"
-    )
+    lon_formatter = LongitudeFormatter(zero_direction_label=True, number_format=".0f")
     lat_formatter = LatitudeFormatter()
     ax.xaxis.set_major_formatter(lon_formatter)
     ax.yaxis.set_major_formatter(lat_formatter)
@@ -549,9 +532,7 @@ def plot_panel_annual_map(  # noqa
         pass
     elif panel_type == "bias":
         step_size = (value_max - value_min) // 5
-        ticks = np.arange(
-            int(value_min), int(value_max) + step_size, step_size
-        )
+        ticks = np.arange(int(value_min), int(value_max) + step_size, step_size)
         cbar.ax.tick_params(labelsize=9.0, length=0)
         cbar.ax.set_yticklabels(ticks)
     else:
@@ -665,9 +646,7 @@ def plot_annual_scatter(xs, ys, zs, parameter):
         "{} streamflow ($m^3$/$s$)".format(parameter.reference_title),
         fontsize=12,
     )
-    ax.set_ylabel(
-        "{} streamflow ($m^3$/$s$)".format(parameter.test_title), fontsize=12
-    )
+    ax.set_ylabel("{} streamflow ($m^3$/$s$)".format(parameter.test_title), fontsize=12)
     ax.set_xlim(bounds[0], bounds[1])
     ax.set_ylim(bounds[0], bounds[1])
     ax.tick_params(axis="both", labelsize=12)
@@ -704,9 +683,7 @@ def plot_annual_scatter(xs, ys, zs, parameter):
     ax.set_title(main_title_annual_scatter, loc="center", y=1.05, fontsize=15)
 
     legend_title = "$R^2$={}, (n={})".format(r2_str, xs.shape[0])
-    ax.legend(
-        handles=[], title=legend_title, loc="upper left", prop={"size": 12}
-    )
+    ax.legend(handles=[], title=legend_title, loc="upper left", prop={"size": 12})
 
     # Prepare to save figure
     # get_output_dir => {parameter.results_dir}/{set_name}/{parameter.case_id}

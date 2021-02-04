@@ -88,9 +88,7 @@ def add_header(root_dir, path, parameters):
     p = soup.new_tag("p", style="margin-left:5em")
 
     bolded_title = soup.new_tag("b")
-    bolded_title.append(
-        "E3SM Diagnostics Package {}".format(acme_diags.__version__)
-    )
+    bolded_title.append("E3SM Diagnostics Package {}".format(acme_diags.__version__))
     bolded_title.append(soup.new_tag("br"))
     p.append(bolded_title)
 

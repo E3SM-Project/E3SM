@@ -28,14 +28,10 @@ def get_drainage_area_error(
     for i in range(-radius, radius + 1):
         for j in range(-radius, radius + 1):
             x = int(
-                1
-                + ((lon_ref + j * resolution) - (-180 + resolution / 2))
-                / resolution
+                1 + ((lon_ref + j * resolution) - (-180 + resolution / 2)) / resolution
             )
             y = int(
-                1
-                + ((lat_ref + i * resolution) - (-90 + resolution / 2))
-                / resolution
+                1 + ((lat_ref + i * resolution) - (-90 + resolution / 2)) / resolution
             )
             area_test[k] = area_upstream[x - 1, y - 1] / 1000000
             error_test[k] = numpy.abs(area_test[k] - area_ref) / area_ref
@@ -112,10 +108,8 @@ def run_diag(parameter):  # noqa
         # This file includes 25765 gauges, which is a subset of the entire
         # dataset (30959 gauges). The removed gauges are associated with very
         # small drainage area (<1km2), which is not meaningful to be included.
-        gauges_path = (
-            "{}/GSIM/GSIM_catchment_characteristics_all_1km2.csv".format(
-                parameter.reference_data_path.rstrip("/")
-            )
+        gauges_path = "{}/GSIM/GSIM_catchment_characteristics_all_1km2.csv".format(
+            parameter.reference_data_path.rstrip("/")
         )
     else:
         raise Exception(
@@ -136,22 +130,14 @@ def run_diag(parameter):  # noqa
 
         if not using_ref_mat_file:
             ref_data = utils.dataset.Dataset(parameter, ref=True)
-            parameter.ref_name_yrs = utils.general.get_name_and_yrs(
-                parameter, ref_data
-            )
+            parameter.ref_name_yrs = utils.general.get_name_and_yrs(parameter, ref_data)
             ref_data_ts = ref_data.get_timeseries_variable(var)
-            var_array = ref_data_ts(
-                cdutil.region.domain(latitude=(-90.0, 90, "ccb"))
-            )
+            var_array = ref_data_ts(cdutil.region.domain(latitude=(-90.0, 90, "ccb")))
             if parameter.print_statements:
                 print("ref var original dimensions={}".format(var_array.shape))
             var_transposed = numpy.transpose(var_array, (2, 1, 0))
             if parameter.print_statements:
-                print(
-                    "ref var transposed dimensions={}".format(
-                        var_transposed.shape
-                    )
-                )
+                print("ref var transposed dimensions={}".format(var_transposed.shape))
             ref_array = var_transposed.astype(numpy.float64)
         else:
             # Load the observed streamflow dataset (GSIM)
@@ -187,29 +173,17 @@ def run_diag(parameter):  # noqa
                 parameter, test_data
             )
             test_data_ts = test_data.get_timeseries_variable(var)
-            var_array = test_data_ts(
-                cdutil.region.domain(latitude=(-90.0, 90, "ccb"))
-            )
+            var_array = test_data_ts(cdutil.region.domain(latitude=(-90.0, 90, "ccb")))
             if parameter.print_statements:
-                print(
-                    "test var original dimensions={}".format(var_array.shape)
-                )
+                print("test var original dimensions={}".format(var_array.shape))
             var_transposed = numpy.transpose(var_array, (2, 1, 0))
             if parameter.print_statements:
-                print(
-                    "test var transposed dimensions={}".format(
-                        var_transposed.shape
-                    )
-                )
+                print("test var transposed dimensions={}".format(var_transposed.shape))
             test_array = var_transposed.astype(numpy.float64)
             areatotal2 = test_data.get_static_variable("areatotal2", var)
-            area_upstream = numpy.transpose(areatotal2, (1, 0)).astype(
-                numpy.float64
-            )
+            area_upstream = numpy.transpose(areatotal2, (1, 0)).astype(numpy.float64)
             if parameter.print_statements:
-                print(
-                    "area_upstream dimensions={}".format(area_upstream.shape)
-                )
+                print("area_upstream dimensions={}".format(area_upstream.shape))
         else:
             # This block is only for debugging -- i.e., when testing with a `mat` file.
             files_in_test_data_path = os.listdir(parameter.test_data_path)
@@ -237,10 +211,8 @@ def run_diag(parameter):  # noqa
                 parameter.test_data_path.rstrip("/"), mat_file
             )
             # FIXME: F524 '...'.format(...) is missing argument(s) for placeholder(s): 2
-            parameter.test_name_yrs = (
-                "{} ({}-{})".format(  # type:ignore # noqa
-                    parameter.test_start_yr, parameter.test_end_yr
-                )
+            parameter.test_name_yrs = "{} ({}-{})".format(  # type:ignore # noqa
+                parameter.test_start_yr, parameter.test_end_yr
             )
             data_mat = scipy.io.loadmat(test_mat_file)
             if "E3SMflow" in data_mat.keys():
@@ -256,13 +228,9 @@ def run_diag(parameter):  # noqa
             try:
                 if e3sm_flow["uparea"].shape == (1, 1):
                     # `edison` file uses this block
-                    area_upstream = e3sm_flow["uparea"][0][0].astype(
-                        numpy.float64
-                    )
+                    area_upstream = e3sm_flow["uparea"][0][0].astype(numpy.float64)
                     if parameter.print_statements:
-                        print(
-                            'e3sm_flow["uparea"] was indexed into for later use'
-                        )
+                        print('e3sm_flow["uparea"] was indexed into for later use')
                 else:
                     area_upstream = e3sm_flow["uparea"].astype(numpy.float64)
                     if parameter.print_statements:
@@ -271,16 +239,12 @@ def run_diag(parameter):  # noqa
                 # `test` file uses this block
                 area_upstream = None
                 if parameter.print_statements:
-                    print(
-                        "WARNING: uparea not found and will thus not be used"
-                    )
+                    print("WARNING: uparea not found and will thus not be used")
             if e3sm_flow["wrmflow"].shape == (1, 1):
                 # `edison` file uses this block
                 test_array = e3sm_flow["wrmflow"][0][0].astype(numpy.float64)
                 if parameter.print_statements:
-                    print(
-                        'e3sm_flow["wrmflow"] was indexed into for later use'
-                    )
+                    print('e3sm_flow["wrmflow"] was indexed into for later use')
             else:
                 # `test` file uses this block
                 test_array = e3sm_flow["wrmflow"].astype(numpy.float64)
@@ -377,28 +341,20 @@ def run_diag(parameter):  # noqa
                     # We actually want the first row to be [January of year 1, January of year 2,...]
                     # (i.e., n sequential columns with 12 entries)
                     # So, we use `reshape` to slice into n segments of length 12 and then we `transpose`.
-                    mmat = numpy.transpose(
-                        numpy.reshape(extracted[:, 2], (-1, 12))
-                    )
+                    mmat = numpy.transpose(numpy.reshape(extracted[:, 2], (-1, 12)))
                     mmat_id = numpy.sum(mmat, axis=0).transpose()
                     if numpy.sum(~numpy.isnan(mmat_id), axis=0) > 0:
                         # There's at least one year of record
                         monthly = mmat[:, ~numpy.isnan(mmat_id)]
                     else:
                         monthly = monthly_mean
-                    seasonality_index_ref, peak_month_ref = get_seasonality(
-                        monthly
-                    )
+                    seasonality_index_ref, peak_month_ref = get_seasonality(monthly)
                 else:
                     ref_lon = int(
-                        1
-                        + (lat_lon_ref[1] - (-180 + resolution / 2))
-                        / resolution
+                        1 + (lat_lon_ref[1] - (-180 + resolution / 2)) / resolution
                     )
                     ref_lat = int(
-                        1
-                        + (lat_lon_ref[0] - (-90 + resolution / 2))
-                        / resolution
+                        1 + (lat_lon_ref[0] - (-90 + resolution / 2)) / resolution
                     )
                     ref = numpy.squeeze(ref_array[ref_lon - 1, ref_lat - 1, :])
                     # Note that `numpy.reshape(ref, (12,-1))` will not work.
@@ -420,9 +376,7 @@ def run_diag(parameter):  # noqa
                     if type(monthly) == cdms2.tvariable.TransientVariable:
                         monthly = monthly.getValue()
 
-                    seasonality_index_ref, peak_month_ref = get_seasonality(
-                        monthly
-                    )
+                    seasonality_index_ref, peak_month_ref = get_seasonality(monthly)
 
                 test_lon = int(
                     1 + (lat_lon_ref[1] - (-180 + resolution / 2)) / resolution
@@ -452,9 +406,7 @@ def run_diag(parameter):  # noqa
                 if type(monthly) == cdms2.tvariable.TransientVariable:
                     monthly = monthly.getValue()
 
-                seasonality_index_test, peak_month_test = get_seasonality(
-                    monthly
-                )
+                seasonality_index_test, peak_month_test = get_seasonality(monthly)
 
                 export[i, 0] = annual_mean_ref
                 export[i, 1] = annual_mean_test
@@ -462,13 +414,9 @@ def run_diag(parameter):  # noqa
                     export[i, 2] = (
                         drainage_area_error * 100
                     )  # From fraction to percentage of the drainage area bias
-                export[
-                    i, 3
-                ] = seasonality_index_ref  # Seasonality index of ref
+                export[i, 3] = seasonality_index_ref  # Seasonality index of ref
                 export[i, 4] = peak_month_ref  # Max flow month of ref
-                export[
-                    i, 5
-                ] = seasonality_index_test  # Seasonality index of test
+                export[i, 5] = seasonality_index_test  # Seasonality index of test
                 export[i, 6] = peak_month_test  # Max flow month of test
                 export[i, 7:9] = lat_lon_ref  # latlon of ref
 
@@ -478,23 +426,13 @@ def run_diag(parameter):  # noqa
         # `export[numpy.isnan(export[:,0]),:]` => rows of `export` where the Boolean column was True
         # Gauges will thus only be plotted if they have a non-nan value for both test and ref.
         if parameter.print_statements:
-            print(
-                "export.shape before removing ref nan means={}".format(
-                    export.shape
-                )
-            )
+            print("export.shape before removing ref nan means={}".format(export.shape))
         export = export[~numpy.isnan(export[:, 0]), :]
         if parameter.print_statements:
-            print(
-                "export.shape before removing test nan means={}".format(
-                    export.shape
-                )
-            )
+            print("export.shape before removing test nan means={}".format(export.shape))
         export = export[~numpy.isnan(export[:, 1]), :]
         if parameter.print_statements:
-            print(
-                "export.shape after both nan removals={}".format(export.shape)
-            )
+            print("export.shape after both nan removals={}".format(export.shape))
 
         if area_upstream is not None:
             # Set the max area error (percent) for all plots
@@ -505,11 +443,7 @@ def run_diag(parameter):  # noqa
             # `export[export[:,2]<=max_area_error,:]` is `export` with only the rows where the above is `True`.
             export = export[export[:, 2] <= max_area_error, :]
             if parameter.print_statements:
-                print(
-                    "export.shape after max_area_error cut={}".format(
-                        export.shape
-                    )
-                )
+                print("export.shape after max_area_error cut={}".format(export.shape))
 
         if parameter.print_statements:
             print("Variable: {}".format(var))

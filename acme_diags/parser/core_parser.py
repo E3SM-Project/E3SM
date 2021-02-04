@@ -280,8 +280,7 @@ class CoreParser(cdp.cdp_parser.CDPParser):
             "--canvas_size_w",
             type=int,
             dest="canvas_size_w",
-            help="Size in pixels of the width for the output figure. "
-            + "VCS only.",
+            help="Size in pixels of the width for the output figure. " + "VCS only.",
             required=False,
         )
 
@@ -289,8 +288,7 @@ class CoreParser(cdp.cdp_parser.CDPParser):
             "--canvas_size_h",
             type=int,
             dest="canvas_size_h",
-            help="Size in pixels of the height for the output figure. "
-            + "VCS only.",
+            help="Size in pixels of the height for the output figure. " + "VCS only.",
             required=False,
         )
 
@@ -299,8 +297,7 @@ class CoreParser(cdp.cdp_parser.CDPParser):
             type=float,
             nargs="+",
             dest="figsize",
-            help="Width and height like so: [width, height]. "
-            + "Matplotlib only.",
+            help="Width and height like so: [width, height]. " + "Matplotlib only.",
             required=False,
         )
 

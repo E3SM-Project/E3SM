@@ -1,12 +1,12 @@
 from .area_mean_time_series_parser import AreaMeanTimeSeriesParser
+from .arm_diags_parser import ARMDiagsParser
 from .core_parser import CoreParser
 from .diurnal_cycle_parser import DiurnalCycleParser
 from .enso_diags_parser import EnsoDiagsParser
 from .meridional_mean_2d_parser import MeridionalMean2dParser
 from .qbo_parser import QboParser
 from .streamflow_parser import StreamflowParser
-from .diurnal_cycle_parser import DiurnalCycleParser
-from .arm_diags_parser import ARMDiagsParser
+from .zonal_mean_2d_parser import ZonalMean2dParser
 
 SET_TO_PARSER = {
     "zonal_mean_xy": CoreParser,

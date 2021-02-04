@@ -3,12 +3,13 @@ from __future__ import print_function
 import os
 
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 
 from acme_diags.driver.utils.general import get_output_dir
 
 matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
+
 
 panel = [
     (0.075, 0.70, 0.6, 0.225),
@@ -55,9 +56,7 @@ def plot_panel(
     if plot_type == "line":
         if "data2" not in x or "data2" not in y:
             raise RuntimeError(
-                "Must set data2 for both x and y to use plot_type={}.".format(
-                    plot_type
-                )
+                "Must set data2 for both x and y to use plot_type={}.".format(plot_type)
             )
         elif "data_label" not in x or "data2_label" not in x:
             raise RuntimeError(
@@ -88,118 +87,95 @@ def plot_panel(
 
 
 def plot(period_new, parameter, test, ref):
-    # FIXME: F841 - assigned but unused
-    # label_size = 14
+    label_size = 14
 
     fig = plt.figure(figsize=(14, 14))
 
     months = min(ref["qbo"].shape[0], test["qbo"].shape[0])
     x_test, y_test = np.meshgrid(np.arange(0, months), test["level"])
     x_ref, y_ref = np.meshgrid(np.arange(0, months), ref["level"])
-    # FIXME: F841 - assigned but unused
-    # cmap2 = plt.cm.RdBu_r
-    # FIXME: F841 - assigned but unused
-    # color_levels0 = np.arange(-50, 51, 100.0 / 20.0)
+    cmap2 = plt.cm.RdBu_r
+    color_levels0 = np.arange(-50, 51, 100.0 / 20.0)
 
     # Panel 0 (Top Left)
-    # FIXME: F841 - assigned but unused
-    # x = dict(
-    #     axis_range=[0, months], axis_scale="linear", data=x_test, label=" "
-    # )
-    # FIXME: F841 - assigned but unused
-    # y = dict(axis_range=[100, 1], axis_scale="log", data=y_test, label="hPa")
-    # FIXME: F841 - assigned but unused
-    # z = dict(data=test["qbo"].T)
-    # FIXME: F841 - assigned but unused
-    # title = "{} U 5S-5N ({})".format(test["name"], parameter.test_yrs)
-
-    # FIXME: F841 - assigned but unused
-    # ax0 = plot_panel(
-    #     0,
-    #     fig,
-    #     "contourf",
-    #     label_size,
-    #     title,
-    #     x,
-    #     y,
-    #     z=z,
-    #     plot_colors=cmap2,
-    #     color_levels=color_levels0,
-    #     color_ticks=[-50, -25, -5, 5, 25, 50],
-    # )
+    x = dict(axis_range=[0, months], axis_scale="linear", data=x_test, label=" ")
+    y = dict(axis_range=[100, 1], axis_scale="log", data=y_test, label="hPa")
+    z = dict(data=test["qbo"].T)
+    title = "{} U 5S-5N ({})".format(test["name"], parameter.test_yrs)
+    ax0 = plot_panel(  # noqa
+        0,
+        fig,
+        "contourf",
+        label_size,
+        title,
+        x,
+        y,
+        z=z,
+        plot_colors=cmap2,
+        color_levels=color_levels0,
+        color_ticks=[-50, -25, -5, 5, 25, 50],
+    )
 
     # Panel 1 (Middle Left)
+    x = dict(axis_range=[0, months], axis_scale="linear", data=x_ref, label="month")
+    y = dict(axis_range=[100, 1], axis_scale="log", data=y_ref, label="hPa")
+    z = dict(data=ref["qbo"].T)
+    title = "{} U 5S-5N ({})".format(ref["name"], parameter.ref_yrs)
     # FIXME: F841 - assigned but unused
-    # x = dict(
-    #     axis_range=[0, months], axis_scale="linear", data=x_ref, label="month"
-    # )
-    # FIXME: F841 - assigned but unused
-    # y = dict(axis_range=[100, 1], axis_scale="log", data=y_ref, label="hPa")
-    # FIXME: F841 - assigned but unused
-    # z = dict(data=ref["qbo"].T)
-    # FIXME: F841 - assigned but unused
-    # title = "{} U 5S-5N ({})".format(ref["name"], parameter.ref_yrs)
-    # FIXME: F841 - assigned but unused
-    # ax1 = plot_panel(
-    #     1,
-    #     fig,
-    #     "contourf",
-    #     label_size,
-    #     title,
-    #     x,
-    #     y,
-    #     z=z,
-    #     plot_colors=cmap2,
-    #     color_levels=color_levels0,
-    #     color_ticks=[-50, -25, -5, 5, 25, 50],
-    # )
+    ax1 = plot_panel(  # noqa
+        1,
+        fig,
+        "contourf",
+        label_size,
+        title,
+        x,
+        y,
+        z=z,
+        plot_colors=cmap2,
+        color_levels=color_levels0,
+        color_ticks=[-50, -25, -5, 5, 25, 50],
+    )
     # Panel 2 (Top/Middle Right)
+    x = dict(
+        axis_range=[0, 30],
+        axis_scale="linear",
+        data=test["amplitude"][:],
+        data_label=test["name"],
+        data2=ref["amplitude"][:],
+        data2_label=ref["name"],
+        label="Amplitude (m/s)",
+    )
+    y = dict(
+        axis_range=[100, 1],
+        axis_scale="log",
+        data=test["level"][:],
+        data2=ref["level"][:],
+        label="Pressure (hPa)",
+    )
+    title = "QBO Amplitude \n (period = 20-40 months)"
     # FIXME: F841 - assigned but unused
-    # x = dict(
-    #     axis_range=[0, 30],
-    #     axis_scale="linear",
-    #     data=test["amplitude"][:],
-    #     data_label=test["name"],
-    #     data2=ref["amplitude"][:],
-    #     data2_label=ref["name"],
-    #     label="Amplitude (m/s)",
-    # )
-    # FIXME: F841 - assigned but unused
-    # y = dict(
-    #     axis_range=[100, 1],
-    #     axis_scale="log",
-    #     data=test["level"][:],
-    #     data2=ref["level"][:],
-    #     label="Pressure (hPa)",
-    # )
-    # FIXME: F841 - assigned but unused
-    # title = "QBO Amplitude \n (period = 20-40 months)"
-    # FIXME: F841 - assigned but unused
-    # ax2 = plot_panel(2, fig, "line", label_size, title, x, y)
+    ax2 = plot_panel(2, fig, "line", label_size, title, x, y)  # noqa
 
     # Panel 3 (Bottom)
+    x = dict(
+        axis_range=[0, 50],
+        axis_scale="linear",
+        data=period_new,
+        data_label=test["name"],
+        data2=period_new,
+        data2_label=ref["name"],
+        label="Period (months)",
+    )
+    y = dict(
+        axis_range=[-1, 25],
+        axis_scale="linear",
+        data=test["amplitude_new"],
+        data2=ref["amplitude_new"],
+        label="Amplitude (m/s)",
+    )
+    title = "QBO Spectral Density (Eq. 18-22 hPa zonal winds)"
     # FIXME: F841 - assigned but unused
-    # x = dict(
-    #     axis_range=[0, 50],
-    #     axis_scale="linear",
-    #     data=period_new,
-    #     data_label=test["name"],
-    #     data2=period_new,
-    #     data2_label=ref["name"],
-    #     label="Period (months)",
-    # )
-    # FIXME: F841 - assigned but unused
-    # y = dict(
-    #     axis_range=[-1, 25],
-    #     axis_scale="linear",
-    #     data=test["amplitude_new"],
-    #     data2=ref["amplitude_new"],
-    #     label="Amplitude (m/s)",
-    # )
-    # FIXME: F841 - assigned but unused
-    # title = "QBO Spectral Density (Eq. 18-22 hPa zonal winds)"
-    # FIXME: F841 - assigned but unused
-    # ax3 = plot_panel(3, fig, "line", label_size, title, x, y)
+    ax3 = plot_panel(3, fig, "line", label_size, title, x, y)  # noqa
     plt.tight_layout()
 
     # Figure title
@@ -222,9 +198,7 @@ def plot(period_new, parameter, test, ref):
     # {parameter.results_dir}/qbo/{parameter.case_id}/{parameter.output_file}
     file_path = os.path.join(output_dir, parameter.output_file)
     # {parameter.orig_results_dir}/qbo/{parameter.case_id}/{parameter.output_file}
-    original_file_path = os.path.join(
-        original_output_dir, parameter.output_file
-    )
+    original_file_path = os.path.join(original_output_dir, parameter.output_file)
 
     # Save figure
     for f in parameter.output_format:

@@ -4,8 +4,6 @@ import os
 
 import cartopy.crs as ccrs
 import matplotlib
-import matplotlib.colors as colors
-import matplotlib.path as mpath
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
@@ -14,6 +12,9 @@ from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
 
 matplotlib.use("Agg")
+import matplotlib.colors as colors  # isort:skip  # noqa: E402
+import matplotlib.path as mpath  # isort:skip  # noqa: E402
+
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.0}
@@ -43,9 +44,7 @@ def get_ax_size(fig, ax):
     return width, height
 
 
-def plot_panel(
-    n, fig, proj, pole, var, clevels, cmap, title, parameters, stats=None
-):
+def plot_panel(n, fig, proj, pole, var, clevels, cmap, title, parameters, stats=None):
 
     var = add_cyclic(var)
     lon = var.getLongitude()
@@ -104,9 +103,7 @@ def plot_panel(
         t.set_position([0.5, 1.06])
 
     # Color bar
-    cbax = fig.add_axes(
-        (panel[n][0] + 0.35, panel[n][1] + 0.0354, 0.0326, 0.1792)
-    )
+    cbax = fig.add_axes((panel[n][0] + 0.35, panel[n][1] + 0.0354, 0.0326, 0.1792))
     cbar = fig.colorbar(p1, cax=cbax)
     w, h = get_ax_size(fig, cbax)
 
@@ -251,9 +248,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
         # Get the filename that the user has passed in and display that.
         # When running in a container, the paths are modified.
         fnm = os.path.join(
-            get_output_dir(
-                parameter.current_set, parameter, ignore_container=True
-            ),
+            get_output_dir(parameter.current_set, parameter, ignore_container=True),
             parameter.output_file + "." + f,
         )
         print("Plot saved in: " + fnm)
@@ -278,9 +273,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
             plt.savefig(fname, bbox_inches=extent)
 
             orig_fnm = os.path.join(
-                get_output_dir(
-                    parameter.current_set, parameter, ignore_container=True
-                ),
+                get_output_dir(parameter.current_set, parameter, ignore_container=True),
                 parameter.output_file,
             )
             fname = orig_fnm + ".%i." % (i) + f

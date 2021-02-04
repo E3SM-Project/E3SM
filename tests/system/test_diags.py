@@ -33,18 +33,12 @@ def get_results_dir(output_list):
 
 def move_to_web(machine_path_re_str, html_prefix_format_str, results_dir):
     command = "git rev-parse --show-toplevel"
-    top_level = (
-        subprocess.check_output(command.split())
-        .decode("utf-8")
-        .splitlines()[0]
-    )
+    top_level = subprocess.check_output(command.split()).decode("utf-8").splitlines()[0]
     match = re.search(machine_path_re_str, top_level)
     if match:
         username = match.group(1)
     else:
-        message = "Username could not be extracted from top_level={}".format(
-            top_level
-        )
+        message = "Username could not be extracted from top_level={}".format(top_level)
         raise RuntimeError(message)
     html_prefix = html_prefix_format_str.format(username)
     print("html_prefix={}".format(html_prefix))
@@ -116,24 +110,18 @@ def compare_images(
             simple_image_name = image_name.split("/")[-1].split(".")[0]
             shutil.copy(
                 path_to_actual_png,
-                os.path.join(
-                    diff_dir, "{}_actual.png".format(simple_image_name)
-                ),
+                os.path.join(diff_dir, "{}_actual.png".format(simple_image_name)),
             )
             shutil.copy(
                 path_to_expected_png,
-                os.path.join(
-                    diff_dir, "{}_expected.png".format(simple_image_name)
-                ),
+                os.path.join(diff_dir, "{}_expected.png".format(simple_image_name)),
             )
             # https://stackoverflow.com/questions/41405632/draw-a-rectangle-and-a-text-in-it-using-pil
             draw = ImageDraw.Draw(diff)
             (left, upper, right, lower) = diff.getbbox()
             draw.rectangle(((left, upper), (right, lower)), outline="red")
             diff.save(
-                os.path.join(
-                    diff_dir, "{}_diff.png".format(simple_image_name)
-                ),
+                os.path.join(diff_dir, "{}_diff.png".format(simple_image_name)),
                 "PNG",
             )
 
@@ -143,17 +131,16 @@ class TestAllSets(unittest.TestCase):
     def setUpClass(cls):
         command = "python all_sets.py -d all_sets.cfg"
         output_list = (
-            subprocess.check_output(command.split())
-            .decode("utf-8")
-            .splitlines()
+            subprocess.check_output(command.split()).decode("utf-8").splitlines()
         )
-        TestAllSets.results_dir = get_results_dir(output_list)
-        print("TestAllSets.results_dir={}".format(TestAllSets.results_dir))
+        # FIXME: "Type[TestAllSets]" has no attribute "results_dir"
+        TestAllSets.results_dir = get_results_dir(output_list)  # type: ignore
+        print("TestAllSets.results_dir={}".format(TestAllSets.results_dir))  # type: ignore
         if CORI_WEB:
-            TestAllSets.results_dir = move_to_web(
+            TestAllSets.results_dir = move_to_web(  # type: ignore
                 "/global/u1/f/(.*)/e3sm_diags",
                 "/global/cfs/cdirs/acme/www/{}",
-                TestAllSets.results_dir,
+                TestAllSets.results_dir,  # type: ignore
             )
 
     def check_html_image(self, html_path, png_path, full_png_path):
@@ -182,7 +169,7 @@ class TestAllSets(unittest.TestCase):
         path_to_actual_png = full_png_path
         path_to_expected_png = "../unit_test_images/{}".format(png_path)
 
-        mismatched_images = []
+        mismatched_images = []  # type: ignore
         compare_images(
             self,
             mismatched_images,
@@ -220,12 +207,10 @@ class TestAllSets(unittest.TestCase):
                     season,
                     region,
                 )
-                full_png_path = "{}{}".format(
-                    TestAllSets.results_dir, png_path
-                )
+                full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
                 self.assertTrue(os.path.exists(full_png_path))
                 html_path = "{}viewer/{}/{}/{}-{}{}-{}/{}.html".format(
-                    TestAllSets.results_dir,
+                    TestAllSets.results_dir,  # type: ignore
                     set_name,
                     case_id_lower,
                     variable_lower,
@@ -266,10 +251,10 @@ class TestAllSets(unittest.TestCase):
             png_path = "{}/{}/regression-coefficient-{}-over-{}.png".format(
                 set_name, case_id, variable_lower, nino_region_lower
             )
-            full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)
+            full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
             self.assertTrue(os.path.exists(full_png_path))
             html_path = "{}viewer/{}/map/{}/plot.html".format(
-                TestAllSets.results_dir, set_name, case_id_lower
+                TestAllSets.results_dir, set_name, case_id_lower  # type: ignore
             )
             self.check_html_image(html_path, png_path, full_png_path)
 
@@ -282,10 +267,10 @@ class TestAllSets(unittest.TestCase):
             png_path = "{}/{}/feedback-{}-{}-TS-NINO3.png".format(
                 set_name, case_id, variable, region
             )
-            full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)
+            full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
             self.assertTrue(os.path.exists(full_png_path))
             html_path = "{}viewer/{}/scatter/{}/plot.html".format(
-                TestAllSets.results_dir, set_name, case_id_lower
+                TestAllSets.results_dir, set_name, case_id_lower  # type: ignore
             )
             self.check_html_image(html_path, png_path, full_png_path)
 
@@ -301,13 +286,13 @@ class TestAllSets(unittest.TestCase):
                 "annual_scatter",
             ]:
                 png_path = "{}/{}/{}.png".format(set_name, case_id, plot_type)
-                expected = "streamflow/RIVER_DISCHARGE_OVER_LAND_LIQ_GSIM/{}.png".format(
-                    plot_type
+                expected = (
+                    "streamflow/RIVER_DISCHARGE_OVER_LAND_LIQ_GSIM/{}.png".format(
+                        plot_type
+                    )
                 )
                 self.assertEqual(png_path, expected)
-                full_png_path = "{}{}".format(
-                    TestAllSets.results_dir, png_path
-                )
+                full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
                 self.assertTrue(os.path.exists(full_png_path))
                 if plot_type == "seasonality_map":
                     plot_label = "seasonality-map"
@@ -324,16 +309,12 @@ class TestAllSets(unittest.TestCase):
                     plot_label, plot_type
                 )
                 self.assertEqual(html_path, expected)
-                full_html_path = "{}{}".format(
-                    TestAllSets.results_dir, html_path
-                )
+                full_html_path = "{}{}".format(TestAllSets.results_dir, html_path)  # type: ignore
                 self.check_html_image(full_html_path, png_path, full_png_path)
 
     # Test results_dir
     def test_results_dir(self):
-        self.assertTrue(
-            TestAllSets.results_dir.endswith("all_sets_results_test/")
-        )
+        self.assertTrue(TestAllSets.results_dir.endswith("all_sets_results_test/"))  # type: ignore
 
     # Test the image count
     def test_image_count(self):
@@ -348,10 +329,10 @@ class TestAllSets(unittest.TestCase):
         for variable in variables:
             variable_lower = variable.lower()
             png_path = "{}/{}.png".format(set_name, variable)
-            full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)
+            full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
             self.assertTrue(os.path.exists(full_png_path))
             html_path = "{}viewer/{}/variable/{}/plot.html".format(
-                TestAllSets.results_dir, set_name, variable_lower
+                TestAllSets.results_dir, set_name, variable_lower  # type: ignore
             )
             self.check_html_image(html_path, png_path, full_png_path)
 
@@ -405,12 +386,12 @@ class TestAllSets(unittest.TestCase):
         case_id_lower = case_id.lower()
         set_name = "qbo"
         png_path = "{}/{}/qbo_diags.png".format(set_name, case_id)
-        full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)
+        full_png_path = "{}{}".format(TestAllSets.results_dir, png_path)  # type: ignore
         print(full_png_path)
         self.assertTrue(os.path.exists(full_png_path))
         # viewer/qbo/variable/era-interim/plot.html
         html_path = "{}viewer/{}/variable/{}/plot.html".format(
-            TestAllSets.results_dir, set_name, case_id_lower
+            TestAllSets.results_dir, set_name, case_id_lower  # type: ignore
         )
         self.check_html_image(html_path, png_path, full_png_path)
 

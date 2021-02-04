@@ -19,9 +19,7 @@ class TestAllSets(unittest.TestCase):
     def get_results_dir(self, output):
         """Given output from acme_diags_driver, extract the path to results_dir."""
         for line in output:
-            match = re.search(
-                "Viewer HTML generated at (.*)viewer.*.html", line
-            )
+            match = re.search("Viewer HTML generated at (.*)viewer.*.html", line)
             if match:
                 results_dir = match.group(1)
                 return results_dir
@@ -40,7 +38,9 @@ class TestAllSets(unittest.TestCase):
         else:
             raise RuntimeError("Invalid backend: {}".format(backend))
         # *_data_path needs to be added b/c the tests runs the diags from a different location
-        cmd = "acme_diags_driver.py -d {}{} --reference_data_path {} --test_data_path {}"
+        cmd = (
+            "acme_diags_driver.py -d {}{} --reference_data_path {} --test_data_path {}"
+        )
         cmd = cmd.format(cfg_pth, backend_option, test_pth, test_pth)
         # This raises a CalledProcessError if cmd has a non-zero return code.
         out = subprocess.check_output(cmd.split()).decode("utf-8").splitlines()
@@ -51,9 +51,7 @@ class TestAllSets(unittest.TestCase):
         # -1 is needed because of the E3SM logo in the viewer html
         self.assertEqual(count - 1, expected_num_diags)
 
-        shutil.rmtree(
-            results_dir
-        )  # remove all generated results from the diags
+        shutil.rmtree(results_dir)  # remove all generated results from the diags
 
     def test_all_sets_mpl(self):
         self.run_test("mpl")

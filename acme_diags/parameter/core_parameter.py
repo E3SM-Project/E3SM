@@ -95,7 +95,9 @@ class CoreParameter(cdp.cdp_parameter.CDPParameter):
         if self.ref_timeseries_input and not (
             hasattr(self, "ref_start_yr") and hasattr(self, "ref_end_yr")
         ):
-            msg = "You need to define both the 'ref_start_yr' and 'ref_end_yr' parameter."
+            msg = (
+                "You need to define both the 'ref_start_yr' and 'ref_end_yr' parameter."
+            )
             raise RuntimeError(msg)
 
         if self.test_timeseries_input and not (

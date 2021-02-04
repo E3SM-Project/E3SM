@@ -63,9 +63,7 @@ def download_files(url_prefix, url_suffix, directory_prefix=None):
     print("\n###Downloading directories")
     for d in directories:
         new_directory = d.rstrip("/")
-        download_files(
-            url, new_directory, directory_prefix=new_directory_prefix
-        )
+        download_files(url, new_directory, directory_prefix=new_directory_prefix)
 
 
 def download():

@@ -24,9 +24,7 @@ def calculate_nino_index(nino_region_str, parameter, test=False, ref=False):
     Relevant files are acme_diags/driver/default_diags/enso_NINO{3, 34, 4}.long.data
     """
     data_file = "".join(["enso_", nino_region_str, ".long.data"])
-    nino_index_path = os.path.join(
-        acme_diags.INSTALL_PATH, "enso_diags", data_file
-    )
+    nino_index_path = os.path.join(acme_diags.INSTALL_PATH, "enso_diags", data_file)
     sst_orig = numpy.loadtxt(
         nino_index_path, skiprows=1, max_rows=149
     )  # load data up to year 2018 from 1870
@@ -84,7 +82,7 @@ def calculate_nino_index_model(data, nino_region_str, parameter):
                 )
             else:
                 raise e1
-        nino_region = default_regions.regions_specs[nino_region_str]["domain"]
+        nino_region = default_regions.regions_specs[nino_region_str]["domain"]  # type: ignore
         sst_nino = sst(nino_region)
         # Domain average
         sst_avg = cdutil.averager(sst_nino, axis="xy")
@@ -111,9 +109,7 @@ def calculate_nino_index_model(data, nino_region_str, parameter):
     return nino_index
 
 
-def perform_regression(
-    data, parameter, var, region, land_frac, ocean_frac, nino_index
-):
+def perform_regression(data, parameter, var, region, land_frac, ocean_frac, nino_index):
     ts_var = data.get_timeseries_variable(var)
     domain = utils.general.select_region(
         region, ts_var, land_frac, ocean_frac, parameter
@@ -128,9 +124,7 @@ def perform_regression(
     nlat = len(anomaly.getLatitude())
     nlon = len(anomaly.getLongitude())
     reg_coe = anomaly[0, :, :](squeeze=1)
-    confidence_levels = cdutil.ANNUALCYCLE.departures(domain)[0, :, :](
-        squeeze=1
-    )
+    confidence_levels = cdutil.ANNUALCYCLE.departures(domain)[0, :, :](squeeze=1)
     # Neither of the following methods work, so we just set values in confidence_levels
     # to be explicitly 0 or 1.
     # confidence_levels = anomaly[0, :, :](squeeze=1).fill(0)
@@ -210,9 +204,7 @@ def run_diag_map(parameter):
         test_nino_index = calculate_nino_index_model(
             test_data, nino_region_str, parameter
         )
-        ref_nino_index = calculate_nino_index(
-            nino_region_str, parameter, ref=True
-        )
+        ref_nino_index = calculate_nino_index(nino_region_str, parameter, ref=True)
     else:
         raise Exception("Invalid run_type={}".format(run_type))
 
@@ -254,9 +246,7 @@ def run_diag_map(parameter):
                         var, nino_region_str
                     )
                 )
-                parameter.viewer_descr[var] = ", ".join(
-                    [parameter.main_title, region]
-                )
+                parameter.viewer_descr[var] = ", ".join([parameter.main_title, region])
 
                 # Test
                 (
@@ -274,11 +264,7 @@ def run_diag_map(parameter):
                 )
 
                 # Reference
-                (
-                    ref_domain,
-                    ref_reg_coe,
-                    ref_confidence_levels,
-                ) = perform_regression(
+                (ref_domain, ref_reg_coe, ref_confidence_levels,) = perform_regression(
                     ref_data,
                     parameter,
                     var,
@@ -328,18 +314,14 @@ def run_diag_map(parameter):
                     )
                     CENTER_ON_ZERO = True
                     if CENTER_ON_ZERO:
-                        bound = max(
-                            abs(max_contour_level), abs(min_contour_level)
-                        )
+                        bound = max(abs(max_contour_level), abs(min_contour_level))
                         lower_bound = -bound
                         upper_bound = bound
                         contour_level_range = 2 * bound
                     else:
                         lower_bound = min_contour_level
                         upper_bound = max_contour_level
-                        contour_level_range = (
-                            max_contour_level - min_contour_level
-                        )
+                        contour_level_range = max_contour_level - min_contour_level
                     step_size = contour_level_range / 10
                     if step_size > 1:
                         step_size = int(step_size)
@@ -352,18 +334,14 @@ def run_diag_map(parameter):
                         parameter.contour_levels = contour_levels
                     if not parameter.diff_levels:
                         parameter.diff_levels = contour_levels
-                parameter.output_file = (
-                    "regression-coefficient-{}-over-{}".format(
-                        var.lower(), nino_region_str.lower()
-                    )
+                parameter.output_file = "regression-coefficient-{}-over-{}".format(
+                    var.lower(), nino_region_str.lower()
                 )
 
                 # Saving the metrics as a json.
                 metrics_dict["unit"] = test_reg_coe_regrid.units
                 metrics_output_file_name = os.path.join(
-                    utils.general.get_output_dir(
-                        parameter.current_set, parameter
-                    ),
+                    utils.general.get_output_dir(parameter.current_set, parameter),
                     parameter.output_file + ".json",
                 )
                 with open(metrics_output_file_name, "w") as outfile:
@@ -412,23 +390,15 @@ def run_diag_scatter(parameter):
     if parameter.print_statements:
         print("run_type: {}".format(run_type))
     if run_type == "model_vs_model":
-        x["test"] = calculate_nino_index_model(
-            test_data, x["region"], parameter
-        )
+        x["test"] = calculate_nino_index_model(test_data, x["region"], parameter)
         x["ref"] = calculate_nino_index_model(ref_data, x["region"], parameter)
     elif run_type == "model_vs_obs":
-        x["test"] = calculate_nino_index_model(
-            test_data, x["region"], parameter
-        )
+        x["test"] = calculate_nino_index_model(test_data, x["region"], parameter)
         x["ref"] = calculate_nino_index(x["region"], parameter, ref=True)
     else:
         raise Exception("Invalid run_type={}".format(run_type))
-    parameter.test_name_yrs = utils.general.get_name_and_yrs(
-        parameter, test_data
-    )
-    parameter.ref_name_yrs = utils.general.get_name_and_yrs(
-        parameter, ref_data
-    )
+    parameter.test_name_yrs = utils.general.get_name_and_yrs(parameter, test_data)
+    parameter.ref_name_yrs = utils.general.get_name_and_yrs(parameter, ref_data)
     for y_var in variables:
         if y_var == "TAUX":
             regions = ["NINO4"]
@@ -438,7 +408,7 @@ def run_diag_scatter(parameter):
             y = {"var": y_var, "region": region}
             test_data_ts = test_data.get_timeseries_variable(y_var)
             ref_data_ts = ref_data.get_timeseries_variable(y_var)
-            y_region = default_regions.regions_specs[region]["domain"]
+            y_region = default_regions.regions_specs[region]["domain"]  # type: ignore
             test_data_ts_regional = test_data_ts(y_region)
             ref_data_ts_regional = ref_data_ts(y_region)
             # Domain average
@@ -454,8 +424,8 @@ def run_diag_scatter(parameter):
                 y["units"] = "10^3 {}".format(y["units"])
             parameter.var_id = "{}-feedback".format(y["var"])
             title_tuple = (y["var"], y["region"], x["var"], x["region"])
-            parameter.main_title = (
-                "{} anomaly ({}) vs. {} anomaly ({})".format(*title_tuple)
+            parameter.main_title = "{} anomaly ({}) vs. {} anomaly ({})".format(
+                *title_tuple
             )
             parameter.viewer_descr[y["var"]] = parameter.main_title
             parameter.output_file = "feedback-{}-{}-{}-{}".format(*title_tuple)

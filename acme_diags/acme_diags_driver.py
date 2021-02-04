@@ -1,8 +1,19 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-import importlib
 import os
+
+# Must be done before any CDAT library is called.
+os.environ["UVCDAT_ANONYMOUS_LOG"] = "no"
+os.environ["CDAT_ANONYMOUS_LOG"] = "no"
+# Needed for when using hdf5 >= 1.10.0,
+# without this, errors are thrown on Edison compute nodes.
+os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
+# Used by numpy, causes too many threads to spawn otherwise.
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
+
+import importlib
 import subprocess
 import sys
 import traceback
@@ -16,17 +27,6 @@ from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.parser import SET_TO_PARSER
 from acme_diags.parser.core_parser import CoreParser
 from acme_diags.viewer.main import create_viewer
-
-# Must be done before any CDAT library is called.
-os.environ["UVCDAT_ANONYMOUS_LOG"] = "no"
-os.environ["CDAT_ANONYMOUS_LOG"] = "no"
-# Needed for when using hdf5 >= 1.10.0,
-# without this, errors are thrown on Edison compute nodes.
-os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
-# Used by numpy, causes too many threads to spawn otherwise.
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-os.environ["OMP_NUM_THREADS"] = "1"
-
 
 # turn off MPI in cdms2 -- not currently supported by e3sm_diags
 cdms2.tvariable.HAVE_MPI = False
@@ -75,9 +75,7 @@ def _save_env_yml(results_dir):
     Save the yml to recreate the environment in results_dir.
     """
     cmd = "conda env export"
-    p = subprocess.Popen(
-        cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, err = p.communicate()
 
     if err:
@@ -243,9 +241,7 @@ def get_parameters(parser=CoreParser()):
     # run this software, pre v2.0.0.
     # Ex: e3sm_diags -p params.py -d diags.cfg
     elif args.parameters and not args.other_parameters:  # -p only
-        original_parameter = parser.get_orig_parameters(
-            argparse_vals_only=False
-        )
+        original_parameter = parser.get_orig_parameters(argparse_vals_only=False)
 
         # Load the default cfg files.
         run_type = getattr(original_parameter, "run_type", "model_vs_obs")
@@ -328,9 +324,7 @@ def main(parameters=[]):
             container.containerize_parameter(p)
 
     if parameters[0].multiprocessing:
-        parameters = cdp.cdp_run.multiprocess(
-            run_diag, parameters, context="fork"
-        )
+        parameters = cdp.cdp_run.multiprocess(run_diag, parameters, context="fork")
     elif parameters[0].distributed:
         parameters = cdp.cdp_run.distribute(run_diag, parameters)
     else:
@@ -343,16 +337,12 @@ def main(parameters=[]):
             container.decontainerize_parameter(p)
 
     if not parameters:
-        print(
-            "There was not a single valid diagnostics run, no viewer created."
-        )
+        print("There was not a single valid diagnostics run, no viewer created.")
     else:
         # If you get `AttributeError: 'NoneType' object has no attribute 'no_viewer'` on this line
         # then `run_diag` likely returns `None`.
         if parameters[0].no_viewer:
-            print(
-                "Viewer not created because the no_viewer parameter is True."
-            )
+            print("Viewer not created because the no_viewer parameter is True.")
         else:
             path = os.path.join(parameters[0].results_dir, "viewer")
             if not os.path.exists(path):

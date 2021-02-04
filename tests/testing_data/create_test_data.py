@@ -36,9 +36,7 @@ path = "obs_for_e3sm_diags/climatology/GPCP_v2.3/GPCP_v2.3_ANN_climo.nc"
 f_and_v = FileAndVars(os.path.join(prefix, path), path, ["PRECT"])
 files_and_vars.append(f_and_v)
 
-path = (
-    "obs_for_e3sm_diags/climatology/MERRA2/MERRA2_ANN_198001_201612_climo.nc"
-)
+path = "obs_for_e3sm_diags/climatology/MERRA2/MERRA2_ANN_198001_201612_climo.nc"
 f_and_v = FileAndVars(os.path.join(prefix, path), path, ["ta"])
 files_and_vars.append(f_and_v)
 
@@ -77,9 +75,7 @@ f_and_v = FileAndVars(
 files_and_vars.append(f_and_v)
 
 # Model timeseries files.
-path = (
-    "test_model_data_for_e3sm_diags/time-series/E3SM_v1/PRECC_185001_201312.nc"
-)
+path = "test_model_data_for_e3sm_diags/time-series/E3SM_v1/PRECC_185001_201312.nc"
 f_and_v = FileAndVars(
     os.path.join(prefix, path),
     path.replace("2013", "1854"),  # 1850 to 1854.
@@ -88,9 +84,7 @@ f_and_v = FileAndVars(
 )
 files_and_vars.append(f_and_v)
 
-path = (
-    "test_model_data_for_e3sm_diags/time-series/E3SM_v1/PRECL_185001_201312.nc"
-)
+path = "test_model_data_for_e3sm_diags/time-series/E3SM_v1/PRECL_185001_201312.nc"
 f_and_v = FileAndVars(
     os.path.join(prefix, path),
     path.replace("2013", "1854"),  # 1850 to 1854.
@@ -158,9 +152,7 @@ for f_and_v in files_and_vars:
                 if f_and_v.time_slice:
                     var = orig_file(
                         v,
-                        time=slice(
-                            f_and_v.time_slice[0], f_and_v.time_slice[1]
-                        ),
+                        time=slice(f_and_v.time_slice[0], f_and_v.time_slice[1]),
                     )
                 else:
                     var = orig_file(v)

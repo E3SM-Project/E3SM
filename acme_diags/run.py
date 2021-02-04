@@ -105,9 +105,7 @@ class Run:
             """
             try:
                 parent_class = param.__class__.__mro__[1]
-                parent = self._get_instance_of_param_class(
-                    parent_class, parameters
-                )
+                parent = self._get_instance_of_param_class(parent_class, parameters)
             except RuntimeError:
                 parent = None
 
@@ -116,7 +114,7 @@ class Run:
         for i in range(len(parameters)):
             parent = get_parent(parameters[i])
             # Make sure that the new object is actually a parent.
-            if not parent or type(parent).isinstance(type(parameters[i])):
+            if not parent or type(parent) == type(parameters[i]):  # noqa:E721
                 continue
 
             # Otherwise, add the the parent's attributes.
@@ -126,9 +124,7 @@ class Run:
             parent = copy.deepcopy(parent)
             # find attributes that are not defaults
 
-            nondefault_param_parent = self._find_attrs_with_nondefault_values(
-                parent
-            )
+            nondefault_param_parent = self._find_attrs_with_nondefault_values(parent)
             nondefault_param_child = self._find_attrs_with_nondefault_values(
                 parameters[i]
             )
@@ -139,19 +135,13 @@ class Run:
             # parameters[i] += parent
 
             for attr in dir(parent):
-                if not attr.startswith("_") and not hasattr(
-                    parameters[i], attr
-                ):
+                if not attr.startswith("_") and not hasattr(parameters[i], attr):
                     # This attr of parent is a user-defined one and does not
                     # already exist in the parameters[i] parameter object.
                     attr_value = getattr(parent, attr)
                     setattr(parameters[i], attr, attr_value)
 
-            print(
-                list(
-                    set(nondefault_param_parent) - set(nondefault_param_child)
-                )
-            )
+            print(list(set(nondefault_param_parent) - set(nondefault_param_child)))
             for attr in list(
                 set(nondefault_param_parent) - set(nondefault_param_child)
             ):
@@ -190,9 +180,9 @@ class Run:
             if attr.startswith("_"):
                 continue
 
-            if hasattr(new_instance, attr) and getattr(
-                new_instance, attr
-            ) == getattr(param, attr):
+            if hasattr(new_instance, attr) and getattr(new_instance, attr) == getattr(
+                param, attr
+            ):
                 delattr(param, attr)
 
     def _find_attrs_with_nondefault_values(self, param):
@@ -207,9 +197,7 @@ class Run:
             if attr.startswith("_"):
                 continue
 
-            if hasattr(new_instance, attr) and getattr(
-                new_instance, attr
-            ) != getattr(
+            if hasattr(new_instance, attr) and getattr(new_instance, attr) != getattr(
                 param, attr
             ):  # This is only valid when the attr values are lists not numpy array
                 nondefault_attr.append(attr)

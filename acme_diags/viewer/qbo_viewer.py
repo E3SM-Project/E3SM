@@ -34,9 +34,7 @@ def create_viewer(root_dir, parameters):
         # to match the file_path determined in
         # acme_diags/plot/cartopy/qbo_plot.py.
         # Otherwise, the plot will not be properly linked from the viewer.
-        relative_path = os.path.join(
-            "..", set_name, param.case_id, param.output_file
-        )
+        relative_path = os.path.join("..", set_name, param.case_id, param.output_file)
         image_relative_path = "{}.{}".format(relative_path, ext)
         if param.print_statements:
             print("image_relative_path: {}".format(image_relative_path))

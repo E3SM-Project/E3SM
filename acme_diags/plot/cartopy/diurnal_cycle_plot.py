@@ -6,7 +6,6 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import cdutil
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
 from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
@@ -15,7 +14,9 @@ from matplotlib.colors import hsv_to_rgb
 from acme_diags.derivations.default_regions import regions_specs
 from acme_diags.driver.utils.general import get_output_dir
 
-matplotlib.use("Agg")
+matplotlib.use("Agg")  # noqa: E402
+import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
+
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -64,7 +65,7 @@ def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
 
     normalize_test_amp = parameter.normalize_test_amp
     # FIXME: F841 - assigned but unused
-    # lon = var.getLongitude()
+    lon = var.getLongitude()  # noqa
     lat = var.getLatitude()
     var = ma.squeeze(var.asma())
     max_amp = amp.max()
@@ -94,9 +95,9 @@ def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
     region = regions_specs[region_str]
     global_domain = True
     full_lon = True
-    if "domain" in region.keys():
+    if "domain" in region.keys():  # type: ignore
         # Get domain to plot
-        domain = region["domain"]
+        domain = region["domain"]  # type: ignore
         global_domain = False
     else:
         # Assume global domain
@@ -143,9 +144,7 @@ def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
     ax.set_xticks(xticks, crs=ccrs.PlateCarree())
     # ax.set_xticks([0, 60, 120, 180, 240, 300, 359.99], crs=ccrs.PlateCarree())
     ax.set_yticks(yticks, crs=ccrs.PlateCarree())
-    lon_formatter = LongitudeFormatter(
-        zero_direction_label=True, number_format=".0f"
-    )
+    lon_formatter = LongitudeFormatter(zero_direction_label=True, number_format=".0f")
     lat_formatter = LatitudeFormatter()
     ax.xaxis.set_major_formatter(lon_formatter)
     ax.yaxis.set_major_formatter(lat_formatter)
@@ -188,9 +187,7 @@ def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
     # bar_ax.set_theta_zero_location('N')
     bar_ax.set_theta_direction(-1)
     bar_ax.set_theta_offset(np.pi / 2)
-    bar_ax.set_xticklabels(
-        ["0h", "3h", "6h", "9h", "12h", "15h", "18h", "21h"]
-    )
+    bar_ax.set_xticklabels(["0h", "3h", "6h", "9h", "12h", "15h", "18h", "21h"])
     bar_ax.set_yticklabels(["", "", "{:.2f}".format(max_amp)])
     bar_ax.set_rlabel_position(340)
     bar_ax.get_yticklabels()[-2].set_weight("bold")
@@ -230,9 +227,7 @@ def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
         verticalalignment="center",
     )
     color = image.reshape((image.shape[0] * image.shape[1], image.shape[2]))
-    pc = bar_ax.pcolormesh(
-        theta, R, np.zeros_like(R), color=color, shading="auto"
-    )
+    pc = bar_ax.pcolormesh(theta, R, np.zeros_like(R), color=color, shading="auto")
     pc.set_array(None)
 
 
@@ -288,9 +283,7 @@ def plot(test_tmax, test_amp, ref_tmax, ref_amp, parameter):
     # {parameter.results_dir}/enso_diags/{parameter.case_id}/{parameter.output_file}
     file_path = os.path.join(output_dir, parameter.output_file)
     # {parameter.orig_results_dir}/enso_diags/{parameter.case_id}/{parameter.output_file}
-    original_file_path = os.path.join(
-        original_output_dir, parameter.output_file
-    )
+    original_file_path = os.path.join(original_output_dir, parameter.output_file)
 
     # Save figure
     for f in parameter.output_format:

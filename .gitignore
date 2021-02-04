@@ -48,6 +48,12 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+tests/unit_test_data
+tests/unit_test_images
+tests/image_check_failures/
+tests/system/all_sets_results_test/
+tests/system/image_check_failures/
+tests/v2_3_0_all_sets/
 
 # Translations
 *.mo

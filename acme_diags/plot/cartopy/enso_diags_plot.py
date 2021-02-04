@@ -5,8 +5,6 @@ import os
 import cartopy.crs as ccrs
 import cdutil
 import matplotlib
-import matplotlib.colors as colors
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
 from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
@@ -17,6 +15,9 @@ from acme_diags.driver.utils.general import get_output_dir
 from acme_diags.plot import get_colormap
 
 matplotlib.use("Agg")
+import matplotlib.colors as colors  # isort:skip  # noqa: E402
+import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
+
 
 plotTitle = {"fontsize": 11.5}
 plotSideTitle = {"fontsize": 9.5}
@@ -77,9 +78,9 @@ def plot_panel_map(
     ax = fig.add_axes(panel[n], projection=proj)
     region_str = parameter.regions[0]
     region = regions_specs[region_str]
-    if "domain" in region.keys():
+    if "domain" in region.keys():  # type: ignore
         # Get domain to plot
-        domain = region["domain"]
+        domain = region["domain"]  # type: ignore
     else:
         # Assume global domain
         domain = cdutil.region.domain(latitude=(-90.0, 90, "ccb"))
@@ -140,9 +141,7 @@ def plot_panel_map(
         ax.set_title(title[2], loc="right", fontdict=plotSideTitle)
     ax.set_xticks(xticks, crs=ccrs.PlateCarree())
     ax.set_yticks(yticks, crs=ccrs.PlateCarree())
-    lon_formatter = LongitudeFormatter(
-        zero_direction_label=True, number_format=".0f"
-    )
+    lon_formatter = LongitudeFormatter(zero_direction_label=True, number_format=".0f")
     lat_formatter = LatitudeFormatter()
     ax.xaxis.set_major_formatter(lon_formatter)
     ax.yaxis.set_major_formatter(lat_formatter)
@@ -153,9 +152,7 @@ def plot_panel_map(
     ax.axvline(x=0.5, color="k", linewidth=0.5)
 
     # Color bar
-    cbax = fig.add_axes(
-        (panel[n][0] + 0.6635, panel[n][1] + 0.0115, 0.0326, 0.1792)
-    )
+    cbax = fig.add_axes((panel[n][0] + 0.6635, panel[n][1] + 0.0115, 0.0326, 0.1792))
     cbar = fig.colorbar(contours, cax=cbax)
     w, h = get_ax_size(fig, cbax)
 
@@ -312,9 +309,7 @@ def plot_map(
     # {parameter.results_dir}/enso_diags/{parameter.case_id}/{parameter.output_file}
     file_path = os.path.join(output_dir, parameter.output_file)
     # {parameter.orig_results_dir}/enso_diags/{parameter.case_id}/{parameter.output_file}
-    original_file_path = os.path.join(
-        original_output_dir, parameter.output_file
-    )
+    original_file_path = os.path.join(original_output_dir, parameter.output_file)
 
     # Save figure
     for f in parameter.output_format:
@@ -359,9 +354,7 @@ def plot_scatter(x, y, parameter):
     if parameter.test_name_yrs:
         test_title += " : {}".format(parameter.test_name_yrs)
     ref_title = (
-        "Reference"
-        if parameter.reference_title == ""
-        else parameter.reference_title
+        "Reference" if parameter.reference_title == "" else parameter.reference_title
     )
     if parameter.ref_name_yrs:
         ref_title += " : {}".format(parameter.ref_name_yrs)
@@ -374,9 +367,7 @@ def plot_scatter(x, y, parameter):
         marker="s",
         s=8,
     )
-    plt.scatter(
-        x["ref"], y["ref"], label=ref_title, color=ref_color, marker="o", s=8
-    )
+    plt.scatter(x["ref"], y["ref"], label=ref_title, color=ref_color, marker="o", s=8)
     for value_type in ["test", "ref"]:
         if value_type == "test":
             type_str = "Test"
@@ -458,9 +449,7 @@ def plot_scatter(x, y, parameter):
     # {parameter.results_dir}/enso_diags/{parameter.case_id}/{parameter.output_file}
     file_path = os.path.join(output_dir, parameter.output_file)
     # {parameter.orig_results_dir}/enso_diags/{parameter.case_id}/{parameter.output_file}
-    original_file_path = os.path.join(
-        original_output_dir, parameter.output_file
-    )
+    original_file_path = os.path.join(original_output_dir, parameter.output_file)
 
     # Figure title
     fig.suptitle(parameter.main_title, x=0.5, y=0.93, fontsize=15)
