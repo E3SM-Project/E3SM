@@ -105,8 +105,8 @@ protected:
 protected:
 #endif
 
-  using import_value_type  = import_field_type::value_type;
-  using export_value_type  = export_field_type::value_type;
+  using import_value_type  = import_field_type::RT;
+  using export_value_type  = export_field_type::RT;
 
   // Packed, device-friendly verson of the helper structures above
   view_1d<device_type,Info<import_value_type>>  m_scream_imports_dev;

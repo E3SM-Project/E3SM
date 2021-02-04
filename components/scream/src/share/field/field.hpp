@@ -24,27 +24,71 @@ struct is_scream_field : public std::false_type {};
 // A field is composed of metadata info (the header) and a pointer to a view.
 // Fields are always stored as 1D arrays of real-valued data. The associated
 // view can be reshaped as needed to match a desired layout for a given client.
+
 template<typename RealType>
 class Field {
 public:
 
-  using value_type           = RealType;
-  using device_type          = DefaultDevice;
+  // The syntax of std::enable_if is way too long...
+  template<bool c, typename T, typename F>
+  using cond_t = typename std::conditional<c,T,F>::type;
+  template<bool c, typename T>
+  using if_t = typename std::enable_if<c,T>::type;
+
+  // Various kokkos-related types
+  using device_type = DefaultDevice;
+  using kt          = KokkosTypes<device_type>;
+
+  template<typename ViewT>
+  using HM = typename ViewT::HostMirror;
+
+  // Given a type Space, check if it is the device mem/exec space,
+  // or even the device itself.
+  template<typename Space>
+  struct OnDevice {
+    static constexpr bool value =
+          std::is_same<Space,device_type::memory_space>::value ||
+          std::is_same<Space,device_type::execution_space>::value ||
+          std::is_same<Space,device_type>::value;
+  };
+
+  // Given a device view type V and a mem/exec space, returns V if the space
+  // is on device, otherwise returns the host mirror of V
+  template<typename DevViewT, typename Space>
+  using get_view_type = cond_t<OnDevice<Space>::value,DevViewT,HM<DevViewT>>;
+
+  template<typename DT>
+  using view_type = typename kt::template view<DT>;
+
+  template<typename DT>
+  using uview_type = ekat::Unmanaged<view_type<DT>>;
+
+  template<typename T, int N>
+  using view_ND_type = uview_type<typename ekat::DataND<T,N>::type>;
+
+  // These are used a few times in ctor and assignment, so use a shortcut
+  template<typename T>
+  using Const = typename std::add_const<T>::type;
+  template<typename T>
+  using NonConst = typename std::remove_const<T>::type;
+
+  // Field stack classes types
+  using RT                   = RealType;
   using header_type          = FieldHeader;
   using identifier_type      = FieldIdentifier;
-  using view_type            = typename KokkosTypes<device_type>::template view<value_type*>;
-  using host_view_type       = typename KokkosTypes<HostDevice>::template view<value_type*>;
-  using const_value_type     = typename std::add_const<value_type>::type;
-  using non_const_value_type = typename std::remove_const<value_type>::type;
+  using field_type           = Field<RT>;
+  using const_field_type     = Field<Const<RT>>;
+  using nonconst_field_type  = Field<NonConst<RT>>;
 
-  using field_type           = Field<value_type>;
-  using const_field_type     = Field<const_value_type>;
-  using nonconst_field_type  = Field<non_const_value_type>;
+  static constexpr int MaxRank = 6;
 
-  static constexpr int MaxRank = 8;
+  // To make assignment impl simpler
+  template<typename SrcRT>
+  friend class Field;
 
-  // Statically check that RealType is not an array.
-  static_assert(view_type::Rank==1, "Error! RealType should not be an array type.\n");
+  // Statically check that RealType is a legit numeric type.
+  static_assert(std::is_floating_point<RT>::value,
+                "Error! RealType should be a floating point type.\n");
 
   // A Field maintains a list of shared_ptrs to FieldPropertyChecks that can
   // determine whether it satisfies certain properties. We use the PointerList
@@ -56,7 +100,7 @@ public:
 
   // Constructor(s)
   Field () = default;
-  Field (const std::shared_ptr<header_type>& h, const view_type& v);
+  Field (const std::shared_ptr<header_type>& h, const view_type<RT*>& v);
   explicit Field (const identifier_type& id);
 
   // This constructor allows const->const, nonconst->nonconst, and nonconst->const copies
@@ -72,7 +116,9 @@ public:
         header_type& get_header ()       { return *m_header; }
   const std::shared_ptr<header_type>& get_header_ptr () const { return m_header; }
 
-  const view_type& get_view   () const { return  m_view;   }
+  template<typename Space = device_type::memory_space>
+  const get_view_type<view_type<RT*>,Space>&
+  get_view () const { return  get_view_impl<Space>();   }
 
   // Returns a const_field_type copy of this field
   const_field_type get_const () const { return const_field_type(*this); }
@@ -95,9 +141,16 @@ public:
   // The class will check that the requested data type is compatible with the
   // allocation. This allows each field to be stored as a 1d array, but then
   // be reshaped to the desired layout before being used.
-  template<typename DT>
-  ekat::Unmanaged<typename KokkosTypes<device_type>::template view<DT> >
+  template<typename DT, typename Space = device_type::memory_space>
+  get_view_type<uview_type<DT>,Space>
   get_reshaped_view () const;
+
+  // If someone needs the host view, some sync routines might be needed.
+  // Note: this class takes no responsibility in keeping track of whether
+  //       a sync is required in either direction. Mainly because we expect
+  //       host views to be seldom used, and even less frequently modified.
+  void sync_to_host () const;
+  void sync_to_dev () const;
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -118,7 +171,7 @@ public:
   field_type subfield (const int idim, const int k) const;
 
   // Checks whether the underlying view has been already allocated.
-  bool is_allocated () const { return m_view.data()!=nullptr; }
+  bool is_allocated () const { return m_view_d.data()!=nullptr; }
 
   // ---- Setters and non-const methods ---- //
 
@@ -127,57 +180,72 @@ public:
 
 protected:
 
+  template<typename Space>
+  const if_t<OnDevice<Space>::value,view_type<RT*>>&
+  get_view_impl   () const {
+    EKAT_REQUIRE_MSG (is_allocated (),
+        "Error! View was not yet allocated.\n");
+    return  m_view_d;
+  }
 
-  using kt = ekat::KokkosTypes<device_type>;
+  template<typename Space>
+  const if_t<!OnDevice<Space>::value,HM<view_type<RT*>>>&
+  get_view_impl   () const {
+    ensure_host_view ();
+    return  m_view_h;
+  }
 
-  template<typename T, int N>
-  using view_ND_type = ekat::Unmanaged<typename kt::template view<typename ekat::DataND<T,N>::type>>;
+  void ensure_host_view () const {
+    EKAT_REQUIRE_MSG (is_allocated (),
+        "Error! View was not yet allocated.\n");
+    if (m_view_h.data()==nullptr) {
+      m_view_h = Kokkos::create_mirror_view(m_view_d);
+    }
+  }
 
   // These SFINAE impl of get_subview are needed since subview_1 does not
   // exist for rank2 (or less) views.
-  template<bool FirstDim, typename T, int N>
-  typename std::enable_if<FirstDim,
-                          view_ND_type<T,N-1>>::type
-  get_subview (const view_ND_type<T,N>& v, const int k) const {
-    return ekat::subview(v,k);
-  }
-
-  template<bool FirstDim, typename T, int N>
-  typename std::enable_if<!FirstDim && (N>2),
-                          view_ND_type<T,N-1>>::type
-  get_subview (const view_ND_type<T,N>& v, const int k) const {
+  template<typename Space, typename T, int N>
+  if_t<(N>2),
+       get_view_type<view_ND_type<T,N-1>,Space>>
+  get_subview_1 (const get_view_type<view_ND_type<T,N>,Space>& v, const int k) const {
     return ekat::subview_1(v,k);
   }
 
 
-  template<bool FirstDim, typename T, int N>
-  typename std::enable_if<!FirstDim && (N<=2),
-                          view_ND_type<T,N-1>>::type
-  get_subview (const view_ND_type<T,N>&, const int) const {
-    view_ND_type<T,N-1> sv;
+  template<typename Space, typename T, int N>
+  if_t<(N<=2),
+       get_view_type<view_ND_type<T,N-1>,Space>>
+  get_subview_1 (const get_view_type<view_ND_type<T,N>,Space>&, const int) const {
+    get_view_type<view_ND_type<T,N-1>,Space> sv;
     EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second dimension without losing LayoutRight.\n");
     return sv;
   }
 
-  template<typename VT,int N>
-  typename std::enable_if<N==MaxRank,view_ND_type<VT,N>>::type
+  template<typename Space,typename T,int N>
+  if_t<N==MaxRank,
+       get_view_type<view_ND_type<T,N>,Space>>
   get_ND_view () const;
 
-  template<typename VT,int N>
-  typename std::enable_if<N<MaxRank,view_ND_type<VT,N>>::type
+  template<typename Space,typename T,int N>
+  if_t<(N<MaxRank),
+       get_view_type<view_ND_type<T,N>,Space>>
   get_ND_view () const;
 
   // Metadata (name, rank, dims, customere/providers, time stamp, ...)
-  std::shared_ptr<header_type>    m_header;
+  std::shared_ptr<header_type>            m_header;
 
   // Actual data.
-  view_type                       m_view;
+  view_type<NonConst<RT*>>                m_view_d;
+
+  // Host mirror of the data. Mutable, to allow lazy creation
+  mutable HM<view_type<NonConst<RT*>>>    m_view_h;
 
   // Keep track of whether the field has been allocated
-  bool                            m_allocated;
+  bool                                    m_allocated;
 
   // List of property checks for this field.
-  std::shared_ptr<property_check_list> m_prop_checks;
+  std::shared_ptr<property_check_list>    m_prop_checks;
 };
 
 template<typename RealType>
@@ -196,15 +264,15 @@ Field (const identifier_type& id)
  : m_header     (create_header(id))
  , m_prop_checks(new property_check_list)
 {
-  // At the very least, the allocation properties need to accommodate this field's value_type.
-  m_header->get_alloc_properties().request_allocation<value_type>();
+  // At the very least, the allocation properties need to accommodate this field's real type.
+  m_header->get_alloc_properties().request_allocation<RT>();
 }
 
 template<typename RealType>
 Field<RealType>::
-Field (const std::shared_ptr<header_type>& h, const view_type& v)
+Field (const std::shared_ptr<header_type>& h, const view_type<RT*>& v)
   : m_header(h)
-  , m_view(v)
+  , m_view_d(v)
   , m_prop_checks(new property_check_list)
 {
   // Nothing to do here
@@ -214,8 +282,8 @@ template<typename RealType>
 template<typename SrcRealType>
 Field<RealType>::
 Field (const Field<SrcRealType>& src)
- : m_header    (src.get_header_ptr())
- , m_view      (src.get_view())
+ : m_header (src.get_header_ptr())
+ , m_view_d (src.get_view())
 {
   using src_field_type = Field<SrcRealType>;
 
@@ -224,13 +292,11 @@ Field (const Field<SrcRealType>& src)
   //       assign pointers.
 
   // Check that underlying value type
-  static_assert(std::is_same<non_const_value_type,
-                             typename src_field_type::non_const_value_type
-                            >::value,
-                "Error! Cannot use copy constructor if the underlying value_type is different.\n");
+  static_assert(std::is_same<NonConst<RT>,NonConst<typename src_field_type::RT>>::value,
+                "Error! Cannot use copy constructor if the underlying real type is different.\n");
   // Check that destination is const or source is nonconst
-  static_assert(std::is_same<value_type,const_value_type>::value ||
-                std::is_same<typename src_field_type::value_type,non_const_value_type>::value,
+  static_assert(std::is_same<RT,Const<RT>>::value ||
+                std::is_same<typename src_field_type::RT,NonConst<RT>>::value,
                 "Error! Cannot create a nonconst field from a const field.\n");
 }
 
@@ -244,17 +310,17 @@ operator= (const Field<SrcRealType>& src) {
 #ifndef CUDA_BUILD // TODO Figure out why nvcc doesn't like this bit of code.
   // Check that underlying value type
   static_assert(
-      std::is_same<non_const_value_type,typename src_field_type::non_const_value_type>::value,
+      std::is_same<NonConst<RT>,NonConst<typename src_field_type::RT>>::value,
       "Error! Cannot use copy constructor if the underlying value_type is different.\n");
   // Check that destination is const or source is nonconst
   static_assert(
-      std::is_same<value_type,const_value_type>::value ||
-      std::is_same<typename src_field_type::value_type,non_const_value_type>::value,
+      std::is_same<RT,Const<RT>>::value ||
+      std::is_same<typename src_field_type::RT,NonConst<RT>>::value,
       "Error! Cannot create a nonconst field from a const field.\n");
 #endif
 
-  // If the field has a valid header, we only allow assignment of fields with
-  // the *same* identifier.
+  // If the field has a valid header (i.e., name!=""), then
+  // we only allow assignment of fields with the *same* identifier.
   EKAT_REQUIRE_MSG(
       m_header->get_identifier().get_id_string()=="" ||
       m_header->get_identifier()==src.get_header().get_identifier(),
@@ -264,21 +330,23 @@ operator= (const Field<SrcRealType>& src) {
   // `if (this!=&src)`, cause the compiler cannot compare those pointers.
   // Therefore, we compare the stored pointers.
   // If either header or view are different, we copy everything
-  if (m_header!=src.get_header_ptr() ||
-      m_view!=src.get_view()) {
-    m_header    = src.get_header_ptr();
-    m_view      = src.get_view();
+  if (m_header!=src.m_header ||
+      m_view_d.data()!=src.m_view_d.data()) {
+    m_header = src.m_header;
+    m_view_d = src.m_view_d;
+    m_view_h = src.m_view_h;
   }
 
   return *this;
 }
 
 template<typename RealType>
-template<typename DT>
-ekat::Unmanaged<typename KokkosTypes<DefaultDevice>::template view<DT> >
-Field<RealType>::get_reshaped_view () const {
-  // The destination view type
-  using DstView = ekat::Unmanaged<typename KokkosTypes<DefaultDevice>::template view<DT> >;
+template<typename DT, typename Space>
+auto Field<RealType>::get_reshaped_view () const
+ -> get_view_type<uview_type<DT>,Space>
+{
+  // The destination view type on correct mem space
+  using DstView = get_view_type<uview_type<DT>,Space>;
   // The dst value types
   using DstValueType = typename DstView::traits::value_type;
   // The ViewDimension object from the Dst View (used to check validity of possible compile-time extents)
@@ -305,7 +373,7 @@ Field<RealType>::get_reshaped_view () const {
       "Error! Cannot reshape a field that has not been allocated yet.\n");
 
   // Start by reshaping into a view with all dyn extents
-  const auto view_ND = get_ND_view<DstValueType,DstRank>();
+  const auto view_ND = get_ND_view<Space,DstValueType,DstRank>();
 
   constexpr int DstRankDynamic= DstView::rank_dynamic;
 
@@ -327,6 +395,30 @@ Field<RealType>::get_reshaped_view () const {
       "Error! Cannot use all compile-time dimensions for strided views.\n");
 
   return DstView(view_ND);
+}
+
+template<typename RealType>
+void Field<RealType>::
+sync_to_host () const {
+  // Sanity check
+  EKAT_REQUIRE_MSG (is_allocated(),
+      "Error! Input field must be allocated in order to sync host and device views.\n");
+
+  // Ensure host view was created (lazy construction)
+  ensure_host_view ();
+  Kokkos::deep_copy(m_view_h,m_view_d);
+}
+
+template<typename RealType>
+void Field<RealType>::
+sync_to_dev () const {
+  // Sanity check
+  EKAT_REQUIRE_MSG (is_allocated(),
+      "Error! Input field must be allocated in order to sync host and device views.\n");
+
+  // Ensure host view was created (lazy construction)
+  ensure_host_view ();
+  Kokkos::deep_copy(m_view_d,m_view_h);
 }
 
 template<typename RealType>
@@ -353,7 +445,7 @@ subfield (const std::string& sf_name, const int idim, const int k) const {
   auto sv_h = create_header(sf_id,m_header,idim,k);
 
   // Return subfield
-  return field_type(sv_h,m_view);
+  return field_type(sv_h,m_view_d);
 }
 
 template<typename RealType>
@@ -385,19 +477,17 @@ void Field<RealType>::allocate_view ()
   alloc_prop.commit(layout);
 
   // Create the view, by quering allocation properties for the allocation size
-  const int view_dim = alloc_prop.get_alloc_size() / sizeof(value_type);
+  const int view_dim = alloc_prop.get_alloc_size() / sizeof(RT);
 
-  m_view = view_type(id.name(),view_dim);
+  m_view_d = decltype(m_view_d)(id.name(),view_dim);
+  Kokkos::deep_copy(m_view_d,0.0);
 }
 
 template<typename RealType>
-template<typename VT,int N>
-typename std::enable_if<N<Field<RealType>::MaxRank,
-                        typename Field<RealType>::template view_ND_type<VT,N>>::type
-Field<RealType>::get_ND_view () const {
-  using ret_type = view_ND_type<VT,N>;
-  // ret_type sv;
-
+template<typename Space,typename T,int N>
+auto Field<RealType>::get_ND_view () const ->
+  if_t<(N<MaxRank),get_view_type<view_ND_type<T,N>,Space>>
+{
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
       "Error! Input Rank must either be 1 (flat array) or the actual field rank.\n");
@@ -406,8 +496,8 @@ Field<RealType>::get_ND_view () const {
   const auto parent = m_header->get_parent().lock();
   if (parent!=nullptr) {
     // Parent field has correct layout to reinterpret the view into N+1-dim view
-    Field<RealType> f(parent,m_view);
-    auto v_np1 = f.get_ND_view<VT,N+1>();
+    Field<RealType> f(parent,m_view_d);
+    auto v_np1 = f.get_ND_view<Space,T,N+1>();
 
     // Now we can subview v_np1 at the correct slice
     const auto& idx = m_header->get_alloc_properties().get_subview_idx();
@@ -424,33 +514,32 @@ Field<RealType>::get_ND_view () const {
     // Use SFINAE-ed get_subview helper function to pick correct
     // subview impl. If N+1<=2 and idim!=0, the code craps out in the check above.
     if (idim==0) {
-      return get_subview<true,VT,N+1>(v_np1,k);
+      return ekat::subview(v_np1,k);
     } else {
-      return get_subview<false,VT,N+1>(v_np1,k);
+      return get_subview_1<Space,T,N+1>(v_np1,k);
     }
   }
 
   // Compute extents from FieldLayout
   const auto& alloc_prop = m_header->get_alloc_properties();
-  size_t num_values = alloc_prop.get_alloc_size() / sizeof(VT);
+  size_t num_values = alloc_prop.get_alloc_size() / sizeof(T);
   Kokkos::LayoutRight kl;
   for (int i=0; i<N-1; ++i) {
     kl.dimension[i] = fl.dim(i);
     num_values /= fl.dim(i);
   }
   kl.dimension[N-1] = num_values;
-  auto ptr = reinterpret_cast<VT*>(m_view.data());
+  auto ptr = reinterpret_cast<T*>(get_view<Space>().data());
+
+  using ret_type = get_view_type<view_ND_type<T,N>,Space>;
   return ret_type (ptr,kl);
 }
 
 template<typename RealType>
-template<typename VT,int N>
-typename std::enable_if<N==Field<RealType>::MaxRank,
-                        typename Field<RealType>::template view_ND_type<VT,N>>::type
-Field<RealType>::get_ND_view () const {
-  using ret_type = view_ND_type<VT,N>;
-  // ret_type sv;
-
+template<typename Space,typename T,int N>
+auto Field<RealType>::get_ND_view () const ->
+  if_t<N==MaxRank,get_view_type<view_ND_type<T,N>,Space>>
+{
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
       "Error! Input Rank must either be 1 (flat array) or the actual field rank.\n");
@@ -461,14 +550,16 @@ Field<RealType>::get_ND_view () const {
 
   // Compute extents from FieldLayout
   const auto& alloc_prop = m_header->get_alloc_properties();
-  size_t num_values = alloc_prop.get_alloc_size() / sizeof(VT);
+  size_t num_values = alloc_prop.get_alloc_size() / sizeof(T);
   Kokkos::LayoutRight kl;
   for (int i=0; i<N-1; ++i) {
     kl.dimension[i] = fl.dim(i);
     num_values /= fl.dim(i);
   }
   kl.dimension[N-1] = num_values;
-  auto ptr = reinterpret_cast<VT*>(m_view.data());
+  auto ptr = reinterpret_cast<T*>(get_view<Space>().data());
+
+  using ret_type = get_view_type<view_ND_type<T,N>,Space>;
   return ret_type (ptr,kl);
 }
 

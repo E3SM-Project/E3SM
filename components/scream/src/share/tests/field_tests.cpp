@@ -78,6 +78,8 @@ TEST_CASE("field", "") {
   using namespace scream;
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
+  using kt = KokkosTypes<DefaultDevice>;
+
   using P4 = ekat::Pack<Real,4>;
   using P8 = ekat::Pack<Real,8>;
   using P16 = ekat::Pack<Real,16>;
@@ -136,7 +138,6 @@ TEST_CASE("field", "") {
     f1.allocate_view();
     f2.allocate_view();
 
-    using kt = ekat::KokkosTypes<ekat::DefaultDevice>;
     auto v1 = f1.get_reshaped_view<Real**>();
     auto v2 = f2.get_reshaped_view<P8**>();
     auto dim0 = fid.get_layout().dim(0);
@@ -179,9 +180,6 @@ TEST_CASE("field", "") {
 
     FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
 
-    using DevT = Field<Real>::device_type;
-    using kt = ekat::KokkosTypes<DevT>;
-
     Field<Real> f1(fid1);
     f1.allocate_view();
     auto v = f1.get_view();
@@ -211,6 +209,41 @@ TEST_CASE("field", "") {
         for (int k=0; k<d1[3]; ++k) {
           REQUIRE (v4dh(i,ivar,j,k)==v3dh(i,j,k));
         }
+  }
+
+  SECTION ("host_view") {
+    Field<Real> f(fid);
+
+    // Views not yet allocated
+    REQUIRE_THROWS(f.get_view());
+    REQUIRE_THROWS(f.get_view<HostDevice>());
+    REQUIRE_THROWS(f.sync_to_host());
+    REQUIRE_THROWS(f.sync_to_dev());
+
+    f.allocate_view();
+
+    auto v = f.get_view();
+    Kokkos::parallel_for(kt::RangePolicy(0,v.size()),
+                         KOKKOS_LAMBDA(int i) {
+      v(i) = i;
+    });
+    f.sync_to_host();
+
+    // Get reshaped view on device, and manually create Host mirror
+    auto v2d = f.get_reshaped_view<Real**>();
+    auto v2d_hm = Kokkos::create_mirror_view(v2d);
+    Kokkos::deep_copy(v2d_hm,v2d);
+
+    // Get reshaped view straight on Host
+    auto v2dh = f.get_reshaped_view<Real**,HostDevice>();
+
+    // The two should match
+    const auto& dims = fid.get_layout().dims();
+    for (int i=0; i<dims[0]; ++i) {
+      for (int j=0; j<dims[0]; ++j) {
+        REQUIRE (v2dh(i,j) == v2d_hm(i,j) );
+      }
+    }
   }
 }
 

@@ -164,8 +164,11 @@ protected:
   std::map<std::string,const_field_type>  m_p3_fields_in;
   std::map<std::string,field_type>        m_p3_fields_out;
 
-  std::map<std::string,const_field_type::view_type::HostMirror>  m_p3_host_views_in;
-  std::map<std::string,field_type::view_type::HostMirror>        m_p3_host_views_out;
+  using host_view_in_type  = const_field_type::view_type<const_field_type::RT*>;
+  using host_view_out_type =       field_type::view_type<      field_type::RT*>;
+
+  std::map<std::string,host_view_in_type>   m_p3_host_views_in;
+  std::map<std::string,host_view_out_type>  m_p3_host_views_out;
 
   std::map<std::string,const Real*>  m_raw_ptrs_in;
   std::map<std::string,Real*>        m_raw_ptrs_out;
