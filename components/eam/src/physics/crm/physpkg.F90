@@ -1049,6 +1049,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   use cam_diagnostics,    only: diag_phys_tend_writeout, diag_conv
   use gw_drag,            only: gw_tend
   use vertical_diffusion, only: vertical_diffusion_tend
+  use mmf_surface_mod,    only: mmf_surface_ac
   use rayleigh_friction,  only: rayleigh_friction_tend
   use constituents,       only: cnst_get_ind
   use physics_types,      only: physics_state, physics_tend, physics_ptend, &
@@ -1210,17 +1211,12 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   nstep = get_nstep()
   call check_tracers_init(state, tracerint)
 
-  call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
-
-  if(.not.use_qqflx_fixer) then 
-     ! Check if latent heat flux exceeds the total moisture content of the
-     ! lowest model layer, thereby creating negative moisture.
-     call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
-          state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
-          cam_in%lhf , cam_in%cflx )
-  end if 
-
-  call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
+  ! call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
+  ! ! Check if LHF exceeds the total moisture content of the lowest layer
+  ! call qneg4('TPHYSAC ', lchnk, ncol, ztodt, &
+  !             state%q(1,pver,1), state%rpdel(1,pver), &
+  !             cam_in%shf, cam_in%lhf, cam_in%cflx )
+  ! call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
 
   call t_stopf('tphysac_init')
 
@@ -1254,17 +1250,21 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   ! Vertical diffusion/pbl calculation - (pbl, free atmosphere and molecular)
   !-----------------------------------------------------------------------------
-  if (l_vdiff) then
 
-    call t_startf('vertical_diffusion_tend')
-    call vertical_diffusion_tend(ztodt, state, cam_in%wsx, cam_in%wsy,   &
-                                 cam_in%shf, cam_in%cflx, surfric, obklen, ptend, ast, &
-                                 cam_in%ocnfrac, cam_in%landfrac, sgh30, pbuf )
+  call mmf_surface_ac(state, cam_in, ptend)
+  call physics_update(state, ptend, ztodt, tend)
 
-    call physics_update(state, ptend, ztodt, tend)
-    call t_stopf ('vertical_diffusion_tend')
+  ! if (l_vdiff) then
+
+  !   call t_startf('vertical_diffusion_tend')
+  !   call vertical_diffusion_tend(ztodt, state, cam_in%wsx, cam_in%wsy,   &
+  !                                cam_in%shf, cam_in%cflx, surfric, obklen, ptend, ast, &
+  !                                cam_in%ocnfrac, cam_in%landfrac, sgh30, pbuf )
+
+  !   call physics_update(state, ptend, ztodt, tend)
+  !   call t_stopf ('vertical_diffusion_tend')
     
-  end if ! l_vdiff
+  ! end if ! l_vdiff
 
   !-----------------------------------------------------------------------------
   ! Rayleigh friction calculation
@@ -1451,6 +1451,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, state, tend, pbuf, fsds, &
   use crmdims,                only: crm_nz, crm_nx, crm_ny, crm_dx, crm_dy, crm_dt
   use crm_physics,            only: crm_physics_tend, crm_surface_flux_bypass_tend
   use crm_ecpp_output_module, only: crm_ecpp_output_type
+  use mmf_surface_mod,        only: mmf_surface_bc
 
   implicit none
   !-----------------------------------------------------------------------------
@@ -1773,19 +1774,22 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, state, tend, pbuf, fsds, &
   end if
 
   !---------------------------------------------------------------------------
-  ! CRM Physics
+  ! MMF surface flux bypass
   !---------------------------------------------------------------------------
+  call check_qflx(state, tend, "PHYBC01", nstep, ztodt, cam_in%cflx(:,1))
+  ! Check if LHF exceeds the total moisture content of the lowest layer
+  call qneg4('TPHYSBC ', lchnk, ncol, ztodt, &
+              state%q(1,pver,1), state%rpdel(1,pver), &
+              cam_in%shf, cam_in%lhf, cam_in%cflx )
+  call check_qflx(state, tend, "PHYBC02", nstep, ztodt, cam_in%cflx(:,1))
 
-  crm_run_time = ztodt
+  call mmf_surface_bc(state, cam_in, ptend)
+  call physics_update(state, ptend, ztodt, tend)
 
-#if defined( ECPP )
-      if (use_ECPP) then
-         call crm_ecpp_output%initialize(pcols,pver)
-      end if ! use_ECPP
-#endif
   !-------------------------------------------------------------------------
   ! Run the CRM 
   !-------------------------------------------------------------------------
+  crm_run_time = ztodt
   call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
                         species_class, crm_ecpp_output, mmf_clear_rh,       &
                         mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
