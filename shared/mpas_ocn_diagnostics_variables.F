@@ -164,7 +164,7 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), dimension(:), pointer :: salinitySurfaceRestoringTendency
 
-   real (kind=RKIND), dimension(:,:), pointer :: surfaceVelocity, avgSurfaceVelocity
+   real (kind=RKIND), dimension(:,:), pointer :: surfaceVelocity
    real (kind=RKIND), dimension(:), pointer :: gradSSHZonal, gradSSHMeridional
    real (kind=RKIND), dimension(:), pointer :: gradSSHX
    real (kind=RKIND), dimension(:), pointer :: gradSSHY
@@ -186,7 +186,6 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: betaEdge
    real (kind=RKIND), dimension(:), pointer :: eddyLength
    real (kind=RKIND), dimension(:), pointer :: eddyTime
-   real (kind=RKIND), dimension(:), pointer :: c_visbeck
    real (kind=RKIND), dimension(:), pointer :: gmResolutionTaper
 
    ! Semi-implicit Array Pointers
@@ -428,7 +427,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
       call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)
       call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
-      call mpas_pool_get_array(diagnosticsPool, 'c_visbeck', c_visbeck)
       call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', gmResolutionTaper)
 
       ! Semi-implicit Array Pointer retrievals
@@ -464,108 +462,207 @@ contains
 
       ! Copy diagnostic variables to accelerator
       if ( trim(config_land_ice_flux_mode) /= 'off' ) then
-         !$acc enter data copyin(                                  &
-         !$acc                   topDrag,                          &
-         !$acc                   topDragMag,                       &
-         !$acc                   landIceBoundaryLayerTracers,      &
-         !$acc                   landIceTracerTransferVelocities,  &
-         !$acc                   indexBLT,      &
-         !$acc                   indexBLS,      &
-         !$acc                   indexHeatTrans,      &
-         !$acc                   indexSaltTrans,      &
+         !$acc enter data copyin(                                 &
+         !$acc                   topDrag,                         &
+         !$acc                   topDragMag,                      &
+         !$acc                   indexBLT,                        &
+         !$acc                   indexBLS,                        &
+         !$acc                   indexHeatTrans,                  &
+         !$acc                   indexSaltTrans,                  &
+         !$acc                   landIceBoundaryLayerTracers,     &
+         !$acc                   landIceTracerTransferVelocities, &
          !$acc                   landIceFrictionVelocity)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
-         !$acc enter data copyin(                    &
-         !$acc                   rx1Edge,            &
-         !$acc                   rx1Cell,            &
-         !$acc                   rx1MaxEdge,         &
-         !$acc                   rx1MaxCell,         &
-         !$acc                   smoothingMask,            &
-         !$acc                   verticalStretch,            &
+         !$acc enter data copyin(                          &
+         !$acc                   rx1Edge,                  &
+         !$acc                   rx1Cell,                  &
+         !$acc                   rx1MaxEdge,               &
          !$acc                   modifySSHMask,            &
+         !$acc                   smoothingMask,            &
+         !$acc                   verticalStretch,          &
+         !$acc                   globalVerticalStretchMax, &
+         !$acc                   globalVerticalStretchMin  &
+         !$acc                   )
+      end if
+      if ( trim(config_ocean_run_mode) == 'init' .or. &
+                config_AM_debugDiagnostics_enable ) then
+         !$acc enter data copyin(                          &
+         !$acc                   rx1MaxCell,               &
          !$acc                   globalRx1Max)
-         ! debug, mdt :: rx1MaxCell and globalRx1Max are in both initMode and debugDiagnosticsAMPKG 
-         !               package, but I can't find a config option for debugDiagnosticsAMPKG
       end if
       if ( trim(config_ocean_run_mode) == 'forward' .or. &
            trim(config_ocean_run_mode) == 'analysis' ) then
-         !$acc enter data copyin( &
-         !$acc                   divergence,              &
-         !$acc                   circulation,             &
-         !$acc                   relativeVorticity,       &
-         !$acc                   relativeVorticityCell,   &
-         !$acc                   normPlanetVortEdge,      &
-         !$acc                   normRelVortEdge,      &
-         !$acc                   normalizedRelativeVorticityCell,      &
-         !$acc                   montgomeryPotential,      &
-         !$acc                   BruntVaisalaFreqTop,      &
-         !$acc                   tangentialVelocity,      &
-         !$acc                   layerThickEdge,      &
-         !$acc                   kineticEnergyCell,      &
-         !$acc                   vertVelocityTop,      &
-         !$acc                   vertTransportVelocityTop,      &
-         !$acc                   vertGMBolusVelocityTop,      &
-         !$acc                   normalTransportVelocity,      &
-         !$acc                   normalGMBolusVelocity,      &
-         !$acc                   RiTopOfCell,      &
-         !$acc                   RiTopOfEdge,      &
-         !$acc                   gradSSH,      &
-         !$acc                   tracersSurfaceLayerValue,      &
-         !$acc                   normalVelocitySurfaceLayer,      &
-         !$acc                   indexSurfaceLayerDepth,      &
-         !$acc                   surfaceBuoyancyForcing,      &
-         !$acc                   penetrativeTemperatureFluxOBL,      &
-         !$acc                   surfaceFrictionVelocity,            &
-         !$acc                   gmStreamFuncTopOfEdge,            &
-         !$acc                   GMStreamFuncX,            &
-         !$acc                   GMStreamFuncY,            &
-         !$acc                   GMStreamFuncZ,            &
-         !$acc                   GMStreamFuncZonal,            &
-         !$acc                   GMStreamFuncMeridional,            &
-         !$acc                   gmStreamFuncTopOfCell,            &
-         !$acc                   k33,            &
-         !$acc                   cGMphaseSpeed,            &
-         !$acc                   slopeTriadUp,            &
-         !$acc                   slopeTriadDown,            &
-         !$acc                   transportVelocityX,            &
-         !$acc                   transportVelocityY,            &
-         !$acc                   transportVelocityZ,            &
-         !$acc                   transportVelocityZonal,            &
-         !$acc                   transportVelocityMeridional,            &
-         !$acc                   GMBolusVelocityX,            &
-         !$acc                   GMBolusVelocityY,            &
-         !$acc                   GMBolusVelocityZ,            &
+         !$acc enter data copyin(                                 &
+         !$acc                   k33,                             &
+         !$acc                   gradSSH,                         &
+         !$acc                   gradSSHX,                        &
+         !$acc                   gradSSHY,                        &
+         !$acc                   gradSSHZ,                        &
+         !$acc                   viscosity,                       &
+         !$acc                   velocityX,                       &
+         !$acc                   velocityY,                       &
+         !$acc                   velocityZ,                       &
+         !$acc                   divergence,                      &
+         !$acc                   RiTopOfCell,                     &
+         !$acc                   RiTopOfEdge,                     &
+         !$acc                   SSHGradient,                     &
+         !$acc                   circulation,                     &
+         !$acc                   slopeTriadUp,                    &
+         !$acc                   gradSSHZonal,                    &
+         !$acc                   cGMphaseSpeed,                   &
+         !$acc                   velocityZonal,                   &
+         !$acc                   GMStreamFuncX,                   &
+         !$acc                   GMStreamFuncY,                   &
+         !$acc                   GMStreamFuncZ,                   &
+         !$acc                   layerThickEdge,                  &
+         !$acc                   slopeTriadDown,                  &
+         !$acc                   normRelVortEdge,                 &
+         !$acc                   surfaceVelocity,                 &
+         !$acc                   vertVelocityTop,                 &
+         !$acc                   GMBolusVelocityX,                &
+         !$acc                   GMBolusVelocityY,                &
+         !$acc                   GMBolusVelocityZ,                &
+         !$acc                   vertNonLocalFlux,                &
+         !$acc                   vertViscTopOfEdge,               &
+         !$acc                   gradSSHMeridional,               &
+         !$acc                   barotropicForcing,               &
+         !$acc                   vertViscTopOfCell,               &
+         !$acc                   vertDiffTopOfCell,               &
+         !$acc                   GMStreamFuncZonal,               &
+         !$acc                   relativeVorticity,               &
+         !$acc                   kineticEnergyCell,               &
+         !$acc                   normPlanetVortEdge,              &
+         !$acc                   velocityMeridional,              &
+         !$acc                   transportVelocityX,              &
+         !$acc                   transportVelocityY,              &
+         !$acc                   transportVelocityZ,              &
+         !$acc                   tangentialVelocity,              &
+         !$acc                   montgomeryPotential,             &
+         !$acc                   BruntVaisalaFreqTop,             &
+         !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
-         !$acc                   GMBolusVelocityMeridional,            &
-         !$acc                   velocityMeridional,            &
-         !$acc                   velocityZonal             &
+         !$acc                   bulkRichardsonNumber,            &
+         !$acc                   gmStreamFuncTopOfCell,           &
+         !$acc                   gmStreamFuncTopOfEdge,           &
+         !$acc                   indexSSHGradientZonal,           &
+         !$acc                   relativeVorticityCell,           &
+         !$acc                   normalGMBolusVelocity,           &
+         !$acc                   vertGMBolusVelocityTop,          &
+         !$acc                   transportVelocityZonal,          &
+         !$acc                   GMStreamFuncMeridional,          &
+         !$acc                   indexSurfaceLayerDepth,          &
+         !$acc                   surfaceBuoyancyForcing,          &
+         !$acc                   surfaceFrictionVelocity,         &
+         !$acc                   indexBoundaryLayerDepth,         &
+         !$acc                   barotropicThicknessFlux,         &
+         !$acc                   normalTransportVelocity,         &
+         !$acc                   vertTransportVelocityTop,        &
+         !$acc                   bulkRichardsonNumberBuoy,        &
+         !$acc                   tracersSurfaceLayerValue,        &
+         !$acc                   GMBolusVelocityMeridional,       &
+         !$acc                   bulkRichardsonNumberShear,       &
+         !$acc                   indexSurfaceVelocityZonal,       &
+         !$acc                   normalVelocitySurfaceLayer,      &
+         !$acc                   index_vertNonLocalFluxTemp,      &
+         !$acc                   indexSSHGradientMeridional,      &
+         !$acc                   transportVelocityMeridional,     &
+         !$acc                   penetrativeTemperatureFluxOBL,   &
+         !$acc                   indexSurfaceVelocityMeridional,  &
+         !$acc                   normalizedRelativeVorticityCell  &
+         !$acc                   )
+      end if
+      if ( trim(config_ocean_run_mode) == 'forward' ) then
+         !$acc enter data copyin( &
+         !$acc                   wettingVelocity              &
          !$acc                   )
       end if
       if ( config_use_GM ) then
-         !$acc enter data copyin( &
-         !$acc                   gmKappaScaling,            &
-         !$acc                   RediKappaScaling,            &
-         !$acc                   RediKappaSfcTaper,            &
-         !$acc                   gmBolusKappa             &
+         !$acc enter data copyin(                   &
+         !$acc                   RediKappa,         &
+         !$acc                   gmBolusKappa,      &
+         !$acc                   gmKappaScaling,    &
+         !$acc                   RediKappaScaling,  &
+         !$acc                   rediLimiterCount,  &
+         !$acc                   RediKappaSfcTaper, &
+         !$acc                   gmResolutionTaper  &
+         !$acc                   )
+      end if
+      if ( config_compute_active_tracer_budgets ) then
+         !$acc enter data copyin(                                         &
+         !$acc                   activeTracerHorMixTendency,              &
+         !$acc                   activeTracerVertMixTendency,             &
+         !$acc                   temperatureShortWaveTendency,            &
+         !$acc                   activeTracerNonLocalTendency,            &
+         !$acc                   activeTracerSurfaceFluxTendency,         &
+         !$acc                   activeTracerVerticalAdvectionTopFlux,    &
+         !$acc                   activeTracerVerticalAdvectionTendency,   &
+         !$acc                   activeTracerHorizontalAdvectionTendency, &
+         !$acc                   activeTracerHorizontalAdvectionEdgeFlux  &
+         !$acc                   )
+      end if
+      if ( config_use_activeTracers_surface_restoring ) then
+         !$acc enter data copyin(                                  &
+         !$acc                   salinitySurfaceRestoringTendency  &
+         !$acc                   )
+      end if
+      if ( trim(config_time_integrator) == 'semi_implicit' ) then
+         !$acc enter data copyin(                       &
+         !$acc                   CGvec_r0,              &
+         !$acc                   CGvec_r00,             &
+         !$acc                   CGvec_r1,              &
+         !$acc                   CGvec_rh0,             &
+         !$acc                   CGvec_rh1,             &
+         !$acc                   CGvec_ph0,             &
+         !$acc                   CGvec_ph1,             &
+         !$acc                   CGvec_v0,              &
+         !$acc                   CGvec_v1,              &
+         !$acc                   CGvec_s0,              &
+         !$acc                   CGvec_s1,              &
+         !$acc                   CGvec_sh0,             &
+         !$acc                   CGvec_sh1,             &
+         !$acc                   CGvec_t0,              &
+         !$acc                   CGvec_t1,              &
+         !$acc                   CGvec_q0,              &
+         !$acc                   CGvec_q1,              &
+         !$acc                   CGvec_qh0,             &
+         !$acc                   CGvec_w0,              &
+         !$acc                   CGvec_w1,              &
+         !$acc                   CGvec_wh0,             &
+         !$acc                   CGvec_wh1,             &
+         !$acc                   CGvec_y0,              &
+         !$acc                   CGvec_z0,              &
+         !$acc                   CGvec_z1,              &
+         !$acc                   CGvec_zh0,             &
+         !$acc                   CGvec_zh1,             &
+         !$acc                   barotropicCoriolisTerm &
          !$acc                   )
       end if
 
-      !$acc enter data copyin( &
-      !$acc                   zMid,                    &
-      !$acc                   zTop,                    &
-      !$acc                   potentialDensity,      &
-      !$acc                   displacedDensity,      &
-      !$acc                   density,      &
-      !$acc                   pressure,      &
-      !$acc                   thermExpCoeff,      &
-      !$acc                   salineContractCoeff,      &
-      !$acc                   pressureAdjustedSSH,      &
-      !$acc                   tracersSurfaceValue,      &
-      !$acc                   sfcFlxAttCoeff,      &
-      !$acc                   surfaceFluxAttenuationCoefficientRunoff       &
+      !$acc enter data copyin(                                         &
+      !$acc                   zMid,                                    &
+      !$acc                   zTop,                                    &
+      !$acc                   xtime,                                   &
+      !$acc                   indMLD,                                  &
+      !$acc                   density,                                 &
+      !$acc                   betaEdge,                                &
+      !$acc                   eddyTime,                                &
+      !$acc                   pressure,                                &
+      !$acc                   eddyLength,                              &
+      !$acc                   thermExpCoeff,                           &
+      !$acc                   sfcFlxAttCoeff,                          &
+      !$acc                   potentialDensity,                        &
+      !$acc                   displacedDensity,                        &
+      !$acc                   boundaryLayerDepth,                      &
+      !$acc                   salineContractCoeff,                     &
+      !$acc                   pressureAdjustedSSH,                     &
+      !$acc                   tracersSurfaceValue,                     &
+      !$acc                   daysSinceStartOfSim,                     &
+      !$acc                   simulationStartTime,                     &
+      !$acc                   edgeAreaFractionOfCell,                  &
+      !$acc                   boundaryLayerDepthSmooth,                &
+      !$acc                   surfaceFluxAttenuationCoefficientRunoff  &
       !$acc                   )
-      ! debug, mdt :: not all diagnostics variables are being copied yet....
 
     end subroutine ocn_diagnostics_variables_init!}}}
 
@@ -601,107 +698,206 @@ contains
       ! Remove data from the device
       if ( trim(config_land_ice_flux_mode) /= 'off' ) then
          !$acc exit data delete(                                  &
-         !$acc                   topDrag,                          &
-         !$acc                   topDragMag,                       &
-         !$acc                   landIceBoundaryLayerTracers,      &
-         !$acc                   landIceTracerTransferVelocities,  &
-         !$acc                   indexBLT,      &
-         !$acc                   indexBLS,      &
-         !$acc                   indexHeatTrans,      &
-         !$acc                   indexSaltTrans,      &
+         !$acc                   topDrag,                         &
+         !$acc                   indexBLT,                        &
+         !$acc                   indexBLS,                        &
+         !$acc                   topDragMag,                      &
+         !$acc                   indexHeatTrans,                  &
+         !$acc                   indexSaltTrans,                  &
+         !$acc                   landIceBoundaryLayerTracers,     &
+         !$acc                   landIceTracerTransferVelocities, &
          !$acc                   landIceFrictionVelocity)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
-         !$acc exit data delete(                    &
-         !$acc                   rx1Edge,            &
-         !$acc                   rx1Cell,            &
-         !$acc                   rx1MaxEdge,         &
-         !$acc                   rx1MaxCell,         &
-         !$acc                   smoothingMask,            &
-         !$acc                   verticalStretch,            &
+         !$acc exit data delete(                           &
+         !$acc                   rx1Edge,                  &
+         !$acc                   rx1Cell,                  &
+         !$acc                   rx1MaxEdge,               &
          !$acc                   modifySSHMask,            &
+         !$acc                   smoothingMask,            &
+         !$acc                   verticalStretch,          &
+         !$acc                   globalVerticalStretchMax, &
+         !$acc                   globalVerticalStretchMin  &
+         !$acc                   )
+      end if
+      if ( trim(config_ocean_run_mode) == 'init' .or. &
+                config_AM_debugDiagnostics_enable ) then
+         !$acc exit data delete(                           &
+         !$acc                   rx1MaxCell,               &
          !$acc                   globalRx1Max)
-         ! debug, mdt :: rx1MaxCell and globalRx1Max are in both initMode and debugDiagnosticsAMPKG 
-         !               package, but I can't find a config option for debugDiagnosticsAMPKG
       end if
       if ( trim(config_ocean_run_mode) == 'forward' .or. &
            trim(config_ocean_run_mode) == 'analysis' ) then
-         !$acc exit data delete( &
-         !$acc                   divergence,              &
-         !$acc                   circulation,             &
-         !$acc                   relativeVorticity,       &
-         !$acc                   relativeVorticityCell,   &
-         !$acc                   normPlanetVortEdge,      &
-         !$acc                   normRelVortEdge,      &
-         !$acc                   normalizedRelativeVorticityCell,      &
-         !$acc                   montgomeryPotential,      &
-         !$acc                   BruntVaisalaFreqTop,      &
-         !$acc                   tangentialVelocity,      &
-         !$acc                   layerThickEdge,      &
-         !$acc                   kineticEnergyCell,      &
-         !$acc                   vertVelocityTop,      &
-         !$acc                   vertTransportVelocityTop,      &
-         !$acc                   vertGMBolusVelocityTop,      &
-         !$acc                   normalTransportVelocity,      &
-         !$acc                   normalGMBolusVelocity,      &
-         !$acc                   RiTopOfCell,      &
-         !$acc                   RiTopOfEdge,      &
-         !$acc                   gradSSH,      &
-         !$acc                   tracersSurfaceLayerValue,      &
-         !$acc                   normalVelocitySurfaceLayer,      &
-         !$acc                   indexSurfaceLayerDepth,      &
-         !$acc                   surfaceBuoyancyForcing,      &
-         !$acc                   penetrativeTemperatureFluxOBL,      &
-         !$acc                   surfaceFrictionVelocity,            &
-         !$acc                   gmStreamFuncTopOfEdge,            &
-         !$acc                   GMStreamFuncX,            &
-         !$acc                   GMStreamFuncY,            &
-         !$acc                   GMStreamFuncZ,            &
-         !$acc                   GMStreamFuncZonal,            &
-         !$acc                   GMStreamFuncMeridional,            &
-         !$acc                   gmStreamFuncTopOfCell,            &
-         !$acc                   k33,            &
-         !$acc                   cGMphaseSpeed,            &
-         !$acc                   slopeTriadUp,            &
-         !$acc                   slopeTriadDown,            &
-         !$acc                   transportVelocityX,            &
-         !$acc                   transportVelocityY,            &
-         !$acc                   transportVelocityZ,            &
-         !$acc                   transportVelocityZonal,            &
-         !$acc                   transportVelocityMeridional,            &
-         !$acc                   GMBolusVelocityX,            &
-         !$acc                   GMBolusVelocityY,            &
-         !$acc                   GMBolusVelocityZ,            &
+         !$acc exit data delete(                                  &
+         !$acc                   k33,                             &
+         !$acc                   gradSSH,                         &
+         !$acc                   gradSSHX,                        &
+         !$acc                   gradSSHY,                        &
+         !$acc                   gradSSHZ,                        &
+         !$acc                   viscosity,                       &
+         !$acc                   velocityX,                       &
+         !$acc                   velocityY,                       &
+         !$acc                   velocityZ,                       &
+         !$acc                   divergence,                      &
+         !$acc                   RiTopOfCell,                     &
+         !$acc                   RiTopOfEdge,                     &
+         !$acc                   SSHGradient,                     &
+         !$acc                   circulation,                     &
+         !$acc                   slopeTriadUp,                    &
+         !$acc                   gradSSHZonal,                    &
+         !$acc                   cGMphaseSpeed,                   &
+         !$acc                   velocityZonal,                   &
+         !$acc                   GMStreamFuncX,                   &
+         !$acc                   GMStreamFuncY,                   &
+         !$acc                   GMStreamFuncZ,                   &
+         !$acc                   layerThickEdge,                  &
+         !$acc                   slopeTriadDown,                  &
+         !$acc                   normRelVortEdge,                 &
+         !$acc                   surfaceVelocity,                 &
+         !$acc                   vertVelocityTop,                 &
+         !$acc                   GMBolusVelocityX,                &
+         !$acc                   GMBolusVelocityY,                &
+         !$acc                   GMBolusVelocityZ,                &
+         !$acc                   vertNonLocalFlux,                &
+         !$acc                   vertViscTopOfEdge,               &
+         !$acc                   gradSSHMeridional,               &
+         !$acc                   barotropicForcing,               &
+         !$acc                   vertViscTopOfCell,               &
+         !$acc                   vertDiffTopOfCell,               &
+         !$acc                   GMStreamFuncZonal,               &
+         !$acc                   relativeVorticity,               &
+         !$acc                   kineticEnergyCell,               &
+         !$acc                   normPlanetVortEdge,              &
+         !$acc                   velocityMeridional,              &
+         !$acc                   transportVelocityX,              &
+         !$acc                   transportVelocityY,              &
+         !$acc                   transportVelocityZ,              &
+         !$acc                   tangentialVelocity,              &
+         !$acc                   montgomeryPotential,             &
+         !$acc                   BruntVaisalaFreqTop,             &
+         !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
-         !$acc                   GMBolusVelocityMeridional,            &
-         !$acc                   velocityMeridional,            &
-         !$acc                   velocityZonal             &
+         !$acc                   bulkRichardsonNumber,            &
+         !$acc                   gmStreamFuncTopOfCell,           &
+         !$acc                   gmStreamFuncTopOfEdge,           &
+         !$acc                   indexSSHGradientZonal,           &
+         !$acc                   relativeVorticityCell,           &
+         !$acc                   normalGMBolusVelocity,           &
+         !$acc                   vertGMBolusVelocityTop,          &
+         !$acc                   transportVelocityZonal,          &
+         !$acc                   GMStreamFuncMeridional,          &
+         !$acc                   indexSurfaceLayerDepth,          &
+         !$acc                   surfaceBuoyancyForcing,          &
+         !$acc                   surfaceFrictionVelocity,         &
+         !$acc                   indexBoundaryLayerDepth,         &
+         !$acc                   barotropicThicknessFlux,         &
+         !$acc                   normalTransportVelocity,         &
+         !$acc                   vertTransportVelocityTop,        &
+         !$acc                   bulkRichardsonNumberBuoy,        &
+         !$acc                   tracersSurfaceLayerValue,        &
+         !$acc                   GMBolusVelocityMeridional,       &
+         !$acc                   bulkRichardsonNumberShear,       &
+         !$acc                   indexSurfaceVelocityZonal,       &
+         !$acc                   normalVelocitySurfaceLayer,      &
+         !$acc                   index_vertNonLocalFluxTemp,      &
+         !$acc                   indexSSHGradientMeridional,      &
+         !$acc                   transportVelocityMeridional,     &
+         !$acc                   penetrativeTemperatureFluxOBL,   &
+         !$acc                   indexSurfaceVelocityMeridional,  &
+         !$acc                   normalizedRelativeVorticityCell  &
+         !$acc                   )
+      end if
+      if ( trim(config_ocean_run_mode) == 'forward' ) then
+         !$acc exit data delete(                              &
+         !$acc                   wettingVelocity              &
          !$acc                   )
       end if
       if ( config_use_GM ) then
-         !$acc exit data delete( &
-         !$acc                   gmKappaScaling,            &
-         !$acc                   RediKappaScaling,            &
-         !$acc                   RediKappaSfcTaper,            &
-         !$acc                   gmBolusKappa             &
+         !$acc exit data delete(                    &
+         !$acc                   RediKappa,         &
+         !$acc                   gmBolusKappa,      &
+         !$acc                   gmKappaScaling,    &
+         !$acc                   RediKappaScaling,  &
+         !$acc                   rediLimiterCount,  &
+         !$acc                   RediKappaSfcTaper, &
+         !$acc                   gmResolutionTaper  &
+         !$acc                   )
+      end if
+      if ( config_compute_active_tracer_budgets ) then
+         !$acc exit data delete(                                          &
+         !$acc                   activeTracerHorMixTendency,              &
+         !$acc                   activeTracerVertMixTendency,             &
+         !$acc                   temperatureShortWaveTendency,            &
+         !$acc                   activeTracerNonLocalTendency,            &
+         !$acc                   activeTracerSurfaceFluxTendency,         &
+         !$acc                   activeTracerVerticalAdvectionTopFlux,    &
+         !$acc                   activeTracerVerticalAdvectionTendency,   &
+         !$acc                   activeTracerHorizontalAdvectionTendency, &
+         !$acc                   activeTracerHorizontalAdvectionEdgeFlux  &
+         !$acc                   )
+      end if
+      if ( config_use_activeTracers_surface_restoring ) then
+         !$acc exit data delete(                                   &
+         !$acc                   salinitySurfaceRestoringTendency  &
+         !$acc                   )
+      end if
+      if ( trim(config_time_integrator) == 'semi_implicit' ) then
+         !$acc exit data delete(                        &
+         !$acc                   CGvec_r0,              &
+         !$acc                   CGvec_r00,             &
+         !$acc                   CGvec_r1,              &
+         !$acc                   CGvec_rh0,             &
+         !$acc                   CGvec_rh1,             &
+         !$acc                   CGvec_ph0,             &
+         !$acc                   CGvec_ph1,             &
+         !$acc                   CGvec_v0,              &
+         !$acc                   CGvec_v1,              &
+         !$acc                   CGvec_s0,              &
+         !$acc                   CGvec_s1,              &
+         !$acc                   CGvec_sh0,             &
+         !$acc                   CGvec_sh1,             &
+         !$acc                   CGvec_t0,              &
+         !$acc                   CGvec_t1,              &
+         !$acc                   CGvec_q0,              &
+         !$acc                   CGvec_q1,              &
+         !$acc                   CGvec_qh0,             &
+         !$acc                   CGvec_w0,              &
+         !$acc                   CGvec_w1,              &
+         !$acc                   CGvec_wh0,             &
+         !$acc                   CGvec_wh1,             &
+         !$acc                   CGvec_y0,              &
+         !$acc                   CGvec_z0,              &
+         !$acc                   CGvec_z1,              &
+         !$acc                   CGvec_zh0,             &
+         !$acc                   CGvec_zh1,             &
+         !$acc                   barotropicCoriolisTerm &
          !$acc                   )
       end if
 
-      !$acc exit data delete( &
-      !$acc                   zMid,                    &
-      !$acc                   zTop,                    &
-      !$acc                   potentialDensity,      &
-      !$acc                   displacedDensity,      &
-      !$acc                   density,      &
-      !$acc                   pressure,      &
-      !$acc                   thermExpCoeff,      &
-      !$acc                   salineContractCoeff,      &
-      !$acc                   pressureAdjustedSSH,      &
-      !$acc                   tracersSurfaceValue,      &
-      !$acc                   sfcFlxAttCoeff,      &
-      !$acc                   surfaceFluxAttenuationCoefficientRunoff       &
+      !$acc exit data delete(                                          &
+      !$acc                   zMid,                                    &
+      !$acc                   zTop,                                    &
+      !$acc                   xtime,                                   &
+      !$acc                   indMLD,                                  &
+      !$acc                   density,                                 &
+      !$acc                   betaEdge,                                &
+      !$acc                   eddyTime,                                &
+      !$acc                   pressure,                                &
+      !$acc                   eddyLength,                              &
+      !$acc                   thermExpCoeff,                           &
+      !$acc                   sfcFlxAttCoeff,                          &
+      !$acc                   potentialDensity,                        &
+      !$acc                   displacedDensity,                        &
+      !$acc                   boundaryLayerDepth,                      &
+      !$acc                   salineContractCoeff,                     &
+      !$acc                   pressureAdjustedSSH,                     &
+      !$acc                   tracersSurfaceValue,                     &
+      !$acc                   daysSinceStartOfSim,                     &
+      !$acc                   simulationStartTime,                     &
+      !$acc                   edgeAreaFractionOfCell,                  &
+      !$acc                   boundaryLayerDepthSmooth,                &
+      !$acc                   surfaceFluxAttenuationCoefficientRunoff  &
       !$acc                   )
-      ! debug, mdt :: not all diagnostics variables are being copied yet....
 
       ! Nullify pointers
       ! debug, mdt :: still need to do this
