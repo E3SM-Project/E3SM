@@ -30,6 +30,7 @@ module ocn_equation_of_state_wright
    use mpas_log
    use mpas_constants
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -692,14 +693,11 @@ contains
 
       else ! displacementType == 'absolute'
 
-         ! The reference gauge pressure is hard coded to the surface (zero)
-         ! for now but this could be replaced by a namelist option with a
-         ! different reference pressure in the future
          !$omp parallel
          !$omp do schedule(runtime) private(k)
          do iCell=1,nCells
             do k = 1, nVertLevels
-               boussinesqPres(k, iCell) = 0.0_RKIND
+               boussinesqPres(k, iCell) = config_eos_wright_ref_pressure
             end do
          end do
          !$omp end do
