@@ -1753,8 +1753,6 @@ module li_calving
              config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*sigmamax*config_ocean_density)
          endwhere
 
-!SFP: Below here is a lot of commented out code from Tong. Needs cleaning up still?
-
          !alpha(:) = sigmamin(:) / (sigmamax(:))
          !epsmax(:) = sigmamax(:) / (2.0d0*effectiveViscosity(:))
          !s0(:) =
