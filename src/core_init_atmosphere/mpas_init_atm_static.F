@@ -127,12 +127,14 @@
 
  real (kind=RKIND), dimension(:), pointer :: ter
  integer (kind=I8KIND), dimension(:), pointer :: ter_integer
+ integer (kind=I8KIND), dimension(:,:), pointer :: greenfrac_int
  real (kind=RKIND), dimension(:), pointer :: soiltemp
  real (kind=RKIND), dimension(:), pointer :: snoalb
  integer (kind=I8KIND), dimension(:), pointer :: snoalb_integer
  real (kind=RKIND), dimension(:), pointer :: shdmin, shdmax
  real (kind=RKIND), dimension(:,:), pointer :: greenfrac
  real (kind=RKIND), dimension(:,:), pointer :: albedo12m
+ integer (kind=I8KIND), dimension(:,:), pointer :: albedo12m_int
  real (kind=RKIND) :: msgval, fillval
  real (kind=RKIND), pointer :: missing_value
  integer, pointer :: category_min, category_max
@@ -154,7 +156,8 @@
  real (kind=RKIND) :: tval
  integer (kind=I8KIND) :: i8val
  integer, pointer :: tile_bdr
- integer, pointer :: tile_nx, tile_ny
+ integer, pointer :: tile_nx, tile_ny, tile_nz
+ integer, pointer :: tile_z_start, tile_z_end
 
  logical :: all_pixels_mapped_to_halo_cells
  integer :: ierr
@@ -1079,104 +1082,134 @@
 
     call mpas_log_write('Using MODIS FPAR 30-arc-second data for climatological monthly vegetation fraction')
 
-    nx = 1200
-    ny = 1200
-    nz = 12
-    isigned  = 0
-    endian   = 0
-    wordsize = 1
-    scalefactor = 1.0
-    msgval = 200.0
-    fillval = 0.0
-    allocate(rarray(nx,ny,nz))
-    allocate(nhs(nCells))
-    nhs(:) = 0
-    greenfrac(:,:) = 0.0
-
-    rarray_ptr = c_loc(rarray)
-
-    start_lat = -89.99583
-    start_lon = -179.99583
     geog_sub_path = 'greenfrac_fpar_modis/'
 
-    do jTileStart = 1,20401,ny
-       jTileEnd = jTileStart + ny - 1
+    ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
+    if (ierr /= 0) then
+       call mpas_log_write('Error occurred when initalizing the interpolation of monthly vegetation fraction (greenfrac)', &
+                            messageType=MPAS_LOG_CRIT)
+    endif
 
-       do iTileStart=1,42001,nx
-          iTileEnd = iTileStart + nx - 1
-          write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//trim(geog_sub_path), &
-                       iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-          call mpas_log_write(trim(fname))
-          call mpas_f_to_c_string(fname, c_fname)
+    call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
+    call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
+    call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+    call mpas_pool_get_config(mgr % pool, 'tile_z', tile_nz)
+    call mpas_pool_get_config(mgr % pool, 'missing_value', missing_value)
 
-          call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                            wordsize,istatus)
-          call init_atm_check_read_error(istatus, fname)
-          rarray(:,:,:) = rarray(:,:,:) *  scalefactor
+    allocate(nhs(nCells))
+    allocate(greenfrac_int(tile_nz, nCells))
+    nhs(:) = 0
+    greenfrac(:,:) = 0.0
+    greenfrac_int(:,:) = 0_I8KIND
+    fillval = 0.0
 
-          iPoint = 1
-          do j=1,ny
-          do i=1,nx
-             lat_pt = start_lat + (jTileStart + j - 2) * 0.0083333333
-             lon_pt = start_lon + (iTileStart + i - 2) * 0.0083333333
-             lat_pt = lat_pt * PI / 180.0
-             lon_pt = lon_pt * PI / 180.0
+    do iCell = 1, nCells
+        if (nhs(iCell) == 0) then
+            tile => null()
+            ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
+            if (ierr /= 0 .or. .not. associated(tile)) then
+                call mpas_log_write('Could not get tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
+            end if
 
-             iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
-                                   nEdgesOnCell,cellsOnCell, &
-                                   latCell,lonCell)
+            ierr = mgr % push_tile(tile)
+            if (ierr /= 0) then
+                call mpas_log_write("Error pushing this tile onto the stack: "//trim(tile % fname), messageType=MPAS_LOG_CRIT)
+            end if
+        end if
 
-             !
-             ! This field only matters for land cells, and for all but the outermost boundary cells,
-             ! we can safely assume that the nearest model grid cell contains the pixel (else, a different
-             ! cell would be nearest)
-             !
-             if (landmask(iPoint) == 1 .and. bdyMaskCell(iPoint) < nBdyLayers) then
-                do k=1,nz
-                   if (rarray(i,j,k) == msgval) then
-                      rarray(i,j,k) = fillval
-                   end if
-                   greenfrac(k,iPoint) = greenfrac(k,iPoint) + rarray(i,j,k)
+        do while (.not. mgr % is_stack_empty())
+            tile => mgr % pop_tile()
+
+            if (tile % is_processed) then
+                cycle
+            end if
+
+            call mpas_log_write('Processing tile: '//trim(tile % fname))
+
+            all_pixels_mapped_to_halo_cells = .true.
+
+            do j = tile_bdr + 1, tile_ny + tile_bdr, 1
+                do i = tile_bdr + 1, tile_nx + tile_bdr, 1
+
+                    call mgr % tile_to_latlon(tile, j, i, lat_pt, lon_pt)
+                    call mpas_latlon_to_xyz(xPixel, yPixel, zPixel, sphere_radius, lat_pt, lon_pt)
+                    call mpas_kd_search(tree, (/xPixel, yPixel, zPixel/), res)
+
+                    !
+                    ! This field only matters for land cells, and for all but the outermost boundary cells,
+                    ! we can safely assume that the nearest model grid cell contains the pixel (else, a different
+                    ! cell would be nearest)
+                    !
+                    if (landMask(res % id) == 1 .and. bdyMaskCell(res % id) < nBdyLayers) then
+                        do k = 1, tile_nz
+                            if (tile % tile(i, j, k) == missing_value) then
+                                i8val = int(fillval, kind=I8KIND)
+                            else
+                                i8val = int(tile % tile(i,j,k), kind=I8KIND)
+                            end if
+                            greenfrac_int(k, res % id) = greenfrac_int(k, res % id) + i8val
+                        end do
+                        nhs(res % id) = nhs(res % id) + 1
+
+                        if (res % id <= nCellsSolve) then
+                            all_pixels_mapped_to_halo_cells = .false.
+                        end if
+
+                    ! For outermost land cells, additional work is needed to verify that the pixel
+                    ! actually lies within the nearest cell
+                    else if (landMask(res % id) == 1) then
+                        if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(res % id), yCell(res % id), zCell(res % id), &
+                                          nEdgesOnCell(res % id), verticesOnCell(:,res % id), xVertex, yVertex, zVertex)) then
+                            do k = 1, tile_nz
+                                if (tile % tile(i, j, k) == missing_value) then
+                                    i8val = int(fillval, kind=I8KIND)
+                                else
+                                    i8val = int(tile % tile(i,j,k), kind=I8KIND)
+                                end if
+                                greenfrac_int(k, res % id) = greenfrac_int(k, res % id) + i8val
+                            end do
+                            nhs(res % id) = nhs(res % id) + 1
+
+                            if (res % id <= nCellsSolve) then
+                                all_pixels_mapped_to_halo_cells = .false.
+                            end if
+                        end if
+                    end if
                 end do
-                nhs(iPoint) = nhs(iPoint) + 1
+            end do
 
-             ! For outermost land cells, additional work is needed to verify that the pixel
-             ! actually lies within the nearest cell
-             else if (landmask(iPoint) == 1) then
-                zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
-                xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
-                yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
+            tile % is_processed = .true.
 
-                if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
-                            nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
-                   do k=1,nz
-                      if (rarray(i,j,k) == msgval) then
-                         rarray(i,j,k) = fillval
-                      end if
-                      greenfrac(k,iPoint) = greenfrac(k,iPoint) + rarray(i,j,k)
-                   end do
-                   nhs(iPoint) = nhs(iPoint) + 1
+            if (.not. all_pixels_mapped_to_halo_cells) then
+                ierr = mgr % push_neighbors(tile)
+                if (ierr /= 0) then
+                    call mpas_log_write("Error pushing the tile neighbors of: "//trim(tile%fname), messageType=MPAS_LOG_CRIT)
                 end if
-             end if
-          end do
-          end do
+            end if
 
-       end do
+        end do
     end do
 
-    do iCell = 1,nCells
-       ! For land points that have no overlap with valid data, and for water points,
-       ! just use the fill value...
-       if (nhs(iCell) == 0) then
-          greenfrac(:,iCell) = fillval
-       else
-          greenfrac(:,iCell) = greenfrac(:,iCell) / real(nhs(iCell))
-       end if
-       shdmin(iCell) = minval(greenfrac(:,iCell))
-       shdmax(iCell) = maxval(greenfrac(:,iCell))
+    do iCell = 1, nCells
+        ! For land points that have no overlap with valid data, and for water points,
+        ! just use the fill value...
+        if (nhs(iCell) == 0) then
+            greenfrac(:,iCell) = fillval
+        else
+            greenfrac(:,iCell) = real(greenfrac_int(:,iCell), kind=R8KIND) / real(nhs(iCell), kind=R8KIND)
+        end if
+        shdmin(iCell) = minval(greenfrac(:,iCell))
+        shdmax(iCell) = maxval(greenfrac(:,iCell))
     end do
-    deallocate(rarray)
+
     deallocate(nhs)
+    deallocate(greenfrac_int)
+
+    ierr = mgr % finalize()
+    if (ierr /= 0) then
+       call mpas_log_write('Error occurred when finalizing the interpolation of monthly vegetation fraction (greenfrac)', &
+                            messageType=MPAS_LOG_CRIT)
+    endif
 
  else if (trim(config_vegfrac_data) == 'NCEP') then
 
@@ -1278,108 +1311,136 @@
        call mpas_log_write('   Dataset will be supersampled by a factor of $i', intArgs=(/supersample_fac/))
     end if
 
-    nx = 1206
-    ny = 1206
-    nz = 12
-    isigned  = 1
-    endian   = 0
-    wordsize = 2
-    scalefactor = 0.01
-    msgval = real(-999.0,kind=R4KIND)*real(0.01,kind=R4KIND)
-    fillval = 8.0
-    allocate(rarray(nx,ny,nz))
-    allocate(nhs(nCells))
-    nhs(:) = 0
-    albedo12m(:,:) = 0.0
-
-    rarray_ptr = c_loc(rarray)
-
-    start_lat = 90.0 - 0.05 * 0.5 / supersample_fac
-    start_lon = -180.0 + 0.05 * 0.5 / supersample_fac
     geog_sub_path = 'albedo_modis/'
 
-    do jTileStart = 1,02401,ny-6
-       jTileEnd = jTileStart + ny - 1 - 6
+    ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
+    if (ierr /= 0) then
+       call mpas_log_write('Error occurred when initalizing the interpolation of monthly albedo (albedo12m)', &
+                            messageType=MPAS_LOG_CRIT)
+    endif
 
-       do iTileStart=1,06001,nx-6
-          iTileEnd = iTileStart + nx - 1 - 6
-          write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//trim(geog_sub_path), &
-                       iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-          call mpas_log_write(trim(fname))
-          call mpas_f_to_c_string(fname, c_fname)
+    call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
+    call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
+    call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+    call mpas_pool_get_config(mgr % pool, 'tile_z_start', tile_z_start)
+    call mpas_pool_get_config(mgr % pool, 'tile_z_end', tile_z_end)
+    call mpas_pool_get_config(mgr % pool, 'missing_value', missing_value)
+    call mpas_pool_get_config(mgr % pool, 'scale_factor', scalefactor_ptr)
+    scalefactor = scalefactor_ptr
 
-          call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                            wordsize,istatus)
-          call init_atm_check_read_error(istatus, fname)
-          rarray(:,:,:) = rarray(:,:,:) * scalefactor
+    allocate(albedo12m_int(tile_z_start:tile_z_end, nCells))
+    allocate(nhs(nCells))
+    albedo12m_int(:,:) = 0
+    albedo12m(:,:) = 0.0
+    nhs(:) = 0
+    fillval = 8.0
 
-          iPoint = 1
-          do j=supersample_fac * 3 + 1, supersample_fac * (ny-3)
-          do i=supersample_fac * 3 + 1, supersample_fac * (nx-3)
-             ii = (i - 1) / supersample_fac + 1
-             jj = (j - 1) / supersample_fac + 1
+    do iCell = 1, nCells
+        if (nhs(iCell) == 0) then
+            tile => null()
+            ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
+            if (ierr /= 0 .or. .not. associated(tile)) then
+                call mpas_log_write('Could not get tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
+            end if
 
-             lat_pt = start_lat - (supersample_fac*(jTileStart-1) + j - (supersample_fac*3+1)) * 0.05 / supersample_fac
-             lon_pt = start_lon + (supersample_fac*(iTileStart-1) + i - (supersample_fac*3+1)) * 0.05 / supersample_fac
-             lat_pt = lat_pt * PI / 180.0
-             lon_pt = lon_pt * PI / 180.0
+            ierr = mgr % push_tile(tile)
+            if (ierr /= 0) then
+                call mpas_log_write("Error pushing this tile onto the stack: "//trim(tile % fname), messageType=MPAS_LOG_CRIT)
+            end if
+        end if
 
-             iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
-                                   nEdgesOnCell,cellsOnCell, &
-                                   latCell,lonCell)
+        do while (.not. mgr % is_stack_empty())
+            tile => mgr % pop_tile()
 
-             !
-             ! This field only matters for land cells, and for all but the outermost boundary cells,
-             ! we can safely assume that the nearest model grid cell contains the pixel (else, a different
-             ! cell would be nearest)
-             !
-             if (landmask(iPoint) == 1 .and. bdyMaskCell(iPoint) < nBdyLayers) then
-                do k=1,nz
-                   if (rarray(ii,jj,k) == msgval) then
-                      rarray(ii,jj,k) = fillval
-                   end if
-                   albedo12m(k,iPoint) = albedo12m(k,iPoint) + rarray(ii,jj,k)
+            if (tile % is_processed) then
+                cycle
+            end if
+
+            call mpas_log_write('Processing tile: '//trim(tile % fname))
+
+            all_pixels_mapped_to_halo_cells = .true.
+
+            do j = supersample_fac * tile_bdr + 1, supersample_fac * (tile_ny + tile_bdr), 1
+                do i = supersample_fac * tile_bdr + 1, supersample_fac * (tile_nx + tile_bdr), 1
+
+                    ii = (i - 1) / supersample_fac + 1
+                    jj = (j - 1) / supersample_fac + 1
+
+                    call mgr % tile_to_latlon(tile, j, i, lat_pt, lon_pt, supersample_fac)
+                    call mpas_latlon_to_xyz(xPixel, yPixel, zPixel, sphere_radius, lat_pt, lon_pt)
+                    call mpas_kd_search(tree, (/xPixel, yPixel, zPixel/), res)
+
+                    if (bdyMaskCell(res % id) < nBdyLayers) then
+                        if (landMask(res % id) == 1) then
+                            do k = tile_z_start, tile_z_end
+                                if (tile % tile(ii, jj, k) == missing_value) then
+                                    i8val = int(fillval, kind=I8KIND)
+                                else
+                                    i8val = int(tile % tile(ii,jj,k), kind=I8KIND)
+                                end if
+                                albedo12m_int(k, res % id) = albedo12m_int(k, res % id) + i8val
+                            end do
+                            nhs(res % id) = nhs(res % id) + 1
+                        end if
+
+                        if (res % id <= nCellsSolve) then
+                            all_pixels_mapped_to_halo_cells = .false.
+                        end if
+                    else
+                        if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(res % id), yCell(res % id), zCell(res % id), &
+                                         nEdgesOnCell(res % id), verticesOnCell(:,res % id), xVertex, yVertex, zVertex)) then
+                            if (landMask(res % id) == 1) then
+                                do k = tile_z_start, tile_z_end
+                                    if (tile % tile(ii, jj, k) == missing_value) then
+                                        i8val = int(fillval, kind=I8KIND)
+                                    else
+                                        i8val = int(tile % tile(ii,jj,k), kind=I8KIND)
+                                    end if
+                                    albedo12m_int(k, res % id) = albedo12m_int(k, res % id) + i8val
+                                end do
+                                nhs(res % id) = nhs(res % id) + 1
+                            end if
+
+                            if (res % id <= nCellsSolve) then
+                                all_pixels_mapped_to_halo_cells = .false.
+                            end if
+                        end if
+                    end if
                 end do
-                nhs(iPoint) = nhs(iPoint) + 1
+            end do
 
-             ! For outermost land cells, additional work is needed to verify that the pixel
-             ! actually lies within the nearest cell
-             else if (landmask(iPoint) == 1) then
-                zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
-                xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
-                yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
+            tile % is_processed = .true.
 
-                if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
-                            nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
-                   do k=1,nz
-                      if (rarray(ii,jj,k) == msgval) then
-                         rarray(ii,jj,k) = fillval
-                      end if
-                      albedo12m(k,iPoint) = albedo12m(k,iPoint) + rarray(ii,jj,k)
-                   end do
-                   nhs(iPoint) = nhs(iPoint) + 1
+            if (.not. all_pixels_mapped_to_halo_cells) then
+                ierr = mgr % push_neighbors(tile)
+                if (ierr /= 0) then
+                    call mpas_log_write("error pushing the tile neighbors of: "//trim(tile%fname), messagetype=MPAS_LOG_CRIT)
                 end if
-             end if
-          end do
-          end do
+            end if
 
-       end do
+        end do
     end do
 
-    do iCell = 1,nCells
-       ! For land points that have no overlap with valid data, and for water points,
-       ! just use the fill value...
-       if (nhs(iCell) == 0) then
-          albedo12m(:,iCell) = fillval
-       else
-          albedo12m(:,iCell) = albedo12m(:,iCell) / real(nhs(iCell))
-       end if
-       if (lu_index(iCell) == isice_lu) then
-          albedo12m(:,iCell) = 70.0
-       end if
+    do iCell = 1, nCells
+        if (nhs(iCell) == 0) then
+            albedo12m(:,iCell) = fillVal
+        else
+            albedo12m(:,iCell) = real(albedo12m_int(:,iCell), kind=R8KIND) / real(nhs(iCell), kind=R8KIND)
+            albedo12m(:,iCell) = albedo12m(:,iCell) * scalefactor
+        end if
+        if (lu_index(iCell) == isice_lu) then
+            albedo12m(:,iCell) = 70.0 ! TODO: Where does this come from?
+        endif
     end do
-    deallocate(rarray)
+
     deallocate(nhs)
+    deallocate(albedo12m_int)
+
+    ierr = mgr % finalize()
+    if (ierr /= 0) then
+       call mpas_log_write('Error occurred when finalizing the interpolation of monthly albedo (albedo12m)', &
+                            messageType=MPAS_LOG_CRIT)
+    endif
 
  else if (trim(config_albedo_data) == 'NCEP') then
 
