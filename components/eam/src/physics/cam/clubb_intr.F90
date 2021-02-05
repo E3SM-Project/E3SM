@@ -1985,40 +1985,40 @@ end subroutine clubb_init_cnst
   
       !  Need to flip arrays around for CLUBB core
       do k=1,pverp
-         um_in(k)      = um(i,pverp-k+1)
-         vm_in(k)      = vm(i,pverp-k+1)
-         upwp_in(k)    = upwp(i,pverp-k+1)
-         vpwp_in(k)    = vpwp(i,pverp-k+1)
-         up2_in(k)     = up2(i,pverp-k+1)
-         vp2_in(k)     = vp2(i,pverp-k+1)
-         wp2_in(k)     = wp2(i,pverp-k+1)
-         wp3_in(k)     = wp3(i,pverp-k+1)
-         rtp2_in(k)    = rtp2(i,pverp-k+1)
-         thlp2_in(k)   = thlp2(i,pverp-k+1)
-         thlm_in(k)    = thlm(i,pverp-k+1)
-         rtm_in(k)     = rtm(i,pverp-k+1)
-         rvm_in(k)     = rvm(i,pverp-k+1)
-         wprtp_in(k)   = wprtp(i,pverp-k+1)
-         wpthlp_in(k)  = wpthlp(i,pverp-k+1)
-         rtpthlp_in(k) = rtpthlp(i,pverp-k+1)
+         um_in(k)      = real(um(i,pverp-k+1), kind = core_rknd)
+         vm_in(k)      = real(vm(i,pverp-k+1), kind = core_rknd)
+         upwp_in(k)    = real(upwp(i,pverp-k+1), kind = core_rknd)
+         vpwp_in(k)    = real(vpwp(i,pverp-k+1), kind = core_rknd)
+         up2_in(k)     = real(up2(i,pverp-k+1), kind = core_rknd)
+         vp2_in(k)     = real(vp2(i,pverp-k+1), kind = core_rknd)
+         wp2_in(k)     = real(wp2(i,pverp-k+1), kind = core_rknd)
+         wp3_in(k)     = real(wp3(i,pverp-k+1), kind = core_rknd)
+         rtp2_in(k)    = real(rtp2(i,pverp-k+1), kind = core_rknd)
+         thlp2_in(k)   = real(thlp2(i,pverp-k+1), kind = core_rknd)
+         thlm_in(k)    = real(thlm(i,pverp-k+1), kind = core_rknd)
+         rtm_in(k)     = real(rtm(i,pverp-k+1), kind = core_rknd)
+         rvm_in(k)     = real(rvm(i,pverp-k+1), kind = core_rknd)
+         wprtp_in(k)   = real(wprtp(i,pverp-k+1), kind = core_rknd)
+         wpthlp_in(k)  = real(wpthlp(i,pverp-k+1), kind = core_rknd)
+         rtpthlp_in(k) = real(rtpthlp(i,pverp-k+1), kind = core_rknd)
  
-         wpthvp_inout(k)  = wpthvp(i,pverp-k+1)
-         wp2thvp_inout(k) = wp2thvp(i,pverp-k+1)
-         rtpthvp_inout(k) = rtpthvp(i,pverp-k+1)
-         thlpthvp_inout(k)= thlpthvp(i,pverp-k+1)
-         rcm_inout(k)  = rcm(i,pverp-k+1)
-         cloud_frac_inout(k) = cloud_frac(i,pverp-k+1)
+         wpthvp_inout(k)     = real(wpthvp(i,pverp-k+1), kind = core_rknd)
+         wp2thvp_inout(k)    = real(wp2thvp(i,pverp-k+1), kind = core_rknd)
+         rtpthvp_inout(k)    = real(rtpthvp(i,pverp-k+1), kind = core_rknd)
+         thlpthvp_inout(k)   = real(thlpthvp(i,pverp-k+1), kind = core_rknd)
+         rcm_inout(k)        = real(rcm(i,pverp-k+1), kind = core_rknd)
+         cloud_frac_inout(k) = real(cloud_frac(i,pverp-k+1), kind = core_rknd)
 
          !  Higher order scalar inouts, set to zero
-         sclrpthvp_inout(k,:)= 0._r8
-         sclrm(k,:)          = 0._r8
-         wpsclrp(k,:)        = 0._r8
-         sclrp2(k,:)         = 0._r8
-         sclrprtp(k,:)       = 0._r8
-         sclrpthlp(k,:)      = 0._r8
+         sclrpthvp_inout(k,:)= 0._core_rknd
+         sclrm(k,:)          = 0._core_rknd
+         wpsclrp(k,:)        = 0._core_rknd
+         sclrp2(k,:)         = 0._core_rknd
+         sclrprtp(k,:)       = 0._core_rknd
+         sclrpthlp(k,:)      = 0._core_rknd
 
          if (k .ne. 1) then
-            pre_in(k)    = prer_evap(i,pverp-k+1)
+            pre_in(k)    = real(prer_evap(i,pverp-k+1), kind = core_rknd)
          endif
 
       enddo
@@ -2026,7 +2026,7 @@ end subroutine clubb_init_cnst
       pre_in(1) = pre_in(2)
       
       !  Initialize these to prevent crashing behavior
-      edsclr_in(:,:)      = 0._r8
+      edsclr_in(:,:)      = 0._core_rknd
       edsclr_out(:,:)     = 0._r8
 
      
@@ -2057,7 +2057,7 @@ end subroutine clubb_init_cnst
          if (lq(ixind))  then 
             icnt=icnt+1
             do k=1,pver
-               edsclr_in(k+1,icnt) = state1%q(i,pver-k+1,ixind)
+               edsclr_in(k+1,icnt) = real(state1%q(i,pver-k+1,ixind), kind = core_rknd)
             enddo
             edsclr_in(1,icnt) = edsclr_in(2,icnt)
          end if
@@ -2065,15 +2065,15 @@ end subroutine clubb_init_cnst
       
       if (do_expldiff) then 
         do k=1,pver
-          edsclr_in(k+1,icnt+1) = thlm(i,pver-k+1)
-          edsclr_in(k+1,icnt+2) = rtm(i,pver-k+1)
+          edsclr_in(k+1,icnt+1) = real(thlm(i,pver-k+1), kind = core_rknd)
+          edsclr_in(k+1,icnt+2) = real(rtm(i,pver-k+1), kind = core_rknd)
         enddo
         
         edsclr_in(1,icnt+1) = edsclr_in(2,icnt+1)
         edsclr_in(1,icnt+2) = edsclr_in(2,icnt+2)  
       endif    
 
-      rho_in(:) = rho(i,:)
+      rho_in(:) = real(rho(i,:), kind = core_rknd)
      
       ! --------------------------------------------------------- !
       ! Compute cloud-top radiative cooling contribution to CLUBB !
@@ -2097,8 +2097,8 @@ end subroutine clubb_init_cnst
          endif
        
          ! Now compute new entrainment rate based on organization
-         varmu2 = mu / (1._r8 + orgparam * 100._r8)
-         varmu(i) = varmu2
+         varmu(i) = mu / (1._r8 + orgparam * 100._r8)
+         varmu2   = real(varmu(i), kind = core_rknd)
      
       endif
 
@@ -2181,29 +2181,20 @@ end subroutine clubb_init_cnst
             rtpthlp_mc_out)
 
             if (clubb_do_deep) then
-               dum1 = 1._r8
+               dum_core_rknd = 1._core_rknd
             else
-               dum1 = (1._r8 - cam_in%landfrac(i))
+               dum_core_rknd = (1._core_rknd - real(cam_in%landfrac(i), kind = core_rknd))
             end if
 
             ! update turbulent moments based on rain evaporation
-            ! update turbulent moments based on rain evaporation
-            rtp2_in  = rtp2_in + clubb_rnevap_effic * dum1 * rtp2_mc_out * dtime
-            thlp2_in = thlp2_in + clubb_rnevap_effic * dum1 * thlp2_mc_out * dtime
+            rtp2_in  = rtp2_in + real(clubb_rnevap_effic, kind = core_rknd) * dum_core_rknd * rtp2_mc_out * dtime
+            thlp2_in = thlp2_in + real(clubb_rnevap_effic, kind = core_rknd) * dum_core_rknd * thlp2_mc_out * dtime
             if (.not. clubb_do_deep) then
-               wprtp_in = wprtp_in + clubb_rnevap_effic * dum1 * wprtp_mc_out * dtime
-               wpthlp_in = wpthlp_in + clubb_rnevap_effic * dum1 * wpthlp_mc_out * dtime
+               wprtp_in = wprtp_in + real(clubb_rnevap_effic, kind = core_rknd) * dum_core_rknd * wprtp_mc_out * dtime
+               wpthlp_in = wpthlp_in + real(clubb_rnevap_effic, kind = core_rknd) * dum_core_rknd * wpthlp_mc_out * dtime
             endif
 !                     rtpthlp_in = rtpthlp_in + rtpthlp_mc_out * dtime
 
-            !dum_core_rknd = real(clubb_rnevap_effic * dum1, kind = core_rknd)  
-            !rtp2_in  = rtp2_in + dum_core_rknd * rtp2_mc_out * dtime
-            !thlp2_in = thlp2_in + dum_core_rknd * thlp2_mc_out * dtime  
-            !if (.not. clubb_do_deep) then
-            !   wprtp_in = wprtp_in + dum_core_rknd * wprtp_mc_out * dtime
-            !   wpthlp_in = wpthlp_in + dum_core_rknd * wpthlp_mc_out * dtime
-            !endif
-!                     rtpthlp_in = rtpthlp_in + rtpthlp_mc_out * dtime
          endif     
 
          if (do_cldcool) then
@@ -2248,36 +2239,36 @@ end subroutine clubb_init_cnst
       !  Arrays need to be "flipped" to CAM grid 
       do k=1,pverp
      
-          um(i,k)           = um_in(pverp-k+1)
-          vm(i,k)           = vm_in(pverp-k+1)
-          upwp(i,k)         = upwp_in(pverp-k+1)
-          vpwp(i,k)         = vpwp_in(pverp-k+1)
-          wpthvp(i,k)       = wpthvp_inout(pverp-k+1)
-          wp2thvp(i,k)      = wp2thvp_inout(pverp-k+1)
-          rtpthvp(i,k)      = rtpthvp_inout(pverp-k+1)
-          thlpthvp(i,k)     = thlpthvp_inout(pverp-k+1)
-          up2(i,k)          = up2_in(pverp-k+1)
-          vp2(i,k)          = vp2_in(pverp-k+1)
-          thlm(i,k)         = thlm_in(pverp-k+1)
-          rtm(i,k)          = rtm_in(pverp-k+1)
-          wprtp(i,k)        = wprtp_in(pverp-k+1)
-          wpthlp(i,k)       = wpthlp_in(pverp-k+1)
-          wp2(i,k)          = wp2_in(pverp-k+1)
-          wp3(i,k)          = wp3_in(pverp-k+1)
-          rtp2(i,k)         = rtp2_in(pverp-k+1)
-          thlp2(i,k)        = thlp2_in(pverp-k+1)
-          rtpthlp(i,k)      = rtpthlp_in(pverp-k+1)
-          rcm(i,k)          = rcm_inout(pverp-k+1)
-          wprcp(i,k)        = wprcp_out(pverp-k+1)
-          cloud_frac(i,k)   = min(cloud_frac_inout(pverp-k+1),1._r8)
-          rcm_in_layer(i,k) = rcm_in_layer_out(pverp-k+1)
-          cloud_cover(i,k)  = min(cloud_cover_out(pverp-k+1),1._r8)
-          zt_out(i,k)       = zt_g(pverp-k+1)
-          zi_out(i,k)       = zi_g(pverp-k+1)
-          khzm(i,k)         = khzm_out(pverp-k+1)
-          khzt(i,k)         = khzt_out(pverp-k+1)
-          qclvar(i,k)       = min(1._r8,qclvar_out(pverp-k+1))
-          sclrpthvp(i,k,:)  = sclrpthvp_inout(pverp-k+1,:)
+          um(i,k)           = real(um_in(pverp-k+1), kind = r8)
+          vm(i,k)           = real(vm_in(pverp-k+1), kind = r8)
+          upwp(i,k)         = real(upwp_in(pverp-k+1), kind = r8)
+          vpwp(i,k)         = real(vpwp_in(pverp-k+1), kind = r8)
+          wpthvp(i,k)       = real(wpthvp_inout(pverp-k+1), kind = r8)
+          wp2thvp(i,k)      = real(wp2thvp_inout(pverp-k+1), kind = r8)
+          rtpthvp(i,k)      = real(rtpthvp_inout(pverp-k+1), kind = r8)
+          thlpthvp(i,k)     = real(thlpthvp_inout(pverp-k+1), kind = r8)
+          up2(i,k)          = real(up2_in(pverp-k+1), kind = r8)
+          vp2(i,k)          = real(vp2_in(pverp-k+1), kind = r8)
+          thlm(i,k)         = real(thlm_in(pverp-k+1), kind = r8)
+          rtm(i,k)          = real(rtm_in(pverp-k+1), kind = r8)
+          wprtp(i,k)        = real(wprtp_in(pverp-k+1), kind = r8)
+          wpthlp(i,k)       = real(wpthlp_in(pverp-k+1), kind = r8)
+          wp2(i,k)          = real(wp2_in(pverp-k+1), kind = r8)
+          wp3(i,k)          = real(wp3_in(pverp-k+1), kind = r8)
+          rtp2(i,k)         = real(rtp2_in(pverp-k+1), kind = r8)
+          thlp2(i,k)        = real(thlp2_in(pverp-k+1), kind = r8)
+          rtpthlp(i,k)      = real(rtpthlp_in(pverp-k+1), kind = r8)
+          rcm(i,k)          = real(rcm_inout(pverp-k+1), kind = r8)
+          wprcp(i,k)        = real(wprcp_out(pverp-k+1), kind = r8)
+          cloud_frac(i,k)   = min(real(cloud_frac_inout(pverp-k+1), kind = r8),1._r8)
+          rcm_in_layer(i,k) = real(rcm_in_layer_out(pverp-k+1), kind = r8)
+          cloud_cover(i,k)  = min(real(cloud_cover_out(pverp-k+1), kind = r8),1._r8)
+          zt_out(i,k)       = real(zt_g(pverp-k+1), kind = r8)
+          zi_out(i,k)       = real(zi_g(pverp-k+1), kind = r8)
+          khzm(i,k)         = real(khzm_out(pverp-k+1), kind = r8)
+          khzt(i,k)         = real(khzt_out(pverp-k+1), kind = r8)
+          qclvar(i,k)       = min(1._r8,real(qclvar_out(pverp-k+1), kind = r8))
+          sclrpthvp(i,k,:)  = real(sclrpthvp_inout(pverp-k+1,:), kind = r8)
           pdf_zm_w_1(i,k) = pdf_zm_w_1_inout(pverp-k+1)
           pdf_zm_w_2(i,k) = pdf_zm_w_2_inout(pverp-k+1)
           pdf_zm_varnce_w_1(i,k) = pdf_zm_varnce_w_1_inout(pverp-k+1)
@@ -2285,7 +2276,7 @@ end subroutine clubb_init_cnst
           pdf_zm_mixt_frac(i,k) =  pdf_zm_mixt_frac_inout(pverp-k+1)
      
           do ixind=1,edsclr_dim
-              edsclr_out(k,ixind) = edsclr_in(pverp-k+1,ixind)
+              edsclr_out(k,ixind) = real(edsclr_in(pverp-k+1,ixind), kind = r8)
           enddo
 
       enddo 
