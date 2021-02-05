@@ -214,8 +214,8 @@ def buildnml(case, caseroot, compname):
         decomp_date += '200908'
         decomp_prefix += 'mpas-seaice.graph.info.'
     elif ice_grid == 'ECwISC30to60E2r1':
-        grid_date += '200916'
-        grid_prefix += 'seaice.ECwISC30to60E2r1'
+        grid_date += '200923'
+        grid_prefix += 'mpassi.ECwISC30to60E2r1-1900.rstFromG-anvil'
         decomp_date += '200916'
         decomp_prefix += 'mpas-seaice.graph.info.'
         data_iceberg_file += 'Iceberg_Interannual_Merino_ECwISC30to60E2r1.nc'
