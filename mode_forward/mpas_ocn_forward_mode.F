@@ -263,11 +263,18 @@ module ocn_forward_mode
 
       call mpas_pool_get_config(domain % configs, 'config_time_integrator', config_time_integrator)
 
-      if (trim(config_time_integrator) == 'semi_implicit' ) then
-        call ocn_time_integration_si_init(domain)
-      else
-        call ocn_time_integration_split_init(domain)
-      endif
+      select case (trim(config_time_integrator))
+
+      case ('semi_implicit')
+         call ocn_time_integration_si_init(domain)
+
+      case ('split_explicit','unsplit_explicit')
+         call ocn_time_integration_split_init(domain)
+
+      case ('RK4')
+         ! No init routine needs to be run for RK4
+
+      end select
 
       call mpas_log_write(' Vertical coordinate movement is: ' // trim(config_vert_coord_movement))
 
