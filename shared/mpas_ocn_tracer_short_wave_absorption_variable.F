@@ -131,7 +131,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: chlorophyllA, zenithAngle, clearSkyRadiation
       real (kind=RKIND), dimension(4) :: Avals, Kvals
       real (kind=RKIND) :: cloudRatio ! cloud Ratio = 1 - incident_sfc_sw_radiation/clearSkyRadiation
-
+      real (kind=RKIND) :: fluxRemaining ! amount of incident solar left to be distributed
       err = 0
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
@@ -157,6 +157,7 @@ contains
       !$omp do schedule(runtime) private(depth, cloudRatio, k, depLev, Avals, Kvals, weights)
       do iCell = 1, nCells
         depth = 0.0_RKIND
+        fluxRemaining = 1.0_RKIND
         cloudRatio = min(1.0_RKIND, 1.0_RKIND - penetrativeTemperatureFlux(iCell)/(hflux_factor*(1.0E-15_RKIND + &
                                                      clearSkyRadiation(iCell))))
         cloudRatio = max(0.0_RKIND, cloudRatio)
@@ -169,7 +170,12 @@ contains
           call ocn_get_variable_sw_fraction(depth, weights(k+1), Avals, Kvals)
           tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
                                             * (weights(k) - weights(k+1) )
+          fluxRemaining = fluxRemaining - (weights(k) - weights(k+1))
         end do
+
+        k = maxLevelCell(iCell)
+        tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
+          * fluxRemaining
 
         depth = 0.0_RKIND
         do k=1,maxLevelCell(iCell)
