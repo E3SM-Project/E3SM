@@ -126,7 +126,7 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND) :: depth
+      real (kind=RKIND) :: depth, fluxRemaining
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
 
@@ -151,14 +151,19 @@ contains
 #endif
       do iCell = 1, nCells
          depth = 0.0_RKIND
+         fluxRemaining = 1.0_RKIND
          do k = 1, maxLevelCell(iCell)
             depth = depth + layerThickness(k, iCell)
 
             call ocn_get_jerlov_fraction(depth, weights(k+1))
             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
                                               * (weights(k) - weights(k+1))
+            fluxRemaining = fluxRemaining - (weights(k) - weights(k+1))
          end do
 
+         k = maxLevelCell(iCell)
+         tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
+           * fluxRemaining
          depth = 0.0_RKIND
          do k=1,maxLevelCell(iCell)
            depth = depth + layerThickness(k,iCell)
