@@ -72,6 +72,8 @@ public:
   // Most individual processes have a pre-processing step that constructs needed variables from
   // the set of fields stored in the field manager.  A structure like this defines those operations,
   // which can then be called during run_imple in the main .cpp code.
+  // NOTE: the use of the ekat command "set" to copy local values into the variables of interest.
+  // This is an important step to avoid having those variables just share pointers to memory.
   // Structure to handle the local generation of data needed by p3_main in run_impl
   struct p3_preamble {
     p3_preamble() = default; 
@@ -83,12 +85,12 @@ public:
         const Spack opmid(pmid(icol,ipack));
         const Smask opmid_mask(!isnan(opmid) and opmid>0.0);
         auto oexner = physics_fun::get_exner(opmid,opmid_mask);
-        exner(icol,ipack)  = oexner;
+        exner(icol,ipack).set(opmid_mask,oexner);
         // Potential temperature
         const Spack oT_atm(T_atm(icol,ipack));
         const Smask oT_atm_mask(!isnan(oT_atm) and oT_atm>0.0);
         auto oth = physics_fun::T_to_th(oT_atm,oexner,oT_atm_mask);
-        th_atm(icol,ipack) = oth; 
+        th_atm(icol,ipack).set(oT_atm_mask,oth); 
         // Cloud fraction and dz
         const Spack oast(ast(icol,ipack));
         const Smask oasti_mask(!isnan(oast) and oast>mincld);
@@ -130,8 +132,8 @@ public:
     view_2d       cld_frac_i;
     view_2d       cld_frac_r;
     view_2d       dz;
-    // Assigning local values
-    void set_values(const int ncol, const int npack, 
+    // Assigning local variables
+    void set_variables(const int ncol, const int npack, 
            view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_,
            view_2d exner_, view_2d th_atm_, view_2d cld_frac_l_, view_2d cld_frac_i_, view_2d cld_frac_r_, view_2d dz_
            )
@@ -150,7 +152,7 @@ public:
       cld_frac_i = cld_frac_i_;
       cld_frac_r = cld_frac_r_;
       dz = dz_;
-    } // set_values
+    } // set_variables
   }; // p3_preamble
   /* --------------------------------------------------------------------------------------------*/
   // Most individual processes have a post-processing step that derives variables needed by the rest
@@ -169,10 +171,12 @@ public:
         const Spack oth_atm(th_atm(icol,ipack));
         const Smask oth_atm_mask(!isnan(oth_atm) and oth_atm>0.0);
         auto oT = physics_fun::th_to_T(oth_atm,oexner,oth_atm_mask);
-        T_prev(icol,ipack) = T_atm(icol,ipack);
-        T_atm(icol,ipack)  = oT;
-        // Update qv_prev
-        qv_prev(icol,ipack) = qv(icol,ipack);
+        T_atm(icol,ipack).set(oth_atm_mask,oT);
+        T_prev(icol,ipack).set(oth_atm_mask,T_atm(icol,ipack));
+         // Update qv_prev
+        const Spack oqv(qv(icol,ipack));
+        const Smask oqv_mask(!isnan(oqv) and oqv>0.0);
+        qv_prev(icol,ipack).set(oqv_mask,oqv);
       } // for ipack
     } // operator
     // Local variables
@@ -184,7 +188,7 @@ public:
     view_2d       qv;
     view_2d       qv_prev;
     // Assigning local values
-    void set_values(const int ncol, const int npack,
+    void set_variables(const int ncol, const int npack,
                     view_2d th_atm_, view_2d exner_, view_2d T_atm_, view_2d T_prev_,
                     view_2d qv_, view_2d qv_prev_
                    )
@@ -206,7 +210,7 @@ public:
       // ENERGY Conservation: prec_str, snow_str
       // RAD Vars: icinc, icwnc, icimrst, icwmrst, rel, rei, dei
       // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffrain, reffsnow  
-    } // set_values 
+    } // set_variables 
   }; // p3_preamble
   /* --------------------------------------------------------------------------------------------*/
 

@@ -141,7 +141,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   view_2d cld_frac_r("cld_frac_r",m_num_cols,nk_pack);
   view_2d dz("dz",m_num_cols,nk_pack);
   // -- Set values for the post-amble structure
-  p3_preproc.set_values(m_num_cols,nk_pack,pmid,T_atm,ast,zi,
+  p3_preproc.set_variables(m_num_cols,nk_pack,pmid,T_atm,ast,zi,
                         exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
   // --Prognostic State Variables:
   prog_state.qc     = m_p3_fields_out["qc"].get_reshaped_view<Pack**>();
@@ -208,7 +208,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   history_only.vap_liq_exchange = m_p3_fields_out["vap_liq_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_ice_exchange = m_p3_fields_out["vap_ice_exchange"].get_reshaped_view<Pack**>();
   // -- Set values for the post-amble structure
-  p3_postproc.set_values(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev);
+  p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev);
 
   // We may have to init some fields from within P3. This can be the case in a P3 standalone run.
   // Some options:
