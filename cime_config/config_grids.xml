@@ -652,6 +652,16 @@
       <mask>usgs</mask>
     </model_grid>
 
+    <model_grid alias="r2_r2" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">r2</grid>
+      <grid name="lnd">r2</grid>
+      <grid name="ocnice">r2</grid>
+      <grid name="rof">r2</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU240</mask>
+    </model_grid>
+
     <model_grid alias="r05_r05" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">r05</grid>
       <grid name="lnd">r05</grid>
@@ -2783,6 +2793,12 @@
     </domain>
 
     <!-- ROF (river) grids-->
+
+    <domain name="r2">
+      <nx>180</nx>
+      <ny>90</ny>
+      <desc>r2 is 2 degree river routing grid (only used for testing):</desc>
+    </domain>
 
     <domain name="rx1">
       <nx>360</nx>
