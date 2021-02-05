@@ -1133,115 +1133,131 @@ end subroutine clubb_init_cnst
   ! The variables defined as core_rknd is required by the advance_clubb_core_api()
   ! subroutine, the changes here is to change the precision in the CLUBB calculation
   !=====================================================================================
-   real(r8) :: dtime                            ! CLUBB time step                              [s]   
-   real(r8) :: edsclr_in(pverp,edsclr_dim)      ! Scalars to be diffused through CLUBB         [units vary]
-   real(r8) :: wp2_in(pverp)                    ! vertical velocity variance (CLUBB)           [m^2/s^2]
-   real(r8) :: wp3_in(pverp)                    ! third moment vertical velocity               [m^3/s^3]
-   real(r8) :: wpthlp_in(pverp)                 ! turbulent flux of thetal                     [K m/s]
-   real(r8) :: wprtp_in(pverp)                  ! turbulent flux of total water                [kg/kg m/s]
-   real(r8) :: rtpthlp_in(pverp)                ! covariance of thetal and qt                  [kg/kg K]
-   real(r8) :: rtp2_in(pverp)                   ! total water variance                         [kg^2/k^2]
-   real(r8) :: thlp2_in(pverp)                  ! thetal variance                              [K^2]
-   real(r8) :: wp2thvp_inout(pverp)                ! thermodynamic levels (< w'^2 th_v' >)        [m^2/s^2 K]
-   real(r8) :: wpthvp_inout(pverp)                 ! momentum levels (< w' th_v' > )              [kg/kg K]
-   real(r8) :: rtpthvp_inout(pverp)                ! momentum levels (< r_t' th_v' > )            [kg/kg K]
-   real(r8) :: rtp3_in(pverp)                   ! thermodynamic levels (r_t'^3 )               [(kg/kg)^3]
-   real(r8) :: thlp3_in(pverp)                  ! thermodynamic levels (th_l'^3)               [K^3] 
-   real(r8) :: thlpthvp_inout(pverp)               ! momentum levels (< th_l' th_v' >)            [K^2]
-   real(r8) :: up2_in(pverp)                    ! meridional wind variance                     [m^2/s^2]
-   real(r8) :: vp2_in(pverp)                    ! zonal wind variance                          [m^2/s^2]
-   real(r8) :: upwp_in(pverp)                   ! meridional wind flux                         [m^2/s^2]
-   real(r8) :: vpwp_in(pverp)                   ! zonal wind flux                              [m^2/s^2]
-   real(r8) :: thlm_in(pverp)                   ! liquid water potential temperature (thetal)  [K]
-   real(r8) :: rtm_in(pverp)                    ! total water mixing ratio                     [kg/kg]
-   real(r8) :: rvm_in(pverp)                    ! water vapor mixing ratio                     [kg/kg]
-   real(r8) :: um_in(pverp)                     ! meridional wind                              [m/s]
-   real(r8) :: vm_in(pverp)                     ! zonal wind                                   [m/s]
-   real(r8) :: rho_in(pverp)                    ! mid-point density                            [kg/m^3]
-   real(r8) :: pre_in(pverp)                    ! input for precip evaporation
-   real(r8) :: rtp2_mc_out(pverp)               ! total water tendency from rain evap  
-   real(r8) :: thlp2_mc_out(pverp)              ! thetal tendency from rain evap
-   real(r8) :: wprtp_mc_out(pverp)
-   real(r8) :: wpthlp_mc_out(pverp)
-   real(r8) :: rtpthlp_mc_out(pverp)
-   real(r8) :: rcm_inout(pverp)                   ! CLUBB output of liquid water mixing ratio     [kg/kg]
-   real(r8) :: rcm_out_zm(pverp)
-   real(r8) :: wprcp_out(pverp)                 ! CLUBB output of flux of liquid water          [kg/kg m/s]
-   real(r8) :: cloud_frac_inout(pverp)            ! CLUBB output of cloud fraction                [fraction]
-   real(r8) :: rcm_in_layer_out(pverp)          ! CLUBB output of in-cloud liq. wat. mix. ratio [kg/kg]
-   real(r8) :: cloud_cover_out(pverp)           ! CLUBB output of in-cloud cloud fraction       [fraction]
-   real(r8) :: thlprcp_out(pverp)
-   real(r8) :: rho_ds_zm(pverp)                 ! Dry, static density on momentum levels        [kg/m^3]
-   real(r8) :: rho_ds_zt(pverp)                 ! Dry, static density on thermodynamic levels   [kg/m^3]
-   real(r8) :: invrs_rho_ds_zm(pverp)           ! Inv. dry, static density on momentum levels   [m^3/kg]
-   real(r8) :: invrs_rho_ds_zt(pverp)           ! Inv. dry, static density on thermo. levels    [m^3/kg]
-   real(r8) :: thv_ds_zm(pverp)                 ! Dry, base-state theta_v on momentum levels    [K]
-   real(r8) :: thv_ds_zt(pverp)                 ! Dry, base-state theta_v on thermo. levels     [K]
-   real(r8) :: rfrzm(pverp)
-   real(r8) :: radf(pverp)
-   real(r8) :: wprtp_forcing(pverp)
-   real(r8) :: wpthlp_forcing(pverp)
-   real(r8) :: rtp2_forcing(pverp)
-   real(r8) :: thlp2_forcing(pverp)
-   real(r8) :: rtpthlp_forcing(pverp)
-   real(r8) :: ice_supersat_frac(pverp)
-   real(r8) :: zt_g(pverp)                      ! Thermodynamic grid of CLUBB                   [m]
-   real(r8) :: zi_g(pverp)                      ! Momentum grid of CLUBB                        [m]
-   real(r8) :: zt_out(pcols,pverp)              ! output for the thermo CLUBB grid              [m] 
-   real(r8) :: zi_out(pcols,pverp)              ! output for momentum CLUBB grid                [m]
-   real(r8) :: fcor                             ! Coriolis forcing                              [s^-1]
-   real(r8) :: sfc_elevation                    ! Elevation of ground                           [m AMSL]
-   real(r8) :: ubar                             ! surface wind                                  [m/s]
-   real(r8) :: ustar                            ! surface stress                                [m/s]                              
-   real(r8) :: z0                               ! roughness height                              [m]
-   real(r8) :: thlm_forcing(pverp)              ! theta_l forcing (thermodynamic levels)        [K/s]
-   real(r8) :: rtm_forcing(pverp)               ! r_t forcing (thermodynamic levels)            [(kg/kg)/s]                              
-   real(r8) :: um_forcing(pverp)                ! u wind forcing (thermodynamic levels)         [m/s/s]
-   real(r8) :: vm_forcing(pverp)                ! v wind forcing (thermodynamic levels)         [m/s/s]
-   real(r8) :: wm_zm(pverp)                     ! w mean wind component on momentum levels      [m/s]
-   real(r8) :: wm_zt(pverp)                     ! w mean wind component on thermo. levels       [m/s]
-   real(r8) :: p_in_Pa(pverp)                   ! Air pressure (thermodynamic levels)           [Pa]
-   real(r8) :: rho_zt(pverp)                    ! Air density on thermo levels                  [kt/m^3]
-   real(r8) :: rho_zm(pverp)                    ! Air density on momentum levels                [kg/m^3]
-   real(r8) :: exner(pverp)                     ! Exner function (thermodynamic levels)         [-]
-   real(r8) :: wpthlp_sfc                       ! w' theta_l' at surface                        [(m K)/s]
-   real(r8) :: wprtp_sfc                        ! w' r_t' at surface                            [(kg m)/( kg s)]
-   real(r8) :: upwp_sfc                         ! u'w' at surface                               [m^2/s^2]
-   real(r8) :: vpwp_sfc                         ! v'w' at surface                               [m^2/s^2]   
-   real(r8) :: sclrpthvp_inout(pverp,sclr_dim)     ! momentum levels (< sclr' th_v' >)             [units vary]
-   real(r8) :: sclrm_forcing(pverp,sclr_dim)    ! Passive scalar forcing                        [{units vary}/s]
-   real(r8) :: wpsclrp_sfc(sclr_dim)            ! Scalar flux at surface                        [{units vary} m/s]
-   real(r8) :: edsclrm_forcing(pverp,edsclr_dim)! Eddy passive scalar forcing                   [{units vary}/s]
-   real(r8) :: wpedsclrp_sfc(edsclr_dim)        ! Eddy-scalar flux at surface                   [{units vary} m/s]
-   real(r8) :: sclrm(pverp,sclr_dim)            ! Passive scalar mean (thermo. levels)          [units vary]
-   real(r8) :: wpsclrp(pverp,sclr_dim)          ! w'sclr' (momentum levels)                     [{units vary} m/s]
-   real(r8) :: sclrp2(pverp,sclr_dim)           ! sclr'^2 (momentum levels)                     [{units vary}^2]
-   real(r8) :: sclrprtp(pverp,sclr_dim)         ! sclr'rt' (momentum levels)                    [{units vary} (kg/kg)]
-   real(r8) :: sclrpthlp(pverp,sclr_dim)        ! sclr'thlp' (momentum levels)                  [{units vary} (K)]
-   real(r8) :: hydromet(pverp,hydromet_dim)
-   real(r8) :: wphydrometp(pverp,hydromet_dim)
-   real(r8) :: wp2hmp(pverp,hydromet_dim)
-   real(r8) :: rtphmp_zt(pverp,hydromet_dim)
-   real(r8) :: thlphmp_zt (pverp,hydromet_dim)
+   real(core_rknd) :: dtime                            ! CLUBB time step                              [s]   
+   real(core_rknd) :: edsclr_in(pverp,edsclr_dim)      ! Scalars to be diffused through CLUBB         [units vary]
+   real(core_rknd) :: wp2_in(pverp)                    ! vertical velocity variance (CLUBB)           [m^2/s^2]
+   real(core_rknd) :: wp3_in(pverp)                    ! third moment vertical velocity               [m^3/s^3]
+   real(core_rknd) :: wpthlp_in(pverp)                 ! turbulent flux of thetal                     [K m/s]
+   real(core_rknd) :: wprtp_in(pverp)                  ! turbulent flux of total water                [kg/kg m/s]
+   real(core_rknd) :: rtpthlp_in(pverp)                ! covariance of thetal and qt                  [kg/kg K]
+   real(core_rknd) :: rtp2_in(pverp)                   ! total water variance                         [kg^2/k^2]
+   real(core_rknd) :: thlp2_in(pverp)                  ! thetal variance                              [K^2]
+   real(core_rknd) :: wp2thvp_inout(pverp)                ! thermodynamic levels (< w'^2 th_v' >)        [m^2/s^2 K]
+   real(core_rknd) :: wpthvp_inout(pverp)                 ! momentum levels (< w' th_v' > )              [kg/kg K]
+   real(core_rknd) :: rtpthvp_inout(pverp)                ! momentum levels (< r_t' th_v' > )            [kg/kg K]
+   real(core_rknd) :: rtp3_in(pverp)                   ! thermodynamic levels (r_t'^3 )               [(kg/kg)^3]
+   real(core_rknd) :: thlp3_in(pverp)                  ! thermodynamic levels (th_l'^3)               [K^3] 
+   real(core_rknd) :: thlpthvp_inout(pverp)               ! momentum levels (< th_l' th_v' >)            [K^2]
+   real(core_rknd) :: up2_in(pverp)                    ! meridional wind variance                     [m^2/s^2]
+   real(core_rknd) :: vp2_in(pverp)                    ! zonal wind variance                          [m^2/s^2]
+   real(core_rknd) :: upwp_in(pverp)                   ! meridional wind flux                         [m^2/s^2]
+   real(core_rknd) :: vpwp_in(pverp)                   ! zonal wind flux                              [m^2/s^2]
+   real(core_rknd) :: thlm_in(pverp)                   ! liquid water potential temperature (thetal)  [K]
+   real(core_rknd) :: rtm_in(pverp)                    ! total water mixing ratio                     [kg/kg]
+   real(core_rknd) :: rvm_in(pverp)                    ! water vapor mixing ratio                     [kg/kg]
+   real(core_rknd) :: um_in(pverp)                     ! meridional wind                              [m/s]
+   real(core_rknd) :: vm_in(pverp)                     ! zonal wind                                   [m/s]
+   real(core_rknd) :: rho_in(pverp)                    ! mid-point density                            [kg/m^3]
+   real(core_rknd) :: pre_in(pverp)                    ! input for precip evaporation
+   real(core_rknd) :: rtp2_mc_out(pverp)               ! total water tendency from rain evap  
+   real(core_rknd) :: thlp2_mc_out(pverp)              ! thetal tendency from rain evap
+   real(core_rknd) :: wprtp_mc_out(pverp)
+   real(core_rknd) :: wpthlp_mc_out(pverp)
+   real(core_rknd) :: rtpthlp_mc_out(pverp)
+   real(core_rknd) :: rcm_inout(pverp)                 ! CLUBB output of liquid water mixing ratio     [kg/kg]
+   real(core_rknd) :: rcm_out_zm(pverp)
+   real(core_rknd) :: wprcp_out(pverp)                 ! CLUBB output of flux of liquid water          [kg/kg m/s]
+   real(core_rknd) :: cloud_frac_inout(pverp)            ! CLUBB output of cloud fraction                [fraction]
+   real(core_rknd) :: rcm_in_layer_out(pverp)          ! CLUBB output of in-cloud liq. wat. mix. ratio [kg/kg]
+   real(core_rknd) :: cloud_cover_out(pverp)           ! CLUBB output of in-cloud cloud fraction       [fraction]
+   real(core_rknd) :: thlprcp_out(pverp)
+   real(core_rknd) :: rho_ds_zm(pverp)                 ! Dry, static density on momentum levels        [kg/m^3]
+   real(core_rknd) :: rho_ds_zt(pverp)                 ! Dry, static density on thermodynamic levels   [kg/m^3]
+   real(core_rknd) :: invrs_rho_ds_zm(pverp)           ! Inv. dry, static density on momentum levels   [m^3/kg]
+   real(core_rknd) :: invrs_rho_ds_zt(pverp)           ! Inv. dry, static density on thermo. levels    [m^3/kg]
+   real(core_rknd) :: thv_ds_zm(pverp)                 ! Dry, base-state theta_v on momentum levels    [K]
+   real(core_rknd) :: thv_ds_zt(pverp)                 ! Dry, base-state theta_v on thermo. levels     [K]
+   real(core_rknd) :: rfrzm(pverp)
+   real(core_rknd) :: radf(pverp)
+   real(core_rknd) :: wprtp_forcing(pverp)
+   real(core_rknd) :: wpthlp_forcing(pverp)
+   real(core_rknd) :: rtp2_forcing(pverp)
+   real(core_rknd) :: thlp2_forcing(pverp)
+   real(core_rknd) :: rtpthlp_forcing(pverp)
+   real(core_rknd) :: ice_supersat_frac(pverp)
+   real(core_rknd) :: zt_g(pverp)                      ! Thermodynamic grid of CLUBB                   [m]
+   real(core_rknd) :: zi_g(pverp)                      ! Momentum grid of CLUBB                        [m]
+   real(core_rknd) :: fcor                             ! Coriolis forcing                              [s^-1]
+   real(core_rknd) :: sfc_elevation                    ! Elevation of ground                           [m AMSL]
+   real(core_rknd) :: thlm_forcing(pverp)              ! theta_l forcing (thermodynamic levels)        [K/s]
+   real(core_rknd) :: rtm_forcing(pverp)               ! r_t forcing (thermodynamic levels)            [(kg/kg)/s]
+   real(core_rknd) :: um_forcing(pverp)                ! u wind forcing (thermodynamic levels)         [m/s/s]
+   real(core_rknd) :: vm_forcing(pverp)                ! v wind forcing (thermodynamic levels)         [m/s/s]
+   real(core_rknd) :: wm_zm(pverp)                     ! w mean wind component on momentum levels      [m/s]
+   real(core_rknd) :: wm_zt(pverp)                     ! w mean wind component on thermo. levels       [m/s]
+   real(core_rknd) :: p_in_Pa(pverp)                   ! Air pressure (thermodynamic levels)           [Pa]
+   real(core_rknd) :: rho_zt(pverp)                    ! Air density on thermo levels                  [kt/m^3]
+   real(core_rknd) :: rho_zm(pverp)                    ! Air density on momentum levels                [kg/m^3]
+   real(core_rknd) :: exner(pverp)                     ! Exner function (thermodynamic levels)         [-]
+   real(core_rknd) :: wpthlp_sfc                       ! w' theta_l' at surface                        [(m K)/s]
+   real(core_rknd) :: wprtp_sfc                        ! w' r_t' at surface                            [(kg m)/( kg s)]
+   real(core_rknd) :: upwp_sfc                         ! u'w' at surface                               [m^2/s^2]
+   real(core_rknd) :: vpwp_sfc                         ! v'w' at surface                               [m^2/s^2]   
+   real(core_rknd) :: sclrpthvp_inout(pverp,sclr_dim)     ! momentum levels (< sclr' th_v' >)             [units vary]
+   real(core_rknd) :: sclrm_forcing(pverp,sclr_dim)    ! Passive scalar forcing                        [{units vary}/s]
+   real(core_rknd) :: wpsclrp_sfc(sclr_dim)            ! Scalar flux at surface                        [{units vary} m/s]
+   real(core_rknd) :: edsclrm_forcing(pverp,edsclr_dim)! Eddy passive scalar forcing                   [{units vary}/s]
+   real(core_rknd) :: wpedsclrp_sfc(edsclr_dim)        ! Eddy-scalar flux at surface                   [{units vary} m/s]
+   real(core_rknd) :: sclrm(pverp,sclr_dim)            ! Passive scalar mean (thermo. levels)          [units vary]
+   real(core_rknd) :: wpsclrp(pverp,sclr_dim)          ! w'sclr' (momentum levels)                     [{units vary} m/s]
+   real(core_rknd) :: sclrp2(pverp,sclr_dim)           ! sclr'^2 (momentum levels)                     [{units vary}^2]
+   real(core_rknd) :: sclrprtp(pverp,sclr_dim)         ! sclr'rt' (momentum levels)                    [{units vary} (kg/kg)]
+   real(core_rknd) :: sclrpthlp(pverp,sclr_dim)        ! sclr'thlp' (momentum levels)                  [{units vary} (K)]
+   real(core_rknd) :: hydromet(pverp,hydromet_dim)
+   real(core_rknd) :: wphydrometp(pverp,hydromet_dim)
+   real(core_rknd) :: wp2hmp(pverp,hydromet_dim)
+   real(core_rknd) :: rtphmp_zt(pverp,hydromet_dim)
+   real(core_rknd) :: thlphmp_zt (pverp,hydromet_dim)
+   real(core_rknd) :: C_10                             ! transfer coefficient                          [-]
+   real(core_rknd) :: khzm_out(pverp)                  ! eddy diffusivity on momentum grids            [m^2/s]
+   real(core_rknd) :: khzt_out(pverp)                  ! eddy diffusivity on thermo grids              [m^2/s]
+   real(core_rknd) :: qclvar_out(pverp)                ! cloud water variance                          [kg^2/kg^2]
+   real(core_rknd) :: varmu2
+   real(core_rknd) :: qrl_clubb(pverp)
+   real(core_rknd) :: qrl_zm(pverp)
+   real(core_rknd) :: thlp2_rad_out(pverp)
+
+   real(core_rknd), dimension(nparams)  :: clubb_params ! These adjustable CLUBB parameters (C1, C2 ...)
+   real(core_rknd), dimension(sclr_dim) :: sclr_tol     ! Tolerance on passive scalar       [units vary]
+
+   real(core_rknd) :: dum_core_rknd                    ! dummy variable  [units vary]
+   real(core_rknd) :: hdtime_core_rknd                  ! host model time step in core_rknd
+
+
+   !===========================================================================================================================
+   ! End of defining the variables for the change of precision in the CLUBB
+   ! calculation
+   !===========================================================================================================================
+
+   real(r8) :: apply_const
+   real(r8) :: qclvar(pcols,pverp)              ! cloud water variance                          [kg^2/kg^2]  
+   real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
    real(r8) :: bflx22                           ! Variable for buoyancy flux for pbl            [K m/s]
-   real(r8) :: C_10                             ! transfer coefficient                          [-]
-   real(r8) :: khzm_out(pverp)                  ! eddy diffusivity on momentum grids            [m^2/s]
-   real(r8) :: khzt_out(pverp)                  ! eddy diffusivity on thermo grids              [m^2/s]
-   real(r8) :: qclvar_out(pverp)                ! cloud water variance                          [kg^2/kg^2]
-   real(r8) :: qclvar(pcols,pverp)              ! cloud water variance                          [kg^2/kg^2]
+   real(r8) :: invrs_hdtime                     ! Preculate 1/hdtime to reduce divide operations
+   real(r8) :: invrs_gravit                     ! Preculate 1/gravit to reduce divide operations
+   real(r8) :: ubar                             ! surface wind                                  [m/s]
+   real(r8) :: ustar                            ! surface stress                                [m/s]
+   real(r8) :: z0                               ! roughness height                              [m]
    real(r8) :: zo                               ! roughness height                              [m]
    real(r8) :: dz_g(pver)                       ! thickness of layer                            [m]
-   real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
    real(r8) :: minqn                            ! minimum total cloud liquid + ice threshold    [kg/kg]
    real(r8) :: tempqn                           ! temporary total cloud liquid + ice            [kg/kg]
    real(r8) :: cldthresh                        ! threshold to determin cloud fraction          [kg/kg]
    real(r8) :: relvarmax,relvarmin
    real(r8) :: qmin
    real(r8) :: varmu(pcols)
-   real(r8) :: varmu2
-   
-   real(r8) :: invrs_hdtime                     ! Preculate 1/hdtime to reduce divide operations
-   real(r8) :: invrs_gravit                     ! Preculate 1/gravit to reduce divide operations
+   real(r8) :: zt_out(pcols,pverp)              ! output for the thermo CLUBB grid              [m]
+   real(r8) :: zi_out(pcols,pverp)              ! output for momentum CLUBB grid                [m]
 
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
@@ -1281,10 +1297,6 @@ end subroutine clubb_init_cnst
    real(r8) :: rrho                             ! Inverse of air density                        [1/kg/m^3]
    real(r8) :: kinwat(pcols)                    ! Kinematic water vapor flux                    [m/s]
    real(r8) :: latsub
-   real(r8) :: qrl_clubb(pverp)
-   real(r8) :: qrl_zm(pverp)
-   real(r8) :: thlp2_rad_out(pverp)
-   real(r8) :: apply_const
 
    integer  :: ktop(pcols,pver)
    integer  :: ncvfin(pcols)
@@ -1302,8 +1314,6 @@ end subroutine clubb_init_cnst
    character(len=6) :: choice_radf
    
    integer                               :: time_elapsed                ! time keep track of stats          [s]
-   real(r8), dimension(nparams)          :: clubb_params                ! These adjustable CLUBB parameters (C1, C2 ...)
-   real(r8), dimension(sclr_dim)         :: sclr_tol                    ! Tolerance on passive scalar       [units vary]
    character(len=200)                    :: temp1, sub                  ! Strings needed for CLUBB output
    logical                               :: l_Lscale_plume_centered, l_use_ice_latent
    character(len=3), dimension(pcnst)    :: cnst_type_loc               ! local override option for constituents cnst_type
@@ -1620,6 +1630,7 @@ end subroutine clubb_init_cnst
    !  host model time step or on macro-micro sub-stepping
    
    dtime = clubb_timestep 
+   hdtime_core_rknd = real(hdtime, kind = core_rknd)
    
    !  Now check to see if dtime is greater than the host model 
    !    (or sub stepped) time step.  If it is, then simply 
@@ -1627,8 +1638,8 @@ end subroutine clubb_init_cnst
    !    This section is mostly to deal with small host model
    !    time steps (or small sub-steps)
    
-   if (dtime .gt. hdtime) then
-     dtime = hdtime
+   if (dtime .gt. hdtime_core_rknd) then
+     dtime = hdtime_core_rknd
    endif
    
    !  Now check to see if CLUBB time step divides evenly into
@@ -1637,23 +1648,23 @@ end subroutine clubb_init_cnst
    !    mainly for host model time steps that are not evenly divisible
    !    by 5 minutes  
    
-   if (mod(hdtime,dtime) .ne. 0) then
-     dtime = hdtime/2._r8
-     do while (dtime .gt. 300._r8) 
-       dtime = dtime/2._r8
+   if (mod(hdtime_core_rknd,dtime) .ne. 0) then
+     dtime = hdtime_core_rknd/2._core_rknd
+     do while (dtime .gt. 300._core_rknd) 
+       dtime = dtime/2._core_rknd
      end do
    endif   
 
    !  If resulting host model time step and CLUBB time step do not divide evenly
    !    into each other, have model throw a fit.  
 
-   if (mod(hdtime,dtime) .ne. 0) then
+   if (mod(hdtime_core_rknd,dtime) .ne. 0) then
      call endrun('clubb_tend_cam:  CLUBB time step and HOST time step NOT compatible')
    endif
    
    !  determine number of timesteps CLUBB core should be advanced, 
    !  host time step divided by CLUBB time step  
-   nadv = max(hdtime/dtime,1._r8)
+   nadv = max(hdtime_core_rknd/dtime,1._r8)
    
    minqn = 0._r8
    newfice(:,:) = 0._r8
@@ -1667,7 +1678,7 @@ end subroutine clubb_init_cnst
 
    do k=1,pver
      do i=1,ncol
-       exner_clubb(i,k) = (p0_clubb/state1%pmid(i,k))**(rair/cpair)
+       exner_clubb(i,k) = (real(p0_clubb, kind = r8 )/state1%pmid(i,k))**(rair/cpair)
      enddo
    enddo
    
@@ -1785,46 +1796,49 @@ end subroutine clubb_init_cnst
 
       !  Set time_elapsed to host model time step, this is for 
       !  CLUBB's budget stats
-      time_elapsed = hdtime
+      time_elapsed = hdtime_core_rknd
 
       !  Define the CLUBB momentum grid (in height, units of m)
       do k=1,pverp
-         zi_g(k) = state1%zi(i,pverp-k+1)-state1%zi(i,pver+1)
+         dum1 = state1%zi(i,pverp-k+1)-state1%zi(i,pver+1)
+         zi_g(k) = real(dum1, kind = core_rknd)
       enddo 
 
       !  Define the CLUBB thermodynamic grid (in units of m)
       do k=1,pver
-         zt_g(k+1) = state1%zm(i,pver-k+1)-state1%zi(i,pver+1)
+         dum1 = state1%zm(i,pver-k+1)-state1%zi(i,pver+1)
+         zt_g(k+1) = real(dum1, kind = core_rknd)
          dz_g(k) = state1%zi(i,k)-state1%zi(i,k+1)  ! compute thickness
       enddo
  
       !  Thermodynamic ghost point is below surface 
-      zt_g(1) = -1._r8*zt_g(2)
+      zt_g(1) = -1._core_rknd*zt_g(2)
 
       !  Set the elevation of the surface
-      sfc_elevation = state1%zi(i,pver+1)
+      sfc_elevation = real(state1%zi(i,pver+1), kind = core_rknd)
 
       !  Compute thermodynamic stuff needed for CLUBB on thermo levels.  
       !  Inputs for the momentum levels are set below setup_clubb core
       do k=1,pver
-         p_in_Pa(k+1)         = state1%pmid(i,pver-k+1)                              ! Pressure profile
-         exner(k+1)           = 1._r8/exner_clubb(i,pver-k+1)
-         rho_ds_zt(k+1)       = invrs_gravit*state1%pdel(i,pver-k+1)/dz_g(pver-k+1)
-         invrs_rho_ds_zt(k+1) = 1._r8/(rho_ds_zt(k+1))                               ! Inverse ds rho at thermo
-         rho(i,k+1)           = rho_ds_zt(k+1)                                       ! rho on thermo 
-         thv_ds_zt(k+1)       = thv(i,pver-k+1)                                      ! thetav on thermo
-         rfrzm(k+1)           = state1%q(i,pver-k+1,ixcldice)   
-         radf(k+1)            = radf_clubb(i,pver-k+1)
-         qrl_clubb(k+1)       = qrl(i,pver-k+1)/(cpair*state1%pdel(i,pver-k+1))
+         p_in_Pa(k+1)         = real(state1%pmid(i,pver-k+1), kind = core_rknd)             ! Pressure profile
+         exner(k+1)           = 1._core_rknd/real(exner_clubb(i,pver-k+1), kind = core_rknd)
+         rho(i,k+1)           = invrs_gravit*state1%pdel(i,pver-k+1)/dz_g(pver-k+1)
+         rho_ds_zt(k+1)       = real(rho(i,k+1), kind = core_rknd) 
+         invrs_rho_ds_zt(k+1) = 1._core_rknd/(rho_ds_zt(k+1))                               ! Inverse ds rho at thermo
+         thv_ds_zt(k+1)       = real(thv(i,pver-k+1), kind = core_rknd)                     ! thetav on thermo
+         rfrzm(k+1)           = real(state1%q(i,pver-k+1,ixcldice), kind = core_rknd)
+         radf(k+1)            = real(radf_clubb(i,pver-k+1), kind = core_rknd)
+         dum1                 = qrl(i,pver-k+1)/(cpair*state1%pdel(i,pver-k+1))
+         qrl_clubb(k+1)       = real(dum1, kind = core_rknd)
       enddo
 
       !  Below computes the same stuff for the ghost point.  May or may
       !  not be needed, just to be safe to avoid NaN's
       rho_ds_zt(1)       = rho_ds_zt(2)
       invrs_rho_ds_zt(1) = invrs_rho_ds_zt(2)
-      rho(i,1)           = rho_ds_zt(2)
+      rho(i,1)           = rho(i,2)     !rho_ds_zt(2)
       thv_ds_zt(1)       = thv_ds_zt(2)
-      rho_zt(:)          = rho(i,:)
+      rho_zt(:)          = rho_ds_zt(:) !rho(i,:)
       p_in_Pa(1)         = p_in_Pa(2)
       exner(1)           = exner(2)
       rfrzm(1)           = rfrzm(2)
@@ -1832,9 +1846,10 @@ end subroutine clubb_init_cnst
       qrl_clubb(1)       = qrl_clubb(2)
 
       !  Compute mean w wind on thermo grid, convert from omega to w 
-      wm_zt(1) = 0._r8
+      wm_zt(1) = 0._core_rknd
       do k=1,pver
-         wm_zt(k+1) = -1._r8*state1%omega(i,pver-k+1)*invrs_rho_ds_zt(k+1)*invrs_gravit
+        dum1 = -1._r8*state1%omega(i,pver-k+1)*invrs_rho_ds_zt(k+1)*invrs_gravit
+        wm_zt(k+1) = real(dum1, kind = core_rknd)
       enddo
     
       ! ------------------------------------------------- !
@@ -1884,14 +1899,14 @@ end subroutine clubb_init_cnst
         endif
     
         !  Compute the surface momentum fluxes, if this is a SCAM simulation       
-        upwp_sfc = -um(i,pver)*ustar**2/ubar
-        vpwp_sfc = -vm(i,pver)*ustar**2/ubar
+        upwp_sfc = -real((um(i,pver)*ustar**2/ubar), kind = core_rknd)
+        vpwp_sfc = -real((vm(i,pver)*ustar**2/ubar), kind = core_rknd)
     
       endif   
  
       !  Set stats output and increment equal to CLUBB and host dt
       stats_tsamp = dtime
-      stats_tout  = hdtime
+      stats_tout  = hdtime_core_rknd
  
       !  Heights need to be set at each timestep.  Therefore, recall 
       !  setup_grid and setup_parameters for this.  
@@ -1925,8 +1940,10 @@ end subroutine clubb_init_cnst
       ! Apply TMS                                         !
       ! ------------------------------------------------- !    
        if ( do_tms) then
-          upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zm(1))
-          vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zm(1))           
+          !upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zm(1))
+          !vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zm(1))
+         upwp_sfc = upwp_sfc-(real((ksrftms(i)*state1%u(i,pver)), kind = core_rknd)/rho_ds_zm(1))
+         vpwp_sfc = vpwp_sfc-(real((ksrftms(i)*state1%v(i,pver)), kind = core_rknd)/rho_ds_zm(1))           
        endif
   
       !  Need to flip arrays around for CLUBB core
@@ -2116,13 +2133,23 @@ end subroutine clubb_init_cnst
                dum1 = (1._r8 - cam_in%landfrac(i))
             end if
 
-            ! update turbulent moments based on rain evaporation  
+            ! update turbulent moments based on rain evaporation
+            ! update turbulent moments based on rain evaporation
             rtp2_in  = rtp2_in + clubb_rnevap_effic * dum1 * rtp2_mc_out * dtime
-            thlp2_in = thlp2_in + clubb_rnevap_effic * dum1 * thlp2_mc_out * dtime  
+            thlp2_in = thlp2_in + clubb_rnevap_effic * dum1 * thlp2_mc_out * dtime
             if (.not. clubb_do_deep) then
                wprtp_in = wprtp_in + clubb_rnevap_effic * dum1 * wprtp_mc_out * dtime
                wpthlp_in = wpthlp_in + clubb_rnevap_effic * dum1 * wpthlp_mc_out * dtime
             endif
+!                     rtpthlp_in = rtpthlp_in + rtpthlp_mc_out * dtime
+
+            !dum_core_rknd = real(clubb_rnevap_effic * dum1, kind = core_rknd)  
+            !rtp2_in  = rtp2_in + dum_core_rknd * rtp2_mc_out * dtime
+            !thlp2_in = thlp2_in + dum_core_rknd * thlp2_mc_out * dtime  
+            !if (.not. clubb_do_deep) then
+            !   wprtp_in = wprtp_in + dum_core_rknd * wprtp_mc_out * dtime
+            !   wpthlp_in = wpthlp_in + dum_core_rknd * wpthlp_mc_out * dtime
+            !endif
 !                     rtpthlp_in = rtpthlp_in + rtpthlp_mc_out * dtime
          endif     
 
