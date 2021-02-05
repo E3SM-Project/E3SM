@@ -703,6 +703,8 @@ CONTAINS
 !      call outfld('KEbeforeadj', kebefore, pcols, lchnk)
       
 
+
+!old vertion, no Q adjust
 !version mimicing homme code but not adjusting Q
 #if 0
       !adjust pressure, keep the code close to applyCAMforcing_tracers
@@ -715,27 +717,6 @@ CONTAINS
             dp_adj(ic,k)=dp_adj(ic,k) + fq   !  ps =  ps0+sum(dp(k))
          enddo
       enddo
-#endif
-
-!version from dme_adjust with Q adjust
-#if 1
-      dp_adj(:ncol,:) = pdel(:ncol,:)
-      ps(:ncol)=state(lchnk)%pint(:ncol,1)
-      do k = 1, pver
-
-         ! adjusment factor is just change in water vapor
-         fdq(:ncol) = 1._r8 + state(lchnk)%q(:ncol,k,1) - state(lchnk)%q1(:ncol,k )
-
-         ! adjust constituents to conserve mass in each layer
-         do m = 1, pcnst
-            qstate(:ncol,k,m) = qstate(:ncol,k,m) / fdq(:ncol)
-         end do
-
-         dp_adj(:ncol,k  ) = dp_adj(:ncol,k  ) * fdq(:ncol)
-
-         ps(:ncol)=ps(:ncol) + dp_adj(:ncol,k)
-      enddo
-#endif
 
 !last part to decide to adjust ps and hybrid or dp3d
       if (adjust_ps) then
@@ -746,6 +727,49 @@ CONTAINS
          enddo
       endif
       pdel(:ncol,:pver)=dp_adj(:ncol,:pver)
+#endif
+
+
+!version with Q adjust, should work with dp or ps adjust
+#if 1
+      !make qdp array 
+      do m = 1, pcnst
+      do k = 1, pver    
+         qstate(:ncol,k,m) = qstate(:ncol,k,m) * pdel(:ncol,k)
+      enddo
+      end do
+
+      dp_adj(:ncol,:) = pdel(:ncol,:)
+      ps(:ncol)=state(lchnk)%pint(:ncol,1)
+      do k = 1, pver
+
+         ! adjusment factor is just change in water vapor
+         fdq(:ncol) = 1._r8 + state(lchnk)%q(:ncol,k,1) - state(lchnk)%q1(:ncol,k )
+
+         dp_adj(:ncol,k  ) = dp_adj(:ncol,k  ) * fdq(:ncol)
+
+         ps(:ncol)=ps(:ncol) + dp_adj(:ncol,k)
+      enddo
+
+!last part to decide to adjust ps and hybrid or dp3d
+      if (adjust_ps) then
+         ! compute new dp3d from adjusted ps()
+         do k=1,pver
+            dp_adj(:ncol,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:ncol)
+         enddo
+      endif
+      pdel(:ncol,:pver)=dp_adj(:ncol,:pver)
+
+      !make q array 
+      do m = 1, pcnst
+      do k = 1, pver
+         qstate(:ncol,k,m) = qstate(:ncol,k,m) / pdel(:ncol,k)
+      enddo
+      end do
+
+#endif
+
 
 
       !compute energy after PW
