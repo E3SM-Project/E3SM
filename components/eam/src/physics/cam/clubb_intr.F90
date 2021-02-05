@@ -178,13 +178,20 @@ module clubb_intr
     qrl_idx, &          ! longwave cooling rate
     radf_idx 
 
- integer :: &          ! newly added pbuf fields for CLUBB
+  integer :: &          ! newly added pbuf fields for CLUBB
     wpthvp_idx, &       ! < w'th_v' >
     wp2thvp_idx, &      ! < w'^2 th_v' >
     rtpthvp_idx, &      ! < r_t'th_v' >
     thlpthvp_idx, &     ! < th_l'th_v' >
     rcm_idx, &          ! Cloud water mixing ratio
     cloud_frac_idx !, & ! Cloud fraction
+
+  integer :: &          ! added pbuf fields for clubb to have restart bfb when ipdf_call_placement=2
+    pdf_zm_w_1_idx, &
+    pdf_zm_w_2_idx, &
+    pdf_zm_varnce_w_1_idx, &
+    pdf_zm_varnce_w_2_idx, &
+    pdf_zm_mixt_frac_idx
 
   integer :: &          !PMA adds pbuf fields for ZM gustiness
     prec_dp_idx, &
@@ -314,6 +321,11 @@ module clubb_intr
     call pbuf_add_field('RCM',           'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rcm_idx)
     call pbuf_add_field('CLOUD_FRAC',    'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), cloud_frac_idx)
 
+    call pbuf_add_field('pdf_zm_w_1',    'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), pdf_zm_w_1_idx)
+    call pbuf_add_field('pdf_zm_w_2',    'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), pdf_zm_w_2_idx)
+    call pbuf_add_field('pdf_zm_var_w_1', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), pdf_zm_varnce_w_1_idx)
+    call pbuf_add_field('pdf_zm_var_w_2', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), pdf_zm_varnce_w_2_idx)
+    call pbuf_add_field('pdf_zm_mixt_frac',  'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), pdf_zm_mixt_frac_idx)
 
     call pbuf_add_field('vmag_gust',       'global', dtype_r8, (/pcols/),      vmag_gust_idx) !PMA total gustiness
 #endif 
@@ -989,6 +1001,12 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, rcm_idx,        0.0_r8)
        call pbuf_set_field(pbuf2d, cloud_frac_idx, 0.0_r8)
 
+       call pbuf_set_field(pbuf2d, pdf_zm_w_1_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, pdf_zm_w_2_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, pdf_zm_varnce_w_1_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, pdf_zm_varnce_w_2_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, pdf_zm_mixt_frac_idx, 0.0_r8)
+
        call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
 
     endif
@@ -1037,7 +1055,7 @@ end subroutine clubb_init_cnst
    use co2_cycle,      only: co2_cycle_set_cnst_type
    use camsrfexch,     only: cam_in_t
    use ref_pres,       only: top_lev => trop_cloud_top_lev  
-   use time_manager,   only: is_first_step   
+   use time_manager,   only: is_first_step, is_first_restart_step
    use cam_abortutils, only: endrun
    use wv_saturation,  only: qsat
    use micro_mg_cam,   only: micro_mg_version
@@ -1075,6 +1093,8 @@ end subroutine clubb_init_cnst
         calculate_thlp2_rad_api, &
         update_xp2_mc_api, &
         zt2zm_api, zm2zt_api
+   use model_flags, only: ipdf_call_placement
+   use advance_clubb_core_module, only: ipdf_post_advance_fields
 #endif
 
    implicit none
@@ -1163,6 +1183,11 @@ end subroutine clubb_init_cnst
    real(r8) :: rcm_out_zm(pverp)
    real(r8) :: wprcp_out(pverp)                 ! CLUBB output of flux of liquid water          [kg/kg m/s]
    real(r8) :: cloud_frac_inout(pverp)            ! CLUBB output of cloud fraction                [fraction]
+   real(r8) :: pdf_zm_w_1_inout(pverp)          ! work array for pdf_params_zm%w_1
+   real(r8) :: pdf_zm_w_2_inout(pverp)          ! work array for pdf_params_zm%w_2
+   real(r8) :: pdf_zm_varnce_w_1_inout(pverp)   ! work array for pdf_params_zm%varnce_w_1
+   real(r8) :: pdf_zm_varnce_w_2_inout(pverp)   ! work array for pdf_params_zm%varnce_w_2
+   real(r8) :: pdf_zm_mixt_frac_inout(pverp)    ! work array for pdf_params_zm%mixt_frac
    real(r8) :: rcm_in_layer_out(pverp)          ! CLUBB output of in-cloud liq. wat. mix. ratio [kg/kg]
    real(r8) :: cloud_cover_out(pverp)           ! CLUBB output of in-cloud cloud fraction       [fraction]
    real(r8) :: thlprcp_out(pverp)
@@ -1324,6 +1349,11 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: thlpthvp   ! < th_l'th_v' > (momentum levels)             [K^2]
    real(r8), pointer, dimension(:,:) :: rcm        ! CLUBB cloud water mixing ratio               [kg/kg]
    real(r8), pointer, dimension(:,:) :: cloud_frac ! CLUBB cloud fraction                       [-]
+   real(r8), pointer, dimension(:,:) :: pdf_zm_w_1(:,:)        !work pointer for pdf_params_zm
+   real(r8), pointer, dimension(:,:) :: pdf_zm_w_2(:,:)        !work pointer for pdf_params_zm
+   real(r8), pointer, dimension(:,:) :: pdf_zm_varnce_w_1(:,:) !work pointer for pdf_params_zm
+   real(r8), pointer, dimension(:,:) :: pdf_zm_varnce_w_2(:,:) !work pointer for pdf_params_zm
+   real(r8), pointer, dimension(:,:) :: pdf_zm_mixt_frac(:,:)  !work pointer for pdf_params_zm
 
    real(r8), pointer, dimension(:,:) :: upwp     ! east-west momentum flux                      [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vpwp     ! north-south momentum flux                    [m^2/s^2]
@@ -1522,6 +1552,12 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, thlpthvp_idx,   thlpthvp,   start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, rcm_idx,        rcm,        start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, cloud_frac_idx, cloud_frac, start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+
+   call pbuf_get_field(pbuf, pdf_zm_w_1_idx, pdf_zm_w_1, start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, pdf_zm_w_2_idx, pdf_zm_w_2, start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, pdf_zm_varnce_w_1_idx, pdf_zm_varnce_w_1, start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, pdf_zm_varnce_w_2_idx, pdf_zm_varnce_w_2, start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, pdf_zm_mixt_frac_idx, pdf_zm_mixt_frac, start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
 
    call pbuf_get_field(pbuf, tke_idx,     tke)
    call pbuf_get_field(pbuf, qrl_idx,     qrl)
@@ -1950,6 +1986,16 @@ end subroutine clubb_init_cnst
          rcm_inout(k)  = rcm(i,pverp-k+1)
          cloud_frac_inout(k) = cloud_frac(i,pverp-k+1)
 
+         ! also flip the arrays for the pdf_params_zm variables to have
+         ! consistent vertical orientation for all variables in restart file
+         ! also need to flip back after calling advance_clubb_core
+
+         pdf_zm_w_1_inout(k) = pdf_zm_w_1(i,pverp-k+1)
+         pdf_zm_w_2_inout(k) = pdf_zm_w_2(i,pverp-k+1)
+         pdf_zm_varnce_w_1_inout(k) = pdf_zm_varnce_w_1(i,pverp-k+1)
+         pdf_zm_varnce_w_2_inout(k) = pdf_zm_varnce_w_2(i,pverp-k+1)
+         pdf_zm_mixt_frac_inout(k) =  pdf_zm_mixt_frac(i,pverp-k+1)
+
          !  Higher order scalar inouts, set to zero
          sclrpthvp_inout(k,:)= 0._r8
          sclrm(k,:)          = 0._r8
@@ -2050,6 +2096,16 @@ end subroutine clubb_init_cnst
       pdf_params    => pdf_params_chnk(i,lchnk)
       pdf_params_zm => pdf_params_zm_chnk(i,lchnk)
 
+      if ( is_first_restart_step() .and. ipdf_call_placement .eq. ipdf_post_advance_fields ) then
+         ! assign the values read back from restart file
+         ! This is necessary when ipdf_call_placement = 2
+         pdf_params_zm%w_1 = pdf_zm_w_1_inout
+         pdf_params_zm%w_2 = pdf_zm_w_2_inout
+         pdf_params_zm%varnce_w_1 = pdf_zm_varnce_w_1_inout
+         pdf_params_zm%varnce_w_2 = pdf_zm_varnce_w_2_inout
+         pdf_params_zm%mixt_frac = pdf_zm_mixt_frac_inout
+      end if
+
       call t_startf('adv_clubb_core_ts_loop')
       do t=1,nadv    ! do needed number of "sub" timesteps for each CAM step
     
@@ -2096,6 +2152,12 @@ end subroutine clubb_init_cnst
               wprcp_out, ice_supersat_frac, &                              ! intent(out)
               rcm_in_layer_out, cloud_cover_out)                           ! intent(out)
          call t_stopf('advance_clubb_core')
+
+         pdf_zm_w_1_inout = pdf_params_zm%w_1
+         pdf_zm_w_2_inout = pdf_params_zm%w_2
+         pdf_zm_varnce_w_1_inout = pdf_params_zm%varnce_w_1
+         pdf_zm_varnce_w_2_inout = pdf_params_zm%varnce_w_2
+         pdf_zm_mixt_frac_inout = pdf_params_zm%mixt_frac
 
          if (do_rainturb) then
             rvm_in = rtm_in - rcm_inout 
@@ -2185,6 +2247,11 @@ end subroutine clubb_init_cnst
           rcm(i,k)          = rcm_inout(pverp-k+1)
           wprcp(i,k)        = wprcp_out(pverp-k+1)
           cloud_frac(i,k)   = min(cloud_frac_inout(pverp-k+1),1._r8)
+          pdf_zm_w_1(i,k) = pdf_zm_w_1_inout(pverp-k+1)
+          pdf_zm_w_2(i,k) = pdf_zm_w_2_inout(pverp-k+1)
+          pdf_zm_varnce_w_1(i,k) = pdf_zm_varnce_w_1_inout(pverp-k+1)
+          pdf_zm_varnce_w_2(i,k) = pdf_zm_varnce_w_2_inout(pverp-k+1)
+          pdf_zm_mixt_frac(i,k) =  pdf_zm_mixt_frac_inout(pverp-k+1)
           rcm_in_layer(i,k) = rcm_in_layer_out(pverp-k+1)
           cloud_cover(i,k)  = min(cloud_cover_out(pverp-k+1),1._r8)
           zt_out(i,k)       = zt_g(pverp-k+1)
