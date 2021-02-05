@@ -320,7 +320,7 @@ void P3Microphysics::set_required_field_impl (const Field<const Real>& f) {
   // in the Homme's view, and be done with it.
   const auto& name = f.get_header().get_identifier().name();
   m_p3_fields_in.emplace(name,f);
-  m_p3_host_views_in[name] = f.get_view<HostDevice>();
+  m_p3_host_views_in[name] = f.get_view<Host>();
   m_raw_ptrs_in[name] = m_p3_host_views_in[name].data();
 
   // Add myself as customer to the field
@@ -334,7 +334,7 @@ void P3Microphysics::set_computed_field_impl (const Field<      Real>& f) {
   // in the Homme's view, and be done with it.
   const auto& name = f.get_header().get_identifier().name();
   m_p3_fields_out.emplace(name,f);
-  m_p3_host_views_out[name] = f.get_view<HostDevice>();
+  m_p3_host_views_out[name] = f.get_view<Host>();
   m_raw_ptrs_out[name] = m_p3_host_views_out[name].data();
 
   // Add myself as provider for the field

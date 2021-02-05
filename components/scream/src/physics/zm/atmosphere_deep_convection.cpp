@@ -152,8 +152,9 @@ void ZMDeepConvection::set_required_field_impl (const Field<const Real>& f) {
   // in the Homme's view, and be done with it.
   const auto& name = f.get_header().get_identifier().name();
   m_zm_fields_in.emplace(name,f);
-  m_zm_host_views_in[name] = f.get_view<HostDevice>();
+  m_zm_host_views_in[name] = f.get_view<Host>();
   m_raw_ptrs_in[name] = m_zm_host_views_in[name].data();
+
   // Add myself as customer to the field
   add_me_as_customer(f);
 
@@ -166,7 +167,7 @@ void ZMDeepConvection::set_computed_field_impl (const Field<      Real>& f) {
   // in the Homme's view, and be done with it.
   const auto& name = f.get_header().get_identifier().name();
   m_zm_fields_out.emplace(name,f);
-  m_zm_host_views_out[name] = f.get_view<HostDevice>();
+  m_zm_host_views_out[name] = f.get_view<Host>();
   m_raw_ptrs_out[name] = m_zm_host_views_out[name].data();
 
   // Add myself as provider for the field

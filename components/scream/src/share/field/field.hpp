@@ -16,6 +16,12 @@
 namespace scream
 {
 
+// Enum used when quering Field for a view on a specific mem space
+enum HostOrDevice {
+  Device = 0,
+  Host
+};
+
 template<typename FieldType>
 struct is_scream_field : public std::false_type {};
 
@@ -42,20 +48,10 @@ public:
   template<typename ViewT>
   using HM = typename ViewT::HostMirror;
 
-  // Given a type Space, check if it is the device mem/exec space,
-  // or even the device itself.
-  template<typename Space>
-  struct OnDevice {
-    static constexpr bool value =
-          std::is_same<Space,device_type::memory_space>::value ||
-          std::is_same<Space,device_type::execution_space>::value ||
-          std::is_same<Space,device_type>::value;
-  };
-
   // Given a device view type V and a mem/exec space, returns V if the space
   // is on device, otherwise returns the host mirror of V
-  template<typename DevViewT, typename Space>
-  using get_view_type = cond_t<OnDevice<Space>::value,DevViewT,HM<DevViewT>>;
+  template<typename DevViewT, HostOrDevice HD>
+  using get_view_type = cond_t<HD==Device,DevViewT,HM<DevViewT>>;
 
   template<typename DT>
   using view_type = typename kt::template view<DT>;
@@ -116,9 +112,9 @@ public:
         header_type& get_header ()       { return *m_header; }
   const std::shared_ptr<header_type>& get_header_ptr () const { return m_header; }
 
-  template<typename Space = device_type::memory_space>
-  const get_view_type<view_type<RT*>,Space>&
-  get_view () const { return  get_view_impl<Space>();   }
+  template<HostOrDevice HD = Device>
+  const get_view_type<view_type<RT*>,HD>&
+  get_view () const { return  get_view_impl<HD>();   }
 
   // Returns a const_field_type copy of this field
   const_field_type get_const () const { return const_field_type(*this); }
@@ -141,8 +137,8 @@ public:
   // The class will check that the requested data type is compatible with the
   // allocation. This allows each field to be stored as a 1d array, but then
   // be reshaped to the desired layout before being used.
-  template<typename DT, typename Space = device_type::memory_space>
-  get_view_type<uview_type<DT>,Space>
+  template<typename DT, HostOrDevice HD = Device>
+  get_view_type<uview_type<DT>,HD>
   get_reshaped_view () const;
 
   // If someone needs the host view, some sync routines might be needed.
@@ -180,16 +176,16 @@ public:
 
 protected:
 
-  template<typename Space>
-  const if_t<OnDevice<Space>::value,view_type<RT*>>&
+  template<HostOrDevice HD>
+  const if_t<HD==Device,view_type<RT*>>&
   get_view_impl   () const {
     EKAT_REQUIRE_MSG (is_allocated (),
         "Error! View was not yet allocated.\n");
     return  m_view_d;
   }
 
-  template<typename Space>
-  const if_t<!OnDevice<Space>::value,HM<view_type<RT*>>>&
+  template<HostOrDevice HD>
+  const if_t<HD==Host,HM<view_type<RT*>>>&
   get_view_impl   () const {
     ensure_host_view ();
     return  m_view_h;
@@ -205,29 +201,29 @@ protected:
 
   // These SFINAE impl of get_subview are needed since subview_1 does not
   // exist for rank2 (or less) views.
-  template<typename Space, typename T, int N>
+  template<HostOrDevice HD, typename T, int N>
   if_t<(N>2),
-       get_view_type<view_ND_type<T,N-1>,Space>>
-  get_subview_1 (const get_view_type<view_ND_type<T,N>,Space>& v, const int k) const {
+       get_view_type<view_ND_type<T,N-1>,HD>>
+  get_subview_1 (const get_view_type<view_ND_type<T,N>,HD>& v, const int k) const {
     return ekat::subview_1(v,k);
   }
 
 
-  template<typename Space, typename T, int N>
+  template<HostOrDevice HD, typename T, int N>
   if_t<(N<=2),
-       get_view_type<view_ND_type<T,N-1>,Space>>
-  get_subview_1 (const get_view_type<view_ND_type<T,N>,Space>&, const int) const {
+       get_view_type<view_ND_type<T,N-1>,HD>>
+  get_subview_1 (const get_view_type<view_ND_type<T,N>,HD>&, const int) const {
     EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second dimension without losing LayoutRight.\n");
   }
 
-  template<typename Space,typename T,int N>
+  template<HostOrDevice HD,typename T,int N>
   if_t<N==MaxRank,
-       get_view_type<view_ND_type<T,N>,Space>>
+       get_view_type<view_ND_type<T,N>,HD>>
   get_ND_view () const;
 
-  template<typename Space,typename T,int N>
+  template<HostOrDevice HD,typename T,int N>
   if_t<(N<MaxRank),
-       get_view_type<view_ND_type<T,N>,Space>>
+       get_view_type<view_ND_type<T,N>,HD>>
   get_ND_view () const;
 
   // Metadata (name, rank, dims, customere/providers, time stamp, ...)
@@ -339,12 +335,12 @@ operator= (const Field<SrcRealType>& src) {
 }
 
 template<typename RealType>
-template<typename DT, typename Space>
+template<typename DT, HostOrDevice HD>
 auto Field<RealType>::get_reshaped_view () const
- -> get_view_type<uview_type<DT>,Space>
+ -> get_view_type<uview_type<DT>,HD>
 {
   // The destination view type on correct mem space
-  using DstView = get_view_type<uview_type<DT>,Space>;
+  using DstView = get_view_type<uview_type<DT>,HD>;
   // The dst value types
   using DstValueType = typename DstView::traits::value_type;
   // The ViewDimension object from the Dst View (used to check validity of possible compile-time extents)
@@ -370,7 +366,7 @@ auto Field<RealType>::get_reshaped_view () const
       "Error! Cannot reshape a field that has not been allocated yet.\n");
 
   // Start by reshaping into a view with all dyn extents
-  const auto view_ND = get_ND_view<Space,DstValueType,DstRank>();
+  const auto view_ND = get_ND_view<HD,DstValueType,DstRank>();
 
   constexpr int DstRankDynamic= DstView::rank_dynamic;
 
@@ -481,9 +477,9 @@ void Field<RealType>::allocate_view ()
 }
 
 template<typename RealType>
-template<typename Space,typename T,int N>
+template<HostOrDevice HD,typename T,int N>
 auto Field<RealType>::get_ND_view () const ->
-  if_t<(N<MaxRank),get_view_type<view_ND_type<T,N>,Space>>
+  if_t<(N<MaxRank),get_view_type<view_ND_type<T,N>,HD>>
 {
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
@@ -494,7 +490,7 @@ auto Field<RealType>::get_ND_view () const ->
   if (parent!=nullptr) {
     // Parent field has correct layout to reinterpret the view into N+1-dim view
     Field<RealType> f(parent,m_view_d);
-    auto v_np1 = f.get_ND_view<Space,T,N+1>();
+    auto v_np1 = f.get_ND_view<HD,T,N+1>();
 
     // Now we can subview v_np1 at the correct slice
     const auto& idx = m_header->get_alloc_properties().get_subview_idx();
@@ -513,7 +509,7 @@ auto Field<RealType>::get_ND_view () const ->
     if (idim==0) {
       return ekat::subview(v_np1,k);
     } else {
-      return get_subview_1<Space,T,N+1>(v_np1,k);
+      return get_subview_1<HD,T,N+1>(v_np1,k);
     }
   }
 
@@ -526,16 +522,16 @@ auto Field<RealType>::get_ND_view () const ->
     num_values /= fl.dim(i);
   }
   kl.dimension[N-1] = num_values;
-  auto ptr = reinterpret_cast<T*>(get_view<Space>().data());
+  auto ptr = reinterpret_cast<T*>(get_view<HD>().data());
 
-  using ret_type = get_view_type<view_ND_type<T,N>,Space>;
+  using ret_type = get_view_type<view_ND_type<T,N>,HD>;
   return ret_type (ptr,kl);
 }
 
 template<typename RealType>
-template<typename Space,typename T,int N>
+template<HostOrDevice HD,typename T,int N>
 auto Field<RealType>::get_ND_view () const ->
-  if_t<N==MaxRank,get_view_type<view_ND_type<T,N>,Space>>
+  if_t<N==MaxRank,get_view_type<view_ND_type<T,N>,HD>>
 {
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
@@ -554,9 +550,9 @@ auto Field<RealType>::get_ND_view () const ->
     num_values /= fl.dim(i);
   }
   kl.dimension[N-1] = num_values;
-  auto ptr = reinterpret_cast<T*>(get_view<Space>().data());
+  auto ptr = reinterpret_cast<T*>(get_view<HD>().data());
 
-  using ret_type = get_view_type<view_ND_type<T,N>,Space>;
+  using ret_type = get_view_type<view_ND_type<T,N>,HD>;
   return ret_type (ptr,kl);
 }
 

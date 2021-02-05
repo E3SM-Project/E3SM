@@ -200,8 +200,8 @@ TEST_CASE("field", "") {
     // Wrong rank for the subfield f2
     REQUIRE_THROWS(f2.get_reshaped_view<Real****>());
 
-    auto v4d_h = f1.get_reshaped_view<Real****,HostDevice>();
-    auto v3d_h = f2.get_reshaped_view<Real***,HostDevice>();
+    auto v4d_h = f1.get_reshaped_view<Real****,Host>();
+    auto v3d_h = f2.get_reshaped_view<Real***,Host>();
     for (int i=0; i<d1[0]; ++i)
       for (int j=0; j<d1[2]; ++j)
         for (int k=0; k<d1[3]; ++k) {
@@ -214,7 +214,7 @@ TEST_CASE("field", "") {
 
     // Views not yet allocated
     REQUIRE_THROWS(f.get_view());
-    REQUIRE_THROWS(f.get_view<HostDevice>());
+    REQUIRE_THROWS(f.get_view<Host>());
     REQUIRE_THROWS(f.sync_to_host());
     REQUIRE_THROWS(f.sync_to_dev());
 
@@ -233,7 +233,7 @@ TEST_CASE("field", "") {
     Kokkos::deep_copy(v2d_hm,v2d);
 
     // Get reshaped view straight on Host
-    auto v2dh = f.get_reshaped_view<Real**,HostDevice>();
+    auto v2dh = f.get_reshaped_view<Real**,Host>();
 
     // The two should match
     const auto& dims = fid.get_layout().dims();
