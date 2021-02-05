@@ -1885,7 +1885,7 @@ end subroutine clubb_init_cnst
       !  Compute mean w wind on thermo grid, convert from omega to w 
       wm_zt(1) = 0._core_rknd
       do k=1,pver
-        dum1 = -1._r8*state1%omega(i,pver-k+1)*invrs_rho_ds_zt(k+1)*invrs_gravit
+        dum1 = -1._r8*state1%omega(i,pver-k+1)*real(invrs_rho_ds_zt(k+1), kind = r8)*invrs_gravit
         wm_zt(k+1) = real(dum1, kind = core_rknd)
       enddo
     
@@ -1968,19 +1968,19 @@ end subroutine clubb_init_cnst
       wm_zm           = zt2zm_api(wm_zt)
       
       !  Surface fluxes provided by host model
-      wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
-      wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
-      upwp_sfc   = cam_in%wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
-      vpwp_sfc   = cam_in%wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
+      wpthlp_sfc = real(cam_in%shf(i), kind = core_rknd)/(real(cpair, kind = core_rknd)*rho_ds_zm(1)) ! Sensible heat flux
+      wprtp_sfc  = real(cam_in%cflx(i,1), kind = core_rknd)/(rho_ds_zm(1))                            ! Latent heat flux
+      upwp_sfc   = real(cam_in%wsx(i), kind = core_rknd)/rho_ds_zm(1)                                 ! Surface meridional momentum flux
+      vpwp_sfc   = real(cam_in%wsy(i), kind = core_rknd)/rho_ds_zm(1)                                 ! Surface zonal momentum flux
       
       ! ------------------------------------------------- !
       ! Apply TMS                                         !
       ! ------------------------------------------------- !    
-       if ( do_tms) then
-          !upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zm(1))
-          !vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zm(1))
-         upwp_sfc = upwp_sfc-(real((ksrftms(i)*state1%u(i,pver)), kind = core_rknd)/rho_ds_zm(1))
-         vpwp_sfc = vpwp_sfc-(real((ksrftms(i)*state1%v(i,pver)), kind = core_rknd)/rho_ds_zm(1))           
+       if ( do_tms ) then
+         dum_core_rknd = real((ksrftms(i)*state1%u(i,pver)), kind = core_rknd)
+         upwp_sfc      = upwp_sfc-(dum_core_rknd/rho_ds_zm(1))
+         dum_core_rknd = real((ksrftms(i)*state1%v(i,pver)), kind = core_rknd)
+         vpwp_sfc      = vpwp_sfc-(dum_core_rknd/rho_ds_zm(1)) 
        endif
   
       !  Need to flip arrays around for CLUBB core
