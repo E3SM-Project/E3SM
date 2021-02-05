@@ -91,7 +91,7 @@ register_import(const std::string& fname,
                          "Error! Unexpected tag '" + e2str(tags[1]) + "' for second dimension of export field '" + fname + "'.\n");
       EKAT_REQUIRE_MSG(tags.back()!=VL || vecComp==-1, "Error! Vector component specified, but field '" + fname + "' is a 3d scalar.\n");
 
-      info.col_stride = alloc_prop.get_last_dim_extent<Real>();
+      info.col_stride = alloc_prop.get_last_extent();
       info.col_offset = vecComp;
       break;
     case 3:
@@ -101,7 +101,7 @@ register_import(const std::string& fname,
                          "Error! Unexpected tag '" + e2str(tags[2]) + "' for third dimension of export field '" + fname + "'.\n");
       EKAT_REQUIRE_MSG(vecComp>=0, "Error! Vector component not specified for 3d vector field '" + fname + "/.\n");
 
-      info.col_stride = layout.dim(1)*alloc_prop.get_last_dim_extent<Real>();
+      info.col_stride = layout.dim(1)*alloc_prop.get_last_extent();
       info.col_offset = tags[1]==VL ? 0 : vecComp;
       break;
     default:
@@ -175,7 +175,7 @@ register_export (const std::string& fname,
                          "Error! Unexpected tag '" + e2str(tags[1]) + "' for second dimension of import field '" + fname + "'.\n");
       EKAT_REQUIRE_MSG(tags.back()!=VL || vecComp==-1, "Error! Vector component specified, but field '" + fname + "' is a 3d scalar.\n");
 
-      info.col_stride = alloc_prop.get_last_dim_extent<Real>();
+      info.col_stride = alloc_prop.get_last_extent();
       info.col_offset = tags[1]==VL ? 0 : vecComp;
       break;
     case 3:
@@ -185,7 +185,7 @@ register_export (const std::string& fname,
                          "Error! Unexpected tag '" + e2str(tags[2]) + "' for third dimension of import field '" + fname + "'.\n");
       EKAT_REQUIRE_MSG(vecComp>=0, "Error! Vector component not specified for 3d vector field '" + fname + "/.\n");
 
-      info.col_stride = layout.dim(1)*alloc_prop.get_last_dim_extent<Real>();
+      info.col_stride = layout.dim(1)*alloc_prop.get_last_extent();
       info.col_offset = vecComp;
       break;
     default:

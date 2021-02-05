@@ -2,6 +2,9 @@
 #define SHOC_MAIN_IMPL_HPP
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
+
+#include "ekat/kokkos/ekat_subview_utils.hpp"
+
 #include <iomanip>
 
 namespace scream {

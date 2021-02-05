@@ -309,10 +309,10 @@ do_remap_fwd() const
     const auto& phys_alloc_prop = ph.get_alloc_properties();
     const auto& dyn_alloc_prop  = dh.get_alloc_properties();
 
-    const bool phys_pack_alloc = phys_alloc_prop.template is_allocation_compatible_with_value_type<pack_type>();
-    const bool dyn_pack_alloc  = dyn_alloc_prop.template  is_allocation_compatible_with_value_type<pack_type>();
-    const bool phys_small_pack_alloc = phys_alloc_prop.template is_allocation_compatible_with_value_type<small_pack_type>();
-    const bool dyn_small_pack_alloc  = dyn_alloc_prop.template  is_allocation_compatible_with_value_type<small_pack_type>();
+    const bool phys_pack_alloc = phys_alloc_prop.template is_compatible<pack_type>();
+    const bool dyn_pack_alloc  = dyn_alloc_prop.template  is_compatible<pack_type>();
+    const bool phys_small_pack_alloc = phys_alloc_prop.template is_compatible<small_pack_type>();
+    const bool dyn_small_pack_alloc  = dyn_alloc_prop.template  is_compatible<small_pack_type>();
 
     const auto phys_lt = get_layout_type(ph.get_identifier().get_layout().tags());
     switch (phys_lt) {
@@ -360,10 +360,10 @@ do_remap_bwd() const {
     const auto& phys_alloc_prop = ph.get_alloc_properties();
     const auto& dyn_alloc_prop  = dh.get_alloc_properties();
 
-    const bool phys_pack_alloc = phys_alloc_prop.template is_allocation_compatible_with_value_type<pack_type>();
-    const bool dyn_pack_alloc  = dyn_alloc_prop.template  is_allocation_compatible_with_value_type<pack_type>();
-    const bool phys_small_pack_alloc = phys_alloc_prop.template is_allocation_compatible_with_value_type<small_pack_type>();
-    const bool dyn_small_pack_alloc  = dyn_alloc_prop.template  is_allocation_compatible_with_value_type<small_pack_type>();
+    const bool phys_pack_alloc = phys_alloc_prop.template is_compatible<pack_type>();
+    const bool dyn_pack_alloc  = dyn_alloc_prop.template  is_compatible<pack_type>();
+    const bool phys_small_pack_alloc = phys_alloc_prop.template is_compatible<small_pack_type>();
+    const bool dyn_small_pack_alloc  = dyn_alloc_prop.template  is_compatible<small_pack_type>();
 
     const int itl = m_is_state_field[i] ? (m_is_tracer_field[i] ? tl.np1_qdp : tl.np1) : -1;
 

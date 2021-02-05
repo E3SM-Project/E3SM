@@ -7,53 +7,60 @@
 #include "share/field/field_positivity_check.hpp"
 #include "share/field/field_within_interval_check.hpp"
 #include "share/field/field_monotonicity_check.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_pack.hpp"
 
 namespace {
 
+TEST_CASE("field_layout") {
+  using namespace scream;
+  using namespace ShortFieldTagsNames;
+
+  FieldLayout l({EL,GP,GP});
+
+  // Should not be able to set a dimensions vector of wrong rank
+  REQUIRE_THROWS(l.set_dimensions({1,2}));
+
+  l.set_dimensions({1,2,3});
+
+  // Should not be able to reset the dimensions once they are set
+  REQUIRE_THROWS(l.set_dimensions({1,2,3}));
+}
+
 TEST_CASE("field_identifier", "") {
   using namespace scream;
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
 #ifdef SCREAM_FORCE_RUN_FAIL
   REQUIRE(false); // force this test to fail
 #endif
 
-  std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
-  std::vector<FieldTag> tags2 = {FieldTag::Element, FieldTag::Component, FieldTag::VerticalLevel};
+  std::vector<FieldTag> tags1 = {EL, VL, CMP};
+  std::vector<FieldTag> tags2 = {EL, CMP, VL};
 
-  FieldIdentifier fid1 ("field_1", tags1, m/s);
-  FieldIdentifier fid2 ("field_1", tags1, m/s);
-  FieldIdentifier fid3 ("field_1", tags2, m/s);
-  FieldIdentifier fid4 ("field_2", tags2, m/s);
+  std::vector<int> dims1 = {2, 3, 4};
+  std::vector<int> dims2 = {2, 4, 3};
+
+  FieldIdentifier fid1 ("field_1", {tags1,dims1}, kg, "some_grid");
+  FieldIdentifier fid2 ("field_1", {tags1,dims1}, kg, "some_grid");
+  FieldIdentifier fid3 ("field_1", {tags1,dims2}, kg, "some_grid");
+  FieldIdentifier fid4 ("field_2", {tags1,dims2}, kg, "some_grid");
+  FieldIdentifier fid5 ("field_2", {tags2,dims2}, kg, "some_grid");
+  FieldIdentifier fid6 ("field_2", {tags2,dims2}, m, "some_grid");
+  FieldIdentifier fid7 ("field_2", {tags2,dims2}, m, "some_other_grid");
 
   REQUIRE (fid1==fid2);
   REQUIRE (fid2!=fid3);
   REQUIRE (fid3!=fid4);
-
-  std::vector<int> dims1 = {2, 3, 4};
-  std::vector<int> dims2 = {2, 3, 3};
-
-  // Should not be able to set negative dimensions, or a non existing extent
-  REQUIRE_THROWS(fid1.set_dimension(0,-1));
-  REQUIRE_THROWS(fid1.set_dimension(-1,1));
-  REQUIRE_THROWS(fid1.set_dimension(3,1));
-
-  // Should not be able to set a dimensions vector of wrong rank
-  REQUIRE_THROWS(fid1.set_dimensions({1,2}));
-
-  fid1.set_dimensions(dims1);
-  fid2.set_dimensions(dims2);
-
-  // Should not be able to reset the dimensions once they are set
-  REQUIRE_THROWS(fid2.set_dimensions(dims2));
-
-  REQUIRE (fid1!=fid2);
+  REQUIRE (fid4!=fid5);
+  REQUIRE (fid5!=fid6);
+  REQUIRE (fid6!=fid7);
 
   // Check that has_tag option works
-  REQUIRE(fid1.get_layout().has_tag(FieldTag::GaussPoint));
-  REQUIRE(!fid1.get_layout().has_tag(FieldTag::Component));
+  REQUIRE(fid1.get_layout().has_tag(CMP));
+  REQUIRE(!fid1.get_layout().has_tag(GP));
 }
 
 TEST_CASE("field_tracking", "") {
@@ -66,34 +73,24 @@ TEST_CASE("field_tracking", "") {
 
   REQUIRE_THROWS  (track.update_time_stamp(time1));
 }
-  template<typename ST, int N>
-  using Pack = ekat::Pack<ST,N>;
 
 TEST_CASE("field", "") {
-
   using namespace scream;
+  using namespace ShortFieldTagsNames;
   using namespace ekat::units;
+  using kt = KokkosTypes<DefaultDevice>;
 
-  std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::VerticalLevel};
-  std::vector<int> dims = {2, 3, 12};
+  using P4 = ekat::Pack<Real,4>;
+  using P8 = ekat::Pack<Real,8>;
+  using P16 = ekat::Pack<Real,16>;
 
-  FieldIdentifier fid ("field_1", tags, m/s);
-  fid.set_dimensions(dims);
+  std::vector<FieldTag> tags = {COL,VL};
+  std::vector<int> dims = {3,24};
 
-  // Check copy constructor
-  SECTION ("copy ctor") {
-    Field<Real> f1 (fid);
-
-    f1.allocate_view();
-
-    Field<const Real> f2 = f1;
-    REQUIRE(f2.get_header_ptr()==f1.get_header_ptr());
-    REQUIRE(f2.get_view()==f1.get_view());
-    REQUIRE(f2.is_allocated());
-  }
+  FieldIdentifier fid ("field_1", {tags,dims}, m/s,"some_grid");
 
   // Check if we can extract a reshaped view
-  SECTION ("reshape simple") {
+  SECTION ("reshape") {
     Field<Real> f1 (fid);
 
     // Should not be able to reshape before allocating
@@ -101,39 +98,150 @@ TEST_CASE("field", "") {
 
     f1.allocate_view();
 
-    // Should not be able to reshape to this data type
-    REQUIRE_THROWS(f1.get_reshaped_view<Pack<Real,8>>());
+    // Reshape should work with both dynamic and static dims
+    auto v1 = f1.get_reshaped_view<Real[3][24]>();
+    auto v2 = f1.get_reshaped_view<Real**>();
 
-    auto v1d = f1.get_view();
-    auto v3d = f1.get_reshaped_view<Real[2][3][12]>();
-    REQUIRE(v3d.size()==v1d.size());
-  }
+    REQUIRE(v1.size()==v2.size());
 
-  // Check if we can request multiple value types
-  SECTION ("reshape multiple value types") {
-    Field<Real> f1 (fid);
-    f1.get_header().get_alloc_properties().request_value_type_allocation<Pack<Real,8>>();
-    f1.allocate_view();
+    // But if wrong static length is used, we should throw
+    REQUIRE_THROWS(f1.get_reshaped_view<Real[3][16]>());
 
-    auto v1d = f1.get_view();
-    auto v3d_1 = f1.get_reshaped_view<Pack<Real,8>***>();
-    auto v3d_2 = f1.get_reshaped_view<Pack<Real,4>***>();
-    auto v3d_3 = f1.get_reshaped_view<Real***>();
-    auto v3d_4 = f1.get_reshaped_view<Real[2][3][16]>();
+    // Should not be able to reshape to this data type...
+    REQUIRE_THROWS(f1.get_reshaped_view<P16**>());
+    // But this should work
+    REQUIRE_NOTHROW(f1.get_reshaped_view<P8**>());
+
+    // Using packs (of allowable size) of different pack sizes
+    // should lead to views with different extents.
+    // Since there's no padding, their extent on last dimension
+    // should be the phys dim divided by pack size.
+    auto v3 = f1.get_reshaped_view<P8**>();
+    auto v4 = f1.get_reshaped_view<P4**>();
+    REQUIRE (v4.size() == 2*v3.size());
+    REQUIRE (v4.extent_int(0) == fid.get_layout().dim(0));
+    REQUIRE (v3.extent_int(0) == fid.get_layout().dim(0));
+    REQUIRE (v4.extent_int(1) == fid.get_layout().dim(1) / P4::n);
+    REQUIRE (v3.extent_int(1) == fid.get_layout().dim(1) / P8::n);
 
     // The memory spans should be identical
-    REQUIRE (v3d_1.impl_map().memory_span()==v3d_2.impl_map().memory_span());
-    REQUIRE (v3d_1.impl_map().memory_span()==v3d_3.impl_map().memory_span());
-    REQUIRE (v3d_1.impl_map().memory_span()==v3d_4.impl_map().memory_span());
-
-    // Sizes differ, since they are in terms of the stored value type.
-    // Each Pack<Real,8> corresponds to two Pack<Real,4>, which corresponds to 4 Real's.
-    REQUIRE(2*v3d_1.size()==v3d_2.size());
-    REQUIRE(8*v3d_1.size()==v3d_3.size());
-    REQUIRE(8*v3d_1.size()==v3d_4.size());
+    REQUIRE (v3.impl_map().memory_span()==v4.impl_map().memory_span());
 
     // Trying to reshape into something that the allocation cannot accommodate should throw
-    REQUIRE_THROWS (f1.get_reshaped_view<Pack<Real,32>***>());
+    REQUIRE_THROWS (f1.get_reshaped_view<P16***>());
+  }
+
+  SECTION ("compare") {
+
+    Field<Real> f1(fid), f2(fid);
+    f2.get_header().get_alloc_properties().request_allocation<P16>();
+    f1.allocate_view();
+    f2.allocate_view();
+
+    auto v1 = f1.get_reshaped_view<Real**>();
+    auto v2 = f2.get_reshaped_view<P8**>();
+    auto dim0 = fid.get_layout().dim(0);
+    auto dim1 = fid.get_layout().dim(1);
+    Kokkos::parallel_for(kt::RangePolicy(0,dim0*dim1),
+                         KOKKOS_LAMBDA(int idx) {
+      int i = idx / dim1;
+      int j = idx % dim1;
+      v1(i,j) = i*dim1+j;
+
+      int jpack = j / P8::n;
+      int jvec = j % P8::n;
+      v2(i,jpack)[jvec] = i*dim1+j;
+    });
+    Kokkos::fence();
+
+    // The views were filled the same way, so they should test equal
+    // NOTE: this cmp function only test the "actual" field, discarding padding.
+    REQUIRE(views_are_equal(f1,f2));
+  }
+
+  // Check copy constructor
+  SECTION ("copy ctor") {
+    Field<Real> f1 (fid);
+
+    f1.allocate_view();
+    Kokkos::deep_copy(f1.get_view(),3.0);
+
+    Field<const Real> f2 = f1;
+    REQUIRE(f2.get_header_ptr()==f1.get_header_ptr());
+    REQUIRE(f2.get_view()==f1.get_view());
+    REQUIRE(f2.is_allocated());
+    REQUIRE(views_are_equal(f1,f2));
+  }
+
+  // Subfields
+  SECTION ("subfield") {
+    std::vector<FieldTag> t1 = {COL,VAR,CMP,VL};
+    std::vector<int> d1 = {3,10,2,24};
+
+    FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
+
+    Field<Real> f1(fid1);
+    f1.allocate_view();
+    auto v = f1.get_view();
+    Kokkos::parallel_for(kt::RangePolicy(0,v.size()),
+                         KOKKOS_LAMBDA(const int i) {
+      v(i) = i;
+    });
+    auto vh = Kokkos::create_mirror_view(v);
+    Kokkos::deep_copy(vh,v);
+
+    const int idim = 1;
+    const int ivar = 2;
+
+    auto f2 = f1.subfield(idim,ivar);
+    auto v4d = f1.get_reshaped_view<Real****>();
+    auto v3d = f2.get_reshaped_view<Real***>();
+
+    // Wrong rank for the subfield f2
+    REQUIRE_THROWS(f2.get_reshaped_view<Real****>());
+
+    auto v4d_h = f1.get_reshaped_view<Real****,Host>();
+    auto v3d_h = f2.get_reshaped_view<Real***,Host>();
+    for (int i=0; i<d1[0]; ++i)
+      for (int j=0; j<d1[2]; ++j)
+        for (int k=0; k<d1[3]; ++k) {
+          REQUIRE (v4d_h(i,ivar,j,k)==v3d_h(i,j,k));
+        }
+  }
+
+  SECTION ("host_view") {
+    Field<Real> f(fid);
+
+    // Views not yet allocated
+    REQUIRE_THROWS(f.get_view());
+    REQUIRE_THROWS(f.get_view<Host>());
+    REQUIRE_THROWS(f.sync_to_host());
+    REQUIRE_THROWS(f.sync_to_dev());
+
+    f.allocate_view();
+
+    auto v = f.get_view();
+    Kokkos::parallel_for(kt::RangePolicy(0,v.size()),
+                         KOKKOS_LAMBDA(int i) {
+      v(i) = i;
+    });
+    f.sync_to_host();
+
+    // Get reshaped view on device, and manually create Host mirror
+    auto v2d = f.get_reshaped_view<Real**>();
+    auto v2d_hm = Kokkos::create_mirror_view(v2d);
+    Kokkos::deep_copy(v2d_hm,v2d);
+
+    // Get reshaped view straight on Host
+    auto v2dh = f.get_reshaped_view<Real**,Host>();
+
+    // The two should match
+    const auto& dims = fid.get_layout().dims();
+    for (int i=0; i<dims[0]; ++i) {
+      for (int j=0; j<dims[0]; ++j) {
+        REQUIRE (v2dh(i,j) == v2d_hm(i,j) );
+      }
+    }
   }
 }
 
@@ -145,37 +253,23 @@ TEST_CASE("field_repo", "") {
   std::vector<FieldTag> tags2 = {FieldTag::Column};
   std::vector<FieldTag> tags3 = {FieldTag::VerticalLevel};
 
-  const auto km = 1000*m;
-
-  FieldIdentifier fid1("field_1", tags1, m/s);
-  FieldIdentifier fid2("field_2", tags1, m/s);
-  FieldIdentifier fid3("field_2", tags2, m/s);
-  FieldIdentifier fid4("field_2", tags2, km/s);
-  FieldIdentifier fid5("field_3", tags2, km/s);
-  FieldIdentifier fid6("field_4", tags2, km/s);
-  FieldIdentifier fid7("field_5", tags2, km/s);
-  FieldIdentifier fid8("field_5", tags3, km/s);
-
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 3, 3};
   std::vector<int> dims3 = {13};
   std::vector<int> dims4 = {6};
 
-  fid1.set_dimensions(dims1);
-  fid2.set_dimensions(dims2);
-  fid3.set_dimensions(dims3);
-  fid4.set_dimensions(dims3);
-  fid5.set_dimensions(dims3);
-  fid6.set_dimensions(dims3);
-  fid7.set_dimensions(dims3);
-  fid8.set_dimensions(dims4);
+  const auto km = 1000*m;
 
-  fid2.set_grid_name("grid_1");
-  fid3.set_grid_name("grid_2");
-  fid7.set_grid_name("grid_3");
-  fid8.set_grid_name("grid_3");
+  FieldIdentifier fid1("field_1", {tags1, dims1},  m/s, "grid_1");
+  FieldIdentifier fid2("field_2", {tags1, dims2},  m/s, "grid_1");
+  FieldIdentifier fid3("field_2", {tags2, dims3},  m/s, "grid_2");
+  FieldIdentifier fid4("field_2", {tags2, dims3}, km/s, "grid_1");
+  FieldIdentifier fid5("field_3", {tags2, dims3}, km/s, "grid_1");
+  FieldIdentifier fid6("field_4", {tags2, dims3}, km/s, "grid_1");
+  FieldIdentifier fid7("field_5", {tags2, dims3}, km/s, "grid_3");
+  FieldIdentifier fid8("field_5", {tags3, dims4}, km/s, "grid_3");
 
-  FieldRepository<Real>  repo;
+  FieldRepository<Real> repo;
 
   // Should not be able to register fields yet
   REQUIRE_THROWS(repo.register_field(fid1,"group_1"));
@@ -258,8 +352,7 @@ TEST_CASE("field_property_check", "") {
   std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::VerticalLevel};
   std::vector<int> dims = {2, 3, 12};
 
-  FieldIdentifier fid ("field_1", tags, m/s);
-  fid.set_dimensions(dims);
+  FieldIdentifier fid ("field_1",{tags,dims}, m/s,"some_grid");
 
   // Check positivity.
   SECTION ("field_positivity_check") {

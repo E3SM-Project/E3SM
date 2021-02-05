@@ -192,7 +192,7 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
   auto it_bool = map.emplace(id,field_type(id));
 
   // Make sure the field can accommodate the requested value type
-  it_bool.first->second.get_header().get_alloc_properties().template request_value_type_allocation<RequestedValueType>();
+  it_bool.first->second.get_header().get_alloc_properties().template request_allocation<RequestedValueType>();
 
   // Finally, add the field to the given groups
   for (const auto& group_name : groups_names) {

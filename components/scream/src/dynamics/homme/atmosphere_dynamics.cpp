@@ -125,6 +125,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 
   constexpr int NTL  = HOMMEXX_NUM_TIME_LEVELS;
   constexpr int NVL  = HOMMEXX_NUM_LEV;
+  constexpr int NVLI = HOMMEXX_NUM_LEV_P;
   constexpr int QNTL = HOMMEXX_Q_NUM_TIME_LEVELS;
 
   // Computed fields
@@ -147,13 +148,13 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
     } else if (name=="phi") {
       // Geopotential
       auto& phi = state.m_phinh_i;
-      auto phi_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
+      auto phi_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVLI]>();
       using phi_type = std::remove_reference<decltype(phi)>::type;
       phi = phi_type(phi_in.data(),num_elems);
     } else if (name=="w") {
       // Geopotential
       auto& w = state.m_w_i;
-      auto w_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
+      auto w_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVLI]>();
       using w_type = std::remove_reference<decltype(w)>::type;
       w = w_type(w_in.data(),num_elems);
     } else if (name=="dp") {

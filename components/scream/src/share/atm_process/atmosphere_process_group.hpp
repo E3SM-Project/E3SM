@@ -160,11 +160,9 @@ protected:
 
 #ifdef SCREAM_DEBUG
   using field_type = Field<Real>;
-  bool views_are_equal (const field_type& v1, const field_type& v2);
 
   const FieldRepository<Real>*   m_field_repo;
   const FieldRepository<Real>*   m_bkp_field_repo;
-
 #endif
 };
 

@@ -190,17 +190,12 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
   std::vector<Int>     dims_v  = {num_levs};
   std::vector<Int>     dims_2d = {num_lcols,num_levs};
 
-  FieldIdentifier fid1("field_1",tag_h,m);
-  FieldIdentifier fid2("field_2",tag_v,kg);
-  FieldIdentifier fid3("field_3",tag_2d,kg/m);
+  using FL = FieldLayout;
+  const std::string gn = "Physics";
+  FieldIdentifier fid1("field_1",FL{tag_h,dims_h},m,gn);
+  FieldIdentifier fid2("field_2",FL{tag_v,dims_v},kg,gn);
+  FieldIdentifier fid3("field_3",FL{tag_2d,dims_2d},kg/m,gn);
 
-  fid1.set_dimensions(dims_h);
-  fid2.set_dimensions(dims_v);
-  fid3.set_dimensions(dims_2d);
-
-  fid1.set_grid_name("Physics");
-  fid2.set_grid_name("Physics");
-  fid3.set_grid_name("Physics");
   // Register fields with repo
   repo->registration_begins();
   repo->register_field(fid1,{"output"});

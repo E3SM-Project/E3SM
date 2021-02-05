@@ -11,14 +11,14 @@ namespace scream
 
 using namespace std;
 std::vector<string> zm_inputs = {"limcnv_in", "no_deep_pbl_in","lchnk", "ncol", "t", "qh", "prec",
-			"jctop", "jcbot", "pblh", "zm", "geos", "zi", "qtnd", "heat",
-			"pap", "paph", "dpp", "delt", "mcon", "cme", "cape", "tpert",
-			"dlf", "pflx", "zdu", "rprd", "mu", "md", "du", "eu", "ed",
-			"dp", "dsubcld", "jt", "maxg", "ideep", "lengath", "ql",
-			"rliq", "landfrac", "hu_nm1", "cnv_nm1", "tm1", "qm1", "t_star",
-			"q_star", "dcape", "q", "tend_s", "tend_q", "cld", "snow",
-			"ntprprd", "ztodt", "ntsnprd", "flxprec", "flxsnow", "pguall",
-			"pgdall", "icwu", "ncnst", "fracis"};
+      "jctop", "jcbot", "pblh", "zm", "geos", "zi", "qtnd", "heat",
+      "pap", "paph", "dpp", "delt", "mcon", "cme", "cape", "tpert",
+      "dlf", "pflx", "zdu", "rprd", "mu", "md", "du", "eu", "ed",
+      "dp", "dsubcld", "jt", "maxg", "ideep", "lengath", "ql",
+      "rliq", "landfrac", "hu_nm1", "cnv_nm1", "tm1", "qm1", "t_star",
+      "q_star", "dcape", "q", "tend_s", "tend_q", "cld", "snow",
+      "ntprprd", "ztodt", "ntsnprd", "flxprec", "flxsnow", "pguall",
+      "pgdall", "icwu", "ncnst", "fracis"};
 
 
 const int INPUT_SIZE = 63;
@@ -29,7 +29,6 @@ const int INPUT_SIZE = 63;
 const int SCALAR_3D_MID = 0;
 const int SCALAR_3D_INT = 1;
 const int VECTOR_3D_MID = 2;
-const int TRACERS = 3;
 const int LINEAR = 4;
 
 using namespace std;

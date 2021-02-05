@@ -8,71 +8,43 @@ FieldIdentifier (const std::string& name,
                  const layout_type& layout,
                  const Units& units,
                  const std::string& grid_name)
- : m_name   (name)
- , m_layout (layout)
- , m_units  (units)
+ : m_name      (name)
+ , m_units     (units)
+ , m_grid_name (grid_name)
 {
-  // This also calls 'update_identifier'
-  set_grid_name(grid_name);
+  set_layout (layout);
 }
 
-FieldIdentifier::
-FieldIdentifier (const std::string& name,
-                 const std::vector<FieldTag>& tags,
-                 const Units& units,
-                 const std::string& grid_name)
- : m_name   (name)
- , m_layout (tags)
- , m_units  (units)
-{
-  // This also calls 'update_identifier'
-  set_grid_name(grid_name);
+void FieldIdentifier::set_layout (const layout_type& layout) {
+  set_layout(std::make_shared<layout_type>(layout));
 }
 
-FieldIdentifier::
-FieldIdentifier (const std::string& name,
-                 const std::initializer_list<FieldTag>& tags,
-                 const Units& units,
-                 const std::string& grid_name)
- : m_name   (name)
- , m_layout (tags)
- , m_units  (units)
-{
-  // This also calls 'update_identifier'
-  set_grid_name(grid_name);
-}
+void FieldIdentifier::set_layout (const layout_ptr_type& layout) {
+  EKAT_REQUIRE_MSG (!m_layout,
+      "Error! You cannot reset the layout once it's set.\n");
+  EKAT_REQUIRE_MSG (layout,
+      "Error! Invalid input layout pointer.\n");
+  EKAT_REQUIRE_MSG (layout->are_dimensions_set(),
+      "Error! Input layout must have dimensions set.\n");
 
-void FieldIdentifier::set_dimension (const int idim, const int dimension) {
-  m_layout.set_dimension(idim,dimension);
-  update_identifier ();
-}
-
-void FieldIdentifier::set_dimensions (const std::vector<int>& dims) {
-  m_layout.set_dimensions(dims);
-  update_identifier ();
-}
-
-void FieldIdentifier::set_grid_name (const std::string& grid_name) {
-  // Only allow overwriting if the stored grid name is empty
-  EKAT_REQUIRE_MSG (m_grid_name=="", "Error! Cannot overwrite a non-empty grid name.\n");
-
-  m_grid_name = grid_name;
-
-  // Update the identifier string
+  m_layout = layout;
   update_identifier ();
 }
 
 void FieldIdentifier::update_identifier () {
   // Create a verbose identifier string.
-  m_identifier = m_name + "[" + m_grid_name + "]<" + e2str(m_layout.tags()[0]);
-  for (int dim=1; dim<m_layout.rank(); ++dim) {
-    m_identifier += "," + e2str(m_layout.tags()[dim]);
+  m_identifier = m_name + "[" + m_grid_name + "]";
+  if (m_layout) {
+    m_identifier += "<" + e2str(m_layout->tags()[0]);
+    for (int dim=1; dim<m_layout->rank(); ++dim) {
+      m_identifier += "," + e2str(m_layout->tags()[dim]);
+    }
+    m_identifier += ">(" + std::to_string(m_layout->dims()[0]);
+    for (int dim=1; dim<m_layout->rank(); ++dim) {
+      m_identifier += "," + std::to_string(m_layout->dims()[dim]);
+    }
+    m_identifier += ") [" + m_units.get_string() + "]";
   }
-  m_identifier += ">(" + std::to_string(m_layout.dims()[0]);
-  for (int dim=1; dim<m_layout.rank(); ++dim) {
-    m_identifier += "," + std::to_string(m_layout.dims()[dim]);
-  }
-  m_identifier += ") [" + m_units.get_string() + "]";
 }
 
 // Free functions for identifiers comparison

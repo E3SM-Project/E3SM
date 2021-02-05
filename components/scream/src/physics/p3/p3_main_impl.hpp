@@ -5,6 +5,8 @@
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 #include "physics/share/physics_saturation_impl.hpp"
 
+#include "ekat/kokkos/ekat_subview_utils.hpp"
+
 namespace scream {
 namespace p3 {
 

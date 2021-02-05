@@ -69,9 +69,17 @@ protected:
   std::map<std::string,const_field_type>  m_zm_fields_in;
   std::map<std::string,field_type>        m_zm_fields_out;
 
-  std::map<std::string,const_field_type::view_type::HostMirror>  m_zm_host_views_in;
-  std::map<std::string,field_type::view_type::HostMirror>        m_zm_host_views_out;
+  template<typename T>
+  using view_type = field_type::view_type<T*>;
 
+  template<typename T>
+  using host_view_type = field_type::get_view_type<view_type<T>,Host>;
+
+  using host_view_in_type   = host_view_type<const_field_type::RT>;
+  using host_view_out_type  = host_view_type<      field_type::RT>;
+
+  std::map<std::string,host_view_in_type>   m_zm_host_views_in;
+  std::map<std::string,host_view_out_type>  m_zm_host_views_out;
 
   util::TimeStamp   m_current_ts;
   ekat::Comm              m_zm_comm;

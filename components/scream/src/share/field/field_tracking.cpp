@@ -9,10 +9,16 @@ namespace scream {
 
 FieldTracking::FieldTracking (const std::string& name)
  : m_name (name)
- // , m_init_type (InitType::NotNeeded)
  , m_init_type (InitType::None)
 {
-  // Nothing else to do
+  // Nothing to do here
+}
+
+FieldTracking::FieldTracking(const std::string& name,
+                             const std::shared_ptr<FieldTracking>& parent)
+ : FieldTracking(name)
+{
+  m_parent = parent;
 }
 
 void FieldTracking::add_provider (const std::weak_ptr<AtmosphereProcess>& provider) {
@@ -29,14 +35,21 @@ void FieldTracking::set_initializer (const std::weak_ptr<FieldInitializer>& init
 
   // Make sure nobody else already claimed this role
   EKAT_REQUIRE_MSG (!static_cast<bool>(m_initializer.lock()),
-                      "Error! There is already an initializer for field '" + m_name + "'.\n" +
-                      "       Current initializer: " + m_initializer.lock()->name() + "\n");
+      "Error! There is already an initializer for field '" + m_name + "'.\n" +
+      "       Current initializer: " + m_initializer.lock()->name() + "\n");
 
   // Make sure the initializer is nonnull
   EKAT_REQUIRE_MSG (static_cast<bool>(initializer.lock()),
-                      "Error! Input initializer process is invalid.\n");
+      "Error! Input initializer process is invalid.\n");
 
   m_initializer = initializer;
+
+  // If you init a field, all its subviews will automatically be inited
+  for (auto c : m_children) {
+    // Can't call set_initializer on c, since it would set init type to Initializer
+    // All we need is to mark that the field is somehow inited.
+    c.lock()->set_init_type(InitType::Inherited);
+  }
 }
 
 void FieldTracking::set_value_initializer (const Real value) {
@@ -46,10 +59,17 @@ void FieldTracking::set_value_initializer (const Real value) {
 
   // Make sure nobody else already claimed this role
   EKAT_REQUIRE_MSG (!static_cast<bool>(m_initializer.lock()),
-                      "Error! There is already an initializer for field '" + m_name + "'.\n" +
-                      "       Current initializer: " + m_initializer.lock()->name() + "\n");
+      "Error! There is already an initializer for field '" + m_name + "'.\n" +
+      "       Current initializer: " + m_initializer.lock()->name() + "\n");
 
   m_initializer = create_field_value_initializer(value);
+
+  // If you init a field, all its subviews will automatically be inited
+  for (auto c : m_children) {
+    // Can't call set_initializer on c, since it would set init type to Initializer
+    // All we need is to mark that the field is somehow inited.
+    c.lock()->set_init_type(InitType::Inherited);
+  }
 }
 
 void FieldTracking::set_init_type (const InitType init_type) {
@@ -67,9 +87,9 @@ void FieldTracking::set_init_type (const InitType init_type) {
     m_init_type = init_type;
   } else if (init_type!=InitType::None) {
     EKAT_REQUIRE_MSG (init_type==m_init_type,
-                        "Error! Invalid attempt made to modify initialization type for field '" + m_name + "'.\n" +
-                        "       Old init type: " + e2str(m_init_type) + "\n" +
-                        "       New init type: " + e2str(init_type) + "\n");
+        "Error! Invalid attempt made to modify initialization type for field '" + m_name + "'.\n" +
+        "       Old init type: " + e2str(m_init_type) + "\n" +
+        "       New init type: " + e2str(init_type) + "\n");
   }
 }
 
@@ -80,9 +100,35 @@ void FieldTracking::add_to_group (const std::string& group_name) {
 void FieldTracking::update_time_stamp (const TimeStamp& ts) {
   // We check that the given time stamp is not in the past.
   // This is to prevent users from tampering with time stamps (e.g., rewinding time).
-  EKAT_REQUIRE_MSG(!m_time_stamp.is_valid() || !(ts<m_time_stamp), "Error! Input time stamp is in the past.\n");
+  EKAT_REQUIRE_MSG(!m_time_stamp.is_valid() || !(ts<m_time_stamp),
+      "Error! Input time stamp is in the past.\n");
 
   m_time_stamp = ts;
+
+  // If you update a field, all its subviews will automatically be updated
+  for (auto c : m_children) {
+    c.lock()->update_time_stamp(ts);
+  }
+}
+
+void FieldTracking::register_as_children_in_parent () {
+  if (m_parent.lock()==nullptr) {
+    return;
+  }
+
+  auto me = shared_from_this();
+  auto siblings = m_parent.lock()->m_children;
+  bool already_there = false;
+  for (auto p : siblings) {
+    if (p.lock()==me) {
+      already_there = true;
+      break;
+    }
+  }
+
+  if (!already_there) {
+    siblings.push_back(me);
+  }
 }
 
 } // namespace scream

@@ -47,7 +47,7 @@ public:
 
   bool is_dimension_set  (const int idim) const;
   bool are_dimensions_set () const;
-  
+
   // ----- Setters ----- //
 
   // Note: as soon as a dimension is set, it cannot be changed.

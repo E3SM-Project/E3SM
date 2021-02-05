@@ -21,8 +21,10 @@ public:
   virtual ~SEGrid () = default;
 
   // Native layout of a dof. This is the natural way to index a dof in the grid.
-  // E.g., for a 2d structured grid, this could be a set of 2 indices.
-  FieldLayout get_native_dof_layout () const override;
+  FieldLayout get_2d_scalar_layout () const override;
+  FieldLayout get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const override;
+  FieldLayout get_3d_scalar_layout (const bool midpoints) const override;
+  FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const override;
 
   // Set the dofs gids as well as their coordinates (ie,igp,jgp) in the grid
   void set_dofs (const dofs_list_type&      dofs,
@@ -36,14 +38,6 @@ protected:
   int                       m_num_local_elem;
   int                       m_num_gp;
 };
-
-inline FieldLayout
-SEGrid::get_native_dof_layout () const
-{
-  using namespace ShortFieldTagsNames;
-
-  return FieldLayout({EL,GP,GP},{m_num_local_elem,m_num_gp,m_num_gp});
-}
 
 } // namespace scream
 
