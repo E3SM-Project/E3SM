@@ -265,6 +265,10 @@
 <bnd_topo hgrid="ne0np4_enax4v1">atm/cam/topo/USGS_enax4v1_tensorx12_consistentSGH_170522.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_twpx4v1" >atm/cam/topo/USGS_twpx4v1_tensor12x_consistentSGH_170629.nc</bnd_topo>
 
+<!-- ieflx_opt 0: atmonly, 2: coupled -->
+<ieflx_opt  ocn="docn" >0</ieflx_opt>
+<ieflx_opt  ocn="mpaso" >2</ieflx_opt>
+
 <!-- Bulk aerosol physical properties (includes optics) -->
 
 <!-- CAM3 Bulk aerosols.  Optics for CAM-RT -->
@@ -922,20 +926,18 @@
 <tms_z0fac                chem="waccm_mozart"               > 0.100D0 </tms_z0fac>
 <tms_z0fac                chem="waccm_mozart_sulfur"        > 0.100D0 </tms_z0fac>
 <tms_z0fac                chem="waccm_ghg"                  > 0.100D0 </tms_z0fac>
-<tms_z0fac unicon="1"                                       > 0.010D0 </tms_z0fac>
 
 <tms_orocnst                                                > 1.0D0   </tms_orocnst>
 
 <!-- Implicit Turbulent Surface Stress -->
 <do_iss                 > .false. </do_iss>
-<do_iss phys="cam5"      > .true.  </do_iss>
+<do_iss phys="default"      > .true.  </do_iss>
 
 <!-- Use convective water in radiation calculation -->
 <conv_water_in_rad                 > 0 </conv_water_in_rad>
-<conv_water_in_rad phys="cam5"      > 1 </conv_water_in_rad>
+<conv_water_in_rad phys="default"      > 1 </conv_water_in_rad>
 
 <conv_water_frac_limit            > 0.01d0  </conv_water_frac_limit>
-<conv_water_frac_limit unicon="1" > 0.001d0 </conv_water_frac_limit>
 
 <!-- CLUBB_SGS -->
 <do_clubb_sgs                > .false. </do_clubb_sgs>
@@ -969,12 +971,15 @@
 <!-- MMF -->
 <MMF_microphysics_scheme MMF_microphysics_scheme="sam1mom">sam1mom</MMF_microphysics_scheme>
 <MMF_microphysics_scheme MMF_microphysics_scheme="m2005">m2005</MMF_microphysics_scheme>
-<use_MMF              > .false.</use_MMF>
-<use_MMF use_MMF="1"> .true. </use_MMF>
-<use_ECPP               > .false.</use_ECPP>
-<use_ECPP  use_ECPP="1" > .true. </use_ECPP>
-<use_MAML               > .false.</use_MAML>
-<use_MAML  use_MAML="1" > .true. </use_MAML>
+<use_MMF                  > .false.</use_MMF>
+<use_MMF    use_MMF="1"   > .true. </use_MMF>
+<use_ECPP                 > .false.</use_ECPP>
+<use_ECPP   use_ECPP="1"  > .true. </use_ECPP>
+<use_MAML                 > .false.</use_MAML>
+<use_MAML   use_MAML="1"  > .true. </use_MAML>
+<use_MMF_VT               > .false.</use_MMF_VT>
+<use_MMF_VT use_MMF_VT="1"> .true. </use_MMF_VT>
+<MMF_VT_wn_max            > 0      </MMF_VT_wn_max>
 
 <do_aerocom_ind3                > .false. </do_aerocom_ind3>
 <do_aerocom_ind3  aerocom_ind3="1" > .true.  </do_aerocom_ind3>
@@ -989,7 +994,6 @@
 <micro_mg_sub_version microphys="mg1">    0          </micro_mg_sub_version>
 <micro_mg_num_steps   microphys="mg1">    1          </micro_mg_num_steps>
 <micro_mg_dcs         microphys="mg1">    400.D-6    </micro_mg_dcs>
-<micro_mg_dcs         microphys="mg1" unicon="1" >    350.D-6    </micro_mg_dcs>
 <ice_sed_ai           microphys="mg1">    700.0      </ice_sed_ai>
 <micro_mg_accre_enhan_fac  microphys="mg1"> 1.0D0    </micro_mg_accre_enhan_fac>
 
@@ -1077,8 +1081,6 @@
 <eddy_max_bot_pressure phys="cam5" waccm_phys="1" >100.D0</eddy_max_bot_pressure>
 
 <eddy_moist_entrain_a2l           >30.D0</eddy_moist_entrain_a2l>
-<eddy_moist_entrain_a2l unicon="1">40.D0</eddy_moist_entrain_a2l>
-<eddy_moist_entrain_a2l dyn="se" unicon="1">20.D0</eddy_moist_entrain_a2l>
 
 <diff_cnsrv_mass_check                > .false. </diff_cnsrv_mass_check>
 
@@ -1100,8 +1102,6 @@
 
 <dust_emis_fact dyn="se"                   phys="cam5"                  >0.55D0</dust_emis_fact>
 <dust_emis_fact dyn="fv"                   phys="cam5" clubb_sgs="1"    >0.13D0</dust_emis_fact>
-
-<dust_emis_fact dyn="se" unicon="1"                  >1.38D0</dust_emis_fact>
 
 
 <!-- Sea Salt tuning option for scavenging mods by PNNL -->
@@ -1136,10 +1136,8 @@
 <sol_facti_cloud_borne clubb_sgs="1" clubb_do_deep="1" microphys="mg2">3.0D0</sol_facti_cloud_borne>
 
 <sol_factb_interstitial                >0.1D0</sol_factb_interstitial>
-<sol_factb_interstitial unicon="1"     >1.0D0</sol_factb_interstitial>
 
 <sol_factic_interstitial                >0.4D0</sol_factic_interstitial>
-<sol_factic_interstitial unicon="1"     >1.0D0</sol_factic_interstitial>
 
 <!-- sub-column switches for physics packages -->
 <use_subcol_microp>.false.</use_subcol_microp>
@@ -1163,7 +1161,6 @@
 <!-- Deep convection scheme -->
 <deep_scheme>ZM</deep_scheme>
 <deep_scheme clubb_do_deep="1" >CLUBB_SGS</deep_scheme>
-<deep_scheme unicon="1"        >UNICON   </deep_scheme>
 
 <!-- PBL scheme -->
 <eddy_scheme pbl="uw"             >diag_TKE </eddy_scheme>
@@ -1172,7 +1169,6 @@
 <eddy_scheme pbl="clubb_sgs"      >CLUBB_SGS</eddy_scheme>
 
 <shallow_scheme pbl="uw"          >UW       </shallow_scheme>
-<shallow_scheme pbl="uw" unicon="1">UNICON   </shallow_scheme>
 <shallow_scheme pbl="hb"          >Hack     </shallow_scheme>
 <shallow_scheme pbl="hbr"         >Hack     </shallow_scheme>
 <shallow_scheme pbl="clubb_sgs"   >CLUBB_SGS</shallow_scheme>
@@ -1182,7 +1178,7 @@
 <srf_flux_avg eddy_scheme="HBR"      >0</srf_flux_avg>
 <srf_flux_avg eddy_scheme="diag_TKE" >0</srf_flux_avg>
 <srf_flux_avg eddy_scheme="CLUBB_SGS">0</srf_flux_avg>
-<srf_flux_avg use_MMF="1"          >0</srf_flux_avg>
+<srf_flux_avg use_MMF="1"            >0</srf_flux_avg>
 
 <!-- MMF CRM mean state acceleration -->
 <use_crm_accel    use_MMF="0">.false.</use_crm_accel>
@@ -1199,12 +1195,10 @@
 <cldfrc_freeze_dry             >.true.</cldfrc_freeze_dry>
 
 <cldfrc_ice            >.false.</cldfrc_ice>
-<cldfrc_ice phys="cam5" >.true.</cldfrc_ice>
+<cldfrc_ice phys="default" >.true.</cldfrc_ice>
 
 <cldfrc_rhminl                                                        > 0.900D0 </cldfrc_rhminl>
-<cldfrc_rhminl dyn="fv"          phys="cam5" unicon="1"               > 0.850D0 </cldfrc_rhminl>
-<cldfrc_rhminl dyn="se"          phys="cam5" unicon="1"               > 0.920D0 </cldfrc_rhminl>
-<cldfrc_rhminl                   phys="cam5" microphys="mg2"          > 0.950D0 </cldfrc_rhminl>
+<cldfrc_rhminl                   phys="default" microphys="mg2"          > 0.950D0 </cldfrc_rhminl>
 <cldfrc_rhminl                   phys="cam5"                          > 0.8975D0 </cldfrc_rhminl>
 <cldfrc_rhminl hgrid="1.9x2.5"   phys="cam5" microphys="mg1.5"        > 0.9125D0 </cldfrc_rhminl>
 <cldfrc_rhminl hgrid="1.9x2.5"   phys="cam5"                          > 0.8875D0 </cldfrc_rhminl>
@@ -1220,7 +1214,6 @@
 
 
 <cldfrc_rhminl_adj_land                                               > 0.100D0 </cldfrc_rhminl_adj_land>
-<cldfrc_rhminl_adj_land unicon="1"                                    > 0.000D0 </cldfrc_rhminl_adj_land>
 
 <cldfrc_rhminh                                                        > 0.800D0 </cldfrc_rhminh>
 <cldfrc_rhminh hgrid="0.23x0.31" phys="cam4"                          > 0.770D0 </cldfrc_rhminh>
@@ -1236,7 +1229,6 @@
 <cldfrc_rhminh hgrid="128x256"                                        > 0.680D0 </cldfrc_rhminh>
 <cldfrc_rhminh hgrid="128x256"                                        > 0.680D0 </cldfrc_rhminh>
 <cldfrc_rhminh hgrid="512x1024"                                       > 0.650D0 </cldfrc_rhminh>
-<cldfrc_rhminh unicon="1"                                             > 0.980D0 </cldfrc_rhminh>
 
 
 <cldfrc_sh1                                                           > 0.07D0 </cldfrc_sh1>
@@ -1271,16 +1263,15 @@
 <cldfrc_premit dyn="se"                          pbl="uw"          > 40000.0D0 </cldfrc_premit>
 
 <cldfrc_premib              > 750.0D2 </cldfrc_premib>
-<cldfrc_premib  phys="cam5" > 700.0D2 </cldfrc_premib>
+<cldfrc_premib  phys="default" > 700.0D2 </cldfrc_premib>
 
 <cldfrc_iceopt                             > 1 </cldfrc_iceopt>
-<cldfrc_iceopt  phys="cam5"                > 5 </cldfrc_iceopt>
+<cldfrc_iceopt  phys="default"                > 5 </cldfrc_iceopt>
 
 <cldfrc_icecrit                            > 0.95D0 </cldfrc_icecrit>
-<cldfrc_icecrit phys="cam5"                > 0.93D0 </cldfrc_icecrit>
+<cldfrc_icecrit phys="default"                > 0.93D0 </cldfrc_icecrit>
 
 <cldfrc2m_rhmini               >  0.80D0  </cldfrc2m_rhmini>
-<cldfrc2m_rhmini   unicon="1"  >  0.85D0  </cldfrc2m_rhmini>
 
 <cldfrc2m_rhmaxi                                     >  1.1D0  </cldfrc2m_rhmaxi>
 <cldfrc2m_rhmaxi    clubb_sgs="1" clubb_do_deep="0"  >  1.0D0  </cldfrc2m_rhmaxi>
@@ -1288,7 +1279,6 @@
 <!-- Cldwat -->
 <cldwat_icritc                                                        >  5.0e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="fv"                                              >  9.5e-6  </cldwat_icritc>
-<cldwat_icritc  dyn="fv"           unicon="1"                         >  9.5e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="fv"  hgrid="0.23x0.31"                           > 45.0e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="fv"  hgrid="0.47x0.63"                           > 45.0e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="fv"  hgrid="0.5x0.625"                           > 45.0e-6  </cldwat_icritc>
@@ -1371,7 +1361,6 @@
 <zmconv_ke                       hgrid="256x512"                      > 1.0E-6 </zmconv_ke>
 <zmconv_ke                       hgrid="512x1024"                     > 1.0E-6 </zmconv_ke>
 
-<zmconv_trigmem                                                       >.false. </zmconv_trigmem>
 <zmconv_trigdcape_ull                                                 >.false. </zmconv_trigdcape_ull>
 <zmconv_trig_dcape_only                                               >.false. </zmconv_trig_dcape_only>
 <zmconv_trig_ull_only                                                 >.false. </zmconv_trig_ull_only>
@@ -1993,5 +1982,99 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <focndomain hgrid="ne240np4"  >share/domains/domain.ocn.ne240np4_gx1v6.111226.nc</focndomain>
 
 <focndomain hgrid="ne0np4_enax4v1">share/domains/domain.ocn.enax4v1_oRRS18to6.170621.nc</focndomain>
+
+<!-- set default parameter values for v2, moved from use_case file -->
+
+<!-- Ice nucleation mods-->
+<use_hetfrz_classnuc phys="default">.true.</use_hetfrz_classnuc>
+<use_preexisting_ice phys="default">.false.</use_preexisting_ice>
+<hist_hetfrz_classnuc phys="default">.false.</hist_hetfrz_classnuc>
+<micro_mg_dcs_tdep phys="default">.true.</micro_mg_dcs_tdep>
+<microp_aero_wsub_scheme phys="default">1</microp_aero_wsub_scheme>
+
+<!-- For Polar mods-->
+<sscav_tuning phys="default">.true.</sscav_tuning>
+<convproc_do_aer phys="default">.true.</convproc_do_aer>
+<convproc_do_gas phys="default">.false.</convproc_do_gas>
+<convproc_method_activate phys="default">2</convproc_method_activate>
+<demott_ice_nuc phys="default">.true.</demott_ice_nuc>
+<liqcf_fix phys="default">.true.</liqcf_fix>
+<regen_fix phys="default">.true.</regen_fix>
+<resus_fix phys="default">.true.</resus_fix>
+<mam_amicphys_optaa phys="default">1</mam_amicphys_optaa>
+
+<fix_g1_err_ndrop phys="default">.true.</fix_g1_err_ndrop>
+<ssalt_tuning phys="default">.true.</ssalt_tuning>
+
+<!-- Radiation bugfix -->
+<use_rad_dt_cosz phys="default">.true.</use_rad_dt_cosz>
+
+<!-- Tunable parameters for 72 layer model -->
+
+<ice_sed_ai phys="default" microphys="mg2"> 500.0     </ice_sed_ai>
+<clubb_ice_sh phys="default"> 50.e-6    </clubb_ice_sh>
+<clubb_liq_deep phys="default"> 8.e-6     </clubb_liq_deep>  
+<clubb_liq_sh phys="default"> 10.e-6    </clubb_liq_sh>
+<clubb_C2rt phys="default"> 1.75D0    </clubb_C2rt>
+<zmconv_dmpdz phys="default">-0.7e-3    </zmconv_dmpdz>
+<zmconv_ke phys="default" dyn="se"> 5.0E-6      </zmconv_ke>
+<cldfrc2m_rhmaxi phys="default" clubb_sgs="1" clubb_do_deep="0"> 1.05D0    </cldfrc2m_rhmaxi>
+<do_tms phys="default"> .false.   </do_tms>
+<n_so4_monolayers_pcage phys="default"> 8.0D0     </n_so4_monolayers_pcage>
+<zmconv_tiedke_add phys="default"> 0.8D0     </zmconv_tiedke_add>
+<zmconv_cape_cin phys="default"> 1         </zmconv_cape_cin>
+<taubgnd phys="default"> 2.5D-3    </taubgnd>
+<raytau0 phys="default"> 5.0D0     </raytau0>
+<prc_coef1 phys="default"  microphys="mg2"> 30500.0D0 </prc_coef1>
+<prc_exp phys="default"  microphys="mg2"> 3.19D0    </prc_exp>
+<relvar_fix phys="default"> .true.    </relvar_fix>
+<mg_prc_coeff_fix phys="default" microphys="mg2"> .true.    </mg_prc_coeff_fix>
+<rrtmg_temp_fix phys="default"> .true.    </rrtmg_temp_fix>
+
+<!-- Revised and new tunable parameters for v2 -->
+
+<clubb_ipdf_call_placement phys="default"> 2         </clubb_ipdf_call_placement>
+<zmconv_trigdcape_ull phys="default"> .true.     </zmconv_trigdcape_ull>
+<cld_sed phys="default" microphys="mg2"> 1.0D0      </cld_sed>
+<effgw_beres phys="default"> 0.35       </effgw_beres>
+<gw_convect_hcf phys="default"> 12.5       </gw_convect_hcf>
+<effgw_oro phys="default"> 0.375      </effgw_oro>
+<clubb_C14 phys="default"> 2.5D0      </clubb_C14>
+<clubb_tk1 phys="default"> 253.15D0   </clubb_tk1>
+<dust_emis_fact phys="default"> 1.50D0     </dust_emis_fact>
+<linoz_psc_T phys="default"> 197.5      </linoz_psc_T>
+<micro_mincdnc phys="default" microphys="mg2"> 10.D6      </micro_mincdnc>
+<clubb_C1 phys="default"> 2.4        </clubb_C1>
+<clubb_C11 phys="default"> 0.70       </clubb_C11>
+<clubb_C11b phys="default"> 0.20       </clubb_C11b>
+<clubb_C11c phys="default"> 0.85       </clubb_C11c>
+<clubb_C1b  phys="default"> 2.8        </clubb_C1b>
+<clubb_C1c  phys="default"> 0.75       </clubb_C1c>
+<clubb_C6rtb phys="default"> 7.50       </clubb_C6rtb>
+<clubb_C6rtc phys="default"> 0.50       </clubb_C6rtc>
+<clubb_C6thlb phys="default"> 7.50       </clubb_C6thlb>
+<clubb_C6thlc phys="default"> 0.50       </clubb_C6thlc>
+<clubb_C8 phys="default"> 5.2        </clubb_C8>
+<clubb_c_K10 phys="default"> 0.35       </clubb_c_K10>
+<clubb_c_K10h phys="default"> 0.35       </clubb_c_K10h>
+<clubb_gamma_coef phys="default"> 0.12D0     </clubb_gamma_coef>
+<clubb_gamma_coefb phys="default"> 0.28D0     </clubb_gamma_coefb>
+<clubb_gamma_coefc phys="default"> 1.2        </clubb_gamma_coefc>
+<clubb_mu phys="default"> 0.0005     </clubb_mu>
+<clubb_wpxp_l_thresh phys="default"> 100.0D0    </clubb_wpxp_l_thresh>
+<clubb_ice_deep phys="default"> 14.e-6     </clubb_ice_deep>
+<clubb_use_sgv phys="default"> .true.     </clubb_use_sgv>
+<seasalt_emis_scale phys="default" chem="linoz_mam4_resus_mom_soag"> 0.6        </seasalt_emis_scale>
+<zmconv_c0_lnd phys="default"> 0.0020     </zmconv_c0_lnd>
+<zmconv_c0_ocn phys="default"> 0.0020     </zmconv_c0_ocn>
+<zmconv_alfa phys="default"> 0.14D0     </zmconv_alfa>
+<zmconv_tp_fac phys="default"> 2.0D0      </zmconv_tp_fac>
+<zmconv_mx_bot_lyr_adj phys="default"> 1          </zmconv_mx_bot_lyr_adj>
+<prc_exp1 phys="default"  microphys="mg2"> -1.40D0    </prc_exp1>
+<micro_mg_accre_enhan_fac phys="default" microphys="mg2"> 1.75D0     </micro_mg_accre_enhan_fac>
+<microp_aero_wsubmin phys="default"> 0.001D0    </microp_aero_wsubmin>
+<so4_sz_thresh_icenuc phys="default"> 0.080e-6   </so4_sz_thresh_icenuc>
+<micro_mg_berg_eff_factor phys="default" clubb_sgs="1"> 0.7D0      </micro_mg_berg_eff_factor>
+<cldfrc_dp1  phys="default"> 0.018D0    </cldfrc_dp1>
 
 </namelist_defaults>

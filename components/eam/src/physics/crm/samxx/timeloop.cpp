@@ -45,6 +45,13 @@ void timeloop() {
       //       Buoyancy term:
       buoyancy();
 
+      //-----------------------------------------------------------
+      // variance transport forcing
+      if (use_VT) {
+        VT_diagnose();
+        VT_forcing();
+      }
+
       //------------------------------------------------------------
       //       Large-scale and surface forcing:
       forcing();

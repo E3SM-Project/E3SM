@@ -45,6 +45,11 @@
 </compset>
 
 <compset>
+  <alias>WCYCL1850</alias>
+  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>A_WCYCL20TRS_CMIP6</alias>
   <lname>20TR_EAM%CMIP6_ELM%SPBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
 </compset>

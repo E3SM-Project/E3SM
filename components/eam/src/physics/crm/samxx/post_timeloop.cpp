@@ -163,6 +163,17 @@ void post_timeloop() {
   auto &dtn                     = :: dtn;
   auto &crm_output_subcycle_factor= :: crm_output_subcycle_factor;
   auto &ncrms                   = :: ncrms;
+  auto &crm_output_t_vt_tend    = :: crm_output_t_vt_tend;
+  auto &crm_output_q_vt_tend    = :: crm_output_q_vt_tend;
+  auto &crm_input_t_vt          = :: crm_input_t_vt;
+  auto &crm_input_q_vt          = :: crm_input_q_vt;
+  auto &t_vt                    = :: t_vt;
+  auto &q_vt                    = :: q_vt;
+  auto &crm_output_t_vt_ls      = :: crm_output_t_vt_ls;
+  auto &crm_output_q_vt_ls      = :: crm_output_q_vt_ls;
+  auto &t_vt_tend               = :: t_vt_tend;
+  auto &q_vt_tend               = :: q_vt_tend;
+  
 
   factor_xyt = factor_xy/((real) nstop);
   real tmp1 = crm_nx_rad_fac*crm_ny_rad_fac/((real) nstop);
@@ -277,6 +288,9 @@ void post_timeloop() {
 #endif
   });
 
+  // extra diagnostic step here for output tendencies
+  if (use_VT) { VT_diagnose(); }
+
   // for (int k=0; k<plev; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<2>(plev,ncrms) , YAKL_LAMBDA (int k, int icrm) {
@@ -292,6 +306,16 @@ void post_timeloop() {
     crm_output_u_tend_esmt(k,icrm) = (uln_esmt(k,icrm) - crm_input_ul_esmt(k,icrm))*icrm_run_time;
     crm_output_v_tend_esmt(k,icrm) = (vln_esmt(k,icrm) - crm_input_vl_esmt(k,icrm))*icrm_run_time;
 #endif    
+    if (use_VT) {
+      if ( k > (plev-nzm-1) ) {
+        int l = plev-(k+1);
+        crm_output_t_vt_tend(k,icrm) = ( t_vt(l,icrm) - crm_input_t_vt(k,icrm) ) * icrm_run_time;
+        crm_output_q_vt_tend(k,icrm) = ( q_vt(l,icrm) - crm_input_q_vt(k,icrm) ) * icrm_run_time;
+      } else {
+        crm_output_t_vt_tend(k,icrm) = 0.0;
+        crm_output_q_vt_tend(k,icrm) = 0.0;
+      }
+    }
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
@@ -320,6 +344,10 @@ void post_timeloop() {
     crm_output_u_tend_esmt(k,icrm) = 0.0;
     crm_output_v_tend_esmt(k,icrm) = 0.0;
 #endif
+    if (use_VT) {
+      crm_output_t_vt_tend(k,icrm) = 0.;
+      crm_output_q_vt_tend(k,icrm) = 0.;
+    }
   });
 
   // Save the last step to the permanent core:
@@ -534,6 +562,10 @@ void post_timeloop() {
 
     crm_output_qt_ls     (l,icrm) = qtend(k,icrm);
     crm_output_t_ls      (l,icrm) = ttend(k,icrm);
+    if (use_VT) {
+      crm_output_t_vt_ls   (l,icrm) = t_vt_tend(k,icrm);
+      crm_output_q_vt_ls   (l,icrm) = q_vt_tend(k,icrm);
+    }
   });
 
   parallel_for( ncrms , YAKL_LAMBDA(int icrm) {

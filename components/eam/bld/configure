@@ -149,13 +149,12 @@ OPTIONS
      -pbl <name>        Specify the PBL option [uw | hb | hbr].
      -pcols <n>         Set maximum number of columns in a chunk to <n>.
      -pergro            Switch enables building EAM for perturbation growth tests.
-     -phys <name>       Physics option [cam3 | cam4 | cam5 | cam5.4 | ideal | adiabatic].  Default: cam5.4
+     -phys <name>       Physics option [cam3 | cam4 | cam5 | cam5.4 | ideal | adiabatic | default]
      -prog_species <list>Comma-separate list of prognostic mozart species packages.
                         Currently available: DST,SSLT,SO4,GHG,OC,BC,CARBON16
      -psubcols <n>      Maximum number of sub-columns in a run - set to 1 if not using sub-columns (default)
      -rad <name>        Specify the radiation package [rrtmg | rrtmgp | camrt]
      -res <name>        Specify horizontal grid.  ***DEPRECATED***  Use the -hgrid option.
-     -unicon            Switch to turn on the UNICON scheme. Default: off.
      -usr_mech_infile   Path and file name of the user supplied chemistry mechanism file.
      -waccm_phys        Switch enables the use of WACCM physics in any chemistry configuration.
                         The user does not need to set this if one of the waccm chemistry options
@@ -267,6 +266,7 @@ OPTIONS
   Options for MMF:
 
      -use_MMF           Build the MMF configuration (super-parameterized EAM)
+     -use_MMF_VT        enable CRM variance transport (VT)
      -crm_nx <n>        CRM's x-grid.
      -crm_ny <n>        CRM's y-grid.
      -crm_nz <n>        CRM's z-grid.
@@ -339,6 +339,7 @@ GetOptions(
     "cosp"                      => \$opts{'cosp'},
     "cppdefs=s"                 => \$opts{'cppdefs'},
     "use_MMF"                   => \$opts{'use_MMF'},
+    "use_MMF_VT"                => \$opts{'use_MMF_VT'},
     "use_ECPP"                  => \$opts{'use_ECPP'},
     "use_MAML"                  => \$opts{'use_MAML'},
     "crm_nx=s"                  => \$opts{'crm_nx'},
@@ -408,7 +409,6 @@ GetOptions(
     "spmd!"                     => \$opts{'spmd'},
     "target_os=s"               => \$opts{'target_os'},
     "test"                      => \$opts{'test'},
-    "unicon"                    => \$opts{'unicon'},
     "usr_mech_infile=s"         => \$opts{'usr_mech_infile'},
     "usr_src=s"                 => \$opts{'usr_src'},
     "v|verbose"                 => \$opts{'verbose'},
@@ -456,7 +456,7 @@ EOF
 # The default physics package is cam5.4.  Physics packages >=cam5 use chemistry packages
 # that include modal aerosols, i.e., the -chem value matches /_mam/.  If the chem_pkg
 # name doesn't match /_mam/ then set the default physics package to cam4.
-my $phys_pkg = 'cam5.4';
+my $phys_pkg = 'default';
 if (defined $opts{'chem'} and $opts{'chem'} !~ /_mam/) {$phys_pkg = 'cam4';}
 
 if (defined $opts{'phys'}) {
@@ -475,7 +475,7 @@ if (defined $opts{'prog_species'}) {
 if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
     $chem_pkg = 'none';
 }
-elsif ($phys_pkg eq 'cam5') {
+elsif ($phys_pkg eq 'default') {
     $chem_pkg = 'trop_mam3';
 }
 
@@ -958,7 +958,7 @@ if (defined $opts{'clubb_sgs'}) {
 if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
     $microphys_pkg = 'rk';
 }
-elsif ($phys_pkg eq 'cam5' and !defined $opts{'clubb_sgs'}) {
+elsif ($phys_pkg eq 'default' and !defined $opts{'clubb_sgs'}) {
     $microphys_pkg = 'mg1';
 }
 
@@ -1056,27 +1056,6 @@ EOF
 $cfg_ref->set('pbl', $pbl_pkg);
 
 if ($print>=2) { print "Using $pbl_pkg PBL scheme.$eol"; }
-
-#-----------------------------------------------------------------------------------------------
-# UNICON
-
-if (defined $opts{'unicon'}) {
-    $cfg_ref->set('unicon', $opts{'unicon'});
-}
-my $unicon = $cfg_ref->get('unicon');
-
-# consistency checks...
-
-# UNICON assumes park macrophysics, uw pbl, and mg microphysics
-if ($unicon and
-    ($macrophys_pkg ne 'park' or $pbl_pkg ne 'uw' or $microphys_pkg !~ m/^mg/) ) {
-    die <<"EOF";
-**    ERROR: UNICON assumes macrophys='park', pbl='uw', microphys='mg*'.  Current values are:
-**    macrophys: $macrophys_pkg, pbl: $pbl_pkg, microphys: $microphys_pkg.
-EOF
-}
-
-if ($unicon and $print>=2) { print "Using UNICON scheme.$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Radiation package
@@ -1292,10 +1271,11 @@ EOF
 if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Superparameterization mode (MMF)
+# Multiscale Modelling Framework mode (MMF)
 if (defined $opts{'use_MMF'}) {
     if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
     if (defined $opts{'use_MAML'})            { $cfg_ref->set('use_MAML', 1); }
+    if (defined $opts{'use_MMF_VT'})          { $cfg_ref->set('use_MMF_VT', 1); }
     $cfg_ref->set('use_MMF', 1);
     $cfg_ref->set('crm_nx', $opts{'crm_nx'});
     $cfg_ref->set('crm_ny', $opts{'crm_ny'});
@@ -1528,13 +1508,11 @@ else {
         $nadv += $chem_nadv;
         if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
 
+    }
 
-        # UNICON tracers
-        if ($unicon) {
-            $nadv += 5;
-            if ($print>=2) { print "Advected constituents added by UNICON: 5$eol"; }
-        }
-
+    if (defined $opts{'use_MMF_VT'}) {
+        $nadv += 2; # add tracers for CRM t and q variance transport
+        if ($print>=2) { print "Advected variance constituent added for MMF: 2$eol"; }
     }
 
     # Add in specified test tracers.  These may be present with adiabatic or ideal physics.
@@ -1835,6 +1813,9 @@ if (defined $opts{'use_MMF'}) {
     } elsif ($crm eq 'samxx') {
         $cfg_cppdefs .= " -DMMF_SAMXX "
     }
+    if (defined $opts{'use_MMF_VT'}) {
+        $cfg_cppdefs .= " -DMMF_VT "
+    }
 
 }
 
@@ -1924,9 +1905,6 @@ if ($clubb_sgs == 1) {
     $cfg_cppdefs .= ' -DNO_LAPACK_ISNAN';
     $cfg_cppdefs .= " -DCLUBB_REAL_TYPE=dp";
 }
-
-# UNICON
-if ($unicon) { $cfg_cppdefs .= ' -DUSE_UNICON'; }
 
 # GPTL Timing library
 # The GPTL configure script in timing/gptl/suggestions may help

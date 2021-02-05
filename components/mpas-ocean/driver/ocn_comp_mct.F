@@ -51,6 +51,7 @@ module ocn_comp_mct
    use ocn_frazil_forcing
    use ocn_surface_land_ice_fluxes
    use ocn_diagnostics
+   use ocn_diagnostics_variables
    use ocn_tracer_short_wave_absorption
    use ocn_tracer_short_wave_absorption_variable
    use ocn_tracer_ecosys
@@ -161,7 +162,7 @@ contains
     type (block_type), pointer :: block_ptr
 
     type (mpas_pool_type), pointer :: meshPool, statePool, &
-                                      forcingPool, diagnosticsPool, &
+                                      forcingPool, &
                                       averagePool, scratchPool
 
     logical :: exists
@@ -666,17 +667,16 @@ contains
     do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
-        call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, ierr, 1)
+        call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
         call mpas_timer_start("land_ice_build_arrays", .false.)
-        call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
+        call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
                                                       forcingPool, scratchPool, statePool, dt, ierr)
         call mpas_timer_stop("land_ice_build_arrays")
 
-        call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
+        call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
 
         block_ptr => block_ptr % next
     end do
@@ -721,10 +721,9 @@ contains
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
           call ocn_time_average_coupled_init(forcingPool)
-          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 1)
+          call ocn_time_average_coupled_accumulate(statePool, forcingPool, 1)
           block_ptr => block_ptr % next
        end do
     end if
@@ -768,10 +767,9 @@ contains
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
           call ocn_time_average_coupled_init(forcingPool)
-          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 1)
+          call ocn_time_average_coupled_accumulate(statePool, forcingPool, 1)
           block_ptr => block_ptr % next
        end do
     end if
@@ -866,7 +864,7 @@ contains
 
       type (block_type), pointer :: block_ptr
 
-      type (mpas_pool_type), pointer :: meshPool, statePool, diagnosticsPool, forcingPool, averagePool, scratchPool
+      type (mpas_pool_type), pointer :: meshPool, statePool, forcingPool, averagePool, scratchPool
 
       type (MPAS_Time_Type) :: currTime
       type (domain_type), pointer :: domain_ptr
@@ -949,23 +947,21 @@ contains
          do while(associated(block_ptr))
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-            call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
             call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-            call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
-            call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, ierr, 1)
+            call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
 
             call mpas_timer_start("land_ice_build_arrays", .false.)
-            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
+            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
                                                           forcingPool, scratchPool, statePool, dt, ierr)
             call mpas_timer_stop("land_ice_build_arrays")
 
-            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
+            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
 
             ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
             if (config_use_Redi.or.config_use_GM) then
-              call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, meshPool, scratchPool, timeLevelIn=1)
+              call ocn_gm_compute_Bolus_velocity(statePool, meshPool, scratchPool, timeLevelIn=1)
             endif
 
             block_ptr => block_ptr % next
@@ -2296,8 +2292,6 @@ contains
    integer, pointer :: nCellsSolve, index_temperatureSurfaceValue, index_salinitySurfaceValue, &
                        index_avgZonalSurfaceVelocity, index_avgMeridionalSurfaceVelocity
 
-   integer, pointer :: indexBLT, indexBLS, indexHeatTrans, indexSaltTrans
-
    type (block_type), pointer :: block_ptr
 
    type (mpas_pool_type), pointer :: meshPool,             &
@@ -2305,7 +2299,6 @@ contains
                                      statePool,            &
                                      tracersPool,          &
                                      ecosysAuxiliary,      &
-                                     diagnosticsPool,      &
                                      ecosysSeaIceCoupling, &
                                      DMSSeaIceCoupling,    &
                                      MacroMoleculesSeaIceCoupling
@@ -2329,8 +2322,6 @@ contains
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
-
-   real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers, landIceTracerTransferVelocities
 
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
@@ -2365,7 +2356,6 @@ contains
      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
      call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
      call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-     call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -2424,20 +2414,6 @@ contains
 !    call mpas_pool_get_array(forcingPool, 'CO2Flux', CO2Flux)
 !    call mpas_pool_get_array(forcingPool, 'DMSFlux', DMSFlux)
 !    call mpas_pool_get_array(forcingPool, 'surfaceUpwardCO2Flux', surfaceUpwardCO2Flux)
-
-!JW     call mpas_pool_get_array(diagnosticsPool,'landIceBoundaryLayerTemperature',landIceBoundaryLayerTemperature)
-!JW     call mpas_pool_get_array(diagnosticsPool,'landIceBoundaryLayerSalinity',landIceBoundaryLayerSalinity)
-!JW     call mpas_pool_get_array(diagnosticsPool,'landIceHeatTransferVelocity',landIceHeatTransferVelocity)
-!JW     call mpas_pool_get_array(diagnosticsPool,'landIceSaltTransferVelocity',landIceSaltTransferVelocity)
-!     call mpas_pool_get_array(diagnosticsPool,'effectiveDensityInLandIce',effectiveDensityInLandIce)
-     if ( trim(config_land_ice_flux_mode) .ne. 'pressure_only' ) then
-        call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerTemperature', indexBLT)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerSalinity', indexBLS)
-        call mpas_pool_get_array(diagnosticsPool, 'landIceTracerTransferVelocities', landIceTracerTransferVelocities)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceHeatTransferVelocity', indexHeatTrans)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceSaltTransferVelocity', indexSaltTrans)
-     endif
 
      do i = 1, nCellsSolve
        n = n + 1

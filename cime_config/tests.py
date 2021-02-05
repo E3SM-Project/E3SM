@@ -66,7 +66,7 @@ _TESTS = {
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.eam-rrtmgp",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.eam-gust_param",
             "REP_Ln5.ne4_ne4.FC5AV1C-L",
-            "SMS_Ld9.ne4pg2_ne4pg2.FC5AV1C-04P2.eam-thetahy_sl_pg2_mass",
+            "SMS_Ld9.ne4pg2_ne4pg2.FC5AV1C-L.eam-thetahy_sl_pg2_mass",
             )
         },
 
@@ -211,7 +211,10 @@ _TESTS = {
     #e3sm tests to mimic production runs
     "e3sm_prod" : {
         "inherit" : "e3sm_atm_prod",
-        "tests"   : "SMS_Ld1.ne30pg2_r05_EC30to60E2r2-1900_ICG.A_WCYCL1850S_CMIP6.allactive-wcprod"
+        "tests"   : (
+            "SMS_Ld1.ne30pg2_r05_EC30to60E2r2-1900_ICG.A_WCYCL1850S_CMIP6.allactive-wcprod",
+            "SMS_PS.northamericax4v1pg2_WC14to60E2r3_ICG.A_WCYCL1850S_CMIP6.allactive-wcprodrrm",
+            )
         },
 
     #e3sm tests to mimic BGC production runs

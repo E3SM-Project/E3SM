@@ -70,6 +70,7 @@ subroutine crm_physics_register()
    use phys_control,        only: phys_getopts
    use crmdims,             only: crm_nx, crm_ny, crm_nz, crm_dx, crm_dy, crm_dt, &
                                   crm_nx_rad, crm_ny_rad
+   use constituents,        only: cnst_add
 #if defined(MMF_SAMXX)
    use cpp_interface_mod,   only: setparm
    use gator_mod, only: gator_init
@@ -84,6 +85,7 @@ subroutine crm_physics_register()
    ! local variables
    integer idx
    logical           :: use_ECPP
+   logical           :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
    integer, dimension(1) :: dims_gcm_1D
    integer, dimension(2) :: dims_gcm_2D
@@ -93,6 +95,7 @@ subroutine crm_physics_register()
 #ifdef MODAL_AERO
    integer, dimension(5) :: dims_crm_aer
 #endif
+   integer :: cnst_ind ! dummy for adding new constituents for variance transport
    !----------------------------------------------------------------------------
 #ifdef MMF_SAMXX
    call gator_init()
@@ -107,6 +110,7 @@ subroutine crm_physics_register()
 #endif
 
    call phys_getopts( use_ECPP_out = use_ECPP)
+   call phys_getopts( use_MMF_VT_out = use_MMF_VT )
    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
    if(masterproc) then
@@ -127,6 +131,14 @@ subroutine crm_physics_register()
 
    ! Setup CRM internal parameters
    call setparm()
+
+   if (use_MMF_VT) then
+      ! add variance tracers
+      call cnst_add('VT_T', real(0,r8), real(0,r8), real(0,r8), cnst_ind, &
+                    longname='VT_T', readiv=.false., mixtype='dry',cam_outfld=.false.)
+      call cnst_add('VT_Q', real(0,r8), real(0,r8), real(0,r8), cnst_ind, &
+                    longname='VT_Q', readiv=.false., mixtype='dry',cam_outfld=.false.)
+   end if
 
    ! Register MMF history variables
    call crm_history_register()
@@ -205,7 +217,7 @@ end subroutine crm_physics_register
 !===================================================================================================
 !===================================================================================================
 
-subroutine crm_physics_init(species_class)
+subroutine crm_physics_init(state,species_class)
 !---------------------------------------------------------------------------------------------------
 ! 
 ! Purpose: initialize some variables, and add necessary fields into output fields 
@@ -217,19 +229,26 @@ subroutine crm_physics_init(species_class)
 #ifdef ECPP
    use module_ecpp_ppdriver2, only: papampollu_init
 #endif
+   use ppgrid,                only: begchunk, endchunk
+   use constituents,          only: pcnst, cnst_get_ind
    !----------------------------------------------------------------------------
    ! interface variables
    ! species_class is defined as input so it needs to be outside 
    ! of MODAL_AERO condition for 1-moment micro to work
+   type(physics_state), intent(inout), dimension(begchunk:endchunk) :: state
    integer, intent(inout) :: species_class(:)
    !----------------------------------------------------------------------------
    ! local variables
    integer :: m
    integer :: ierror   ! Error code
    logical :: use_ECPP
+   logical :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
+   integer :: idx_vt_t, idx_vt_q
+   integer :: lchnk, ncol
    !----------------------------------------------------------------------------
    call phys_getopts(use_ECPP_out = use_ECPP)
+   call phys_getopts(use_MMF_VT_out = use_MMF_VT)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
 #ifdef ECPP
@@ -267,6 +286,17 @@ subroutine crm_physics_init(species_class)
    snow_str_idx = pbuf_get_index('SNOW_STR')
    prec_pcw_idx = pbuf_get_index('PREC_PCW')
    snow_pcw_idx = pbuf_get_index('SNOW_PCW')
+
+   if (use_MMF_VT) then
+      ! initialize variance transport tracers
+      call cnst_get_ind( 'VT_T', idx_vt_t )
+      call cnst_get_ind( 'VT_Q', idx_vt_q )
+      do lchnk = begchunk, endchunk
+         ncol  = state(lchnk)%ncol
+         state(lchnk)%q(:ncol,:pver,idx_vt_t) = 0
+         state(lchnk)%q(:ncol,:pver,idx_vt_q) = 0
+      end do
+   end if
 
 end subroutine crm_physics_init
 
@@ -395,6 +425,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    character(len=16) :: microp_scheme              ! GCM microphysics scheme
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
+   logical(c_bool):: use_MMF_VT                    ! flag for MMF variance transport (for C++ CRM)
+   logical        :: use_MMF_VT_tmp                ! flag for MMF variance transport (for Fortran CRM)
+   integer        :: MMF_VT_wn_max                 ! wavenumber cutoff for filtered variance transport
+
    real(r8) :: tmp_e_sat                           ! temporary saturation vapor pressure
    real(r8) :: tmp_q_sat                           ! temporary saturation specific humidity
    real(r8) :: tmp_rh_sum                          ! temporary relative humidity sum
@@ -438,7 +472,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    logical(c_bool)             :: use_crm_accel
    logical(c_bool)             :: crm_accel_uv
    integer                     :: igstep
-
+   integer                     :: idx_vt_t, idx_vt_q  ! variance transport constituent indices
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
 #if defined( MMF_ORIENT_RAND )
@@ -450,6 +484,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 
    call phys_getopts(use_ECPP_out = use_ECPP)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+
+   use_MMF_VT = .false.
+   call phys_getopts(use_MMF_VT_out = use_MMF_VT_tmp)
+   call phys_getopts(MMF_VT_wn_max_out = MMF_VT_wn_max)
+   use_MMF_VT = use_MMF_VT_tmp
 
    nstep = get_nstep()
    lchnk = state%lchnk
@@ -828,6 +867,15 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       end do
 #endif
       !---------------------------------------------------------------------------------------------
+      ! Variance transport
+      !---------------------------------------------------------------------------------------------
+      if (use_MMF_VT) then
+         call cnst_get_ind( 'VT_T', idx_vt_t )
+         call cnst_get_ind( 'VT_Q', idx_vt_q )
+         crm_input%t_vt(:ncol,:pver) = state%q(:ncol,:pver,idx_vt_t)
+         crm_input%q_vt(:ncol,:pver) = state%q(:ncol,:pver,idx_vt_q)
+      end if
+      !---------------------------------------------------------------------------------------------
       ! Set the input wind (also sets CRM orientation)
       !---------------------------------------------------------------------------------------------
       do i = 1,ncol
@@ -884,6 +932,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_input, crm_state, crm_rad, &
                crm_ecpp_output, crm_output, crm_clear_rh, &
                latitude0, longitude0, gcolp, igstep, &
+               use_MMF_VT_tmp, MMF_VT_wn_max, &
                use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
 
       call t_stopf('crm_call')
@@ -900,6 +949,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 #ifdef MMF_ESMT
                crm_input%ul_esmt, crm_input%vl_esmt,                                        &
 #endif
+               crm_input%t_vt, crm_input%q_vt, &
                crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
                crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, &
                crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, crm_output%subcycle_factor, &
@@ -913,6 +963,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
                crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
                crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
+               crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%t_vt_ls, crm_output%q_vt_ls, &
 #if defined(MMF_MOMENTUM_FEEDBACK)
                crm_output%ultend, crm_output%vltend, &
 #endif /* MMF_MOMENTUM_FEEDBACK */
@@ -924,6 +975,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 #endif
                crm_clear_rh, &
                latitude0, longitude0, gcolp, igstep, &
+               use_MMF_VT, MMF_VT_wn_max, &
                use_crm_accel, crm_accel_factor, crm_accel_uv)
 
       call t_stopf('crm_call')
@@ -941,6 +993,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%q(:ncol,:pver,1)        = crm_output%qltend(1:ncol,1:pver)
       ptend%q(:ncol,:pver,ixcldliq) = crm_output%qcltend(1:ncol,1:pver)
       ptend%q(:ncol,:pver,ixcldice) = crm_output%qiltend(1:ncol,1:pver)
+
+      if (use_MMF_VT) then
+         call cnst_get_ind( 'VT_T', idx_vt_t )
+         call cnst_get_ind( 'VT_Q', idx_vt_q )
+         ptend%q(1:ncol,1:pver,idx_vt_t) = crm_output%t_vt_tend(1:ncol,1:pver)
+         ptend%q(1:ncol,1:pver,idx_vt_q) = crm_output%q_vt_tend(1:ncol,1:pver)
+      end if
 
       !---------------------------------------------------------------------------------------------
       ! Add radiative heating tendency above CRM
@@ -1038,6 +1097,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%lq(ixcldice) = .TRUE.
       ptend%lu           = .FALSE.
       ptend%lv           = .FALSE.
+
+      if (use_MMF_VT) then
+         call cnst_get_ind( 'VT_T', idx_vt_t )
+         call cnst_get_ind( 'VT_Q', idx_vt_q )
+         ptend%lq(idx_vt_t) = .TRUE.
+         ptend%lq(idx_vt_q) = .TRUE.
+      end if
 
       !---------------------------------------------------------------------------------------------
       ! CRM momentum tendencies

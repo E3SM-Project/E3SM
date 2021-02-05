@@ -673,13 +673,13 @@
         <command name="load">sems-cmake/3.12.2</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">sems-gcc/7.3.0</command>
+        <command name="load">acme-gcc/8.1.0</command>
       </modules>
       <modules compiler="intel">
         <command name="load">sems-intel/19.0.5</command>
       </modules>
       <modules mpilib="mpi-serial">
-        <command name="load">sems-netcdf/4.4.1/exo</command>
+        <command name="load">acme-netcdf/4.4.1/exo_acme</command>
         <command name="load">acme-pfunit/3.2.8/base</command>
       </modules>
       <modules mpilib="!mpi-serial">
@@ -1121,7 +1121,7 @@
 
   <machine MACH="chrysalis">
     <DESC>ANL LCRC cluster 512-node AMD Epyc 7532 2-sockets 64-cores per node</DESC>
-    <NODENAME_REGEX>chrlogin.*</NODENAME_REGEX>
+    <NODENAME_REGEX>chr.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>impi,openmpi</MPILIBS>
@@ -1141,13 +1141,7 @@
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="impi">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks"> -l -n {{ total_tasks }}</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="openmpi">
+    <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks">--mpi=pmi2 -l -n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
@@ -1200,6 +1194,14 @@
         <command name="load">netcdf-fortran/4.5.3-i5ah7u2</command>
         <command name="load">parallel-netcdf/1.12.1-e7w4x32</command>
       </modules>
+      <modules compiler="gnu" mpilib="impi">
+        <command name="load">intel-mpi/2019.9.304-jdih7h5</command>
+        <command name="load">hdf5/1.8.16-dtbpce3</command>
+        <command name="load">netcdf-c/4.4.1-zcoa44z</command>
+        <command name="load">netcdf-cxx/4.2-ayxg4c7</command>
+        <command name="load">netcdf-fortran/4.4.4-2lfr2lr</command>
+        <command name="load">parallel-netcdf/1.11.0-ifdodru</command>
+      </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -1221,13 +1223,8 @@
     <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
-    <environment_variables mpilib="impi">
-      <env name="I_MPI_PIN_DOMAIN">omp</env>
-      <env name="I_MPI_PIN_ORDER">spread</env>
-      <env name="I_MPI_PIN_CELL">core</env>
-    </environment_variables>
-    <environment_variables mpilib="impi" DEBUG="TRUE">
-      <env name="I_MPI_DEBUG">10</env>
+    <environment_variables mpilib="openmpi">
+      <env name="UCX_TLS">sm,ud</env>
     </environment_variables>
   </machine>
 
@@ -2859,6 +2856,7 @@
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi.*">
         <command name="load">pgi/19.9</command>
+        <command name="load">pgi-cxx14/default</command>
       </modules>
       <modules compiler="pgigpu">
         <command name="load">cuda/10.1.243</command>
@@ -3048,7 +3046,7 @@
         <command name="load">svn/1.10.6</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/8.2.0</command>
+        <command name="load">gcc/8.1.0</command>
         <command name="load">blas/gcc/64/3.8.0</command>
         <command name="load">lapack/gcc/64/3.8.0</command>
       </modules>
