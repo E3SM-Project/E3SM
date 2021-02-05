@@ -41,7 +41,7 @@
     <default_value></default_value>
     <values modifier='additive'>
       <value compset=""               >-mach $MACH</value>
-      <value compset="_EAM"          >-phys cam5</value>
+      <value compset="_EAM"          >-phys default</value>
       <value compset="_EAM%MAM4"     >-chem trop_mam4</value>
       <value compset="_EAM%ATMMOD"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero</value>
       <value compset="_EAM%AV1C-L"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
@@ -69,6 +69,7 @@
       <value compset="_EAM%CLBMG2MAM4RESUSCOSP"   >-clubb_sgs -microphys mg2 -chem trop_mam4 -rain_evap_to_coarse_aero -cosp</value>
       <value compset="_EAM%CLBMG2MAM4RESUSMOMCOSP"   >-clubb_sgs -microphys mg2 -chem trop_mam4_resus_mom -rain_evap_to_coarse_aero -cosp</value>
       <value compset="_EAM%CLBMG2LINMAM4RESUSMOMCOSP" >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero -cosp</value>
+      <value compset="_EAM%UNI"      >-unicon -cppdefs -DMODIFY_ACTIVATE</value>
       <value compset="_EAM%MOZM"     >-chem trop_mozart_mam3 -age_of_air_trcs</value>
       <value compset="_EAM%PM"       >-chem none</value>
       <value compset="_EAM%SMA3"     >-chem trop_strat_mam3 -age_of_air_trcs</value>
@@ -114,7 +115,7 @@
       <value compset="GEOS_EAM"      >-nlev 56</value>
       <value compset="_EAM.*_BGC%B"   >-co2_cycle</value>
       <value compset="EAM%SCAM"   >-scam</value>
-      <value compset="AR97_EAM"   >-phys cam5 -scam -nlev 72 -clubb_sgs -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
+      <value compset="AR97_EAM"   >-phys default -scam -nlev 72 -clubb_sgs -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
       <value compset="_EAM.%L60"      >-nlev 60</value>
       <value compset="_ELM%[^_]*BC"     >-bc_dep_to_snow_updates</value>
 
@@ -123,10 +124,10 @@
       <value compset="_EAM%ADIAB"     >-phys adiabatic</value>
 
       <!-- Aquaplanet -->
-      <value compset="_EAM%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
+      <value compset="_EAM%AQUA"   >-nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
 
       <!-- Radiative-Convective Equilibrium (RCE) -->
-      <value compset="_EAM%RCE"    >-phys cam5  -rad rrtmgp -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -rce -chem none </value>
+      <value compset="_EAM%RCE"    >-rad rrtmgp -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -rce -chem none </value>
 
 
     </values>
@@ -299,6 +300,7 @@
     <desc compset="IDEAL"        >EAM ideal physics:</desc>
     <desc compset="AMIP">Atmospheric Model Intercomparison Project protocol: </desc>
     <desc compset="_EAM%MG1M"   >MG1.0 w/ modified activation:</desc>
+    <desc compset="_EAM%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="EAM.*_BGC%B">EAM prognostic CO2 cycle turned on.</desc>
     <!-- old MMF / Super-Parameterization -->
     <desc compset="_EAM%SP1V1_"    >SP-E3SM with 64x1km CRM, RRTMG radiation, 1-mom micro, prescribed aerosol</desc>

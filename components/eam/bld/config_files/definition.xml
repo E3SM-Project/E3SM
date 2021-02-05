@@ -41,8 +41,8 @@ Switch to turn on FV offline driver: 0 => no, 1 => yes.
 <entry id="waccmx" valid_values="0,1" value="0">
 Option to turn on waccmx thermosphere/ionosphere extension: 0 => no, 1 => yes
 </entry>
-<entry id="phys" valid_values="cam3,cam3_5_1,cam4,cam5,ideal,adiabatic" value="">
-Physics package: cam3, cam4, cam5, ideal (Held-Suarez forcings), adiabatic.
+<entry id="phys" valid_values="cam3,cam3_5_1,cam4,cam5,ideal,adiabatic,default" value="">
+Physics package: cam3, cam4, cam5, ideal (Held-Suarez forcings), adiabatic, default (eam).
 </entry>
 <entry id="microphys" valid_values="rk,mg1,mg1.5,mg2" value="">
 Microphysics package: rk (Rasch and Kristjansson), mg1 (Morrison and Gettelman two moment scheme CAM5.1), mg1.5 (Morrison and Gettelman second version development), mg2 ((Morrison and Gettelman second version).

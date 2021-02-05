@@ -35,7 +35,7 @@ integer,           parameter :: unset_int = huge(1)
 
 ! Namelist variables:
 character(len=16) :: cam_physpkg          = unset_str  ! CAM physics package [cam3 | cam4 | cam5 |
-                                                       !   ideal | adiabatic].
+                                                       !   ideal | adiabatic | default].
 character(len=32) :: cam_chempkg          = unset_str  ! CAM chemistry package [waccm_mozart | 
                                                        !  waccm_ghg | trop_mozart | trop_ghg | 
                                                        !  trop_bam | trop_mam3 | trop_mam4 | 

@@ -149,7 +149,7 @@ OPTIONS
      -pbl <name>        Specify the PBL option [uw | hb | hbr].
      -pcols <n>         Set maximum number of columns in a chunk to <n>.
      -pergro            Switch enables building EAM for perturbation growth tests.
-     -phys <name>       Physics option [cam3 | cam4 | cam5 | cam5.4 | ideal | adiabatic].  Default: cam5.4
+     -phys <name>       Physics option [cam3 | cam4 | cam5 | cam5.4 | ideal | adiabatic | default]
      -prog_species <list>Comma-separate list of prognostic mozart species packages.
                         Currently available: DST,SSLT,SO4,GHG,OC,BC,CARBON16
      -psubcols <n>      Maximum number of sub-columns in a run - set to 1 if not using sub-columns (default)
@@ -456,7 +456,7 @@ EOF
 # The default physics package is cam5.4.  Physics packages >=cam5 use chemistry packages
 # that include modal aerosols, i.e., the -chem value matches /_mam/.  If the chem_pkg
 # name doesn't match /_mam/ then set the default physics package to cam4.
-my $phys_pkg = 'cam5.4';
+my $phys_pkg = 'default';
 if (defined $opts{'chem'} and $opts{'chem'} !~ /_mam/) {$phys_pkg = 'cam4';}
 
 if (defined $opts{'phys'}) {
@@ -475,7 +475,7 @@ if (defined $opts{'prog_species'}) {
 if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
     $chem_pkg = 'none';
 }
-elsif ($phys_pkg eq 'cam5') {
+elsif ($phys_pkg eq 'default') {
     $chem_pkg = 'trop_mam3';
 }
 
@@ -958,7 +958,7 @@ if (defined $opts{'clubb_sgs'}) {
 if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
     $microphys_pkg = 'rk';
 }
-elsif ($phys_pkg eq 'cam5' and !defined $opts{'clubb_sgs'}) {
+elsif ($phys_pkg eq 'default' and !defined $opts{'clubb_sgs'}) {
     $microphys_pkg = 'mg1';
 }
 

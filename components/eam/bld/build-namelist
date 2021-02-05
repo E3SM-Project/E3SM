@@ -803,10 +803,23 @@ add_default($nl, 'ncdata', %atts);
 # 0: uncoupled, 2: coupled, distinguished by ocn comp name as seen by atm's configure command
 add_default($nl,'ieflx_opt');
 
+# Add other variables that are previously set in use_case but not previously set
+add_default($nl,'use_hetfrz_classnuc');
+add_default($nl,'hist_hetfrz_classnuc');
+add_default($nl,'gw_convect_hcf');
+add_default($nl,'linoz_psc_t');
+add_default($nl,'micro_mg_dcs_tdep');
+add_default($nl,'micro_mincdnc');
+add_default($nl,'microp_aero_wsub_scheme');
+add_default($nl,'microp_aero_wsubmin');
+add_default($nl,'use_preexisting_ice');
+
+
 #BSINGH - (when .true.)calculate solar zenith angle averaged over a time step.
 #In default model, solar zenith angle is held constant over time.
 #This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
-add_default($nl,'use_rad_dt_cosz','val'=>'.false.');
+#Default value set by namelist_defaults_eam.xml, avoid setting a  default value false here.
+add_default($nl,'use_rad_dt_cosz');
 
 #Approximate value of decay time at model top (days);
 #if 0., no rayleigh friction is applied
@@ -3483,7 +3496,8 @@ $nl->set_variable_value('phys_ctl_nl', 'cam_chempkg', $cam_chempkg);
 
 #BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag 
 #This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
-add_default($nl,'fix_g1_err_ndrop','val'=>'.false.');
+#The value set to be  determined by namelist_defaults_eam.xml, not preset a value to false here.
+add_default($nl,'fix_g1_err_ndrop');
 
 # Deep convection scheme
 add_default($nl, 'deep_scheme');
@@ -3625,6 +3639,29 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_wpxp_L_thresh');
    add_default($nl, 'relvar_fix');
    add_default($nl, 'clubb_use_sgv');
+
+  # additional clubb parameters for EAMv2 as default
+   add_default($nl, 'clubb_C1');
+   add_default($nl, 'clubb_C11');
+   add_default($nl, 'clubb_C11b');
+   add_default($nl, 'clubb_C11c');
+   add_default($nl, 'clubb_C14');
+   add_default($nl, 'clubb_C1b');
+   add_default($nl, 'clubb_C1c');
+   add_default($nl, 'clubb_C2rt');
+   add_default($nl, 'clubb_C6rtb');
+   add_default($nl, 'clubb_C6rtc');
+   add_default($nl, 'clubb_C6thlb');
+   add_default($nl, 'clubb_C6thlc');
+   add_default($nl, 'clubb_C8');
+   add_default($nl, 'clubb_c_K10');
+   add_default($nl, 'clubb_c_K10h');
+   add_default($nl, 'clubb_gamma_coef');
+   add_default($nl, 'clubb_gamma_coefb');
+   add_default($nl, 'clubb_gamma_coefc');
+   add_default($nl, 'clubb_mu');
+   add_default($nl, 'clubb_ipdf_call_placement');
+
 }
 
 # MMF Microphysics scheme
@@ -3710,11 +3747,15 @@ add_default($nl, 'zmconv_cape_cin');
 add_default($nl, 'zmconv_mx_bot_lyr_adj');
 add_default($nl, 'zmconv_dmpdz');
 add_default($nl, 'zmconv_tp_fac');
+add_default($nl, 'zmconv_alfa');
+add_default($nl, 'zmconv_trigdcape_ull');
 
 # moist convection rainwater coefficients
-add_default($nl, 'hkconv_cmftau');
-add_default($nl, 'hkconv_c0');
-if ($phys eq 'cam5') {
+# These no more needed for EAM, including uwshcu_rpen. No need to reset for 'cam5'
+#add_default($nl, 'hkconv_cmftau');
+#add_default($nl, 'hkconv_c0');
+#MMF still uses UW scheme in the background and check for this parameter during runtime
+if ($phys eq 'cam5' || $phys eq 'default') {
   add_default($nl, 'uwshcu_rpen');
 }
 
