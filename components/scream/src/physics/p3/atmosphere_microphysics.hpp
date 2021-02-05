@@ -72,66 +72,54 @@ public:
   // Most individual processes have a pre-processing step that constructs needed variables from
   // the set of fields stored in the field manager.  A structure like this defines those operations,
   // which can then be called during run_imple in the main .cpp code.
+  // NOTE: the use of the ekat command "set" to copy local values into the variables of interest.
+  // This is an important step to avoid having those variables just share pointers to memory.
   // Structure to handle the local generation of data needed by p3_main in run_impl
-  struct run_local_vars {
-    run_local_vars(const int ncol, const int npack, view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_) : 
-      m_ncol(ncol),
-      m_npack(npack),
-      // IN
-      pmid(pmid_),
-      T_atm(T_atm_),
-      ast(ast_),
-      zi(zi_),
-      // OUT
-      exner("exner",ncol,npack),
-      th_atm("th_atm",ncol,npack),
-      cld_frac_l("cld_frac_l",ncol,npack),
-      cld_frac_i("cld_frac_i",ncol,npack),
-      cld_frac_r("cld_frac_r",ncol,npack),
-      dz("dz",ncol,npack)
-    {
-      // Nothing else to initialize at the moment.
-    };
+  struct p3_preamble {
+    p3_preamble() = default; 
+    // Functor for Kokkos loop to pre-process every run step
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
-      int ipack, ivec;
-      for (ipack=0;ipack<m_npack;ipack++) {
+      for (int ipack=0;ipack<m_npack;ipack++) {
         // Exner
         const Spack opmid(pmid(icol,ipack));
         const Smask opmid_mask(!isnan(opmid) and opmid>0.0);
         auto oexner = physics_fun::get_exner(opmid,opmid_mask);
-        exner(icol,ipack)  = oexner;
+        exner(icol,ipack).set(opmid_mask,oexner);
         // Potential temperature
         const Spack oT_atm(T_atm(icol,ipack));
         const Smask oT_atm_mask(!isnan(oT_atm) and oT_atm>0.0);
         auto oth = physics_fun::T_to_th(oT_atm,oexner,oT_atm_mask);
-        th_atm(icol,ipack) = oth; 
+        th_atm(icol,ipack).set(oT_atm_mask,oth); 
         // Cloud fraction and dz
         const Spack oast(ast(icol,ipack));
         const Smask oasti_mask(!isnan(oast) and oast>mincld);
         cld_frac_l(icol,ipack).set(oasti_mask,oast);
         cld_frac_i(icol,ipack).set(oasti_mask,oast);
         cld_frac_r(icol,ipack).set(oasti_mask,oast);
-        Int kstr = ipack==0 ? 1 : 0;  // If ipack == 0 then we need to skip the first index for rain fraction (i.e. TOM)
-        for (int kk=kstr;kk<Spack::n;kk++)
+        for (int ivec=0;ivec<Spack::n;ivec++)
         {
           // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top to bottom and determine if the rain fraction needs to
           // be updated to match the cloud fraction in the layer above.  It is necessary to calculate the location of the layer directly above this one,
           // labeled ipack_m1 and ivec_m1 respectively.  Note, the top layer has no layer above it, which is why we have the kstr index in the loop.
-          ivec  = kk % Spack::n;
-          Int ipack_m1 = (ipack*Spack::n + kk) / Spack::n;
-          Int ivec_m1  = (ipack*Spack::n + kk) % Spack::n;
-          cld_frac_r(icol,ipack)[kk] = ast(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[kk] ? 
+          Int lev = ipack*Spack::n + ivec;  // Determine the level at this pack/vec location.
+          Int ipack_m1 = (lev - 1) / Spack::n;
+          Int ivec_m1  = (lev - 1) % Spack::n;
+          Int ipack_p1 = (lev + 1) / Spack::n;
+          Int ivec_p1  = (lev + 1) % Spack::n;
+          if (lev != 0) { /* Not applicable at the very top layer */
+            cld_frac_r(icol,ipack)[ivec] = ast(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ? 
                                               ast(icol,ipack_m1)[ivec_m1] :
-                                              cld_frac_r(icol,ipack)[kk];
+                                              cld_frac_r(icol,ipack)[ivec];
+          }
           // dz is calculated as the difference between the two layer interfaces.  Note that the lower the index the higher the altitude.
           // We also want to make sure we use the top level index for assignment since dz[0] = zi[0]-zi[1], for example.
-          dz(icol,ipack_m1)[ivec_m1] = zi(icol,ipack_m1)[ivec_m1]-zi(icol,ipack)[ivec]; 
+          dz(icol,ipack)[ivec] = zi(icol,ipack)[ivec]-zi(icol,ipack_p1)[ivec_p1]; 
         }
         //
       }
-    }
-
+    } // operator
+    // Local variables
     int m_ncol, m_npack;
     Real mincld = 0.0001;  // TODO: These should be stored somewhere as more universal constants.  Or maybe in the P3 class hpp
     view_2d_const pmid;
@@ -144,7 +132,86 @@ public:
     view_2d       cld_frac_i;
     view_2d       cld_frac_r;
     view_2d       dz;
-  }; // run_local_vars
+    // Assigning local variables
+    void set_variables(const int ncol, const int npack, 
+           view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_,
+           view_2d exner_, view_2d th_atm_, view_2d cld_frac_l_, view_2d cld_frac_i_, view_2d cld_frac_r_, view_2d dz_
+           )
+    {
+      m_ncol = ncol;
+      m_npack = npack;
+      // IN
+      pmid = pmid_;
+      T_atm = T_atm_;
+      ast = ast_;
+      zi = zi_;
+      // OUT
+      exner = exner_;
+      th_atm = th_atm_;
+      cld_frac_l = cld_frac_l_;
+      cld_frac_i = cld_frac_i_;
+      cld_frac_r = cld_frac_r_;
+      dz = dz_;
+    } // set_variables
+  }; // p3_preamble
+  /* --------------------------------------------------------------------------------------------*/
+  // Most individual processes have a post-processing step that derives variables needed by the rest
+  // of the model, using outputs from this process.
+  // Structure to handle the generation of data needed by the rest of the model based on output from
+  // p3_main.
+  struct p3_postamble {
+    p3_postamble() = default; 
+    // Functor for Kokkos loop to pre-process every run step
+    KOKKOS_INLINE_FUNCTION
+    void operator()(const int icol) const {
+      for (int ipack=0;ipack<m_npack;ipack++) {
+        // Update the atmospheric temperature and the previous temperature.
+        const Spack oexner(exner(icol,ipack));
+        const Smask oexner_mask(!isnan(oexner) and oexner>0.0);
+        const Spack oth_atm(th_atm(icol,ipack));
+        const Smask oth_atm_mask(!isnan(oth_atm) and oth_atm>0.0);
+        auto oT = physics_fun::th_to_T(oth_atm,oexner,oth_atm_mask);
+        T_atm(icol,ipack).set(oth_atm_mask,oT);
+        T_prev(icol,ipack).set(oth_atm_mask,T_atm(icol,ipack));
+         // Update qv_prev
+        const Spack oqv(qv(icol,ipack));
+        const Smask oqv_mask(!isnan(oqv) and oqv>0.0);
+        qv_prev(icol,ipack).set(oqv_mask,oqv);
+      } // for ipack
+    } // operator
+    // Local variables
+    int m_ncol, m_npack;
+    view_2d       T_atm;
+    view_2d       exner;
+    view_2d       th_atm;
+    view_2d       T_prev;
+    view_2d       qv;
+    view_2d       qv_prev;
+    // Assigning local values
+    void set_variables(const int ncol, const int npack,
+                    view_2d th_atm_, view_2d exner_, view_2d T_atm_, view_2d T_prev_,
+                    view_2d qv_, view_2d qv_prev_
+                   )
+    {
+      m_ncol  = ncol;
+      m_npack = npack;
+      // IN
+      th_atm = th_atm_;
+      exner  = exner_;
+      qv     = qv_;
+      // OUT
+      T_atm  = T_atm_;
+      T_prev = T_prev_;
+      qv_prev = qv_prev_;
+      // TODO: This is a list of variables not yet defined for post-processing, but are
+      // defined in the F90 p3 interface code.  So this list will need to be checked as
+      // new processes come online to make sure their requirements from p3 are being met.
+      // qme, vap_liq_exchange
+      // ENERGY Conservation: prec_str, snow_str
+      // RAD Vars: icinc, icwnc, icimrst, icwmrst, rel, rei, dei
+      // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffrain, reffsnow  
+    } // set_variables 
+  }; // p3_preamble
   /* --------------------------------------------------------------------------------------------*/
 
 protected:
@@ -173,21 +240,23 @@ protected:
   // Used to init some fields. For now, only needed for stand-alone p3 runs
   std::shared_ptr<FieldInitializer>  m_initializer;
 
-  util::TimeStamp   m_current_ts;
-  ekat::Comm              m_p3_comm;
-
-  ekat::ParameterList     m_p3_params;
+  util::TimeStamp     m_current_ts;
+  ekat::Comm          m_p3_comm;
+  ekat::ParameterList m_p3_params;
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
   Int m_num_levs;
+  Int m_nk_pack;
 
   // Store the structures for each arguement to p3_main;
-  P3F::P3PrognosticState prog_state;
-  P3F::P3DiagnosticInputs diag_inputs;
+  P3F::P3PrognosticState   prog_state;
+  P3F::P3DiagnosticInputs  diag_inputs;
   P3F::P3DiagnosticOutputs diag_outputs;
-  P3F::P3HistoryOnly history_only;
-  P3F::P3Infrastructure infrastructure;
+  P3F::P3HistoryOnly       history_only;
+  P3F::P3Infrastructure    infrastructure;
+  p3_preamble              p3_preproc;
+  p3_postamble             p3_postproc;
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
   // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs. 
 

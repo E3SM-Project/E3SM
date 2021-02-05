@@ -200,38 +200,38 @@ void P3InputsInitializer::initialize_fields ()
   {
     for (int k = nk-1;k>=0;k--)
     {
-    int icol  = icol_i % icol_in_max;
-    int ipack = k / Spack::n;
-    int ivec  = k % Spack::n;
-    int ipack_m1 = (k-1) / Spack::n;
-    int ivec_m1  = (k-1) % Spack::n;
-    h_qv(icol_i,ipack)[ivec]              = h_qv(icol,ipack)[ivec]                              ;
-    h_th_atm(icol_i,ipack)[ivec]          = h_th_atm(icol,ipack)[ivec]                          ;
-    h_T_atm(icol_i,ipack)[ivec]           = h_th_atm(icol,ipack)[ivec]*h_exner(icol,ipack)[ivec];
-    h_pmid(icol_i,ipack)[ivec]            = h_pmid(icol,ipack)[ivec]                            ;
-    h_dz(icol_i,ipack)[ivec]              = h_dz(icol,ipack)[ivec]                              ;
-    h_nc_nuceat_tend(icol_i,ipack)[ivec]  = h_nc_nuceat_tend(icol,ipack)[ivec]                  ;
-    h_nccn_prescribed(icol_i,ipack)[ivec] = h_nccn_prescribed(icol,ipack)[ivec]                 ;
-    h_ni_activated(icol_i,ipack)[ivec]    = h_ni_activated(icol,ipack)[ivec]                    ;
-    h_inv_qc_relvar(icol_i,ipack)[ivec]   = h_inv_qc_relvar(icol,ipack)[ivec]                   ;
-    h_qc(icol_i,ipack)[ivec]              = h_qc(icol,ipack)[ivec]                              ;
-    h_nc(icol_i,ipack)[ivec]              = h_nc(icol,ipack)[ivec]                              ;
-    h_qr(icol_i,ipack)[ivec]              = h_qr(icol,ipack)[ivec]                              ;
-    h_nr(icol_i,ipack)[ivec]              = h_nr(icol,ipack)[ivec]                              ;
-    h_qi(icol_i,ipack)[ivec]              = h_qi(icol,ipack)[ivec]                              ;
-    h_ni(icol_i,ipack)[ivec]              = h_ni(icol,ipack)[ivec]                              ;
-    h_qm(icol_i,ipack)[ivec]              = h_qm(icol,ipack)[ivec]                              ;
-    h_bm(icol_i,ipack)[ivec]              = h_bm(icol,ipack)[ivec]                              ;
-    h_dp(icol_i,ipack)[ivec]              = h_dp(icol,ipack)[ivec]                              ;
-    h_exner(icol_i,ipack)[ivec]           = h_exner(icol,ipack)[ivec]                           ;
-    h_ast(icol_i,ipack)[ivec]             = h_ast(icol,ipack)[ivec]                             ;
-    h_qv_prev(icol_i,ipack)[ivec]         = h_qv_prev(icol,ipack)[ivec]                         ;
-    h_T_prev(icol_i,ipack)[ivec]          = h_T_prev(icol,ipack)[ivec]                          ;
-    // Initialize arrays not provided in input file
-    h_zi(icol_i,ipack)[ivec] = (k==nk-1) ? 0 :
-                                           h_zi(icol_i,ipack_m1)[ivec_m1] + h_dz(icol_i,ipack)[ivec];
-    }
-  }
+      int icol  = icol_i % (icol_in_max+1);
+      int ipack = k / Spack::n;
+      int ivec  = k % Spack::n;
+      int ipack_p1 = (k+1) / Spack::n;
+      int ivec_p1  = (k+1) % Spack::n;
+      h_qv(icol_i,ipack)[ivec]              = h_qv(icol,ipack)[ivec]                              ;
+      h_th_atm(icol_i,ipack)[ivec]          = h_th_atm(icol,ipack)[ivec]                          ;
+      h_T_atm(icol_i,ipack)[ivec]           = h_th_atm(icol,ipack)[ivec]*h_exner(icol,ipack)[ivec];
+      h_pmid(icol_i,ipack)[ivec]            = h_pmid(icol,ipack)[ivec]                            ;
+      h_dz(icol_i,ipack)[ivec]              = h_dz(icol,ipack)[ivec]                              ;
+      h_nc_nuceat_tend(icol_i,ipack)[ivec]  = h_nc_nuceat_tend(icol,ipack)[ivec]                  ;
+      h_nccn_prescribed(icol_i,ipack)[ivec] = h_nccn_prescribed(icol,ipack)[ivec]                 ;
+      h_ni_activated(icol_i,ipack)[ivec]    = h_ni_activated(icol,ipack)[ivec]                    ;
+      h_inv_qc_relvar(icol_i,ipack)[ivec]   = h_inv_qc_relvar(icol,ipack)[ivec]                   ;
+      h_qc(icol_i,ipack)[ivec]              = h_qc(icol,ipack)[ivec]                              ;
+      h_nc(icol_i,ipack)[ivec]              = h_nc(icol,ipack)[ivec]                              ;
+      h_qr(icol_i,ipack)[ivec]              = h_qr(icol,ipack)[ivec]                              ;
+      h_nr(icol_i,ipack)[ivec]              = h_nr(icol,ipack)[ivec]                              ;
+      h_qi(icol_i,ipack)[ivec]              = h_qi(icol,ipack)[ivec]                              ;
+      h_ni(icol_i,ipack)[ivec]              = h_ni(icol,ipack)[ivec]                              ;
+      h_qm(icol_i,ipack)[ivec]              = h_qm(icol,ipack)[ivec]                              ;
+      h_bm(icol_i,ipack)[ivec]              = h_bm(icol,ipack)[ivec]                              ;
+      h_dp(icol_i,ipack)[ivec]              = h_dp(icol,ipack)[ivec]                              ;
+      h_exner(icol_i,ipack)[ivec]           = h_exner(icol,ipack)[ivec]                           ;
+      h_ast(icol_i,ipack)[ivec]             = h_ast(icol,ipack)[ivec]                             ;
+      h_qv_prev(icol_i,ipack)[ivec]         = h_qv_prev(icol,ipack)[ivec]                         ;
+      h_T_prev(icol_i,ipack)[ivec]          = h_T_prev(icol,ipack)[ivec]                          ;
+      // Initialize arrays not provided in input file
+      if (k==nk-1) { h_zi(icol_i,ipack_p1)[ivec_p1] = 0.0; } // If this is the bottom layer then initialize zi[nk]
+      h_zi(icol_i,ipack)[ivec] = h_zi(icol_i,ipack_p1)[ivec_p1] + h_dz(icol_i,ipack)[ivec];
+    } // for k
+  } // for icol_i
 
   // Deep copy back to device
   Kokkos::deep_copy(d_T_atm          , h_T_atm          ); 
