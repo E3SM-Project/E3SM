@@ -1894,8 +1894,9 @@ end subroutine clubb_init_cnst
            trim(scm_clubb_iop_name) .eq. 'toga' .or. trim(scm_clubb_iop_name) .eq. 'mpace' .or. &
            trim(scm_clubb_iop_name) .eq. 'ARM_CC') then
        
-             bflx22 = (gravit/theta0)*wpthlp_sfc
-             ustar  = diag_ustar(zt_g(2),bflx22,ubar,zo)      
+             dum1   = real(zt_g(2), kind = r8)
+             bflx22 = (gravit/real(theta0, kind = r8))*real(wpthlp_sfc, kind = r8)
+             ustar  = diag_ustar(dum1,bflx22,ubar,zo)      
         endif
     
         !  Compute the surface momentum fluxes, if this is a SCAM simulation       
@@ -1932,7 +1933,7 @@ end subroutine clubb_init_cnst
       
       !  Surface fluxes provided by host model
       wpthlp_sfc = real(cam_in%shf(i), kind = core_rknd)/(real(cpair, kind = core_rknd)*rho_ds_zm(1)) ! Sensible heat flux
-      wprtp_sfc  = real(cam_in%cflx(i,1), kind = core_rknd)/(rho_ds_zm(1))                            ! Latent heat flux
+      wprtp_sfc  = real(cam_in%cflx(i,1), kind = core_rknd)/rho_ds_zm(1)                              ! Latent heat flux
       upwp_sfc   = real(cam_in%wsx(i), kind = core_rknd)/rho_ds_zm(1)                                 ! Surface meridional momentum flux
       vpwp_sfc   = real(cam_in%wsy(i), kind = core_rknd)/rho_ds_zm(1)                                 ! Surface zonal momentum flux
       
@@ -2522,9 +2523,9 @@ end subroutine clubb_init_cnst
    do k=1,pver
       do i=1,ncol
          !  buoyancy flux
-         wpthvp_diag(i,k) = (wpthlp(i,k)-(apply_const*wpthlp_const))+((1._r8-eps)/eps)*theta0* &
+         wpthvp_diag(i,k) = (wpthlp(i,k)-(apply_const*wpthlp_const))+((1._r8-eps)/eps)*real(theta0, kind = r8)* &
                        (wprtp(i,k)-(apply_const*wprtp_const))+((latvap/cpair)* &
-                       state1%exner(i,k)-(1._r8/eps)*theta0)*wprcp(i,k)
+                       state1%exner(i,k)-(1._r8/eps)*real(theta0, kind = r8))*wprcp(i,k)
 
          !  total water mixing ratio
          qt_output(i,k) = state1%q(i,k,ixq)+state1%q(i,k,ixcldliq)+state1%q(i,k,ixcldice)
