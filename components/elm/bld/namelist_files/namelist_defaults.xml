@@ -321,6 +321,10 @@ lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr1850_c180306.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_10x15_simyr1850_c130927.nc</fsurdat>
 <fsurdat hgrid="NLDAS"        sim_year="1850" irrig=".false." use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_nldas2_simyr2000_c181207.nc</fsurdat>
+<fsurdat hgrid="ne0np4_antarcticax4v1"        sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_antarcticax4v1pg2_simyr1850_c210131.nc</fsurdat>
+<fsurdat hgrid="ne0np4_antarcticax4v1"        sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_antarcticax4v1pg2_simyr2010_c210131.nc</fsurdat>
 
 <fsurdat hgrid="1x1_tropicAtl" sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1x1_tropicAtl_simyr1850_c130927.nc</fsurdat>
@@ -389,6 +393,8 @@ lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
  use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_10x15_rcp8.5_simyr1850-2100_c130524.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="48x96"         sim_year_range="1850-2000"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_48x96_rcp8.5_simyr1850-2100_c130524.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="ne0np4_antarcticax4v1"    sim_year_range="1850-2015"
+ use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_antarcticax4v1pg2_hist_simyr1850-2015_c210131.nc</flanduse_timeseries>
 
 <flanduse_timeseries hgrid="1x1_tropicAtl" sim_year_range="1850-2000"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_1x1_tropicAtl_hist_simyr1850-2005_c130627.nc</flanduse_timeseries>
@@ -1849,6 +1855,39 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_GSDTG2000_to_0.125x0.125_nomask_aave_da_c190725.nc</map>
 
 <!-- mapping files for r0125xr0125 END -->
+
+<map frm_hgrid="0.5x0.5"    frm_lmask="AVHRR"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_0.5x0.5_AVHRR_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="MODIS"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_0.5x0.5_MODIS_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="nomask"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_0.5x0.5_nomask_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="10x10min"    frm_lmask="nomask"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_10x10min_nomask_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="MODIS"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_3x3min_MODIS_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="USGS"   to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_3x3min_USGS_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="3x3min"    frm_lmask="LandScan2004" to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_3x3min_LandScan2004_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="IGBP-GSDP"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_5x5min_IGBP-GSDP_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="ISRIC-WISE"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_5x5min_ISRIC-WISE_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="5x5min"    frm_lmask="nomask"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_5x5min_nomask_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="3x3min"   frm_lmask="GLOBE-Gardner" to_hgrid="ne0np4_antarcticax4v1" to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_3x3min_GLOBE-Gardner_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="3x3min"   frm_lmask="GLOBE-Gardner-mergeGIS" to_hgrid="ne0np4_antarcticax4v1" to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_3x3min_GLOBE-Gardner-mergeGIS_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="0.9x1.25"    frm_lmask="GRDC"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_0.9x1.25_GRDC_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="360x720cru"    frm_lmask="cruncep"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_360x720cru_cruncep_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_1km-merge-10min_HYDRO1K-merge-nomask_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="ne0np4_antarcticax4v1"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/antarcticax4v1/map_0.5x0.5_GSDTG2000_to_antarcticax4v1_nomask_aave_da_c210130.nc</map>
 
 <!-- =========================================  -->
 <!-- Defaults for modelio namelist              -->
