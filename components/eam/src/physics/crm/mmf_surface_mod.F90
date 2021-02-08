@@ -4,7 +4,7 @@ module mmf_surface_mod
   ! use physics_buffer,   only: physics_buffer_desc
   use physics_types,    only: physics_state, physics_ptend, physics_ptend_init
   use camsrfexch,       only: cam_in_t
-  use constituents,     only: pcnst
+  use constituents,     only: pcnst, cnst_type
   use ppgrid,           only: pver, pcols
   use physconst,        only: gravit
 
@@ -27,7 +27,7 @@ subroutine mmf_surface_ac(state, cam_in, ptend)
   !-----------------------------------------------------------------------------
   ! Local variables
   logical  :: lq(pcnst)
-  integer  :: ncol, i, m
+  integer  :: ncol, icol, m
   real(r8) :: g_dp
   !-----------------------------------------------------------------------------
   ncol   = state%ncol
@@ -36,41 +36,34 @@ subroutine mmf_surface_ac(state, cam_in, ptend)
   call physics_ptend_init(ptend, state%psetcols, "mmf_surface", ls=.true., lu=.true., lv=.true., lq=lq)
   ! call physics_ptend_init(ptend, state%psetcols, "mmf_surface", lq=lq)
 
-! #ifdef MMF_SFC1
-  do i = 1,ncol
-    g_dp = gravit * state%rpdel(i,pver)
-    ! ptend%s(i,pver) = g_dp * cam_in%shf(i)
-    ptend%u(i,pver) = g_dp * cam_in%wsx(i)
-    ptend%v(i,pver) = g_dp * cam_in%wsy(i)
+
+  do icol = 1,ncol
+
+    g_dp = gravit * state%rpdel(icol,pver)
+
+#ifdef MMF_SFC1
+    ptend%u(icol,pver) = g_dp * cam_in%wsx(icol)
+    ptend%v(icol,pver) = g_dp * cam_in%wsy(icol)
+#endif
+
+#ifdef MMF_SFC2
+    ! momentum fluxes in bc for this option
+#endif
+
+#ifdef MMF_SFC3
+    ptend%u(icol,pver) = g_dp * cam_in%wsx(icol) * 0.5
+    ptend%v(icol,pver) = g_dp * cam_in%wsy(icol) * 0.5
+#endif
+
     do m = 2,pcnst
-      ptend%q(i,pver,m) = g_dp * cam_in%cflx(i,m)
-    end do
-  end do
-! #endif
+      ptend%q(icol,pver,m) = g_dp * cam_in%cflx(icol,m)
+      ! Convert tendencies of dry constituents to dry basis
+      if (cnst_type(m).eq.'dry') then
+        ptend%q(icol,pver,m) = ptend%q(icol,pver,m) * state%pdel(icol,pver) / state%pdeldry(icol,pver)
+      endif
+    end do ! m
 
-! #ifdef MMF_SFC2
-!   do i = 1,ncol
-!     g_dp = gravit * state%rpdel(i,pver)
-!     ! ptend%s(i,pver) = g_dp * cam_in%shf(i)
-!     ! ptend%u(i,pver) = g_dp * cam_in%wsx(i)
-!     ! ptend%v(i,pver) = g_dp * cam_in%wsy(i)
-!     do m = 2,pcnst
-!       ptend%q(i,pver,m) = g_dp * cam_in%cflx(i,m)
-!     end do
-!   end do
-! #endif
-
-! #ifdef MMF_SFC3
-!   do i = 1,ncol
-!     g_dp = gravit * state%rpdel(i,pver)
-!     ! ptend%s(i,pver) = g_dp * cam_in%shf(i)
-!     ptend%u(i,pver) = g_dp * cam_in%wsx(i) * 0.5
-!     ptend%v(i,pver) = g_dp * cam_in%wsy(i) * 0.5
-!     do m = 2,pcnst
-!       ptend%q(i,pver,m) = g_dp * cam_in%cflx(i,m)
-!     end do
-!   end do
-! #endif
+  end do ! icol
 
 end subroutine mmf_surface_ac
 !-------------------------------------------------------------------------------
@@ -84,7 +77,7 @@ subroutine mmf_surface_bc(state, cam_in, ptend)
   !-----------------------------------------------------------------------------
   ! Local variables
   logical  :: lq(pcnst)
-  integer  :: ncol, i, m
+  integer  :: ncol, icol, m
   real(r8) :: g_dp
   !-----------------------------------------------------------------------------
   ncol   = state%ncol
@@ -92,44 +85,37 @@ subroutine mmf_surface_bc(state, cam_in, ptend)
   lq(1) = .TRUE.
   call physics_ptend_init(ptend, state%psetcols, "mmf_surface", ls=.true., lu=.true., lv=.true., lq=lq)
 
-! #ifdef MMF_SFC1
-  do i = 1,ncol
-    g_dp = gravit * state%rpdel(i,pver)
-    ptend%s(i,pver) = g_dp * cam_in%shf(i)
-    ! ptend%u(i,pver) = g_dp * cam_in%wsx(i)
-    ! ptend%v(i,pver) = g_dp * cam_in%wsy(i)
-    ptend%q(i,pver,1) = g_dp * cam_in%cflx(i,1)
-    ! do m = 1,pcnst
-    !   ptend%q(i,pver,m) = g_dp * cam_in%cflx(i,m)
-    ! end do
-  end do
-! #endif
+  do icol = 1,ncol
 
-! #ifdef MMF_SFC2
-!   do i = 1,ncol
-!     g_dp = gravit * state%rpdel(i,pver)
-!     ptend%s(i,pver) = g_dp * cam_in%shf(i)
-!     ptend%u(i,pver) = g_dp * cam_in%wsx(i)
-!     ptend%v(i,pver) = g_dp * cam_in%wsy(i)
-!     ptend%q(i,pver,1) = g_dp * cam_in%cflx(i,1)
-!     ! do m = 1,pcnst
-!     !   ptend%q(i,pver,m) = g_dp * cam_in%cflx(i,m)
-!     ! end do
-!   end do
-! #endif
+    g_dp = gravit * state%rpdel(icol,pver)
 
-! #ifdef MMF_SFC3
-!   do i = 1,ncol
-!     g_dp = gravit * state%rpdel(i,pver)
-!     ptend%s(i,pver) = g_dp * cam_in%shf(i)
-!     ptend%u(i,pver) = g_dp * cam_in%wsx(i) * 0.5
-!     ptend%v(i,pver) = g_dp * cam_in%wsy(i) * 0.5
-!     ptend%q(i,pver,1) = g_dp * cam_in%cflx(i,1)
-!     ! do m = 1,pcnst
-!     !   ptend%q(i,pver,m) = g_dp * cam_in%cflx(i,m)
-!     ! end do
-!   end do
-! #endif
+    ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)
+    ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1)
+
+#ifdef MMF_SFC1
+    ! momentum fluxes in ac for this option
+#endif
+
+#ifdef MMF_SFC2
+    ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol)
+    ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol)
+#endif
+
+#ifdef MMF_SFC3
+    ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol) * 0.5
+    ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol) * 0.5
+#endif
+    
+  end do ! icol
+
+
+#ifdef MMF_CRM_SFC_FLX
+  ! fluxes will be injected within the CRM, so undo flux addition
+  do icol = 1,ncol
+    ptend%s(icol,pver)   = 0
+    ptend%q(icol,pver,1) = 0
+  end do ! icol
+#endif
 
 end subroutine mmf_surface_bc
 !-------------------------------------------------------------------------------
