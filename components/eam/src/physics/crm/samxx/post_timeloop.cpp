@@ -173,7 +173,8 @@ void post_timeloop() {
   auto &crm_output_q_vt_ls      = :: crm_output_q_vt_ls;
   auto &t_vt_tend               = :: t_vt_tend;
   auto &q_vt_tend               = :: q_vt_tend;
-  
+  auto &use_VT                  = :: use_VT;
+ 
 
   factor_xyt = factor_xy/((real) nstop);
   real tmp1 = crm_nx_rad_fac*crm_ny_rad_fac/((real) nstop);

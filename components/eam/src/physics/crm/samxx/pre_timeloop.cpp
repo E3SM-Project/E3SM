@@ -155,6 +155,7 @@ void pre_timeloop() {
   auto &q_vt_tend               = :: q_vt_tend;
   auto &t_vt                    = :: t_vt;
   auto &q_vt                    = :: q_vt;
+  auto &use_VT                  = :: use_VT;
   
 
   crm_accel_ceaseflag = false;
