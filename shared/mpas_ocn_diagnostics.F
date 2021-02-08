@@ -195,10 +195,20 @@ contains
          call ocn_diagnostic_solve_kineticEnergy(normalVelocity, kineticEnergyCell)
       end if
 
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(layerThickness)
+      !$acc update device(relativeVorticity)
+#endif
+
       call ocn_diagnostic_solve_vorticity(dt, normalVelocity, tangentialVelocity, &
                 layerThickness, relativeVorticity, &
                 normRelVortEdge, normPlanetVortEdge, &
                 normalizedRelativeVorticityCell)
+
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(layerThickness)
+      !$acc update self(normPlanetVortEdge)
+#endif
 
       !
       ! Surface pressure
@@ -669,9 +679,8 @@ contains
       nVertices = nVerticesHalo( 2 )
 
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(layerThickness, fVertex) &
+      !$acc enter data &
       !$acc            create(normalizedRelativeVorticityVertex, normalizedPlanetaryVorticityVertex)
-      !$acc update device(relativeVorticity)
 
       !$acc parallel loop gang vector &
       !$acc          present(areaTriangle, maxLevelVertexBot, layerThickness, kiteAreasOnVertex, &
@@ -696,12 +705,8 @@ contains
             normalizedPlanetaryVorticityVertex(k,iVertex) = fVertex(iVertex) / layerThicknessVertex
          end do
       end do
-#ifdef MPAS_OPENACC
-      !$acc exit data delete(layerThickness, fVertex)
-#else
       !$omp end do
       !$omp end parallel
-#endif
 
       nEdges = nEdgesHalo( 2 )
 
@@ -728,7 +733,7 @@ contains
         end do
       end do
 #ifdef MPAS_OPENACC
-      !$acc update self(normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge)
+      !$acc update self(normalizedRelativeVorticityEdge)
       !$acc exit data delete(normalizedRelativeVorticityVertex, normalizedPlanetaryVorticityVertex)
 #else
       !$omp end do
