@@ -408,6 +408,20 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
   endif
 
+  ! Add surface heat fluxes to CRM
+#if defined( MMF_CRM_SFC_FLX )
+  !$acc parallel loop collapse(3) async(asyncid)
+  do j=1,ny
+    do i=1,nx
+      do icrm=1,ncrms
+        fluxbt(icrm,i,j) = crm_input%fluxt00(icrm)/rhow(icrm,1)
+        fluxbq(icrm,i,j) = crm_input%fluxq00(icrm)/rhow(icrm,1)
+        sstxy (icrm,i,j) = crm_input%ts     (icrm)
+      end do
+    end do
+  end do  
+#endif
+
   ! Populate microphysics array from crm_state
   !$acc parallel loop collapse(4) async(asyncid)
   do k = 1 , nzm
