@@ -376,17 +376,17 @@
                 {
                         "sets": ["polar"],
                         "case_id": "ERA-Interim",
-                        "variables": ["Z3"],		
-                        "ref_name": "ERA-Interim",		
-                        "reference_name": "ERA-Interim Reanalysis 1979-2015",		
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],		
-                        "regions": ["polar_S", "polar_N"],		
-                        "plevs": [500.0],		
-                        "contour_levels": [48, 49, 50, 51, 52, 53, 54, 55, 56],		
-                        "diff_levels": [-1.8, -1.4, -1.0, -0.6, -0.2, 0.2, 0.6, 1.0, 1.4, 1.8]		
-                },		
-                {		
-                        "sets": ["polar"],		
+                        "variables": ["Z3"],
+                        "ref_name": "ERA-Interim",
+                        "reference_name": "ERA-Interim Reanalysis 1979-2015",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "regions": ["polar_S", "polar_N"],
+                        "plevs": [500.0],
+                        "contour_levels": [48, 49, 50, 51, 52, 53, 54, 55, 56],
+                        "diff_levels": [-1.8, -1.4, -1.0, -0.6, -0.2, 0.2, 0.6, 1.0, 1.4, 1.8]
+                },
+                {
+                        "sets": ["polar"],
                         "case_id": "ERA-Interim",
                         "variables": ["T"],
                         "ref_name": "ERA-Interim",
@@ -621,4 +621,3 @@
                 }
         ]
 }
-

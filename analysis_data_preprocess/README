@@ -4,7 +4,7 @@ conda create -n obs_env cdtime cdms2 cdutil numpy pytz nco cdo python=2.7 -c con
 The obs_en.yml file saved here as part of the provenance included the exact packages that generated the resulting datasets
 
 B. Generate climo and time-series for each datasets:
-1. GPCP 
+1. GPCP
   -Run process_GPCP_dataset.py to generate time series data with specified time period and metadata
 
   -Run create_GPCP_climo.py to generate climatology from time series data
@@ -20,7 +20,7 @@ B. Generate climo and time-series for each datasets:
 
 4. ERA-Interim
   -Run create_ERA-Interim_climo.sh for ERA-Interim reanalysis data
- 
+
 5. MERRA2
   -Run create_MERRA2_climo.sh for MERRA2 reanalysis data
 
@@ -41,4 +41,4 @@ B. Generate climo and time-series for each datasets:
    -Run create_PminusE_GPCP-OAFlux_timeseries.py to generate time series of P - E from GPCP and OAFLux
    -Run create_PminusE_GPCP-OAFlux_climo.sh to generate climatology of P - E from GPCP and OAFLux
 
-As of Oct 24th 2018, climos of other variables (CRU_IPCC, cloud simulators related[COSP], SSMI) used in E3SM diags are used from data distributed with NCAR's AMWG diagnostics package.We did use analysis_scripts_more_fix.py to add yrs_averaged attritute for data that with this information available. 
+As of Oct 24th 2018, climos of other variables (CRU_IPCC, cloud simulators related[COSP], SSMI) used in E3SM diags are used from data distributed with NCAR's AMWG diagnostics package.We did use analysis_scripts_more_fix.py to add yrs_averaged attritute for data that with this information available.

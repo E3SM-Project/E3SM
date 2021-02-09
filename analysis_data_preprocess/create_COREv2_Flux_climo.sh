@@ -36,7 +36,7 @@ cd ${tmp}
 ncclimo -a sdd --lnk_flg -c COREv2_Flux_${start_yr}01.nc -s $start_yr -e $end_yr
 mv *climo.nc $climo_output_path
 
-ncrcat ${tmp}COREv2_Flux_*nc ${time_series_output_path}COREv2_Flux_${start_yr}01_${end_yr}12.nc 
+ncrcat ${tmp}COREv2_Flux_*nc ${time_series_output_path}COREv2_Flux_${start_yr}01_${end_yr}12.nc
 
 #ncrename -v F_evap,evspsbl -v F_prec,pr -v F_roff,mrro -v Q_lat,hfls -v Q_sen,hfss -v Q_lwdn,rlds -v Q_lwup,rlus -v Q_swnet,rss -v taux,tauu -v tauy,tauv ${time_series_output_path}COREv2_Flux_${start_yr}01_${end_yr}12.nc
 
@@ -47,10 +47,3 @@ do
    ncks -v $var ${time_series_output_path}COREv2_Flux_${start_yr}01_${end_yr}12.nc ${time_series_output_path}${var}_${start_yr}01_${end_yr}12.nc
 done
 rm ${time_series_output_path}COREv2_Flux*nc
-
-
-
-
-
-
-

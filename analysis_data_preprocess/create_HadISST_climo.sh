@@ -32,7 +32,7 @@ for yr in {1870..2017}; do
         done
 done
 
-ncrcat ${tmp}HadISST2*nc ${time_series_output_path}sst_187001_201712.nc 
+ncrcat ${tmp}HadISST2*nc ${time_series_output_path}sst_187001_201712.nc
 
 #add time_bnds to time attr
 #ncatted -O -a bounds,time,a,c,time_bnds ${time_series_output_path}sst_187001_201712.nc
@@ -53,7 +53,3 @@ mv *climo.nc $climo_output_path
 #    rm 'HadiSSTi'${yyyy}'.nc'
 #    mv 'HadiSSTii'${yyyy}'.nc' 'HadiSST'${yyyy}'.nc'
 #done
-
-
-
-

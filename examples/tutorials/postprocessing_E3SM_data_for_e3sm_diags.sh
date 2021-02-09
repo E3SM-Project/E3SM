@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#A Bash script to post-process (regriding, climatology generation and time-series extraction) to prepare E3SM model output to to be used in e3sm_diags. 
+#A Bash script to post-process (regriding, climatology generation and time-series extraction) to prepare E3SM model output to to be used in e3sm_diags.
 #Note: For processing E3SM v2 output add '-P eam' or '-m eam' when calling ncclimo, also change 'cam' to 'eam' in this script
 
 #source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified.sh
@@ -42,11 +42,10 @@ drc_rgr=${dir_out_ts}/rgr
 drc_out=${dir_out_ts}/native
 
 echo "Variables for Streamflow"
-cd ${drc_in_river};eval ls ${caseid}*mosart.h0.*{${start}..${end}}*.nc | ncclimo  --caseid=${caseid} --var_xtr=areatotal2 -v RIVER_DISCHARGE_OVER_LAND_LIQ --yr_srt=$start --yr_end=$end --drc_out=${drc_rgr} 
+cd ${drc_in_river};eval ls ${caseid}*mosart.h0.*{${start}..${end}}*.nc | ncclimo  --caseid=${caseid} --var_xtr=areatotal2 -v RIVER_DISCHARGE_OVER_LAND_LIQ --yr_srt=$start --yr_end=$end --drc_out=${drc_rgr}
 #
 echo "Variables for supporting diags using monthly time series as input(ENSO, QBO, etc.)"
 cd ${drc_in};eval ls ${caseid}.cam.h0.*{${start}..${end}}*.nc | ncclimo  --caseid=${caseid} --var=U,CLDHGH,CLDLOW,CLDMED,CLDTOT,FLNS,FLUT,FSNS,FSNT,FSNTOA,LANDFRAC,LHFLX,LWCF,OCNFRAC,PRECC,PRECL,PSL,QFLX,SHFLX,SWCF,T,TAUX,TAUY,TREFHT,TS --yr_srt=$start --yr_end=$end --drc_out=${drc_out} -O $drc_rgr --map=${map_file}
 done
 
 exit
-

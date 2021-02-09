@@ -25,12 +25,10 @@ for yyyy in {1997..2016}; do      # Loop over years
          ${original_data_path}pr_day_GPCP-1-3_BE_gn_19961002-20170101.nc ${tmp}GPCP_1DD_${yyyy}${mm}.nc
   done
 done
-#ncrcat ${tmp}GPCP_1DD_*.nc ${time_series_output_path}pr_199701_201612.nc 
+#ncrcat ${tmp}GPCP_1DD_*.nc ${time_series_output_path}pr_199701_201612.nc
 ncclimo -a sdd --no_amwg_link -c GPCP_1DD_199701.nc -s 1997 -e 2016 -i ${tmp} -o ${climo_output_path}
 
 exit
 
 # Concatenate monthly files together
 #ncrcat -O in_??????.nc out.nc
-
-

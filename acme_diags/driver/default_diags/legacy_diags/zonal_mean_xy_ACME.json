@@ -243,14 +243,14 @@
                         "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
                         "plevs": [850.0, 200.0]
                 },
-          {		
-                        "sets": ["zonal_mean_xy"],		
-                        "case_id": "ERA-Interim",		
-                        "variables": ["Z3"],		
-                        "ref_name": "ERA-Interim",		
-                        "reference_name": "ERA-Interim Reanalysis 1979-2015",		
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],		
-                        "plevs": [500.0]		
+          {
+                        "sets": ["zonal_mean_xy"],
+                        "case_id": "ERA-Interim",
+                        "variables": ["Z3"],
+                        "ref_name": "ERA-Interim",
+                        "reference_name": "ERA-Interim Reanalysis 1979-2015",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "plevs": [500.0]
                 },
                 {
                         "sets": ["zonal_mean_xy"],
@@ -467,4 +467,3 @@
 
         ]
 }
-

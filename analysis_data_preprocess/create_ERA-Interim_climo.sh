@@ -21,7 +21,7 @@ cd $original_data_path
 #Note: in original data sets, 3d variables are stored one year of data per file
 
 for file0 in *197901-*nc
-do 
+do
     var=$(echo $file0 | cut -d'_' -f1)
     vars="$vars $var"
 
@@ -39,7 +39,7 @@ do
            ncks -O -F -d time,${mth} ${tmp}ERA-Interim_yearly_${var}_${yyyy}.nc ${tmp}ERA-Interim_monthly_${var}_${yyyy}${mm}.nc
         done
     done
-    ncrcat ${tmp}ERA-Interim_yearly_${var}_*.nc ${time_series_output_path}${var}_${start_yr}01_${end_yr}12.nc 
+    ncrcat ${tmp}ERA-Interim_yearly_${var}_*.nc ${time_series_output_path}${var}_${start_yr}01_${end_yr}12.nc
     ncclimo -a sdd --lnk_flg -c ERA-Interim_monthly_${var}_${start_yr}01.nc -s $start_yr -e $end_yr -i ${tmp} -o ${climo_output_path}
 #rm ${time_series_output_path}*yearly*nc
 #rm ${time_series_output_path}*monthly*nc
@@ -64,4 +64,3 @@ done
 
 for i in ERA-Interim_monthly_vas*.nc; do mv "$i" "${i/ERA-Interim_monthly_vas/ERA-Interim}" ; done
 rm ERA-Interim_monthly_*.nc
-

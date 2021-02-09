@@ -35,6 +35,3 @@ do
 done
 ncrcat ${tmp}ua_180_360_rec_dmn*nc ${time_series_output_path}ua_${start_yr}01_${end_yr}12.nc
 ncrename -v u,ua ${time_series_output_path}ua_${start_yr}01_${end_yr}12.nc
-
-
-

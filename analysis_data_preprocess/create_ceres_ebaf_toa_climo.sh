@@ -15,7 +15,7 @@ for i in "${arr[@]}"
         climo_data_output_path=$path"$i"_toa/climatology/
         mkdir $time_series_output_path
         mkdir $climo_data_output_path
-    
+
         echo $path"$i"_toa/original_data/CERES_EBAF-TOA_Ed*.nc
         if [ $i == '4.1' ]
         then
@@ -48,5 +48,5 @@ for i in "${arr[@]}"
 
 #        rm ${time_series_output_path}ceres_ebaf_toa_v${i}_*nc
 #        rm ${time_series_output_path}ceres_ebaf_toa_time_series*nc
-   
+
 done
