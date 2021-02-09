@@ -30,6 +30,8 @@ contains
 
 subroutine scm_setinitial(elem)
 
+  use kinds, only : real_kind
+
   implicit none
 
   type(element_t), intent(inout) :: elem(:)
@@ -98,9 +100,16 @@ subroutine scm_setinitial(elem)
               !    velocity with the large-scale one.  wfld is used in forecast.F90
               !    for the compuation of the large-scale subsidence.
               if (have_omega .and. .not. iop_mode) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
-              elem(ie)%derived%omega_p(i,j,k) = 0.0
-              elem(ie)%state%phis(i,j) = 0.0
+              elem(ie)%derived%omega_p(i,j,k) = 0.0_real_kind
+              elem(ie)%state%phis(i,j) = 0.0_real_kind
             enddo
+
+            ! If doubly periodic IOP mode then SHOC/CLUBB needs to know about
+            !   length size.  Note that planar dycore only supports uniform grids.
+            if (iop_mode) then
+              ! convert from km to m
+              dyn_dx_size = elem(ie)%dx_short * 1000.0_real_kind
+            endif
 
           endif
 
@@ -258,7 +267,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
     ! Get temperature from dynamics state
     call get_temperature(elem(ie),temperature,hvcoord,t1)
-    
+
       do j=1,np_todo
         do i=1,np_todo
 

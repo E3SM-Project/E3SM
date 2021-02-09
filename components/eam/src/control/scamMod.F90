@@ -137,6 +137,7 @@ module scamMod
   real(r8), public ::      divu(plev)          ! Horiz Divergence of E/W
   real(r8), public ::      divv(plev)          ! Horiz Divergence of N/S
                                                ! mo_drydep algorithm
+  real(r8), public ::      dyn_dx_size         ! for use in doubly periodic CRM mode
        
   real(r8), public ::  scm_relaxation_low      ! lowest level to apply relaxation
   real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation

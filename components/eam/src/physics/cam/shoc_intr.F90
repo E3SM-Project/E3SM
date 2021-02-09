@@ -694,16 +694,12 @@ end function shoc_implements_cnst
      host_dx_in(:) = 100000._r8
      host_dy_in(:) = 100000._r8
    else if (iop_mode) then
-     call grid_size_uniform(host_dx, host_dy)
+     call grid_size_planar_uniform(host_dx, host_dy)
      host_dx_in(:) = host_dx
      host_dy_in(:) = host_dy
    else
      call grid_size(state1, host_dx_in, host_dy_in)
    endif
-   
-   ! Change this
-   host_dx_in(:) = 6000._r8
-   host_dy_in(:) = 6000._r8
  
    minqn = 0._r8
    newfice(:,:) = 0._r8
@@ -1126,22 +1122,18 @@ end function shoc_implements_cnst
 
   end subroutine grid_size  
   
-  subroutine grid_size_uniform(grid_dx, grid_dy)
+  subroutine grid_size_planar_uniform(grid_dx, grid_dy)
   
-    ! Estimate grid box size at equator using
-    !  the earth radius set for this case.  This assumes
-    !  that all grid points are uniform, which is 
-    !  reasonable for IOP mode (not currently compatible with RRM) 
+    ! Get size of grid box if in doubly period planar mode
+    ! At time of implementation planar dycore only supports uniform grids.
   
-    use physical_constants, only: rearth, dd_pi
-    use dimensions_mod, only: np, ne
+    use scamMod,  only: dyn_dx_size
     
     real(r8), intent(out) :: grid_dx, grid_dy
-    
-    grid_dx = dd_pi*rearth/(2000.d0*dble(ne*(np-1)))
-    grid_dx = grid_dx*1000._r8
+
+    grid_dx = dyn_dx_size
     grid_dy = grid_dx
   
-  end subroutine grid_size_uniform    
+  end subroutine grid_size_planar_uniform
 
 end module shoc_intr
