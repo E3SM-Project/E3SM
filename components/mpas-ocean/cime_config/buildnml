@@ -29,9 +29,9 @@ def buildnml(case, caseroot, compname):
     casename          = case.get_value("CASE")
     srcroot           = case.get_value("SRCROOT")
     din_loc_root      = case.get_value("DIN_LOC_ROOT")
+    compset           = case.get_value("COMPSET")
     ocn_grid          = case.get_value("OCN_GRID")
     ocn_mask          = case.get_value("MASK_GRID")
-    ocn_ic_mode       = case.get_value("MPASO_IC_MODE")
     ocn_forcing       = case.get_value("MPASO_FORCING")
     ocn_iceberg       = case.get_value("MPASO_ICEBERG")
     ocn_ismf          = case.get_value("MPASO_ISMF")
@@ -61,6 +61,13 @@ def buildnml(case, caseroot, compname):
     #--------------------------------------------------------------------
     expect(nthrds_ocn == 1 or ocn_bgc == 'no_bgc',
            " ERROR mpas-o buildnml: ocn bgc cannot be run with more than 1 thread\n")
+
+    #--------------------------------------------------------------------
+    # Determine if initial conditions are spunup, from compset
+    #--------------------------------------------------------------------
+    ocn_ic_mode = 'default'
+    if "SOI" in compset:
+        ocn_ic_mode = 'spunup'
 
     #--------------------------------------------------------------------
     # Determine date stamp, from grid names
