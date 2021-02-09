@@ -985,11 +985,20 @@ contains
       if(config_use_cvmix_kpp) then
 
         nCells = nCellsOwned
+        surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
 
+#ifdef MPAS_OPENACC
+        !$acc enter data copyin(layerThickness, activeTracers)
+
+        !$acc parallel loop gang vector &
+        !$acc          present(tracersSurfaceLayerValue, indexSurfaceLayerDepth, maxLevelCell, &
+        !$acc                  layerThickness, activeTracers) &
+        !$acc          private(sumSurfaceLayer, k, rSurfaceLayer)
+#else
         !$omp parallel
         !$omp do schedule(runtime) private(surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
+#endif
         do iCell=1,nCells
-          surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
           sumSurfaceLayer=0.0_RKIND
           tracersSurfaceLayerValue(:,iCell) = 0.0_RKIND
           indexSurfaceLayerDepth(iCell) = -9.e30
@@ -1003,7 +1012,6 @@ contains
              exit
            endif
           end do
-          tracersSurfaceLayerValue(:, iCell) = 0.0_RKIND
           do k=1,int(rSurfaceLayer)
             tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + activeTracers(:,k,iCell) &
                                               * layerThickness(k,iCell)
@@ -1012,8 +1020,13 @@ contains
           tracersSurfaceLayerValue(:,iCell) = (tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer) &
                                             * activeTracers(:,k,iCell) * layerThickness(k,iCell)) / surfaceLayerDepth
         enddo
+#ifdef MPAS_OPENACC
+        !$acc update host(tracersSurfaceLayerValue, indexSurfaceLayerDepth)
+        !$acc exit data delete(layerThickness, activeTracers)
+#else
         !$omp end do
         !$omp end parallel
+#endif
 
         nEdges = nEdgesOwned
 
@@ -1022,13 +1035,23 @@ contains
         ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
         !
 
+        surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
+#ifdef MPAS_OPENACC
+        !$acc enter data copyin(normalVelocity)
+        !$acc update device(layerThicknessEdge)
+
+        !$acc parallel loop gang vector &
+        !$acc          present(normalVelocitySurfaceLayer, cellsOnEdge, maxLevelEdgeTop, &
+        !$acc                  layerThicknessEdge, normalVelocity) &
+        !$acc          private(cell1, cell2, rSurfaceLayer, sumSurfaceLayer, k)
+#else
         !$omp parallel
         !$omp do schedule(runtime) private(cell1, cell2, surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
+#endif
         do iEdge=1,nEdges
           normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
           cell1=cellsOnEdge(1,iEdge)
           cell2=cellsOnEdge(2,iEdge)
-          surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
           sumSurfaceLayer=0.0_RKIND
           rSurfaceLayer = min(minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge))
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
@@ -1051,8 +1074,13 @@ contains
                                               * normalVelocity(k,iEdge) * layerThicknessEdge(k,iEdge)) / surfaceLayerDepth
           end if
         enddo
+#ifdef MPAS_OPENACC
+        !$acc update host(normalVelocitySurfaceLayer)
+        !$acc exit data delete(normalVelocity)
+#else
         !$omp end do
         !$omp end parallel
+#endif
 
       endif
 
