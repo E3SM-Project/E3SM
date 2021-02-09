@@ -3894,6 +3894,7 @@ if ($cfg->get('dyn') =~ /se/) {
                   theta_hydrostatic_mode transport_alg theta_advect_form
                   se_tstep dt_tracer_factor dt_remap_factor 
                   cubed_sphere_map se_geometry se_ne_x se_ne_y
+                  se_lx se_ly
                   );
 
     foreach my $var (@vars) {

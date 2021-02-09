@@ -1527,6 +1527,8 @@
 <se_geometry> "sphere" </se_geometry>
 <se_ne_x> -1 </se_ne_x>
 <se_ne_y> -1 </se_ne_y>
+<se_lx> 0.0 </se_lx>
+<se_ly> 0.0 </se_ly>
 <statefreq> 480 </statefreq>
 <integration> "explicit" </integration>
 

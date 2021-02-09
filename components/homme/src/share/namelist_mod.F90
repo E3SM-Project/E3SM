@@ -195,6 +195,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     integer :: se_partmethod
     integer :: se_ne
     integer :: se_ne_x, se_ne_y
+    real(kind=real_kind) :: se_lx, se_ly
     integer :: unitn
     character(len=*), parameter ::  subname = "homme:namelist_mod"
 #endif
@@ -214,6 +215,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       se_ne,             &
       se_ne_x,           &
       se_ne_y,           &
+      se_lx,             &
+      se_ly,             &
       se_limiter_option, &
 #else
       qsize,             &         ! number of SE tracers
@@ -648,6 +651,8 @@ end if
        ne         = se_ne
        ne_x       = se_ne_x
        ne_y       = se_ne_y
+       Lx         = se_lx
+       Ly         = se_ly
        topology   = se_topology
        geometry   = se_geometry
        qsize      = qsize_d
@@ -686,6 +691,8 @@ end if
     call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(Lx,              1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(Ly,              1, MPIreal_t,    par%root,par%comm,ierr)
 
 #ifndef CAM
     if(test_case == "dcmip2012_test4") then
@@ -912,9 +919,7 @@ end if
       scale_factor = 1.0D0
       scale_factor_inv = 1.0D0
       laplacian_rigid_factor = 0.0D0 !this eliminates the correction to ensure the Laplacian doesn't damp rigid motion
-! Set some temporary defaults
-    Lx = 200.0D0 * 1000.0D0
-    Ly = 200.0D0 * 1000.0D0
+!   Set as default to be used if no test case
     Sx = 0.0D0
     Sy = 0.0D0
     if (test_case == "planar_dbl_vrtx") then
@@ -988,6 +993,11 @@ end if
     dy = Ly/ne_y
     dx_ref = 1.0D0/ne_x
     dy_ref = 1.0D0/ne_y
+
+    if (Lx==0.0 .or. Ly==0.0) then
+      print *, 'For planar homme Lx and Ly cannot be zero'
+        call abortmp("Error Lx or Ly = 0")
+    endif
 
   else if (geometry == "sphere") then
       scale_factor = rearth
