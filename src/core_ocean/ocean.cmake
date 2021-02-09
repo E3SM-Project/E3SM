@@ -127,8 +127,8 @@ list(APPEND RAW_SOURCES ${OCEAN_DRIVER})
 list(APPEND DISABLE_QSMP ${OCEAN_DRIVER})
 
 # Add CVMix
-if (NOT EXISTS core_ocean/cvmix/.git)
-  message(FATAL "Missing core_ocean/cvmix/.git, did you forget to 'git submodule update --init --recursive' ?")
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/cvmix/.git)
+  message(FATAL_ERROR "Missing core_ocean/cvmix/.git, did you forget to 'git submodule update --init --recursive' ?")
 endif()
 set(CVMIX_FILES
   core_ocean/cvmix/src/shared/cvmix_kinds_and_types.F90
@@ -144,8 +144,8 @@ set(CVMIX_FILES
 )
 
 # Add BGC
-if (NOT EXISTS core_ocean/BGC/.git)
-  message(FATAL "Missing core_ocean/BGC/.git, did you forget to 'git submodule update --init --recursive' ?")
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/BGC/.git)
+  message(FATAL_ERROR "Missing core_ocean/BGC/.git, did you forget to 'git submodule update --init --recursive' ?")
 endif()
 set(BGC_FILES
   core_ocean/BGC/BGC_mod.F90
