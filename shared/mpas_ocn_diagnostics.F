@@ -2025,8 +2025,17 @@ contains
       !
       ! Put f*normalBaroclinicVelocity^{perp} in u as a work variable
       !
+#ifdef MPAS_OPENACC
+      !$acc enter data create(normalVelocity) copyin(normalBaroclinicVelocity)
+
+      !$acc parallel loop gang vector &
+      !$acc          present(cellsOnEdge, maxLevelEdgeTop, normalVelocity, nEdgesOnEdge, &
+      !$acc                  edgesOnEdge, weightsOnEdge, fEdge, normalBaroclinicVelocity) &
+      !$acc          private(cell1, cell2, k, j, eoe)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(cell1, cell2, k, eoe)
+#endif
       do iEdge = 1, nEdgesOwned
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -2041,8 +2050,12 @@ contains
             end do
          end do
       end do
+#ifdef MPAS_OPENACC
+      !$acc exit data copyout(normalVelocity) delete(normalBaroclinicVelocity)
+#else
       !$omp end do
       !$omp end parallel
+#endif
 
       call mpas_timer_stop("ocn_fuperp")
 
