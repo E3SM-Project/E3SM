@@ -700,6 +700,10 @@ end function shoc_implements_cnst
    else
      call grid_size(state1, host_dx_in, host_dy_in)
    endif
+   
+   ! Change this
+   host_dx_in(:) = 6000._r8
+   host_dy_in(:) = 6000._r8
  
    minqn = 0._r8
    newfice(:,:) = 0._r8

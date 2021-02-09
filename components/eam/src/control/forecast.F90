@@ -568,19 +568,19 @@ end if
          enddo
  
          ! Relax winds for IOP mode
-         if (iop_mode) then
- 
-           do k=1,plev
-             rtau(k) = 10800._r8
-             rtau(k) = max(ztodt,rtau(k))
-             relaxu(k) = -(ufcst(k) - uobs(k))/rtau(k)
-             relaxv(k) = -(vfcst(k) - vobs(k))/rtau(k)
-   
-             ufcst(k) = ufcst(k) + relaxu(k)*ztodt
-             vfcst(k) = vfcst(k) + relaxv(k)*ztodt
-           enddo
-   
-         endif
+!         if (iop_mode) then
+! 
+!           do k=1,plev
+!             rtau(k) = 10800._r8
+!             rtau(k) = max(ztodt,rtau(k))
+!             relaxu(k) = -(ufcst(k) - uobs(k))/rtau(k)
+!             relaxv(k) = -(vfcst(k) - vobs(k))/rtau(k)
+!   
+!             ufcst(k) = ufcst(k) + relaxu(k)*ztodt
+!             vfcst(k) = vfcst(k) + relaxv(k)*ztodt
+!           enddo
+!   
+!         endif
 
       endif      ! from  if (use_iop .and. have_v .and. have_u) 
       

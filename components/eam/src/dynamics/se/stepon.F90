@@ -208,8 +208,8 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
     iop_update_phase1 = .true. 
     if (doiopupdate .and. masterproc) call readiopdata( iop_update_phase1,hyam,hybm )
     call scm_broadcast()
-    call scm_setfield(elem,iop_update_phase1)       
-  endif 
+    if (.not. iop_mode) call scm_setfield(elem,iop_update_phase1)
+  endif
   
    call t_barrierf('sync_d_p_coupling', mpicom)
    call t_startf('d_p_coupling')
@@ -516,12 +516,8 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
        call scm_setinitial(elem)
        if (masterproc) call readiopdata(iop_update_phase1,hyam,hybm)
        call scm_broadcast()
-       call scm_setfield(elem,iop_update_phase1)
-     endif
-
-     if (iop_mode) then
-       call scm_setfield(elem,iop_update_phase1)
-     endif   
+       if (.not. iop_mode) call scm_setfield(elem,iop_update_phase1)
+     endif  
 
    endif
 
