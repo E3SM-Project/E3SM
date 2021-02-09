@@ -1202,10 +1202,34 @@ contains
       !
       allocate(div_hu(nVertLevels),div_huTransport(nVertLevels),div_huGMBolus(nVertLevels))
 
+<<<<<<< HEAD
+=======
+#ifdef MPAS_OPENACC
+      !$acc enter data create(div_hu, div_huTransport, div_huGMBolus)  &
+      !$acc            copyin(normalVelocity)
+      !$acc update device(layerThicknessEdge, normalTransportVelocity, normalGMBolusVelocity, &
+      !$acc               vertVelocityTop, vertTransportVelocityTop, vertGMBolusVelocityTop, &
+      !$acc               areaCell, nEdgesOnCell, edgesOnCell, edgeSignOnCell, dcEdge, dvEdge, &
+      !$acc               maxLevelCell)
+
+      !$acc parallel loop gang vector &
+      !$acc          present(divergence, kineticEnergyCell, div_hu, div_huTransport, div_huGMBolus, &
+      !$acc                  areaCell, nEdgesOnCell, edgesOnCell, edgeSignOnCell, dcEdge, dvEdge, &
+      !$acc                  maxLevelCell, normalVelocity, divergence, layerThicknessEdge, &
+      !$acc                  normalTransportVelocity, normalGMBolusVelocity, vertVelocityTop, &
+      !$acc                  vertTransportVelocityTop, vertGMBolusVelocityTop) &
+      !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
+      !$acc                  dvEdge_temp, k, r_tmp)
+#else
+>>>>>>> Finish porting diagnostics_solve to GPU
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(i, iEdge, invAreaCell1, edgeSignOnCell_temp, dcEdge_temp, dvEdge_temp, &
       !$omp         k, r_tmp, div_hu, div_huTransport, div_huGMBolus)
+<<<<<<< HEAD
+=======
+#endif
+>>>>>>> Finish porting diagnostics_solve to GPU
       do iCell = 1, nCells
          divergence(:, iCell) = 0.0_RKIND
          kineticEnergyCell(:, iCell) = 0.0_RKIND
@@ -1244,14 +1268,40 @@ contains
             vertGMBolusVelocityTop(k,iCell) = vertGMBolusVelocityTop(k+1,iCell) - div_huGMBolus(k)
          end do
       end do
+<<<<<<< HEAD
       !$omp end do
       !$omp end parallel
+=======
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(div_hu, div_huTransport, div_huGMBolus, normalVelocity) 
+      !$acc update self(divergence, kineticEnergyCell, vertVelocityTop, vertTransportVelocityTop, &
+      !$acc             vertGMBolusVelocityTop)
+#else
+      !$omp end do
+      !$omp end parallel
+#endif
+>>>>>>> Finish porting diagnostics_solve to GPU
 
       deallocate(div_hu,div_huTransport,div_huGMBolus)
 
       nEdges = nEdgesHalo( 2 )
+<<<<<<< HEAD
       !$omp parallel
       !$omp do schedule(runtime) private(i, eoe, weightsOnEdge_temp, k)
+=======
+
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(normalVelocity)
+
+      !$acc parallel loop gang &
+      !$acc          present(tangentialVelocity, nEdgesOnEdge, edgesOnEdge, weightsOnEdge, &
+      !$acc                  maxLevelEdgeTop, normalVelocity) &
+      !$acc          private(i, eoe, weightsOnEdge_temp, k) 
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) private(i, eoe, weightsOnEdge_temp, k)
+#endif
+>>>>>>> Finish porting diagnostics_solve to GPU
       do iEdge = 1, nEdges
          tangentialVelocity(:, iEdge) = 0.0_RKIND
          ! Compute v (tangential) velocities
@@ -1264,8 +1314,18 @@ contains
             end do
          end do
       end do
+<<<<<<< HEAD
       !$omp end do
       !$omp end parallel
+=======
+#ifdef MPAS_OPENACC
+      !$acc update self(tangentialVelocity)
+      !$acc exit data delete(normalVelocity)
+#else
+      !$omp end do
+      !$omp end parallel
+#endif
+>>>>>>> Finish porting diagnostics_solve to GPU
 
    end subroutine ocn_diagnostic_solve_vortVel!}}}
 
