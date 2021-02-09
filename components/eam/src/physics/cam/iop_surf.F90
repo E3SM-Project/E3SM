@@ -28,9 +28,6 @@ subroutine scam_use_iop_srf( cam_in )
              cam_in(c)%ts(:ncol) = tground(1)
              cam_in(c)%lwup(:ncol) = stebol * tground(1)**4
           endif
-          ! below mods are temporary
-          cam_in(c)%wsx(:ncol) = 0.0
-          cam_in(c)%wsy(:ncol) = 0.0
        end do
     endif
 
