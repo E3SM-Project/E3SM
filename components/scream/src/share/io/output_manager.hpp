@@ -262,11 +262,11 @@ inline void OutputManager::make_restart_param_list(ekat::ParameterList& params)
   // set fields for restart
   // If a developer wants a field to be stored in the restart file than they must add the "restart" group tag
   // to that field when registering the field with the field repository.
-  auto& restart_fields = m_device_field_repo->get_field_groups_names().at("restart");
+  auto restart_fields = m_device_field_repo->get_field_group("restart","Physics");
   auto& field_params = params.sublist("FIELDS");
-  field_params.set<Int>("Number of Fields",restart_fields.size());
+  field_params.set<Int>("Number of Fields",restart_fields.m_fields.size());
   Int it_cnt = 0;
-  for (auto it : restart_fields)
+  for (auto it : restart_fields.m_info->m_fields_names)
   {
     ++it_cnt;
     std::string f_it = "field ";

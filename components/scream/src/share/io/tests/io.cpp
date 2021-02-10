@@ -56,21 +56,18 @@ TEST_CASE("input_output_basic","io")
   util::TimeStamp time (0,0,0,0);
 
   //  Cycle through data and write output
-  auto& out_fields = field_repo->get_field_groups_names().at("output");
+  const auto& out_fields = field_repo->get_groups_info().at("output");
   Int max_steps = 10;
   Real dt = 1.0;
-  for (Int ii=0;ii<max_steps;++ii)
-  {
-    for (auto it : out_fields)
-    {
-      auto f_dev  = field_repo->get_field(it,"Physics").get_view();
-      auto f_host = Kokkos::create_mirror_view( f_dev );
-      Kokkos::deep_copy(f_host,f_dev);
-      for (size_t jj=0;jj<f_host.size();++jj)
-      {
+  for (Int ii=0;ii<max_steps;++ii) {
+    for (const auto& fname : out_fields->m_fields_names) {
+      auto& f  = field_repo->get_field(fname,"Physics");
+      auto f_host = f.get_view<Host>();
+      f.sync_to_host();
+      for (size_t jj=0;jj<f_host.size();++jj) {
         f_host(jj) += dt;
       }
-      Kokkos::deep_copy(f_dev,f_host);
+      f.sync_to_dev();
     }
     time += dt;
     m_output_manager.run(time);
@@ -78,10 +75,9 @@ TEST_CASE("input_output_basic","io")
   m_output_manager.finalize();
   // Because the next test for input in this sequence relies on the same fields.  We set all field values
   // to nan to ensure no false-positive tests if a field is simply not read in as input.
-  for (auto it : out_fields)
+  for (const auto& fname : out_fields->m_fields_names)
   {
-    auto f_dev  = field_repo->get_field(it,"Physics").get_view();
-    auto f_host = Kokkos::create_mirror_view( f_dev );
+    auto f_dev  = field_repo->get_field(fname,"Physics").get_view();
     Kokkos::deep_copy(f_dev,std::nan(""));
   }
 
@@ -98,92 +94,83 @@ TEST_CASE("input_output_basic","io")
   // Check instant output
   input_type ins_input(io_comm,ins_params,field_repo,grid_man);
   ins_input.pull_input();
-  auto f1_dev = field_repo->get_field("field_1","Physics").get_view();
-  auto f2_dev = field_repo->get_field("field_2","Physics").get_view();
-  auto f3_dev = field_repo->get_field("field_3","Physics").get_reshaped_view<Real**>();
-  auto f4_dev = field_repo->get_field("field_packed","Physics").get_reshaped_view<Real**>();
-  auto f1_hst = Kokkos::create_mirror_view( f1_dev );
-  auto f2_hst = Kokkos::create_mirror_view( f2_dev );
-  auto f3_hst = Kokkos::create_mirror_view( f3_dev );
-  auto f4_hst = Kokkos::create_mirror_view( f4_dev );
-  Kokkos::deep_copy( f1_hst, f1_dev );
-  Kokkos::deep_copy( f2_hst, f2_dev );
-  Kokkos::deep_copy( f3_hst, f3_dev );
-  Kokkos::deep_copy( f4_hst, f4_dev );
+  auto f1 = field_repo->get_field("field_1","Physics");
+  auto f2 = field_repo->get_field("field_2","Physics");
+  auto f3 = field_repo->get_field("field_3","Physics");
+  auto f4 = field_repo->get_field("field_packed","Physics");
+  auto f1_host = f1.get_view<Host>();
+  auto f2_host = f2.get_view<Host>();
+  auto f3_host = f3.get_reshaped_view<Real**,Host>();
+  auto f4_host = f4.get_reshaped_view<Real**,Host>();
+  f1.sync_to_host();
+  f2.sync_to_host();
+  f3.sync_to_host();
+  f4.sync_to_host();
+
   int view_cnt = 0;
-  for (int ii=0;ii<num_lcols;++ii)
-  {
-    REQUIRE(std::abs(f1_hst(ii)-(max_steps*dt+ii))<tol);
-    for (int jj=0;jj<num_levs;++jj)
-    {
+  for (int ii=0;ii<num_lcols;++ii) {
+    REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
+    for (int jj=0;jj<num_levs;++jj) {
       view_cnt += 1;
-      REQUIRE(std::abs(f3_hst(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
-      REQUIRE(std::abs(f4_hst(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(f3_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(f4_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
     }
   }
-  for (int jj=0;jj<num_levs;++jj)
-  {
-    REQUIRE(std::abs(f2_hst(jj)-(max_steps*dt + (jj+1)/10.))<tol);
+  for (int jj=0;jj<num_levs;++jj) {
+    REQUIRE(std::abs(f2_host(jj)-(max_steps*dt + (jj+1)/10.))<tol);
   }
+
   // Check average output
   input_type avg_input(io_comm,avg_params,field_repo,grid_man);
   avg_input.pull_input();
-  Kokkos::deep_copy( f1_hst, f1_dev );
-  Kokkos::deep_copy( f2_hst, f2_dev );
-  Kokkos::deep_copy( f3_hst, f3_dev );
+  f1.sync_to_host();
+  f2.sync_to_host();
+  f3.sync_to_host();
   Real avg_val;
-  for (int ii=0;ii<num_lcols;++ii)
-  {
+  for (int ii=0;ii<num_lcols;++ii) {
     avg_val = (max_steps+1)/2.0*dt + ii; // Sum(x0+i*dt,i=1...N) = N*x0 + dt*N*(N+1)/2, AVG = Sum/N, note x0=ii in this case
-    REQUIRE(std::abs(f1_hst(ii)-avg_val)<tol);
-    for (int jj=0;jj<num_levs;++jj)
-    {
+    REQUIRE(std::abs(f1_host(ii)-avg_val)<tol);
+    for (int jj=0;jj<num_levs;++jj) {
       avg_val = (max_steps+1)/2.0*dt + (jj+1)/10.+ii;  //note x0=(jj+1)/10+ii in this case.
-      REQUIRE(std::abs(f3_hst(ii,jj)-avg_val)<tol);
+      REQUIRE(std::abs(f3_host(ii,jj)-avg_val)<tol);
     }
   }
-  for (int jj=0;jj<num_levs;++jj)
-  {
+  for (int jj=0;jj<num_levs;++jj) {
     avg_val = (max_steps+1)/2.0*dt + (jj+1)/10.;  //note x0=(jj+1)/10 in this case.
-    REQUIRE(std::abs(f2_hst(jj)-avg_val)<tol);
+    REQUIRE(std::abs(f2_host(jj)-avg_val)<tol);
   }
+
   // Check max output
   // The max should be equivalent to the instantaneous because this function is monotonically increasing.
   input_type max_input(io_comm,max_params,field_repo,grid_man);
   max_input.pull_input();
-  Kokkos::deep_copy( f1_hst, f1_dev );
-  Kokkos::deep_copy( f2_hst, f2_dev );
-  Kokkos::deep_copy( f3_hst, f3_dev );
-  for (int ii=0;ii<num_lcols;++ii)
-  {
-    REQUIRE(std::abs(f1_hst(ii)-(max_steps*dt+ii))<tol);
-    for (int jj=0;jj<num_levs;++jj)
-    {
-      REQUIRE(std::abs(f3_hst(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
+  f1.sync_to_host();
+  f2.sync_to_host();
+  f3.sync_to_host();
+  for (int ii=0;ii<num_lcols;++ii) {
+    REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
+    for (int jj=0;jj<num_levs;++jj) {
+      REQUIRE(std::abs(f3_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
     }
   }
-  for (int jj=0;jj<num_levs;++jj)
-  {
-    REQUIRE(std::abs(f2_hst(jj)-(max_steps*dt + (jj+1)/10.))<tol);
+  for (int jj=0;jj<num_levs;++jj) {
+    REQUIRE(std::abs(f2_host(jj)-(max_steps*dt + (jj+1)/10.))<tol);
   }
   // Check min output
   // The min should be equivalent to the first step because this function is monotonically increasing.
   input_type min_input(io_comm,min_params,field_repo,grid_man);
   min_input.pull_input();
-  Kokkos::deep_copy( f1_hst, f1_dev );
-  Kokkos::deep_copy( f2_hst, f2_dev );
-  Kokkos::deep_copy( f3_hst, f3_dev );
-  for (int ii=0;ii<num_lcols;++ii)
-  {
-    REQUIRE(std::abs(f1_hst(ii)-ii)<tol);
-    for (int jj=0;jj<num_levs;++jj)
-    {
-      REQUIRE(std::abs(f3_hst(ii,jj)-(ii + (jj+1)/10.))<tol);
+  f1.sync_to_host();
+  f2.sync_to_host();
+  f3.sync_to_host();
+  for (int ii=0;ii<num_lcols;++ii) {
+    REQUIRE(std::abs(f1_host(ii)-ii)<tol);
+    for (int jj=0;jj<num_levs;++jj) {
+      REQUIRE(std::abs(f3_host(ii,jj)-(ii + (jj+1)/10.))<tol);
     }
   }
-  for (int jj=0;jj<num_levs;++jj)
-  {
-    REQUIRE(std::abs(f2_hst(jj)-((jj+1)/10.))<tol);
+  for (int jj=0;jj<num_levs;++jj) {
+    REQUIRE(std::abs(f2_host(jj)-((jj+1)/10.))<tol);
   }
    
   scorpio::eam_pio_finalize();
@@ -230,34 +217,32 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
   REQUIRE(fid4_padding > 0);
 
   // Initialize these fields
-  auto f1_dev = repo->get_field(fid1).get_view(); 
-  auto f2_dev = repo->get_field(fid2).get_view(); 
-  auto f3_dev = repo->get_field(fid3).get_reshaped_view<Real**>();
-  auto f4_dev = repo->get_field(fid4).get_reshaped_view<Pack**>(); 
-  auto f1_hst = Kokkos::create_mirror_view( f1_dev );
-  auto f2_hst = Kokkos::create_mirror_view( f2_dev ); 
-  auto f3_hst = Kokkos::create_mirror_view( f3_dev );
-  auto f4_hst = Kokkos::create_mirror_view( f4_dev );
-  Kokkos::deep_copy( f1_hst, f1_dev );
-  Kokkos::deep_copy( f2_hst, f2_dev );
-  Kokkos::deep_copy( f3_hst, f3_dev );
-  Kokkos::deep_copy( f4_hst, f4_dev );
-  for (int ii=0;ii<num_lcols;++ii)
-  {
-    f1_hst(ii) = ii;
-    for (int jj=0;jj<num_levs;++jj)
-    {
-      f2_hst(jj) = (jj+1)/10.0;
-      f3_hst(ii,jj) = (ii) + (jj+1)/10.0;
+  auto f1 = repo->get_field(fid1);
+  auto f2 = repo->get_field(fid2);
+  auto f3 = repo->get_field(fid3);
+  auto f4 = repo->get_field(fid4);
+  auto f1_host = f1.get_view<Host>(); 
+  auto f2_host = f2.get_view<Host>(); 
+  auto f3_host = f3.get_reshaped_view<Real**,Host>();
+  auto f4_host = f4.get_reshaped_view<Pack**,Host>(); 
+  f1.sync_to_host();
+  f2.sync_to_host();
+  f3.sync_to_host();
+  f4.sync_to_host();
+  for (int ii=0;ii<num_lcols;++ii) {
+    f1_host(ii) = ii;
+    for (int jj=0;jj<num_levs;++jj) {
+      f2_host(jj) = (jj+1)/10.0;
+      f3_host(ii,jj) = (ii) + (jj+1)/10.0;
       int ipack = jj / packsize;
       int ivec  = jj % packsize;
-      f4_hst(ii,ipack)[ivec] = (ii) + (jj+1)/10.0;
+      f4_host(ii,ipack)[ivec] = (ii) + (jj+1)/10.0;
     }
   }
-  Kokkos::deep_copy(f1_dev,f1_hst);
-  Kokkos::deep_copy(f2_dev,f2_hst);
-  Kokkos::deep_copy(f3_dev,f3_hst);
-  Kokkos::deep_copy(f4_dev,f4_hst);
+  f1.sync_to_dev();
+  f2.sync_to_dev();
+  f3.sync_to_dev();
+  f4.sync_to_dev();
 
   return repo;
 }
@@ -278,8 +263,7 @@ ekat::ParameterList get_om_params(const Int casenum, const ekat::Comm& comm)
 {
   ekat::ParameterList om_params("Output Manager");
   om_params.set<Int>("PIO Stride",1);
-  if (casenum == 1)
-  {
+  if (casenum == 1) {
     std::vector<std::string> fileNames = { "io_test_instant","io_test_average",
                                             "io_test_max",    "io_test_min" };
     for (auto& name : fileNames) {
@@ -287,18 +271,14 @@ ekat::ParameterList get_om_params(const Int casenum, const ekat::Comm& comm)
     }
 
     om_params.set("Output YAML Files",fileNames);
-  } 
-  else if (casenum == 2)
-  {
+  } else if (casenum == 2) {
     std::vector<std::string> fileNames = { "io_test_restart_np" + std::to_string(comm.size()) + ".yaml" };
     om_params.set("Output YAML Files",fileNames);
     auto& res_sub = om_params.sublist("Restart Control");
     auto& freq_sub = res_sub.sublist("FREQUENCY");
     freq_sub.set<Int>("OUT_N",5);
     freq_sub.set<std::string>("OUT_OPTION","Steps");
-  }
-  else
-  {
+  } else {
     EKAT_REQUIRE_MSG(false,"Error, incorrect case number for get_om_params");
   }
 
@@ -312,8 +292,7 @@ ekat::ParameterList get_in_params(const std::string type, const ekat::Comm& comm
   in_params.set<std::string>("GRID","Physics");
   auto& f_list = in_params.sublist("FIELDS");
   f_list.set<Int>("Number of Fields",4);
-  for (int ii=1;ii<=3+1;++ii)
-  {
+  for (int ii=1;ii<=3+1;++ii) {
     f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
   }
   f_list.set<std::string>("field 4","field_packed");
