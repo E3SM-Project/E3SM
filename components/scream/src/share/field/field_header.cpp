@@ -46,9 +46,4 @@ set_extra_data (const std::string& key,
   }
 }
 
-void FieldHeader::register_inside_parent () {
-  auto me = shared_from_this ();
-  // m_parent.lock()->m_children.push_back(me);
-}
-
 } // namespace scream
