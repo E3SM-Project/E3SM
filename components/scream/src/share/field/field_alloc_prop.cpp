@@ -85,16 +85,35 @@ subview (const int idim, const int k) const {
   return props;
 }
 
-int FieldAllocProp::get_alloc_size () const {
-  EKAT_REQUIRE_MSG(is_committed(),
-      "Error! You cannot query the allocation properties until they have been committed.");
-  return m_alloc_size;
+void FieldAllocProp::request_allocation (const int scalar_size, const int pack_size) {
+  using ekat::ScalarTraits;
+  using namespace ekat::error;
+
+  ekat::error::runtime_check(!m_committed, "Error! Cannot change allocation properties after they have been commited.\n");
+
+  const int vts = scalar_size*pack_size;
+  if (m_scalar_type_size==0) {
+    // This is the first time we receive a request. Set the scalar type properties
+    m_scalar_type_size = scalar_size;
+  } else {
+    // Make sure the new scalar_type coincides with the one already stored (check name and size)
+    runtime_check(scalar_size==m_scalar_type_size,
+                  std::string("Error! Scalar type incompatible with current allocation request:\n") +
+                  "         stored scalar type size: " + std::to_string(m_scalar_type_size) + "\n" +
+                  "         requested scalar type size: " + std::to_string(scalar_size) + "\n");
+  }
+
+  // Store the size of the value type.
+  m_value_type_sizes.push_back(vts);
 }
 
-int FieldAllocProp::get_last_extent () const {
-  EKAT_REQUIRE_MSG(is_committed(),
-      "Error! You cannot query the allocation strides until after calling commit().");
-  return m_last_extent;
+void FieldAllocProp::request_allocation (const FieldAllocProp& src)
+{
+  const auto sts = src.m_scalar_type_size;
+  for (auto vts : src.m_value_type_sizes) {
+    // For each value type size, the pack size is simply vts/sts.
+    request_allocation(sts, vts/sts);
+  }
 }
 
 int FieldAllocProp::get_padding () const {
@@ -157,6 +176,18 @@ void FieldAllocProp::commit (const layout_ptr_type& layout)
   m_contiguous = true;
 
   m_committed = true;
+}
+
+int FieldAllocProp::get_alloc_size () const {
+  EKAT_REQUIRE_MSG(is_committed(),
+      "Error! You cannot query the allocation properties until they have been committed.");
+  return m_alloc_size;
+}
+
+int FieldAllocProp::get_last_extent () const {
+  EKAT_REQUIRE_MSG(is_committed(),
+      "Error! You cannot query the allocation strides until after calling commit().");
+  return m_last_extent;
 }
 
 } // namespace scream
