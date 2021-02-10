@@ -17,7 +17,9 @@ module ocn_core_interface
 
    use ocn_forward_mode
    use ocn_analysis_mode
+#ifndef EXCLUDE_INIT_MODE
    use ocn_init_mode
+#endif
 
    private
 
@@ -361,9 +363,11 @@ module ocn_core_interface
       !
       ! if in init mode, validate configuration
       !
+#ifndef EXCLUDE_INIT_MODE
       if ( initModeActive ) then
          call ocn_init_mode_validate_configuration(configPool, packagePool, iocontext, ierr)
       endif
+#endif
 
       !
       ! iterate over tracer groups
@@ -537,8 +541,10 @@ module ocn_core_interface
          ierr = ocn_forward_mode_setup_clock(core_clock, configs)
       else if ( trim(config_ocean_run_mode) == 'analysis' ) then
          ierr = ocn_analysis_mode_setup_clock(core_clock, configs)
+#ifndef EXCLUDE_INIT_MODE
       else if ( trim(config_ocean_run_mode) == 'init' ) then
          ierr = ocn_init_mode_setup_clock(core_clock, configs)
+#endif
       end if
 
 
