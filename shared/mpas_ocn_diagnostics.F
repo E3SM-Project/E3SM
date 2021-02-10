@@ -153,16 +153,16 @@ contains
 <<<<<<< HEAD
 =======
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(normalVelocity) async(1)
+      !$acc enter data copyin(normalVelocity)
       !$acc update device(normalTransportVelocity, normalGMBolusVelocity, vertVelocityTop, &
-      !$acc               vertTransportVelocityTop, vertGMBolusVelocityTop) async(1)
+      !$acc               vertTransportVelocityTop, vertGMBolusVelocityTop)
 #endif
 
 >>>>>>> Optimize diagnostics solve GPU data transfers
       call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, layerThickEdge)
 
 #ifdef MPAS_OPENACC
-      !$acc update device(layerThickEdge) async(1)
+      !$acc update device(layerThickEdge)
 #endif
 
       coef_3rd_order = config_coef_3rd_order
@@ -181,13 +181,13 @@ contains
       call ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)
 =======
 #ifdef MPAS_OPENACC
-      !$acc update device(normalVelocity) async(1)
+      !$acc update device(normalVelocity)
 #endif
 
       call ocn_relativeVorticity_circulation(relativeVorticity, circulation, normalVelocity, err)
 
 #ifdef MPAS_OPENACC
-      !$acc update device(relativeVorticity) async(1)
+      !$acc update device(relativeVorticity)
 #endif
 >>>>>>> Optimize diagnostics solve GPU data transfers
 
@@ -431,8 +431,6 @@ contains
       err = 0
 
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(normalVelocity)
-
       !$acc parallel loop gang vector &
       !$acc          present(circulation, relativeVorticity, areaTriangle, edgesOnVertex, &
       !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, edgeSignOnVertex) &
@@ -461,7 +459,6 @@ contains
       end do
 #ifdef MPAS_OPENACC
       !$acc update host(circulation, relativeVorticity)
-      !$acc exit data delete(normalVelocity)
 #else
       !$omp end do
       !$omp end parallel
@@ -1266,7 +1263,7 @@ contains
       !$acc          present(relativeVorticityCell, areaCell, nEdgesOnCell, &
       !$acc                  kiteIndexOnCell, verticesOnCell, maxLevelCell, &
       !$acc                  relativeVorticity, kiteAreasOnVertex) &
-      !$acc          private(invAreaCell1, i, j, iVertex, k) wait(1)
+      !$acc          private(invAreaCell1, i, j, iVertex, k)
 #else
 >>>>>>> Optimize diagnostics solve GPU data transfers
       !$omp parallel
@@ -2239,6 +2236,15 @@ contains
                                          err, thermalExpansionCoeff, salineContractionCoeff, &
                                          timeLevel)
 
+<<<<<<< HEAD
+=======
+#ifdef MPAS_OPENACC
+      !$acc exit data copyout(densitySurfaceDisplaced, &
+      !$acc                   thermalExpansionCoeff,   &
+      !$acc                   salineContractionCoeff)
+#endif
+
+>>>>>>> Continued GPU data transfer optimization
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(fracAbsorbed, fracAbsorbedRunoff, sumSurfaceStressSquared, i, iEdge)
