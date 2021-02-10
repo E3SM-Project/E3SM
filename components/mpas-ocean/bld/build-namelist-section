@@ -414,6 +414,12 @@ add_default($nl, 'config_conduct_tests');
 add_default($nl, 'config_test_tensors');
 add_default($nl, 'config_tensor_test_function');
 
+#########################################
+# Namelist group: init_mode_vert_levels #
+#########################################
+
+add_default($nl, 'config_vert_levels');
+
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
 ################################################

@@ -443,6 +443,9 @@
 <config_test_tensors>.false.</config_test_tensors>
 <config_tensor_test_function>'sph_uCosCos'</config_tensor_test_function>
 
+<!-- init_mode_vert_levels -->
+<config_vert_levels>-1</config_vert_levels>
+
 <!-- tracer_forcing_activeTracers -->
 <config_use_activeTracers>.true.</config_use_activeTracers>
 <config_use_activeTracers_surface_bulk_forcing>.true.</config_use_activeTracers_surface_bulk_forcing>
