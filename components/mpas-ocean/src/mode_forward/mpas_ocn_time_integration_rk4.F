@@ -53,6 +53,9 @@ module ocn_time_integration_rk4
    !
    ! Public parameters
    !
+   
+   integer :: configVertAdvMethod
+   
    !--------------------------------------------------------------------
 
    !--------------------------------------------------------------------
@@ -218,7 +221,16 @@ module ocn_time_integration_rk4
       call mpas_pool_get_config(domain % configs, 'config_zero_drying_velocity', config_zero_drying_velocity)
       call mpas_pool_get_config(domain % configs, 'config_use_tidal_forcing', config_use_tidal_forcing)
       call mpas_pool_get_config(domain % configs, 'config_tidal_forcing_type', config_tidal_forcing_type)
+      call mpas_pool_get_config(domain % configs, 'config_vert_advection_method', config_vert_advection_method)
 
+      
+      if ( config_vert_advection_method == 'flux-form' ) then
+         configVertAdvMethod = 1
+      elseif ( config_vert_advection_method == 'remap' ) then
+         configVertAdvMethod = 2
+      endif
+ 
+ 
       !
       ! Initialize time_levs(2) with state at current time
       ! Initialize first RK state
@@ -635,10 +647,7 @@ module ocn_time_integration_rk4
 
 
 
-      !! Hack in remapping here?
-      !! just do this for "impermeable-interfaces" for now...
-
-      if (config_vert_coord_movement.eq.'impermeable_interfaces') then
+      if ( configVertAdvMethod == 2 ) then
          block => domain % blocklist
          do while(associated(block))
             call ocn_remap_vert_state(block, err)
@@ -906,17 +915,20 @@ module ocn_time_integration_rk4
       call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
       call mpas_pool_get_array(provisStatePool, 'highFreqThickness', highFreqThicknessProvis, 1)
 
+      
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
-      if (associated(highFreqThicknessProvis)) then
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
-            sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err, highFreqThicknessProvis)
-      else
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
-            sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err)
+      if ( configVertAdvMethod == 1) then
+         if (associated(highFreqThicknessProvis)) then
+            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
+               sshCur, rkSubstepWeight, &
+               vertAleTransportTop, err, highFreqThicknessProvis)
+         else
+            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
+               sshCur, rkSubstepWeight, &
+               vertAleTransportTop, err)
+         endif
       endif
 
       call ocn_tend_vel(domain, tendPool, provisStatePool, forcingPool, 1, dminfo, dt)
@@ -975,16 +987,18 @@ module ocn_time_integration_rk4
          end if
 
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
-      if (associated(highFreqThicknessProvis)) then
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err, highFreqThicknessProvis)
-      else
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err)
+      if ( configVertAdvMethod == 1) then
+         if (associated(highFreqThicknessProvis)) then
+            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
+               sshCur, rkSubstepWeight, &
+               vertAleTransportTop, err, highFreqThicknessProvis)
+         else
+            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
+               sshCur, rkSubstepWeight, &
+               vertAleTransportTop, err)
+         endif
       endif
 
       call ocn_tend_thick(tendPool, forcingPool)
@@ -1045,16 +1059,18 @@ module ocn_time_integration_rk4
       end if
 
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
-      if (associated(highFreqThicknessProvis)) then
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err, highFreqThicknessProvis)
-      else
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err)
+      if ( configVertAdvMethod == 1) then
+         if (associated(highFreqThicknessProvis)) then
+            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
+               sshCur, rkSubstepWeight, &
+               vertAleTransportTop, err, highFreqThicknessProvis)
+         else
+            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
+               sshCur, rkSubstepWeight, &
+               vertAleTransportTop, err)
+         endif
       endif
 
       if (config_filter_btr_mode) then
@@ -1108,30 +1124,34 @@ module ocn_time_integration_rk4
       call mpas_pool_get_array(provisStatePool, 'highFreqThickness', highFreqThicknessProvis, 1)
 
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
-      if (associated(highFreqThicknessProvis)) then
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
-            sshCur, rkWeight, &
-            vertAleTransportTop, err, highFreqThicknessProvis)
-      else
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
-            sshCur, rkWeight, &
-            vertAleTransportTop, err)
+      if ( configVertAdvMethod == 1) then
+         if (associated(highFreqThicknessProvis)) then
+            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
+               sshCur, rkWeight, &
+               vertAleTransportTop, err, highFreqThicknessProvis)
+         else
+            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
+               sshCur, rkWeight, &
+               vertAleTransportTop, err)
+         endif
       endif
 
       call ocn_tend_vel(domain, tendPool, provisStatePool, forcingPool, 1, dminfo, dt)
 
-      if (associated(highFreqThicknessProvis)) then
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            sshCur, rkWeight, &
-            vertAleTransportTop, err, highFreqThicknessProvis)
-      else
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            sshCur, rkWeight, &
-            vertAleTransportTop, err)
+      if ( configVertAdvMethod == 1) then
+         if (associated(highFreqThicknessProvis)) then
+            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
+               sshCur, rkWeight, &
+               vertAleTransportTop, err, highFreqThicknessProvis)
+         else
+            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
+               sshCur, rkWeight, &
+               vertAleTransportTop, err)
+         endif
       endif
 
       call ocn_tend_thick(tendPool, forcingPool)
@@ -1695,8 +1715,14 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:), pointer :: bottomDepth
       real (kind=RKIND), dimension(:, :), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
+      real (kind=RKIND), dimension(:, :), pointer :: highFreqThickness,lowFreqDivergence
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroup
 
+      integer,pointer :: config_vert_remap_order
+      
+      err = 0
+
+      call mpas_pool_get_config(block % configs, 'config_vert_remap_order', config_vert_remap_order)
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
       call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
@@ -1717,7 +1743,25 @@ module ocn_time_integration_rk4
       
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 2)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 2)
-
+      if (config_use_freq_filtered_thickness) then
+         call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThickness, 2)
+         call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence, 2)
+      end if
+      
+      ! Options for remapping
+      ! TODO move to initialization routine
+      if ( config_vert_remap_order == 1 ) then
+         opts%cell_meth = pcm_method ! PCM method
+      elseif ( config_vert_remap_order == 2 ) then
+         opts%cell_meth = plm_method ! PLM method
+      elseif ( config_vert_remap_order == 3 ) then
+         opts%cell_meth = ppm_method ! PPM method
+         opts%edge_meth = p3e_method ! 3rd-order edge interp.
+      elseif ( config_vert_remap_order == 5 ) then
+         opts%cell_meth = pqm_method ! PPM method
+         opts%edge_meth = p5e_method ! 3rd-order edge interp.
+      endif
+      opts%cell_lims = mono_limit ! monotone slope limits TODO: consider config_monotonic
 
    !----------------------------------------------------------------------------
    !- SETUP VERTICAL GRIDS:
@@ -1805,8 +1849,17 @@ module ocn_time_integration_rk4
       dataNow = 0.0_RKIND
       dataNew = 0.0_RKIND
 
-      opts%edge_meth = p3e_method ! 3rd-order edge interp.
-      opts%cell_meth = ppm_method ! PPM method
+      if ( config_vert_remap_order == 1 ) then
+         opts%cell_meth = pcm_method ! PCM method
+      elseif ( config_vert_remap_order == 2 ) then
+         opts%cell_meth = plm_method ! PLM method
+      elseif ( config_vert_remap_order == 3 ) then
+         opts%cell_meth = ppm_method ! PPM method
+         opts%edge_meth = p3e_method ! 3rd-order edge interp.
+      elseif ( config_vert_remap_order == 5 ) then
+         opts%cell_meth = pqm_method ! PPM method
+         opts%edge_meth = p5e_method ! 3rd-order edge interp.
+      endif
       opts%cell_lims = mono_limit ! monotone slope limits
 
       bcUpper%bcopt = bcon_loose ! "loose" => extrapolate

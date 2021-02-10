@@ -1000,12 +1000,16 @@
 	</nml_record>
 
 	<nml_record name="advection" mode="forward">
-		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
-					description="Method for interpolating tracer values from layer centers to layer edges"
-					possible_values="'spline' and 'stencil'"
+		<nml_option name="config_vert_advection_method" type="character" default_value="flux-form" units="unitless"
+					description="Method for advecting tracers, momentum, and thickness vertically."
+					possible_values="'flux-form' and 'remap'"
 		/>
-		<nml_option name="config_vert_tracer_adv_order" type="integer" default_value="3" units="unitless"
-					description="Order of polynomial used for tracer reconstruction at layer edges"
+		<nml_option name="config_vert_remap_order" type="integer" default_value="3" units="unitless"
+					description="Order of remapping method used for momentum and tracer advection"
+					possible_values="1, 2, 3 and 5"
+		/>
+		<nml_option name="config_vert_tracer_adv_flux_order" type="integer" default_value="3" units="unitless"
+					description="Order of polynomial used for tracer reconstruction at layer edges for flux-form method"
 					possible_values="2, 3 and 4"
 		/>
 		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="3" units="unitless"
