@@ -110,7 +110,7 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   m_field_repo->registration_begins();
   m_atm_process_group->register_fields(*m_field_repo);
   register_groups();
-  m_field_repo->registration_ends();
+  m_field_repo->registration_ends(m_grids_manager);
 
   // Set all the fields in the processes needing them (before, they only had ids)
   // Input fields will be handed to the processes as const

@@ -423,7 +423,7 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
     // and make sure Q can accommodate all of them
     auto& Q_ap = Q->get_header().get_alloc_properties();
     for (const auto& fn : tr_gr.m_fields_names) {
-      auto q = get_field_ptr (fn, fn);
+      auto q = get_field_ptr (fn, gn);
       if (q!=nullptr) {
         Q_ap.request_allocation(q->get_header().get_alloc_properties());
       }
@@ -437,6 +437,10 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
   int iq = 0;
   for (auto& it : m_fields) {
     const auto& fname = it.first;
+    if (fname==Q_name) {
+      // We already allocated Q, so skip it.
+      continue;
+    }
 
     // Check if this field is a tracer
     bool is_tracer = ekat::contains(tr_gr.m_fields_names,fname);
@@ -445,12 +449,12 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
       if (is_tracer) {
         // A tracer must be a subview of the big Q field.
         const auto& fh = f->get_header();
-        const auto& Q = get_field(Q_name,fh.get_identifier().get_grid_name());
-        const auto& Q_tags = Q.get_header().get_identifier().get_layout().tags();
+        const auto  Q = get_field_ptr(Q_name,fh.get_identifier().get_grid_name());
+        const auto& Q_tags = Q->get_header().get_identifier().get_layout().tags();
         // Note: as of 02/2021, idim should *always* be 1, but we store it just in case,
         //       to avoid bugs in the future.
         const int idim = std::distance(Q_tags.begin(),ekat::find(Q_tags,VAR));
-        auto q = Q.subfield(fname,idim,iq);
+        auto q = Q->subfield(fname,idim,iq);
 
         // Either this is the first tracer we set in the group (m_subview_dim still -1),
         // or idim should match what was already in the group info.

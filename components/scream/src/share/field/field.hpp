@@ -165,6 +165,30 @@ public:
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_view_d.data()!=nullptr; }
 
+  // Whether this field is equivalent to the rhs. To be equivalent is
+  // less strict than to have all the members equal. In particular,
+  // this method returns true if and only if:
+  //  - this==&rhs OR all the following apply
+  //    - both views are allocated (if not, allocating one won't be reflected on the other)
+  //    - both fields have the same header
+  //    - both fields have the same device view
+  // We need to SFINAE on RhsRT, cause this==&rhs only works if the
+  // two are the same. And we do want to check this==&rhs for the
+  // same type, since if we didn't, f.equivalent(f) would return false
+  // if f is not allocated...
+
+  template<typename RhsRT>
+  typename std::enable_if<
+    std::is_same<RealType,RhsRT>::value,
+    bool>::type
+  equivalent (const Field<RhsRT>& rhs) const;
+
+  template<typename RhsRT>
+  typename std::enable_if<
+    !std::is_same<RealType,RhsRT>::value,
+    bool>::type
+  equivalent (const Field<RhsRT>& rhs) const;
+
   // ---- Setters and non-const methods ---- //
 
   // Allocate the actual view
@@ -231,9 +255,6 @@ protected:
   // Host mirror of the data. Mutable, to allow lazy creation
   mutable HM<view_type<RT*>>              m_view_h;
 
-  // Keep track of whether the field has been allocated
-  bool                                    m_allocated;
-
   // List of property checks for this field.
   std::shared_ptr<property_check_list>    m_prop_checks;
 };
@@ -275,7 +296,6 @@ Field (const Field<SrcRealType>& src)
  : m_header (src.get_header_ptr())
  , m_view_d (src.m_view_d)
  , m_view_h (src.m_view_h)
- , m_allocated (src.m_allocated)
  , m_prop_checks (src.m_prop_checks)
 {
   using src_field_type = Field<SrcRealType>;
@@ -317,7 +337,7 @@ operator= (const Field<SrcRealType>& src) {
   // AND if the field was not yet allocated.
   EKAT_REQUIRE_MSG(
       m_header==nullptr ||
-      (!m_allocated && m_header->get_identifier()==src.get_header().get_identifier()),
+      (!is_allocated() && m_header->get_identifier()==src.get_header().get_identifier()),
       "Error! Assignment of fields with different (and non-null) identifiers is prohibited.\n");
 
   // Since the type of *this and src may be different, we cannot do the usual
@@ -329,7 +349,6 @@ operator= (const Field<SrcRealType>& src) {
     m_view_d = src.m_view_d;
     m_view_h = src.m_view_h;
     m_prop_checks = src.m_prop_checks;
-    m_allocated = src.m_allocated;
   }
 
   return *this;
@@ -449,6 +468,31 @@ subfield (const int idim, const int k) const {
 }
 
 template<typename RealType>
+template<typename RhsRT>
+typename std::enable_if<
+  !std::is_same<RealType,RhsRT>::value,
+  bool>::type
+Field<RealType>::equivalent(const Field<RhsRT>& rhs) const
+{
+  return (m_header==rhs.m_header &&
+          is_allocated() &&
+          m_view_d==rhs.m_view_d);
+}
+
+template<typename RealType>
+template<typename RhsRT>
+typename std::enable_if<
+  std::is_same<RealType,RhsRT>::value,
+  bool>::type
+Field<RealType>::equivalent(const Field<RhsRT>& rhs) const
+{
+  return (this==&rhs) ||
+    (m_header==rhs.m_header &&
+     is_allocated() &&
+     m_view_d==rhs.m_view_d);
+}
+
+template<typename RealType>
 void Field<RealType>::allocate_view ()
 {
   // Not sure if simply returning would be safe enough. Re-allocating
@@ -474,7 +518,6 @@ void Field<RealType>::allocate_view ()
   const int view_dim = alloc_prop.get_alloc_size() / sizeof(RT);
 
   m_view_d = decltype(m_view_d)(id.name(),view_dim);
-  Kokkos::deep_copy(m_view_d,0.0);
 }
 
 template<typename RealType>

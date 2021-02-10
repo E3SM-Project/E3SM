@@ -9,7 +9,11 @@
 #include "share/field/field_monotonicity_check.hpp"
 #include "share/field/field_utils.hpp"
 
+#include "share/grid/point_grid.hpp"
+#include "share/grid/user_provided_grids_manager.hpp"
+
 #include "ekat/ekat_pack.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
 
 namespace {
 
@@ -157,6 +161,13 @@ TEST_CASE("field", "") {
     // The views were filled the same way, so they should test equal
     // NOTE: this cmp function only test the "actual" field, discarding padding.
     REQUIRE(views_are_equal(f1,f2));
+
+    // Check self equivalence
+    // get_const returns a copy of self, so equivalent (if already allocated)
+    REQUIRE (f1.equivalent(f1.get_const()));
+    REQUIRE (f1.equivalent(f1));
+    // f1 and f2 have independent views, so they are not equivalent.
+    REQUIRE (!f1.equivalent(f2));
   }
 
   // Check copy constructor
@@ -247,11 +258,12 @@ TEST_CASE("field", "") {
 TEST_CASE("field_repo", "") {
   using namespace scream;
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
-  std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
-  std::vector<FieldTag> tags2 = {FieldTag::Column};
-  std::vector<FieldTag> tags3 = {FieldTag::VerticalLevel};
-  std::vector<FieldTag> tags4 = {FieldTag::Column,FieldTag::VerticalLevel};
+  std::vector<FieldTag> tags1 = {EL, GP, GP};
+  std::vector<FieldTag> tags2 = {COL};
+  std::vector<FieldTag> tags3 = {VL};
+  std::vector<FieldTag> tags4 = {COL,VL};
 
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 3, 3};
@@ -359,6 +371,113 @@ TEST_CASE("field_repo", "") {
   // Check that get_padding returns the appropriate value
   auto& f9 = repo.get_field("field_packed","grid_3");
   REQUIRE (f9.get_header().get_alloc_properties().get_padding()==2);
+}
+
+TEST_CASE("tracers_bundle", "") {
+  using namespace scream;
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  const int ncols = 4;
+  const int nlevs = 7;
+
+  std::vector<FieldTag> tags = {COL,VL};
+  std::vector<int> dims = {ncols,nlevs};
+
+  const auto nondim = Units::nondimensional();
+
+  const std::string grid_name = "physics";
+  FieldIdentifier qv_id("qv", {tags, dims}, nondim, grid_name);
+  FieldIdentifier qc_id("qc", {tags, dims}, nondim, grid_name);
+  FieldIdentifier qr_id("qr", {tags, dims}, nondim, grid_name);
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  auto pg = create_point_grid(grid_name,ncols*comm.size(),nlevs,comm);
+  auto gm = create_user_provided_grids_manager(comm,ekat::ParameterList());
+  auto upgm = std::dynamic_pointer_cast<UserProvidedGridsManager>(gm);
+  upgm->set_grid(pg);
+  upgm->set_reference_grid(grid_name);
+
+  FieldRepository<Real> repo;
+  repo.registration_begins();
+  repo.register_field(qv_id,"ADVECTED");
+  repo.register_field(qc_id,"ADVECTED");
+  repo.register_field(qr_id,"ADVECTED");
+  repo.registration_ends(gm);
+
+  auto qv = repo.get_field(qv_id);
+  auto qc = repo.get_field(qc_id);
+  auto qr = repo.get_field(qr_id);
+
+  auto group = repo.get_field_group("ADVECTED",grid_name);
+  // The repo should have allocated the group bundled
+  REQUIRE (group.m_info->m_bundled);
+
+  const auto& Q_name = group.m_bundle->get_header().get_identifier().name();
+  auto Q = repo.get_field(Q_name,grid_name);
+
+  // The bundled field in the group should match the field we get from the repo
+  REQUIRE (Q.equivalent(*group.m_bundle));
+
+  // Check that Q is set as parent for all q's.
+  auto qvp = qv.get_header().get_parent().lock();
+  auto qcp = qc.get_header().get_parent().lock();
+  auto qrp = qr.get_header().get_parent().lock();
+  REQUIRE ((qvp!=nullptr && qvp.get()==&Q.get_header()));
+  REQUIRE ((qcp!=nullptr && qvp.get()==&Q.get_header()));
+  REQUIRE ((qrp!=nullptr && qvp.get()==&Q.get_header()));
+
+  // The indices used for each q to subview Q
+  int idx_v, idx_c, idx_r;
+
+  // The idx must be stored
+  REQUIRE_NOTHROW (idx_v = group.m_info->m_subview_idx.at("qv"));
+  REQUIRE_NOTHROW (idx_c = group.m_info->m_subview_idx.at("qc"));
+  REQUIRE_NOTHROW (idx_r = group.m_info->m_subview_idx.at("qr"));
+
+  // All idx must be in [0,2] and must be different
+  REQUIRE ((idx_v>=0 && idx_v<3 &&
+            idx_c>=0 && idx_c<3 &&
+            idx_r>=0 && idx_r<3));
+  REQUIRE ((idx_v!=idx_c && idx_v!=idx_r && idx_c!=idx_r));
+
+  // Now fill Q with random values
+  std::random_device rd;
+  using rngAlg = std::mt19937_64;
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  rngAlg engine(seed);
+  using RPDF = std::uniform_real_distribution<Real>;
+  RPDF pdf(0.0,1.0);
+
+  ekat::genRandArray(Q.get_view(),engine,pdf);
+
+  // Check that the same values are in all q's
+  Q.sync_to_host();
+  auto Qh = Q.get_reshaped_view<Real***,Host>();
+  auto qvh = qv.get_reshaped_view<Real**,Host>();
+  auto qch = qc.get_reshaped_view<Real**,Host>();
+  auto qrh = qr.get_reshaped_view<Real**,Host>();
+
+  for (int icol=0; icol<ncols; ++icol) {
+    for (int ilev=0; ilev<nlevs; ++ilev) {
+      REQUIRE (Qh(icol,idx_v,ilev)==qvh(icol,ilev));
+      REQUIRE (Qh(icol,idx_c,ilev)==qch(icol,ilev));
+      REQUIRE (Qh(icol,idx_r,ilev)==qrh(icol,ilev));
+    }
+  }
+
+  // Check that the field ptrs stored in the group are the same as the q
+  auto qv_ptr = group.m_fields.at("qv");
+  auto qc_ptr = group.m_fields.at("qc");
+  auto qr_ptr = group.m_fields.at("qr");
+
+  REQUIRE (qv_ptr->equivalent(qv));
+  REQUIRE (qc_ptr->equivalent(qc));
+  REQUIRE (qr_ptr->equivalent(qr));
+
+  upgm->clean_up();
 }
 
 TEST_CASE("field_property_check", "") {
