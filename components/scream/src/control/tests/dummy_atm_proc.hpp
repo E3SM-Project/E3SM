@@ -85,23 +85,23 @@ public:
     }
   }
 
-  void set_required_group (const ci_string_pair& /* group_and_grid */,
-                           const std::set<Field<const Real>>& field_group) {
+  void set_required_group (const FieldGroup<const Real>& field_group) {
     EKAT_REQUIRE_MSG (m_dummy_type==G2A,
                       "Error! This atmosphere process does not require a group of fields.\n");
 
-    for (const auto& f : field_group) {
+    for (const auto& it : field_group.m_fields) {
+      const auto& f = *it.second.lock();
       const auto& fid = f.get_header().get_identifier();
       m_inputs.emplace(fid.name(),f);
       m_input_fids.emplace(fid);
     }
   }
-  void set_updated_group (const ci_string_pair& /* group_and_grid */,
-                          const std::set<Field<Real>>& field_group) {
+  void set_updated_group (const FieldGroup<Real>& field_group) {
     EKAT_REQUIRE_MSG (m_dummy_type==G2G,
                       "Error! This atmosphere process does not require a group of fields.\n");
 
-    for (const auto& f : field_group) {
+    for (const auto& it : field_group.m_fields) {
+      const auto& f = *it.second.lock();
       const auto& fid = f.get_header().get_identifier();
       m_inputs.emplace(fid.name(),f.get_const());
       m_input_fids.emplace(fid);
@@ -113,17 +113,17 @@ public:
   // Providing a list of required and computed fields
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_input_fids; }
   const std::set<FieldIdentifier>&  get_computed_fields () const { return m_output_fids; }
-  std::set<ci_string_pair> get_required_groups () const {
-    std::set<ci_string_pair> s;
+  std::set<GroupRequest> get_required_groups () const {
+    std::set<GroupRequest> s;
     if (m_dummy_type==G2A) {
-      s.insert(ci_string_pair("The Group",m_grid->name()));
+      s.insert(GroupRequest("The Group",m_grid->name()));
     }
     return s;
   }
-  std::set<ci_string_pair> get_updated_groups () const {
-    std::set<ci_string_pair> s;
+  std::set<GroupRequest> get_updated_groups () const {
+    std::set<GroupRequest> s;
     if (m_dummy_type==G2G) {
-      s.insert(ci_string_pair("The Group",m_grid->name()));
+      s.insert(GroupRequest("The Group",m_grid->name()));
     }
     return s;
   }

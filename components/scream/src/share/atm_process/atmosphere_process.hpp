@@ -61,9 +61,26 @@ namespace scream
 class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
 {
 public:
-  using TimeStamp       = util::TimeStamp;
-  using ci_string       = ekat::CaseInsensitiveString;
-  using ci_string_pair  = std::pair<ci_string,ci_string>; // Group and grid names
+  using TimeStamp      = util::TimeStamp;
+  using ci_string      = ekat::CaseInsensitiveString;
+
+  // A group request allow to request a group of fields.
+  struct GroupRequest {
+    GroupRequest (const std::string& name_, const std::string& grid_, const int ps = 1)
+     : name(name_), grid(grid_), pack_size(ps)
+    {
+      EKAT_REQUIRE_MSG(pack_size>=1, "Error! Invalid pack size request.\n");
+    }
+
+    // Group name
+    ci_string name;
+    // Grid name
+    ci_string grid;
+    // Request an allocation that can accomodate a value type like Pack<Real,pack_size>
+    int       pack_size;
+
+    friend bool operator<(const GroupRequest&, const GroupRequest&);
+  };
 
   virtual ~AtmosphereProcess () = default;
 
@@ -176,11 +193,11 @@ public:
   // of strings, where the 1st is the group name, and the 2nd the grid name. If the same group is
   // needed on multiple grids, two separate entries are needed.
   // Note: we provide a default empty version since most Atm Proc classes will likely not need this feature.
-  virtual std::set<ci_string_pair> get_required_groups () const {
-    return std::set<ci_string_pair>();
+  virtual std::set<GroupRequest> get_required_groups () const {
+    return std::set<GroupRequest>();
   }
-  virtual std::set<ci_string_pair> get_updated_groups () const {
-    return std::set<ci_string_pair>();
+  virtual std::set<GroupRequest> get_updated_groups () const {
+    return std::set<GroupRequest>();
   }
 
   // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use our util free function
@@ -188,10 +205,20 @@ public:
   bool computes (const FieldIdentifier& id) const { return ekat::contains(get_computed_fields(),id); }
 
   bool requires_group (const std::string& name, const std::string& grid) const {
-    return ekat::contains(get_required_groups(),ci_string_pair(name,grid));
+    for (const auto& it : get_required_groups()) {
+      if (it.name==name && it.grid==grid) {
+        return true;
+      }
+    }
+    return false;
   }
   bool updates_group (const std::string& name, const std::string& grid) const {
-    return ekat::contains(get_updated_groups(),ci_string_pair(name,grid));
+    for (const auto& it : get_updated_groups()) {
+      if (it.name==name && it.grid==grid) {
+        return true;
+      }
+    }
+    return false;
   }
 
 protected:
@@ -228,6 +255,22 @@ private:
   // updated during stepping.
   TimeStamp t_;
 };
+
+// To allow using GroupRequest in std sorted containers
+inline bool operator< (const AtmosphereProcess::GroupRequest& lhs,
+                       const AtmosphereProcess::GroupRequest& rhs)
+{
+  if (lhs.name<rhs.name) {
+    return true;
+  } else if (lhs.name==rhs.name) {
+    if (lhs.grid<rhs.grid) {
+      return true;
+    } else if (lhs.grid==rhs.grid) {
+      return lhs.pack_size < rhs.pack_size;
+    }
+  }
+  return false;
+}
 
 // A short name for the factory for atmosphere processes
 // WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.

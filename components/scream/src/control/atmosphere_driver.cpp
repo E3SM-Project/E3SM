@@ -125,11 +125,11 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   }
   // Set all groups of fields
   for (const auto& it : m_atm_process_group->get_required_groups()) {
-    auto group = m_field_repo->get_const_field_group(it.first,it.second);
+    auto group = m_field_repo->get_const_field_group(it.name,it.grid);
     m_atm_process_group->set_required_group(group);
   }
   for (const auto& it : m_atm_process_group->get_updated_groups()) {
-    auto group = m_field_repo->get_field_group(it.first,it.second);
+    auto group = m_field_repo->get_field_group(it.name,it.grid);
     m_atm_process_group->set_updated_group(group);
   }
 
@@ -226,17 +226,16 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 }
 
 void AtmosphereDriver::register_groups () {
-  using ci_string = ekat::CaseInsensitiveString;
-  using ci_string_pair = std::pair<ci_string,ci_string>;
+  using GroupRequest = AtmosphereProcess::GroupRequest;
 
   // Given a list of group-grid pairs (A,B), make sure there is a copy
   // of each field in group A on grid B registered in the repo.
-  auto lambda = [&](const std::set<ci_string_pair>& groups_grids) {
+  auto lambda = [&](const std::set<GroupRequest>& groups_grids) {
     const auto& groups_info = m_field_repo->get_groups_info();
 
     for (const auto& gg : groups_grids) {
-      const auto& group = gg.first;
-      const auto& grid = gg.second;
+      const auto& group = gg.name;
+      const auto& grid = gg.grid;
 
       // Lambda helper fcn, that register field $name with group $group on grid $grid
       // if not yet already registered
@@ -266,7 +265,7 @@ void AtmosphereDriver::register_groups () {
           auto src_layout = fid.get_layout();
           auto tgt_layout = r->create_tgt_layout(src_layout);
           FieldIdentifier new_fid(name,tgt_layout,f_units,grid);
-          m_field_repo->register_field(new_fid,group);
+          m_field_repo->register_field(new_fid,gg.pack_size,group);
         }
       };
 

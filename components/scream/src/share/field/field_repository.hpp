@@ -77,6 +77,8 @@ public:
   template<typename RequestedValueType = RT>
   void register_field (const identifier_type& identifier);
 
+  void register_field (const identifier_type& identifier, const int pack_size, const std::string& field_group);
+
   // Get information about the state of the repo
   int size () const { return m_fields.size(); }
   int internal_size () const;
@@ -226,6 +228,15 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
     // Add the field name to the set of fields belonging to this group
     group->m_fields_names.insert(id.name());
   }
+}
+
+template<typename RealType>
+void FieldRepository<RealType>::
+register_field (const identifier_type& identifier, const int pack_size, const std::string& field_group)
+{
+  register_field(identifier,field_group);
+  auto f = get_field_ptr(identifier);
+  f->get_header().get_alloc_properties().template request_allocation<RealType>(pack_size);
 }
 
 template<typename RealType>

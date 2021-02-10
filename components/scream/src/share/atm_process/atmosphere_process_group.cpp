@@ -414,21 +414,21 @@ void AtmosphereProcessGroup::register_fields (FieldRepository<Real>& field_repo)
   }
 }
 
-std::set<AtmosphereProcessGroup::ci_string_pair>
+std::set<AtmosphereProcessGroup::GroupRequest>
 AtmosphereProcessGroup::get_required_groups () const {
-  std::set<AtmosphereProcessGroup::ci_string_pair> groups;
+  std::set<AtmosphereProcessGroup::GroupRequest> groups;
   for (auto atm_proc : m_atm_processes) {
-    auto groups_i = atm_proc->get_required_groups();
+    const auto& groups_i = atm_proc->get_required_groups();
     groups.insert(groups_i.begin(),groups_i.end());
   }
   return groups;
 }
 
-std::set<AtmosphereProcessGroup::ci_string_pair>
+std::set<AtmosphereProcessGroup::GroupRequest>
 AtmosphereProcessGroup::get_updated_groups () const {
-  std::set<AtmosphereProcessGroup::ci_string_pair> groups;
+  std::set<AtmosphereProcessGroup::GroupRequest> groups;
   for (auto atm_proc : m_atm_processes) {
-    auto groups_i = atm_proc->get_updated_groups();
+    const auto& groups_i = atm_proc->get_updated_groups();
     groups.insert(groups_i.begin(),groups_i.end());
   }
   return groups;
