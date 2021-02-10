@@ -1174,12 +1174,9 @@ module li_calving
 
          calvingVelocity(:) = 0.0_RKIND
          ! First calculate the front retreat rate (Levermann eq. 1)
-         !calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) ! m/s
-!         calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) & ! m/s
-!               * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
+         calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) & ! m/s
+               * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
                   ! calculate only for floating ice - map of "potential" calving rate
-
-         calvingVelocity(:) = config_calving_eigencalving_parameter_scalar_value  !MJH HACK
 
 
          ! Convert calvingVelocity to calvingThickness
@@ -1331,6 +1328,8 @@ module li_calving
           ! get flowParamA from MPAS or use Albany-like equation
           if ( config_use_Albany_flowA_eqn ) then
           !calculate Albany-type flowParamA
+             call mpas_log_write("config_use_Albany_flowA_eqn not yet supported", MPAS_LOG_ERR) 
+             err = 1
           else
              call li_calculate_flowParamA(meshPool, temperature, thickness,flowParamA,err) ! Get MPAS flowParamA
           endif
@@ -1346,16 +1345,16 @@ module li_calving
              if ( thickness(iCell) > 0.0_RKIND ) then
                 vonMisesStress(iCell) = sqrt(3.0_RKIND) * sum(layerThickness(:,iCell) * &
                               flowParamA(:,iCell)**(-1.0_RKIND/config_flowLawExponent),dim=1) / &
-                              thickness(iCell) * ( 0.5_RKIND * ( (max(0.0_RKIND, eMax(iCell)))**2 + &
-                              (max(0.0_RKIND, eMin(iCell)))**2) )**(1 / (2 * config_flowLawExponent))
+                              thickness(iCell) * ( 0.5_RKIND * ( (max(0.0_RKIND, eMax(iCell)))**2.0_RKIND + &
+                              (max(0.0_RKIND, eMin(iCell)))**2.0_RKIND) )**(1.0_RKIND / (2.0_RKIND * config_flowLawExponent))
              endif 
         
              ! Calculate calving velocity for grounded cells at marine margin
              if ( .not. li_mask_is_floating_ice(cellMask(iCell)) ) then
-                calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2 + yvelmean(iCell)**2) * &
+                calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND) * &
                                          vonMisesStress(iCell) / config_grounded_von_Mises_threshold_stress
              elseif ( li_mask_is_floating_ice(cellMask(iCell)) ) then
-                calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2 + yvelmean(iCell)**2) * &
+                calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND) * &
                                          vonMisesStress(iCell) / config_floating_von_Mises_threshold_stress
              endif
           enddo
