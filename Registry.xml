@@ -130,7 +130,7 @@
 		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'von_Mises_stress', 'mask'"
 		/>
                 <nml_option name="config_use_Albany_flowA_eqn" type="logical" default_value=".false." units="unitless"
-			    description="Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving"
+			    description="Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving"
 			    possible_values="'.true.', '.false.'"
 		/>
 		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
@@ -318,16 +318,16 @@
                             description="Exponent of the subglacial discharge term in ISMIP6 grounded ice front melting parameterization"
                             possible_values="any real value"
                 />
-                <nml_option name="config_subglacial_discharge_coefficient" type="real" default_value="3.0e-4" units="unitless"
+                <nml_option name="config_subglacial_discharge_coefficient" type="real" default_value="3.0e-4" units="m^{-alpha} day^{alpha-1} deg. C^{-beta}"
                             description="Coefficient of the subglacial discharge term in ISMIP6 grounded ice front melting parameterization"
                             possible_values="any real value"
                 />
-                <nml_option name="config_subglacial_discharge_intercept" type="real" default_value="0.15" units="unitless"
+                <nml_option name="config_subglacial_discharge_intercept" type="real" default_value="0.15" units="m day^{-1} deg. C^{-beta}"
                             description="Added value B in ISMIP6 grounded ice front melting parameterization"
                             possible_values="any real value"
                 />
 		<nml_option name="config_uniform_face_melt_rate" type="real" default_value="0.0" units="m s^{-1}"
-			    descrption="Apply a uniform linear submarine melt rate at all grounded marine margins. If set to 0.0, it will not be applied."
+			    descrption="Apply a uniform linear submarine melt rate at all grounded marine margins. If set to 0.0, it will not be applied. Must be 0.0 for ISMIP6 front mass balance paramterization to work."
 			    possible_values="any non-negative value"
 		/>
         </nml_record>
@@ -523,9 +523,9 @@
 
                 <package name="observations" description="This package includes variables required for observations in Albany."/>
 
-                <package name="ismip6ShelfMelt" description="This package includes variables required for the ISMIP6 ice-shelf melt parameterization."/>
+                <package name="ismip6ShelfMelt" description="This package includes variables required for the ISMIP6 ice-shelf melt parameterization developed for Antarctica."/>
 
-		<package name="ismip6GroundedFaceMelt" description="This package includes variables required for the ISMIP6 grounded glacier front melt parameterization" />	
+		<package name="ismip6GroundedFaceMelt" description="This package includes variables required for the ISMIP6 grounded glacier front melt parameterization developed for Greenland." />	
 
                 <package name="thermal" description="This package includes variables required for the thermal solver."/>
 
@@ -635,10 +635,6 @@
 			<!-- these variables just for ISMIP6 grounded glacier forcing -->
 			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
-			<var name="faceMeltRateApplied" packages="ismip6GroundedFaceMelt" />
-			<var name="subglacialWaterFlux" packages="ismip6GroundedFaceMelt" />
-		        <var name="faceMeltSpeed" packages="ismip6GroundedFaceMelt" />
-			<var name="groundedMarineMarginMask" packages="ismip6GroundedFaceMelt" />
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -719,10 +715,6 @@
                         <!-- these variables just for ISMIP6 grounded glacier forcing -->
                         <var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
                         <var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
-			<var name="faceMeltRateApplied" packages="ismip6GroundedFaceMelt" />
-			<var name="faceMeltSpeed" packages="ismip6GroundedFaceMelt" />
-                        <var name="subglacialWaterFlux" packages="ismip6GroundedFaceMelt" />
-                        <var name="groundedMarineMarginMask" packages="ismip6GroundedFaceMelt" />
 		</stream>
 
 
@@ -1123,17 +1115,14 @@ is the value of that variable from the *previous* time level!
 		<var name="faceMeltSpeed" type="real" dimensions="nCells Time" units="m s^{-1}" packages="ismip6GroundedFaceMelt"
 		     description="linear speed of submarine melting at grounded glacier front"
   		/>
-                <var name="subglacialWaterFlux" type="real" dimensions="nCells Time" units="m day^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
-                     description="Catchment-wide subglacial runoff normalized by modern submerged face area, in units used by ismip6 grounded marine melt parameterization, with zeros where ISMIP6 forcing file has negative runoff"
-                />
                 <var name="ismip6Runoff" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
                      description="Runoff forcing for ISMIP6 grounded ice melting method, input to model" 
                 />
 		<var name="ismip6_2dThermalForcing" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6GroundedFaceMelt" default_value="2.0"
 	 	     description="thermal forcing for ISMIP6 grounded marine melt method, input to model"
 		/>
-		<var name="meltingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
-                     description="thickness of ice that melts on a given timestep (less than or equal to ice thickness)"
+		<var name="faceMeltingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="Equivalent plan-view averaged thickness of ice that melts on a given timestep from front ablation (less than or equal to ice thickness)"
 		/>
                <var name="unmeltedVolume" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
                      description="volume of ice that was left unmelted from required facemelt flux due to only applying flux over immediate neighbors (diagnostic field to assess if this limitation is a problem)"
@@ -1337,7 +1326,7 @@ is the value of that variable from the *previous* time level!
 	       />
 	  <var name="iceCellMask2" type="integer" dimensions="nCells" units="none"
 	       description="mask set to 1 in cells where some criterion is satisfied and 0 otherwise"
-	       persistence="persistent"
+	       persistence="scratch"
 	       />
 	  <var name="iceCellMask3" type="integer" dimensions="nCells" units="none"
 	       description="mask set to 1 in cells where some criterion is satisfied and 0 otherwise"

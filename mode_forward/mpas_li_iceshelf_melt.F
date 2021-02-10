@@ -1186,7 +1186,7 @@ module li_iceshelf_melt
       type (mpas_pool_type), pointer :: geometryPool, meshPool, scratchPool, velocityPool
       real (kind=RKIND), pointer :: seaLevel
       real (kind=RKIND), dimension(:), pointer :: dvEdge
-      real (kind=RKIND), dimension(:), pointer :: thickness, lowerSurface, meltingThickness
+      real (kind=RKIND), dimension(:), pointer :: thickness, lowerSurface, faceMeltingThickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: TFocean, ismip6Runoff
       real (kind=RKIND), dimension(:), pointer :: areaCell
@@ -1242,7 +1242,7 @@ module li_iceshelf_melt
          call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-         call mpas_pool_get_array(geometryPool, 'meltingThickness', meltingThickness)
+         call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface) 
          call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
@@ -1251,10 +1251,9 @@ module li_iceshelf_melt
          
        ! Calculate retreat rate for each cell
          do iCell = 1, nCellsSolve
-            ! Define marine marginal cells as those that are (1) at the ice
-            ! margin, (2) have at least one neighboring cell without ice, (3) contain
-            ! grounded ice, and (4) have bed topography below sea level.
-            ! OR is adjacent to an inactive floating margin cell
+            ! Define grounded marine marginal cells as those that have at least one 
+            ! neighboring cell without ice and with bed topography below sea
+            ! level OR are adjacent to an inactive floating margin cell
             nEmptyNeighbors = 0
             oceanEdgeLength = 0.0_RKIND
             ! Check if neighboring cells contain ice and have bed topo below sea
@@ -1262,19 +1261,16 @@ module li_iceshelf_melt
             do iEdge = 1, nEdgesOnCell(iCell)
                iNeighbor = cellsOnCell(iEdge, iCell)
                  if ( ((thickness(iNeighbor) == 0.0_RKIND) & 
-                    .and. iNeighbor > 0 & ! make sure this cell exists
-                    .and. iNeighbor <= nCellsSolve & ! make sure this cell exists
                     .and. bedTopography(iNeighbor) < seaLevel) &
-                    .or. (li_mask_is_floating_ice(cellMask(iNeighbor)) & 
+                    .or. ( li_mask_is_floating_ice(cellMask(iNeighbor)) & 
                     .and. li_mask_is_margin(cellMask(iNeighbor)) &
-                    .and. (.not. li_mask_is_albany_active(cellMask(iNeighbor)))) ) then
+                    .and. (.not. li_mask_is_albany_active(cellMask(iNeighbor))) ) ) then
                      nEmptyNeighbors = nEmptyNeighbors + 1
                      oceanEdgeLength = oceanEdgeLength + dvEdge(edgesOnCell(iEdge, iCell))
                  endif
             enddo 
             
             if ( nEmptyNeighbors > 0 &
-               .and. thickness(iCell) > 0.0_RKIND &
                .and. li_mask_is_grounded_ice(cellMask(iCell)) &
                .and. bedTopography(iCell) < seaLevel ) then
                 
@@ -1291,7 +1287,6 @@ module li_iceshelf_melt
                 else
                    faceMeltSpeed(iCell) = config_uniform_face_melt_rate
                 endif
-                !calvingVelocity(iCell) = calvingVelocity(iCell) + iceFrontMeltRate ! m s^-1
                 faceMeltRateApplied(iCell) = faceMeltSpeed(iCell) * submergedFaceArea ! m^3 s^-1
             else 
                 groundedMarineMarginMask(iCell) = 0
@@ -1305,7 +1300,7 @@ module li_iceshelf_melt
          err = ior(err, err_tmp)
 
          ! Apply facemelt: open the Ark
-         thickness(:) = thickness(:) - meltingThickness(:)
+         thickness(:) = thickness(:) - faceMeltingThickness(:)
 
          ! update mask
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
@@ -1358,7 +1353,7 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      real (kind=RKIND), dimension(:), pointer :: faceMeltRateApplied, meltingThickness, &
+      real (kind=RKIND), dimension(:), pointer :: faceMeltRateApplied, faceMeltingThickness, &
                                                   thickness, areaCell, cellVolume, &
                                                   unmeltedVolume, bedTopography                                
       real (kind=RKIND), pointer :: deltat
@@ -1376,7 +1371,7 @@ module li_iceshelf_melt
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-      call mpas_pool_get_array(geometryPool, 'meltingThickness', meltingThickness)
+      call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
       call mpas_pool_get_array(geometryPool, 'faceMeltRateApplied', faceMeltRateApplied)
       call mpas_pool_get_array(geometryPool, 'unmeltedVolume', unmeltedVolume)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
@@ -1388,7 +1383,7 @@ module li_iceshelf_melt
       call mpas_allocate_scratch_field(cellVolumeField, .true.)
       cellVolume => cellVolumeField % array
 
-      meltingThickness(:) = 0.0_RKIND
+      faceMeltingThickness(:) = 0.0_RKIND
       unmeltedVolume(:) = 0.0_RKIND
 
       cellVolume(:) = areaCell(:) * thickness(:)
@@ -1405,7 +1400,7 @@ module li_iceshelf_melt
                   ! can
                   ! TODO: could distribute this evenly amongst neighbors
                   removeVolumeHere = min(volumeLeft, cellVolume(jCell)) ! how much we want to remove here
-                  meltingThickness(jCell) = meltingThickness(jCell) + removeVolumeHere / areaCell(jCell)
+                  faceMeltingThickness(jCell) = faceMeltingThickness(jCell) + removeVolumeHere / areaCell(jCell)
                       ! < apply to the field that will be used, in thickness
                       ! units
                   cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere ! update accounting on cell volume
@@ -1416,7 +1411,7 @@ module li_iceshelf_melt
             if (volumeLeft > 0.0_RKIND) then
                ! Now remove ice from iCell
                removeVolumeHere = min(volumeLeft, cellVolume(iCell))
-               meltingThickness(iCell) = meltingThickness(iCell) + removeVolumeHere / areaCell(iCell)
+               faceMeltingThickness(iCell) = faceMeltingThickness(iCell) + removeVolumeHere / areaCell(iCell)
                   ! < apply to the field that will be used in thickness units
                cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere ! update accounting on cell volume
                volumeLeft = volumeLeft - removeVolumeHere ! update accounting on how much left to distribute from current iCell
@@ -1443,7 +1438,7 @@ module li_iceshelf_melt
                      ! remove as much ice from here as we can
                      removeVolumeHere = min(volumeLeft / real(inwardNeighbors, kind=RKIND), cellVolume(jCell))
                         ! < how much we want to remove here
-                     meltingThickness(jCell) = meltingThickness(jCell) + removeVolumeHere / areaCell(jCell)
+                     faceMeltingThickness(jCell) = faceMeltingThickness(jCell) + removeVolumeHere / areaCell(jCell)
                         ! < apply to the field that will be used in thickness
                         ! units
                      cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere ! update accounting on cell volume
