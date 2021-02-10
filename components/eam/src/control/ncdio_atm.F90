@@ -207,7 +207,7 @@ contains
         end if
       end if
 
-      if (single_column .and. dim1e == 1) then
+      if (single_column .and. dim1e == 1 .and. .not. iop_mode) then
       
         ! Specifically, this condition is for when the single column model 
         !  is run in the Spectral Element dycore

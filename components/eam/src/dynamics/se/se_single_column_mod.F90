@@ -100,8 +100,7 @@ subroutine scm_setinitial(elem)
               !    velocity with the large-scale one.  wfld is used in forecast.F90
               !    for the compuation of the large-scale subsidence.
               if (have_omega .and. .not. iop_mode) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
-              elem(ie)%derived%omega_p(i,j,k) = 0.0_real_kind
-              elem(ie)%state%phis(i,j) = 0.0_real_kind
+              if (iop_mode) elem(ie)%derived%omega_p(i,j,k) = 0.0_real_kind
             enddo
 
             ! If doubly periodic IOP mode then SHOC/CLUBB needs to know about
