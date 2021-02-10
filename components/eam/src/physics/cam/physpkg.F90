@@ -1477,6 +1477,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8), pointer, dimension(:,:) :: t_star   ! temperature
     real(r8), pointer, dimension(:,:) :: q_star   ! moisture
 
+    character(len=16)  :: deep_scheme             ! Default set in phys_control.F90
+
     ! Debug physics_state.
     logical :: state_debug_checks
 
@@ -1496,6 +1498,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
                        state_debug_checks_out = state_debug_checks &
+                      ,deep_scheme_out        = deep_scheme        &
                       ,l_tracer_aero_out      = l_tracer_aero      &
                       ,l_vdiff_out            = l_vdiff            &
                       ,l_rayleigh_out         = l_rayleigh         &
@@ -1776,7 +1779,7 @@ end if ! l_ac_energy_chk
 
     ! DCAPE-ULL: record current state of T and q for computing dynamical tendencies
     !            the calculation follows the same format as in diag_phys_tend_writeout
-    if (do_zmconv_dcape_ull .or. do_zmconv_dcape_only) then
+    if (deep_scheme .eq. 'ZM' .and. (do_zmconv_dcape_ull .or. do_zmconv_dcape_only)) then
       ifld = pbuf_get_index('T_STAR')
       call pbuf_get_field(pbuf, ifld, t_star, (/1,1/),(/pcols,pver/))
       ifld = pbuf_get_index('Q_STAR')
