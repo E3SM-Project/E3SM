@@ -313,10 +313,11 @@ operator= (const Field<SrcRealType>& src) {
                 "Error! Cannot create a nonconst field from a const field.\n");
 
   // If the field has a valid header (i.e., m_header!=nullptr), then
-  // we only allow assignment of fields with the *same* identifier.
+  // we only allow assignment of fields with the *same* identifier,
+  // AND if the field was not yet allocated.
   EKAT_REQUIRE_MSG(
       m_header==nullptr ||
-      m_header->get_identifier()==src.get_header().get_identifier(),
+      (!m_allocated && m_header->get_identifier()==src.get_header().get_identifier()),
       "Error! Assignment of fields with different (and non-null) identifiers is prohibited.\n");
 
   // Since the type of *this and src may be different, we cannot do the usual

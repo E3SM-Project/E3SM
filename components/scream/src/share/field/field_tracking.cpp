@@ -19,6 +19,22 @@ FieldTracking::FieldTracking(const std::string& name,
  : FieldTracking(name)
 {
   m_parent = parent;
+
+  // Lock the parent, and see if there are any tracking properties that should be propagated
+
+  auto p = m_parent.lock();
+  EKAT_REQUIRE_MSG (p!=nullptr, "Error! Input parent pointer not valid.\n");
+
+  // If an initializer was already set in the parent, make sure
+  // this field doesn't get assigned another initializer
+  if (p->get_init_type()!=InitType::None) {
+    set_init_type(InitType::Inherited);
+  }
+
+  // If the parent already has a valid time stamp, set it here
+  if (p->get_time_stamp().is_valid()) {
+    update_time_stamp(p->get_time_stamp());
+  }
 }
 
 void FieldTracking::add_provider (const std::weak_ptr<AtmosphereProcess>& provider) {
@@ -93,8 +109,9 @@ void FieldTracking::set_init_type (const InitType init_type) {
   }
 }
 
-void FieldTracking::add_to_group (const std::string& group_name) {
-  m_groups.insert(group_name);
+void FieldTracking::
+add_to_group (const std::shared_ptr<const FieldGroupInfo>& group) {
+  m_groups.insert(group);
 }
 
 void FieldTracking::update_time_stamp (const TimeStamp& ts) {
@@ -116,19 +133,16 @@ void FieldTracking::register_as_children_in_parent () {
     return;
   }
 
+  // Scan the children of my parent. If I'm not already there, add myself.
   auto me = shared_from_this();
   auto siblings = m_parent.lock()->m_children;
-  bool already_there = false;
   for (auto p : siblings) {
     if (p.lock()==me) {
-      already_there = true;
-      break;
+      return;
     }
   }
 
-  if (!already_there) {
-    siblings.push_back(me);
-  }
+  siblings.push_back(me);
 }
 
 } // namespace scream

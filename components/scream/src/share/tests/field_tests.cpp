@@ -236,9 +236,8 @@ TEST_CASE("field", "") {
     auto v2dh = f.get_reshaped_view<Real**,Host>();
 
     // The two should match
-    const auto& dims = fid.get_layout().dims();
     for (int i=0; i<dims[0]; ++i) {
-      for (int j=0; j<dims[0]; ++j) {
+      for (int j=0; j<dims[1]; ++j) {
         REQUIRE (v2dh(i,j) == v2d_hm(i,j) );
       }
     }
@@ -291,8 +290,6 @@ TEST_CASE("field_repo", "") {
   using Spack        = ekat::Pack<Int,SCREAM_SMALL_PACK_SIZE>;
   using Pack         = ekat::Pack<Real,8>;
   repo.register_field<Pack>(fid9);
-  // Should not be able to register fields to the 'state' group (it's reserved)
-  REQUIRE_THROWS(repo.register_field(fid2,"state"));
   // Should not be able to register the same field name with two different units
   REQUIRE_THROWS(repo.register_field(fid4));
   repo.registration_ends();
@@ -326,29 +323,38 @@ TEST_CASE("field_repo", "") {
   REQUIRE (f1.get_header().get_identifier()!=f2.get_header().get_identifier());
 
   // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
-  REQUIRE (ekat::contains(f1.get_header().get_tracking().get_groups_names(),"gRouP_1"));
-  REQUIRE (ekat::contains(f2.get_header().get_tracking().get_groups_names(),"Group_2"));
-  REQUIRE (ekat::contains(f5.get_header().get_tracking().get_groups_names(),"Group_3"));
-  REQUIRE (ekat::contains(f5.get_header().get_tracking().get_groups_names(),"Group_5"));
-  REQUIRE (ekat::contains(f6.get_header().get_tracking().get_groups_names(),"Group_4"));
-  REQUIRE (ekat::contains(f6.get_header().get_tracking().get_groups_names(),"Group_5"));
-  REQUIRE (ekat::contains(f6.get_header().get_tracking().get_groups_names(),"Group_6"));
+  auto has_group = [](const ekat::WeakPtrSet<const FieldGroupInfo>& groups,
+                      const std::string& name)->bool {
+    for (auto it : groups) {
+      if (it.lock()->m_group_name==name) {
+        return true;
+      }
+    }
+    return false;
+  };
+  REQUIRE (has_group(f1.get_header().get_tracking().get_groups_info(),"gRouP_1"));
+  REQUIRE (has_group(f2.get_header().get_tracking().get_groups_info(),"Group_2"));
+  REQUIRE (has_group(f5.get_header().get_tracking().get_groups_info(),"Group_3"));
+  REQUIRE (has_group(f5.get_header().get_tracking().get_groups_info(),"Group_5"));
+  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_4"));
+  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_5"));
+  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_6"));
 
   // Check that the groups in the repo contain the correct fields
-  REQUIRE (repo.get_field_groups_names().count("GROUP_1")==1);
-  REQUIRE (repo.get_field_groups_names().count("GRoup_2")==1);
-  REQUIRE (repo.get_field_groups_names().count("group_3")==1);
-  REQUIRE (repo.get_field_groups_names().count("groUP_4")==1);
-  REQUIRE (repo.get_field_groups_names().count("group_5")==1);
-  REQUIRE (repo.get_field_groups_names().at("group_5").size()==2);
-  REQUIRE (repo.get_field_groups_names().count("group_6")==1);
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_1"),"Field_1"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_2"),"Field_2"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_3"),"Field_3"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_4"),"Field_4"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_5"),"Field_3"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_5"),"Field_4"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_6"),"Field_4"));
+  REQUIRE (repo.get_groups_info().count("GROUP_1")==1);
+  REQUIRE (repo.get_groups_info().count("GRoup_2")==1);
+  REQUIRE (repo.get_groups_info().count("group_3")==1);
+  REQUIRE (repo.get_groups_info().count("groUP_4")==1);
+  REQUIRE (repo.get_groups_info().count("group_5")==1);
+  REQUIRE (repo.get_groups_info().at("group_5")->m_fields_names.size()==2);
+  REQUIRE (repo.get_groups_info().count("group_6")==1);
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_1")->m_fields_names,"Field_1"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_2")->m_fields_names,"Field_2"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_3")->m_fields_names,"Field_3"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_4")->m_fields_names,"Field_4"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_5")->m_fields_names,"Field_3"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_5")->m_fields_names,"Field_4"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_6")->m_fields_names,"Field_4"));
 
   // Check that get_padding returns the appropriate value
   auto& f9 = repo.get_field("field_packed","grid_3");
