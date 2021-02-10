@@ -1,5 +1,9 @@
 .SUFFIXES: .F .c .o
 
+ifeq "$(EXCLUDE_INIT_MODE)" "true"
+CPPLOCALFLAGS = -DEXCLUDE_INIT_MODE
+$(info "EXCLUDE_INIT_MODE found")
+endif
 
 OCEAN_SHARED_INCLUDES = -I$(PWD)/../framework -I$(PWD)/../external/esmf_time_f90 -I$(PWD)/../operators
 OCEAN_SHARED_INCLUDES += -I$(PWD)/BGC -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/cvmix/src/shared -I$(PWD)/mode_forward -I$(PWD)/mode_analysis
@@ -20,7 +24,7 @@ endif
 	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 core_reg:
-	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+	$(CPP) $(CPPFLAGS) $(CPPLOCALFLAGS) $(CPPINITFLAG) $(CPPINCLUDES) Registry.xml > Registry_processed.xml)
 
 core_input_gen:
 	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
@@ -36,7 +40,7 @@ ifneq "$(EXCLUDE_INIT_MODE)" "true"
 endif
 
 gen_includes:
-	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+	$(CPP) $(CPPFLAGS) $(CPPLOCALFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 	(if [ ! -d inc ]; then mkdir -p inc; fi) # To generate *.inc files
 	(cd inc; $(REG_PARSE) < ../Registry_processed.xml )
 
