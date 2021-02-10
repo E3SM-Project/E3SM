@@ -1,6 +1,7 @@
 
 # build_options.mk stuff handled here
 list(APPEND CPPDEFS "-DCORE_OCEAN")
+list(APPEND CPPDEFS "-DEXCLUDE_INIT_MODE")
 list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_ocean/shared") # Only need this for '#include "../inc/core_variables.inc"' to work
 
 # check if lapack is linked
@@ -27,33 +28,6 @@ list(APPEND RAW_SOURCES
   core_ocean/mode_forward/mpas_ocn_time_integration_si.F
 
   core_ocean/mode_analysis/mpas_ocn_analysis_mode.F
-
-  core_ocean/mode_init/mpas_ocn_init_mode.F
-  core_ocean/mode_init/mpas_ocn_init_spherical_utils.F
-  core_ocean/mode_init/mpas_ocn_init_vertical_grids.F
-  core_ocean/mode_init/mpas_ocn_init_cell_markers.F
-  core_ocean/mode_init/mpas_ocn_init_interpolation.F
-  core_ocean/mode_init/mpas_ocn_init_ssh_and_landIcePressure.F
-  core_ocean/mode_init/mpas_ocn_init_baroclinic_channel.F
-  core_ocean/mode_init/mpas_ocn_init_lock_exchange.F
-  core_ocean/mode_init/mpas_ocn_init_dam_break.F
-  core_ocean/mode_init/mpas_ocn_init_internal_waves.F
-  core_ocean/mode_init/mpas_ocn_init_overflow.F
-  core_ocean/mode_init/mpas_ocn_init_cvmix_WSwSBF.F
-  core_ocean/mode_init/mpas_ocn_init_iso.F
-  core_ocean/mode_init/mpas_ocn_init_soma.F
-  core_ocean/mode_init/mpas_ocn_init_ziso.F
-  core_ocean/mode_init/mpas_ocn_init_sub_ice_shelf_2D.F
-  core_ocean/mode_init/mpas_ocn_init_periodic_planar.F
-  core_ocean/mode_init/mpas_ocn_init_ecosys_column.F
-  core_ocean/mode_init/mpas_ocn_init_sea_mount.F
-  core_ocean/mode_init/mpas_ocn_init_global_ocean.F
-  core_ocean/mode_init/mpas_ocn_init_isomip.F
-  core_ocean/mode_init/mpas_ocn_init_hurricane.F
-  core_ocean/mode_init/mpas_ocn_init_isomip_plus.F
-  core_ocean/mode_init/mpas_ocn_init_tidal_boundary.F
-  core_ocean/mode_init/mpas_ocn_init_smoothing.F
-  core_ocean/mode_init/mpas_ocn_init_cosine_bell.F
 
   core_ocean/shared/mpas_ocn_init_routines.F
   core_ocean/shared/mpas_ocn_gm.F
@@ -197,7 +171,7 @@ list(APPEND RAW_SOURCES
 
 # Generate core input
 handle_st_nl_gen(
-  "namelist.ocean;namelist.ocean.forward mode=forward;namelist.ocean.analysis mode=analysis;namelist.ocean.init mode=init"
-  "streams.ocean stream_list.ocean. mutable;streams.ocean.forward stream_list.ocean.forward. mutable mode=forward;streams.ocean.analysis stream_list.ocean.analysis. mutable mode=analysis;streams.ocean.init stream_list.ocean.init. mutable mode=init"
+  "namelist.ocean;namelist.ocean.forward mode=forward;namelist.ocean.analysis mode=analysis"
+  "streams.ocean stream_list.ocean. mutable;streams.ocean.forward stream_list.ocean.forward. mutable mode=forward;streams.ocean.analysis stream_list.ocean.analysis. mutable mode=analysis"
   ${CORE_INPUT_DIR} ${CORE_BLDDIR}
 )
