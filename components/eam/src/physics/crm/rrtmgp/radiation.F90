@@ -1507,16 +1507,10 @@ contains
                if (do_aerosol_rad) then
                   if (radiation_do('sw')) then
                      call t_startf('rad_aerosol_optics_sw')
-                     if(present(clear_rh)) then
-                        call set_aerosol_optics_sw( &
-                             icall, dt, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
-                             aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw,  &
-                             clear_rh=clear_rh)
-                     else
-                        call set_aerosol_optics_sw( &
-                             icall, dt, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
-                             aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw)
-                     endif
+                     call set_aerosol_optics_sw( &
+                          icall, dt, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
+                          aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw,  &
+                          clear_rh=clear_rh)
                      ! Now reorder bands to be consistent with RRTMGP
                      ! TODO: fix the input files themselves!
                      do icol = 1,size(aer_tau_bnd_sw,1)
