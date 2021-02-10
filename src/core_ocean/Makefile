@@ -24,7 +24,7 @@ endif
 	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 core_reg:
-	$(CPP) $(CPPFLAGS) $(CPPLOCALFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml)
+	$(CPP) $(CPPFLAGS) $(CPPLOCALFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 
 core_input_gen:
 	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
