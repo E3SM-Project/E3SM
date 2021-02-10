@@ -98,12 +98,12 @@ struct FieldGroup {
 
   int size() const { return m_fields.size(); }
 
-  // The fields in this group (weak ptrs to avoid cyclic deps)
-  std::map<ci_string,std::weak_ptr<field_type>> m_fields;
+  // The fields in this group
+  std::map<ci_string,std::shared_ptr<field_type>> m_fields;
 
   // If m_info->m_bundled is true, this is the field that all fields
   // in m_fields are a subview of.
-  std::weak_ptr<field_type> m_bundle;
+  std::shared_ptr<field_type> m_bundle;
 
   // The info of this group.
   std::shared_ptr<FieldGroupInfo>  m_info;

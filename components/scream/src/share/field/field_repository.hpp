@@ -3,6 +3,7 @@
 
 #include "share/grid/grids_manager.hpp"
 #include "share/field/field.hpp"
+#include "share/util/map_key_iterator.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_assert.hpp"
@@ -39,7 +40,7 @@ class FieldRepository {
 public:
 
   // Public types
-  using RT               = RealType;
+  using RT               = typename std::remove_const<RealType>::type;
   using const_RT         = typename std::add_const<RT>::type;
   using field_type       = Field<RT>;
   using const_field_type = typename Field<RT>::const_field_type;
@@ -85,12 +86,14 @@ public:
   RepoState repository_state () const { return m_repo_state; }
 
   // Query for a particular field or group of fields
+  bool has_field (const std::string& name) const;
   bool has_field (const identifier_type& identifier) const;
   const field_type& get_field (const identifier_type& identifier) const;
   const field_type& get_field(const std::string& name,const std::string& grid) const;
 
-  // Get all fields corresponding to a given name (they will differ in their grid/layou).
-  const alias_map_type& get_aliases (const std::string& name) const;
+  // Get iterators to the keys (i.e., identifier_type) of all fields with a given name
+  map_key_const_iterator<alias_map_type> cbegin (const std::string& name) const;
+  map_key_const_iterator<alias_map_type> cend   (const std::string& name) const;
 
   // Get the names of the groups, with the names of all fields belonging to each group
   const group_info_map& get_groups_info () const { return m_field_groups; }
@@ -103,12 +106,8 @@ public:
   FieldGroup<RT> get_field_group (const std::string& name, const std::string& grid_name) const;
   FieldGroup<const_RT> get_const_field_group (const std::string& group_name, const std::string& grid_name) const;
 
-  // Iterators, to allow range for loops over the repo.
-  typename repo_type::const_iterator begin() const { return m_fields.begin(); }
-  typename repo_type::const_iterator end()   const { return m_fields.end(); }
-
-  typename repo_type::iterator begin() { return m_fields.begin(); }
-  typename repo_type::iterator end()   { return m_fields.end(); }
+  // Set the time stamp of all fields
+  void init_fields_time_stamp (const util::TimeStamp& t0);
 
 protected:
 
@@ -251,6 +250,13 @@ internal_size () const {
 
 template<typename RealType>
 bool FieldRepository<RealType>::
+has_field (const std::string& name) const {
+  auto it = m_fields.find(name);
+  return it!=m_fields.end();
+}
+
+template<typename RealType>
+bool FieldRepository<RealType>::
 has_field (const identifier_type& identifier) const {
   auto it = m_fields.find(identifier.name());
   return it!=m_fields.end() && it->second.find(identifier)!=it->second.end();
@@ -259,6 +265,8 @@ has_field (const identifier_type& identifier) const {
 template<typename RealType>
 const typename FieldRepository<RealType>::field_type&
 FieldRepository<RealType>::get_field (const identifier_type& id) const {
+  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
+      "Error! Cannot get fields from the repo while registration has not yet completed.\n");
   auto ptr = get_field_ptr(id);
   EKAT_REQUIRE_MSG(ptr!=nullptr, "Error! Field not found.\n");
   return *ptr;
@@ -267,6 +275,8 @@ FieldRepository<RealType>::get_field (const identifier_type& id) const {
 template<typename RealType>
 const typename FieldRepository<RealType>::field_type&
 FieldRepository<RealType>::get_field (const std::string& name, const std::string& grid) const {
+  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
+      "Error! Cannot get fields from the repo while registration has not yet completed.\n");
   auto ptr = get_field_ptr(name,grid);
   EKAT_REQUIRE_MSG(ptr!=nullptr, "Error! Field not found.\n");
   return *ptr;
@@ -276,6 +286,10 @@ template<typename RealType>
 FieldGroup<typename FieldRepository<RealType>::RT>
 FieldRepository<RealType>::
 get_field_group (const std::string& group_name, const std::string& grid_name) const {
+  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
+      "Error! Cannot get field groups from the repo while registration has not yet completed.\n");
+
+  // Create an empty group
   FieldGroup<RT> group(group_name,grid_name);
 
   // Allow returning an empty group
@@ -285,7 +299,8 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
     for (const auto& fname : group.m_info->m_fields_names) {
       auto f = get_field_ptr(fname,grid_name);
       group.m_fields[fname] = f;
-      if (group.m_info->m_bundled && group.m_bundle.lock()==nullptr) {
+      // Fetch the bundle fields (if bundled) just once
+      if (group.m_info->m_bundled && group.m_bundle==nullptr) {
         auto p = f->get_header().get_parent().lock();
         EKAT_REQUIRE_MSG(p!=nullptr, "Error! Something is amiss with a bundled field group.\n");
 
@@ -302,6 +317,10 @@ template<typename RealType>
 FieldGroup<typename FieldRepository<RealType>::const_RT>
 FieldRepository<RealType>::
 get_const_field_group (const std::string& group_name, const std::string& grid_name) const {
+  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
+      "Error! Cannot get field groups from the repo while registration has not yet completed.\n");
+
+  // Create an empty group
   FieldGroup<const_RT> group(group_name,grid_name);
 
   // Allow returning an empty group
@@ -312,7 +331,8 @@ get_const_field_group (const std::string& group_name, const std::string& grid_na
       auto f = get_field_ptr(fname,grid_name);
       auto cf = std::make_shared<const_field_type>(f->get_const());
       group.m_fields[fname] = cf;
-      if (group.m_info->m_bundled && group.m_bundle.lock()==nullptr) {
+      // Fetch the bundle fields (if bundled) just once
+      if (group.m_info->m_bundled && group.m_bundle==nullptr) {
         auto p = f->get_header().get_parent().lock();
         EKAT_REQUIRE_MSG(p!=nullptr, "Error! Something is amiss with a bundled field group.\n");
 
@@ -326,12 +346,37 @@ get_const_field_group (const std::string& group_name, const std::string& grid_na
 }
 
 template<typename RealType>
-const typename FieldRepository<RealType>::alias_map_type&
-FieldRepository<RealType>::get_aliases (const std::string& name) const
+void FieldRepository<RealType>::
+init_fields_time_stamp (const util::TimeStamp& t0)
 {
-  auto it = m_fields.find(name);
-  EKAT_REQUIRE_MSG (it!=m_fields.end(), "Error! Field aliases not found.\n");
-  return it->second;
+  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
+      "Error! Cannot set initial time stamp until registration has completed.\n");
+
+  for (auto it : m_fields) {
+    for (auto f : it.second) {
+      f.second->get_header().get_tracking().update_time_stamp(t0);
+    }
+  }
+}
+
+template<typename RealType>
+map_key_const_iterator<typename FieldRepository<RealType>::alias_map_type>
+FieldRepository<RealType>::cbegin (const std::string& name) const
+{
+  EKAT_REQUIRE_MSG (m_fields.find(name)!=m_fields.end(),
+      "Error! No field called '" << name << "' registered in the repo.\n");
+  const auto& aliases = m_fields.at(name);
+  return map_key_const_iterator<alias_map_type>(aliases.cbegin());
+}
+
+template<typename RealType>
+map_key_const_iterator<typename FieldRepository<RealType>::alias_map_type>
+FieldRepository<RealType>::cend (const std::string& name) const
+{
+  EKAT_REQUIRE_MSG (m_fields.find(name)!=m_fields.end(),
+      "Error! No field called '" << name << "' registered in the repo.\n");
+  const auto& aliases = m_fields.at(name);
+  return map_key_const_iterator<alias_map_type>(aliases.cend());
 }
 
 template<typename RealType>
@@ -457,34 +502,33 @@ void FieldRepository<RealType>::clean_up() {
 template<typename RealType>
 std::shared_ptr<typename FieldRepository<RealType>::field_type>
 FieldRepository<RealType>::get_field_ptr (const identifier_type& id) const {
-  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
-
-  const auto& map = m_fields.find(id.name());
-  EKAT_REQUIRE_MSG(map!=m_fields.end(), "Error! Field not found.\n");
-  auto it = map->second.find(id);
-  if (it==map->second.end()) {
+  if (!has_field(id)) {
     return nullptr;
-  } else {
-    return it->second;
   }
+  return m_fields.at(id.name()).at(id);
 }
 
 template<typename RealType>
 std::shared_ptr<typename FieldRepository<RealType>::field_type>
 FieldRepository<RealType>::get_field_ptr (const std::string& name, const std::string& grid) const {
-  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
+
+  if (!has_field(name)) {
+    return nullptr;
+  }
 
   // Keep track of the number of fields found for this name/grid combo
   std::vector<identifier_type> f_matches;
-  //  Search field repo for field matching this name.
-  const auto& map = m_fields.find(name);
-  EKAT_REQUIRE_MSG(map!=m_fields.end(), "Error! get_field: " + name + " not found.\n");
+
   //  Search subset of field repo for matching gridname.
-  for (const auto& it : map->second) {
-    if ( it.first.get_grid_name()==grid) {f_matches.push_back(it.first);}
+  for (const auto& it : m_fields.at(name)) {
+    if ( it.first.get_grid_name()==grid) {
+      f_matches.push_back(it.first);
+    }
   }
+
   // Check to make sure a) the field was found on this grid, and b) only once.
   EKAT_REQUIRE_MSG(f_matches.size()==1, "Error! get_field: " + name + " found " + std::to_string(f_matches.size()) + " matches on grid " + grid + ".\n");
+
   // Use this field id to grab field itself.
   return get_field_ptr(f_matches[0]);
 }

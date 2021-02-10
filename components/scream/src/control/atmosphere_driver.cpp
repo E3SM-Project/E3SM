@@ -148,11 +148,7 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   init_atm_inputs ();
 
   // Set time steamp t0 to all fields
-  for (auto& field_map_it : *m_field_repo) {
-    for (auto& f_it : field_map_it.second) {
-      f_it.second->get_header().get_tracking().update_time_stamp(t0);
-    }
-  }
+  m_field_repo->init_fields_time_stamp(t0);
 
   // Now that all fields have been set and checked we can establish an output manager
   // for all output streams.
@@ -240,14 +236,15 @@ void AtmosphereDriver::register_groups () {
       // Lambda helper fcn, that register field $name with group $group on grid $grid
       // if not yet already registered
       auto register_if_not_there = [&](const std::string& name) {
-        const auto& aliases = m_field_repo->get_aliases(name);
-        EKAT_REQUIRE_MSG(aliases.size()>0,
+        EKAT_REQUIRE_MSG(m_field_repo->has_field(name),
           "Error! Something went wrong while looking for field '" << name << "' in the repo.\n");
+        auto aliases_begin = m_field_repo->cbegin(name);
+        auto aliases_end = m_field_repo->cend(name);
 
         // Check if a copy of this field on the right grid is already registered.
         bool found = false;
-        for (const auto& alias : aliases) {
-          if (alias.first.get_grid_name()==grid) {
+        for (auto it = aliases_begin; it!=aliases_end; ++it) {
+          if (it->get_grid_name()==grid) {
             found = true;
             break;
           }
@@ -258,8 +255,7 @@ void AtmosphereDriver::register_groups () {
           // Lets take any fid in the repo for this field, and register
           // a copy of it on grid $grid. We can do this by creating
           // a remapper and using its capabilities.
-          const auto& alias = *aliases.begin();
-          const auto& fid = alias.first;
+          const auto& fid = *aliases_begin;
           auto r = m_grids_manager->create_remapper(fid.get_grid_name(),grid);
           auto f_units = fid.get_units();
           auto src_layout = fid.get_layout();
@@ -300,9 +296,12 @@ void AtmosphereDriver::init_atm_inputs () {
     // initializer is set to init this field on a non-ref grid. In that case,
     // such non-ref field would *not* appear as an atm input (since it's the
     // output of a remapper).
-    auto& aliases = m_field_repo->get_aliases(input.name());
-    for (auto& it : aliases) {
-      const auto& f = *it.second;
+    EKAT_REQUIRE_MSG(m_field_repo->has_field(input.name()),
+      "Error! Something went wrong while looking for field '" << input.name() << "' in the repo.\n");
+    auto begin = m_field_repo->cbegin(input.name());
+    auto end = m_field_repo->cend(input.name());
+    for (auto it=begin; it!=end; ++it) {
+      const auto& f = m_field_repo->get_field(*it);
       const auto& hdr = f.get_header();
       const auto& id = hdr.get_identifier();
       auto init_type = hdr.get_tracking().get_init_type();

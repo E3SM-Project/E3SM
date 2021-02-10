@@ -337,10 +337,10 @@ set_required_group (const FieldGroup<const Real>& group)
     if (atm_proc->requires_group(name,grid)) {
       atm_proc->set_required_group(group);
       // We also might need to add each field of the group to the remap in/out
-      for (auto& it : group.m_fields) {
-        auto f = it.second.lock();
-        const auto& fid = f->get_header().get_identifier();
-        const auto r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
+      for (const auto& it : group.m_fields) {
+        const auto& f = *it.second;
+        const auto& fid = f.get_header().get_identifier();
+        const auto& r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
         process_required_field(fid,r_in);
       }
     }
@@ -362,9 +362,9 @@ set_updated_group (const FieldGroup<Real>& group)
     if (atm_proc->updates_group(name,grid)) {
       atm_proc->set_updated_group(group);
       // We also might need to add each field of the group to the remap in/out
-      for (auto it : group.m_fields) {
-        auto f = it.second.lock();
-        const auto& fid = f->get_header().get_identifier();
+      for (const auto& it : group.m_fields) {
+        const auto& f = *it.second;
+        const auto& fid = f.get_header().get_identifier();
         const auto r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
         const auto r_out = m_outputs_remappers[iproc].at(fid.get_grid_name());
         process_required_field(fid,r_in);

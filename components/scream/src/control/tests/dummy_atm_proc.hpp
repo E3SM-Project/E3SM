@@ -90,9 +90,9 @@ public:
                       "Error! This atmosphere process does not require a group of fields.\n");
 
     for (const auto& it : field_group.m_fields) {
-      const auto& f = *it.second.lock();
-      const auto& fid = f.get_header().get_identifier();
-      m_inputs.emplace(fid.name(),f);
+      const auto& f = it.second;
+      const auto& fid = f->get_header().get_identifier();
+      m_inputs.emplace(fid.name(),*f);
       m_input_fids.emplace(fid);
     }
   }
@@ -101,11 +101,11 @@ public:
                       "Error! This atmosphere process does not require a group of fields.\n");
 
     for (const auto& it : field_group.m_fields) {
-      const auto& f = *it.second.lock();
-      const auto& fid = f.get_header().get_identifier();
-      m_inputs.emplace(fid.name(),f.get_const());
+      const auto& f = it.second;
+      const auto& fid = f->get_header().get_identifier();
+      m_inputs.emplace(fid.name(),f->get_const());
       m_input_fids.emplace(fid);
-      m_outputs.emplace(fid.name(),f);
+      m_outputs.emplace(fid.name(),*f);
       m_output_fids.emplace(fid);
     }
   }
