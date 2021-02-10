@@ -1069,7 +1069,7 @@ else {
     if ($chem eq 'none' or $chem eq 'waccm_ghg' or $chem eq 'super_fast_llnl' or $chem eq 'waccm_mozart' or $chem eq 'waccm_mozart_sulfur') {
 	# If no chemistry then there must be prescribed aerosols unless physics
 	# package is adiabatic or ideal.
-	if ($phys eq 'cam5') {
+	if ($phys eq 'default') {
 	    $prescribed_aero_model = 'modal';
 	}
 	elsif ($phys eq 'cam4' or $phys eq 'cam3') {
@@ -4187,7 +4187,7 @@ if ($ice_comp eq 'cice' and $cam_build and $ice_active) {
     }
 
     # For CAM5 need to send the variable "cam5=.true." to get correct defaults for several
-    # cice parameters.
+    # cice parameters. only used for active cice. not used in e3sm, no need to change for new phys name
     if ($phys eq 'cam5') {
 	$cice_nl .= "cam5=.true. \n";
     }
