@@ -1,6 +1,6 @@
 #include "mo_garand_atmos_io.h"
 #include "simple_netcdf.hpp"
-#include <netcdf>
+#include <netcdf.h>
 
 // Read in the data, then use only the first column, and copy it to all of the model columns
 // In the end, all model columns will be identical

@@ -1,4 +1,4 @@
-#include <netcdf>
+#include <netcdf.h>
 #include "YAKL.h"
 
 using namespace yakl;

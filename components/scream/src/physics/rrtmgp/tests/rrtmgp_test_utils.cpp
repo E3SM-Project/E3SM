@@ -6,8 +6,18 @@
 #include "mo_fluxes.h"
 #include "mo_cloud_optics.h"
 #include "simple_netcdf.hpp"
-#include <netcdf>
+#include <netcdf.h>
+
 namespace rrtmgpTest {
+
+    bool file_exists(const char *filename) {
+        if (auto file = fopen(filename, "r")) {
+            fclose(file);
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     // TODO: use YAKL intrinsics for this; this won't work on the GPU
     bool all_equals(real2d &arr1, real2d &arr2) {
@@ -112,11 +122,11 @@ namespace rrtmgpTest {
         lw_flux_dn  = real2d("lw_flux_dn" , ncol, nlev);
 
         // Read data
-        io.read(sw_flux_up,  "sw_flux_up_result" );
-        io.read(sw_flux_dn,  "sw_flux_dn_result" );
-        io.read(sw_flux_dir, "sw_flux_dir_result");
-        io.read(lw_flux_up,  "lw_flux_up_result" );
-        io.read(lw_flux_dn,  "lw_flux_dn_result" );
+        io.read(sw_flux_up,  "sw_flux_up" );
+        io.read(sw_flux_dn,  "sw_flux_dn" );
+        io.read(sw_flux_dir, "sw_flux_dir");
+        io.read(lw_flux_up,  "lw_flux_up" );
+        io.read(lw_flux_dn,  "lw_flux_dn" );
     }
 
     void write_fluxes(
@@ -125,12 +135,12 @@ namespace rrtmgpTest {
             real2d &lw_flux_up, real2d &lw_flux_dn) {
 
         simple_netcdf::SimpleNetCDF io;
-        io.open(outputfile, NC_NOWRITE);
-        io.write(sw_flux_up , "sw_flux_up_result" , {"col_new","lev"});
-        io.write(sw_flux_dn , "sw_flux_dn_result" , {"col_new","lev"});
-        io.write(sw_flux_dir, "sw_flux_dir_result", {"col_new","lev"});
-        io.write(lw_flux_up , "lw_flux_up_result" , {"col_new","lev"});
-        io.write(lw_flux_dn , "lw_flux_dn_result" , {"col_new","lev"});
+        io.create(outputfile);
+        io.write(sw_flux_up , "sw_flux_up" , {"col_flx","lev"});
+        io.write(sw_flux_dn , "sw_flux_dn" , {"col_flx","lev"});
+        io.write(sw_flux_dir, "sw_flux_dir", {"col_flx","lev"});
+        io.write(lw_flux_up , "lw_flux_up" , {"col_flx","lev"});
+        io.write(lw_flux_dn , "lw_flux_dn" , {"col_flx","lev"});
         io.close();
 
     }

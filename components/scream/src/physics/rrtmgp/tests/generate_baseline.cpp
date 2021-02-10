@@ -2,16 +2,12 @@
 #include <cmath>
 //#include <catch2/catch.hpp>
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "netcdf.h"
 #include "mo_gas_concentrations.h"
 #include "mo_garand_atmos_io.h"
-#include "mo_fluxes.h"
-#include "mo_cloud_optics.h"
 #include "Intrinsics.h"
 #include "rrtmgp_test_utils.hpp"
 #include "share/scream_types.hpp"
 #include "share/scream_session.hpp"
-
 
 /*
  * Run standalone test problem for RRTMGP. Two tests are run, one that uses
@@ -22,16 +18,24 @@
  */
 
 // Input file that contains example atmosphere and reference fluxes
-std::string inputfile = "./data/rrtmgp-allsky.nc";
-std::string baseline = "./data/rrtmgp-allsky-baseline.nc";
+//std::string inputfile = "./data/rrtmgp-allsky.nc";
+//std::string baseline = "./data/rrtmgp-allsky-baseline.nc";
 
 
 using namespace scream;
 
 int main (int argc, char** argv) {
-//    TEST_CASE("RRTMGP_GENERATE") { //int main (int argc, char** argv) {
-    // Setup for standalone (dummy) problem
-    //REQUIRE (1 == 1);
+
+    // Get filenames from command line
+    if (argc != 3) {
+        std::cout <<
+            argv[0] << " [options] inputfile baseline\n"
+            "Options:\n"
+            "  (there are no options)\n";
+        return 1;
+    }
+    std::string inputfile(argv[argc-2]);
+    std::string baseline(argv[argc-1]);
 
     // Initialize yakl
     yakl::init();
@@ -77,7 +81,6 @@ int main (int argc, char** argv) {
     // data that contains information about absorption coefficients for gases
     std::cout << "rrtmgp_initialize..." << std::endl;
     rrtmgp::rrtmgp_initialize(ngas, gas_names);
-
 
     // Setup dummy all-sky problem
     real2d sfc_alb_dir;
