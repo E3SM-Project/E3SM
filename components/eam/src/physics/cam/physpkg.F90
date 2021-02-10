@@ -386,32 +386,32 @@ subroutine phys_inidat( cam_out, pbuf2d )
     end if
     call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
 
-!    if(aqua_planet) then
+    if(aqua_planet) then
        sgh = 0._r8
        sgh30 = 0._r8
        landm = 0._r8
-!      if (masterproc) write(iulog,*) 'AQUA_PLANET simulation, sgh, sgh30, landm initialized to 0.'
-!    else
-!       if (masterproc) write(iulog,*) 'NOT AN AQUA_PLANET simulation, initialize &
-!                                      &sgh, sgh30, land m using data from file.'
-!       fh_topo=>topo_file_get_id()
-!       call infld('SGH', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
-!            sgh, found, gridname='physgrid')
-!       if(.not. found) call endrun('ERROR: SGH not found on topo file')
-!
-!       call infld('SGH30', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
-!            sgh30, found, gridname='physgrid')
-!       if(.not. found) then
-!          if (masterproc) write(iulog,*) 'Warning: Error reading SGH30 from topo file.'
-!          if (masterproc) write(iulog,*) 'The field SGH30 will be filled using data from SGH.'
-!          sgh30 = sgh
-!       end if
-!
-!       call infld('LANDM_COSLAT', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
-!            landm, found, gridname='physgrid')
-!
-!       if(.not.found) call endrun(' ERROR: LANDM_COSLAT not found on topo dataset.')
-!    end if
+      if (masterproc) write(iulog,*) 'AQUA_PLANET simulation, sgh, sgh30, landm initialized to 0.'
+    else
+       if (masterproc) write(iulog,*) 'NOT AN AQUA_PLANET simulation, initialize &
+                                      &sgh, sgh30, land m using data from file.'
+       fh_topo=>topo_file_get_id()
+       call infld('SGH', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+            sgh, found, gridname='physgrid')
+       if(.not. found) call endrun('ERROR: SGH not found on topo file')
+
+       call infld('SGH30', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+            sgh30, found, gridname='physgrid')
+       if(.not. found) then
+          if (masterproc) write(iulog,*) 'Warning: Error reading SGH30 from topo file.'
+          if (masterproc) write(iulog,*) 'The field SGH30 will be filled using data from SGH.'
+          sgh30 = sgh
+       end if
+
+       call infld('LANDM_COSLAT', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+            landm, found, gridname='physgrid')
+
+       if(.not.found) call endrun(' ERROR: LANDM_COSLAT not found on topo dataset.')
+    end if
 
     allocate(tptr(1:pcols,begchunk:endchunk))
 
