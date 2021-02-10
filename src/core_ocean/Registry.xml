@@ -1302,6 +1302,12 @@
 					possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
 		/>
 	</nml_record>
+	<nml_record name="init_mode_vert_levels">
+		<nml_option name="config_vert_levels" type="integer" default_value="-1" units="unitless"
+					description="Number of vertical levels to create within the configuration."
+					possible_values="Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition."
+		/>
+	</nml_record>
 	<packages>
 		<package name="timeVaryingAtmosphericForcingPKG" description="This package includes variables required for time varying atmospheric forcing"/>
 		<package name="timeVaryingLandIceForcingPKG" description="This package includes variavles required for time varying land-ice forcing"/>
@@ -3597,5 +3603,7 @@
 <!-- Include registry files from subdirectories -->
 #include "tracer_groups/Registry_tracers.xml"
 #include "analysis_members/Registry_analysis_members.xml"
+#ifndef EXCLUDE_INIT_MODE
 #include "mode_init/Registry.xml"
+#endif
 </registry>
