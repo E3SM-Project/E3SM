@@ -323,23 +323,23 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
 }
 
 void AtmosphereProcessGroup::
-set_required_group (const ci_string_pair& group_and_grid,
-                    const std::set<Field<const Real>>& group)
+set_required_group (const FieldGroup<const Real>& group)
 {
-  EKAT_REQUIRE_MSG(group.size()>0,
+  EKAT_REQUIRE_MSG(group.m_fields.size()>0,
     "Error! We were not expecting an empty field group.\n");
 
-  const auto& name = group_and_grid.first;
-  const auto& grid = group_and_grid.second;
+  const auto& name = group.m_info->m_group_name;
+  const auto& grid = group.m_grid_name;
 
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];
 
     if (atm_proc->requires_group(name,grid)) {
-      atm_proc->set_required_group(group_and_grid, group);
+      atm_proc->set_required_group(group);
       // We also might need to add each field of the group to the remap in/out
-      for (auto& f : group) {
-        const auto& fid = f.get_header().get_identifier();
+      for (auto& it : group.m_fields) {
+        auto f = it.second.lock();
+        const auto& fid = f->get_header().get_identifier();
         const auto r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
         process_required_field(fid,r_in);
       }
@@ -348,23 +348,23 @@ set_required_group (const ci_string_pair& group_and_grid,
 }
 
 void AtmosphereProcessGroup::
-set_updated_group (const ci_string_pair& group_and_grid,
-                   const std::set<Field<Real>>& group)
+set_updated_group (const FieldGroup<Real>& group)
 {
-  EKAT_REQUIRE_MSG(group.size()>0,
+  EKAT_REQUIRE_MSG(group.m_fields.size()>0,
     "Error! We were not expecting an empty field group.\n");
 
-  const auto& name = group_and_grid.first;
-  const auto& grid = group_and_grid.second;
+  const auto& name = group.m_info->m_group_name;
+  const auto& grid = group.m_grid_name;
 
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];
 
     if (atm_proc->updates_group(name,grid)) {
-      atm_proc->set_updated_group(group_and_grid, group);
+      atm_proc->set_updated_group(group);
       // We also might need to add each field of the group to the remap in/out
-      for (auto& f : group) {
-        const auto& fid = f.get_header().get_identifier();
+      for (auto it : group.m_fields) {
+        auto f = it.second.lock();
+        const auto& fid = f->get_header().get_identifier();
         const auto r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
         const auto r_out = m_outputs_remappers[iproc].at(fid.get_grid_name());
         process_required_field(fid,r_in);

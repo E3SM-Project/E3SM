@@ -126,11 +126,11 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   // Set all groups of fields
   for (const auto& it : m_atm_process_group->get_required_groups()) {
     auto group = m_field_repo->get_const_field_group(it.first,it.second);
-    m_atm_process_group->set_required_group(it,group);
+    m_atm_process_group->set_required_group(group);
   }
   for (const auto& it : m_atm_process_group->get_updated_groups()) {
     auto group = m_field_repo->get_field_group(it.first,it.second);
-    m_atm_process_group->set_updated_group(it,group);
+    m_atm_process_group->set_updated_group(group);
   }
 
   // Initialize the processes
@@ -150,7 +150,7 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   // Set time steamp t0 to all fields
   for (auto& field_map_it : *m_field_repo) {
     for (auto& f_it : field_map_it.second) {
-      f_it.second.get_header().get_tracking().update_time_stamp(t0);
+      f_it.second->get_header().get_tracking().update_time_stamp(t0);
     }
   }
 
@@ -229,23 +229,23 @@ void AtmosphereDriver::register_groups () {
   using ci_string = ekat::CaseInsensitiveString;
   using ci_string_pair = std::pair<ci_string,ci_string>;
 
-  // Given a list of group-grid pairs (A,B), make sure there is a copy of A
-  // on grid B registered in the repo.
+  // Given a list of group-grid pairs (A,B), make sure there is a copy
+  // of each field in group A on grid B registered in the repo.
   auto lambda = [&](const std::set<ci_string_pair>& groups_grids) {
-    const auto& groups_to_fnames = m_field_repo->get_field_groups_names();
+    const auto& groups_info = m_field_repo->get_groups_info();
+
     for (const auto& gg : groups_grids) {
       const auto& group = gg.first;
-      const auto& grid  = gg.second;
-      EKAT_REQUIRE_MSG(groups_to_fnames.find(group)!=groups_to_fnames.end(),
-        "Error! Group '" << group << "' not found in the repo.\n");
+      const auto& grid = gg.second;
 
-      const auto& fnames = groups_to_fnames.at(group);
-      for (const auto& name : fnames) {
-        auto aliases = m_field_repo->get_aliases(name);
+      // Lambda helper fcn, that register field $name with group $group on grid $grid
+      // if not yet already registered
+      auto register_if_not_there = [&](const std::string& name) {
+        const auto& aliases = m_field_repo->get_aliases(name);
         EKAT_REQUIRE_MSG(aliases.size()>0,
           "Error! Something went wrong while looking for field '" << name << "' in the repo.\n");
 
-        // Check if a copy of this field on the right grid already is registered.
+        // Check if a copy of this field on the right grid is already registered.
         bool found = false;
         for (const auto& alias : aliases) {
           if (alias.first.get_grid_name()==grid) {
@@ -268,6 +268,25 @@ void AtmosphereDriver::register_groups () {
           FieldIdentifier new_fid(name,tgt_layout,f_units,grid);
           m_field_repo->register_field(new_fid,group);
         }
+      };
+
+      auto group_it = groups_info.find(group);
+      EKAT_REQUIRE_MSG(group_it!=groups_info.end(),
+        "Error! Group '" << group << "' not found in the repo.\n");
+
+      const auto& fnames = group_it->second->m_fields_names;
+      for (const auto& name : fnames) {
+        register_if_not_there(name);
+      }
+
+      if (group_it->second->m_bundled) {
+        // The group was allocated as a single bundled field, with each
+        // field in the group later subviewing the bundle.
+        // We need to ensure the bundle also exists on $grid
+        const auto& name = *fnames.begin();
+        const auto& f = m_field_repo->get_field(name,grid);
+        const auto& bundle_name = f.get_header().get_parent().lock()->get_identifier().name();
+        register_if_not_there(bundle_name);
       }
     }
   };
@@ -284,12 +303,12 @@ void AtmosphereDriver::init_atm_inputs () {
     // output of a remapper).
     auto& aliases = m_field_repo->get_aliases(input.name());
     for (auto& it : aliases) {
-      auto& f = it.second;
-      auto& hdr = f.get_header_ptr();
-      auto& id = hdr->get_identifier();
-      auto init_type = hdr->get_tracking().get_init_type();
-      if (init_type!=InitType::None) {
-        auto initializer = hdr->get_tracking().get_initializer().lock();
+      const auto& f = *it.second;
+      const auto& hdr = f.get_header();
+      const auto& id = hdr.get_identifier();
+      auto init_type = hdr.get_tracking().get_init_type();
+      if (init_type!=InitType::None && init_type!=InitType::Inherited) {
+        auto initializer = hdr.get_tracking().get_initializer().lock();
         EKAT_REQUIRE_MSG (static_cast<bool>(initializer),
                             "Error! Field '" + id.name() + "' has initialization type '" + e2str(init_type) + "',\n" +
                             "       but its initializer pointer is not valid.\n");

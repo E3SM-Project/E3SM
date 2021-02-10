@@ -352,8 +352,8 @@ add_nodes (const group_type& atm_procs,
         for (auto itg : proc->get_updated_groups()) {
           EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
           auto group = field_repo->get_const_field_group(itg.first,itg.second);
-          for (const auto& f : group) {
-            const auto& fid = f.get_header().get_identifier();
+          for (const auto& f : group.m_fields) {
+            const auto& fid = f.second.lock()->get_header().get_identifier();
             const int fid_id = add_fid(fid);
             node.required.insert(fid_id);
             auto it = m_fid_to_last_provider.find(fid_id);
@@ -369,8 +369,8 @@ add_nodes (const group_type& atm_procs,
         for (auto itg : proc->get_required_groups()) {
           EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
           auto group = field_repo->get_const_field_group(itg.first,itg.second);
-          for (const auto& f : group) {
-            const auto& fid = f.get_header().get_identifier();
+          for (const auto& f : group.m_fields) {
+            const auto& fid = f.second.lock()->get_header().get_identifier();
             const int fid_id = add_fid(fid);
             node.computed.insert(fid_id);
             m_fid_to_last_provider[fid_id] = id;

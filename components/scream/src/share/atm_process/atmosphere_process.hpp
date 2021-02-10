@@ -5,6 +5,7 @@
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_repository.hpp"
 #include "share/field/field.hpp"
+#include "share/field/field_group.hpp"
 #include "share/grid/grids_manager.hpp"
 
 #include "ekat/ekat_assert.hpp"
@@ -137,8 +138,13 @@ public:
     set_computed_field_impl (f);
   }
 
-  virtual void set_required_group (const ci_string_pair& /* group_and_grid */,
-                                   const std::set<Field<const Real>>& /* group */) {
+  // Note: for the following (unlike set_required/computed_field, we do provide an
+  //       implementation, since requiring a group is "rare".
+  // Note: from the group, derived class can extract individual fields, and,
+  //       if needed, they can check that the group was allocated as a bundle,
+  //       and if so, and if desired, they can access the bundled field directly.
+  //       See field_group.hpp for more details.
+  virtual void set_required_group (const FieldGroup<const Real>& /* group */) {
     ekat::error::runtime_abort(
       "Error! This atmosphere process does not require a group of fields, meaning\n"
       "       that 'get_required_groups' was not overridden in this class, or that\n"
@@ -147,8 +153,7 @@ public:
       "       then you must also override 'set_required_group' in your derived class.\n"
     );
   }
-  virtual void set_updated_group (const ci_string_pair& /* group_and_grid */,
-                                  const std::set<Field<Real>>& /* group */) {
+  virtual void set_updated_group (const FieldGroup<Real>& /* group */) {
     ekat::error::runtime_abort(
       "Error! This atmosphere process does not update a group of fields, meaning\n"
       "       that 'get_updated_groups' was not overridden in this class, or that\n"
