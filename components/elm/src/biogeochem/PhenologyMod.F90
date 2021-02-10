@@ -2031,11 +2031,12 @@ contains
 
          if (.not. croplive(p)) then
 
-            write(iulog,*) 'croplive(p), offset_flag(p), t10(p), a10tmin(p), onset_gddflag(p), onset_gdd(p)', croplive(p), offset_flag(p), t10(p), a10tmin(p)
             ! Perennial crop is planted when temperature conditions are met
             if ( t10(p) /= spval .and. a10tmin(p) /= spval  .and. &
                  t10(p)     > planttemp(ivt(p))             .and. &
-                 a10tmin(p) > minplanttemp(ivt(p)) ) then
+                 a10tmin(p) > minplanttemp(ivt(p))          .and. &
+                 jday       >= minplantjday(ivt(p),h)       .and. &
+                 jday       <= maxplantjday(ivt(p),h) ) then
                croplive(p)  = .true.
                gddmaturity(p) = hybgdd(ivt(p))
                offset_flag(p) = 1._r8
@@ -2044,7 +2045,6 @@ contains
                harvday(p) = NOT_Harvested
                write(iulog,*) 'perennial crops live, t10(p), a10tmin(p)', t10(p), a10tmin(p)
 
-               write(iulog,*) 'leafcn(ivt(p)), leafcp(ivt(p))', leafcn(ivt(p)), leafcp(ivt(p))
                leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
                leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p))
                leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p))
@@ -2052,7 +2052,6 @@ contains
                crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
                crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
                crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
-               write(iulog,*) 'leafn_xfer(p), leafp_xfer(p)', leafn_xfer(p), leafp_xfer(p)
             end if
          end if     ! crop not live
 
@@ -2060,7 +2059,6 @@ contains
 
             ! update onset_counter and test for the end of the onset period
             if (onset_flag(p) == 1.0_r8) then
-               write(iulog,*) 'onset_counter(p), fert_counter(p), t10(p)', onset_counter(p), fert_counter(p), t10(p)
                ! decrement counter for onset period
                onset_counter(p) = onset_counter(p) - dt
 
@@ -2147,7 +2145,7 @@ contains
     ! initialized, and after ecophyscon file is read in.
     !
     ! !USES:
-    use pftvarcon       , only: npcropmin, npcropmax, mnNHplantdate
+    use pftvarcon       , only: npcropmin, npcropmax, nppercropmin, nppercropmax, mnNHplantdate
     use pftvarcon       , only: mnSHplantdate, mxNHplantdate
     use pftvarcon       , only: mxSHplantdate
     use clm_time_manager, only: get_calday
@@ -2180,6 +2178,15 @@ contains
     do n = npcropmin, npcropmax
         minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
         maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
+    end do
+
+    do n = nppercropmin, nppercropmax
+       minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
+       maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )
+    end do
+    do n = nppercropmin, nppercropmax
+       minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
+       maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
     end do
 
     ! Figure out what hemisphere each PFT is in
@@ -2884,9 +2891,6 @@ contains
               ! for perennial bioenergy grass yield comes from leaf and stem harvest
               crpyld(p)  = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + livestemc(p) + cpool_to_livestemc(p)*dt) * fyield(ivt(p)) * convfact(ivt(p)) / (cgrain * 1000)
               dmyield(p) = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + livestemc(p) + cpool_to_livestemc(p)*dt) * fyield(ivt(p)) * 0.01 / cgrain
-              write(iulog,*) 'presharv(ivt(p)), fyield(ivt(p)), convfact(ivt(p))', presharv(ivt(p)), fyield(ivt(p)), convfact(ivt(p))
-              write(iulog,*) 'leafc(p), cpool_to_leafc(p)*dt, livestemc(p), cpool_to_livestemc(p)*dt)', leafc(p), cpool_to_leafc(p)*dt, livestemc(p), cpool_to_livestemc(p)*dt
-              write(iulog,*) 'crpyld(p), dmyield(p)', crpyld(p), dmyield(p)
 
               !calculate harvested carbon and nitrogen; remaining goes into litterpool
               hrv_leafc_to_prod1c(p)  = presharv(ivt(p)) * ((t1 * leafc(p)) + cpool_to_leafc(p))
