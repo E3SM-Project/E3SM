@@ -5,16 +5,42 @@ Namelist creator for E3SM's SCREAM component
 """
 
 import os, sys
+from collections import OrderedDict
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
+# Add path to scream libs
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts"))
+
+# Cime imports
 from standard_script_setup import *
 from CIME.case import Case
 from CIME.utils import expect, run_cmd_no_fail, safe_copy, SharedArea
 from CIME.buildnml import create_namelist_infile, parse_input
 
+# SCREAM imports
+from utils import ensure_yaml
+ensure_yaml()
+import yaml
+
 logger = logging.getLogger(__name__)
+
+###############################################################################
+def ordered_load(stream, Loader=yaml.SafeLoader, object_pairs_hook=OrderedDict):
+###############################################################################
+    """
+    Copied from: https://stackoverflow.com/a/21912744
+    """
+    class OrderedLoader(Loader):
+        pass
+    def construct_mapping(loader, node):
+        loader.flatten_mapping(node)
+        return object_pairs_hook(loader.construct_pairs(node))
+    OrderedLoader.add_constructor(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+        construct_mapping)
+    return yaml.load(stream, OrderedLoader)
 
 ###############################################################################
 def buildnml(case, caseroot, compname):
@@ -27,6 +53,7 @@ def buildnml(case, caseroot, compname):
     target = os.path.join(rundir, "data")
     src    = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
 
+    # Copy scream/data to rundir/data
     with SharedArea():
         if not os.path.isdir(target):
             os.mkdir(target)
@@ -36,6 +63,25 @@ def buildnml(case, caseroot, compname):
             # local mods made by the user.
             if not os.path.exists(os.path.join(target, item)):
                 safe_copy(os.path.join(src, item), target)
+
+    # Load scream inputs from yaml
+    with open(os.path.join(target, "scream_input.yaml"), "r") as fd:
+        scream_input = ordered_load(fd)
+
+    # Create homme namelists from scream inputs
+    homme_nl_path = os.path.join(rundir, scream_input["Atmosphere Driver"]["Grids Manager"]["Dynamics Driven"]["Dynamics Namelist File Name"])
+    with open(homme_nl_path, "w") as fd:
+        for outer, inner in scream_input["HOMME"].items():
+            fd.write("&{}\n".format(outer))
+            for k, v in inner.items():
+                if type(v) is str:
+                    fd.write("{} = '{}'\n".format(k, v))
+                elif type(v) is bool:
+                    fd.write("{} = {}\n".format(k, str(v).lower()))
+                else:
+                    fd.write("{} = {}\n".format(k, v))
+
+            fd.write("/\n")
 
 ###############################################################################
 def _main_func():
