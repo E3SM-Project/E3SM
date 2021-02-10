@@ -62,19 +62,15 @@ public:
   template<typename T, int N>
   using view_ND_type = uview_type<typename ekat::DataND<T,N>::type>;
 
-  // These are used a few times in ctor and assignment, so use a shortcut
-  template<typename T>
-  using Const = typename std::add_const<T>::type;
-  template<typename T>
-  using NonConst = typename std::remove_const<T>::type;
-
   // Field stack classes types
   using RT                   = RealType;
+  using non_const_RT         = typename std::remove_const<RT>::type;
+  using const_RT             = typename std::add_const<RT>::type;
   using header_type          = FieldHeader;
   using identifier_type      = FieldIdentifier;
   using field_type           = Field<RT>;
-  using const_field_type     = Field<Const<RT>>;
-  using nonconst_field_type  = Field<NonConst<RT>>;
+  using const_field_type     = Field<const_RT>;
+  using non_const_field_type = Field<non_const_RT>;
 
   static constexpr int MaxRank = 6;
 
@@ -89,7 +85,7 @@ public:
   // A Field maintains a list of shared_ptrs to FieldPropertyChecks that can
   // determine whether it satisfies certain properties. We use the PointerList
   // class to provide simple access to the property checks.
-  using property_check_type = FieldPropertyCheck<RealType>;
+  using property_check_type = FieldPropertyCheck<non_const_RT>;
   using property_check_list = PointerList<std::shared_ptr<property_check_type>,
                                            property_check_type>;
   using property_check_iterator = typename property_check_list::iterator;
@@ -230,10 +226,10 @@ protected:
   std::shared_ptr<header_type>            m_header;
 
   // Actual data.
-  view_type<NonConst<RT*>>                m_view_d;
+  view_type<RT*>                          m_view_d;
 
   // Host mirror of the data. Mutable, to allow lazy creation
-  mutable HM<view_type<NonConst<RT*>>>    m_view_h;
+  mutable HM<view_type<RT*>>              m_view_h;
 
   // Keep track of whether the field has been allocated
   bool                                    m_allocated;
@@ -277,7 +273,10 @@ template<typename SrcRealType>
 Field<RealType>::
 Field (const Field<SrcRealType>& src)
  : m_header (src.get_header_ptr())
- , m_view_d (src.get_view())
+ , m_view_d (src.m_view_d)
+ , m_view_h (src.m_view_h)
+ , m_allocated (src.m_allocated)
+ , m_prop_checks (src.m_prop_checks)
 {
   using src_field_type = Field<SrcRealType>;
 
@@ -285,12 +284,12 @@ Field (const Field<SrcRealType>& src)
   //       constructor might already perform analogue checks in order to
   //       assign pointers.
 
-  // Check that underlying value type
-  static_assert(std::is_same<NonConst<RT>,NonConst<typename src_field_type::RT>>::value,
+  // Check that the underlying value type is the same
+  static_assert(std::is_same<non_const_RT,typename src_field_type::non_const_RT>::value,
                 "Error! Cannot use copy constructor if the underlying real type is different.\n");
   // Check that destination is const or source is nonconst
-  static_assert(std::is_same<RT,Const<RT>>::value ||
-                std::is_same<typename src_field_type::RT,NonConst<RT>>::value,
+  static_assert( std::is_const<RT>::value ||
+                !std::is_const<typename src_field_type::RT>::value,
                 "Error! Cannot create a nonconst field from a const field.\n");
 }
 
@@ -299,36 +298,37 @@ template<typename SrcRealType>
 Field<RealType>&
 Field<RealType>::
 operator= (const Field<SrcRealType>& src) {
-
   using src_field_type = typename std::remove_reference<decltype(src)>::type;
-#ifndef CUDA_BUILD // TODO Figure out why nvcc doesn't like this bit of code.
-  // Check that underlying value type
-  static_assert(
-      std::is_same<NonConst<RT>,NonConst<typename src_field_type::RT>>::value,
-      "Error! Cannot use copy constructor if the underlying value_type is different.\n");
-  // Check that destination is const or source is nonconst
-  static_assert(
-      std::is_same<RT,Const<RT>>::value ||
-      std::is_same<typename src_field_type::RT,NonConst<RT>>::value,
-      "Error! Cannot create a nonconst field from a const field.\n");
-#endif
 
-  // If the field has a valid header (i.e., name!=""), then
+  // NOTE: the following checks might be redundant, since Kokkos::View copy
+  //       constructor might already perform analogue checks in order to
+  //       assign pointers.
+
+  // Check that the underlying value type is the same
+  static_assert(std::is_same<non_const_RT,typename src_field_type::non_const_RT>::value,
+                "Error! Cannot use copy constructor if the underlying real type is different.\n");
+  // Check that destination is const or source is nonconst
+  static_assert( std::is_const<RT>::value ||
+                !std::is_const<typename src_field_type::RT>::value,
+                "Error! Cannot create a nonconst field from a const field.\n");
+
+  // If the field has a valid header (i.e., m_header!=nullptr), then
   // we only allow assignment of fields with the *same* identifier.
   EKAT_REQUIRE_MSG(
-      m_header->get_identifier().get_id_string()=="" ||
+      m_header==nullptr ||
       m_header->get_identifier()==src.get_header().get_identifier(),
       "Error! Assignment of fields with different (and non-null) identifiers is prohibited.\n");
 
   // Since the type of *this and src may be different, we cannot do the usual
   // `if (this!=&src)`, cause the compiler cannot compare those pointers.
-  // Therefore, we compare the stored pointers.
-  // If either header or view are different, we copy everything
-  if (m_header!=src.m_header ||
-      m_view_d.data()!=src.m_view_d.data()) {
+  // Therefore, we compare the stored headers and device views.
+  // If either one is different, we perform the copy.
+  if (m_header!=src.m_header || m_view_d.data()!=src.m_view_d.data()) {
     m_header = src.m_header;
     m_view_d = src.m_view_d;
     m_view_h = src.m_view_h;
+    m_prop_checks = src.m_prop_checks;
+    m_allocated = src.m_allocated;
   }
 
   return *this;
