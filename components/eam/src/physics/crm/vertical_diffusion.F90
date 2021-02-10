@@ -1,4 +1,4 @@
-
+#ifndef DUMMY
 module vertical_diffusion
 
   !----------------------------------------------------------------------------------------------------- !
@@ -1427,3 +1427,4 @@ contains
   end subroutine positive_moisture
 
 end module vertical_diffusion
+#endif

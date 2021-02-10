@@ -2713,7 +2713,7 @@ Default: 'ZM'
 </entry>
 
 <entry id="microp_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="RK,MG" >
+       group="phys_ctl_nl" valid_values="RK,MG,off" >
 Type of microphysics scheme employed.  'RK' for Rasch and Kristjansson
 (1998); 'MG' for Morrison and Gettelman (2008), Gettelman et al (2010)
 two moment scheme for CAM5.1
@@ -2721,7 +2721,7 @@ Default: set by build-namelist (depends on value set in configure).
 </entry>
 
 <entry id="macrop_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="park,RK,CLUBB_SGS" >
+       group="phys_ctl_nl" valid_values="park,RK,CLUBB_SGS,off" >
 Type of macrophysics scheme employed.  'park' for Park
 (1998); 'RK' for Rasch and Kristjansson (1998); 'CLUBB_SGS' clubb.
 Default: set by build-namelist
@@ -3467,7 +3467,7 @@ Default: 0 if <varname>eddy_scheme</varname> is 'HB', 1 otherwise.
 </entry>
 
 <entry id="eddy_scheme" type="char*16" category="pbl"
-       group="phys_ctl_nl" valid_values="HB,diag_TKE,HBR,CLUBB_SGS" >
+       group="phys_ctl_nl" valid_values="off,HB,diag_TKE,HBR,CLUBB_SGS" >
 Type of eddy scheme employed by the vertical diffusion package.  'HB' for
 Holtslag and Boville; 'diag_TKE' for diagnostic tke version of Grenier and
 Bretherton; 'HBR' for Rasch modified version of 'HB'.

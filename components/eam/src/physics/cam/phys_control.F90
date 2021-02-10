@@ -317,11 +317,11 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('phys_setopts: illegal value of shallow_scheme')
    endif
    if (.not. (eddy_scheme .eq. 'HB' .or. eddy_scheme .eq. 'HBR' .or. eddy_scheme .eq. 'diag_TKE' .or. &
-              eddy_scheme .eq. 'CLUBB_SGS') ) then
+              eddy_scheme .eq. 'CLUBB_SGS' .or. eddy_scheme .eq. 'off') ) then
       write(iulog,*)'phys_setopts: illegal value of eddy_scheme:', eddy_scheme
       call endrun('phys_setopts: illegal value of eddy_scheme')
    endif
-   if ((microp_scheme /= 'MG' .and. microp_scheme /= 'RK')) then
+   if (.not. (microp_scheme .eq. 'MG' .or. microp_scheme .eq. 'RK' .or. microp_scheme .eq. 'off') ) then
       write(iulog,*)'phys_setopts: illegal value of microp_scheme:', microp_scheme
       call endrun('phys_setopts: illegal value of microp_scheme')
    endif

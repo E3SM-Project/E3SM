@@ -32,27 +32,53 @@ subroutine mmf_surface_ac(state, cam_in, ptend)
   !-----------------------------------------------------------------------------
   ncol   = state%ncol
 
-  lq(2:) = .TRUE.
-  call physics_ptend_init(ptend, state%psetcols, "mmf_surface", ls=.true., lu=.true., lv=.true., lq=lq)
-  ! call physics_ptend_init(ptend, state%psetcols, "mmf_surface", lq=lq)
-
+  lq(:) = .TRUE.
+  call physics_ptend_init(ptend, state%psetcols, "mmf_surface_ac", ls=.true., lu=.true., lv=.true., lq=lq)
 
   do icol = 1,ncol
 
     g_dp = gravit * state%rpdel(icol,pver)
 
 #ifdef MMF_SFC1
-    ptend%u(icol,pver) = g_dp * cam_in%wsx(icol)
-    ptend%v(icol,pver) = g_dp * cam_in%wsy(icol)
+    ! all fluxes added in ac
+    ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)
+    ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1)
+    ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol)
+    ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol)
 #endif
 
 #ifdef MMF_SFC2
-    ! momentum fluxes in bc for this option
+    ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol)
+    ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol)
 #endif
 
 #ifdef MMF_SFC3
-    ptend%u(icol,pver) = g_dp * cam_in%wsx(icol) * 0.5
-    ptend%v(icol,pver) = g_dp * cam_in%wsy(icol) * 0.5
+    ! momentum fluxes in bc for this option
+#endif
+
+#ifdef MMF_SFC4
+    ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol) * 0.5
+    ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol) * 0.5
+#endif
+
+#ifdef MMF_SFC5
+    ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1)
+    ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol)
+    ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol)
+#endif
+
+#ifdef MMF_SFC6
+    ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1)
+    ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol) * 0.5
+    ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol) * 0.5
+#endif
+
+#ifdef MMF_SFC7
+    ! all fluxes added with parallel split
+    ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)    * 0.5
+    ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1) * 0.5
+    ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol)    * 0.5
+    ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol)    * 0.5
 #endif
 
     do m = 2,pcnst
@@ -82,30 +108,57 @@ subroutine mmf_surface_bc(state, cam_in, ptend)
   !-----------------------------------------------------------------------------
   ncol   = state%ncol
 
-  lq(1) = .TRUE.
-  call physics_ptend_init(ptend, state%psetcols, "mmf_surface", ls=.true., lu=.true., lv=.true., lq=lq)
+  lq(:) = .TRUE.
+  call physics_ptend_init(ptend, state%psetcols, "mmf_surface_bc", ls=.true., lu=.true., lv=.true., lq=lq)
 
   do icol = 1,ncol
 
     g_dp = gravit * state%rpdel(icol,pver)
 
-    ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)
-    ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1)
-
 #ifdef MMF_SFC1
-    ! momentum fluxes in ac for this option
+    ! all fluxes added in ac
 #endif
 
 #ifdef MMF_SFC2
+    ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)
+    ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1)
+    ! momentum fluxes in ac for this option
+#endif
+
+#ifdef MMF_SFC3
+    ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)
+    ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1)
     ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol)
     ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol)
 #endif
 
-#ifdef MMF_SFC3
+#ifdef MMF_SFC4
+    ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)
+    ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1)
     ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol) * 0.5
     ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol) * 0.5
 #endif
-    
+
+#ifdef MMF_SFC5
+    ! only SHF added in bc - will not work with MMF_CRM_SFC_FLX
+    ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)
+#endif
+
+#ifdef MMF_SFC6
+    ! combination of #4-5 - will not work with MMF_CRM_SFC_FLX
+    ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)
+    ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol) * 0.5
+    ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol) * 0.5
+#endif
+
+#ifdef MMF_SFC7
+    ! all fluxes added with parallel split
+    ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)    * 0.5
+    ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1) * 0.5
+    ptend%u(icol,pver)   = g_dp * cam_in%wsx(icol)    * 0.5
+    ptend%v(icol,pver)   = g_dp * cam_in%wsy(icol)    * 0.5
+#endif
+
   end do ! icol
 
 

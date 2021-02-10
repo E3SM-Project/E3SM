@@ -35,7 +35,7 @@ module crm_physics
    integer :: crm_qaerwat_idx, crm_dgnumwet_idx
    ! integer :: prec_dp_idx, snow_dp_idx, prec_sh_idx, snow_sh_idx
    integer :: prec_sed_idx, snow_sed_idx, snow_str_idx, prec_pcw_idx, snow_pcw_idx
-   integer :: cldo_idx, cld_idx, concld_idx
+   integer :: cldo_idx, cld_idx, concld_idx, iciwp_idx, iclwp_idx
 
    ! Physics buffer fields normally registered by offline parameterizations
    integer :: qme_idx
@@ -243,6 +243,10 @@ subroutine crm_physics_register()
    call pbuf_add_field('CLDO',  'global', dtype_r8, (/pcols, pver, dyn_time_lvls/), cldo_idx  )
    call pbuf_add_field('CLD',   'global', dtype_r8, (/pcols, pver, dyn_time_lvls/), cld_idx)
    call pbuf_add_field('CONCLD','global', dtype_r8, (/pcols, pver, dyn_time_lvls/), concld_idx)
+
+   
+   call pbuf_add_field('ICIWP', 'global', dtype_r8,(/pcols,pver/), iciwp_idx)  ! In cloud ice water path for radiation
+   call pbuf_add_field('ICLWP', 'global', dtype_r8,(/pcols,pver/), iclwp_idx)  ! In cloud liquid water path for radiation
 
    
    call pbuf_add_field('QME',   'physpkg',dtype_r8, (/pcols, pver/), qme_idx)
