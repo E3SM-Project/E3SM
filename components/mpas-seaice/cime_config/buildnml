@@ -270,16 +270,6 @@ def buildnml(case, caseroot, compname):
             grid_date += '201001'
             grid_prefix += 'mpassi.EC30to60E2r2.rstFromG-anvil'
 
-    elif ice_grid == 'EC30to60E2r2-1900':
-        decomp_date += '200908'
-        decomp_prefix += 'mpas-seaice.graph.info.'
-        grid_date += '201001'
-        grid_prefix += 'mpassi.EC30to60E2r2-1900.rstFromG-anvil'
-        if ice_ic_mode != 'spunup':
-            logger.warning("WARNING: The specified compset is requesting non-spunup seaice ICs")
-            logger.warning("         But this grid differs from EC30to60E2r2 only by its spinup")
-            logger.warning("         so this run will use spunup seaice ICs instead.")
-
     elif ice_grid == 'WC14to60E2r3':
         decomp_date += '200714'
         decomp_prefix += 'mpas-seaice.graph.info.'
@@ -288,16 +278,6 @@ def buildnml(case, caseroot, compname):
         if ice_ic_mode == 'spunup':
             grid_date += '201002'
             grid_prefix += 'mpassi.WC14to60E2r3.rstFromG-anvil'
-
-    elif ice_grid == 'WC14to60E2r3-1900':
-        grid_date += '201002'
-        grid_prefix += 'mpassi.WC14to60E2r3-1900.rstFromG-anvil'
-        decomp_date += '200714'
-        decomp_prefix += 'mpas-seaice.graph.info.'
-        if ice_ic_mode != 'spunup':
-            logger.warning("WARNING: The specified compset is requesting non-spunup seaice ICs")
-            logger.warning("         But this grid differs from WC14to60E2r3 only by its spinup")
-            logger.warning("         so this run will use spunup seaice ICs instead.")
 
 
     #--------------------------------------------------------------------

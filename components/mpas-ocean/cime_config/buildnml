@@ -275,17 +275,6 @@ def buildnml(case, caseroot, compname):
             ic_date += '201001'
             ic_prefix += 'mpaso.EC30to60E2r2.rstFromG-anvil'
 
-    elif ocn_grid == 'EC30to60E2r2-1900':
-        decomp_date += '200904'
-        decomp_prefix += 'mpas-o.graph.info.'
-        analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
-        ic_date += '201001'
-        ic_prefix += 'mpaso.EC30to60E2r2-1900.rstFromG-anvil'
-        if ocn_ic_mode != 'spunup':
-            logger.warning("WARNING: The specified compset is requesting non-spunup ocean ICs")
-            logger.warning("         But this grid differs from EC30to60E2r2 only by its spinup")
-            logger.warning("         so this run will use spunup ocean ICs instead.")
-
     elif ocn_grid == 'WC14to60E2r3':
         decomp_date += '200714'
         decomp_prefix += 'mpas-o.graph.info.'
@@ -296,17 +285,6 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date += '201002'
             ic_prefix += 'mpaso.WC14to60E2r3.rstFromG-anvil'
-
-    elif ocn_grid == 'WC14to60E2r3-1900':
-        decomp_date += '200714'
-        decomp_prefix += 'mpas-o.graph.info.'
-        analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
-        ic_date += '201002'
-        ic_prefix += 'mpaso.WC14to60E2r3-1900.rstFromG-anvil'
-        if ocn_ic_mode != 'spunup':
-            logger.warning("WARNING: The specified compset is requesting non-spunup ocean ICs")
-            logger.warning("         But this grid differs from WC14to60E2r3 only by its spinup")
-            logger.warning("         so this run will use spunup ocean ICs instead.")
 
 
     #--------------------------------------------------------------------
