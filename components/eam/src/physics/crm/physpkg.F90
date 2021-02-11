@@ -2778,7 +2778,7 @@ end if
 
       ! set all ptend%lq to false as they will be set in modal_aero_calcsize_sub
       ptend%lq(:) = .false.
-      call modal_aero_calcsize_sub (state, ptend, ztodt, pbuf)
+      call modal_aero_calcsize_sub (state, ztodt, pbuf, ptend)
       call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=mmf_clear_rh)
 
       ! ECPP handles aerosol wet deposition, so tendency from wet depostion is 
