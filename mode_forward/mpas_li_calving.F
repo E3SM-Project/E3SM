@@ -1652,7 +1652,6 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: eigencalvingParameter
       real (kind=RKIND), dimension(:), pointer :: calvingThickness
-      real (kind=RKIND), dimension(:), pointer :: requiredCalvingVolumeRate
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: eMax
       real (kind=RKIND), dimension(:), pointer :: sigmamax, sigmamin, sigmaxx, sigmaxy, sigmayx, sigmayy 
@@ -1721,7 +1720,6 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
          call mpas_pool_get_array(geometryPool, 'eigencalvingParameter', eigencalvingParameter)
-         call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeRate', requiredCalvingVolumeRate)
          call mpas_pool_get_array(geometryPool, 'damage', damage)
          call mpas_pool_get_array(geometryPool, 'ddamagedt', ddamagedt)
          call mpas_pool_get_array(geometryPool, 's0', s0)
