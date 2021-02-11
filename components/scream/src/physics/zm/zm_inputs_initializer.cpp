@@ -16,7 +16,7 @@ std::vector<string> zm_inputs = {"limcnv_in", "no_deep_pbl_in","lchnk", "ncol", 
       "dlf", "pflx", "zdu", "rprd", "mu", "md", "du", "eu", "ed",
       "dp", "dsubcld", "jt", "maxg", "ideep", "lengath", "ql",
       "rliq", "landfrac", "hu_nm1", "cnv_nm1", "tm1", "qm1", "t_star",
-      "q_star", "dcape", "q", "tend_s", "tend_q", "cld", "snow",
+      "q_star", "dcape", "qv", "tend_s", "tend_q", "cld", "snow",
       "ntprprd", "ztodt", "ntsnprd", "flxprec", "flxsnow", "pguall",
       "pgdall", "icwu", "ncnst", "fracis"};
 
@@ -106,7 +106,7 @@ void set_grid_opts(){
   GridOpts t_star;
   GridOpts q_star;
   GridOpts dcape;
-  GridOpts q;
+  GridOpts qv;
   GridOpts tend_s;
   GridOpts tend_q;
   GridOpts cld;
@@ -171,7 +171,7 @@ void set_grid_opts(){
   set_grid_opts_helper(t_star, "t_star", true, NULL, SCALAR_3D_MID);
   set_grid_opts_helper(q_star, "q_star", true, NULL, SCALAR_3D_MID);
   set_grid_opts_helper(dcape, "dcape", true, NULL, LINEAR);
-  set_grid_opts_helper(q, "q", true, NULL, SCALAR_3D_MID);
+  set_grid_opts_helper(qv, "qv", true, NULL, SCALAR_3D_MID);
   set_grid_opts_helper(tend_s, "tend_s", true, NULL, LINEAR);
   set_grid_opts_helper(tend_q, "tend_q", true, NULL, LINEAR);
   set_grid_opts_helper(cld, "cld", true, NULL, LINEAR);
