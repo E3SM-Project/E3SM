@@ -20,17 +20,18 @@ from CIME.utils import expect, run_cmd_no_fail, safe_copy, SharedArea
 from CIME.buildnml import create_namelist_infile, parse_input
 
 # SCREAM imports
-from utils import ensure_yaml
+from utils import ensure_yaml, multilevel_dict_change
 ensure_yaml()
 import yaml
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def ordered_load(stream, Loader=yaml.SafeLoader, object_pairs_hook=OrderedDict):
+def ordered_load(item, Loader=yaml.SafeLoader, object_pairs_hook=OrderedDict):
 ###############################################################################
     """
     Copied from: https://stackoverflow.com/a/21912744
+    Added ability to pass filename
     """
     class OrderedLoader(Loader):
         pass
@@ -40,7 +41,34 @@ def ordered_load(stream, Loader=yaml.SafeLoader, object_pairs_hook=OrderedDict):
     OrderedLoader.add_constructor(
         yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
         construct_mapping)
-    return yaml.load(stream, OrderedLoader)
+
+    if isinstance(item, str) and item.endswith(".yaml"):
+        # Item is a filepath
+        return yaml.load(open(item, "r"), OrderedLoader)
+    else:
+        return yaml.load(item, OrderedLoader)
+
+###############################################################################
+def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
+###############################################################################
+    """
+    Copied from: https://stackoverflow.com/a/21912744
+    Added ability to pass filename
+    """
+    class OrderedDumper(Dumper):
+        pass
+    def _dict_representer(dumper, data):
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            data.items())
+    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+
+    if isinstance(item, str) and item.endswith(".yaml"):
+        # Item is a filepath
+        with open(item, "w") as fd:
+            return yaml.dump(data, fd, OrderedDumper, **kwds)
+    else:
+        return yaml.dump(data, item, OrderedDumper, **kwds)
 
 ###############################################################################
 def buildnml(case, caseroot, compname):
@@ -49,9 +77,16 @@ def buildnml(case, caseroot, compname):
 
     # Copy data inputs to a place where they are convenient to find the run
     # area.
-    rundir = case.get_value("RUNDIR")
-    target = os.path.join(rundir, "data")
-    src    = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
+    rundir   = case.get_value("RUNDIR")
+    target   = os.path.join(rundir, "data")
+    src      = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
+    yaml_tgt = os.path.join(target, "scream_input.yaml")
+
+    # Specify yaml input changes that are driven by case env
+    # maps key-tuple to case env name to lookup
+    yaml_changes = {
+        ("SCREAM", "Start Date"): "RUN_STARTDATE",
+    }
 
     # Copy scream/data to rundir/data
     with SharedArea():
@@ -64,9 +99,17 @@ def buildnml(case, caseroot, compname):
             if not os.path.exists(os.path.join(target, item)):
                 safe_copy(os.path.join(src, item), target)
 
+                if item == "scream_input.yaml":
+                    scream_input = ordered_load(yaml_tgt)
+
+                    # Change yaml values based on case env
+                    for keys, envname in yaml_changes.items():
+                        multilevel_dict_change(scream_input, keys, case.get_value(envname))
+
+                    ordered_dump(scream_input, yaml_tgt)
+
     # Load scream inputs from yaml
-    with open(os.path.join(target, "scream_input.yaml"), "r") as fd:
-        scream_input = ordered_load(fd)
+    scream_input = ordered_load(yaml_tgt)
 
     # Create homme namelists from scream inputs
     homme_nl_path = os.path.join(rundir, scream_input["Atmosphere Driver"]["Grids Manager"]["Dynamics Driven"]["Dynamics Namelist File Name"])

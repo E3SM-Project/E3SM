@@ -495,3 +495,19 @@ def ensure_yaml():
         site.main() # needed to "rehash" available libs
 
         import yaml
+
+###############################################################################
+def multilevel_dict_change(ml_dict, keys, value):
+###############################################################################
+    """
+    Change an existing value in a multi-level dict (expects all keys to already
+    be in dict).
+    """
+    num_keys = len(keys)
+    for idx, key in enumerate(keys):
+        expect(key in ml_dict, "No key {} in {}-th level of ml_dict {}".format(key, idx, ml_dict))
+        if idx == num_keys-1:
+            # Last key
+            ml_dict[key] = value
+        else:
+            ml_dict = ml_dict[key]
