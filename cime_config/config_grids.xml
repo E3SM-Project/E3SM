@@ -659,7 +659,7 @@
       <grid name="rof">r2</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>oQU240</mask>
+      <mask>oQU480</mask>
     </model_grid>
 
     <model_grid alias="r05_r05" compset="(DOCN|XOCN|SOCN|AQP1)">
@@ -2797,6 +2797,7 @@
     <domain name="r2">
       <nx>180</nx>
       <ny>90</ny>
+      <file grid="atm|lnd" mask="oQU480">$DIN_LOC_ROOT/share/domains/domain.lnd.r2_oQU480.210211.nc</file>
       <desc>r2 is 2 degree river routing grid (only used for testing):</desc>
     </domain>
 
