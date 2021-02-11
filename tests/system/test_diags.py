@@ -62,10 +62,39 @@ def count_images(directory):
     return len(images)
 
 
+def compare_images(test, mismatched_images, image_name, path_to_actual_png, path_to_expected_png):
+    # https://stackoverflow.com/questions/35176639/compare-images-python-pil
+
+    actual_png = Image.open(path_to_actual_png).convert('RGB')
+    expected_png = Image.open(path_to_expected_png).convert('RGB')
+    diff = ImageChops.difference(actual_png, expected_png)
+
+    bbox = diff.getbbox()
+    if not bbox:
+        # If `diff.getbbox()` is None, then the images are in theory equal
+        test.assertIsNone(diff.getbbox())
+    else:
+        # Sometimes, a few pixels will differ, but the two images appear identical.
+        # https://codereview.stackexchange.com/questions/55902/fastest-way-to-count-non-zero-pixels-using-python-and-pillow
+        nonzero_pixels = diff.crop(bbox).point(lambda x: 255 if x else 0).convert("L").point(bool).getdata()
+        num_nonzero_pixels = sum(nonzero_pixels)
+        print('\npath_to_actual_png={}'.format(path_to_actual_png))
+        print('path_to_expected_png={}'.format(path_to_expected_png))
+        print('diff has {} nonzero pixels.'.format(num_nonzero_pixels))
+        width, height = expected_png.size
+        num_pixels = width * height
+        print('total number of pixels={}'.format(num_pixels))
+        fraction = num_nonzero_pixels / num_pixels
+        print('num_nonzero_pixels/num_pixels fraction={}'.format(fraction))
+        # Fraction of mismatched pixels should be less than 0.02%
+        if fraction >= 0.0002:
+            mismatched_images.append(image_name)
+
+
 class TestAllSets(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         command = 'python all_sets.py -d all_sets.cfg'
         output_list = subprocess.check_output(command.split()).decode('utf-8').splitlines()
         TestAllSets.results_dir = get_results_dir(output_list)
@@ -97,32 +126,13 @@ class TestAllSets(unittest.TestCase):
         self.assertIsNotNone(option_value)
         self.assertIsNotNone(href)
 
-        # https://stackoverflow.com/questions/35176639/compare-images-python-pil
+        image_name = os.path.split(png_path)[-1]
         path_to_actual_png = full_png_path
         path_to_expected_png = '../unit_test_images/{}'.format(png_path)
-        actual_png = Image.open(path_to_actual_png).convert('RGB')
-        expected_png = Image.open(path_to_expected_png).convert('RGB')
-        diff = ImageChops.difference(actual_png, expected_png)
 
-        bbox = diff.getbbox()
-        if not bbox:
-            # If `diff.getbbox()` is None, then the images are in theory equal
-            self.assertIsNone(diff.getbbox())
-        else:
-            # Sometimes, a few pixels will differ, but the two images appear identical.
-            # https://codereview.stackexchange.com/questions/55902/fastest-way-to-count-non-zero-pixels-using-python-and-pillow
-            nonzero_pixels = diff.crop(bbox).point(lambda x: 255 if x else 0).convert("L").point(bool).getdata()
-            num_nonzero_pixels = sum(nonzero_pixels)
-            print('\npath_to_actual_png={}'.format(path_to_actual_png))
-            print('path_to_expected_png={}'.format(path_to_expected_png))
-            print('diff has {} nonzero pixels.'.format(num_nonzero_pixels))
-            width, height = expected_png.size
-            num_pixels = width * height
-            print('total number of pixels={}'.format(num_pixels))
-            fraction = num_nonzero_pixels/num_pixels
-            print('num_nonzero_pixels/num_pixels fraction={}'.format(fraction))
-            # Fraction of mismatched pixels should be less than 0.01%
-            self.assertTrue(fraction < 0.0001)
+        mismatched_images = []
+        compare_images(self, mismatched_images, image_name, path_to_actual_png, path_to_expected_png)
+        self.assertEqual(mismatched_images, [])
 
     def check_plots_generic(self, set_name, case_id, ref_name, variables, region, plev=None):
         case_id_lower = case_id.lower()
