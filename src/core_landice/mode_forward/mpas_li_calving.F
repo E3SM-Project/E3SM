@@ -2537,7 +2537,6 @@ module li_calving
       ! local variables
       !-----------------------------------------------------------------
 !      logical, pointer :: config_print_calving_info
-      real (kind=RKIND), dimension(:), pointer :: requiredCalvingVolumeRate
          !< Input: the specified calving flux at calving front margin cells
       real (kind=RKIND), dimension(:), pointer :: calvingThickness !< Output: the applied calving rate as a thickness
       real (kind=RKIND), dimension(:), pointer :: thickness, damage, bedTopography
@@ -2575,7 +2574,6 @@ module li_calving
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-      call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeRate', requiredCalvingVolumeRate)
       call mpas_pool_get_array(geometryPool, 'uncalvedVolume', uncalvedVolume)
       call mpas_pool_get_array(geometryPool, 'damage', damage)
       call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
