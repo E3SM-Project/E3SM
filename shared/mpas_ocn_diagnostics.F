@@ -186,11 +186,14 @@ contains
 
       call ocn_relativeVorticity_circulation(relativeVorticity, circulation, normalVelocity, err)
 
+<<<<<<< HEAD
 #ifdef MPAS_OPENACC
       !$acc update device(relativeVorticity)
 #endif
 >>>>>>> Optimize diagnostics solve GPU data transfers
 
+=======
+>>>>>>> Add new invAreaCell to ocn_mesh
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdge, normalVelocity, normalTransportVelocity, &
              normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
@@ -202,7 +205,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc update host(tangentialVelocity, relativeVorticityCell, kineticEnergyCell, &
       !$acc             divergence, vertVelocityTop, vertTransportVelocityTop, &
-      !$acc             vertGMBolusVelocityTop)
+      !$acc             vertGMBolusVelocityTop, relativeVorticity, circulation)
 #endif
 
 >>>>>>> Optimize diagnostics solve GPU data transfers
@@ -280,7 +283,7 @@ contains
                 surfacePressure, montgomeryPotential, pressure)
 
 #ifdef MPAS_OPENACC
-      !$acc update host(zMid, zTop)
+      !$acc update host(zTop)
       !$acc exit data copyout(ssh)
 #endif
 
@@ -299,6 +302,10 @@ contains
 #endif
 
       end if    ! full_compute
+
+#ifdef MPAS_OPENACC
+      !$acc update host(zMid)
+#endif
 
       !
       ! extrapolate tracer values to ocean surface
@@ -332,6 +339,10 @@ contains
 
       if ( full_compute ) then
 
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(activeTracers)
+#endif
+
          !
          ! average tracer values over the ocean surface layer
          ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
@@ -339,6 +350,12 @@ contains
                 layerThickEdge, normalVelocity, tracersSurfaceLayerValue,  &
                 indexSurfaceLayerDepth, normalVelocitySurfaceLayer, &
                 sfcFlxAttCoeff, surfaceFluxAttenuationCoefficientRunoff)
+
+#ifdef MPAS_OPENACC
+         !$acc exit data delete(activeTracers)
+         !$acc update host(tracersSurfaceLayerValue, indexSurfaceLayerDepth, &
+         !$acc             normalVelocitySurfaceLayer)
+#endif
 
       end if ! full_compute
 
@@ -457,12 +474,8 @@ contains
             end do
          end do
       end do
-#ifdef MPAS_OPENACC
-      !$acc update host(circulation, relativeVorticity)
-#else
       !$omp end do
       !$omp end parallel
-#endif
 
    !--------------------------------------------------------------------
 
@@ -643,7 +656,7 @@ contains
       !$omp do schedule(runtime) private(invAreaCell1, i, j, iVertex, k)
       do iCell = 1, nCells
         kineticEnergyVertexOnCells(:, iCell) = 0.0_RKIND
-        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+        invAreaCell1 = invAreaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           j = kiteIndexOnCell(i, iCell)
           iVertex = verticesOnCell(i, iCell)
@@ -795,16 +808,33 @@ contains
                                                      + normalizedPlanetaryVorticityVertex(k, vertex2))
         end do
       end do
+<<<<<<< HEAD
+=======
+#ifdef MPAS_OPENACC
+      !$acc update host(normalizedRelativeVorticityEdge)
+      !$acc exit data delete(normalizedRelativeVorticityVertex, normalizedPlanetaryVorticityVertex)
+#else
+>>>>>>> Add new invAreaCell to ocn_mesh
       !$omp end do
       !$omp end parallel
 
       nCells = nCellsHalo ( 1 )
 
+<<<<<<< HEAD
+=======
+#ifdef MPAS_OPENACC
+      !$acc parallel loop gang vector &
+      !$acc          present(normalizedRelativeVorticityCell, maxLevelCell, nEdgesOnCell, &
+      !$acc                  areaCell, kiteIndexOnCell, verticesOnCell, kiteAreasOnVertex, &
+      !$acc                  invAreaCell) &
+      !$acc          private(invAreaCell1, i, j, iVertex, k)
+#else
+>>>>>>> Add new invAreaCell to ocn_mesh
       !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, i, j, iVertex, k)
       do iCell = 1, nCells
         normalizedRelativeVorticityCell(:, iCell) = 0.0_RKIND
-        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+        invAreaCell1 = invAreaCell(iCell)
 
         do i = 1, nEdgesOnCell(iCell)
           j = kiteIndexOnCell(i, iCell)
@@ -945,8 +975,14 @@ contains
       ! Brunt-Vaisala frequency (this has units of s^{-2})
       !
       coef = -gravity / rho_sw
+#ifdef MPAS_OPENACC
+      !$acc parallel loop gang vector &
+      !$acc          present(BruntVaisalaFreqTop, displacedDensity, density, zMid, maxLevelCell) &
+      !$acc          private(k)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
+#endif
       do iCell = 1, nCellsAll
          BruntVaisalaFreqTop(minLevelCell(iCell),iCell) = 0.0_RKIND
          do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
@@ -963,7 +999,7 @@ contains
 
       nCells = nCellsHalo( 2 )
 #ifdef MPAS_OPENACC
-      !$acc update device(BruntVaisalaFreqTop, edgeAreaFractionOfCell)
+      !$acc update device(edgeAreaFractionOfCell)
 
       !$acc parallel loop gang vector &
       !$acc          present(RiTopOfCell, maxLevelCell, nEdgesOnCell, edgesOnCell, normalVelocity, &
@@ -971,7 +1007,7 @@ contains
       !$acc          private(k, i, iEdge, delU2, shearSquared, shearMean)
 #else
       !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, delU2, shearMean)
+      !$omp do schedule(runtime) private(k, shearSquared, i, iEdge, delU2, shearMean)
 #endif
       do iCell=1,nCells
          RiTopOfCell(:,iCell) = 100.0_RKIND
@@ -991,6 +1027,10 @@ contains
       end do
       !$omp end do
       !$omp end parallel
+
+#ifdef MPAS_OPENACC
+      !$acc update host(BruntVaisalaFreqTop)
+#endif
 
    end subroutine ocn_diagnostic_solve_richardson!}}}
 
@@ -1070,8 +1110,6 @@ contains
         surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
 
 #ifdef MPAS_OPENACC
-        !$acc enter data copyin(activeTracers)
-
         !$acc parallel loop gang vector &
         !$acc          present(tracersSurfaceLayerValue, indexSurfaceLayerDepth, maxLevelCell, &
         !$acc                  layerThickness, activeTracers) &
@@ -1102,13 +1140,8 @@ contains
           tracersSurfaceLayerValue(:,iCell) = (tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer) &
                                             * activeTracers(:,k,iCell) * layerThickness(k,iCell)) / surfaceLayerDepth
         enddo
-#ifdef MPAS_OPENACC
-        !$acc update host(tracersSurfaceLayerValue, indexSurfaceLayerDepth)
-        !$acc exit data delete(activeTracers)
-#else
         !$omp end do
         !$omp end parallel
-#endif
 
         nEdges = nEdgesOwned
 
@@ -1119,8 +1152,6 @@ contains
 
         surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
 #ifdef MPAS_OPENACC
-        !$acc update device(layerThicknessEdge)
-
         !$acc parallel loop gang vector &
         !$acc          present(normalVelocitySurfaceLayer, cellsOnEdge, maxLevelEdgeTop, &
         !$acc                  layerThicknessEdge, normalVelocity) &
@@ -1155,12 +1186,8 @@ contains
                                               * normalVelocity(k,iEdge) * layerThicknessEdge(k,iEdge)) / surfaceLayerDepth
           end if
         enddo
-#ifdef MPAS_OPENACC
-        !$acc update host(normalVelocitySurfaceLayer)
-#else
         !$omp end do
         !$omp end parallel
-#endif
 
       endif
 
@@ -1262,7 +1289,7 @@ contains
       !$acc parallel loop gang vector &
       !$acc          present(relativeVorticityCell, areaCell, nEdgesOnCell, &
       !$acc                  kiteIndexOnCell, verticesOnCell, maxLevelCell, &
-      !$acc                  relativeVorticity, kiteAreasOnVertex) &
+      !$acc                  relativeVorticity, kiteAreasOnVertex, invAreaCell) &
       !$acc          private(invAreaCell1, i, j, iVertex, k)
 #else
 >>>>>>> Optimize diagnostics solve GPU data transfers
@@ -1270,7 +1297,7 @@ contains
       !$omp do schedule(runtime) private(invAreaCell1, i, j, k, iVertex)
       do iCell = 1, nCells
         relativeVorticityCell(:,iCell) = 0.0_RKIND
-        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+        invAreaCell1 = invAreaCell(iCell)
 
         do i = 1, nEdgesOnCell(iCell)
           j = kiteIndexOnCell(i, iCell)
@@ -1302,7 +1329,7 @@ contains
       !$acc                  areaCell, nEdgesOnCell, edgesOnCell, edgeSignOnCell, dcEdge, dvEdge, &
       !$acc                  maxLevelCell, normalVelocity, divergence, layerThicknessEdge, &
       !$acc                  normalTransportVelocity, normalGMBolusVelocity, vertVelocityTop, &
-      !$acc                  vertTransportVelocityTop, vertGMBolusVelocityTop) &
+      !$acc                  vertTransportVelocityTop, vertGMBolusVelocityTop, invAreaCell) &
       !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
       !$acc                  dvEdge_temp, k, r_tmp) 
 #else
@@ -1321,7 +1348,7 @@ contains
          div_hu(:) = 0.0_RKIND
          div_huTransport(:) = 0.0_RKIND
          div_huGMBolus(:) = 0.0_RKIND
-         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+         invAreaCell1 = invAreaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             edgeSignOnCell_temp = edgeSignOnCell(i, iCell)
@@ -1894,7 +1921,7 @@ contains
 
       integer :: iEdge, iCell, k, i, nCells
 
-      real (kind=RKIND) :: flux, invAreaCell, div_hu_btr
+      real (kind=RKIND) :: flux, invAreaCell1, div_hu_btr
 
       ! Scratch Arrays
       ! projectedSSH: projected SSH at a new time
@@ -1928,17 +1955,17 @@ contains
       !
       ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
       !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k, flux, div_hu_btr)
+      !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k, flux, div_hu_btr)
       do iCell = 1, nCells
          div_hu(:,iCell) = 0.0_RKIND
          div_hu_btr = 0.0_RKIND
-         invAreaCell = 1.0_RKIND / areaCell(iCell)
+         invAreaCell1 = invAreaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
 
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                flux = layerThicknessEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) &
-                    * invAreaCell
+                    * invAreaCell1
                div_hu(k,iCell) = div_hu(k,iCell) - flux
                div_hu_btr = div_hu_btr - flux
             end do

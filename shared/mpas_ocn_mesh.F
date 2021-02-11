@@ -121,6 +121,9 @@ module ocn_mesh
       meshDensity, &! density of mesh
       angleEdge        ! angle the edge normal makes with local east
 
+   real(kind=RKIND), public, dimension(:), allocatable :: &
+      invAreaCell   ! inverse of area of each cell
+
    ! Multiplicative masks and vectors for various conditions
    real(kind=RKIND), public, dimension(:, :), allocatable :: &
       edgeMask, &! mask to denote active edges    with depth
@@ -468,16 +471,17 @@ contains
          call mpas_pool_get_array(meshPool, 'boundaryCell', &
                                   boundaryCellTmp)
 
-         allocate ( &
-            edgeMask(nVertLevels, nEdgesAll+1), &
-            cellMask(nVertLevels, nCellsAll+1), &
-            vertexMask(nVertLevels, nVerticesAll+1), &
-            boundaryEdge(nVertLevels, nEdgesAll+1), &
-            boundaryCell(nVertLevels, nCellsAll+1), &
-            boundaryVertex(nVertLevels, nVerticesAll+1), &
-            edgeSignOnCell(maxEdges, nCellsAll+1), &
-            edgeSignOnVertex(maxEdges, nVerticesAll+1), &
-            highOrderAdvectionMask(nVertLevels, nEdgesAll+1))
+         allocate (                                           &
+            edgeMask(nVertLevels, nEdgesAll+1),               &
+            cellMask(nVertLevels, nCellsAll+1),               &
+            vertexMask(nVertLevels, nVerticesAll+1),          &
+            boundaryEdge(nVertLevels, nEdgesAll+1),           &
+            boundaryCell(nVertLevels, nCellsAll+1),           &
+            boundaryVertex(nVertLevels, nVerticesAll+1),      &
+            edgeSignOnCell(maxEdges, nCellsAll+1),            &
+            edgeSignOnVertex(maxEdges, nVerticesAll+1),       &
+            highOrderAdvectionMask(nVertLevels, nEdgesAll+1), &
+            invAreaCell(nCellsAll+1))
 
          do n = 1, nCellsAll+1
          do k = 1, nVertLevels
@@ -513,6 +517,11 @@ contains
             edgeSignOnVertex(k, n) = real(edgeSignOnVertexTmp(k, n), RKIND)
          end do
          end do
+
+         do n = 1, nCellsAll    ! debug, mdt :: areaCell(nCellsAll+1 is later set to 1e-34)
+            invAreaCell(n) = 1.0_RKIND / areaCell(n)
+         end do
+         invAreaCell(nCellsAll+1) = 0.0_RKIND    ! debug, mdt
 
          ! Copy structure and components to accelerator
          ! Must manually do a deep copy with structure itself copied first.
@@ -579,6 +588,7 @@ contains
          !$acc                   dcEdge,                   &
          !$acc                   dvEdge,                   &
          !$acc                   areaCell,                 &
+         !$acc                   invAreaCell,              &
          !$acc                   areaTriangle,             &
          !$acc                   bottomDepth,              &
          !$acc                   refBottomDepth,           &
@@ -715,6 +725,7 @@ contains
       !$acc                  dcEdge,            &
       !$acc                  dvEdge,            &
       !$acc                  areaCell,          &
+      !$acc                  invAreaCell,       &
       !$acc                  areaTriangle,      &
       !$acc                  bottomDepth,       &
       !$acc                  refBottomDepth,    &
@@ -829,18 +840,19 @@ contains
                cellTangentPlane, &
                coeffs_reconstruct)
 
-      deallocate (nEdgesHalo, &
-                  nCellsHalo, &
-                  nVerticesHalo, &
-                  edgeMask, &
-                  cellMask, &
-                  vertexMask, &
-                  boundaryEdge, &
-                  boundaryCell, &
-                  boundaryVertex, &
-                  edgeSignOnCell, &
-                  edgeSignOnVertex, &
-                  highOrderAdvectionMask)
+      deallocate (nEdgesHalo,             &
+                  nCellsHalo,             &
+                  nVerticesHalo,          &
+                  edgeMask,               &
+                  cellMask,               &
+                  vertexMask,             &
+                  boundaryEdge,           &
+                  boundaryCell,           &
+                  boundaryVertex,         &
+                  edgeSignOnCell,         &
+                  edgeSignOnVertex,       &
+                  highOrderAdvectionMask, &
+                  invAreaCell)
 
 !-------------------------------------------------------------------------------
 
@@ -1161,6 +1173,7 @@ contains
       !$acc               dcEdge,                   &
       !$acc               dvEdge,                   &
       !$acc               areaCell,                 &
+      !$acc               invAreaCell,              &
       !$acc               areaTriangle,             &
       !$acc               bottomDepth,              &
       !$acc               refBottomDepth,           &
