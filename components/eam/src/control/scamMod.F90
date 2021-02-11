@@ -141,6 +141,9 @@ module scamMod
        
   real(r8), public ::  scm_relaxation_low      ! lowest level to apply relaxation
   real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation
+
+  real(r8), public :: iop_perturb_high         ! higest level to apply perturbations
+                                               ! to temperature profile (doubly periodic mode)
        
   real(r8), public, pointer :: loniop(:)
   real(r8), public, pointer :: latiop(:)
@@ -210,7 +213,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
         scm_relaxation_low_out, scm_relaxation_high_out, &
         scm_diurnal_avg_out, scm_crm_mode_out, scm_observed_aero_out, &
         swrad_off_out, lwrad_off_out, precip_off_out, scm_clubb_iop_name_out,&
-        iop_mode_out)
+        iop_mode_out, iop_perturb_high_out)
 !-----------------------------------------------------------------------
    real(r8), intent(out), optional :: scmlat_out,scmlon_out
    character*(max_path_len), intent(out), optional ::  iopfile_out
@@ -225,7 +228,8 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    logical, intent(out), optional ::  precip_off_out
    logical, intent(out), optional ::  iop_mode_out
    real(r8), intent(out), optional ::  scm_relaxation_low_out
-   real(r8), intent(out), optional ::  scm_relaxation_high_out   
+   real(r8), intent(out), optional ::  scm_relaxation_high_out
+   real(r8), intent(out), optional ::  iop_perturb_high_out
    character(len=*), intent(out), optional ::  scm_clubb_iop_name_out
 
    if ( present(scmlat_out) )           scmlat_out     = -999._r8
@@ -235,7 +239,8 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(scm_iop_srf_prop_out) )scm_iop_srf_prop_out  = .false.
    if ( present(scm_relaxation_out) )   scm_relaxation_out  = .false.
    if ( present(scm_relaxation_low_out) ) scm_relaxation_low_out = 1050.0_r8
-   if ( present(scm_relaxation_high_out) ) scm_relaxation_high_out = 0.e3_r8   
+   if ( present(scm_relaxation_high_out) ) scm_relaxation_high_out = 0.e3_r8
+   if ( present(scm_relaxation_high_out) ) iop_perturb_high_out = 1050.0_r8
    if ( present(scm_diurnal_avg_out) )  scm_diurnal_avg_out = .false.
    if ( present(scm_crm_mode_out) )     scm_crm_mode_out  = .false.
    if ( present(scm_observed_aero_out)) scm_observed_aero_out = .false.
@@ -252,7 +257,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_relaxation_low_in, scm_relaxation_high_in, &
                          scm_diurnal_avg_in, scm_crm_mode_in, scm_observed_aero_in, &
                          swrad_off_in, lwrad_off_in, precip_off_in, scm_clubb_iop_name_in,&
-                         iop_mode_in)
+                         iop_mode_in, iop_perturb_high_in)
 !-----------------------------------------------------------------------
   real(r8), intent(in), optional       :: scmlon_in, scmlat_in
   character*(max_path_len), intent(in), optional :: iopfile_in
@@ -268,7 +273,8 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   logical, intent(in), optional        :: iop_mode_in
   character(len=*), intent(in), optional :: scm_clubb_iop_name_in
   real(r8), intent(in), optional       :: scm_relaxation_low_in
-  real(r8), intent(in), optional       :: scm_relaxation_high_in  
+  real(r8), intent(in), optional       :: scm_relaxation_high_in
+  real(r8), intent(in), optional       :: iop_perturb_high_in
   integer ncid,latdimid,londimid,latsiz,lonsiz,latid,lonid,ret,i
   integer latidx,lonidx
   real(r8) ioplat,ioplon
@@ -295,8 +301,12 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   
   if (present (scm_relaxation_high_in)) then
      scm_relaxation_high=scm_relaxation_high_in
-  endif   
-  
+  endif
+
+  if (present (iop_perturb_high_in)) then
+     iop_perturb_high=iop_perturb_high_in
+  endif
+
   if (present (scm_diurnal_avg_in)) then
      scm_diurnal_avg=scm_diurnal_avg_in
   endif
@@ -334,6 +344,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   call mpibcast(scm_relaxation,1,mpilog,0,mpicom)
   call mpibcast(scm_relaxation_high,1,mpir8,0,mpicom)
   call mpibcast(scm_relaxation_low,1,mpir8,0,mpicom)
+  call mpibcast(iop_perturb_high,1,mpir8,0,mpicom)
   call mpibcast(scm_diurnal_avg,1,mpilog,0,mpicom)
   call mpibcast(scm_crm_mode,1,mpilog,0,mpicom)
   call mpibcast(scm_observed_aero,1,mpilog,0,mpicom)

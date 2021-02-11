@@ -20,7 +20,7 @@ module inidat
   use spmd_utils,   only: iam, masterproc
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
-  use scamMod, only: single_column, precip_off, scmlat, scmlon, iop_mode
+  use scamMod, only: single_column, precip_off, scmlat, scmlon, iop_mode, iop_perturb_high
   implicit none
   private
   public read_inidat
@@ -80,6 +80,7 @@ contains
     logical :: found
     integer :: kptr, m_cnst
     integer :: lsize
+    real(r8) :: p_ref(nlev)
 
     integer,parameter :: pcnst = PCNST
     integer(iMap), pointer :: ldof(:) => NULL() ! Basic (2D) grid dof
@@ -285,55 +286,6 @@ contains
           end do
        end do
     end do
-
-    if (pertlim .ne. D0_0) then
-      if(masterproc) then
-        write(iulog,*) trim(subname), ': Adding random perturbation bounded', &
-                       'by +/- ', pertlim, ' to initial temperature field'
-      end if
-
-      if (new_random) then
-        rndm_seed_sz = 1
-      else
-        call random_seed(size=rndm_seed_sz)
-      endif
-      allocate(rndm_seed(rndm_seed_sz))
-
-      do ie=1,nelemd
-        ! seed random number generator based on element ID
-        ! (possibly include a flag to allow clock-based random seeding)
-        rndm_seed(:) = elem(ie)%GlobalId
-        if (seed_custom > 0) rndm_seed(:) = ieor( rndm_seed(1) , int(seed_custom,kind(rndm_seed(1))) )
-        if (seed_clock) then
-          call system_clock(sysclk)
-          rndm_seed(:) = ieor( sysclk , int(rndm_seed(1),kind(sysclk)) )
-        endif
-        if (new_random) then
-          call init_ranx(rndm_seed(1))
-        else
-          call random_seed(put=rndm_seed)
-        endif
-        do i=1,np
-          do j=1,np
-            do k=1,nlev
-              if (new_random) then
-                pertval = ranx()
-              else
-                call random_number(pertval)
-              endif
-              pertval = D2_0*pertlim*(D0_5 - pertval)
-#ifdef MODEL_THETA_L
-              elem(ie)%derived%FT(i,j,k) = elem(ie)%derived%FT(i,j,k)*(D1_0 + pertval)
-#else
-              elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
-#endif
-            end do
-          end do
-        end do
-      end do
-
-      deallocate(rndm_seed)
-    end if
 
     if (associated(ldof)) then
        call endrun(trim(subname)//': ldof should not be associated')
@@ -558,6 +510,69 @@ contains
       if (iop_mode) call scm_broadcast()
       call scm_setinitial(elem)
     endif
+
+    if (pertlim .ne. D0_0) then
+      if(masterproc) then
+        write(iulog,*) trim(subname), ': Adding random perturbation bounded', &
+                       'by +/- ', pertlim, ' to initial temperature field'
+      end if
+
+      if (iop_mode) then
+        ! Restrict perturbations to lowest layers based on reference pressure
+        do k=1,nlev
+          p_ref(k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*hvcoord%ps0
+        enddo
+      endif
+
+      if (new_random) then
+        rndm_seed_sz = 1
+      else
+        call random_seed(size=rndm_seed_sz)
+      endif
+      allocate(rndm_seed(rndm_seed_sz))
+
+      do ie=1,nelemd
+        ! seed random number generator based on element ID
+        ! (possibly include a flag to allow clock-based random seeding)
+        rndm_seed(:) = elem(ie)%GlobalId
+        if (seed_custom > 0) rndm_seed(:) = ieor( rndm_seed(1) , int(seed_custom,kind(rndm_seed(1))) )
+        if (seed_clock) then
+          call system_clock(sysclk)
+          rndm_seed(:) = ieor( sysclk , int(rndm_seed(1),kind(sysclk)) )
+        endif
+        if (new_random) then
+          call init_ranx(rndm_seed(1))
+        else
+          call random_seed(put=rndm_seed)
+        endif
+        do i=1,np
+          do j=1,np
+            do k=62,nlev
+
+              if (new_random) then
+                pertval = ranx()
+              else
+                call random_number(pertval)
+              endif
+              pertval = D2_0*pertlim*(D0_5 - pertval)
+
+              ! If IOP mode potentially only perturb a portion of the profile
+              if (.not. iop_mode .or. p_ref(k) .gt. iop_perturb_high*100._r8) then
+
+#ifdef MODEL_THETA_L
+                elem(ie)%derived%FT(i,j,k) = elem(ie)%derived%FT(i,j,k)*(D1_0 + pertval)
+#else
+                elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
+#endif
+              endif
+
+            end do
+          end do
+        end do
+      end do
+
+      deallocate(rndm_seed)
+    end if
 
     if (.not. single_column) then
 

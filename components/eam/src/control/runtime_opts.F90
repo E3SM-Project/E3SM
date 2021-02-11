@@ -168,6 +168,7 @@ logical  :: single_column
 real(r8) :: scmlat,scmlon
 real(r8) :: scm_relaxation_low
 real(r8) :: scm_relaxation_high
+real(r8) :: iop_perturb_high
 integer, parameter :: max_chars = 128
 character(len=max_chars) iopfile
 character(len=200) :: scm_clubb_iop_name
@@ -334,7 +335,8 @@ contains
    namelist /cam_inparm/ iopfile,scm_iop_srf_prop,scm_relaxation, &
                          scm_relaxation_low, scm_relaxation_high, &
                          scm_diurnal_avg,scm_crm_mode,scm_clubb_iop_name, &
-                         scm_observed_aero,swrad_off,lwrad_off, precip_off
+                         scm_observed_aero,swrad_off,lwrad_off, precip_off, &
+                         iop_perturb_high
 
 !-----------------------------------------------------------------------
 
@@ -375,6 +377,7 @@ contains
         scm_relaxation_out=scm_relaxation, &
         scm_relaxation_low_out=scm_relaxation_low, &
         scm_relaxation_high_out=scm_relaxation_high, &
+        iop_perturb_high_out=iop_perturb_high, &
         scm_diurnal_avg_out=scm_diurnal_avg, &
         scm_crm_mode_out=scm_crm_mode, &
         scm_observed_aero_out=scm_observed_aero, &
@@ -456,6 +459,7 @@ contains
                             scm_relaxation_in=scm_relaxation, &
                             scm_relaxation_low_in=scm_relaxation_low, &
                             scm_relaxation_high_in=scm_relaxation_high, &
+                            iop_perturb_high_in=iop_perturb_high, &
                             scm_diurnal_avg_in=scm_diurnal_avg, &
                             scm_crm_mode_in=scm_crm_mode, &
                             scm_observed_aero_in=scm_observed_aero, &

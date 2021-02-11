@@ -4037,6 +4037,12 @@ at the model top.
 Default: 0.e3 (hPa)
 </entry>
 
+<entry id="iop_perturb_high" type="real" category="scam"
+       group="cam_inparm" valid_values="">
+Highest layer to apply perturbations for doubly periodic IOP mode.
+Default: 0.e3 (hPa)
+</entry>
+
 <entry id="scm_observed_aero" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Initialize with observed aerosols from IOP file. 
