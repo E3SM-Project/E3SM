@@ -325,7 +325,7 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
 void AtmosphereProcessGroup::
 set_required_group (const FieldGroup<const Real>& group)
 {
-  EKAT_REQUIRE_MSG(group.m_fields.size()>0,
+  EKAT_REQUIRE_MSG(group.m_info->size()>0,
     "Error! We were not expecting an empty field group.\n");
 
   const auto& name = group.m_info->m_group_name;
@@ -350,7 +350,7 @@ set_required_group (const FieldGroup<const Real>& group)
 void AtmosphereProcessGroup::
 set_updated_group (const FieldGroup<Real>& group)
 {
-  EKAT_REQUIRE_MSG(group.m_fields.size()>0,
+  EKAT_REQUIRE_MSG(group.m_info->size()>0,
     "Error! We were not expecting an empty field group.\n");
 
   const auto& name = group.m_info->m_group_name;

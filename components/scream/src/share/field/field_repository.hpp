@@ -139,8 +139,10 @@ FieldRepository<RealType>::
 FieldRepository ()
  : m_repo_state (RepoState::Clean)
 {
-  m_bundled_groups["ADVECTED"] = "Q";
-  m_field_groups["ADVECTED"] = std::make_shared<group_info_type>("ADVECTED");
+  m_bundled_groups["TRACERS"] = "Q";
+  m_bundled_groups["TRACERS TENDENCY"] = "FQ";
+  m_field_groups["TRACERS"] = std::make_shared<group_info_type>("TRACERS");
+  m_field_groups["TRACERS TENDENCY"] = std::make_shared<group_info_type>("TRACERS TENDENCY");
 }
 
 template<typename RealType>
@@ -389,8 +391,8 @@ template<typename RealType>
 void FieldRepository<RealType>::
 registration_ends (const std::shared_ptr<const GridsManager>& gm) {
 
-  // Count fields in the 'ADVECTED' group
-  auto& tr_gr = *m_field_groups["ADVECTED"];
+  // Count fields in the 'TRACERS' group
+  auto& tr_gr = *m_field_groups["TRACERS"];
   const int nt = tr_gr.m_fields_names.size();
   std::set<std::string> tr_grids;
   for (auto& fn : tr_gr.m_fields_names) {
@@ -401,15 +403,50 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
     }
   }
 
+  // Inspect the TRACERS TENDENCY group, and make sure that:
+  //  - has the same size as the TRACERS group
+  //  - its fields are called "blah_tendency", and "blah" is a name
+  //    that appears in the TRACERS group
+  //  - "blah" and "blah_tendency" have the same index in the two groups.
+  // At this moment, it is possible the tendency group is smaller than the
+  // tracers group (if there's a tracer that no atm proc is interested in
+  // its specific tendency). But it *can't* happen that the tendency group
+  // is larger than the tracers group.
+
+  auto& tr_tend_gr = *m_field_groups["TRACERS TENDENCY"];
+  EKAT_REQUIRE_MSG (tr_tend_gr.size()<=tr_gr.size(),
+      "Error! Tracers tendency group is larger than the tracers group.\n"
+      "       We don't think this makes sense, so we are erroring out.\n"
+      "       If you think this CAN happen, remove this check (and add others).\n");
+
+  // Make sure tend is of the form "blah_tendency", and that "blah"
+  // is in the tracers group
+  for (const auto& tend : tr_tend_gr.m_fields_names) {
+    bool ok = false;
+    for (const auto& tr : tr_gr.m_fields_names) {
+      if (tend==(tr+"_tendency")) {
+        ok = true;
+        break;
+      }
+    }
+    EKAT_REQUIRE_MSG (ok,
+        "Error! Tracer tendency '" << tend << "' has an invalid name.\n"
+        "       Tendency names must be 'blah_tendency', with 'blah' being a valid tracer name.\n");
+  }
+
+  // Empty the tracers tendencies group. When we create tracers, we will re-fill it,
+  // making sure the tracer tendencies are in the same order as the tracers
+
   // If there are tracers, we need gm to be valid
   EKAT_REQUIRE_MSG (nt==0 || gm!=nullptr,
       "Error! Tracers allocation requires a valid grid manager pointer.\n");
 
-  const std::string& Q_name = m_bundled_groups.at("ADVECTED");
+  const std::string& Q_name = m_bundled_groups.at("TRACERS");
+  const std::string& FQ_name = m_bundled_groups.at("TRACERS TENDENCY");
   constexpr auto VAR = ShortFieldTagsNames::VAR;
   const auto q_units = ekat::units::Units::nondimensional();
 
-  // Create "bundled" tracers
+  // Create "bundled" tracers and tracers forcing
   for (const auto& gn : tr_grids) {
     // Create field id for Q
     auto layout = gm->get_grid(gn)->get_3d_vector_layout(true,VAR,nt);
@@ -431,23 +468,49 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
 
     // Allocate
     Q->allocate_view();
+
+    // Register tracers forcing. Alloc props must at least accommodate Q's ones.
+    FieldIdentifier fid_FQ (FQ_name,layout, q_units/ekat::units::s, gn);
+    register_field(fid_FQ);
+    auto FQ = get_field_ptr(fid_FQ);
+    FQ->get_header().get_alloc_properties().request_allocation(Q_ap);
+    FQ->allocate_view();
   }
 
+  // Helper lambdas to detect if a field name corresponds to a tracer or
+  // tracer tendency.
+  const ci_string tend_tail = "_tendency";
+  auto is_tracer = [&](const std::string& name) -> bool {
+    return ekat::contains(tr_gr.m_fields_names,name);
+  };
+  auto is_tendency = [&](const std::string& name) -> bool {
+    return name.size()>tend_tail.size() &&
+           (name.substr(name.size()-tend_tail.size()) == tend_tail);
+  };
+  auto get_tr_name_from_tend_name = [&](const std::string& name) -> std::string {
+    return name.substr(0,name.size()-tend_tail.size());
+  };
+  auto is_tr_tendency = [&](const std::string& name) -> bool {
+    return is_tendency(name) && is_tracer(name.substr(0,name.size()-tend_tail.size()));
+  };
+
   // Proceed to allocate other fields, and subview tracers
-  int iq = 0;
   for (auto& it : m_fields) {
     const auto& fname = it.first;
-    if (fname==Q_name) {
-      // We already allocated Q, so skip it.
+    if (fname==Q_name || fname==FQ_name) {
+      // We already allocated Q and FQ, so skip it.
       continue;
     }
 
-    // Check if this field is a tracer
-    bool is_tracer = ekat::contains(tr_gr.m_fields_names,fname);
     for (auto& it_f : it.second) {
       auto f = it_f.second;
-      if (is_tracer) {
+      if (is_tracer(fname)) {
         // A tracer must be a subview of the big Q field.
+        auto pos = ekat::find(tr_gr.m_fields_names,fname);
+        const int iq = std::distance(tr_gr.m_fields_names.begin(),pos);
+        EKAT_REQUIRE_MSG (iq>=0 && iq<tr_gr.size(),
+            "Error! Field '" << fname << "' is a tracer, but could not locate it in the tracer group.\n");
+
         const auto& fh = f->get_header();
         const auto  Q = get_field_ptr(Q_name,fh.get_identifier().get_grid_name());
         const auto& Q_tags = Q->get_header().get_identifier().get_layout().tags();
@@ -466,14 +529,36 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
 
         // Overwrite f with q.
         *f = q;
+      } else if (is_tr_tendency(fname)) {
+        const auto tr_name = get_tr_name_from_tend_name(fname);
+        auto pos = ekat::find(tr_gr.m_fields_names,tr_name);
+        const int iq = std::distance(tr_gr.m_fields_names.begin(),pos);
+        EKAT_REQUIRE_MSG (iq>=0 && iq<tr_gr.size(),
+            "Error! Field '" << fname << "' is a tracer-tendency, but could not locate\n"
+            "       the corresponding tracer name '" << tr_name << "' in the tracer group.\n");
+
+        const auto& fh = f->get_header();
+        const auto  FQ = get_field_ptr(FQ_name,fh.get_identifier().get_grid_name());
+        const auto& FQ_tags = FQ->get_header().get_identifier().get_layout().tags();
+        // Note: as of 02/2021, idim should *always* be 1, but we store it just in case,
+        //       to avoid bugs in the future.
+        const int idim = std::distance(FQ_tags.begin(),ekat::find(FQ_tags,VAR));
+        auto fq = FQ->subfield(fname,idim,iq);
+
+        // Either this is the first tracer we set in the group (m_subview_dim still -1),
+        // or idim should match what was already in the group info.
+        EKAT_REQUIRE_MSG (tr_tend_gr.m_subview_dim==-1 || tr_tend_gr.m_subview_dim==idim,
+            "Error! Something is amiss with the creation of tracers subviews.\n");
+        tr_tend_gr.m_subview_idx[fname] = iq;
+        tr_tend_gr.m_subview_dim = idim;
+        tr_tend_gr.m_bundled = true;
+
+        // Overwrite f with fq.
+        *f = fq;
       } else {
         // A completely independent field. Allocate it.
         f->allocate_view();
       }
-    }
-
-    if (is_tracer) {
-      ++iq;
     }
   }
 

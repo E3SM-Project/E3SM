@@ -63,6 +63,8 @@ struct FieldGroupInfo
     // Nothing to do here
   }
 
+  int size() const { return m_fields_names.size(); }
+
   // The name of the group
   ci_string m_group_name;
 
@@ -96,7 +98,7 @@ struct FieldGroup {
     // Nothing to do here
   }
 
-  int size() const { return m_fields.size(); }
+  FieldGroup (const FieldGroup&) = default;
 
   // The fields in this group
   std::map<ci_string,std::shared_ptr<field_type>> m_fields;

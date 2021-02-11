@@ -400,16 +400,16 @@ TEST_CASE("tracers_bundle", "") {
 
   FieldRepository<Real> repo;
   repo.registration_begins();
-  repo.register_field(qv_id,"ADVECTED");
-  repo.register_field(qc_id,"ADVECTED");
-  repo.register_field(qr_id,"ADVECTED");
+  repo.register_field(qv_id,"TRACERS");
+  repo.register_field(qc_id,"TRACERS");
+  repo.register_field(qr_id,"TRACERS");
   repo.registration_ends(gm);
 
   auto qv = repo.get_field(qv_id);
   auto qc = repo.get_field(qc_id);
   auto qr = repo.get_field(qr_id);
 
-  auto group = repo.get_field_group("ADVECTED",grid_name);
+  auto group = repo.get_field_group("TRACERS",grid_name);
   // The repo should have allocated the group bundled
   REQUIRE (group.m_info->m_bundled);
 
