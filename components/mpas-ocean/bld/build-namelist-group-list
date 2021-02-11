@@ -31,6 +31,7 @@ my @groups = qw(run_modes
                 ale_frequency_filtered_thickness
                 debug
                 testing
+                init_mode_vert_levels
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers

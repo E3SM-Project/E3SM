@@ -2109,6 +2109,17 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- init_mode_vert_levels -->
+
+<entry id="config_vert_levels" type="integer"
+	category="init_mode_vert_levels" group="init_mode_vert_levels">
+Number of vertical levels to create within the configuration.
+
+Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- tracer_forcing_activeTracers -->
 
 <entry id="config_use_activeTracers" type="logical"
