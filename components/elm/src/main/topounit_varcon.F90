@@ -8,11 +8,11 @@ module topounit_varcon
 !#include "shr_assert.h"
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
-  use clm_varctl      , only: fsurdat, iulog
+  use elm_varctl      , only: fsurdat, iulog
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   !use abortutils      , only : endrun
-  use clm_varcon      , only : grlnd
+  use elm_varcon      , only : grlnd
   use pio
   use spmdMod
   !

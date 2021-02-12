@@ -13,7 +13,7 @@ module organicFileMod
   use abortutils   , only : endrun
   use elm_varctl   , only : iulog
   use shr_kind_mod , only : r8 => shr_kind_r8
-  use clm_varcon   , only : grlnd, namet
+  use elm_varcon   , only : grlnd, namet
   use topounit_varcon , only : max_topounits, has_topounit ! maximum number of topounits
 !
 ! !PUBLIC TYPES:
@@ -78,7 +78,7 @@ contains
 
     ! Initialize data to zero - no organic matter dataset
 
-    organic(:,:)   = 0._r8
+    organic(:,:,:)   = 0._r8
        
     ! Read data if file was specified in namelist
        

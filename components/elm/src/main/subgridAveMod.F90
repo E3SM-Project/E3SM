@@ -1738,7 +1738,7 @@ contains
     end do
     if (found) then
        write(iulog,*)'p2t_1d error: sumwt is greater than 1.0 at t= ',index
-       call endrun(decomp_index=index, clmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
     end if
 
   end subroutine p2t_1d
@@ -1816,7 +1816,7 @@ contains
        end do
        if (found) then
           write(iulog,*)'p2t_2d error: sumwt gt 1.0 at t/sumwt = ',index,sumwt(index)
-          call endrun(decomp_index=index, clmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -1879,7 +1879,7 @@ contains
     end do
     if (found) then
        write(iulog,*)'c2t_1d error: sumwt is greater than 1.0 at t= ',index
-       call endrun(decomp_index=index, clmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
     end if
 
   end subroutine c2t_1d
@@ -1943,7 +1943,7 @@ contains
        end do
        if (found) then
           write(iulog,*)'c2t_2d error: sumwt is greater than 1.0 at t= ',index
-          call endrun(decomp_index=index, clmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -1999,7 +1999,7 @@ contains
     end do
     if (found) then
        write(iulog,*)'l2t_1d error: sumwt is greater than 1.0 at t= ',index
-       call endrun(decomp_index=index, clmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
     end if
 
   end subroutine l2t_1d
@@ -2057,7 +2057,7 @@ contains
        end do
        if (found) then
           write(iulog,*)'l2t_2d error: sumwt is greater than 1.0 at t= ',index,' lev= ',j
-          call endrun(decomp_index=index, clmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
