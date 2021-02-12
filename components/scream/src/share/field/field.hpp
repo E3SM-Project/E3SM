@@ -159,6 +159,8 @@ public:
   //   - If the field rank is 2, then idim cannot be 1. This is b/c Kokkos
   //     specializes view's traits for LayoutRight of rank 1, not allowing
   //     to store a stride for the slowest dimension.
+  field_type subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
+                       const int idim, const int k) const;
   field_type subfield (const std::string& sf_name, const int idim, const int k) const;
   field_type subfield (const int idim, const int k) const;
 
@@ -436,7 +438,9 @@ sync_to_dev () const {
 
 template<typename RealType>
 Field<RealType> Field<RealType>::
-subfield (const std::string& sf_name, const int idim, const int k) const {
+subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
+          const int idim, const int k) const {
+
   const auto& id = m_header->get_identifier();
   const auto& lt = id.get_layout();
 
@@ -452,13 +456,20 @@ subfield (const std::string& sf_name, const int idim, const int k) const {
   tags.erase(tags.begin()+idim);
   dims.erase(dims.begin()+idim);
   FieldLayout sf_lt(tags,dims);
-  FieldIdentifier sf_id(sf_name,sf_lt,id.get_units(),id.get_grid_name());
+  FieldIdentifier sf_id(sf_name,sf_lt,sf_units,id.get_grid_name());
 
   // Create header
   auto sv_h = create_header(sf_id,m_header,idim,k);
 
   // Return subfield
   return field_type(sv_h,m_view_d);
+}
+
+template<typename RealType>
+Field<RealType> Field<RealType>::
+subfield (const std::string& sf_name, const int idim, const int k) const {
+  const auto& id = m_header->get_identifier();
+  return subfield(sf_name,id.get_units(),idim,k);
 }
 
 template<typename RealType>

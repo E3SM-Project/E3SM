@@ -517,7 +517,7 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
         // Note: as of 02/2021, idim should *always* be 1, but we store it just in case,
         //       to avoid bugs in the future.
         const int idim = std::distance(Q_tags.begin(),ekat::find(Q_tags,VAR));
-        auto q = Q->subfield(fname,idim,iq);
+        auto q = Q->subfield(fname,fh.get_identifier().get_units(),idim,iq);
 
         // Either this is the first tracer we set in the group (m_subview_dim still -1),
         // or idim should match what was already in the group info.
@@ -543,7 +543,7 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
         // Note: as of 02/2021, idim should *always* be 1, but we store it just in case,
         //       to avoid bugs in the future.
         const int idim = std::distance(FQ_tags.begin(),ekat::find(FQ_tags,VAR));
-        auto fq = FQ->subfield(fname,idim,iq);
+        auto fq = FQ->subfield(fname,fh.get_identifier().get_units(),idim,iq);
 
         // Either this is the first tracer we set in the group (m_subview_dim still -1),
         // or idim should match what was already in the group info.
