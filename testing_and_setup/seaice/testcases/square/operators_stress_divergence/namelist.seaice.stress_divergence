@@ -3,7 +3,7 @@
     config_calendar_type = 'gregorian_noleap'
     config_start_time = '2000-01-01_00:00:00'
     config_stop_time = 'none'
-    config_run_duration = '00-00-04_00:00:00'
+    config_run_duration = '00-00-00_01:00:00'
     config_num_halos = 2
 /
 &io
@@ -39,17 +39,17 @@
     config_nSnowLayers = 1
 /
 &initialize
-    config_earth_radius = 6371229.0
-    config_initial_condition_type = 'none'
+    config_earth_radius = 1.0
+    config_initial_condition_type = 'uniform'
     config_initial_ice_area = 1.0
     config_initial_ice_volume = 1.0
     config_initial_snow_volume = 0.0
-    config_initial_latitude_north = 70.0
-    config_initial_latitude_south = -60.0
-    config_initial_velocity_type = 'uniform'
+    config_initial_latitude_north = -70.0
+    config_initial_latitude_south = 60.0
+    config_initial_velocity_type = 'none'
     config_initial_uvelocity = 0.0
     config_initial_vvelocity = 0.0
-    config_calculate_coriolis = false
+    config_calculate_coriolis = true
 /
 &use_sections
     config_use_dynamics = true
@@ -78,22 +78,22 @@
     config_dynamics_subcycle_number = 1
     config_rotate_cartesian_grid = false
     config_include_metric_terms = false
-    config_elastic_subcycle_number = 7680
+    config_elastic_subcycle_number = 1
     config_strain_scheme = 'variational'
-    config_constitutive_relation_type = 'evp'
+    config_constitutive_relation_type = 'none'
     config_stress_divergence_scheme = 'variational'
     config_variational_basis = 'wachspress'
     config_variational_denominator_type = 'original'
     config_wachspress_integration_type = 'dunavant'
     config_wachspress_integration_order = 8
-    config_calc_velocity_masks = true
+    config_calc_velocity_masks = false
     config_use_air_stress = true
     config_use_ocean_stress = true
     config_use_surface_tilt = true
     config_geostrophic_surface_tilt = true
     config_ocean_stress_type = 'quadratic'
-    config_use_special_boundaries_velocity = true
-    config_use_special_boundaries_velocity_masks = true
+    config_use_special_boundaries_velocity = false
+    config_use_special_boundaries_velocity_masks = false
 /
 &advection
     config_advection_type = 'incremental_remap'
@@ -111,15 +111,16 @@
     config_use_column_snow_tracers = false
 /
 &column_tracers
-    config_use_ice_age = true
-    config_use_first_year_ice = true
-    config_use_level_ice = true
+    config_use_ice_age = false
+    config_use_first_year_ice = false
+    config_use_level_ice = false
     config_use_cesm_meltponds = false
-    config_use_level_meltponds = true
+    config_use_level_meltponds = false
     config_use_topo_meltponds = false
     config_use_aerosols = false
     config_use_effective_snow_density = false
     config_use_snow_grain_radius = false
+    config_use_special_boundaries_zero_tracers = false
 /
 &biogeochemistry
     config_use_brine = false
@@ -472,7 +473,7 @@
     config_AM_timeSeriesStatsMonthly_write_on_startup = false
     config_AM_timeSeriesStatsMonthly_compute_interval = 'dt'
     config_AM_timeSeriesStatsMonthly_output_stream = 'timeSeriesStatsMonthlyOutput'
-    config_AM_timeSeriesStatsMonthly_restart_stream = 'none'
+    config_AM_timeSeriesStatsMonthly_restart_stream = 'timeSeriesStatsMonthlyRestart'
     config_AM_timeSeriesStatsMonthly_operation = 'avg'
     config_AM_timeSeriesStatsMonthly_reference_times = 'initial_time'
     config_AM_timeSeriesStatsMonthly_duration_intervals = 'repeat_interval'

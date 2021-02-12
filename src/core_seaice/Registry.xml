@@ -608,6 +608,10 @@
 			description="Order of integration for Wachspress basis integrations."
 			possible_values="'trapezoidal': any positive integer, 'dunavant':1-10,12, 'fekete':1-6,8,9"
 		/>
+		<nml_option name="config_calc_velocity_masks" type="logical" default_value="true" units="unitless"
+			description="Calculate velocity masks."
+			possible_values="true or false"
+		/>
 		<nml_option name="config_use_air_stress" type="logical" default_value="true" units="unitless"
 			description="If true include the air stress term in the velocity solver calculations."
 			possible_values="true or. false."

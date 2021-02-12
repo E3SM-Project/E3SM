@@ -787,7 +787,8 @@ contains
          config_use_column_vertical_thermodynamics, &
          config_use_halo_exch, &
          config_aggregate_halo_exch, &
-         config_reuse_halo_exch
+         config_reuse_halo_exch, &
+         config_calc_velocity_masks
 
     integer :: &
          ierr
@@ -886,9 +887,11 @@ contains
     end do
 
     ! calculate computational masks
-    call stress_calculation_mask(domain)
-
-    call velocity_calculation_mask(domain)
+    call MPAS_pool_get_config(domain % configs, "config_calc_velocity_masks", config_calc_velocity_masks)
+    if (config_calc_velocity_masks) then
+       call stress_calculation_mask(domain)
+       call velocity_calculation_mask(domain)
+    endif
 
     ! halo exchange velocity mask
     call seaice_load_balance_timers(domain, "vel prep before")
