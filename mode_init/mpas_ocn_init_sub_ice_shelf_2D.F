@@ -217,7 +217,7 @@ module ocn_init_sub_ice_shelf_2D
 
         if(associated(landIceFraction)) &
           landIceFraction(:) = 0.0_RKIND
-        modifySSHMask(:) = 0
+        modifyLandIcePressureMask(:) = 0
         if(associated(landIceMask)) &
           landIceMask(:) = 0
 
@@ -235,7 +235,7 @@ module ocn_init_sub_ice_shelf_2D
            ssh(iCell) = -config_sub_ice_shelf_2D_bottom_depth + totalSubIceThickness
 
            if(ssh(iCell) < 0.0_RKIND) then
-              modifySSHMask(iCell) = 1
+              modifyLandIcePressureMask(iCell) = 1
            end if
         end do
 
@@ -259,12 +259,12 @@ module ocn_init_sub_ice_shelf_2D
 
      ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) based on ssh,
      ! bottomDepth and refBottomDepth
-     call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
+      call ocn_init_vertical_grid(domain, iErr=iErr)
 
-     if(iErr .ne. 0) then
-        call mpas_log_write( 'ocn_init_ssh_and_landIcePressure_vertical_grid failed.', MPAS_LOG_CRIT)
+      if(iErr .ne. 0) then
+        call mpas_log_write( 'ocn_init_vertical_grid failed.', MPAS_LOG_CRIT)
         call mpas_dmpar_finalize(domain % dminfo)
-     end if
+      end if
 
      block_ptr => domain % blocklist
      do while(associated(block_ptr))
@@ -300,8 +300,7 @@ module ocn_init_sub_ice_shelf_2D
         block_ptr => block_ptr % next
      end do
 
-     ! compute or update the land-ice pressure (or possibly SSH), also computing density along the way
-     ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
+     ! compute the land-ice pressure, also computing density along the way.
      call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
 
      if(iErr .ne. 0) then
