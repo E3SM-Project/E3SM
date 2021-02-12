@@ -143,15 +143,17 @@ public:
   void set_required_field (const Field<const Real>& f) {
     ekat::error::runtime_check(
         requires(f.get_header().get_identifier()),
-        "Error! This atmosphere process does not require this field. "
-        "Something is wrong up the call stack. Please, contact developers.\n");
+        "Error! This atmosphere process does not require\n  " +
+        f.get_header().get_identifier().get_id_string() +
+        "\nSomething is wrong up the call stack. Please, contact developers.\n");
     set_required_field_impl (f);
   }
   void set_computed_field (const Field<Real>& f) {
     ekat::error::runtime_check(
         computes(f.get_header().get_identifier()),
-        "Error! This atmosphere process does not compute this field. "
-        "Something is wrong up the call stack. Please, contact developers.\n");
+        "Error! This atmosphere process does not compute\n  " +
+        f.get_header().get_identifier().get_id_string() +
+        "\nSomething is wrong up the call stack. Please, contact developers.\n");
     set_computed_field_impl (f);
   }
 

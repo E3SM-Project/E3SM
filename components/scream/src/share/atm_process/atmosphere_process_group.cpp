@@ -325,9 +325,6 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
 void AtmosphereProcessGroup::
 set_required_group (const FieldGroup<const Real>& group)
 {
-  EKAT_REQUIRE_MSG(group.m_info->size()>0,
-    "Error! We were not expecting an empty field group.\n");
-
   const auto& name = group.m_info->m_group_name;
   const auto& grid = group.m_grid_name;
 
@@ -336,12 +333,24 @@ set_required_group (const FieldGroup<const Real>& group)
 
     if (atm_proc->requires_group(name,grid)) {
       atm_proc->set_required_group(group);
-      // We also might need to add each field of the group to the remap in/out
-      for (const auto& it : group.m_fields) {
-        const auto& f = *it.second;
-        const auto& fid = f.get_header().get_identifier();
-        const auto& r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
-        process_required_field(fid,r_in);
+      // Some groups might be optional, so don't error out if the size is 0
+      if (group.m_info->size()>0) {
+        // If the group is 'bundled', we remap the bundled group,
+        // otherwise remap each individual field.
+        if (group.m_info->m_bundled) {
+          const auto& f = *group.m_bundle;
+          const auto& fid = f.get_header().get_identifier();
+          const auto& r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
+          process_required_field(fid,r_in);
+        } else {
+          // We also might need to add each field of the group to the remap in/out
+          for (const auto& it : group.m_fields) {
+            const auto& f = *it.second;
+            const auto& fid = f.get_header().get_identifier();
+            const auto& r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
+            process_required_field(fid,r_in);
+          }
+        }
       }
     }
   }
@@ -350,9 +359,6 @@ set_required_group (const FieldGroup<const Real>& group)
 void AtmosphereProcessGroup::
 set_updated_group (const FieldGroup<Real>& group)
 {
-  EKAT_REQUIRE_MSG(group.m_info->size()>0,
-    "Error! We were not expecting an empty field group.\n");
-
   const auto& name = group.m_info->m_group_name;
   const auto& grid = group.m_grid_name;
 
@@ -361,14 +367,24 @@ set_updated_group (const FieldGroup<Real>& group)
 
     if (atm_proc->updates_group(name,grid)) {
       atm_proc->set_updated_group(group);
-      // We also might need to add each field of the group to the remap in/out
-      for (const auto& it : group.m_fields) {
-        const auto& f = *it.second;
-        const auto& fid = f.get_header().get_identifier();
-        const auto r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
-        const auto r_out = m_outputs_remappers[iproc].at(fid.get_grid_name());
-        process_required_field(fid,r_in);
-        process_computed_field(fid,r_out);
+      // Some groups might be optional, so don't error out if the size is 0
+      if (group.m_info->size()>0) {
+        // If the group is 'bundled', we remap the bundled group,
+        // otherwise remap each individual field.
+        if (group.m_info->m_bundled) {
+          const auto& f = *group.m_bundle;
+          const auto& fid = f.get_header().get_identifier();
+          const auto r_out = m_outputs_remappers[iproc].at(fid.get_grid_name());
+          process_computed_field(fid,r_out);
+        } else {
+          // We also might need to add each field of the group to the remap in/out
+          for (const auto& it : group.m_fields) {
+            const auto& f = *it.second;
+            const auto& fid = f.get_header().get_identifier();
+            const auto r_out = m_outputs_remappers[iproc].at(fid.get_grid_name());
+            process_computed_field(fid,r_out);
+          }
+        }
       }
     }
   }
