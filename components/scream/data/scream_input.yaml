@@ -84,9 +84,7 @@ SCREAM:
     micro_p3_tableversion : 4
 
   Output Files:
-    # I think Aaron already created yaml files
-    # to control this - doesn't need to be
-    # specified in our master file?
+    # This should be a bracketed list of all the output control yaml files
 
 # Note: HOMME settings will be translated into data/theta.nl
 HOMME:
