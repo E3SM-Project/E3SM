@@ -21,18 +21,13 @@ Atmosphere Driver:
 
 SCREAM:
 
-  #=====================
-  # I'm confused how we should set this. You shouldn't be able
-  # to change this once a run starts, but you should be able to choose it
-  # when you start a new run... What if your initial condition is for year 2000
-  # but you're doing a control run and want it to start at 01-01-0001?
-  Start Date: 01-01-2000
+  Start Date: 01-01-2000 # For CIME cases, do NOT set this! It will be set by CIME's RUN_STARTDATE
 
   # Model Timesteps
   whole_model_dt: 3600.0 #aka phys/dyn coupling dt
 
   # Number of sub or supersteps of whole_model_dt for given proc.
-  # maybe have positive #s be supersteps and negative numbers being
+  # maybe have positive nums be supersteps and negative numbers being
   # number of substeps? This might require a generalization of substepping
   # since everything except rad always substeps and rad always supersteps?
   # There's also an issue here where AMB just
