@@ -241,7 +241,8 @@ contains
          wt_cft(g,t,:) = 0.0_r8
          wt_cft(g,t,cft_lb) = 100.0_r8
       end if
-   end do
+    end do
+  end do
 
  end subroutine convert_pft_to_cft
 

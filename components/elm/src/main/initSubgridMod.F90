@@ -166,6 +166,7 @@ contains
 
     ! Determine landunit_indices: indices into landunit-level arrays for each topounit.
     ! Note that landunits not present in a given topounit are set to ispval.
+    curt = 0
     top_pp%landunit_indices(:,bounds%begt:bounds%endt) = ispval
     do l = bounds%begl,bounds%endl
        ltype = lun_pp%itype(l)

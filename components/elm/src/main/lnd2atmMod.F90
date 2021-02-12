@@ -38,7 +38,7 @@ module lnd2atmMod
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use SoilHydrologyType    , only : soilhydrology_type 
   use spmdmod          , only: masterproc
-  use clm_varctl     , only : iulog
+  use elm_varctl     , only : iulog
   !
   ! !PUBLIC TYPES:
   implicit none

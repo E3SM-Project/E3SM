@@ -286,22 +286,21 @@ contains
     ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale topounits, landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
-    if(max_topounits > 1) then    
-       if (create_glacier_mec_landunit) then
-          call decompInit_clumps(ldomain%glcmask,ldomain%num_tunits_per_grd)
-          call decompInit_ghosts(ldomain%glcmask,ldomain%num_tunits_per_grd)
-       else
-          call decompInit_clumps(ldomain%num_tunits_per_grd)
-          call decompInit_ghosts(ldomain%num_tunits_per_grd)
-       endif
+    !if(has_topounit .and. max_topounits > 1) then    
+    !   if (create_glacier_mec_landunit) then
+    !      call decompInit_clumps(ldomain%num_tunits_per_grd,ldomain%glcmask)
+    !      call decompInit_ghosts(ldomain%num_tunits_per_grd,ldomain%glcmask)
+    !   else
+    !      call decompInit_clumps(ldomain%num_tunits_per_grd)
+    !      call decompInit_ghosts(ldomain%num_tunits_per_grd)
+    !   endif
+    !else
+    if (create_glacier_mec_landunit) then
+       call decompInit_clumps(ldomain%glcmask)
+       call decompInit_ghosts(ldomain%glcmask)
     else
-       if (create_glacier_mec_landunit) then
-          call decompInit_clumps(ldomain%glcmask)
-          call decompInit_ghosts(ldomain%glcmask)
-       else
-          call decompInit_clumps()
-          call decompInit_ghosts()
-       endif
+       call decompInit_clumps()
+       call decompInit_ghosts()
     endif
 
     ! *** Get ALL processor bounds - for gridcells, landunit, columns and patches ***
@@ -348,19 +347,19 @@ contains
     call initGridCells()
 
     ! Set global seg maps for gridcells, topounits, landlunits, columns and patches
-    if(max_topounits > 1) then 
-       if (create_glacier_mec_landunit) then
-          call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask,ldomain%num_tunits_per_grd)
-       else
-          call decompInit_gtlcp(ns, ni, nj,ldomain%num_tunits_per_grd)
-       endif
+    !if(max_topounits > 1) then 
+    !   if (create_glacier_mec_landunit) then
+    !      call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask,ldomain%num_tunits_per_grd)
+    !   else
+    !      call decompInit_gtlcp(ns, ni, nj,ldomain%num_tunits_per_grd)
+    !   endif
+    !else
+    if (create_glacier_mec_landunit) then
+       call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask)
     else
-       if (create_glacier_mec_landunit) then
-          call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask)
-       else
-          call decompInit_gtlcp(ns, ni, nj)
-       endif
+       call decompInit_gtlcp(ns, ni, nj)
     endif
+    !endif
 
     ! Set filters
 
@@ -393,7 +392,8 @@ contains
     ! Some things are kept until the end of initialize2; urban_valid is kept through the
     ! end of the run for error checking.
 
-    deallocate (wt_lunit, wt_cft, wt_glc_mec)
+    !deallocate (wt_lunit, wt_cft, wt_glc_mec)
+    deallocate (wt_cft, wt_glc_mec)    !wt_lunit not deallocated because it is being used in CanopyHydrologyMod.F90
     deallocate (wt_tunit, elv_tunit, slp_tunit, asp_tunit,num_tunit_per_grd)
     call t_stopf('elm_init1')
 

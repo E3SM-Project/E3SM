@@ -11,10 +11,10 @@ module lnd_disagg_forc
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use shr_megan_mod  , only : shr_megan_mechcomps_n
-  use clm_varpar     , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
-  use clm_varcon     , only : rair, grav, cpair, hfus, tfrz, spval
-  use clm_varctl     , only : iulog, use_c13, use_cn, use_lch4, iulog, precip_downscaling_method
-  use clm_cpl_indices
+  use elm_varpar     , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
+  use elm_varcon     , only : rair, grav, cpair, hfus, tfrz, spval
+  use elm_varctl     , only : iulog, use_c13, use_cn, use_lch4, iulog, precip_downscaling_method
+  use elm_cpl_indices
   use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
   use abortutils     , only : endrun
   use decompMod      , only : bounds_type
@@ -57,11 +57,11 @@ contains
     !
     ! !USES:
     use clm_time_manager, only : get_nstep
-    use clm_varcon      , only : rair, cpair, grav, lapse_glcmec
-    use clm_varcon      , only : glcmec_rain_snow_threshold, o2_molar_const
+    use elm_varcon      , only : rair, cpair, grav, lapse_glcmec
+    use elm_varcon      , only : glcmec_rain_snow_threshold, o2_molar_const
     use shr_const_mod   , only : SHR_CONST_TKFRZ
     use landunit_varcon , only : istice_mec 
-    use clm_varctl      , only : glcmec_downscale_rain_snow_convert
+    use elm_varctl      , only : glcmec_downscale_rain_snow_convert
     use domainMod       , only : ldomain
     use QsatMod         , only : Qsat
     !
@@ -83,6 +83,14 @@ contains
     real(r8) :: uovern_t           ! Froude Number
     real(r8) :: grdElv             ! Grid elevation
     real(r8) :: topoElv            ! Topounit elevation
+    real(r8) :: crnt_temp_t             ! Current downscaled topounit temperature
+    real(r8) :: temp_r             ! Temporary topounit rainfall
+    real(r8) :: temp_s             ! Temporary topounit snowfall
+    real(r8) :: t_th               ! Temperature threshold for snowfall
+    real(r8) :: Ta_th1              ! Temperature at 0.5 Celsius in K 273.65
+    real(r8) :: Ta_th2              ! Temperature at 2.0 Celsius in K 275.15
+    real(r8) :: Ta_th3              ! Temperature at 2.5 Celsius in K 275.65
+    real(r8) :: tmp_Snow_frc        ! Current snow fraction
 
     real(r8) :: e
     real(r8) :: qvsat
@@ -145,6 +153,11 @@ contains
     sum_wtslw_g = 0.
     
     sum_of_hrise = 0.
+    t_th = 273.15_r8   ! Freezing temperature in K
+    Ta_th1 = 273.65_r8 ! Lowest threshold for snow calculation
+    Ta_th2 = 275.15_r8 ! Middle threshold for rain/snow partitioning
+    Ta_th3 = 275.65_r8 ! Highest threshold for rain/snow partitioning
+    tmp_Snow_frc = 0._r8   ! Snow fraction
 	
     if (numt_pg > 1) then          !downscaling is done only if a grid has more than 1 topounits 
        if (precip_downscaling_method == 'FNM') then
@@ -231,6 +244,27 @@ contains
           deallocate(deltaSnow)
        end if
        
+	   ! Precipitation partitioning using simple method following Jordan (1991)
+       do t = grc_pp%topi(g), grc_pp%topf(g)
+            crnt_temp_t = top_as%tbot(t)
+            if (crnt_temp_t > Ta_th3) then            ! No snow or all rain
+                temp_r = top_af%rain(t) + top_af%snow(t)
+                temp_s = 0._r8
+            else if (crnt_temp_t >= Ta_th2 .and. crnt_temp_t <= Ta_th3) then
+                temp_s = (top_af%snow(t) + top_af%rain(t))*0.6              ! 0.6 fraction of the total precip is snow
+                temp_r = (top_af%snow(t) + top_af%rain(t)) - temp_s
+            else if (crnt_temp_t < Ta_th2 .and. crnt_temp_t > Ta_th1) then
+                tmp_Snow_frc = (crnt_temp_t-Ta_th2)*(0.4/(Ta_th1-Ta_th2))+0.6  ! Snow fraction value 1-0.6 = 0.4 snowfrc is 1 at t = Ta_th1
+                temp_s = (top_af%snow(t) + top_af%rain(t))*tmp_Snow_frc        ! 0.6 is snow fraction at t = Ta_th2  
+                temp_r = (top_af%snow(t) + top_af%rain(t)) - temp_s
+            else   ! crnt_temp_t <= Ta_th1 ==> all snow
+                temp_s = top_af%snow(t) + top_af%rain(t)
+                temp_r = 0._r8                
+            top_af%rain(t) = temp_r
+            top_af%snow(t) = temp_s
+            end if
+       end do
+
     else !grid has a single topounit
        ! update top_af using grid level values
        t = grc_pp%topi(g)
@@ -328,10 +362,10 @@ contains
     !
     ! !USES:
     use clm_time_manager, only : get_nstep
-    use clm_varcon      , only : rair, cpair, grav, lapse_glcmec
-    use clm_varcon      , only : glcmec_rain_snow_threshold
+    use elm_varcon      , only : rair, cpair, grav, lapse_glcmec
+    use elm_varcon      , only : glcmec_rain_snow_threshold
     use landunit_varcon , only : istice_mec 
-    use clm_varctl      , only : glcmec_downscale_rain_snow_convert
+    use elm_varctl      , only : glcmec_downscale_rain_snow_convert
     use domainMod       , only : ldomain
     use QsatMod         , only : Qsat
     !
@@ -435,8 +469,8 @@ contains
     use clm_time_manager, only : get_nstep
     use domainMod       , only : ldomain
     use landunit_varcon , only : istice_mec
-    use clm_varcon      , only : lapse_glcmec
-    use clm_varctl      , only : glcmec_downscale_longwave
+    use elm_varcon      , only : lapse_glcmec
+    use elm_varctl      , only : glcmec_downscale_longwave
     !
     ! !ARGUMENTS:
     integer                    , intent(in)    :: g
