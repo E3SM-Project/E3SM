@@ -77,12 +77,6 @@
 					possible_values="Any positive non-zero integer."
 		/>
 	</nml_record>
-	<nml_record name="init_ssh_and_landIcePressure" mode="init">
-		<nml_option name="config_iterative_init_variable" type="character" default_value="landIcePressure" units="unitless"
-					description="Which variable, ssh or landIcePressure, is computed from the other.  If landIcePressure is to be computed, 'landIcePressure_from_top_density' indicates that the top density (rather than the mean density displaced by land ice) should be used to compute the landIcePressure."
-					possible_values="'ssh', 'landIcePressure_from_top_density' or 'landIcePressure'"
-		/>
-	</nml_record>
 	<nml_record name="constrain_Haney_number" mode="init">
 		<nml_option name="config_use_rx1_constraint" type="logical" default_value=".false." units="unitless"
 					description="Initialize using Haney number constraint under ice shelves"
