@@ -883,6 +883,12 @@ add_default($nl, 'config_conduct_tests');
 add_default($nl, 'config_test_tensors');
 add_default($nl, 'config_tensor_test_function');
 
+#########################################
+# Namelist group: init_mode_vert_levels #
+#########################################
+
+add_default($nl, 'config_vert_levels');
+
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
 ################################################
@@ -1602,6 +1608,7 @@ my @groups = qw(run_modes
                 ale_frequency_filtered_thickness
                 debug
                 testing
+                init_mode_vert_levels
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers
