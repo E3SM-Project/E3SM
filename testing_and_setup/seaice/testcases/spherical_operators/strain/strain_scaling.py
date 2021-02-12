@@ -144,72 +144,81 @@ def strain_scaling():
     mpl.rc('text', usetex=True)
     mpl.rcParams['axes.linewidth'] = 0.5
 
+    strains = ["strain11","strain22","strain12"]
+
     resolutions = [2562,10242,40962,163842]
 
-    methods = ["wachspress", "pwl", "weak", "weakwachs"]
+    methods = ["wachspress", "pwl", "weak"]
 
+    lineColours = ["black","grey","red"]
 
-
-    lineColours = ["black","black","grey","grey"]
-    lineStyles  = ["-","--","-","--"]
+    lineStyles = {"hex":"solid",
+                  "quad":"dashed"}
 
     latitudeLimit = 20.0
 
-    xMin = 6e-3
-    xMax = 1e-1
+    fig, axes = plt.subplots(3,1,figsize=(5,10))
 
-    # quadratic scaling
-    #scale = 3e-5 / math.pow(xMin,2)
-    #scaleMin = math.pow(xMin,2) * scale
-    #scaleMax = math.pow(xMax,2) * scale
+    iStrain = 0
+    for strain in strains:
 
-    # linear scaling
-    scale = 2.5e-3 / math.pow(xMin,1)
-    scaleMin = math.pow(xMin,1) * scale
-    scaleMax = math.pow(xMax,1) * scale
+        xMin = 4e-2
+        xMax = 8e-2
 
+        # linear scaling
+        scale = 1e-3 / math.pow(xMin,1)
+        scaleMinLin = math.pow(xMin,1) * scale
+        scaleMaxLin = math.pow(xMax,1) * scale
 
-    plt.figure(figsize=(4,3))
+        # quadratic scaling
+        scale = 1e-3 / math.pow(xMin,2)
+        scaleMinQuad = math.pow(xMin,2) * scale
+        scaleMaxQuad = math.pow(xMax,2) * scale
 
-    plt.loglog([xMin, xMax],[scaleMin,scaleMax],linestyle=':', color='k')
+        axes[iStrain].loglog([xMin, xMax], [scaleMinLin,scaleMaxLin], linestyle=':', color='k')
+        axes[iStrain].loglog([xMin, xMax], [scaleMinQuad,scaleMaxQuad], linestyle=':', color='k')
 
-    iPlot = 0
-    for method in methods:
+        iPlot = 0
+        for method in methods:
 
-        x = []
-        y = []
+            x = []
+            y = []
 
-        for resolution in resolutions:
+            for resolution in resolutions:
 
-            filename = "./output_%s_%i/output.2000.nc" %(method,resolution)
-            filenameIC = "./ic_%i.nc" %(resolution)
+                filename = "./output_%s_%i/output.2000.nc" %(method,resolution)
+                filenameIC = "./ic_%i.nc" %(resolution)
 
-            print(filename, filenameIC)
+                print(filename, filenameIC)
 
-            if (method == "weak"):
-                normE11, normE22, normE12 = get_norm_cell(filenameIC, filename, latitudeLimit)
-            else:
-                normE11, normE22, normE12 = get_norm_vertex(filenameIC, filename, latitudeLimit)
+                if (method == "weak"):
+                    normE11, normE22, normE12 = get_norm_cell(filenameIC, filename, latitudeLimit)
+                else:
+                    normE11, normE22, normE12 = get_norm_vertex(filenameIC, filename, latitudeLimit)
 
-            x.append(get_resolution(filename, latitudeLimit))
-            y.append(normE11)
+                x.append(get_resolution(filename, latitudeLimit))
+                if (strain == "strain11"):
+                    y.append(normE11)
+                elif (strain == "strain22"):
+                    y.append(normE22)
+                elif (strain == "strain12"):
+                    y.append(normE12)
 
-        plt.loglog(x,y, marker='o', color=lineColours[iPlot], ls=lineStyles[iPlot], markersize=5.0)
+            axes[iStrain].loglog(x,y, marker='o', color=lineColours[iPlot], ls="solid", markersize=5.0, label="%s" %(method.capitalize()))
 
-        iPlot = iPlot + 1
+            iPlot = iPlot + 1
 
-    #legendLabels = ["Quadratic scaling","Wachspress", "PWL", "Weak", "WeakWachs"]
-    legendLabels = ["Linear scaling","Wachspress", "PWL", "Weak", "WeakWachs"]
+        axes[iStrain].legend(frameon=False, loc=2, fontsize=8, handlelength=4)
 
-    plt.legend(legendLabels, frameon=False, loc=2, fontsize=8, handlelength=4)
+        axes[iStrain].set_xlabel("Grid resolution")
+        axes[iStrain].set_ylabel(r"$L_2$ error norm")
+        #axes[iStrain].set_xlim([xMin, xMax])
 
-    ax = plt.gca()
-    ax.set_xlabel("Grid resolution")
-    ax.set_ylabel(r"$L_2$ error norm")
-    ax.set_xlim([xMin, xMax])
+        iStrain = iStrain + 1
+
 
     plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
-    plt.savefig("strain_scaling.png",dpi=400)
+    plt.savefig("strain_scaling.png", dpi=400)
 
 #-------------------------------------------------------------------------------
 
