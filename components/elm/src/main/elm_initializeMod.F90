@@ -906,8 +906,8 @@ contains
     ! --------------------------------------------------------------
     ! Initialise the FATES model state structure cold-start
     ! --------------------------------------------------------------
-
-    if ( use_fates .and. .not.is_restart() .and. finidat == ' ' .and. nsrest /= nsrBranch) then
+   
+    if ( use_fates .and. .not.is_restart() .and. finidat == ' ') then
        call alm_fates%init_coldstart(canopystate_vars, soilstate_vars, frictionvel_vars)
     end if
 
