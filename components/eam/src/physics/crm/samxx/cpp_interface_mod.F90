@@ -12,6 +12,9 @@ module cpp_interface_mod
     subroutine crm(ncrms_in, pcols_in, dt_gl, plev, crm_input_bflxls, crm_input_wndls, crm_input_zmid, crm_input_zint, &
                    crm_input_pmid, crm_input_pint, crm_input_pdel, crm_input_ul, crm_input_vl, &
                    crm_input_tl, crm_input_qccl, crm_input_qiil, crm_input_ql, crm_input_tau00, &
+#ifdef MMF_ESMT
+                   crm_input_ul_esmt, crm_input_vl_esmt, &
+#endif
                    crm_input_t_vt, crm_input_q_vt, &
                    crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
                    crm_state_qt, crm_state_qp, crm_state_qn, crm_rad_qrad, crm_rad_temperature, &
@@ -32,7 +35,11 @@ module cpp_interface_mod
 #endif 
                    crm_output_tk, crm_output_tkh, crm_output_qcl, crm_output_qci, crm_output_qpl, crm_output_qpi, &
                    crm_output_z0m, crm_output_taux, crm_output_tauy, crm_output_precc, crm_output_precl, crm_output_precsc, &
-                   crm_output_precsl, crm_output_prec_crm, crm_clear_rh, &
+                   crm_output_precsl, crm_output_prec_crm,        & 
+#ifdef MMF_ESMT
+                   crm_output_u_tend_esmt, crm_output_v_tend_esmt, &
+#endif
+                   crm_clear_rh, &
                    lat0, long0, gcolp, igstep,  &
                    use_VT, VT_wn_max, &
                    use_crm_accel, crm_accel_factor, crm_accel_uv) bind(C,name="crm")
@@ -48,6 +55,9 @@ module cpp_interface_mod
       real(crm_rknd), dimension(*) :: crm_input_bflxls, crm_input_wndls, crm_input_zmid, crm_input_zint, &
                                       crm_input_pmid, crm_input_pint, crm_input_pdel, crm_input_ul, crm_input_vl, &
                                       crm_input_tl, crm_input_qccl, crm_input_qiil, crm_input_ql, crm_input_tau00, &
+#ifdef MMF_ESMT
+                                      crm_input_ul_esmt, crm_input_vl_esmt, &
+#endif
                                       crm_input_t_vt, crm_input_q_vt, &
                                       crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
                                       crm_state_qt, crm_state_qp, crm_state_qn, crm_rad_qrad, crm_rad_temperature, &
@@ -68,7 +78,11 @@ module cpp_interface_mod
 #endif
                                       crm_output_qiltend, crm_output_tk, crm_output_tkh, crm_output_qcl, crm_output_qci, crm_output_qpl, crm_output_qpi, &
                                       crm_output_z0m, crm_output_taux, crm_output_tauy, crm_output_precc, crm_output_precl, crm_output_precsc, &
-                                      crm_output_precsl, crm_output_prec_crm, crm_clear_rh, lat0, long0
+                                      crm_output_precsl, crm_output_prec_crm,        & 
+#ifdef MMF_ESMT
+                                      crm_output_u_tend_esmt, crm_output_v_tend_esmt, &
+#endif
+                                      crm_clear_rh, lat0, long0
     end subroutine crm
 
 
