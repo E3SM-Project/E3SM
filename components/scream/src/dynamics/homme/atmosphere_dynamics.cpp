@@ -44,30 +44,20 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     prim_init_data_structures_f90 ();
   }
 
-
   using namespace ekat::units;
 
-  // The units of mixing ratio Q are technically non-dimensional.
-  // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Q = kg/kg;
-  auto Qdp = Q * Pa;
-  Q.set_string("kg/kg");
-  Qdp.set_string("kg/kg Pa");
-
   constexpr int NGP  = HOMMEXX_NP;
-  constexpr int QSZ  = HOMMEXX_QSIZE_D;
   constexpr int NVL  = HOMMEXX_NUM_PHYSICAL_LEV;
   constexpr int NTL  = HOMMEXX_NUM_TIME_LEVELS;
-  constexpr int QNTL = HOMMEXX_Q_NUM_TIME_LEVELS;
 
   const auto dyn_grid_name = "Dynamics";
-  const auto dyn_grid = grids_manager->get_grid(dyn_grid_name);
-  const int ne = dyn_grid->get_num_local_dofs()/(NGP*NGP);
+  m_dyn_grid = grids_manager->get_grid(dyn_grid_name);
+  const int ne = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
 
   // Sanity check for the grid. This should *always* pass, since Homme builds the grids
   EKAT_REQUIRE_MSG(get_num_local_elems_f90()==ne,
-                     "Error! The number of elements computed from the Dynamis grid num_dof()\n"
-                     "       does not match the number of elements internal in Homme.\n");
+      "Error! The number of elements computed from the Dynamis grid num_dof()\n"
+      "       does not match the number of elements internal in Homme.\n");
   const int nmf = get_homme_param<int>("num momentum forcings");
 
   // Create the identifiers of input and output fields
@@ -77,14 +67,11 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   Tags dyn_3d_vector_tags        {EL,   CMP,GP,GP,VL};
   Tags dyn_3d_scalar_state_tags  {EL,TL,    GP,GP,VL};
   Tags dyn_3d_vector_state_tags  {EL,TL,CMP,GP,GP,VL};
-  Tags dyn_3d_tracer_state_tags  {EL,TL,VAR,GP,GP,VL};
 
   // Inputs
-  FieldLayout FQ_layout  { {EL,VAR,GP,GP,VL}, {ne,QSZ,NGP,NGP,NVL} };
   FieldLayout FM_layout  { {EL,CMP,GP,GP,VL}, {ne,nmf,NGP,NGP,NVL} };
   FieldLayout FT_layout  { {EL,    GP,GP,VL}, {ne,    NGP,NGP,NVL} };
 
-  m_required_fields.emplace("FQ", FQ_layout, Q,          dyn_grid_name);
   m_required_fields.emplace("FM", FM_layout, m/pow(s,2), dyn_grid_name);
   m_required_fields.emplace("FT", FT_layout, K/s,        dyn_grid_name);
 
@@ -92,18 +79,77 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   FieldLayout dyn_scalar_3d_mid_layout { dyn_3d_scalar_state_tags,  {ne, NTL,    NGP,NGP,NVL} };
   FieldLayout dyn_scalar_3d_int_layout { dyn_3d_scalar_state_tags,  {ne, NTL,    NGP,NGP,NVL+1} };
   FieldLayout dyn_vector_3d_mid_layout { dyn_3d_vector_state_tags,  {ne, NTL,  2,NGP,NGP,NVL} };
-  FieldLayout dyn_tracers_layout       { dyn_3d_tracer_state_tags,  {ne,QNTL,QSZ,NGP,NGP,NVL} };
   m_computed_fields.emplace("u",       dyn_vector_3d_mid_layout, m/s, dyn_grid_name);
   m_computed_fields.emplace("vtheta",  dyn_scalar_3d_mid_layout, K,   dyn_grid_name);
   m_computed_fields.emplace("phi",     dyn_scalar_3d_int_layout, Pa*pow(m,3)/kg, dyn_grid_name);
   m_computed_fields.emplace("w",       dyn_scalar_3d_int_layout, m/s, dyn_grid_name);
   m_computed_fields.emplace("dp",      dyn_scalar_3d_mid_layout, Pa,  dyn_grid_name);
-  m_computed_fields.emplace("qdp",     dyn_tracers_layout,       Qdp, dyn_grid_name);
 
   const int ftype = get_homme_param<int>("ftype");
   EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,
                      "Error! The scream interface to homme *assumes* ftype to be 2 or 4.\n"
                      "       Found " + std::to_string(ftype) + " instead.\n");
+
+  // Input-output
+  m_inout_groups_req.emplace("TRACERS",m_dyn_grid->name());
+  m_in_groups_req.emplace("TRACERS TENDENCY",m_dyn_grid->name());
+}
+
+// =========================================================================================
+void HommeDynamics::
+set_required_group (const FieldGroup<const Real>& group)
+{
+  if (group.m_info->size()>0) {
+    const auto& name = group.m_info->m_group_name;
+
+    EKAT_REQUIRE_MSG(name=="TRACERS TENDENCY",
+      "Error! We were not expecting a field group called '" << name << "\n");
+
+    EKAT_REQUIRE_MSG(group.m_info->m_bundled,
+        "Error! Shoc expects bundled fields for tracers.\n");
+
+    m_dyn_fields_in["FQ"] = *group.m_bundle;
+  } else {
+    // This must be a Homme-standalone run. Allocate a field manually
+    // TODO: add check to make sure this is indeed a standalone run
+    constexpr int qsize_d = HOMMEXX_QSIZE_D;
+    const auto VAR = ShortFieldTagsNames::VAR;
+    auto layout = m_dyn_grid->get_3d_vector_layout(true,VAR,qsize_d);
+    auto nondim = ekat::units::Units::nondimensional();
+    FieldIdentifier FQ_fid("FQ",layout,nondim,m_dyn_grid->name());
+    Field<Real> FQ(FQ_fid);
+    FQ.get_header().get_alloc_properties().request_allocation<Homme::Scalar>();
+    FQ.allocate_view();
+    m_dyn_fields_in.emplace("FQ",FQ);
+  }
+}
+
+void HommeDynamics::
+set_updated_group (const FieldGroup<Real>& group)
+{
+  if (group.m_info->size()>0) {
+    const auto& name = group.m_info->m_group_name;
+
+    EKAT_REQUIRE_MSG(name=="TRACERS",
+      "Error! We were not expecting a field group called '" << name << "\n");
+
+    EKAT_REQUIRE_MSG(group.m_info->m_bundled,
+        "Error! Shoc expects bundled fields for tracers.\n");
+
+    m_dyn_fields_out["Q"] = *group.m_bundle;
+  } else {
+    // This must be a Homme-standalone run. Allocate a field manually
+    // TODO: add check to make sure this is indeed a standalone run
+    constexpr int qsize_d = HOMMEXX_QSIZE_D;
+    const auto VAR = ShortFieldTagsNames::VAR;
+    auto layout = m_dyn_grid->get_3d_vector_layout(true,VAR,qsize_d);
+    auto nondim = ekat::units::Units::nondimensional();
+    FieldIdentifier Q_fid("Q",layout,nondim,m_dyn_grid->name());
+    Field<Real> Q(Q_fid);
+    Q.get_header().get_alloc_properties().request_allocation<Homme::Scalar>();
+    Q.allocate_view();
+    m_dyn_fields_out.emplace("Q",Q);
+  }
 }
 
 void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
@@ -126,12 +172,10 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   constexpr int NTL  = HOMMEXX_NUM_TIME_LEVELS;
   constexpr int NVL  = HOMMEXX_NUM_LEV;
   constexpr int NVLI = HOMMEXX_NUM_LEV_P;
-  constexpr int QNTL = HOMMEXX_Q_NUM_TIME_LEVELS;
 
   // Computed fields
-  for (auto& it : m_dyn_fields_out) {
-    const auto& name = it.first;
-    const auto& f    = it.second;
+  for (ci_string name : {"u", "vtheta", "phi", "w", "dp", "Q"} ) {
+    const auto& f = m_dyn_fields_out.at(name);
 
     if (name=="u") {
       // Velocity
@@ -163,12 +207,12 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
       auto dp_in = f.template get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
       using dp_type = std::remove_reference<decltype(dp)>::type;
       dp = dp_type(dp_in.data(),num_elems);
-    } else if (name=="qdp") {
+    } else if (name=="Q") {
       // Tracers mass
-      auto& qdp = tracers.qdp;
-      auto qdp_in = f.template get_reshaped_view<Scalar*[QNTL][QSIZE_D][NP][NP][NVL]>();
-      using qdp_type = std::remove_reference<decltype(qdp)>::type;
-      qdp = qdp_type(qdp_in.data(),num_elems);
+      auto& Q = tracers.Q;
+      auto Q_in = f.template get_reshaped_view<Scalar*[QSIZE_D][NP][NP][NVL]>();
+      using Q_type = std::remove_reference<decltype(Q)>::type;
+      Q = Q_type(Q_in.data(),num_elems);
     } else {
       ekat::error::runtime_abort("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
     }
@@ -180,9 +224,8 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   //       Therefore, we need to cast away the const from the scream input fields.
   // TODO: make Hommexx Elements structure store const views for stuff that is indeed (logically) const.
   auto& forcing = Homme::Context::singleton().get<Homme::ElementsForcing>();
-  for (auto& it : m_dyn_fields_in) {
-    const auto& name = it.first;
-    const auto& f    = it.second;
+  for (ci_string name : {"FQ", "FM", "FT"}) {
+    const auto& f = m_dyn_fields_in.at(name);
 
     if (name=="FQ") {
       // Tracers forcing
