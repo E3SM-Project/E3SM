@@ -55,6 +55,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_inventory_init
    use elm_varctl        , only : use_fates_fixed_biogeog
    use elm_varctl        , only : fates_inventory_ctrl_filename
+   use elm_varctl        , only : nsrest, nsrBranch
    use elm_varctl        , only : use_nitrif_denitrif
    use elm_varcon        , only : tfrz
    use elm_varcon        , only : spval 
@@ -145,8 +146,14 @@ module ELMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : InitHydrSites
    use FatesPlantHydraulicsMod, only : RestartHydrStates
 
-   use dynHarvestMod          , only : num_harvest_vars, harvest_varnames
-   
+   use dynHarvestMod          , only : harvest_rates ! these are dynamic in space and time
+   use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
+
+   use FatesConstantsMod      , only : hlm_harvest_area_fraction
+   use FatesConstantsMod      , only : hlm_harvest_carbon
+
+   use dynSubgridControlMod, only : get_do_harvest ! this gets the namelist value
+
    use FatesInterfaceTypesMod , only : bc_in_type, bc_out_type
    use CLMFatesParamInterfaceMod         , only : FatesReadParameters
 
@@ -255,7 +262,7 @@ contains
      integer                                        :: pass_is_restart
      integer                                        :: pass_cohort_age_tracking
      integer                                        :: pass_biogeog
-     integer                                        :: pass_num_lu_harvest_cats
+     integer                                        :: pass_num_lu_harvest_types
      integer                                        :: pass_lu_harvest
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
@@ -281,7 +288,7 @@ contains
      
      if (use_fates) then
 
-        verbose_output = .false.
+verbose_output = .false.
         call FatesInterfaceInit(iulog, verbose_output)
 
         ! Force FATES parameters that are recieve type, to the unset value
@@ -323,7 +330,7 @@ contains
         call set_fates_ctrlparms('phosphorus_spec',ival=1)
            
         
-        if(is_restart()) then
+        if(is_restart() .or. nsrest .eq. nsrBranch) then
            pass_is_restart = 1
         else
            pass_is_restart = 0
@@ -374,18 +381,18 @@ contains
            pass_logging = 0
         end if
 
-        if(do_elm_fates_harvest) then
-!        if(get_do_harvest()) then
+!        if(do_elm_fates_harvest) then
+        if(get_do_harvest()) then
            pass_logging = 1
-           pass_num_lu_harvest_cats = num_harvest_vars
+           pass_num_lu_harvest_types = num_harvest_vars
            pass_lu_harvest = 1
         else
            pass_lu_harvest = 0
-           pass_num_lu_harvest_cats = 0
+           pass_num_lu_harvest_types = 0
         end if
 
         call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
-        call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_cats)
+        call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_types)
         call set_fates_ctrlparms('use_logging',ival=pass_logging)
         
         if(use_fates_ed_st3) then
@@ -718,6 +725,7 @@ contains
       integer  :: t                        ! topounit index (HLM)
       integer  :: ifp                      ! patch index
       integer  :: p                        ! HLM patch index
+      integer  :: g                        ! HLM grid index
       integer  :: nc                       ! clump index
       integer  :: nlevsoil                 ! number of soil layers at the site
 
@@ -780,7 +788,17 @@ contains
             this%fates(nc)%bc_in(s)%bsw_sisl(1:nlevsoil)    = soilstate_inst%bsw_col(c,1:nlevsoil)
             this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil) =  col_ws%h2osoi_liq(c,1:nlevsoil)
          end if
-         
+
+         ! get the harvest data, which is by gridcell
+         ! for now there is one veg column per gridcell, so store all harvest data in each site
+         ! this will eventually change
+         ! the harvest data are zero if today is before the start of the harvest time series
+         g = col_pp%gridcell(c)
+         if (get_do_harvest()) then
+            this%fates(nc)%bc_in(s)%hlm_harvest_rates = harvest_rates(:,g)
+            this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
+            this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
+         end if
 
       end do
 
