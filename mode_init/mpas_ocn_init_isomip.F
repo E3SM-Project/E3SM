@@ -268,7 +268,7 @@ contains
 
         landIceFraction(:) = 0.0_RKIND
         landIceSurfaceTemperature(:) = -25.0_RKIND !doesn't matter because ice is insulating
-        modifySSHMask(:) = 0
+        modifyLandIcePressureMask(:) = 0
         landIceMask(:) = 0
 
 
@@ -295,7 +295,7 @@ contains
           end if
 
           if(ssh(iCell) < 0.0_RKIND) then
-            modifySSHMask(iCell) = 1
+            modifyLandIcePressureMask(iCell) = 1
           end if
 
           if(.not. associated(activeTracers)) then
@@ -341,20 +341,19 @@ contains
 
       ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid)
       !  based on ssh, bottomDepth and refBottomDepth
-      call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
+      call ocn_init_vertical_grid(domain, iErr=iErr)
 
       if(iErr .ne. 0) then
-        call mpas_log_write( 'ocn_init_ssh_and_landIcePressure_vertical_grid failed.', MPAS_LOG_CRIT)
-        return
+        call mpas_log_write( 'ocn_init_vertical_grid failed.', MPAS_LOG_CRIT)
+        call mpas_dmpar_finalize(domain % dminfo)
       end if
 
-      ! compute or update the land-ice pressure (or possibly SSH), also computing density along the way
-      ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
+      ! compute the land-ice pressure, also computing density along the way.
       call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
 
       if(iErr .ne. 0) then
          call mpas_log_write( 'ocn_init_ssh_and_landIcePressure_balance failed.', MPAS_LOG_CRIT)
-         return
+         call mpas_dmpar_finalize(domain % dminfo)
       end if
 
       block_ptr => domain % blocklist
