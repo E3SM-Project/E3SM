@@ -221,6 +221,7 @@ module seq_diag_mct
   character(len=*),parameter :: latname   = 'lat'
   character(len=*),parameter :: afracname = 'afrac'
   character(len=*),parameter :: lfracname = 'lfrac'
+  character(len=*),parameter :: lfrinname = 'lfrin'
   character(len=*),parameter :: ofracname = 'ofrac'
   character(len=*),parameter :: ifracname = 'ifrac'
 
@@ -853,7 +854,7 @@ contains
     ip = p_inst
 
     kArea = mct_aVect_indexRA(dom_l%data,afldname)
-    kl    = mct_aVect_indexRA(frac_l,lfracname)
+    kl    = mct_aVect_indexRA(frac_l,lfrinname)
 
     if (present(do_l2x)) then
        if (first_time) then

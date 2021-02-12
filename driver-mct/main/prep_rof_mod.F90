@@ -82,6 +82,8 @@ module prep_rof_mod
   character(CXX) :: lnd2rof_normal_fluxes
   ! whether the model is being run with a separate irrigation field
   logical :: have_irrig_field
+  ! samegrid atm and lnd
+  logical :: samegrid_al   ! samegrid atm and lnd
   !================================================================================================
 
 contains
@@ -175,6 +177,8 @@ contains
 
        samegrid_lr = .true.
        if (trim(lnd_gnam) /= trim(rof_gnam)) samegrid_lr = .false.
+       samegrid_al = .true.
+       if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
 
        if (lnd_c2_rof) then
           if (iamroot_CPLID) then
@@ -451,10 +455,11 @@ contains
     integer, save :: index_l2x_coszen_str
     integer, save :: index_x2r_coszen_str
 
-    integer, save :: index_lfrac
+    integer, save :: index_frac
+    real(r8)      :: frac
+    character(CL) :: fracstr
     logical, save :: first_time = .true.
     logical, save :: flds_wiso_rof = .false.
-    real(r8)      :: lfrac
     integer       :: nflds,lsize
     logical       :: iamroot
     character(CL) :: field        ! field string
@@ -519,27 +524,32 @@ contains
           index_x2r_Flrl_rofl_HDO = mct_aVect_indexRA(x2r_r,'Flrl_rofl_HDO' )
           index_x2r_Flrl_rofi_HDO = mct_aVect_indexRA(x2r_r,'Flrl_rofi_HDO' )
        end if
-       index_lfrac = mct_aVect_indexRA(fractions_r,"lfrac")
 
-       index_lfrac = mct_aVect_indexRA(fractions_r,"lfrac")
+       if (samegrid_al) then
+          index_frac = mct_aVect_indexRA(fractions_r,"lfrac")
+          fracstr = 'lfrac'
+       else
+          index_frac = mct_aVect_indexRA(fractions_r,"lfrin")
+          fracstr = 'lfrin'
+       endif
 
        mrgstr(index_x2r_Flrl_rofsur) = trim(mrgstr(index_x2r_Flrl_rofsur))//' = '// &
-            'lfrac*l2x%Flrl_rofsur'
+            trim(fracstr)//'*l2x%Flrl_rofsur'
        mrgstr(index_x2r_Flrl_rofgwl) = trim(mrgstr(index_x2r_Flrl_rofgwl))//' = '// &
-            'lfrac*l2x%Flrl_rofgwl'
+            trim(fracstr)//'*l2x%Flrl_rofgwl'
        mrgstr(index_x2r_Flrl_rofsub) = trim(mrgstr(index_x2r_Flrl_rofsub))//' = '// &
-            'lfrac*l2x%Flrl_rofsub'
+            trim(fracstr)//'*l2x%Flrl_rofsub'
        mrgstr(index_x2r_Flrl_rofdto) = trim(mrgstr(index_x2r_Flrl_rofdto))//' = '// &
-            'lfrac*l2x%Flrl_rofdto'
+            trim(fracstr)//'*l2x%Flrl_rofdto'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
-            'lfrac*l2x%Flrl_rofi'
+            trim(fracstr)//'*l2x%Flrl_rofi'
        if (trim(cime_model).eq.'e3sm') then
           mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
-               'lfrac*l2x%Flrl_demand'
+               trim(fracstr)//'*l2x%Flrl_demand'
        endif
        if (have_irrig_field) then
           mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
-               'lfrac*l2x%Flrl_irrig'
+               trim(fracstr)//'*l2x%Flrl_irrig'
        end if
        if(trim(cime_model) .eq. 'e3sm') then
           mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsur))//' = '//'l2x%Flrl_Tqsur'
@@ -547,17 +557,17 @@ contains
        endif
        if ( flds_wiso_rof ) then
           mrgstr(index_x2r_Flrl_rofl_16O) = trim(mrgstr(index_x2r_Flrl_rofl_16O))//' = '// &
-               'lfrac*l2x%Flrl_rofl_16O'
+               trim(fracstr)//'*l2x%Flrl_rofl_16O'
           mrgstr(index_x2r_Flrl_rofi_16O) = trim(mrgstr(index_x2r_Flrl_rofi_16O))//' = '// &
-               'lfrac*l2x%Flrl_rofi_16O'
+               trim(fracstr)//'*l2x%Flrl_rofi_16O'
           mrgstr(index_x2r_Flrl_rofl_18O) = trim(mrgstr(index_x2r_Flrl_rofl_18O))//' = '// &
-               'lfrac*l2x%Flrl_rofl_18O'
+               trim(fracstr)//'*l2x%Flrl_rofl_18O'
           mrgstr(index_x2r_Flrl_rofi_18O) = trim(mrgstr(index_x2r_Flrl_rofi_18O))//' = '// &
-               'lfrac*l2x%Flrl_rofi_18O'
+               trim(fracstr)//'*l2x%Flrl_rofi_18O'
           mrgstr(index_x2r_Flrl_rofl_HDO) = trim(mrgstr(index_x2r_Flrl_rofl_HDO))//' = '// &
-               'lfrac*l2x%Flrl_rofl_HDO'
+               trim(fracstr)//'*l2x%Flrl_rofl_HDO'
           mrgstr(index_x2r_Flrl_rofi_HDO) = trim(mrgstr(index_x2r_Flrl_rofi_HDO))//' = '// &
-               'lfrac*l2x%Flrl_rofi_HDO'
+               trim(fracstr)//'*l2x%Flrl_rofi_HDO'
        end if
 	   
        if ( rof_heat ) then
@@ -598,29 +608,29 @@ contains
     end if
 
     do i = 1,lsize
-       lfrac = fractions_r%rAttr(index_lfrac,i)
-       x2r_r%rAttr(index_x2r_Flrl_rofsur,i) = l2x_r%rAttr(index_l2x_Flrl_rofsur,i) * lfrac
-       x2r_r%rAttr(index_x2r_Flrl_rofgwl,i) = l2x_r%rAttr(index_l2x_Flrl_rofgwl,i) * lfrac
-       x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * lfrac
-       x2r_r%rAttr(index_x2r_Flrl_rofdto,i) = l2x_r%rAttr(index_l2x_Flrl_rofdto,i) * lfrac
-       x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * lfrac
+       frac = fractions_r%rAttr(index_frac,i)
+       x2r_r%rAttr(index_x2r_Flrl_rofsur,i) = l2x_r%rAttr(index_l2x_Flrl_rofsur,i) * frac
+       x2r_r%rAttr(index_x2r_Flrl_rofgwl,i) = l2x_r%rAttr(index_l2x_Flrl_rofgwl,i) * frac
+       x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * frac
+       x2r_r%rAttr(index_x2r_Flrl_rofdto,i) = l2x_r%rAttr(index_l2x_Flrl_rofdto,i) * frac
+       x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * frac
        if (trim(cime_model).eq.'e3sm') then
-          x2r_r%rAttr(index_x2r_Flrl_demand,i) = l2x_r%rAttr(index_l2x_Flrl_demand,i) * lfrac
+          x2r_r%rAttr(index_x2r_Flrl_demand,i) = l2x_r%rAttr(index_l2x_Flrl_demand,i) * frac
        endif
        if (have_irrig_field) then
-          x2r_r%rAttr(index_x2r_Flrl_irrig,i) = l2x_r%rAttr(index_l2x_Flrl_irrig,i) * lfrac
+          x2r_r%rAttr(index_x2r_Flrl_irrig,i) = l2x_r%rAttr(index_l2x_Flrl_irrig,i) * frac
        end if
        if(trim(cime_model) .eq. 'e3sm') then
          x2r_r%rAttr(index_x2r_Flrl_Tqsur,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsur,i)
          x2r_r%rAttr(index_x2r_Flrl_Tqsub,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsub,i)
        endif
        if ( flds_wiso_rof ) then
-          x2r_r%rAttr(index_x2r_Flrl_rofl_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_16O,i) * lfrac
-          x2r_r%rAttr(index_x2r_Flrl_rofi_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_16O,i) * lfrac
-          x2r_r%rAttr(index_x2r_Flrl_rofl_18O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_18O,i) * lfrac
-          x2r_r%rAttr(index_x2r_Flrl_rofi_18O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_18O,i) * lfrac
-          x2r_r%rAttr(index_x2r_Flrl_rofl_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_HDO,i) * lfrac
-          x2r_r%rAttr(index_x2r_Flrl_rofi_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_HDO,i) * lfrac
+          x2r_r%rAttr(index_x2r_Flrl_rofl_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_16O,i) * frac
+          x2r_r%rAttr(index_x2r_Flrl_rofi_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_16O,i) * frac
+          x2r_r%rAttr(index_x2r_Flrl_rofl_18O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_18O,i) * frac
+          x2r_r%rAttr(index_x2r_Flrl_rofi_18O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_18O,i) * frac
+          x2r_r%rAttr(index_x2r_Flrl_rofl_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_HDO,i) * frac
+          x2r_r%rAttr(index_x2r_Flrl_rofi_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_HDO,i) * frac
        end if
       
        if ( rof_heat ) then
