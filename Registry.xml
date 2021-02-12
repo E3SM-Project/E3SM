@@ -2400,8 +2400,8 @@
 		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 description="pressure used in the momentum equation"
 		/>
-		<var name="modifySSHMask" type="integer" dimensions="nCells Time" units="unitless"
-			description="A mask indicating where the SSH can be modified from refSSH through iteriative init/forward runs.  The mask is 1 under (and perhaps near) ice shelves and 0 elsenwere."
+		<var name="modifyLandIcePressureMask" type="integer" dimensions="nCells Time" units="unitless"
+			description="A mask indicating where landIcePressure can be modified during iterative init.  The mask is 1 under (and perhaps near) ice shelves and 0 elsewhere."
 			packages="initMode"
 		/>
 		<var name="normalTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
