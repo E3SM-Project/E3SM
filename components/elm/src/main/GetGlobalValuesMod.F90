@@ -153,12 +153,12 @@ contains
        write(iulog,*)'gridcell longitude    = ',grc_pp%londeg(igrc)
        write(iulog,*)'gridcell latitude     = ',grc_pp%latdeg(igrc)
     
-    else if (trim(clmlevel) == namet) then
+    else if (trim(elmlevel) == namet) then
        itun = decomp_index
        igrc = top_pp%gridcell(itun)
        write(iulog,*)'local  topounit index = ',itun
-       write(iulog,*)'global topounit index = ',GetGlobalIndex(decomp_index=itun, clmlevel=namet)
-       write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, clmlevel=nameg)
+       write(iulog,*)'global topounit index = ',GetGlobalIndex(decomp_index=itun, elmlevel=namet)
+       write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, elmlevel=nameg)
        write(iulog,*)'gridcell longitude    = ',grc_pp%londeg(igrc)
        write(iulog,*)'gridcell latitude     = ',grc_pp%latdeg(igrc)
       ! write(iulog,*)'topounit type         = ',top_pp%itype(decomp_index)

@@ -342,7 +342,7 @@ contains
   end subroutine decompInit_lnd
 
   !------------------------------------------------------------------------------
-  subroutine decompInit_clumps(glcmask,num_tunits_per_grd)
+  subroutine decompInit_clumps(glcmask)
     !
     ! !DESCRIPTION:
     ! This subroutine initializes the land surface decomposition into a clump
@@ -356,7 +356,7 @@ contains
     ! !ARGUMENTS:
     implicit none
     integer , pointer, optional   :: glcmask(:)  ! glc mask
-    integer , pointer, optional   :: num_tunits_per_grd(:)  ! Number of topounits per grid
+    !integer , pointer, optional   :: num_tunits_per_grd(:)  ! Number of topounits per grid
     !
     ! !LOCAL VARIABLES:
     integer :: ln,an              ! indices
@@ -659,7 +659,7 @@ contains
   end subroutine decompInit_clumps
 
   !------------------------------------------------------------------------------
-  subroutine decompInit_gtlcp(lns,lni,lnj,glcmask,num_tunits_per_grd)
+  subroutine decompInit_gtlcp(lns,lni,lnj,glcmask)
     !
     ! !DESCRIPTION:
     ! Determine gsMaps for topounits, landunits, columns, pfts and cohorts
@@ -674,7 +674,7 @@ contains
     implicit none
     integer , intent(in) :: lns,lni,lnj ! land domain global size
     integer , pointer, optional   :: glcmask(:)  ! glc mask
-    integer , pointer, optional   :: num_tunits_per_grd(:)  ! Number of topounits per grid
+    !integer , pointer, optional   :: num_tunits_per_grd(:)  ! Number of topounits per grid
     !
     ! !LOCAL VARIABLES:
     integer :: gi,ti,li,ci,pi,coi ! indices
@@ -1727,7 +1727,7 @@ contains
   end subroutine decompInit_lnd_using_gp
 
   !------------------------------------------------------------------------------
-  subroutine decompInit_ghosts(glcmask,num_tunits_per_grd)
+  subroutine decompInit_ghosts(glcmask)
     !
     ! !DESCRIPTION:
     ! On each proc, determine the number of following ghost/halo subgrid quantities:
@@ -1749,7 +1749,7 @@ contains
     !
     ! !ARGUMENTS:
     integer , pointer, optional  :: glcmask(:)             ! glc mask
-    integer , pointer, optional  :: num_tunits_per_grd(:)             ! glc mask
+    !integer , pointer, optional  :: num_tunits_per_grd(:)             ! glc mask
     !
     ! !LOCAL VARIABLES:
     integer                      :: begg,endg              ! begin/end indices for grid
