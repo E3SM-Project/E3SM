@@ -29,6 +29,14 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 def load_comments(filepath):
 ###############################################################################
+    """
+    Loading and dumping YAML files does not preserve the whitespace or comments
+    from the original. Since SCREAM users will be interacting with the scream_input.yaml,
+    we really want to keep these comments. This function will parse the text of
+    a YAML file and store the comments and whitespace in a simple list of 3-ples
+    [(do_insert, line idx, text)] with the idea that this data can be applied
+    to a freshly generated YAML file via the apply_comments function.
+    """
     with open(filepath, "r") as fd:
         lines = fd.readlines()
 
@@ -58,6 +66,9 @@ def load_comments(filepath):
 ###############################################################################
 def apply_comments(filepath, comments):
 ###############################################################################
+    """
+    Apply the comments from load_comments to a freshly generated YAML file.
+    """
     with open(filepath, "r") as fd:
         lines = fd.readlines()
 
@@ -143,7 +154,7 @@ def buildnml(case, caseroot, compname):
             if not os.path.exists(os.path.join(target, item)):
                 safe_copy(os.path.join(src, item), target)
 
-    # Load scream inputs from yaml
+    # Load scream inputs from yaml and store original-file comments
     comments = load_comments(yaml_tgt)
     scream_input = ordered_load(yaml_tgt)
 
@@ -154,6 +165,8 @@ def buildnml(case, caseroot, compname):
         expect("\n" not in envval, "Multiline env vals breaks us")
         modified |= multilevel_dict_change(scream_input, keys, envval)
 
+    # If we have to re-dump the YAML file due to CIME case updates,
+    # we need to also restore the original comments.
     if modified:
         ordered_dump(scream_input, yaml_tgt)
         apply_comments(yaml_tgt, comments)
