@@ -5,16 +5,125 @@ Namelist creator for E3SM's SCREAM component
 """
 
 import os, sys
+from collections import OrderedDict
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
+# Add path to scream libs
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts"))
+
+# Cime imports
 from standard_script_setup import *
 from CIME.case import Case
 from CIME.utils import expect, run_cmd_no_fail, safe_copy, SharedArea
 from CIME.buildnml import create_namelist_infile, parse_input
 
+# SCREAM imports
+from utils import ensure_yaml, multilevel_dict_change
+ensure_yaml()
+import yaml
+
 logger = logging.getLogger(__name__)
+
+###############################################################################
+def load_comments(filepath):
+###############################################################################
+    """
+    Loading and dumping YAML files does not preserve the whitespace or comments
+    from the original. Since SCREAM users will be interacting with the scream_input.yaml,
+    we really want to keep these comments. This function will parse the text of
+    a YAML file and store the comments and whitespace in a simple list of 3-ples
+    [(do_insert, line idx, text)] with the idea that this data can be applied
+    to a freshly generated YAML file via the apply_comments function.
+    """
+    with open(filepath, "r") as fd:
+        lines = fd.readlines()
+
+    result = []
+    for idx, line in enumerate(lines):
+        sline = line.strip()
+
+        if sline.startswith("%YAML"):
+            result.append((True, idx, line))
+        elif sline in ["---", "..."]:
+            result.append((True, idx, line))
+        elif sline == "":
+            result.append((True, idx, line))
+        elif "#" in line:
+            try:
+                before, after = line.split("#")
+            except ValueError:
+                expect(False, "Bad line, too many #: {}".format(line))
+            before_nows = before.strip()
+            if before_nows == "":
+                result.append((True, idx, line))
+            else:
+                result.append((False, idx, after))
+
+    return result
+
+###############################################################################
+def apply_comments(filepath, comments):
+###############################################################################
+    """
+    Apply the comments from load_comments to a freshly generated YAML file.
+    """
+    with open(filepath, "r") as fd:
+        lines = fd.readlines()
+
+    for is_insert, idx, contents in comments:
+        if is_insert:
+            lines.insert(idx, contents)
+        else:
+            lines[idx] = "{} # {}".format(lines[idx].rstrip(), contents)
+
+    with open(filepath, "w") as fd:
+        fd.writelines(lines)
+
+###############################################################################
+def ordered_load(item, Loader=yaml.SafeLoader, object_pairs_hook=OrderedDict):
+###############################################################################
+    """
+    Copied from: https://stackoverflow.com/a/21912744
+    Added ability to pass filename
+    """
+    class OrderedLoader(Loader):
+        pass
+    def construct_mapping(loader, node):
+        loader.flatten_mapping(node)
+        return object_pairs_hook(loader.construct_pairs(node))
+    OrderedLoader.add_constructor(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+        construct_mapping)
+
+    if isinstance(item, str) and item.endswith(".yaml"):
+        # Item is a filepath
+        return yaml.load(open(item, "r"), OrderedLoader)
+    else:
+        return yaml.load(item, OrderedLoader)
+
+###############################################################################
+def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
+###############################################################################
+    """
+    Copied from: https://stackoverflow.com/a/21912744
+    Added ability to pass filename
+    """
+    class OrderedDumper(Dumper):
+        pass
+    def _dict_representer(dumper, data):
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            data.items())
+    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+
+    if isinstance(item, str) and item.endswith(".yaml"):
+        # Item is a filepath
+        with open(item, "w") as fd:
+            return yaml.dump(data, fd, OrderedDumper, **kwds)
+    else:
+        return yaml.dump(data, item, OrderedDumper, **kwds)
 
 ###############################################################################
 def buildnml(case, caseroot, compname):
@@ -23,10 +132,18 @@ def buildnml(case, caseroot, compname):
 
     # Copy data inputs to a place where they are convenient to find the run
     # area.
-    rundir = case.get_value("RUNDIR")
-    target = os.path.join(rundir, "data")
-    src    = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
+    rundir   = case.get_value("RUNDIR")
+    target   = os.path.join(rundir, "data")
+    src      = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
+    yaml_tgt = os.path.join(target, "scream_input.yaml")
 
+    # Specify yaml input changes that are driven by case env
+    # maps key-tuple to case env name to lookup
+    yaml_changes = {
+        ("SCREAM", "Start Date"): "RUN_STARTDATE",
+    }
+
+    # Copy scream/data to rundir/data
     with SharedArea():
         if not os.path.isdir(target):
             os.mkdir(target)
@@ -36,6 +153,38 @@ def buildnml(case, caseroot, compname):
             # local mods made by the user.
             if not os.path.exists(os.path.join(target, item)):
                 safe_copy(os.path.join(src, item), target)
+
+    # Load scream inputs from yaml and store original-file comments
+    comments = load_comments(yaml_tgt)
+    scream_input = ordered_load(yaml_tgt)
+
+    # Change yaml values based on case env
+    modified = False
+    for keys, envname in yaml_changes.items():
+        envval = case.get_value(envname)
+        expect("\n" not in envval, "Multiline env vals breaks us")
+        modified |= multilevel_dict_change(scream_input, keys, envval)
+
+    # If we have to re-dump the YAML file due to CIME case updates,
+    # we need to also restore the original comments.
+    if modified:
+        ordered_dump(scream_input, yaml_tgt)
+        apply_comments(yaml_tgt, comments)
+
+    # Create homme namelists from scream inputs
+    homme_nl_path = os.path.join(rundir, scream_input["Atmosphere Driver"]["Grids Manager"]["Dynamics Driven"]["Dynamics Namelist File Name"])
+    with open(homme_nl_path, "w") as fd:
+        for outer, inner in scream_input["HOMME"].items():
+            fd.write("&{}\n".format(outer))
+            for k, v in inner.items():
+                if type(v) is str:
+                    fd.write("{} = '{}'\n".format(k, v))
+                elif type(v) is bool:
+                    fd.write("{} = {}\n".format(k, str(v).lower()))
+                else:
+                    fd.write("{} = {}\n".format(k, v))
+
+            fd.write("/\n")
 
 ###############################################################################
 def _main_func():

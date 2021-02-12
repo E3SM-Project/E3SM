@@ -7,5 +7,5 @@
 !    config_do_restart, config_Restart_timestamp_filename, config_calendar_type,
 !    config_set_restingThickness_to_IC, config_alter_ICs_for_pbcs
 ! 2. To preview the namelists, invoke $CASEROOT preview-namelists and look at
-!    $CASEROOT/CaseDocs/scream_in
+!    $RUNDIR/atm_in
 !----------------------------------------------------------------------------------
