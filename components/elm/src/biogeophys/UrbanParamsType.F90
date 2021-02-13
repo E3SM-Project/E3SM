@@ -11,7 +11,7 @@ module UrbanParamsType
   use decompMod    , only : bounds_type
   use elm_varctl   , only : iulog, fsurdat
   use elm_varcon   , only : namel, grlnd, spval
-  use LandunitType , only : lun_pp                
+  use LandunitType , only : lun_pp
   !
   implicit none
   save
@@ -23,21 +23,21 @@ module UrbanParamsType
   !
   ! !PRIVATE TYPE
   type urbinp_type
-     real(r8), pointer :: canyon_hwr      (:,:)  
-     real(r8), pointer :: wtlunit_roof    (:,:)  
-     real(r8), pointer :: wtroad_perv     (:,:)  
-     real(r8), pointer :: em_roof         (:,:)   
-     real(r8), pointer :: em_improad      (:,:)  
-     real(r8), pointer :: em_perroad      (:,:)  
-     real(r8), pointer :: em_wall         (:,:)  
-     real(r8), pointer :: alb_roof_dir    (:,:,:)  
-     real(r8), pointer :: alb_roof_dif    (:,:,:)  
-     real(r8), pointer :: alb_improad_dir (:,:,:)  
-     real(r8), pointer :: alb_improad_dif (:,:,:)  
-     real(r8), pointer :: alb_perroad_dir (:,:,:)  
-     real(r8), pointer :: alb_perroad_dif (:,:,:)  
-     real(r8), pointer :: alb_wall_dir    (:,:,:)  
-     real(r8), pointer :: alb_wall_dif    (:,:,:)  
+     real(r8), pointer :: canyon_hwr      (:,:)
+     real(r8), pointer :: wtlunit_roof    (:,:)
+     real(r8), pointer :: wtroad_perv     (:,:)
+     real(r8), pointer :: em_roof         (:,:)
+     real(r8), pointer :: em_improad      (:,:)
+     real(r8), pointer :: em_perroad      (:,:)
+     real(r8), pointer :: em_wall         (:,:)
+     real(r8), pointer :: alb_roof_dir    (:,:,:)
+     real(r8), pointer :: alb_roof_dif    (:,:,:)
+     real(r8), pointer :: alb_improad_dir (:,:,:)
+     real(r8), pointer :: alb_improad_dif (:,:,:)
+     real(r8), pointer :: alb_perroad_dir (:,:,:)
+     real(r8), pointer :: alb_perroad_dif (:,:,:)
+     real(r8), pointer :: alb_wall_dir    (:,:,:)
+     real(r8), pointer :: alb_wall_dif    (:,:,:)
      real(r8), pointer :: ht_roof         (:,:)
      real(r8), pointer :: wind_hgt_canyon (:,:)
      real(r8), pointer :: tk_wall         (:,:,:)
@@ -56,43 +56,43 @@ module UrbanParamsType
 
   ! !PUBLIC TYPE
   type, public :: urbanparams_type
-     real(r8), allocatable :: wind_hgt_canyon     (:)   ! lun height above road at which wind in canyon is to be computed (m)
-     real(r8), allocatable :: em_roof             (:)   ! lun roof emissivity
-     real(r8), allocatable :: em_improad          (:)   ! lun impervious road emissivity
-     real(r8), allocatable :: em_perroad          (:)   ! lun pervious road emissivity
-     real(r8), allocatable :: em_wall             (:)   ! lun wall emissivity
-     real(r8), allocatable :: alb_roof_dir        (:,:) ! lun direct  roof albedo
-     real(r8), allocatable :: alb_roof_dif        (:,:) ! lun diffuse roof albedo
-     real(r8), allocatable :: alb_improad_dir     (:,:) ! lun direct  impervious road albedo
-     real(r8), allocatable :: alb_improad_dif     (:,:) ! lun diffuse impervious road albedo
-     real(r8), allocatable :: alb_perroad_dir     (:,:) ! lun direct  pervious road albedo
-     real(r8), allocatable :: alb_perroad_dif     (:,:) ! lun diffuse pervious road albedo
-     real(r8), allocatable :: alb_wall_dir        (:,:) ! lun direct  wall albedo
-     real(r8), allocatable :: alb_wall_dif        (:,:) ! lun diffuse wall albedo
+     real(r8), pointer :: wind_hgt_canyon     (:)   => null()! lun height above road at which wind in canyon is to be computed (m)
+     real(r8), pointer :: em_roof             (:)   => null()! lun roof emissivity
+     real(r8), pointer :: em_improad          (:)   => null()! lun impervious road emissivity
+     real(r8), pointer :: em_perroad          (:)   => null()! lun pervious road emissivity
+     real(r8), pointer :: em_wall             (:)   => null()! lun wall emissivity
+     real(r8), pointer :: alb_roof_dir        (:,:) => null()! lun direct  roof albedo
+     real(r8), pointer :: alb_roof_dif        (:,:) => null()! lun diffuse roof albedo
+     real(r8), pointer :: alb_improad_dir     (:,:) => null()! lun direct  impervious road albedo
+     real(r8), pointer :: alb_improad_dif     (:,:) => null()! lun diffuse impervious road albedo
+     real(r8), pointer :: alb_perroad_dir     (:,:) => null()! lun direct  pervious road albedo
+     real(r8), pointer :: alb_perroad_dif     (:,:) => null()! lun diffuse pervious road albedo
+     real(r8), pointer :: alb_wall_dir        (:,:) => null()! lun direct  wall albedo
+     real(r8), pointer :: alb_wall_dif        (:,:) => null()! lun diffuse wall albedo
 
-     integer , pointer     :: nlev_improad        (:)   ! lun number of impervious road layers (-)
-     real(r8), pointer     :: tk_wall             (:,:) ! lun thermal conductivity of urban wall (W/m/K)
-     real(r8), pointer     :: tk_roof             (:,:) ! lun thermal conductivity of urban roof (W/m/K)
-     real(r8), pointer     :: tk_improad          (:,:) ! lun thermal conductivity of urban impervious road (W/m/K)
-     real(r8), pointer     :: cv_wall             (:,:) ! lun heat capacity of urban wall (J/m^3/K)
-     real(r8), pointer     :: cv_roof             (:,:) ! lun heat capacity of urban roof (J/m^3/K)
-     real(r8), pointer     :: cv_improad          (:,:) ! lun heat capacity of urban impervious road (J/m^3/K)
-     real(r8), pointer     :: thick_wall          (:)   ! lun total thickness of urban wall (m)
-     real(r8), pointer     :: thick_roof          (:)   ! lun total thickness of urban roof (m)
+     integer , pointer     :: nlev_improad        (:)   => null()! lun number of impervious road layers (-)
+     real(r8), pointer     :: tk_wall             (:,:) => null()! lun thermal conductivity of urban wall (W/m/K)
+     real(r8), pointer     :: tk_roof             (:,:) => null()! lun thermal conductivity of urban roof (W/m/K)
+     real(r8), pointer     :: tk_improad          (:,:) => null()! lun thermal conductivity of urban impervious road (W/m/K)
+     real(r8), pointer     :: cv_wall             (:,:) => null()! lun heat capacity of urban wall (J/m^3/K)
+     real(r8), pointer     :: cv_roof             (:,:) => null()! lun heat capacity of urban roof (J/m^3/K)
+     real(r8), pointer     :: cv_improad          (:,:) => null()! lun heat capacity of urban impervious road (J/m^3/K)
+     real(r8), pointer     :: thick_wall          (:)   => null()! lun total thickness of urban wall (m)
+     real(r8), pointer     :: thick_roof          (:)   => null()! lun total thickness of urban roof (m)
 
-     real(r8), pointer     :: vf_sr               (:)   ! lun view factor of sky for road
-     real(r8), pointer     :: vf_wr               (:)   ! lun view factor of one wall for road
-     real(r8), pointer     :: vf_sw               (:)   ! lun view factor of sky for one wall
-     real(r8), pointer     :: vf_rw               (:)   ! lun view factor of road for one wall
-     real(r8), pointer     :: vf_ww               (:)   ! lun view factor of opposing wall for one wall
+     real(r8), pointer     :: vf_sr               (:)   => null()! lun view factor of sky for road
+     real(r8), pointer     :: vf_wr               (:)   => null()! lun view factor of one wall for road
+     real(r8), pointer     :: vf_sw               (:)   => null()! lun view factor of sky for one wall
+     real(r8), pointer     :: vf_rw               (:)   => null()! lun view factor of road for one wall
+     real(r8), pointer     :: vf_ww               (:)   => null()! lun view factor of opposing wall for one wall
 
-     real(r8), pointer     :: t_building_max      (:)   ! lun maximum internal building temperature (K)
-     real(r8), pointer     :: t_building_min      (:)   ! lun minimum internal building temperature (K)
-     real(r8), pointer     :: eflx_traffic_factor (:)   ! lun multiplicative traffic factor for sensible heat flux from urban traffic (-)
+     real(r8), pointer     :: t_building_max      (:)   => null()! lun maximum internal building temperature (K)
+     real(r8), pointer     :: t_building_min      (:)   => null()! lun minimum internal building temperature (K)
+     real(r8), pointer     :: eflx_traffic_factor (:)   => null()! lun multiplicative traffic factor for sensible heat flux from urban traffic (-)
    contains
 
-     procedure, public :: Init 
-     
+     procedure, public :: Init
+
   end type urbanparams_type
   !
   ! !Urban control variables
@@ -100,13 +100,22 @@ module UrbanParamsType
   character(len= *), parameter, public :: urban_hac_on =  'ON'                 
   character(len= *), parameter, public :: urban_wasteheat_on = 'ON_WASTEHEAT'  
   character(len= 16), public           :: urban_hac = urban_hac_off
-  logical, public                      :: urban_traffic = .false.   ! urban traffic fluxes
-  !----------------------------------------------------------------------- 
+  
+  integer, public            :: urban_hac_int = urban_hac_off
+  logical, public            :: urban_traffic      = .false.   ! urban traffic fluxes
+  !$acc declare copyin(urban_hac_off     )
+  !$acc declare copyin(urban_hac_on      )
+  !$acc declare copyin(urban_wasteheat_on)
+  !$acc declare copyin(urban_hac_int     )
+  !!!$acc declare copyin(urban_hac       )
+  !$acc declare copyin(urban_traffic     )
+  !-----------------------------------------------------------------------
 
   !-----------------------------------------------------------------------
   ! declare the public instance of urban parameters data types
   !-----------------------------------------------------------------------
   type(urbanparams_type)          , public, target :: urbanparams_vars    ! urban parameters
+  !$acc declare create(urbanparams_vars)
 
   contains
 
@@ -116,7 +125,7 @@ module UrbanParamsType
     ! Allocate module variables and data structures
     !
     ! !USES:
-    use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
+  !  use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
     use elm_varpar      , only : nlevcan, nlevcan, numrad, nlevgrnd, nlevurb
     use elm_varpar      , only : nlevsoi, nlevgrnd
     use elm_varctl      , only : use_vancouver, use_mexicocity
@@ -127,11 +136,11 @@ module UrbanParamsType
     !
     ! !ARGUMENTS:
     class(urbanparams_type) :: this
-    type(bounds_type)      , intent(in)    :: bounds  
+    type(bounds_type)      , intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:
     integer             :: j,l,c,p,g       ! indices
-    integer             :: nc,fl,ib        ! indices 
+    integer             :: nc,fl,ib        ! indices
     integer             :: dindx           ! urban density type index
     integer             :: ier             ! error status
     real(r8)            :: sumvf           ! sum of view factors for wall or road
@@ -155,37 +164,37 @@ module UrbanParamsType
     ! Allocate urbanparams data structure
 
     if ( nlevurb > 0 )then
-       allocate(this%tk_wall          (begl:endl,nlevurb))  ; this%tk_wall             (:,:) = nan
-       allocate(this%tk_roof          (begl:endl,nlevurb))  ; this%tk_roof             (:,:) = nan
-       allocate(this%cv_wall          (begl:endl,nlevurb))  ; this%cv_wall             (:,:) = nan
-       allocate(this%cv_roof          (begl:endl,nlevurb))  ; this%cv_roof             (:,:) = nan
+       allocate(this%tk_wall          (begl:endl,nlevurb))  ; this%tk_wall             (:,:) = spval
+       allocate(this%tk_roof          (begl:endl,nlevurb))  ; this%tk_roof             (:,:) = spval
+       allocate(this%cv_wall          (begl:endl,nlevurb))  ; this%cv_wall             (:,:) = spval
+       allocate(this%cv_roof          (begl:endl,nlevurb))  ; this%cv_roof             (:,:) = spval
     end if
-    allocate(this%t_building_max      (begl:endl))          ; this%t_building_max      (:)   = nan
-    allocate(this%t_building_min      (begl:endl))          ; this%t_building_min      (:)   = nan
-    allocate(this%tk_improad          (begl:endl,nlevurb))  ; this%tk_improad          (:,:) = nan
-    allocate(this%cv_improad          (begl:endl,nlevurb))  ; this%cv_improad          (:,:) = nan
-    allocate(this%thick_wall          (begl:endl))          ; this%thick_wall          (:)   = nan
-    allocate(this%thick_roof          (begl:endl))          ; this%thick_roof          (:)   = nan
+    allocate(this%t_building_max      (begl:endl))          ; this%t_building_max      (:)   = spval
+    allocate(this%t_building_min      (begl:endl))          ; this%t_building_min      (:)   = spval
+    allocate(this%tk_improad          (begl:endl,nlevurb))  ; this%tk_improad          (:,:) = spval
+    allocate(this%cv_improad          (begl:endl,nlevurb))  ; this%cv_improad          (:,:) = spval
+    allocate(this%thick_wall          (begl:endl))          ; this%thick_wall          (:)   = spval
+    allocate(this%thick_roof          (begl:endl))          ; this%thick_roof          (:)   = spval
     allocate(this%nlev_improad        (begl:endl))          ; this%nlev_improad        (:)   = huge(1)
-    allocate(this%vf_sr               (begl:endl))          ; this%vf_sr               (:)   = nan
-    allocate(this%vf_wr               (begl:endl))          ; this%vf_wr               (:)   = nan
-    allocate(this%vf_sw               (begl:endl))          ; this%vf_sw               (:)   = nan
-    allocate(this%vf_rw               (begl:endl))          ; this%vf_rw               (:)   = nan
-    allocate(this%vf_ww               (begl:endl))          ; this%vf_ww               (:)   = nan
-    allocate(this%wind_hgt_canyon     (begl:endl))          ; this%wind_hgt_canyon     (:)   = nan
-    allocate(this%em_roof             (begl:endl))          ; this%em_roof             (:)   = nan
-    allocate(this%em_improad          (begl:endl))          ; this%em_improad          (:)   = nan
-    allocate(this%em_perroad          (begl:endl))          ; this%em_perroad          (:)   = nan
-    allocate(this%em_wall             (begl:endl))          ; this%em_wall             (:)   = nan
-    allocate(this%alb_roof_dir        (begl:endl,numrad))   ; this%alb_roof_dir        (:,:) = nan
-    allocate(this%alb_roof_dif        (begl:endl,numrad))   ; this%alb_roof_dif        (:,:) = nan    
-    allocate(this%alb_improad_dir     (begl:endl,numrad))   ; this%alb_improad_dir     (:,:) = nan       
-    allocate(this%alb_perroad_dir     (begl:endl,numrad))   ; this%alb_perroad_dir     (:,:) = nan       
-    allocate(this%alb_improad_dif     (begl:endl,numrad))   ; this%alb_improad_dif     (:,:) = nan       
-    allocate(this%alb_perroad_dif     (begl:endl,numrad))   ; this%alb_perroad_dif     (:,:) = nan       
-    allocate(this%alb_wall_dir        (begl:endl,numrad))   ; this%alb_wall_dir        (:,:) = nan    
-    allocate(this%alb_wall_dif        (begl:endl,numrad))   ; this%alb_wall_dif        (:,:) = nan
-    allocate(this%eflx_traffic_factor (begl:endl))          ; this%eflx_traffic_factor (:)   = nan
+    allocate(this%vf_sr               (begl:endl))          ; this%vf_sr               (:)   = spval
+    allocate(this%vf_wr               (begl:endl))          ; this%vf_wr               (:)   = spval
+    allocate(this%vf_sw               (begl:endl))          ; this%vf_sw               (:)   = spval
+    allocate(this%vf_rw               (begl:endl))          ; this%vf_rw               (:)   = spval
+    allocate(this%vf_ww               (begl:endl))          ; this%vf_ww               (:)   = spval
+    allocate(this%wind_hgt_canyon     (begl:endl))          ; this%wind_hgt_canyon     (:)   = spval
+    allocate(this%em_roof             (begl:endl))          ; this%em_roof             (:)   = spval
+    allocate(this%em_improad          (begl:endl))          ; this%em_improad          (:)   = spval
+    allocate(this%em_perroad          (begl:endl))          ; this%em_perroad          (:)   = spval
+    allocate(this%em_wall             (begl:endl))          ; this%em_wall             (:)   = spval
+    allocate(this%alb_roof_dir        (begl:endl,numrad))   ; this%alb_roof_dir        (:,:) = spval
+    allocate(this%alb_roof_dif        (begl:endl,numrad))   ; this%alb_roof_dif        (:,:) = spval
+    allocate(this%alb_improad_dir     (begl:endl,numrad))   ; this%alb_improad_dir     (:,:) = spval
+    allocate(this%alb_perroad_dir     (begl:endl,numrad))   ; this%alb_perroad_dir     (:,:) = spval
+    allocate(this%alb_improad_dif     (begl:endl,numrad))   ; this%alb_improad_dif     (:,:) = spval
+    allocate(this%alb_perroad_dif     (begl:endl,numrad))   ; this%alb_perroad_dif     (:,:) = spval
+    allocate(this%alb_wall_dir        (begl:endl,numrad))   ; this%alb_wall_dir        (:,:) = spval
+    allocate(this%alb_wall_dif        (begl:endl,numrad))   ; this%alb_wall_dif        (:,:) = spval
+    allocate(this%eflx_traffic_factor (begl:endl))          ; this%eflx_traffic_factor (:)   = spval
 
     ! Initialize time constant urban variables
 
@@ -244,7 +253,7 @@ module UrbanParamsType
              this%t_building_max(l) = 380.00_r8
              this%t_building_min(l) = 200.00_r8
           else
-             if (urban_hac == urban_hac_off) then
+             if (trim(urban_hac) == urban_hac_off) then
                 ! Overwrite values read in from urbinp by freely evolving values
                 this%t_building_max(l) = 380.00_r8
                 this%t_building_min(l) = 200.00_r8
@@ -261,7 +270,7 @@ module UrbanParamsType
           !              | \  vsr   / |       |         r   |  | \  vww   /   s
           !              |  \      /  |       h         o   w  |  \      /    k
           !        wall  |   \    /   | wall  |         a   |  |   \    /     y
-          !              |vwr \  / vwr|       |         d   |  |vrw \  / vsw 
+          !              |vwr \  / vwr|       |         d   |  |vrw \  / vsw
           !              ------\/------       -             -  |-----\/-----
           !                   road                                  wall   |
           !              <----- w ---->                                    |
@@ -272,20 +281,20 @@ module UrbanParamsType
           !                                               vsw = view factor of sky for wall
           !    vsr + vwr + vwr = 1                        vrw + vww + vsw = 1
           !
-          ! Source: Masson, V. (2000) A physically-based scheme for the urban energy budget in 
+          ! Source: Masson, V. (2000) A physically-based scheme for the urban energy budget in
           ! atmospheric models. Boundary-Layer Meteorology 94:357-397
           !
           ! - Calculate urban land unit aerodynamic constants using Macdonald (1998) as used in
           ! Grimmond and Oke (1999)
           ! ---------------------------------------------------------------------------------------
-          
-          ! road -- sky view factor -> 1 as building height -> 0 
+
+          ! road -- sky view factor -> 1 as building height -> 0
           ! and -> 0 as building height -> infinity
 
           this%vf_sr(l) = sqrt(lun_pp%canyon_hwr(l)**2 + 1._r8) - lun_pp%canyon_hwr(l)
           this%vf_wr(l) = 0.5_r8 * (1._r8 - this%vf_sr(l))
 
-          ! one wall -- sky view factor -> 0.5 as building height -> 0 
+          ! one wall -- sky view factor -> 0.5 as building height -> 0
           ! and -> 0 as building height -> infinity
 
           this%vf_sw(l) = 0.5_r8 * (lun_pp%canyon_hwr(l) + 1._r8 - sqrt(lun_pp%canyon_hwr(l)**2+1._r8)) / lun_pp%canyon_hwr(l)
@@ -311,7 +320,7 @@ module UrbanParamsType
           ! Grimmond and Oke (1999)
           !----------------------------------------------------------------------------------
 
-          ! Calculate plan area index 
+          ! Calculate plan area index
           plan_ai = lun_pp%canyon_hwr(l)/(lun_pp%canyon_hwr(l) + 1._r8)
 
           ! Building shape shortside/longside ratio (e.g. 1 = square )
@@ -344,7 +353,7 @@ module UrbanParamsType
                   (1 - lun_pp%z_d_town(l) / lun_pp%ht_roof(l)) * frontal_ai)**(-0.5_r8))
           end if
 
-       else ! Not urban point 
+       else ! Not urban point
 
           this%eflx_traffic_factor(l) = spval
           this%t_building_max(l) = spval
@@ -360,15 +369,16 @@ module UrbanParamsType
     end do
 
     ! Deallocate memory for urbinp datatype
-    
+
     call UrbanInput(bounds%begg, bounds%endg, mode='finalize')
+
 
   end subroutine Init
 
   !-----------------------------------------------------------------------
   subroutine UrbanInput(begg, endg, mode)
     !
-    ! !DESCRIPTION: 
+    ! !DESCRIPTION:
     ! Allocate memory and read in urban input data
     !
     ! !USES:
@@ -377,7 +387,7 @@ module UrbanParamsType
     use fileutils       , only : getavu, relavu, getfil, opnfil
     use spmdMod         , only : masterproc
     use domainMod       , only : ldomain
-    use ncdio_pio       , only : file_desc_t, ncd_defvar, ncd_io, ncd_inqvdlen, ncd_inqfdims 
+    use ncdio_pio       , only : file_desc_t, ncd_defvar, ncd_io, ncd_inqvdlen, ncd_inqfdims
     use ncdio_pio       , only : ncd_pio_openfile, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
     !
     ! !ARGUMENTS:
@@ -394,7 +404,7 @@ module UrbanParamsType
     integer :: numrad_i              ! input grid: number of solar bands (VIS/NIR)
     integer :: numurbl_i             ! input grid: number of urban landunits
     integer :: ier,ret               ! error status
-    logical :: isgrid2d              ! true => file is 2d 
+    logical :: isgrid2d              ! true => file is 2d
     logical :: readvar               ! true => variable is on dataset
     logical :: has_numurbl           ! true => numurbl dimension is on dataset
     character(len=32) :: subname = 'UrbanInput' ! subroutine name
@@ -405,11 +415,11 @@ module UrbanParamsType
     if (mode == 'initialize') then
 
        ! Read urban data
-       
+
        if (masterproc) then
           write(iulog,*)' Reading in urban input data from fsurdat file ...'
        end if
-       
+
        call getfil (fsurdat, locfn, 0)
        call ncd_pio_openfile (ncid, locfn, 0)
 
@@ -430,20 +440,20 @@ module UrbanParamsType
        if ( nlevurb == 0 ) return
 
        ! Allocate dynamic memory
-       allocate(urbinp%canyon_hwr(begg:endg, numurbl), &  
-                urbinp%wtlunit_roof(begg:endg, numurbl), &  
+       allocate(urbinp%canyon_hwr(begg:endg, numurbl), &
+                urbinp%wtlunit_roof(begg:endg, numurbl), &
                 urbinp%wtroad_perv(begg:endg, numurbl), &
-                urbinp%em_roof(begg:endg, numurbl), &     
-                urbinp%em_improad(begg:endg, numurbl), &    
-                urbinp%em_perroad(begg:endg, numurbl), &    
-                urbinp%em_wall(begg:endg, numurbl), &    
-                urbinp%alb_roof_dir(begg:endg, numurbl, numrad), &    
-                urbinp%alb_roof_dif(begg:endg, numurbl, numrad), &    
-                urbinp%alb_improad_dir(begg:endg, numurbl, numrad), &    
-                urbinp%alb_perroad_dir(begg:endg, numurbl, numrad), &    
-                urbinp%alb_improad_dif(begg:endg, numurbl, numrad), &    
-                urbinp%alb_perroad_dif(begg:endg, numurbl, numrad), &    
-                urbinp%alb_wall_dir(begg:endg, numurbl, numrad), &    
+                urbinp%em_roof(begg:endg, numurbl), &
+                urbinp%em_improad(begg:endg, numurbl), &
+                urbinp%em_perroad(begg:endg, numurbl), &
+                urbinp%em_wall(begg:endg, numurbl), &
+                urbinp%alb_roof_dir(begg:endg, numurbl, numrad), &
+                urbinp%alb_roof_dif(begg:endg, numurbl, numrad), &
+                urbinp%alb_improad_dir(begg:endg, numurbl, numrad), &
+                urbinp%alb_perroad_dir(begg:endg, numurbl, numrad), &
+                urbinp%alb_improad_dif(begg:endg, numurbl, numrad), &
+                urbinp%alb_perroad_dif(begg:endg, numurbl, numrad), &
+                urbinp%alb_wall_dir(begg:endg, numurbl, numrad), &
                 urbinp%alb_wall_dif(begg:endg, numurbl, numrad), &
                 urbinp%ht_roof(begg:endg, numurbl), &
                 urbinp%wind_hgt_canyon(begg:endg, numurbl), &
@@ -664,7 +674,7 @@ module UrbanParamsType
 
        call ncd_pio_closefile(ncid)
        if (masterproc) then
-          write(iulog,*)' Sucessfully read urban input data' 
+          write(iulog,*)' Sucessfully read urban input data'
           write(iulog,*)
        end if
 
@@ -828,8 +838,5 @@ module UrbanParamsType
 
   end subroutine CheckUrban
 
+
 end module UrbanParamsType
-
-
-
-
