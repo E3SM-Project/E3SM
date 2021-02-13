@@ -1,36 +1,38 @@
 module UrbanFluxesMod
 
-  !----------------------------------------------------------------------- 
-  ! !DESCRIPTION: 
+  !-----------------------------------------------------------------------
+  ! !DESCRIPTION:
   ! Calculate solar and longwave radiation, and turbulent fluxes for urban landunit
   !
   ! !USES:
   use shr_kind_mod         , only : r8 => shr_kind_r8
-  use shr_sys_mod          , only : shr_sys_flush 
+  use shr_sys_mod          , only : shr_sys_flush
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use decompMod            , only : bounds_type
   use elm_varpar           , only : numrad
   use elm_varcon           , only : isecspday, degpsec, namel
   use elm_varctl           , only : iulog
-  use abortutils           , only : endrun  
+  use abortutils           , only : endrun
   use UrbanParamsType      , only : urbanparams_type
-  use UrbanParamsType      , only : urban_wasteheat_on, urban_hac_on, urban_hac 
+  use UrbanParamsType      , only : urban_wasteheat_on, urban_hac_on, urban_hac
   use atm2lndType          , only : atm2lnd_type
   use SoilStateType        , only : soilstate_type
-  use TemperatureType      , only : temperature_type
-  use WaterstateType       , only : waterstate_type
   use FrictionVelocityType , only : frictionvel_type
   use EnergyFluxType       , only : energyflux_type
-  use WaterfluxType        , only : waterflux_type
   use SurfaceResistanceMod , only : do_soilevap_beta
   use GridcellType         , only : grc_pp
-  use TopounitDataType     , only : top_as  
-  use LandunitType         , only : lun_pp 
-  use LandunitDataType     , only : lun_es, lun_ef, lun_ws  
+  use TopounitDataType     , only : top_as
+  use LandunitType         , only : lun_pp
+  use LandunitDataType     , only : lun_es, lun_ef, lun_ws
   use ColumnType           , only : col_pp
-  use ColumnDataType       , only : col_es, col_ef, col_ws  
-  use VegetationType       , only : veg_pp                
-  use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf  
+  use ColumnDataType       , only : col_es, col_ef, col_ws
+  use VegetationType       , only : veg_pp
+  use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
+  use clm_time_manager    , only : get_curr_date, get_step_size, get_nstep
+
+  use timeinfoMod  , only : nstep_mod, year_curr, mon_curr, day_curr, secs_curr
+  use timeinfoMod  , only : dtime_mod
+
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -46,14 +48,16 @@ contains
   !-----------------------------------------------------------------------
   subroutine UrbanFluxes (bounds, num_nourbanl, filter_nourbanl,                        &
        num_urbanl, filter_urbanl, num_urbanc, filter_urbanc, num_urbanp, filter_urbanp, &
-       atm2lnd_vars, urbanparams_vars, soilstate_vars, temperature_vars,                &
-       waterstate_vars, frictionvel_vars, energyflux_vars, waterflux_vars) 
+       atm2lnd_vars, urbanparams_vars, soilstate_vars,    &
+      frictionvel_vars, energyflux_vars )
     !
-    ! !DESCRIPTION: 
-    ! Turbulent and momentum fluxes from urban canyon (consisting of roof, sunwall, 
+    ! !DESCRIPTION:
+    ! Turbulent and momentum fluxes from urban canyon (consisting of roof, sunwall,
     ! shadewall, pervious and impervious road).
 
     ! !USES:
+      !$acc routine seq
+    
     use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
     use elm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
@@ -63,11 +67,10 @@ contains
     use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, implicit_stress
     use QSatMod             , only : QSat
     use elm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
-    use clm_time_manager    , only : get_curr_date, get_step_size, get_nstep
     use elm_varctl          , only : use_vsfm
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds    
+    type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_nourbanl       ! number of non-urban landunits in clump
     integer                , intent(in)    :: filter_nourbanl(:) ! non-urban landunit filter
     integer                , intent(in)    :: num_urbanl         ! number of urban landunits in clump
@@ -79,14 +82,12 @@ contains
     type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
     type(urbanparams_type) , intent(in)    :: urbanparams_vars
     type(soilstate_type)   , intent(inout) :: soilstate_vars
-    type(temperature_type) , intent(inout) :: temperature_vars
-    type(waterstate_type)  , intent(inout) :: waterstate_vars
     type(frictionvel_type) , intent(inout) :: frictionvel_vars
-    type(waterflux_type)   , intent(inout) :: waterflux_vars
     type(energyflux_type)  , intent(inout) :: energyflux_vars
+    real(r8) :: dtime                                                ! land model time step (sec)
+    integer  :: year,month,day,secs
     !
     ! !LOCAL VARIABLES:
-    character(len=*), parameter :: sub="UrbanFluxes"
     integer  :: fp,fc,fl,f,p,c,l,t,g,j,pi,i     ! indices
 
     integer  :: filterl_copy(num_urbanl)                ! iteration copy of filter_urbanl
@@ -161,9 +162,9 @@ contains
     real(r8) :: t_roof_innerl(bounds%begl:bounds%endl)               ! temperature of inner layer of roof (K)
     real(r8) :: lngth_roof                                           ! length of roof (m)
     real(r8) :: wc                                                   ! convective velocity (m/s)
-    real(r8) :: zeta                                                 ! dimensionless height used in Monin-Obukhov theory 
-    real(r8) :: eflx_sh_grnd_scale(bounds%begp:bounds%endp)          ! scaled sensible heat flux from ground (W/m**2) [+ to atm] 
-    real(r8) :: qflx_evap_soi_scale(bounds%begp:bounds%endp)         ! scaled soil evaporation (mm H2O/s) (+ = to atm) 
+    real(r8) :: zeta                                                 ! dimensionless height used in Monin-Obukhov theory
+    real(r8) :: eflx_sh_grnd_scale(bounds%begp:bounds%endp)          ! scaled sensible heat flux from ground (W/m**2) [+ to atm]
+    real(r8) :: qflx_evap_soi_scale(bounds%begp:bounds%endp)         ! scaled soil evaporation (mm H2O/s) (+ = to atm)
     real(r8) :: eflx_wasteheat_roof(bounds%begl:bounds%endl)         ! sensible heat flux from urban heating/cooling sources of waste heat for roof (W/m**2)
     real(r8) :: eflx_wasteheat_sunwall(bounds%begl:bounds%endl)      ! sensible heat flux from urban heating/cooling sources of waste heat for sunwall (W/m**2)
     real(r8) :: eflx_wasteheat_shadewall(bounds%begl:bounds%endl)    ! sensible heat flux from urban heating/cooling sources of waste heat for shadewall (W/m**2)
@@ -179,8 +180,7 @@ contains
     real(r8) :: fwet_roof                                            ! fraction of roof surface that is wet (-)
     real(r8) :: fwet_road_imperv                                     ! fraction of impervious road surface that is wet (-)
     integer  :: local_secp1(bounds%begl:bounds%endl)                 ! seconds into current date in local time (sec)
-    real(r8) :: dtime                                                ! land model time step (sec)
-    integer  :: year,month,day,secs                                  ! calendar info for current time step
+                                     ! calendar info for current time step
     logical  :: found                                                ! flag in search loop
     integer  :: indexl                                               ! index of first found in search loop
     integer  :: nstep                                                ! time step number
@@ -229,63 +229,62 @@ contains
          rootr_road_perv     =>   soilstate_vars%rootr_road_perv_col        , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer for urban pervious road
          soilalpha_u         =>   soilstate_vars%soilalpha_u_col            , & ! Input:  [real(r8) (:)   ]  Urban factor that reduces ground saturated specific humidity (-)
          soilbeta            =>   soilstate_vars%soilbeta_col               , & ! Input:  [real(r8) (:)   ]  soil wetness relative to field capacity
-         rootr               =>   soilstate_vars%rootr_patch                , & ! Output: [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
+         rootr               =>   soilstate_vars%rootr_patch                , & ! Output: [real(r8) (:,:) ]  effective fraction of roots in each soil layer
 
-         t_grnd              =>   col_es%t_grnd               , & ! Input:  [real(r8) (:)   ]  ground surface temperature (K)                    
-         t_soisno            =>   col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (K)                            
-         t_ref2m             =>   veg_es%t_ref2m            , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (K)            
-         t_ref2m_u           =>   veg_es%t_ref2m_u          , & ! Output: [real(r8) (:)   ]  Urban 2 m height surface air temperature (K)     
-         t_veg               =>   veg_es%t_veg                , & ! Output: [real(r8) (:)   ]  vegetation temperature (K)                        
-         t_building          =>   lun_es%t_building           , & ! Output: [real(r8) (:)   ]  internal building temperature (K)                 
-         taf                 =>   lun_es%taf                  , & ! Output: [real(r8) (:)   ]  urban canopy air temperature (K)                  
+         t_grnd              =>   col_es%t_grnd               , & ! Input:  [real(r8) (:)   ]  ground surface temperature (K)
+         t_soisno            =>   col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (K)
+         t_ref2m             =>   veg_es%t_ref2m            , & ! Output: [real(r8) (:)   ]  2 m height surface air temperature (K)
+         t_ref2m_u           =>   veg_es%t_ref2m_u          , & ! Output: [real(r8) (:)   ]  Urban 2 m height surface air temperature (K)
+         t_veg               =>   veg_es%t_veg                , & ! Output: [real(r8) (:)   ]  vegetation temperature (K)
+         t_building          =>   lun_es%t_building           , & ! Output: [real(r8) (:)   ]  internal building temperature (K)
+         taf                 =>   lun_es%taf                  , & ! Output: [real(r8) (:)   ]  urban canopy air temperature (K)
 
-         frac_sno            =>   col_ws%frac_sno              , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
-         snow_depth          =>   col_ws%snow_depth            , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
-         dqgdT               =>   col_ws%dqgdT                 , & ! Input:  [real(r8) (:)   ]  temperature derivative of "qg"                    
-         qg                  =>   col_ws%qg                    , & ! Input:  [real(r8) (:)   ]  specific humidity at ground surface (kg/kg)       
-         h2osoi_ice          =>   col_ws%h2osoi_ice            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
-         h2osoi_liq          =>   col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
-         h2osno              =>   col_ws%h2osno                , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
-         qaf                 =>   lun_ws%qaf                   , & ! Output: [real(r8) (:)   ]  urban canopy air specific humidity (kg/kg)        
-         q_ref2m             =>   veg_ws%q_ref2m             , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
-         rh_ref2m            =>   veg_ws%rh_ref2m            , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
-         rh_ref2m_u          =>   veg_ws%rh_ref2m_u          , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
+         frac_sno            =>   col_ws%frac_sno              , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
+         snow_depth          =>   col_ws%snow_depth            , & ! Input:  [real(r8) (:)   ]  snow height (m)
+         dqgdT               =>   col_ws%dqgdT                 , & ! Input:  [real(r8) (:)   ]  temperature derivative of "qg"
+         qg                  =>   col_ws%qg                    , & ! Input:  [real(r8) (:)   ]  specific humidity at ground surface (kg/kg)
+         h2osoi_ice          =>   col_ws%h2osoi_ice            , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
+         h2osoi_liq          =>   col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         h2osno              =>   col_ws%h2osno                , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
+         qaf                 =>   lun_ws%qaf                   , & ! Output: [real(r8) (:)   ]  urban canopy air specific humidity (kg/kg)
+         q_ref2m             =>   veg_ws%q_ref2m             , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)
+         rh_ref2m            =>   veg_ws%rh_ref2m            , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)
+         rh_ref2m_u          =>   veg_ws%rh_ref2m_u          , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)
 
-         forc_hgt_u_patch    =>   frictionvel_vars%forc_hgt_u_patch         , & ! Input:  [real(r8) (:)   ]  observational height of wind at pft-level (m)     
+         forc_hgt_u_patch    =>   frictionvel_vars%forc_hgt_u_patch         , & ! Input:  [real(r8) (:)   ]  observational height of wind at pft-level (m)
          forc_hgt_t_patch    =>   frictionvel_vars%forc_hgt_t_patch         , & ! Input:  [real(r8) (:)   ]  observational height of temperature at pft-level (m)
-         ram1                =>   frictionvel_vars%ram1_patch               , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                    
+         ram1                =>   frictionvel_vars%ram1_patch               , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)
 
-         htvp                =>   col_ef%htvp                  , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) (J/kg)  
-         eflx_urban_ac       =>   col_ef%eflx_urban_ac         , & ! Input:  [real(r8) (:)   ]  urban air conditioning flux (W/m**2)              
-         eflx_urban_heat     =>   col_ef%eflx_urban_heat       , & ! Input:  [real(r8) (:)   ]  urban heating flux (W/m**2)                       
+         htvp                =>   col_ef%htvp                  , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) (J/kg)
+         eflx_urban_ac       =>   col_ef%eflx_urban_ac         , & ! Input:  [real(r8) (:)   ]  urban air conditioning flux (W/m**2)
+         eflx_urban_heat     =>   col_ef%eflx_urban_heat       , & ! Input:  [real(r8) (:)   ]  urban heating flux (W/m**2)
          dlrad               =>   veg_ef%dlrad               , & ! Output: [real(r8) (:)   ]  downward longwave radiation below the canopy (W/m**2)
          ulrad               =>   veg_ef%ulrad               , & ! Output: [real(r8) (:)   ]  upward longwave radiation above the canopy (W/m**2)
          cgrnds              =>   veg_ef%cgrnds              , & ! Output: [real(r8) (:)   ]  deriv, of soil sensible heat flux wrt soil temp (W/m**2/K)
          cgrndl              =>   veg_ef%cgrndl              , & ! Output: [real(r8) (:)   ]  deriv of soil latent heat flux wrt soil temp (W/m**2/K)
          cgrnd               =>   veg_ef%cgrnd               , & ! Output: [real(r8) (:)   ]  deriv. of soil energy flux wrt to soil temp (W/m**2/K)
          eflx_sh_grnd        =>   veg_ef%eflx_sh_grnd        , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
-         eflx_sh_tot         =>   veg_ef%eflx_sh_tot         , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]      
+         eflx_sh_tot         =>   veg_ef%eflx_sh_tot         , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
          eflx_sh_tot_u       =>   veg_ef%eflx_sh_tot_u       , & ! Output: [real(r8) (:)   ]  urban total sensible heat flux (W/m**2) [+ to atm]
-         eflx_sh_snow        =>   veg_ef%eflx_sh_snow        , & ! Output: [real(r8) (:)   ]  sensible heat flux from snow (W/m**2) [+ to atm]  
-         eflx_sh_soil        =>   veg_ef%eflx_sh_soil        , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]  
-         eflx_sh_h2osfc      =>   veg_ef%eflx_sh_h2osfc      , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]  
-         eflx_traffic        =>   lun_ef%eflx_traffic          , & ! Output: [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)               
+         eflx_sh_snow        =>   veg_ef%eflx_sh_snow        , & ! Output: [real(r8) (:)   ]  sensible heat flux from snow (W/m**2) [+ to atm]
+         eflx_sh_soil        =>   veg_ef%eflx_sh_soil        , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]
+         eflx_sh_h2osfc      =>   veg_ef%eflx_sh_h2osfc      , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]
+         eflx_traffic        =>   lun_ef%eflx_traffic          , & ! Output: [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)
          eflx_wasteheat      =>   lun_ef%eflx_wasteheat        , & ! Output: [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
          eflx_heat_from_ac   =>   lun_ef%eflx_heat_from_ac     , & ! Output: [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
-         taux                =>   veg_ef%taux                , & ! Output: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)              
-         tauy                =>   veg_ef%tauy                , & ! Output: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2)               
+         taux                =>   veg_ef%taux                , & ! Output: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)
+         tauy                =>   veg_ef%tauy                , & ! Output: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2)
 
-         qflx_evap_soi       =>   veg_wf%qflx_evap_soi        , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)          
-         qflx_tran_veg       =>   veg_wf%qflx_tran_veg        , & ! Output: [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
-         qflx_evap_veg       =>   veg_wf%qflx_evap_veg        , & ! Output: [real(r8) (:)   ]  vegetation evaporation (mm H2O/s) (+ = to atm)    
-         qflx_evap_tot       =>   veg_wf%qflx_evap_tot        , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg     
+         qflx_evap_soi       =>   veg_wf%qflx_evap_soi        , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
+         qflx_tran_veg       =>   veg_wf%qflx_tran_veg        , & ! Output: [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
+         qflx_evap_veg       =>   veg_wf%qflx_evap_veg        , & ! Output: [real(r8) (:)   ]  vegetation evaporation (mm H2O/s) (+ = to atm)
+         qflx_evap_tot       =>   veg_wf%qflx_evap_tot        , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
 
          begl                =>   bounds%begl                               , &
          endl                =>   bounds%endl                                 &
          )
 
-      ! Define fields that appear on the restart file for non-urban landunits 
-      
+      ! Define fields that appear on the restart file for non-urban landunits
       do fl = 1,num_nourbanl
          l = filter_nourbanl(fl)
          taf(l) = spval
@@ -293,15 +292,17 @@ contains
       end do
 
       ! Get time step
-      nstep = get_nstep()
+
+      nstep = nstep_mod
+      dtime = dtime_mod
+      year = year_curr
+      month = mon_curr
+      day = day_curr
+      secs = secs_curr
 
       ! Set constants (same as in Biogeophysics1Mod)
       beta(begl:endl) = 1._r8             ! Should be set to the same values as in Biogeophysics1Mod
       zii(begl:endl)  = 1000._r8          ! Should be set to the same values as in Biogeophysics1Mod
-
-      ! Get current date
-      dtime = get_step_size()
-      call get_curr_date (year, month, day, secs)
 
       ! Compute canyontop wind using Masson (2000)
 
@@ -315,6 +316,7 @@ contains
 
          ! Error checks
 
+#ifndef _OPENACC
          if (ht_roof(l) - z_d_town(l) <= z_0_town(l)) then
             write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
             write (iulog,*) 'h_r - z_d <= z_0'
@@ -331,7 +333,7 @@ contains
             write (iulog,*) 'elm model is stopping'
             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
-
+#endif
          ! Initialize winds for iteration.
          if (implicit_stress) then
             wind_speed0(l) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
@@ -346,7 +348,7 @@ contains
 
       end do
 
-      ! Compute fluxes - Follows CLM approach for bare soils (Oleson et al 2004)
+      ! Compute fluxes - Follows elm approach for bare soils (Oleson et al 2004)
 
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
@@ -409,7 +411,7 @@ contains
             call FrictionVelocity(begl, endl, &
                  num_urbanl, filter_urbanl, &
                  z_d_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), &
-                 obu(begl:endl), iter, ur(begl:endl), um(begl:endl), ustar(begl:endl), &
+                 obu(begl:endl), iter+1, ur(begl:endl), um(begl:endl), ustar(begl:endl), &
                  temp1(begl:endl), temp2(begl:endl), temp12m(begl:endl), temp22m(begl:endl), fm(begl:endl), &
                  frictionvel_vars, landunit_index=.true.)
          end if
@@ -421,7 +423,6 @@ contains
 
             ! Determine aerodynamic resistance to fluxes from urban canopy air to
             ! atmosphere
-
             ramu(l) = 1._r8/(ustar(l)*ustar(l)/um(l))
             rahu(l) = 1._r8/(temp1(l)*ustar(l))
             rawu(l) = 1._r8/(temp2(l)*ustar(l))
@@ -512,7 +513,7 @@ contains
                   fwet_roof = (max(0._r8, h2osoi_liq(c,1)+h2osoi_ice(c,1))/pondmx_urban)**0.666666666666_r8
                   fwet_roof = min(fwet_roof,1._r8)
                end if
-               if (qaf(l) > qg(c)) then 
+               if (qaf(l) > qg(c)) then
                   fwet_roof = 1._r8
                end if
                ! scaled latent heat conductance
@@ -572,7 +573,7 @@ contains
                   fwet_road_imperv = (max(0._r8, h2osoi_liq(c,1)+h2osoi_ice(c,1))/pondmx_urban)**0.666666666666_r8
                   fwet_road_imperv = min(fwet_road_imperv,1._r8)
                end if
-               if (qaf(l) > qg(c)) then 
+               if (qaf(l) > qg(c)) then
                   fwet_road_imperv = 1._r8
                end if
                ! scaled latent heat conductance
@@ -639,10 +640,12 @@ contains
                   eflx_heat_from_ac_shadewall(l) = 0._r8
                end if
             else
+              #ifndef _OPENACC
                write(iulog,*) 'c, ctype, pi = ', c, ctype(c), pi
                write(iulog,*) 'Column indices for: shadewall, sunwall, road_imperv, road_perv, roof: '
                write(iulog,*) icol_shadewall, icol_sunwall, icol_road_imperv, icol_road_perv, icol_roof
                call endrun(decomp_index=l, elmlevel=namel, msg="ERROR, ctype out of range"//errmsg(__FILE__, __LINE__))
+              #endif
             end if
 
             taf_numer(l) = taf_numer(l) + t_grnd(c)*wtus(c)
@@ -664,7 +667,7 @@ contains
                  (1._r8-wtlunit_roof(l))*(canyon_hwr(l)*(eflx_wasteheat_sunwall(l) + &
                  eflx_wasteheat_shadewall(l)))
 
-            ! Limit wasteheat to ensure that we don't get any unrealistically strong 
+            ! Limit wasteheat to ensure that we don't get any unrealistically strong
             ! positive feedbacks due to AC in a warmer climate
             eflx_wasteheat(l) = min(eflx_wasteheat(l),wasteheat_limit)
 
@@ -768,7 +771,7 @@ contains
          ulrad(p)  = 0._r8
          dlrad(p)  = 0._r8
 
-         ! Derivative of sensible and latent heat fluxes with respect to 
+         ! Derivative of sensible and latent heat fluxes with respect to
          ! ground temperature
 
          if (ctype(c) == icol_roof) then
@@ -900,6 +903,8 @@ contains
             exit
          end if
       end do
+
+      #ifndef _OPENACC
       if ( found ) then
          write(iulog,*)'WARNING:  Total sensible heat does not equal sum of scaled heat fluxes for urban columns ',&
               ' nstep = ',nstep,' indexl= ',indexl,' eflx_err= ',eflx_err(indexl)
@@ -913,6 +918,7 @@ contains
             call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
+      #endif
 
       found = .false.
       do fl = 1, num_urbanl
@@ -924,6 +930,8 @@ contains
             exit
          end if
       end do
+
+      #ifndef _OPENACC
       if ( found ) then
          write(iulog,*)'WARNING:  Total water vapor flux does not equal sum of scaled water vapor fluxes for urban columns ',&
               ' nstep = ',nstep,' indexl= ',indexl,' qflx_err= ',qflx_err(indexl)
@@ -934,6 +942,7 @@ contains
             call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
+      #endif
 
       ! Check for convergence of stress.
       if (implicit_stress) then
@@ -984,6 +993,7 @@ contains
             if (ctype(c) == icol_road_perv) then
                rootr(p,j) = rootr_road_perv(c,j)
             else
+
                rootr(p,j) = 0._r8
             end if
          end do
@@ -997,7 +1007,7 @@ contains
          t = veg_pp%topounit(p)
          l = veg_pp%landunit(p)
 
-         ! Use urban canopy air temperature and specific humidity to represent 
+         ! Use urban canopy air temperature and specific humidity to represent
          ! 2-m temperature and humidity
 
          t_ref2m(p) = taf(l)
@@ -1011,7 +1021,6 @@ contains
          rh_ref2m_u(p) = rh_ref2m(p)
 
          ! Variables needed by history tape
-
          t_veg(p) = forc_t(t)
 
       end do
