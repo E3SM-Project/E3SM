@@ -1,5 +1,6 @@
 module subgridAveMod
-  #include "shr_assert.h"
+ 
+#include "shr_assert.h"
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Utilities to perfrom subgrid averaging
