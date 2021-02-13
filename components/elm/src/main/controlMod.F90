@@ -34,7 +34,7 @@ module controlMod
   use VerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp 
   use VerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile  
   use SharedParamsMod       , only: anoxia_wtsat
-  use CanopyfluxesMod         , only: perchroot, perchroot_alt
+  use CanopyStateType       , only: perchroot, perchroot_alt
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
   use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic

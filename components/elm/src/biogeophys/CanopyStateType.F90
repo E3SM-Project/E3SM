@@ -1,6 +1,5 @@
 module CanopyStateType
 
-  !------------------------------------------------------------------------------
   ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_infnan_mod  , only : shr_infnan_isnan
@@ -8,49 +7,62 @@ module CanopyStateType
   use abortutils      , only : endrun
   use decompMod       , only : bounds_type
   use landunit_varcon , only : istsoil, istcrop
-  use elm_varcon      , only : spval  
+  use elm_varcon      , only : spval,ispval
   use elm_varpar      , only : nlevcan, nvegwcs
   use elm_varctl      , only : iulog, use_cn, use_fates, use_hydrstress
-  use LandunitType    , only : lun_pp                
-  use ColumnType      , only : col_pp                
-  use VegetationType       , only : veg_pp                
+  use LandunitType    , only : lun_pp
+  use ColumnType      , only : col_pp
+  use VegetationType       , only : veg_pp
   !
   implicit none
   save
-  private
+
+
+  !renamed perchroot so as not to confuse with private data variable in
+  !SoilMoistStressMod
+  ! !PUBLIC DATA MEMBERS:
+  ! true => btran is based only on unfrozen soil levels
+  logical,  public :: perchroot    = .false.
+
+  ! true  => btran is based on active layer (defined over two years);
+  ! false => btran is based on currently unfrozen levels
+  logical,  public :: perchroot_alt = .false.
+  !------------------------------------------------------------------------------
+  !$acc declare create(perchroot )
+  !$acc declare create(perchroot_alt)
   !
   ! !PUBLIC TYPES:
   type, public :: CanopyState_type
 
-     integer  , pointer :: frac_veg_nosno_patch     (:)   ! patch fraction of vegetation not covered by snow (0 OR 1) [-] 
-     integer  , pointer :: frac_veg_nosno_alb_patch (:)   ! patch fraction of vegetation not covered by snow (0 OR 1) [-] 
+     integer  , pointer :: frac_veg_nosno_patch     (:)   ! patch fraction of vegetation not covered by snow (0 OR 1) [-]
+     integer  , pointer :: frac_veg_nosno_alb_patch (:)   ! patch fraction of vegetation not covered by snow (0 OR 1) [-]
 
      real(r8) , pointer :: tlai_patch               (:)   ! patch canopy one-sided leaf area index, no burying by snow
      real(r8) , pointer :: tsai_patch               (:)   ! patch canopy one-sided stem area index, no burying by snow
      real(r8) , pointer :: elai_patch               (:)   ! patch canopy one-sided leaf area index with burying by snow
      real(r8) , pointer :: esai_patch               (:)   ! patch canopy one-sided stem area index with burying by snow
-     real(r8) , pointer :: elai240_patch            (:)   ! patch canopy one-sided leaf area index with burying by snow average over 10days 
-     real(r8) , pointer :: laisun_patch             (:)   ! patch patch sunlit projected leaf area index  
-     real(r8) , pointer :: laisha_patch             (:)   ! patch patch shaded projected leaf area index  
-     real(r8) , pointer :: laisun_z_patch           (:,:) ! patch patch sunlit leaf area for canopy layer 
-     real(r8) , pointer :: laisha_z_patch           (:,:) ! patch patch shaded leaf area for canopy layer 
+     real(r8) , pointer :: elai240_patch            (:)   ! patch canopy one-sided leaf area index with burying by snow average over 10days
+     real(r8) , pointer :: laisun_patch             (:)   ! patch patch sunlit projected leaf area index
+     real(r8) , pointer :: laisha_patch             (:)   ! patch patch shaded projected leaf area index
+     real(r8) , pointer :: laisun_z_patch           (:,:) ! patch patch sunlit leaf area for canopy layer
+     real(r8) , pointer :: laisha_z_patch           (:,:) ! patch patch shaded leaf area for canopy layer
      real(r8) , pointer :: mlaidiff_patch           (:)   ! patch difference between lai month one and month two (for dry deposition of chemical tracers)
-     real(r8) , pointer :: annlai_patch             (:,:) ! patch 12 months of monthly lai from input data set (for dry deposition of chemical tracers) 
+     real(r8) , pointer :: annlai_patch             (:,:) ! patch 12 months of monthly lai from input data set (for dry deposition of chemical tracers)
      real(r8) , pointer :: htop_patch               (:)   ! patch canopy top (m)
      real(r8) , pointer :: hbot_patch               (:)   ! patch canopy bottom (m)
      real(r8) , pointer :: displa_patch             (:)   ! patch displacement height (m)
-     real(r8) , pointer :: fsun_patch               (:)   ! patch sunlit fraction of canopy         
-     real(r8) , pointer :: fsun24_patch             (:)   ! patch 24hr average of sunlit fraction of canopy 
+     real(r8) , pointer :: fsun_patch               (:)   ! patch sunlit fraction of canopy
+     real(r8) , pointer :: fsun24_patch             (:)   ! patch 24hr average of sunlit fraction of canopy
      real(r8) , pointer :: fsun240_patch            (:)   ! patch 240hr average of sunlit fraction of canopy
 
-     real(r8) , pointer :: alt_col                  (:)   ! col current depth of thaw 
-     integer  , pointer :: alt_indx_col             (:)   ! col current depth of thaw 
-     real(r8) , pointer :: altmax_col               (:)   ! col maximum annual depth of thaw 
-     real(r8) , pointer :: altmax_lastyear_col      (:)   ! col prior year maximum annual depth of thaw 
-     integer  , pointer :: altmax_indx_col          (:)   ! col maximum annual depth of thaw 
-     integer  , pointer :: altmax_lastyear_indx_col (:)   ! col prior year maximum annual depth of thaw 
-     
-     real(r8) , pointer :: dewmx_patch              (:)   ! patch maximum allowed dew [mm] 
+     real(r8) , pointer :: alt_col                  (:)   ! col current depth of thaw
+     integer  , pointer :: alt_indx_col             (:)   ! col current depth of thaw
+     real(r8) , pointer :: altmax_col               (:)   ! col maximum annual depth of thaw
+     real(r8) , pointer :: altmax_lastyear_col      (:)   ! col prior year maximum annual depth of thaw
+     integer  , pointer :: altmax_indx_col          (:)   ! col maximum annual depth of thaw
+     integer  , pointer :: altmax_lastyear_indx_col (:)   ! col prior year maximum annual depth of thaw
+
+     real(r8) , pointer :: dewmx_patch              (:)   ! patch maximum allowed dew [mm]
 
      real(r8) , pointer :: dleaf_patch              (:)   ! patch characteristic leaf width (diameter) [m]
                                                           ! for non-ED/FATES this is the same as pftcon%dleaf()
@@ -59,24 +71,24 @@ module CanopyStateType
    contains
 
      procedure, public  :: Init
-     procedure, private :: InitAllocate
-     procedure, private :: InitHistory  
-     procedure, private :: InitCold     
+     procedure, public  :: InitAllocate
+     procedure, private :: InitHistory
+     procedure, private :: InitCold
      procedure, public  :: InitAccBuffer
      procedure, public  :: InitAccVars
      procedure, public  :: UpdateAccVars
-     procedure, public  :: Restart      
+     procedure, public  :: Restart
+
 
   end type CanopyState_type
   !------------------------------------------------------------------------
 
-contains   
-
+contains
   !------------------------------------------------------------------------
   subroutine Init(this, bounds)
 
     class(canopystate_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
 
     call this%InitAllocate(bounds)
     call this%InitHistory(bounds)
@@ -85,28 +97,23 @@ contains
   end subroutine Init
 
   !------------------------------------------------------------------------
-  subroutine InitAllocate(this, bounds)
-    !
-    ! !USES:
-    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use elm_varpar     , only : nlevcan, nlevsno, nlevgrnd
-    use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
-    !
+  subroutine InitAllocate(this, bounds )
+
     ! !ARGUMENTS:
     class(canopystate_type) :: this
-    type(bounds_type), intent(in) :: bounds  
-    !
+    type(bounds_type), intent(in) :: bounds    !
     ! !LOCAL VARIABLES:
     integer :: begp, endp
     integer :: begc, endc
     integer :: begg, endg
+
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
 
-    allocate(this%frac_veg_nosno_patch     (begp:endp))           ; this%frac_veg_nosno_patch     (:)   = huge(1)
+    allocate(this%frac_veg_nosno_patch     (begp:endp))           ; this%frac_veg_nosno_patch     (:)   = ispval
     allocate(this%frac_veg_nosno_alb_patch (begp:endp))           ; this%frac_veg_nosno_alb_patch (:)   = 0
     allocate(this%tlai_patch               (begp:endp))           ; this%tlai_patch               (:)   = nan
     allocate(this%tsai_patch               (begp:endp))           ; this%tsai_patch               (:)   = nan
@@ -126,17 +133,17 @@ contains
     allocate(this%fsun24_patch             (begp:endp))           ; this%fsun24_patch             (:)   = nan
     allocate(this%fsun240_patch            (begp:endp))           ; this%fsun240_patch            (:)   = nan
 
-    allocate(this%alt_col                  (begc:endc))           ; this%alt_col                  (:)   = spval;     
+    allocate(this%alt_col                  (begc:endc))           ; this%alt_col                  (:)   = spval;
     allocate(this%altmax_col               (begc:endc))           ; this%altmax_col               (:)   = spval
     allocate(this%altmax_lastyear_col      (begc:endc))           ; this%altmax_lastyear_col      (:)   = spval
     allocate(this%alt_indx_col             (begc:endc))           ; this%alt_indx_col             (:)   = huge(1)
     allocate(this%altmax_indx_col          (begc:endc))           ; this%altmax_indx_col          (:)   = huge(1)
     allocate(this%altmax_lastyear_indx_col (begc:endc))           ; this%altmax_lastyear_indx_col (:)   = huge(1)
 
-    allocate(this%dewmx_patch              (begp:endp))           ; this%dewmx_patch              (:)   = nan
-    allocate(this%dleaf_patch              (begp:endp))           ; this%dleaf_patch              (:)   = nan
-    allocate(this%lbl_rsc_h2o_patch        (begp:endp))           ; this%lbl_rsc_h2o_patch        (:)   = nan
-    allocate(this%vegwp_patch              (begp:endp,1:nvegwcs)) ; this%vegwp_patch              (:,:) = nan
+    allocate(this%dewmx_patch              (begp:endp))           ; this%dewmx_patch              (:)   = spval
+    allocate(this%dleaf_patch              (begp:endp))           ; this%dleaf_patch              (:)   = spval
+    allocate(this%lbl_rsc_h2o_patch        (begp:endp))           ; this%lbl_rsc_h2o_patch        (:)   = spval
+    allocate(this%vegwp_patch              (begp:endp,1:nvegwcs)) ; this%vegwp_patch              (:,:) = spval
 
 
   end subroutine InitAllocate
@@ -152,7 +159,7 @@ contains
     !
     ! !ARGUMENTS:
     class(canopystate_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: begc, endc
@@ -298,12 +305,12 @@ contains
     ! This routine set defaults values that are then overwritten by the
     ! restart file for restart or branch runs
     !
-    ! !USES 
+    ! !USES
     use accumulMod  , only : init_accum_field
     !
     ! !ARGUMENTS:
     class(canopystate_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !---------------------------------------------------------------------
 
     this%fsun24_patch(bounds%begp:bounds%endp) = spval
@@ -329,16 +336,16 @@ contains
     ! !DESCRIPTION:
     ! Initialize module variables that are associated with
     ! time accumulated fields. This routine is called for both an initial run
-    ! and a restart run (and must therefore must be called after the restart file 
+    ! and a restart run (and must therefore must be called after the restart file
     ! is read in and the accumulation buffer is obtained)
     !
-    ! !USES 
+    ! !USES
     use accumulMod       , only : extract_accum_field
     use clm_time_manager , only : get_nstep
     !
     ! !ARGUMENTS:
     class(canopystate_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer  :: begp, endp
@@ -386,7 +393,7 @@ contains
     !
     ! !ARGUMENTS:
     class(canopystate_type)             :: this
-    type(bounds_type)      , intent(in) :: bounds  
+    type(bounds_type)      , intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: g,p                       ! indices
@@ -396,20 +403,15 @@ contains
     integer :: begp, endp
     real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
     !---------------------------------------------------------------------
-
     begp = bounds%begp; endp = bounds%endp
-
     nstep = get_nstep()
-
     ! Allocate needed dynamic memory for single level pft field
-
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
        write(iulog,*)'update_accum_hist allocation error for rbuf1dp'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
-
-    ! Accumulate and extract fsun24 & fsun240   
+    ! Accumulate and extract fsun24 & fsun240
     do p = begp,endp
        rbufslp(p) = this%fsun_patch(p)
     end do
@@ -418,7 +420,7 @@ contains
     call update_accum_field  ('FSUN240', rbufslp              , nstep)
     call extract_accum_field ('FSUN240', this%fsun240_patch   , nstep)
 
-    ! Accumulate and extract elai240 
+    ! Accumulate and extract elai240
     do p = begp,endp
        rbufslp(p) = this%elai_patch(p)
     end do
@@ -426,7 +428,6 @@ contains
     call extract_accum_field ('LAI240', this%elai240_patch       , nstep)
 
     deallocate(rbufslp)
-
   end subroutine UpdateAccVars
 
   !-----------------------------------------------------------------------
@@ -434,10 +435,10 @@ contains
     !
     ! !ARGUMENTS:
     class(canopystate_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer  :: p,l,c,g 
+    integer  :: p,l,c,g
     !-----------------------------------------------------------------------
 
     do p = bounds%begp, bounds%endp
@@ -480,7 +481,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine Restart(this, bounds, ncid, flag)
-    ! 
+    !
     ! !USES:
     use spmdMod    , only : masterproc
     use ncdio_pio  , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
@@ -488,7 +489,7 @@ contains
     !
     ! !ARGUMENTS:
     class(canopystate_type) :: this
-    type(bounds_type) , intent(in)    :: bounds 
+    type(bounds_type) , intent(in)    :: bounds
     type(file_desc_t) , intent(inout) :: ncid   ! netcdf id
     character(len=*)  , intent(in)    :: flag   ! 'read' or 'write'
     !
@@ -499,39 +500,30 @@ contains
     !-----------------------------------------------------------------------
 
     begp = bounds%begp; endp = bounds%endp
-
     call restartvar(ncid=ncid, flag=flag, varname='FRAC_VEG_NOSNO_ALB', xtype=ncd_int,  &
          dim1name='pft', long_name='fraction of vegetation not covered by snow (0 or 1)', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%frac_veg_nosno_alb_patch)
-
     call restartvar(ncid=ncid, flag=flag, varname='tlai', xtype=ncd_double,  &
          dim1name='pft', long_name='one-sided leaf area index, no burying by snow', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%tlai_patch)
-
     call restartvar(ncid=ncid, flag=flag, varname='tsai', xtype=ncd_double,  &
          dim1name='pft', long_name='one-sided stem area index, no burying by snow', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%tsai_patch)
-
     call restartvar(ncid=ncid, flag=flag, varname='elai', xtype=ncd_double,  &
          dim1name='pft', long_name='one-sided leaf area index, with burying by snow', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%elai_patch)
-    
     call restartvar(ncid=ncid, flag=flag, varname='esai', xtype=ncd_double,  &
          dim1name='pft', long_name='one-sided stem area index, with burying by snow', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%esai_patch)
-    
     call restartvar(ncid=ncid, flag=flag, varname='htop', xtype=ncd_double,  &
          dim1name='pft', long_name='canopy top', units='m', &
          interpinic_flag='interp', readvar=readvar, data=this%htop_patch)
-
     call restartvar(ncid=ncid, flag=flag, varname='hbot', xtype=ncd_double,  &
          dim1name='pft', long_name='canopy botton', units='m', &
          interpinic_flag='interp', readvar=readvar, data=this%hbot_patch)
-
     call restartvar(ncid=ncid, flag=flag, varname='mlaidiff', xtype=ncd_double,  &
          dim1name='pft', long_name='difference between lai month one and month two', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%mlaidiff_patch)
-
     call restartvar(ncid=ncid, flag=flag, varname='fsun', xtype=ncd_double,  &
          dim1name='pft', long_name='sunlit fraction of canopy', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%fsun_patch)
@@ -542,33 +534,26 @@ contains
           end if
        end do
     end if
-
     if (use_cn .or. use_fates) then
        call restartvar(ncid=ncid, flag=flag, varname='altmax', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%altmax_col) 
-
+            interpinic_flag='interp', readvar=readvar, data=this%altmax_col)
        call restartvar(ncid=ncid, flag=flag, varname='altmax_lastyear', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%altmax_lastyear_col) 
-
+            interpinic_flag='interp', readvar=readvar, data=this%altmax_lastyear_col)
        call restartvar(ncid=ncid, flag=flag, varname='altmax_indx', xtype=ncd_int,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%altmax_indx_col) 
-
+            interpinic_flag='interp', readvar=readvar, data=this%altmax_indx_col)
        call restartvar(ncid=ncid, flag=flag, varname='altmax_lastyear_indx', xtype=ncd_int,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%altmax_lastyear_indx_col) 
+            interpinic_flag='interp', readvar=readvar, data=this%altmax_lastyear_indx_col)
     end if
-
     if ( use_hydrstress ) then
        call restartvar(ncid=ncid, flag=flag, varname='vegwp', xtype=ncd_double, &
             dim1name='pft', dim2name='vegwcs', switchdim=.true., &
             long_name='vegetation water matric potential', units='mm', &
             interpinic_flag='interp', readvar=readvar, data=this%vegwp_patch)
-
     end if
-
   end subroutine Restart
 
 end module CanopyStateType

@@ -142,7 +142,8 @@ module WaterstateType
   end type waterstate_type
   ! minimum allowed snow effective radius (also "fresh snow" value) [microns]
   real(r8), public, parameter :: snw_rds_min = 54.526_r8    
-
+  
+  type(waterstate_type) ,public        :: waterstate_vars
   !------------------------------------------------------------------------
 
 contains
