@@ -587,12 +587,12 @@ contains
                   eflx_heat_from_ac_shadewall(l) = 0._r8
                end if
             else
-              #ifndef _OPENACC
+#ifndef _OPENACC
                write(iulog,*) 'c, ctype, pi = ', c, ctype(c), pi
                write(iulog,*) 'Column indices for: shadewall, sunwall, road_imperv, road_perv, roof: '
                write(iulog,*) icol_shadewall, icol_sunwall, icol_road_imperv, icol_road_perv, icol_roof
                call endrun(decomp_index=l, elmlevel=namel, msg="ERROR, ctype out of range"//errmsg(__FILE__, __LINE__))
-              #endif
+#endif
             end if
 
             taf_numer(l) = taf_numer(l) + t_grnd(c)*wtus(c)
@@ -819,7 +819,7 @@ contains
          end if
       end do
 
-      #ifndef _OPENACC
+#ifndef _OPENACC
       if ( found ) then
          write(iulog,*)'WARNING:  Total sensible heat does not equal sum of scaled heat fluxes for urban columns ',&
               ' nstep = ',nstep,' indexl= ',indexl,' eflx_err= ',eflx_err(indexl)
@@ -833,7 +833,7 @@ contains
             call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
-      #endif
+#endif
 
       found = .false.
       do fl = 1, num_urbanl
@@ -846,7 +846,7 @@ contains
          end if
       end do
 
-      #ifndef _OPENACC
+#ifndef _OPENACC
       if ( found ) then
          write(iulog,*)'WARNING:  Total water vapor flux does not equal sum of scaled water vapor fluxes for urban columns ',&
               ' nstep = ',nstep,' indexl= ',indexl,' qflx_err= ',qflx_err(indexl)
@@ -857,7 +857,7 @@ contains
             call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
-      #endif
+#endif
 
       ! Gather terms required to determine internal building temperature
 

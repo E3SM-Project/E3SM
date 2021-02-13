@@ -657,7 +657,7 @@ contains
 
           ! This situation should not happen:
           if (abs(sum(sabg_lyr(p,:))-sabg_snow(p)) > 0.00001_r8) then
-            #ifndef _OPENACC
+#ifndef _OPENACC
              write(iulog,*)"SNICAR ERROR: Absorbed ground radiation not equal to summed snow layer radiation"
              write(iulog,*)"Diff        = ",sum(sabg_lyr(p,:))-sabg_snow(p)
              write(iulog,*)"sabg_snow(p)= ",sabg_snow(p)
@@ -674,7 +674,7 @@ contains
              write(iulog,*)"albgrd_nir  = ",albgrd(c,2)
              write(iulog,*)"coszen      = ",coszen(c)
              call endrun(decomp_index=c, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
-             #endif
+#endif
           endif
 
           ! Diagnostic: shortwave penetrating ground (e.g. top layer)

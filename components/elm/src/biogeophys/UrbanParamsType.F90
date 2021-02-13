@@ -101,7 +101,6 @@ module UrbanParamsType
   character(len= *), parameter, public :: urban_wasteheat_on = 'ON_WASTEHEAT'  
   character(len= 16), public           :: urban_hac = urban_hac_off
   
-  integer, public            :: urban_hac_int = urban_hac_off
   logical, public            :: urban_traffic      = .false.   ! urban traffic fluxes
   !$acc declare copyin(urban_hac_off     )
   !$acc declare copyin(urban_hac_on      )

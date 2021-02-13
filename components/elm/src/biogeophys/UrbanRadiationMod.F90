@@ -460,7 +460,7 @@ contains
 
          err = lwdown(l) - (lwdown_road(l) + (lwdown_shadewall(l) + lwdown_sunwall(l))*canyon_hwr(l))
          if (abs(err) > 0.10_r8 ) then
-           #ifndef _OPENACC
+#ifndef _OPENACC
              write(iulog,*) 'urban incident atmospheric longwave radiation balance error',err
              write(iulog,*) 'l          = ',l
              write(iulog,*) 'lwdown     = ',lwdown(l)
@@ -469,7 +469,7 @@ contains
              write(iulog,*) 'canyon_hwr = ',canyon_hwr(l)
              write(iulog,*) 'elm model is stopping'
              call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
-            #endif
+#endif
          endif
       end do
 
@@ -647,11 +647,11 @@ contains
             if (crit < .001_r8) exit
          end do
          if (iter >= n) then
-           #ifndef _OPENACC
+#ifndef _OPENACC
              write (iulog,*) 'urban net longwave radiation error: no convergence'
              write (iulog,*) 'elm model is stopping'
              call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
-            #endif
+#endif
          endif
 
          ! total net longwave radiation for canyon. project wall fluxes to horizontal surface

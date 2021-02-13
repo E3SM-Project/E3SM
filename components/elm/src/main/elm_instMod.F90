@@ -1,6 +1,6 @@
 module elm_instMod
   !-----------------------------------------------------------------------
-  ! initialize clm data types
+  ! initialize elm data types
   !
   use shr_kind_mod               , only : r8 => shr_kind_r8
   use shr_log_mod                , only : errMsg => shr_log_errMsg
@@ -36,9 +36,9 @@ module elm_instMod
   use SurfaceRadiationMod        , only : surfrad_type
   use SurfaceAlbedoMod           , only : SurfaceAlbedoInitTimeConst !TODO - can this be merged into the type?
   use SurfaceAlbedoType          , only : surfalb_type
-  use TemperatureType            , only : temperature_type
-  use WaterfluxType              , only : waterflux_type
-  use WaterstateType             , only : waterstate_type
+  use TemperatureType            , only : temperature_type, temperature_vars
+  use WaterfluxType              , only : waterflux_type,   waterflux_vars
+  use WaterstateType             , only : waterstate_type, waterstate_vars 
   use VOCEmissionMod             , only : vocemis_type
   use atm2lndType                , only : atm2lnd_type
   use lnd2atmType                , only : lnd2atm_type
@@ -77,6 +77,7 @@ module elm_instMod
 
   ! instances declared in their own modules
   use UrbanParamsType            , only : urbanparams_vars
+  use controlMod                 , only : nlfilename
 
 
   !
@@ -115,9 +116,6 @@ module elm_instMod
   type(solarabs_type)                                 :: solarabs_vars
   type(surfalb_type)                                  :: surfalb_vars
   type(surfrad_type)                                  :: surfrad_vars
-  type(temperature_type)                              :: temperature_vars
-  type(waterflux_type)                                :: waterflux_vars
-  type(waterstate_type)                               :: waterstate_vars
   type(atm2lnd_type)                                  :: atm2lnd_vars
   type(glc2lnd_type)                                  :: glc2lnd_vars
   type(lnd2atm_type)                                  :: lnd2atm_vars
@@ -267,7 +265,6 @@ contains
     use domainMod                         , only : ldomain
     use elm_varpar                        , only : nlevsno, numpft
     use elm_varctl                        , only : single_column, fsurdat, scmlat, scmlon
-    use controlMod                        , only : nlfilename
     use SoilWaterRetentionCurveFactoryMod , only : create_soil_water_retention_curve
     use fileutils                         , only : getfil
     use VegetationPropertiesType          , only : veg_vp
