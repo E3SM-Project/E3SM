@@ -169,7 +169,8 @@ module elm_driver
   use WaterBudgetMod              , only : WaterBudget_SetEndingMonthlyStates
   use elm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
   use elm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
-
+  
+  use timeinfoMod 
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -239,7 +240,9 @@ contains
     nclumps = get_proc_clumps()
     
     if (do_budgets) call WaterBudget_Reset()
-
+    nstep_mod = get_nstep() 
+    dtime_mod = real(get_step_size(),r8) 
+    call get_curr_date(year_curr,mon_curr, day_curr,secs_curr)
 
     ! ============================================================================
     ! Specified phenology
@@ -677,7 +680,7 @@ contains
             filter(nc)%num_nourbanp, filter(nc)%nourbanp,                  &
             filter(nc)%num_urbanp, filter(nc)%urbanp    ,                  &
             filter(nc)%num_urbanc, filter(nc)%urbanc,                      &
-            atm2lnd_vars, waterstate_vars, canopystate_vars, surfalb_vars, &
+            atm2lnd_vars, canopystate_vars, surfalb_vars, &
             solarabs_vars, surfrad_vars)
 
        ! Surface Radiation for only urban columns
@@ -687,7 +690,7 @@ contains
             filter(nc)%num_urbanl, filter(nc)%urbanl,                          &
             filter(nc)%num_urbanc, filter(nc)%urbanc,                          &
             filter(nc)%num_urbanp, filter(nc)%urbanp,                          &
-            atm2lnd_vars, waterstate_vars, temperature_vars, urbanparams_vars, &
+            atm2lnd_vars, urbanparams_vars, &
             solarabs_vars, surfalb_vars, energyflux_vars)
 
        call t_stopf('surfrad')
@@ -702,8 +705,7 @@ contains
             filter(nc)%num_nolakec, filter(nc)%nolakec,                       &
             filter(nc)%num_nolakep, filter(nc)%nolakep,                       &
             atm2lnd_vars, canopystate_vars, soilstate_vars, frictionvel_vars, &
-            waterstate_vars, waterflux_vars, energyflux_vars, temperature_vars, &
-            alm_fates)
+            energyflux_vars)
        call t_stopf('bgp1')
 
        ! ============================================================================
@@ -719,8 +721,7 @@ contains
        call BareGroundFluxes(bounds_clump,                                 &
             filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,          &
             atm2lnd_vars, canopystate_vars, soilstate_vars,                &
-            frictionvel_vars, ch4_vars, energyflux_vars, temperature_vars, &
-            waterflux_vars, waterstate_vars)
+            frictionvel_vars, ch4_vars  )
        call t_stopf('bgflux')
 
        ! non-bareground fluxes for all patches except lakes and urban landunits
@@ -732,21 +733,19 @@ contains
             filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,                        &
             atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars,               &
             frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars,               &
-            temperature_vars, waterflux_vars, waterstate_vars, ch4_vars, photosyns_vars, &
-            soil_water_retention_curve, nitrogenstate_vars,phosphorusstate_vars,         &
-            alm_fates) 
+            ch4_vars, photosyns_vars ) 
        call t_stopf('canflux')
 
        ! Fluxes for all urban landunits
 
        call t_startf('uflux')
-       call UrbanFluxes(bounds_clump,                                         &
-            filter(nc)%num_nourbanl, filter(nc)%nourbanl,                     &
-            filter(nc)%num_urbanl, filter(nc)%urbanl,                         &
-            filter(nc)%num_urbanc, filter(nc)%urbanc,                         &
-            filter(nc)%num_urbanp, filter(nc)%urbanp,                         &
-            atm2lnd_vars, urbanparams_vars, soilstate_vars, temperature_vars, &
-            waterstate_vars, frictionvel_vars, energyflux_vars, waterflux_vars) 
+       call UrbanFluxes(bounds_clump,                        &
+            filter(nc)%num_nourbanl, filter(nc)%nourbanl,    &
+            filter(nc)%num_urbanl, filter(nc)%urbanl,        &
+            filter(nc)%num_urbanc, filter(nc)%urbanc,        &
+            filter(nc)%num_urbanp, filter(nc)%urbanp,        &
+            atm2lnd_vars, urbanparams_vars, soilstate_vars,  &
+            frictionvel_vars, energyflux_vars) 
        call t_stopf('uflux')
 
        ! Fluxes for all lake landunits
@@ -755,8 +754,8 @@ contains
        call LakeFluxes(bounds_clump,                                         &
             filter(nc)%num_lakec, filter(nc)%lakec,                          &
             filter(nc)%num_lakep, filter(nc)%lakep,                          &
-            atm2lnd_vars, solarabs_vars, frictionvel_vars, temperature_vars, &
-            energyflux_vars, waterstate_vars, waterflux_vars, lakestate_vars) 
+            atm2lnd_vars, solarabs_vars, frictionvel_vars,  &
+            energyflux_vars, lakestate_vars) 
 
        ! ============================================================================
        ! DUST and VOC emissions
