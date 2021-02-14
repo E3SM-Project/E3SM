@@ -66,7 +66,7 @@ contains
 !  routine ocn_init_setup_tidal_boundary
 !
 !> \brief   Setup for Tidal Boundary on drying slope
-!> \author  Phillip Wolfram
+!> \author  Phillip Wolfram, Xylar Asay-Davis
 !> \date    04/05/2019
 !> \details
 !>  This routine sets up the initial conditions for the tidal_boundary test case.
@@ -100,7 +100,7 @@ contains
     integer, pointer :: index_temperature, index_salinity, index_tracer1
 
     ! Define arrays
-    integer, dimension(:), pointer :: maxLevelCell
+    integer, dimension(:), pointer :: minLevelCell, maxLevelCell
     integer, dimension(:), pointer :: vegetationMask
     real (kind=RKIND), dimension(:), pointer :: vegetationHeight,vegetationDensity, vegetationDiameter
     real (kind=RKIND), dimension(:), pointer :: yCell, refBottomDepth, bottomDepth, vertCoordMovementWeights, dcEdge
@@ -173,6 +173,7 @@ contains
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
       call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
 
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
@@ -296,7 +297,7 @@ contains
         end do
       end if
 
-      if (.not. config_alter_ICs_for_pbcs .and. trim(config_tidal_boundary_layer_type) == 'zstar') then
+      if (.not. config_alter_ICs_for_pcs .and. trim(config_tidal_boundary_layer_type) == 'zstar') then
         do iCell = 1, nCellsSolve
           do k = 1,nVertLevels
             if (refBottomDepth(k) > bottomDepth(iCell)) then
@@ -306,6 +307,8 @@ contains
           end do
         end do
       end if
+
+      minLevelCell(:) = 1
 
       if(trim(config_tidal_boundary_layer_type) == 'zstar') then
 
@@ -373,12 +376,19 @@ contains
         end do
       else
         do iCell = 1, nCellsSolve
-          ! Set layerThickness and restingThickness
-          call ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness(:,iCell), zMid(:,iCell), &
-            refBottomDepth, bottomDepth(iCell), maxLevelCell(iCell), nVertLevels, iErr, &
-            restingThickness=restingThickness(:,iCell), &
-            ssh=ssh(iCell))
-          ! also computes zMid
+          ! restingThickness is z-level, with ssh = 0
+          call ocn_compute_z_level_layerThickness(restingThickness(:,iCell), refBottomDepth, 0.0_RKIND, &
+                                                  bottomDepth(iCell), minLevelCell(iCell),              &
+                                                  maxLevelCell(iCell), nVertLevels, iErr)
+
+          ! stretch restingThickness to get the z-star layerThickness
+          call ocn_compute_z_star_layerThickness(layerThickness(:,iCell), restingThickness(:,iCell),  &
+                                                 ssh(iCell), bottomDepth(iCell), minLevelCell(iCell), &
+                                                 maxLevelCell(iCell), nVertLevels, iErr)
+
+          ! compute zMid
+          call ocn_compute_zMid_from_layerThickness(zMid(:,iCell), layerThickness(:,iCell), ssh(iCell), &
+                                                    minLevelCell(iCell), maxLevelCell(iCell), nVertLevels, iErr)
           do k = 1, maxLevelCell(iCell)
             restingThickness(k, iCell) = layerThickness(k, iCell)
           end do
@@ -399,7 +409,7 @@ contains
         end if
       end do
 
-      ! check that there is some tidalInputMask 
+      ! check that there is some tidalInputMask
       if (.not. sum(tidalInputMask) > 0) then
         call mpas_log_write('Input mask for tidal case is not set!', MPAS_LOG_CRIT)
       end if
