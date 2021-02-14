@@ -24,6 +24,7 @@ module ocn_init_vertical_grids
    use mpas_pool_routines
    use mpas_constants
    use mpas_timer
+   use mpas_io
 
    use ocn_constants
    use ocn_config
@@ -46,8 +47,11 @@ module ocn_init_vertical_grids
    !--------------------------------------------------------------------
 
    public :: ocn_generate_vertical_grid, &
-             ocn_compute_layerThickness_zMid_from_bottomDepth, &
+             ocn_compute_z_level_layerThickness, &
+             ocn_compute_zMid_from_layerThickness, &
+             ocn_compute_z_star_layerThickness, &
              ocn_alter_bottomDepth_for_pbcs, &
+             ocn_alter_ssh_for_ptcs, &
              ocn_compute_Haney_number, &
              ocn_init_vertical_grid, &
              ocn_init_vertical_grid_with_max_rx1
@@ -484,50 +488,40 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_compute_layerThickness_zMid_from_bottomDepth
+!  routine ocn_compute_z_level_layerThickness
 !
 !> \brief   Compute auxiliary z-variables from bottomDepth
-!> \author  Mark Petersen
+!> \author  Mark Petersen, Xylar Asay-Davis
 !> \date    10/17/2015
 !> \details
 !>  This routine computes auxiliary z-variables from bottomDepth
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness,zMid,refBottomDepth,bottomDepth, &
-                                                                maxLevelCell,nVertLevels,iErr,restingThickness,ssh)!{{{
-      real (kind=RKIND), dimension(nVertLevels), intent(out) :: layerThickness, zMid
+    subroutine ocn_compute_z_level_layerThickness(layerThickness, refBottomDepth, ssh, bottomDepth, &
+                                                  minLevelCell, maxLevelCell, nVertLevels, iErr)!{{{
+      real (kind=RKIND), dimension(nVertLevels), intent(out) :: layerThickness
       real (kind=RKIND), dimension(nVertLevels), intent(in) :: refBottomDepth
-      real (kind=RKIND), intent(in) :: bottomDepth
-      integer, intent(in) :: maxLevelCell, nVertLevels
+      real (kind=RKIND), intent(in) :: ssh, bottomDepth
+      integer, intent(in) :: minLevelCell, maxLevelCell, nVertLevels
       integer, intent(out) :: iErr
-      real (kind=RKIND), dimension(nVertLevels), intent(out), optional :: restingThickness
-      real (kind=RKIND), intent(in), optional :: ssh
 
       integer :: k
-      real (kind=RKIND) :: layerStretch, zTop
 
       iErr = 0
 
-      layerThickness(:) = 0.0_RKIND
-      zMid(:) = 0.0_RKIND
-
-      if(present(ssh) .and. .not. present(restingThickness)) then
-         call mpas_log_write( ' Error: ssh present but restingThickness not present ' &
-                           // 'in ocn_compute_layerThickness_zMid_from_bottomDepth')
-         iErr = 1
-         return
-      end if
+      layerThickness(:) = 0.0_RKIND  ! = MPAS_REAL_FILLVAL
 
       if (maxLevelCell<=0) return
 
-      ! first, compute the resting layer thickness (same as layer thickness if ssh not present)
-      if (maxLevelCell==1) then
-         layerThickness(1) = bottomDepth
+      ! compute the z-level layer thickness
+      if (maxLevelCell==minLevelCell) then
+         layerThickness(minLevelCell) = bottomDepth + ssh
       else
-         layerThickness(1) = refBottomDepth(1)
+         k = minLevelCell
+         layerThickness(k) = refBottomDepth(k) + ssh
 
-         do k = 2, maxLevelCell-1
+         do k = minLevelCell+1, maxLevelCell-1
             layerThickness(k) = refBottomDepth(k) - refBottomDepth(k-1)
          end do
 
@@ -536,27 +530,82 @@ contains
 
       endif
 
-      zTop = 0.0_RKIND
-      ! copy to layerThickness to restingThickness
-      if (present(restingThickness)) then
-         restingThickness(:) = layerThickness(:)
-         ! stretch layers if ssh is present
-         if(present(ssh)) then
-            layerStretch = (ssh + bottomDepth)/bottomDepth
-            zTop = ssh
-            do k=1,maxLevelCell
-               layerThickness(k) = layerStretch*restingThickness(k)
-            end do
-         end if
-      end if
+    end subroutine ocn_compute_z_level_layerThickness  !}}}
 
+!***********************************************************************
+!
+!  routine ocn_compute_zMid_from_layerThickness
+!
+!> \brief   Compute zMid from layerThickness
+!> \author  Xylar Asay-Davis
+!> \date    02/14/2021
+!> \details
+!>  This routine computes zMid from ssh and layerThickness for any vertical coordinate
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_compute_zMid_from_layerThickness(zMid, layerThickness, ssh, minLevelCell, &
+                                                    maxLevelCell, nVertLevels, iErr)!{{{
+      real (kind=RKIND), dimension(nVertLevels), intent(out) :: zMid
+      real (kind=RKIND), dimension(nVertLevels), intent(in) :: layerThickness
+      real (kind=RKIND), intent(in) :: ssh
+      integer, intent(in) :: minLevelCell, maxLevelCell, nVertLevels
+      integer, intent(out) :: iErr
+
+      integer :: k
+      real (kind=RKIND) :: zTop
+
+      iErr = 0
+
+      zMid(:) = 0.0_RKIND  ! MPAS_REAL_FILLVAL
+
+      if (maxLevelCell<=0) return
+
+      zTop = ssh
       ! compute zMid based on the layer thickness
-      do k = 1, maxLevelCell
-         zMid(k) = zTop - 0.5_RKIND*layerThickness(k)
+      do k = minLevelCell, maxLevelCell
+         zMid(k) = zTop - 0.5_RKIND * layerThickness(k)
          zTop = zTop - layerThickness(k)
       end do
 
-    end subroutine ocn_compute_layerThickness_zMid_from_bottomDepth  !}}}
+    end subroutine ocn_compute_zMid_from_layerThickness  !}}}
+
+
+!***********************************************************************
+!
+!  routine ocn_compute_z_star_layerThickness
+!
+!> \brief   Compute z-star layerThickness
+!> \author  Xylar Asay-Davis
+!> \date    02/14/2021
+!> \details
+!>  This routine computes z-star layerThickness from restingThickness, bottomDepth, and ssh
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_compute_z_star_layerThickness(layerThickness, restingThickness, ssh, bottomDepth, &
+                                                 minLevelCell, maxLevelCell, nVertLevels, iErr)!{{{
+      real (kind=RKIND), dimension(nVertLevels), intent(out) :: layerThickness
+      real (kind=RKIND), dimension(nVertLevels), intent(in) :: restingThickness
+      real (kind=RKIND), intent(in) :: ssh, bottomDepth
+      integer, intent(in) :: minLevelCell, maxLevelCell, nVertLevels
+      integer, intent(out) :: iErr
+
+      integer :: k
+      real (kind=RKIND) :: layerStretch
+
+      iErr = 0
+
+      layerThickness(:) = 0.0_RKIND  ! = MPAS_REAL_FILLVAL
+
+      if (maxLevelCell<=0) return
+
+      layerStretch = (ssh + bottomDepth)/bottomDepth
+      do k = minLevelCell, maxLevelCell
+         layerThickness(k) = layerStretch * restingThickness(k)
+      end do
+
+    end subroutine ocn_compute_z_star_layerThickness  !}}}
 
 
 !***********************************************************************
@@ -567,14 +616,14 @@ contains
 !> \author  Mark Petersen
 !> \date    10/19/2015
 !> \details
-!>  This routine alters the bottom depth in a single column based on pbc settings
+!>  This routine alters the bottom depth in a single column based on partial cell settings
 !
 !-----------------------------------------------------------------------
     subroutine ocn_alter_bottomDepth_for_pbcs(bottomDepth, refBottomDepth, maxLevelCell, iErr)
 
       real (kind=RKIND), intent(inout) :: bottomDepth
       integer, intent(inout) :: maxLevelCell
-      real (kind=RKIND), dimension(maxLevelCell), intent(in) :: refBottomDepth
+      real (kind=RKIND), dimension(:), intent(in) :: refBottomDepth
       integer, intent(out) :: iErr
       integer :: k
       real (kind=RKIND) :: minBottomDepth, minBottomDepthMid
@@ -582,12 +631,12 @@ contains
       iErr = 0
 
       if (maxLevelCell > 1) then
-         if (config_alter_ICs_for_pbcs) then
+         if (config_alter_ICs_for_pcs) then
 
-            if (config_pbc_alteration_type .eq. 'partial_cell') then
+            if (config_pc_alteration_type .eq. 'partial_cell') then
                ! Change value of maxLevelCell for partial bottom cells
                k = maxLevelCell
-               minBottomDepth = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
+               minBottomDepth = refBottomDepth(k) - (1.0-config_min_pc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
                minBottomDepthMid = 0.5_RKIND*(minBottomDepth + refBottomDepth(k-1))
                if (bottomDepth .lt. minBottomDepthMid) then
                   ! Round up to cell above
@@ -597,16 +646,71 @@ contains
                   ! Round down cell to the min_pbc_fraction.
                   bottomDepth = minBottomDepth
                end if
-            elseif (config_pbc_alteration_type .eq. 'full_cell') then
+            elseif (config_pc_alteration_type .eq. 'full_cell') then
                bottomDepth = refBottomDepth(maxLevelCell)
             else
-               call mpas_log_write( ' Error: Incorrect choice of config_pbc_alteration_type: '// config_pbc_alteration_type)
+               call mpas_log_write( ' Error: Incorrect choice of config_pc_alteration_type: '// config_pc_alteration_type)
                iErr = 1
             endif
          endif
       endif
 
     end subroutine ocn_alter_bottomDepth_for_pbcs
+
+!***********************************************************************
+!
+!  routine ocn_alter_ssh_for_ptcs
+!
+!> \brief   Alter sea surface height for partial top cells
+!> \author  Xylar Asay-Davis
+!> \date    02/14/2021
+!> \details
+!>  This routine alters the sea surface height in a single column based on partial cell settings
+!
+!-----------------------------------------------------------------------
+    subroutine ocn_alter_ssh_for_ptcs(ssh, refBottomDepth, minLevelCell, iErr)
+
+      real (kind=RKIND), intent(inout) :: ssh
+      integer, intent(inout) :: minLevelCell
+      real (kind=RKIND), dimension(:), intent(in) :: refBottomDepth
+      integer, intent(out) :: iErr
+      real (kind=RKIND) :: minSSH, minSSHMid, zTop, zBot
+
+      iErr = 0
+
+      if (.not. config_alter_ICs_for_pcs) return
+
+      if (minLevelCell < 1) return
+
+      if (minLevelCell == 1) then
+         zTop = 0.0_RKIND
+      else
+         zTop = -refBottomDepth(minLevelCell-1)
+      end if
+
+      zBot = -refBottomDepth(minLevelCell)
+
+      if (config_pc_alteration_type == 'partial_cell') then
+         ! Change value of minLevelCell for partial top cells
+         minSSH = zBot + config_min_pc_fraction*(zTop - zBot)
+         minSSHMid = 0.5_RKIND*(minSSH + zBot)
+         if (ssh < minSSHMid) then
+            ! Move down to the cell below
+            minLevelCell = minLevelCell + 1
+            ssh = zBot
+         else if (ssh < minSSH) then
+            ! Move up to min_pc_fraction.
+            ssh = minSSH
+         end if
+      else if (config_pc_alteration_type == 'full_cell') then
+         ssh = zBot
+      else
+         call mpas_log_write(' Error: Incorrect choice of config_pc_alteration_type: '// config_pc_alteration_type)
+         iErr = 1
+      endif
+
+    end subroutine ocn_alter_ssh_for_ptcs
+
 
 !***********************************************************************
 !
@@ -748,17 +852,28 @@ contains
      integer, pointer :: nCells, nVertLevels
 
      ! Define variable pointers
-     integer, dimension(:), pointer :: maxLevelCell
+     integer, dimension(:), pointer :: minLevelCell, maxLevelCell
      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, bottomDepth, ssh
      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
 
      integer :: iCell
 
+     logical :: useZStar, useZLevel
+
    !--------------------------------------------------------------------
 
      iErr = 0
 
-     if(config_use_rx1_constraint) then
+     if (config_init_vertical_grid_type /= 'z-level' .and. &
+         config_init_vertical_grid_type /= 'z-star' .and. &
+         config_init_vertical_grid_type /= 'haney-number') then
+
+         call mpas_log_write('Unexpected value for config_init_vertical_grid_type ' // &
+                             trim(config_init_vertical_grid_type), MPAS_LOG_CRIT)
+
+     end if
+
+     if(config_init_vertical_grid_type == 'haney-number') then
        ! We already know the ssh and landIcePressure we want to use.
        ! Compute the layer thicknesses and zMid based on topography and ssh.
        ! Use rx1 constraint to recompute the vertical grid.
@@ -769,34 +884,11 @@ contains
          return
        end if
 
-     else
-
-       ! we're initializing to z-star
-
-       ! alter pbcs
-       block_ptr => domain % blocklist
-       do while(associated(block_ptr))
-         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-
-         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-
-         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
-         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-
-         do iCell = 1, nCells
-           call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
-           if(iErr .ne. 0) then
-             call mpas_log_write( 'ocn_alter_bottomDepth_for_pbcs failed.', MPAS_LOG_CRIT)
-             return
-           end if
-         end do
-         block_ptr => block_ptr % next
-       end do !block_ptr
+     else if(config_init_vertical_grid_type == 'z-star') then
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
+
          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
          call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
@@ -806,6 +898,7 @@ contains
 
          call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+         call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -814,14 +907,102 @@ contains
          call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
 
          do iCell = 1, nCells
-           call ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness(:,iCell),zMid(:,iCell), &
-                refBottomDepth,bottomDepth(iCell), &
-                maxLevelCell(iCell),nVertLevels,iErr, &
-                restingThickness=restingThickness(:,iCell), &
-                ssh=ssh(iCell))
+           ! alter pbcs
+           call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
+           if(iErr .ne. 0) then
+             call mpas_log_write( 'ocn_alter_bottomDepth_for_pbcs failed.', MPAS_LOG_CRIT)
+             return
+           end if
+
+           ! restingThickness is z-level, with ssh = 0
+           call ocn_compute_z_level_layerThickness(restingThickness(:,iCell), refBottomDepth, 0.0_RKIND, &
+                                                   bottomDepth(iCell), minLevelCell(iCell),              &
+                                                   maxLevelCell(iCell), nVertLevels, iErr)
 
            if(iErr .ne. 0) then
-             call mpas_log_write( 'ocn_compute_layerThickness_zMid_from_bottomDepth failed.', MPAS_LOG_CRIT)
+             call mpas_log_write( 'ocn_compute_z_level_layerThickness failed.', MPAS_LOG_CRIT)
+             return
+           end if
+
+           ! stretch restingThickness to get the z-star layerThickness
+           call ocn_compute_z_star_layerThickness(layerThickness(:,iCell), restingThickness(:,iCell),  &
+                                                  ssh(iCell), bottomDepth(iCell), minLevelCell(iCell), &
+                                                  maxLevelCell(iCell), nVertLevels, iErr)
+
+           if(iErr .ne. 0) then
+             call mpas_log_write( 'ocn_compute_z_star_layerThickness failed.', MPAS_LOG_CRIT)
+             return
+           end if
+
+           ! compute zMid
+           call ocn_compute_zMid_from_layerThickness(zMid(:,iCell), layerThickness(:,iCell), ssh(iCell), &
+                                                     minLevelCell(iCell), maxLevelCell(iCell), nVertLevels, iErr)
+
+           if(iErr .ne. 0) then
+             call mpas_log_write( 'ocn_compute_zMid_from_layerThickness failed.', MPAS_LOG_CRIT)
+             return
+           end if
+         end do !iCell
+
+         block_ptr => block_ptr % next
+       end do !block_ptr
+     else  ! config_init_vertical_grid_type == 'z-level'
+
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
+
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+         call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+         call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+
+         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+
+         do iCell = 1, nCells
+           ! alter pbcs
+           call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
+           if(iErr .ne. 0) then
+             call mpas_log_write( 'ocn_alter_bottomDepth_for_pbcs failed.', MPAS_LOG_CRIT)
+             return
+           end if
+
+           ! alter ptcs
+           call ocn_alter_ssh_for_ptcs(ssh(iCell), refBottomDepth, minLevelCell(iCell), iErr)
+           if(iErr .ne. 0) then
+             call mpas_log_write( 'ocn_alter_ssh_for_ptcs failed.', MPAS_LOG_CRIT)
+             return
+           end if
+
+           ! layerThickness is z-level
+           call ocn_compute_z_level_layerThickness(layerThickness(:,iCell), refBottomDepth, ssh(iCell), &
+                                                   bottomDepth(iCell), minLevelCell(iCell),             &
+                                                   maxLevelCell(iCell), nVertLevels, iErr)
+
+           if(iErr .ne. 0) then
+             call mpas_log_write( 'ocn_compute_z_level_layerThickness failed.', MPAS_LOG_CRIT)
+             return
+           end if
+
+           ! restingThickness is the same as layerThickness
+           restingThickness(:,iCell) = layerThickness(:,iCell)
+
+           ! compute zMid
+           call ocn_compute_zMid_from_layerThickness(zMid(:,iCell), layerThickness(:,iCell), ssh(iCell),    &
+                                                     minLevelCell(iCell), maxLevelCell(iCell), nVertLevels, &
+                                                     iErr)
+
+           if(iErr .ne. 0) then
+             call mpas_log_write( 'ocn_compute_zMid_from_layerThickness failed.', MPAS_LOG_CRIT)
              return
            end if
          end do !iCell

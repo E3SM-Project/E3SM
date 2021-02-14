@@ -100,7 +100,7 @@ contains
       integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       ! Define variable pointers
-      integer, dimension(:), pointer :: maxLevelCell, landIceMask
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, landIceMask
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell,refBottomDepth, &
                                                   vertCoordMovementWeights, bottomDepth, &
                                                   fCell, fEdge, fVertex, dcEdge, &
@@ -207,6 +207,7 @@ contains
         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
         call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+        call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
         call mpas_pool_get_array(meshPool, 'fCell', fCell)
         call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
@@ -235,6 +236,7 @@ contains
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
             activeTracersSurfaceRestoringValue, 1)
 
+        minLevelCell(:) = 1
 
         ! flat bottom
         maxLevelCell(:) = nVertLevels
@@ -257,10 +259,14 @@ contains
             refBottomDepth(k) = refBottomDepth(k-1) + columnThicknessFraction(k)*abs(config_isomip_bottom_depth)
         end do
 
-        ! Compute refLayerThickness and refZMid
-        call ocn_compute_layerThickness_zMid_from_bottomDepth(refLayerThickness,refZMid, &
-             refBottomDepth,refBottomDepth(nVertLevels), &
-             nVertLevels,nVertLevels,iErr)
+        ! Compute refLayerThickness
+        call ocn_compute_z_level_layerThickness(refLayerThickness, refBottomDepth, 0.0_RKIND, &
+                                                refBottomDepth(nVertLevels), 1,               &
+                                                nVertLevels, nVertLevels, iErr)
+
+        ! Compute refZMid
+        call ocn_compute_zMid_from_layerThickness(refZMid, refLayerThickness, 0.0_RKIND, 1, &
+                                                  nVertLevels, nVertLevels, iErr)
 
         fCell(:) = config_isomip_coriolis_parameter
         fEdge(:) = config_isomip_coriolis_parameter

@@ -97,7 +97,7 @@ module ocn_init_sub_ice_shelf_2D
      integer, pointer :: index_temperature, index_salinity
 
      ! Define variable pointers
-     integer, dimension(:), pointer :: maxLevelCell, landIceMask
+     integer, dimension(:), pointer :: minLevelCell, maxLevelCell, landIceMask
      real (kind=RKIND), dimension(:), pointer :: xCell, yCell,refBottomDepth, refZMid, &
           vertCoordMovementWeights, bottomDepth, &
           fCell, fEdge, fVertex, dcEdge, refLayerThickness
@@ -188,6 +188,7 @@ module ocn_init_sub_ice_shelf_2D
         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
         call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+        call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
@@ -205,10 +206,14 @@ module ocn_init_sub_ice_shelf_2D
            refBottomDepth(k) = config_sub_ice_shelf_2D_bottom_depth * interfaceLocations(k+1)
         end do
 
-        ! Compute refLayerThickness and refZMid
-        call ocn_compute_layerThickness_zMid_from_bottomDepth(refLayerThickness,refZMid, &
-             refBottomDepth,refBottomDepth(nVertLevels), &
-             nVertLevels,nVertLevels,iErr)
+        ! Compute refLayerThickness
+        call ocn_compute_z_level_layerThickness(refLayerThickness, refBottomDepth, 0.0_RKIND, &
+                                                refBottomDepth(nVertLevels), 1,               &
+                                                nVertLevels, nVertLevels, iErr)
+
+        ! Compute refZMid
+        call ocn_compute_zMid_from_layerThickness(refZMid, refLayerThickness, 0.0_RKIND, 1, &
+                                                  nVertLevels, nVertLevels, iErr)
 
         ! Set vertCoordMovementWeights
         vertCoordMovementWeights(:) = 1.0_RKIND
@@ -238,6 +243,8 @@ module ocn_init_sub_ice_shelf_2D
               modifyLandIcePressureMask(iCell) = 1
            end if
         end do
+
+        minLevelCell(:) = 1
 
         do iCell = 1, nCells
            if (yCell(iCell) < y3 ) then
