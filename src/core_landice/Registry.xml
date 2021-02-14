@@ -208,9 +208,9 @@
                         description="If true, then we change stiffnessFactor to 1-damage during the run."
 	                possible_values=".true. or .false."
 		/>
-		        <nml_option name="config_damage_gl_setting" type="character" default_value="none" units="unitless"
+		        <nml_option name="config_damage_gl_setting" type="character" default_value="nye" units="unitless"
 		                description="Selection of the method for damage setting near the grounding line"
-		            possible_values="'nye', 'extra'"
+		            possible_values="'nye', 'extrapolate'"
 		/>
 		        <nml_option name="config_damage_calving_method" type="character" default_value="none" units="unitless"
 		                description="Selection of the method for damage calving"
