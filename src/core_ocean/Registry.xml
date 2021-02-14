@@ -1412,6 +1412,7 @@
 			<var name="refBottomDepth"/>
 			<var name="bottomDepth"/>
 			<var name="bottomDepthObserved"/>
+			<var name="minLevelCell"/>
 			<var name="maxLevelCell"/>
 			<var name="vertCoordMovementWeights"/>
 			<var name="edgeMask"/>
@@ -1506,6 +1507,7 @@
 			<var name="fVertex"/>
 			<var name="fCell"/>
 			<var name="bottomDepth"/>
+			<var name="minLevelCell"/>
 			<var name="maxLevelCell"/>
 			<var name="refBottomDepth" packages="forwardMode;analysisMode"/>
 			<var name="restingThickness" packages="forwardMode;analysisMode"/>
@@ -2162,6 +2164,9 @@
 		/>
 		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
 			 description="Coefficients to reconstruct velocity vectors at cells centers."
+		/>
+		<var name="minLevelCell" type="integer" dimensions="nCells" units="unitless" default_value="1"
+			 description="Index to the first active ocean cell in each column."
 		/>
 		<var name="maxLevelCell" type="integer" dimensions="nCells" units="unitless"
 			 description="Index to the last active ocean cell in each column."
