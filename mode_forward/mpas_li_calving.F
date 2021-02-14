@@ -1841,7 +1841,7 @@ module li_calving
          ! the damage of grouned ice is kept as 0, 
          ! as the strain rate calculation is only valid for ice shelf
 
-         if (trim(config_damage_gl_setting) == 'extra') then
+         if (trim(config_damage_gl_setting) == 'extrapolate') then
              do iCell = 1, nCells
                 if (li_mask_is_grounding_line(cellMask(iCell))) then
                     
@@ -2026,7 +2026,7 @@ module li_calving
             end if
          end do
 
-         if (trim(config_damage_gl_setting) == 'extra') then
+         if (trim(config_damage_gl_setting) == 'extrapolate') then
              do iCell = 1, nCells
                 if (li_mask_is_grounding_line(cellMask(iCell))) then
                     damage_downstream = 0.0_RKIND
