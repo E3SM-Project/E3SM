@@ -40,7 +40,7 @@ if ( ! defined($result) ) {
 ** Cannot find perl module \"Build/NamelistDefinition.pm\" from directories: @dirs **
 EOF
 }
-my $nldef_file     = "$scrdir/../../../bld/namelist_files/namelist_definition_clm4_5.xml";
+my $nldef_file     = "$scrdir/../../../bld/namelist_files/namelist_definition.xml";
 
 my $definition = Build::NamelistDefinition->new( $nldef_file );
 
