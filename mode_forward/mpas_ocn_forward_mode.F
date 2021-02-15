@@ -253,7 +253,7 @@ module ocn_forward_mode
 
       call ocn_init_routines_vert_coord(domain)
 
-      call ocn_init_routines_compute_max_level(domain)
+      call ocn_init_routines_compute_min_max_level(domain)
 
       call mpas_pool_get_config(domain % configs, 'config_time_integrator', config_time_integrator)
 
