@@ -2633,23 +2633,19 @@ module li_calving
                jCell = cellsOnCell(iNeighbor, iCell)
                if (li_mask_is_floating_ice(cellMask(jCell)) .and. .not. li_mask_is_dynamic_ice(cellMask(jCell))) then
                   ! this is a thin neighbor - remove the whole cell volume
-                  removeVolumeHere = cellVolume(jCell) ! how much we want to remove here
-                  calvingThickness(jCell) = removeVolumeHere / areaCell(jCell)
-                      ! < apply to the field that will be used, in thickness units
-                  cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere ! update accounting on cell volume
+                  calvingThickness(jCell) = thickness(jCell)
+                  cellVolume(jCell) = 0.0_RKIND ! update accounting on cell volume
                endif
             enddo
 
-            ! Now remove ice from iCell
-            removeVolumeHere = cellVolume(iCell)
-            ! remove the whole damaged cell
-            calvingThickness(iCell) = removeVolumeHere / areaCell(iCell)
+            calvingThickness(iCell) = thickness(iCell)
             ! < apply to the field that will be used in thickness units
-            cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere 
+            cellVolume(iCell) = 0.0_RKIND
             ! update accounting on cell volume
 
             ! Now calved away the neighboring cells if the damage is also > the threshold value
             ! I choose to disable this section (i.e., no recursive calving) -- TZ
+            !TODO: a flood fill algorithm might be needed for this threshold method in the future 
             !do iNeighbor = 1, nEdgesOnCell(iCell)
             !   jCell = cellsOnCell(iNeighbor, iCell)
             !   if (li_mask_is_floating_ice(cellMask(jCell)) .and. li_mask_is_dynamic_ice(cellMask(jCell)) &
