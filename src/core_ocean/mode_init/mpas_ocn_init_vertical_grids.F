@@ -828,11 +828,14 @@ contains
 !> \details
 !>  This routine sets up the vertical grid (layerThickness, zMid and
 !>  restingThickness) needed for computing land-ice pressure from SSH.
-!>  bottomDepth, refBottomDepth, maxLevelCell must have been computed by the
-!>  test case before calling this routine.  For tests with ice-shelf cavities,
-!>  ssh must be computed before calling this routine. If the test case is
-!>  using a z-star coordinate, this routine will take care of setting up
-!>  partial bottom cells by calling ocn_alter_bottomDepth_for_pbcs(). If using
+!>  bottomDepth, refBottomDepth, must have been computed by the test case
+!>  before calling this routine.  For coordinates other than z-level,
+!>  minLevelCell and maxLevelCell must also be computed before calling this
+!>  routine.  For z-level, they are computed here.  For tests with ice-shelf
+!>  cavities, ssh must be computed before calling this routine. If the test
+!>  case is using a z-star or z-level coordinate, this routine will take care
+!>  of setting  up partial bottom (and, for z-level, top) cells by calling
+!>  ocn_alter_bottomDepth_for_pbcs() and ocn_alter_ssh_for_ptcs() . If using
 !>  the Haney-number-constrained coordinate, another approach is used to handle
 !>  maintaining a minimum layer thickness.
 !-----------------------------------------------------------------------
@@ -856,9 +859,11 @@ contains
      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, bottomDepth, ssh
      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
 
-     integer :: iCell
+     integer :: iCell, k
 
      logical :: useZStar, useZLevel
+
+     real (kind=RKIND) :: depth
 
    !--------------------------------------------------------------------
 
@@ -967,6 +972,32 @@ contains
          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
 
          call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+
+         ! compute minLevelCell and maxLevelCell based on refBottomDepth, ssh and bottomDepth
+         do iCell = 1, nCells
+           maxLevelCell(iCell) = -1
+           minLevelCell(iCell) = -1
+
+           if ((bottomDepth(iCell) == 0.0_RKIND) .or. (bottomDepth(iCell) <= -ssh(iCell))) then
+              cycle
+           end if
+
+           do k = 1, nVertLevels
+             depth = refBottomDepth(k)
+             if (depth >= bottomDepth(iCell)) then
+               maxLevelCell(iCell) = k
+               exit
+             end if
+           end do
+
+           do k = 1, nVertLevels
+             depth = -refBottomDepth(k)
+             if (depth < ssh(iCell)) then
+               minLevelCell(iCell) = k
+               exit
+             end if
+           end do
+         end do
 
          do iCell = 1, nCells
            ! alter pbcs
