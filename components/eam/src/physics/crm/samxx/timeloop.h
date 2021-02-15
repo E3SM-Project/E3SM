@@ -23,6 +23,7 @@
 #include "diagnose.h"
 #include "post_icycle.h"
 #include "pressure.h"
+#include "scalar_momentum.h"
 #include "crm_variance_transport.h"
 
 void timeloop();
