@@ -91,7 +91,7 @@ public:
   using property_check_iterator = typename property_check_list::iterator;
 
   // Constructor(s)
-  Field () = default;
+  Field ();
   Field (const std::shared_ptr<header_type>& h, const view_type<RT*>& v);
   explicit Field (const identifier_type& id);
 
@@ -210,14 +210,14 @@ protected:
   const if_t<HD==Host,HM<view_type<RT*>>>&
   get_view_impl   () const {
     ensure_host_view ();
-    return  m_view_h;
+    return  *m_view_h;
   }
 
   void ensure_host_view () const {
     EKAT_REQUIRE_MSG (is_allocated (),
         "Error! View was not yet allocated.\n");
-    if (m_view_h.data()==nullptr) {
-      m_view_h = Kokkos::create_mirror_view(m_view_d);
+    if (m_view_h->data()==nullptr) {
+      *m_view_h = Kokkos::create_mirror_view(m_view_d);
     }
   }
 
@@ -254,8 +254,9 @@ protected:
   // Actual data.
   view_type<RT*>                          m_view_d;
 
-  // Host mirror of the data. Mutable, to allow lazy creation
-  mutable HM<view_type<RT*>>              m_view_h;
+  // Host mirror of the data. Use shared_ptr to ensure subfields store
+  // the same host mirror of parents.
+  std::shared_ptr<HM<view_type<RT*>>>     m_view_h;
 
   // List of property checks for this field.
   std::shared_ptr<property_check_list>    m_prop_checks;
@@ -273,12 +274,25 @@ bool operator< (const Field<RealType>& f1, const Field<RealType>& f2) {
 
 template<typename RealType>
 Field<RealType>::
+Field ()
+{
+  // Create an empty host mirror view
+  // Note: this is needed cause 'ensure_host_view' cannot modify this class
+  m_view_h = std::make_shared<HM<view_type<RT*>>>();
+}
+
+template<typename RealType>
+Field<RealType>::
 Field (const identifier_type& id)
  : m_header     (create_header(id))
  , m_prop_checks(new property_check_list)
 {
   // At the very least, the allocation properties need to accommodate this field's real type.
   m_header->get_alloc_properties().request_allocation<RT>();
+
+  // Create an empty host mirror view
+  // Note: this is needed cause 'ensure_host_view' cannot modify this class
+  m_view_h = std::make_shared<HM<view_type<RT*>>>();
 }
 
 template<typename RealType>
@@ -288,7 +302,9 @@ Field (const std::shared_ptr<header_type>& h, const view_type<RT*>& v)
   , m_view_d(v)
   , m_prop_checks(new property_check_list)
 {
-  // Nothing to do here
+  // Create an empty host mirror view
+  // Note: this is needed cause 'ensure_host_view' cannot modify this class
+  m_view_h = std::make_shared<HM<view_type<RT*>>>();
 }
 
 template<typename RealType>
@@ -421,7 +437,7 @@ sync_to_host () const {
 
   // Ensure host view was created (lazy construction)
   ensure_host_view ();
-  Kokkos::deep_copy(m_view_h,m_view_d);
+  Kokkos::deep_copy(*m_view_h,m_view_d);
 }
 
 template<typename RealType>
@@ -433,7 +449,7 @@ sync_to_dev () const {
 
   // Ensure host view was created (lazy construction)
   ensure_host_view ();
-  Kokkos::deep_copy(m_view_d,m_view_h);
+  Kokkos::deep_copy(m_view_d,*m_view_h);
 }
 
 template<typename RealType>
@@ -461,9 +477,11 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   // Create header
   auto sv_h = create_header(sf_id,m_header,idim,k);
 
-  // Return subfield
-  return field_type(sv_h,m_view_d);
-}
+  // Create subfield (set host view too)
+  field_type sf(sv_h,m_view_d);
+  sf.m_view_h = m_view_h;
+
+  return sf;}
 
 template<typename RealType>
 Field<RealType> Field<RealType>::
@@ -545,6 +563,8 @@ auto Field<RealType>::get_ND_view () const ->
   if (parent!=nullptr) {
     // Parent field has correct layout to reinterpret the view into N+1-dim view
     Field<RealType> f(parent,m_view_d);
+    f.m_view_h = m_view_h;  // Make sure we share the same host view ptr.
+
     auto v_np1 = f.get_ND_view<HD,T,N+1>();
 
     // Now we can subview v_np1 at the correct slice
