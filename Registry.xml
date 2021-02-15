@@ -1648,6 +1648,7 @@
 			<var name="layerThickness"/>
 			<var name="ssh"/>
 			<var name="maxLevelEdgeTop"/>
+			<var name="minLevelEdgeBot"/>
 			<var name="vertCoordMovementWeights"/>
 			<var name="edgeMask"/>
 			<var name="vertexMask"/>
@@ -2171,16 +2172,32 @@
 		<var name="maxLevelCell" type="integer" dimensions="nCells" units="unitless"
 			 description="Index to the last active ocean cell in each column."
 		/>
+		<var name="minLevelEdgeTop" type="integer" dimensions="nEdges" units="unitless"
+			 description="Index to the first edge in a column with at least one active ocean cell on either side of it."
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="maxLevelEdgeTop" type="integer" dimensions="nEdges" units="unitless"
 			 description="Index to the last edge in a column with active ocean cells on both sides of it."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="minLevelEdgeBot" type="integer" dimensions="nEdges" units="unitless"
+			 description="Index to the first edge in a column with active ocean cells on both sides of it."
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="maxLevelEdgeBot" type="integer" dimensions="nEdges" units="unitless"
 			 description="Index to the last edge in a column with at least one active ocean cell on either side of it."
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="minLevelVertexTop" type="integer" dimensions="nVertices" units="unitless"
+			 description="Index to the first vertex in a column with at least one active ocean cell around it."
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="maxLevelVertexTop" type="integer" dimensions="nVertices" units="unitless"
 			 description="Index to the last vertex in a column with all active cells around it."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="minLevelVertexBot" type="integer" dimensions="nVertices" units="unitless"
+			 description="Index to the first vertex in a column with all active cells around it."
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="maxLevelVertexBot" type="integer" dimensions="nVertices" units="unitless"
