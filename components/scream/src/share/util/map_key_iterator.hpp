@@ -32,7 +32,7 @@ public:
   map_key_iterator ( ) : map_iterator ( ) { };
   map_key_iterator ( map_iterator it_ ) : map_iterator ( it_ ) { };
 
-  Key *operator -> ( ) { return ( Key * const ) &( map_iterator::operator -> ( )->first ); }
+  Key *operator -> ( ) { return ( Key * ) &( map_iterator::operator -> ( )->first ); }
   Key operator * ( ) { return map_iterator::operator * ( ).first; }
 };
 
@@ -45,7 +45,7 @@ public:
   map_key_const_iterator ( ) : map_const_iterator ( ) { };
   map_key_const_iterator ( map_const_iterator it_ ) : map_const_iterator ( it_ ) { };
 
-  const Key *operator -> ( ) { return ( const Key * const ) &( map_const_iterator::operator -> ( )->first ); }
+  const Key *operator -> ( ) { return ( const Key * ) &( map_const_iterator::operator -> ( )->first ); }
   Key operator * ( ) { return map_const_iterator::operator * ( ).first; }
 };
 

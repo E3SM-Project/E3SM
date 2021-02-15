@@ -299,7 +299,6 @@ TEST_CASE("field_repo", "") {
   repo.register_field(fid7,"group_7");
   repo.register_field(fid8,"group_7");
   // Test for packed field
-  using Spack        = ekat::Pack<Int,SCREAM_SMALL_PACK_SIZE>;
   using Pack         = ekat::Pack<Real,8>;
   repo.register_field<Pack>(fid9);
   // Should not be able to register the same field name with two different units
