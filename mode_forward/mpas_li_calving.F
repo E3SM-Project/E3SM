@@ -2624,8 +2624,7 @@ module li_calving
       ! 1. We need to first remove any "thin" ice in front of this cell
       ! 2. Then we remove ice from this cell if damage > threshold
       do iCell = 1, nCells
-         if ( ( (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) & ! floating dynamic
-                .or.  (groundedMarineMarginMask(iCell) == 1) ) &
+         if ( (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) & ! floating dynamic
               .and. li_mask_is_margin(cellMask(iCell)) &
               .and. (damage(iCell) .ge. config_damage_calving_threshold)) then
 
