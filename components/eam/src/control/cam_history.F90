@@ -4870,7 +4870,7 @@ end subroutine print_active_fldlst
 
     ! If the field is an advected constituent determine whether its concentration
     ! is based on dry or wet air.
-    call cnst_get_ind(fname_tmp, idx, abort=.false.)
+    call cnst_get_ind(fname_tmp, idx, abrtf=.false.)
     mixing_ratio = ''
     if (idx > 0) then
        mixing_ratio = cnst_get_type_byind(idx)

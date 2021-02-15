@@ -35,8 +35,8 @@ subroutine scm_setinitial(elem)
   integer inumliq, inumice, icldliq, icldice
 
   if (.not. use_replay .and. get_nstep() .eq. 0) then
-    call cnst_get_ind('NUMLIQ', inumliq, abort=.false.)
-    call cnst_get_ind('NUMICE', inumice, abort=.false.)
+    call cnst_get_ind('NUMLIQ', inumliq, abrtf=.false.)
+    call cnst_get_ind('NUMICE', inumice, abrtf=.false.)
     call cnst_get_ind('CLDLIQ', icldliq)
     call cnst_get_ind('CLDICE', icldice)
 

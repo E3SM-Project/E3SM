@@ -1963,6 +1963,7 @@ flags should be captured within MPAS CMake files.
   </CFLAGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O1 </append>
+    <append COMP_NAME="eam">-vector0</append>
   </FFLAGS>
   <CXX_LINKER>CXX</CXX_LINKER>
   <KOKKOS_OPTIONS> --gcc-toolchain=/opt/gcc/9.3.0/snos --with-serial </KOKKOS_OPTIONS>

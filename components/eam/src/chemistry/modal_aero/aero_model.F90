@@ -239,7 +239,7 @@ contains
        !    but for now they are conditional on convproc_do_aer
        if ( convproc_do_aer ) then 
           do m = 1,gas_pcnst
-             call cnst_get_ind( solsym(m), l, abort=.false. )
+             call cnst_get_ind( solsym(m), l, abrtf=.false. )
              if ( ( history_aerosol ) .and. (l > 0) ) then
                 if  ( species_class(l) == spec_class_gas ) then !RCE - only output WD_xxx and DF_xxx for gases
                    wetdep_name = 'WD_'//trim(solsym(m))
@@ -395,7 +395,7 @@ contains
          allocate(drydep_indices(ndrydep))
 
     do m = 1,ndrydep
-       call cnst_get_ind ( drydep_list(m), id, abort=.false. )
+       call cnst_get_ind ( drydep_list(m), id, abrtf=.false. )
        if (id>0) then
           drydep_indices(m) = id
        else
@@ -407,7 +407,7 @@ contains
        endif
     enddo
     do m = 1,nwetdep
-       call cnst_get_ind ( wetdep_list(m), id, abort=.false. )
+       call cnst_get_ind ( wetdep_list(m), id, abrtf=.false. )
        if (id>0) then
           wetdep_indices(m) = id
        else
@@ -633,7 +633,7 @@ contains
           end if
        endif
        
-       call cnst_get_ind(trim(solsym(m)), nspc, abort=.false. ) ! REASTER 08/04/2015
+       call cnst_get_ind(trim(solsym(m)), nspc, abrtf=.false. ) ! REASTER 08/04/2015
 !      if(nspc > 0 .and. .not.cnst_name_cw(nspc) == ' ') then   ! REASTER 08/04/2015
        if( nspc > 0 ) then                                      ! REASTER 08/04/2015
         if ( .not. cnst_name_cw(nspc) == ' ') then              ! REASTER 08/04/2015

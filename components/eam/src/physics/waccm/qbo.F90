@@ -218,7 +218,7 @@ contains
 ! Figure out if the file contains qbo winds by month or fft coefficients 
 !   by looking for the variable DATE
 !---------------------------------------------------------------------
-       call wrap_inq_varid( ncid, 'date' , dateid, abort=.false.  )
+       call wrap_inq_varid( ncid, 'date' , dateid, abrtf=.false.  )
 
        if (dateid > 0) then
           has_monthly_data=.true.
