@@ -174,8 +174,10 @@ contains
         end do
 
         k = maxLevelCell(iCell)
-        tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
-          * fluxRemaining
+        if(k > 0 .and. fluxRemaining > 0.0_RKIND) then
+           tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
+                                             * fluxRemaining
+        end if
 
         depth = 0.0_RKIND
         do k=1,maxLevelCell(iCell)
