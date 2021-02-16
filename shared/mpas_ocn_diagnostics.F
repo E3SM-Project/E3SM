@@ -2397,13 +2397,13 @@ contains
 
          ! Check for errors in the state fields
          do iCell = 1, nCellsSolve
-            do k = 1, maxLevelCell(iCell)
+            do k = minLevelCell(iCell), maxLevelCell(iCell) !mlc-do-k
                thickNanFound = thickNanFound .or. ( .not. layerThickness(k, iCell) == layerThickness(k, iCell) )
                do iTracer = 1, size(activeTracers, dim=1)
                   tracersNanFound = tracersNanFound .or. &
                                   ( .not. activeTracers(iTracer, k, iCell) == activeTracers(iTracer, k, iCell) )
                end do
-            end do
+            end do !mlc-end-do
          end do
 
          do iEdge = 1, nEdgesSolve
