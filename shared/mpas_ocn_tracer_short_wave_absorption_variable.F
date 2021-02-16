@@ -154,7 +154,7 @@ contains
       nCells = nCellsArray( 3 )
 
       !$omp parallel
-      !$omp do schedule(runtime) private(depth, cloudRatio, k, depLev, Avals, Kvals, weights)
+      !$omp do schedule(runtime) private(fluxRemaining, depth, cloudRatio, k, depLev, Avals, Kvals, weights)
       do iCell = 1, nCells
         depth = 0.0_RKIND
         fluxRemaining = 1.0_RKIND
