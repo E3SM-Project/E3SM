@@ -73,7 +73,7 @@ contains
 !>  This routine produces an initial guess at land-ice pressure using the
 !>  density of the topmost layer as the effective density of seawater within
 !>  the land ice. The resulting land-ice pressure is approximately consistent
-!>  with the in the sense that the horizontal pressure-gradient force (HPGF)
+!>  with the ice draft in the sense that the horizontal pressure-gradient force (HPGF)
 !>  should be small at the ocean surface.
 !>  ocn_init_vertical_grid() should be called to produce the appropriate
 !>  vertical grid before calling this subroutine and activeTracers should be
