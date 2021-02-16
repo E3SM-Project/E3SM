@@ -20,7 +20,6 @@ module physpkg
   use constituents,       only: pcnst, cnst_name, cnst_get_ind!, species_class
   use camsrfexch,         only: cam_out_t, cam_in_t
   use phys_control,       only: phys_do_flux_avg, phys_getopts
-  use zm_conv,            only: do_zmconv_dcape_ull => trigdcape_ull
   use scamMod,            only: single_column, scm_crm_mode
   use flux_avg,           only: flux_avg_init
   use cam_logfile,        only: iulog
@@ -71,17 +70,13 @@ module physpkg
   ! Private module data
   !-----------------------------------------------------------------------------
   ! Physics package options
-  character(len=16) :: shallow_scheme
-  character(len=16) :: macrop_scheme
-  character(len=16) :: microp_scheme 
-  integer           :: cld_macmic_num_steps    ! Number of macro/micro substeps
-  logical           :: state_debug_checks  ! Debug physics_state.
-  logical           :: clim_modal_aero     ! climate controled by prognostic or prescribed modal aerosols
-  logical           :: prog_modal_aero     ! Prognostic modal aerosols present
-  logical           :: micro_do_icesupersat
-  logical           :: pergro_test_active= .false.
-  logical           :: pergro_mods = .false.
-  logical           :: is_cmip6_volc       ! true if cmip6 style volcanic file is read otherwise false
+  logical :: state_debug_checks   ! Debug physics_state.
+  logical :: clim_modal_aero      ! climate controled by prognostic or prescribed modal aerosols
+  logical :: prog_modal_aero      ! Prognostic modal aerosols present
+  logical :: micro_do_icesupersat
+  logical :: pergro_test_active= .false.
+  logical :: pergro_mods = .false.
+  logical :: is_cmip6_volc       ! true if cmip6 style volcanic file is read otherwise false
 
 contains
 
@@ -92,47 +87,42 @@ subroutine phys_register
   !----------------------------------------------------------------------- 
   ! Purpose: Register constituents and physics buffer fields.
   !-----------------------------------------------------------------------
-  use physics_buffer,     only: pbuf_init_time
-  use physics_buffer,     only: pbuf_add_field, dtype_r8
-  use shr_kind_mod,       only: r8 => shr_kind_r8
-  use spmd_utils,         only: masterproc
-  use constituents,       only: pcnst, cnst_add, cnst_chk_dim, cnst_name
-  use cam_control_mod,    only: moist_physics
-  use chemistry,          only: chem_register
-  use cloud_fraction,     only: cldfrc_register
-  use stratiform,         only: stratiform_register
-  use microp_driver,      only: microp_driver_register
-  use microp_aero,        only: microp_aero_register
-  use macrop_driver,      only: macrop_driver_register
-  use clubb_intr,         only: clubb_register_cam
-  use conv_water,         only: conv_water_register
-  use physconst,          only: mwdry, cpair, mwh2o, cpwv
-  use tracers,            only: tracers_register
-  use check_energy,       only: check_energy_register
-  use cam3_aero_data,     only: cam3_aero_data_on, cam3_aero_data_register
-  use cam3_ozone_data,    only: cam3_ozone_data_on, cam3_ozone_data_register
-  use ghg_data,           only: ghg_data_register
-  use mmf_vertical_diffusion, only: mmf_vertical_diffusion_register
-  use convect_deep,       only: convect_deep_register
-  use convect_shallow,    only: convect_shallow_register
-  use radiation,          only: radiation_register
-  use co2_cycle,          only: co2_register
-  use flux_avg,           only: flux_avg_register
-  use ionosphere,         only: ionos_register
-  use string_utils,       only: to_lower
-  use prescribed_ozone,   only: prescribed_ozone_register
-  use prescribed_volcaero,only: prescribed_volcaero_register
-  use prescribed_aero,    only: prescribed_aero_register
-  use prescribed_ghg,     only: prescribed_ghg_register
-  use sslt_rebin,         only: sslt_rebin_register
-  use aoa_tracers,        only: aoa_tracers_register
-  use aircraft_emit,      only: aircraft_emit_register
-  use cam_diagnostics,    only: diag_register
-  use cloud_diagnostics,  only: cloud_diagnostics_register
-  use cospsimulator_intr, only: cospsimulator_intr_register
-  use rad_constituents,   only: rad_cnst_get_info ! Added to query if it is a modal aero sim or not
-  use output_aerocom_aie, only: output_aerocom_aie_register, do_aerocom_ind3
-  use crm_physics,        only: crm_physics_register
+  use physics_buffer,           only: pbuf_init_time
+  use physics_buffer,           only: pbuf_add_field, dtype_r8
+  use shr_kind_mod,             only: r8 => shr_kind_r8
+  use spmd_utils,               only: masterproc
+  use constituents,             only: pcnst, cnst_add, cnst_chk_dim, cnst_name
+  use chemistry,                only: chem_register
+  use cloud_fraction,           only: cldfrc_register
+  ! use stratiform,               only: stratiform_register
+  ! use microp_driver,            only: microp_driver_register
+  ! use microp_aero,              only: microp_aero_register
+  ! use macrop_driver,            only: macrop_driver_register 
+  use conv_water,               only: conv_water_register
+  use physconst,                only: mwdry, cpair, mwh2o, cpwv
+  use tracers,                  only: tracers_register
+  use check_energy,             only: check_energy_register
+  use ghg_data,                 only: ghg_data_register
+  ! use convect_deep,             only: convect_deep_register
+  ! use convect_shallow,          only: convect_shallow_register
+  use radiation,                only: radiation_register
+  use co2_cycle,                only: co2_register
+  use flux_avg,                 only: flux_avg_register
+  use ionosphere,               only: ionos_register
+  use prescribed_ozone,         only: prescribed_ozone_register
+  use prescribed_volcaero,      only: prescribed_volcaero_register
+  use prescribed_aero,          only: prescribed_aero_register
+  use prescribed_ghg,           only: prescribed_ghg_register
+  use sslt_rebin,               only: sslt_rebin_register
+  use aoa_tracers,              only: aoa_tracers_register
+  use aircraft_emit,            only: aircraft_emit_register
+  use cam_diagnostics,          only: diag_register
+  use cospsimulator_intr,       only: cospsimulator_intr_register
+  use rad_constituents,         only: rad_cnst_get_info ! Added to query if it is a modal aero sim or not
+  use output_aerocom_aie,       only: output_aerocom_aie_register, do_aerocom_ind3
+  use crm_physics,              only: crm_physics_register
+  use vertical_diffusion,   only: vertical_diffusion_register
+  use cloud_diagnostics,    only: cloud_diagnostics_register
   !---------------------------------------------------------------------------
   ! Local variables
   !---------------------------------------------------------------------------
@@ -143,9 +133,7 @@ subroutine phys_register
   !---------------------------------------------------------------------------
   !---------------------------------------------------------------------------
 
-  call phys_getopts(cld_macmic_num_steps_out = cld_macmic_num_steps, &
-                    microp_scheme_out        = microp_scheme,   &
-                    do_aerocom_ind3_out      = do_aerocom_ind3,  &
+  call phys_getopts(do_aerocom_ind3_out      = do_aerocom_ind3,  &
                     state_debug_checks_out   = state_debug_checks, &
                     micro_do_icesupersat_out = micro_do_icesupersat, &
                     pergro_test_active_out   = pergro_test_active, &
@@ -218,17 +206,11 @@ subroutine phys_register
   ! co2 constituents
   call co2_register()
 
-  ! register data model ozone with pbuf
-  if (cam3_ozone_data_on) call cam3_ozone_data_register()
-
   call prescribed_volcaero_register()
   call prescribed_ozone_register()
   call prescribed_aero_register()
   call prescribed_ghg_register()
   call sslt_rebin_register
-
-  ! CAM3 prescribed aerosols
-  if (cam3_aero_data_on) call cam3_aero_data_register()
 
   ! register various data model gasses with pbuf
   call ghg_data_register()
@@ -251,7 +233,7 @@ subroutine phys_register
   call cospsimulator_intr_register
 
   ! vertical diffusion
-  call mmf_vertical_diffusion_register()
+  call vertical_diffusion_register()
 
   if (do_aerocom_ind3) call output_aerocom_aie_register()
 
@@ -278,14 +260,13 @@ end subroutine phys_register
 !===================================================================================================
 
 subroutine phys_inidat( cam_out, pbuf2d )
-  use cam_abortutils, only : endrun
-  use physics_buffer, only : pbuf_get_index, pbuf_get_field, physics_buffer_desc, pbuf_set_field, dyn_time_lvls
+  use cam_abortutils,      only: endrun
+  use physics_buffer,      only: pbuf_get_index, pbuf_get_field, physics_buffer_desc, pbuf_set_field, dyn_time_lvls
   use cam_initfiles,       only: initial_file_get_id, topo_file_get_id
   use cam_grid_support,    only: cam_grid_check, cam_grid_id
   use cam_grid_support,    only: cam_grid_get_dim_names
   use pio,                 only: file_desc_t
   use ncdio_atm,           only: infld
-  use polar_avg,           only: polar_average
   use short_lived_species, only: initialize_short_lived_species
   use comsrf,              only: landm, sgh, sgh30
   use cam_control_mod,     only: aqua_planet
@@ -597,26 +578,22 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use cloud_fraction,     only: cldfrc_init
   use cldfrc2m,           only: cldfrc2m_init
   use co2_cycle,          only: co2_init, co2_transport
-  use convect_deep,       only: convect_deep_init
-  use convect_shallow,    only: convect_shallow_init
+  ! use convect_deep,       only: convect_deep_init
+  ! use convect_shallow,    only: convect_shallow_init
   use cam_diagnostics,    only: diag_init
   use gw_drag,            only: gw_init
-  use cam3_aero_data,     only: cam3_aero_data_on, cam3_aero_data_init
-  use cam3_ozone_data,    only: cam3_ozone_data_on, cam3_ozone_data_init
   use radheat,            only: radheat_init
   use radiation,          only: radiation_init
-  use cloud_diagnostics,  only: cloud_diagnostics_init
   use stratiform,         only: stratiform_init
   use wv_saturation,      only: wv_sat_init
-  use microp_driver,      only: microp_driver_init
-  use microp_aero,        only: microp_aero_init
+  ! use microp_driver,      only: microp_driver_init
+  ! use microp_aero,        only: microp_aero_init
   use macrop_driver,      only: macrop_driver_init
   use conv_water,         only: conv_water_init
   use tracers,            only: tracers_init
   use aoa_tracers,        only: aoa_tracers_init
   use rayleigh_friction,  only: rayleigh_friction_init
   use pbl_utils,          only: pbl_utils_init
-  use mmf_vertical_diffusion, only: mmf_vertical_diffusion_init
   use phys_debug_util,    only: phys_debug_init
   use rad_constituents,   only: rad_cnst_init
   use aer_rad_props,      only: aer_rad_props_init
@@ -629,6 +606,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use dyn_grid,           only: fv_nphys
   use cam_history,        only: addfld, add_default, horiz_only 
   use crm_physics,        only: crm_physics_init 
+  use vertical_diffusion, only: vertical_diffusion_init
+  use cloud_diagnostics,  only: cloud_diagnostics_init
   !-----------------------------------------------------------------------------
   ! Input/output arguments
   !-----------------------------------------------------------------------------
@@ -683,9 +662,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   ! low level, so init it early. Must at least do this before radiation.
   call wv_sat_init
 
-  ! CAM3 prescribed aerosols
-  if (cam3_aero_data_on) call cam3_aero_data_init(phys_state)
-
   ! Initialize rad constituents and their properties
   call rad_cnst_init()
   call aer_rad_props_init()
@@ -713,15 +689,12 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
      call co2_init(phys_state, pbuf2d)
   end if
 
-  ! CAM3 prescribed ozone
-  if (cam3_ozone_data_on) call cam3_ozone_data_init(phys_state)
-
   call gw_init()
 
   call rayleigh_friction_init()
 
   call pbl_utils_init(gravit, karman, cpair, rair, zvir)
-  call mmf_vertical_diffusion_init(pbuf2d)
+  call vertical_diffusion_init(pbuf2d)
 
   call tsinti(tmelt, latvap, rair, stebol, latice)
 
@@ -729,11 +702,11 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
   call rad_solar_var_init()
 
-  call cloud_diagnostics_init()
+  call cloud_diagnostics_init(phys_state, pbuf2d)
 
   call radheat_init(pref_mid)
 
-  if (use_MMF) call crm_physics_init( phys_state, species_class )
+  ! call convect_shallow_init(pref_edge, pbuf2d)
 
   call cldfrc_init(dp1)! for passing dp1 on to clubb
   call cldfrc2m_init()
@@ -1036,14 +1009,14 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !   Computes the following:
   !     o Radon surface flux and decay (optional)
   !     o Vertical diffusion and planetary boundary layer
-  !     o Multiple gravity wave drag
+  !     o Multiple gravity wave drag calculations (convective, frontal, orographic)
   !-----------------------------------------------------------------------------
   use physics_buffer,     only: physics_buffer_desc, pbuf_set_field, pbuf_get_index, pbuf_get_field, pbuf_old_tim_idx
   use shr_kind_mod,       only: r8 => shr_kind_r8
   use chemistry,          only: chem_is_active, chem_timestep_tend, chem_emissions
   use cam_diagnostics,    only: diag_phys_tend_writeout, diag_conv
   use gw_drag,            only: gw_tend
-  use mmf_vertical_diffusion, only: mmf_vertical_diffusion_tend
+  use vertical_diffusion, only: vertical_diffusion_tend
   use mmf_surface_mod,    only: mmf_surface_ac
   use rayleigh_friction,  only: rayleigh_friction_tend
   use constituents,       only: cnst_get_ind
@@ -1201,7 +1174,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
 
 #ifdef MMF_USE_HB
 
-  call mmf_vertical_diffusion_tend(ztodt, state, &
+  call vertical_diffusion_tend(ztodt, state, &
                                    cam_in%wsx, cam_in%wsy,  &
                                    cam_in%shf, cam_in%cflx, &
                                    surfric, obklen, ptend, ast, &
@@ -1317,7 +1290,8 @@ end subroutine tphysac
 !===================================================================================================
 !===================================================================================================
 
-subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, state, tend, pbuf, fsds, &
+subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
+                   state, tend, pbuf, fsds, &
                    landm, sgh, sgh30, cam_out, cam_in )
   !----------------------------------------------------------------------------- 
   ! Purpose: Evaluate physics processes BEFORE coupling to sfc components
@@ -1356,7 +1330,6 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, state, tend, pbuf, fsds, &
                                     check_tracers_chng, check_tracers_fini
   use aero_model,             only: aero_model_wetdep
   use radiation,              only: radiation_tend
-  use cloud_diagnostics,      only: cloud_diagnostics_calc
   use perf_mod
   use mo_gas_phase_chemdr,    only: map2chm
   use clybry_fam,             only: clybry_fam_adj
@@ -1370,6 +1343,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, state, tend, pbuf, fsds, &
   use crm_physics,            only: crm_physics_tend, crm_surface_flux_bypass_tend
   use crm_ecpp_output_module, only: crm_ecpp_output_type
   use mmf_surface_mod,        only: mmf_surface_bc
+  use cloud_diagnostics,      only: cloud_diagnostics_calc
 
   implicit none
   !-----------------------------------------------------------------------------
@@ -1497,8 +1471,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, state, tend, pbuf, fsds, &
 
   call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
-  call phys_getopts( microp_scheme_out      = microp_scheme, &
-                     state_debug_checks_out = state_debug_checks &
+  call phys_getopts( state_debug_checks_out = state_debug_checks &
                     ,l_bc_energy_fix_out    = l_bc_energy_fix    &
                     ,l_dry_adj_out          = l_dry_adj          &
                     ,l_tracer_aero_out      = l_tracer_aero      &
@@ -1690,18 +1663,31 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, state, tend, pbuf, fsds, &
   !-----------------------------------------------------------------------------
   ! MMF surface flux bypass
   !-----------------------------------------------------------------------------
-  ! ! Check if LHF exceeds the total moisture content of the lowest layer
-  ! call qneg4('TPHYSBC ', lchnk, ncol, ztodt, &
-  !             state%q(1,pver,1), state%rpdel(1,pver), &
-  !             cam_in%shf, cam_in%lhf, cam_in%cflx )
+      
+#if defined( MMF_FLUX_BYPASS ) || defined( MMF_CRM_SFC_FLX )
+  ! Check if LHF exceeds the total moisture content of the lowest layer
+  call qneg4('TPHYSBC ', lchnk, ncol, ztodt, &
+              state%q(1,pver,1), state%rpdel(1,pver), &
+              cam_in%shf, cam_in%lhf, cam_in%cflx )
+#endif
 
+#if defined( MMF_FLUX_BYPASS )
+  call crm_surface_flux_bypass_tend(state, cam_in, ptend)
+  call physics_update(state, ptend, ztodt, tend)  
+  call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
+                         cam_in%shf(:), zero, zero, cam_in%cflx(:,1)) 
+#endif
+
+  !-----------------------------------------------------------------------------
+  ! experimental surface flux treatment
+  !-----------------------------------------------------------------------------
 #ifndef MMF_SKIP_FLUX
-
+#ifndef MMF_USE_HB
   if (.not. is_first_step()) then
     call mmf_surface_bc(state, cam_in, ptend)
     call physics_update(state, ptend, ztodt, tend)
   end if
-
+#endif
 #endif
 
   !-----------------------------------------------------------------------------
@@ -1809,7 +1795,6 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, state, tend, pbuf, fsds, &
   !-----------------------------------------------------------------------------
   if(do_aerocom_ind3) call cloud_top_aerocom(state, pbuf) 
 
-
   ! Diagnose the location of the tropopause
   call tropopause_output(state)
 
@@ -1838,12 +1823,10 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use physics_types,       only: physics_state
   use physics_buffer,      only: physics_buffer_desc
   use ghg_data,            only: ghg_data_timestep_init
-  use cam3_aero_data,      only: cam3_aero_data_on, cam3_aero_data_timestep_init
-  use cam3_ozone_data,     only: cam3_ozone_data_on, cam3_ozone_data_timestep_init
   use radiation,           only: radiation_do
   use tracers,             only: tracers_timestep_init
   use aoa_tracers,         only: aoa_tracers_timestep_init
-  use mmf_vertical_diffusion,  only: mmf_vertical_diffusion_ts_init
+  use vertical_diffusion,  only: vertical_diffusion_ts_init
   use radheat,             only: radheat_timestep_init
   use solar_data,          only: solar_data_advance
   use efield,              only: get_efield
@@ -1882,12 +1865,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   ! prescribed aerosol deposition fluxes
   call aerodep_flx_adv(phys_state, pbuf2d, cam_out)
 
-  ! CAM3 prescribed aerosol masses
-  if (cam3_aero_data_on) call cam3_aero_data_timestep_init(pbuf2d,  phys_state)
-
-  ! CAM3 prescribed ozone data
-  if (cam3_ozone_data_on) call cam3_ozone_data_timestep_init(pbuf2d,  phys_state)
-
   ! Time interpolate data models of gasses in pbuf2d
   call ghg_data_timestep_init(pbuf2d,  phys_state)
 
@@ -1895,7 +1872,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   call radheat_timestep_init(phys_state, pbuf2d)
  
   ! Time interpolate for vertical diffusion upper boundary condition
-  call mmf_vertical_diffusion_ts_init(pbuf2d, phys_state)
+  call vertical_diffusion_ts_init(pbuf2d, phys_state)
 
   ! Time interpolate for tracers, if appropriate
   call tracers_timestep_init(phys_state)

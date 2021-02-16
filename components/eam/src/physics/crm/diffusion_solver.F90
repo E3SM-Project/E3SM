@@ -137,7 +137,7 @@
                             u               , v                  , q             , dse          ,               &
                             tautmsx         , tautmsy            , dtk           , topflx       , errstring   , &
                             tauresx         , tauresy            , itaures       , cpairv       , rairi       , &
-                            do_molec_diff   , do_MMF_bypass      , compute_molec_diff, vd_lu_qdecomp, kvt )
+                            do_molec_diff   , compute_molec_diff, vd_lu_qdecomp, kvt )
 
     !-------------------------------------------------------------------------- !
     ! Driver routine to compute vertical diffusion of momentum, moisture, trace !
@@ -190,7 +190,6 @@
     real(r8), intent(in)    :: kvh(pcols,pver+1)         ! Eddy diffusivity for heat [ m2/s ]
 
     logical,  intent(in)    :: do_molec_diff             ! Flag indicating multiple constituent diffusivities
-    logical,  intent(in)    :: do_MMF_bypass              ! whannah - Flag indicating whether to enforce MMF_FLUX_BYPASS - needed for call in eddy_diff.F90
 
     integer,  external, optional :: compute_molec_diff   ! Constituent-independent moleculuar diffusivity routine
     integer,  external, optional :: vd_lu_qdecomp        ! Constituent-dependent moleculuar diffusivity routine
@@ -306,17 +305,15 @@
     ! Variables needed for WACCM-X
     !--------------------------------
     logical  :: kvt_returned
-    real(r8) :: ttemp(pcols,pver)			 ! temporary temperature array
-    real(r8) :: ttemp0(pcols,pver)			 ! temporary temperature array
+    real(r8) :: ttemp(pcols,pver)   ! temporary temperature array
+    real(r8) :: ttemp0(pcols,pver)  ! temporary temperature array
 
     dtk(:ncol,:pver) = 0.0_r8 !BSINGH(10/15/2014):Initialized to zero;This variable was uninitialized when we diffuse anything except than 'u' and 'v'
     ! ------------------------------------------------ !
     ! Parameters for implicit surface stress treatment !
     ! ------------------------------------------------ !
 
-!-- mdb spcam
     call phys_getopts(use_MMF_out = use_MMF)
-!-- mdb spcam
 
     wsmin    = 1._r8                                     ! Minimum wind speed for ksrfturb computation        [ m/s ]
     ksrfmin  = 1.e-4_r8                                  ! Minimum surface drag coefficient                   [ kg/s/m^2 ]
@@ -489,13 +486,9 @@
 
          ! 2. Do 'normal stress' explicitly
 
-! whannah - bypass adding surface stress here when CRM handles subgrid momentum tendencies
-! #if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_USE_ESMT)
-!       ! Do nothing...
-! #else
            u(:ncol,pver) = u(:ncol,pver) + tmp1(:ncol)*taux(:ncol)
            v(:ncol,pver) = v(:ncol,pver) + tmp1(:ncol)*tauy(:ncol)
-! #endif
+
        end if  ! End of 'do iss' ( implicit surface stress )
 
        ! --------------------------------------------------------------------------------------- !
@@ -512,16 +505,12 @@
                           ksrf  , kvm  , tmpi2 , rpdel , ztodt , gravit, &
                           zero  , ntop , nbot  , decomp)
 
-! whannah - bypass vertical diffusion of momentum when CRM handles subgrid momentum tendencies
-! #if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_USE_ESMT)
-!       ! Do nothing...
-! #else
        call vd_lu_solve(  pcols , pver  , ncol  ,                        &
                           u     , decomp, ntop  , nbot , zero )
 
        call vd_lu_solve(  pcols , pver  , ncol  ,                        &
                           v     , decomp, ntop  , nbot , zero )
-! #endif
+
        ! ---------------------------------------------------------------------- !
        ! Calculate 'total' ( tautotx ) and 'tms' ( tautmsx ) stresses that      !
        ! have been actually added into the atmosphere at the current time step. ! 
@@ -653,6 +642,7 @@
   !                moist static energy,not the dry static energy.
 
     if( diffuse(fieldlist,'s') ) then
+
 #if defined( MMF_USE_DIFF )
       if (.true.) then
 #else
@@ -669,18 +659,6 @@
       endif
 
       dse(:ncol,pver) = dse(:ncol,pver) + tmp1(:ncol) * shflx(:ncol)
-
-     ! whannah - The surface flux bypass option was implemented to move the 
-     ! addition of surface fluxes to be after the dynamical core. This modification 
-     ! has been commented out because it did not improve the simulation, and would
-     ! often lead to an error to be thrown in the energy balance check.
-     !   MMF_FLUX_BYPASS - only sensible and latent heat fluxes are affected
-
-#if defined( MMF_FLUX_BYPASS )
-      if (do_MMF_bypass) then
-        dse(:ncol,pver) = dse(:ncol,pver) - tmp1(:ncol) * shflx(:ncol)
-      endif
-#endif
 
      ! Diffuse dry static energy
      !----------------------------------------------------------------------------------------------------
@@ -761,8 +739,9 @@
 #if defined( MMF_USE_DIFF )
            if (.true.) then
 #else
-           if (.not. use_MMF) then
+           if (.not. ( use_MMF .and. m==1 ) ) then
 #endif
+
              ! Add the nonlocal transport terms to constituents in the PBL.
              ! Check for neg q's in each constituent and put the original vertical
              ! profile back if a neg value is found. A neg value implies that the
@@ -781,19 +760,12 @@
              do k = 1, pver
                q(:ncol,k,m) = merge( q(:ncol,k,m), qtm(:ncol,k), lqtst(:ncol) )
              end do
+
            endif
 
            ! Add the explicit surface fluxes to the lowest layer
 
-
-      q(:ncol,pver,m) = q(:ncol,pver,m) + tmp1(:ncol) * cflx(:ncol,m) 
-        
-
-#if defined( MMF_FLUX_BYPASS )
-        if (do_MMF_bypass) then
-          if ( m .eq. 1 ) q(:ncol,pver,m) = q(:ncol,pver,m) - tmp1(:ncol) * cflx(:ncol,m) 
-        endif
-#endif  
+           q(:ncol,pver,m) = q(:ncol,pver,m) + tmp1(:ncol) * cflx(:ncol,m)         
 
            ! Diffuse constituents.
 
@@ -828,10 +800,11 @@
                endif
            end if
 
+
 #if defined( MMF_USE_DIFF )
            if (.true.) then
 #else
-           if (.not. use_MMF) then
+           if (.not. ( use_MMF .and. m==1 ) ) then
 #endif
              call vd_lu_solve(  pcols , pver , ncol  ,                         &
                                 q(1,1,m) , decomp    , ntop  , nbot  , cd_top )

@@ -243,11 +243,6 @@ subroutine crm_physics_register()
    call pbuf_add_field('CLDO',  'global', dtype_r8, (/pcols, pver, dyn_time_lvls/), cldo_idx  )
    call pbuf_add_field('CLD',   'global', dtype_r8, (/pcols, pver, dyn_time_lvls/), cld_idx)
    call pbuf_add_field('CONCLD','global', dtype_r8, (/pcols, pver, dyn_time_lvls/), concld_idx)
-
-   
-   call pbuf_add_field('ICIWP', 'global', dtype_r8,(/pcols,pver/), iciwp_idx)  ! In cloud ice water path for radiation
-   call pbuf_add_field('ICLWP', 'global', dtype_r8,(/pcols,pver/), iclwp_idx)  ! In cloud liquid water path for radiation
-
    
    call pbuf_add_field('QME',   'physpkg',dtype_r8, (/pcols, pver/), qme_idx)
    call pbuf_add_field('PRAIN', 'physpkg',dtype_r8, (/pcols, pver/), prain_idx)
@@ -256,16 +251,17 @@ subroutine crm_physics_register()
 
   call pbuf_add_field('WSEDL',      'physpkg',dtype_r8,(/pcols,pver/), wsedl_idx)
 
-  call pbuf_add_field('REI',        'physpkg',dtype_r8,(/pcols,pver/), rei_idx)
-  call pbuf_add_field('REL',        'physpkg',dtype_r8,(/pcols,pver/), rel_idx)
-
-  call pbuf_add_field('DEI',        'physpkg',dtype_r8,(/pcols,pver/), dei_idx)                 ! Mitchell ice effective diameter for radiation
-  call pbuf_add_field('MU',         'physpkg',dtype_r8,(/pcols,pver/), mu_idx)                  ! Size distribution shape parameter for radiation
-  call pbuf_add_field('LAMBDAC',    'physpkg',dtype_r8,(/pcols,pver/), lambdac_idx)             ! Size distribution shape parameter for radiation
-  call pbuf_add_field('ICIWPST',    'physpkg',dtype_r8,(/pcols,pver/), iciwpst_idx)             ! Stratiform only in cloud ice water path for radiation
-  call pbuf_add_field('ICLWPST',    'physpkg',dtype_r8,(/pcols,pver/), iclwpst_idx)             ! Stratiform in cloud liquid water path for radiation
-  call pbuf_add_field('DES',     'physpkg',dtype_r8,(/pcols,pver/), des_idx)                    ! Snow effective diameter for radiation
-  call pbuf_add_field('ICSWP',   'physpkg',dtype_r8,(/pcols,pver/), icswp_idx)                  ! In cloud snow water path for radiation
+  call pbuf_add_field('REI',     'physpkg',dtype_r8,(/pcols,pver/), rei_idx)
+  call pbuf_add_field('REL',     'physpkg',dtype_r8,(/pcols,pver/), rel_idx)
+  call pbuf_add_field('DEI',     'physpkg',dtype_r8,(/pcols,pver/), dei_idx)        ! Mitchell ice effective diameter for radiation
+  call pbuf_add_field('MU',      'physpkg',dtype_r8,(/pcols,pver/), mu_idx)         ! Size distribution shape parameter for radiation
+  call pbuf_add_field('LAMBDAC', 'physpkg',dtype_r8,(/pcols,pver/), lambdac_idx)    ! Size distribution shape parameter for radiation
+  call pbuf_add_field('ICIWPST', 'physpkg',dtype_r8,(/pcols,pver/), iciwpst_idx)    ! Stratiform only in cloud ice water path for radiation
+  call pbuf_add_field('ICLWPST', 'physpkg',dtype_r8,(/pcols,pver/), iclwpst_idx)    ! Stratiform in cloud liquid water path for radiation
+  call pbuf_add_field('DES',     'physpkg',dtype_r8,(/pcols,pver/), des_idx)        ! Snow effective diameter for radiation
+  call pbuf_add_field('ICIWP',   'physpkg',dtype_r8,(/pcols,pver/), iciwp_idx)      ! In cloud ice water path for radiation
+  call pbuf_add_field('ICLWP',   'physpkg',dtype_r8,(/pcols,pver/), iclwp_idx)      ! In cloud liquid water path for radiation
+  call pbuf_add_field('ICSWP',   'physpkg',dtype_r8,(/pcols,pver/), icswp_idx)      ! In cloud snow water path for radiation
   call pbuf_add_field('CLDFSNOW','physpkg',dtype_r8,(/pcols,pver,dyn_time_lvls/), cldfsnow_idx) ! Cloud fraction for liquid drops + snow
 
 
@@ -1474,7 +1470,7 @@ subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
    type(cam_in_t),      intent(in   ) :: cam_in
    type(physics_ptend), intent(  out) :: ptend 
 
-   integer  :: ii       ! loop iterator
+   integer  :: icol     ! loop iterator
    integer  :: ncol     ! number of columns
    real(r8) :: g_dp     ! temporary variable for unit conversion
    logical, dimension(pcnst) :: lq
@@ -1488,16 +1484,16 @@ subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
                            lu=.false., lv=.false., ls=.true., lq=lq)
 
    ! apply fluxes to bottom layer
-   do ii = 1,ncol
-      g_dp = gravit * state%rpdel(ii,pver)             ! note : rpdel = 1./pdel
-      ptend%s(ii,:)   = 0.
-      ptend%q(ii,:,1) = 0.
-#ifdef MAML
-      ptend%s(ii,pver)   = g_dp * cam_in%shf(ii,1)
-#else
-      ptend%s(ii,pver)   = g_dp * cam_in%shf(ii)
-#endif
-      ptend%q(ii,pver,1) = g_dp * cam_in%cflx(ii,1)
+   do icol = 1,ncol
+      g_dp = gravit * state%rpdel(icol,pver)             ! note : rpdel = 1./pdel
+      ! ptend%s(icol,:)   = 0.
+      ! ptend%q(icol,:,1) = 0.
+! #ifdef MAML
+!       ptend%s(icol,pver)   = g_dp * cam_in%shf(icol,1)
+! #else
+      ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)
+! #endif
+      ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1)
    end do
 
 end subroutine crm_surface_flux_bypass_tend

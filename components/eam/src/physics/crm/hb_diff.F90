@@ -1,10 +1,10 @@
-module mmf_hb_diff
+module hb_diff
   !-----------------------------------------------------------------------------
   ! Module to compute turbulent mixing coefficients based on Holtslag and Boville, 1991.
   !
   ! Public interfaces:
-  !    init_mmf_hb_diff     initializes time independent coefficients
-  !    compute_mmf_hb_diff  computes eddy diffusivities and counter-gradient fluxes
+  !    init_hb_diff     initializes time independent coefficients
+  !    compute_hb_diff  computes eddy diffusivities and counter-gradient fluxes
   !
   ! Private methods:
   !       trbintd         initializes time dependent variables
@@ -22,11 +22,11 @@ module mmf_hb_diff
   save
 
   ! Public interfaces
-  public init_mmf_hb_diff
-  public compute_mmf_hb_diff
+  public init_hb_diff
+  public compute_hb_diff
   
   ! PBL limits
-  real(r8), parameter :: pblmaxp   = 100.e2_r8  ! pbl max depth [Pa]
+  real(r8), parameter :: pblmaxp   = 400.e2_r8  ! pbl max depth relative to reference pressure [Pa]
   real(r8), parameter :: zkmin     = 0.01_r8    ! Minimum kneutral*f(ri)
   
   ! PBL Parameters
@@ -40,7 +40,12 @@ module mmf_hb_diff
   real(r8), parameter :: sffrac=  0.1_r8        ! Surface layer fraction of boundary layer
   real(r8), parameter :: binm  = betam*sffrac   ! betam * sffrac
   real(r8), parameter :: binh  = betah*sffrac   ! betah * sffrac
+#ifdef MMF_HBML
+  real(r8), parameter :: ml    = MMF_HBML        ! mixing length scale used for ml2
+#else
   real(r8), parameter :: ml    = 30.0_r8        ! mixing length scale used for ml2
+#endif
+  
 
   ! PBL constants set using values from other parts of code
   real(r8) :: cpair      ! Specific heat of dry air
@@ -57,7 +62,7 @@ module mmf_hb_diff
 CONTAINS
 !===============================================================================
 
-subroutine init_mmf_hb_diff(gravx, cpairx, ntop_eddy, nbot_eddy, pref_mid, vkx)
+subroutine init_hb_diff(gravx, cpairx, ntop_eddy, nbot_eddy, pref_mid, vkx)
   !----------------------------------------------------------------------------- 
   ! Initialize time independent variables of turbulence/pbl package.
   !-----------------------------------------------------------------------------
@@ -93,9 +98,9 @@ subroutine init_mmf_hb_diff(gravx, cpairx, ntop_eddy, nbot_eddy, pref_mid, vkx)
 
   npbl = 0
   do k=nbot_turb,ntop_turb,-1
-  if (pref_mid(k) >= pblmaxp) then
-     npbl = npbl + 1
-  end if
+    if (pref_mid(k) >= pblmaxp) then
+      npbl = npbl + 1
+    end if
   end do
   npbl = max(npbl,1)
 
@@ -104,11 +109,11 @@ subroutine init_mmf_hb_diff(gravx, cpairx, ntop_eddy, nbot_eddy, pref_mid, vkx)
                 ' model levels. Top is ',pref_mid(pverp-npbl),' pascals'
   end if
 
-end subroutine init_mmf_hb_diff
+end subroutine init_hb_diff
 
 !===============================================================================
 !===============================================================================
-subroutine compute_mmf_hb_diff(lchnk, ncol,             &
+subroutine compute_hb_diff(lchnk, ncol,             &
           th      ,t       ,q       ,z       ,zi      , &
           pmid    ,u       ,v       ,taux    ,tauy    , &
           shflx   ,qflx    ,obklen  ,ustar   ,pblh    , &
@@ -198,7 +203,7 @@ subroutine compute_mmf_hb_diff(lchnk, ncol,             &
   kvq(:ncol,:) = kvh(:ncol,:)
 
   return
-end subroutine compute_mmf_hb_diff
+end subroutine compute_hb_diff
 !===============================================================================
 !===============================================================================
 subroutine trbintd(ncol, thv, z, u, v, s2, n2, ri )
@@ -610,4 +615,4 @@ subroutine austausch_pbl(lchnk ,ncol    ,  &
 end subroutine austausch_pbl
 !===============================================================================
 !===============================================================================
-end module mmf_hb_diff
+end module hb_diff
