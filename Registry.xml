@@ -129,7 +129,7 @@
 		            description="Selection of the method for calving ice (as defined further below)."
 		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'von_Mises_stress', 'mask'"
 		/>
-                <nml_option name="config_use_Albany_flowA_eqn" type="logical" default_value=".false." units="unitless"
+                <nml_option name="config_use_Albany_flowA_eqn_for_vM" type="logical" default_value=".false." units="unitless"
 			    description="Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving"
 			    possible_values="'.true.', '.false.'"
 		/>

@@ -1277,7 +1277,7 @@ module li_calving
       real (kind=RKIND), pointer :: config_grounded_von_Mises_threshold_stress, &
                                     config_floating_von_Mises_threshold_stress, &
                                     config_flowLawExponent
-      logical, pointer :: config_use_Albany_flowA_eqn 
+      logical, pointer :: config_use_Albany_flowA_eqn_for_vM 
       real (kind=RKIND), dimension(:), pointer :: eMax, eMin, & 
                                         calvingVelocity, thickness, &
                                         xvelmean, yvelmean, calvingThickness
@@ -1295,7 +1295,7 @@ module li_calving
       !config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM
       !ALBANY!!!!!
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
-      call mpas_pool_get_config(liConfigs, 'config_use_Albany_flowA_eqn', config_use_Albany_flowA_eqn)
+      call mpas_pool_get_config(liConfigs, 'config_use_Albany_flowA_eqn_for_vM', config_use_Albany_flowA_eqn_for_vM)
 
       block => domain % blocklist
 
@@ -1324,9 +1324,9 @@ module li_calving
           vonMisesStress(:) = 0.0_RKIND
 
           ! get flowParamA from MPAS or use Albany-like equation
-          if ( config_use_Albany_flowA_eqn ) then
+          if ( config_use_Albany_flowA_eqn_for_vM ) then
           !calculate Albany-type flowParamA
-             call mpas_log_write("config_use_Albany_flowA_eqn not yet supported", MPAS_LOG_ERR) 
+             call mpas_log_write("config_use_Albany_flowA_eqn_for_vM not yet supported", MPAS_LOG_ERR) 
              err = 1
           else
              call li_calculate_flowParamA(meshPool, temperature, thickness,flowParamA,err) ! Get MPAS flowParamA
