@@ -184,8 +184,7 @@ module li_iceshelf_melt
       endif
 
       ! Simple options handled here
-      if (trim(config_basal_mass_bal_float) == 'none' &
-                .and. config_front_mass_bal_grounded == 'none') then
+      if (trim(config_basal_mass_bal_float) == 'none') then 
 
          ! Zero entire field
 
