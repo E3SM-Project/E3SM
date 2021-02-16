@@ -1,4 +1,3 @@
-! Copyright (c) 2013-2018,  Los Alamos National Security, LLC (LANS)
 ! and the University Corporation for Atmospheric Research (UCAR).
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
@@ -106,7 +105,7 @@ module li_calving
       type (mpas_pool_type), pointer :: scratchPool
 
       ! calving-relevant config options
-      character (len=StrKIND), pointer :: config_calving
+      character (len=StrKIND), pointer :: config_calving 
       logical, pointer :: config_print_calving_info, config_data_calving
       real(kind=RKIND), pointer :: config_calving_timescale
 
@@ -218,13 +217,18 @@ module li_calving
          call mask_calving(domain, err_tmp)
          err = ior(err, err_tmp)
 
+      elseif (trim(config_calving) == 'von_Mises_stress') then
+
+         call von_Mises_calving(domain, err_tmp)
+         err = ior(err, err_tmp)
+
       else
 
          call mpas_log_write("Invalid option for config_calving specified: " // trim(config_calving), MPAS_LOG_ERR)
          err = 1
 
       endif
-
+      
       ! now also remove any icebergs
       call remove_icebergs(domain)
 
@@ -1181,9 +1185,7 @@ module li_calving
 
          calvingVelocity(:) = 0.0_RKIND
          ! First calculate the front retreat rate (Levermann eq. 1)
-         calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) & ! m/s
-               * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
-                  ! calculate only for floating ice - map of "potential" calving rate
+         calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) ! m/s
 
 
          ! Convert calvingVelocity to calvingThickness
@@ -1249,7 +1251,146 @@ module li_calving
 
    end subroutine eigencalving
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine von_Mises_calving
+!
+!> \brief Apply calving law based on von Mises stress to grounded marine margins
+!> \author Trevor Hillebrand
+!> \date   April 2020
+!> \details Uses the calving law described by Morlighem et al. (2016): 
+!> "Modeling of Store Gletscher’s calving dynamics, West Greenland, in response
+!> to ocean thermal forcing" to calculate calvingVelocity at grounded tidewater
+!glacier margins
+!-----------------------------------------------------------------------
+   subroutine von_Mises_calving(domain, err)
 
+      use li_diagnostic_vars
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: iCell, err_tmp
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, &
+                                        velocityPool, scratchPool, thermalPool
+      real (kind=RKIND), pointer :: config_grounded_von_Mises_threshold_stress, &
+                                    config_floating_von_Mises_threshold_stress, &
+                                    config_flowLawExponent
+      logical, pointer :: config_use_Albany_flowA_eqn_for_vM 
+      real (kind=RKIND), dimension(:), pointer :: eMax, eMin, & 
+                                        calvingVelocity, thickness, &
+                                        xvelmean, yvelmean, calvingThickness
+      real (kind=RKIND), dimension(:,:), pointer :: flowParamA, &
+                                        temperature, layerThickness
+      real (kind=RKIND), pointer :: config_default_flowParamA
+      integer, pointer :: nCells
+      integer, dimension(:), pointer :: cellMask
+      real (kind=RKIND), dimension(:), pointer :: vonMisesStress       
+      err = 0
+      
+      call mpas_pool_get_config(liConfigs, 'config_grounded_von_Mises_threshold_stress', config_grounded_von_Mises_threshold_stress)
+      call mpas_pool_get_config(liConfigs, 'config_floating_von_Mises_threshold_stress', config_floating_von_Mises_threshold_stress)
+      !call mpas_pool_get_config(liConfigs, 'config_default_flowParamA',
+      !config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM
+      !ALBANY!!!!!
+      call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
+      call mpas_pool_get_config(liConfigs, 'config_use_Albany_flowA_eqn_for_vM', config_use_Albany_flowA_eqn_for_vM)
+
+      block => domain % blocklist
+
+      do while (associated(block))
+         ! get pools
+          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         ! get fields
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+          call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+          call mpas_pool_get_array(velocityPool, 'eMax', eMax)
+          call mpas_pool_get_array(velocityPool, 'eMin', eMin)
+          call mpas_pool_get_array(velocityPool, 'vonMisesStress', vonMisesStress)
+          call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
+          call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
+          call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
+          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity) 
+          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+          
+          vonMisesStress(:) = 0.0_RKIND
+
+          ! get flowParamA from MPAS or use Albany-like equation
+          if ( config_use_Albany_flowA_eqn_for_vM ) then
+          !calculate Albany-type flowParamA
+             call mpas_log_write("config_use_Albany_flowA_eqn_for_vM not yet supported", MPAS_LOG_ERR) 
+             err = 1
+          else
+             call li_calculate_flowParamA(meshPool, temperature, thickness,flowParamA,err) ! Get MPAS flowParamA
+          endif
+    
+         !Using a depth-averaged ice viscosity parameter B_depthAvg
+         !=sum(layerThickness(:,iCell) *
+         !flowParamA(:,iCell)**(-1.0_RKIND/config_flowLawExponent), dim=1) /
+         !thickness(iCell)
+         ! Calculate effective von  Mises stress.
+          calvingVelocity(:) = 0.0_RKIND
+
+          do iCell = 1,nCells
+             if ( thickness(iCell) > 0.0_RKIND ) then
+                vonMisesStress(iCell) = sqrt(3.0_RKIND) * sum(layerThickness(:,iCell) * &
+                              flowParamA(:,iCell)**(-1.0_RKIND/config_flowLawExponent),dim=1) / &
+                              thickness(iCell) * ( 0.5_RKIND * ( (max(0.0_RKIND, eMax(iCell)))**2.0_RKIND + &
+                              (max(0.0_RKIND, eMin(iCell)))**2.0_RKIND) )**(1.0_RKIND / (2.0_RKIND * config_flowLawExponent))
+             endif 
+        
+             ! Calculate calving velocity for grounded cells at marine margin
+             if ( .not. li_mask_is_floating_ice(cellMask(iCell)) ) then
+                calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND) * &
+                                         vonMisesStress(iCell) / config_grounded_von_Mises_threshold_stress
+             elseif ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+                calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND) * &
+                                         vonMisesStress(iCell) / config_floating_von_Mises_threshold_stress
+             endif
+          enddo
+
+          ! Convert calvingVelocity to calvingThickness
+          call apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
+
+
+          ! === apply calving ===
+          thickness(:) = thickness(:) - calvingThickness(:)
+
+          ! update mask
+          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+          err = ior(err, err_tmp)
+
+          call remove_small_islands(meshPool, geometryPool)
+
+          block => block % next
+ 
+      enddo ! associated(block)
+
+   end subroutine von_Mises_calving
+ 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !    routine apply_calving_velocity
@@ -1498,7 +1639,6 @@ module li_calving
             enddo
          endif
       enddo
-
       ! b. copy calving remaining in non-dynamic cells to dynamic edges
       ! Assume height and velocity are uniform, but edge length is not.
       do iCell = 1, nCells
@@ -1596,6 +1736,13 @@ module li_calving
             call mpas_log_write("NaN detected in calvingThickness at cell $i", MPAS_LOG_ERR, intArgs=(/iCell/))
             err_tmp = 1
             err = ior(err, err_tmp)
+         endif
+      enddo
+
+      ! Clean up to account for roundoff level errors that can occur
+      do iCell = 1, nCells
+         if (abs(calvingThickness(iCell) - thickness(iCell)) < calvingSmallThk) then
+            calvingThickness(iCell) = thickness(iCell)
          endif
       enddo
 

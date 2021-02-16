@@ -134,7 +134,11 @@
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for calving ice (as defined further below)."
-		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'mask'"
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'von_Mises_stress', 'mask'"
+		/>
+                <nml_option name="config_use_Albany_flowA_eqn_for_vM" type="logical" default_value=".false." units="unitless"
+			    description="Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving"
+			    possible_values="'.true.', '.false.'"
 		/>
 		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
@@ -172,6 +176,14 @@
                         description="If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field."
 	                possible_values=".true. or .false."
 		/>
+		<nml_option name="config_grounded_von_Mises_threshold_stress" type="real" default_value="1.0e6" units="Pa"
+			    description="Threshold von Mises stress value required for calving velocity to exceed ice velocity on grounded ice. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier."
+			    possible_values="Any positive real value"
+		/>
+                <nml_option name="config_floating_von_Mises_threshold_stress" type="real" default_value="1.0e6" units="Pa"
+                            description="Threshold von Mises stress value required for calving velocity to exceed ice velocity on floating ice. Generally seems to need to be low (1e5 to 2e5 for Humboldt Glacier) to allow floating ice to retreat. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier."
+                            possible_values="Any positive real value"
+                />
 	</nml_record>
 
 	<nml_record name="thermal_solver" in_defaults="true">
@@ -295,6 +307,35 @@
                 <nml_option name="config_temperature_profile_GL_depth_fraction" type="real" default_value="0.25" units="unitless"
 		            description="The fraction of the deepest grounding line depths over which the grounding line depth is averaged to obtain a reference grounding line depth for the 'temperature_profile' melt parameterization."
 		            possible_values="any positive real value"
+		/>
+                <!-- Options related to grounded glacier front submarine melt param. -->
+                <nml_option name="config_front_mass_bal_grounded" type="character" default_value="none" units="unitless"
+                            description="Selection of the method for computing the frontal mass balance of submarine grounded ice.  'none' sets the front mass balance field to 0 everywhere. 'uniform' sets faceMeltSpeed to the value given by config_uniform_face_melt_rate. 'ismip6' uses the parameterization provided by ISMIP6 and requires an ocean thermal forcing field and subglacial hydrology."
+                            possible_values="'none', 'uniform', 'ismip6'"
+                />
+                <nml_option name="config_beta_ocean_thermal_forcing" type="real" default_value="1.18" units="unitless"
+			    description="Exponent of the ocean thermal forcing in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
+		<nml_option name="config_add_ocean_thermal_forcing" type="real" default_value="0.0" units="deg. C"
+			    description="Adjust ismip6_2dThermalForcing by a scalar value"
+			    possible_values="any real value"
+		/>
+                <nml_option name="config_alpha_subglacial_discharge" type="real" default_value="0.39" units="unitless"
+                            description="Exponent of the subglacial discharge term in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
+                <nml_option name="config_subglacial_discharge_coefficient" type="real" default_value="3.0e-4" units="m^{-alpha} day^{alpha-1} deg. C^{-beta}"
+                            description="Coefficient of the subglacial discharge term in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
+                <nml_option name="config_subglacial_discharge_intercept" type="real" default_value="0.15" units="m day^{-1} deg. C^{-beta}"
+                            description="Added value B in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
+		<nml_option name="config_uniform_face_melt_rate" type="real" default_value="0.0" units="m s^{-1}"
+			    descrption="Apply a uniform linear submarine melt rate at all grounded marine margins. config_mass_bal_grounded must be set to 'uniform'."
+			    possible_values="any non-negative value"
 		/>
         </nml_record>
 
@@ -489,7 +530,9 @@
 
                 <package name="observations" description="This package includes variables required for observations in Albany."/>
 
-                <package name="ismip6Melt" description="This package includes variables required for the ISMIP6 melt parameterization."/>
+                <package name="ismip6ShelfMelt" description="This package includes variables required for the ISMIP6 ice-shelf melt parameterization developed for Antarctica."/>
+
+		<package name="ismip6GroundedFaceMelt" description="This package includes variables required for the ISMIP6 grounded glacier front melt parameterization developed for Greenland." />	
 
                 <package name="thermal" description="This package includes variables required for the thermal solver."/>
 
@@ -590,13 +633,16 @@
                         <var name="sfcMassBalUncertainty" packages="observations"/>
                         <var name="thicknessUncertainty" packages="observations"/>
                         <var name="floatingBasalMassBalUncertainty" packages="observations"/>
-                        <!-- these variables just for ISMIP6 forcing -->
-                        <var name="ismip6shelfMelt_basin" packages="ismip6Melt"/>
-                        <var name="ismip6shelfMelt_gamma0" packages="ismip6Melt"/>
-                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6Melt"/>
-                        <var name="ismip6shelfMelt_deltaT" packages="ismip6Melt"/>
-                        <var name="ismip6shelfMelt_zOcean" packages="ismip6Melt"/>
-                        <var name="ismip6shelfMelt_offset" packages="ismip6Melt"/>
+                        <!-- these variables just for ISMIP6 ice shelf forcing -->
+                        <var name="ismip6shelfMelt_basin" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_gamma0" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
+			<!-- these variables just for ISMIP6 grounded glacier forcing -->
+			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
+			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -670,12 +716,15 @@
                         <var name="channelArea" packages="hydro"/>  <!-- this is only needed if running with channels - could be package-controlled -->
 			<var name="waterFluxMask" packages="hydro"/>
                         <!-- these variables just for ISMIP6 forcing -->
-                        <var name="ismip6shelfMelt_basin" packages="ismip6Melt"/>
-                        <var name="ismip6shelfMelt_gamma0" packages="ismip6Melt"/>
-                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6Melt"/>
-                        <var name="ismip6shelfMelt_deltaT" packages="ismip6Melt"/>
-                        <var name="ismip6shelfMelt_zOcean" packages="ismip6Melt"/>
-                        <var name="ismip6shelfMelt_offset" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_basin" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_gamma0" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
+                        <!-- these variables just for ISMIP6 grounded glacier forcing -->
+                        <var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
+                        <var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
 		</stream>
 
 
@@ -1049,7 +1098,7 @@ is the value of that variable from the *previous* time level!
                 <var name="groundedToFloatingThickness" type="real" dimensions="nCells Time"
                         units="m"  description="ice thickness that changed from grounded to floating due to grounding line movement during this time step.  Negative values indicate floating to grounded transition."
                 />
-                <!-- Variables only needed by SIA solver -->
+		<!-- Variables only needed by SIA solver -->
                 <var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
                      description="elevation at top of ice on vertices" packages="SIAvelocity"
                 />
@@ -1061,32 +1110,52 @@ is the value of that variable from the *previous* time level!
                />
                 <!-- Variables only needed by ISMIP6 ice-shelf melt method -->
                 <var name="ismip6shelfMelt_basin" type="integer" dimensions="nCells" units="" default_value="1" 
-                     packages="ismip6Melt" description="basin number mask for ISMIP6 melt forcing, input to model"
+                     packages="ismip6ShelfMelt" description="basin number mask for ISMIP6 melt forcing, input to model"
                 />
                 <var name="ismip6shelfMelt_gamma0" type="real" dimensions="" units="m yr^{-1}" default_value="0.0"
-                     packages="ismip6Melt"
+                     packages="ismip6ShelfMelt"
                      description="gamma0 value prescribed for ISMIP6 ice-shelf melting method, input to model.  Defaults to 0 so that missing input value will zero melt field."
                 />
                 <var name="ismip6shelfMelt_deltaT" type="real" dimensions="nCells" units="K" default_value="0.0"
-                     packages="ismip6Melt"
+                     packages="ismip6ShelfMelt"
                      description="basin-by-basin temperature bias correction for ISMIP6 ice-shelf melting method, input to model"
                 />
-                <var name="ismip6shelfMelt_TFdraft" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6Melt"
+                <var name="ismip6shelfMelt_TFdraft" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6ShelfMelt"
                      description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method, calculated by param."
                 />
                 <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C" 
-                     default_value="2.0" packages="ismip6Melt"
+                     default_value="2.0" packages="ismip6ShelfMelt"
                      description="thermal forcing for ISMIP6 ice-shelf melting method, input to model"
                 />
-                <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m" packages="ismip6Melt"
+                <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m" packages="ismip6ShelfMelt"
                      description="depth coordinate associated with ismip6shelfMelt_3dThermalForcing field, input to model"
                 />
-                <var name="ismip6shelfMelt_offset" type="real" dimensions="nCells" units="kg m^{-2} s^{-1}" packages="ismip6Melt" default_value="0.0"
+                <var name="ismip6shelfMelt_offset" type="real" dimensions="nCells" units="kg m^{-2} s^{-1}" packages="ismip6ShelfMelt" default_value="0.0"
                      description="Optional field of offset that should be applied to the melt field calculated by the ISMIP6 melt method.  Can be used to run in anomaly mode, but this is not the anomaly.  See Registry.xml for details."
                 />
                 <var name="groundedMarineMarginMask" type="integer" dimensions="nCells Time" units="none" time_levs="1"
                      description="mask of grid cells that are grounded and adjacent to the ocean. 0=interior, 1=grounded ice margin"
                 />
+                <!-- Variables needed for ISMIP6 grounded face melt parameterization -->
+                <var name="faceMeltRateApplied" type="real" dimensions="nCells Time" units="m^{3} s^{-1}" packages="ismip6GroundedFaceMelt"
+                     description="Volumetric submarine melt rate applied at grounded marine margin"
+                />
+		<var name="faceMeltSpeed" type="real" dimensions="nCells Time" units="m s^{-1}" packages="ismip6GroundedFaceMelt"
+		     description="linear speed of submarine melting at grounded glacier front"
+  		/>
+                <var name="ismip6Runoff" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
+                     description="Runoff forcing for ISMIP6 grounded ice melting method, input to model" 
+                />
+		<var name="ismip6_2dThermalForcing" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6GroundedFaceMelt" default_value="2.0"
+	 	     description="thermal forcing for ISMIP6 grounded marine melt method, input to model"
+		/>
+		<var name="faceMeltingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="Equivalent plan-view averaged thickness of ice that melts on a given timestep from front ablation (less than or equal to ice thickness)"
+		/>
+               <var name="unmeltedVolume" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was left unmelted from required facemelt flux due to only applying flux over immediate neighbors (diagnostic field to assess if this limitation is a problem)"
+		/>
+>>>>>>> trevor/landice/ismip6_calving_melting_phase1
                 <!--  description="Optional field of offset that should be appliped to the melt field calculated by the ISMIP6 melt method.  This field is added directly to the melt field calculated by the method and can be used to use the method in anomaly mode.  Note this field is NOT the anomaly.  Let m be the final melt field generated, m_t be the ISMIP6 melt calculation at any time, m_t0 the ISMIP6 melt at time 0, and m_0 a reference melt field (e.g. observed melt field used for initialization).  The melt anomaly would be defined as (delta m)=m_t-m_t0. Then, m=(delta m) + m_0.  Rearranging, m=m_t+(m_0-m_t0).  ismip6shelfMelt_offset is the term in parentheses.  Note that the general usage requires that the first time step be run with ismip6shelfMelt_offset=0 in order to determine m_t0, and then NCO or similar tool used to generate the (m_0-m_t0) field to be input as ismip6shelfMelt_offset in the forward run." -->
                 />
                 <var name="upliftRate"            type="real"     dimensions="nCells Time"
@@ -1163,29 +1232,35 @@ is the value of that variable from the *previous* time level!
 		     description="stiffness factor applied to effective viscosity in higher-order velocity solve"
 		/>
                 <var name="exx" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="x-component of surface strain rate"
+                     description="x-component of depth-integrated strain rate"
                 />
                 <var name="eyy" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="y-component of surface strain rate"
+                     description="y-component of depth-integrated strain rate"
                 />
                 <var name="exy" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="shear component of surface strain rate"
+                     description="shear component of depth-integrated strain rate"
+                />
+                <var name="dudy" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="y-derivative of x-component of depth-integrated velocity"
+                />
+                <var name="dvdx" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="x-derivative of y-component of depth-integrated velocity"
                 />
                 <var name="eTheta" type="real" dimensions="nCells Time" units="radians"
-                     description="orientation of principal surface strain rate"
-                />
-                <var name="eyx" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="shear component of surface strain rate"
+                     description="orientation of principal depth-integrated strain rate"
                 />
                 <var name="eMax" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="magnitude of first principal surface strain rate"
+                     description="magnitude of first principal depth-integrated strain rate"
                 />
                 <var name="eMin" type="real" dimensions="nCells Time" units="s^{-1}"
-                     description="magnitude of second principal surface strain rate"
+                     description="magnitude of second principal depth-integrated strain rate"
                 />
                 <var name="fluxAcrossGroundingLine" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
                      description="flux across grounding line per unit width.  Positive means flux goes from grounded to floating ice."
                 />
+		<var name="vonMisesStress" type="real" dimensions="nCells Time" units="Pa"
+		     description="von Mises stress used for calving law"
+		/>
 
 		<!-- Variables only needed by HO solver -->
                 <var name="anyDynamicVertexMaskChanged"              type="integer"  dimensions="Time"
