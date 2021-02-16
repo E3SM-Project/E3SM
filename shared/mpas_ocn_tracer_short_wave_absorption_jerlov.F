@@ -146,7 +146,7 @@ contains
 
 #ifndef CPRPGI
       !$omp parallel
-      !$omp do schedule(runtime) private(depth, k, depLev) &
+      !$omp do schedule(runtime) private(fluxRemaining, depth, k, depLev) &
       !$omp firstprivate(weights)
 #endif
       do iCell = 1, nCells
