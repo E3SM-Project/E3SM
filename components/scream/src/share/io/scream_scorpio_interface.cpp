@@ -138,12 +138,6 @@ void eam_pio_enddef(const std::string &filename) {
   eam_pio_enddef_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
-void grid_read_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, Int *hbuf) {
-
-  grid_read_data_array_c2f_int(filename.c_str(),varname.c_str(),dim_length,hbuf);
-
-};
-/* ----------------------------------------------------------------- */
 // Handling the reading of input for packed arrays
 void grid_read_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& pack_extra, Real *hbuf) {
 
@@ -214,54 +208,6 @@ void grid_write_data_array(const std::string &filename, const std::string &varna
 void grid_write_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, const Real* hbuf) {
 
   grid_write_data_array_c2f_real_1d(filename.c_str(),varname.c_str(),dim_length,hbuf);
-
-};
-/* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, const Int* hbuf) {
-
-  grid_write_data_array_c2f_int_1d(filename.c_str(),varname.c_str(),dim_length,hbuf);
-
-};
-/* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,1>& dim_length, const Real* hbuf) {
-
-  grid_write_data_array_c2f_real_1d(filename.c_str(),varname.c_str(),dim_length[0],hbuf);
-
-};
-/* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,2>& dim_length, const Real* hbuf) {
-
-  grid_write_data_array_c2f_real_2d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],hbuf);
-
-};
-/* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,3>& dim_length, const Real* hbuf) {
-
-  grid_write_data_array_c2f_real_3d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],dim_length[2],hbuf);
-
-};
-/* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,4>& dim_length, const Real* hbuf) {
-
-  grid_write_data_array_c2f_real_4d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],dim_length[2],dim_length[3],hbuf);
-
-};
-/* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,1>& dim_length, const Int* hbuf) {
-
-  grid_write_data_array_c2f_int_1d(filename.c_str(),varname.c_str(),dim_length[0],hbuf);
-
-};
-/* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,2>& dim_length, const Int* hbuf) {
-
-  grid_write_data_array_c2f_int_2d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],hbuf);
-
-};
-/* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,3>& dim_length, const Int* hbuf) {
-
-  grid_write_data_array_c2f_int_3d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],dim_length[2],hbuf);
 
 };
 /* ----------------------------------------------------------------- */

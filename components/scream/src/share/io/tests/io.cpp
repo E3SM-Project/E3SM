@@ -229,6 +229,12 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
   repo->register_field<Pack>(fid4,{"output","restart"}); // Register field as packed
   repo->registration_ends();
 
+  // Make sure that field 4 is in fact a packed field
+  auto field4 = repo->get_field(fid4);
+  auto fid4_extent = field4.get_header().get_alloc_properties().get_last_extent();
+  auto fid4_final_dim = field4.get_header().get_identifier().get_layout().dims().back();
+  REQUIRE(fid4_extent-fid4_final_dim > 0);
+
   // Initialize these fields
   auto f1_dev = repo->get_field(fid1).get_view(); 
   auto f2_dev = repo->get_field(fid2).get_view(); 

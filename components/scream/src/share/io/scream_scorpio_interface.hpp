@@ -52,21 +52,10 @@ namespace scorpio {
 
   /* Read data for a specific variable from a specific file. */
   void grid_read_data_array (const std::string &filename, const std::string &varname, const Int& dim_length, Real* hbuf);
-  void grid_read_data_array (const std::string &filename, const std::string &varname, const Int& dim_length, Int* hbuf);
   void grid_read_data_array (const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& pack_extra, Real* hbuf);
   /* Write data for a specific variable to a specific file. */
   void grid_write_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, const Int* hbuf);
   void grid_write_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& pack_extra, const Real* hbuf);
-  /* Read and write data routines that allow for passage of multi dimensional arrays.  May no longer be needed, but keep for now just in case. */
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,1>& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,2>& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,3>& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,4>& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,1>& dim_length, const Int* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,2>& dim_length, const Int* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,3>& dim_length, const Int* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,4>& dim_length, const Int* hbuf);
 
   void count_pio_atm_file();
 } // namespace scorpio
