@@ -2407,9 +2407,9 @@ contains
          end do
 
          do iEdge = 1, nEdgesSolve
-            do k = 1, maxLevelEdgeBot(iEdge)
+            do k = minLevelEdgeTop(iEdge), maxLevelEdgeBot(iEdge) !mlc-do-k
                velNanFound = velNanFound .or. ( .not. normalVelocity(k, iEdge) == normalVelocity(k, iEdge) )
-            end do
+            end do !mlc-end-do
          end do
 
          ! If an error was found, we need to open the file to write data out.
