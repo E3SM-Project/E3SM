@@ -225,7 +225,8 @@ module li_iceshelf_melt
          endif
       endif
 
-      if (trim(config_front_mass_bal_grounded) == 'ismip6') then
+      if ( trim(config_front_mass_bal_grounded) == 'ismip6' &
+          .or. trim(config_front_mass_bal_grounded) == 'uniform' ) then
          call grounded_face_melt_ismip6(domain, err_tmp)
          err = ior(err, err_tmp)
 
@@ -1198,6 +1199,7 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: betaTF ! param beta
       real (kind=RKIND), pointer :: addTFocean ! adjust ocean thermal forcing
       real (kind=RKIND), pointer :: config_uniform_face_melt_rate
+      character(len=StrKIND), pointer :: config_front_mass_bal_grounded
       real (kind=RKIND), parameter :: secPerDay = 86400.0
       real (kind=RKIND), parameter :: rhow = 1000.0 ! subglacial runoff density
       integer, dimension(:), pointer :: groundedMarineMarginMask
@@ -1217,6 +1219,7 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_subglacial_discharge_intercept', B)
       call mpas_pool_get_config(liConfigs, 'config_add_ocean_thermal_forcing', addTFocean)
       call mpas_pool_get_config(liConfigs, 'config_uniform_face_melt_rate', config_uniform_face_melt_rate)
+      call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       
       block => domain % blocklist
       do while (associated(block))
@@ -1279,12 +1282,12 @@ module li_iceshelf_melt
                           
                 submergedFaceArea = waterDepth * oceanEdgeLength
                 
-                if (config_uniform_face_melt_rate == 0.0) then                
+                if (trim(config_front_mass_bal_grounded) == 'ismip6') then                
                 ! Calculate ice front melt rate at each cell
                    faceMeltSpeed(iCell) = (aSubglacial * waterDepth * & ! m s^-1
                          (ismip6Runoff(iCell) / rhow * secPerDay)**alphaSubglacial &
                          + B) * (TFocean(iCell) + addTFocean)**betaTF / secPerDay
-                else
+                elseif (trim(config_front_mass_bal_grounded) == 'uniform') then   
                    faceMeltSpeed(iCell) = config_uniform_face_melt_rate
                 endif
                 faceMeltRateApplied(iCell) = faceMeltSpeed(iCell) * submergedFaceArea ! m^3 s^-1
