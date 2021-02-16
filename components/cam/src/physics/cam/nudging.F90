@@ -1391,10 +1391,7 @@ contains
        Nudge_ON=.true.
      else
        Nudge_ON=.false.
-       if(masterproc) then
-         write(iulog,*) 'NUDGING: WARNING - analyses file NOT FOUND. Switching '
-         write(iulog,*) 'NUDGING:           nudging OFF to coast thru the gap. '
-       endif
+       call endrun('NUDGING: Nudging data file NOT FOUND')
      endif
    else
      Nudge_ON=.false.
