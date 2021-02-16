@@ -303,8 +303,8 @@
 		/>
                 <!-- Options related to grounded glacier front submarine melt param. -->
                 <nml_option name="config_front_mass_bal_grounded" type="character" default_value="none" units="unitless"
-                            description="Selection of the method for computing the frontal mass balance of submarine grounded ice.  'none' sets the frontMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant' uses a prescribed constant melt rate. 'ismip6' uses the parameterization provided by ISMIP6 and requires an ocean thermal forcing field and subglacial hydrology."
-                            possible_values="'none', 'file', 'constant', 'ismip6'"
+                            description="Selection of the method for computing the frontal mass balance of submarine grounded ice.  'none' sets the front mass balance field to 0 everywhere. 'uniform' sets faceMeltSpeed to the value given by config_uniform_face_melt_rate. 'ismip6' uses the parameterization provided by ISMIP6 and requires an ocean thermal forcing field and subglacial hydrology."
+                            possible_values="'none', 'uniform', 'ismip6'"
                 />
                 <nml_option name="config_beta_ocean_thermal_forcing" type="real" default_value="1.18" units="unitless"
 			    description="Exponent of the ocean thermal forcing in ISMIP6 grounded ice front melting parameterization"
@@ -327,7 +327,7 @@
                             possible_values="any real value"
                 />
 		<nml_option name="config_uniform_face_melt_rate" type="real" default_value="0.0" units="m s^{-1}"
-			    descrption="Apply a uniform linear submarine melt rate at all grounded marine margins. If set to 0.0, it will not be applied. Must be 0.0 for ISMIP6 front mass balance paramterization to work."
+			    descrption="Apply a uniform linear submarine melt rate at all grounded marine margins. config_mass_bal_grounded must be set to 'uniform'."
 			    possible_values="any non-negative value"
 		/>
         </nml_record>
