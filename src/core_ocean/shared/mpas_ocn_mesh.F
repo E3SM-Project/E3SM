@@ -62,6 +62,11 @@ module ocn_mesh
    integer, public, dimension(:), pointer :: &
       nEdgesOnEdge, &! number of edges connected to each edge point
       nEdgesOnCell, &! number of edges associated with each cell center
+      minLevelCell, &! max ocean level at bottom of cell
+      minLevelEdgeTop, &! max ocean level at top    of edge column
+      minLevelEdgeBot, &! max ocean level at bottom of edge column
+      minLevelVertexTop, &! max ocean level at top    of each vertex
+      minLevelVertexBot, &! max ocean level at bottom of each vertex
       maxLevelCell, &! max ocean level at bottom of cell
       maxLevelEdgeTop, &! max ocean level at top    of edge column
       maxLevelEdgeBot, &! max ocean level at bottom of edge column
@@ -307,6 +312,16 @@ contains
                                   nEdgesOnEdge)
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', &
                                   nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'minLevelCell', &
+                                  minLevelCell)
+         call mpas_pool_get_array(meshPool, 'minLevelEdgeTop', &
+                                  minLevelEdgeTop)
+         call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', &
+                                  minLevelEdgeBot)
+         call mpas_pool_get_array(meshPool, 'minLevelVertexTop', &
+                                  minLevelVertexTop)
+         call mpas_pool_get_array(meshPool, 'minLevelVertexBot', &
+                                  minLevelVertexBot)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', &
                                   maxLevelCell)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', &
@@ -519,6 +534,11 @@ contains
          !$acc                   nVerticesHalo,            &
          !$acc                   nEdgesOnEdge,             &
          !$acc                   nEdgesOnCell,             &
+         !$acc                   minLevelCell,             &
+         !$acc                   minLevelEdgeTop,          &
+         !$acc                   minLevelEdgeBot,          &
+         !$acc                   minLevelVertexTop,        &
+         !$acc                   minLevelVertexBot,        &
          !$acc                   maxLevelCell,             &
          !$acc                   maxLevelEdgeTop,          &
          !$acc                   maxLevelEdgeBot,          &
@@ -650,6 +670,11 @@ contains
       !$acc                  nVerticesHalo,     &
       !$acc                  nEdgesOnEdge,      &
       !$acc                  nEdgesOnCell,      &
+      !$acc                  minLevelCell,      &
+      !$acc                  minLevelEdgeTop,   &
+      !$acc                  minLevelEdgeBot,   &
+      !$acc                  minLevelVertexTop, &
+      !$acc                  minLevelVertexBot, &
       !$acc                  maxLevelCell,      &
       !$acc                  maxLevelEdgeTop,   &
       !$acc                  maxLevelEdgeBot,   &
@@ -739,6 +764,11 @@ contains
 
       nullify (nEdgesOnEdge, &
                nEdgesOnCell, &
+               minLevelCell, &
+               minLevelEdgeTop, &
+               minLevelEdgeBot, &
+               minLevelVertexTop, &
+               minLevelVertexBot, &
                maxLevelCell, &
                maxLevelEdgeTop, &
                maxLevelEdgeBot, &
@@ -1086,6 +1116,11 @@ contains
       !$acc               nVerticesHalo,            &
       !$acc               nEdgesOnEdge,             &
       !$acc               nEdgesOnCell,             &
+      !$acc               minLevelCell,             &
+      !$acc               minLevelEdgeTop,          &
+      !$acc               minLevelEdgeBot,          &
+      !$acc               minLevelVertexTop,        &
+      !$acc               minLevelVertexBot,        &
       !$acc               maxLevelCell,             &
       !$acc               maxLevelEdgeTop,          &
       !$acc               maxLevelEdgeBot,          &
