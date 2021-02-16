@@ -144,11 +144,72 @@ void grid_read_data_array(const std::string &filename, const std::string &varnam
 
 };
 /* ----------------------------------------------------------------- */
+// Handling the reading of input for packed arrays
+void grid_read_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& pack_extra, Real *hbuf) {
+
+  if (pack_extra == 0) // then no xtra data, is contiguous
+  {
+    grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),dim_length,hbuf);
+  } else {
+    std::vector<Real> hbuf_new(dim_length);
+    grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),dim_length,hbuf_new.data());
+    // Copy the read in values back to the packed array
+    int slow_dim_len = dims[0];
+    for (int ii=1;ii<dims.size()-1;ii++)
+    {
+      slow_dim_len *= dims[ii];
+    }
+    int loc = 0; // running tally of what index in the packed array we are at.
+    int dloc = 0; // running tally of what index in the read in contiguous array we are at.
+    for (int ii=0;ii<slow_dim_len;ii++)
+    {
+      for (int jj=0;jj<dims.back();jj++)
+      {
+        hbuf[loc] = (hbuf_new[dloc]);
+        loc += 1;
+        dloc += 1;
+      }
+      loc += pack_extra;
+    }
+    EKAT_REQUIRE_MSG((dim_length == dloc),"Error read input for field " + varname + ", packed and unpacked data variables don't match in size.");
+  }
+
+};
+/* ----------------------------------------------------------------- */
 void grid_read_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, Real *hbuf) {
 
   grid_read_data_array_c2f_real(filename.c_str(),varname.c_str(),dim_length,hbuf);
 
 };
+/* ----------------------------------------------------------------- */
+// Handling the writing of output for packed arrays
+void grid_write_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& pack_extra, const Real* hbuf)
+{
+  if (pack_extra == 0) // then no xtra data, is contiguous
+  {
+    grid_write_data_array_c2f_real_1d(filename.c_str(),varname.c_str(),dim_length,hbuf);
+  } else {
+    std::vector<Real> hbuf_new;
+    // Packed along final dimension
+    int slow_dim_len = dims[0];
+    for (int ii=1;ii<dims.size()-1;ii++)
+    {
+      slow_dim_len *= dims[ii];
+    }
+    int loc = 0; // running tally of what index in the packed array we are at.
+    for (int ii=0;ii<slow_dim_len;ii++)
+    {
+      for (int jj=0;jj<dims.back();jj++)
+      {
+        hbuf_new.push_back(hbuf[loc]);
+        loc += 1;
+      }
+      loc += pack_extra;
+    }
+    EKAT_REQUIRE_MSG((dim_length == hbuf_new.size()),"Error write output for field " + varname + ", packed and unpacked data variables don't match in size.");
+    grid_write_data_array_c2f_real_1d(filename.c_str(),varname.c_str(),dim_length,hbuf_new.data());
+  }
+}
 /* ----------------------------------------------------------------- */
 void grid_write_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, const Real* hbuf) {
 

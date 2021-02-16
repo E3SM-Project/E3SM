@@ -158,13 +158,18 @@ inline void AtmosphereInput::pull_input(const std::string name, view_type view_o
 inline void AtmosphereInput::pull_input()
 {
 /*  Run through the sequence of opening the file, reading input and then closing the file.  */
+  using namespace scream;
+  using namespace scream::scorpio;
   init();
   for (auto const& name : m_fields)
   {
     auto fmap = m_field_repo->get_field(name, m_grid_name);
     // Get all the info for this field.
     auto l_view_dev = fmap.get_view();
-    auto l_view = run(name);
+    view_type l_view = m_view_local.at(name);
+    auto l_dims = fmap.get_header().get_identifier().get_layout().dims();
+    Int extra = fmap.get_header().get_alloc_properties().get_last_extent()-fmap.get_header().get_identifier().get_layout().dims().back();
+    grid_read_data_array(m_filename,name,l_dims,m_dofs.at(name),extra,l_view.data());
     Kokkos::deep_copy(l_view_dev,l_view);
   }
   finalize();
