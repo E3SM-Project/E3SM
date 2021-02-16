@@ -1174,9 +1174,7 @@ module li_calving
 
          calvingVelocity(:) = 0.0_RKIND
          ! First calculate the front retreat rate (Levermann eq. 1)
-         calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) & ! m/s
-               * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
-                  ! calculate only for floating ice - map of "potential" calving rate
+         calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) ! m/s
 
 
          ! Convert calvingVelocity to calvingThickness
