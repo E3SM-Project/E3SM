@@ -101,6 +101,9 @@ OR
     parser.add_argument("-d", "--dry-run", action="store_true",
                         help="Do a dry run, commands will be printed but not executed")
 
+    parser.add_argument("--print-mach-setup", action="store_true",
+        help="Prints environment used on given machine, then quits immediately.")
+
     parser.add_argument("--make-parallel-level", action="store", type=int, default=0,
         help="Max number of jobs to be created during compilation. If not provided, use default for given machine.")
 
