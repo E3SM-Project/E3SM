@@ -23,6 +23,7 @@ module ocn_init_sub_ice_shelf_2D
    use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
+   use mpas_io
 
    use ocn_constants
    use ocn_config
@@ -280,6 +281,8 @@ module ocn_init_sub_ice_shelf_2D
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+        call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
+        call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
@@ -293,14 +296,22 @@ module ocn_init_sub_ice_shelf_2D
            ! Set temperature
            idx = index_temperature
            do k = 1, nVertLevels
-              activeTracers(idx, k, iCell) = config_sub_ice_shelf_2D_temperature
+              if (k >= minLevelCell(iCell) .and. k <= maxLevelCell(iCell)) then
+                 activeTracers(idx, k, iCell) = config_sub_ice_shelf_2D_temperature
+              else
+                 activeTracers(idx, k, iCell) = MPAS_REAL_FILLVAL
+              end if
            end do
 
            ! Set up salinity stratification
            idx = index_salinity
            do k = 1, nVertLevels
-              activeTracers(idx, k, iCell) = surfaceSalinity + (bottomSalinity - surfaceSalinity) &
-                                                             * (zMid(k,iCell)/(-config_sub_ice_shelf_2D_bottom_depth))
+              if (k >= minLevelCell(iCell) .and. k <= maxLevelCell(iCell)) then
+                 activeTracers(idx, k, iCell) = surfaceSalinity + (bottomSalinity - surfaceSalinity) &
+                                                                * (zMid(k,iCell)/(-config_sub_ice_shelf_2D_bottom_depth))
+              else
+                 activeTracers(idx, k, iCell) = MPAS_REAL_FILLVAL
+              end if
            end do
         end do
 
