@@ -413,7 +413,7 @@ module nudging
   logical::         Nudge_File_Present=.false.
   logical::         Nudge_Initialized =.false.
   character(len=cl) Nudge_Path
-  character(len=cs) Nudge_File,Nudge_File_Template
+  character(len=cl) Nudge_File,Nudge_File_Template
   integer           Nudge_Times_Per_Day
   integer           Model_Times_Per_Day
   real(r8)          Nudge_Ucoef,Nudge_Vcoef
@@ -1675,7 +1675,7 @@ contains
 
    integer :: cnt3(3)               ! array of counts for each dimension
    integer :: strt3(3)              ! array of starting indices
-   character(len=cs) :: nudge_file1
+   character(len=cl) :: nudge_file1
    integer :: n, n_cnt, ncid1, ind
    integer :: timesiz               ! size of time dimension on dataset
    integer :: Year, Month, Day, Sec
@@ -2388,7 +2388,7 @@ contains
 
    integer :: cnt4(4)               ! array of counts for each dimension
    integer :: strt4(4)              ! array of starting indices
-   character(len=cs) :: nudge_file1
+   character(len=cl) :: nudge_file1
    integer :: n, n_cnt, ncid1, ind
    integer :: Year, Month, Day, Sec
 
@@ -3118,7 +3118,7 @@ contains
   ! local variable  
   integer :: YMD3, YMD4, Nudge_Next1_Sec, Nudge_Next1_Year, &
              Nudge_Next1_Month, Nudge_Next1_Day, istat
-  character(len=cs)       :: nudge_file
+  character(len=cl)       :: nudge_file
 
   YMD3 = (Nudge_Next_Year*10000) + &
          (Nudge_NEXT_Month*100) + Nudge_Next_Day
