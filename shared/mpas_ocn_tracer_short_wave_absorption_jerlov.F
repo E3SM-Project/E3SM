@@ -126,7 +126,7 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND) :: depth
+      real (kind=RKIND) :: depth, fluxRemaining
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
 
@@ -146,18 +146,26 @@ contains
 
 #ifndef CPRPGI
       !$omp parallel
-      !$omp do schedule(runtime) private(depth, k, depLev) &
+      !$omp do schedule(runtime) private(fluxRemaining, depth, k, depLev) &
       !$omp firstprivate(weights)
 #endif
       do iCell = 1, nCells
          depth = 0.0_RKIND
+         fluxRemaining = 1.0_RKIND
          do k = 1, maxLevelCell(iCell)
             depth = depth + layerThickness(k, iCell)
 
             call ocn_get_jerlov_fraction(depth, weights(k+1))
             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
                                               * (weights(k) - weights(k+1))
+            fluxRemaining = fluxRemaining - (weights(k) - weights(k+1))
          end do
+
+         k = maxLevelCell(iCell)
+         if(k > 0 .and. fluxRemaining > 0.0_RKIND) then
+            tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
+                                              * fluxRemaining
+         end if
 
          depth = 0.0_RKIND
          do k=1,maxLevelCell(iCell)
