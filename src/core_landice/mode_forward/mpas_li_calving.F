@@ -44,7 +44,7 @@ module li_calving
    !
    !--------------------------------------------------------------------
 
-   public :: li_calve_ice, li_restore_calving_front, apply_front_ablation_velocity
+   public :: li_calve_ice, li_restore_calving_front, li_apply_front_ablation_velocity
 
    !--------------------------------------------------------------------
    !
@@ -1196,7 +1196,7 @@ module li_calving
          calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) ! m/s
 
          ! Convert calvingVelocity to calvingThickness
-          call apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
+          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
                                               applyToFloating, applyToGroundingLine, applyCalving, &
                                               applyMelting, domain, err)
 
@@ -1315,7 +1315,7 @@ module li_calving
 
       err = 0
 
-      ! Logical arrays needed for apply_front_ablation_velocity
+      ! Logical arrays needed for li_apply_front_ablation_velocity
       applyToGrounded = .true.
       applyToFloating = .true.
       applyToGroundingLine = .false.
@@ -1324,6 +1324,11 @@ module li_calving
       
       call mpas_pool_get_config(liConfigs, 'config_grounded_von_Mises_threshold_stress', config_grounded_von_Mises_threshold_stress)
       call mpas_pool_get_config(liConfigs, 'config_floating_von_Mises_threshold_stress', config_floating_von_Mises_threshold_stress)
+
+      if ( config_grounded_von_Mises_threshold_stress <=  0.0_RKIND ) then
+         call mpas_log_write("config_grounded_von_Mises_threshold_stress must be >0.0", MPAS_LOG_ERR)
+         err = 1
+      endif
       !call mpas_pool_get_config(liConfigs, 'config_default_flowParamA',
       !config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM
       !ALBANY!!!!!
@@ -1384,6 +1389,9 @@ module li_calving
              if ( .not. li_mask_is_floating_ice(cellMask(iCell)) ) then
                 calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND) * &
                                          vonMisesStress(iCell) / config_grounded_von_Mises_threshold_stress
+             ! If config_floating_von_Mises_threshold_stress is not 0.0, calculate
+             ! calvingVelocity. If config_floating_von_Mises_threshold_stress is
+             ! 0.0, remove floating ice in loop below.
              elseif ( li_mask_is_floating_ice(cellMask(iCell)) .and. config_floating_von_Mises_threshold_stress .ne. 0.0_RKIND) then
                 calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2 + yvelmean(iCell)**2) * &
                                          vonMisesStress(iCell) / config_floating_von_Mises_threshold_stress
@@ -1391,7 +1399,7 @@ module li_calving
           enddo
 
           ! Convert calvingVelocity to calvingThickness
-          call apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
+          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
                                       applyToFloating, applyToGroundingLine, applyCalving, applyMelting, domain, err)
 
 
@@ -1423,7 +1431,7 @@ module li_calving
  
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!    routine apply_front_ablation_velocity
+!    routine li_apply_front_ablation_velocity
 !
 !> \brief Convert a calving or melting velocity to an ice thickness removal
 !> \author Matthew Hoffman and Trevor Hillebrand
@@ -1459,7 +1467,7 @@ module li_calving
 !> by the calling routine.
 !-----------------------------------------------------------------------
 
-   subroutine apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, applyToFloating, applyToGroundingLine, applyCalving, applyMelting, domain, err)
+   subroutine li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, applyToFloating, applyToGroundingLine, applyCalving, applyMelting, domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -1749,7 +1757,7 @@ module li_calving
                   ablateLengthEdge = edgeLengthScaling * dvEdge(iEdge)
                   if (requiredAblationVolumeDynEdge(iEdge) > 0.0_RKIND) then
                      call mpas_log_write("Unexpectedly found a dynamic edge that already has calving assigned to it." // &
-                           "  There is a flaw in apply_front_ablation_velocity that needs to be fixed!", MPAS_LOG_ERR)
+                           "  There is a flaw in li_apply_front_ablation_velocity that needs to be fixed!", MPAS_LOG_ERR)
                      err_tmp = 1
                      err = ior(err, err_tmp)
                   endif
@@ -1847,7 +1855,7 @@ module li_calving
       if (((globalInfo(5) + globalInfo(6)) / (globalInfo(4) + 1.0e-30_RKIND) > 0.1_RKIND) .and. &
           (globalInfo(4) > 1000.0_RKIND**2)) then ! Include some small amount of total calving for comparison
          call mpas_log_write("Failed to ablate an amount greater than 10% of the ice ablated.  " // &
-                 "Try reducing time step or apply_front_ablation_velocity may need improvements.", &
+                 "Try reducing time step or li_apply_front_ablation_velocity may need improvements.", &
                  MPAS_LOG_ERR, realArgs=(/globalInfo(5) + globalInfo(6), &
                  100.0_RKIND * (globalInfo(5) + globalInfo(6)) / (globalInfo(4)+1.0e-30_RKIND)/))
          err_tmp = 1
@@ -1857,7 +1865,7 @@ module li_calving
          ! If stranded ice deletion results in more than a small amount of the total calving flux, this routine will not
          ! be accurate.  If this error gets triggered, either try using a smaller timstep or this routine needs improving.
          call mpas_log_write("Deleting stranded floating cells accounts for more than 1% of ablation loss." // &
-                 "  Try using a smaller timestep or apply_front_ablation_velocity may need improvements for this simulation.")
+                 "  Try using a smaller timestep or li_apply_front_ablation_velocity may need improvements for this simulation.")
          err_tmp = 1
          err = ior(err, err_tmp)
       endif
@@ -1883,12 +1891,12 @@ module li_calving
       deallocate(requiredAblationVolumeDynCell)
       deallocate(thicknessForAblation)
       deallocate(ablationVelocity)
-      call mpas_log_write("Finished with apply_front_ablation_velocity")
+      call mpas_log_write("Finished with li_apply_front_ablation_velocity")
 
-    end subroutine apply_front_ablation_velocity
+    end subroutine li_apply_front_ablation_velocity
 
 
-    ! Helper function for subroutine apply_front_ablation_velocity
+    ! Helper function for subroutine li_apply_front_ablation_velocity
     ! Calculates the amount to scale an edge length based on the orientation of the edge with the surface velocity
     function scale_edge_length(angleEdgeHere, u, v)
        real(kind=RKIND), intent(in) :: angleEdgeHere
