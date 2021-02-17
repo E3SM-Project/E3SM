@@ -2751,8 +2751,10 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,    &
       !print*,'p3_qc_autocon_expon = ',p3_qc_autocon_expon
       sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2.47_rtype)
       qc2qr_autoconv_tend = sbgrd_var_coef*1350._rtype*bfb_pow(qc_incld,2.47_rtype)*bfb_pow(nc_incld*1.e-6_rtype*rho,-1.79_rtype)
-      ! note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
+      !ncautr is change in nr: assume all new raindrops are 25 micron in diameter
       ncautr = qc2qr_autoconv_tend*cons3
+      !nc2nr_autoconv_tend is change in nc: remove frac of nc_incld 
+      !proportional to fraction of mass removed by autoconversion
       nc2nr_autoconv_tend = qc2qr_autoconv_tend*nc_incld/qc_incld
 
       if (qc2qr_autoconv_tend .eq.0._rtype) nc2nr_autoconv_tend = 0._rtype
@@ -2864,6 +2866,8 @@ end subroutine prevent_ice_overdepletion
 
 subroutine ice_supersat_conservation(qidep,qinuc,cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt,qi2qv_sublim_tend, qr2qv_evap_tend)
   !Make sure ice processes don't drag qv below ice supersaturation
+  !Note that qv_sat_i is always > 0 so this also ensures qv itself doesn't go
+  !negative.
 
   implicit none
 
@@ -2927,6 +2931,8 @@ subroutine nr_conservation(nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_auto
   real(rtype) :: sink_nr, source_nr, ratio
 
   sink_nr = (nr_collect_tend + nr2ni_immers_freeze_tend + nr_selfcollect_tend + nr_evap_tend)*dt
+  !recall that melting number is scaled by nmltratio to account for ice crystals melting then
+  !rapidly evaporating. Thus ni removal from melting is *not* scaled by nmltratio...
   source_nr = nr + (ni2nr_melt_tend*nmltratio + nr_ice_shed_tend + ncshdc + nc2nr_autoconv_tend)*dt
   if(sink_nr > source_nr) then
      ratio = source_nr/sink_nr

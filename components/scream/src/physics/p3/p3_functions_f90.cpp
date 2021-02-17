@@ -926,19 +926,6 @@ void NiConservationData::randomize()
   ni_sublim_tend           = data_dist(generator);
   ni_selfcollect_tend      = data_dist(generator);
 }
-
-void WaterVaporConservationData::randomize()
-{
-  std::default_random_engine generator;
-  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
-
-  qv                = data_dist(generator);
-  qi2qv_sublim_tend = data_dist(generator);
-  qr2qv_evap_tend   = data_dist(generator);
-  dt                = data_dist(generator);
-  qidep             = data_dist(generator);
-  qinuc             = data_dist(generator);
-}
 // end _c impls
 
 ///////////////////////////////////////////////////////////////////////////////
