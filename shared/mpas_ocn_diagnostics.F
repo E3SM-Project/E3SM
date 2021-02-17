@@ -700,7 +700,7 @@ contains
         normalizedPlanetaryVorticityEdge(:, iEdge) = 0.0_RKIND
         vertex1 = verticesOnEdge(1, iEdge)
         vertex2 = verticesOnEdge(2, iEdge)
-        do k = 1, maxLevelEdgeBot(iEdge)
+        do k = minLevelEdgeTop(iEdge), maxLevelEdgeBot(iEdge)
           normalizedRelativeVorticityEdge(k, iEdge) = 0.5_RKIND * (normalizedRelativeVorticityVertex(k, vertex1) &
                                                     + normalizedRelativeVorticityVertex(k, vertex2))
           normalizedPlanetaryVorticityEdge(k, iEdge) = 0.5_RKIND * (normalizedPlanetaryVorticityVertex(k, vertex1) &
@@ -721,7 +721,7 @@ contains
         do i = 1, nEdgesOnCell(iCell)
           j = kiteIndexOnCell(i, iCell)
           iVertex = verticesOnCell(i, iCell)
-          do k = 1, maxLevelCell(iCell)
+          do k = minLevelCell(iCell), maxLevelCell(iCell)
             normalizedRelativeVorticityCell(k, iCell) = normalizedRelativeVorticityCell(k, iCell) &
               + kiteAreasOnVertex(j, iVertex) * normalizedRelativeVorticityVertex(k, iVertex) * invAreaCell1
           end do
@@ -753,7 +753,7 @@ contains
             invLength = 1.0_RKIND / dcEdge(iEdge)
             ! Compute gradient of PV in normal direction
             !   ( this computes the gradient for all edges bounding real cells )
-            do k=1,maxLevelEdgeTop(iEdge)
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                vorticityGradientNormalComponent(k,iEdge) = &
                   (normalizedRelativeVorticityCell(k,cell2) - normalizedRelativeVorticityCell(k,cell1)) * invLength
             enddo
@@ -761,7 +761,7 @@ contains
             invLength = 1.0_RKIND / dvEdge(iEdge)
             ! Compute gradient of PV in the tangent direction
             !   ( this computes the gradient at all edges bounding real cells and distance-1 ghost cells )
-            do k = 1,maxLevelEdgeBot(iEdge)
+            do k = minLevelEdgeTop(iEdge), maxLevelEdgeBot(iEdge)
               vorticityGradientTangentialComponent(k,iEdge) = &
                  (normalizedRelativeVorticityVertex(k,vertex2) - normalizedRelativeVorticityVertex(k,vertex1)) * invLength
             enddo
@@ -774,12 +774,12 @@ contains
          !
          !$omp do schedule(runtime) private(k)
          do iEdge = 1,nEdges
-            do k = 1,maxLevelEdgeBot(iEdge)
+            do k = minLevelEdgeTop(iEdge), maxLevelEdgeBot(iEdge)
               normalizedRelativeVorticityEdge(k,iEdge) = normalizedRelativeVorticityEdge(k,iEdge) &
                 - config_apvm_scale_factor * dt * &
                     (  normalVelocity(k,iEdge)     * vorticityGradientNormalComponent(k,iEdge)      &
                      + tangentialVelocity(k,iEdge) * vorticityGradientTangentialComponent(k,iEdge) )
-            enddo
+            end do
          enddo
          !$omp end do
          !$omp end parallel
