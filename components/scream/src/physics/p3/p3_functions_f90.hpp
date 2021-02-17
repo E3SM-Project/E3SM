@@ -779,7 +779,7 @@ struct P3MainData : public PhysicsTestData
 
 struct IceSupersatConservationData {
   // Inputs
-  Real cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt;
+  Real cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt, qi2qv_sublim_tend, qr2qv_evap_tend;
 
   // Inputs/Outputs
   Real qidep, qinuc;
@@ -1109,7 +1109,7 @@ Int p3_main_f(
   Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
 
-void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt);
+void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt, Real qi2qv_sublim_tend, Real qr2qv_evap_tend);
 void nc_conservation_f(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_collect_tend, Real* nc2ni_immers_freeze_tend, Real* nc_accret_tend, Real* nc2nr_autoconv_tend);
 void nr_conservation_f(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend);
 void ni_conservation_f(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_tend, Real nc2ni_immers_freeze_tend, Real dt, Real* ni2nr_melt_tend, Real* ni_sublim_tend, Real* ni_selfcollect_tend);

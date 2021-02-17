@@ -618,7 +618,7 @@ void Functions<S,D>
 
     prevent_ice_overdepletion(pres(k), T_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, range_mask, not_skip_all);
 
-    ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/exner(k),dt, not_skip_all);
+    ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, not_skip_all);
 
     // vapor -- not needed, since all sinks already have limits imposed and the sum, therefore,
     //          cannot possibly overdeplete qv

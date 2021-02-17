@@ -815,7 +815,8 @@ contains
 
       call prevent_ice_overdepletion(pres(k), t_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qidep, qi2qv_sublim_tend)
 
-      call ice_supersat_conservation(qidep,qinuc,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/exner(k),dt)
+      call ice_supersat_conservation(qidep,qinuc,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/exner(k),dt, &
+           qi2qv_sublim_tend, qr2qv_evap_tend)
 
       ! cloud
       call cloud_water_conservation(qc(k), dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, &
@@ -2861,12 +2862,12 @@ subroutine prevent_ice_overdepletion(pres,t_atm,qv,latent_heat_sublim,inv_dt,   
 
 end subroutine prevent_ice_overdepletion
 
-subroutine ice_supersat_conservation(qidep,qinuc,cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt)
+subroutine ice_supersat_conservation(qidep,qinuc,cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt,qi2qv_sublim_tend, qr2qv_evap_tend)
   !Make sure ice processes don't drag qv below ice supersaturation
 
   implicit none
 
-  real(rtype), intent(in) :: cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt
+  real(rtype), intent(in) :: cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt,qi2qv_sublim_tend, qr2qv_evap_tend
   real(rtype), intent(inout) :: qidep,qinuc
 
   real(rtype) :: qv_sink, qv_avail, fract
@@ -2875,7 +2876,7 @@ subroutine ice_supersat_conservation(qidep,qinuc,cld_frac_i,qv,qv_sat_i,latent_h
 
   if (qv_sink > qsmall .and. cld_frac_i > 1.0e-20_rtype) then
      ! --- Available water vapor for deposition/nucleation
-     qv_avail = (qv - qv_sat_i) / &
+     qv_avail = (qv + (qi2qv_sublim_tend+qr2qv_evap_tend)*dt - qv_sat_i) / &
           (1.0_rtype + bfb_square(latent_heat_sublim)*qv_sat_i / (cp*rv*bfb_square(T_atm)) ) / dt
 
      ! --- Only excess water vapor can be limited

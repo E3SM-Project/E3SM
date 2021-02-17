@@ -970,7 +970,7 @@ struct Functions
     Int nk); // number of vertical cells per column
 
   KOKKOS_FUNCTION
-  static void ice_supersat_conservation(Spack& qidep, Spack& qinuc, const Spack& cld_frac_i, const Spack& qv, const Spack& qv_sat_i, const Spack& latent_heat_sublim, const Spack& t_atm, const Real& dt, const Smask& context = Smask(true));
+  static void ice_supersat_conservation(Spack& qidep, Spack& qinuc, const Spack& cld_frac_i, const Spack& qv, const Spack& qv_sat_i, const Spack& latent_heat_sublim, const Spack& t_atm, const Real& dt, const Spack& qi2qv_sublim_tend, const Spack& qr2qv_evap_tend, const Smask& context = Smask(true));
 
   KOKKOS_FUNCTION
   static void nc_conservation(const Spack& nc, const Spack& nc_selfcollect_tend, const Real& dt, Spack& nc_collect_tend, Spack& nc2ni_immers_freeze_tend, Spack& nc_accret_tend, Spack& nc2nr_autoconv_tend, const Smask& context = Smask(true));

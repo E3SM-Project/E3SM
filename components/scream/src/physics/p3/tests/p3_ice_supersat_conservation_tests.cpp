@@ -44,7 +44,7 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack cld_frac_i, latent_heat_sublim, qidep, qinuc, qv, qv_sat_i, t_atm;
+      Spack cld_frac_i, latent_heat_sublim, qidep, qinuc, qv, qv_sat_i, t_atm, qi2qv_sublim_tend, qr2qv_evap_tend;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         cld_frac_i[s] = cxx_device(vs).cld_frac_i;
         latent_heat_sublim[s] = cxx_device(vs).latent_heat_sublim;
@@ -53,9 +53,11 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
         qv[s] = cxx_device(vs).qv;
         qv_sat_i[s] = cxx_device(vs).qv_sat_i;
         t_atm[s] = cxx_device(vs).t_atm;
+        qi2qv_sublim_tend[s] = cxx_device(vs).qi2qv_sublim_tend;
+        qr2qv_evap_tend[s] = cxx_device(vs).qr2qv_evap_tend;
       }
 
-      Functions::ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, cxx_device(0).dt);
+      Functions::ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, cxx_device(0).dt, qi2qv_sublim_tend, qr2qv_evap_tend);
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
