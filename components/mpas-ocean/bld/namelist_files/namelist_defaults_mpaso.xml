@@ -73,7 +73,6 @@
 <config_hmix_scaleWithMesh ocn_grid="WC14to60E2r3">.true.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
 <config_hmix_use_ref_cell_width>.false.</config_hmix_use_ref_cell_width>
-<config_hmix_use_ref_cell_width ocn_grid="WC14to60E2r3">.true.</config_hmix_use_ref_cell_width>
 <config_hmix_ref_cell_width>30.0e3</config_hmix_ref_cell_width>
 <config_apvm_scale_factor>0.0</config_apvm_scale_factor>
 
@@ -93,7 +92,7 @@
 <config_mom_del2 ocn_grid="oEC60to30v3wLI">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="ECwISC30to60E1r2">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="EC30to60E2r2">1000.0</config_mom_del2>
-<config_mom_del2 ocn_grid="WC14to60E2r3">250.0</config_mom_del2>
+<config_mom_del2 ocn_grid="WC14to60E2r3">462.0</config_mom_del2>
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
 <config_tracer_del2>10.0</config_tracer_del2>
 
@@ -118,7 +117,7 @@
 <config_mom_del4 ocn_grid="oARRM60to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oARRM60to6">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="EC30to60E2r2">1.2e11</config_mom_del4>
-<config_mom_del4 ocn_grid="WC14to60E2r3">1.5e10</config_mom_del4>
+<config_mom_del4 ocn_grid="WC14to60E2r3">1.18e10</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
 <config_tracer_del4>0.0</config_tracer_del4>
