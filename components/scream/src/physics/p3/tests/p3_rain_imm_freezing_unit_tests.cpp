@@ -105,11 +105,12 @@ static void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
+#ifndef NDEBUG
   for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(rain_imm_freezing_data[s].qr2qi_immers_freeze_tend == host_data[s].qr2qi_immers_freeze_tend);
     REQUIRE(rain_imm_freezing_data[s].nr2ni_immers_freeze_tend == host_data[s].nr2ni_immers_freeze_tend);
   }
-
+#endif
 }
 
 };

@@ -126,10 +126,12 @@ static void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
+#ifndef NDEBUG
   for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(calc_rime_density_data[s].vtrmi1 == host_data[s].vtrmi1);
     REQUIRE(calc_rime_density_data[s].rho_qm_cloud == host_data[s].rho_qm_cloud);
   }
+#endif
 }
 
 };

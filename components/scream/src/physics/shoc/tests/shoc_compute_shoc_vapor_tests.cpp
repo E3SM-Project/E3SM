@@ -95,8 +95,6 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
       ComputeShocVaporData(2,   7),
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeShocVaporData);
-
     // Generate random input data
     for (auto& d : f90_data) {
       d.randomize();
@@ -127,6 +125,8 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeShocVaporData);
     for (Int i = 0; i < num_runs; ++i) {
       ComputeShocVaporData& d_f90 = f90_data[i];
       ComputeShocVaporData& d_cxx = cxx_data[i];
@@ -134,6 +134,7 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
         REQUIRE(d_f90.qv[k] == d_cxx.qv[k]);
       }
     }
+#endif
   } // run_bfb
 };
 

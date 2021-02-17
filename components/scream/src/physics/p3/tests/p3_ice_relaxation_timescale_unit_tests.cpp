@@ -93,10 +93,12 @@ struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale {
 
     Kokkos::deep_copy(self_host, self_device);
 
+#ifndef NDEBUG
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(self[s].epsi     == self_host(s).epsi);
       REQUIRE(self[s].epsi_tot == self_host(s).epsi_tot);
     }
+#endif
   }
 
   static void run_ice_relaxation_timescale_phys()

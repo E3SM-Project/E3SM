@@ -92,8 +92,6 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
       SHOCSecondMomentSrfData(256),
     };
 
-    static constexpr Int num_runs = sizeof(mom_srf_data_f90) / sizeof(SHOCSecondMomentSrfData);
-
     for (auto& d : mom_srf_data_f90) {
       d.randomize({ {d.wthl, {-1, 1}} });
     }
@@ -114,6 +112,8 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
       shoc_diag_second_moments_srf_f(d.shcol, d.wthl_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar);
     }
 
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(mom_srf_data_f90) / sizeof(SHOCSecondMomentSrfData);
     for (Int i = 0; i < num_runs; ++i) {
       Int shcol = mom_srf_data_cxx[i].shcol;
       for (Int k = 0; k < shcol; ++k) {
@@ -121,7 +121,8 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
         REQUIRE(mom_srf_data_f90[i].wstar[k]  == mom_srf_data_cxx[i].wstar[k]);
       }
     }
-  #endif
+#endif
+#endif
   }
 
 };

@@ -93,6 +93,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
       shoc_diag_second_moments_ubycond_f(d.shcol, d.thl_sec, d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
     }
 
+#ifndef NDEBUG
     for (Int i = 0; i < num_runs; ++i) {
       const Int shcol = uby_cxx[i].shcol;
       for (Int k = 0; k < shcol; ++k) {
@@ -106,8 +107,8 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
         REQUIRE(uby_fortran[i].wtke_sec[k]     == uby_cxx[i].wtke_sec[k]);
       }
     }
+#endif
   }
-
 
 };
 

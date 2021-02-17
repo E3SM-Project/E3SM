@@ -89,12 +89,14 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
     Kokkos::deep_copy(dc_host, dc_device);
 
     // Validate results
+#ifndef NDEBUG
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(dc[s].rho                 == dc_host(s).rho);
       REQUIRE(dc[s].qr_incld            == dc_host(s).qr_incld);
       REQUIRE(dc[s].nr_incld            == dc_host(s).nr_incld);
       REQUIRE(dc[s].nr_selfcollect_tend == dc_host(s).nr_selfcollect_tend);
     }
+#endif
   }
 
   static void run_bfb(){

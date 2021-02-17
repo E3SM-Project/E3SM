@@ -114,15 +114,13 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
       PblintdSurfTempData(6, 7, 8),
       PblintdSurfTempData(64, 72, 73),
       PblintdSurfTempData(128, 72, 73),
-      PblintdSurfTempData(256, 72, 73),      
+      PblintdSurfTempData(256, 72, 73),
     };
-
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdSurfTempData);
 
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
-      d.randomize({ {d.obklen, {100., 200.}} });     
+      d.randomize({ {d.obklen, {100., 200.}} });
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -131,7 +129,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
       PblintdSurfTempData(f90_data[0]),
       PblintdSurfTempData(f90_data[1]),
       PblintdSurfTempData(f90_data[2]),
-      PblintdSurfTempData(f90_data[3]),      
+      PblintdSurfTempData(f90_data[3]),
     };
 
     // Assume all data is in C layout
@@ -150,6 +148,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdSurfTempData);
     for (Int i = 0; i < num_runs; ++i) {
       PblintdSurfTempData& d_f90 = f90_data[i];
       PblintdSurfTempData& d_cxx = cxx_data[i];
@@ -165,8 +165,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
         REQUIRE(d_f90.total(d_f90.rino) == d_cxx.total(d_cxx.rino));
         REQUIRE(d_f90.rino[k] == d_cxx.rino[k]);
       }
-
     }
+#endif
   } // run_bfb
 
 };

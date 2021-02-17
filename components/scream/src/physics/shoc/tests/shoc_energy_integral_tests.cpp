@@ -136,8 +136,6 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
       ShocEnergyIntegralsData(2, 7),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocEnergyIntegralsData);
-
     // Generate random input data
     for (auto& d : SDS_f90) {
       d.randomize();
@@ -171,6 +169,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocEnergyIntegralsData);
     for (Int i = 0; i < num_runs; ++i) {
       ShocEnergyIntegralsData& d_f90 = SDS_f90[i];
       ShocEnergyIntegralsData& d_cxx = SDS_cxx[i];
@@ -181,6 +181,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
         REQUIRE(d_f90.wl_int[c] == d_cxx.wl_int[c]);
       }
     }
+#endif
   }
 };
 

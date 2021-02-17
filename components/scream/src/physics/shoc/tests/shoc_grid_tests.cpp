@@ -135,8 +135,6 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
       ShocGridData(2, 7, 8),
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocGridData);
-
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
@@ -168,6 +166,8 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocGridData);
     for (Int i = 0; i < num_runs; ++i) {
       ShocGridData& d_f90 = f90_data[i];
       ShocGridData& d_cxx = cxx_data[i];
@@ -179,6 +179,7 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
         REQUIRE(d_f90.dz_zi[k] == d_cxx.dz_zi[k]);
       }
     }
+#endif
   } // run_bfb
 };
 

@@ -183,8 +183,6 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
       IsotropicTsData(2,   7)
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(IsotropicTsData);
-
     // Generate random input data
     for (auto& d : f90_data) {
       d.randomize();
@@ -215,6 +213,8 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(IsotropicTsData);
     for (Int i = 0; i < num_runs; ++i) {
       IsotropicTsData& d_f90 = f90_data[i];
       IsotropicTsData& d_cxx = cxx_data[i];
@@ -222,7 +222,7 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
         REQUIRE(d_f90.isotropy[k] == d_cxx.isotropy[k]);
       }
     }
-
+#endif
   }//run_bfb
 
 };

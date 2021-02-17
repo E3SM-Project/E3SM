@@ -270,6 +270,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     Kokkos::deep_copy(real_results_mirror, real_results);
 
     // Validate results
+#ifndef NDEBUG
     for(int s = 0; s < max_pack_size; ++s) {
       // +1 for O vs 1-based indexing
       REQUIRE(int_results_mirror(0, s)+1 == lid[s].dumi);
@@ -290,6 +291,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
 
       REQUIRE(real_results_mirror(6, s) == altcd[s].proc);
     }
+#endif
   }
 
   static void run_phys()

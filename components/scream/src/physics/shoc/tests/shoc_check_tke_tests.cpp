@@ -82,8 +82,6 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
       CheckTkeData(2,   7),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CheckTkeData);
-
     // Generate random input data
     for (auto& d : SDS_f90) {
       d.randomize();
@@ -115,6 +113,8 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CheckTkeData);
     for (Int i = 0; i < num_runs; ++i) {
       CheckTkeData& d_f90 = SDS_f90[i];
       CheckTkeData& d_cxx = SDS_cxx[i];
@@ -122,6 +122,7 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
         REQUIRE(d_f90.tke[k]    == d_cxx.tke[k]);
       }
     }
+#endif
   }
 
 };

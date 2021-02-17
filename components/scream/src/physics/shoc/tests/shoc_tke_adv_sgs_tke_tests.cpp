@@ -198,7 +198,6 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
       AdvSgsTkeData(7,  16, 17),
       AdvSgsTkeData(2,   7, 8)
     };
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(AdvSgsTkeData);
 
     // Generate random input data
     for (auto& d : f90_data) {
@@ -230,6 +229,8 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(AdvSgsTkeData);
     for (Int i = 0; i < num_runs; ++i) {
       AdvSgsTkeData& d_f90 = f90_data[i];
       AdvSgsTkeData& d_cxx = cxx_data[i];
@@ -238,6 +239,7 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
         REQUIRE(d_f90.a_diss[k] == d_cxx.a_diss[k]);
       }
     }
+#endif
   }//run_bfb
 };
 
