@@ -250,13 +250,13 @@ contains
       !$omp parallel
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-         tracersSurfaceValue(:, iCell) = activeTracers(:,1, iCell)
+         tracersSurfaceValue(:, iCell) = activeTracers(:, minLevelCell(iCell), iCell)
       end do
       !$omp end do
 
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
-         normalVelocitySurfaceLayer(iEdge) = normalVelocity(1, iEdge)
+         normalVelocitySurfaceLayer(iEdge) = normalVelocity(minLevelEdgeBot(iEdge), iEdge)
       end do
       !$omp end do
       !$omp end parallel
