@@ -98,7 +98,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
                             zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, &
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
-  logical :: abort=.false.
+  logical :: abrtf=.false.
 
   q = vert_remap_q_alg
   if ( (q.ne.-1) .and. (q.ne.0) .and. (q.ne.1) .and. (q.ne.2) .and. (q.ne.3) .and. (q.ne.10) )&
@@ -144,7 +144,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
         write(6,*) 'PLEVMODEL=',z2c(nlev+1)
         write(6,*) 'PLEV     =',z1c(nlev+1)
         write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
-        abort=.true.
+        abrtf=.true.
       endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -167,7 +167,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
 
       !if(any(zkr==0)) then
       !  write(6,*) "Invalid zkr values in remap1."
-      !  abort=.true.
+      !  abrtf=.true.
       !endif
 
       zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
@@ -343,7 +343,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
       do k=1,nlev
         if (zgam(k+1)>1d0) then
           WRITE(*,*) 'r not in [0:1]', zgam(k+1)
-          abort=.true.
+          abrtf=.true.
         endif
         zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
              (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
@@ -353,7 +353,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
     enddo
   enddo
   enddo ! q loop
-  if (abort) call abortmp('Bad levels in remap1.  usually CFL violatioin')
+  if (abrtf) call abortmp('Bad levels in remap1.  usually CFL violatioin')
   call t_stopf('remap_Q_noppm')
 
 end subroutine remap1
@@ -381,7 +381,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
                             zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, &
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
-  logical :: abort=.false.
+  logical :: abrtf=.false.
 !   call t_startf('remap1_nofilter')
 
 #if (defined COLUMN_OPENMP)
@@ -414,7 +414,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
         write(6,*) 'PLEVMODEL=',z2c(nlev+1)
         write(6,*) 'PLEV     =',z1c(nlev+1)
         write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
-        abort=.true.
+        abrtf=.true.
       endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -489,7 +489,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
       do k=1,nlev
         if (zgam(k+1)>1d0) then
           WRITE(*,*) 'r not in [0:1]', zgam(k+1)
-          abort=.true.
+          abrtf=.true.
         endif
         zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
              (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
@@ -499,7 +499,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
     enddo
   enddo
   enddo ! q loop
-  if (abort) call abortmp('Bad levels in remap1_nofilter.  usually CFL violatioin')
+  if (abrtf) call abortmp('Bad levels in remap1_nofilter.  usually CFL violatioin')
 !   call t_stopf('remap1_nofilter')
 end subroutine remap1_nofilter
 

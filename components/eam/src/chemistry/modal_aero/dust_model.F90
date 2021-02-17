@@ -97,10 +97,10 @@ module dust_model
     integer :: n
 
     do n = 1, dust_nbin
-       call cnst_get_ind(dust_names(n), dust_indices(n),abort=.false.)
+       call cnst_get_ind(dust_names(n), dust_indices(n),abrtf=.false.)
     end do
     do n = 1, dust_nnum
-       call cnst_get_ind(dust_names(dust_nbin+n), dust_indices(dust_nbin+n),abort=.false.)
+       call cnst_get_ind(dust_names(dust_nbin+n), dust_indices(dust_nbin+n),abrtf=.false.)
     enddo 
     dust_active = any(dust_indices(:) > 0)
     if (.not.dust_active) return

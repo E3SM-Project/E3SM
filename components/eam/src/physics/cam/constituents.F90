@@ -215,7 +215,7 @@ CONTAINS
 
 !==============================================================================
 
-  subroutine cnst_get_ind (name, ind, abort)
+  subroutine cnst_get_ind (name, ind, abrtf)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: Get the index of a constituent 
@@ -226,7 +226,7 @@ CONTAINS
 !
     character(len=*),  intent(in)  :: name  ! constituent name
     integer,           intent(out) :: ind   ! global constituent index (in q array)
-    logical, optional, intent(in)  :: abort ! optional flag controlling abort
+    logical, optional, intent(in)  :: abrtf ! optional flag controlling abort
 
 !---------------------------Local workspace-----------------------------
     integer :: m                                   ! tracer index
@@ -243,7 +243,7 @@ CONTAINS
 
 ! Unrecognized name
     abort_on_error = .true.
-    if ( present(abort) ) abort_on_error = abort
+    if ( present(abrtf) ) abort_on_error = abrtf
 
     if ( abort_on_error ) then
        write(iulog,*) 'CNST_GET_IND, name:', name,  ' not found in list:', cnst_name(:)
