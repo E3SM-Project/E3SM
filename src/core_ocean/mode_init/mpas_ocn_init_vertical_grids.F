@@ -735,10 +735,11 @@ contains
       real (kind=RKIND), dimension(:), pointer :: ssh, rx1MaxLevel
 
       integer, pointer :: nCells, nVertLevels, nEdges
+      integer, dimension(:), pointer :: minLevelCell
       integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:,:), pointer :: cellsOnEdge
 
-      integer :: iEdge, c1, c2, k, maxLevelEdge
+      integer :: iEdge, c1, c2, k, minLevelEdge, maxLevelEdge
 
       real (kind=RKIND) :: dzVert1, dzVert2, dzEdgeK, dzEdgeKp1, rx1, localMaxRx1Edge
 
@@ -762,6 +763,7 @@ contains
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
         call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
+        call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
@@ -776,9 +778,10 @@ contains
           c2 = cellsOnEdge(2,iEdge)
           ! not a valid edge
           if((c1 > nCells) .or. (c2 > nCells)) cycle
+          minLevelEdge = max(minLevelCell(c1), minLevelCell(c2))
           maxLevelEdge = min(maxLevelCell(c1), maxLevelCell(c2))
-          do k = 1,maxLevelEdge
-            if(k == 1) then
+          do k = minLevelEdge,maxLevelEdge
+            if(k == minLevelEdge) then
               dzVert1 = 2.0_RKIND*(ssh(c1)-zMid(k,c1))
               dzVert2 = 2.0_RKIND*(ssh(c2)-zMid(k,c2))
               dzEdgeK = ssh(c2)-ssh(c1)
