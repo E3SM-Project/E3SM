@@ -87,9 +87,9 @@ subview (const int idim, const int k) const {
 
 void FieldAllocProp::request_allocation (const int scalar_size, const int pack_size) {
   using ekat::ScalarTraits;
-  using namespace ekat::error;
 
-  ekat::error::runtime_check(!m_committed, "Error! Cannot change allocation properties after they have been commited.\n");
+  EKAT_REQUIRE_MSG(!m_committed,
+      "Error! Cannot change allocation properties after they have been commited.\n");
 
   const int vts = scalar_size*pack_size;
   if (m_scalar_type_size==0) {
@@ -97,10 +97,10 @@ void FieldAllocProp::request_allocation (const int scalar_size, const int pack_s
     m_scalar_type_size = scalar_size;
   } else {
     // Make sure the new scalar_type coincides with the one already stored (check name and size)
-    runtime_check(scalar_size==m_scalar_type_size,
-                  std::string("Error! Scalar type incompatible with current allocation request:\n") +
-                  "         stored scalar type size: " + std::to_string(m_scalar_type_size) + "\n" +
-                  "         requested scalar type size: " + std::to_string(scalar_size) + "\n");
+    EKAT_REQUIRE_MSG(scalar_size==m_scalar_type_size,
+        "Error! Scalar type incompatible with current allocation request:\n"
+        "         stored scalar type size: " + std::to_string(m_scalar_type_size) + "\n" +
+        "         requested scalar type size: " + std::to_string(scalar_size) + "\n");
   }
 
   // Store the size of the value type.

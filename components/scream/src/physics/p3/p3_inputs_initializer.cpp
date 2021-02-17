@@ -95,7 +95,7 @@ void P3InputsInitializer::initialize_fields ()
     "       and make sure they agree on who's initializing each field.\n");
 
   // Initialize the fields that we expect.
-  // Get device views
+  // Ask directly for host mirrors.
   auto h_T_atm           = m_fields.at("T_atm").get_reshaped_view<Pack**,Host>();
   auto h_ast             = m_fields.at("ast").get_reshaped_view<Pack**,Host>();
   auto h_ni_activated    = m_fields.at("ni_activated").get_reshaped_view<Pack**,Host>();
@@ -208,7 +208,7 @@ void P3InputsInitializer::initialize_fields ()
     } // for k
   } // for icol_i
 
-  // Deep copy back to device
+  // Use Field interface to deep copy back to device
   m_fields.at("T_atm").sync_to_dev();
   m_fields.at("ast").sync_to_dev();
   m_fields.at("ni_activated").sync_to_dev();

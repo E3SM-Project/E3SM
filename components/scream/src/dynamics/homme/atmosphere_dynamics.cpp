@@ -56,7 +56,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
   // Sanity check for the grid. This should *always* pass, since Homme builds the grids
   EKAT_REQUIRE_MSG(get_num_local_elems_f90()==ne,
-      "Error! The number of elements computed from the Dynamis grid num_dof()\n"
+      "Error! The number of elements computed from the Dynamics grid num_dof()\n"
       "       does not match the number of elements internal in Homme.\n");
   const int nmf = get_homme_param<int>("num momentum forcings");
 

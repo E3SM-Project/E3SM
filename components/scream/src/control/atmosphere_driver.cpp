@@ -226,7 +226,7 @@ void AtmosphereDriver::register_groups () {
 
   // Given a list of group-grid pairs (A,B), make sure there is a copy
   // of each field in group A on grid B registered in the repo.
-  auto lambda = [&](const std::set<GroupRequest>& groups_grids) {
+  auto has_group_fields_on_grid = [&](const std::set<GroupRequest>& groups_grids) {
     const auto& groups_info = m_field_repo->get_groups_info();
 
     for (const auto& gg : groups_grids) {
@@ -285,8 +285,10 @@ void AtmosphereDriver::register_groups () {
       }
     }
   };
-  lambda( m_atm_process_group->get_required_groups() );
-  lambda( m_atm_process_group->get_updated_groups() );
+
+  // Call the above lambda on both required and updated groups.
+  has_group_fields_on_grid( m_atm_process_group->get_required_groups() );
+  has_group_fields_on_grid( m_atm_process_group->get_updated_groups() );
 }
 
 void AtmosphereDriver::init_atm_inputs () {

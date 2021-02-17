@@ -47,6 +47,7 @@ public:
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real>& field_repo) const;
 
+  // Dynamics requires 'TRACERS TENDENCY', and updates 'TRACERS'.
   void set_required_group (const FieldGroup<const Real>& group);
   void set_updated_group (const FieldGroup<Real>& group);
 

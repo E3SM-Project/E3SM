@@ -61,6 +61,14 @@ public:
   FieldRepository& operator= (const FieldRepository&) = delete;
 
   // Change the state of the database
+  // Note: the GridsManager is needed *if and only if* the field group TRACERS
+  //       is non-empty. If so, the GM is used to retrieve a FieldLayout of
+  //       a vector field on every grid on which tracers are declared.
+  //       If you are writing a unit test with no use of 'TRACERS' group,
+  //       then you do *not* need to pass a GM pointer.
+  // Note: there is also the 'TRACERS TENDENCY' group, with some requirements
+  //       on his specs. In particular, for every 'blah_tendency' field in the
+  //       group 'TRACERS TENDENCY' there must be a 'blah' field in 'TRACERS'.
   void registration_begins ();
   void registration_ends (const std::shared_ptr<const GridsManager>& gm = nullptr);
   void clean_up ();
@@ -176,7 +184,7 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
   EKAT_REQUIRE_MSG (m_repo_state!=RepoState::Clean,
       "Error! Repo state is not 'Open' yet. You must call registration_begins() first.\n");
   EKAT_REQUIRE_MSG (m_repo_state!=RepoState::Closed,
-      "Error! Repo state is not 'Open' anumore. You must register field before calling registration_ends().\n");
+      "Error! Repo state is not 'Open' anymore. You must register field before calling registration_ends().\n");
 
   using ekat::ScalarTraits;
 
@@ -304,7 +312,8 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
       // Fetch the bundle fields (if bundled) just once
       if (group.m_info->m_bundled && group.m_bundle==nullptr) {
         auto p = f->get_header().get_parent().lock();
-        EKAT_REQUIRE_MSG(p!=nullptr, "Error! Something is amiss with a bundled field group.\n");
+        EKAT_REQUIRE_MSG(p!=nullptr,
+            "Error! A field belonging to a bundled field group is missing its 'parent'.\n");
 
         const auto& p_id = p->get_identifier();
         group.m_bundle = get_field_ptr(p_id);

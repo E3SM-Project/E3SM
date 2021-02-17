@@ -49,6 +49,7 @@ public:
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real>& field_repo) const;
 
+  // SHOC updates the 'TRACERS' group.
   void set_updated_group (const FieldGroup<Real>& group);
 
   // Get the set of required/computed fields and groups

@@ -64,7 +64,21 @@ public:
   using TimeStamp      = util::TimeStamp;
   using ci_string      = ekat::CaseInsensitiveString;
 
-  // A group request allow to request a group of fields.
+  /*
+   * A struct used to request a group of fields.
+   *
+   * Groups are simply a labels attached to a Field object (see field_tracking.hpp).
+   * They can be useful when a class need to access a certain group of fields,
+   * in a way that is agnostic to how many fields are in said group.
+   * A GroupRequest is a lightweight struct that an AP can expose if it needs a group
+   * of fields, without caring how many there are, or how they are called.
+   * A typical example is an AP that needs to advect tracers (like Dynamics does):
+   * it treats tracers agnostically, and does not really care how many there are.
+   * So the AP exposes this need as a GroupRequest. Later, it will be provided
+   * with a FieldGroup, which allows to access all the fields in the group
+   * individually, and, if the allocation permits it, as a single N+1 dimensional
+   * field. For more details about the FieldGroup struct, see field_group.hpp.
+   */
   struct GroupRequest {
     GroupRequest (const std::string& name_, const std::string& grid_, const int ps = 1)
      : name(name_), grid(grid_), pack_size(ps)
@@ -78,8 +92,6 @@ public:
     ci_string grid;
     // Request an allocation that can accomodate a value type like Pack<Real,pack_size>
     int       pack_size;
-
-    friend bool operator<(const GroupRequest&, const GroupRequest&);
   };
 
   virtual ~AtmosphereProcess () = default;
@@ -258,7 +270,8 @@ private:
   TimeStamp t_;
 };
 
-// To allow using GroupRequest in std sorted containers
+// In order to use GroupRequest in std sorted containers (like std::set),
+// we need to provide an overload of op< or std::less.
 inline bool operator< (const AtmosphereProcess::GroupRequest& lhs,
                        const AtmosphereProcess::GroupRequest& rhs)
 {
