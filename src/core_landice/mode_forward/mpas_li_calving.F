@@ -1387,16 +1387,6 @@ module li_calving
              elseif ( li_mask_is_floating_ice(cellMask(iCell)) .and. config_floating_von_Mises_threshold_stress .ne. 0.0_RKIND) then
                 calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2 + yvelmean(iCell)**2) * &
                                          vonMisesStress(iCell) / config_floating_von_Mises_threshold_stress
-             !if gloating VM threshold is zero, remove floating ice
-             elseif ( li_mask_is_floating_ice(cellMask(iCell)) .and. config_floating_von_Mises_threshold_stress .eq. 0.0_RKIND &
-                       .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
-                thickness(iCell) = 0.0_RKIND
-                ! update mask
-                call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-                err = ior(err, err_tmp)
-
-                call remove_small_islands(meshPool, geometryPool)
-
              endif
           enddo
 
@@ -1405,6 +1395,17 @@ module li_calving
                                       applyToFloating, applyToGroundingLine, applyCalving, applyMelting, domain, err)
 
 
+          ! If floating VM threshold is zero, remove floating ice.
+          if ( config_floating_von_Mises_threshold_stress .eq. 0.0_RKIND ) then
+             do iCell = 1,nCells
+                if ( li_mask_is_floating_ice(cellMask(iCell)) .and. &
+                     li_mask_is_dynamic_ice(cellMask(iCell)) ) then
+                     calvingThickness(iCell) = thickness(iCell)
+                endif
+             enddo
+          endif
+
+             
           ! === apply calving ===
           thickness(:) = thickness(:) - calvingThickness(:)
 
