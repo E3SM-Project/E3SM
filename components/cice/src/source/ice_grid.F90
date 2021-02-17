@@ -1154,15 +1154,15 @@
       
       if (single_column) then
         call scatter_global(TLON,scm_var1,master_task,distrb_info, &
-          field_loc_noupdate,field_type_noupdate)
+          field_loc_center, field_type_scalar)
         call scatter_global(TLAT,scm_var2,master_task,distrb_info, &
-          field_loc_noupdate,field_type_noupdate)
+          field_loc_center, field_type_scalar)
         call scatter_global(tarea,scm_var3,master_task,distrb_info, &
           field_loc_center,field_type_scalar)  
         call scatter_global(hm,scm_var4,master_task,distrb_info, &
-          field_loc_noupdate,field_type_noupdate)
+          field_loc_center, field_type_scalar)
         call scatter_global(ocn_gridcell_frac,scm_var5,master_task,distrb_info, &
-          field_loc_noupdate,field_type_noupdate)
+          field_loc_center, field_type_scalar)
   
         deallocate(scm_var1)
         deallocate(scm_var2)
