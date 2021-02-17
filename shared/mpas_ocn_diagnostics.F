@@ -337,7 +337,7 @@ contains
 
       integer :: iVertex, iEdge, i, k
       integer, pointer :: nEdges, nVertices, vertexDegree
-      integer, dimension(:), pointer :: maxLevelVertexBot
+      integer, dimension(:), pointer :: maxLevelVertexBot, minLevelVertexTop
       integer, dimension(:,:), pointer :: edgesOnVertex, edgeSignOnVertex
 
       real (kind=RKIND) :: invAreaTri1, r_tmp
@@ -349,6 +349,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
       call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
+      call mpas_pool_get_array(meshPool, 'minLevelVertexTop', minLevelVertexTop)
       call mpas_pool_get_array(meshPool, 'edgesOnVertex', edgesOnVertex)
       call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', edgeSignOnVertex)
 
@@ -365,7 +366,7 @@ contains
          invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
-            do k = 1, maxLevelVertexBot(iVertex)
+            do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
               r_tmp = dcEdge(iEdge) * normalVelocity(k, iEdge)
 
               circulation(k, iVertex) = circulation(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp
