@@ -215,14 +215,14 @@ def buildnml(case, caseroot, compname):
         restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to6.190214.nc'
         analysis_mask_file += 'ARRM60to6_SingleRegionAtlanticWTransportTransects_masks.nc'
     elif ocn_grid == 'EC30to60E2r2':
-        ic_date += '200908'
+        ic_date += '210210'
         ic_prefix += 'ocean.EC30to60E2r2'
         decomp_date += '200904'
         decomp_prefix += 'mpas-o.graph.info.'
         restoring_file += 'sss.PHC2_monthlyClimatology.EC30to60E2r2.200910.nc'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
     elif ocn_grid == 'EC30to60E2r2_ICG':
-        ic_date += '201001'
+        ic_date += '210210'
         ic_prefix += 'mpaso.EC30to60E2r2.rstFromG-anvil'
         decomp_date += '200904'
         decomp_prefix += 'mpas-o.graph.info.'
@@ -234,14 +234,14 @@ def buildnml(case, caseroot, compname):
         decomp_prefix += 'mpas-o.graph.info.'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
     elif ocn_grid == 'WC14to60E2r3':
-        ic_date += '200714'
+        ic_date += '210210'
         ic_prefix += 'ocean.WC14to60E2r3'
         decomp_date += '200714'
         decomp_prefix += 'mpas-o.graph.info.'
         restoring_file += 'sss.PHC2_monthlyClimatology.WC14to60E2r3.200715.nc'
         analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
     elif ocn_grid == 'WC14to60E2r3_ICG':
-        ic_date += '201002'
+        ic_date += '210210'
         ic_prefix += 'mpaso.WC14to60E2r3.rstFromG-anvil'
         decomp_date += '200714'
         decomp_prefix += 'mpas-o.graph.info.'

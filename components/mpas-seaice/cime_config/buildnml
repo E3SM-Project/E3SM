@@ -199,12 +199,12 @@ def buildnml(case, caseroot, compname):
         decomp_date += '180820'
         decomp_prefix += 'mpas-cice.graph.info.'
     elif ice_grid == 'EC30to60E2r2':
-        grid_date += '200908'
+        grid_date += '210210'
         grid_prefix += 'seaice.EC30to60E2r2'
         decomp_date += '200908'
         decomp_prefix += 'mpas-seaice.graph.info.'
     elif ice_grid == 'EC30to60E2r2_ICG':
-        grid_date += '201001'
+        grid_date += '210210'
         grid_prefix += 'mpassi.EC30to60E2r2.rstFromG-anvil'
         decomp_date += '200908'
         decomp_prefix += 'mpas-seaice.graph.info.'
@@ -214,12 +214,12 @@ def buildnml(case, caseroot, compname):
         decomp_date += '200908'
         decomp_prefix += 'mpas-seaice.graph.info.'
     elif ice_grid == 'WC14to60E2r3':
-        grid_date += '200714'
+        grid_date += '210210'
         grid_prefix += 'seaice.WC14to60E2r3'
         decomp_date += '200714'
         decomp_prefix += 'mpas-seaice.graph.info.'
     elif ice_grid == 'WC14to60E2r3_ICG':
-        grid_date += '201002'
+        grid_date += '210210'
         grid_prefix += 'mpassi.WC14to60E2r3.rstFromG-anvil'
         decomp_date += '200714'
         decomp_prefix += 'mpas-seaice.graph.info.'
