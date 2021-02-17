@@ -82,12 +82,7 @@ TEST_CASE("input_output_basic","io")
   {
     auto f_dev  = field_repo->get_field(it,"Physics").get_view();
     auto f_host = Kokkos::create_mirror_view( f_dev );
-    Kokkos::deep_copy(f_host,f_dev);
-    for (size_t jj=0;jj<f_host.size();++jj)
-    {
-      f_host(jj) = std::nan("");
-    }
-    Kokkos::deep_copy(f_dev,f_host);
+    Kokkos::deep_copy(f_dev,std::nan(""));
   }
 
   // At this point we should have 4 files output:
@@ -231,9 +226,8 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
 
   // Make sure that field 4 is in fact a packed field
   auto field4 = repo->get_field(fid4);
-  auto fid4_extent = field4.get_header().get_alloc_properties().get_last_extent();
-  auto fid4_final_dim = field4.get_header().get_identifier().get_layout().dims().back();
-  REQUIRE(fid4_extent-fid4_final_dim > 0);
+  auto fid4_padding = field4.get_header().get_alloc_properties().get_padding();
+  REQUIRE(fid4_padding > 0);
 
   // Initialize these fields
   auto f1_dev = repo->get_field(fid1).get_view(); 
@@ -255,7 +249,6 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
     {
       f2_hst(jj) = (jj+1)/10.0;
       f3_hst(ii,jj) = (ii) + (jj+1)/10.0;
-//      f4_hst(ii,jj) = (ii) + (jj+1)/10.0;
       int ipack = jj / packsize;
       int ivec  = jj % packsize;
       f4_hst(ii,ipack)[ivec] = (ii) + (jj+1)/10.0;

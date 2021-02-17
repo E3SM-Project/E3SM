@@ -95,6 +95,7 @@ public:
 
   // Size of the last extent in the alloction (i.e., number of scalars in it)
   int  get_last_extent () const;
+  int  get_padding () const;
 
   // Return the slice information of this subview allocation.
   const std::pair<int,int>& get_subview_idx () const { return m_subview_idx; }

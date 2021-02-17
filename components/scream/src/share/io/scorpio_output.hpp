@@ -399,8 +399,8 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
     } // m_avg_type != "Instant"
     if (is_write) {
       auto l_dims = fmap.get_header().get_identifier().get_layout().dims();
-      Int extra = fmap.get_header().get_alloc_properties().get_last_extent()-fmap.get_header().get_identifier().get_layout().dims().back();
-      grid_write_data_array(filename,name,l_dims,m_dofs.at(name),extra,l_view.data());
+      Int padding = fmap.get_header().get_alloc_properties().get_padding();
+      grid_write_data_array(filename,name,l_dims,m_dofs.at(name),padding,l_view.data());
       if (is_typical) { 
         for (int ii=0; ii<f_len; ++ii) { l_view(ii) = g_view(ii); }  // Reset local view after writing.  Only for typical output.
       }

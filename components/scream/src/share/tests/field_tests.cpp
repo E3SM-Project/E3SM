@@ -252,11 +252,13 @@ TEST_CASE("field_repo", "") {
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
   std::vector<FieldTag> tags2 = {FieldTag::Column};
   std::vector<FieldTag> tags3 = {FieldTag::VerticalLevel};
+  std::vector<FieldTag> tags4 = {FieldTag::Column,FieldTag::VerticalLevel};
 
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 3, 3};
   std::vector<int> dims3 = {13};
   std::vector<int> dims4 = {6};
+  std::vector<int> dims5 = {13,6};
 
   const auto km = 1000*m;
 
@@ -268,6 +270,7 @@ TEST_CASE("field_repo", "") {
   FieldIdentifier fid6("field_4", {tags2, dims3}, km/s, "grid_1");
   FieldIdentifier fid7("field_5", {tags2, dims3}, km/s, "grid_3");
   FieldIdentifier fid8("field_5", {tags3, dims4}, km/s, "grid_3");
+  FieldIdentifier fid9("field_packed", {tags4,dims5}, km/s, "grid_3");
 
   FieldRepository<Real> repo;
 
@@ -284,6 +287,10 @@ TEST_CASE("field_repo", "") {
   // Test for same field and grid name, different layout
   repo.register_field(fid7,"group_7");
   repo.register_field(fid8,"group_7");
+  // Test for packed field
+  using Spack        = ekat::Pack<Int,SCREAM_SMALL_PACK_SIZE>;
+  using Pack         = ekat::Pack<Real,8>;
+  repo.register_field<Pack>(fid9);
   // Should not be able to register fields to the 'state' group (it's reserved)
   REQUIRE_THROWS(repo.register_field(fid2,"state"));
   // Should not be able to register the same field name with two different units
@@ -295,8 +302,8 @@ TEST_CASE("field_repo", "") {
 
   // Check registration is indeed closed
   REQUIRE (repo.repository_state()==RepoState::Closed);
-  REQUIRE (repo.size()==5);
-  REQUIRE (repo.internal_size()==7);
+  REQUIRE (repo.size()==6);
+  REQUIRE (repo.internal_size()==8);
 
   auto f1 = repo.get_field(fid1);
   auto f2 = repo.get_field(fid2);
@@ -342,6 +349,10 @@ TEST_CASE("field_repo", "") {
   REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_5"),"Field_3"));
   REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_5"),"Field_4"));
   REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_6"),"Field_4"));
+
+  // Check that get_padding returns the appropriate value
+  auto& f9 = repo.get_field("field_packed","grid_3");
+  REQUIRE (f9.get_header().get_alloc_properties().get_padding()==2);
 }
 
 TEST_CASE("field_property_check", "") {

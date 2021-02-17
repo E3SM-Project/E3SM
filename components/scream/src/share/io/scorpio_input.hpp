@@ -168,8 +168,8 @@ inline void AtmosphereInput::pull_input()
     auto l_view_dev = fmap.get_view();
     view_type l_view = m_view_local.at(name);
     auto l_dims = fmap.get_header().get_identifier().get_layout().dims();
-    Int extra = fmap.get_header().get_alloc_properties().get_last_extent()-fmap.get_header().get_identifier().get_layout().dims().back();
-    grid_read_data_array(m_filename,name,l_dims,m_dofs.at(name),extra,l_view.data());
+    Int padding = fmap.get_header().get_alloc_properties().get_padding();
+    grid_read_data_array(m_filename,name,l_dims,m_dofs.at(name),padding,l_view.data());
     Kokkos::deep_copy(l_view_dev,l_view);
   }
   finalize();
