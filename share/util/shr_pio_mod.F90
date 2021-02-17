@@ -115,6 +115,13 @@ contains
        pio_comp_settings(i)%pio_rearranger = pio_rearranger
        pio_comp_settings(i)%pio_netcdf_ioformat = pio_netcdf_ioformat
     end do
+    print *,__FILE__,__LINE__,pio_debug_level
+    if(pio_debug_level>0) then
+       if(drank==0) then
+          write(shr_log_unit,*) 'Setting pio_debuglevel : ',pio_debug_level
+       end if
+       call pio_setdebuglevel(pio_debug_level)
+    endif
     if(pio_async_interface) then
 #ifdef NO_MPI2
        call shr_sys_abort(subname//':: async IO requires an MPI2 compliant MPI library')
@@ -134,12 +141,6 @@ contains
        call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl mpigrp')
        call mpi_comm_create(GLOBAL_COMM, mpigrp, mpicom, ierr)
        Global_COMM=mpicom
-       if(pio_debug_level>0) then
-          if(drank==0) then
-             write(shr_log_unit,*) 'Setting pio_debuglevel : ',pio_debug_level
-          end if
-          call pio_setdebuglevel(pio_debug_level)
-       endif
        if(io_comm .ne. MPI_COMM_NULL) then
           allocate(iosystems(ncomps), comp_comm(ncomps))
           comp_comm = MPI_COMM_NULL
@@ -195,8 +196,9 @@ contains
     allocate(iosystems(total_comps))
 
     if(pio_async_interface) then
+#ifdef PIO2
        call pio_init(iosystems, MPI_COMM_WORLD, comp_comm, io_comm, PIO_REARR_BOX)
-
+#endif
 !       do i=1,total_comps
 !         ret =  pio_set_rearr_opts(iosystems(i), pio_rearr_opt_comm_type,&
 !                  pio_rearr_opt_fcd,&
