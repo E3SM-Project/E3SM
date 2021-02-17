@@ -387,7 +387,7 @@ module ocn_time_integration_split
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCellsAll
          sshNew(iCell) = sshCur(iCell)
-         do k = 1, maxLevelCell(iCell)
+         do k = minLevelCell(iCell), maxLevelCell(iCell)
             layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell)
          end do
       end do
@@ -408,7 +408,7 @@ module ocn_time_integration_split
                !$omp parallel
                !$omp do schedule(runtime) private(k)
                do iCell = 1, nCellsAll
-               do k = 1, maxLevelCell(iCell)
+               do k = minLevelCell(iCell), maxLevelCell(iCell)
                   tracersGroupNew(:,k,iCell) = &
                   tracersGroupCur(:,k,iCell)
                end do
@@ -506,7 +506,7 @@ module ocn_time_integration_split
             !$omp parallel
             !$omp do schedule(runtime) private(k)
             do iCell = 1, nCellsAll
-            do k = 1, maxLevelCell(iCell)
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
                ! this is h^{hf}_{n+1}
                highFreqThicknessNew(k,iCell) = &
                highFreqThicknessCur(k,iCell) + dt* &
@@ -573,7 +573,7 @@ module ocn_time_integration_split
                cell2 = cellsOnEdge(2,iEdge)
                ! could put this after with uTemp(maxleveledgetop+1:nvertlevels)=0
                uTemp = 0.0_RKIND
-               do k = 1, maxLevelEdgeTop(iEdge)
+               do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
                   ! normalBaroclinicVelocityNew =
                   ! normalBaroclinicVelocityOld +
@@ -593,11 +593,11 @@ module ocn_time_integration_split
                ! on land boundaries maxLevelEdgeTop=0, but we want to
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
-               normalThicknessFluxSum = layerThickEdge(1,iEdge)* &
-                                        uTemp(1)
-               thicknessSum = layerThickEdge(1,iEdge)
+               normalThicknessFluxSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)* &
+                                        uTemp(minLevelEdgeBot(iEdge))
+               thicknessSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)
 
-               do k = 2, maxLevelEdgeTop(iEdge)
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   normalThicknessFluxSum = normalThicknessFluxSum + &
                                  layerThickEdge(k,iEdge)*uTemp(k)
                   thicknessSum = thicknessSum + &
@@ -606,7 +606,7 @@ module ocn_time_integration_split
                barotropicForcing(iEdge) = splitFact* &
                               normalThicknessFluxSum/thicknessSum/dt
 
-               do k = 1, maxLevelEdgeTop(iEdge)
+               do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   ! These two steps are together here:
                   !{\bf u}'_{k,n+1} =
                   !    {\bf u}'_{k,n} - \Delta t {\overline {\bf G}}
@@ -1395,11 +1395,11 @@ module ocn_time_integration_split
                ! on land boundaries maxLevelEdgeTop=0, but I want to
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
-               normalThicknessFluxSum = layerThickEdge(1,iEdge)* &
-                                        uTemp(1)
-               thicknessSum  = layerThickEdge(1,iEdge)
+               normalThicknessFluxSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)* &
+                                        uTemp(minLevelEdgeBot(iEdge))
+               thicknessSum  = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)
 
-               do k = 2, maxLevelEdgeTop(iEdge)
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   normalThicknessFluxSum = normalThicknessFluxSum + &
                                            layerThickEdge(k,iEdge)*&
                                            uTemp(k)
@@ -1542,7 +1542,7 @@ module ocn_time_integration_split
             !$omp parallel
             !$omp do schedule(runtime) private(i, k, temp_h, temp)
             do iCell = 1, nCellsAll
-            do k = 1, maxLevelCell(iCell)
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
 
                ! this is h_{n+1}
                temp_h = layerThicknessCur(k,iCell) + dt* &
@@ -1572,7 +1572,7 @@ module ocn_time_integration_split
                !$omp parallel
                !$omp do schedule(runtime) private(k, temp)
                do iCell = 1, nCellsAll
-               do k = 1, maxLevelCell(iCell)
+               do k = minLevelCell(iCell), maxLevelCell(iCell)
 
                   ! h^{hf}_{n+1} was computed in Stage 1
 
@@ -1628,7 +1628,7 @@ module ocn_time_integration_split
             !$omp parallel
             !$omp do schedule(runtime) private(k)
             do iCell = 1, nCellsAll
-            do k = 1, maxLevelCell(iCell)
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
                ! this is h_{n+1}
                layerThicknessNew(k,iCell) = &
                                      layerThicknessCur(k,iCell) + &
@@ -1643,7 +1643,7 @@ module ocn_time_integration_split
                !$omp parallel
                !$omp do schedule(runtime) private(k)
                do iEdge = 1, nEdgesAll
-               do k= 1, maxLevelEdgeTop(iEdge)
+               do k= minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) = &
                   activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) / &
                        layerThickEdge(k,iEdge)
@@ -1653,7 +1653,7 @@ module ocn_time_integration_split
 
                !$omp do schedule(runtime) private(k)
                do iCell = 1, nCellsAll
-               do k= 1, maxLevelCell(iCell)
+               do k= minLevelCell(iCell), maxLevelCell(iCell)
                   activeTracerHorizontalAdvectionTendency(:,k,iCell) = &
                   activeTracerHorizontalAdvectionTendency(:,k,iCell) / &
                             layerThicknessNew(k,iCell)
@@ -1708,7 +1708,7 @@ module ocn_time_integration_split
                      !$omp parallel
                      !$omp do schedule(runtime) private(k)
                      do iCell = 1, nCellsAll
-                     do k = 1, maxLevelCell(iCell)
+                     do k = minLevelCell(iCell), maxLevelCell(iCell)
                         tracersGroupNew(:,k,iCell) = &
                        (tracersGroupCur(:,k,iCell) * &
                         layerThicknessCur(k,iCell) + dt* &
@@ -1725,7 +1725,7 @@ module ocn_time_integration_split
                         !$omp parallel
                         !$omp do schedule(runtime) private(k)
                         do iCell = 1, nCellsAll
-                        do k = 1, maxLevelCell(iCell)
+                        do k = minLevelCell(iCell), maxLevelCell(iCell)
                            tracersGroupNew(indexSalinity,k,iCell) = &
                            max(0.001_RKIND,  &
                            tracersGroupNew(indexSalinity,k,iCell))
@@ -1745,7 +1745,7 @@ module ocn_time_integration_split
                         do iCell = 1, nCellsAll
 
                            ! Reset tracer1 to 2 in top n layers
-                           do k = 1, config_reset_debugTracers_top_nLayers
+                           do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers
                                 tracersGroupNew(1,k,iCell) = 2.0_RKIND
                            end do
 
@@ -1757,11 +1757,11 @@ module ocn_time_integration_split
                                 .or.lat>- 2.5.and.lat<  2.5 &
                                 .or.lat> 35.0.and.lat< 40.0 &
                                 .or.lat> 55.0.and.lat< 60.0 ) then
-                              do k = 1, config_reset_debugTracers_top_nLayers
+                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers
                                  tracersGroupNew(2,k,iCell) = 2.0_RKIND
                               end do
                            else
-                              do k = 1, config_reset_debugTracers_top_nLayers
+                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers
                                  tracersGroupNew(2,k,iCell) = 1.0_RKIND
                               end do
                            end if
@@ -1775,11 +1775,11 @@ module ocn_time_integration_split
                                 .or.lat> 10.0.and.lat< 15.0 &
                                 .or.lat> 30.0.and.lat< 35.0 &
                                 .or.lat> 50.0.and.lat< 55.0 ) then
-                              do k = 1, config_reset_debugTracers_top_nLayers
+                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers
                                  tracersGroupNew(3,k,iCell) = 2.0_RKIND
                               end do
                            else
-                              do k = 1, config_reset_debugTracers_top_nLayers
+                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers
                                  tracersGroupNew(3,k,iCell) = 1.0_RKIND
                               end do
                            end if
@@ -1795,7 +1795,7 @@ module ocn_time_integration_split
                !$omp parallel
                !$omp do schedule(runtime) private(k)
                do iCell = 1, nCellsAll
-               do k = 1, maxLevelCell(iCell)
+               do k = minLevelCell(iCell), maxLevelCell(iCell)
 
                   ! h^{hf}_{n+1} was computed in Stage 1
 
@@ -1828,7 +1828,7 @@ module ocn_time_integration_split
             !$omp parallel
             !$omp do schedule(runtime) private(k)
             do iEdge = 1, nEdgesAll
-            do k = 1, maxLevelEdgeTop(iEdge)
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                normalVelocityNew(k,iEdge) = &
                                normalBarotropicVelocityNew(iEdge) + &
                              2*normalBaroclinicVelocityNew(k,iEdge) - &
@@ -1956,9 +1956,9 @@ module ocn_time_integration_split
       !$omp do schedule(runtime)
       do iCell = 1, nCellsAll
          surfaceVelocity(indexSurfaceVelocityZonal,iCell) = &
-                                   velocityZonal(1,iCell)
+                                   velocityZonal(minLevelCell(iCell),iCell)
          surfaceVelocity(indexSurfaceVelocityMeridional,iCell) = &
-                                   velocityMeridional(1,iCell)
+                                   velocityMeridional(minLevelCell(iCell),iCell)
 
          SSHGradient(indexSSHGradientZonal,iCell) = gradSSHZonal(iCell)
          SSHGradient(indexSSHGradientMeridional,iCell) = &
@@ -2168,7 +2168,7 @@ module ocn_time_integration_split
 
             if (config_filter_btr_mode) then
                do iCell = 1, nCells
-                  layerThickness(1,iCell) = refBottomDepth(1)
+                  layerThickness(minLevelCell(iCell),iCell) = refBottomDepth(minLevelCell(iCell))
                enddo
             endif
 
@@ -2186,13 +2186,13 @@ module ocn_time_integration_split
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
                layerThicknessEdge1 = 0.5_RKIND* &
-                                     (layerThickness(1,cell1) + &
-                                      layerThickness(1,cell2) )
+                                     (layerThickness(minLevelCell(iCell),cell1) + &
+                                      layerThickness(minLevelCell(iCell),cell2) )
                normalThicknessFluxSum = layerThicknessEdge1* &
-                                        normalVelocity(1,iEdge)
+                                        normalVelocity(minLevelEdgeBot(iEdge),iEdge)
                layerThicknessSum = layerThicknessEdge1
 
-               do k=2, kmax
+               do k=minLevelEdgeBot(iEdge)+1, kmax
                   layerThicknessEdge1 = 0.5_RKIND* &
                                        (layerThickness(k,cell1) + &
                                         layerThickness(k,cell2))
@@ -2209,7 +2209,7 @@ module ocn_time_integration_split
 
                ! normalBaroclinicVelocity = normalVelocity -
                !     normalBarotropicVelocity
-               do k = 1, kmax
+               do k = minLevelEdgeBot(iEdge), kmax
                   normalBaroclinicVelocity(k,iEdge) = &
                             normalVelocity(k,iEdge) - &
                     normalBarotropicVelocity(iEdge)
