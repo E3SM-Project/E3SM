@@ -163,6 +163,9 @@ module elm_varctl
   ! BGC logic and datasets
   !----------------------------------------------------------
 
+  ! Couple with iac compontent
+  logical, public :: iac_active = .false.
+
   ! values of 'prognostic','diagnostic','constant'
   character(len=16), public :: co2_type = 'constant'    
 

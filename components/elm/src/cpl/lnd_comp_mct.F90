@@ -43,7 +43,7 @@ contains
     use shr_kind_mod     , only : SHR_KIND_CL
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use elm_initializeMod, only : initialize1, initialize2, initialize3
-    use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
+    use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars, lnd2iac_vars
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland
     use elm_varctl       , only : inst_index, inst_suffix, inst_name
     use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
@@ -290,7 +290,7 @@ contains
     ! Create land export state 
 
     if (atm_present) then 
-      call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
+      call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
     endif
 
     ! Fill in infodata settings
@@ -338,6 +338,7 @@ contains
     ! !USES:
     use shr_kind_mod    ,  only : r8 => shr_kind_r8
     use elm_instMod     , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+    use elm_instMod     , only : lnd2iac_vars
     use elm_driver      ,  only : elm_drv
     use clm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
     use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
@@ -505,7 +506,7 @@ contains
 
 #ifndef CPL_BYPASS       
        call t_startf ('lc_lnd_export')
-       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
+       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
        call t_stopf ('lc_lnd_export')
 #endif
 

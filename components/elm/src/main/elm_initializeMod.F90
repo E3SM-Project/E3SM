@@ -13,6 +13,7 @@ module elm_initializeMod
   use elm_varctl       , only : create_glacier_mec_landunit, iulog
   use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
   use elm_varctl       , only : use_fates, use_betr
+  use clm_varctl       , only : iac_active
   use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use elm_varsur       , only : fert_cft
   use perf_mod         , only : t_startf, t_stopf
@@ -433,6 +434,7 @@ contains
     use lnd2atmMod            , only : lnd2atm_minimal
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
+    use lnd2iacMod            , only : lnd2iac_type 
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
     use elm_varctl                          , only : use_elm_interface, use_pflotran
     use elm_interface_pflotranMod           , only : elm_pf_interface_init !, elm_pf_set_restart_stamp
@@ -935,6 +937,25 @@ contains
     end if
     call t_stopf('init_elm_interface_data & pflotran')
     !------------------------------------------------------------
+
+    !------------------------------------------------------------       
+    ! Initialize lnd2iac, to send to iac.  Not sure this is 
+    ! necessary, given our yearly iac timestep, but we'll do it anyway
+    ! just in case.
+    !------------------------------------------------------------       
+    ! Find right logical
+    if (iac_active) then  
+       !Threading probably okay
+       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
+       do nc = 1,nclumps
+          call get_clump_bounds(nc, bounds_clump)
+
+          call t_startf('init_lnd2iac')
+          call lnd2iac_vars%update_lnd2iac(bounds_clump)
+          call t_stopf('init_lnd2iac')
+       end do
+       !$OMP END PARALLEL DO
+    end if
 
     !------------------------------------------------------------       
     ! Write log output for end of initialization
