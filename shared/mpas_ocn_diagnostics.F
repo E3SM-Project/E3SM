@@ -860,8 +860,8 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCellsAll
-         BruntVaisalaFreqTop(1,iCell) = 0.0_RKIND
-         do k = 2, maxLevelCell(iCell)
+         BruntVaisalaFreqTop(minLevelCell(iCell),iCell) = 0.0_RKIND
+         do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
             BruntVaisalaFreqTop(k,iCell) = coef * (displacedDensity(k-1,iCell) - density(k,iCell)) &
               / (zMid(k-1,iCell) - zMid(k,iCell))
           end do
@@ -878,7 +878,7 @@ contains
       !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, delU2, shearMean)
       do iCell=1,nCells
          RiTopOfCell(:,iCell) = 100.0_RKIND
-         do k=2,maxLevelCell(iCell)
+         do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
            shearSquared = 0.0_RKIND
            do i = 1, nEdgesOnCell(iCell)
              iEdge = edgesOnCell(i, iCell)
@@ -890,7 +890,7 @@ contains
            shearMean = shearMean / (zMid(k-1,iCell) - zMid(k,iCell))
            RiTopOfCell(k,iCell) = BruntVaisalaFreqTop(k,iCell) / (shearMean**2 + 1.0e-10_RKIND)
           end do
-          RiTopOfCell(1,iCell) = RiTopOfCell(2,iCell)
+          RiTopOfCell(minLevelCell(iCell),iCell) = RiTopOfCell(minLevelCell(iCell)+1,iCell)
       end do
       !$omp end do
       !$omp end parallel
