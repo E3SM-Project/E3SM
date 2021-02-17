@@ -9,8 +9,8 @@ module iac2lndMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar     , only : numpft
-  use clm_varctl     , only : iulog
+  use elm_varpar     , only : numpft
+  use elm_varctl     , only : iulog
   use abortutils     , only : endrun
   use GridcellType   , only : grc_pp
   use TopounitType   , only : top_pp
@@ -86,7 +86,7 @@ contains
     ! Extract into clm variables from iac coupled inputs
     ! 
     ! !USES:
-    use clm_varctl, only: iac_active
+    use elm_varctl, only: iac_active
     !
     ! !ARGUMENTS:
     class(iac2lnd_type), intent(inout) :: this

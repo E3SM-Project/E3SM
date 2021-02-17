@@ -12,8 +12,8 @@ module lnd2iacMod
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : get_proc_bounds, bounds_type
   use domainMod       , only : ldomain
-  use clm_varctl      , only : iulog
-  use clm_varpar      , only : numpft
+  use elm_varctl      , only : iulog
+  use elm_varpar      , only : numpft
   use abortutils      , only : endrun
   use ColumnType      , only : col_pp   ! 
   use ColumnDataType  , only : col_cf   ! for hr
