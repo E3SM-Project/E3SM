@@ -58,10 +58,10 @@ contains
 
   subroutine run_remap_f90 (np1, np1_qdp, dt, rsplit_in, qsize_in, vr_alg,    &
                             dp_ptr, vtheta_dp_ptr, w_i_ptr, phi_i_ptr, v_ptr, &
-                            ps_ptr, eta_dot_dpdn_ptr) bind(c)
+                            ps_ptr, eta_dot_dpdn_ptr, qdp_ptr) bind(c)
     use iso_c_binding,          only: c_ptr, c_f_pointer, c_int, c_bool
     use control_mod,            only: vert_remap_q_alg, rsplit
-    use dimensions_mod,         only: nelemd, nlev, nlevp, np, qsize
+    use dimensions_mod,         only: nelemd, nlev, nlevp, np, qsize, qsize_d
     use thetal_test_interface,  only: hvcoord
     use geometry_interface_mod, only: hybrid
     use element_state,          only: timelevels
@@ -72,7 +72,7 @@ contains
     real (kind=real_kind), intent(in) :: dt
     integer (kind=c_int),  intent(in) :: np1, np1_qdp, rsplit_in, vr_alg, qsize_in
     type (c_ptr),          intent(in) :: dp_ptr, vtheta_dp_ptr, w_i_ptr, phi_i_ptr, v_ptr
-    type (c_ptr),          intent(in) :: ps_ptr, eta_dot_dpdn_ptr
+    type (c_ptr),          intent(in) :: ps_ptr, eta_dot_dpdn_ptr, qdp_ptr
     !
     ! Locals
     !
@@ -83,6 +83,7 @@ contains
     real (kind=real_kind), pointer :: v            (:,:,:,:,:,:)
     real (kind=real_kind), pointer :: ps           (:,:,:,:)
     real (kind=real_kind), pointer :: eta_dot_dpdn (:,:,:,:)
+    real (kind=real_kind), pointer :: qdp          (:,:,:,:,:,:)
     integer :: ie
 
     call c_f_pointer(dp_ptr,           dp,           [np,np,  nlev,  timelevels, nelemd])
@@ -92,6 +93,7 @@ contains
     call c_f_pointer(v_ptr,            v,            [np,np,2,nlev,  timelevels, nelemd])
     call c_f_pointer(ps_ptr,           ps,           [np,np,         timelevels, nelemd])
     call c_f_pointer(eta_dot_dpdn_ptr, eta_dot_dpdn, [np,np,  nlevp,             nelemd])
+    call c_f_pointer(qdp_ptr,          qdp,          [np,np,  nlev,  qsize_d, 2, nelemd])
 
     do ie=1,nelemd
       ! Copy inputs in the elem%state
@@ -101,6 +103,7 @@ contains
       elem(ie)%state%phinh_i(:,:,:,:) = phi_i(:,:,:,:,ie)
       elem(ie)%state%v(:,:,:,:,:) = v(:,:,:,:,:,ie)
       elem(ie)%state%ps_v(:,:,:) = ps(:,:,:,ie)
+      elem(ie)%state%qdp(:,:,:,:,:) = qdp(:,:,:,:,:,ie)
 
       elem(ie)%derived%eta_dot_dpdn(:,:,:) = eta_dot_dpdn(:,:,:,ie)
     enddo
@@ -120,6 +123,7 @@ contains
       w_i(:,:,:,:,ie)       = elem(ie)%state%w_i(:,:,:,:)
       phi_i(:,:,:,:,ie)     = elem(ie)%state%phinh_i(:,:,:,:)
       v(:,:,:,:,:,ie)       = elem(ie)%state%v(:,:,:,:,:)
+      qdp(:,:,:,:,:,ie)     = elem(ie)%state%qdp(:,:,:,:,:)
     enddo
 
   end subroutine run_remap_f90
