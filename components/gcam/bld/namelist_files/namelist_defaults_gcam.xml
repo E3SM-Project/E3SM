@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<!--
+Values to use by default for creation of gcam model namelists.
+The element names are the same as the corresponding namelist
+variables.  Values that depend on the model configuration use
+attributes to express the dependency.  
+
+The default filenames are given relative to the root directory
+for the iac data in the e3sm distribution 
+-->
+
+<!-- Default mosart namelist -->
+
+<namelist_defaults>
+<iac_npft>17</iac_npft>
+<!--
+Grid files - for different grids, we can qualify in the attribute name
+i.e. <
+-->
+<gcam_gridfile>iac/giac/glm2iac/landuse.timeseries_0.9x1.25_template_simyr2015-2100_c201021.nc</gcam_gridfile>
+</namelist_defaults>

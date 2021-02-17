@@ -1,0 +1,214 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+<entry id="gcam_gridfile"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Full pathname of input gcam grid file
+</entry>
+
+<entry id="case_name"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Gcam case name
+</entry>
+
+<entry id="case_name"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Gcam case name
+</entry>
+
+<entry id="gcam_config"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Configuration file for gcam model
+</entry>
+
+<entry id="base_co2_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Initial co2 surface emissions file
+</entry>
+
+<entry id="base_npp_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Initial npp values file
+</entry>
+
+<entry id="base_hr_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Initial hr values file
+</entry>
+
+<entry id="gcam2elm_co2_mapping_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Mapping file for co2 emissions
+</entry>
+
+<entry id="gcam2elm_luc_mapping_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Mapping file for land use
+</entry>
+
+<entry id="gcam2elm_woodharvest_mapping_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Mapping file for woodharvest
+</entry>
+
+<entry id="elm2gcam_mapping_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Mapping file between land model and gcam types
+</entry>
+
+<entry id="read_scalars"
+	type="logical"
+	category="gcam"
+	group="gcam_inparm">
+If FALSE, scalars are calculated from npp/hr
+</entry>
+
+<entry id="read_elm_from_file"
+	type="logical"
+	category="gcam"
+	group="gcam_inparm">
+if FALSE, elm data are passed through coupler rather than file
+</entry>
+
+<entry id="write_co2"
+	type="logical"
+	category="gcam"
+	group="gcam_inparm">
+Write co2 emissions to file (in addition to coupler)
+</entry>
+
+<entry id="write_scalars"
+	type="logical"	
+	category="gcam"
+	group="gcam_inparm">
+Write scalars to file
+</entry>
+
+<entry id="elm_iac_carbon_scaling"
+	type="logical"
+	category="gcam"
+	group="gcam_inparm">
+Changes in land productivity from elm are used in gcam
+</entry>
+
+<entry id="iac_elm_co2_emissions"
+	type="logical"
+	category="gcam"
+	group="gcam_inparm">
+Energy system co2 is passed from gcam to eam
+</entry>
+
+<entry id="num_lat"
+	type="integer"
+	category="gcam"
+	group="gcam_inparm"
+	valid_values="">
+Number of horizontal grid cells
+</entry>
+
+<entry id="num_lon"
+	type="integer"
+	category="gcam"
+	group="gcam_inparm"
+	valid_values="">
+Number of vertical grid cells
+</entry>
+
+<entry id="num_pft"
+	type="integer"
+	category="gcam"
+	group="gcam_inparm"
+	valid_values="">
+GCAM and LND number number of plant functional types
+Default: 17
+Used in GCAM to subgrid each cell by different land use type
+</entry>
+
+<entry id="num_gcam_energy_regions"
+	type="integer"
+	category="gcam"
+	group="gcam_inparm"
+	valid_values="">
+Number of energy regions
+</entry>
+
+<entry id="num_gcam_land_regions"
+	type="integer"
+	category="gcam"
+	group="gcam_inparm"
+	valid_values="">
+Number of land regions
+</entry>
+
+<entry id="num_iac2elm_landtypes"
+	type="integer"
+	category="gcam"
+	group="gcam_inparm"
+	valid_values="">
+Number of land types
+</entry>
+
+<entry id="num_emiss_sectors"
+	type="integer"
+	category="gcam"
+	group="gcam_inparm"
+	valid_values="">
+Number of emission sectors
+</entry>
+
+<entry id="num_emiss_regions"
+	type="integer"
+	category="gcam"
+	group="gcam_inparm"
+	valid_values="">
+Number of emission regions
+</entry>
+
+</namelist_definition>
