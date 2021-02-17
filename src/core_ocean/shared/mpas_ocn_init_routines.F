@@ -683,8 +683,8 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
 
       if (.not. config_do_restart) then
          do iCell=1,nCells
-            boundaryLayerDepth(iCell) = layerThickness(1, iCell) * 0.5_RKIND
-            indMLD(iCell) = 1
+            boundaryLayerDepth(iCell) = layerThickness(minLevelCell(iCell), iCell) * 0.5_RKIND
+            indMLD(iCell) = minLevelCell(iCell)
          end do
       end if
 
@@ -700,6 +700,8 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
          normalVelocity(maxLevelEdgeTop(iEdge)+1:maxLevelEdgeBot(iEdge), iEdge) = 0.0_RKIND
 
          normalVelocity(maxLevelEdgeBot(iEdge)+1:nVertLevels,iEdge) = -1.0e34_RKIND
+         
+         normalVelocity(1:minLevelEdgeTop(iEdge)-1,iEdge) = -1.0e34_RKIND
       end do
 
       call mpas_pool_begin_iteration(tracersPool)
@@ -709,6 +711,7 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
             if ( associated(tracersGroup) ) then
                do iCell=1,nCells
                   tracersGroup(:, maxLevelCell(iCell)+1:nVertLevels,iCell) =  -1.0e34_RKIND
+                  tracersGroup(:, 1:minLevelCell(iCell)-1,iCell) =  -1.0e34_RKIND
                end do
             end if
          end if
