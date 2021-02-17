@@ -1174,11 +1174,9 @@
 <shallow_scheme pbl="clubb_sgs"   >CLUBB_SGS</shallow_scheme>
 
 <!-- Surface flux averaging -->
-<srf_flux_avg eddy_scheme="HB"       >0</srf_flux_avg>
-<srf_flux_avg eddy_scheme="HBR"      >0</srf_flux_avg>
-<srf_flux_avg eddy_scheme="diag_TKE" >0</srf_flux_avg>
-<srf_flux_avg eddy_scheme="CLUBB_SGS">0</srf_flux_avg>
-<srf_flux_avg use_MMF="1"            >0</srf_flux_avg>
+<srf_flux_avg             >0</srf_flux_avg>
+<!-- <srf_flux_avg use_MMF="1" >0</srf_flux_avg> -->
+<srf_flux_avg_tau         >7200</srf_flux_avg_tau>
 
 <!-- MMF CRM mean state acceleration -->
 <use_crm_accel    use_MMF="0">.false.</use_crm_accel>

@@ -1,9 +1,7 @@
 module flux_avg
-
-!---------------------------------------------------------------------------------
-! Purpose: Contains code to smooth the surface fluxes to reduce
-!          instabilities in the surface layer.
-!---------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------
+! Purpose: Code for smoothing surface fluxes to aviod instabilities
+!-------------------------------------------------------------------------------
 
   use shr_kind_mod,     only: r8=>shr_kind_r8
   use ppgrid,           only: begchunk, endchunk, pcols
@@ -40,12 +38,9 @@ contains
 !===============================================================================
 
 subroutine flux_avg_register()
-
-   !----------------------------------------------------------------------
-   !
-   ! Register the fluxes in the physics buffer.
-   ! 
-   !-----------------------------------------------------------------------
+   !----------------------------------------------------------------------------
+   ! Purpose: Register the fluxes in the physics buffer
+   !----------------------------------------------------------------------------
 
    ! Request physics buffer space for fields that persist across timesteps.
    call pbuf_add_field('LHFLX',    'global',dtype_r8,(/pcols,1/),lhflx_idx)
@@ -64,17 +59,18 @@ end subroutine flux_avg_register
 !===============================================================================
 
 subroutine flux_avg_init(cam_in,  pbuf2d)
-  use physics_buffer, only : physics_buffer_desc, pbuf_set_field, pbuf_get_chunk
+   use physics_buffer, only : physics_buffer_desc, pbuf_set_field, pbuf_get_chunk
+   !----------------------------------------------------------------------------
    ! Initialize the surface fluxes in the physics buffer using the cam import state
-
+   !----------------------------------------------------------------------------
+   ! Input arguments
    type(cam_in_t),      intent(in)    :: cam_in(begchunk:endchunk)
-   
+   ! Local variables
    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+   type(physics_buffer_desc), pointer :: pbuf2d_chunk(:)
    integer :: lchnk
    integer :: ncol
-   type(physics_buffer_desc), pointer :: pbuf2d_chunk(:)
-
-   !----------------------------------------------------------------------- 
+   !---------------------------------------------------------------------------- 
 
    do lchnk = begchunk, endchunk
       ncol = get_ncols_p(lchnk)
@@ -93,30 +89,23 @@ subroutine flux_avg_init(cam_in,  pbuf2d)
       call pbuf_set_field(pbuf2d_chunk, tauy_res_idx,  0.0_r8)
    end do
 
-
 end subroutine flux_avg_init
 
 !===============================================================================
 
-subroutine flux_avg_run(state, cam_in,  pbuf, nstep, deltat)
+subroutine flux_avg_run(state, cam_in,  pbuf, nstep, deltat, timescale)
   use physics_buffer, only : physics_buffer_desc, pbuf_get_field
-   !----------------------------------------------------------------------- 
-   ! 
-   ! Purpose: 
-   !
-   !----------------------------------------------------------------------- 
-!++ debug code to be removed after PBL code validated
-   use phys_debug,       only: phys_debug_flux1, phys_debug_flux2
-!-- debug code to be removed after PBL code validated
-
+   !---------------------------------------------------------------------------- 
+   ! Purpose: smooth fluxes from surface components
+   !----------------------------------------------------------------------------
    ! Input arguments
-
    type(physics_state), intent(in)    :: state
    type(cam_in_t),      intent(inout) :: cam_in
    type(physics_buffer_desc), pointer :: pbuf(:)
    
    integer,             intent(in)    :: nstep
    real(r8),            intent(in)    :: deltat
+   real(r8),            intent(in)    :: timescale
 
    ! Local variables
    integer :: lchnk                  ! chunk identifier
@@ -133,8 +122,7 @@ subroutine flux_avg_run(state, cam_in,  pbuf, nstep, deltat)
    real(r8), pointer, dimension(:) :: qflx_res    ! water vapor heat flux
    real(r8), pointer, dimension(:) :: taux_res    ! x momentum flux
    real(r8), pointer, dimension(:) :: tauy_res    ! y momentum flux
-   !----------------------------------------------------------------------- 
-
+   !----------------------------------------------------------------------------
    lchnk = state%lchnk
    ncol  = state%ncol
 
@@ -151,41 +139,33 @@ subroutine flux_avg_run(state, cam_in,  pbuf, nstep, deltat)
    call pbuf_get_field(pbuf, taux_res_idx,  taux_res  )
    call pbuf_get_field(pbuf, tauy_res_idx,  tauy_res  )
 
-!++ debug code to be removed after PBL code validated
-   call phys_debug_flux1(lchnk, cam_in, lhflx, shflx, taux, tauy, qflx, &
-                         lhflx_res, shflx_res, taux_res, tauy_res, qflx_res)
-!-- debug code to be removed after PBL code validated
-
-   call smooth (cam_in%lhf, lhflx, lhflx_res, nstep, deltat, ncol)
-   call smooth (cam_in%shf, shflx, shflx_res, nstep, deltat, ncol)
-   call smooth (cam_in%wsx, taux, taux_res, nstep, deltat, ncol)
-   call smooth (cam_in%wsy, tauy, tauy_res, nstep, deltat, ncol)
-   call smooth (cam_in%cflx(:pcols,1), qflx, qflx_res, nstep, deltat, ncol)
-
-!++ debug code to be removed after PBL code validated
-   call phys_debug_flux2(lchnk, cam_in, lhflx, &
-                         lhflx_res, shflx_res, taux_res, tauy_res, qflx_res)
-!-- debug code to be removed after PBL code validated
+   call smooth(cam_in%lhf,           lhflx,lhflx_res,nstep,deltat,timescale,ncol)
+   call smooth(cam_in%shf,           shflx,shflx_res,nstep,deltat,timescale,ncol)
+   call smooth(cam_in%wsx,           taux, taux_res, nstep,deltat,timescale,ncol)
+   call smooth(cam_in%wsy,           tauy, tauy_res, nstep,deltat,timescale,ncol)
+   call smooth(cam_in%cflx(:pcols,1),qflx, qflx_res, nstep,deltat,timescale,ncol)
 
 end subroutine flux_avg_run
 
 !===============================================================================
 
-subroutine smooth(new, old, res, nstep, deltat, ncol)
-
+subroutine smooth(new, old, res, nstep, deltat, timescale, ncol)
+   !----------------------------------------------------------------------------
+   ! Purpose: smooth the input data in time
+   !----------------------------------------------------------------------------
+   ! Input arguments
    real(r8), intent(inout) :: new(pcols)
    real(r8), intent(inout) :: old(pcols)
    real(r8), intent(inout) :: res(pcols)
    real(r8), intent(in)    :: deltat
+   real(r8), intent(in)    :: timescale
    integer,  intent(in)    :: nstep
    integer,  intent(in)    :: ncol
-
+   ! Local variables
    real(r8) :: temp(pcols)
    real(r8) :: maxres
    integer i
-
-   real(r8), parameter :: timescale = 14400._r8    ! 4 hours
-
+   !----------------------------------------------------------------------------
    temp(1:ncol) = new(1:ncol)
    if (nstep > 0) then
       new(1:ncol) = 0.5_r8*(new(1:ncol)+old(1:ncol))
@@ -194,21 +174,15 @@ subroutine smooth(new, old, res, nstep, deltat, ncol)
       res(1:ncol) = 0._r8
    endif
 
-   ! storing the old value for smoothing on the next step
-   ! doesnt seem to be stable
-   ! old(1:ncol) = temp(1:ncol)
-
-   ! storing the smoothed value for the next step
-
    ! first add the flux that the surface model wanted to provide less
    ! the flux the atmosphere will actually see to the residual
    res(1:ncol) = res(1:ncol) + temp(1:ncol)-new(1:ncol)
 
    ! now calculate the amount that we might increment the new flux
-   ! to include some of the residual
-   ! If the residual is small we will just add it all, 
-   ! but if it is large we will add it at the rate required to put
-   ! the residual back into the flux over a 4 hour period
+   ! to include some of the residual. If the residual is small 
+   ! we will just add it all, but if it is large we will add it 
+   ! at the rate required to put the residual back into the flux 
+   ! over a period specified by "timescale"
    do i = 1,ncol
       maxres = max( abs(new(i)) , abs(old(i)) )
       if (abs(res(i)).lt.maxres*0.05_r8) then
@@ -222,8 +196,6 @@ subroutine smooth(new, old, res, nstep, deltat, ncol)
 
    ! dont do conservative smoothing for first 12 hours
    if (nstep*deltat/86400._r8 < 0.5_r8) then
-      ! use this line if your dont want to use the residual
-      !if (.true.) then
       temp = 0._r8
       res = 0._r8
    endif

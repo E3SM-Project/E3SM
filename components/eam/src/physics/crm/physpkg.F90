@@ -1090,6 +1090,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   logical  :: l_rayleigh
   logical  :: l_gw_drag
   logical  :: l_ac_energy_chk
+  real(r8) :: srf_flux_avg_tau
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
   lchnk = state%lchnk
@@ -1102,10 +1103,11 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
                     ,l_rayleigh_out         = l_rayleigh         &
                     ,l_gw_drag_out          = l_gw_drag          &
                     ,l_ac_energy_chk_out    = l_ac_energy_chk    &
+                    ,srf_flux_avg_tau_out   = srf_flux_avg_tau   &
                    )
 
   ! Adjust the surface fluxes to reduce instabilities in near sfc layer
-  if (phys_do_flux_avg()) call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
+  if (phys_do_flux_avg()) call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt, srf_flux_avg_tau)
 
   ! Validate the physics state.
   if (state_debug_checks) call physics_state_check(state, name="before tphysac")

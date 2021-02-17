@@ -19,6 +19,7 @@ module vertical_diffusion
   !        compute_tms            Computes turbulent mountain stresses                             
   !        compute_vdiff          Solves vertical diffusion, including molecular diffusivities
   !-------------------------------------------------------------------------------------------------
+  use perf_mod
   use shr_kind_mod,     only : r8 => shr_kind_r8, i4=> shr_kind_i4
   use ppgrid,           only : pcols, pver, pverp
   use constituents,     only : pcnst, qmin, cnst_get_ind
@@ -38,7 +39,6 @@ module vertical_diffusion
                                tms_orocnst,&  ! turbulent mountain stress parameter
                                tms_z0fac      ! Factor determining z_0 from orographic standard deviation [no unit]
   use cam_history,      only : fieldname_len
-  use perf_mod
   use cam_logfile,      only : iulog
   use ref_pres,         only : do_molec_diff
   use phys_control,     only : phys_getopts, waccmx_is
@@ -690,8 +690,6 @@ subroutine vertical_diffusion_tend( ztodt    , state    ,                  &
   cflx_tmp(:,1) = 0.
 #endif
 
-  ! fieldlist_wet = ?
-
   call pbuf_get_field(pbuf, kvt_idx, kvt)
 
   if( any(fieldlist_wet) ) then
@@ -714,7 +712,7 @@ subroutine vertical_diffusion_tend( ztodt    , state    ,                  &
       call compute_vdiff( state%lchnk   ,                                                                     &
                           pcols         , pver               , pcnst        , ncol          , state%pmiddry , &
                           state%pintdry , state%rpdeldry     , state%t      , ztodt         , taux          , &       
-                          tauy          , shflx              , cflx         , ntop          , nbot          , &       
+                          tauy          , shflx_tmp          , cflx_tmp     , ntop          , nbot          , &       
                           kvh           , kvm                , kvq          , cgs           , cgh           , &   
                           state%zi      , ksrftms            , qmincg       , fieldlist_dry , fieldlist_molec,&
                           u_tmp         , v_tmp              , q_tmp        , s_tmp         ,                 &

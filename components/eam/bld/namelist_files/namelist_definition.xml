@@ -3463,7 +3463,13 @@ Default: .false.
        group="phys_ctl_nl" valid_values="0,1" >
 Switch to turn on adjustment of the surface fluxes to reduce instabilities
 in the surface layer.  Set to 1 to turn on the adjustments.
-Default: 0 if <varname>eddy_scheme</varname> is 'HB', 1 otherwise.
+Default: 0
+</entry>
+
+<entry id="srf_flux_avg_tau" type="real" category="pbl"
+       group="phys_ctl_nl" valid_values="" >
+Timescale in seconds for surface flux smoothing used when srf_flux_avg=1
+Default: 7200
 </entry>
 
 <entry id="eddy_scheme" type="char*16" category="pbl"
