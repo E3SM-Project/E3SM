@@ -16,9 +16,6 @@ namespace scream
 */
 
   using namespace p3;
-//  using P3F          = Functions<Real, DefaultDevice>;
-//  using Spack        = typename P3F::Spack;
-//  using Pack         = ekat::Pack<Real,Spack::n>;
 
   using view_1d  = typename P3F::view_1d<Real>;
   using view_2d  = typename P3F::view_2d<Spack>;

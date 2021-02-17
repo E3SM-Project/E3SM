@@ -76,6 +76,15 @@ TEST_CASE("input_output_basic","io")
     m_output_manager.run(time);
   }
   m_output_manager.finalize();
+  // Because the next test for input in this sequence relies on the same fields.  We set all field values
+  // to nan to ensure no false-positive tests if a field is simply not read in as input.
+  for (auto it : out_fields)
+  {
+    auto f_dev  = field_repo->get_field(it,"Physics").get_view();
+    auto f_host = Kokkos::create_mirror_view( f_dev );
+    Kokkos::deep_copy(f_dev,std::nan(""));
+  }
+
   // At this point we should have 4 files output:
   // 1 file each for averaged, instantaneous, min and max data.
   // Cycle through each output and make sure it is correct.
@@ -92,18 +101,24 @@ TEST_CASE("input_output_basic","io")
   auto f1_dev = field_repo->get_field("field_1","Physics").get_view();
   auto f2_dev = field_repo->get_field("field_2","Physics").get_view();
   auto f3_dev = field_repo->get_field("field_3","Physics").get_reshaped_view<Real**>();
+  auto f4_dev = field_repo->get_field("field_packed","Physics").get_reshaped_view<Real**>();
   auto f1_hst = Kokkos::create_mirror_view( f1_dev );
   auto f2_hst = Kokkos::create_mirror_view( f2_dev );
   auto f3_hst = Kokkos::create_mirror_view( f3_dev );
+  auto f4_hst = Kokkos::create_mirror_view( f4_dev );
   Kokkos::deep_copy( f1_hst, f1_dev );
   Kokkos::deep_copy( f2_hst, f2_dev );
   Kokkos::deep_copy( f3_hst, f3_dev );
+  Kokkos::deep_copy( f4_hst, f4_dev );
+  int view_cnt = 0;
   for (int ii=0;ii<num_lcols;++ii)
   {
     REQUIRE(std::abs(f1_hst(ii)-(max_steps*dt+ii))<tol);
     for (int jj=0;jj<num_levs;++jj)
     {
+      view_cnt += 1;
       REQUIRE(std::abs(f3_hst(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(f4_hst(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
     }
   }
   for (int jj=0;jj<num_levs;++jj)
@@ -195,24 +210,38 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
   FieldIdentifier fid1("field_1",FL{tag_h,dims_h},m,gn);
   FieldIdentifier fid2("field_2",FL{tag_v,dims_v},kg,gn);
   FieldIdentifier fid3("field_3",FL{tag_2d,dims_2d},kg/m,gn);
+  FieldIdentifier fid4("field_packed",FL{tag_2d,dims_2d},kg/m,gn);
 
   // Register fields with repo
+  using Spack        = ekat::Pack<Int,SCREAM_SMALL_PACK_SIZE>;
+  // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
+  const int packsize = 2;
+  using Pack         = ekat::Pack<Real,packsize>;
   repo->registration_begins();
   repo->register_field(fid1,{"output"});
   repo->register_field(fid2,{"output","restart"});
   repo->register_field(fid3,{"output","restart"});
+  repo->register_field<Pack>(fid4,{"output","restart"}); // Register field as packed
   repo->registration_ends();
+
+  // Make sure that field 4 is in fact a packed field
+  auto field4 = repo->get_field(fid4);
+  auto fid4_padding = field4.get_header().get_alloc_properties().get_padding();
+  REQUIRE(fid4_padding > 0);
 
   // Initialize these fields
   auto f1_dev = repo->get_field(fid1).get_view(); 
   auto f2_dev = repo->get_field(fid2).get_view(); 
   auto f3_dev = repo->get_field(fid3).get_reshaped_view<Real**>();
+  auto f4_dev = repo->get_field(fid4).get_reshaped_view<Pack**>(); 
   auto f1_hst = Kokkos::create_mirror_view( f1_dev );
   auto f2_hst = Kokkos::create_mirror_view( f2_dev ); 
   auto f3_hst = Kokkos::create_mirror_view( f3_dev );
+  auto f4_hst = Kokkos::create_mirror_view( f4_dev );
   Kokkos::deep_copy( f1_hst, f1_dev );
   Kokkos::deep_copy( f2_hst, f2_dev );
   Kokkos::deep_copy( f3_hst, f3_dev );
+  Kokkos::deep_copy( f4_hst, f4_dev );
   for (int ii=0;ii<num_lcols;++ii)
   {
     f1_hst(ii) = ii;
@@ -220,11 +249,15 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
     {
       f2_hst(jj) = (jj+1)/10.0;
       f3_hst(ii,jj) = (ii) + (jj+1)/10.0;
+      int ipack = jj / packsize;
+      int ivec  = jj % packsize;
+      f4_hst(ii,ipack)[ivec] = (ii) + (jj+1)/10.0;
     }
   }
   Kokkos::deep_copy(f1_dev,f1_hst);
   Kokkos::deep_copy(f2_dev,f2_hst);
   Kokkos::deep_copy(f3_dev,f3_hst);
+  Kokkos::deep_copy(f4_dev,f4_hst);
 
   return repo;
 }
@@ -278,11 +311,12 @@ ekat::ParameterList get_in_params(const std::string type, const ekat::Comm& comm
   in_params.set<std::string>("FILENAME","io_output_test_np" + std::to_string(comm.size()) +"."+type+".Steps_x10.0000-01-01.000010.nc");
   in_params.set<std::string>("GRID","Physics");
   auto& f_list = in_params.sublist("FIELDS");
-  f_list.set<Int>("Number of Fields",3);
+  f_list.set<Int>("Number of Fields",4);
   for (int ii=1;ii<=3+1;++ii)
   {
     f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
   }
+  f_list.set<std::string>("field 4","field_packed");
   return in_params;
 }
 /*===================================================================================================================*/
