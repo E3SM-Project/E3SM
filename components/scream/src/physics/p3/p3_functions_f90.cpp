@@ -238,7 +238,6 @@ void ice_supersat_conservation_c(Real* qidep, Real* qinuc, Real cld_frac_i, Real
 void nc_conservation_c(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_collect_tend, Real* nc2ni_immers_freeze_tend, Real* nc_accret_tend, Real* nc2nr_autoconv_tend);
 void nr_conservation_c(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real nmltratio, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend);
 void ni_conservation_c(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_tend, Real nc2ni_immers_freeze_tend, Real dt, Real* ni2nr_melt_tend, Real* ni_sublim_tend, Real* ni_selfcollect_tend);
-void water_vapor_conservation_c(Real qv, Real* qidep, Real* qinuc, Real qi2qv_sublim_tend, Real qr2qv_evap_tend, Real dt);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -937,12 +936,6 @@ void WaterVaporConservationData::randomize()
   dt                = data_dist(generator);
   qidep             = data_dist(generator);
   qinuc             = data_dist(generator);
-}
-
-void water_vapor_conservation(WaterVaporConservationData& d)
-{
-  p3_init();
-  water_vapor_conservation_c(d.qv, &d.qidep, &d.qinuc, d.qi2qv_sublim_tend, d.qr2qv_evap_tend, d.dt);
 }
 // end _c impls
 
@@ -3501,28 +3494,6 @@ void ni_conservation_f(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_t
   *ni2nr_melt_tend = t_h(0);
   *ni_selfcollect_tend = t_h(1);
   *ni_sublim_tend = t_h(2);
-}
-
-void water_vapor_conservation_f(Real qv, Real* qidep, Real* qinuc, Real qi2qv_sublim_tend, Real qr2qv_evap_tend, Real dt)
-{
-  using PF = Functions<Real, DefaultDevice>;
-
-  using Spack   = typename PF::Spack;
-  using view_1d = typename PF::view_1d<Real>;
-
-  view_1d t_d("t_d", 2);
-  const auto t_h = Kokkos::create_mirror_view(t_d);
-
-  Real local_qidep(*qidep), local_qinuc(*qinuc);
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    Spack qi2qv_sublim_tend_(qi2qv_sublim_tend), qidep_(local_qidep), qinuc_(local_qinuc), qr2qv_evap_tend_(qr2qv_evap_tend), qv_(qv);
-    PF::water_vapor_conservation(qv_, qidep_, qinuc_, qi2qv_sublim_tend_, qr2qv_evap_tend_, dt);
-    t_d(0) = qidep_[0];
-    t_d(1) = qinuc_[0];
-  });
-  Kokkos::deep_copy(t_h, t_d);
-  *qidep = t_h(0);
-  *qinuc = t_h(1);
 }
 
 } // namespace p3

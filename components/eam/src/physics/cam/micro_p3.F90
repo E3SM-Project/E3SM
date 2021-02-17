@@ -815,7 +815,6 @@ contains
 
       call prevent_ice_overdepletion(pres(k), t_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qidep, qi2qv_sublim_tend)
 
-      call water_vapor_conservation(qv(k),qidep,qinuc,qi2qv_sublim_tend,qr2qv_evap_tend,dt)
       call ice_supersat_conservation(qidep,qinuc,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/exner(k),dt)
 
       ! cloud
@@ -2861,27 +2860,6 @@ subroutine prevent_ice_overdepletion(pres,t_atm,qv,latent_heat_sublim,inv_dt,   
    qi2qv_sublim_tend  = qi2qv_sublim_tend*min(1._rtype,max(0._rtype,-qdep_satadj)/max(qi2qv_sublim_tend, 1.e-20_rtype))
 
 end subroutine prevent_ice_overdepletion
-
-subroutine water_vapor_conservation(qv,qidep,qinuc,qi2qv_sublim_tend,qr2qv_evap_tend,dt)
-  ! If water vapor sinks cause qv<0 by the end of the step, rescale them such that qv=0 at the end of the step
-
-  implicit none
-
-  real(rtype), intent(in)     :: qv,qi2qv_sublim_tend,qr2qv_evap_tend,dt
-  real(rtype), intent(inout) :: qidep,qinuc
-  real(rtype)                :: qv_avail, qv_sink, ratio
-
-  qv_avail = qv + (qi2qv_sublim_tend+qr2qv_evap_tend)*dt
-  qv_sink  = (qidep + qinuc)*dt
-
-  if (qv_sink > qv_avail .and. qv_sink>1.e-20_rtype) then
-     ratio = qv_avail/qv_sink
-     qidep = qidep*ratio
-     qinuc = qinuc*ratio
-  endif
-
-  return
-end subroutine water_vapor_conservation
 
 subroutine ice_supersat_conservation(qidep,qinuc,cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt)
   !Make sure ice processes don't drag qv below ice supersaturation
