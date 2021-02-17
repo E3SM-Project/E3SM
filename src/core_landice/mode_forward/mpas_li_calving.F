@@ -1463,7 +1463,14 @@ module li_calving
 !> This is done by weighting the flux to be distrbuted by the length of each such edge in the direction
 !> perpendicular to the calving flux.
 !>
-!> The output of this routine is calvingThickness, which then needs to be applied to thickness
+!> The location at which ablation is controlled by applyToGrounded, applyToFloating, and applyToGroundingLine,
+!> which are set by the calling routine.
+!> If applyToGrounded = .true., ablation is applied to grounded marine margin cells, which do not have dynamic ice shelf neighbors
+!> If applyToGroundingLine = .true., ablation is applied to grounding line, regardless of whether there is an ice shelf or not.
+!> If there in dynamic floating ice, ablation is applied to the floating cell adjacent to grounding line; 
+!> otherwise it is applied to the last grounded cell.
+!> If applyToFloating = .true., ablation is applied to dynamic floating margin cells
+!> The output of this routine is calvingThickness or faceMeltingThickness, which then needs to be applied to thickness
 !> by the calling routine.
 !-----------------------------------------------------------------------
 
@@ -1498,29 +1505,30 @@ module li_calving
       integer, dimension(:,:), pointer :: edgesOnCell
       integer, dimension(:), pointer :: cellMask, edgeMask
       integer, dimension(:), pointer :: groundedMarineMarginMask
-      real (kind=RKIND), dimension(:), pointer :: calvingThickness, meltingThickness
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness, faceMeltingThickness
       real (kind=RKIND), pointer :: config_sea_level
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: angleEdge
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity, faceMeltSpeed
       real (kind=RKIND), dimension(:), allocatable :: ablationVelocity, ablationThickness
       real (kind=RKIND), dimension(:), pointer :: areaCell
-      real (kind=RKIND), dimension(:), pointer :: requiredCalvingVolumeNonDynEdge, requiredCalvingVolumeDynEdge
-      real (kind=RKIND), dimension(:), pointer :: requiredCalvingVolumeNonDynCell, requiredCalvingVolumeDynCell
       real (kind=RKIND), dimension(:,:), pointer :: uReconstructX
       real (kind=RKIND), dimension(:,:), pointer :: uReconstructY
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       real (kind=RKIND), pointer :: deltat  !< time step (s)
       real (kind=RKIND), dimension(:), allocatable :: thicknessForAblation
-      real (kind=RKIND), dimension(:), allocatable :: requiredAblationVolumeNonDynEdge, requiredAblationVolumeNonDynCell
-      real (kind=RKIND), dimension(:), allocatable :: requiredAblationVolumeDynEdge, requiredAblationVolumeDynCell
+      real (kind=RKIND), dimension(:), pointer :: requiredAblationVolumeNonDynEdge, requiredAblationVolumeNonDynCell
+      real (kind=RKIND), dimension(:), pointer :: requiredAblationVolumeDynEdge, requiredAblationVolumeDynCell
+      real (kind=RKIND), dimension(:), pointer :: ablatedVolumeNonDynCell, ablatedVolumeDynCell
       real (kind=RKIND), dimension(:), pointer :: unablatedVolumeNonDynCell, unablatedVolumeDynCell
       real (kind=RKIND), dimension(:), allocatable :: cellVolume
       real(kind=RKIND) :: ablationSubtotal1, ablationSubtotal2, ablationSubtotal3
       real(kind=RKIND) :: thkSum
       integer :: thkCount
       real(kind=RKIND) :: removeVolumeHere
-      real(kind=RKIND) :: volumeAvailableToPass
+      real(kind=RKIND) :: volumeAvailableToPass !< a temp. var. for accounting purposes that indicates how much volume
+                          !< to be calved is 'leftover' after trying to calve non-dynamic cells and can be transferred to
+                          !< neighboring dynamic cells
       real(kind=RKIND) :: ablateLengthCell, ablateLengthEdge
       real(kind=RKIND), dimension(6) :: localInfo, globalInfo
       real(kind=RKIND) :: edgeLengthScaling
@@ -1549,14 +1557,16 @@ module li_calving
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-      call mpas_pool_get_array(geometryPool, 'meltingThickness', meltingThickness)
+      call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
       call mpas_pool_get_array(geometryPool, 'unablatedVolumeNonDynCell', unablatedVolumeNonDynCell)
       call mpas_pool_get_array(geometryPool, 'unablatedVolumeDynCell', unablatedVolumeDynCell)
+      call mpas_pool_get_array(geometryPool, 'ablatedVolumeNonDynCell', ablatedVolumeNonDynCell)
+      call mpas_pool_get_array(geometryPool, 'ablatedVolumeDynCell', ablatedVolumeDynCell)
       call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
-      call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeNonDynEdge', requiredCalvingVolumeNonDynEdge)
-      call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeDynEdge', requiredCalvingVolumeDynEdge)
-      call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeNonDynCell', requiredCalvingVolumeNonDynCell)
-      call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeDynCell', requiredCalvingVolumeDynCell)
+      call mpas_pool_get_array(geometryPool, 'requiredAblationVolumeNonDynEdge', requiredAblationVolumeNonDynEdge)
+      call mpas_pool_get_array(geometryPool, 'requiredAblationVolumeDynEdge', requiredAblationVolumeDynEdge)
+      call mpas_pool_get_array(geometryPool, 'requiredAblationVolumeNonDynCell', requiredAblationVolumeNonDynCell)
+      call mpas_pool_get_array(geometryPool, 'requiredAblationVolumeDynCell', requiredAblationVolumeDynCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
@@ -1624,19 +1634,17 @@ module li_calving
 
       ! Init fields for accounting
       calvingThickness(:) = 0.0_RKIND
-      meltingThickness(:) = 0.0_RKIND
+      faceMeltingThickness(:) = 0.0_RKIND
       
       ! Init fields for accounting
       allocate(ablationThickness(nCells+1))
       ablationThickness(:) = 0.0_RKIND
+      ablatedVolumeNonDynCell(:) = 0.0_RKIND
+      ablatedVolumeDynCell(:) = 0.0_RKIND
       unablatedVolumeNonDynCell(:) = 0.0_RKIND
       unablatedVolumeDynCell(:) = 0.0_RKIND
       allocate(cellVolume(nCells+1))
       cellVolume(:) = areaCell(:) * thickness(:)
-      allocate(requiredAblationVolumeNonDynEdge(nEdges+1))
-      allocate(requiredAblationVolumeNonDynCell(nCells+1))
-      allocate(requiredAblationVolumeDynEdge(nEdges+1))
-      allocate(requiredAblationVolumeDynCell(nCells+1))
       requiredAblationVolumeNonDynEdge(:) = 0.0_RKIND
       requiredAblationVolumeNonDynCell(:) = 0.0_RKIND
       requiredAblationVolumeDynEdge(:) = 0.0_RKIND
@@ -1695,6 +1703,7 @@ module li_calving
             ! c. Apply calving here
             removeVolumeHere = min(cellVolume(iCell), requiredAblationVolumeNonDynCell(iCell))  ! Don't use more than available
             ablationThickness(iCell) = removeVolumeHere / areaCell(iCell)
+            ablatedVolumeNonDynCell(iCell) = removeVolumeHere
             unablatedVolumeNonDynCell(iCell) = requiredAblationVolumeNonDynCell(iCell) - removeVolumeHere
             cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
             ablationSubtotal1 = ablationSubtotal1 + removeVolumeHere
@@ -1764,13 +1773,13 @@ module li_calving
                   requiredAblationVolumeDynEdge(iEdge) = ablateLengthEdge / ablateLengthCell * volumeAvailableToPass
                   unablatedVolumeNonDynCell(iCell) = unablatedVolumeNonDynCell(iCell) - requiredAblationVolumeDynEdge(iEdge)
                   !call mpas_log_write("   Passed calving $r from non-dynamic cell $i to dynamic cell $i", &
-                  !        realArgs=(/requiredCalvingVolumeDynEdge(iEdge)/), intArgs=(/iCell, jCell/))
+                  !        realArgs=(/requiredAblationVolumeDynEdge(iEdge)/), intArgs=(/iCell, jCell/))
                endif
             enddo
          endif
       enddo
       call mpas_timer_start("halo updates")
-      call mpas_dmpar_field_halo_exch(domain, 'requiredCalvingVolumeDynEdge')
+      call mpas_dmpar_field_halo_exch(domain, 'requiredAblationVolumeDynEdge')
       call mpas_timer_stop("halo updates")
 
       ! c. Now apply ablation to each cell
@@ -1786,6 +1795,7 @@ module li_calving
             ! c. Apply calving here
             removeVolumeHere = min(cellVolume(iCell), requiredAblationVolumeDynCell(iCell))  ! Don't use more than available
             ablationThickness(iCell) = removeVolumeHere / areaCell(iCell)
+            ablatedVolumeDynCell(iCell) = removeVolumeHere
             unablatedVolumeDynCell(iCell) = requiredAblationVolumeDynCell(iCell) - removeVolumeHere
             cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
             ablationSubtotal2 = ablationSubtotal2 + removeVolumeHere
@@ -1871,13 +1881,13 @@ module li_calving
       endif
 
 
-      ! Update halos on calvingThickness or meltingThickness before applying it.
+      ! Update halos on calvingThickness or faceMeltingThickness before applying it.
       ! Testing seemed to indicate this is not necessary, but I don't understand why not, so leaving it.
       ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
       call mpas_timer_start("halo updates")
       if ( applyMelting ) then 
-         meltingThickness(:) = ablationThickness(:)
-         call mpas_dmpar_field_halo_exch(domain, 'meltingThickness')
+         faceMeltingThickness(:) = ablationThickness(:)
+         call mpas_dmpar_field_halo_exch(domain, 'faceMeltingThickness')
       else if ( applyCalving ) then
          calvingThickness(:) = ablationThickness(:)
          call mpas_dmpar_field_halo_exch(domain, 'calvingThickness')
@@ -1885,10 +1895,6 @@ module li_calving
       call mpas_timer_stop("halo updates")
 
       deallocate(cellVolume)
-      deallocate(requiredAblationVolumeNonDynEdge)
-      deallocate(requiredAblationVolumeNonDynCell)
-      deallocate(requiredAblationVolumeDynEdge)
-      deallocate(requiredAblationVolumeDynCell)
       deallocate(thicknessForAblation)
       deallocate(ablationVelocity)
       call mpas_log_write("Finished with li_apply_front_ablation_velocity")
