@@ -442,7 +442,7 @@ contains
           layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
           cell1 = cellsOnEdge(1,iEdge)
           cell2 = cellsOnEdge(2,iEdge)
-          do k = 1, maxLevelEdgeTop(iEdge)
+          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             ! central differenced
             layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
           end do
@@ -459,7 +459,7 @@ contains
               layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
               cell1 = cellsOnEdge(1,iEdge)
               cell2 = cellsOnEdge(2,iEdge)
-              do k = 1, maxLevelEdgeTop(iEdge)
+              do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                 ! upwind
                 if (normalVelocity(k, iEdge) > 0.0_RKIND) then
                   layerThicknessEdge(k,iEdge) = layerThickness(k,cell1)
