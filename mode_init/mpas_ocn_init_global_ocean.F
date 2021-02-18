@@ -195,13 +195,13 @@ contains
          call ocn_init_setup_global_ocean_interpolate_land_ice_topography(domain, iErr)
       end if
 
-      call mpas_log_write( 'Initializing vertical coordinate with ssh = 0.')
+      call mpas_log_write( 'Initializing vertical coordinate.')
       ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid)
       ! based on bottomDepth and refBottomDepth and apply PBCs if requested
-      call ocn_init_ssh_and_landIcePressure_vertical_grid(domain, iErr)
+      call ocn_init_vertical_grid(domain, iErr=iErr)
 
       if(iErr .ne. 0) then
-        call mpas_log_write( 'ocn_init_ssh_and_landIcePressure_vertical_grid failed.', MPAS_LOG_CRIT)
+        call mpas_log_write( 'ocn_init_vertical_grid failed.', MPAS_LOG_CRIT)
         call mpas_dmpar_finalize(domain % dminfo)
       end if
 
@@ -489,9 +489,8 @@ contains
          call mpas_log_write('Modifying temperature and surface restoring under land ice.')
          call ocn_init_setup_global_ocean_modify_temp_under_land_ice(domain, iErr)
 
-         call mpas_log_write( 'Recalculating ocean layer topography due to land ice depression')
-         ! compute or update the land-ice pressure (or possibly SSH), also computing density along the way
-         ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
+         call mpas_log_write('Calculating land-ice pressure from the weight of ice shelves')
+         ! compute the land-ice pressure, also computing density along the way.
          call ocn_init_ssh_and_landIcePressure_balance(domain, iErr)
 
          if(iErr .ne. 0) then
@@ -1169,7 +1168,7 @@ contains
 
           ssh(:) = 0.0_RKIND
           landIceFraction(:) = 0.0_RKIND
-          modifySSHMask(:) = 0
+          modifyLandIcePressureMask(:) = 0
           landIcePressure(:) = 0.0_RKIND
           do iCell = 1, nCells
 
@@ -1180,24 +1179,10 @@ contains
              ! nothing to do here if the cell is land
              if (maxLevelCell(iCell) <= 0) cycle
 
-             if(config_iterative_init_variable == 'ssh') then
-                ! we compute the land-ice pressure first and find out the SSH
-                landIcePressure(iCell) = max(0.0_RKIND, config_land_ice_flux_rho_ice &
-                   * gravity * landIceThkObserved(iCell))
-                if(landIcePressure(iCell) > 0.0_RKIND) then
-                   modifySSHMask(iCell) = 1
-                end if
-             else if(config_iterative_init_variable == 'landIcePressure' &
-                .or. config_iterative_init_variable == 'landIcePressure_from_top_density') then
-                ! we compute the SSH first and find out the land-ice pressure
-                ssh(iCell) = min(0.0_RKIND,landIceDraftObserved(iCell))
-                if(ssh(iCell) < 0.0_RKIND) then
-                   modifySSHMask(iCell) = 1
-                end if
-             else
-                call mpas_log_write( 'Invalid choice of config_iterative_init_variable.', MPAS_LOG_CRIT)
-                iErr = 1
-                call mpas_dmpar_finalize(domain % dminfo)
+             ! we compute the SSH first and find out the land-ice pressure
+             ssh(iCell) = min(0.0_RKIND, landIceDraftObserved(iCell))
+             if(ssh(iCell) < 0.0_RKIND) then
+                modifyLandIcePressureMask(iCell) = 1
              end if
           end do
 
@@ -3033,7 +3018,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
       end if
 
-      if ( config_global_ocean_depress_by_land_ice) then
+      if (config_global_ocean_depress_by_land_ice) then
          if (trim(config_global_ocean_land_ice_topo_file) == 'none') then
             call mpas_log_write( 'Validation failed for global ocean. '// &
                'Invalid filename for config_global_ocean_land_ice_topo_file', MPAS_LOG_CRIT)

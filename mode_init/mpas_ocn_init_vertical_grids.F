@@ -49,6 +49,7 @@ module ocn_init_vertical_grids
              ocn_compute_layerThickness_zMid_from_bottomDepth, &
              ocn_alter_bottomDepth_for_pbcs, &
              ocn_compute_Haney_number, &
+             ocn_init_vertical_grid, &
              ocn_init_vertical_grid_with_max_rx1
 
    !--------------------------------------------------------------------
@@ -712,6 +713,124 @@ contains
       deallocate(rx1MaxLevel)
 
     end subroutine ocn_compute_Haney_number
+
+!***********************************************************************
+!
+!  routine ocn_init_vertical_grid
+!
+!> \brief   Initialize z-star vertical grid based on SSH
+!> \author  Xylar Asay-Davis
+!> \date    8/8/2016
+!> \details
+!>  This routine sets up the vertical grid (layerThickness, zMid and
+!>  restingThickness) needed for computing land-ice pressure from SSH.
+!>  bottomDepth, refBottomDepth, maxLevelCell must have been computed by the
+!>  test case before calling this routine.  For tests with ice-shelf cavities,
+!>  ssh must be computed before calling this routine. If the test case is
+!>  using a z-star coordinate, this routine will take care of setting up
+!>  partial bottom cells by calling ocn_alter_bottomDepth_for_pbcs(). If using
+!>  the Haney-number-constrained coordinate, another approach is used to handle
+!>  maintaining a minimum layer thickness.
+!-----------------------------------------------------------------------
+
+   subroutine ocn_init_vertical_grid(domain, iErr)!{{{
+
+   !--------------------------------------------------------------------
+
+     type (domain_type), intent(inout) :: domain
+     integer, intent(out) :: iErr
+
+     type (block_type), pointer :: block_ptr
+
+     type (mpas_pool_type), pointer :: meshPool, statePool, verticalMeshPool
+
+     ! Define dimension pointers
+     integer, pointer :: nCells, nVertLevels
+
+     ! Define variable pointers
+     integer, dimension(:), pointer :: maxLevelCell
+     real (kind=RKIND), dimension(:), pointer :: refBottomDepth, bottomDepth, ssh
+     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
+
+     integer :: iCell
+
+   !--------------------------------------------------------------------
+
+     iErr = 0
+
+     if(config_use_rx1_constraint) then
+       ! We already know the ssh and landIcePressure we want to use.
+       ! Compute the layer thicknesses and zMid based on topography and ssh.
+       ! Use rx1 constraint to recompute the vertical grid.
+       call ocn_init_vertical_grid_with_max_rx1(domain, iErr)
+
+       if(iErr .ne. 0) then
+         call mpas_log_write( 'ocn_init_vertical_grid_with_max_rx1 failed.', MPAS_LOG_CRIT)
+         return
+       end if
+
+     else
+
+       ! we're initializing to z-star
+
+       ! alter pbcs
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+         do iCell = 1, nCells
+           call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
+           if(iErr .ne. 0) then
+             call mpas_log_write( 'ocn_alter_bottomDepth_for_pbcs failed.', MPAS_LOG_CRIT)
+             return
+           end if
+         end do
+         block_ptr => block_ptr % next
+       end do !block_ptr
+
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
+
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+         call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+
+         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+
+         do iCell = 1, nCells
+           call ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness(:,iCell),zMid(:,iCell), &
+                refBottomDepth,bottomDepth(iCell), &
+                maxLevelCell(iCell),nVertLevels,iErr, &
+                restingThickness=restingThickness(:,iCell), &
+                ssh=ssh(iCell))
+
+           if(iErr .ne. 0) then
+             call mpas_log_write( 'ocn_compute_layerThickness_zMid_from_bottomDepth failed.', MPAS_LOG_CRIT)
+             return
+           end if
+         end do !iCell
+
+         block_ptr => block_ptr % next
+       end do !block_ptr
+     end if
+
+   end subroutine ocn_init_vertical_grid
 
 !***********************************************************************
 !
