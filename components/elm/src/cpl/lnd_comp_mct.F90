@@ -44,7 +44,8 @@ contains
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use elm_initializeMod, only : initialize1, initialize2, initialize3
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
-    use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland, iop_mode
+    use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland, &
+                                  iop_mode, iop_nx, iop_ny
     use elm_varctl       , only : inst_index, inst_suffix, inst_name
     use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
@@ -209,7 +210,7 @@ contains
                                    calendar=calendar )
     call seq_infodata_GetData(infodata, case_name=caseid,    &
                               case_desc=ctitle, single_column=single_column,    &
-                              iop_mode=iop_mode,                                &
+                              iop_mode=iop_mode,iop_nx=iop_nx,iop_ny=iop_ny,    &
                               scmlat=scmlat, scmlon=scmlon,                     &
                               brnch_retain_casename=brnch_retain_casename,      &
                               start_type=starttype, model_version=version,      &
@@ -230,11 +231,11 @@ contains
     ! If IOP mode, force single_column flag to be false for this
     !  block of code, as special treatment is needed
     if (iop_mode) single_column = .false.
-    call elm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
-                        brnch_retain_casename_in=brnch_retain_casename,         &
-                        iop_mode_in=iop_mode,single_column_in=single_column,    &
-                        scmlat_in=scmlat,                                       &
-                        scmlon_in=scmlon, nsrest_in=nsrest, version_in=version, &
+    call elm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                      &
+                        brnch_retain_casename_in=brnch_retain_casename,          &
+                        iop_mode_in=iop_mode, iop_nx_in=iop_nx, iop_ny_in=iop_ny,&
+                        single_column_in=single_column, scmlat_in=scmlat,        &
+                        scmlon_in=scmlon, nsrest_in=nsrest, version_in=version,  &
                         hostname_in=hostname, username_in=username)
 
     ! Read namelist, grid and surface data

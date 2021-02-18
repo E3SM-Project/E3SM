@@ -288,6 +288,8 @@ module elm_varctl
   logical,  public :: iop_mode      = .false. ! true => iop mode
   real(r8), public :: scmlat        = rundef  ! single column lat
   real(r8), public :: scmlon        = rundef  ! single column lon
+  integer,  public :: iop_nx        = -1      ! doubly periodic points x direction
+  integer,  public :: iop_ny        = -1      ! doubly periodic points y direction
 
   !----------------------------------------------------------
   ! instance control
@@ -447,8 +449,8 @@ contains
 
   !---------------------------------------------------------------------------
   subroutine elm_varctl_set( caseid_in, ctitle_in, brnch_retain_casename_in,    &
-       single_column_in, iop_mode_in, scmlat_in, scmlon_in, nsrest_in, &
-       version_in, hostname_in, username_in)
+       single_column_in, iop_mode_in, scmlat_in, scmlon_in, iop_nx_in, iop_ny_in, &
+       nsrest_in, version_in, hostname_in, username_in)
     !
     ! !DESCRIPTION:
     ! Set input control variables.
@@ -462,6 +464,8 @@ contains
     logical,            optional, intent(IN) :: iop_mode_in              ! IOP mode
     real(r8),           optional, intent(IN) :: scmlat_in                ! single column lat
     real(r8),           optional, intent(IN) :: scmlon_in                ! single column lon
+    integer,            optional, intent(IN) :: iop_nx_in                ! x direction points
+    integer,            optional, intent(IN) :: iop_ny_in                ! y direction points
     integer,            optional, intent(IN) :: nsrest_in                ! 0: initial run. 1: restart: 3: branch
     character(len=256), optional, intent(IN) :: version_in               ! model version
     character(len=256), optional, intent(IN) :: hostname_in              ! hostname running on
@@ -478,6 +482,8 @@ contains
     if ( present(iop_mode_in     ) ) iop_mode      = iop_mode_in
     if ( present(scmlat_in       ) ) scmlat        = scmlat_in
     if ( present(scmlon_in       ) ) scmlon        = scmlon_in
+    if ( present(iop_nx_in       ) ) iop_nx        = iop_nx_in
+    if ( present(iop_ny_in       ) ) iop_ny        = iop_ny_in
     if ( present(nsrest_in       ) ) nsrest        = nsrest_in
     if ( present(brnch_retain_casename_in) ) brnch_retain_casename = brnch_retain_casename_in
     if ( present(version_in      ) ) version       = version_in

@@ -19,7 +19,7 @@ module ncdio_pio
   use spmdMod        , only : MPI_REAL8, MPI_INTEGER, MPI_LOGICAL
   use elm_varcon     , only : grlnd, nameg, namel, namec, namep
   use elm_varcon     , only : spval,ispval
-  use elm_varctl     , only : single_column, iop_mode, iulog
+  use elm_varctl     , only : single_column, iop_mode, iop_nx, iop_ny, iulog
   use shr_sys_mod    , only : shr_sys_flush
   use decompMod      , only : get_elmlevel_gsize,get_elmlevel_gsmap
   use perf_mod       , only : t_startf, t_stopf
@@ -472,6 +472,14 @@ contains
        ni = 1
        nj = 1
        ns = 1
+       isgrid2d = .true.
+       RETURN
+    end if
+
+    if (iop_mode) then
+       ni = iop_nx
+       nj = iop_ny
+       ns = ni * nj
        isgrid2d = .true.
        RETURN
     end if
