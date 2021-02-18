@@ -4895,6 +4895,7 @@ delete @nl_group{@comp_groups};
 
 # Dry deposition and MEGAN VOC emis namelists
 @comp_groups = qw(drydep_inparm megan_emis_nl carma_inparm);
+#@comp_groups = qw(drydep_inparm megan_emis_nl fire_emis_nl carma_inparm);
 $outfile = "$opts{'dir'}/drv_flds_in";
 $nl->write($outfile, 'groups'=>\@comp_groups);
 if ($print>=1) { print "CAM writing dry deposition namelist to drv_flds_in $eol"; }

@@ -59,7 +59,9 @@ module clm_instMod
   use BeTRSimulationALM          , only : betr_simulation_alm_type
   use PlantMicKineticsMod        , only : PlantMicKinetics_type
   use CLMFatesInterfaceMod       , only : hlm_fates_interface_type
-
+!LXu@02/20++++++
+  use CNFireEmissionsMod         , only : fireemis_type
+!LXu@02/20------
 
   !
   implicit none
@@ -85,6 +87,9 @@ module clm_instMod
   type(cnstate_type)                                  :: cnstate_vars
   type(dust_type)                                     :: dust_vars
   type(vocemis_type)                                  :: vocemis_vars
+!LXu@02/20+++++
+  type(fireemis_type)                                 :: fireemis_vars
+!LXu@02/20-----
   type(drydepvel_type)                                :: drydepvel_vars
   type(aerosol_type)                                  :: aerosol_vars
   type(canopystate_type)                              :: canopystate_vars
@@ -171,6 +176,11 @@ contains
        if (use_c14) then
           call c14_carbonflux_vars%Init(bounds_proc, carbon_type='c14')
        end if
+
+!LXu@02/20+++++, initilizing fireemis_vars
+       call fireemis_vars%Init(bounds_proc)
+!LXu@02/20-----
+
     endif
 
     if (use_cn) then

@@ -868,6 +868,10 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, radf_idx,    0.0_r8)
+!LXu@02/2020+++++
+!following 1929c29 https://github.com/E3SM-Project/E3SM/commit/1929c294774ea7a087e5a398fe7dca1ce4237e43
+       call pbuf_set_field(pbuf2d, qrl_idx,     0.0_r8)
+!LXu@02/2020-----
 
     endif
    

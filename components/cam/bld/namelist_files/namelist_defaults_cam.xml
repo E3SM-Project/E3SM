@@ -661,6 +661,12 @@
 <bc_a3_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a3_ext_file>
 <bc_a4_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a4_ext_file>
 
+<!-- without forest fires and grass fires sources -->
+<so2_ext_wofire_file        >atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_elev_2000_wofire_c150317.nc</so2_ext_wofire_file>
+<so4_a1_ext_wofire_file     >atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so4_a1_elev_2000_wofire_c150317.nc</so4_a1_ext_wofire_file>
+<num_a1_ext_wofire_file     >atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_num_a1_elev_2000_wofire_c150317.nc</num_a1_ext_wofire_file>
+<mam4_num_a1_ext_wofire_file>atm/cam/chem/trop_mozart_aero/emis/ar5_mam4_num_a1_elev_2000_wofire_c150722.nc</mam4_num_a1_ext_wofire_file>
+
 <mam7_num_a1_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a1_surf_2000_c120716.nc</mam7_num_a1_emis_file>
 <mam7_num_a3_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a3_surf_2000_c120716.nc</mam7_num_a3_emis_file>
 <mam7_num_a1_ext_file  >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a1_elev_2000_c120716.nc</mam7_num_a1_ext_file>

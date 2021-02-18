@@ -55,6 +55,10 @@ module clm_cpl_indices
   integer, public ::index_l2x_Fall_flxdst3    ! dust flux size bin 3    
   integer, public ::index_l2x_Fall_flxdst4    ! dust flux size bin 4
   integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes
+!LXu@01/20++++++
+  integer, public ::index_l2x_Fall_flxfire    ! Fire fluxes
+  integer, public ::index_l2x_Sl_ztopfire     ! Top of fire emissions (m)
+!LXu@01/20------
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_l2x_Sl_tsrf(0:glc_nec_max)   = 0 ! glc MEC temperature
@@ -133,6 +137,9 @@ contains
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
     use shr_megan_mod  , only: shr_megan_fields_token, shr_megan_mechcomps_n
     use clm_varctl     , only: use_voc
+!LXu@01/20++++++
+    use shr_fire_emis_mod,only: shr_fire_emis_fields_token, shr_fire_emis_ztop_token, shr_fire_emis_mechcomps_n
+!LXu@01/20------
     !
     ! !ARGUMENTS:
     implicit none
@@ -210,6 +217,17 @@ contains
     else
        index_l2x_Fall_flxvoc = 0
     endif
+
+!LXu@01/20++++++
+    ! Fire fluxes
+    if (shr_fire_emis_mechcomps_n>0) then
+       index_l2x_Fall_flxfire = mct_avect_indexra(l2x,trim(shr_fire_emis_fields_token))
+       index_l2x_Sl_ztopfire = mct_avect_indexra(l2x,trim(shr_fire_emis_ztop_token))
+    else
+       index_l2x_Fall_flxfire = 0
+       index_l2x_Sl_ztopfire = 0
+    endif
+!LXu@01/20+------
 
     !-------------------------------------------------------------
     ! drv -> clm

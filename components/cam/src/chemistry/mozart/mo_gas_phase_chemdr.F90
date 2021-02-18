@@ -173,6 +173,16 @@ contains
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
+!LXu@02/20+++++
+!  subroutine gas_phase_chemdr(lchnk, ncol, imozart, q, &
+!                              phis, zm, zi, calday, &
+!                              tfld, pmid, pdel, pint,  &
+!                              cldw, troplev, &
+!                              ncldwtr, ufld, vfld,  &
+!                              delt, ps, xactive_prates, &
+!                              fsds, ts, asdir, ocnfrac, icefrac, &
+!                              precc, precl, snowhland, ghg_chem, latmapback, &
+!                              chem_name, drydepflx, cflx, qtend, pbuf)
   subroutine gas_phase_chemdr(lchnk, ncol, imozart, q, &
                               phis, zm, zi, calday, &
                               tfld, pmid, pdel, pint,  &
@@ -181,7 +191,8 @@ contains
                               delt, ps, xactive_prates, &
                               fsds, ts, asdir, ocnfrac, icefrac, &
                               precc, precl, snowhland, ghg_chem, latmapback, &
-                              chem_name, drydepflx, cflx, qtend, pbuf)
+                              chem_name, drydepflx, cflx, fire_sflx, fire_ztop, qtend, pbuf)
+!LXu@02/20+-----
 
     !-----------------------------------------------------------------------
     !     ... Chem_solver advances the volumetric mixing ratio
@@ -237,6 +248,9 @@ contains
     use rate_diags,        only : rate_diags_calc
     use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri
     use orbit,             only : zenith
+!LXu@02/20+++++
+    use fire_emissions,    only : fire_emissions_vrt
+!LXu@02/20-----
 !
 ! LINOZ
 !
@@ -283,6 +297,10 @@ contains
     integer,        intent(in)    :: latmapback(pcols)
     character(len=*), intent(in)  :: chem_name
     integer,         intent(in) ::  troplev(pcols)
+!LXu@02/20+++++
+    real(r8),pointer, intent(in)  :: fire_sflx(:,:)                 ! fire emssions surface flux (kg/m^2/s)
+    real(r8),pointer, intent(in)  :: fire_ztop(:)                   ! top of vertical distribution of fire emssions (m)
+!LXu@02/20-----
 
     real(r8),       intent(inout) :: qtend(pcols,pver,pcnst)        ! species tendencies (kg/kg/s)
     real(r8),       intent(inout) :: cflx(pcols,pcnst)              ! constituent surface flux (kg/m^2/s)
@@ -709,6 +727,11 @@ contains
     call setext( extfrc, zint, zintr, cldtop, &
                  zmid, lchnk, tfld, o2mmr, ommr, &
                  pmid, mbar, rlats, calday, ncol, rlons, pbuf )
+
+!LXu@02/20+++++
+    ! include forcings from fire emissions ...
+    call fire_emissions_vrt( ncol, lchnk, zint, fire_sflx, fire_ztop, extfrc )
+!LXu@02/20-----
 
     do m = 1,extcnt
        if( m /= synoz_ndx ) then

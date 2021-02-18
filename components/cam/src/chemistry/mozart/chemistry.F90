@@ -18,6 +18,8 @@ module chemistry
   use mo_gas_phase_chemdr, only : map2chm
   use shr_megan_mod,    only : shr_megan_mechcomps, shr_megan_mechcomps_n 
   use tracer_data,      only : MAXTRCRS
+!LXu@04/20
+  use shr_fire_emis_mod, only : shr_fire_emis_mechcomps_n
 
   implicit none
   private
@@ -914,6 +916,9 @@ end function chem_is_active
     use aero_model,            only : aero_model_init
     use mo_setsox,             only : sox_inti
     use constituents,          only : sflxnam
+!LXu@02/20+++++
+    use fire_emissions,        only : fire_emissions_init
+!LXu@02/20-----
 
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     type(physics_state), intent(in):: phys_state(begchunk:endchunk)
@@ -1063,9 +1068,20 @@ end function chem_is_active
                 trim(shr_megan_mechcomps(n)%name)//' MEGAN emissions flux')
         enddo
      endif
+!LXu@02/20+++++
+    ! Fire emissions ...
+!    call fire_emissions_init()
+!LXu@02/20-----
 
     ! Initialize aerosols - part 2   ! REASTER 8/4/2015
     call aero_model_init( pbuf2d, species_class, 2 ) 
+
+!LXu@02/20+++++
+    ! Fire emissions ...
+    if ( masterproc ) write(iulog,*) 'fire_emissions_init: initiation start ++++'
+        call fire_emissions_init()
+    if ( masterproc ) write(iulog,*) 'fire_emissions_init: initiation finished ----'
+!LXu@02/20-----
 
   end subroutine chem_init
 
@@ -1079,6 +1095,10 @@ end function chem_is_active
     use mo_srf_emissions, only: set_srf_emissions
     use cam_cpl_indices,     only : index_x2a_Fall_flxvoc
     use cam_cpl_indices,     only : index_x2a_Fall_flxdst1
+!LXu@02/20+++++
+    use cam_cpl_indices,     only : index_x2a_Fall_flxfire
+    use fire_emissions,      only : fire_emissions_srf
+!LXu@02/20-----  
 
     ! Arguments:
 
@@ -1139,6 +1159,14 @@ end function chem_is_active
        endif
     enddo
 
+    ! fire surface emissions if not elevated forcing
+    if (masterproc) write(iulog,*) 'call fire_emissions_srf or not? ',  index_x2a_Fall_flxfire, shr_fire_emis_mechcomps_n
+
+    if ( index_x2a_Fall_flxfire>0 .and. shr_fire_emis_mechcomps_n>0 ) then
+	if (masterproc) write(iulog,*) 'fire_emissions_srf: start ++++' 
+	call fire_emissions_srf( lchnk, ncol, cam_in%fireflx, cam_in%cflx )
+	if (masterproc) write(iulog,*) 'fire_emissions_srf: finished ---'
+    end if
 
   end subroutine chem_emissions
 
@@ -1461,6 +1489,15 @@ end function chem_is_active
     end do
 
     call t_startf( 'chemdr' )
+!LXu@02/20+++++
+!    call gas_phase_chemdr(lchnk, ncol, imozart, state%q, &
+!                          state%phis, state%zm, state%zi, calday, &
+!                          state%t, state%pmid, state%pdel, state%pint, &
+!                          cldw, tropLev, ncldwtr, state%u, state%v, &
+!                          chem_dt, state%ps, xactive_prates, &
+!                          fsds, cam_in%ts, cam_in%asdir, cam_in%ocnfrac, cam_in%icefrac, &
+!                          cam_out%precc, cam_out%precl, cam_in%snowhland, ghg_chem, state%latmapback, &
+!                          chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf)
     call gas_phase_chemdr(lchnk, ncol, imozart, state%q, &
                           state%phis, state%zm, state%zi, calday, &
                           state%t, state%pmid, state%pdel, state%pint, &
@@ -1468,7 +1505,8 @@ end function chem_is_active
                           chem_dt, state%ps, xactive_prates, &
                           fsds, cam_in%ts, cam_in%asdir, cam_in%ocnfrac, cam_in%icefrac, &
                           cam_out%precc, cam_out%precl, cam_in%snowhland, ghg_chem, state%latmapback, &
-                          chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf)
+                          chem_name, drydepflx, cam_in%cflx, cam_in%fireflx, cam_in%fireztop, ptend%q, pbuf)
+!LXu@02/20-----
 
     call t_stopf( 'chemdr' )
 

@@ -66,6 +66,9 @@ module clm_driver
   use DUSTMod                , only : DustDryDep, DustEmission
   use VOCEmissionMod         , only : VOCEmission
   use FatesBGCDynMod         , only : FatesBGCDyn
+!LXu@02/20+++++
+!  use CNFireEmissionsMod     , only : CNFireEmisUpdate
+!LXu@02/20-----
   !
   use filterMod              , only : setFilters
   !
@@ -91,6 +94,9 @@ module clm_driver
   use clm_instMod            , only : cnstate_vars
   use clm_instMod            , only : dust_vars
   use clm_instMod            , only : vocemis_vars
+!LXu@02/20+++++  
+  use clm_instMod            , only : fireemis_vars
+!LXu@02/20-----   
   use clm_instMod            , only : drydepvel_vars
   use clm_instMod            , only : aerosol_vars
   use clm_instMod            , only : canopystate_vars
@@ -124,7 +130,6 @@ module clm_driver
   use VegetationType         , only : veg_pp
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_clm_interface
@@ -578,6 +583,13 @@ contains
                atm2lnd_vars, canopystate_vars, photosyns_vars, temperature_vars, &
                vocemis_vars)
        end if
+!LXu@02/20+++++
+!       if (use_cn) then
+!            ! fire carbon emissions when use_cn = True
+!	  call CNFireEmisUpdate(bounds_clump, filter(nc)%num_soilp, filter(nc)%soilp, &
+!               carbonflux_vars, carbonstate_vars, fireemis_vars )
+!      end if
+!LXu@02/20-----
 
        call t_stopf('bgc')
 
@@ -860,7 +872,20 @@ contains
              end if !if (use_clm_interface)
              !--------------------------------------------------------------------------------
 
-             call CNEcosystemDynNoLeaching2(bounds_clump,                                   &
+!             call CNEcosystemDynNoLeaching2(bounds_clump,                                   &
+!                   filter(nc)%num_soilc, filter(nc)%soilc,                                  &
+!                   filter(nc)%num_soilp, filter(nc)%soilp,                                  &
+!                   filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,                         &
+!                   cnstate_vars, carbonflux_vars, carbonstate_vars,                         &
+!                   c13_carbonflux_vars, c13_carbonstate_vars,                               &
+!                   c14_carbonflux_vars, c14_carbonstate_vars,                               &
+!                   nitrogenflux_vars, nitrogenstate_vars,                                   &
+!                   atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
+!                   canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
+!                   dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,          &
+!                   phosphorusflux_vars,phosphorusstate_vars)
+ 
+            call CNEcosystemDynNoLeaching2(bounds_clump,                                   &
                    filter(nc)%num_soilc, filter(nc)%soilc,                                  &
                    filter(nc)%num_soilp, filter(nc)%soilp,                                  &
                    filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,                         &
@@ -871,8 +896,12 @@ contains
                    atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
                    canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
                    dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,          &
-                   phosphorusflux_vars,phosphorusstate_vars)
-
+                   phosphorusflux_vars,phosphorusstate_vars,fireemis_vars)
+!LXu@02/20+++++
+!             ! fire carbon emissions when use_cn = True
+!	     call CNFireEmisUpdate(bounds_clump, filter(nc)%num_soilp, filter(nc)%soilp, &
+!        	  carbonflux_vars, carbonstate_vars, fireemis_vars )
+!LXu@02/20-----
              !===========================================================================================
              ! clm_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
              !===========================================================================================
@@ -1165,11 +1194,18 @@ contains
     endif
 
     call t_startf('lnd2atm')
+!LXu@02/20+++++
+!    call lnd2atm(bounds_proc,                                            &
+!         atm2lnd_vars, surfalb_vars, temperature_vars, frictionvel_vars, &
+!         waterstate_vars, waterflux_vars, energyflux_vars,               &
+!         solarabs_vars, carbonflux_vars, drydepvel_vars,                 &
+!         vocemis_vars, dust_vars, ch4_vars, lnd2atm_vars) 
     call lnd2atm(bounds_proc,                                            &
          atm2lnd_vars, surfalb_vars, temperature_vars, frictionvel_vars, &
          waterstate_vars, waterflux_vars, energyflux_vars,               &
          solarabs_vars, carbonflux_vars, drydepvel_vars,                 &
-         vocemis_vars, dust_vars, ch4_vars, lnd2atm_vars) 
+         vocemis_vars, dust_vars, fireemis_vars,ch4_vars, lnd2atm_vars) 
+!LXu@02/20-----
     call t_stopf('lnd2atm')
 
     ! ============================================================================
