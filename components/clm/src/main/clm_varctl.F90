@@ -98,6 +98,7 @@ module clm_varctl
   character(len=fname_len), public :: fsnowoptics  = ' '      ! snow optical properties file name
   character(len=fname_len), public :: fsnowaging   = ' '      ! snow aging parameters file name
   character(len=fname_len), public :: fsoilordercon    = ' '  ! ASCII data file with soil order dependent  constants
+  character(len=fname_len), public :: f3dtopo    = ' '        ! file name for 3D topography parameters ! 3D-RT
 
   !----------------------------------------------------------
   ! Flag to turn on MEGAN VOC's

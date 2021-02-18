@@ -58,12 +58,13 @@ contains
     use clm_varcon                , only: clm_varcon_init
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon             , only: col_itype_to_icemec_class
-    use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
+    use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version, f3dtopo  ! 3D-RT 
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
     use domainMod                 , only: domain_check, ldomain, domain_init
-    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
+    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data, &
+										  surfrd_get_3dtopo  ! 3D-RT
     use controlMod                , only: control_init, control_print, NLFilename
     use ncdio_pio                 , only: ncd_pio_init
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
@@ -80,7 +81,8 @@ contains
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
     use CLMFatesInterfaceMod      , only: ELMFatesGlobals
-    !
+    use SurfaceAlbedoMod		  , only : rad_3d_topo  ! 3D-RT  
+  !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
     integer           :: i,j,n,k,c,l,g           ! indices
@@ -221,6 +223,17 @@ contains
        call surfrd_get_topo(ldomain, flndtopo)  
     endif
 
+    ! Get 3D topography parameters  ! 3D-RT
+
+    if (f3dtopo /= " " .and. rad_3d_topo) then
+       if (masterproc) then
+          write(iulog,*) 'Attempting to read 3D topo parameters from ',trim(f3dtopo)
+          call shr_sys_flush(iulog)
+       endif
+       call surfrd_get_3dtopo(ldomain, f3dtopo)  
+    endif
+    ! end of 3D topography parameter !  3D-RT
+	
     ! Initialize urban model input (initialize urbinp data structure)
     ! This needs to be called BEFORE the call to surfrd_get_data since
     ! that will call surfrd_get_special which in turn calls check_urban

@@ -30,6 +30,7 @@ module surfrdMod
   public :: surfrd_get_topo      ! Read grid topography into domain (after domain decomp)
   public :: surfrd_get_data      ! Read surface dataset and determine subgrid weights
   public :: surfrd_get_grid_conn ! Reads grid connectivity information from domain file
+  public :: surfrd_get_3dtopo    ! Read topography dataset for 3D radiation
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: surfrd_special             ! Read the special landunits
@@ -759,6 +760,11 @@ contains
     else
       call ncd_io(ncid=ncid, varname='PCT_URBAN'  , flag='read', data=pcturb, &
            dim1name=grlnd, readvar=readvar)
+		   
+		   
+		 write(iulog,*) 'pcturb', pcturb(3851, 3) ! degbug by daleihao
+		 write(iulog,*) 'pcturb', pcturb(26782, 1) ! degbug by daleihao
+		 
       if (.not. readvar) call endrun( msg=' ERROR: PCT_URBAN NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 
       call ncd_io(ncid=ncid, varname='URBAN_REGION_ID', flag='read', data=urban_region_id, &
@@ -1267,4 +1273,111 @@ contains
 
   end subroutine surfrd_get_grid_conn
 
+!
+!---- Added by Dalei Hao for 3D-RT ----------------------------------------
+! !IROUTINE: surfrd_get_3dtopo
+
+! !INTERFACE:
+  subroutine surfrd_get_3dtopo(domain,filename)
+
+! !DESCRIPTION:
+! Read the 3D topography parameters for surface radiation:
+! Assume domain has already been initialized and read
+
+! !USES:
+    use domainMod , only : domain_type
+    use fileutils , only : getfil
+
+! !ARGUMENTS:
+    implicit none
+    type(domain_type),intent(inout) :: domain   ! domain to init
+    character(len=*) ,intent(in)    :: filename ! grid filename
+!
+! !CALLED FROM:
+! subroutine initialize
+!
+! !REVISION HISTORY:
+! Created by Wei-Liang Lee
+!
+! !LOCAL VARIABLES:
+!EOP
+    type(file_desc_t) :: ncid      ! netcdf file id
+    integer :: n                   ! indices
+    integer :: ni,nj,ns            ! size of grid on file
+    integer :: dimid,varid         ! netCDF id's
+    integer :: ier                 ! error status
+    real(r8):: eps = 1.0e-12_r8             ! lat/lon error tolerance
+    integer :: beg,end                      ! local beg,end indices
+    logical             :: isgrid2d         ! true => file is 2d lat/lon
+    real(r8),pointer    :: lonc(:),latc(:)  ! local lat/lon
+    character(len=256)  :: locfn            ! local file name
+    logical :: readvar                      ! is variable on file
+    character(len=32) :: subname = 'surfrd_get_3dtopo'     ! subroutine name
+!-----------------------------------------------------------------------
+
+    if (masterproc) then
+       if (filename == ' ') then
+          write(iulog,*) trim(subname),' ERROR: filename must be specified '
+          call endrun()
+       else
+          write(iulog,*) 'Attempting to read 3D topography parameters from f3dtopo ',trim(filename)
+       endif
+    end if
+
+    call getfil( filename, locfn, 0 )
+    call ncd_pio_openfile (ncid, trim(locfn), 0)
+    call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
+
+    if (domain%ns /= ns) then
+       write(iulog,*) trim(subname),' ERROR: 3dtopo file mismatch ns',&
+            domain%ns,ns
+       call endrun()
+    endif
+    
+    beg = domain%nbeg
+    end = domain%nend
+
+    allocate(latc(beg:end),lonc(beg:end))
+
+    call ncd_io(ncid=ncid, varname='LONGXY', flag='read', data=lonc, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: LONGXY  NOT on 3dtopo file' )
+
+    call ncd_io(ncid=ncid, varname='LATIXY', flag='read', data=latc, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: LATIXY  NOT on 3dtopo file' )
+
+    do n = beg,end
+       if (abs(latc(n)-domain%latc(n)) > eps .or. &
+           abs(lonc(n)-domain%lonc(n)) > eps) then
+          write(iulog,*) trim(subname),' ERROR: 3dtopo file mismatch lat,lon',latc(n),&
+               domain%latc(n),lonc(n),domain%lonc(n),eps
+          call endrun()
+       endif
+    enddo
+
+    call ncd_io(ncid=ncid, varname='STDEV_ELEV', flag='read', data=domain%stdev_elev, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: STDEV_ELEV  NOT on 3dtopo file' )
+    call ncd_io(ncid=ncid, varname='SKY_VIEW', flag='read', data=domain%sky_view, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: SKY_VIEW  NOT on 3dtopo file' )
+    call ncd_io(ncid=ncid, varname='TERRAIN_CONFIG', flag='read', data=domain%terrain_config, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: TERRAIN_CONFIG  NOT on 3dtopo file' )
+    call ncd_io(ncid=ncid, varname='SINSL_COSAS', flag='read', data=domain%sinsl_cosas, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( trim(subname)//' ERROR: SINSL_COSAS  NOT on 3dtopo file' )
+    call ncd_io(ncid=ncid, varname='SINSL_SINAS', flag='read', data=domain%sinsl_sinas, &
+         dim1name=grlnd, readvar=readvar)
+    If (.not. readvar) call endrun( trim(subname)//' ERROR: SINSL_SINAS  NOT on 3dtopo file' )
+
+    deallocate(latc,lonc)
+
+    call ncd_pio_closefile(ncid)
+
+  end subroutine surfrd_get_3dtopo
+
+!----End 3D-RT -------------------------------------------------------------
+ 
 end module surfrdMod

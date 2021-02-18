@@ -557,6 +557,18 @@ If TRUE, write diagnostic of global radiative temperature written to CLM log fil
 Subgrid fluxes for snow
 </entry>
 
+<!-- Added by Dalei Hao for 3D-RT                        -->
+<entry id="rad_3d_topo" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, 3D topography parameterization will be activated.
+</entry>
+
+<entry id="f3dtopo" type="char*256"     category="datasets"
+       input_pathname="abs" group="clm_inparm" valid_values="" >
+Full pathname of 3D topography parameters
+</entry>
+<!-- End 3D-RT                    -->
+
 <!-- ========================================================================================  -->
 <!-- Former CPP tokens -->
 <!-- ========================================================================================  -->

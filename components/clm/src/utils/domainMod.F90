@@ -43,8 +43,16 @@ module domainMod
                                     ! (glcmask is just a guess at the appropriate mask, known at initialization - in contrast to icemask, which is the true mask obtained from glc)
      logical          :: set        ! flag to check if domain is set
      logical          :: decomped   ! decomposed locally or global copy
-
-     ! pflotran:beg-----------------------------------------------------
+    
+     ! === Modified by Dalei Hao for 3D-RT
+     real(r8),pointer :: stdev_elev(:)     ! standard deviation of elevation within a gridcell
+     real(r8),pointer :: sky_view(:)       ! mean of (sky view factor / cos(slope))  ! 3D-RT
+     real(r8),pointer :: terrain_config(:) ! mean of (terrain configuration factor / cos(slope))
+     real(r8),pointer :: sinsl_cosas(:)    ! sin(slope)*cos(aspect) / cos(slope)
+     real(r8),pointer :: sinsl_sinas(:)    ! sin(slope)*sin(aspect) / cos(slope)
+     ! === End 3D-RT
+	 
+	 ! pflotran:beg-----------------------------------------------------
      integer          :: nv           ! number of vertices
      real(r8),pointer :: latv(:,:)    ! latitude of grid cell's vertices (deg)
      real(r8),pointer :: lonv(:,:)    ! longitude of grid cell's vertices (deg)
@@ -122,8 +130,13 @@ contains
     endif
     allocate(domain%mask(nb:ne),domain%frac(nb:ne),domain%latc(nb:ne), &
              domain%pftm(nb:ne),domain%area(nb:ne),domain%firrig(nb:ne),domain%lonc(nb:ne), &
-             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%glcmask(nb:ne), &
-             domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
+             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%glcmask(nb:ne), &            
+! === Modified by Dalei Hao for 3D-RT
+!            domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
+             domain%xCell(nb:ne),domain%yCell(nb:ne), &
+             domain%stdev_elev(nb:ne),domain%sky_view(nb:ne),domain%terrain_config(nb:ne), &
+             domain%sinsl_cosas(nb:ne),domain%sinsl_sinas(nb:ne),stat=ier)
+! === End 3D-RT
     if (ier /= 0) then
        call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
     endif
@@ -210,7 +223,13 @@ end subroutine domain_init
        deallocate(domain%mask,domain%frac,domain%latc, &
                   domain%lonc,domain%area,domain%firrig,domain%pftm, &
                   domain%topo,domain%f_surf,domain%f_grd,domain%glcmask, &
-                  domain%xCell,domain%yCell,stat=ier)
+! === Modified by Wei-Liang Lee for 3D-RT
+!                 domain%xCell,domain%yCell,stat=ier)
+                  domain%xCell,domain%yCell, &
+                  domain%stdev_elev,domain%sky_view,domain%terrain_config, &
+                  domain%sinsl_cosas,domain%sinsl_sinas,stat=ier)
+! === End 3D-RT
+                  
        if (ier /= 0) then
           call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
        endif
@@ -294,7 +313,14 @@ end subroutine domain_clean
     write(iulog,*) '  domain_check area      = ',minval(domain%area),maxval(domain%area)
     write(iulog,*) '  domain_check pftm      = ',minval(domain%pftm),maxval(domain%pftm)
     write(iulog,*) '  domain_check glcmask   = ',minval(domain%glcmask),maxval(domain%glcmask)
-    write(iulog,*) ' '
+! === Modified by Dalei Hao for 3D-RT
+	write(iulog,*) '  domain_check stdev_elev = ',minval(domain%stdev_elev),maxval(domain%stdev_elev)
+    write(iulog,*) '  domain_check sky_view = ',minval(domain%sky_view),maxval(domain%sky_view)
+    write(iulog,*) '  domain_check terrain_config = ',minval(domain%terrain_config),maxval(domain%terrain_config)
+    write(iulog,*) '  domain_check sinsl_cosas = ',minval(domain%sinsl_cosas),maxval(domain%sinsl_cosas)
+    write(iulog,*) '  domain_check sinsl_sinas = ',minval(domain%sinsl_sinas),maxval(domain%sinsl_sinas)
+! === End 3D-RT
+	write(iulog,*) ' '
   endif
 
 end subroutine domain_check

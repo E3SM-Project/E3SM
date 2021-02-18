@@ -41,6 +41,10 @@ module FrictionVelocityType
      real(r8), pointer :: z0hg_col         (:)   ! col roughness length over ground, sensible heat [m]
      real(r8), pointer :: z0qg_col         (:)   ! col roughness length over ground, latent heat [m]
 
+     !!=== Add by Dalei Hao for output =====
+     real(r8), pointer :: zeta_patch		   (:)   ! dimensionless height used in Monin-Obukhov theory
+	 real(r8), pointer :: ustar_patch   	   (:)   ! friction velocity [m/s]
+     !!=== End 
    contains
 
      procedure, public  :: Init         
@@ -105,6 +109,12 @@ contains
     allocate(this%z0qg_col         (begc:endc)) ; this%z0qg_col         (:)   = nan
     allocate(this%z0hg_col         (begc:endc)) ; this%z0hg_col         (:)   = nan
 
+
+	!!! add by Dalei Hao
+    allocate(this%zeta_patch       (begp:endp)) ; this%zeta_patch       (:)   = nan
+    allocate(this%ustar_patch       (begp:endp)) ; this%ustar_patch       (:)   = nan
+	!!!
+	
   end subroutine InitAllocate
 
   !-----------------------------------------------------------------------
@@ -152,7 +162,24 @@ contains
     call hist_addfld1d (fname='U10', units='m/s', &
          avgflag='A', long_name='10-m wind', &
          ptr_patch=this%u10_clm_patch)
+    
+	!!! add by Dalei hao
+	this%zeta_patch(begp:endp) = spval
+    call hist_addfld1d (fname='zeta_patch', units='unitless', &
+         avgflag='A', long_name='dimensionless height used in Monin-Obukhov theory', &
+         ptr_patch=this%zeta_patch, default='inactive')
 
+    this%ustar_patch(begp:endp) = spval
+    call hist_addfld1d (fname='ustar_patch', units='m/s', &
+         avgflag='A', long_name='friction velocity [m/s]', &
+         ptr_patch=this%ustar_patch, default='inactive')
+		 
+		  this%fv_patch(begp:endp) = spval
+       call hist_addfld1d (fname='FV', units='m/s', &
+            avgflag='A', long_name='friction velocity for dust model', &
+            ptr_patch=this%fv_patch, default='inactive')
+	!!! end
+	
     if (use_cn) then
        this%u10_patch(begp:endp) = spval
        call hist_addfld1d (fname='U10_DUST', units='m/s', &

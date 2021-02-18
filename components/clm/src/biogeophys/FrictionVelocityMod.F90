@@ -111,8 +111,12 @@ contains
          u10              => frictionvel_vars%u10_patch        , & ! Output: [real(r8) (:) ] 10-m wind (m/s) (for dust model)        
          u10_clm          => frictionvel_vars%u10_clm_patch    , & ! Output: [real(r8) (:) ] 10-m wind (m/s)                         
          va               => frictionvel_vars%va_patch         , & ! Output: [real(r8) (:) ] atmospheric wind speed plus convective velocity (m/s)
-         fv               => frictionvel_vars%fv_patch           & ! Output: [real(r8) (:) ] friction velocity (m/s) (for dust model)
-         )
+         fv               => frictionvel_vars%fv_patch         , & ! Output: [real(r8) (:) ] friction velocity (m/s) (for dust model)
+		 !!! add by Dalei Hao
+		 zeta_patch               => frictionvel_vars%zeta_patch         , & ! Output: [real(r8) (:) ] atmospheric wind speed plus convective velocity (m/s)
+         ustar_patch               => frictionvel_vars%ustar_patch         & ! Output: [real(r8) (:) ] friction velocity (m/s) (for dust model)	 
+		 !!!
+		)
 
       ! Adjustment factors for unstable (moz < 0) or stable (moz > 0) conditions.
 
@@ -387,7 +391,19 @@ contains
             u10(n) = ur(n) - ustar(n)/vkc * (tmp4 - fm(n) + fm10)
             fv(n)  = ustar(n)
          end if
-
+		 
+!!! add by Dalei Hao
+         if (present(landunit_index)) then
+            do pp = pfti(n),pftf(n)
+				zeta_patch(pp)  = zeta(n)
+               ustar_patch(pp)  = ustar(n)
+            end do
+         else
+			zeta_patch(n)  = zeta(n)
+            ustar_patch(n)  = ustar(n)
+         end if
+		 !!! end
+		 
       end do
 
     end associate

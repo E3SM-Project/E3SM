@@ -34,6 +34,11 @@ module SurfaceAlbedoType
      real(r8), pointer :: albsnd_hst_col       (:,:) ! col snow albedo, direct , for history files (col,bnd) [frc] 
      real(r8), pointer :: albsni_hst_col       (:,:) ! col snow albedo, diffuse, for history files (col,bnd) [frc] 
 
+     !!=== Add by Dalei Hao for 3D radiative transfer =====
+     real(r8), pointer :: fd_3d_adjust         (:,:) !adjustment factor for direct flux (numrad)
+	 real(r8), pointer :: fi_3d_adjust         (:,:) !adjustment factor for diffuse flux (numrad)
+     !!=== End 3D-RT
+   
      real(r8), pointer :: ftdd_patch           (:,:) ! patch down direct flux below canopy per unit direct flx    (numrad)
      real(r8), pointer :: ftid_patch           (:,:) ! patch down diffuse flux below canopy per unit direct flx   (numrad)
      real(r8), pointer :: ftii_patch           (:,:) ! patch down diffuse flux below canopy per unit diffuse flx  (numrad)
@@ -124,6 +129,11 @@ contains
     allocate(this%albd_patch         (begp:endp,numrad))       ; this%albd_patch         (:,:) = nan
     allocate(this%albi_patch         (begp:endp,numrad))       ; this%albi_patch         (:,:) = nan
 
+    !!=== Add by Dalei Hao for 3D radiative transfer =====
+	allocate(this%fd_3d_adjust       (begp:endp,numrad))       ; this%fd_3d_adjust       (:,:) = nan
+	allocate(this%fi_3d_adjust       (begp:endp,numrad))       ; this%fi_3d_adjust       (:,:) = nan
+    !!=== End 3D-RT
+   
     allocate(this%ftdd_patch         (begp:endp,numrad))       ; this%ftdd_patch         (:,:) = nan
     allocate(this%ftid_patch         (begp:endp,numrad))       ; this%ftid_patch         (:,:) = nan
     allocate(this%ftii_patch         (begp:endp,numrad))       ; this%ftii_patch         (:,:) = nan
@@ -177,28 +187,41 @@ contains
     this%coszen_col(begc:endc) = spval
     call hist_addfld1d (fname='COSZEN', units='none', &
          avgflag='A', long_name='cosine of solar zenith angle', &
-         ptr_col=this%coszen_col, default='inactive')
+         ptr_col=this%coszen_col) !, default='inactive')
 
     this%albgri_col(begc:endc,:) = spval
     call hist_addfld2d (fname='ALBGRD', units='proportion', type2d='numrad', &
          avgflag='A', long_name='ground albedo (direct)', &
-         ptr_col=this%albgrd_col, default='inactive')
+         ptr_col=this%albgrd_col)!, default='inactive')
 
     this%albgri_col(begc:endc,:) = spval
     call hist_addfld2d (fname='ALBGRI', units='proportion', type2d='numrad', &
          avgflag='A', long_name='ground albedo (indirect)', &
-         ptr_col=this%albgri_col, default='inactive')
+         ptr_col=this%albgri_col)!, default='inactive')
 
     this%albd_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='ALBD', units='proportion', type2d='numrad', &
          avgflag='A', long_name='surface albedo (direct)', &
-         ptr_patch=this%albd_patch, default='inactive', c2l_scale_type='urbanf')
+         ptr_patch=this%albd_patch)!, c2l_scale_type='urbanf')!, default='inactive', c2l_scale_type='urbanf')
 
     this%albi_patch(begp:endp,:) = spval
     call hist_addfld2d (fname='ALBI', units='proportion', type2d='numrad', &
          avgflag='A', long_name='surface albedo (indirect)', &
-         ptr_patch=this%albi_patch, default='inactive', c2l_scale_type='urbanf')
+         ptr_patch=this%albi_patch)!, c2l_scale_type='urbanf')!, default='inactive', c2l_scale_type='urbanf')
 
+  
+	!!=== Add by Dalei Hao for 3D radiative transfer =====
+    this%fd_3d_adjust(begp:endp,:) = spval
+    call hist_addfld2d (fname='fd_3d_adjust', units='none', type2d='numrad', &
+         avgflag='A', long_name='fd_3d_adjust', &
+         ptr_patch=this%fd_3d_adjust)
+		 
+	this%fi_3d_adjust(begp:endp,:) = spval
+    call hist_addfld2d (fname='fi_3d_adjust', units='none', type2d='numrad', &
+         avgflag='A', long_name='fi_3d_adjust', &
+         ptr_patch=this%fi_3d_adjust)
+    !!=== End 3D-RT
+   
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -246,6 +269,11 @@ contains
     this%ftid_patch     (begp:endp, :) = 0.0_r8
     this%ftii_patch     (begp:endp, :) = 1.0_r8
  
+ 	!!=== Add by Dalei Hao for 3D radiative transfer =====
+    this%fd_3d_adjust   (begp:endp, :) = 1.0_r8
+	this%fi_3d_adjust   (begp:endp, :) = 1.0_r8
+    !!=== End 3D-RT
+   
   end subroutine InitCold
    
   !---------------------------------------------------------------------

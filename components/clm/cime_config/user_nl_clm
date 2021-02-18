@@ -21,5 +21,11 @@
 ! Set glc_smb            with GLC_SMB                            option
 ! Set maxpatch_glcmec    with GLC_NEC                            option
 ! Set glc_do_dynglacier  with GLC_TWO_WAY_COUPLING               env variable
+!
+!
+! To enable the 3-D topography effect on surface solar radiation in CLM,
+! the following namelist variables are required:
+!   rad_3d_topo = .true.
+!   f3dtopo = '<topographic_factor_path>/topo_3d_{resolution}_c150322.nc'
 !----------------------------------------------------------------------------------
 

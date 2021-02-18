@@ -743,6 +743,9 @@ module UrbanParamsType
     do nl = begg,endg
        do n = 1, numurbl
           if ( pcturb(nl,n) > 0.0_r8 ) then
+		  
+		  	
+			   
              if ( .not. urban_valid(nl) .or. &
                   urbinp%canyon_hwr(nl,n)            <= 0._r8 .or. &
                   urbinp%em_improad(nl,n)            <= 0._r8 .or. &
@@ -772,6 +775,12 @@ module UrbanParamsType
                 found = .true.
                 nindx = nl
                 dindx = n
+				
+			   !write(iulog,*) 'pcturb(nl,n)',pcturb(nl,n)  ! debug by daleihao
+			   !write(iulog,*) 'n1',nindx  ! debug by daleihao
+			   !write(iulog,*) 'n',dindx  ! debug by daleihao
+			   !write(iulog,*) 'urban_valid(nl)',urban_valid(nl)  ! debug by daleihao
+			   
                 exit
              else
                 if (urbinp%nlev_improad(nl,n) > 0) then
@@ -781,6 +790,13 @@ module UrbanParamsType
                       found = .true.
                       nindx = nl
                       dindx = n
+					  
+					  
+					  
+				!	   write(iulog,*) 'pcturb(nl,n)',pcturb(nl,n)  ! debug by daleihao
+			  ! write(iulog,*) 'n1',nindx  ! debug by daleihao
+			  ! write(iulog,*) 'n',dindx  ! debug by daleihao
+			  !   write(iulog,*) 'urban_valid(nl)',urban_valid(nl)  ! debug by daleihao
                       exit
                    end if
                 end if

@@ -255,7 +255,7 @@ contains
          avgflag='A', long_name='Product-limited photosynthesis', &
          ptr_patch=this%fpsn_wp_patch, set_lake=0._r8, set_urb=0._r8)
 
-    if (use_cn) then
+   ! if (use_cn) then
        this%psnsun_patch(begp:endp) = spval
        call hist_addfld1d (fname='PSNSUN', units='umolCO2/m^2/s', &
             avgflag='A', long_name='sunlit leaf photosynthesis', &
@@ -265,7 +265,7 @@ contains
        call hist_addfld1d (fname='PSNSHA', units='umolCO2/m^2/s', &
             avgflag='A', long_name='shaded leaf photosynthesis', &
             ptr_patch=this%psnsha_patch)
-    end if
+   ! end if
 
     if ( use_c13 ) then
        this%c13_psnsun_patch(begp:endp) = spval

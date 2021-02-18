@@ -50,6 +50,8 @@ module controlMod
   use clm_varctl              , only: startdate_add_temperature, startdate_add_co2
   use clm_varctl              , only: add_temperature, add_co2
   use clm_varctl              , only: const_climate_hist
+  use clm_varctl              , only: f3dtopo  ! 3D-RT
+  use SurfaceAlbedoMod        , only: rad_3d_topo  ! 3D-RT
  !
   ! !PUBLIC TYPES:
   implicit none
@@ -295,6 +297,11 @@ contains
 
     namelist /clm_inparm/ &
          use_erosion, ero_ccycle
+		 
+	! 3D topography on radiation options  ! 3D-RT
+    namelist /clm_inparm/  &
+         rad_3d_topo, f3dtopo
+    ! End 3D-RT
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -632,6 +639,7 @@ contains
     call mpi_bcast (fsoilordercon, len(fsoilordercon) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowoptics, len(fsnowoptics),  MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowaging,  len(fsnowaging),   MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (f3dtopo , len(f3dtopo) , MPI_CHARACTER, 0, mpicom, ier)  ! 3D-RT
 
     ! Irrigation
     call mpi_bcast(irrigate, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -741,7 +749,8 @@ contains
     call mpi_bcast (albice, 2, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (more_vertlayers,1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (const_climate_hist, 1, MPI_LOGICAL, 0, mpicom, ier)
-
+    call mpi_bcast (rad_3d_topo , 1, MPI_LOGICAL, 0, mpicom, ier)  ! 3D-RT
+	
     ! glacier_mec variables
     call mpi_bcast (create_glacier_mec_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (maxpatch_glcmec, 1, MPI_INTEGER, 0, mpicom, ier)
@@ -897,6 +906,17 @@ contains
     else
        write(iulog,*) '   atm topographic data = ',trim(fatmtopo)
     end if
+	
+	if (rad_3d_topo) then  ! 3D-RT
+      if (f3dtopo == ' ') then
+         call endrun(subname//' ERROR: f3dtopo not set while rad_3d_topo is True')
+      else
+         write(iulog,*) '   3D topography data = ',trim(f3dtopo)
+      end if
+    else
+       write(iulog,*) '   rad_3d_topo is False, so do not run 3D topopgraphy parameterization'
+    end if  ! End 3D-RT
+	
     if (use_cn) then
        if (suplnitro /= suplnNon)then
           write(iulog,*) '   Supplemental Nitrogen mode is set to run over Patches: ', &
@@ -1011,6 +1031,7 @@ contains
     write(iulog,*) '   urban air conditioning/heating and wasteheat   = ', urban_hac
     write(iulog,*) '   urban traffic flux   = ', urban_traffic
     write(iulog,*) '   more vertical layers = ', more_vertlayers
+	write(iulog,*) '   3D topography on solar radiation   = ', rad_3d_topo  ! 3D-RT
     if (nsrest == nsrContinue) then
        write(iulog,*) 'restart warning:'
        write(iulog,*) '   Namelist not checked for agreement with initial run.'
