@@ -1417,7 +1417,7 @@ is the value of that variable from the *previous* time level!
 	       />
       <var name="meanFlowParamA" type="real" dimensions="nCells" units="Pa^{-3} s^{-1}"
 	       description="depth averaged flow parameter A"
-	       persistence="persistent"
+	       persistence="scratch"
 	       />
 	  <var name="alpha" type="real" dimensions="nCells" units="none"
 	       description="the ratio of the principal horizontal strain rate"
