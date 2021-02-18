@@ -1461,7 +1461,7 @@ contains
            pTop(1) = 0.0_RKIND
            ! At top layer it is g*SSH, where SSH may be off by a
            ! constant (ie, bottomDepth can be relative to top or bottom)
-           montgomeryPotential(1,iCell) = gravity &
+           montgomeryPotential(minLevelCell(iCell),iCell) = gravity &
               * (bottomDepth(iCell) + sum(layerThickness(1:nVertLevels,iCell)))
 
            do k = 2, nVertLevels
@@ -1484,10 +1484,10 @@ contains
         !$omp do schedule(runtime) private(k)
         do iCell = 1, nCells
            ! Pressure for generalized coordinates.
-           pressure(1,iCell) = surfacePressure(iCell) &
-             + density(1,iCell)*gravity*0.5_RKIND*layerThickness(1,iCell)
+           pressure(minLevelCell(iCell),iCell) = surfacePressure(iCell) &
+             + density(minLevelCell(iCell),iCell)*gravity*0.5_RKIND*layerThickness(minLevelCell(iCell),iCell)
 
-           do k = 2, maxLevelCell(iCell)
+           do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
               pressure(k,iCell) = pressure(k-1,iCell)  &
                 + 0.5_RKIND*gravity*(  density(k-1,iCell)*layerThickness(k-1,iCell) &
                                      + density(k  ,iCell)*layerThickness(k  ,iCell))
