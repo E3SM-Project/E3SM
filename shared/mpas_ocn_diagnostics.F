@@ -1703,7 +1703,7 @@ contains
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
 
-            do k = 1, maxLevelEdgeTop(iEdge)
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                flux = layerThicknessEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) &
                     * invAreaCell
                div_hu(k,iCell) = div_hu(k,iCell) - flux
@@ -1736,7 +1736,7 @@ contains
       do iCell = 1,nCells
          vertAleTransportTop(1,iCell) = 0.0_RKIND
          vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
-         do k = maxLevelCell(iCell),2,-1
+         do k = maxLevelCell(iCell), minLevelCell(iCell)+1, -1
             vertAleTransportTop(k,iCell) = vertAleTransportTop(k+1,iCell) - div_hu(k,iCell) &
               - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell))/dt
          end do
