@@ -49,9 +49,13 @@ public:
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real>& field_repo) const;
 
-  // Get the set of required/computed fields
+  // SHOC updates the 'TRACERS' group.
+  void set_updated_group (const FieldGroup<Real>& group);
+
+  // Get the set of required/computed fields and groups
   const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
   const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
+  std::set<GroupRequest> get_updated_groups () const { return m_inout_groups_req; }
 
 protected:
 
@@ -66,9 +70,11 @@ protected:
 
   std::set<FieldIdentifier> m_required_fields;
   std::set<FieldIdentifier> m_computed_fields;
+  std::set<GroupRequest>    m_inout_groups_req;
 
   std::map<std::string,const_field_type>  m_shoc_fields_in;
   std::map<std::string,field_type>        m_shoc_fields_out;
+  std::map<std::string,FieldGroup<Real>>  m_shoc_groups_inout;
 
   ekat::Comm              m_shoc_comm;
   ekat::ParameterList     m_shoc_params;

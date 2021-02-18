@@ -95,63 +95,38 @@ void P3InputsInitializer::initialize_fields ()
     "       and make sure they agree on who's initializing each field.\n");
 
   // Initialize the fields that we expect.
-  // Get device views
-  auto d_T_atm           = m_fields.at("T_atm").get_reshaped_view<Pack**>();
-  auto d_ast             = m_fields.at("ast").get_reshaped_view<Pack**>();
-  auto d_ni_activated    = m_fields.at("ni_activated").get_reshaped_view<Pack**>();
-  auto d_nc_nuceat_tend  = m_fields.at("nc_nuceat_tend").get_reshaped_view<Pack**>();
-  auto d_pmid            = m_fields.at("pmid").get_reshaped_view<Pack**>();
-  auto d_dp              = m_fields.at("dp").get_reshaped_view<Pack**>();
-  auto d_zi              = m_fields.at("zi").get_reshaped_view<Pack**>();
-  auto d_qv_prev         = m_fields.at("qv_prev").get_reshaped_view<Pack**>();
-  auto d_T_prev          = m_fields.at("T_prev").get_reshaped_view<Pack**>();
-  auto d_qv              = m_fields.at("qv").get_reshaped_view<Pack**>();
-  auto d_qc              = m_fields.at("qc").get_reshaped_view<Pack**>();
-  auto d_qr              = m_fields.at("qr").get_reshaped_view<Pack**>();
-  auto d_qi              = m_fields.at("qi").get_reshaped_view<Pack**>();
-  auto d_qm              = m_fields.at("qm").get_reshaped_view<Pack**>();
-  auto d_nc              = m_fields.at("nc").get_reshaped_view<Pack**>();
-  auto d_nr              = m_fields.at("nr").get_reshaped_view<Pack**>();
-  auto d_ni              = m_fields.at("ni").get_reshaped_view<Pack**>();
-  auto d_bm              = m_fields.at("bm").get_reshaped_view<Pack**>();
-  auto d_nccn_prescribed = m_fields.at("nccn_prescribed").get_reshaped_view<Pack**>();
-  auto d_inv_qc_relvar   = m_fields.at("inv_qc_relvar").get_reshaped_view<Pack**>();
+  // Ask directly for host mirrors.
+  auto h_T_atm           = m_fields.at("T_atm").get_reshaped_view<Pack**,Host>();
+  auto h_ast             = m_fields.at("ast").get_reshaped_view<Pack**,Host>();
+  auto h_ni_activated    = m_fields.at("ni_activated").get_reshaped_view<Pack**,Host>();
+  auto h_nc_nuceat_tend  = m_fields.at("nc_nuceat_tend").get_reshaped_view<Pack**,Host>();
+  auto h_pmid            = m_fields.at("pmid").get_reshaped_view<Pack**,Host>();
+  auto h_dp              = m_fields.at("dp").get_reshaped_view<Pack**,Host>();
+  auto h_zi              = m_fields.at("zi").get_reshaped_view<Pack**,Host>();
+  auto h_qv_prev         = m_fields.at("qv_prev").get_reshaped_view<Pack**,Host>();
+  auto h_T_prev          = m_fields.at("T_prev").get_reshaped_view<Pack**,Host>();
+  auto h_qv              = m_fields.at("qv").get_reshaped_view<Pack**,Host>();
+  auto h_qc              = m_fields.at("qc").get_reshaped_view<Pack**,Host>();
+  auto h_qr              = m_fields.at("qr").get_reshaped_view<Pack**,Host>();
+  auto h_qi              = m_fields.at("qi").get_reshaped_view<Pack**,Host>();
+  auto h_qm              = m_fields.at("qm").get_reshaped_view<Pack**,Host>();
+  auto h_nc              = m_fields.at("nc").get_reshaped_view<Pack**,Host>();
+  auto h_nr              = m_fields.at("nr").get_reshaped_view<Pack**,Host>();
+  auto h_ni              = m_fields.at("ni").get_reshaped_view<Pack**,Host>();
+  auto h_bm              = m_fields.at("bm").get_reshaped_view<Pack**,Host>();
+  auto h_nccn_prescribed = m_fields.at("nccn_prescribed").get_reshaped_view<Pack**,Host>();
+  auto h_inv_qc_relvar   = m_fields.at("inv_qc_relvar").get_reshaped_view<Pack**,Host>();
 
   // Set local views which are used in some of the initialization
   auto mdims = m_fields.at("qc").get_header().get_identifier().get_layout();
   Int ncol = mdims.dim(0); 
   Int nk   = mdims.dim(1);
   const Int nk_pack = ekat::npack<Spack>(nk);
-  view_2d d_th_atm("th_atm",ncol,nk_pack);        
-  view_2d d_dz("dz",ncol,nk_pack);                
-  view_2d d_exner("exner",ncol,nk_pack);          
+  view_2d::HostMirror h_th_atm("th_atm",ncol,nk_pack);        
+  view_2d::HostMirror h_dz("dz",ncol,nk_pack);                
+  view_2d::HostMirror h_exner("exner",ncol,nk_pack);          
   
-  // Create host mirrors for all views
-  auto h_T_atm            = Kokkos::create_mirror_view(d_T_atm          ); 
-  auto h_ast              = Kokkos::create_mirror_view(d_ast            ); 
-  auto h_ni_activated     = Kokkos::create_mirror_view(d_ni_activated   ); 
-  auto h_nc_nuceat_tend   = Kokkos::create_mirror_view(d_nc_nuceat_tend ); 
-  auto h_pmid             = Kokkos::create_mirror_view(d_pmid           ); 
-  auto h_dp               = Kokkos::create_mirror_view(d_dp             ); 
-  auto h_zi               = Kokkos::create_mirror_view(d_zi             ); 
-  auto h_qv_prev          = Kokkos::create_mirror_view(d_qv_prev        ); 
-  auto h_T_prev           = Kokkos::create_mirror_view(d_T_prev         ); 
-  auto h_qv               = Kokkos::create_mirror_view(d_qv             ); 
-  auto h_qc               = Kokkos::create_mirror_view(d_qc             ); 
-  auto h_qr               = Kokkos::create_mirror_view(d_qr             ); 
-  auto h_qi               = Kokkos::create_mirror_view(d_qi             ); 
-  auto h_qm               = Kokkos::create_mirror_view(d_qm             ); 
-  auto h_nc               = Kokkos::create_mirror_view(d_nc             ); 
-  auto h_nr               = Kokkos::create_mirror_view(d_nr             ); 
-  auto h_ni               = Kokkos::create_mirror_view(d_ni             ); 
-  auto h_bm               = Kokkos::create_mirror_view(d_bm             ); 
-  auto h_nccn_prescribed  = Kokkos::create_mirror_view(d_nccn_prescribed); 
-  auto h_inv_qc_relvar    = Kokkos::create_mirror_view(d_inv_qc_relvar  ); 
-  auto h_th_atm           = Kokkos::create_mirror_view(d_th_atm         ); 
-  auto h_dz               = Kokkos::create_mirror_view(d_dz             ); 
-  auto h_exner            = Kokkos::create_mirror_view(d_exner          ); 
-
- // Initalize from text file 
+  // Initalize from text file 
   std::ifstream fid("p3_init_vals.txt", std::ifstream::in);
   EKAT_REQUIRE_MSG(!fid.fail(),"Error in p3_inputs_initializer.cpp loading p3_init_vals.txt file");
   std::string tmp_line;
@@ -233,27 +208,27 @@ void P3InputsInitializer::initialize_fields ()
     } // for k
   } // for icol_i
 
-  // Deep copy back to device
-  Kokkos::deep_copy(d_T_atm          , h_T_atm          ); 
-  Kokkos::deep_copy(d_ast            , h_ast            );
-  Kokkos::deep_copy(d_ni_activated   , h_ni_activated   ); 
-  Kokkos::deep_copy(d_nc_nuceat_tend , h_nc_nuceat_tend ); 
-  Kokkos::deep_copy(d_pmid           , h_pmid           ); 
-  Kokkos::deep_copy(d_dp             , h_dp             ); 
-  Kokkos::deep_copy(d_zi             , h_zi             ); 
-  Kokkos::deep_copy(d_qv_prev        , h_qv_prev        ); 
-  Kokkos::deep_copy(d_T_prev         , h_T_prev         ); 
-  Kokkos::deep_copy(d_qv             , h_qv             ); 
-  Kokkos::deep_copy(d_qc             , h_qc             ); 
-  Kokkos::deep_copy(d_qr             , h_qr             ); 
-  Kokkos::deep_copy(d_qi             , h_qi             ); 
-  Kokkos::deep_copy(d_qm             , h_qm             ); 
-  Kokkos::deep_copy(d_nc             , h_nc             ); 
-  Kokkos::deep_copy(d_nr             , h_nr             ); 
-  Kokkos::deep_copy(d_ni             , h_ni             ); 
-  Kokkos::deep_copy(d_bm             , h_bm             ); 
-  Kokkos::deep_copy(d_nccn_prescribed, h_nccn_prescribed); 
-  Kokkos::deep_copy(d_inv_qc_relvar  , h_inv_qc_relvar  ); 
+  // Use Field interface to deep copy back to device
+  m_fields.at("T_atm").sync_to_dev();
+  m_fields.at("ast").sync_to_dev();
+  m_fields.at("ni_activated").sync_to_dev();
+  m_fields.at("nc_nuceat_tend").sync_to_dev();
+  m_fields.at("pmid").sync_to_dev();
+  m_fields.at("dp").sync_to_dev();
+  m_fields.at("zi").sync_to_dev();
+  m_fields.at("qv_prev").sync_to_dev();
+  m_fields.at("T_prev").sync_to_dev();
+  m_fields.at("qv").sync_to_dev();
+  m_fields.at("qc").sync_to_dev();
+  m_fields.at("qr").sync_to_dev();
+  m_fields.at("qi").sync_to_dev();
+  m_fields.at("qm").sync_to_dev();
+  m_fields.at("nc").sync_to_dev();
+  m_fields.at("nr").sync_to_dev();
+  m_fields.at("ni").sync_to_dev();
+  m_fields.at("bm").sync_to_dev();
+  m_fields.at("nccn_prescribed").sync_to_dev();
+  m_fields.at("inv_qc_relvar").sync_to_dev();
 
   if (m_remapper) {
     m_remapper->registration_ends();

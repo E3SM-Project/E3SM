@@ -105,6 +105,9 @@ protected:
 protected:
 #endif
 
+  void get_col_info (const std::shared_ptr<const FieldHeader>& fh,
+                     int vecComp, int& col_offset, int& col_stride) const;
+
   using import_value_type  = import_field_type::RT;
   using export_value_type  = export_field_type::RT;
 

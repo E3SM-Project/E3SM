@@ -117,7 +117,7 @@ void ZMDeepConvection::run_impl (const Real dt)
               m_raw_ptrs_out["ql"], m_raw_ptrs_out["rliq"], m_raw_ptrs_out["landfrac"],
               m_raw_ptrs_out["hu_nm1"], m_raw_ptrs_out["cnv_nm1"], m_raw_ptrs_out["tm1"],
               m_raw_ptrs_out["qm1"], &m_raw_ptrs_out["t_star"], &m_raw_ptrs_out["q_star"],
-              m_raw_ptrs_out["dcape"], m_raw_ptrs_out["q"], &m_raw_ptrs_out["tend_s"],
+              m_raw_ptrs_out["dcape"], m_raw_ptrs_out["qv"], &m_raw_ptrs_out["tend_s"],
               &m_raw_ptrs_out["tend_q"], &m_raw_ptrs_out["cld"], m_raw_ptrs_out["snow"],
               m_raw_ptrs_out["ntprprd"], m_raw_ptrs_out["ntsnprd"],
               &m_raw_ptrs_out["flxprec"], &m_raw_ptrs_out["flxsnow"],

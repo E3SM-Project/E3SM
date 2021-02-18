@@ -37,7 +37,8 @@ public:
   FieldTag tag  (const int idim) const;
   bool has_tag (const FieldTag t) const { return ekat::contains(m_tags,t); }
 
-  int      rank ()               const  { return m_rank; }
+  // The rank is the number of tags associated to this field.
+  int     rank () const  { return m_rank; }
 
   int dim (const FieldTag tag) const;
   int dim (const int idim) const;

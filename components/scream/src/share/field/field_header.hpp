@@ -84,8 +84,6 @@ public:
   // Get the extra data
   const extra_data_type& get_extra_data () const { return m_extra_data; }
 
-  void register_inside_parent ();
-
 protected:
 
   // Static information about the field: name, rank, tags

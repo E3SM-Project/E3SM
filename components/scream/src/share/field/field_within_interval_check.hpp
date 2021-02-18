@@ -14,6 +14,8 @@ namespace scream
 template<typename RealType>
 class FieldWithinIntervalCheck: public FieldPropertyCheck<RealType> {
 public:
+  using non_const_RT = typename FieldPropertyCheck<RealType>::non_const_RT;
+  using const_RT     = typename FieldPropertyCheck<RealType>::const_RT;
 
   // No default constructor -- we need lower and upper bounds.
   FieldWithinIntervalCheck () = delete;
@@ -22,8 +24,8 @@ public:
   // can repair fields that fail the check by overwriting nonpositive values
   // with the given lower bound. If can_repair is false, the check cannot
   // apply repairs to the field.
-  explicit FieldWithinIntervalCheck (RealType lower_bound,
-                                     RealType upper_bound,
+  explicit FieldWithinIntervalCheck (const_RT lower_bound,
+                                     const_RT upper_bound,
                                      bool can_repair = true) :
     m_lower_bound(lower_bound),
     m_upper_bound(upper_bound),
@@ -34,9 +36,9 @@ public:
 
   // Overrides.
 
-  bool check(const Field<RealType>& field) const override {
+  bool check(const Field<const_RT>& field) const override {
     auto view = field.get_view();
-    typename Kokkos::MinMax<RealType>::value_type minmax;
+    typename Kokkos::MinMax<non_const_RT>::value_type minmax;
     Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i,
         typename Kokkos::MinMax<RealType>::value_type& mm) {
       if (i == 0) {
@@ -45,7 +47,7 @@ public:
         mm.min_val = ekat::impl::min(mm.min_val, view(i));
         mm.max_val = ekat::impl::max(mm.max_val, view(i));
       }
-    }, Kokkos::MinMax<RealType>(minmax));
+    }, Kokkos::MinMax<non_const_RT>(minmax));
     return ((minmax.min_val >= m_lower_bound) && (minmax.max_val <= m_upper_bound));
   }
 
@@ -53,7 +55,7 @@ public:
     return m_can_repair;
   }
 
-  void repair(Field<RealType>& field) const override {
+  void repair(Field<non_const_RT>& field) const override {
     if (m_can_repair) {
       auto view = field.get_view();
       RealType lower_bound = m_lower_bound;
@@ -79,7 +81,6 @@ protected:
 
   // Can we repair a field?
   bool m_can_repair;
-
 };
 
 } // namespace scream

@@ -76,7 +76,8 @@ public:
   const std::string& name () const { return m_name; }
 
   // Native layout of a dof. This is the natural way to index a dof in the grid.
-  // E.g., for a 2d field on a SE grid, this will be (nelem,np,np)
+  // E.g., for a scalar 2d field on a SE grid, this will be (nelem,np,np),
+  //       for a vector 3d field on a Point grid it will be (ncols,vector_dim,nlevs)
   virtual FieldLayout get_2d_scalar_layout () const = 0;
   virtual FieldLayout get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const = 0;
   virtual FieldLayout get_3d_scalar_layout (const bool midpoints) const = 0;

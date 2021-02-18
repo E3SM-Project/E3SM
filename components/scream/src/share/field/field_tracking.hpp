@@ -1,6 +1,7 @@
 #ifndef SCREAM_FIELD_TRACKING_HPP
 #define SCREAM_FIELD_TRACKING_HPP
 
+#include "share/field/field_group.hpp"
 #include "share/scream_types.hpp"
 
 #include "share/util/scream_time_stamp.hpp"
@@ -80,7 +81,7 @@ public:
   std::weak_ptr<FieldTracking> get_parent () const { return m_parent; }
 
   // List of field groups that this field belongs to
-  const std::set<ci_string>& get_groups_names () const { return m_groups; }
+  const ekat::WeakPtrSet<const FieldGroupInfo>& get_groups_info () const { return m_groups; }
 
   // ----- Setters ----- //
 
@@ -91,7 +92,7 @@ public:
   void set_value_initializer (const Real value);
 
   // Add the field to a given group
-  void add_to_group (const std::string& group_name);
+  void add_to_group (const std::shared_ptr<const FieldGroupInfo>& group);
 
   // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
   // NOTE: if the field has 'children' (see below), their ts will be updated too.
@@ -141,7 +142,7 @@ protected:
   // get all tracers, which need to be advected. However, dyamics has no idea of what are
   // the tracers names, and neither should it care. Groups can come to rescue here, allowing
   // dynamics to request all fields that have been marked as 'tracers'.
-  std::set<ci_string>    m_groups;
+  ekat::WeakPtrSet<const FieldGroupInfo>    m_groups;
 };
 
 // Use this free function to exploit features of enable_from_this

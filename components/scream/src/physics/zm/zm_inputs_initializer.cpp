@@ -16,7 +16,7 @@ std::vector<string> zm_inputs = {"limcnv_in", "no_deep_pbl_in","lchnk", "ncol", 
       "dlf", "pflx", "zdu", "rprd", "mu", "md", "du", "eu", "ed",
       "dp", "dsubcld", "jt", "maxg", "ideep", "lengath", "ql",
       "rliq", "landfrac", "hu_nm1", "cnv_nm1", "tm1", "qm1", "t_star",
-      "q_star", "dcape", "q", "tend_s", "tend_q", "cld", "snow",
+      "q_star", "dcape", "qv", "tend_s", "tend_q", "cld", "snow",
       "ntprprd", "ztodt", "ntsnprd", "flxprec", "flxsnow", "pguall",
       "pgdall", "icwu", "ncnst", "fracis"};
 
@@ -106,7 +106,7 @@ void set_grid_opts(){
   GridOpts t_star;
   GridOpts q_star;
   GridOpts dcape;
-  GridOpts q;
+  GridOpts qv;
   GridOpts tend_s;
   GridOpts tend_q;
   GridOpts cld;
@@ -171,7 +171,7 @@ void set_grid_opts(){
   set_grid_opts_helper(t_star, "t_star", true, NULL, SCALAR_3D_MID);
   set_grid_opts_helper(q_star, "q_star", true, NULL, SCALAR_3D_MID);
   set_grid_opts_helper(dcape, "dcape", true, NULL, LINEAR);
-  set_grid_opts_helper(q, "q", true, NULL, SCALAR_3D_MID);
+  set_grid_opts_helper(qv, "qv", true, NULL, SCALAR_3D_MID);
   set_grid_opts_helper(tend_s, "tend_s", true, NULL, LINEAR);
   set_grid_opts_helper(tend_q, "tend_q", true, NULL, LINEAR);
   set_grid_opts_helper(cld, "cld", true, NULL, LINEAR);
@@ -243,15 +243,14 @@ void ZMInputsInitializer :: initialize_fields(){
 
 
 
-  for (size_t i = 0; i < zm_inputs.size(); i++){
+  for (const auto& name : zm_inputs) {
     //Get and store device view using input name
-    Kokkos::View<Real*, Kokkos::LayoutRight, DefaultDevice> d_v = m_fields.at(zm_inputs[i]).get_view();
-    //Create and store host mirrors using device views
-    Kokkos::View<scream::Real*, Kokkos::LayoutRight, HostDevice> h_m = Kokkos::create_mirror_view(d_v);
-    //Create and store host mirrors raw pointers
-    // Real* r_p = h_m.data();
-    //Deep copy back to device
-    Kokkos::deep_copy(d_v, h_m);
+    const auto& f = m_fields.at(name);
+    
+    // TODO: Do something to init fields
+
+    // If init was on host, uncomment this line
+    f.sync_to_dev();
   }
 }
 

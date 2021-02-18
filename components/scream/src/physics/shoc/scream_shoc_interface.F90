@@ -93,14 +93,13 @@ contains
 
   end subroutine shoc_init_f90
   !====================================================================!
-  subroutine shoc_main_f90 (dtime,q,FQ) bind(c)
+  subroutine shoc_main_f90 (dtime,q) bind(c)
 
     use shoc,           only: shoc_main
 
 !    real, intent(in) :: q(pcols,pver,9) ! Tracer mass concentrations from SCREAM      kg/kg
     real(kind=c_real), intent(in)    :: dtime ! Timestep
     real(kind=c_real), intent(inout) :: q(pcols,pver,qsize) ! Tracer mass concentrations from SCREAM kg/kg
-    real(kind=c_real), intent(inout) :: FQ(pcols,4,pver) ! Tracer mass concentrations from SCREAM kg/kg
 
     real(kind=c_real) :: cldliq(pcols,pver)     !cloud liquid water mixing ratio        kg/kg
     real(kind=c_real) :: numliq(pcols,pver)     !cloud liquid water drop concentraiton  #/kg
@@ -166,8 +165,7 @@ contains
     end do
 
     test = test + dtime
-    FQ(1,1,1) = 9e9
-    print '(a15,f16.8,4e16.8)', 'SHOC run = ', test, qtest, sum(q), sum(qv), sum(FQ(:,:,:))
+    print '(a15,f16.8,3e16.8)', 'SHOC run = ', test, qtest, sum(q), sum(qv)
 
   end subroutine shoc_main_f90
   !====================================================================!
