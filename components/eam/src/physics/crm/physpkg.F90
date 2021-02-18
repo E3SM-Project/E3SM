@@ -721,7 +721,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
      call conv_water_init
   ! end if
 
-  call crm_physics_init(pbuf2d, species_class)
+  call crm_physics_init(phys_state, pbuf2d, species_class)
 
   call sslt_rebin_init()
   call tropopause_init()
@@ -1017,7 +1017,6 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   use cam_diagnostics,    only: diag_phys_tend_writeout, diag_conv
   use gw_drag,            only: gw_tend
   use vertical_diffusion, only: vertical_diffusion_tend
-  use mmf_surface_mod,    only: mmf_surface_ac
   use rayleigh_friction,  only: rayleigh_friction_tend
   use constituents,       only: cnst_get_ind
   use physics_types,      only: physics_state, physics_tend, physics_ptend, &
@@ -1172,25 +1171,12 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   ! Vertical diffusion/pbl calculation - (pbl, free atmosphere and molecular)
   !-----------------------------------------------------------------------------
 
-#ifndef MMF_SKIP_FLUX
-
-#ifdef MMF_USE_HB
-
   call vertical_diffusion_tend(ztodt, state, &
                                    cam_in%wsx, cam_in%wsy,  &
                                    cam_in%shf, cam_in%cflx, &
                                    surfric, obklen, ptend, ast, &
                                    cam_in%landfrac, sgh30, pbuf )
   call physics_update(state, ptend, ztodt, tend)
-
-#else
-
-  call mmf_surface_ac(state, cam_in, ptend)
-  call physics_update(state, ptend, ztodt, tend)
-
-#endif
-
-#endif
   
   obklen(:) = 0.
   surfric(:) = 0.
@@ -1344,7 +1330,6 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   use crmdims,                only: crm_nz, crm_nx, crm_ny, crm_dx, crm_dy, crm_dt
   use crm_physics,            only: crm_physics_tend, crm_surface_flux_bypass_tend
   use crm_ecpp_output_module, only: crm_ecpp_output_type
-  use mmf_surface_mod,        only: mmf_surface_bc
   use cloud_diagnostics,      only: cloud_diagnostics_calc
 
   implicit none
@@ -1678,18 +1663,6 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   call physics_update(state, ptend, ztodt, tend)  
   call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
                          cam_in%shf(:), zero, zero, cam_in%cflx(:,1)) 
-#endif
-
-  !-----------------------------------------------------------------------------
-  ! experimental surface flux treatment
-  !-----------------------------------------------------------------------------
-#ifndef MMF_SKIP_FLUX
-#ifndef MMF_USE_HB
-  if (.not. is_first_step()) then
-    call mmf_surface_bc(state, cam_in, ptend)
-    call physics_update(state, ptend, ztodt, tend)
-  end if
-#endif
 #endif
 
   !-----------------------------------------------------------------------------
