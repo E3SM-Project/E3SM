@@ -1265,7 +1265,7 @@
 <rsplit > -1 </rsplit>
 <se_nsplit > -1 </se_nsplit>
 
-<se_tstep >                  600 </se_tstep>
+<se_tstep >                  300 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne30np4" >  300 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne45np4" >  200 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne60np4" >  150 </se_tstep>
