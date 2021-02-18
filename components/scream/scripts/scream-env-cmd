@@ -27,11 +27,11 @@ OR
     > eval $({0} mappy)
 
     \033[1;32m# Encapsulate this in a bash function for maximum convenience \033[0m
-    load_scream () {{ eval $(dump-scream-env mappy); }}
+    load_scream () {{ eval $({0} mappy); }}
     > load_scream
 
     \033[1;32m# A more-flexible bash function \033[0m
-    load_scream () {{ eval $(dump-scream-env $1); }}
+    load_scream () {{ eval $({0} $1); }}
     > load_scream mappy
 
 """.format(pathlib.Path(args[0]).name),
