@@ -115,7 +115,7 @@ contains
        pio_comp_settings(i)%pio_rearranger = pio_rearranger
        pio_comp_settings(i)%pio_netcdf_ioformat = pio_netcdf_ioformat
     end do
-    print *,__FILE__,__LINE__,pio_debug_level
+
     if(pio_debug_level>0) then
        if(drank==0) then
           write(shr_log_unit,*) 'Setting pio_debuglevel : ',pio_debug_level
