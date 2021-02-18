@@ -651,6 +651,7 @@ contains
       !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
+      !$acc                   surfacePressure,                         &
       !$acc                   potentialDensity,                        &
       !$acc                   displacedDensity,                        &
       !$acc                   boundaryLayerDepth,                      &
@@ -886,6 +887,7 @@ contains
       !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
+      !$acc                   surfacePressure,                         &
       !$acc                   potentialDensity,                        &
       !$acc                   displacedDensity,                        &
       !$acc                   boundaryLayerDepth,                      &
