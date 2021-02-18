@@ -761,6 +761,8 @@ contains
     outputField % isVarArray       = .false.
     outputField % isPersistent     = .true.
 
+    allocate(outputField % attLists(1))
+
   end subroutine create_new_output_field_1D
 
 !***********************************************************************
@@ -822,6 +824,8 @@ contains
     outputField % isActive         = .true.
     outputField % isVarArray       = .false.
     outputField % isPersistent     = .true.
+
+    allocate(outputField % attLists(1))
 
   end subroutine create_new_output_field_2D
 
