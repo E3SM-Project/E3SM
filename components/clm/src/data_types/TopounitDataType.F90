@@ -147,7 +147,11 @@ module TopounitDataType
     call hist_addfld1d (fname='RH', units='%',  &
          avgflag='A', long_name='atmospheric relative humidity', &
          ptr_gcell=this%rhbot, default='inactive')
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> e05e89d9b3d048ea47aecc06c3ac4c18cfad7bd4
 	!!! add by Dalei Hao
     this%rhobot(begt:endt) = spval
     call hist_addfld1d (fname='RHO', units='kg/m**3',  &
@@ -155,6 +159,10 @@ module TopounitDataType
          ptr_gcell=this%rhobot, default='inactive')
 	!!! end
 	
+<<<<<<< HEAD
+=======
+	
+>>>>>>> e05e89d9b3d048ea47aecc06c3ac4c18cfad7bd4
     this%windbot(begt:endt) = spval
     call hist_addfld1d (fname='WIND', units='m/s',  &
          avgflag='A', long_name='atmospheric wind velocity magnitude', &

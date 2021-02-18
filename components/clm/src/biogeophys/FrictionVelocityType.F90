@@ -109,7 +109,10 @@ contains
     allocate(this%z0qg_col         (begc:endc)) ; this%z0qg_col         (:)   = nan
     allocate(this%z0hg_col         (begc:endc)) ; this%z0hg_col         (:)   = nan
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> e05e89d9b3d048ea47aecc06c3ac4c18cfad7bd4
 	!!! add by Dalei Hao
     allocate(this%zeta_patch       (begp:endp)) ; this%zeta_patch       (:)   = nan
     allocate(this%ustar_patch       (begp:endp)) ; this%ustar_patch       (:)   = nan
@@ -162,7 +165,11 @@ contains
     call hist_addfld1d (fname='U10', units='m/s', &
          avgflag='A', long_name='10-m wind', &
          ptr_patch=this%u10_clm_patch)
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> e05e89d9b3d048ea47aecc06c3ac4c18cfad7bd4
 	!!! add by Dalei hao
 	this%zeta_patch(begp:endp) = spval
     call hist_addfld1d (fname='zeta_patch', units='unitless', &
@@ -174,12 +181,22 @@ contains
          avgflag='A', long_name='friction velocity [m/s]', &
          ptr_patch=this%ustar_patch, default='inactive')
 		 
+<<<<<<< HEAD
 		  this%fv_patch(begp:endp) = spval
        call hist_addfld1d (fname='FV', units='m/s', &
+=======
+	this%fv_patch(begp:endp) = spval
+    call hist_addfld1d (fname='FV', units='m/s', &
+>>>>>>> e05e89d9b3d048ea47aecc06c3ac4c18cfad7bd4
             avgflag='A', long_name='friction velocity for dust model', &
             ptr_patch=this%fv_patch, default='inactive')
 	!!! end
 	
+<<<<<<< HEAD
+=======
+	
+	
+>>>>>>> e05e89d9b3d048ea47aecc06c3ac4c18cfad7bd4
     if (use_cn) then
        this%u10_patch(begp:endp) = spval
        call hist_addfld1d (fname='U10_DUST', units='m/s', &

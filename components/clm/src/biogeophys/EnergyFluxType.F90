@@ -300,7 +300,11 @@ contains
     call hist_addfld1d (fname='BTRAN', units='unitless',  &
          avgflag='A', long_name='transpiration beta factor', &
          ptr_patch=this%btran_patch, set_lake=spval, set_urb=spval)
+<<<<<<< HEAD
 		 
+=======
+
+>>>>>>> e05e89d9b3d048ea47aecc06c3ac4c18cfad7bd4
 	!!! add output (pft-based SH and LH) by Dalei Hao 12/6/2020	 
 	this%eflx_sh_tot_patch(begp:endp) = spval
     call hist_addfld1d (fname='SH_pft', units='W/m^2',  &
@@ -313,6 +317,10 @@ contains
          ptr_patch=this%eflx_lh_tot_patch, default='inactive')
     !!! end
 	
+<<<<<<< HEAD
+=======
+	
+>>>>>>> e05e89d9b3d048ea47aecc06c3ac4c18cfad7bd4
     if (use_cn) then
        this%rresis_patch(begp:endp,:) = spval
        call hist_addfld2d (fname='RRESIS', units='proportion', type2d='levgrnd', &
