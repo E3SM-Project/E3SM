@@ -3,7 +3,7 @@ from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_cu
     get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
-    get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, get_mach_env_setup_command, \
+    get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
     get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler, is_machine_supported
 
 check_minimum_python_version(3, 4)
@@ -18,11 +18,12 @@ class TestAllScream(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, cxx_compiler, f90_compiler, c_compiler, submit=False, parallel=False, fast_fail=False,
+    def __init__(self, cxx_compiler=None, f90_compiler=None, c_compiler=None,
+                 submit=False, parallel=False, fast_fail=False,
                  baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
                  integration_test="JENKINS_HOME" in os.environ, local=False, root_dir=None, work_dir=None,
-                 quick_rerun=False,quick_rerun_failed=False,dry_run=False,print_mach_setup=False,
+                 quick_rerun=False,quick_rerun_failed=False,dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
 
@@ -48,7 +49,6 @@ class TestAllScream(object):
         self._quick_rerun             = quick_rerun
         self._quick_rerun_failed      = quick_rerun_failed
         self._dry_run                 = dry_run
-        self._print_mach_setup        = print_mach_setup
         self._must_generate_baselines = False
 
         if self._quick_rerun_failed:
@@ -360,10 +360,10 @@ class TestAllScream(object):
         # Netcdf should be available. But if the user is doing a testing session
         # where all netcdf-related code is disabled, he/she should be able to run
         # even if no netcdf is available
-        stat, f_path, err = run_cmd("nf-config --prefix")
+        stat, f_path, _ = run_cmd("nf-config --prefix")
         if stat == 0:
             result += " -DNetCDF_Fortran_PATHS={}".format(f_path)
-        stat, c_path, err = run_cmd("nc-config --prefix")
+        stat, c_path, _ = run_cmd("nc-config --prefix")
         if stat == 0:
             result += " -DNetCDF_C_PATHS={}".format(c_path)
 
@@ -650,12 +650,6 @@ class TestAllScream(object):
     ###############################################################################
     def test_all_scream(self):
     ###############################################################################
-
-        if self._print_mach_setup:
-            # Simply print mach env, then return
-            s = " && ".join(get_mach_env_setup_command(self._machine))
-            print ("\nBash commands for machine '{}' setup:\n\n  {}\n".format(self._machine,s))
-            return True
 
         # Add any override the user may have requested
         for env_var in self._custom_env_vars:
