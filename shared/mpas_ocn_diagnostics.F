@@ -2147,11 +2147,11 @@ contains
          cell2 = cellsOnEdge(2, iEdge)
 
          ! top drag tau = - CD*|u|*u, where |u| = sqrt(2*KE) = sqrt(KE1 + KE2) from the neighboring cells
-         velocityMagnitude = sqrt(kineticEnergyCell(1,cell1) + kineticEnergyCell(1,cell2))
+         velocityMagnitude = sqrt(kineticEnergyCell(minLevelCell(cell1),cell1) + kineticEnergyCell(minLevelCell(cell1),cell2))
          landIceEdgeFraction = 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
 
          topDrag(iEdge) = - rho_sw * landIceEdgeFraction * config_land_ice_flux_topDragCoeff &
-                          * velocityMagnitude * normalVelocity(1,iEdge)
+                          * velocityMagnitude * normalVelocity(minLevelEdgeBot(iEdge),iEdge)
 
       end do
       !$omp end do
@@ -2161,11 +2161,12 @@ contains
       do iCell = 1, nCellsAll
          ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
          topDragMag(iCell) = rho_sw * landIceFraction(iCell) &
-                           * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(1,iCell)
+                           * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(minLevelCell(iCell),iCell)
 
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
-         landIceFrictionVelocity(iCell) = sqrt(config_land_ice_flux_topDragCoeff * (2.0_RKIND * kineticEnergyCell(1,iCell) &
+         landIceFrictionVelocity(iCell) = sqrt(config_land_ice_flux_topDragCoeff * &
+                                   (2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell) &
                                    + config_land_ice_flux_rms_tidal_velocity**2))
       end do
       !$omp end do
@@ -2176,7 +2177,7 @@ contains
          blThickness = 0.0_RKIND
          blTempScratch(iCell) = 0.0_RKIND
          blSaltScratch(iCell) = 0.0_RKIND
-         do iLevel = 1, maxLevelCell(iCell)
+         do iLevel = minLevelCell(iCell), maxLevelCell(iCell)
             dz = min(layerThickness(iLevel,iCell),config_land_ice_flux_boundaryLayerThickness-blThickness)
             if(dz <= 0.0_RKIND) exit
             blTempScratch(iCell) = blTempScratch(iCell) + activeTracers(indexT, iLevel, iCell)*dz
@@ -2200,10 +2201,10 @@ contains
                cell2 = cellsOnCell(i,iCell)
 
                landIceBoundaryLayerTracers(indexBLT, iCell) = landIceBoundaryLayerTracers(indexBLT, iCell) &
-                 + cellMask(1,cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
+                 + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
                landIceBoundaryLayerTracers(indexBLS, iCell) = landIceBoundaryLayerTracers(indexBLS, iCell) &
-                 + cellMask(1,cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
-               weightSum = weightSum + cellMask(1,cell2)*config_land_ice_flux_boundaryLayerNeighborWeight
+                 + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
+               weightSum = weightSum + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight
             end do
             landIceBoundaryLayerTracers(:, iCell) = landIceBoundaryLayerTracers(:, iCell)/weightSum
          end if
