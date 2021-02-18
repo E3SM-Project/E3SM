@@ -73,7 +73,6 @@
 <config_hmix_scaleWithMesh ocn_grid="WC14to60E2r3">.true.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
 <config_hmix_use_ref_cell_width>.false.</config_hmix_use_ref_cell_width>
-<config_hmix_use_ref_cell_width ocn_grid="WC14to60E2r3">.true.</config_hmix_use_ref_cell_width>
 <config_hmix_ref_cell_width>30.0e3</config_hmix_ref_cell_width>
 <config_apvm_scale_factor>0.0</config_apvm_scale_factor>
 
@@ -93,7 +92,7 @@
 <config_mom_del2 ocn_grid="oEC60to30v3wLI">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="ECwISC30to60E1r2">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="EC30to60E2r2">1000.0</config_mom_del2>
-<config_mom_del2 ocn_grid="WC14to60E2r3">250.0</config_mom_del2>
+<config_mom_del2 ocn_grid="WC14to60E2r3">462.0</config_mom_del2>
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
 <config_tracer_del2>10.0</config_tracer_del2>
 
@@ -118,7 +117,7 @@
 <config_mom_del4 ocn_grid="oARRM60to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oARRM60to6">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="EC30to60E2r2">1.2e11</config_mom_del4>
-<config_mom_del4 ocn_grid="WC14to60E2r3">1.5e10</config_mom_del4>
+<config_mom_del4 ocn_grid="WC14to60E2r3">1.18e10</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
 <config_tracer_del4>0.0</config_tracer_del4>
@@ -131,7 +130,6 @@
 
 <!-- mesoscale_eddy_parameterizations -->
 <config_eddying_resolution_taper>'ramp'</config_eddying_resolution_taper>
-<config_eddying_resolution_taper ocn_grid="EC30to60E2r2">'none'</config_eddying_resolution_taper>
 <config_eddying_resolution_ramp_min>20e3</config_eddying_resolution_ramp_min>
 <config_eddying_resolution_ramp_max>30e3</config_eddying_resolution_ramp_max>
 
@@ -165,6 +163,7 @@
 <config_use_GM ocn_grid="oRRS15to5">.false.</config_use_GM>
 <config_GM_closure>'EdenGreatbatch'</config_GM_closure>
 <config_GM_closure ocn_grid="EC30to60E2r2">'constant'</config_GM_closure>
+<config_GM_closure ocn_grid="WC14to60E2r3">'constant'</config_GM_closure>
 <config_GM_constant_kappa>1800.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="oEC60to30v3wLI">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="ECwISC30to60E1r2">600.0</config_GM_constant_kappa>
@@ -894,7 +893,7 @@
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to10">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to6">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="EC30to60E2r2">.true.</config_AM_mocStreamfunction_enable>
-<config_AM_mocStreamfunction_enable ocn_grid="WC14to60E2r3">.false.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="WC14to60E2r3">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_compute_interval>'0000-00-00_01:00:00'</config_AM_mocStreamfunction_compute_interval>
 <config_AM_mocStreamfunction_output_stream>'mocStreamfunctionOutput'</config_AM_mocStreamfunction_output_stream>
 <config_AM_mocStreamfunction_compute_on_startup>.true.</config_AM_mocStreamfunction_compute_on_startup>
