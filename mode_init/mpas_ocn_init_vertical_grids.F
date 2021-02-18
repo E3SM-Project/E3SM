@@ -703,7 +703,7 @@ contains
             ssh = minSSH
          end if
       else if (config_pc_alteration_type == 'full_cell') then
-         ssh = zBot
+         ssh = zTop
       else
          call mpas_log_write(' Error: Incorrect choice of config_pc_alteration_type: '// config_pc_alteration_type)
          iErr = 1
