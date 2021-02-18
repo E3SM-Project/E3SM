@@ -1142,7 +1142,7 @@ contains
         do i = 1, nEdgesOnCell(iCell)
           j = kiteIndexOnCell(i, iCell)
           iVertex = verticesOnCell(i, iCell)
-          do k = 1, maxLevelCell(iCell)
+          do k = minLevelCell(iCell), maxLevelCell(iCell)
             relativeVorticityCell(k, iCell) = relativeVorticityCell(k, iCell) + kiteAreasOnVertex(j, iVertex) &
                                             * relativeVorticity(k, iVertex) * invAreaCell1
           end do
@@ -1175,7 +1175,7 @@ contains
             edgeSignOnCell_temp = edgeSignOnCell(i, iCell)
             dcEdge_temp = dcEdge(iEdge)
             dvEdge_temp = dvEdge(iEdge)
-            do k = 1, maxLevelCell(iCell)
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
                r_tmp = dvEdge_temp * normalVelocity(k, iEdge) * invAreaCell1
 
                divergence(k, iCell) = divergence(k, iCell) - edgeSignOnCell_temp * r_tmp
@@ -1194,7 +1194,7 @@ contains
          end do
          ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
          vertVelocityTop(maxLevelCell(iCell)+1, iCell) = 0.0_RKIND
-         do k=maxLevelCell(iCell),1,-1
+         do k = maxLevelCell(iCell), 1, -1
             vertVelocityTop(k,iCell) = vertVelocityTop(k+1,iCell) - div_hu(k)
             vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_huTransport(k)
             vertGMBolusVelocityTop(k,iCell) = vertGMBolusVelocityTop(k+1,iCell) - div_huGMBolus(k)
@@ -1214,7 +1214,7 @@ contains
          do i = 1, nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(i,iEdge)
             weightsOnEdge_temp = weightsOnEdge(i, iEdge)
-            do k = 1, maxLevelEdgeTop(iEdge)
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                tangentialVelocity(k,iEdge) = tangentialVelocity(k,iEdge) &
                                               + weightsOnEdge_temp * normalVelocity(k, eoe)
             end do
