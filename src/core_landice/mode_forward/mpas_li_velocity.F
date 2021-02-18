@@ -896,7 +896,7 @@ contains
       !-----------------------------------------------------------------
 
       real(kind=RKIND), dimension(:), pointer :: exx, eyy, exy, eyx, eTheta, eMax, eMin
-      real(kind=RKIND), dimension(:), pointer :: sigmaxx, sigmayy, sigmaxy, sigmayx, sigmamax, sigmamin
+      real(kind=RKIND), dimension(:), pointer :: tauxx, tauyy, tauxy, tauyx, tauMax, tauMin
       real(kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
       integer :: err_tmp
 
@@ -930,12 +930,12 @@ contains
       call mpas_pool_get_array(velocityPool, 'eMax', eMax)
       call mpas_pool_get_array(velocityPool, 'eMin', eMin)
 
-      call mpas_pool_get_array(velocityPool, 'sigmaxx', sigmaxx)
-      call mpas_pool_get_array(velocityPool, 'sigmayy', sigmayy)
-      call mpas_pool_get_array(velocityPool, 'sigmaxy', sigmaxy)
-      call mpas_pool_get_array(velocityPool, 'sigmayx', sigmayx)
-      call mpas_pool_get_array(velocityPool, 'sigmamax', sigmamax)
-      call mpas_pool_get_array(velocityPool, 'sigmamin', sigmamin)
+      call mpas_pool_get_array(velocityPool, 'tauxx', tauxx)
+      call mpas_pool_get_array(velocityPool, 'tauyy', tauyy)
+      call mpas_pool_get_array(velocityPool, 'tauxy', tauxy)
+      call mpas_pool_get_array(velocityPool, 'tauyx', tauyx)
+      call mpas_pool_get_array(velocityPool, 'tauMax', tauMax)
+      call mpas_pool_get_array(velocityPool, 'tauMin', tauMin)
 
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
@@ -977,16 +977,16 @@ contains
       endwhere
 
       ! calculate deviatoric stresses
-      sigmaxx(:) = 2.0_RKIND*effectiveViscosity(:)*exx(:)
-      sigmayy(:) = 2.0_RKIND*effectiveViscosity(:)*eyy(:)
-      sigmaxy(:) = 2.0_RKIND*effectiveViscosity(:)*(exy(:)+eyx(:))/2.0_RKIND
-      sigmayx(:) = 2.0_RKIND*effectiveViscosity(:)*(eyx(:)+exy(:))/2.0_RKIND
+      tauxx(:) = 2.0_RKIND*effectiveViscosity(:)*exx(:)
+      tauyy(:) = 2.0_RKIND*effectiveViscosity(:)*eyy(:)
+      tauxy(:) = 2.0_RKIND*effectiveViscosity(:)*(exy(:)+eyx(:))/2.0_RKIND
+      tauyx(:) = 2.0_RKIND*effectiveViscosity(:)*(eyx(:)+exy(:))/2.0_RKIND
 
       ! calculate principal stresses
-      sigmamin(:) = &
-      (sigmaxx(:)+sigmayy(:))/2.0_RKIND-sqrt(((sigmaxx(:)-sigmayy(:))/2.0_RKIND)**2.0_RKIND+((sigmaxy(:)+sigmayx(:))/2.0_RKIND)**2.0_RKIND)
-      sigmamax(:) = &
-      (sigmaxx(:)+sigmayy(:))/2.0_RKIND+sqrt(((sigmaxx(:)-sigmayy(:))/2.0_RKIND)**2.0_RKIND+((sigmaxy(:)+sigmayx(:))/2.0_RKIND)**2.0_RKIND)
+      tauMin(:) = &
+      (tauxx(:)+tauyy(:))/2.0_RKIND-sqrt(((tauxx(:)-tauyy(:))/2.0_RKIND)**2.0_RKIND+((tauxy(:)+tauyx(:))/2.0_RKIND)**2.0_RKIND)
+      tauMax(:) = &
+      (tauxx(:)+tauyy(:))/2.0_RKIND+sqrt(((tauxx(:)-tauyy(:))/2.0_RKIND)**2.0_RKIND+((tauxy(:)+tauyx(:))/2.0_RKIND)**2.0_RKIND)
 
       call mpas_deallocate_scratch_field(meanFlowParamAVar, .true.)
 
