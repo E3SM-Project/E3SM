@@ -1367,7 +1367,7 @@ contains
          zMid(k:nVertLevels,iCell) = -bottomDepth(iCell) + 0.5_RKIND*layerThickness(k,iCell)
          zTop(k:nVertLevels,iCell) = -bottomDepth(iCell) + layerThickness(k,iCell)
 
-         do k = maxLevelCell(iCell)-1, 1, -1
+         do k = maxLevelCell(iCell)-1, minLevelCell(iCell), -1
             zMid(k,iCell) = zMid(k+1,iCell)  &
               + 0.5_RKIND*(  layerThickness(k+1,iCell) &
                            + layerThickness(k  ,iCell))
@@ -1376,7 +1376,7 @@ contains
          end do
 
          ! copy zTop(1,iCell) into sea-surface height array
-         ssh(iCell) = zTop(1,iCell)
+         ssh(iCell) = zTop(minLevelCell(iCell),iCell)
 
       end do
       !$omp end do
