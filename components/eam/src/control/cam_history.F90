@@ -2093,7 +2093,7 @@ CONTAINS
     case ('B')
       time_op(:) = 'mean00z'
     case ('I')
-      time_op(:) = ' '
+      time_op(:) = 'point'
     case ('X')
       time_op(:) = 'maximum'
     case ('M')
@@ -4061,7 +4061,7 @@ end subroutine print_active_fldlst
         !
         str = tape(t)%hlist(f)%time_op
         select case (str)
-        case ('mean', 'maximum', 'minimum' )
+        case ('mean', 'maximum', 'minimum','point' )
           ierr = pio_put_att(tape(t)%File, varid, 'cell_methods', 'time: '//str)
           call cam_pio_handle_error(ierr,                                     &
                'h_define: cannot define cell_methods for '//trim(fname_tmp))
