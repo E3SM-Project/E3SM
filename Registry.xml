@@ -1266,22 +1266,22 @@ is the value of that variable from the *previous* time level!
                 <var name="eMin" type="real" dimensions="nCells Time" units="s^{-1}"
                      description="magnitude of second principal surface strain rate"
                 />
-                <var name="sigmaxx" type="real" dimensions="nCells Time" units="Pa"
+                <var name="tauxx" type="real" dimensions="nCells Time" units="Pa"
                      description="deviatoric stress xx"
                 />
-                <var name="sigmayy" type="real" dimensions="nCells Time" units="Pa"
+                <var name="tauyy" type="real" dimensions="nCells Time" units="Pa"
                      description="deviatoric stress yy"
                 />
-                <var name="sigmaxy" type="real" dimensions="nCells Time" units="Pa"
+                <var name="tauxy" type="real" dimensions="nCells Time" units="Pa"
                      description="deviatoric stress xy"
                 />
-                <var name="sigmayx" type="real" dimensions="nCells Time" units="Pa"     
+                <var name="tauyx" type="real" dimensions="nCells Time" units="Pa"     
                      description="deviatoric stress yx"
                 />
-                <var name="sigmamax" type="real" dimensions="nCells Time" units="Pa"    
+                <var name="tauMax" type="real" dimensions="nCells Time" units="Pa"    
                      description="maximum principal stress"
                 />
-                <var name="sigmamin" type="real" dimensions="nCells Time" units="Pa"    
+                <var name="tauMin" type="real" dimensions="nCells Time" units="Pa"    
                      description="minimum principal stress"
                 />
                 <var name="fluxAcrossGroundingLine" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
