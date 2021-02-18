@@ -1795,7 +1795,7 @@ contains
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
-         do k = 1, maxLevelEdgeTop(iEdge)
+         do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
             normalVelocity(k,iEdge) = 0.0_RKIND
             do j = 1,nEdgesOnEdge(iEdge)
