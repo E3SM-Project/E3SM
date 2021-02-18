@@ -1183,20 +1183,18 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       integer :: iCell, iNeighbor, iEdge, nEmptyNeighbors
       real (kind=RKIND), pointer :: rhoi
-      integer, pointer :: nCellsSolve, nEdgesSolve, maxEdges
-      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
-      real (kind=RKIND) :: waterDepth, submergedFaceArea, oceanEdgeLength
+      integer, pointer :: nCells, nCellsSolve
+      integer, dimension(:,:), pointer :: cellsOnCell, edgesOnCell
+      real (kind=RKIND) :: waterDepth
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool, meshPool, scratchPool, velocityPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, velocityPool
       real (kind=RKIND), pointer :: seaLevel
-      real (kind=RKIND), pointer :: deltat
-      real (kind=RKIND), dimension(:), pointer :: dvEdge
-      real (kind=RKIND), dimension(:), pointer :: thickness, lowerSurface, faceMeltingThickness
+      real (kind=RKIND), dimension(:), pointer :: thickness, faceMeltingThickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: TFocean, ismip6Runoff
       real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, dimension(:), pointer :: cellMask, edgeMask, nEdgesOnCell
-      real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), pointer :: aSubglacial ! param A
       real (kind=RKIND), pointer :: alphaSubglacial ! param alpha
       real (kind=RKIND), pointer :: B ! param B
@@ -1206,11 +1204,12 @@ module li_iceshelf_melt
       character(len=StrKIND), pointer :: config_front_mass_bal_grounded
       real (kind=RKIND), parameter :: secPerDay = 86400.0
       real (kind=RKIND), parameter :: rhow = 1000.0 ! subglacial runoff density
-      integer, dimension(:), pointer :: groundedMarineMarginMask
-      real (kind=RKIND), dimension(:), pointer :: faceMeltRateApplied, faceMeltSpeed
+      real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed
+      real (kind=RKIND), dimension(:), allocatable :: faceMeltSpeedVertAvg !vertically averaged faceMeltSpeed 
+                                                                !to pass to  li_apply_front_ablation_velocity,
+                                                                !because faceMeltSpeed is only below water-line
       integer :: err_tmp
       logical :: applyToFloating, applyToGrounded, applyToGroundingLine
-      logical :: applyMelting, applyCalving
        
       err = 0
       call mpas_log_write('Starting face melt routine')
@@ -1219,8 +1218,6 @@ module li_iceshelf_melt
       applyToFloating = .false. ! if true, only apply to floating ice
       applyToGrounded = .false.  ! if true, only apply to grounded
       applyToGroundingLine = .true. ! if true, apply at grounding line
-      applyMelting = .true.
-      applyCalving = .false.
 
       ! Get sea level, bedTopography, ice density
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
@@ -1239,55 +1236,33 @@ module li_iceshelf_melt
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
-         call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
          ! Get ISMIP6 forcing fields
          call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean) 
          call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
-         call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
         
          ! Get mesh and geometry arrays
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
          call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
          call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface) 
-         call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
-         call mpas_pool_get_array(geometryPool, 'faceMeltRateApplied', faceMeltRateApplied)
          call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
-         call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
-         faceMeltRateApplied(:) = 0.0_RKIND
          faceMeltSpeed(:) = 0.0_RKIND 
-       ! Calculate retreat rate for each cell
+         allocate(faceMeltSpeedVertAvg(nCells+1))
+         faceMeltSpeedVertAvg(:) = 0.0_RKIND
+
+       ! Calculate face melting for each cell
          do iCell = 1, nCellsSolve
-            ! Define marine marginal cells as those that are (1) at the ice
-            ! margin, (2) have at least one neighboring cell without ice, (3) contain
-            ! grounded ice, and (4) have bed topography below sea level.
-            ! OR is adjacent to an inactive floating margin cell
-            oceanEdgeLength = 0.0_RKIND
-            
-            ! Calculate length of grounding line for each cell
-            if ( bedTopography(iCell) < seaLevel &
-                .and. li_mask_is_grounded_ice(cellMask(iCell)) ) then
-               do iEdge = 1, nEdgesOnCell(iCell)
-                 iNeighbor = cellsOnCell(iEdge, iCell)
-                 if ( li_mask_is_grounding_line(edgeMask(edgesOnCell(iEdge,iCell))) ) then 
-                    oceanEdgeLength = oceanEdgeLength + dvEdge(edgesOnCell(iEdge, iCell))
-                 endif
-               enddo 
-            endif
             
             if ( bedTopography(iCell) < 0.0_RKIND ) then
                 waterDepth = seaLevel - bedTopography(iCell)
@@ -1295,8 +1270,6 @@ module li_iceshelf_melt
                 waterDepth = 0.0
             endif
            
-            submergedFaceArea = waterDepth * oceanEdgeLength
-                
             if (trim(config_front_mass_bal_grounded) == 'ismip6') then                
                 ! Calculate ice front melt rate at each cell
                faceMeltSpeed(iCell) = (aSubglacial * waterDepth * & ! m s^-1
@@ -1307,18 +1280,28 @@ module li_iceshelf_melt
             endif
 
          enddo
+        
+         where ( (thickness > 0.0_RKIND) .and. (lowerSurface < 0.0_RKIND) )
+               faceMeltSpeedVertAvg(:) = faceMeltSpeed(:) * abs(lowerSurface(:)) / thickness(:)
+         end where
 
-         call mpas_log_write("calling li_apply_front_ablation_velocity")
+         call mpas_log_write("calling li_apply_front_ablation_velocity from li_grounded_face_melt_ismip6")
          ! Distribute melt among neighbors
-         call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
-                                            applyToFloating, applyToGroundingLine, applyCalving, &
-                                            applyMelting, domain, err)
+         call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, &
+                                            faceMeltingThickness, faceMeltSpeedVertAvg, applyToGrounded, &
+                                            applyToFloating, applyToGroundingLine, domain, err)
 
-         call mpas_log_write("Back to melting routine")
+
+         ! Update halos on calvingThickness or faceMeltingThickness before applying it.
+         ! Testing seemed to indicate this is not necessary, but I don't understand
+         ! why not, so leaving it.
+         ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'faceMeltingThickness')
+         call mpas_timer_stop("halo updates")
 
          ! Apply facemelt: open the Ark
          thickness(:) = thickness(:) - faceMeltingThickness(:)
-         faceMeltRateApplied = faceMeltingThickness(:) * areaCell(:) / deltat     
 
          ! update mask
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
@@ -1326,6 +1309,8 @@ module li_iceshelf_melt
 
          block => block % next
       enddo    ! associated(block)
+
+    deallocate(faceMeltSpeedVertAvg)
 
     end subroutine li_grounded_face_melt_ismip6
 !-----------------------------------------------------------------------

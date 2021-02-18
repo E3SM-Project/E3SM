@@ -1124,7 +1124,6 @@ module li_calving
       real(kind=RKIND) :: calvingSubtotal
       integer :: err_tmp
       logical :: applyToGrounded, applyToFloating, applyToGroundingLine
-      logical :: applyCalving, applyMelting
 
       err = 0
 
@@ -1132,8 +1131,6 @@ module li_calving
       applyToGrounded = .true.
       applyToFloating = .true.
       applyToGroundingLine = .false.
-      applyCalving = .true.
-      applyMelting = .false.
 
       call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
       call mpas_pool_get_config(liConfigs, 'config_calving_eigencalving_parameter_scalar_value', &
@@ -1195,10 +1192,20 @@ module li_calving
          ! First calculate the front retreat rate (Levermann eq. 1)
          calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) ! m/s
 
-         ! Convert calvingVelocity to calvingThickness
-          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
-                                              applyToFloating, applyToGroundingLine, applyCalving, &
-                                              applyMelting, domain, err)
+         call mpas_log_write("calling li_apply_front_ablation_velocity from eigencalving")
+          ! Convert calvingVelocity to calvingThickness
+          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, &
+                                              calvingThickness, calvingVelocity, applyToGrounded, &
+                                              applyToFloating, applyToGroundingLine, domain, err)
+         ! Update halos on calvingThickness or faceMeltingThickness before
+         ! applying it.
+         ! Testing seemed to indicate this is not necessary, but I don't
+         ! understand
+         ! why not, so leaving it.
+         ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'calvingThickness')
+         call mpas_timer_stop("halo updates")
 
          ! === apply calving ===
          thickness(:) = thickness(:) - calvingThickness(:)
@@ -1311,7 +1318,6 @@ module li_calving
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress       
       logical :: applyToGrounded, applyToFloating, applyToGroundingLine
-      logical :: applyCalving, applyMelting
 
       err = 0
 
@@ -1319,8 +1325,6 @@ module li_calving
       applyToGrounded = .true.
       applyToFloating = .true.
       applyToGroundingLine = .false.
-      applyCalving = .true.
-      applyMelting = .false.
       
       call mpas_pool_get_config(liConfigs, 'config_grounded_von_Mises_threshold_stress', config_grounded_von_Mises_threshold_stress)
       call mpas_pool_get_config(liConfigs, 'config_floating_von_Mises_threshold_stress', config_floating_von_Mises_threshold_stress)
@@ -1398,10 +1402,20 @@ module li_calving
              endif
           enddo
 
-          ! Convert calvingVelocity to calvingThickness
-          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
-                                      applyToFloating, applyToGroundingLine, applyCalving, applyMelting, domain, err)
-
+          call mpas_log_write("calling li_apply_front_ablation_velocity from von Mises stress calving routine")
+         ! Convert calvingVelocity to calvingThickness
+          call li_apply_front_ablation_velocity(meshPool, geometryPool,velocityPool, &
+                                              calvingThickness, calvingVelocity, applyToGrounded, &
+                                              applyToFloating, applyToGroundingLine, domain, err)
+         ! Update halos on calvingThickness or faceMeltingThickness before
+         ! applying it.
+         ! Testing seemed to indicate this is not necessary, but I don't
+         ! understand
+         ! why not, so leaving it.
+         ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'calvingThickness')
+         call mpas_timer_stop("halo updates")
 
           ! If floating VM threshold is zero, remove floating ice.
           if ( config_floating_von_Mises_threshold_stress .eq. 0.0_RKIND ) then
@@ -1471,10 +1485,11 @@ module li_calving
 !> otherwise it is applied to the last grounded cell.
 !> If applyToFloating = .true., ablation is applied to dynamic floating margin cells
 !> The output of this routine is calvingThickness or faceMeltingThickness, which then needs to be applied to thickness
-!> by the calling routine.
+!> by the calling routine. The calling routine should perform a halo update
+!> after the call and before applying ablation.
 !-----------------------------------------------------------------------
 
-   subroutine li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, applyToFloating, applyToGroundingLine, applyCalving, applyMelting, domain, err)
+   subroutine li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, ablationThickness, ablationVelocity, applyToGrounded, applyToFloating, applyToGroundingLine, domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -1483,13 +1498,13 @@ module li_calving
       type (mpas_pool_type), pointer, intent(in) :: velocityPool !< Input: velocity pool
       logical, intent(in) :: applyToFloating, applyToGrounded, &
                              applyToGroundingLine
-      logical, intent(in) :: applyCalving, applyMelting
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain          !< Input: domain object
       type (mpas_pool_type), pointer, intent(inout) :: geometryPool !< Input: geometry pool
-
+      real (kind=RKIND), dimension(:), intent(in) :: ablationVelocity
+      real (kind=RKIND), dimension(:), intent(out) :: ablationThickness
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
@@ -1510,7 +1525,6 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: angleEdge
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity, faceMeltSpeed
-      real (kind=RKIND), dimension(:), allocatable :: ablationVelocity, ablationThickness
       real (kind=RKIND), dimension(:), pointer :: areaCell
       real (kind=RKIND), dimension(:,:), pointer :: uReconstructX
       real (kind=RKIND), dimension(:,:), pointer :: uReconstructY
@@ -1630,14 +1644,8 @@ module li_calving
       endif
 
       
-
-
-      ! Init fields for accounting
-      calvingThickness(:) = 0.0_RKIND
-      faceMeltingThickness(:) = 0.0_RKIND
       
       ! Init fields for accounting
-      allocate(ablationThickness(nCells+1))
       ablationThickness(:) = 0.0_RKIND
       ablatedVolumeNonDynCell(:) = 0.0_RKIND
       ablatedVolumeDynCell(:) = 0.0_RKIND
@@ -1651,18 +1659,7 @@ module li_calving
       requiredAblationVolumeDynCell(:) = 0.0_RKIND
       allocate(thicknessForAblation(nCells+1))
       thicknessForAblation = 0.0_RKIND
-      allocate(ablationVelocity(nCells+1))
 
-      ablationVelocity(:) = 0.0_RKIND
-
-      if ( applyCalving ) then
-         ablationVelocity(:) = calvingVelocity(:)
-      else if ( applyMelting ) then
-         !ablationVelocity(:) = faceMeltSpeed(:) * abs(config_sea_level - lowerSurface(:)) / thickness(:) ! faceMeltSpeed is only submarine, so spread this across the whole height of the ice front
-         where ( (thickness > 0.0_RKIND) .and. (lowerSurface < 0.0_RKIND) )
-               ablationVelocity(:) = faceMeltSpeed(:) * abs(lowerSurface(:)) / thickness(:)
-         end where
-      end if
 
       ! 1. Calculate ablation rate for all non-dynamic cells by working with their ocean-going edges
       ablationSubtotal1 = 0.0_RKIND
@@ -1881,22 +1878,8 @@ module li_calving
       endif
 
 
-      ! Update halos on calvingThickness or faceMeltingThickness before applying it.
-      ! Testing seemed to indicate this is not necessary, but I don't understand why not, so leaving it.
-      ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
-      call mpas_timer_start("halo updates")
-      if ( applyMelting ) then 
-         faceMeltingThickness(:) = ablationThickness(:)
-         call mpas_dmpar_field_halo_exch(domain, 'faceMeltingThickness')
-      else if ( applyCalving ) then
-         calvingThickness(:) = ablationThickness(:)
-         call mpas_dmpar_field_halo_exch(domain, 'calvingThickness')
-      end if
-      call mpas_timer_stop("halo updates")
-
       deallocate(cellVolume)
       deallocate(thicknessForAblation)
-      deallocate(ablationVelocity)
       call mpas_log_write("Finished with li_apply_front_ablation_velocity")
 
     end subroutine li_apply_front_ablation_velocity
