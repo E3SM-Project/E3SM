@@ -1503,7 +1503,7 @@ module li_calving
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain          !< Input: domain object
       type (mpas_pool_type), pointer, intent(inout) :: geometryPool !< Input: geometry pool
-      real (kind=RKIND), dimension(:), intent(in) :: ablationVelocity
+      real (kind=RKIND), dimension(:), intent(inout) :: ablationVelocity
       real (kind=RKIND), dimension(:), intent(out) :: ablationThickness
       !-----------------------------------------------------------------
       ! output variables
@@ -1537,7 +1537,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: unablatedVolumeNonDynCell, unablatedVolumeDynCell
       real (kind=RKIND), dimension(:), allocatable :: cellVolume
       real(kind=RKIND) :: ablationSubtotal1, ablationSubtotal2, ablationSubtotal3
-      real(kind=RKIND) :: thkSum
+      real(kind=RKIND) :: thkSum, ablationVelSum
       integer :: thkCount
       real(kind=RKIND) :: removeVolumeHere
       real(kind=RKIND) :: volumeAvailableToPass !< a temp. var. for accounting purposes that indicates how much volume
@@ -1660,19 +1660,20 @@ module li_calving
       allocate(thicknessForAblation(nCells+1))
       thicknessForAblation = 0.0_RKIND
 
-
       ! 1. Calculate ablation rate for all non-dynamic cells by working with their ocean-going edges
       ablationSubtotal1 = 0.0_RKIND
       do iCell = 1, nCellsSolve
          if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
-            ! a. Translate the calving front height based on dynamic cells to the non-dynamic locations
+            ! a1. Translate the calving front height based on dynamic cells to the non-dynamic locations
             ! find mean (or min?) of thickness in dynamic neighbors
+            ablationVelSum = 0.0_RKIND
             thkSum = 0.0_RKIND
             thkCount = 0
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if (li_mask_is_dynamic_ice(cellMask(jCell))) then
                   thkSum = thkSum + thickness(jCell)
+                  ablationVelSum = ablationVelSum + ablationVelocity(jCell)
                   thkCount = thkCount + 1
                endif
             enddo
@@ -1681,9 +1682,44 @@ module li_calving
                !   intArgs=(/iCell/), realArgs=(/thickness(iCell)/))
             else
                thicknessForAblation(iCell) = thkSum / real(thkCount, kind=RKIND)
+               ablationVelocity(iCell) = ablationVelSum / real(thkCount, kind=RKIND)
             endif
+         endif
+      enddo
+
+          ! a2.Set thicknessForAblation and ablationVelocity of stranded non-dynamic cells to
+          ! average of non-dynamic neighbors. Stranded non-dynamic cells are
+          ! identified as those that still have thicknessForAblation == 0.0
+      do iCell = 1, nCellsSolve
+         if ( thicknessForAblation(iCell) == 0.0_RKIND .and. li_mask_is_floating_ice(cellMask(iCell)) &
+              .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
+            ablationVelSum = 0.0_RKIND
+            thkSum = 0.0_RKIND
+            thkCount = 0
+            do iNeighbor = 1, nEdgesOnCell(iCell)
+               jCell = cellsOnCell(iNeighbor, iCell)
+               if ( li_mask_is_floating_ice(cellMask(jCell)) &
+                    .and. (.not. li_mask_is_dynamic_ice(cellMask(jCell))) ) then
+                  thkSum = thkSum + thickness(jCell)
+                  ablationVelSum = ablationVelSum + ablationVelocity(jCell)
+                  thkCount = thkCount + 1
+               endif
+            enddo
+            if (thkCount == 0) then
+                !call mpas_log_write("Found a stranded non-dynamic floating cell: cell $i with thickness=$r m.", MPAS_LOG_WARN, &
+               !   intArgs=(/iCell/), realArgs=(/thickness(iCell)/))
+            else
+                thicknessForAblation(iCell) = thkSum / real(thkCount, kind=RKIND)
+                ablationVelocity(iCell) = ablationVelSum / real(thkCount, kind=RKIND)
+            endif
+         endif
+      enddo
+
             ! b. Translate the ablationVelocity and thickness from non-dynamic cells to their ocean-going edges
             !    to calculate the calving volume on those edges and this cell
+      do iCell = 1, nCellsSolve
+         if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
+
             do iNeighbor = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iNeighbor, iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
@@ -1697,7 +1733,8 @@ module li_calving
                           requiredAblationVolumeNonDynEdge(iEdge) ! Keep running total
                endif
             enddo
-            ! c. Apply calving here
+
+            ! c. Apply ablationThickness here
             removeVolumeHere = min(cellVolume(iCell), requiredAblationVolumeNonDynCell(iCell))  ! Don't use more than available
             ablationThickness(iCell) = removeVolumeHere / areaCell(iCell)
             ablatedVolumeNonDynCell(iCell) = removeVolumeHere
