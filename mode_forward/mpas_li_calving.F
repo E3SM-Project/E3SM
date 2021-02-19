@@ -1585,16 +1585,20 @@ module li_calving
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
+      ! Step 0: Define the frontAblationMask that will be used to determine where ablation should be applied.
+      ! This mask can be for 1. a floating calving front, 2. a grounded marine margin (no dynamic floating ice shelf attached),
+      ! 3. along the grounding line (whether or not there is floating ice adjacent), or any combination of the three.
+      ! The mask includes both the dynamic AND non-dynamic cells along the prescribed interface type(s).
       frontAblationMask(:) = 0
-      
+
       if ( applyToGrounded ) then
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
 
          ! If applyToGrounded: Define marine marginal cells as those that are (1) at the ice
          ! margin, (2) have at least one neighboring cell without ice, (3) contain
          ! grounded ice, and (4) have bed topography below sea level.
          ! OR is adjacent to an inactive floating margin cell
- 
+
          ! Check if neighboring cells contain ice and have bed topo below sea level
             nEmptyNeighbors = 0
             do iEdge = 1, nEdgesOnCell(iCell)
@@ -1650,7 +1654,7 @@ module li_calving
 
                  endif
               enddo ! end loop over edges
-           endif      
+           endif
          enddo !end loop over cells
 
       endif
@@ -1662,22 +1666,22 @@ module li_calving
            ! cells
             if ( li_mask_is_floating_ice(cellMask(iCell)) .and. &
                li_mask_is_dynamic_margin(cellMask(iCell)) ) then
-             
+
                frontAblationMask(iCell) = 1
                ! Include adjacent non-dynamic cells
                do iEdge = 1, nEdgesOnCell(iCell)
                   iNeighbor = cellsOnCell(iEdge, iCell)
                   if ( li_mask_is_floating_ice(cellMask(iNeighbor)) .and. &
                         .not. li_mask_is_dynamic_ice(cellMask(iNeighbor)) ) then
- 
+
                      frontAblationMask(iNeighbor) = 1
                   endif
                enddo
              endif
-             
+
          enddo
-      endif 
-      
+      endif
+
       ! Init fields for accounting
       ablationThickness(:) = 0.0_RKIND
       ablatedVolumeNonDynCell(:) = 0.0_RKIND
@@ -1696,7 +1700,7 @@ module li_calving
       ! 1. Calculate ablation rate for all non-dynamic cells by working with their ocean-going edges
       ablationSubtotal1 = 0.0_RKIND
       do iCell = 1, nCellsSolve
-         if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
+         if ((frontAblationMask(iCell)==1) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) ) then
             ! a1. Translate the calving front height based on dynamic cells to the non-dynamic locations
             ! find mean (or min?) of thickness in dynamic neighbors
             ablationVelSum = 0.0_RKIND
@@ -1724,7 +1728,7 @@ module li_calving
           ! average of non-dynamic neighbors. Stranded non-dynamic cells are
           ! identified as those that still have thicknessForAblation == 0.0
       do iCell = 1, nCellsSolve
-         if ( thicknessForAblation(iCell) == 0.0_RKIND .and. li_mask_is_floating_ice(cellMask(iCell)) &
+         if ( thicknessForAblation(iCell) == 0.0_RKIND .and. frontAblationMask(iCell)==1 &
               .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
             ablationVelSum = 0.0_RKIND
             thkSum = 0.0_RKIND
@@ -1751,12 +1755,12 @@ module li_calving
             ! b. Translate the ablationVelocity and thickness from non-dynamic cells to their ocean-going edges
             !    to calculate the calving volume on those edges and this cell
       do iCell = 1, nCellsSolve
-         if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
+         if (frontAblationMask(iCell)==1 .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
 
             do iNeighbor = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iNeighbor, iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
-               if (li_mask_is_floating_ice(edgeMask(iEdge)) .and. li_mask_is_margin(edgeMask(iEdge)) .and. &
+               if (li_mask_is_margin(edgeMask(iEdge)) .and. & !< edge is a margin
                    .not. li_mask_is_ice(cellMask(jCell)) .and. bedTopography(jCell) < config_sea_level & ! ensure margin is w/ocn
                    ) then
                   edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
@@ -1787,7 +1791,8 @@ module li_calving
 
       ! a. Calculate calving on dynamic margin edges
       do iCell = 1, nCellsSolve
-         if ( frontAblationMask(iCell) == 1 ) then 
+         if ( frontAblationMask(iCell) == 1 .and. li_mask_is_dynamic_ice(cellMask(iCell)) & ! a dynamic cell in the mask...
+            .and. li_mask_is_margin(cellMask(iCell)) ) then                            ! that is at the edge of the ice
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if ((.not. li_mask_is_ice(cellMask(jCell))) .and. (bedTopography(jCell) <= config_sea_level)) then
@@ -1851,6 +1856,7 @@ module li_calving
       do iCell = 1, nCellsSolve
          if ((li_mask_is_dynamic_ice(cellMask(iCell))) .and. (bedTopography(iCell) <= config_sea_level)) then
             ! Can loop over all dyn cells - only ones with calving on their edges will have calving applied.
+            ! Note, we ignore any leftover calving/melting if it would be applied to cells where the bed is above sea level.
             do iNeighbor = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iNeighbor, iCell)
                ! No need to check what type of edge this is - only required edges are nonzero
@@ -1876,7 +1882,7 @@ module li_calving
          endif
       enddo
 
-      ! Clean up - zap any stranded ice
+      ! Clean up - zap any stranded ice.  This only needs to be considered for floating ice.
       ablationSubtotal3 = 0.0_RKIND
       do iCell = 1, nCellsSolve
          if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
