@@ -134,7 +134,7 @@ module cam_history_support
     generic   :: get_dims    => get_dims_2d, get_dims_3d
   end type field_info
 
-  real(r8), parameter, public :: fillvalue = 9.9692099683868690d+36     ! fill value for netcdf fields
+  real(r8), parameter, public :: fillvalue = 1.e+20_r8     ! fill value for netcdf fields
 
 
   !---------------------------------------------------------------------------
