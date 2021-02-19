@@ -3,6 +3,7 @@
 
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/field/field_initializer.hpp"
+#include "share/field/field_group.hpp"
 
 namespace scream {
 
@@ -38,18 +39,25 @@ protected:
   // If already stored, simply return its position
   int add_fid (const FieldIdentifier& fid);
 
+  int get_fid_id (const FieldIdentifier& fid) const;
+
   void update_unmet_deps ();
 
   struct Node {
     std::vector<int>  children;
     std::string       name;
     int               id;
-    std::set<int>     computed;
-    std::set<int>     required;
+    std::set<int>     computed;     // output fields
+    std::set<int>     required;     // input fields
+    std::set<int>     gr_updated;   // in-out groups
+    std::set<int>     gr_required;  // input groups
   };
 
   // Assign an id to each field identifier
-  std::vector<FieldIdentifier>    m_fids;
+  std::vector<FieldIdentifier>                m_fids;
+
+  // Store groups so we can print info of their members if need be
+  std::map<FieldIdentifier,FieldGroup<Real>>  m_gr_fid_to_group;
 
   // Map each field id to its last provider
   std::map<int,int>               m_fid_to_last_provider;

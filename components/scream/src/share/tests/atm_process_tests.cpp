@@ -276,7 +276,7 @@ TEST_CASE("atm_proc_dag", "") {
     // Create the dag
     AtmProcDAG dag;
     dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process),nullptr);
-    dag.write_dag("working_atm_proc_dag.dot",0);
+    dag.write_dag("working_atm_proc_dag.dot",4);
 
     // Clean up
     upgm->clean_up();
@@ -294,7 +294,7 @@ TEST_CASE("atm_proc_dag", "") {
     // Create the dag
     AtmProcDAG dag;
     dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(broken_atm_group),nullptr);
-    dag.write_dag("broken_atm_proc_dag.dot",1);
+    dag.write_dag("broken_atm_proc_dag.dot",4);
 
     upgm->clean_up();
   }
