@@ -150,7 +150,7 @@ def strain_stress_divergence_map():
     fileIC.close()
 
     # Wachspress
-    fileWach = Dataset("./output_hex_wachspress_0082x0094/output.2000.nc","r")
+    fileWach = Dataset("./output_hex_wachsStrainAvg_0082x0094/output.2000.nc","r")
 
     interiorCell = fileWach.variables["interiorCell"][0,:]
 
@@ -177,7 +177,7 @@ def strain_stress_divergence_map():
                         useVertex[iVertex] = 0
 
     # PWL
-    filePWL = Dataset("./output_hex_pwl_0082x0094/output.2000.nc","r")
+    filePWL = Dataset("./output_hex_pwlStrainAvg_0082x0094/output.2000.nc","r")
 
     stressDivergenceUPWL = filePWL.variables["stressDivergenceU"][0,:]
     stressDivergenceVPWL = filePWL.variables["stressDivergenceV"][0,:]

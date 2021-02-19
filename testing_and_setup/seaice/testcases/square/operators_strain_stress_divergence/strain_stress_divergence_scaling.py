@@ -65,14 +65,20 @@ def get_resolution(filename, useVertex):
 
     degreesToRadians = math.pi / 180.0
 
+    cellsOnEdge = fileMPAS.variables["cellsOnEdge"][:]
+    cellsOnEdge[:] = cellsOnEdge[:] - 1
+
     dcEdge = fileMPAS.variables["dcEdge"][:]
     latEdge = fileMPAS.variables["latEdge"][:]
 
     resolution = 0.0
     denom = 0.0
     for iEdge in range(0,nEdges):
-        resolution = resolution + dcEdge[iEdge]
-        denom = denom + 1.0
+        iCell1 = cellsOnEdge[iEdge,0]
+        iCell2 = cellsOnEdge[iEdge,1]
+        if (iCell1 != -1 and iCell2 != -1):
+            resolution = resolution + dcEdge[iEdge]
+            denom = denom + 1.0
 
     resolution = resolution / denom
 
@@ -109,13 +115,27 @@ def get_use_vertex(filenameIn):
 
 #--------------------------------------------------------
 
+def scaling_lines(axis, xMin, xMax, yMin):
+
+    # linear scaling
+    scale = yMin / math.pow(xMin,1)
+    scaleMinLin = math.pow(xMin,1) * scale
+    scaleMaxLin = math.pow(xMax,1) * scale
+
+    # quadratic scaling
+    scale = yMin / math.pow(xMin,2)
+    scaleMinQuad = math.pow(xMin,2) * scale
+    scaleMaxQuad = math.pow(xMax,2) * scale
+
+    axis.loglog([xMin, xMax], [scaleMinLin,  scaleMaxLin],  linestyle=':', color='k', label='_nolegend_')
+    axis.loglog([xMin, xMax], [scaleMinQuad, scaleMaxQuad], linestyle=':', color='k', label='_nolegend_')
+
+#--------------------------------------------------------
+
 def strain_stress_divergence_scaling():
 
-    mpl.rc('font', family='Times New Roman', size=8)
-    mpl.rc('text', usetex=True)
-    mpl.rcParams['axes.linewidth'] = 0.5
-
-    operatorMethods = ["wachspress","pwl","weak","weakwachs","weakpwl"]
+    # options
+    operatorMethods = ["wachspress","pwl","weak","weakwachs","weakpwl","wachsavg","pwlavg"]
 
     gridTypes = ["hex","quad"]
     #gridTypes = ["quad"]
@@ -131,74 +151,98 @@ def strain_stress_divergence_scaling():
     #grids = {"hex" :["0082x0094"],
     #         "quad":["0080x0080"]}
 
+    stressDivergences = ["U","V"]
 
-    lineColours = ["black","grey","red","blue","green"]
+
+    # plot options
+    lineColours = {"wachspress":"black",
+                   "pwl":"grey",
+                   "weak":"red",
+                   "weakwachs":"blue",
+                   "weakpwl":"green",
+                   "wachsavg":"purple",
+                   "pwlavg":"orange"}
 
     lineStyles = {"hex":"solid",
                   "quad":"dashed"}
 
-    xMin = 6e-3
-    xMax = 1e-2
+    legendLabels = {"wachspress":"Wachs.",
+                    "pwl":"PWL",
+                    "weak":"Weak",
+                    "weakwachs":"Weak Wachs.",
+                    "weakpwl":"Weak PWL",
+                    "wachsavg":"Wachs. Avg.",
+                    "pwlavg":"PWL Avg."}
 
-    # quadratic scaling
-    #scale = 3e-5 / math.pow(xMin,2)
-    #scaleMin = math.pow(xMin,2) * scale
-    #scaleMax = math.pow(xMax,2) * scale
-
-    # linear scaling
-    scale = 2.5e-3 / math.pow(xMin,1)
-    scaleMin = math.pow(xMin,1) * scale
-    scaleMax = math.pow(xMax,1) * scale
+    stressDivergenceLabels = {"U":r"(a) $(\nabla \cdot \sigma)_u$",
+                              "V":r"(b) $(\nabla \cdot \sigma)_v$"}
 
 
-    plt.figure(figsize=(4,3))
+    # scaling lines
+    xMin = 2e-3
+    xMax = 3.5e-3
+    yMin = 9e-3
 
-    plt.loglog([xMin, xMax],[scaleMin,scaleMax],linestyle=':', color='k')
+    # plot
+    mpl.rc('font', family='Times New Roman', size=8)
+    mpl.rc('text', usetex=True)
+    mpl.rcParams['axes.linewidth'] = 0.5
 
+    fig, axes = plt.subplots(2, 1, figsize=(5,7))
 
-    for gridType in gridTypes:
+    j = 0
+    for stressDivergence in stressDivergences:
 
-        print("Grid type: ", gridType)
+        scaling_lines(axes[j], xMin, xMax, yMin)
 
-        iPlot = 0
-        for operatorMethod in operatorMethods:
+        for gridType in gridTypes:
 
-            print("  Operator Method: ", operatorMethod)
+            print("Grid type: ", gridType)
 
-            x = []
-            y = []
+            iPlot = 0
+            for operatorMethod in operatorMethods:
 
-            for grid in grids[gridType]:
+                print("  Operator Method: ", operatorMethod)
 
-                print("    Grid: ", grid)
+                x = []
+                y = []
 
-                filenameIC = "ic_%s_%s.nc" %(gridType,grid)
-                filename = "output_%s_%s_%s/output.2000.nc" %(gridType, operatorMethod, grid)
+                for grid in grids[gridType]:
 
-                print("      ", filename, filenameIC)
+                    print("    Grid: ", grid)
 
-                useVertex = get_use_vertex(filename)
+                    filenameIC = "ic_%s_%s.nc" %(gridType,grid)
+                    filename = "output_%s_%s_%s/output.2000.nc" %(gridType, operatorMethod, grid)
 
-                normU, normV = get_norm(filenameIC, filename, useVertex)
+                    print("      ", filename, filenameIC)
 
-                x.append(get_resolution(filename, useVertex))
-                y.append(normU)
+                    useVertex = get_use_vertex(filename)
 
-            plt.loglog(x, y, marker='o', color=lineColours[iPlot], ls=lineStyles[gridType], markersize=5.0)
+                    normU, normV = get_norm(filenameIC, filename, useVertex)
 
-            iPlot = iPlot + 1
+                    x.append(get_resolution(filename, useVertex))
+                    if (stressDivergence == "U"):
+                        y.append(normU)
+                    elif (stressDivergence == "V"):
+                        y.append(normV)
 
-    #legendLabels = ["Quadratic scaling","Wachspress", "PWL", "Weak", "WeakWachs"]
-    legendLabels = ["Linear","Wachspress", "PWL", "Weak", "WeakWachs", "WeakPWL"]
+                if (gridType == "hex"):
+                    legendLabel = legendLabels[operatorMethod]
+                else:
+                    legendLabel = "_nolegend_"
+                axes[j].loglog(x, y, marker='o', color=lineColours[operatorMethod], ls=lineStyles[gridType], markersize=5.0, label=legendLabel)
 
-    plt.legend(legendLabels, frameon=False, loc=2, fontsize=8, handlelength=4)
+                iPlot = iPlot + 1
 
-    ax = plt.gca()
-    ax.set_xlabel("Grid resolution")
-    ax.set_ylabel(r"$L_2$ error norm")
-    #ax.set_xlim([xMin, xMax])
+        axes[j].legend(frameon=False, loc=4, fontsize=8, handlelength=4)
 
-    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
+        axes[j].set_xlabel("Grid resolution")
+        axes[j].set_ylabel(r"$L_2$ error norm")
+        axes[j].set_title(stressDivergenceLabels[stressDivergence])
+
+        j += 1
+
+    plt.tight_layout()
     plt.savefig("strain_stress_divergence_scaling.png",dpi=400)
 
 #-------------------------------------------------------------------------------
