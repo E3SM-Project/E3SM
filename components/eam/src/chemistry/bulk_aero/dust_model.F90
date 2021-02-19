@@ -90,7 +90,7 @@ contains
     integer :: n
 
     do n = 1, dust_nbin
-       call cnst_get_ind(dust_names(n), dust_indices(n),abort=.false.)
+       call cnst_get_ind(dust_names(n), dust_indices(n),abrtf=.false.)
     end do
     dust_active = any(dust_indices(:) > 0)
     if (.not.dust_active) return

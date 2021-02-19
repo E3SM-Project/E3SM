@@ -1149,7 +1149,7 @@ endif !scm_observed_aero
      end do
 
 
-     call cnst_get_ind('NUMLIQ', inumliq, abort=.false.)
+     call cnst_get_ind('NUMLIQ', inumliq, abrtf=.false.)
      if ( inumliq > 0 ) then
        have_srf = .false.
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'NUMLIQ', &
@@ -1185,7 +1185,7 @@ endif !scm_observed_aero
        have_cldice = .true.
      endif
 
-     call cnst_get_ind('NUMICE', inumice, abort=.false.)
+     call cnst_get_ind('NUMICE', inumice, abrtf=.false.)
      if ( inumice > 0 ) then
         have_srf = .false.
 
