@@ -1519,7 +1519,7 @@ module li_calving
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:,:), pointer :: edgesOnCell
       integer, dimension(:), pointer :: cellMask, edgeMask
-      integer, dimension(:), pointer :: groundedMarineMarginMask
+      integer, dimension(:), pointer :: frontAblationMask
       real (kind=RKIND), dimension(:), pointer :: calvingThickness, faceMeltingThickness
       real (kind=RKIND), pointer :: config_sea_level
       real (kind=RKIND), dimension(:), pointer :: dvEdge
@@ -1576,7 +1576,7 @@ module li_calving
       call mpas_pool_get_array(geometryPool, 'unablatedVolumeDynCell', unablatedVolumeDynCell)
       call mpas_pool_get_array(geometryPool, 'ablatedVolumeNonDynCell', ablatedVolumeNonDynCell)
       call mpas_pool_get_array(geometryPool, 'ablatedVolumeDynCell', ablatedVolumeDynCell)
-      call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
+      call mpas_pool_get_array(geometryPool, 'frontAblationMask', frontAblationMask)
       call mpas_pool_get_array(geometryPool, 'requiredAblationVolumeNonDynEdge', requiredAblationVolumeNonDynEdge)
       call mpas_pool_get_array(geometryPool, 'requiredAblationVolumeDynEdge', requiredAblationVolumeDynEdge)
       call mpas_pool_get_array(geometryPool, 'requiredAblationVolumeNonDynCell', requiredAblationVolumeNonDynCell)
@@ -1585,7 +1585,7 @@ module li_calving
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
-      groundedMarineMarginMask(:) = 0
+      frontAblationMask(:) = 0
       
       if ( applyToGrounded ) then
          do iCell = 1, nCellsSolve
@@ -1613,13 +1613,21 @@ module li_calving
                .and. bedTopography(iCell) < config_sea_level &
                .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
 
-               groundedMarineMarginMask(iCell) = 1
-            else
-               groundedMarineMarginMask(iCell) = 0
+               frontAblationMask(iCell) = 1
+               ! Include adjacent non-dynamic cells
+               do iEdge = 1, nEdgesOnCell(iCell)
+                  iNeighbor = cellsOnCell(iEdge, iCell)
+                  if ( li_mask_is_floating_ice(cellMask(iNeighbor)) .and. &
+                        .not. li_mask_is_dynamic_ice(cellMask(iNeighbor)) ) then
+
+                     frontAblationMask(iNeighbor) = 1
+                  endif
+               enddo
             endif
          enddo
-      
-      else if ( applyToGroundingLine ) then
+      endif
+
+      if ( applyToGroundingLine ) then
          do iCell = 1,nCellsSolve
 
          ! If applyToGroundingLine: Define marine marginal cells as those that
@@ -1632,10 +1640,14 @@ module li_calving
                 iNeighbor = cellsOnCell(iEdge, iCell)
                  if ( li_mask_is_grounding_line(edgeMask(edgesOnCell(iEdge,iCell))) &
                       .and. li_mask_is_floating_ice(cellMask(iNeighbor)) ) then
-                    groundedMarineMarginMask(iNeighbor) = 1
+
+                    frontAblationMask(iNeighbor) = 1
+
                  else if ( li_mask_is_grounding_line(edgeMask(edgesOnCell(iEdge,iCell))) &
                       .and. (.not. li_mask_is_floating_ice(cellMask(iNeighbor))) ) then
-                    groundedMarineMarginMask(iCell) = 1
+
+                    frontAblationMask(iCell) = 1
+
                  endif
               enddo ! end loop over edges
            endif      
@@ -1643,7 +1655,28 @@ module li_calving
 
       endif
 
-      
+      if ( applyToFloating ) then
+         do iCell = 1,nCellsSolve
+
+           ! If applyToFloating: marine marginal cells are dynamic floating margin
+           ! cells
+            if ( li_mask_is_floating_ice(cellMask(iCell)) .and. &
+               li_mask_is_dynamic_margin(cellMask(iCell)) ) then
+             
+               frontAblationMask(iCell) = 1
+               ! Include adjacent non-dynamic cells
+               do iEdge = 1, nEdgesOnCell(iCell)
+                  iNeighbor = cellsOnCell(iEdge, iCell)
+                  if ( li_mask_is_floating_ice(cellMask(iNeighbor)) .and. &
+                        .not. li_mask_is_dynamic_ice(cellMask(iNeighbor)) ) then
+ 
+                     frontAblationMask(iNeighbor) = 1
+                  endif
+               enddo
+             endif
+             
+         enddo
+      endif 
       
       ! Init fields for accounting
       ablationThickness(:) = 0.0_RKIND
@@ -1754,10 +1787,7 @@ module li_calving
 
       ! a. Calculate calving on dynamic margin edges
       do iCell = 1, nCellsSolve
-         if ( ( (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) & ! floating dynamic
-                .or.  (groundedMarineMarginMask(iCell) == 1) ) &
-              .and. li_mask_is_margin(cellMask(iCell)) ) then
-            ! only consider dynamic margins adjacent to open ocean (need to exclude dynamic margins adjacent to land)
+         if ( frontAblationMask(iCell) == 1 ) then 
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if ((.not. li_mask_is_ice(cellMask(jCell))) .and. (bedTopography(jCell) <= config_sea_level)) then
