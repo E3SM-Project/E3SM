@@ -2397,19 +2397,19 @@ contains
 
          ! Check for errors in the state fields
          do iCell = 1, nCellsSolve
-            do k = minLevelCell(iCell), maxLevelCell(iCell) !mlc-do-k
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
                thickNanFound = thickNanFound .or. ( .not. layerThickness(k, iCell) == layerThickness(k, iCell) )
                do iTracer = 1, size(activeTracers, dim=1)
                   tracersNanFound = tracersNanFound .or. &
                                   ( .not. activeTracers(iTracer, k, iCell) == activeTracers(iTracer, k, iCell) )
                end do
-            end do !mlc-end-do
+            end do
          end do
 
          do iEdge = 1, nEdgesSolve
-            do k = minLevelEdgeTop(iEdge), maxLevelEdgeBot(iEdge) !mlc-do-k
+            do k = minLevelEdgeTop(iEdge), maxLevelEdgeBot(iEdge)
                velNanFound = velNanFound .or. ( .not. normalVelocity(k, iEdge) == normalVelocity(k, iEdge) )
-            end do !mlc-end-do
+            end do
          end do
 
          ! If an error was found, we need to open the file to write data out.
