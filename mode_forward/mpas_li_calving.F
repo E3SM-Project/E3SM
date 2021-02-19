@@ -1718,8 +1718,9 @@ module li_calving
       ! a. Calculate calving on dynamic margin edges
       do iCell = 1, nCellsSolve
          if ( ( (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) & ! floating dynamic
-              .and. li_mask_is_margin(cellMask(iCell)) ) .or.  (groundedMarineMarginMask(iCell) == 1) ) then            
-! only consider dynamic margins adjacent to open ocean (need to exclude dynamic margins adjacent to land)
+                .or.  (groundedMarineMarginMask(iCell) == 1) ) &
+              .and. li_mask_is_margin(cellMask(iCell)) ) then
+            ! only consider dynamic margins adjacent to open ocean (need to exclude dynamic margins adjacent to land)
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if ((.not. li_mask_is_ice(cellMask(jCell))) .and. (bedTopography(jCell) <= config_sea_level)) then
