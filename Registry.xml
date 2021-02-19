@@ -686,6 +686,7 @@
                         <var name="basalHeatFlux" packages="thermal;hydro"/>
                         <var name="basalFrictionFlux" packages="thermal;hydro"/>
                         <var name="heatDissipation" packages="thermal"/>
+                        <var name="betaSolve" packages="thermal"/>
 			<var name="cellMask"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
