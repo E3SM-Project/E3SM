@@ -155,9 +155,9 @@ contains
     call addfld ('TGCLDCWP',horiz_only,    'A',wpunits,'Total grid-box cloud water path (liquid and ice)', &
          sampling_seq=sampling_seq)
     call addfld ('TGCLDLWP',horiz_only,    'A',wpunits,'Total grid-box cloud liquid water path', &
-         sampling_seq=sampling_seq)
+         sampling_seq=sampling_seq, standard_name='atmosphere_mass_content_of_cloud_condensed_water')
     call addfld ('TGCLDIWP',horiz_only,    'A',wpunits,'Total grid-box cloud ice water path'   , &
-         sampling_seq=sampling_seq)
+         sampling_seq=sampling_seq, standard_name='atmosphere_mass_content_of_cloud_ice')
     
     if(mg_clouds) then
        call addfld ('lambda_cloud',(/ 'lev' /),'I','1/meter','lambda in cloud')

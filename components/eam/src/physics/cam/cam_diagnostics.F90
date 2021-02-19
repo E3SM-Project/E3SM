@@ -172,10 +172,11 @@ subroutine diag_init()
    call addfld ('NSTEP',horiz_only,    'A','timestep','Model timestep')
    call addfld ('PHIS',horiz_only,    'I','m2/s2','Surface geopotential')
 
-   call addfld ('PS',horiz_only,    'A','Pa','Surface pressure')
-   call addfld ('T',(/ 'lev' /), 'A','K','Temperature')
-   call addfld ('U',(/ 'lev' /), 'A','m/s','Zonal wind')
-   call addfld ('V',(/ 'lev' /), 'A','m/s','Meridional wind')
+   call addfld ('PS',horiz_only,    'A','Pa','Surface pressure', &
+    standard_name='surface_air_pressure')
+   call addfld ('T',(/ 'lev' /), 'A','K','Temperature',standard_name='air_temperature')
+   call addfld ('U',(/ 'lev' /), 'A','m/s','Zonal wind',standard_name='eastward_wind')
+   call addfld ('V',(/ 'lev' /), 'A','m/s','Meridional wind',standard_name='northward_wind')
    call addfld (cnst_name(1),(/ 'lev' /), 'A','kg/kg',cnst_longname(1))
 
    ! State before physics
@@ -196,7 +197,7 @@ subroutine diag_init()
    ! column burdens for all constituents except water vapor
    call constituent_burden_init
 
-   call addfld ('Z3',(/ 'lev' /), 'A','m','Geopotential Height (above sea level)')
+   call addfld ('Z3',(/ 'lev' /), 'A','m','Geopotential Height (above sea level)',standard_name='geopotential_height')
    call addfld ('Z1000',horiz_only,    'A','m','Geopotential Z at 1000 mbar pressure surface')
    call addfld ('Z975',horiz_only,    'A','m','Geopotential Z at 975 mbar pressure surface')
    call addfld ('Z950',horiz_only,    'A','m','Geopotential Z at 950 mbar pressure surface')
@@ -256,7 +257,8 @@ subroutine diag_init()
    call addfld ('WSPDSRFMX',horiz_only,    'X','m/s','Horizontal total wind speed maximum at the surface' )
    call addfld ('WSPDSRFAV',horiz_only,    'A','m/s','Horizontal total wind speed average at the surface' )
 
-   call addfld ('OMEGA',(/ 'lev' /), 'A','Pa/s','Vertical velocity (pressure)')
+   call addfld ('OMEGA',(/ 'lev' /), 'A','Pa/s','Vertical velocity (pressure)', &
+      standard_name='lagrangian_tendency_of_air_pressure')
    call addfld ('OMEGAT',(/ 'lev' /), 'A','K Pa/s  ','Vertical heat flux' )
    call addfld ('OMEGAU',(/ 'lev' /), 'A','m Pa/s2 ','Vertical flux of zonal momentum' )
    call addfld ('OMEGA1000',horiz_only,    'A','Pa/s','Vertical velocity at 1000 mbar pressure surface')
@@ -292,18 +294,20 @@ subroutine diag_init()
    call addfld ('RHBOT',horiz_only,    'A','%','Lowest model level relative humidity')
 
    call addfld ('MQ',(/ 'lev' /), 'A','kg/m2','Water vapor mass in layer')
-   call addfld ('TMQ',horiz_only,    'A','kg/m2','Total (vertically integrated) precipitable water')
+   call addfld ('TMQ',horiz_only,    'A','kg/m2','Total (vertically integrated) precipitable water', &
+   standard_name='atmosphere_mass_content_of_water_vapor')
    call addfld ('TUQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) zonal water flux')
    call addfld ('TVQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) meridional water flux')
    call addfld ('TUH',horiz_only,    'A','W/m',   'Total (vertically integrated) zonal MSE flux')
    call addfld ('TVH',horiz_only,    'A','W/m',   'Total (vertically integrated) meridional MSE flux')
    call addfld ('DTENDTH', horiz_only, 'A', 'W/m2',   'Dynamic Tendency of Total (vertically integrated) moist static energy')
    call addfld ('DTENDTQ', horiz_only, 'A', 'kg/m2/s','Dynamic Tendency of Total (vertically integrated) specific humidity')
-   call addfld ('RELHUM',(/ 'lev' /), 'A','percent','Relative humidity')
+   call addfld ('RELHUM',(/ 'lev' /), 'A','percent','Relative humidity', standard_name='relative_humidity')
    call addfld ('RHW',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to liquid')
    call addfld ('RHI',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to ice')
    call addfld ('RHCFMIP',(/ 'lev' /), 'A','percent' ,'Relative humidity with respect to water above 273 K, ice below 273 K')
-   call addfld ('PSL',horiz_only,    'A','Pa','Sea level pressure')
+   call addfld ('PSL',horiz_only,    'A','Pa','Sea level pressure', &
+      standard_name='air_pressure_at_mean_sea_level')
 
    call addfld ('T850',horiz_only,    'A','K','Temperature at 850 mbar pressure surface')
    call addfld ('T500',horiz_only,    'A','K','Temperature at 500 mbar pressure surface')
@@ -602,17 +606,23 @@ subroutine diag_init()
 
    ! outfld calls in diag_surf
 
-   call addfld ('SHFLX',horiz_only,    'A','W/m2','Surface sensible heat flux')
-   call addfld ('LHFLX',horiz_only,    'A','W/m2','Surface latent heat flux')
-   call addfld ('QFLX',horiz_only,    'A','kg/m2/s','Surface water flux')
+   call addfld ('SHFLX',horiz_only,    'A','W/m2','Surface sensible heat flux', &
+   standard_name='surface_upward_sensible_heat_flux')
+   call addfld ('LHFLX',horiz_only,    'A','W/m2','Surface latent heat flux', &
+   standard_name = 'surface_upward_latent_heat_flux')
+   call addfld ('QFLX',horiz_only,    'A','kg/m2/s','Surface water flux', &
+   standard_name = 'water_evapotranspiration_flux')
 
    call addfld ('TAUX',horiz_only,    'A','N/m2','Zonal surface stress')
    call addfld ('TAUY',horiz_only,    'A','N/m2','Meridional surface stress')
-   call addfld ('TREFHT',horiz_only,    'A','K','Reference height temperature')
+   call addfld ('TREFHT',horiz_only,    'A','K','Reference height temperature', &
+      standard_name='air_temperature')
    call addfld ('TREFHTMN',horiz_only,    'M','K','Minimum reference height temperature over output period')
    call addfld ('TREFHTMX',horiz_only,    'X','K','Maximum reference height temperature over output period')
-   call addfld ('QREFHT',horiz_only,    'A','kg/kg','Reference height humidity')
-   call addfld ('U10',horiz_only,    'A','m/s','10m wind speed')
+   call addfld ('QREFHT',horiz_only,    'A','kg/kg','Reference height humidity', &
+    standard_name = 'specific_humidity')
+   call addfld ('U10',horiz_only,    'A','m/s','10m wind speed', &
+     standard_name='wind_speed')
    call addfld ('RHREFHT',horiz_only,    'A','1','Reference height relative humidity')
 
    call addfld ('LANDFRAC',horiz_only,    'A','1','Fraction of sfc area covered by land')
@@ -622,7 +632,8 @@ subroutine diag_init()
    call addfld ('TREFMNAV',horiz_only,    'A','K','Average of TREFHT daily minimum')
    call addfld ('TREFMXAV',horiz_only,    'A','K','Average of TREFHT daily maximum')
 
-   call addfld ('TS',horiz_only,    'A','K','Surface temperature (radiative)')
+   call addfld ('TS',horiz_only,    'A','K','Surface temperature (radiative)', &
+       standard_name = 'surface_temperature')
    call addfld ('TSMN',horiz_only,    'M','K','Minimum surface temperature over output period')
    call addfld ('TSMX',horiz_only,    'X','K','Maximum surface temperature over output period')
    call addfld ('SNOWHLND',horiz_only,    'A','m','Water equivalent snow depth')
