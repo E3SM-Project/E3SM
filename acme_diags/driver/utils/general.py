@@ -9,7 +9,7 @@ import MV2
 import genutil
 import cdms2
 from acme_diags import container
-from acme_diags.derivations.default_regions import regions_specs
+from acme_diags.derivations.default_regions import regions_specs, points_specs
 import errno
 
 def strictly_increasing(L):
@@ -91,7 +91,7 @@ def get_yrs(dataset, season=''):
             #print("No 'yrs_averaged' exists in the global attributes.")
             yrs_averaged = ''
     else:
-        start_yr, end_yr = dataset.get_start_and_end_years()
+        start_yr, end_yr, sub_monthly = dataset.get_start_and_end_years()
         yrs_averaged = '{}-{}'.format(start_yr, end_yr)
     return yrs_averaged
 
@@ -191,6 +191,21 @@ def select_region(region, var, land_frac, ocean_frac, parameter):
     var_domain_selected.units = var.units
 
     return var_domain_selected
+
+def select_point(region, var):
+    """Select desired point from transient variables."""
+
+    lat = points_specs[region][0]
+    lon = points_specs[region][1]
+    select = points_specs[region][2]
+
+    try:
+        var_selected = var(latitude = (lat, lat, select), longitude = (lon, lon, select), squeeze = 1)
+    except:
+        print("No point selected.")
+
+
+    return var_selected
 
 
 def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):

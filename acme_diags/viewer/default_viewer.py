@@ -21,6 +21,7 @@ SET_TO_NAME = {
     'polar': 'Polar contour maps',
     'cosp_histogram': 'CloudTopHeight-Tau joint histograms',
     'diurnal_cycle': 'Diurnal cycle phase maps',
+    'arm_diags': 'Diagnostics at ARM stations',
 }
 
 # The ordering of the columns in the viewer.

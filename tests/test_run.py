@@ -51,6 +51,8 @@ class TestRun(unittest.TestCase):
         streamflow_param.test_data_path = 'unit_test_data/3yr_nc'
         streamflow_param.reference_data_path = 'unit_test_data'
 
+        self.runner.sets_to_run = ['lat_lon', 'area_mean_time_series', 'enso_diags', 'streamflow']
+
         parameters = self.runner.get_final_parameters([self.core_param, ts_param, enso_param, streamflow_param])
         # Counts the number of each set and each seasons to run the diags on.
         set_counter, season_counter = collections.Counter(), collections.Counter()

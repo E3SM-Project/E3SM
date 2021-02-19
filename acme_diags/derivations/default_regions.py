@@ -63,6 +63,18 @@ regions_specs = {
     # Below is for RRM(regionally refined model) domains.
     #'CONUS_RRM': {'domain': cdutil.region.domain(latitude=(20., 50., 'ccb'), longitude=(-125., -65., 'ccb'))},For RRM dataset, negative value won't work
     'CONUS_RRM': {'domain': cdutil.region.domain(latitude=(20., 50., 'ccb'), longitude=(235., 295., 'ccb'))},
+    
     # Below is for debugging. A smaller latitude range reduces processing time.
     'DEBUG': {'domain': cdutil.region.domain(latitude=(-2., 2, 'ccb'))}
+}
+
+points_specs = {
+    # ARM sites coordinates, select nearest grid poit to ARM site coordinates
+    # Each point is supplied with [latitude, longitude ,select method, description of the point]
+    'sgp': [36.4, -97.5, 'cob','97.5W 36.4N Oklahoma ARM'],
+    'nsa': [71.3, -156.6, 'cob','156.6W 71.3N Barrow ARM'],
+    'twpc1': [-2.1, 147.4, 'cob','147.4E 2.1S Manus ARM'],
+    'twpc2': [-0.5, 166.9, 'cob', '166.9E 0.5S Nauru ARM'],
+    'twpc3': [-12.4, 130.9, 'cob','130.9E 12.4S Darwin ARM'],
+
 }

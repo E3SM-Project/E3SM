@@ -64,11 +64,12 @@ def climo(var, season):
     # Losing the grid after a squeeze is normal, we need to set it again.
     trans_var.setGrid(var.getGrid())
     # Set the correct axis as well.
-    trans_var.setAxis(0, var.getAxis(1))
-    trans_var.setAxis(1, var.getAxis(2))
-    if var.getLevel():
-        # If it's a 3D variable, set the last axis.
-        trans_var.setAxis(2, var.getAxis(3))
+    if var.getLongitude() and var.getLatitude():
+        trans_var.setAxis(0, var.getAxis(1))
+        trans_var.setAxis(1, var.getAxis(2))
+        if var.getLevel():
+            # If it's a 3D variable, set the last axis.
+            trans_var.setAxis(2, var.getAxis(3))
     
     # Copy any missing attributes from var to trans_var.
     # The below doesn't work, since MaskedArrays apparently

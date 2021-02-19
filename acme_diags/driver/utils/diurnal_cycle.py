@@ -4,7 +4,7 @@ import cdms2
 import MV2
 
 
-def composite_diurnal_cycle(var, season):
+def composite_diurnal_cycle(var, season, fft=True):
     """
     Compute the composite diurnal cycle for var for the given season.
     Return mean + amplitudes and times-of-maximum of the first Fourier harmonic component as three transient variables.  
@@ -29,6 +29,11 @@ def composite_diurnal_cycle(var, season):
         'ANN':[1,1,1,1,1,1,1,1,1,1,1,1],
     }
 
+    site = False
+    if var.getLatitude() is None and var.getLongitude() is None:
+        site = True
+        lat = var.lat
+        lon = var.lon
     # Redefine time to be in the middle of the time interval
     var_time = var.getTime()
     if var_time is None:
@@ -55,22 +60,29 @@ def composite_diurnal_cycle(var, season):
         cycle = [season]
 
     ncycle = len(cycle)
+    # var_diurnal has shape i.e. (ncycle, ntimesteps, [lat,lon]) for lat lon data 
+    var_diurnal = ma.zeros([ncycle]+[time_freq]+list(numpy.shape(v))[1:])
     for n in range(ncycle):
         # Get time index for each month/season. 
         idx = numpy.array([season_idx[cycle[n]][var_time_absolute[i].month-1]
                           for i in range(len(var_time_absolute))], dtype=numpy.int).nonzero()
-        # var_season has shape (ncycle, ntimesteps, [lat,lon]) 
-        var_season = ma.zeros([ncycle]+[len(idx[0])]+list(numpy.shape(v))[1:])
-        var_season[n,] = v[idx]
-    # var_daily has shape (ncycle, ndays, time_freq, lat, lon),i.e., (1,1,8,lat,lon)if seasonal diurnal cycle (3hrly) climatology is used as input 
-    var_daily = numpy.reshape(var_season,(ncycle,int(var_season.shape[1]/time_freq),time_freq,var_season.shape[2],var_season.shape[3]))
-    var_diurnal = ma.average(var_daily,axis=1).squeeze()
+        var_diurnal[n,]  = ma.average(numpy.reshape(v[idx],(int(v[idx].shape[0]/time_freq), time_freq) + v[idx].shape[1:]),axis =0)
    
     #Convert GMT to local time
-    nlat = var.shape[1]
-    nlon = var.shape[2]
-    lat = var.getLatitude()
-    lon =  var.getLongitude()
+    if site:
+        nlat = 1
+        nlon = 1
+        #lat = [36.6]
+        #lon = [262.5]
+        lat = [lat,]
+        lon = [lon,]
+    else:
+        nlat = var.shape[1]
+        nlon = var.shape[2]
+        lat = var.getLatitude()
+        lon =  var.getLongitude()
+        var_diurnal = numpy.squeeze(var_diurnal)
+        
     nt=time_freq
     lst = numpy.zeros((nt,nlat,nlon))
     for it, itime in enumerate(numpy.arange(0,24,int(24/nt))):
@@ -78,34 +90,38 @@ def composite_diurnal_cycle(var, season):
             lst[it,:,ilon] = (itime + start_time + lon[ilon]/360*24)%24 #convert GMT to LST
 
     #Compute mean, amplitude and max time of the first three Fourier components.
-    cycmean, maxvalue, tmax = fastAllGridFT(var_diurnal,lst)
+    if not fft: 
+        return var_diurnal,lst
 
-    #Save phase, amplitude, and mean for the first homonic,
-    amplitude = MV2.zeros((nlat,nlon))
-    amplitude[:,:] = maxvalue[0]
-    amplitude.id = var.id +'_diurnal_amplitude'
-    amplitude.longname = 'Amplitude of diurnal cycle of '+var.id
-    amplitude.units = var.units
-    amplitude.setAxis(0, lat)
-    amplitude.setAxis(1, lon)
+    else:
+        cycmean, maxvalue, tmax = fastAllGridFT(var_diurnal,lst)
 
-    maxtime = MV2.zeros((nlat,nlon))
-    maxtime[:,:] = tmax[0]
-    maxtime.id = var.id +'_diurnal_phase'
-    maxtime.longname = 'Phase of diurnal cycle of '+var.id
-    maxtime.units = 'hour'
-    maxtime.setAxis(0, lat)
-    maxtime.setAxis(1, lon)
+        # Save phase, amplitude, and mean for the first homonic,
+        amplitude = MV2.zeros((nlat,nlon))
+        amplitude[:,:] = maxvalue[0]
+        amplitude.id = var.id +'_diurnal_amplitude'
+        amplitude.longname = 'Amplitude of diurnal cycle of '+var.id
+        amplitude.units = var.units
+        amplitude.setAxis(0, lat)
+        amplitude.setAxis(1, lon)
+
+        maxtime = MV2.zeros((nlat,nlon))
+        maxtime[:,:] = tmax[0]
+        maxtime.id = var.id +'_diurnal_phase'
+        maxtime.longname = 'Phase of diurnal cycle of '+var.id
+        maxtime.units = 'hour'
+        maxtime.setAxis(0, lat)
+        maxtime.setAxis(1, lon)
    
-    cmean = MV2.zeros((nlat,nlon))
-    cmean[:,:] = cycmean
-    cmean.id = var.id +'_diurnal_cycmean'
-    cmean.longname = 'Mean of diurnal cycle of '+var.id
-    cmean.units = var.units
-    cmean.setAxis(0, lat)
-    cmean.setAxis(1, lon)
+        cmean = MV2.zeros((nlat,nlon))
+        cmean[:,:] = cycmean
+        cmean.id = var.id +'_diurnal_cycmean'
+        cmean.longname = 'Mean of diurnal cycle of '+var.id
+        cmean.units = var.units
+        cmean.setAxis(0, lat)
+        cmean.setAxis(1, lon)
 
-    return cmean,amplitude, maxtime
+        return cmean,amplitude, maxtime
 
 
 def fastAllGridFT(x, t):
@@ -125,8 +141,12 @@ def fastAllGridFT(x, t):
     '''
 
     #Creating output arrays 
-    nx = x.shape[1]
-    ny = x.shape[2]
+    if len(x.shape) ==1:
+        nx = 1
+        ny = 1
+    else:
+        nx = x.shape[1]
+        ny = x.shape[2]
     # time  of maximum for nth component (n=0 => diurnal, n=1 => semi...)
     tmax = numpy.zeros((3, nx, ny))
     # value of maximum for nth component (= 1/2 peak-to-peak amplitude)

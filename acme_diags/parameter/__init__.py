@@ -6,6 +6,7 @@ from .enso_diags_parameter import EnsoDiagsParameter
 from .qbo_parameter import QboParameter
 from .streamflow_parameter import StreamflowParameter
 from .diurnal_cycle_parameter import DiurnalCycleParameter
+from .arm_diags_parameter import ARMDiagsParameter
 
 SET_TO_PARAMETERS = {
     'zonal_mean_xy': CoreParameter,
@@ -18,5 +19,6 @@ SET_TO_PARAMETERS = {
     'enso_diags': EnsoDiagsParameter,
     'qbo': QboParameter,
     'streamflow': StreamflowParameter,
-    'diurnal_cycle': DiurnalCycleParameter
+    'diurnal_cycle': DiurnalCycleParameter,
+    'arm_diags': ARMDiagsParameter,
 }
