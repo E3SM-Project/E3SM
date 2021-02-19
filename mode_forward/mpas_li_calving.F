@@ -1300,7 +1300,9 @@ module li_calving
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      integer :: iCell, err_tmp
+      integer :: iCell, jCell, iNeighbor, nGroundedNeighbors, err_tmp
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnCell
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool, meshPool, &
                                         velocityPool, scratchPool, thermalPool
@@ -1349,6 +1351,8 @@ module li_calving
           call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
           call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
          ! get fields
+          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
@@ -1417,12 +1421,28 @@ module li_calving
          call mpas_dmpar_field_halo_exch(domain, 'calvingThickness')
          call mpas_timer_stop("halo updates")
 
-          ! If floating VM threshold is zero, remove floating ice.
+          ! If floating VM threshold is zero, remove floating ice. Remove
+          ! non-dynamic cells adjacent to floating ice, but leave
+          ! non-dynamic cells adjacent to grounded ice.
+          ! TODO: Make an exception for the case of floating ice surrounded by grounded ice
+          ! (i.e., floating on a subglacial lake) using a flood fill routine
           if ( config_floating_von_Mises_threshold_stress .eq. 0.0_RKIND ) then
              do iCell = 1,nCells
                 if ( li_mask_is_floating_ice(cellMask(iCell)) .and. &
                      li_mask_is_dynamic_ice(cellMask(iCell)) ) then
                      calvingThickness(iCell) = thickness(iCell)
+                elseif ( li_mask_is_floating_ice(cellMask(icell)) .and. &
+                    (.not. li_mask_is_dynamic_ice(cellMask(iCell))) ) then
+                    nGroundedNeighbors = 0
+                    do iNeighbor = 1, nEdgesOnCell(iCell)
+                       jCell = cellsOnCell(iNeighbor, iCell)
+                       if ( li_mask_is_grounded_ice(cellMask(jCell)) ) then 
+                           nGroundedNeighbors = nGroundedNeighbors + 1
+                       endif
+                    enddo
+                    if ( nGroundedNeighbors == 0 ) then
+                       calvingThickness(iCell) = thickness(iCell)
+                    endif
                 endif
              enddo
           endif
