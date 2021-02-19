@@ -857,7 +857,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! co2 cycle            
     if (co2_transport()) then
-       call co2_init(phys_state, pbuf2d)
+       call co2_init()
     end if
 
     ! CAM3 prescribed ozone
@@ -1428,6 +1428,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
+    use co2_cycle,          only: co2_cycle_set_ptend
     use cam_history,        only: outfld 
     use crm_physics,        only: crm_physics_tend
 
@@ -1641,6 +1642,10 @@ if (l_tracer_aero) then
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
+
+    ! add tendency from aircraft emissions
+    call co2_cycle_set_ptend(state, pbuf, ptend)
+    call physics_update(state, ptend, ztodt, tend)
 
     ! Chemistry calculation
     if (chem_is_active()) then
