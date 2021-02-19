@@ -922,11 +922,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, num_tracers, N, nCells
+      integer :: iCell, k, num_tracers, N, Nsurf, nCells
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
 
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: maxLevelCell, minLevelCell
 
       real (kind=RKIND), dimension(:), allocatable :: A,B,C
       real (kind=RKIND), dimension(:,:), allocatable :: tracersTemp, rhs
@@ -940,6 +940,7 @@ contains
       num_tracers = size(tracers, dim=1)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),tracersTemp(num_tracers,nVertLevels))
       allocate(rhs(num_tracers,nVertLevels))
@@ -951,40 +952,42 @@ contains
       !$omp do schedule(runtime) private(N, A, B, C, rhs, tracersTemp, k)
       do iCell = 1, nCells
          ! Compute A(k), B(k), C(k) for tracers
+         Nsurf = minLevelCell(iCell)
          N = maxLevelCell(iCell)
 
          ! A is lower diagonal term
-         A(1)=0.0_RKIND
-         do k = 2, N
+         A(Nsurf)=0.0_RKIND
+         do k = Nsurf+1, N
             A(k) = -2.0_RKIND*dt*vertDiffTopOfCell(k,iCell) &
                  / (layerThickness(k-1,iCell) + layerThickness(k,iCell)) / layerThickness(k,iCell)
          enddo
 
          ! C is upper diagonal term
-         do k = 1, N-1
+         do k = Nsurf, N-1
             C(k) = -2.0_RKIND*dt*vertDiffTopOfCell(k+1,iCell) &
                  / (layerThickness(k,iCell) + layerThickness(k+1,iCell)) / layerThickness(k,iCell)
          enddo
          C(N) = 0.0_RKIND
 
          ! B is diagonal term
-         do k = 1, N
+         do k = Nsurf, N
             B(k) = 1.0_RKIND - A(k) - C(k)
          enddo
 
          if ( config_cvmix_kpp_nonlocal_with_implicit_mix ) then
             call ocn_compute_kpp_rhs(tracers(:,:,iCell), rhs(:,:), dt, N, num_tracers, &
                              layerThickness(:,iCell), vertNonLocalFlux(:,:,iCell), &
-                             tracerGroupSurfaceFlux(:,iCell))
+                             tracerGroupSurfaceFlux(:,iCell)) !mlc-arguments may need to be changed
          else
             rhs(:,:) = tracers(:,:,iCell)
          endif
 
-         call tridiagonal_solve_mult(A(2:N), B, C(1:N-1), rhs(:,:), &
-              tracersTemp, N, nVertLevels, num_tracers)
+         call tridiagonal_solve_mult(A(Nsurf+1:N), B(Nsurf:N), C(Nsurf:N-1), rhs(:,Nsurf:N), &
+              tracersTemp(:,Nsurf:N), N, nVertLevels, num_tracers) !mlc-arguments need to be changed
 
-         tracers(:,1:N,iCell) = tracersTemp(:,1:N)
+         tracers(:,Nsurf:N,iCell) = tracersTemp(:,Nsurf:N)
          tracers(:,N+1:nVertLevels,iCell) = -1e34
+         tracers(:,1:Nsurf-1,iCell) = -1e34
       end do
       !$omp end do
       !$omp end parallel
