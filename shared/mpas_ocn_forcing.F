@@ -140,7 +140,7 @@ contains
         do iCell = 1, nCells
            zTop = 0.0_RKIND
            transmissionCoeffTop = ocn_forcing_transmission(zTop, sfcFlxAttCoeff(iCell))
-           do k = minLevelCell(iCell), maxLevelCell(iCell) !mlc-do-k
+           do k = minLevelCell(iCell), maxLevelCell(iCell)
               zBot = zTop - layerThickness(k,iCell)
               transmissionCoeffBot = ocn_forcing_transmission(zBot, sfcFlxAttCoeff(iCell))
 
@@ -148,7 +148,7 @@ contains
 
               zTop = zBot
               transmissionCoeffTop = transmissionCoeffBot
-           end do !mlc-end-do
+           end do
         end do
 
 !  now do river runoff separately
@@ -156,7 +156,7 @@ contains
         do iCell = 1, nCells
            zTop = 0.0_RKIND
            transmissionCoeffTop = ocn_forcing_transmission(zTop, surfaceFluxAttenuationCoefficientRunoff(iCell))
-           do k = minLevelCell(iCell), maxLevelCell(iCell) !mlc-do-k
+           do k = minLevelCell(iCell), maxLevelCell(iCell)
               zBot = zTop - layerThickness(k,iCell)
               transmissionCoeffBot = ocn_forcing_transmission(zBot, surfaceFluxAttenuationCoefficientRunoff(iCell))
 
@@ -164,7 +164,7 @@ contains
 
               zTop = zBot
               transmissionCoeffTop = transmissionCoeffBot
-           end do !mlc-end-do
+           end do
         end do
 
     end subroutine ocn_forcing_build_fraction_absorbed_array!}}}
