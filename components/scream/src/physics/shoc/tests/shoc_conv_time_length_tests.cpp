@@ -176,8 +176,6 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
       ComputeConvTimeShocLengthData(2)
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeConvTimeShocLengthData);
-
     // Generate random input data
     for (auto& d : SDS_f90) {
       d.randomize();
@@ -209,6 +207,8 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeConvTimeShocLengthData);
     for (Int i = 0; i < num_runs; ++i) {
       ComputeConvTimeShocLengthData& d_f90 = SDS_f90[i];
       ComputeConvTimeShocLengthData& d_cxx = SDS_cxx[i];
@@ -217,6 +217,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
         REQUIRE(d_f90.tscale[c] == d_cxx.tscale[c]);
       }
     }
+#endif
   }
 };
 

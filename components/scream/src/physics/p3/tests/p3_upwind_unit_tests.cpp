@@ -247,6 +247,7 @@ static void run_bfb()
       d.num_arrays, fluxes, vs, qnx);
   }
 
+#ifndef NDEBUG
   for (Int i = 0; i < num_runs; ++i) {
     // Due to pack issues, we must restrict checks to the active k space
     Int start = std::min(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop) - 1; // 0-based indx
@@ -263,6 +264,7 @@ static void run_bfb()
       }
     }
   }
+#endif
 }
 
 };
@@ -317,6 +319,7 @@ static void run_bfb()
                                 d.num_arrays, fluxes, vs, qnx);
   }
 
+#ifndef NDEBUG
   for (Int i = 0; i < num_runs; ++i) {
     // Due to pack issues, we must restrict checks to the active k space
     Int start = std::min(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop) - 1; // 0-based indx
@@ -336,6 +339,7 @@ static void run_bfb()
     REQUIRE(gsds_fortran[i].dt_left   == gsds_cxx[i].dt_left);
     REQUIRE(gsds_fortran[i].prt_accum == gsds_cxx[i].prt_accum);
   }
+#endif
 }
 
 };

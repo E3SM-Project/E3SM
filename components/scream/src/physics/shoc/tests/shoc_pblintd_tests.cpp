@@ -144,8 +144,6 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
       PblintdData(2, 7, 8),
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdData);
-
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
@@ -177,6 +175,8 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdData);
     for (Int i = 0; i < num_runs; ++i) {
       PblintdData& d_f90 = f90_data[i];
       PblintdData& d_cxx = cxx_data[i];
@@ -184,6 +184,7 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
         REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
       }
     }
+#endif
   } // run_bfb
 
 };

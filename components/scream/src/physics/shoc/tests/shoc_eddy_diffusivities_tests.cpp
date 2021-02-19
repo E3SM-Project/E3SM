@@ -261,8 +261,6 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
       EddyDiffusivitiesData(2, 7),
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(EddyDiffusivitiesData);
-
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
@@ -294,6 +292,8 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(EddyDiffusivitiesData);
     for (Int i = 0; i < num_runs; ++i) {
       EddyDiffusivitiesData& d_f90 = f90_data[i];
       EddyDiffusivitiesData& d_cxx = cxx_data[i];
@@ -302,6 +302,7 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
         REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
       }
     }
+#endif
   } // run_bfb
 };
 

@@ -158,8 +158,6 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
       PblintdInitPotData(256, 72),
     };
 
-    static constexpr Int num_runs = sizeof(pblintd_init_pot_data_f90) / sizeof(PblintdInitPotData);
-
     for (auto& d : pblintd_init_pot_data_f90) {
       d.randomize();
     }
@@ -180,6 +178,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
       shoc_pblintd_init_pot_f(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
     }
 
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(pblintd_init_pot_data_f90) / sizeof(PblintdInitPotData);
     for (Int i = 0; i < num_runs; ++i) {
       Int shcol = pblintd_init_pot_data_cxx[i].shcol;
       Int nlev  = pblintd_init_pot_data_cxx[i].nlev;
@@ -189,6 +189,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
         }
       }
     }
+#endif
   }
 
 };

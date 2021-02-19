@@ -163,7 +163,6 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
       ComputeShrProdData(7,  16, 17),
       ComputeShrProdData(2,   7, 8)
     };
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeShrProdData);
 
     // Generate random input data
     for (auto& d : f90_data) {
@@ -195,6 +194,8 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeShrProdData);
     for (Int i = 0; i < num_runs; ++i) {
       ComputeShrProdData& d_f90 = f90_data[i];
       ComputeShrProdData& d_cxx = cxx_data[i];
@@ -202,7 +203,7 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
         REQUIRE(d_f90.sterm[k] == d_cxx.sterm[k]);
       }
     }
-
+#endif
   } //run_bfb
 };
 

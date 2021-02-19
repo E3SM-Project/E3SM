@@ -139,8 +139,6 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
       CalcShocVertfluxData(2, 7, 8),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CalcShocVertfluxData);
-
     // Generate random input data
     for (auto& d : SDS_f90) {
       d.randomize();
@@ -172,6 +170,8 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CalcShocVertfluxData);
     for (Int i = 0; i < num_runs; ++i) {
       CalcShocVertfluxData& d_f90 = SDS_f90[i];
       CalcShocVertfluxData& d_cxx = SDS_cxx[i];
@@ -179,6 +179,7 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
         REQUIRE(d_f90.vertflux[k] == d_cxx.vertflux[k]);
       }
     }
+#endif
   }
 
 };

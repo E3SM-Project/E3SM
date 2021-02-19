@@ -110,6 +110,7 @@ static void run_bfb_rain_vel()
   Kokkos::deep_copy(crfv_host, crfv_device);
 
   // Validate results
+#ifndef NDEBUG
   for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(crfv_fortran[s].nr_incld == crfv_host(s).nr_incld);
     REQUIRE(crfv_fortran[s].mu_r     == crfv_host(s).mu_r);
@@ -117,6 +118,7 @@ static void run_bfb_rain_vel()
     REQUIRE(crfv_fortran[s].V_qr     == crfv_host(s).V_qr);
     REQUIRE(crfv_fortran[s].V_nr     == crfv_host(s).V_nr);
   }
+#endif
 }
 
 static void run_bfb_rain_sed()
@@ -159,6 +161,7 @@ static void run_bfb_rain_sed()
                          d.qr_tend, d.nr_tend);
   }
 
+#ifndef NDEBUG
   for (Int i = 0; i < num_runs; ++i) {
     // Due to pack issues, we must restrict checks to the active k space
     Int start = std::min(rsds_fortran[i].kbot, rsds_fortran[i].ktop) - 1; // 0-based indx
@@ -176,6 +179,7 @@ static void run_bfb_rain_sed()
     REQUIRE(rsds_fortran[i].precip_liq_flux[end] == rsds_cxx[i].precip_liq_flux[end]);
     REQUIRE(rsds_fortran[i].precip_liq_surf      == rsds_cxx[i].precip_liq_surf);
   }
+#endif
 }
 
 static void run_bfb()

@@ -334,14 +334,12 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
 
   static void run_bfb()
   {
-    UpdatePrognosticsImplicitData f90_data[] = {      
+    UpdatePrognosticsImplicitData f90_data[] = {
       UpdatePrognosticsImplicitData(10, 71, 72, 19, 5),
       UpdatePrognosticsImplicitData(10, 12, 13, 7, 2.5),
       UpdatePrognosticsImplicitData(7, 16, 17, 2, 1),
       UpdatePrognosticsImplicitData(2, 7, 8, 1, 1)
     };
-
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(UpdatePrognosticsImplicitData);
 
     // Generate random input data
     for (auto& d : f90_data) {
@@ -376,6 +374,8 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(UpdatePrognosticsImplicitData);
     for (Int i = 0; i < num_runs; ++i) {
       UpdatePrognosticsImplicitData& d_f90 = f90_data[i];
       UpdatePrognosticsImplicitData& d_cxx = cxx_data[i];
@@ -397,8 +397,8 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
       for (Int k = 0; k < d_f90.total(d_f90.tracer); ++k) {
         REQUIRE(d_f90.tracer[k] == d_cxx.tracer[k]);
       }
-
     }
+#endif
   } // run_bfb
 
 };
