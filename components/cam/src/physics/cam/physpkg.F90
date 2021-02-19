@@ -1858,6 +1858,8 @@ subroutine tphysbc (ztodt,               &
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
+    use zm_average_gathered, only: zm_gath_avg, zm_gath_avg_init, &
+                                   zm_gath_avg_accum, zm_gath_avg_output
 
     implicit none
 
@@ -1973,12 +1975,20 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: prec_sed_macmic(pcols)
     real(r8) :: snow_sed_macmic(pcols)
 
+    real(r8) :: cmfmc_accum(pcols, pverp)
+    real(r8) :: cmfcme_accum(pcols, pver)
+    real(r8) :: dlf_accum(pcols, pver)
+    real(r8) :: pflx_accum(pcols, pverp)
+    real(r8) :: zdu_accum(pcols, pver)
+
     real(r8) :: prec_dp_accum(pcols)
     real(r8) :: snow_dp_accum(pcols)
     real(r8) :: rprddp_accum(pcols,pver)
     real(r8) :: nevapr_dpcu_accum(pcols,pver)
     real(r8) :: ttend_dp_accum(pcols,pver)
     real(r8) :: rliq_accum(pcols)
+
+    type(zm_gath_avg) :: zga
 
     ! energy checking variables
     real(r8) :: zero(pcols)                    ! array of zeros
@@ -2386,12 +2396,20 @@ end if
        prec_pcw_macmic = 0._r8
        snow_pcw_macmic = 0._r8
 
+       cmfmc_accum = 0._r8
+       cmfcme_accum = 0._r8
+       dlf_accum = 0._r8
+       pflx_accum = 0._r8
+       zdu_accum = 0._r8
+
        prec_dp_accum = 0._r8
        snow_dp_accum = 0._r8
        rprddp_accum = 0._r8
        nevapr_dpcu_accum = 0._r8
        ttend_dp_accum = 0._r8
        rliq_accum = 0._r8
+
+       call zm_gath_avg_init(state%pdel, zga)
 
        do macmic_it = 1, cld_macmic_num_steps
           !
@@ -2621,6 +2639,17 @@ end if
 
         end if ! l_st_mic
 
+        call zm_gath_avg_accum( &
+             lengath, ideep, mu, eu, du, &
+             md, ed, dp, dsubcld, jt, &
+             maxg, zga)
+
+        cmfmc_accum(:ncol,:) = cmfmc_accum(:ncol,:) + cmfmc(:ncol,:)
+        cmfcme_accum(:ncol,:) = cmfcme_accum(:ncol,:) + cmfcme(:ncol,:)
+        dlf_accum(:ncol,:) = dlf_accum(:ncol,:) + dlf(:ncol,:)
+        pflx_accum(:ncol,:) = pflx_accum(:ncol,:) + pflx(:ncol,:)
+        zdu_accum(:ncol,:) = zdu_accum(:ncol,:) + zdu(:ncol,:)
+
           prec_sed_macmic(:ncol) = prec_sed_macmic(:ncol) + prec_sed(:ncol)
           snow_sed_macmic(:ncol) = snow_sed_macmic(:ncol) + snow_sed(:ncol)
           prec_pcw_macmic(:ncol) = prec_pcw_macmic(:ncol) + prec_pcw(:ncol)
@@ -2633,6 +2662,17 @@ end if
           rliq_accum(:ncol) = rliq_accum(:ncol) + rliq(:ncol)
 
        end do ! end substepping over macrophysics/microphysics
+
+       call zm_gath_avg_output( &
+            zga, lengath, ideep, mu, eu, &
+            du, md, ed, dp, dsubcld, &
+            jt, maxg)
+
+       cmfmc(:ncol,:) = cmfmc_accum(:ncol,:) / cld_macmic_num_steps
+       cmfcme(:ncol,:) = cmfcme_accum(:ncol,:) / cld_macmic_num_steps
+       dlf(:ncol,:) = dlf_accum(:ncol,:) / cld_macmic_num_steps
+       pflx(:ncol,:) = pflx_accum(:ncol,:) / cld_macmic_num_steps
+       zdu(:ncol,:) = zdu_accum(:ncol,:) / cld_macmic_num_steps
 
        prec_sed(:ncol) = prec_sed_macmic(:ncol)/cld_macmic_num_steps
        snow_sed(:ncol) = snow_sed_macmic(:ncol)/cld_macmic_num_steps
