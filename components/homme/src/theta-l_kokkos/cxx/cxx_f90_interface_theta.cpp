@@ -221,7 +221,7 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
   Tracers &tracers = Context::singleton().get<Tracers>();
   if (params.ftype == ForcingAlg::FORCING_DEBUG) {
     if (tracers.fq.data() == nullptr) {
-      tracers.fq = decltype(tracers.fq)("fq", num_elems);
+      tracers.fq = decltype(tracers.fq)("fq", num_elems, params.qsize);
     }
     HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
         elem_derived_FQ, num_elems);
