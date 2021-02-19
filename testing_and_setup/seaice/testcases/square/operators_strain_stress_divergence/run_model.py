@@ -9,7 +9,8 @@ except ImportError:
 
 def run_model():
 
-    operatorMethods = ["wachspress","pwl","weak","weakwachs","weakpwl"]
+    operatorMethods = ["wachspress","pwl","weak","wachsavg","pwlavg","weakwachs","weakpwl"]
+    #operatorMethods = ["wachsavg"]
 
     gridTypes = ["hex","quad"]
     #gridTypes = ["quad"]
@@ -56,6 +57,18 @@ def run_model():
                     nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
                                                     "config_stress_divergence_scheme":"weak",
                                                     "config_variational_denominator_type":"original"}}
+                if (operatorMethod == "wachsavg"):
+                    nmlPatch = {"velocity_solver": {"config_strain_scheme":"variational",
+                                                    "config_stress_divergence_scheme":"variational",
+                                                    "config_variational_basis":"wachspress",
+                                                    "config_variational_denominator_type":"original",
+                                                    "config_average_variational_strain":True}}
+                elif (operatorMethod == "pwlavg"):
+                    nmlPatch = {"velocity_solver": {"config_strain_scheme":"variational",
+                                                    "config_stress_divergence_scheme":"variational",
+                                                    "config_variational_basis":"pwl",
+                                                    "config_variational_denominator_type":"original",
+                                                    "config_average_variational_strain":True}}
                 elif (operatorMethod == "weakwachs"):
                     nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
                                                     "config_stress_divergence_scheme":"variational",

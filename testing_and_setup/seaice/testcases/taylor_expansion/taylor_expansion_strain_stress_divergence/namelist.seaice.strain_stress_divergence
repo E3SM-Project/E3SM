@@ -86,6 +86,7 @@
     config_variational_denominator_type = 'original'
     config_wachspress_integration_type = 'dunavant'
     config_wachspress_integration_order = 8
+    config_average_variational_strain = false
     config_calc_velocity_masks = false
     config_use_air_stress = true
     config_use_ocean_stress = true

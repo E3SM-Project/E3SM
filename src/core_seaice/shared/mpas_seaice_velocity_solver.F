@@ -38,6 +38,9 @@ module seaice_velocity_solver
        WEAK_STRAIN_SCHEME = 1, &
        VARIATIONAL_STRAIN_SCHEME = 2
 
+  logical :: &
+       averageVariationalStrains
+
   ! stress divergence scheme type
   integer :: &
        stressDivergenceSchemeType
@@ -107,6 +110,7 @@ contains
 
     logical, pointer :: &
          config_use_velocity_solver, &
+         config_average_variational_strain, &
          config_rotate_cartesian_grid, &
          config_include_metric_terms, &
          config_aggregate_halo_exch, &
@@ -192,6 +196,9 @@ contains
            stressDivergenceSchemeType == WEAK_STRESS_DIVERGENCE_SCHEME) then
           call MPAS_log_write("Cannot have variational strain scheme with variational stress divergence scheme", MPAS_LOG_CRIT)
        endif
+
+       call MPAS_pool_get_config(domain % configs, "config_average_variational_strain", config_average_variational_strain)
+       averageVariationalStrains = config_average_variational_strain
 
        ! initialize the evp solver
        call seaice_init_evp(domain)
@@ -2623,7 +2630,8 @@ contains
     use seaice_velocity_solver_variational, only: &
          seaice_strain_tensor_variational, &
          seaice_stress_tensor_variational, &
-         seaice_stress_divergence_variational
+         seaice_stress_divergence_variational, &
+         seaice_average_strains_on_vertex
 
     type(domain_type), intent(inout) :: &
          domain
@@ -2654,7 +2662,8 @@ contains
          stress22weak, &
          stress12weak, &
          latCellRotated, &
-         latVertexRotated
+         latVertexRotated, &
+         areaCell
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorPolygon, &
@@ -2742,6 +2751,18 @@ contains
                solveStress)
           call mpas_timer_stop("Velocity solver strain tensor")
 
+       endif
+
+       ! average variational strains around vertex
+       if (strainSchemeType == VARIATIONAL_STRAIN_SCHEME .and. &
+           averageVariationalStrains) then
+
+          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
+          call seaice_average_strains_on_vertex(&
+                areaCell, &
+                strain11var, &
+                strain22var, &
+                strain12var)
        endif
 
        ! weak strain / variational stress divergence

@@ -41,6 +41,8 @@ def average_variational_strains():
                 vertexDegree = len(fileModify.dimensions["vertexDegree"])
                 nTimes = len(fileModify.dimensions["Time"])
 
+                areaCell = fileModify.variables["areaCell"][:]
+
                 cellsOnVertex = fileModify.variables["cellsOnVertex"][:]
                 cellVerticesAtVertex = fileModify.variables["cellVerticesAtVertex"][:]
 
@@ -62,7 +64,7 @@ def average_variational_strains():
                         strain11avg = 0.0
                         strain22avg = 0.0
                         strain12avg = 0.0
-                        nCellsSum = 0
+                        denominator = 0.0
 
                         for iVertexDegree in range(0,vertexDegree):
 
@@ -72,15 +74,14 @@ def average_variational_strains():
 
                                 iVertexOnCell = cellVerticesAtVertex[iVertex,iVertexDegree]
 
-                                strain11avg = strain11avg + strain11var[iTime,iCell,iVertexOnCell]
-                                strain22avg = strain22avg + strain22var[iTime,iCell,iVertexOnCell]
-                                strain12avg = strain12avg + strain12var[iTime,iCell,iVertexOnCell]
-                                nCellsSum = nCellsSum + 1
+                                strain11avg = strain11avg + areaCell[iCell] * strain11var[iTime,iCell,iVertexOnCell]
+                                strain22avg = strain22avg + areaCell[iCell] * strain22var[iTime,iCell,iVertexOnCell]
+                                strain12avg = strain12avg + areaCell[iCell] * strain12var[iTime,iCell,iVertexOnCell]
+                                denominator = denominator + areaCell[iCell]
 
-                        strain11varAvg[iTime,iVertex] = strain11avg / float(nCellsSum)
-                        strain22varAvg[iTime,iVertex] = strain22avg / float(nCellsSum)
-                        strain12varAvg[iTime,iVertex] = strain12avg / float(nCellsSum)
-
+                        strain11varAvg[iTime,iVertex] = strain11avg / denominator
+                        strain22varAvg[iTime,iVertex] = strain22avg / denominator
+                        strain12varAvg[iTime,iVertex] = strain12avg / denominator
                         #print(iTime,iVertex,strain11varAvg[iTime,iVertex],strain11avg,float(nCellsSum))
 
                 try:

@@ -161,6 +161,13 @@ def create_grid_quad(nx, ny, dc):
 
     filein = Dataset(gridname,"a")
 
+    nCells = len(filein.dimensions["nCells"])
+    nEdgesOnCell = filein.variables["nEdgesOnCell"][:]
+    verticesOnCell = filein.variables["verticesOnCell"][:]
+    verticesOnCell[:] = verticesOnCell[:] - 1
+    xVertex = filein.variables["xVertex"][:]
+    yVertex = filein.variables["yVertex"][:]
+
     filein.Lx = Lx
     filein.Ly = Ly
 
@@ -170,6 +177,20 @@ def create_grid_quad(nx, ny, dc):
     filein.dc = dc
 
     filein.close()
+
+    # plot
+    filenameplot = "grid_quad_%4.4ix%4.4i.txt" %(nx,ny)
+    fileplot = open(filenameplot,"w")
+
+    for iCell in range(0,nCells):
+        for iVertexOnCell in range(0,nEdgesOnCell[iCell]):
+            iVertex = verticesOnCell[iCell,iVertexOnCell]
+            fileplot.write("%f %f\n" %(xVertex[iVertex],yVertex[iVertex]))
+        iVertex = verticesOnCell[iCell,0]
+        fileplot.write("%f %f\n" %(xVertex[iVertex],yVertex[iVertex]))
+        fileplot.write("\n")
+
+    fileplot.close()
 
 #-------------------------------------------------------------------------------
 

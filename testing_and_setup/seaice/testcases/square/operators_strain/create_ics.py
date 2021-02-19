@@ -2,10 +2,10 @@ from netCDF4 import Dataset
 import numpy as np
 from math import sin, cos, pi, pow
 
-A = np.random.uniform(2,4)
-B = np.random.uniform(2,4)
-C = np.random.uniform(2,4)
-D = np.random.uniform(2,4)
+A = 2.56#np.random.uniform(2,4)#2.56#
+B = 2.56#np.random.uniform(2,4)
+C = 2.56#np.random.uniform(2,4)
+D = 2.56#np.random.uniform(2,4)
 
 #-------------------------------------------------------------
 
@@ -250,7 +250,7 @@ def create_ics():
                      "0320x0320",
                      "0640x0640"]}
 
-    velType = "quadratic"
+    velType = "sinusoid"
 
     for gridType in gridTypes:
         for grid in grids[gridType]:
