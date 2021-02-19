@@ -48,7 +48,7 @@ module li_iceshelf_melt
    !
    !--------------------------------------------------------------------
 
-   public :: li_basal_melt_floating_ice, li_grounded_face_melt_ismip6
+   public :: li_basal_melt_floating_ice, li_face_melt_grounded_ice
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +60,64 @@ module li_iceshelf_melt
    contains
 !***********************************************************************
 
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine li_face_melt_grounded_ice
+!
+!> \brief MPAS land ice solver for face melt of grounded ice
+!> \author Trevor Hillebrand
+!> \date   February 2021
+!> \details
+!>  This routine computes face melting for floating ice.
+!>  The following options are supported:
+!>  (1) Do nothing (config_front_mass_bal_grounded = 'none')
+!>  (2) Prescribed uniform face melt speed (config_front_mass_bal_grounded = 'uniform')
+!>  (3) Face melt speed as in ISMIP6 (config_front_mass_bal_grounded = 'ismip6')
+
+!-----------------------------------------------------------------------
+
+   subroutine li_face_melt_grounded_ice(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      character(len=StrKIND), pointer :: &
+           config_front_mass_bal_grounded ! option for submarine mass balance
+                                          ! at grounded glacier front
+
+      integer :: err_tmp
+
+      err = 0
+      err_tmp = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
+
+      if ( trim(config_front_mass_bal_grounded) == 'ismip6' &
+          .or. trim(config_front_mass_bal_grounded) == 'uniform' ) then
+         call grounded_face_melt_ismip6(domain, err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
+   end subroutine li_face_melt_grounded_ice
+!-----------------------------------------------------------------------
+!||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||r
 !
 !  !  routine li_basal_melt_floating_ice
 !
@@ -222,13 +279,6 @@ module li_iceshelf_melt
          if (config_print_thermal_info) then
             call mpas_log_write('GLdepth=$r, CFdepth=$r', realArgs=(/GLdepth, CFdepth/))
          endif
-      endif
-
-      if ( trim(config_front_mass_bal_grounded) == 'ismip6' &
-          .or. trim(config_front_mass_bal_grounded) == 'uniform' ) then
-         call li_grounded_face_melt_ismip6(domain, err_tmp)
-         err = ior(err, err_tmp)
-
       endif
 
       if (trim(config_basal_mass_bal_float) == 'ismip6') then
@@ -1147,7 +1197,7 @@ module li_iceshelf_melt
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  !  routine li_grounded_face_melt_ismip6
+!  !  routine grounded_face_melt_ismip6
 !
 !> \brief Calculate grounded glacier submarine melt rate using parameterization from ISMIP6
 !> \author Trevor Hillebrand
@@ -1164,7 +1214,7 @@ module li_iceshelf_melt
 !-----------------------------------------------------------------------
 
 
-    subroutine li_grounded_face_melt_ismip6(domain, err)
+    subroutine grounded_face_melt_ismip6(domain, err)
 
       use li_calving  
       !-----------------------------------------------------------------
@@ -1285,7 +1335,7 @@ module li_iceshelf_melt
                faceMeltSpeedVertAvg(:) = faceMeltSpeed(:) * abs(lowerSurface(:)) / thickness(:)
          end where
 
-         call mpas_log_write("calling li_apply_front_ablation_velocity from li_grounded_face_melt_ismip6")
+         call mpas_log_write("calling li_apply_front_ablation_velocity from grounded_face_melt_ismip6")
          ! Distribute melt among neighbors
          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, &
                                             faceMeltingThickness, faceMeltSpeedVertAvg, applyToGrounded, &
@@ -1312,7 +1362,7 @@ module li_iceshelf_melt
 
     deallocate(faceMeltSpeedVertAvg)
 
-    end subroutine li_grounded_face_melt_ismip6
+    end subroutine grounded_face_melt_ismip6
 !-----------------------------------------------------------------------
 
 
