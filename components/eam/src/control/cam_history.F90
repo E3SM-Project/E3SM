@@ -3751,9 +3751,10 @@ end subroutine print_active_fldlst
     call datetime(curdate, curtime)
     str = 'created on ' // curdate // ' ' // curtime
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'history' , trim(str))
-    str = 'CF-1.0'
+    str = 'CF-1.7'
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'product', 'model-output')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'contact',  &
                       'e3sm-data-support@listserv.llnl.gov')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'initial_file', ncdata)
@@ -4056,6 +4057,13 @@ end subroutine print_active_fldlst
         ierr=pio_put_att (tape(t)%File, varid, 'long_name', trim(str))
         call cam_pio_handle_error(ierr,                                       &
              'h_define: cannot define long_name for '//trim(fname_tmp))
+
+        str = tape(t)%hlist(f)%field%standard_name
+        if (str /= ' ') then
+          ierr=pio_put_att (tape(t)%File, varid, 'standard_name', trim(str))
+          call cam_pio_handle_error(ierr,                                       &
+               'h_define: cannot define standard_name for '//trim(fname_tmp))
+        endif
         !
         ! Assign field attributes defining valid levels and averaging info
         !
@@ -4890,6 +4898,12 @@ end subroutine print_active_fldlst
     listentry%htapeindx(:) = -1
     listentry%act_sometape = .false.
     listentry%actflag(:) = .false.
+
+    if (present(standard_name)) then
+     listentry%field%standard_name = standard_name
+    else
+     listentry%field%standard_name = ' '
+    end if
 
     ! Make sure we have a valid gridname
     if (present(gridname)) then

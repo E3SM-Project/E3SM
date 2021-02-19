@@ -120,6 +120,7 @@ module cam_history_support
 
     character(len=max_fieldname_len) :: name ! field name
     character(len=max_chars) :: long_name    ! long name
+    character(len=max_chars) :: standard_name  ! CF standard name
     character(len=max_chars) :: units        ! units
     character(len=3)         :: mixing_ratio ! 'dry' or 'wet'
     character(len=max_chars) :: sampling_seq ! sampling sequence - if not every timestep, how often field is sampled
@@ -133,7 +134,7 @@ module cam_history_support
     generic   :: get_dims    => get_dims_2d, get_dims_3d
   end type field_info
 
-  real(r8), parameter, public :: fillvalue = 1.e36_r8     ! fill value for netcdf fields
+  real(r8), parameter, public :: fillvalue = 9.9692099683868690d+36     ! fill value for netcdf fields
 
 
   !---------------------------------------------------------------------------
