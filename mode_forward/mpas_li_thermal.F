@@ -1237,7 +1237,7 @@ module li_thermal
 
                      call mpas_log_write('li_thermal, energy conservation error: iCell=$i, imbalance=$r (W/m2):', MPAS_LOG_WARN, &
                              intArgs=(/indexToCellID(iCell)/), realArgs=(/(finalEnergy - initialEnergy - deltaEnergy)/deltat/))
-                     err = 0
+                     !err = ior(err, 1)
 
                   endif  ! energy conservation error
 
@@ -1325,6 +1325,9 @@ module li_thermal
 
             enddo   ! iCell
 
+         case default
+            call mpas_log_write("Unknown thermal solver specified: " // trim(config_thermal_solver), MPAS_LOG_ERR)
+            err = ior(err, 1)
          end select   ! config_thermal_solver
 
          ! It is possible that internal melting was computed above for floating ice and assigned
