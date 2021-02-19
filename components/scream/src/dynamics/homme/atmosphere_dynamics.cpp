@@ -122,14 +122,13 @@ set_required_group (const FieldGroup<const Real>& group)
 void HommeDynamics::
 set_updated_group (const FieldGroup<Real>& group)
 {
+  const auto& name = group.m_info->m_group_name;
+  EKAT_REQUIRE_MSG(name=="TRACERS",
+    "Error! We were not expecting a field group called '" << name << "\n");
+
   if (group.m_info->size()>0) {
-    const auto& name = group.m_info->m_group_name;
-
-    EKAT_REQUIRE_MSG(name=="TRACERS",
-      "Error! We were not expecting a field group called '" << name << "\n");
-
     EKAT_REQUIRE_MSG(group.m_info->m_bundled,
-        "Error! Shoc expects bundled fields for tracers.\n");
+        "Error! Homme expects bundled fields for tracers.\n");
 
     m_dyn_fields_out["Q"] = *group.m_bundle;
   } else {
@@ -145,6 +144,15 @@ set_updated_group (const FieldGroup<Real>& group)
     Q.allocate_view();
     m_dyn_fields_out.emplace("Q",Q);
   }
+
+  // Now that we have Q, we have the exact count for tracers,
+  // and we can use that info to setup tracers stuff in Homme
+  const int qsize = m_dyn_fields_out["Q"].get_header().get_identifier().get_layout().dims()[1];
+  auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
+  auto& tracers = Homme::Context::singleton().get<Homme::Tracers>();
+  params.qsize = qsize;
+  set_homme_param("qsize",qsize);
+  tracers.init(tracers.num_elems(),qsize);
 }
 
 void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
@@ -162,6 +170,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   auto& tracers  = Homme::Context::singleton().get<Homme::Tracers>();
 
   const int num_elems = state.num_elems();
+  const int num_tracers = tracers.num_tracers();
   using Scalar = Homme::Scalar;
 
   constexpr int NTL  = HOMMEXX_NUM_TIME_LEVELS;
@@ -205,9 +214,9 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
     } else if (name=="Q") {
       // Tracers mass
       auto& Q = tracers.Q;
-      auto Q_in = f.template get_reshaped_view<Scalar*[QSIZE_D][NP][NP][NVL]>();
+      auto Q_in = f.template get_reshaped_view<Scalar**[NP][NP][NVL]>();
       using Q_type = std::remove_reference<decltype(Q)>::type;
-      Q = Q_type(Q_in.data(),num_elems);
+      Q = Q_type(Q_in.data(),num_elems,num_tracers);
     } else {
       ekat::error::runtime_abort("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
     }
@@ -225,10 +234,10 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
     if (name=="FQ") {
       // Tracers forcing
       auto& fq = tracers.fq;
-      auto fq_in = f.template get_reshaped_view<const Scalar*[QSIZE_D][NP][NP][NVL]>();
+      auto fq_in = f.template get_reshaped_view<const Scalar**[NP][NP][NVL]>();
       using fq_type = std::remove_reference<decltype(fq)>::type;
       auto non_const_ptr = const_cast<Scalar*>(fq_in.data());
-      fq = fq_type(non_const_ptr,num_elems);
+      fq = fq_type(non_const_ptr,num_elems,num_tracers);
     } else if (name=="FM") {
       // Momemntum forcing
       auto& fm = forcing.m_fm;
