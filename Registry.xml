@@ -612,6 +612,10 @@
 			description="Calculate velocity masks."
 			possible_values="true or false"
 		/>
+		<nml_option name="config_average_variational_strain" type="logical" default_value="false" units="unitless"
+			description="Average variational strains over vertex."
+			possible_values="true or false"
+		/>
 		<nml_option name="config_use_air_stress" type="logical" default_value="true" units="unitless"
 			description="If true include the air stress term in the velocity solver calculations."
 			possible_values="true or. false."

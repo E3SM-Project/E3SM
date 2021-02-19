@@ -27,6 +27,7 @@ module seaice_velocity_solver_variational
   public :: &
        seaice_init_velocity_solver_variational, &
        seaice_strain_tensor_variational, &
+       seaice_average_strains_on_vertex, &
        seaice_stress_tensor_variational, &
        seaice_stress_divergence_variational, &
        seaice_final_divergence_shear_variational
@@ -226,33 +227,29 @@ contains
 
        do iVertex = 1, nVertices
 
-          if (interiorVertex(iVertex) == 1) then
+          variationalDenominator(iVertex) = 0.0_RKIND
 
-             variationalDenominator(iVertex) = 0.0_RKIND
+          ! loop over surrounding cells
+          do iSurroundingCell = 1, vertexDegree
 
-             ! loop over surrounding cells
-             do iSurroundingCell = 1, vertexDegree
+             ! get the cell number of this cell
+             iCell = cellsOnVertex(iSurroundingCell, iVertex)
 
-                ! get the cell number of this cell
-                iCell = cellsOnVertex(iSurroundingCell, iVertex)
+             ! get the vertexOnCell number of the iVertex velocity point from cell iCell
+             iVelocityVertex = cellVerticesAtVertex(iSurroundingCell,iVertex)
 
-                ! get the vertexOnCell number of the iVertex velocity point from cell iCell
-                iVelocityVertex = cellVerticesAtVertex(iSurroundingCell,iVertex)
+             ! loop over the vertices of the surrounding cell
+             do iStressVertex = 1, nEdgesOnCell(iCell)
 
-                ! loop over the vertices of the surrounding cell
-                do iStressVertex = 1, nEdgesOnCell(iCell)
+                variationalDenominator(iVertex) = variationalDenominator(iVertex) + &
+                     basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell)
 
-                   variationalDenominator(iVertex) = variationalDenominator(iVertex) + &
-                        basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell)
+             enddo ! iStressVertex
 
-                enddo ! iStressVertex
+          enddo ! iSurroundingCell
 
-             enddo ! iSurroundingCell
-
-             ! inverse
-             variationalDenominator(iVertex) = variationalDenominator(iVertex)
-
-          endif
+          ! inverse
+          variationalDenominator(iVertex) = variationalDenominator(iVertex)
 
        enddo ! iVertex
 
@@ -261,13 +258,7 @@ contains
        call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
 
        do iVertex = 1, nVertices
-
-          if (interiorVertex(iVertex) == 1) then
-
-             variationalDenominator(iVertex) = areaTriangle(iVertex)
-
-          endif
-
+          variationalDenominator(iVertex) = areaTriangle(iVertex)
        enddo ! iVertex
 
     else
@@ -516,6 +507,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine seaice_average_strains_on_vertex(&
+       areaCell, &
        strain11, &
        strain22, &
        strain12)
@@ -527,6 +519,9 @@ contains
          cellsOnVertex, &
          vertexDegree
 
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         areaCell !< Input
+
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
          strain11, & !< Input/Output:
          strain22, & !< Input/Output:
@@ -535,21 +530,21 @@ contains
     real(kind=RKIND) :: &
          strain11avg, &
          strain22avg, &
-         strain12avg
+         strain12avg, &
+         denominator
 
     integer :: &
          iVertex, &
          iVertexDegree, &
          iCell, &
-         iVertexOnCell, &
-         nCellsSum
+         iVertexOnCell
 
     do iVertex = 1, nVerticesSolve
 
-       strain11avg = 0.0
-       strain22avg = 0.0
-       strain12avg = 0.0
-       nCellsSum = 0
+       strain11avg = 0.0_RKIND
+       strain22avg = 0.0_RKIND
+       strain12avg = 0.0_RKIND
+       denominator = 0.0_RKIND
 
        do iVertexDegree = 1, vertexDegree
 
@@ -559,18 +554,18 @@ contains
 
              iVertexOnCell = cellVerticesAtVertex(iVertexDegree,iVertex)
 
-             strain11avg = strain11avg + strain11(iVertexOnCell,iCell)
-             strain22avg = strain22avg + strain22(iVertexOnCell,iCell)
-             strain12avg = strain12avg + strain12(iVertexOnCell,iCell)
-             nCellsSum = nCellsSum + 1
+             strain11avg = strain11avg + strain11(iVertexOnCell,iCell) * areaCell(iCell)
+             strain22avg = strain22avg + strain22(iVertexOnCell,iCell) * areaCell(iCell)
+             strain12avg = strain12avg + strain12(iVertexOnCell,iCell) * areaCell(iCell)
+             denominator = denominator + areaCell(iCell)
 
           endif
 
        enddo ! iVertexDegree
 
-       strain11avg = strain11avg / real(nCellsSum,RKIND)
-       strain22avg = strain22avg / real(nCellsSum,RKIND)
-       strain12avg = strain12avg / real(nCellsSum,RKIND)
+       strain11avg = strain11avg / denominator
+       strain22avg = strain22avg / denominator
+       strain12avg = strain12avg / denominator
 
        do iVertexDegree = 1, vertexDegree
 
