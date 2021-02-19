@@ -1134,8 +1134,8 @@ is the value of that variable from the *previous* time level!
                      description="Optional field of offset that should be applied to the melt field calculated by the ISMIP6 melt method.  Can be used to run in anomaly mode, but this is not the anomaly.  See Registry.xml for details."
                 />
                 <!-- Variables needed for ISMIP6 grounded face melt parameterization -->
-                <var name="groundedMarineMarginMask" type="integer" dimensions="nCells Time" units="none" time_levs="1" 
-                     description="mask of grid cells that are grounded and adjacent to the ocean. 0=interior, 1=grounded ice margin"
+                <var name="frontAblationMask" type="integer" dimensions="nCells Time" units="none" time_levs="1" 
+                     description="mask of grid cells at which front ablation will be applied. Determined by settings of applyToGrounded, applyToFloating, and applyToGroundingLine in routines that call li_apply_front_ablation_velocity."
                 />
                 />
 		<var name="faceMeltSpeed" type="real" dimensions="nCells Time" units="m s^{-1}" packages="ismip6GroundedFaceMelt"
