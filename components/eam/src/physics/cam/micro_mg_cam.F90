@@ -754,7 +754,7 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('EVAPPREC', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling precip'                   )
    call addfld ('EVAPSNOW', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling snow'                     )
    call addfld ('HPROGCLD', (/ 'lev' /), 'A', 'W/kg'    , 'Heating from prognostic clouds'                          )
-   call addfld ('FICE', (/ 'lev' /), 'A', 'fraction', 'Fractional ice content within cloud'                     )
+   call addfld ('FICE', (/ 'lev' /), 'A', '1', 'Fractional ice content within cloud'                     )
    call addfld ('ICWMRST', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-stratus water mixing ratio'                )
    call addfld ('ICIMRST', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-stratus ice mixing ratio'                  )
 
@@ -815,7 +815,7 @@ subroutine micro_mg_cam_init(pbuf2d)
    ! This is provided as an example on how to write out subcolumn output
    ! NOTE -- only 'I' should be used for sub-column fields as subc-columns could shift from time-step to time-step
    if (use_subcol_microp) then
-      call addfld('FICE_SCOL', (/'psubcols','lev     '/), 'I', 'fraction', &
+      call addfld('FICE_SCOL', (/'psubcols','lev     '/), 'I', '1', &
            'Sub-column fractional ice content within cloud', flag_xyfill=.true., fill_value=1.e30_r8)
    end if
 
@@ -825,8 +825,8 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('AREL', (/ 'lev' /), 'A', 'Micron', 'Average droplet effective radius'                        )
    call addfld ('AREI', (/ 'lev' /), 'A', 'Micron', 'Average ice effective radius'                            )
    ! Frequency arrays for above
-   call addfld ('FREQL', (/ 'lev' /), 'A', 'fraction', 'Fractional occurrence of liquid'                          )
-   call addfld ('FREQI', (/ 'lev' /), 'A', 'fraction', 'Fractional occurrence of ice'                             )
+   call addfld ('FREQL', (/ 'lev' /), 'A', '1', 'Fractional occurrence of liquid'                          )
+   call addfld ('FREQI', (/ 'lev' /), 'A', '1', 'Fractional occurrence of ice'                             )
 
    ! Average cloud top particle size and number (liq, ice) and frequency
    call addfld ('ACTREL', horiz_only,    'A', 'Micron', 'Average Cloud Top droplet effective radius'              )
@@ -881,8 +881,8 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('ANSNOW',(/ 'lev' /), 'A','m-3','Average snow number conc'         )
    call addfld ('ADRAIN',(/ 'lev' /), 'A','Micron','Average rain effective Diameter'         )
    call addfld ('ADSNOW',(/ 'lev' /), 'A','Micron','Average snow effective Diameter'         )
-   call addfld ('FREQR',(/ 'lev' /), 'A','fraction','Fractional occurrence of rain'       )
-   call addfld ('FREQS',(/ 'lev' /), 'A','fraction','Fractional occurrence of snow'       )
+   call addfld ('FREQR',(/ 'lev' /), 'A','1','Fractional occurrence of rain'       )
+   call addfld ('FREQS',(/ 'lev' /), 'A','1','Fractional occurrence of snow'       )
 
    ! precipitation efficiency & other diagnostic fields
    call addfld('PE'    ,       horiz_only, 'A', '1', 'Stratiform Precipitation Efficiency  (precip/cmeliq)' )

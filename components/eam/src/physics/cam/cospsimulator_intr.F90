@@ -748,10 +748,10 @@ CONTAINS
        !*cfMon,cfOff,cfDa,cf3hr* clcalipso (time,height,profile)
        call addfld('CLD_CAL',(/'cosp_ht'/),'A','percent','Calipso Cloud Fraction (532 nm)', flag_xyfill=.true., fill_value=R_UNDEF)
        !*cfMon,cfOff,cfDa,cf3hr* parasol_refl (time,sza,profile)
-       call addfld ('RFL_PARASOL',(/'cosp_sza'/),'A','fraction','PARASOL-like mono-directional reflectance ',  &
+       call addfld ('RFL_PARASOL',(/'cosp_sza'/),'A','1','PARASOL-like mono-directional reflectance ',  &
             flag_xyfill=.true., fill_value=R_UNDEF)
        !*cfOff,cf3hr* cfad_calipsosr532 (time,height,scat_ratio,profile), %11%, default is 40 vert levs, 15 SR  bins
-       call addfld('CFAD_SR532_CAL',(/'cosp_sr','cosp_ht'/),'A','fraction',                                    &
+       call addfld('CFAD_SR532_CAL',(/'cosp_sr','cosp_ht'/),'A','1',                                    &
             'Calipso Scattering Ratio CFAD (532 nm)',                                                    &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! beta_mol532 (time,height_mlev,profile)
@@ -912,7 +912,7 @@ CONTAINS
 
        ! addfld calls
        !*cfOff,cf3hr* cfad_dbze94 (time,height,dbze,profile), default is 40 vert levs, 15 dBZ bins 
-       call addfld('CFAD_DBZE94_CS',(/'cosp_dbze','cosp_ht  '/),'A','fraction',&
+       call addfld('CFAD_DBZE94_CS',(/'cosp_dbze','cosp_ht  '/),'A','1',&
             'Radar Reflectivity Factor CFAD (94 GHz)',&
             flag_xyfill=.true., fill_value=R_UNDEF)
        !*cfOff,cf3hr* clcalipso2 (time,height,profile)

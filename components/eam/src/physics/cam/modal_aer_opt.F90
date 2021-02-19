@@ -379,9 +379,9 @@ subroutine modal_aer_opt_init()
    do ilist = 1, n_diag
       if (call_list(ilist)) then
 
-         call addfld ('EXTINCT'//diag(ilist), (/ 'lev' /), 'A','/m', &
+         call addfld ('EXTINCT'//diag(ilist), (/ 'lev' /), 'A','1/m', &
               'Aerosol extinction', flag_xyfill=.true.)
-         call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','/m', &
+         call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','1/m', &
               'Aerosol absorption', flag_xyfill=.true.)
          call addfld ('AODVIS'//diag(ilist),       horiz_only, 'A','  ', &
               'Aerosol optical depth 550 nm', flag_xyfill=.true.)
