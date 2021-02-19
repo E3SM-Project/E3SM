@@ -1591,39 +1591,51 @@ module li_calving
       ! The mask includes both the dynamic AND non-dynamic cells along the prescribed interface type(s).
       frontAblationMask(:) = 0
 
-      if ( applyToGrounded ) then
-         do iCell = 1, nCells
+      ! First identify the dynamic cells for each mask type.
 
+      if ( applyToGrounded .or. applyToGroundingLine ) then
+         do iCell = 1, nCells
          ! If applyToGrounded: Define marine marginal cells as those that are (1) at the ice
          ! margin, (2) have at least one neighboring cell without ice, (3) contain
          ! grounded ice, and (4) have bed topography below sea level.
          ! OR is adjacent to an inactive floating margin cell
-
-         ! Check if neighboring cells contain ice and have bed topo below sea level
-            nEmptyNeighbors = 0
-            do iEdge = 1, nEdgesOnCell(iCell)
-              iNeighbor = cellsOnCell(iEdge, iCell)
-              if ( (((thickness(iNeighbor) == 0.0_RKIND) &
-                 .and. bedTopography(iNeighbor) < config_sea_level)) &
-                 .or. ((li_mask_is_floating_ice(cellMask(iNeighbor)) &
-                 .and. li_mask_is_margin(cellMask(iNeighbor)) &
-                 .and. (.not. li_mask_is_dynamic_ice(cellMask(iNeighbor)))))) then
-                 nEmptyNeighbors = nEmptyNeighbors + 1
-              endif
-            enddo
-
-            if ( nEmptyNeighbors > 0 &
-               .and. li_mask_is_grounded_ice(cellMask(iCell)) &
+            if (li_mask_is_grounding_line(cellMask(iCell)) &
+               !< GL here means cell is grounded but has a neighbor that is floating or ocean
                .and. bedTopography(iCell) < config_sea_level &
                .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
 
-               frontAblationMask(iCell) = 1
-               ! Include adjacent non-dynamic cells
+               ! Check if neighboring cells contain ice and have bed topo below sea level
+               nEmptyNeighbors = 0
                do iEdge = 1, nEdgesOnCell(iCell)
                   iNeighbor = cellsOnCell(iEdge, iCell)
-                  if ( li_mask_is_floating_ice(cellMask(iNeighbor)) .and. &
-                        .not. li_mask_is_dynamic_ice(cellMask(iNeighbor)) ) then
+                  if ( (((thickness(iNeighbor) == 0.0_RKIND) .and. bedTopography(iNeighbor) < config_sea_level)) &
+                     !< these previous conditions are open ocean
+                     .or. &
+                     !> these following conditions are inactive floating margin cells
+                     ((li_mask_is_floating_ice(cellMask(iNeighbor)) &
+                     .and. li_mask_is_margin(cellMask(iNeighbor)) &
+                     .and. (.not. li_mask_is_dynamic_ice(cellMask(iNeighbor)))))) then
+                     nEmptyNeighbors = nEmptyNeighbors + 1
+                  endif
+               enddo
+               if (nEmptyNeighbors > 0) then
+                  frontAblationMask(iCell) = 1
+               endif ! nEmptyNeighbors
+            endif ! cell is GL etc.
+         enddo ! nCells loop
+      endif ! applyToGrounded
 
+      if ( applyToGroundingLine ) then
+         ! If applyToGroundingLine: Define marine marginal cells as those that
+         ! are at the margin (defined by li_mask_is_grounding_line) if no
+         ! floating ice or are the first floating cell if there is floating ice.
+         ! The case of no floating ice was handled above already, so only looking for
+         ! GL locations with floating ice here.
+         do iCell = 1,nCells
+            if ( li_mask_is_grounding_line(cellMask(iCell)) ) then
+               do iEdge = 1, nEdgesOnCell(iCell)
+                  iNeighbor = cellsOnCell(iEdge, iCell)
+                  if (li_mask_is_floating_ice(cellMask(iNeighbor)) .and. li_mask_is_dynamic_ice(cellMask(iNeighbor))) then
                      frontAblationMask(iNeighbor) = 1
                   endif
                enddo
@@ -1631,56 +1643,43 @@ module li_calving
          enddo
       endif
 
-      if ( applyToGroundingLine ) then
-         do iCell = 1,nCellsSolve
-
-         ! If applyToGroundingLine: Define marine marginal cells as those that
-         ! are at the margin (defined by li_mask_is_grounding_line) if no
-         ! floating ice or are the first floating cell if there is floating ice.
-           if ( bedTopography(iCell) < config_sea_level &
-                .and. li_mask_is_grounded_ice(cellMask(iCell)) ) then
-
-              do iEdge = 1, nEdgesOnCell(iCell)
-                iNeighbor = cellsOnCell(iEdge, iCell)
-                 if ( li_mask_is_grounding_line(edgeMask(edgesOnCell(iEdge,iCell))) &
-                      .and. li_mask_is_floating_ice(cellMask(iNeighbor)) ) then
-
-                    frontAblationMask(iNeighbor) = 1
-
-                 else if ( li_mask_is_grounding_line(edgeMask(edgesOnCell(iEdge,iCell))) &
-                      .and. (.not. li_mask_is_floating_ice(cellMask(iNeighbor))) ) then
-
-                    frontAblationMask(iCell) = 1
-
-                 endif
-              enddo ! end loop over edges
-           endif
-         enddo !end loop over cells
-
-      endif
-
       if ( applyToFloating ) then
-         do iCell = 1,nCellsSolve
-
-           ! If applyToFloating: marine marginal cells are dynamic floating margin
-           ! cells
+         do iCell = 1,nCells
+            ! If applyToFloating: marine marginal cells are dynamic floating margin cells
             if ( li_mask_is_floating_ice(cellMask(iCell)) .and. &
                li_mask_is_dynamic_margin(cellMask(iCell)) ) then
-
                frontAblationMask(iCell) = 1
-               ! Include adjacent non-dynamic cells
-               do iEdge = 1, nEdgesOnCell(iCell)
-                  iNeighbor = cellsOnCell(iEdge, iCell)
-                  if ( li_mask_is_floating_ice(cellMask(iNeighbor)) .and. &
-                        .not. li_mask_is_dynamic_ice(cellMask(iNeighbor)) ) then
-
-                     frontAblationMask(iNeighbor) = 1
-                  endif
-               enddo
-             endif
-
+            endif
          enddo
       endif
+
+      ! Now extend the mask forward to include non-dynamic floating neighbors (appropriate for any of the mask types)
+      ! Use value 2 to indicate the non-dynamic cells
+      do iCell = 1,nCells
+         if (frontAblationMask(iCell) == 1) then
+            do iEdge = 1, nEdgesOnCell(iCell)
+               iNeighbor = cellsOnCell(iEdge, iCell)
+               if ( li_mask_is_floating_ice(cellMask(iNeighbor)) .and. &
+                  .not. li_mask_is_dynamic_ice(cellMask(iNeighbor)) ) then
+                  frontAblationMask(iNeighbor) = 2
+               endif
+            enddo
+         endif
+      enddo
+      ! Make a second pass to include potentially 'stranded' nondynamic floating cells
+      do iCell = 1, nCells
+         if (frontAblationMask(iCell) == 2) then
+            ! Check if this non-dynamic masked cell has any non-dynamic, floating, but unmasked neighbors we need to include
+            do iEdge = 1, nEdgesOnCell(iCell)
+               iNeighbor = cellsOnCell(iEdge, iCell)
+               if ((.not. li_mask_is_dynamic_ice(cellMask(iNeighbor))) .and. li_mask_is_floating_ice(iNeighbor) &
+                  .and. frontAblationMask(iNeighbor) == 0) then
+                  frontAblationMask(iNeighbor) = 1
+               endif
+            enddo
+         endif
+      enddo
+
 
       ! Init fields for accounting
       ablationThickness(:) = 0.0_RKIND
@@ -1700,7 +1699,7 @@ module li_calving
       ! 1. Calculate ablation rate for all non-dynamic cells by working with their ocean-going edges
       ablationSubtotal1 = 0.0_RKIND
       do iCell = 1, nCellsSolve
-         if ((frontAblationMask(iCell)==1) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) ) then
+         if ((frontAblationMask(iCell)>0) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) ) then
             ! a1. Translate the calving front height based on dynamic cells to the non-dynamic locations
             ! find mean (or min?) of thickness in dynamic neighbors
             ablationVelSum = 0.0_RKIND
@@ -1728,7 +1727,7 @@ module li_calving
           ! average of non-dynamic neighbors. Stranded non-dynamic cells are
           ! identified as those that still have thicknessForAblation == 0.0
       do iCell = 1, nCellsSolve
-         if ( thicknessForAblation(iCell) == 0.0_RKIND .and. frontAblationMask(iCell)==1 &
+         if ( thicknessForAblation(iCell) == 0.0_RKIND .and. frontAblationMask(iCell)>0 &
               .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
             ablationVelSum = 0.0_RKIND
             thkSum = 0.0_RKIND
@@ -1755,7 +1754,7 @@ module li_calving
             ! b. Translate the ablationVelocity and thickness from non-dynamic cells to their ocean-going edges
             !    to calculate the calving volume on those edges and this cell
       do iCell = 1, nCellsSolve
-         if (frontAblationMask(iCell)==1 .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
+         if (frontAblationMask(iCell)>0 .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
 
             do iNeighbor = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iNeighbor, iCell)
@@ -1791,7 +1790,7 @@ module li_calving
 
       ! a. Calculate calving on dynamic margin edges
       do iCell = 1, nCellsSolve
-         if ( frontAblationMask(iCell) == 1 .and. li_mask_is_dynamic_ice(cellMask(iCell)) & ! a dynamic cell in the mask...
+         if ( frontAblationMask(iCell)>0 .and. li_mask_is_dynamic_ice(cellMask(iCell)) & ! a dynamic cell in the mask...
             .and. li_mask_is_margin(cellMask(iCell)) ) then                            ! that is at the edge of the ice
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
