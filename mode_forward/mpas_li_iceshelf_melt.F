@@ -98,10 +98,13 @@ module li_iceshelf_melt
       ! local variables
       !-----------------------------------------------------------------
 
+      type (block_type), pointer :: block
+
+      type (mpas_pool_type), pointer :: geometryPool
       character(len=StrKIND), pointer :: &
            config_front_mass_bal_grounded ! option for submarine mass balance
                                           ! at grounded glacier front
-
+      real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed, faceMeltingThickness
       integer :: err_tmp
 
       err = 0
@@ -113,6 +116,25 @@ module li_iceshelf_melt
           .or. trim(config_front_mass_bal_grounded) == 'uniform' ) then
          call grounded_face_melt_ismip6(domain, err_tmp)
          err = ior(err, err_tmp)
+      elseif ( trim(config_front_mass_bal_grounded) == 'none' ) then
+         ! Zero entire field
+
+         ! block loop
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
+            call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
+
+            faceMeltSpeed(:) = 0.0_RKIND
+            faceMeltingThickness(:) = 0.0_RKIND
+
+            block => block % next
+         enddo   ! associated(block)
+      else
+         call mpas_log_write('Unknown option selected for config_front_mass_bal_grounded:' // &
+                             trim(config_front_mass_bal_grounded), MPAS_LOG_ERR)
+         err = ior(err, 1)
       endif
 
    end subroutine li_face_melt_grounded_ice
