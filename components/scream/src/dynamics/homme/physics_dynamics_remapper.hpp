@@ -180,7 +180,7 @@ create_tgt_layout (const FieldLayout& src_layout) const {
   dims[0] = this->m_tgt_grid->get_num_local_dofs() / (HOMMEXX_NP*HOMMEXX_NP);
 
   // For position of GP and NP, it's easier to switch between 2d and 3d
-  auto lt = get_layout_type(tags);
+  auto lt = get_layout_type(src_layout.tags());
   switch (lt) {
     case LayoutType::Scalar2D:
     case LayoutType::Vector2D:
