@@ -1138,7 +1138,7 @@ is the value of that variable from the *previous* time level!
                      description="mask of grid cells at which front ablation will be applied. Determined by settings of applyToGrounded, applyToFloating, and applyToGroundingLine in routines that call li_apply_front_ablation_velocity."
                 />
                 />
-		<var name="faceMeltSpeed" type="real" dimensions="nCells Time" units="m s^{-1}" packages="ismip6GroundedFaceMelt"
+		<var name="faceMeltSpeed" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
 		     description="linear speed of submarine melting at grounded glacier front"
   		/>
                 <var name="ismip6Runoff" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
