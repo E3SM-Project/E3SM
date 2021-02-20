@@ -414,7 +414,7 @@ module nudging
   logical::         Nudge_ON          =.false.
   logical::         Nudge_File_Present=.false.
   logical::         Nudge_Initialized =.false.
-  logical::         Nudge_Allow_Missing_File = .true.  
+  logical::         Nudge_Allow_Missing_File = .false.  
   character(len=cl) Nudge_Path
   character(len=cl) Nudge_File,Nudge_File_Template
   integer           Nudge_Times_Per_Day
@@ -555,7 +555,7 @@ contains
    ! Set Default Namelist values
    !-----------------------------
    Nudge_Model        =.false.
-   Nudge_Allow_Missing_File = .true.
+   Nudge_Allow_Missing_File = .false.
    Nudge_Path         ='./Data/YOTC_ne30np4_001/'
    Nudge_File_Template='YOTC_ne30np4_L30.cam2.i.%y-%m-%d-%s.nc'
    Nudge_Times_Per_Day=4
