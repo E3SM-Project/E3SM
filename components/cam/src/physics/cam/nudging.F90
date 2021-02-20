@@ -1401,13 +1401,13 @@ contains
      else
        Nudge_ON=.false.
        if(Nudge_Allow_Missing_File) then
-         write(err_str,*) 'NUDGING: Nudging data file NOT FOUND; ', errmsg(__FILE__, __LINE__)
-         call endrun(err_str)
-       else
          if(masterproc) then
            write(iulog,*) 'NUDGING: WARNING - Nudging data file NOT FOUND. Switching '
            write(iulog,*) 'NUDGING:           nudging OFF to coast thru the gap. '
-         endif               
+         endif   
+       else
+         write(err_str,*) 'NUDGING: Nudging data file (',trim(adjustl(Nudge_File)),') NOT FOUND; ', errmsg(__FILE__, __LINE__)
+         call endrun(err_str)
        endif 
      endif
    else
