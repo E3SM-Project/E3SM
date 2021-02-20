@@ -56,7 +56,7 @@ module ocn_vel_hadv_coriolis
                            ! use disabled since default is on
 
    logical :: &
-      usePlanetVorticity   ! multiplicative mask for including 
+      usePlanetVorticity   ! multiplicative mask for including
                            ! planetary vorticity term
 
 !***********************************************************************
@@ -70,8 +70,8 @@ contains
 !> \brief   Computes tendency term for horizontal advection and coriolis force
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
-!> \details This routine computes the horizontal advection and 
-!>          coriolis advection tendencies for momentum based on 
+!> \details This routine computes the horizontal advection and
+!>          coriolis advection tendencies for momentum based on
 !>          current state.
 !
 !-----------------------------------------------------------------------
@@ -187,7 +187,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(nEdgesOnEdge, edgesOnEdge, weightsOnEdge, &
-      !$acc            maxLevelEdgeTop, qArr, tmpVorticity, &
+      !$acc            minLevelEdgeBot, maxLevelEdgeTop, qArr, tmpVorticity, &
       !$acc            normalVelocity, layerThickEdge) &
       !$acc    private(k, j, eoe, edgeWeight, avgVorticity)
 #else
@@ -205,7 +205,7 @@ contains
             eoe = edgesOnEdge(j, iEdge)
             edgeWeight = weightsOnEdge(j, iEdge)
 
-            do k = 1, maxLevelEdgeTop(iEdge)
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                avgVorticity = 0.5_RKIND* &
                               (tmpVorticity(k,iEdge) + &
                                tmpVorticity(k,eoe))
@@ -222,7 +222,7 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(cellsOnEdge, maxLevelEdgeTop, edgeMask, &
+      !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
       !$acc            dcEdge, tend, qArr, kineticEnergyCell) &
       !$acc    private(cell1, cell2, invLength, k)
 #else
@@ -234,7 +234,7 @@ contains
          cell2 = cellsOnEdge(2,iEdge)
          invLength = 1.0_RKIND / dcEdge(iEdge)
 
-         do k = 1, maxLevelEdgeTop(iEdge)
+         do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             tend(k,iEdge) = tend(k,iEdge) + &
                         edgeMask(k,iEdge)* (qArr(k,iEdge) - &
                            (kineticEnergyCell(k,cell2) &
@@ -298,19 +298,19 @@ contains
 
       case ('split_explicit')
          ! For split explicit, Coriolis tendency uses eta/h because
-         ! the Coriolis term is added separately to the momentum 
+         ! the Coriolis term is added separately to the momentum
          ! tendencies.
          usePlanetVorticity = .false.
 
       case ('unsplit_explicit')
          ! For unsplit explicit, Coriolis tendency uses eta/h because
-         ! the Coriolis term is added separately to the momentum 
+         ! the Coriolis term is added separately to the momentum
          ! tendencies.
          usePlanetVorticity = .false.
 
       case ('semi_implicit')
          ! For semi-implicit, Coriolis tendency uses eta/h because
-         ! the Coriolis term is added separately to the momentum 
+         ! the Coriolis term is added separately to the momentum
          ! tendencies.
          usePlanetVorticity = .false.
 
