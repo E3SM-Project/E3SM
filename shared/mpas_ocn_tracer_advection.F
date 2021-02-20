@@ -102,7 +102,9 @@ module ocn_tracer_advection
          advCoefs, advCoefs3rd ! advection coefficients
 
       integer, dimension(:), pointer, contiguous :: &
+         minLevelCell,    &! index of min level at each cell
          maxLevelCell,    &! index of max level at each cell
+         minLevelEdgeBot, &! min level at edge with both cells active
          maxLevelEdgeTop, &! max level at edge with both cells active
          nAdvCellsForEdge  ! number of advective cells for each edge
       integer, dimension(:,:), pointer, contiguous :: &!
@@ -122,7 +124,9 @@ module ocn_tracer_advection
       ! extract pool variables
       call mpas_pool_get_array(meshPool, 'advCoefs', advCoefs)
       call mpas_pool_get_array(meshPool, 'advCoefs3rd', advCoefs3rd)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'highOrderAdvectionMask', &
                                           highOrderAdvectionMask)
@@ -139,7 +143,8 @@ module ocn_tracer_advection
                                              normalThicknessFlux, w, dt,       &
                                              advCoefs, advCoefs3rd,            &
                                              nAdvCellsForEdge, advCellsForEdge,&
-                                             maxLevelCell, maxLevelEdgeTop,    &
+                                             minLevelCell, maxLevelCell,       &
+                                             minLevelEdgeBot, maxLevelEdgeTop, &
                                              highOrderAdvectionMask,           &
                                              edgeSignOnCell, meshPool,         &
                                              computeBudgets)
