@@ -398,11 +398,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, k, cell1, cell2, N, nEdges
+      integer :: iEdge, k, cell1, cell2, N, Nsurf, nEdges
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nEdgesArray
 
-      integer, dimension(:), pointer :: maxLevelEdgeTop
+      integer, dimension(:), pointer :: maxLevelEdgeTop, minLevelEdgeBot
 
       integer, dimension(:,:), pointer :: cellsOnEdge
 
@@ -416,17 +416,18 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       nEdges = nEdgesArray( 1 )
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels))
-      A(1)=0.0_RKIND
 
       !$omp parallel
       !$omp do schedule(runtime) private(N, cell1, cell2, A, B, C, velTemp, k)
       do iEdge = 1, nEdges
         N = maxLevelEdgeTop(iEdge)
+        Nsurf = minLevelEdgeBot(iEdge)
         if (N .gt. 0) then
 
          ! Compute A(k), B(k), C(k)
@@ -434,27 +435,30 @@ contains
          ! so recompute layerThicknessEdge here.
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-         do k = 1, N
+         do k = Nsurf, N
             layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
          end do
 
          ! A is lower diagonal term
-         do k = 2, N
+         A(1:Nsurf)=0.0_RKIND
+         do k = Nsurf+1, N
             A(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
                / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)) &
                / layerThicknessEdge(k,iEdge)
          enddo
 
          ! C is upper diagonal term
-         do k = 1, N-1
+         C(1:Nsurf-1)=0.0_RKIND
+         do k = Nsurf, N-1
             C(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
                / (layerThicknessEdge(k,iEdge) + layerThicknessEdge(k+1,iEdge)) &
                / layerThicknessEdge(k,iEdge)
          enddo
 
          ! B is diagonal term
-         B(1) = 1.0_RKIND - C(1)
-         do k = 2, N-1
+         B(1:Nsurf-1)=0.0_RKIND
+         B(Nsurf) = 1.0_RKIND - C(Nsurf)
+         do k = Nsurf+1, N-1
             B(k) = 1.0_RKIND - A(k) - C(k)
          enddo
 
@@ -463,9 +467,10 @@ contains
          B(N) = 1.0_RKIND - A(N) + dt*implicitBottomDragCoef &
               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThicknessEdge(N,iEdge)
 
-         call tridiagonal_solve(A(2:N),B,C(1:N-1),normalVelocity(:,iEdge),velTemp,N)
+         call tridiagonal_solve(A(Nsurf+1:N),B(Nsurf:N),C(Nsurf:N-1),normalVelocity(Nsurf:N,iEdge),velTemp(Nsurf:N),N-Nsurf+1)
 
-         normalVelocity(1:N,iEdge) = velTemp(1:N)
+         normalVelocity(1:Nsurf-1,iEdge) = 0.0_RKIND
+         normalVelocity(Nsurf:N,iEdge) = velTemp(Nsurf:N)
          normalVelocity(N+1:nVertLevels,iEdge) = 0.0_RKIND
 
         end if
