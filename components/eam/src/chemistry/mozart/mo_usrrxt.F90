@@ -166,9 +166,9 @@ contains
     usr_DMS_OH_ndx       = get_rxt_ndx( 'usr_DMS_OH' )
     usr_HO2_aer_ndx      = get_rxt_ndx( 'usr_HO2_aer' )
     ! chemUCI
-    ucih1_ndx            = get_rxt_ndx( 'ucih1_ndx' )   ! N2O5 + ASAD (het chem)
-    ucih2_ndx            = get_rxt_ndx( 'ucih2_ndx' )   ! NO3 + ASAD
-    ucih3_ndx            = get_rxt_ndx( 'ucih3_ndx' )   ! HO2 + ASAD
+    ucih1_ndx            = get_rxt_ndx( 'ucih1' )   ! N2O5 + ASAD (het chem)
+    ucih2_ndx            = get_rxt_ndx( 'ucih2' )   ! NO3 + ASAD
+    ucih3_ndx            = get_rxt_ndx( 'ucih3' )   ! HO2 + ASAD
  !
     tag_NO2_NO3_ndx      = get_rxt_ndx( 'tag_NO2_NO3' )
     tag_NO2_OH_ndx       = get_rxt_ndx( 'tag_NO2_OH' )
