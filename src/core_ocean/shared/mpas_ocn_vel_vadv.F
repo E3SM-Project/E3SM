@@ -103,13 +103,13 @@ contains
 
       integer ::       &
          iEdge, k,     &! loop indices for edge, vertical loops
-         kmax,         &! deepest active layer on edge
+         kmin, kmax,   &! shallowest and deepest active layer on edge
          cell1, cell2   ! neighbor cell indices across edge
 
       real (kind=RKIND) :: &
          wAvg           ! ALE transport velocity across top edge
 
-      real (kind=RKIND), dimension(:,:), allocatable :: & 
+      real (kind=RKIND), dimension(:,:), allocatable :: &
          w_dudzTopEdge  ! w*du/dz at top of edge
 
       ! End preamble
@@ -129,22 +129,23 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(cellsOnEdge, maxLevelEdgeTop, w_dudzTopEdge, &
+      !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, w_dudzTopEdge, &
       !$acc            vertAleTransportTop, normalVelocity, &
       !$acc            layerThickEdge) &
-      !$acc    private(cell1, cell2, k, kmax, wAvg)
+      !$acc    private(cell1, cell2, k, kmin, kmax, wAvg)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp    private(cell1, cell2, k, kmax, wAvg)
+      !$omp    private(cell1, cell2, k, kmin, kmax, wAvg)
 #endif
       do iEdge = 1, nEdgesOwned
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
+         kmin  = minLevelEdgeBot(iEdge)
          kmax  = maxLevelEdgeTop(iEdge)
 
-         w_dudzTopEdge(1,iEdge) = 0.0_RKIND ! flux is zero at top
-         do k = 2,kmax
+         w_dudzTopEdge(kmin,iEdge) = 0.0_RKIND ! flux is zero at top
+         do k = kmin+1,kmax
 
             ! Average w from cell center to edge
             wAvg = 0.5_RKIND*(vertAleTransportTop(k,cell1) + &
@@ -167,14 +168,14 @@ contains
       ! Average w*du/dz from vertical interface to vertical middle of cell
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(maxLevelEdgeTop, tend, edgeMask, w_dudzTopEdge)&
+      !$acc    present(minLevelEdgeBot, maxLevelEdgeTop, tend, edgeMask, w_dudzTopEdge)&
       !$acc    private(k)
 #else
       !$omp do schedule(runtime) &
       !$omp    private(k)
 #endif
       do iEdge = 1, nEdgesOwned
-      do k = 1, maxLevelEdgeTop(iEdge)
+      do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
          tend(k,iEdge) = tend(k,iEdge) - edgeMask(k,iEdge)* &
                          0.5_RKIND*(w_dudzTopEdge(k  ,iEdge) + &
                                     w_dudzTopEdge(k+1,iEdge))
