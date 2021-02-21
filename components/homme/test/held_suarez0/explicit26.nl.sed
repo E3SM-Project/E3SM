@@ -12,6 +12,9 @@ theta_hydrostatic_mode = .false.
 tstep_type    = 7
 qsize         = 1
 theta_advect_form = 1
+pgrad_correction=1
+hv_ref_profiles=2
+hv_theta_correction=1
 limiter_option = 9
 rsplit        = 6
 restartfreq   =  1
@@ -27,7 +30,8 @@ nu_q          = NU1
 nu_div        = NU2
 nu_top = 2.5e5
 hypervis_order = 2
-hypervis_subcycle = 2
+hypervis_subcycle = 1
+hypervis_subcycle_tom = 1
 se_ftype=0
 /
 &vert_nl

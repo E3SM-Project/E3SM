@@ -44,7 +44,7 @@ set runtype = 0
 
 set ne = 30
 set NPTS = 4
-set qsize = 1         # number of tracers
+set qsize = 0         # number of tracers
 set topo = ''
 set toponame = ''
 if ( $ne == 8 ) then
@@ -70,8 +70,11 @@ if ( $ne == 30 ) then
    set tstep = 300       # dynamics timestep
    set nu = 1e15
    set nu_div = 1e15
-   set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
-   set toponame = 16xdel2
+   #set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
+   #set topo = '/lcrc/group/acme/ac.mtaylor/topodata/ne30/USGS-gtopo30_ne30np4_16xdel2-nolim.nc'
+   set topo = '/lcrc/group/acme/ac.mtaylor/topodata/ne30/USGS-gtopo30_ne30np4_8xdel2.nc'
+
+   set toponame = debug
 endif
 if ( $ne == 60 ) then
    # 0.5 degree     tbird 200 nodes, 560 days: 20h
@@ -145,6 +148,8 @@ set wdir = $wdir/$name
 mkdir $wdir
 mkdir $wdir/movies
 mkdir $wdir/restart
+#use a restart file from a different simulation
+#ln -fs $wdir/../restart-ne30L26-8x $wdir/restart
 
 
 
