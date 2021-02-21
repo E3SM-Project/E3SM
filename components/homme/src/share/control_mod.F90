@@ -72,13 +72,14 @@ module control_mod
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
 
-! vert_remap_q_alg:   -1  remap without monotone filter, used for some test cases
-!                      0  default value, Zerroukat monotonic splines
+! vert_remap_q_alg:   -1  PPM remap without monotone filter, used for some test cases
+!                      0  Zerroukat monotonic splines
 !                      1  PPM vertical remap with mirroring at the boundaries
 !                         (solid wall bc's, high-order throughout)
-!                      2  PPM vertical remap without mirroring at the boundaries
-!                         (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
- integer, public :: vert_remap_q_alg = 0
+!                      2  PPM, switching to piecewise constant at boundaries   
+!                     10  PPM with linear extrapolation at boundaries, with column limiter
+!                     11  PPM with unlimited linear extrapolation ab boundaries
+ integer, public :: vert_remap_q_alg = 0    ! tracers
 
 ! advect theta 0: conservation form 
 !              1: expanded divergence form (less noisy, non-conservative)
