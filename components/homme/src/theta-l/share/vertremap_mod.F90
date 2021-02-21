@@ -123,7 +123,7 @@ contains
         !ttmp(:,:,:,5)=ttmp(:,:,:,5) !*dp_star
     
         call t_startf('vertical_remap1_1')
-        call remap1(ttmp,np,5,dp_star,dp)
+        call remap1(ttmp,np,5,dp_star,dp,vert_remap_q_alg)
         call t_stopf('vertical_remap1_1')
 
         elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
@@ -154,7 +154,7 @@ contains
      if (qsize>0 .and. np1_qdp > 0) then
 
        call t_startf('vertical_remap1_3')
-       call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
+       call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp,vert_remap_q_alg)
        call t_stopf('vertical_remap1_3')
 
        !dir$ simd

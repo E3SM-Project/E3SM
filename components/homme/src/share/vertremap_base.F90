@@ -33,7 +33,6 @@ module vertremap_base
   use hybvcoord_mod, only          : hvcoord_t
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp, parallel_t
-  use control_mod, only : vert_remap_q_alg
 
 ! options:
 ! remap1                  ! remap any field, splines, monotone
@@ -75,7 +74,7 @@ end subroutine remap_calc_grids
 
 
 
-subroutine remap1(Qdp,nx,qsize,dp1,dp2)
+subroutine remap1(Qdp,nx,qsize,dp1,dp2,remap_alg)
   ! remap 1 field
   ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
   !         dp1   layer thickness (source)
@@ -84,7 +83,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
   ! output: remaped Qdp, conserving mass, monotone on Q=Qdp/dp
   !
   implicit none
-  integer, intent(in) :: nx,qsize
+  integer, intent(in) :: nx,qsize,remap_alg
   real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
   real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
   ! ========================
@@ -100,16 +99,16 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abrtf=.false.
 
-  q = vert_remap_q_alg
-  if ( (q.ne.-1) .and. (q.ne.0) .and. (q.ne.1) .and. (q.ne.2) .and. (q.ne.3) .and. (q.ne.10) )&
-     call abortmp('Bad vert_remap_q_alg value. Use -1, 0, 1, 2, 3, or 10.')
+  q = remap_alg
+  if ( (q.ne.-1) .and. (q.ne.0) .and. (q.ne.1) .and. (q.ne.10) .and. (q.ne.11) )&
+     call abortmp('Bad remap_alg value. Use -1, 0, 1, 10 or 11.')
 
-  if (vert_remap_q_alg == -1) then
+  if (remap_alg == -1) then
      call remap1_nofilter(qdp,nx,qsize,dp1,dp2)
      return
   endif
-  if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3 .or. vert_remap_q_alg == 10) then
-     call remap_Q_ppm(qdp,nx,qsize,dp1,dp2)
+  if (remap_alg >= 1) then
+     call remap_Q_ppm(qdp,nx,qsize,dp1,dp2,remap_alg)
      return
   endif
 
@@ -510,11 +509,12 @@ end subroutine remap1_nofilter
 !This uses the exact same model and reference grids and data as remap_Q, but it interpolates
 !using PPM instead of splines.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! vert_remap_q_alg == 1  means mirrored values in ghost cells (i.e., no flux)
-!! vert_remap_q_alg == 2  means piecewise constant in 2 cells near boundaries (don't use ghost cells)
-!! vert_remap_q_alg == 3  means UKMO splines ghost cells (copy last value into all ghost cells)
+!! remap_alg == 1  means mirrored values in ghost cells (i.e., no flux)
+!! remap_alg == 2  means 1st order reconstruction in ghost cells
+!! remap_alg == 10 linear extrapolation with global bounds preservation
+!! remap_alg == 11 linear extrapolation 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
+subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,remap_alg)
   ! remap 1 field
   ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
   !         dp1   layer thickness (source)
@@ -522,9 +522,8 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
   !
   ! output: remaped Qdp, conserving mass
   !
-  use control_mod, only        : vert_remap_q_alg
   implicit none
-  integer,intent(in) :: nx,qsize
+  integer,intent(in) :: nx,qsize, remap_alg
   real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
   real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
   ! Local Variables
@@ -560,7 +559,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
                                       !It makes sure there's an old interface value below the domain that is larger.
       pin(nlev+1) = pio(nlev+1)       !The total mass in a column does not change.
                                       !Therefore, the pressure of that mass cannot either.
-      !Fill in the ghost regions with mirrored values. if vert_remap_q_alg is defined, this is of no consequence.
+      !Fill in the ghost regions with mirrored values. if remap_alg is defined, this is of no consequence.
       do k = 1 , gs
         dpo(1   -k) = dpo(       k)
         dpo(nlev+k) = dpo(nlev+1-k)
@@ -599,6 +598,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
 
       !From here, we loop over tracers for only those portions which depend on tracer data, which includes PPM limiting and
       !mass accumulation
+
       do q = 1 , qsize
         !Accumulate the old mass up to old grid cell interface locations to simplify integration
         !during remapping. Also, divide out the grid spacing so we're working with actual tracer
@@ -610,26 +610,25 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
           masso(k+1) = masso(k) + ao(k) !Accumulate the old mass. This will simplify the remapping
           ao(k) = ao(k) / dpo(k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
         enddo
-        !Fill in ghost values. Ignored if vert_remap_q_alg == 2
-        if (vert_remap_q_alg >= 1 .and. vert_remap_q_alg <= 3) then
+        !Fill in ghost values. Ignored if remap_alg == 2
+        if (remap_alg == 1) then
            do k = 1 , gs
-              if (vert_remap_q_alg == 3) then
-                 ao(1   -k) = ao(1)
-                 ao(nlev+k) = ao(nlev)
-              elseif (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 1)then   !Ignored if vert_remap_q_alg == 2
-                 ao(1   -k) = ao(       k)
-                 ao(nlev+k) = ao(nlev+1-k)
-              endif
-            enddo
-         elseif (vert_remap_q_alg == 10) then
-            ext(1) = minval(ao(1:nlev))
-            ext(2) = maxval(ao(1:nlev))
-            call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1), ao(0), ao(-1), ext(1), ext(2))
-            call linextrap(dpo(nlev-1), dpo(nlev), dpo(nlev+1), dpo(nlev+2),&
-                 ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2), ext(1), ext(2))
-         endif
+              ao(1   -k) = ao(1)
+              ao(nlev+k) = ao(nlev)
+           enddo
+        else if (remap_alg==10) then
+           ext(1) = minval(ao(1:nlev))
+           ext(2) = maxval(ao(1:nlev))
+           call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1), ao(0), ao(-1), 1,ext(1), ext(2))
+           call linextrap(dpo(nlev-1), dpo(nlev), dpo(nlev+1), dpo(nlev+2),&
+                ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2), 1, ext(1), ext(2))
+        else if (remap_alg==11) then
+           call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1), ao(0), ao(-1), 0,ext(1), ext(2))
+           call linextrap(dpo(nlev-1), dpo(nlev), dpo(nlev+1), dpo(nlev+2),&
+                ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2), 0, ext(1), ext(2))
+        endif
         !Compute monotonic and conservative PPM reconstruction over every cell
-        coefs(:,:) = compute_ppm( ao , ppmdx )
+        coefs(:,:) = compute_ppm( ao , ppmdx, remap_alg )
         !Compute tracer values on the new grid by integrating from the old cell bottom to the new
         !cell interface to form a new grid mass accumulation. Taking the difference between
         !accumulation at successive interfaces gives the mass inside each cell. Since Qdp is
@@ -680,11 +679,12 @@ end function compute_ppm_grids
 
 
 !This computes a limited parabolic interpolant using a net 5-cell stencil, but the stages of computation are broken up into 3 stages
-function compute_ppm( a , dx )    result(coefs)
-  use control_mod, only: vert_remap_q_alg
+function compute_ppm( a , dx, remap_alg )    result(coefs)
+  use control_mod, only: vert_remap_bl, vert_remap_tom
   implicit none
   real(kind=real_kind), intent(in) :: a    (    -1:nlev+2)  !Cell-mean values
   real(kind=real_kind), intent(in) :: dx   (10,  0:nlev+1)  !grid spacings
+  integer :: remap_alg
   real(kind=real_kind) ::             coefs(0:2,   nlev  )  !PPM coefficients (for parabola)
   real(kind=real_kind) :: ai (0:nlev  )                     !fourth-order accurate, then limited interface values
   real(kind=real_kind) :: dma(0:nlev+1)                     !An expression from Collela's '84 publication
@@ -726,13 +726,18 @@ function compute_ppm( a , dx )    result(coefs)
     coefs(2,j) = 3. * (-2. * a(j) + ( al + ar ))
   enddo
 
-  !If vert_remap_q_alg == 2, use piecewise constant in the boundaries, and don't use ghost cells.
-  if (vert_remap_q_alg == 2) then
-    coefs(0,1:2) = a(1:2)
-    coefs(1:2,1:2) = 0.
-    coefs(0,nlev-1:nlev) = a(nlev-1:nlev)
-    coefs(1:2,nlev-1:nlev) = 0.D0
+  ! switcht to piecewise constant near the boundaries
+  if (remap_alg==2) then
+     do j=1,vert_remap_tom
+        coefs(0,j) = a(j)
+        coefs(1:2,j) = 0.D0
+     enddo
+     do j=nlev+1-vert_remap_bl,nlev
+        coefs(0,j) = a(j)
+        coefs(1:2,j) = 0.D0
+     enddo
   endif
+
 end function compute_ppm
 
 !=======================================================================================================!
@@ -778,12 +783,13 @@ end function integrate_parabola
   end subroutine binary_search
 
 
-  subroutine linextrap(dx1,dx2,dx3,dx4,y1,y2,y3,y4,lo,hi)
+  subroutine linextrap(dx1,dx2,dx3,dx4,y1,y2,y3,y4,limit,lo,hi)
     real(kind=real_kind), intent(in) :: dx1,dx2,dx3,dx4,y1,y2,lo,hi
     real(kind=real_kind), intent(out) :: y3,y4
 
     real(kind=real_kind) :: den,num,a
     real(kind=real_kind) :: z3,z4
+    integer :: limit
 
     ! In exact arithmetic, the following is equivalent to
     !   x1 = half*dx1
@@ -806,8 +812,10 @@ end function integrate_parabola
     a  = num/den
     y4 = (1-a)*y1 + a*y2
 
-    y3 = max(lo, min(hi, y3))
-    y4 = max(lo, min(hi, y4))
+    if (limit==1) then
+       y3 = max(lo, min(hi, y3))
+       y4 = max(lo, min(hi, y4))
+    endif
   end subroutine linextrap
 
 
