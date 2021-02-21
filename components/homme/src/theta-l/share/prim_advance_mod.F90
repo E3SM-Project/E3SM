@@ -17,7 +17,7 @@ module prim_advance_mod
   use bndry_mod,          only: bndry_exchangev
   use control_mod,        only: dcmip16_mu, dcmip16_mu_s, hypervis_order, hypervis_subcycle,&
     integration, nu, nu_div, nu_p, nu_s, nu_top, prescribed_wind, qsplit, rsplit, test_case,&
-    theta_hydrostatic_mode, tstep_type, theta_advect_form, hypervis_subcycle_tom
+    theta_hydrostatic_mode, tstep_type, theta_advect_form, hypervis_subcycle_tom, pgrad_correction
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
@@ -26,7 +26,7 @@ module prim_advance_mod
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
   use element_state,      only: nu_scale_top, nlev_tom, max_itercnt, max_deltaerr,max_reserr
-  use element_ops,        only: set_theta_ref, state0, get_R_star
+  use element_ops,        only: state0, get_R_star
   use eos,                only: pnh_and_exner_from_eos,pnh_and_exner_from_eos2,phi_from_eos
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
@@ -1114,7 +1114,7 @@ contains
   real (kind=real_kind) ::  temp(np,np,nlev)
   real (kind=real_kind) ::  vtemp(np,np,2,nlev)       ! generic gradient storage
   real (kind=real_kind), dimension(np,np) :: sdot_sum ! temporary field
-  real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
+  real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn, T0
   integer :: i,j,k,kptr,ie, nlyr_tot
 
   call t_startf('compute_andor_apply_rhs')
@@ -1444,7 +1444,14 @@ contains
         mgrad(:,:,1,k) = (dpnh_dp_i(:,:,k)*gradphinh_i(:,:,1,k)+ &
               dpnh_dp_i(:,:,k+1)*gradphinh_i(:,:,1,k+1))/2
         mgrad(:,:,2,k) = (dpnh_dp_i(:,:,k)*gradphinh_i(:,:,2,k)+ &
-              dpnh_dp_i(:,:,k+1)*gradphinh_i(:,:,2,k+1))/2
+             dpnh_dp_i(:,:,k+1)*gradphinh_i(:,:,2,k+1))/2
+
+        if (pgrad_correction==1) then
+           T0 = TREF-.0065*TREF*Cp/g     ! = 97  
+           vtemp(:,:,:,k)=gradient_sphere(log(exner(:,:,k)),deriv,elem(ie)%Dinv)
+           mgrad(:,:,1,k)=mgrad(:,:,1,k) + Cp*T0*(vtemp(:,:,1,k)-gradexner(:,:,1,k)/exner(:,:,k))
+           mgrad(:,:,2,k)=mgrad(:,:,2,k) + Cp*T0*(vtemp(:,:,2,k)-gradexner(:,:,2,k)/exner(:,:,k))
+        endif
 
 
         do j=1,np

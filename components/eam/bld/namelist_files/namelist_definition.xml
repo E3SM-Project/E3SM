@@ -5598,7 +5598,17 @@ Indicates form of eqn. for vtheta in theta model.
 0 is conservation form, 1 is expanded div form.
 Default: 1.
 </entry>
-	
+
+<entry id="pgrad_correction" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+</entry>
+<entry id="hv_ref_profiles" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+</entry>
+<entry id="hv_theta_correction" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+</entry>
+
 <entry id="cubed_sphere_map" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 Defines which map is used for referene element in homme.

@@ -12,7 +12,7 @@ module viscosity_theta
 !
 !
 use kinds, only : real_kind, iulog
-use dimensions_mod, only : np, nlev
+use dimensions_mod, only : np, nlev,nlevp
 use hybrid_mod, only : hybrid_t
 use parallel_mod, only : parallel_t
 use element_mod, only : element_t
@@ -21,7 +21,8 @@ use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
 use edge_mod, only : edgevpack_nlyr, edgevunpack_nlyr
 
 use bndry_mod, only : bndry_exchangev
-use control_mod, only : hypervis_scaling, nu, nu_div, theta_hydrostatic_mode
+use control_mod, only : hypervis_scaling, nu, nu_div, theta_hydrostatic_mode,&
+     hv_theta_correction
 use perf_mod, only: t_startf, t_stopf
 
 implicit none
@@ -56,8 +57,10 @@ integer :: i,j,k,kptr,ie,nlyr_tot,ssize
 real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: tmp
 real (kind=real_kind), dimension(np,np) :: tmp2
+real (kind=real_kind), dimension(np,np,nlevp) :: p_i
 real (kind=real_kind), dimension(np,np,2) :: v
 real (kind=real_kind) :: nu_ratio1, nu_ratio2
+real (kind=real_kind) :: dp_thresh
 logical var_coef1
 
 #ifdef HOMMEXX_BFB_TESTING
@@ -77,8 +80,7 @@ endif
 
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
    !so tensor is only used on second call to laplace_sphere_wk
-   var_coef1 = .true.
-   if(hypervis_scaling > 0)    var_coef1 = .false.
+   var_coef1 = .false.
 
    ! correct nu_div scaling. do not match buggy scaling used by PREQX model
    nu_ratio1=1
@@ -99,6 +101,7 @@ endif
 
    do ie=nets,nete
 
+
       do k=1,nlev
          stens(:,:,k,1,ie)=laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),&
               deriv,elem(ie),var_coef=var_coef1)
@@ -111,6 +114,23 @@ endif
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),&
               var_coef=var_coef1,nu_ratio=nu_ratio1)
       enddo
+
+      if (hv_theta_correction>0) then
+         p_i(:,:,1) = elem(ie)%state%vtheta_dp(:,:,1,nt)
+         p_i(:,:,nlevp) = elem(ie)%state%vtheta_dp(:,:,nlev,nt)
+         do k=2,nlev
+            p_i(:,:,k)=(elem(ie)%state%vtheta_dp(:,:,k,nt) +&
+                 elem(ie)%state%vtheta_dp(:,:,k-1,nt))/2
+         enddo
+         do k=1,nlev
+            tmp(:,:) = (p_i(:,:,k+1)-p_i(:,:,k))/elem(ie)%derived%dp_ref(:,:,k)
+            dp_thresh=.025*hv_theta_correction
+            tmp(:,:)=tmp(:,:) / (1 + abs(tmp(:,:))/dp_thresh)
+            stens(:,:,k,2,ie)=stens(:,:,k,2,ie)-tmp(:,:)*elem(ie)%derived%lap_p_wk(:,:,k)
+         enddo
+      endif
+
+      
       kptr=0
       call edgeVpack_nlyr(edgebuf,elem(ie)%desc,vtens(1,1,1,1,ie),2*nlev,kptr,nlyr_tot)
       kptr=2*nlev

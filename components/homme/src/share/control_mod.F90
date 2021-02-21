@@ -83,6 +83,9 @@ module control_mod
 ! advect theta 0: conservation form 
 !              1: expanded divergence form (less noisy, non-conservative)
  integer, public :: theta_advect_form = 0
+ integer, public :: pgrad_correction  = 0   ! 1=turn on theta model pressure gradient correction
+ integer, public :: hv_ref_profiles   = 0   ! 1=turn on theta model HV reference profiles
+ integer, public :: hv_theta_correction=0   ! 1=use HV on p-surface approximation for theta
 
  integer, public :: cubed_sphere_map = -1  ! -1 = chosen at run time
                                            !  0 = equi-angle Gnomonic (default)
