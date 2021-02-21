@@ -33,8 +33,7 @@ def lookfor1(fid,key1,key2="",allow_eof=0):
 
     if (allow_eof==1):
         raise eof("EOF")
-#    raise search_failed,"Search failed  string='"+key1+"'"
-    raise search_failed("Search failed  string="+key1)
+    raise search_failed("Search failed:  string='"+key1+"'")
     return 0
 
     
@@ -120,8 +119,7 @@ try:
 
         
 except search_failed as e:
-    print("search failed")
-    print("".join(e))
+    print(''.join(e.args))
     sys.exit(1)
     
 except eof as e:
