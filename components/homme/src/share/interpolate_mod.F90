@@ -33,6 +33,7 @@ module interpolate_mod
   use cube_mod,               only : convert_gbl_index, dmap, ref2sphere
   use mesh_mod,               only : MeshUseMeshFile
   use control_mod,            only : cubed_sphere_map, interp_lon0
+  use thread_mod,             only : omp_get_max_threads
 
   implicit none
   private
@@ -1053,7 +1054,8 @@ contains
     allocate(cart_vec(nlat,nlon))
 
     if (par%masterproc) then
-       write(iulog,'(a,i4,a,i4,a)') 'Initializing ',nlat,' x ',nlon,' lat-lon interpolation grid: '
+       write(iulog,'(a,i5,a,i5,a)') 'Initializing ',nlat,'x',nlon,' lat-lon interpolation grid:'
+       write(iulog,*) 'Number of threads in lat-lon search loop',omp_get_max_threads()
     endif
 
     do ii=1,nelemd
@@ -1158,13 +1160,15 @@ contains
 
 
     ! go through once, counting the number of points on each element
-    sphere%r=1
     local_elem_num  = -1
     local_elem_gid  = -1
     global_elem_gid = -1
     err=0
     do j=1,nlat
+       
+!$OMP PARALLEL DO NUM_THREADS(omp_get_max_threads()) SHARED(err) PRIVATE(i,sphere,ii,cart,sphere2_xyz,sphere_xyz)
        do i=1,nlon
+          sphere%r=1
           sphere%lat=lat(j)
           sphere%lon=lon(i)
           call find_ref_coordinates(sphere,elem,local_elem_num(j,i),local_elem_gid(j,i),cart_vec(j,i))
@@ -1177,9 +1181,12 @@ contains
              sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,     &
                   elem(ii)%corners3D,cubed_sphere_map,elem(ii)%corners,elem(ii)%facenum ))
              sphere_xyz = spherical_to_cart(sphere)
+!$OMP CRITICAL
              err=max(err,distance(sphere2_xyz,sphere_xyz))
+!$OMP END CRITICAL
           endif
        enddo
+!$OMP END PARALLEL DO
        if (par%masterproc) then
           if ((MOD(j,64).eq.1).or.(j.eq.nlat)) then
              print *,'finished latitude ',j,' of ',nlat
