@@ -653,10 +653,11 @@ contains
 
   function gfr_pgn_to_smoothed_topo(par, elem, output_nphys, intopofn, outtopoprefix) result(stat)
 #ifndef CAM
-    use common_io_mod, only: varname_len
+    use common_io_mod, only: varname_len,infilenames
     use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_fv_phys_to_dyn_topo, &
          gfr_dyn_to_fv_phys_topo, gfr_f_get_latlon
-    use interpolate_driver_mod, only: read_physgrid_topo_file, write_physgrid_smoothed_phis_file
+    use interpolate_driver_mod, only: read_physgrid_topo_file, write_physgrid_smoothed_phis_file, &
+       pio_read_phis
     use physical_constants, only: dd_pi
     use edge_mod, only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
     use bndry_mod, only: bndry_exchangev
@@ -685,27 +686,32 @@ contains
     if (write_latlon) nvar = 3
 
     allocate(gll_fields(np,np,nelemd,nvar), pg_fields(np*np,nelemd,nvar))
+    hybrid = hybrid_create(par, 0, 1)
+
 
     ! Read the unsmoothed physgrid topo data from cube_to_target's first
     ! run. Here, pg4 will give the best quality.
     fieldnames(1) = 'PHIS'
+    if (hybrid%masterthread) print *,'Attempting to read PG4 PHIS data for smoothing:'
     call read_physgrid_topo_file(intopofn, elem, par, fieldnames, intopo_nphys, pg_fields, stat)
-    if (stat /= 0) return
+    if (stat == 0) then
+       ! Map this topo field to GLL.
+       call gfr_init(par, elem, intopo_nphys)
+       call gfr_fv_phys_to_dyn_topo(par, elem, pg_fields(:,:,1))
+       do ie = 1,nelemd
+          call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis, 1, 0, 1)
+       end do
+       call bndry_exchangeV(par, edge_g)
+       do ie = 1,nelemd
+          call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis, 1, 0, 1)
+       end do
+       call gfr_finish()
+    else
+       ! error trying to read pg4 input data. try GLL:
+       if (hybrid%masterthread) print *,'Attempting to read GLL PHIS data for smoothing:'
+       call pio_read_phis(elem,hybrid%par,'PHIS')
+    endif
 
-    ! Map this topo field to GLL.
-    call gfr_init(par, elem, intopo_nphys)
-    call gfr_fv_phys_to_dyn_topo(par, elem, pg_fields(:,:,1))
-    do ie = 1,nelemd
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis, 1, 0, 1)
-    end do
-    call bndry_exchangeV(par, edge_g)
-    do ie = 1,nelemd
-       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis, 1, 0, 1)
-    end do
-    call gfr_finish()
-
-    ! Smooth on the GLL grid.
-    hybrid = hybrid_create(par, 0, 1)
     call smooth_topo_datasets(elem, hybrid, 1, nelemd)
     do ie = 1,nelemd
        gll_fields(:,:,ie,1) = elem(ie)%state%phis
