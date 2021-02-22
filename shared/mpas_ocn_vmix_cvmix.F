@@ -137,7 +137,7 @@ contains
       type(cvmix_data_type) :: cvmix_variables
 
       integer, dimension(:), pointer :: &
-        maxLevelCell, nEdgesOnCell, maxLevelEdgeTop
+        maxLevelCell, minLevelCell, nEdgesOnCell, maxLevelEdgeTop, minLevelEdgeBot
 
       real (kind=RKIND), dimension(:), pointer :: &
         latCell, lonCell, bottomDepth, fCell, &
@@ -219,7 +219,9 @@ contains
       ! set pointers for fields related to vertical mesh
       !
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
@@ -324,10 +326,16 @@ contains
 
          ! fill vertical position of column
          ! CVMix assume top of ocean is at z=0, so building all z-coordinate data based on layerThickness
-         cvmix_variables % zw_iface(1) = 0.0_RKIND
-         cvmix_variables % dzw(1) = layerThickness(1,iCell)/2.0_RKIND
-         cvmix_variables % zt_cntr(1) = -layerThickness(1,iCell)/2.0_RKIND
-         do k=2,maxLevelCell(iCell)
+         do k = 1, minLevelCell(iCell) - 1
+            cvmix_variables % zw_iface(k) = 0.0_RKIND
+            cvmix_variables % zt_cntr(k) = 0.0_RKIND
+            cvmix_variables % dzw(k) = 0.0_RKIND
+            cvmix_variables % dzt(k) = 0.0_RKIND
+         enddo
+         cvmix_variables % zw_iface(minLevelCell(iCell)) = 0.0_RKIND
+         cvmix_variables % dzw(minLevelCell(iCell)) = layerThickness(minLevelCell(iCell),iCell)/2.0_RKIND
+         cvmix_variables % zt_cntr(minLevelCell(iCell)) = -layerThickness(minLevelCell(iCell),iCell)/2.0_RKIND
+         do k=minLevelCell(iCell)+1,maxLevelCell(iCell)
             cvmix_variables % zw_iface(k) = cvmix_variables % zw_iface(k-1) - layerThickness(k-1,iCell)
             cvmix_variables % zt_cntr(k) = cvmix_variables %  zw_iface(k) - layerThickness(k,iCell)/2.0_RKIND
             cvmix_variables % dzw(k) = cvmix_variables % zt_cntr(k-1) - cvmix_variables % zt_cntr(k)
@@ -384,7 +392,9 @@ contains
          endif
 
          ! fill BVF
-         BVFSmoothed(1:maxLevelCell(iCell)) = max(0.0_RKIND,BruntVaisalaFreqTop(1:maxLevelCell(iCell),iCell))
+         BVFSmoothed(minLevelCell(iCell):maxLevelCell(iCell)) = max(0.0_RKIND, &
+                        BruntVaisalaFreqTop(minLevelCell(iCell):maxLevelCell(iCell),iCell))
+         BVFSmoothed(1:minLevelCell(iCell)-1) = max(0.0_RKIND,BVFSmoothed(minLevelCell(iCell)))
          BVFSmoothed(maxLevelCell(iCell)+1) = max(0.0_RKIND,BVFSmoothed(maxLevelCell(iCell)))
          cvmix_variables%SqrBuoyancyFreq_iface => BVFSmoothed(1:maxLevelCell(iCell)+1)
 
@@ -435,9 +445,10 @@ contains
             else
 
               ! set stratification
-              do k=1,maxLevelCell(iCell)
+              do k=minLevelCell(iCell),maxLevelCell(iCell)
                   Nsqr_iface(k) = BVFSmoothed(k)
               enddo
+              Nsqr_iface(1:minLevelCell(iCell)-1) = Nsqr_iface(minLevelCell(iCell))
               k=min(maxLevelCell(iCell)+1,nVertLevels)
               Nsqr_iface(k:maxLevelCell(iCell)+1) = Nsqr_iface(k-1)
 
@@ -463,11 +474,11 @@ contains
               ! assume boundary layer depth is at bottom of every kIndexOBL cell
               bulkRichardsonNumberStop = config_cvmix_kpp_stop_OBL_search * config_cvmix_kpp_criticalBulkRichardsonNumber
               bulkRichardsonFlag = .false.
-              topIndex = 1
+              topIndex = minLevelCell(iCell)
 !             call mpas_timer_start('Bulk Richardson kIndexOBL loops')
               ! compute the index of the last cell in the KPP defined surface layer
               ! this index is used for the necessary surface layer averages of buoyancy and momentum
-              do kIndexOBL = 1, maxLevelCell(iCell)
+              do kIndexOBL = minLevelCell(iCell), maxLevelCell(iCell)
 
                  ! Reset deltaVelocitySquared and bulkRichardsonNumber at this layer for the later computation
                  deltaVelocitySquared(kIndexOBL) = 0.0_RKIND
@@ -481,7 +492,7 @@ contains
                  interfaceForcings(kIndexOBL) = cvmix_variables % SurfaceBuoyancyForcing
 
                  ! initialize the surfaceAverageIndex for cases when the if statement below is not true
-                 surfaceAverageIndex(kIndexOBL) = 1
+                 surfaceAverageIndex(kIndexOBL) = minLevelCell(iCell)
                  ! move progressively downward to find the bottom most layer within the surface layer
                  sfc_layer_depth = cvmix_variables % BoundaryLayerDepth * config_cvmix_kpp_surface_layer_extent
                  do kav=topIndex,kIndexOBL
@@ -506,18 +517,19 @@ contains
               do i = 1, nEdgesOnCell(iCell)
                  iEdge = edgesOnCell(i, iCell)
 
-                 deltaVelocitySquared(1) = 0.0_RKIND
+                 deltaVelocitySquared(1:minLevelCell(iCell)) = 0.0_RKIND
 
-                 normalVelocitySum(1) = normalVelocity(1, iEdge)*layerThickEdge(1,iEdge)
-                 layerThicknessEdgeSum(1) = layerThickEdge(1,iEdge)
+                 normalVelocitySum(minLevelCell(iCell)) = normalVelocity(minLevelCell(iCell), iEdge)* &
+                                                          layerThickEdge(minLevelCell(iCell),iEdge)
+                 layerThicknessEdgeSum(minLevelCell(iCell)) = layerThickEdge(minLevelCell(iCell),iEdge)
 
-                 do kIndexOBL = 2, maxLevelCell(iCell)
+                 do kIndexOBL = minLevelCell(iCell)+1, maxLevelCell(iCell)
                     normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + &
                                       layerThickEdge(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
                     layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThickEdge(kIndexOBL, iEdge)
                  end do
 
-                 do kIndexOBL = 1, maxLevelCell(iCell)
+                 do kIndexOBL = minLevelCell(iCell), maxLevelCell(iCell)
                     normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / &
                         layerThicknessEdgeSum(surfaceAverageIndex(kIndexOBL))
                     delU2 = ( normalVelocityAv - normalVelocity(kIndexOBL, iEdge) )**2
@@ -525,15 +537,16 @@ contains
                  end do
               end do
 
-              potentialDensitySum(1) = potentialDensity(1, iCell)*layerThickness(1, iCell)
-              layerThicknessSum(1) = layerThickness(1, iCell)
-              do kIndexOBL = 2, maxLevelCell(iCell)
+              potentialDensitySum(minLevelCell(iCell)) = potentialDensity(minLevelCell(iCell), iCell)* &
+                                                         layerThickness(minLevelCell(iCell), iCell)
+              layerThicknessSum(minLevelCell(iCell)) = layerThickness(minLevelCell(iCell), iCell)
+              do kIndexOBL = minLevelCell(iCell)+1, maxLevelCell(iCell)
                 layerThicknessSum(kIndexOBL) = layerThicknessSum(kIndexOBL-1) + layerThickness(kIndexOBL, iCell)
                 potentialDensitySum(kIndexOBL) = potentialDensitySum(kIndexOBL-1) + &
                     layerThickness(kIndexOBL, iCell)*potentialDensity(kIndexOBL, iCell)
               end do
 
-              do kIndexOBL = 1, maxLevelCell(iCell)
+              do kIndexOBL = minLevelCell(iCell), maxLevelCell(iCell)
                 ! !compute shear contribution assuming BLdepth is cell bottom
                 !Note that the factor of two is from averaging dot products to cell centers on a C-grid
                 bulkRichardsonNumberShear(kIndexOBL,iCell) = max(2.0_RKIND*deltaVelocitySquared(kIndexOBL), 1.0e-15_RKIND)
@@ -571,8 +584,8 @@ contains
              endif  ! if (config_use_cvmix_fixed_boundary_layer) then
 
              ! apply minimum limit to OBL
-             if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(1,iCell)/2.0_RKIND) then
-                cvmix_variables % BoundaryLayerDepth = layerThickness(1,iCell)/2.0_RKIND
+             if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(minLevelCell(iCell),iCell)/2.0_RKIND) then
+                cvmix_variables % BoundaryLayerDepth = layerThickness(minLevelCell(iCell),iCell)/2.0_RKIND
                 cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
                           zw_iface = cvmix_variables%zw_iface(1:maxLevelCell(iCell)+1),&
                           zt_cntr = cvmix_variables%zt_cntr(1:maxLevelCell(iCell)),    &
@@ -611,7 +624,7 @@ contains
             end do
 
             !must reapply max and min limits to boundaryLayerDepth
-            blTemp = max(boundaryLayerDepth(iCell), layerThickness(1,iCell)/2.0_RKIND)
+            blTemp = max(boundaryLayerDepth(iCell), layerThickness(minLevelCell(iCell),iCell)/2.0_RKIND)
             boundaryLayerDepth(iCell) = min(blTemp, abs(cvmix_variables%zt_cntr(maxLevelCell(iCell))))
 
             cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
@@ -686,7 +699,9 @@ contains
                   vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) + cvmix_variables % Tdiff_iface(k)
                enddo
             else
-               do k = 1, maxLevelCell(iCell) + 1
+               vertViscTopOfCell(1:minLevelCell(iCell)-1, iCell) = 0.0_RKIND
+               vertDiffTopOfCell(1:minLevelCell(iCell)-1, iCell) = 0.0_RKIND
+               do k = minLevelCell(iCell), maxLevelCell(iCell) + 1
                   vertViscTopOfCell(k, iCell) = vertViscTopOfCell(k, iCell) + cvmix_variables % Mdiff_iface(k)
                   vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + cvmix_variables % Tdiff_iface(k)
                end do
@@ -704,8 +719,8 @@ contains
 
          ! computation of viscosity/diffusivity complete
          ! impose no-flux boundary conditions at top and bottom by zero viscosity/diffusivity
-         vertViscTopOfCell(1, iCell) = 0.0_RKIND
-         vertDiffTopOfCell(1, iCell) = 0.0_RKIND
+         vertViscTopOfCell(1:minLevelCell(iCell), iCell) = 0.0_RKIND
+         vertDiffTopOfCell(1:minLevelCell(iCell), iCell) = 0.0_RKIND
          do k = maxLevelCell(iCell)+1, nVertLevelsP1
             vertViscTopOfCell(k, iCell)=0.0_RKIND
             vertDiffTopOfCell(k, iCell)=0.0_RKIND
@@ -730,10 +745,10 @@ contains
             do iEdge = 1,nEdges
                iNeighbor = cellsOnCell(iEdge,iCell)
                boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) +  &
-                             2.0_RKIND * cellMask(1,iNeighbor) * areaCell(iNeighbor)    &
+                             2.0_RKIND * cellMask(minLevelCell(iNeighbor),iNeighbor) * areaCell(iNeighbor)    &
                              * boundaryLayerDepth(iNeighbor)
-               areaSum = areaSum + 2.0_RKIND * areaCell(iNeighbor) * cellMask(1,iNeighbor)
-               edgeCount = edgeCount + cellMask(1,iNeighbor)
+               areaSum = areaSum + 2.0_RKIND * areaCell(iNeighbor) * cellMask(minLevelCell(iNeighbor),iNeighbor)
+               edgeCount = edgeCount + cellMask(minLevelCell(iNeighbor),iNeighbor)
             end do
             areaSum = areaSum + edgeCount * areaCell(iCell)
             boundaryLayerDepthSmooth(iCell) = boundaryLayerDepthSmooth(iCell) +   &
