@@ -272,12 +272,12 @@ Int Functions<S,D>::shoc_main(
   // SHOC main loop
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
-  ekat::WorkspaceManager<Spack,  Device> workspace_mgr(nlevi_packs, 12, policy);
+  ekat::WorkspaceManager<Spack, Device> workspace_mgr(nlevi_packs, 12, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
-    auto workspace       = workspace_mgr.get_workspace(team);
+    auto workspace = workspace_mgr.get_workspace(team);
 
     const Scalar host_dx_s{shoc_input.host_dx(i)[0]};
     const Scalar host_dy_s{shoc_input.host_dy(i)[0]};

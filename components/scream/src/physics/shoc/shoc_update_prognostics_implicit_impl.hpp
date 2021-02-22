@@ -53,9 +53,9 @@ void Functions<S,D>::update_prognostics_implicit(
   workspace.template take_many_contiguous_unsafe<3, Scalar>(
     {"du_workspace", "dl_workspace", "d_workspace"},
     {&du_workspace, &dl_workspace, &d_workspace});
-  auto du = Kokkos::subview(du_workspace,std::make_pair(0,nlev));
-  auto dl = Kokkos::subview(dl_workspace,std::make_pair(0,nlev));
-  auto d  = Kokkos::subview(d_workspace, std::make_pair(0,nlev));
+  auto du = Kokkos::subview(du_workspace, Kokkos::make_pair(0,nlev));
+  auto dl = Kokkos::subview(dl_workspace, Kokkos::make_pair(0,nlev));
+  auto d  = Kokkos::subview(d_workspace,  Kokkos::make_pair(0,nlev));
 
   const auto last_nlev_pack = (nlev-1)/Spack::n;
   const auto last_nlev_indx = (nlev-1)%Spack::n;
