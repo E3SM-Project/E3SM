@@ -1166,7 +1166,7 @@ contains
     err=0
     do j=1,nlat
        
-!$OMP PARALLEL DO NUM_THREADS(omp_get_max_threads()) SHARED(err) PRIVATE(i,sphere,ii,cart,sphere2_xyz,sphere_xyz) reduction (max: err)
+!$OMP PARALLEL DO NUM_THREADS(omp_get_max_threads()) PRIVATE(i,sphere,ii,cart,sphere2_xyz,sphere_xyz) reduction (max: err)
        do i=1,nlon
           sphere%r=1
           sphere%lat=lat(j)
