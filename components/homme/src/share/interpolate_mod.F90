@@ -1166,7 +1166,7 @@ contains
     err=0
     do j=1,nlat
        
-!$OMP PARALLEL DO NUM_THREADS(omp_get_max_threads()) SHARED(err) PRIVATE(i,sphere,ii,cart,sphere2_xyz,sphere_xyz)
+!$OMP PARALLEL DO NUM_THREADS(omp_get_max_threads()) SHARED(err) PRIVATE(i,sphere,ii,cart,sphere2_xyz,sphere_xyz) reduction (max: err)
        do i=1,nlon
           sphere%r=1
           sphere%lat=lat(j)
@@ -1181,9 +1181,7 @@ contains
              sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,     &
                   elem(ii)%corners3D,cubed_sphere_map,elem(ii)%corners,elem(ii)%facenum ))
              sphere_xyz = spherical_to_cart(sphere)
-!$OMP CRITICAL
              err=max(err,distance(sphere2_xyz,sphere_xyz))
-!$OMP END CRITICAL
           endif
        enddo
 !$OMP END PARALLEL DO
