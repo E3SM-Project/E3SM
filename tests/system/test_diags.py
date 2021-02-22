@@ -1,8 +1,9 @@
 import unittest
 import os
 import re
+import shutil
 import subprocess
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageDraw
 
 
 # Run these tetsts on Cori by doing the following:
@@ -68,6 +69,10 @@ def compare_images(test, mismatched_images, image_name, path_to_actual_png, path
     actual_png = Image.open(path_to_actual_png).convert('RGB')
     expected_png = Image.open(path_to_expected_png).convert('RGB')
     diff = ImageChops.difference(actual_png, expected_png)
+    
+    diff_dir = 'image_check_failures'
+    if not os.path.isdir(diff_dir):
+        os.mkdir(diff_dir)
 
     bbox = diff.getbbox()
     if not bbox:
@@ -89,6 +94,15 @@ def compare_images(test, mismatched_images, image_name, path_to_actual_png, path
         # Fraction of mismatched pixels should be less than 0.02%
         if fraction >= 0.0002:
             mismatched_images.append(image_name)
+
+            simple_image_name = image_name.split('/')[-1].split('.')[0]
+            shutil.copy(path_to_actual_png, os.path.join(diff_dir, '{}_actual.png'.format(simple_image_name)))
+            shutil.copy(path_to_expected_png, os.path.join(diff_dir, '{}_expected.png'.format(simple_image_name)))
+            # https://stackoverflow.com/questions/41405632/draw-a-rectangle-and-a-text-in-it-using-pil
+            draw = ImageDraw.Draw(diff)
+            (left, upper, right, lower) = diff.getbbox()
+            draw.rectangle(((left, upper), (right, lower)), outline="red")
+            diff.save(os.path.join(diff_dir, '{}_diff.png'.format(simple_image_name)), "PNG")
 
 
 class TestAllSets(unittest.TestCase):
