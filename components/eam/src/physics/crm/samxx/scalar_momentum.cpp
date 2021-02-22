@@ -75,10 +75,10 @@ void esmt_fft_forward(real2d& arr_in, real1d& k_out, real2d& arr_out) {
    }
 
    parallel_for( nh, YAKL_LAMBDA (int j) {
-      k_out(2*j)   = 2.*pi*real(j)/(real(n)*dx);   //cos
-      k_out(2*j+1) = 2.*pi*real(j)/(real(n)*dx);   //sin
+      k_out(2*j+1) = 2.*pi*real(j+1)/(real(n)*dx);   //cos
+      k_out(2*j+2) = 2.*pi*real(j+1)/(real(n)*dx);   //sin
       if ((n%2) == 0) {
-        k_out(n) =  2.*pi/(2.*dx);   //nyquist wavelength for even n
+        k_out(n-1) =  2.*pi/(2.*dx);   //nyquist wavelength for even n
       }
       if (j==0) k_out(0) = 0.0;
    });
@@ -173,7 +173,7 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
      if (k < nzm) {
       dz(k) = zi(k+1,icrm)-zi(k,icrm);
      }
-     dz(nzm) = dz(nzm-1);
+     dz(nzm) = zi(nzm,icrm)-zi(nzm-1,icrm);
    });
 
 
@@ -233,6 +233,7 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
       // Loop through wavelengths
       //do i = 2,nx
       parallel_for( nx, YAKL_LAMBDA (int i) {
+        if (i>0) {
       //   do k = 1,nzm
          for (auto k = 0; k < nzm; ++k) {
             a(k) = dz(k+1) / ( dz(k+1) + dz(k) );
@@ -260,7 +261,7 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
          // backward substitution
          rhs(nzm-1) = rhs(nzm-1) / b(nzm-1);
          //do k=nzm-1,1,-1
-         for (auto k = nzm-2; k < 0; --k) {
+         for (auto k = nzm-2; k > -1; --k) {
             rhs(k) = ( rhs(k) - c(k) * rhs(k+1) ) / b(k);
          }
 
@@ -268,11 +269,12 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
          for (auto k = 0; k < nzm; ++k) {
             pgf_hat(k,i) = rhs(k);
          }
+        }
       }); // i - zonal wavelength
 
       // Note sure what this part does... 
       // something about the Nyquist freq and whether nx is odd or even
-      if ((nx-1)%2 == 0) {
+      if (nx%2 == 0) {
         // do k=1,nzm
          parallel_for( nzm, YAKL_LAMBDA (int k) {
             pgf_hat(k,nx-1) = pgf_hat(k,nx-1) / 2.0;
@@ -290,7 +292,7 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
       //do k = 1,nzm
       //   do i = 1,nx
       parallel_for( SimpleBounds<2>(nzm,nx) , YAKL_LAMBDA (int k, int i) {
-         if (k == 1) {
+         if (k == 0) {
             tend(k,j,i) = 0.0;
          } else {
             tend(k,j,i) = -1.0 * pgf(k,i) * rho(k,icrm);
