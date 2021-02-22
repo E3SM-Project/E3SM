@@ -123,6 +123,9 @@ except search_failed as e:
     sys.exit(1)
     
 except eof as e:
+    print('eof reached. analysing data.')
+
+finally:
     print('plotting energy...')
     KE2= np.array(KE)
     nlen=KE2.size
@@ -180,7 +183,7 @@ except eof as e:
     if ( hydrostatic_mode ):
         plt.figure()
         print ('plotting T...std min,max=%f %f' % (np.std(Tmin),np.std(Tmax)))
-        print ('avg min,max=%f %f' % (sum(Tmin)/len(Tmin),sum(Tmax)/len(Tmax)))
+        print ('min,max=%f %f' % (min(Tmin),max(Tmax)))
         legend1=("min avg: %.3f std: %.4f" % (sum(Tmin)/len(Tmin),np.std(Tmin)) )
         plt.plot(time,Tmin,label=legend1)
         legend1=("max avg: %.3f std: %.4f" % (sum(Tmax)/len(Tmax),np.std(Tmax)) )
