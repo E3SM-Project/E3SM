@@ -707,7 +707,7 @@ contains
        end do
        call gfr_finish()
     else
-       ! error trying to read pg4 input data. try GLL:
+       ! error trying to read PG input data. try GLL:
        if (hybrid%masterthread) print *,'Attempting to read GLL PHIS data for smoothing:'
        call pio_read_phis(elem,hybrid%par,'PHIS')
     endif
