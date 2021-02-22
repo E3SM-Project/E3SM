@@ -42,36 +42,9 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<const Spack>& wtracer_sfc,
   const uview_1d<const Spack>& exner,
   const Scalar&                phis,
-  // Local Variables
-  const uview_1d<Spack>&       rho_zt,
-  const uview_1d<Spack>&       shoc_qv,
-  const uview_1d<Spack>&       dz_zt,
-  const uview_1d<Spack>&       dz_zi,
-  const uview_1d<Spack>&       thv_zi,
-  const uview_1d<Spack>&       sterm,
-  const uview_1d<Spack>&       sterm_zt,
-  const uview_1d<Spack>&       a_diss,
-  const uview_1d<Spack>&       rdp_zt,
-  const uview_1d<Spack>&       tmpi,
-  const uview_1d<Spack>&       tkh_zi,
-  const uview_1d<Spack>&       tk_zi,
-  const uview_1d<Spack>&       rho_zi,
-  const uview_1d<Scalar>&      du,
-  const uview_1d<Scalar>&      dl,
-  const uview_1d<Scalar>&      d,
+  // Workspace/Local Variables
+  const Workspace&             workspace,
   const uview_2d<Spack>&       X1,
-  const uview_1d<Spack>&       isotropy_zi,
-  const uview_1d<Spack>&       w_sec_zi,
-  const uview_1d<Spack>&       brunt_zi,
-  const uview_1d<Spack>&       thetal_zi,
-  const uview_1d<Spack>&       wthl_sec_zt,
-  const uview_1d<Spack>&       wqw_sec_zt,
-  const uview_1d<Spack>&       w3_zt,
-  const uview_1d<Spack>&       thl_sec_zt,
-  const uview_1d<Spack>&       qwthl_sec_zt,
-  const uview_1d<Spack>&       qw_sec_zt,
-  const uview_1d<Spack>&       pblintd_thv,
-  const uview_1d<Spack>&       rino,
   // Input/Output Variables
   const uview_1d<Spack>&       host_dse,
   const uview_1d<Spack>&       tke,
@@ -104,6 +77,12 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       brunt,
   const uview_1d<Spack>&       isotropy)
 {
+  // Define temporary variables
+  uview_1d<Spack> rho_zt, shoc_qv, dz_zt, dz_zi;
+  workspace.template take_many_and_reset<4>(
+    {"rho_zt", "shoc_qv", "dz_zt", "dz_zi"},
+    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi});
+
   // View/pack indices for nlev, nlevi
   const Int nlev_v = (nlev-1)/Spack::n;
   const Int nlev_p = (nlev-1)%Spack::n;
@@ -128,7 +107,7 @@ void Functions<S,D>::shoc_main_internal(
 
     // Define vertical grid arrays needed for
     // vertical derivatives in SHOC, also
-    // define air density
+    // define air density (rho_zt)
     shoc_grid(team,nlev,nlevi,      // Input
               zt_grid,zi_grid,pdel, // Input
               dz_zt,dz_zi,rho_zt);  // Output
@@ -136,7 +115,8 @@ void Functions<S,D>::shoc_main_internal(
     // Compute the planetary boundary layer height, which is an
     // input needed for the length scale calculation.
 
-    // Update SHOC water vapor, to be used by the next two routines
+    // Update SHOC water vapor,
+    // to be used by the next two routines
     compute_shoc_vapor(team,nlev,qw,shoc_ql, // Input
                        shoc_qv);             // Output
 
@@ -148,59 +128,63 @@ void Functions<S,D>::shoc_main_internal(
                     shoc_qv(nlev_v)[nlev_p], // Input
                     ustar,kbfs,obklen);      // Output
 
-    pblintd(team,nlev,nlevi,npbl,          // Input
-            zt_grid,zi_grid,thetal,        // Input
-            shoc_ql,shoc_qv,u_wind,        // Input
-            v_wind,ustar,obklen,kbfs,      // Input
-            shoc_cldfrac,rino,pblintd_thv, // Input
-            pblh);                         // Output
+    pblintd(team,nlev,nlevi,npbl,     // Input
+            zt_grid,zi_grid,thetal,   // Input
+            shoc_ql,shoc_qv,u_wind,   // Input
+            v_wind,ustar,obklen,kbfs, // Input
+            shoc_cldfrac,             // Input
+            workspace,                // Workspace
+            pblh);                    // Output
 
     // Update the turbulent length scale
     shoc_length(team,nlev,nlevi,host_dx,host_dy, // Input
                 pblh,tke,zt_grid,zi_grid,dz_zt,  // Input
-                wthv_sec,thv,thv_zi,             // Input
+                wthv_sec,thv,                    // Input
+                workspace,                       // Workspace
                 brunt,shoc_mix);                 // Output
 
     // Advance the SGS TKE equation
-    shoc_tke(team,nlev,nlevi,dtime,wthv_sec,      // Input
-             shoc_mix,dz_zi,dz_zt,pres,u_wind,    // Input
-             v_wind,brunt,obklen,zt_grid,zi_grid, // Input
-             pblh,sterm,sterm_zt,a_diss,          // Input
-             tke,tk,tkh,                          // Input/Output
-             isotropy);                           // Output
+    shoc_tke(team,nlev,nlevi,dtime,wthv_sec,    // Input
+             shoc_mix,dz_zi,dz_zt,pres,u_wind,  // Input
+             v_wind,brunt,obklen,zt_grid,       // Input
+             zi_grid,pblh,                      // Input
+             workspace,                         // Workspace
+             tke,tk,tkh,                        // Input/Output
+             isotropy);                         // Output
 
     // Update SHOC prognostic variables here
     // via implicit diffusion solver
     team.team_barrier();
     update_prognostics_implicit(team,nlev,nlevi,num_qtracers,dtime,dz_zt,   // Input
                                 dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
-                                vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,rdp_zt, // Input
-                                tmpi,tkh_zi,tk_zi,rho_zi,du,dl,d,X1,        // Input
-                               thetal, qw,qtracers,tke,u_wind,v_wind);      // Input/Output
+                                vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
+                                workspace,                                  // Workspace
+                                X1,thetal,qw,qtracers,tke,u_wind,v_wind);   // Input/Output
 
     // Diagnose the second order moments
-    diag_second_shoc_moments(team,nlev,nlevi,thetal,qw,u_wind,v_wind,  // Input
-                            tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
-                            shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
-                            ustar2,wstar,isotropy_zi,tkh_zi,tk_zi,     // Input
-                            thl_sec,qw_sec,wthl_sec,wqw_sec,qwthl_sec, // Output
-                            uw_sec,vw_sec,wtke_sec,w_sec);             // Output
+    diag_second_shoc_moments(team,nlev,nlevi,thetal,qw,u_wind,v_wind,   // Input
+                             tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
+                             shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
+                             ustar2,wstar,                              // Input/Output
+                             workspace,                                 // Workspace
+                             thl_sec,qw_sec,wthl_sec,wqw_sec,qwthl_sec, // Output
+                             uw_sec,vw_sec,wtke_sec,w_sec);             // Output
 
     // Diagnose the third moment of vertical velocity,
     //  needed for the PDF closure
     diag_third_shoc_moments(team,nlev,nlevi,w_sec,thl_sec,wthl_sec, // Input
                             isotropy,brunt,thetal,tke,dz_zt,dz_zi,  // Input
-                            zt_grid,zi_grid,w_sec_zi,isotropy_zi,   // Input
-                            brunt_zi,thetal_zi,                     // Input
+                            zt_grid,zi_grid,                        // Input
+                            workspace,                              // Workspace
                             w3);                                    // Output
 
     // Call the PDF to close on SGS cloud and turbulence
     team.team_barrier();
     shoc_assumed_pdf(team,nlev,nlevi,thetal,qw,w_field,thl_sec,qw_sec, // Input
-                     wthl_sec,w_sec,wqw_sec,qwthl_sec,w3,pres,zt_grid, // Input
-                     zi_grid,wthl_sec_zt,wqw_sec_zt,w3_zt,thl_sec_zt,  // Input
-                     qwthl_sec_zt,qw_sec_zt,                           // Input
-                    shoc_cldfrac,shoc_ql,wqls_sec,wthv_sec,shoc_ql2);  // Ouptut
+                     wthl_sec,w_sec,wqw_sec,qwthl_sec,w3,pres,         // Input
+                     zt_grid, zi_grid,                                 // Input
+                     workspace,                                        // Workspace
+                     shoc_cldfrac,shoc_ql,wqls_sec,wthv_sec,shoc_ql2); // Ouptut
 
     // Check TKE to make sure values lie within acceptable
     // bounds after vertical advection, etc.
@@ -222,7 +206,8 @@ void Functions<S,D>::shoc_main_internal(
 
   shoc_energy_fixer(team,nlev,nlevi,dtime,nadv,zt_grid,zi_grid, // Input
                     se_b,ke_b,wv_b,wl_b,se_a,ke_a,wv_a,wl_a,    // Input
-                    wthl_sfc,wqw_sfc,rho_zt,tke,presi,rho_zi,   // Input
+                    wthl_sfc,wqw_sfc,rho_zt,tke,presi,          // Input
+                    workspace,                                  // Workspace
                     host_dse);                                  // Output
 
   // Remaining code is to diagnose certain quantities
@@ -244,11 +229,17 @@ void Functions<S,D>::shoc_main_internal(
                    shoc_qv(nlev_v)[nlev_p], // Input
                    ustar,kbfs,obklen);      // Output
 
-  pblintd(team,nlev,nlevi,npbl,zt_grid,       // Input
-          zi_grid,thetal,shoc_ql,shoc_qv,     // Input
-          u_wind,v_wind,ustar,obklen,         // Input
-          kbfs,shoc_cldfrac,rino,pblintd_thv, // Input
-          pblh);                              // Output
+  pblintd(team,nlev,nlevi,npbl,zt_grid,   // Input
+          zi_grid,thetal,shoc_ql,shoc_qv, // Input
+          u_wind,v_wind,ustar,obklen,     // Input
+          kbfs,shoc_cldfrac,              // Input
+          workspace,                      // Workspace
+          pblh);                          // Output
+
+  // Release temporary variables from the workspace
+  workspace.template release_many_contiguous<4>(
+    {&rho_zt, &shoc_qv, &dz_zt, & dz_zi});
+  //workspace.release(dz_zi);
 }
 
 
@@ -272,39 +263,6 @@ Int Functions<S,D>::shoc_main(
   const auto nlev_packs = ekat::npack<Spack>(nlev);
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
 
-  // Local variables
-  view_2d<Spack>
-    rho_zt_d("rho_zt",shcol,nlev_packs),
-    shoc_qv_d("rho_zt",shcol,nlev_packs),
-    dz_zt_d("rho_zt",shcol,nlev_packs),
-    dz_zi_d("rho_zt",shcol,nlevi_packs),
-    thv_zi_d("thv_zi",shcol,nlevi_packs),
-    sterm_d("sterm",shcol,nlevi_packs),
-    sterm_zt_d("sterm_zt",shcol,nlev_packs),
-    a_diss_d("a_diss",shcol,nlev_packs),
-    rdp_zt_d("rdp_zt", shcol, nlev_packs),
-    tmpi_d("tmpi", shcol, nlevi_packs),
-    tkh_zi_d("tkh_zi", shcol, nlevi_packs),
-    tk_zi_d("tk_zi", shcol, nlevi_packs),
-    rho_zi_d("rho_zi", shcol, nlevi_packs),
-    isotropy_zi_d("isotropy_zi", shcol, nlevi_packs),
-    w_sec_zi_d("w_sec_zi", shcol, nlevi_packs),
-    brunt_zi_d("brunt_zi", shcol, nlevi_packs),
-    thetal_zi_d("thetal_zi", shcol, nlevi_packs),
-    wthl_sec_zt_d("wthl_sec_zt", shcol, nlev_packs),
-    wqw_sec_zt_d("wqw_sec_zt", shcol, nlev_packs),
-    w3_zt_d("w3_zt", shcol, nlev_packs),
-    thl_sec_zt_d("thl_sec_zt", shcol, nlev_packs),
-    qwthl_sec_zt_d("qwthl_sec_zt", shcol, nlev_packs),
-    qw_sec_zt_d("qw_sec_zt", shcol, nlev_packs),
-    pblintd_thv_d("pblintd_thv", shcol, nlev_packs),
-    pblintd_rino_d("rino", shcol, nlev_packs);
-
-  view_2d<Scalar>
-    du_d("du", shcol, nlev),
-    dl_d("dl", shcol, nlev),
-    d_d("d", shcol, nlev);
-
   view_3d<Spack>
     X1_d("X1",shcol,nlev,ekat::npack<Spack>(2));
 
@@ -313,8 +271,13 @@ Int Functions<S,D>::shoc_main(
 
   // SHOC main loop
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+
+  ekat::WorkspaceManager<Spack, Device> workspace_mgr(nlevi_packs, 12, policy);
+
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
+
+    auto workspace = workspace_mgr.get_workspace(team);
 
     const Scalar host_dx_s{shoc_input.host_dx(i)[0]};
     const Scalar host_dy_s{shoc_input.host_dy(i)[0]};
@@ -334,36 +297,6 @@ Int Functions<S,D>::shoc_main(
     const auto w_field_s      = ekat::subview(shoc_input.w_field, i);
     const auto wtracer_sfc_s  = ekat::subview(shoc_input.wtracer_sfc, i);
     const auto exner_s        = ekat::subview(shoc_input.exner, i);
-
-    const auto rho_zt_s       = ekat::subview(rho_zt_d, i);
-    const auto shoc_qv_s      = ekat::subview(shoc_qv_d, i);
-    const auto dz_zt_s        = ekat::subview(dz_zt_d, i);
-    const auto dz_zi_s        = ekat::subview(dz_zi_d, i);
-    const auto thv_zi_s       = ekat::subview(thv_zi_d, i);
-    const auto sterm_s        = ekat::subview(sterm_d, i);
-    const auto sterm_zt_s     = ekat::subview(sterm_zt_d, i);
-    const auto a_diss_s       = ekat::subview(a_diss_d, i);
-    const auto rdp_zt_s       = ekat::subview(rdp_zt_d, i);
-    const auto tmpi_s         = ekat::subview(tmpi_d, i);
-    const auto tkh_zi_s       = ekat::subview(tkh_zi_d, i);
-    const auto tk_zi_s        = ekat::subview(tk_zi_d, i);
-    const auto rho_zi_s       = ekat::subview(rho_zi_d, i);
-    const auto du_s           = ekat::subview(du_d, i);
-    const auto dl_s           = ekat::subview(dl_d, i);
-    const auto d_s            = ekat::subview(d_d, i);
-    const auto isotropy_zi_s  = ekat::subview(isotropy_zi_d, i);
-    const auto w_sec_zi_s     = ekat::subview(w_sec_zi_d, i);
-    const auto brunt_zi_s     = ekat::subview(brunt_zi_d, i);
-    const auto thetal_zi_s    = ekat::subview(thetal_zi_d, i);
-    const auto wthl_sec_zt_s  = ekat::subview(wthl_sec_zt_d, i);
-    const auto wqw_sec_zt_s   = ekat::subview(wqw_sec_zt_d, i);
-    const auto w3_zt_s        = ekat::subview(w3_zt_d, i);
-    const auto thl_sec_zt_s   = ekat::subview(thl_sec_zt_d, i);
-    const auto qwthl_sec_zt_s = ekat::subview(qwthl_sec_zt_d, i);
-    const auto qw_sec_zt_s    = ekat::subview(qw_sec_zt_d, i);
-    const auto pblintd_thv_s  = ekat::subview(pblintd_thv_d, i);
-    const auto pblintd_rino_s = ekat::subview(pblintd_rino_d, i);
-
     const auto host_dse_s     = ekat::subview(shoc_input_output.host_dse, i);
     const auto tke_s          = ekat::subview(shoc_input_output.tke, i);
     const auto thetal_s       = ekat::subview(shoc_input_output.thetal, i);
@@ -395,21 +328,19 @@ Int Functions<S,D>::shoc_main(
     const auto qtracers_s = Kokkos::subview(shoc_input_output.qtracers, i, Kokkos::ALL(), Kokkos::ALL());
 
     shoc_main_internal(team, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
-                       host_dx_s, host_dy_s, zt_grid_s, zi_grid_s,
-                       pres_s, presi_s, pdel_s, thv_s, w_field_s,
-                       wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,
-                       wtracer_sfc_s, exner_s, phis_s, rho_zt_s,
-                       shoc_qv_s, dz_zt_s, dz_zi_s, thv_zi_s, sterm_s,
-                       sterm_zt_s, a_diss_s, rdp_zt_s, tmpi_s, tkh_zi_s,
-                       tk_zi_s, rho_zi_s, du_s, dl_s, d_s, X1_s, isotropy_zi_s,
-                       w_sec_zi_s, brunt_zi_s, thetal_zi_s, wthl_sec_zt_s,
-                       wqw_sec_zt_s, w3_zt_s, thl_sec_zt_s, qwthl_sec_zt_s,
-                       qw_sec_zt_s, pblintd_thv_s, pblintd_rino_s, host_dse_s, tke_s,
-                       thetal_s, qw_s, u_wind_s, v_wind_s, wthv_sec_s, qtracers_s,
-                       tk_s, tkh_s, shoc_cldfrac_s, shoc_ql_s, pblh_s, shoc_ql2_s,
-                       shoc_mix_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s,
-                       wthl_sec_s, wqw_sec_s, wtke_sec_s, uw_sec_s, vw_sec_s, w3_s,
-                       wqls_sec_s, brunt_s, isotropy_s);
+                       host_dx_s, host_dy_s, zt_grid_s, zi_grid_s,             // Input
+                       pres_s, presi_s, pdel_s, thv_s, w_field_s,              // Input
+                       wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,              // Input
+                       wtracer_sfc_s, exner_s, phis_s,                         // Input
+                       workspace,                                              // Workspace
+                       X1_s,                                                   // Local variable
+                       host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s,  // Input/Output
+                       wthv_sec_s, qtracers_s, tk_s, tkh_s, shoc_cldfrac_s,    // Input/Output
+                       shoc_ql_s,                                              // Input/Output
+                       pblh_s, shoc_ql2_s,                                     // Output
+                       shoc_mix_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s,  // Diagnostic Output Variables
+                       wthl_sec_s, wqw_sec_s, wtke_sec_s, uw_sec_s, vw_sec_s,  // Diagnostic Output Variables
+                       w3_s, wqls_sec_s, brunt_s, isotropy_s);                 // Diagnostic Output Variables
 
     shoc_output.pblh(i)[0] = pblh_s;
   });

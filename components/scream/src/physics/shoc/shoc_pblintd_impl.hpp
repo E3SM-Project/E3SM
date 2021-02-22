@@ -55,10 +55,15 @@ void Functions<S,D>::pblintd(
   const Scalar&                obklen,
   const Scalar&                kbfs,
   const uview_1d<const Spack>& cldn,
-  const uview_1d<Spack>&       rino,
-  const uview_1d<Spack>&       thv,
+  const Workspace&             workspace,
   Scalar&                      pblh)
 {
+  // Define temporary variables
+  uview_1d<Spack> rino, thv;
+  workspace.template take_many_contiguous_unsafe<2>(
+    {"rino", "rino"},
+    {&rino, &thv});
+
   const auto nlev_v = (nlev-1)/Spack::n;
   const auto nlev_p = (nlev-1)%Spack::n;
 
@@ -94,6 +99,10 @@ void Functions<S,D>::pblintd(
 
   // PBL check over ocean
   shoc_pblintd_cldcheck(zi(nlev_v)[nlev_p],cldn(nlev_v)[nlev_p],pblh);
+
+  // Release temporary variables from the workspace
+  workspace.template release_many_contiguous<2>(
+    {&rino, &thv});
 }
 
 } // namespace shoc
