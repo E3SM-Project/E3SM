@@ -594,8 +594,10 @@ subroutine diag_init()
    end if
 
    call addfld ('PRECL',horiz_only,    'A','m/s','Large-scale (stable) precipitation rate (liq + ice)'                )
-   call addfld ('PRECC',horiz_only,    'A','m/s','Convective precipitation rate (liq + ice)'                          )
-   call addfld ('PRECT',horiz_only,    'A','m/s','Total (convective and large-scale) precipitation rate (liq + ice)'  )
+   call addfld ('PRECC',horiz_only,    'A','m/s','Convective precipitation rate (liq + ice)', &
+                standard_name='convective_precipitation_flux')
+   call addfld ('PRECT',horiz_only,    'A','m/s','Total (convective and large-scale) precipitation rate (liq + ice)', &
+                standard_name='precipitation_flux')
    call addfld ('PREC_PCW',horiz_only,    'A','m/s','LS_pcw precipitation rate')
    call addfld ('PREC_zmc',horiz_only,    'A','m/s','CV_zmc precipitation rate')
    call addfld ('PRECTMX',horiz_only,    'X','m/s','Maximum (convective and large-scale) precipitation rate (liq+ice)'  )

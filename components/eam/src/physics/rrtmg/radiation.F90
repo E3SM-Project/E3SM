@@ -662,7 +662,8 @@ end function radiation_nextsw_cday
                       'Net near-infrared flux (>= 0.7 microns) at top of atmosphere', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld ('SWCF'//diag(icall),  horiz_only,     'A',   'W/m2', 'Shortwave cloud forcing', &
-                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                       sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                       standard_name='toa_shortwave_cloud_radiative_effect')
 
           if (history_amwg) then
              call add_default('SOLIN'//diag(icall),   1, ' ')
@@ -712,14 +713,16 @@ end function radiation_nextsw_cday
           call addfld('FLNT'//diag(icall), horiz_only,    'A',    'W/m2', 'Net longwave flux at top of model', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLUT'//diag(icall), horiz_only,    'A',    'W/m2', 'Upwelling longwave flux at top of model', &
-                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                      sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                      standard_name='toa_outgoing_longwave_flux')
           call addfld('FLUTC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky upwelling longwave flux at top of model', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true., &
                       standard_name='toa_outgoing_longwave_flux_assuming_clear_sky')
           call addfld('FLNTC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky net longwave flux at top of model', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('LWCF'//diag(icall), horiz_only,    'A',    'W/m2', 'Longwave cloud forcing', &
-                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                      sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                      standard_name='toa_longwave_cloud_radiative_effect')
           call addfld('FLN200'//diag(icall), horiz_only,    'A',  'W/m2', 'Net longwave flux at 200 mb', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLN200C'//diag(icall), horiz_only,    'A', 'W/m2', 'Clearsky net longwave flux at 200 mb', &
