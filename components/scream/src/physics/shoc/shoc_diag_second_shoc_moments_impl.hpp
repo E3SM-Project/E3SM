@@ -19,7 +19,7 @@ void Functions<S,D>::diag_second_shoc_moments(const MemberType& team, const Int&
        const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi, 
        const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix, 
        const Scalar& wthl_sfc, const Scalar& wqw_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc, Scalar& ustar2, Scalar& wstar, 
-       const Workspace workspace_nlevi, const uview_1d<Spack>& thl_sec,
+       const Workspace workspace, const uview_1d<Spack>& thl_sec,
        const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec, 
        const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec)
 {
@@ -28,7 +28,7 @@ void Functions<S,D>::diag_second_shoc_moments(const MemberType& team, const Int&
 
   // Define temporary variables
   uview_1d<Spack> isotropy_zi, tkh_zi, tk_zi;
-  workspace_nlevi.template take_many_contiguous_unsafe<3>(
+  workspace.template take_many_contiguous_unsafe<3>(
     {"isotropy_zi", "tkh_zi", "tk_zi"},
     {&isotropy_zi, &tkh_zi, &tk_zi});
 
@@ -61,7 +61,7 @@ void Functions<S,D>::diag_second_shoc_moments(const MemberType& team, const Int&
                                    vw_sec(0)[0], wtke_sec(0)[0]);
 
   // Release temporary variables from the workspace
-  workspace_nlevi.template release_many_contiguous<3>(
+  workspace.template release_many_contiguous<3>(
     {&isotropy_zi, &tkh_zi, &tk_zi});
 }
 

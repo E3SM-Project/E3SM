@@ -68,7 +68,6 @@ struct Functions
   using MemberType = typename KT::MemberType;
 
   using Workspace       = typename ekat::WorkspaceManager<Spack,  Device>::Workspace;
-  using WorkspaceScalar = typename ekat::WorkspaceManager<Scalar, Device>::Workspace;
 
   // This struct stores input views for shoc_main.
   struct SHOCInput {
@@ -319,7 +318,7 @@ struct Functions
      const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
      const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
      const Scalar& wthl_sfc, const Scalar& wqw_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc, Scalar& ustar2, Scalar& wstar,
-     const Workspace workspace_nlevi, const uview_1d<Spack>& thl_sec,
+     const Workspace workspace, const uview_1d<Spack>& thl_sec,
      const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec,
      const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec);
 
@@ -399,7 +398,7 @@ struct Functions
     const uview_1d<const Spack>& dz_zt,
     const uview_1d<const Spack>& wthv_sec,
     const uview_1d<const Spack>& thv,
-    const Workspace&             workspace_nlevi,
+    const Workspace&             workspace,
     const uview_1d<Spack>&       brunt,
     const uview_1d<Spack>&       shoc_mix);
 
@@ -425,7 +424,7 @@ struct Functions
     const uview_1d<const Spack>& rho_zt,
     const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& pint,
-    const Workspace&             workspace_nlevi,
+    const Workspace&             workspace,
     const uview_1d<Spack>&       host_dse);
 
   KOKKOS_FUNCTION
@@ -455,9 +454,7 @@ struct Functions
     const Scalar&                wthl_sfc,
     const Scalar&                wqw_sfc,
     const uview_1d<const Spack>& wtracer_sfc,
-    const Workspace&             workspace_nlev,
-    const Workspace&             workspace_nlevi,
-    const WorkspaceScalar&       workspace_nlev_scalar,
+    const Workspace&             workspace,
     const uview_2d<Spack>&       X1,
     const uview_1d<Spack>&       thetal,
     const uview_1d<Spack>&       qw,
@@ -482,7 +479,7 @@ struct Functions
     const uview_1d<const Spack>& dz_zi,
     const uview_1d<const Spack>& zt_grid,
     const uview_1d<const Spack>& zi_grid,
-    const Workspace&             workspace_nlevi,
+    const Workspace&             workspace,
     const uview_1d<Spack>&       w3);
 
   KOKKOS_FUNCTION
@@ -515,7 +512,7 @@ struct Functions
     const uview_1d<const Spack>& pres,
     const uview_1d<const Spack>& zt_grid,
     const uview_1d<const Spack>& zi_grid,
-    const Workspace&             workspace_nlev,
+    const Workspace&             workspace,
     const uview_1d<Spack>&       shoc_cldfrac,
     const uview_1d<Spack>&       shoc_ql,
     const uview_1d<Spack>&       wqls,
@@ -595,9 +592,7 @@ struct Functions
     const uview_1d<const Spack>& exner,
     const Scalar&                phis,
     // Local Workspace/Variables
-    const Workspace&             workspace_nlev,
-    const Workspace&             workspace_nlevi,
-    const WorkspaceScalar&       workspace_nlev_scalar,
+    const Workspace&             workspace,
     const uview_2d<Spack>&       X1,
     // Input/Output Variables
     const uview_1d<Spack>&       host_dse,
@@ -709,7 +704,7 @@ struct Functions
     const Scalar&                obklen,
     const Scalar&                kbfs,
     const uview_1d<const Spack>& cldn,
-    const Workspace&             workspace_nlev,
+    const Workspace&             workspace,
     Scalar&                      pblh);
 
   KOKKOS_FUNCTION
@@ -756,8 +751,7 @@ struct Functions
     const uview_1d<const Spack>& zt_grid,
     const uview_1d<const Spack>& zi_grid,
     const Scalar&                pblh,
-    const Workspace&             workspace_nlev,
-    const Workspace&             workspace_nlevi,
+    const Workspace&             workspace,
     const uview_1d<Spack>&       tke,
     const uview_1d<Spack>&       tk,
     const uview_1d<Spack>&       tkh,

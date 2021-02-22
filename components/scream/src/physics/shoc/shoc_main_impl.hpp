@@ -43,9 +43,7 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<const Spack>& exner,
   const Scalar&                phis,
   // Workspace/Local Variables
-  const Workspace&             workspace_nlev,
-  const Workspace&             workspace_nlevi,
-  const WorkspaceScalar&       workspace_nlev_scalar,
+  const Workspace&             workspace,
   const uview_2d<Spack>&       X1,
   // Input/Output Variables
   const uview_1d<Spack>&       host_dse,
@@ -80,11 +78,10 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       isotropy)
 {
   // Define temporary variables
-  uview_1d<Spack> rho_zt, shoc_qv, dz_zt;
-  workspace_nlev.template take_many_and_reset<3>(
-    {"rho_zt", "shoc_qv", "dz_zt"},
-    {&rho_zt, &shoc_qv, &dz_zt});
-  auto dz_zi = workspace_nlevi.take("dz_zi");
+  uview_1d<Spack> rho_zt, shoc_qv, dz_zt, dz_zi;
+  workspace.template take_many_and_reset<4>(
+    {"rho_zt", "shoc_qv", "dz_zt", "dz_zi"},
+    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi});
 
   // View/pack indices for nlev, nlevi
   const Int nlev_v = (nlev-1)/Spack::n;
@@ -136,14 +133,14 @@ void Functions<S,D>::shoc_main_internal(
             shoc_ql,shoc_qv,u_wind,   // Input
             v_wind,ustar,obklen,kbfs, // Input
             shoc_cldfrac,             // Input
-            workspace_nlev,           // Workspace
+            workspace,                // Workspace
             pblh);                    // Output
 
     // Update the turbulent length scale
     shoc_length(team,nlev,nlevi,host_dx,host_dy, // Input
                 pblh,tke,zt_grid,zi_grid,dz_zt,  // Input
                 wthv_sec,thv,                    // Input
-                workspace_nlevi,                 // Workspace
+                workspace,                       // Workspace
                 brunt,shoc_mix);                 // Output
 
     // Advance the SGS TKE equation
@@ -151,7 +148,7 @@ void Functions<S,D>::shoc_main_internal(
              shoc_mix,dz_zi,dz_zt,pres,u_wind,  // Input
              v_wind,brunt,obklen,zt_grid,       // Input
              zi_grid,pblh,                      // Input
-             workspace_nlev, workspace_nlevi,   // Workspace
+             workspace,                         // Workspace
              tke,tk,tkh,                        // Input/Output
              isotropy);                         // Output
 
@@ -161,8 +158,7 @@ void Functions<S,D>::shoc_main_internal(
     update_prognostics_implicit(team,nlev,nlevi,num_qtracers,dtime,dz_zt,   // Input
                                 dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
                                 vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
-                                workspace_nlev, workspace_nlevi,            // Workspace
-                                workspace_nlev_scalar,                      // Workspace
+                                workspace,                                  // Workspace
                                 X1,thetal,qw,qtracers,tke,u_wind,v_wind);   // Input/Output
 
     // Diagnose the second order moments
@@ -170,7 +166,7 @@ void Functions<S,D>::shoc_main_internal(
                              tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
                              shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
                              ustar2,wstar,                              // Input/Output
-                             workspace_nlevi,                           // Workspace
+                             workspace,                                 // Workspace
                              thl_sec,qw_sec,wthl_sec,wqw_sec,qwthl_sec, // Output
                              uw_sec,vw_sec,wtke_sec,w_sec);             // Output
 
@@ -179,7 +175,7 @@ void Functions<S,D>::shoc_main_internal(
     diag_third_shoc_moments(team,nlev,nlevi,w_sec,thl_sec,wthl_sec, // Input
                             isotropy,brunt,thetal,tke,dz_zt,dz_zi,  // Input
                             zt_grid,zi_grid,                        // Input
-                            workspace_nlevi,                        // Workspace
+                            workspace,                              // Workspace
                             w3);                                    // Output
 
     // Call the PDF to close on SGS cloud and turbulence
@@ -187,7 +183,7 @@ void Functions<S,D>::shoc_main_internal(
     shoc_assumed_pdf(team,nlev,nlevi,thetal,qw,w_field,thl_sec,qw_sec, // Input
                      wthl_sec,w_sec,wqw_sec,qwthl_sec,w3,pres,         // Input
                      zt_grid, zi_grid,                                 // Input
-                     workspace_nlev,                                   // Workspace
+                     workspace,                                        // Workspace
                      shoc_cldfrac,shoc_ql,wqls_sec,wthv_sec,shoc_ql2); // Ouptut
 
     // Check TKE to make sure values lie within acceptable
@@ -211,7 +207,7 @@ void Functions<S,D>::shoc_main_internal(
   shoc_energy_fixer(team,nlev,nlevi,dtime,nadv,zt_grid,zi_grid, // Input
                     se_b,ke_b,wv_b,wl_b,se_a,ke_a,wv_a,wl_a,    // Input
                     wthl_sfc,wqw_sfc,rho_zt,tke,presi,          // Input
-                    workspace_nlevi,                            // Workspace
+                    workspace,                                  // Workspace
                     host_dse);                                  // Output
 
   // Remaining code is to diagnose certain quantities
@@ -237,13 +233,13 @@ void Functions<S,D>::shoc_main_internal(
           zi_grid,thetal,shoc_ql,shoc_qv, // Input
           u_wind,v_wind,ustar,obklen,     // Input
           kbfs,shoc_cldfrac,              // Input
-          workspace_nlev,                 // Workspace
+          workspace,                      // Workspace
           pblh);                          // Output
 
   // Release temporary variables from the workspace
-  workspace_nlev.template release_many_contiguous<3>(
-    {&rho_zt, &shoc_qv, &dz_zt});
-  workspace_nlevi.release(dz_zi);
+  workspace.template release_many_contiguous<4>(
+    {&rho_zt, &shoc_qv, &dz_zt, & dz_zi});
+  //workspace.release(dz_zi);
 }
 
 
@@ -276,16 +272,12 @@ Int Functions<S,D>::shoc_main(
   // SHOC main loop
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
-  ekat::WorkspaceManager<Spack,  Device> workspace_mgr_nlev(nlev_packs, 9, policy);
-  ekat::WorkspaceManager<Spack,  Device> workspace_mgr_nlevi(nlevi_packs, 5, policy);
-  ekat::WorkspaceManager<Scalar, Device> workspace_mgr_nlev_scalar(nlev, 3,  policy);
+  ekat::WorkspaceManager<Spack,  Device> workspace_mgr(nlevi_packs, 12, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
-    auto workspace_nlev        = workspace_mgr_nlev.get_workspace(team);
-    auto workspace_nlevi       = workspace_mgr_nlevi.get_workspace(team);
-    auto workspace_nlev_scalar = workspace_mgr_nlev_scalar.get_workspace(team);
+    auto workspace       = workspace_mgr.get_workspace(team);
 
     const Scalar host_dx_s{shoc_input.host_dx(i)[0]};
     const Scalar host_dy_s{shoc_input.host_dy(i)[0]};
@@ -340,7 +332,7 @@ Int Functions<S,D>::shoc_main(
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,              // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,              // Input
                        wtracer_sfc_s, exner_s, phis_s,                         // Input
-                       workspace_nlev, workspace_nlevi, workspace_nlev_scalar, // Workspace
+                       workspace,                                              // Workspace
                        X1_s,                                                   // Local variable
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s,  // Input/Output
                        wthv_sec_s, qtracers_s, tk_s, tkh_s, shoc_cldfrac_s,    // Input/Output

@@ -22,12 +22,12 @@ void Functions<S,D>
   const uview_1d<const Spack>& dz_zt,
   const uview_1d<const Spack>& wthv_sec,
   const uview_1d<const Spack>& thv,
-  const Workspace&             workspace_nlevi,
+  const Workspace&             workspace,
   const uview_1d<Spack>&       brunt,
   const uview_1d<Spack>&       shoc_mix)
 {
   // Define temporary variable
-  auto thv_zi = workspace_nlevi.take("thv_zi");
+  auto thv_zi = workspace.take("thv_zi");
 
   linear_interp(team,zt_grid,zi_grid,thv,thv_zi,nlev,nlevi,0);
   team.team_barrier();
@@ -51,7 +51,7 @@ void Functions<S,D>
   check_length_scale_shoc_length(team,nlev,host_dx,host_dy,shoc_mix);
 
   // Release temporary variable from the workspace
-  workspace_nlevi.release(thv_zi);
+  workspace.release(thv_zi);
 }
 
 } // namespace shoc

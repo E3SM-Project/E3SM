@@ -55,12 +55,12 @@ void Functions<S,D>::pblintd(
   const Scalar&                obklen,
   const Scalar&                kbfs,
   const uview_1d<const Spack>& cldn,
-  const Workspace&             workspace_nlev,
+  const Workspace&             workspace,
   Scalar&                      pblh)
 {
   // Define temporary variables
   uview_1d<Spack> rino, thv;
-  workspace_nlev.template take_many_contiguous_unsafe<2>(
+  workspace.template take_many_contiguous_unsafe<2>(
     {"rino", "rino"},
     {&rino, &thv});
 
@@ -101,7 +101,7 @@ void Functions<S,D>::pblintd(
   shoc_pblintd_cldcheck(zi(nlev_v)[nlev_p],cldn(nlev_v)[nlev_p],pblh);
 
   // Release temporary variables from the workspace
-  workspace_nlev.template release_many_contiguous<2>(
+  workspace.template release_many_contiguous<2>(
     {&rino, &thv});
 }
 

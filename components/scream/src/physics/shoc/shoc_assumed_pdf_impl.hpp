@@ -41,7 +41,7 @@ void Functions<S,D>::shoc_assumed_pdf(
   const uview_1d<const Spack>& pres,
   const uview_1d<const Spack>& zt_grid,
   const uview_1d<const Spack>& zi_grid,
-  const Workspace&             workspace_nlev,
+  const Workspace&             workspace,
   const uview_1d<Spack>&       shoc_cldfrac,
   const uview_1d<Spack>&       shoc_ql,
   const uview_1d<Spack>&       wqls,
@@ -51,7 +51,7 @@ void Functions<S,D>::shoc_assumed_pdf(
   // Define temporary variables
   uview_1d<Spack> wthl_sec_zt, wqw_sec_zt, w3_zt,
                   thl_sec_zt, qwthl_sec_zt, qw_sec_zt;
-  workspace_nlev.template take_many_contiguous_unsafe<6>(
+  workspace.template take_many_contiguous_unsafe<6>(
     {"wthl_sec_zt", "wqw_sec_zt", "w3_zt",
      "thl_sec_zt", "qwthl_sec_zt", "qw_sec_zt"},
     {&wthl_sec_zt, &wqw_sec_zt, &w3_zt,
@@ -320,7 +320,7 @@ void Functions<S,D>::shoc_assumed_pdf(
   });
 
   // Release temporary variables from the workspace
-  workspace_nlev.template release_many_contiguous<6>(
+  workspace.template release_many_contiguous<6>(
     {&wthl_sec_zt, &wqw_sec_zt, &w3_zt,
      &thl_sec_zt, &qwthl_sec_zt, &qw_sec_zt});
 }

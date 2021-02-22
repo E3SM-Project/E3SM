@@ -31,9 +31,7 @@ void Functions<S,D>::update_prognostics_implicit(
   const Scalar&                wthl_sfc,
   const Scalar&                wqw_sfc,
   const uview_1d<const Spack>& wtracer_sfc,
-  const Workspace&             workspace_nlev,
-  const Workspace&             workspace_nlevi,
-  const WorkspaceScalar&       workspace_nlev_scalar,
+  const Workspace&             workspace,
   const uview_2d<Spack>&       X1,
   const uview_1d<Spack>&       thetal,
   const uview_1d<Spack>&       qw,
@@ -43,19 +41,21 @@ void Functions<S,D>::update_prognostics_implicit(
   const uview_1d<Spack>&       v_wind)
 {
   // Define temporary variables
-  auto rdp_zt = workspace_nlev.take("rdp_zt");
-
   uview_1d<Spack> tmpi, tkh_zi,
-                  tk_zi, rho_zi;
-  uview_1d<Scalar> du, dl, d;
+                  tk_zi, rho_zi,
+                  rdp_zt;
+  uview_1d<Scalar> du_workspace, dl_workspace, d_workspace;
 
-  workspace_nlevi.template take_many_contiguous_unsafe<4>(
-    {"tmpi", "tkh_zi", "tk_zi", "rho_zi"},
-    {&tmpi, &tkh_zi, &tk_zi, &rho_zi});
+  workspace.template take_many_contiguous_unsafe<5>(
+    {"tmpi", "tkh_zi", "tk_zi", "rho_zi", "rdp_zt"},
+    {&tmpi, &tkh_zi, &tk_zi, &rho_zi, &rdp_zt});
 
-  workspace_nlev_scalar.template take_many_contiguous_unsafe<3>(
-    {"du", "dl", "d"},
-    {&du, &dl, &d});
+  workspace.template take_many_contiguous_unsafe<3, Scalar>(
+    {"du_workspace", "dl_workspace", "d_workspace"},
+    {&du_workspace, &dl_workspace, &d_workspace});
+  auto du = Kokkos::subview(du_workspace,std::make_pair(0,nlev));
+  auto dl = Kokkos::subview(dl_workspace,std::make_pair(0,nlev));
+  auto d  = Kokkos::subview(d_workspace, std::make_pair(0,nlev));
 
   const auto last_nlev_pack = (nlev-1)/Spack::n;
   const auto last_nlev_indx = (nlev-1)%Spack::n;
@@ -168,11 +168,10 @@ void Functions<S,D>::update_prognostics_implicit(
   });
 
   // Release temporary variables from the workspace
-  workspace_nlev.release(rdp_zt);
-  workspace_nlevi.template release_many_contiguous<4>(
-    {&tmpi, &tkh_zi, &tk_zi, &rho_zi});
-  workspace_nlev_scalar.template release_many_contiguous<3>(
-    {&du, &dl, &d});
+  workspace.template release_many_contiguous<3,Scalar>(
+    {&du_workspace, &dl_workspace, &d_workspace});
+  workspace.template release_many_contiguous<5>(
+    {&tmpi, &tkh_zi, &tk_zi, &rho_zi, &rdp_zt});
 }
 
 } // namespace shoc

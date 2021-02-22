@@ -1608,12 +1608,12 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
   // Local variable workspace
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_nlevi_mgr(nlevi_packs, 3, policy);
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, 3, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
-    auto workspace_nlevi = workspace_nlevi_mgr.get_workspace(team);
+    auto workspace = workspace_mgr.get_workspace(team);
 
     const auto thetal_1d      = ekat::subview(thetal_2d, i);
     const auto qw_1d          = ekat::subview(qw_2d, i);
@@ -1647,7 +1647,7 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
     SHOC::diag_second_shoc_moments(team, nlev, nlevi,
        thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d, dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d,
        wthl_s, wqw_s, uw_s, vw_s, ustar2_s, wstar_s,
-       workspace_nlevi, thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d, qwthl_sec_1d,
+       workspace, thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d, qwthl_sec_1d,
        uw_sec_1d, vw_sec_1d, wtke_sec_1d, w_sec_1d);
   });
 
@@ -2025,12 +2025,12 @@ void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
   // Local variable workspace
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_nlevi_mgr(nlevi_packs, 1, policy);
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, 1, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
-    auto workspace_nlevi = workspace_nlevi_mgr.get_workspace(team);
+    auto workspace = workspace_mgr.get_workspace(team);
 
     // Inputs
     const Scalar host_dx_s{host_dx_d(i)[0]};
@@ -2048,7 +2048,7 @@ void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
 
     SHF::shoc_length(team,nlev,nlevi,host_dx_s,host_dy_s,pblh_s,tke_s,
                      zt_grid_s,zi_grid_s,dz_zt_s,wthv_sec_s,
-                     thv_s,workspace_nlevi,brunt_s,shoc_mix_s);
+                     thv_s,workspace,brunt_s,shoc_mix_s);
   });
 
   // Sync back to host
@@ -2113,12 +2113,12 @@ void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, R
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
   // Local variable workspace
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_nlevi_mgr(nlevi_packs, 1, policy);
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, 1, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
-    auto workspace_nlevi = workspace_nlevi_mgr.get_workspace(team);
+    auto workspace = workspace_mgr.get_workspace(team);
 
     const Scalar se_b_s{se_b_d(i)[0]};
     const Scalar ke_b_s{ke_b_d(i)[0]};
@@ -2140,7 +2140,7 @@ void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, R
 
     SHF::shoc_energy_fixer(team,nlev,nlevi,dtime,nadv,zt_grid_s,zi_grid_s,se_b_s,
                            ke_b_s,wv_b_s,wl_b_s,se_a_s,ke_a_s,wv_a_s,wl_a_s,
-                           wthl_sfc_s,wqw_sfc_s,rho_zt_s,tke_s,pint_s,workspace_nlevi,host_dse_s);
+                           wthl_sfc_s,wqw_sfc_s,rho_zt_s,tke_s,pint_s,workspace,host_dse_s);
   });
 
   // Sync back to host
@@ -2259,16 +2259,12 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
     X1_d("X1",shcol,nlev,ekat::npack<Spack>(2));
 
   // Local variable workspace
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_nlev_mgr(nlev_packs, 1, policy);
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_nlevi_mgr(nlevi_packs, 4, policy);
-  ekat::WorkspaceManager<Scalar, KT::Device> workspace_nlev_scalar_mgr(nlev, 3, policy);
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, 8, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
-    auto workspace_nlev = workspace_nlev_mgr.get_workspace(team);
-    auto workspace_nlevi = workspace_nlevi_mgr.get_workspace(team);
-    auto workspace_nlev_scalar = workspace_nlev_scalar_mgr.get_workspace(team);
+    auto workspace = workspace_mgr.get_workspace(team);
 
     const Scalar uw_sfc_s{uw_sfc_d(i)[0]};
     const Scalar vw_sfc_s{vw_sfc_d(i)[0]};
@@ -2295,7 +2291,7 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
                                      dz_zt_s, dz_zi_s, rho_zt_s, zt_grid_s,
                                      zi_grid_s, tk_s, tkh_s, uw_sfc_s, vw_sfc_s,
                                      wthl_sfc_s, wqw_sfc_s, wtracer_sfc_s,
-                                     workspace_nlev, workspace_nlevi,workspace_nlev_scalar,
+                                     workspace,
                                      X1_s,
                                      thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s);
   });
@@ -2357,12 +2353,12 @@ void diag_third_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* w_sec, Real
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
   // Local variable workspace
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_nlevi_mgr(nlevi_packs, 4, policy);
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, 4, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
-    auto workspace_nlevi = workspace_nlevi_mgr.get_workspace(team);
+    auto workspace = workspace_mgr.get_workspace(team);
 
     const auto wsec_s = ekat::subview(wsec_d, i);
     const auto thl_sec_s = ekat::subview(thl_sec_d, i);
@@ -2380,7 +2376,7 @@ void diag_third_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* w_sec, Real
     SHF::diag_third_shoc_moments(team, nlev, nlevi, wsec_s, thl_sec_s,
                                  wthl_sec_s, isotropy_s, brunt_s, thetal_s, tke_s,
                                  dz_zt_s, dz_zi_s, zt_grid_s, zi_grid_s,
-                                 workspace_nlevi,
+                                 workspace,
                                  w3_s);
   });
 
@@ -2491,12 +2487,12 @@ void shoc_assumed_pdf_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, 
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
   // Local variable workspace
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_nlev_mgr(nlev_packs, 6, policy);
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlev_packs, 6, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
-    auto workspace_nlev = workspace_nlev_mgr.get_workspace(team);
+    auto workspace = workspace_mgr.get_workspace(team);
 
     const auto thetal_s = ekat::subview(thetal_d, i);
     const auto qw_s = ekat::subview(qw_d, i);
@@ -2519,7 +2515,7 @@ void shoc_assumed_pdf_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, 
 
     SHF::shoc_assumed_pdf(team, nlev, nlevi, thetal_s, qw_s, w_field_s, thl_sec_s, qw_sec_s, wthl_sec_s, w_sec_s,
                           wqw_sec_s, qwthl_sec_s, w3_s, pres_s, zt_grid_s, zi_grid_s,
-                          workspace_nlev,
+                          workspace,
                           shoc_cldfrac_s, shoc_ql_s, wqls_s, wthv_sec_s, shoc_ql2_s);
   });
 
@@ -3334,12 +3330,12 @@ void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Rea
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_pack);
 
     // Local variable workspace
-    ekat::WorkspaceManager<Spack, KT::Device> workspace_nlev_mgr(nlev_pack, 2, policy);
+    ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlev_pack, 2, policy);
 
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const Int i = team.league_rank();
 
-      auto workspace_nlev = workspace_nlev_mgr.get_workspace(team);
+      auto workspace = workspace_mgr.get_workspace(team);
 
       const Scalar ustar_s{ustar_d(i)[0]};
       const Scalar obklen_s{obklen_d(i)[0]};
@@ -3356,7 +3352,7 @@ void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Rea
       const auto cldn_s = ekat::subview(cldn_d, i);
 
       SHF::pblintd(team,nlev,nlevi,npbl,z_s,zi_s,thl_s,ql_s,q_s,u_s,v_s,ustar_s,
-                           obklen_s,kbfs_s,cldn_s,workspace_nlev,pblh_s);
+                           obklen_s,kbfs_s,cldn_s,workspace,pblh_s);
 
       pblh_d(i)[0] = pblh_s;
     });
@@ -3422,14 +3418,12 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
   // Local variable workspace
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_nlev_mgr(nlev_packs, 2, policy);
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_nlevi_mgr(nlevi_packs, 1, policy);
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, 3, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
-    auto workspace_nlev = workspace_nlev_mgr.get_workspace(team);
-    auto workspace_nlevi = workspace_nlevi_mgr.get_workspace(team);
+    auto workspace = workspace_mgr.get_workspace(team);
 
     const Scalar obklen_s{obklen_d(i)[0]};
     const Scalar pblh_s{pblh_d(i)[0]};
@@ -3451,7 +3445,7 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
 
     SHF::shoc_tke(team,nlev,nlevi,dtime,wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
                   u_wind_s,v_wind_s,brunt_s,obklen_s,zt_grid_s,zi_grid_s,pblh_s,
-                  workspace_nlev,workspace_nlevi,
+                  workspace,
                   tke_s,tk_s,tkh_s,isotropy_s);
   });
 
