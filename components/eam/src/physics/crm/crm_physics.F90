@@ -326,9 +326,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use constituents,    only: pcnst, cnst_get_ind
 #if defined(MMF_SAMXX)
    use cpp_interface_mod, only: crm
-#elif defined(MMF_SAM)
-   use crm_module       , only: crm
-#elif defined(MMF_SAMOMP)
+#elif defined(MMF_SAM) || defined(MMF_SAMOMP)
    use crm_module       , only: crm
 #endif
    use params_kind,          only: crm_rknd
@@ -926,7 +924,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ! Load the nstep
       igstep = get_nstep()
 
-#if defined(MMF_SAM)
+#if defined(MMF_SAM) || defined(MMF_SAMOMP)
 
       call t_startf ('crm_call')
 
@@ -935,18 +933,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_ecpp_output, crm_output, crm_clear_rh, &
                latitude0, longitude0, gcolp, igstep, &
                use_MMF_VT_tmp, MMF_VT_wn_max, &
-               use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
-
-      call t_stopf('crm_call')
-
-#elif defined(MMF_SAMOMP)
-
-      call t_startf ('crm_call')
-
-      call crm(lchnk, ncol, ztodt, pver, &
-               crm_input, crm_state, crm_rad, &
-               crm_ecpp_output, crm_output, crm_clear_rh, &
-               latitude0, longitude0, gcolp, igstep, &
                use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
 
       call t_stopf('crm_call')
