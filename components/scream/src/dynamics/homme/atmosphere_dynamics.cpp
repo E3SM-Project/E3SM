@@ -354,16 +354,6 @@ void HommeDynamics::set_computed_field_impl (const Field<Real>& f) {
 
   // Add myself as provider for the field
   this->add_me_as_provider(f);
-
-  // Set extra data specifying whether this state corresponds to tracers
-  // This is needed by the phys-dyn remapper to figure out which timeleve
-  // to use in the homme's TimeLevel structure
-  if (name=="qdp") {
-    ekat::any tracer;
-    tracer.reset<bool>(true);
-    // Throw if this data was already set (who dared?)
-    f.get_header_ptr()->set_extra_data("Is Tracer State",tracer,true);
-  }
 }
 
 } // namespace scream
