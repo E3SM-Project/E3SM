@@ -25,10 +25,12 @@ def lookfor1(fid,key1,key2="",allow_eof=0):
             sline = line[pos+len(key1):-1]
             return sline
         if (len(key2)>0):
-           pos=find(line,key2)
+           pos=line.find(key2)
            if (-1 != pos ):
-               print ("error looking for: "+key1)
-               raise (search_failed,"run not complete, found: "+key2)
+               #print ("error looking for: "+key1)
+               #raise (search_failed,"run not complete, found: "+key2)
+               sline="0 0 0 0 0 0 0 0 0 0"
+               return sline
         line=fid.readline()
 
     if (allow_eof==1):
@@ -73,17 +75,17 @@ try:
      
         time.extend([n*tstep/(24*3600)])
 
-        if ( not hydrostatic_mode ):
-            str = lookfor1(sys.stdin,"mu    =","",0)
-            str=str.split()
-            mumin.extend([float(str[0])])
-            mumax.extend([float(str[3])])
+        # look for mu. return all zeros if we find dz(m) first:
+        str = lookfor1(sys.stdin,"mu    =","dz(m) =",0)
+        str=str.split()
+        mumin.extend([float(str[0])])
+        mumax.extend([float(str[3])])
 
-        if ( hydrostatic_mode ):
-            str = lookfor1(sys.stdin,"T     =","",0)
-            str=str.split()
-            Tmin.extend([float(str[0])])
-            Tmax.extend([float(str[3])])
+        # look for TS. return all zeros if we find ps first:
+        str = lookfor1(sys.stdin,"TS=","ps=",0)
+        str=str.split()
+        Tmin.extend([float(str[0])])
+        Tmax.extend([float(str[1])])
 
         # KE,d/dt,diss:
         # IE,d/dt,diss:
@@ -125,7 +127,6 @@ except search_failed as e:
 except eof as e:
     print('eof reached. analysing data.')
 
-finally:
     print('plotting energy...')
     KE2= np.array(KE)
     nlen=KE2.size
@@ -180,20 +181,18 @@ finally:
         plt.legend()
         plt.savefig("mu.png")
 
-    if ( hydrostatic_mode ):
-        plt.figure()
-        print ('plotting T...std min,max=%f %f' % (np.std(Tmin),np.std(Tmax)))
-        print ('min,max=%f %f' % (min(Tmin),max(Tmax)))
-        legend1=("min avg: %.3f std: %.4f" % (sum(Tmin)/len(Tmin),np.std(Tmin)) )
-        plt.plot(time,Tmin,label=legend1)
-        legend1=("max avg: %.3f std: %.4f" % (sum(Tmax)/len(Tmax),np.std(Tmax)) )
-        plt.plot(time,Tmax,label=legend1)
-        plt.axis([min(time), max(min(time)+200,max(time)+10), 0,400])
-        plt.grid(True)
-        plt.legend()
-        plt.savefig("T.png")
-    
-
+    plt.figure()
+    print ('plotting TS..std min,max=%f %f' % (np.std(Tmin),np.std(Tmax)))
+    print ('min,max=%f %f' % (min(Tmin),max(Tmax)))
+    legend1=("min: %.3f std: %.4f" % (min(Tmin),np.std(Tmin)) )
+    plt.plot(time,Tmin,label=legend1)
+    legend1=("max: %.3f std: %.4f" % (max(Tmax),np.std(Tmax)) )
+    plt.plot(time,Tmax,label=legend1)
+    plt.axis([min(time), max(min(time)+200,max(time)+10), 0,400])
+    plt.grid(True)
+    plt.legend()
+    plt.savefig("TS.png")
+   
     plt.show()
     sys.exit(0)
 
