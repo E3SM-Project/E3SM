@@ -47,9 +47,15 @@ public:
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real>& field_repo) const;
 
+  // Dynamics requires 'TRACERS TENDENCY', and updates 'TRACERS'.
+  void set_required_group (const FieldGroup<const Real>& group);
+  void set_updated_group (const FieldGroup<Real>& group);
+
   // Get the set of required/computed fields
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
   const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }
+  std::set<GroupRequest> get_required_groups () const { return m_in_groups_req; }
+  std::set<GroupRequest> get_updated_groups () const { return m_inout_groups_req; }
 
 protected:
 
@@ -64,12 +70,17 @@ protected:
 
   std::set<FieldIdentifier> m_required_fields;
   std::set<FieldIdentifier> m_computed_fields;
+  std::set<GroupRequest>    m_in_groups_req;
+  std::set<GroupRequest>    m_inout_groups_req;
 
   std::map<std::string,const_field_type>  m_dyn_fields_in;
   std::map<std::string,field_type>        m_dyn_fields_out;
 
   // For certain tests, dynamics needs to init states
   std::shared_ptr<FieldInitializer>       m_initializer;
+
+  // For standalong tests, we might need the grid info later
+  std::shared_ptr<const AbstractGrid>  m_dyn_grid;
 
   ekat::ParameterList     m_params;
   ekat::Comm              m_dynamics_comm;

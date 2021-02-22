@@ -22,10 +22,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
-
-  constexpr int QSZ =  35;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
   const auto& grid_name = m_shoc_params.get<std::string>("Grid");
   auto grid = grids_manager->get_grid(grid_name);
@@ -35,59 +31,65 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   auto VL = FieldTag::VerticalLevel;
   auto CO = FieldTag::Column;
-  auto VR = FieldTag::Variable;
 
   FieldLayout scalar3d_layout { {CO,VL}, {ncols,nlevs} }; // Note that C++ and Fortran read array dimensions in reverse
-  FieldLayout vector3d_layout { {CO,VR,VL}, {ncols,QSZ,nlevs} };
-  FieldLayout q_forcing_layout  { {CO,VR,VL}, {ncols,QSZ,nlevs} };
 
   // Input
   m_required_fields.emplace("dp", scalar3d_layout,  Pa, grid->name());
-  // Input-Output
-  m_required_fields.emplace("q",  vector3d_layout,  Q,  grid->name());
-  m_required_fields.emplace("FQ", q_forcing_layout, Q,  grid->name());
 
-  m_computed_fields.emplace("q" , vector3d_layout,  Q,  grid->name());
-  m_computed_fields.emplace("FQ", q_forcing_layout, Q,  grid->name());
-
+  // Input-output
+  m_inout_groups_req.emplace("TRACERS",grid->name());
 }
 // =========================================================================================
-void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
+void SHOCMacrophysics::
+set_updated_group (const FieldGroup<Real>& group)
+{
+  EKAT_REQUIRE_MSG(group.m_info->size()>0,
+    "Error! We were not expecting an empty field group.\n");
+
+  const auto& name = group.m_info->m_group_name;
+
+  EKAT_REQUIRE_MSG(name=="TRACERS",
+    "Error! We were not expecting a field group called '" << name << "\n");
+
+  EKAT_REQUIRE_MSG(group.m_info->m_bundled,
+      "Error! Shoc expects bundled fields for tracers.\n");
+
+  m_shoc_groups_inout.emplace(name,group);
+}
+
+// =========================================================================================
+void SHOCMacrophysics::initialize_impl (const util::TimeStamp& /* t0 */)
 {
   // TODO: create the host mirrors once.
-  auto q_dev = m_shoc_fields_out.at("q").get_view();
-  auto q_host = Kokkos::create_mirror_view(q_dev);
-  Kokkos::deep_copy(q_host,q_dev);
-  auto q_ptr = q_host.data();
+  auto Q = m_shoc_groups_inout.at("TRACERS").m_bundle;
+  Q->sync_to_host();
+
+  auto q_ptr = Q->get_view<Host>().data();
 
   shoc_init_f90 (q_ptr);
 
-  Kokkos::deep_copy(q_dev,q_host);
+  Q->sync_to_dev();
 }
 
 // =========================================================================================
 void SHOCMacrophysics::run_impl (const Real dt)
 {
-  // TODO: create the host mirrors once.
-  auto q_dev   = m_shoc_fields_out.at("q").get_view();
-  auto fq_dev  = m_shoc_fields_out.at("FQ").get_view();
+  // Get bundled tracers
+  auto Q  = m_shoc_groups_inout.at("TRACERS").m_bundle;
 
-  auto q_host   = Kokkos::create_mirror_view(q_dev);
-  auto fq_host  = Kokkos::create_mirror_view(fq_dev);
+  Q->sync_to_host();
 
-  auto q_ptr   = q_host.data();
-  auto fq_ptr  = fq_host.data();
+  auto q_ptr  = Q->get_view<Host>().data();
 
-  shoc_main_f90 (dt,q_ptr,fq_ptr);
+  shoc_main_f90 (dt,q_ptr);
 
-  Kokkos::deep_copy(q_dev,q_host);
-  Kokkos::deep_copy(fq_dev,fq_host);
+  Q->sync_to_dev();
 
   // Get the beginning-of-step timestamp and advance it to update our fields.
   auto ts = timestamp();
   ts += dt;
-  m_shoc_fields_out.at("q").get_header().get_tracking().update_time_stamp(ts);
-  m_shoc_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(ts);
+  Q->get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 void SHOCMacrophysics::finalize_impl()

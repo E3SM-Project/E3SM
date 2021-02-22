@@ -98,6 +98,7 @@ static void run_bfb_p3_main_part1()
                     &d.is_nucleat_possible, &d.is_hydromet_present);
   }
 
+#ifndef NDEBUG
   for (Int i = 0; i < num_runs; ++i) {
     Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
@@ -133,6 +134,7 @@ static void run_bfb_p3_main_part1()
     REQUIRE( isds_fortran[i].is_hydromet_present == isds_cxx[i].is_hydromet_present );
     REQUIRE( isds_fortran[i].is_nucleat_possible == isds_cxx[i].is_nucleat_possible );
   }
+#endif
 }
 
 static void run_bfb_p3_main_part2()
@@ -188,6 +190,7 @@ static void run_bfb_p3_main_part2()
       d.prctot, &d.is_hydromet_present);
   }
 
+#ifndef NDEBUG
   for (Int i = 0; i < num_runs; ++i) {
     Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
@@ -243,6 +246,7 @@ static void run_bfb_p3_main_part2()
     }
     REQUIRE( isds_fortran[i].is_hydromet_present == isds_cxx[i].is_hydromet_present );
   }
+#endif
 }
 
 static void run_bfb_p3_main_part3()
@@ -282,12 +286,13 @@ static void run_bfb_p3_main_part3()
   for (auto& d : isds_cxx) {
     p3_main_part3_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir,
-      d.exner, d.cld_frac_l, d.cld_frac_r, d.cld_frac_i, 
+      d.exner, d.cld_frac_l, d.cld_frac_r, d.cld_frac_i,
       d.rho, d.inv_rho, d.rhofaci, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim,
       d.mu_c, d.nu, d.lamc, d.mu_r, d.lamr, d.vap_liq_exchange,
       d. ze_rain, d.ze_ice, d.diag_vm_qi, d.diag_eff_radius_qi, d.diag_diam_qi, d.rho_qi, d.diag_equiv_reflectivity, d.diag_eff_radius_qc);
   }
 
+#ifndef NDEBUG
   for (Int i = 0; i < num_runs; ++i) {
     Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
@@ -323,6 +328,7 @@ static void run_bfb_p3_main_part3()
       REQUIRE(isds_fortran[i].diag_eff_radius_qc[k]         == isds_cxx[i].diag_eff_radius_qc[k]);
     }
   }
+#endif
 }
 
 static void run_bfb_p3_main()
@@ -388,6 +394,7 @@ static void run_bfb_p3_main()
     d.transpose<ekat::TransposeDirection::f2c>();
   }
 
+#ifndef NDEBUG
   for (Int i = 0; i < num_runs; ++i) {
     const auto& df90 = isds_fortran[i];
     const auto& dcxx = isds_fortran[i];
@@ -423,6 +430,7 @@ static void run_bfb_p3_main()
     REQUIRE(df90.precip_liq_surf[tot]   == dcxx.precip_liq_surf[tot]);
     REQUIRE(df90.precip_ice_surf[tot]   == dcxx.precip_ice_surf[tot]);
   }
+#endif
 }
 
 static void run_bfb()

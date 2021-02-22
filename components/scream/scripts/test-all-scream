@@ -29,15 +29,15 @@ OR
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run all tests on current machine \033[0m
     > cd $scream_repo/components/scream
-    > ./scripts/test-all-scream --cxx-compiler $(which mpicxx) --f90-compiler $(which mpifort) -m melvin
+    > ./scripts/{0} --cxx-compiler $(which mpicxx) --f90-compiler $(which mpifort) -m melvin
 
     \033[1;32m# Run all tests on current machine with custom flags *using machine's default environment* \033[0m
     > cd $scream_repo/components/scream
-    > ./scripts/test-all-scream --cxx-compiler $(which mpicxx) --f90-compiler $(which mpifort) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
+    > ./scripts/{0} --cxx-compiler $(which mpicxx) --f90-compiler $(which mpifort) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
 
     \033[1;32m# Run all tests on current machine with custom flags *but preserving user environment* \033[0m
     > cd $scream_repo/components/scream
-    > ./scripts/test-all-scream --cxx-compiler $(which mpicxx) --f90-compiler --preserve-env $(which mpifort) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
+    > ./scripts/{0} --cxx-compiler $(which mpicxx) --f90-compiler --preserve-env $(which mpifort) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -100,9 +100,6 @@ OR
 
     parser.add_argument("-d", "--dry-run", action="store_true",
                         help="Do a dry run, commands will be printed but not executed")
-
-    parser.add_argument("--print-mach-setup", action="store_true",
-        help="Prints environment used on given machine, then quits immediately.")
 
     parser.add_argument("--make-parallel-level", action="store", type=int, default=0,
         help="Max number of jobs to be created during compilation. If not provided, use default for given machine.")

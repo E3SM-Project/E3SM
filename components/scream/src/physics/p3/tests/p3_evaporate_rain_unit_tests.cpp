@@ -29,7 +29,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     //dt/tau ~ 0 => weight => 1. A value of exactly 0 would cause div by 0 though.
     Spack wt;
     Functions::rain_evap_tscale_weight(Spack(1e-8),wt);
-    
+
     REQUIRE( wt[0] >= 0 ); //always true
     REQUIRE( wt[0] <= 1 ); //always true
     REQUIRE( 1-wt[0] < 1e-8 );
@@ -39,11 +39,11 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     REQUIRE( wt[0] >= 0 ); //always true
     REQUIRE( wt[0] <= 1 ); //always true
     REQUIRE( wt[0] < 1e-8 );
-      
+
     //TEST EQUILIB EVAP RATE:
     //=======================
     //if A_c=0, equilibrium evap rate should be zero
-    Spack tend;    
+    Spack tend;
     Functions::rain_evap_equilib_tend(Spack(0),Spack(1),Spack(1),Spack(1),tend);
     REQUIRE( std::abs(tend[0])<1e-8 );
 
@@ -52,7 +52,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     Spack ab(1.2);
     Functions::rain_evap_equilib_tend(A_c,ab,Spack(1),Spack(1),tend);
     REQUIRE( std::abs(tend[0] + A_c[0]/ab[0]) < 1e-8 );
-      
+
     //TEST INSTANTANEOUS EVAP RATE:
     //=============================
     //when ssat_r=0, tend should be zero.
@@ -63,7 +63,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     Functions::rain_evap_instant_tend(Spack(-1e-3),ab,Spack(1e12),tend);
     REQUIRE( tend[0] > 0 ); //always true for ssat_r<0.
     REQUIRE( tend[0] < 1e-8 );
-    
+
     //TEST ACTUAL EVAP FUNCTION:
     //==========================
     //first, establish reasonable values to use as default:
@@ -87,7 +87,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     Scalar dt=60;
     Spack qrtend;
     Spack nrtend;
-    
+
     //if qr_incld is too small, evap rate should be zero.
     constexpr Scalar QSMALL   = C::QSMALL;
     Functions::evaporate_rain(Spack(QSMALL/2),qc_incld,nr_incld,qi_incld, //qr_incld->QSMALL/2
@@ -133,11 +133,11 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
 			      qrtend,nrtend);
     REQUIRE( qrtend[0] <= qr_incld[0]/dt);
     REQUIRE( nrtend[0] <= nr_incld[0]/dt); //keep end-of-step nr positive. Should always be true.
-	     
+
   }; //end run_property
-    
+
   static void run_bfb(){
-    
+
     //fortran generated data is input to the following
     //This subroutine has 20 args, only 18 are supplied here for invoking it as last 2 are intent-outs
     //note that dt is the same val for each row - this is needed since dt is a scalar and all rows are executed simultaneously on CPU in C++.
@@ -187,14 +187,14 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
       const Int offset = i * Spack::n;
-      
+
       // Init pack inputs
       Spack qr_incld,qc_incld,nr_incld,qi_incld,
 	cld_frac_l,cld_frac_r,qv,qv_prev,qv_sat_l,qv_sat_i,
 	ab,abi,epsr,epsi_tot,t,t_prev,latent_heat_sublim,dqsdt;
 
       Scalar dt;
-      
+
       // Init pack outputs
       Spack qr2qv_evap_tend, nr_evap_tend;
 
@@ -221,12 +221,12 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
         //qr2qv_evap_tend[s]       = espd_device(vs).qr2qv_evap_tend; //PMC shouldn't have to init output vars.
         //nr_evap_tend[s]       = espd_device(vs).nr_evap_tend;
       }
-      
+
       Functions::evaporate_rain(qr_incld,qc_incld,nr_incld,qi_incld,
 				cld_frac_l,cld_frac_r,qv,qv_prev,qv_sat_l,qv_sat_i,
 				ab,abi,epsr,epsi_tot,t,t_prev,latent_heat_sublim,dqsdt,dt,
 				qr2qv_evap_tend,nr_evap_tend);
-				
+
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         espd_device(vs).qr_incld    = qr_incld[s];
@@ -248,15 +248,17 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     Kokkos::deep_copy(espd_host, espd_device);
 
     // Validate results
+#ifndef NDEBUG
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(espd[s].qr2qv_evap_tend == espd_host(s).qr2qv_evap_tend);
       REQUIRE(espd[s].nr_evap_tend == espd_host(s).nr_evap_tend);
     }
+#endif
   } // end run_bfb
 
 
 }; //TestEvapSublPrecip UnitWrap
-  
+
 }//namespace unit_test
 }//namespace p3
 }//namespace scream
@@ -268,7 +270,7 @@ namespace {
     using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;
     TestStruct::run_property();
   }
-  
+
   TEST_CASE("p3_evaporate_rain_test", "p3_unit_tests")
   {
     using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;

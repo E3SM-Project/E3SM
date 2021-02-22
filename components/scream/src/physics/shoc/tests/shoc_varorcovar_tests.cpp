@@ -275,8 +275,6 @@ static void run_bfb()
       CalcShocVarorcovarData(2, 7, 8, 0.005),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CalcShocVarorcovarData);
-
     // Generate random input data
     for (auto& d : SDS_f90) {
       d.randomize();
@@ -311,6 +309,8 @@ static void run_bfb()
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CalcShocVarorcovarData);
     for (Int i = 0; i < num_runs; ++i) {
       CalcShocVarorcovarData& d_f90 = SDS_f90[i];
       CalcShocVarorcovarData& d_cxx = SDS_cxx[i];
@@ -318,6 +318,7 @@ static void run_bfb()
         REQUIRE(d_f90.varorcovar[k] == d_cxx.varorcovar[k]);
       }
     }
+#endif
   }
 };
 

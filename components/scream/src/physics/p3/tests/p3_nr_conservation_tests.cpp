@@ -19,8 +19,6 @@ struct UnitWrap::UnitTest<D>::TestNrConservation {
   {
     NrConservationData f90_data[max_pack_size];
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(NrConservationData);
-
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
@@ -72,15 +70,16 @@ struct UnitWrap::UnitTest<D>::TestNrConservation {
     Kokkos::deep_copy(cxx_host, cxx_device);
 
     // Verify BFB results
-    for (Int i = 0; i < num_runs; ++i) {
+#ifndef NDEBUG
+    for (Int i = 0; i < max_pack_size; ++i) {
       NrConservationData& d_f90 = f90_data[i];
       NrConservationData& d_cxx = cxx_host[i];
       REQUIRE(d_f90.nr_collect_tend == d_cxx.nr_collect_tend);
       REQUIRE(d_f90.nr2ni_immers_freeze_tend == d_cxx.nr2ni_immers_freeze_tend);
       REQUIRE(d_f90.nr_selfcollect_tend == d_cxx.nr_selfcollect_tend);
       REQUIRE(d_f90.nr_evap_tend == d_cxx.nr_evap_tend);
-
     }
+#endif
   } // run_bfb
 
 };

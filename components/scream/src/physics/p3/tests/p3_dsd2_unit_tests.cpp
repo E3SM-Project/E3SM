@@ -95,6 +95,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     Kokkos::deep_copy(gcdd_host, gcdd_device);
 
     // Validate results
+#ifndef NDEBUG
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(gcdd[s].nc_out == gcdd_host(s).nc_out);
       REQUIRE(gcdd[s].mu_c   == gcdd_host(s).mu_c);
@@ -103,6 +104,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       REQUIRE(gcdd[s].cdist  == gcdd_host(s).cdist);
       REQUIRE(gcdd[s].cdist1 == gcdd_host(s).cdist1);
     }
+#endif
   }
 
   static void run_cloud_phys()
@@ -175,6 +177,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     Kokkos::deep_copy(grdd_host, grdd_device);
 
     // Validate results
+#ifndef NDEBUG
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(grdd[s].nr_out == grdd_host(s).nr_out);
       REQUIRE(grdd[s].mu_r   == grdd_host(s).mu_r);
@@ -182,6 +185,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       REQUIRE(grdd[s].cdistr == grdd_host(s).cdistr);
       REQUIRE(grdd[s].logn0r == grdd_host(s).logn0r);
     }
+#endif
   }
 
   static void run_rain_phys()

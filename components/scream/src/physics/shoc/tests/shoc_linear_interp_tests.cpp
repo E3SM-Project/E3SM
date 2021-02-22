@@ -343,8 +343,6 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
       LinearInterpData(1, 6, 5, 1e-15),
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(LinearInterpData);
-
     // Generate random input data
     for (auto& d : f90_data) {
       d.randomize();
@@ -377,6 +375,8 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(LinearInterpData);
     for (Int i = 0; i < num_runs; ++i) {
       LinearInterpData& d_f90 = f90_data[i];
       LinearInterpData& d_cxx = cxx_data[i];
@@ -384,6 +384,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
         REQUIRE(d_f90.y2[k] == d_cxx.y2[k]);
       }
     }
+#endif
   } // run_bfb
 
 };

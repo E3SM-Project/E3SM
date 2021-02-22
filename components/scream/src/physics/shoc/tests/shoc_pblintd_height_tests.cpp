@@ -176,8 +176,6 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
       PblintdHeightData(2, 7),
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdHeightData);
-
     // Generate random input data
     for (auto& d : f90_data) {
       d.randomize();
@@ -208,6 +206,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdHeightData);
     for (Int i = 0; i < num_runs; ++i) {
       PblintdHeightData& d_f90 = f90_data[i];
       PblintdHeightData& d_cxx = cxx_data[i];
@@ -218,6 +218,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
         REQUIRE(d_f90.check[k] == d_cxx.check[k]);
       }
     }
+#endif
   } // run_bfb
 
 };

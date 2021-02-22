@@ -19,8 +19,6 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
   {
     IceSupersatConservationData f90_data[max_pack_size];
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(IceSupersatConservationData);
-
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
@@ -70,13 +68,14 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
     Kokkos::deep_copy(cxx_host, cxx_device);
 
     // Verify BFB results
-    for (Int i = 0; i < num_runs; ++i) {
+#ifndef NDEBUG
+    for (Int i = 0; i < max_pack_size; ++i) {
       IceSupersatConservationData& d_f90 = f90_data[i];
       IceSupersatConservationData& d_cxx = cxx_host[i];
       REQUIRE(d_f90.qidep == d_cxx.qidep);
       REQUIRE(d_f90.qinuc == d_cxx.qinuc);
-
     }
+#endif
   } // run_bfb
 
 };

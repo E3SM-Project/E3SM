@@ -78,10 +78,30 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(shoc_tests "${SHOC_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1)
 endif()
 
-CreateUnitTest(shoc_run_and_cmp "shoc_run_and_cmp.cpp" "${NEED_LIBS}" THREADS ${SCREAM_TEST_MAX_THREADS} EXE_ARGS "${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline" DEP shoc_tests_ut_np1_omp1 EXCLUDE_MAIN_CPP)
+# Set huge tolerance for release builds. This will effectively disable all baseline
+# checking, but we still want to ensure things run without crashing
+if (CMAKE_BUILD_TYPE MATCHES ".*Rel.*")
+  set(TOL_FLAG "--tol 1e15")
+endif()
 
-# By default, baselines should be created using all fortran
-add_custom_target(shoc_baseline
-  COMMAND $<TARGET_FILE:shoc_run_and_cmp> -f -g ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline)
+CreateUnitTest(shoc_run_and_cmp_cxx "shoc_run_and_cmp.cpp" "${NEED_LIBS}"
+               THREADS ${SCREAM_TEST_MAX_THREADS}
+               EXE_ARGS "${TOL_FLAG} ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline"
+               EXCLUDE_MAIN_CPP)
 
-add_dependencies(baseline shoc_baseline)
+CreateUnitTest(shoc_run_and_cmp_f90 "shoc_run_and_cmp.cpp" "${NEED_LIBS}"
+               THREADS ${SCREAM_TEST_MAX_THREADS}
+               EXE_ARGS "${TOL_FLAG} ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline"
+               EXCLUDE_MAIN_CPP)
+
+# By default, baselines should be created using all fortran (make baseline). If the user wants
+# to use CXX to generate their baselines, they should use "make baseline_cxx".
+
+add_custom_target(shoc_baseline_f90
+  COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:shoc_run_and_cmp_f90> -f -g ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline)
+
+add_custom_target(shoc_baseline_cxx
+  COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:shoc_run_and_cmp_cxx> -g ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline)
+
+add_dependencies(baseline     shoc_baseline_f90)
+add_dependencies(baseline_cxx shoc_baseline_cxx)

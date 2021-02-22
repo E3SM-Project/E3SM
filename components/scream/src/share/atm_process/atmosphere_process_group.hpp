@@ -51,10 +51,8 @@ public:
 
   void final_setup ();
 
-  void set_required_group (const ci_string_pair& group_and_grid,
-                           const std::set<Field<const Real>>& group);
-  void set_updated_group (const ci_string_pair& group_and_grid,
-                          const std::set<Field<Real>>& group);
+  void set_required_group (const FieldGroup<const Real>& group);
+  void set_updated_group (const FieldGroup<Real>& group);
 
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real>& field_repo) const;
@@ -63,8 +61,8 @@ public:
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
   const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }
 
-  std::set<ci_string_pair> get_required_groups () const;
-  std::set<ci_string_pair> get_updated_groups () const;
+  std::set<GroupRequest> get_required_groups () const;
+  std::set<GroupRequest> get_updated_groups () const;
 
   // --- Methods specific to AtmosphereProcessGroup --- //
 

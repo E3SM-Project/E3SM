@@ -42,7 +42,7 @@ void Functions<S,D>::pblintd_height(
   const auto nlev_p = (nlev-1)%Spack::n;
 
   // Compute rino values and find max index s.t. rino(k) >= ricr
-  Int max_indx;
+  Int max_indx = -1;
 
   const Int lower_pack_indx = (nlev-npbl)/Spack::n;
   const Int upper_pack_indx = (nlev-1)/Spack::n+1;

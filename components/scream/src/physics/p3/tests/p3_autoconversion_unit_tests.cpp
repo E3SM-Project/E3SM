@@ -99,6 +99,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
   Kokkos::deep_copy(cwadc_host, cwadc_device);
 
   // Validate results
+#ifndef NDEBUG
   for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(cwadc[s].rho                  == cwadc_host(s).rho);
     REQUIRE(cwadc[s].qc_incld             == cwadc_host(s).qc_incld);
@@ -108,6 +109,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
     REQUIRE(cwadc[s].nc2nr_autoconv_tend  == cwadc_host(s).nc2nr_autoconv_tend);
     REQUIRE(cwadc[s].ncautr               == cwadc_host(s).ncautr);
   }
+#endif
 }
 
   static void run_bfb(){

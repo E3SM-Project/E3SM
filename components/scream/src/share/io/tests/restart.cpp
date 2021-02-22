@@ -60,21 +60,19 @@ TEST_CASE("restart","io")
   util::TimeStamp time (0,0,0,0);
 
   //  Cycle through data and write output
-  auto& out_fields = field_repo->get_field_groups_names().at("output");
+  const auto& out_fields = field_repo->get_groups_info().at("output");
   Int max_steps = 17;  // Go a few steps past the last restart write to make sure that the last written file is on the 15th step.
   Real dt = 1.0;
-  for (Int ii=0;ii<max_steps;++ii)
-  {
-    for (auto it : out_fields)
-    {
-      auto f_dev  = field_repo->get_field(it,"Physics").get_view();
-      auto f_host = Kokkos::create_mirror_view( f_dev );
-      Kokkos::deep_copy(f_host,f_dev);
+  for (Int ii=0;ii<max_steps;++ii) {
+    for (const auto& fname : out_fields->m_fields_names) {
+      auto& f = field_repo->get_field(fname,"Physics");
+      f.sync_to_host();
+      auto f_host = f.get_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
       {
         f_host(jj) += dt;
       }
-      Kokkos::deep_copy(f_dev,f_host);
+      f.sync_to_dev();
     }
     time += dt;
     m_output_manager.run(time);
@@ -99,38 +97,34 @@ TEST_CASE("restart","io")
   // Note, that only field_1 and field_2 were marked for restart.  Check to make sure values
   // in the field manager reflect those fields as restarted from 15 and field_3 as being
   // freshly restarted:
-  auto field1_dev = field_repo->get_field("field_1","Physics").get_view();
-  auto field2_dev = field_repo->get_field("field_2","Physics").get_view();
-  auto field3_dev = field_repo->get_field("field_3","Physics").get_reshaped_view<Real**>();
-  auto field1_hst = Kokkos::create_mirror_view( field1_dev );
-  auto field2_hst = Kokkos::create_mirror_view( field2_dev );
-  auto field3_hst = Kokkos::create_mirror_view( field3_dev );
-  Kokkos::deep_copy(field1_hst,field1_dev);
-  Kokkos::deep_copy(field2_hst,field2_dev);
-  Kokkos::deep_copy(field3_hst,field3_dev);
+  auto field1 = field_repo->get_field("field_1","Physics");
+  auto field2 = field_repo->get_field("field_2","Physics");
+  auto field3 = field_repo->get_field("field_3","Physics");
+  auto field1_hst = field1.get_view<Host>();
+  auto field2_hst = field2.get_view<Host>();
+  auto field3_hst = field3.get_reshaped_view<Real**,Host>();
+  field1.sync_to_host();
+  field2.sync_to_host();
+  field3.sync_to_host();
   Real tol = pow(10,-6);
-  for (Int ii=0;ii<num_lcols;++ii)
-  {
+  for (Int ii=0;ii<num_lcols;++ii) {
     REQUIRE(std::abs(field1_hst(ii)-(15+ii))<tol);
-    for (Int jj=0;jj<num_levs;++jj)
-    {
+    for (Int jj=0;jj<num_levs;++jj) {
       REQUIRE(std::abs(field2_hst(jj)   -((jj+1)/10.+15))<tol);
       REQUIRE(std::abs(field3_hst(ii,jj)-((jj+1)/10.+ii))<tol);  //Note, field 3 is not restarted, so doesn't have the +15
     }
   }
   // Finish the last 5 steps
-  for (Int ii=0;ii<5;++ii)
-  {
-    for (auto it : out_fields)
-    {
-      auto f_dev  = field_repo->get_field(it,"Physics").get_view();
-      auto f_host = Kokkos::create_mirror_view( f_dev );
-      Kokkos::deep_copy( f_host, f_dev );
+  for (Int ii=0;ii<5;++ii) {
+    for (const auto& fname : out_fields->m_fields_names) {
+      auto& f = field_repo->get_field(fname,"Physics");
+      f.sync_to_host();
+      auto f_host = f.get_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
       {
         f_host(jj) += dt;
       }
-      Kokkos::deep_copy(f_dev,f_host);
+      f.sync_to_dev();
     }
     time_res += dt;
     m_output_manager_res.run(time_res);
@@ -145,16 +139,14 @@ TEST_CASE("restart","io")
   auto avg_params = get_in_params("Final",io_comm);
   input_type avg_input(io_comm,avg_params,field_repo,grid_man);
   avg_input.pull_input();
-  Kokkos::deep_copy(field1_hst,field1_dev);
-  Kokkos::deep_copy(field2_hst,field2_dev);
-  Kokkos::deep_copy(field3_hst,field3_dev);
+  field1.sync_to_host();
+  field2.sync_to_host();
+  field3.sync_to_host();
   Real avg_val;
-  for (Int ii=0;ii<num_lcols;++ii)
-  {
+  for (Int ii=0;ii<num_lcols;++ii) {
     avg_val = (20+11)/2.+ii;
     REQUIRE(std::abs(field1_hst(ii)-avg_val)<tol);
-    for (Int jj=0;jj<num_levs;++jj)
-    {
+    for (Int jj=0;jj<num_levs;++jj) {
       avg_val = (20+11)/2.+(jj+1)/10.0;
       REQUIRE(std::abs(field2_hst(jj)-avg_val)<tol);
       avg_val = (15+11)/4. + (5+1)/4. + ii + (jj+1)/10.;
@@ -203,29 +195,24 @@ void Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_lcol
 {
 
   // Initialize these fields
-  auto f1_dev = repo.get_field("field_1","Physics").get_view();
-  auto f2_dev = repo.get_field("field_2","Physics").get_view();
-  auto f3_dev = repo.get_field("field_3","Physics").get_reshaped_view<Real**>();
-  auto f1_hst = Kokkos::create_mirror_view( f1_dev );
-  auto f2_hst = Kokkos::create_mirror_view( f2_dev ); 
-  auto f3_hst = Kokkos::create_mirror_view( f3_dev );
-  Kokkos::deep_copy(f1_hst, f1_dev );
-  Kokkos::deep_copy(f2_hst, f2_dev );
-  Kokkos::deep_copy(f3_hst, f3_dev );
-  for (int ii=0;ii<num_lcols;++ii)
-  {
+  const auto& f1 = repo.get_field("field_1","Physics");
+  const auto& f2 = repo.get_field("field_2","Physics");
+  const auto& f3 = repo.get_field("field_3","Physics");
+  auto f1_hst = f1.get_view<Host>();
+  auto f2_hst = f2.get_view<Host>();
+  auto f3_hst = f3.get_reshaped_view<Real**,Host>();
+  for (int ii=0;ii<num_lcols;++ii) {
     f1_hst(ii) = ii;
-    for (int jj=0;jj<num_levs;++jj)
-    {
+    for (int jj=0;jj<num_levs;++jj) {
       f2_hst(jj) = (jj+1)/10.0;
       f3_hst(ii,jj) = (ii) + (jj+1)/10.0;
     }
   }
-  Kokkos::deep_copy(f1_dev,f1_hst);
-  Kokkos::deep_copy(f2_dev,f2_hst);
-  Kokkos::deep_copy(f3_dev,f3_hst);
-
+  f1.sync_to_dev();
+  f2.sync_to_dev();
+  f3.sync_to_dev();
 }
+
 /*===================================================================================================================*/
 std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {

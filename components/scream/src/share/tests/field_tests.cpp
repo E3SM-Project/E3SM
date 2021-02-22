@@ -9,7 +9,11 @@
 #include "share/field/field_monotonicity_check.hpp"
 #include "share/field/field_utils.hpp"
 
+#include "share/grid/point_grid.hpp"
+#include "share/grid/user_provided_grids_manager.hpp"
+
 #include "ekat/ekat_pack.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
 
 namespace {
 
@@ -157,6 +161,13 @@ TEST_CASE("field", "") {
     // The views were filled the same way, so they should test equal
     // NOTE: this cmp function only test the "actual" field, discarding padding.
     REQUIRE(views_are_equal(f1,f2));
+
+    // Check self equivalence
+    // get_const returns a copy of self, so equivalent (if already allocated)
+    REQUIRE (f1.equivalent(f1.get_const()));
+    REQUIRE (f1.equivalent(f1));
+    // f1 and f2 have independent views, so they are not equivalent.
+    REQUIRE (!f1.equivalent(f2));
   }
 
   // Check copy constructor
@@ -236,9 +247,8 @@ TEST_CASE("field", "") {
     auto v2dh = f.get_reshaped_view<Real**,Host>();
 
     // The two should match
-    const auto& dims = fid.get_layout().dims();
     for (int i=0; i<dims[0]; ++i) {
-      for (int j=0; j<dims[0]; ++j) {
+      for (int j=0; j<dims[1]; ++j) {
         REQUIRE (v2dh(i,j) == v2d_hm(i,j) );
       }
     }
@@ -248,15 +258,18 @@ TEST_CASE("field", "") {
 TEST_CASE("field_repo", "") {
   using namespace scream;
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
-  std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
-  std::vector<FieldTag> tags2 = {FieldTag::Column};
-  std::vector<FieldTag> tags3 = {FieldTag::VerticalLevel};
+  std::vector<FieldTag> tags1 = {EL, GP, GP};
+  std::vector<FieldTag> tags2 = {COL};
+  std::vector<FieldTag> tags3 = {VL};
+  std::vector<FieldTag> tags4 = {COL,VL};
 
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 3, 3};
   std::vector<int> dims3 = {13};
   std::vector<int> dims4 = {6};
+  std::vector<int> dims5 = {13,6};
 
   const auto km = 1000*m;
 
@@ -268,6 +281,7 @@ TEST_CASE("field_repo", "") {
   FieldIdentifier fid6("field_4", {tags2, dims3}, km/s, "grid_1");
   FieldIdentifier fid7("field_5", {tags2, dims3}, km/s, "grid_3");
   FieldIdentifier fid8("field_5", {tags3, dims4}, km/s, "grid_3");
+  FieldIdentifier fid9("field_packed", {tags4,dims5}, km/s, "grid_3");
 
   FieldRepository<Real> repo;
 
@@ -284,8 +298,9 @@ TEST_CASE("field_repo", "") {
   // Test for same field and grid name, different layout
   repo.register_field(fid7,"group_7");
   repo.register_field(fid8,"group_7");
-  // Should not be able to register fields to the 'state' group (it's reserved)
-  REQUIRE_THROWS(repo.register_field(fid2,"state"));
+  // Test for packed field
+  using Pack         = ekat::Pack<Real,8>;
+  repo.register_field<Pack>(fid9);
   // Should not be able to register the same field name with two different units
   REQUIRE_THROWS(repo.register_field(fid4));
   repo.registration_ends();
@@ -295,8 +310,8 @@ TEST_CASE("field_repo", "") {
 
   // Check registration is indeed closed
   REQUIRE (repo.repository_state()==RepoState::Closed);
-  REQUIRE (repo.size()==5);
-  REQUIRE (repo.internal_size()==7);
+  REQUIRE (repo.size()==6);
+  REQUIRE (repo.internal_size()==8);
 
   auto f1 = repo.get_field(fid1);
   auto f2 = repo.get_field(fid2);
@@ -319,29 +334,149 @@ TEST_CASE("field_repo", "") {
   REQUIRE (f1.get_header().get_identifier()!=f2.get_header().get_identifier());
 
   // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
-  REQUIRE (ekat::contains(f1.get_header().get_tracking().get_groups_names(),"gRouP_1"));
-  REQUIRE (ekat::contains(f2.get_header().get_tracking().get_groups_names(),"Group_2"));
-  REQUIRE (ekat::contains(f5.get_header().get_tracking().get_groups_names(),"Group_3"));
-  REQUIRE (ekat::contains(f5.get_header().get_tracking().get_groups_names(),"Group_5"));
-  REQUIRE (ekat::contains(f6.get_header().get_tracking().get_groups_names(),"Group_4"));
-  REQUIRE (ekat::contains(f6.get_header().get_tracking().get_groups_names(),"Group_5"));
-  REQUIRE (ekat::contains(f6.get_header().get_tracking().get_groups_names(),"Group_6"));
+  auto has_group = [](const ekat::WeakPtrSet<const FieldGroupInfo>& groups,
+                      const std::string& name)->bool {
+    for (auto it : groups) {
+      if (it.lock()->m_group_name==name) {
+        return true;
+      }
+    }
+    return false;
+  };
+  REQUIRE (has_group(f1.get_header().get_tracking().get_groups_info(),"gRouP_1"));
+  REQUIRE (has_group(f2.get_header().get_tracking().get_groups_info(),"Group_2"));
+  REQUIRE (has_group(f5.get_header().get_tracking().get_groups_info(),"Group_3"));
+  REQUIRE (has_group(f5.get_header().get_tracking().get_groups_info(),"Group_5"));
+  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_4"));
+  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_5"));
+  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_6"));
 
   // Check that the groups in the repo contain the correct fields
-  REQUIRE (repo.get_field_groups_names().count("GROUP_1")==1);
-  REQUIRE (repo.get_field_groups_names().count("GRoup_2")==1);
-  REQUIRE (repo.get_field_groups_names().count("group_3")==1);
-  REQUIRE (repo.get_field_groups_names().count("groUP_4")==1);
-  REQUIRE (repo.get_field_groups_names().count("group_5")==1);
-  REQUIRE (repo.get_field_groups_names().at("group_5").size()==2);
-  REQUIRE (repo.get_field_groups_names().count("group_6")==1);
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_1"),"Field_1"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_2"),"Field_2"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_3"),"Field_3"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_4"),"Field_4"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_5"),"Field_3"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_5"),"Field_4"));
-  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_6"),"Field_4"));
+  REQUIRE (repo.get_groups_info().count("GROUP_1")==1);
+  REQUIRE (repo.get_groups_info().count("GRoup_2")==1);
+  REQUIRE (repo.get_groups_info().count("group_3")==1);
+  REQUIRE (repo.get_groups_info().count("groUP_4")==1);
+  REQUIRE (repo.get_groups_info().count("group_5")==1);
+  REQUIRE (repo.get_groups_info().at("group_5")->m_fields_names.size()==2);
+  REQUIRE (repo.get_groups_info().count("group_6")==1);
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_1")->m_fields_names,"Field_1"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_2")->m_fields_names,"Field_2"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_3")->m_fields_names,"Field_3"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_4")->m_fields_names,"Field_4"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_5")->m_fields_names,"Field_3"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_5")->m_fields_names,"Field_4"));
+  REQUIRE (ekat::contains(repo.get_groups_info().at("group_6")->m_fields_names,"Field_4"));
+
+  // Check that get_padding returns the appropriate value
+  auto& f9 = repo.get_field("field_packed","grid_3");
+  REQUIRE (f9.get_header().get_alloc_properties().get_padding()==2);
+}
+
+TEST_CASE("tracers_bundle", "") {
+  using namespace scream;
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  const int ncols = 4;
+  const int nlevs = 7;
+
+  std::vector<FieldTag> tags = {COL,VL};
+  std::vector<int> dims = {ncols,nlevs};
+
+  const auto nondim = Units::nondimensional();
+
+  const std::string grid_name = "physics";
+  FieldIdentifier qv_id("qv", {tags, dims}, nondim, grid_name);
+  FieldIdentifier qc_id("qc", {tags, dims}, nondim, grid_name);
+  FieldIdentifier qr_id("qr", {tags, dims}, nondim, grid_name);
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  auto pg = create_point_grid(grid_name,ncols*comm.size(),nlevs,comm);
+  auto gm = create_user_provided_grids_manager(comm,ekat::ParameterList());
+  auto upgm = std::dynamic_pointer_cast<UserProvidedGridsManager>(gm);
+  upgm->set_grid(pg);
+  upgm->set_reference_grid(grid_name);
+
+  FieldRepository<Real> repo;
+  repo.registration_begins();
+  repo.register_field(qv_id,"TRACERS");
+  repo.register_field(qc_id,"TRACERS");
+  repo.register_field(qr_id,"TRACERS");
+  repo.registration_ends(gm);
+
+  auto qv = repo.get_field(qv_id);
+  auto qc = repo.get_field(qc_id);
+  auto qr = repo.get_field(qr_id);
+
+  auto group = repo.get_field_group("TRACERS",grid_name);
+  // The repo should have allocated the group bundled
+  REQUIRE (group.m_info->m_bundled);
+
+  const auto& Q_name = group.m_bundle->get_header().get_identifier().name();
+  auto Q = repo.get_field(Q_name,grid_name);
+
+  // The bundled field in the group should match the field we get from the repo
+  REQUIRE (Q.equivalent(*group.m_bundle));
+
+  // Check that Q is set as parent for all q's.
+  auto qvp = qv.get_header().get_parent().lock();
+  auto qcp = qc.get_header().get_parent().lock();
+  auto qrp = qr.get_header().get_parent().lock();
+  REQUIRE ((qvp!=nullptr && qvp.get()==&Q.get_header()));
+  REQUIRE ((qcp!=nullptr && qvp.get()==&Q.get_header()));
+  REQUIRE ((qrp!=nullptr && qvp.get()==&Q.get_header()));
+
+  // The indices used for each q to subview Q
+  int idx_v, idx_c, idx_r;
+
+  // The idx must be stored
+  REQUIRE_NOTHROW (idx_v = group.m_info->m_subview_idx.at("qv"));
+  REQUIRE_NOTHROW (idx_c = group.m_info->m_subview_idx.at("qc"));
+  REQUIRE_NOTHROW (idx_r = group.m_info->m_subview_idx.at("qr"));
+
+  // All idx must be in [0,2] and must be different
+  REQUIRE ((idx_v>=0 && idx_v<3 &&
+            idx_c>=0 && idx_c<3 &&
+            idx_r>=0 && idx_r<3));
+  REQUIRE ((idx_v!=idx_c && idx_v!=idx_r && idx_c!=idx_r));
+
+  // Now fill Q with random values
+  std::random_device rd;
+  using rngAlg = std::mt19937_64;
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  rngAlg engine(seed);
+  using RPDF = std::uniform_real_distribution<Real>;
+  RPDF pdf(0.0,1.0);
+
+  ekat::genRandArray(Q.get_view(),engine,pdf);
+
+  // Check that the same values are in all q's
+  Q.sync_to_host();
+  auto Qh = Q.get_reshaped_view<Real***,Host>();
+  auto qvh = qv.get_reshaped_view<Real**,Host>();
+  auto qch = qc.get_reshaped_view<Real**,Host>();
+  auto qrh = qr.get_reshaped_view<Real**,Host>();
+
+  for (int icol=0; icol<ncols; ++icol) {
+    for (int ilev=0; ilev<nlevs; ++ilev) {
+      REQUIRE (Qh(icol,idx_v,ilev)==qvh(icol,ilev));
+      REQUIRE (Qh(icol,idx_c,ilev)==qch(icol,ilev));
+      REQUIRE (Qh(icol,idx_r,ilev)==qrh(icol,ilev));
+    }
+  }
+
+  // Check that the field ptrs stored in the group are the same as the q
+  auto qv_ptr = group.m_fields.at("qv");
+  auto qc_ptr = group.m_fields.at("qc");
+  auto qr_ptr = group.m_fields.at("qr");
+
+  REQUIRE (qv_ptr->equivalent(qv));
+  REQUIRE (qc_ptr->equivalent(qc));
+  REQUIRE (qr_ptr->equivalent(qr));
+
+  upgm->clean_up();
 }
 
 TEST_CASE("field_property_check", "") {

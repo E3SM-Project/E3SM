@@ -255,8 +255,6 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
       ShocTkeData(2, 7, 8, 5),
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocTkeData);
-
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
@@ -290,6 +288,8 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocTkeData);
     for (Int i = 0; i < num_runs; ++i) {
       ShocTkeData& d_f90 = f90_data[i];
       ShocTkeData& d_cxx = cxx_data[i];
@@ -304,6 +304,7 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
         REQUIRE(d_f90.isotropy[k] == d_cxx.isotropy[k]);
       }
     }
+#endif
   } // run_bfb
 };
 

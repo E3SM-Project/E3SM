@@ -270,8 +270,6 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments {
       DiagSecondShocMomentsData(256, 72, 73),
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(DiagSecondShocMomentsData);
-
     // Generate random input data
     for (auto& d : f90_data) {
       d.randomize();
@@ -297,13 +295,15 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      diag_second_shoc_moments_f(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, 
-                d.tkh, d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.thl_sec, 
+      diag_second_shoc_moments_f(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy,
+                d.tkh, d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.thl_sec,
                 d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.w_sec);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(DiagSecondShocMomentsData);
     for (Int i = 0; i < num_runs; ++i) {
       DiagSecondShocMomentsData& d_f90 = f90_data[i];
       DiagSecondShocMomentsData& d_cxx = cxx_data[i];
@@ -320,8 +320,8 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments {
         REQUIRE(d_f90.vw_sec[k] == d_cxx.vw_sec[k]);
         REQUIRE(d_f90.wtke_sec[k] == d_cxx.wtke_sec[k]);
       }
-
     }
+#endif
   } // run_bfb
 
 };

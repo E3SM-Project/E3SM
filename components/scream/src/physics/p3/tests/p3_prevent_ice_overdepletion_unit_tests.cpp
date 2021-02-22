@@ -98,10 +98,12 @@ static void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
+#ifndef NDEBUG
   for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(prevent_ice_overdepletion_data[s].qv2qi_vapdep_tend == host_data[s].qv2qi_vapdep_tend);
     REQUIRE(prevent_ice_overdepletion_data[s].qi2qv_sublim_tend == host_data[s].qi2qv_sublim_tend);
   }
+#endif
 }
 
 };

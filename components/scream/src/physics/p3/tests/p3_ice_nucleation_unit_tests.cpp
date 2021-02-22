@@ -92,10 +92,12 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
 
 	Kokkos::deep_copy(self_host, self_device);
 
+#ifndef NDEBUG
 	for (Int s = 0; s < max_pack_size; ++s) {
 	  REQUIRE(self[s].qv2qi_nucleat_tend == self_host(s).qv2qi_nucleat_tend);
 	  REQUIRE(self[s].ni_nucleat_tend    == self_host(s).ni_nucleat_tend);
 	}
+#endif
       } //end for do_predict_nc
     } //end for do_prescribed_CCN
   }

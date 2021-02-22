@@ -13,7 +13,7 @@ extern "C"
 
 // Fortran routines to be called from C
 void shoc_init_f90     (Real* q);
-void shoc_main_f90     (const Real& dtime, Real* q, Real* FQ);
+void shoc_main_f90     (const Real& dtime, Real* q);
 void shoc_finalize_f90 ();
 
 } // extern "C"

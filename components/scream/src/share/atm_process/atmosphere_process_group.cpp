@@ -323,52 +323,68 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
 }
 
 void AtmosphereProcessGroup::
-set_required_group (const ci_string_pair& group_and_grid,
-                    const std::set<Field<const Real>>& group)
+set_required_group (const FieldGroup<const Real>& group)
 {
-  EKAT_REQUIRE_MSG(group.size()>0,
-    "Error! We were not expecting an empty field group.\n");
-
-  const auto& name = group_and_grid.first;
-  const auto& grid = group_and_grid.second;
+  const auto& name = group.m_info->m_group_name;
+  const auto& grid = group.m_grid_name;
 
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];
 
     if (atm_proc->requires_group(name,grid)) {
-      atm_proc->set_required_group(group_and_grid, group);
-      // We also might need to add each field of the group to the remap in/out
-      for (auto& f : group) {
-        const auto& fid = f.get_header().get_identifier();
-        const auto r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
-        process_required_field(fid,r_in);
+      atm_proc->set_required_group(group);
+      // Some groups might be optional, so don't error out if the size is 0
+      if (group.m_info->size()>0) {
+        // If the group is 'bundled', we remap the bundled group,
+        // otherwise remap each individual field.
+        if (group.m_info->m_bundled) {
+          const auto& f = *group.m_bundle;
+          const auto& fid = f.get_header().get_identifier();
+          const auto& r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
+          process_required_field(fid,r_in);
+        } else {
+          // We also might need to add each field of the group to the remap in/out
+          for (const auto& it : group.m_fields) {
+            const auto& f = *it.second;
+            const auto& fid = f.get_header().get_identifier();
+            const auto& r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
+            process_required_field(fid,r_in);
+          }
+        }
       }
     }
   }
 }
 
 void AtmosphereProcessGroup::
-set_updated_group (const ci_string_pair& group_and_grid,
-                   const std::set<Field<Real>>& group)
+set_updated_group (const FieldGroup<Real>& group)
 {
-  EKAT_REQUIRE_MSG(group.size()>0,
-    "Error! We were not expecting an empty field group.\n");
-
-  const auto& name = group_and_grid.first;
-  const auto& grid = group_and_grid.second;
+  const auto& name = group.m_info->m_group_name;
+  const auto& grid = group.m_grid_name;
 
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];
 
     if (atm_proc->updates_group(name,grid)) {
-      atm_proc->set_updated_group(group_and_grid, group);
-      // We also might need to add each field of the group to the remap in/out
-      for (auto& f : group) {
-        const auto& fid = f.get_header().get_identifier();
-        const auto r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
-        const auto r_out = m_outputs_remappers[iproc].at(fid.get_grid_name());
-        process_required_field(fid,r_in);
-        process_computed_field(fid,r_out);
+      atm_proc->set_updated_group(group);
+      // Some groups might be optional, so don't error out if the size is 0
+      if (group.m_info->size()>0) {
+        // If the group is 'bundled', we remap the bundled group,
+        // otherwise remap each individual field.
+        if (group.m_info->m_bundled) {
+          const auto& f = *group.m_bundle;
+          const auto& fid = f.get_header().get_identifier();
+          const auto r_out = m_outputs_remappers[iproc].at(fid.get_grid_name());
+          process_computed_field(fid,r_out);
+        } else {
+          // We also might need to add each field of the group to the remap in/out
+          for (const auto& it : group.m_fields) {
+            const auto& f = *it.second;
+            const auto& fid = f.get_header().get_identifier();
+            const auto r_out = m_outputs_remappers[iproc].at(fid.get_grid_name());
+            process_computed_field(fid,r_out);
+          }
+        }
       }
     }
   }
@@ -414,21 +430,21 @@ void AtmosphereProcessGroup::register_fields (FieldRepository<Real>& field_repo)
   }
 }
 
-std::set<AtmosphereProcessGroup::ci_string_pair>
+std::set<AtmosphereProcessGroup::GroupRequest>
 AtmosphereProcessGroup::get_required_groups () const {
-  std::set<AtmosphereProcessGroup::ci_string_pair> groups;
+  std::set<AtmosphereProcessGroup::GroupRequest> groups;
   for (auto atm_proc : m_atm_processes) {
-    auto groups_i = atm_proc->get_required_groups();
+    const auto& groups_i = atm_proc->get_required_groups();
     groups.insert(groups_i.begin(),groups_i.end());
   }
   return groups;
 }
 
-std::set<AtmosphereProcessGroup::ci_string_pair>
+std::set<AtmosphereProcessGroup::GroupRequest>
 AtmosphereProcessGroup::get_updated_groups () const {
-  std::set<AtmosphereProcessGroup::ci_string_pair> groups;
+  std::set<AtmosphereProcessGroup::GroupRequest> groups;
   for (auto atm_proc : m_atm_processes) {
-    auto groups_i = atm_proc->get_updated_groups();
+    const auto& groups_i = atm_proc->get_updated_groups();
     groups.insert(groups_i.begin(),groups_i.end());
   }
   return groups;

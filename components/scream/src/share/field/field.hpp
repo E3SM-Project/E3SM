@@ -62,19 +62,15 @@ public:
   template<typename T, int N>
   using view_ND_type = uview_type<typename ekat::DataND<T,N>::type>;
 
-  // These are used a few times in ctor and assignment, so use a shortcut
-  template<typename T>
-  using Const = typename std::add_const<T>::type;
-  template<typename T>
-  using NonConst = typename std::remove_const<T>::type;
-
   // Field stack classes types
   using RT                   = RealType;
+  using non_const_RT         = typename std::remove_const<RT>::type;
+  using const_RT             = typename std::add_const<RT>::type;
   using header_type          = FieldHeader;
   using identifier_type      = FieldIdentifier;
   using field_type           = Field<RT>;
-  using const_field_type     = Field<Const<RT>>;
-  using nonconst_field_type  = Field<NonConst<RT>>;
+  using const_field_type     = Field<const_RT>;
+  using non_const_field_type = Field<non_const_RT>;
 
   static constexpr int MaxRank = 6;
 
@@ -89,13 +85,13 @@ public:
   // A Field maintains a list of shared_ptrs to FieldPropertyChecks that can
   // determine whether it satisfies certain properties. We use the PointerList
   // class to provide simple access to the property checks.
-  using property_check_type = FieldPropertyCheck<RealType>;
+  using property_check_type = FieldPropertyCheck<non_const_RT>;
   using property_check_list = PointerList<std::shared_ptr<property_check_type>,
                                            property_check_type>;
   using property_check_iterator = typename property_check_list::iterator;
 
   // Constructor(s)
-  Field () = default;
+  Field ();
   Field (const std::shared_ptr<header_type>& h, const view_type<RT*>& v);
   explicit Field (const identifier_type& id);
 
@@ -163,11 +159,37 @@ public:
   //   - If the field rank is 2, then idim cannot be 1. This is b/c Kokkos
   //     specializes view's traits for LayoutRight of rank 1, not allowing
   //     to store a stride for the slowest dimension.
+  field_type subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
+                       const int idim, const int k) const;
   field_type subfield (const std::string& sf_name, const int idim, const int k) const;
   field_type subfield (const int idim, const int k) const;
 
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_view_d.data()!=nullptr; }
+
+  // Whether this field is equivalent to the rhs. To be equivalent is
+  // less strict than to have all the members equal. In particular,
+  // this method returns true if and only if:
+  //  - this==&rhs OR all the following apply
+  //    - both views are allocated (if not, allocating one won't be reflected on the other)
+  //    - both fields have the same header
+  //    - both fields have the same device view
+  // We need to SFINAE on RhsRT, cause this==&rhs only works if the
+  // two are the same. And we do want to check this==&rhs for the
+  // same type, since if we didn't, f.equivalent(f) would return false
+  // if f is not allocated...
+
+  template<typename RhsRT>
+  typename std::enable_if<
+    std::is_same<RealType,RhsRT>::value,
+    bool>::type
+  equivalent (const Field<RhsRT>& rhs) const;
+
+  template<typename RhsRT>
+  typename std::enable_if<
+    !std::is_same<RealType,RhsRT>::value,
+    bool>::type
+  equivalent (const Field<RhsRT>& rhs) const;
 
   // ---- Setters and non-const methods ---- //
 
@@ -188,14 +210,14 @@ protected:
   const if_t<HD==Host,HM<view_type<RT*>>>&
   get_view_impl   () const {
     ensure_host_view ();
-    return  m_view_h;
+    return  *m_view_h;
   }
 
   void ensure_host_view () const {
     EKAT_REQUIRE_MSG (is_allocated (),
         "Error! View was not yet allocated.\n");
-    if (m_view_h.data()==nullptr) {
-      m_view_h = Kokkos::create_mirror_view(m_view_d);
+    if (m_view_h->data()==nullptr) {
+      *m_view_h = Kokkos::create_mirror_view(m_view_d);
     }
   }
 
@@ -230,13 +252,11 @@ protected:
   std::shared_ptr<header_type>            m_header;
 
   // Actual data.
-  view_type<NonConst<RT*>>                m_view_d;
+  view_type<RT*>                          m_view_d;
 
-  // Host mirror of the data. Mutable, to allow lazy creation
-  mutable HM<view_type<NonConst<RT*>>>    m_view_h;
-
-  // Keep track of whether the field has been allocated
-  bool                                    m_allocated;
+  // Host mirror of the data. Use shared_ptr to ensure subfields store
+  // the same host mirror of parents.
+  std::shared_ptr<HM<view_type<RT*>>>     m_view_h;
 
   // List of property checks for this field.
   std::shared_ptr<property_check_list>    m_prop_checks;
@@ -254,12 +274,25 @@ bool operator< (const Field<RealType>& f1, const Field<RealType>& f2) {
 
 template<typename RealType>
 Field<RealType>::
+Field ()
+{
+  // Create an empty host mirror view
+  // Note: this is needed cause 'ensure_host_view' cannot modify this class
+  m_view_h = std::make_shared<HM<view_type<RT*>>>();
+}
+
+template<typename RealType>
+Field<RealType>::
 Field (const identifier_type& id)
  : m_header     (create_header(id))
  , m_prop_checks(new property_check_list)
 {
   // At the very least, the allocation properties need to accommodate this field's real type.
   m_header->get_alloc_properties().request_allocation<RT>();
+
+  // Create an empty host mirror view
+  // Note: this is needed cause 'ensure_host_view' cannot modify this class
+  m_view_h = std::make_shared<HM<view_type<RT*>>>();
 }
 
 template<typename RealType>
@@ -269,7 +302,9 @@ Field (const std::shared_ptr<header_type>& h, const view_type<RT*>& v)
   , m_view_d(v)
   , m_prop_checks(new property_check_list)
 {
-  // Nothing to do here
+  // Create an empty host mirror view
+  // Note: this is needed cause 'ensure_host_view' cannot modify this class
+  m_view_h = std::make_shared<HM<view_type<RT*>>>();
 }
 
 template<typename RealType>
@@ -277,7 +312,9 @@ template<typename SrcRealType>
 Field<RealType>::
 Field (const Field<SrcRealType>& src)
  : m_header (src.get_header_ptr())
- , m_view_d (src.get_view())
+ , m_view_d (src.m_view_d)
+ , m_view_h (src.m_view_h)
+ , m_prop_checks (src.m_prop_checks)
 {
   using src_field_type = Field<SrcRealType>;
 
@@ -285,12 +322,12 @@ Field (const Field<SrcRealType>& src)
   //       constructor might already perform analogue checks in order to
   //       assign pointers.
 
-  // Check that underlying value type
-  static_assert(std::is_same<NonConst<RT>,NonConst<typename src_field_type::RT>>::value,
+  // Check that the underlying value type is the same
+  static_assert(std::is_same<non_const_RT,typename src_field_type::non_const_RT>::value,
                 "Error! Cannot use copy constructor if the underlying real type is different.\n");
   // Check that destination is const or source is nonconst
-  static_assert(std::is_same<RT,Const<RT>>::value ||
-                std::is_same<typename src_field_type::RT,NonConst<RT>>::value,
+  static_assert( std::is_const<RT>::value ||
+                !std::is_const<typename src_field_type::RT>::value,
                 "Error! Cannot create a nonconst field from a const field.\n");
 }
 
@@ -299,36 +336,37 @@ template<typename SrcRealType>
 Field<RealType>&
 Field<RealType>::
 operator= (const Field<SrcRealType>& src) {
-
   using src_field_type = typename std::remove_reference<decltype(src)>::type;
-#ifndef CUDA_BUILD // TODO Figure out why nvcc doesn't like this bit of code.
-  // Check that underlying value type
-  static_assert(
-      std::is_same<NonConst<RT>,NonConst<typename src_field_type::RT>>::value,
-      "Error! Cannot use copy constructor if the underlying value_type is different.\n");
-  // Check that destination is const or source is nonconst
-  static_assert(
-      std::is_same<RT,Const<RT>>::value ||
-      std::is_same<typename src_field_type::RT,NonConst<RT>>::value,
-      "Error! Cannot create a nonconst field from a const field.\n");
-#endif
 
-  // If the field has a valid header (i.e., name!=""), then
-  // we only allow assignment of fields with the *same* identifier.
+  // NOTE: the following checks might be redundant, since Kokkos::View copy
+  //       constructor might already perform analogue checks in order to
+  //       assign pointers.
+
+  // Check that the underlying value type is the same
+  static_assert(std::is_same<non_const_RT,typename src_field_type::non_const_RT>::value,
+                "Error! Cannot use copy constructor if the underlying real type is different.\n");
+  // Check that destination is const or source is nonconst
+  static_assert( std::is_const<RT>::value ||
+                !std::is_const<typename src_field_type::RT>::value,
+                "Error! Cannot create a nonconst field from a const field.\n");
+
+  // If the field has a valid header (i.e., m_header!=nullptr), then
+  // we only allow assignment of fields with the *same* identifier,
+  // AND if the field was not yet allocated.
   EKAT_REQUIRE_MSG(
-      m_header->get_identifier().get_id_string()=="" ||
-      m_header->get_identifier()==src.get_header().get_identifier(),
+      m_header==nullptr ||
+      (!is_allocated() && m_header->get_identifier()==src.get_header().get_identifier()),
       "Error! Assignment of fields with different (and non-null) identifiers is prohibited.\n");
 
   // Since the type of *this and src may be different, we cannot do the usual
   // `if (this!=&src)`, cause the compiler cannot compare those pointers.
-  // Therefore, we compare the stored pointers.
-  // If either header or view are different, we copy everything
-  if (m_header!=src.m_header ||
-      m_view_d.data()!=src.m_view_d.data()) {
+  // Therefore, we compare the stored headers and device views.
+  // If either one is different, we perform the copy.
+  if (m_header!=src.m_header || m_view_d.data()!=src.m_view_d.data()) {
     m_header = src.m_header;
     m_view_d = src.m_view_d;
     m_view_h = src.m_view_h;
+    m_prop_checks = src.m_prop_checks;
   }
 
   return *this;
@@ -399,7 +437,7 @@ sync_to_host () const {
 
   // Ensure host view was created (lazy construction)
   ensure_host_view ();
-  Kokkos::deep_copy(m_view_h,m_view_d);
+  Kokkos::deep_copy(*m_view_h,m_view_d);
 }
 
 template<typename RealType>
@@ -411,12 +449,14 @@ sync_to_dev () const {
 
   // Ensure host view was created (lazy construction)
   ensure_host_view ();
-  Kokkos::deep_copy(m_view_d,m_view_h);
+  Kokkos::deep_copy(m_view_d,*m_view_h);
 }
 
 template<typename RealType>
 Field<RealType> Field<RealType>::
-subfield (const std::string& sf_name, const int idim, const int k) const {
+subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
+          const int idim, const int k) const {
+
   const auto& id = m_header->get_identifier();
   const auto& lt = id.get_layout();
 
@@ -432,19 +472,53 @@ subfield (const std::string& sf_name, const int idim, const int k) const {
   tags.erase(tags.begin()+idim);
   dims.erase(dims.begin()+idim);
   FieldLayout sf_lt(tags,dims);
-  FieldIdentifier sf_id(sf_name,sf_lt,id.get_units(),id.get_grid_name());
+  FieldIdentifier sf_id(sf_name,sf_lt,sf_units,id.get_grid_name());
 
   // Create header
   auto sv_h = create_header(sf_id,m_header,idim,k);
 
-  // Return subfield
-  return field_type(sv_h,m_view_d);
+  // Create subfield (set host view too)
+  field_type sf(sv_h,m_view_d);
+  sf.m_view_h = m_view_h;
+
+  return sf;}
+
+template<typename RealType>
+Field<RealType> Field<RealType>::
+subfield (const std::string& sf_name, const int idim, const int k) const {
+  const auto& id = m_header->get_identifier();
+  return subfield(sf_name,id.get_units(),idim,k);
 }
 
 template<typename RealType>
 Field<RealType> Field<RealType>::
 subfield (const int idim, const int k) const {
   return subfield(m_header->get_identifier().name(),idim,k);
+}
+
+template<typename RealType>
+template<typename RhsRT>
+typename std::enable_if<
+  !std::is_same<RealType,RhsRT>::value,
+  bool>::type
+Field<RealType>::equivalent(const Field<RhsRT>& rhs) const
+{
+  return (m_header==rhs.m_header &&
+          is_allocated() &&
+          m_view_d==rhs.m_view_d);
+}
+
+template<typename RealType>
+template<typename RhsRT>
+typename std::enable_if<
+  std::is_same<RealType,RhsRT>::value,
+  bool>::type
+Field<RealType>::equivalent(const Field<RhsRT>& rhs) const
+{
+  return (this==&rhs) ||
+    (m_header==rhs.m_header &&
+     is_allocated() &&
+     m_view_d==rhs.m_view_d);
 }
 
 template<typename RealType>
@@ -473,7 +547,6 @@ void Field<RealType>::allocate_view ()
   const int view_dim = alloc_prop.get_alloc_size() / sizeof(RT);
 
   m_view_d = decltype(m_view_d)(id.name(),view_dim);
-  Kokkos::deep_copy(m_view_d,0.0);
 }
 
 template<typename RealType>
@@ -490,6 +563,8 @@ auto Field<RealType>::get_ND_view () const ->
   if (parent!=nullptr) {
     // Parent field has correct layout to reinterpret the view into N+1-dim view
     Field<RealType> f(parent,m_view_d);
+    f.m_view_h = m_view_h;  // Make sure we share the same host view ptr.
+
     auto v_np1 = f.get_ND_view<HD,T,N+1>();
 
     // Now we can subview v_np1 at the correct slice

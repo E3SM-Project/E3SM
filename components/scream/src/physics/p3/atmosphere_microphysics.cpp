@@ -16,9 +16,6 @@ namespace scream
 */
 
   using namespace p3;
-//  using P3F          = Functions<Real, DefaultDevice>;
-//  using Spack        = typename P3F::Spack;
-//  using Pack         = ekat::Pack<Real,Spack::n>;
 
   using view_1d  = typename P3F::view_1d<Real>;
   using view_2d  = typename P3F::view_2d<Spack>;
@@ -328,11 +325,27 @@ void P3Microphysics::finalize_impl()
 
 // =========================================================================================
 void P3Microphysics::register_fields (FieldRepository<Real>& field_repo) const {
+  std::set<ci_string> q_names =
+    { "qv","qc","qr","qi","qm","nc","nr","ni","bm",
+      "nccn_prescribed", "ni_activated",
+      "inv_qc_relvar","mu_c","lamc","nevapr",
+      "liq_ice_exchange","vap_liq_exchange","vap_ice_exchange"};
+
   for (auto& fid : m_required_fields) {
-    field_repo.register_field<Pack>(fid);
+    const auto& name = fid.name();
+    if (q_names.count(name)>0) {
+      field_repo.register_field<Pack>(fid,"TRACERS");
+    } else {
+      field_repo.register_field<Pack>(fid);
+    }
   }
   for (auto& fid : m_computed_fields) {
-    field_repo.register_field<Pack>(fid);
+    const auto& name = fid.name();
+    if (q_names.count(name)>0) {
+      field_repo.register_field<Pack>(fid,"TRACERS");
+    } else {
+      field_repo.register_field<Pack>(fid);
+    }
   }
 }
 

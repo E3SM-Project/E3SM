@@ -107,12 +107,14 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     Kokkos::deep_copy(cldliq_host, cldliq_device);
 
     // Validate results
+#ifndef NDEBUG
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(cldliq[s].qc2qi_collect_tend   == cldliq_host(s).qc2qi_collect_tend);
       REQUIRE(cldliq[s].nc_collect_tend      == cldliq_host(s).nc_collect_tend);
       REQUIRE(cldliq[s].qc2qr_ice_shed_tend  == cldliq_host(s).qc2qr_ice_shed_tend);
       REQUIRE(cldliq[s].ncshdc               == cldliq_host(s).ncshdc);
     }
+#endif
   }
 
   static void run_ice_cldliq_phys()
@@ -192,10 +194,12 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     Kokkos::deep_copy(rain_host, rain_device);
 
     // Validate results
+#ifndef NDEBUG
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(rain[s].qr2qi_collect_tend == rain_host(s).qr2qi_collect_tend);
       REQUIRE(rain[s].nr_collect_tend    == rain_host(s).nr_collect_tend);
     }
+#endif
   }
 
   static void run_ice_rain_phys()
@@ -268,9 +272,11 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
 
     Kokkos::deep_copy(self_host, self_device);
 
+#ifndef NDEBUG
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(self[s].ni_selfcollect_tend == self_host(s).ni_selfcollect_tend);
     }
+#endif
   }
 
 

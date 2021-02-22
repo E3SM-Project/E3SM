@@ -110,10 +110,12 @@ static void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
+#ifndef NDEBUG
   for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(cloud_rain_acc_data[s].qc2qr_accret_tend == host_data[s].qc2qr_accret_tend);
     REQUIRE(cloud_rain_acc_data[s].nc_accret_tend == host_data[s].nc_accret_tend);
   }
+#endif
 }
 
 };

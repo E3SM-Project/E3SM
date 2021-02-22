@@ -130,8 +130,6 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
       ComputeBruntShocLengthData(2, 7, 8),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeBruntShocLengthData);
-
     // Generate random input data
     for (auto& d : SDS_f90) {
       d.randomize();
@@ -163,6 +161,8 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeBruntShocLengthData);
     for (Int i = 0; i < num_runs; ++i) {
       ComputeBruntShocLengthData& d_f90 = SDS_f90[i];
       ComputeBruntShocLengthData& d_cxx = SDS_cxx[i];
@@ -170,6 +170,7 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
         REQUIRE(d_f90.brunt[k] == d_cxx.brunt[k]);
       }
     }
+#endif
   }
 };
 

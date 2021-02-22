@@ -75,9 +75,17 @@ public:
   template<typename ValueType>
   void request_allocation ();
 
-  // Request allocation able to accommodate the given ValueType
+  // Request allocation able to accommodate a pack of ScalarType of the given pack size
   template<typename ScalarType>
   void request_allocation (int pack_size);
+
+  // Request allocation able to accommodate pack_size scalars,
+  // where scalars have size scalar_size
+  void request_allocation (int scalar_size, int pack_size);
+
+  // Request allocation able to accommodate all the alloc props in src.
+  // Note: src does not need to be committed yet.
+  void request_allocation (const FieldAllocProp& src);
 
   // Locks the allocation properties, preventing furter value types requests
   void commit (const layout_ptr_type& layout);
@@ -95,6 +103,7 @@ public:
 
   // Size of the last extent in the alloction (i.e., number of scalars in it)
   int  get_last_extent () const;
+  int  get_padding () const;
 
   // Return the slice information of this subview allocation.
   const std::pair<int,int>& get_subview_idx () const { return m_subview_idx; }
@@ -143,25 +152,7 @@ void FieldAllocProp::request_allocation () {
 
 template<typename ScalarType>
 void FieldAllocProp::request_allocation (const int pack_size) {
-  using ekat::ScalarTraits;
-  using namespace ekat::error;
-
-  ekat::error::runtime_check(!m_committed, "Error! Cannot change allocation properties after they have been commited.\n");
-  
-  const int vts = sizeof(ScalarType)*pack_size;
-  if (m_scalar_type_size==0) {
-    // This is the first time we receive a request. Set the scalar type properties
-    m_scalar_type_size = sizeof(ScalarType);
-  } else {
-    // Make sure the new scalar_type coincides with the one already stored (check name and size)
-    runtime_check(sizeof(ScalarType)==m_scalar_type_size,
-                  std::string("Error! Scalar type incompatible with current allocation request:\n") +
-                  "         stored scalar type size: " + std::to_string(m_scalar_type_size) + "\n" +
-                  "         requested scalar type name: " + std::to_string(sizeof(ScalarType)) + "\n");
-  }
-
-  // Store the size of the value type.
-  m_value_type_sizes.push_back(vts);
+  request_allocation (sizeof(ScalarType),pack_size);
 }
 
 template<typename ValueType>
