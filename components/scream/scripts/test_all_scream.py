@@ -12,6 +12,7 @@ import os, shutil, pathlib
 import concurrent.futures as threading3
 import itertools
 import json
+from collections import OrderedDict
 
 ###############################################################################
 class TestAllScream(object):
@@ -110,18 +111,18 @@ class TestAllScream(object):
             "opt" : [("CMAKE_BUILD_TYPE", "Release")],
         }
 
-        self._test_full_names = {
-            "dbg" : "full_debug",
-            "sp"  : "full_sp_debug",
-            "fpe" : "debug_nopack_fpe",
-            "opt" : "release",
-        }
+        self._test_full_names = OrderedDict([
+            ("dbg" , "full_debug"),
+            ("sp"  , "full_sp_debug"),
+            ("fpe" , "debug_nopack_fpe"),
+            ("opt" , "release"),
+        ])
 
         if not self._tests:
-            # always do dbg and sp tests, do not do fpe test on CUDA
-            self._tests = ["dbg", "sp"]
-            if not is_cuda_machine(self._machine):
-                self._tests.append("fpe")
+            # default to all test types except do not do fpe on CUDA
+            self._tests = self._test_full_names.keys()
+            if is_cuda_machine(self._machine):
+                self._tests.remove("fpe")
         else:
             for t in self._tests:
                 expect(t in self._test_full_names,
