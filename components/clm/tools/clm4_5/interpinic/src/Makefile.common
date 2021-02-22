@@ -4,9 +4,9 @@
 #
 # These macros can be changed by setting environment variables:
 #
-# LIB_NETCDF --- Library directory location of netcdf. (defaults to /usr/local/lib)
-# INC_NETCDF --- Include directory location of netcdf. (defaults to /usr/local/include)
-# MOD_NETCDF --- Module directory location of netcdf.  (defaults to $LIB_NETCDF)
+# NETCDF_LIB --- Library directory location of netcdf. (defaults to /usr/local/lib)
+# NETCDF_INCLUDE --- Include directory location of netcdf. (defaults to /usr/local/include)
+# MOD_NETCDF --- Module directory location of netcdf.  (defaults to $NETCDF_LIB)
 # USER_FC ------ Allow user to override the default Fortran compiler specified in Makefile.
 # USER_FCTYP --- Allow user to override the default type of Fortran compiler (linux and USER_FC=ftn only).
 # USER_CC ------ Allow user to override the default C compiler specified in Makefile (linux only).
@@ -29,16 +29,16 @@ CURDIR := $(shell pwd)
 RM = rm
 
 # Check for the netcdf library and include directories 
-ifeq ($(LIB_NETCDF),$(null))
-  LIB_NETCDF := /usr/local/lib
+ifeq ($(NETCDF_LIB),$(null))
+  NETCDF_LIB := /usr/local/lib
 endif
 
-ifeq ($(INC_NETCDF),$(null))
-  INC_NETCDF := /usr/local/include
+ifeq ($(NETCDF_INCLUDE),$(null))
+  NETCDF_INCLUDE := /usr/local/include
 endif
 
 ifeq ($(MOD_NETCDF),$(null))
-  MOD_NETCDF := $(LIB_NETCDF)
+  MOD_NETCDF := $(NETCDF_LIB)
 endif
 
 # Set user specified Fortran compiler
@@ -74,7 +74,7 @@ UNAMES := $(shell uname -s)
 dirs := . $(shell cat Filepath)
 
 # Set cpp search path, include netcdf
-cpp_dirs := $(dirs) $(INC_NETCDF) $(MOD_NETCDF)
+cpp_dirs := $(dirs) $(NETCDF_INCLUDE) $(MOD_NETCDF)
 cpp_path := $(foreach dir,$(cpp_dirs),-I$(dir)) # format for command line
 
 # Expand any tildes in directory names. Change spaces to colons.
@@ -110,10 +110,10 @@ ifeq ($(UNAMES),AIX)
 CPPDEF += -DAIX 
 cpre = $(null)-WF,-D$(null)
 FPPFLAGS   := $(patsubst -D%,$(cpre)%,$(CPPDEF))
-FFLAGS  = -c -I$(INC_NETCDF) -q64 -qsuffix=f=f90 -qsuffix=f=f90:cpp=F90 \
+FFLAGS  = -c -I$(NETCDF_INCLUDE) -q64 -qsuffix=f=f90 -qsuffix=f=f90:cpp=F90 \
 	   $(FPPFLAGS)  -g -qfullpath -qarch=auto -qtune=auto -qsigtrap=xl__trcedump  -qsclk=micro
 
-LDFLAGS = -L$(LIB_NETCDF) -q64 -lnetcdff -lnetcdf
+LDFLAGS = -L$(NETCDF_LIB) -q64 -lnetcdff -lnetcdf
 ifneq ($(OPT),TRUE)
    FFLAGS  += -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en -qspillsize=4000 -C
 else
@@ -190,8 +190,8 @@ ifeq ($(FC),ifort)
      FFLAGS    += -O2
   endif
   ifeq ($(SMP),TRUE)
-    FFLAGS    += -openmp
-    LDFLAGS   += -openmp
+    FFLAGS    += -qopenmp
+    LDFLAGS   += -qopenmp
   endif
 endif
 
@@ -215,7 +215,7 @@ endif
 ifeq ($(CC),icc)
    CFLAGS     += -m64 -g
    ifeq ($(SMP),TRUE)
-     CFLAGS    += -openmp
+     CFLAGS    += -qopenmp
    endif
 endif
 ifeq ($(CC),pgcc)
@@ -223,7 +223,7 @@ ifeq ($(CC),pgcc)
 endif
 
 CFLAGS  += $(CPPDEF) $(cpp_path)
-LDFLAGS += -L$(LIB_NETCDF) -lnetcdf -lnetcdff
+LDFLAGS += -L$(NETCDF_LIB) -lnetcdf -lnetcdff
 
 endif
 
@@ -248,7 +248,7 @@ ifeq ($(UNAMES),Linux)
   endif
   CPPDEF += -DLINUX -DFORTRANUNDERSCORE
   CFLAGS := $(CPPDEF)
-  LDFLAGS := $(shell $(LIB_NETCDF)/../bin/nf-config --flibs)
+  LDFLAGS := $(shell $(NETCDF_LIB)/../bin/nf-config --flibs)
   FFLAGS =
 
   ifeq ($(FCTYP),pgf90)
@@ -279,8 +279,8 @@ ifeq ($(UNAMES),Linux)
     # even small
     # resolution problems (FV at 10x15 res fails).
     ifeq ($(SMP),TRUE)
-      FFLAGS  += --openmp --threadheap 4096
-      LDFLAGS += --openmp --threadheap 4096
+      FFLAGS  += --qopenmp --threadheap 4096
+      LDFLAGS += --qopenmp --threadheap 4096
     endif
   endif
   ifeq ($(FCTYP),pathf90)
@@ -307,12 +307,12 @@ ifeq ($(UNAMES),Linux)
        FFLAGS    += -O2
     endif
     ifeq ($(SMP),TRUE)
-      FFLAGS    += -openmp
-      CFLAGS    += -openmp
-      LDFLAGS   += -openmp
+      FFLAGS    += -qopenmp
+      CFLAGS    += -qopenmp
+      LDFLAGS   += -qopenmp
     endif
   endif
-  FFLAGS += -c -I$(INC_NETCDF) $(CPPDEF) $(cpp_path)
+  FFLAGS += -c -I$(NETCDF_INCLUDE) $(CPPDEF) $(cpp_path)
   CFLAGS += $(cpp_path)
 endif
 
