@@ -97,19 +97,25 @@ class TestAllScream(object):
         expect(not (self._baseline_ref and self._baseline_dir),
                "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
 
-        self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug"),
-                                           ("EKAT_DEFAULT_BFB", "True")],
-                                  "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
-                                           ("SCREAM_DOUBLE_PRECISION", "False"),
-                                           ("EKAT_DEFAULT_BFB", "True")],
-                                  "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
-                                           ("SCREAM_PACK_SIZE", "1"),
-                                           ("SCREAM_SMALL_PACK_SIZE", "1"),
-                                           ("EKAT_DEFAULT_BFB", "True")]}
+        self._tests_cmake_args = {
+            "dbg" : [("CMAKE_BUILD_TYPE", "Debug"),
+                     ("EKAT_DEFAULT_BFB", "True")],
+            "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
+                    ("SCREAM_DOUBLE_PRECISION", "False"),
+                     ("EKAT_DEFAULT_BFB", "True")],
+            "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
+                     ("SCREAM_PACK_SIZE", "1"),
+                     ("SCREAM_SMALL_PACK_SIZE", "1"),
+                     ("EKAT_DEFAULT_BFB", "True")],
+            "opt" : [("CMAKE_BUILD_TYPE", "Release")],
+        }
 
-        self._test_full_names = { "dbg" : "full_debug",
-                                  "sp"  : "full_sp_debug",
-                                  "fpe" : "debug_nopack_fpe"}
+        self._test_full_names = {
+            "dbg" : "full_debug",
+            "sp"  : "full_sp_debug",
+            "fpe" : "debug_nopack_fpe",
+            "opt" : "release",
+        }
 
         if not self._tests:
             # always do dbg and sp tests, do not do fpe test on CUDA
@@ -220,9 +226,12 @@ class TestAllScream(object):
             ctest_max_jobs = get_mach_testing_resources(self._machine)
             print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
 
-        self._testing_res_count = {"dbg" : ctest_max_jobs,
-                                   "sp"  : ctest_max_jobs,
-                                   "fpe" : ctest_max_jobs}
+        self._testing_res_count = {
+            "dbg" : ctest_max_jobs,
+            "sp"  : ctest_max_jobs,
+            "fpe" : ctest_max_jobs,
+            "opt" : ctest_max_jobs,
+        }
 
         # Deduce how many compilation resources per test
         if make_parallel_level > 0:
@@ -232,9 +241,12 @@ class TestAllScream(object):
             make_max_jobs = get_mach_compilation_resources(self._machine)
             print("Note: no value passed for --make-parallel-level. Using the default for this machine: {}".format(make_max_jobs))
 
-        self._compile_res_count = {"dbg" : make_max_jobs,
-                                   "sp"  : make_max_jobs,
-                                   "fpe" : make_max_jobs}
+        self._compile_res_count = {
+            "dbg" : make_max_jobs,
+            "sp"  : make_max_jobs,
+            "fpe" : make_max_jobs,
+            "opt" : make_max_jobs,
+        }
 
         if self._parallel:
             # We need to be aware that other builds may be running too.
