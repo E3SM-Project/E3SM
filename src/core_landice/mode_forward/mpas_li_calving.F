@@ -1990,8 +1990,8 @@ module li_calving
 
        mag = sqrt(u**2 + v**2)
        if (mag == 0.0_RKIND) mag = 1.0_RKIND
-       !scale_edge_length =  abs(u/mag * cos(-1.0*angleEdgeHere) + v/mag * sin(-1.0*angleEdgeHere))  ! dot product of unit vectors
-       scale_edge_length = abs(cos(angleEdgeHere - atan2(v, u)))
+       scale_edge_length =  abs(u/mag * cos(-1.0*angleEdgeHere) + v/mag * sin(-1.0*angleEdgeHere))  ! dot product of unit vectors
+       !scale_edge_length = abs(cos(angleEdgeHere - atan2(v, u)))
     end function scale_edge_length
 
 
