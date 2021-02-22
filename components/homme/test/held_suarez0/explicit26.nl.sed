@@ -14,12 +14,16 @@ pgrad_correction=1
 hv_ref_profiles=2
 hv_theta_correction=1
 limiter_option = 9
-rsplit        = 1
 restartfreq   =  1
 restartfile   = "restart/R0001"
 restartdir    = "./restart/"
 runtype       = RUNTYPE
 tstep         = TSTEP
+dt_remap_factor = 1
+dt_tracer_factor = 1
+vert_remap_q_alg = 11
+vert_remap_bl = 3
+vert_remap_tom = 0
 integration   = "explicit"
 nu            = NU1
 nu_top = 2.5e5
@@ -39,9 +43,9 @@ infilenames=''
 output_timeunits=1,0,2    ! 1=days, 2=hours, 3=seconds
 output_frequency=1,0,0    ! 0 to disable
 output_start_time=200,0,0
-output_end_time=30000,999999999,0
-output_varnames1='u','v','T','zeta','div','ps','geos','omega'
-!output_varnames1='u','v','T','zeta','ps','Q','DIFFT'
+output_end_time=500,999999999,0
+!output_varnames1='u','v','T','zeta','div','ps','geos','omega'
+output_varnames1='u','v','T','omega','ps'
 ! debug output
 output_varnames2='u','v','T','zeta','div','ps','geo','dp3d','geos','Th'
 ! output3: hourly data for 20 days  
