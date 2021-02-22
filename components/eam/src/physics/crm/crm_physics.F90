@@ -74,10 +74,8 @@ subroutine crm_physics_register()
 #if defined(MMF_SAMXX)
    use cpp_interface_mod,   only: setparm
    use gator_mod, only: gator_init
-#elif defined(MMF_SAM)
+#elif defined(MMF_SAM) || defined(MMF_SAMOMP)
    use setparm_mod      ,   only: setparm
-#elif defined(MMF_SAMOMP)
-   use setparm_mod     ,    only: setparm
 #endif
    use crm_history,         only: crm_history_register
 #ifdef MODAL_AERO
