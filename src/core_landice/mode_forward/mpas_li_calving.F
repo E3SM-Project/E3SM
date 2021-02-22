@@ -1654,7 +1654,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: calvingThickness
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: eMax
-      real (kind=RKIND), dimension(:), pointer :: sigmamax, sigmamin, sigmaxx, sigmaxy, sigmayx, sigmayy 
+      real (kind=RKIND), dimension(:), pointer :: tauMax, tauMin, tauxx, tauxy, tauyx, tauyy 
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer :: damage
       real (kind=RKIND), dimension(:), pointer :: ddamagedt
@@ -1735,26 +1735,26 @@ module li_calving
          alpha => alphaVar % array
 
          call mpas_pool_get_array(velocityPool, 'eMax', eMax) 
-         call mpas_pool_get_array(velocityPool, 'sigmaxx', sigmaxx)
-         call mpas_pool_get_array(velocityPool, 'sigmayy', sigmayy)
-         call mpas_pool_get_array(velocityPool, 'sigmaxy', sigmaxy)
-         call mpas_pool_get_array(velocityPool, 'sigmayx', sigmayx)
-         call mpas_pool_get_array(velocityPool, 'sigmamax', sigmamax)
-         call mpas_pool_get_array(velocityPool, 'sigmamin', sigmamin)
+         call mpas_pool_get_array(velocityPool, 'tauxx', tauxx)
+         call mpas_pool_get_array(velocityPool, 'tauyy', tauyy)
+         call mpas_pool_get_array(velocityPool, 'tauxy', tauxy)
+         call mpas_pool_get_array(velocityPool, 'tauyx', tauyx)
+         call mpas_pool_get_array(velocityPool, 'tauMax', tauMax)
+         call mpas_pool_get_array(velocityPool, 'tauMin', tauMin)
 
          where (thickness == 0.0_RKIND)
              alpha = 0.0_RKIND
              s0 = 0.0_RKIND
          elsewhere
-             alpha = sigmamin / sigmamax 
+             alpha = tauMin / tauMax 
              s0 = &
-             config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*sigmamax*config_ocean_density)
+             config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*tauMax*config_ocean_density)
          endwhere
 
-         !alpha(:) = sigmamin(:) / (sigmamax(:))
-         !epsmax(:) = sigmamax(:) / (2.0d0*effectiveViscosity(:))
+         !alpha(:) = tauMin(:) / (tauMax(:))
+         !epsmax(:) = tauMax(:) / (2.0d0*effectiveViscosity(:))
          !s0(:) =
-         !config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness(:)/(2.0d0*sigmamax(:)*config_ocean_density)
+         !config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness(:)/(2.0d0*tauMax(:)*config_ocean_density)
           ! Compute the hydrostatic to tensile stress ratio
           ! These commented lines are doing the same thing as the above where loop. Which is better?
 
@@ -1763,7 +1763,7 @@ module li_calving
           ! Compute the effective flow law exponent
 
          !s0(:) =
-         !config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness(:)/(2.0d0*sigmamax(:)*config_ocean_density)
+         !config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness(:)/(2.0d0*tauMax(:)*config_ocean_density)
           ! Compute the hydrostatic to tensile stress ratio
 
          !do iCell = 1, nCells
@@ -1800,7 +1800,7 @@ module li_calving
              if (thickness(iCell) == 0.0_RKIND) then
                  damage_nye(iCell) = 0.0_RKIND
              else
-                 damage_nye(iCell) = (2.0+alpha(iCell)) * sigmamax(iCell) / (gravity*(config_ocean_density-config_ice_density)*thickness(iCell))
+                 damage_nye(iCell) = (2.0+alpha(iCell)) * tauMax(iCell) / (gravity*(config_ocean_density-config_ice_density)*thickness(iCell))
              endif
          enddo
          !damage_nye(:) = 0.5
@@ -1893,8 +1893,8 @@ module li_calving
                         realArgs=(/minval(nstar), maxval(nstar)/))
              call mpas_log_write("deltat value range: Min=$r, Max=$r", &
                         realArgs=(/deltat, deltat/))
-             call mpas_log_write("sigmamax value range: Min=$r, Max=$r", &
-                        realArgs=(/minval(sigmamax), maxval(sigmamax)/))
+             call mpas_log_write("tauMax value range: Min=$r, Max=$r", &
+                        realArgs=(/minval(tauMax), maxval(tauMax)/))
              call mpas_log_write("damage value range: Min=$r, Max=$r", &
                         realArgs=(/minval(damage), maxval(damage)/))
              call mpas_log_write("alpha value range: Min=$r, Max=$r", &
