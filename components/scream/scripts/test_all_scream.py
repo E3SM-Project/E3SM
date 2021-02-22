@@ -120,7 +120,7 @@ class TestAllScream(object):
 
         if not self._tests:
             # default to all test types except do not do fpe on CUDA
-            self._tests = self._test_full_names.keys()
+            self._tests = list(self._test_full_names.keys())
             if is_cuda_machine(self._machine):
                 self._tests.remove("fpe")
         else:
