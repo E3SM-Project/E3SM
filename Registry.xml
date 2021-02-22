@@ -217,7 +217,7 @@
 		            possible_values="'calving_rate', 'threshold'"
 		/>
     <nml_option name="config_damagecalvingParameter" type="real" default_value="1.0e-4" units="m/s"
-                        description="A scalar parameter that links damage and calving when we use the calving_rate method"
+                        description="A scalar parameter that specifies a calving rate as proportional to the value of damage above some threshold value when using the calving_rate method for the config_damage_calving_method option (with the threshold damage value specified by config_damage_calving_threshold)"
 	                possible_values="any positive real value"
 		/>
 	</nml_record>
