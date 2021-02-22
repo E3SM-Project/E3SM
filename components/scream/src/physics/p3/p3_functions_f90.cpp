@@ -234,11 +234,10 @@ void p3_main_c(
   Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev, Real* elapsed_s);
 
-void ice_supersat_conservation_c(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt);
+void ice_supersat_conservation_c(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt, Real qi2qv_sublim_tend, Real qr2qv_evap_tend);
 void nc_conservation_c(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_collect_tend, Real* nc2ni_immers_freeze_tend, Real* nc_accret_tend, Real* nc2nr_autoconv_tend);
 void nr_conservation_c(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real nmltratio, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend);
 void ni_conservation_c(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_tend, Real nc2ni_immers_freeze_tend, Real dt, Real* ni2nr_melt_tend, Real* ni_sublim_tend, Real* ni_selfcollect_tend);
-void water_vapor_conservation_c(Real qv, Real* qidep, Real* qinuc, Real qi2qv_sublim_tend, Real qr2qv_evap_tend, Real dt);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -843,7 +842,7 @@ void p3_main(P3MainData& d)
 void ice_supersat_conservation(IceSupersatConservationData& d)
 {
   p3_init();
-  ice_supersat_conservation_c(&d.qidep, &d.qinuc, d.cld_frac_i, d.qv, d.qv_sat_i, d.latent_heat_sublim, d.t_atm, d.dt);
+  ice_supersat_conservation_c(&d.qidep, &d.qinuc, d.cld_frac_i, d.qv, d.qv_sat_i, d.latent_heat_sublim, d.t_atm, d.dt, d.qi2qv_sublim_tend, d.qr2qv_evap_tend);
 }
 
 void nc_conservation(NcConservationData& d)
@@ -875,6 +874,8 @@ void IceSupersatConservationData::randomize()
   latent_heat_sublim = data_dist(generator);
   t_atm              = data_dist(generator);
   dt                 = data_dist(generator);
+  qi2qv_sublim_tend  = data_dist(generator);
+  qr2qv_evap_tend    = data_dist(generator);
   qidep              = data_dist(generator);
   qinuc              = data_dist(generator);
 }
@@ -924,25 +925,6 @@ void NiConservationData::randomize()
   ni2nr_melt_tend          = data_dist(generator);
   ni_sublim_tend           = data_dist(generator);
   ni_selfcollect_tend      = data_dist(generator);
-}
-
-void WaterVaporConservationData::randomize()
-{
-  std::default_random_engine generator;
-  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
-
-  qv                = data_dist(generator);
-  qi2qv_sublim_tend = data_dist(generator);
-  qr2qv_evap_tend   = data_dist(generator);
-  dt                = data_dist(generator);
-  qidep             = data_dist(generator);
-  qinuc             = data_dist(generator);
-}
-
-void water_vapor_conservation(WaterVaporConservationData& d)
-{
-  p3_init();
-  water_vapor_conservation_c(d.qv, &d.qidep, &d.qinuc, d.qi2qv_sublim_tend, d.qr2qv_evap_tend, d.dt);
 }
 // end _c impls
 
@@ -3405,7 +3387,7 @@ Int p3_main_f(
   return elapsed_microsec;
 }
 
-void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt)
+void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt, Real qi2qv_sublim_tend, Real qr2qv_evap_tend)
 {
   using PF = Functions<Real, DefaultDevice>;
 
@@ -3417,8 +3399,8 @@ void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real
 
   Real local_qidep(*qidep), local_qinuc(*qinuc);
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    Spack cld_frac_i_(cld_frac_i), latent_heat_sublim_(latent_heat_sublim), qidep_(local_qidep), qinuc_(local_qinuc), qv_(qv), qv_sat_i_(qv_sat_i), t_atm_(t_atm);
-    PF::ice_supersat_conservation(qidep_, qinuc_, cld_frac_i_, qv_, qv_sat_i_, latent_heat_sublim_, t_atm_, dt);
+    Spack cld_frac_i_(cld_frac_i), latent_heat_sublim_(latent_heat_sublim), qidep_(local_qidep), qinuc_(local_qinuc), qv_(qv), qv_sat_i_(qv_sat_i), t_atm_(t_atm), qi2qv_sublim_tend_(qi2qv_sublim_tend), qr2qv_evap_tend_(qr2qv_evap_tend);
+    PF::ice_supersat_conservation(qidep_, qinuc_, cld_frac_i_, qv_, qv_sat_i_, latent_heat_sublim_, t_atm_, dt, qi2qv_sublim_tend_, qr2qv_evap_tend_);
     t_d(0) = qidep_[0];
     t_d(1) = qinuc_[0];
   });
@@ -3501,28 +3483,6 @@ void ni_conservation_f(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_t
   *ni2nr_melt_tend = t_h(0);
   *ni_selfcollect_tend = t_h(1);
   *ni_sublim_tend = t_h(2);
-}
-
-void water_vapor_conservation_f(Real qv, Real* qidep, Real* qinuc, Real qi2qv_sublim_tend, Real qr2qv_evap_tend, Real dt)
-{
-  using PF = Functions<Real, DefaultDevice>;
-
-  using Spack   = typename PF::Spack;
-  using view_1d = typename PF::view_1d<Real>;
-
-  view_1d t_d("t_d", 2);
-  const auto t_h = Kokkos::create_mirror_view(t_d);
-
-  Real local_qidep(*qidep), local_qinuc(*qinuc);
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    Spack qi2qv_sublim_tend_(qi2qv_sublim_tend), qidep_(local_qidep), qinuc_(local_qinuc), qr2qv_evap_tend_(qr2qv_evap_tend), qv_(qv);
-    PF::water_vapor_conservation(qv_, qidep_, qinuc_, qi2qv_sublim_tend_, qr2qv_evap_tend_, dt);
-    t_d(0) = qidep_[0];
-    t_d(1) = qinuc_[0];
-  });
-  Kokkos::deep_copy(t_h, t_d);
-  *qidep = t_h(0);
-  *qinuc = t_h(1);
 }
 
 } // namespace p3

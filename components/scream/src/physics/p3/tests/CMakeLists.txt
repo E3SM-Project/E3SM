@@ -37,7 +37,6 @@ set(P3_TESTS_SRCS
     p3_nc_conservation_tests.cpp
     p3_nr_conservation_tests.cpp
     p3_ni_conservation_tests.cpp
-    p3_water_vapor_conservation_tests.cpp
     ) # P3_TESTS_SRCS
 
 # The p3_test_setup executable generates tables used by all p3 tests. This

@@ -934,13 +934,13 @@ subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
 
  end subroutine p3_main_part3_c
 
-  subroutine ice_supersat_conservation_c(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt) bind(C)
+  subroutine ice_supersat_conservation_c(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt, qi2qv_sublim_tend, qr2qv_evap_tend) bind(C)
     use micro_p3, only : ice_supersat_conservation
 
     real(kind=c_real) , intent(inout) :: qidep, qinuc
-    real(kind=c_real) , value, intent(in) :: cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt
+    real(kind=c_real) , value, intent(in) :: cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt, qi2qv_sublim_tend, qr2qv_evap_tend
 
-    call ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt)
+    call ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt, qi2qv_sublim_tend, qr2qv_evap_tend)
   end subroutine ice_supersat_conservation_c
   subroutine nc_conservation_c(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend) bind(C)
     use micro_p3, only : nc_conservation
@@ -966,12 +966,4 @@ subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
 
     call ni_conservation(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, dt, ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend)
   end subroutine ni_conservation_c
-  subroutine water_vapor_conservation_c(qv, qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend, dt) bind(C)
-    use micro_p3, only : water_vapor_conservation
-
-    real(kind=c_real) , value, intent(in) :: qv, qi2qv_sublim_tend, qr2qv_evap_tend, dt
-    real(kind=c_real) , intent(inout) :: qidep, qinuc
-
-    call water_vapor_conservation(qv, qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend, dt)
-  end subroutine water_vapor_conservation_c
 end module p3_iso_c
