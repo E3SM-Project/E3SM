@@ -234,8 +234,10 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
       group = std::make_shared<group_info_type>(group_name);
     }
     
-    // Add the field name to the set of fields belonging to this group
-    group->m_fields_names.insert(id.name());
+    // Add the field name to the list of fields belonging to this group
+    if (ekat::find(group->m_fields_names,id.name())==group->m_fields_names.end()) {
+      group->m_fields_names.push_back(id.name());
+    }
   }
 }
 
@@ -401,7 +403,7 @@ void FieldRepository<RealType>::
 registration_ends (const std::shared_ptr<const GridsManager>& gm) {
 
   // Count fields in the 'TRACERS' group
-  auto& tr_gr = *m_field_groups["TRACERS"];
+  FieldGroupInfo& tr_gr = *m_field_groups["TRACERS"];
   const int nt = tr_gr.m_fields_names.size();
   std::set<std::string> tr_grids;
   for (auto& fn : tr_gr.m_fields_names) {
@@ -410,6 +412,13 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
     for (const auto& it_f : map) {
       tr_grids.insert(it_f.second->get_header().get_identifier().get_grid_name());
     }
+  }
+
+  // Homme (and possibly other places in EAM) hard-codes water vapor as the 1st
+  // tracer in Q. Therfore, find qv in the TRACERS group, and make sure it's the 1st
+  auto qv_pos = ekat::find(tr_gr.m_fields_names,"qv");
+  if (qv_pos!=tr_gr.m_fields_names.end()) {
+    std::iter_swap(tr_gr.m_fields_names.begin(),qv_pos);
   }
 
   // Inspect the TRACERS TENDENCY group, and make sure that:
@@ -445,6 +454,7 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
 
   // Empty the tracers tendencies group. When we create tracers, we will re-fill it,
   // making sure the tracer tendencies are in the same order as the tracers
+  tr_tend_gr = FieldGroupInfo(tr_tend_gr.m_group_name);
 
   // If there are tracers, we need gm to be valid
   EKAT_REQUIRE_MSG (nt==0 || gm!=nullptr,
