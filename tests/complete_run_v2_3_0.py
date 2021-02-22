@@ -14,12 +14,9 @@ class TestCompleteRun(unittest.TestCase):
     def test_complete_run(self):
         actual_images_dir = run_lcrc('.')
 
-        # The expected_images_file lists all 475 images we expect to compare.
-        # It was generated with the following steps:
-        # cd /lcrc/group/e3sm/public_html/e3sm_diags_test_data/unit_test_complete_run/v2_3_0_all_sets_2021_02_09
-        # find . -type f -name '*.png' > ../expected_images_v2_3_0_all_sets_2021_02_09.txt
-        expected_images_file = '/lcrc/group/e3sm/public_html/e3sm_diags_test_data/unit_test_complete_run/expected_images_v2_3_0_all_sets_2021_02_09.txt'
-        expected_images_dir = '/lcrc/group/e3sm/public_html/e3sm_diags_test_data/unit_test_complete_run/v2_3_0_all_sets_2021_02_09'
+        # The expected_images_file lists all images we expect to compare.
+        expected_images_file = '/lcrc/group/e3sm/public_html/e3sm_diags_test_data/unit_test_complete_run/expected_images_v2_3_0_all_sets_2021_02_22.txt'
+        expected_images_dir = '/lcrc/group/e3sm/public_html/e3sm_diags_test_data/unit_test_complete_run/v2_3_0_all_sets_2021_02_22'
 
         mismatched_images = []
 
