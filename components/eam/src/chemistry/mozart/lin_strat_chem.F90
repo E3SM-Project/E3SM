@@ -154,8 +154,8 @@ end subroutine linoz_readnl
 
     ! define additional output
 
-    call addfld( 'LINOZ_DO3'    , (/ 'lev' /), 'A', '/s'     , 'ozone vmr tendency by linearized ozone chemistry'   )
-    call addfld( 'LINOZ_DO3_PSC', (/ 'lev' /), 'A', '/s'     , 'ozone vmr loss by PSCs using Carille et al. (1990)' )
+    call addfld( 'LINOZ_DO3'    , (/ 'lev' /), 'A', '1/s'     , 'ozone vmr tendency by linearized ozone chemistry'   )
+    call addfld( 'LINOZ_DO3_PSC', (/ 'lev' /), 'A', '1/s'     , 'ozone vmr loss by PSCs using Carille et al. (1990)' )
     call addfld( 'LINOZ_SSO3'   , (/ 'lev' /), 'A', 'kg'     , 'steady state ozone in LINOZ'                        )
     call addfld( 'LINOZ_O3COL'  , (/ 'lev' /), 'A', 'DU'     , 'ozone column above'                                 )
     call addfld( 'LINOZ_O3CLIM' , (/ 'lev' /), 'A', 'mol/mol', 'climatology of ozone in LINOZ'                      )

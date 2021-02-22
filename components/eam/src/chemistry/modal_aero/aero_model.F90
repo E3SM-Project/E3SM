@@ -454,7 +454,7 @@ contains
        endif
 
        dummy = 'LND_MBL'
-       call addfld (dummy,horiz_only, 'A','frac','Soil erodibility factor')
+       call addfld (dummy,horiz_only, 'A','1','Soil erodibility factor')
        if (history_aerosol) then
           call add_default (dummy, 1, ' ')
        endif
