@@ -197,8 +197,6 @@ create_tgt_layout (const FieldLayout& src_layout) const {
     case LayoutType::Tensor3D:
       {
         // Replace last tag/tim with GP/NP, then push back GP/NP and LEV/nvl
-
-        // Note down num levels
         tags.back() = GP;
         dims.back() = HOMMEXX_NP;
 
