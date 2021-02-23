@@ -315,9 +315,12 @@ void HommeDynamics::run_impl (const Real dt)
   try {
     prim_run_f90 (dt);
 
-    // Update all fields time stamp
+    // Get a copy of the current timestamp (at the beginning of the step) and
+    // advance it, updating the p3 fields.
+    auto ts = timestamp();
+    ts += dt;
     for (auto& it : m_dyn_fields_out) {
-      it.second.get_header().get_tracking().update_time_stamp(this->timestamp());
+      it.second.get_header().get_tracking().update_time_stamp(ts);
     }
   } catch (std::exception& e) {
     ekat::error::runtime_abort(e.what());
