@@ -1551,13 +1551,14 @@ module li_calving
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       real (kind=RKIND), pointer :: deltat  !< time step (s)
       real (kind=RKIND), dimension(:), allocatable :: thicknessForAblation
+      real (kind=RKIND), dimension(:), allocatable :: uvelForAblation, vvelForAblation
       real (kind=RKIND), dimension(:), pointer :: requiredAblationVolumeNonDynEdge, requiredAblationVolumeNonDynCell
       real (kind=RKIND), dimension(:), pointer :: requiredAblationVolumeDynEdge, requiredAblationVolumeDynCell
       real (kind=RKIND), dimension(:), pointer :: ablatedVolumeNonDynCell, ablatedVolumeDynCell
       real (kind=RKIND), dimension(:), pointer :: unablatedVolumeNonDynCell, unablatedVolumeDynCell
       real (kind=RKIND), dimension(:), allocatable :: cellVolume
       real(kind=RKIND) :: ablationSubtotal1, ablationSubtotal2, ablationSubtotal3
-      real(kind=RKIND) :: thkSum, ablationVelSum
+      real(kind=RKIND) :: thkSum, ablationVelSum, uvelSum, vvelSum
       integer :: thkCount
       real(kind=RKIND) :: removeVolumeHere
       real(kind=RKIND) :: volumeAvailableToPass !< a temp. var. for accounting purposes that indicates how much volume
@@ -1715,6 +1716,10 @@ module li_calving
       requiredAblationVolumeDynCell(:) = 0.0_RKIND
       allocate(thicknessForAblation(nCells+1))
       thicknessForAblation = 0.0_RKIND
+      allocate(uvelForAblation(nCells+1))
+      uvelForAblation(:) = 0.0_RKIND
+      allocate(vvelForAblation(nCells+1))
+      vvelForAblation(:) = 0.0_RKIND
 
       ! 1. Calculate ablation rate for all non-dynamic cells by working with their ocean-going edges
       ablationSubtotal1 = 0.0_RKIND
@@ -1724,11 +1729,15 @@ module li_calving
             ! find mean (or min?) of thickness in dynamic neighbors
             ablationVelSum = 0.0_RKIND
             thkSum = 0.0_RKIND
+            uvelSum = 0.0_RKIND
+            vvelSum = 0.0_RKIND
             thkCount = 0
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if (li_mask_is_dynamic_ice(cellMask(jCell))) then
                   thkSum = thkSum + thickness(jCell)
+                  uvelSum = uvelSum + uReconstructX(1, jCell)
+                  vvelSum = vvelSum + uReconstructY(1, jCell)
                   ablationVelSum = ablationVelSum + ablationVelocity(jCell)
                   thkCount = thkCount + 1
                endif
@@ -1739,6 +1748,8 @@ module li_calving
             else
                thicknessForAblation(iCell) = thkSum / real(thkCount, kind=RKIND)
                ablationVelocity(iCell) = ablationVelSum / real(thkCount, kind=RKIND)
+               uvelForAblation(iCell) = uvelSum / real(thkCount, kind=RKIND)
+               vvelForAblation(iCell) = vvelSum / real(thkCount, kind=RKIND)
             endif
          endif
       enddo
@@ -1751,12 +1762,16 @@ module li_calving
               .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
             ablationVelSum = 0.0_RKIND
             thkSum = 0.0_RKIND
+            uvelSum = 0.0_RKIND
+            vvelSum = 0.0_RKIND
             thkCount = 0
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if ( li_mask_is_floating_ice(cellMask(jCell)) &
                     .and. (.not. li_mask_is_dynamic_ice(cellMask(jCell))) ) then
                   thkSum = thkSum + thickness(jCell)
+                  uvelSum = uvelSum + uReconstructX(1, jCell)
+                  vvelSum = vvelSum + uReconstructY(1, jCell)
                   ablationVelSum = ablationVelSum + ablationVelocity(jCell)
                   thkCount = thkCount + 1
                endif
@@ -1767,6 +1782,8 @@ module li_calving
             else
                 thicknessForAblation(iCell) = thkSum / real(thkCount, kind=RKIND)
                 ablationVelocity(iCell) = ablationVelSum / real(thkCount, kind=RKIND)
+                uvelForAblation(iCell) = uvelSum / real(thkCount, kind=RKIND)
+                vvelForAblation(iCell) = vvelSum / real(thkCount, kind=RKIND)
             endif
          endif
       enddo
@@ -1782,7 +1799,7 @@ module li_calving
                if (li_mask_is_margin(edgeMask(iEdge)) .and. & !< edge is a margin
                    .not. li_mask_is_ice(cellMask(jCell)) .and. bedTopography(jCell) < config_sea_level & ! ensure margin is w/ocn
                    ) then
-                  edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
+                  edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uvelForAblation(iCell), vvelForAblation(iCell))
                   requiredAblationVolumeNonDynEdge(iEdge) = ablationVelocity(iCell) * &
                           edgeLengthScaling * dvEdge(iEdge) * thicknessForAblation(iCell) * deltat
                   requiredAblationVolumeNonDynCell(iCell) = requiredAblationVolumeNonDynCell(iCell) + &
@@ -1816,7 +1833,7 @@ module li_calving
                jCell = cellsOnCell(iNeighbor, iCell)
                if ((.not. li_mask_is_ice(cellMask(jCell))) .and. (bedTopography(jCell) <= config_sea_level)) then
                   iEdge = edgesOnCell(iNeighbor, iCell)
-                  edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
+                  edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uvelForAblation(iCell), vvelForAblation(iCell))
                   requiredAblationVolumeDynEdge(iEdge) = ablationVelocity(iCell) * &
                           edgeLengthScaling * dvEdge(iEdge) * thickness(iCell) * deltat
                endif
@@ -1840,31 +1857,33 @@ module li_calving
             do iNeighbor = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iNeighbor, iCell)
                if (li_mask_is_dynamic_ice(edgeMask(iEdge))) then
-                  edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
+                  edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uvelForAblation(iCell), vvelForAblation(iCell))
                   ablateLengthEdge = edgeLengthScaling * dvEdge(iEdge)
                   ablateLengthCell = ablateLengthCell + ablateLengthEdge
                endif
             enddo
 
             ! Now that we know calvLengthCell, pass along the required calving volume relative to the interface length
-            do iNeighbor = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(iNeighbor, iCell)
-               jCell = cellsOnCell(iNeighbor, iCell)
-               if (li_mask_is_dynamic_ice(edgeMask(iEdge))) then
-                  edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
-                  ablateLengthEdge = edgeLengthScaling * dvEdge(iEdge)
-                  if (requiredAblationVolumeDynEdge(iEdge) > 0.0_RKIND) then
-                     call mpas_log_write("Unexpectedly found a dynamic edge that already has calving assigned to it." // &
-                           "  There is a flaw in li_apply_front_ablation_velocity that needs to be fixed!", MPAS_LOG_ERR)
-                     err_tmp = 1
-                     err = ior(err, err_tmp)
+            if ( ablateLengthCell > 0.0_RKIND ) then
+               do iNeighbor = 1, nEdgesOnCell(iCell)
+                  iEdge = edgesOnCell(iNeighbor, iCell)
+                  jCell = cellsOnCell(iNeighbor, iCell)
+                  if (li_mask_is_dynamic_ice(edgeMask(iEdge))) then
+                     edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uvelForAblation(iCell), vvelForAblation(iCell))
+                     ablateLengthEdge = edgeLengthScaling * dvEdge(iEdge)
+                     if (requiredAblationVolumeDynEdge(iEdge) > 0.0_RKIND) then
+                        call mpas_log_write("Unexpectedly found a dynamic edge that already has calving assigned to it." // &
+                              "  There is a flaw in li_apply_front_ablation_velocity that needs to be fixed!", MPAS_LOG_ERR)
+                        err_tmp = 1
+                        err = ior(err, err_tmp)
+                     endif
+                     requiredAblationVolumeDynEdge(iEdge) = ablateLengthEdge / ablateLengthCell * volumeAvailableToPass
+                     unablatedVolumeNonDynCell(iCell) = unablatedVolumeNonDynCell(iCell) - requiredAblationVolumeDynEdge(iEdge)
+                    !call mpas_log_write("   Passed calving $r from non-dynamic cell $i to dynamic cell $i", &
+                    !        realArgs=(/requiredAblationVolumeDynEdge(iEdge)/), intArgs=(/iCell, jCell/))
                   endif
-                  requiredAblationVolumeDynEdge(iEdge) = ablateLengthEdge / ablateLengthCell * volumeAvailableToPass
-                  unablatedVolumeNonDynCell(iCell) = unablatedVolumeNonDynCell(iCell) - requiredAblationVolumeDynEdge(iEdge)
-                  !call mpas_log_write("   Passed calving $r from non-dynamic cell $i to dynamic cell $i", &
-                  !        realArgs=(/requiredAblationVolumeDynEdge(iEdge)/), intArgs=(/iCell, jCell/))
-               endif
-            enddo
+               enddo
+            endif
          endif
       enddo
       call mpas_timer_start("halo updates")
@@ -1973,6 +1992,8 @@ module li_calving
 
       deallocate(cellVolume)
       deallocate(thicknessForAblation)
+      deallocate(uvelForAblation)
+      deallocate(vvelForAblation)
       call mpas_log_write("Finished with li_apply_front_ablation_velocity")
 
     end subroutine li_apply_front_ablation_velocity
