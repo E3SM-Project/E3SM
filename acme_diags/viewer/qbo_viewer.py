@@ -1,5 +1,7 @@
 import os
+
 from cdp.cdp_viewer import OutputViewer
+
 from .default_viewer import create_metadata
 from .utils import add_header, h1_to_h3
 
@@ -14,14 +16,14 @@ def create_viewer(root_dir, parameters):
     viewer = OutputViewer(path=root_dir)
 
     # The name that's displayed on the viewer.
-    display_name = 'Quasi-biennial Oscillation'
-    set_name = 'qbo'
+    display_name = "Quasi-biennial Oscillation"
+    set_name = "qbo"
     # The title of the colums on the webpage.
     # Appears in the second and third columns of the bolded rows.
-    cols = ['Description', 'Plot']
+    cols = ["Description", "Plot"]
     viewer.add_page(display_name, short_name=set_name, columns=cols)
     # Appears in the first column of the bolded rows.
-    viewer.add_group('Variable')
+    viewer.add_group("Variable")
     for param in parameters:
         # We need to make sure we have relative paths, and not absolute ones.
         # This is why we don't use get_output_dir() as in the plotting script
@@ -32,22 +34,21 @@ def create_viewer(root_dir, parameters):
         # to match the file_path determined in
         # acme_diags/plot/cartopy/qbo_plot.py.
         # Otherwise, the plot will not be properly linked from the viewer.
-        relative_path = os.path.join(
-            '..', set_name, param.case_id,
-            param.output_file)
-        image_relative_path = '{}.{}'.format(relative_path, ext)
+        relative_path = os.path.join("..", set_name, param.case_id, param.output_file)
+        image_relative_path = "{}.{}".format(relative_path, ext)
         if param.print_statements:
-            print('image_relative_path: {}'.format(image_relative_path))
+            print("image_relative_path: {}".format(image_relative_path))
         formatted_files = []
         if param.save_netcdf:
             nc_files = []
-            variables = ['qbo', 'level']
+            variables = ["qbo", "level"]
             for variable_name in variables:
-                for label in ['test', 'ref']:
-                    file_name = '{}_{}_{}.nc'.format(param.output_file, variable_name, label)
+                for label in ["test", "ref"]:
+                    file_name = "{}_{}_{}.nc".format(
+                        param.output_file, variable_name, label
+                    )
                     nc_files.append(relative_path + file_name)
-            formatted_files = [
-                {'url': f, 'title': f} for f in nc_files]
+            formatted_files = [{"url": f, "title": f} for f in nc_files]
         # TODO: will param.variables ever be longer than one variable?
         #  If so, we'll need to create unique image_relative_paths
         for var in param.variables:
@@ -63,9 +64,13 @@ def create_viewer(root_dir, parameters):
             viewer.add_col(param.viewer_descr[var])
             # Link to an html version of the plot png file.
             # Appears in the third column of the non-bolded rows.
-            viewer.add_col(image_relative_path, is_file=True, title='Plot',
-                           other_files=formatted_files,
-                           meta=create_metadata(param))
+            viewer.add_col(
+                image_relative_path,
+                is_file=True,
+                title="Plot",
+                other_files=formatted_files,
+                meta=create_metadata(param),
+            )
 
     url = viewer.generate_page()
     add_header(root_dir, os.path.join(root_dir, url), parameters)

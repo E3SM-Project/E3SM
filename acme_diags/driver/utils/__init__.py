@@ -1,3 +1,1 @@
-from . import general
-from . import dataset
-from . import diurnal_cycle
+from . import dataset, diurnal_cycle, general

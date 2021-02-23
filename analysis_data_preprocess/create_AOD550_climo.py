@@ -1,3 +1,4 @@
+# flake8: noqa
 #!/bin/bash
 
 #####################################################
@@ -201,7 +202,7 @@ ncap2 -O -s "climatology_bnds[time,nv]=${CLMBNDS}" $OBSFILE $OBSFILE
 
 # Set values to "missing" if not known
 # (MD) Using climate bounds and adjusted time bounds accordingly
-ncatted -O -h -a _FillValue,climatology_bnds,o,d,-999.9 $OBSFILE $OBSFILE 
+ncatted -O -h -a _FillValue,climatology_bnds,o,d,-999.9 $OBSFILE $OBSFILE
 
 # Add the cell methods to each flux
 # There is probably a lot better way to do this that I am not aware of (MD)
@@ -218,7 +219,7 @@ ncatted -O -a standard_name,lon,o,c,"longitude" $OBSFILE $OBSFILE
 ncatted -O -a long_name,time,o,c,"time" -a standard_name,time,o,c,"time" $OBSFILE $OBSFILE
 # Flip FLNS/FLNSC signs to match model output
 #
-# Note: Simply reversing valid_min/valid_max was 
+# Note: Simply reversing valid_min/valid_max was
 # throwing an error in ncview. By doing the below
 # operation, observed output now matches model
 # output more closely.

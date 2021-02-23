@@ -1,40 +1,52 @@
+# flake8: noqa
 #!/usr/bin/env cdat
 """
-This script takes an observational dataset that contains monthly data 
-and creates the appropriate climo files. Aspects of this code have been taken 
+This script takes an observational dataset that contains monthly data
+and creates the appropriate climo files. Aspects of this code have been taken
 from Susannah Burrows's ACME_obs_for_diagnostics_metadata_template.sh
 See: https://gist.github.com/susburrows/fb0fe95ad2a3348d8ce1#file-acme_obs_for_diagnostics_metadata_template-sh
 
-IMPORTANT: The script assumes that the observational dataset already 
+IMPORTANT: The script assumes that the observational dataset already
 contains all the necessary attributes (correct units, standard_name, etc).
 
-WHAT THIS DOES: The script creates 17 climo files: one for each month of the 
+WHAT THIS DOES: The script creates 17 climo files: one for each month of the
 year (12), four seasonal datasets (4), and one annual mean dataset.
 
-For DJF, the dataset only calculates means over contiguous DJF seasons, so the 
-first JF and last D are not included in the mean. - This should be reflected in 
+For DJF, the dataset only calculates means over contiguous DJF seasons, so the
+first JF and last D are not included in the mean. - This should be reflected in
 the climatology_bnds attribute.
 
-In order to run this script, UVCDAT (2.2.0 or later) and NCO (4.5.0 or later) 
-need to be installed on your system. 
+In order to run this script, UVCDAT (2.2.0 or later) and NCO (4.5.0 or later)
+need to be installed on your system.
 
-Author: Chris Terai (terai1@llnl.gov) 
+Author: Chris Terai (terai1@llnl.gov)
 
 Modified by Jill Zhang (zhang40@llnl.gov) 08-15-2018
 """
 
 # Upload the following libraries to call in this script
-import argparse,datetime,gc,re,sys,time
-import cdat_info,cdtime,code,inspect,os,re,string,sys,pytz
-import cdms2 as cdm
-import MV2 as MV     #functions for dealing with masked values.
-import cdutil as cdu
+import argparse
+import code
+import datetime
+import gc
 import glob
+import inspect
 import os
+import re
+import string
+import sys
+import time
 from socket import gethostname
 from string import replace
+from subprocess import call  # for calling NCO functions
+
+import cdat_info
+import cdms2 as cdm
+import cdtime
+import cdutil as cdu
+import MV2 as MV  # functions for dealing with masked values.
 import numpy
-from subprocess import call  #for calling NCO functions
+import pytz
 
 # Set nc classic as outputs
 cdm.setCompressionWarnings(0) ; # Suppress warnings
@@ -84,43 +96,43 @@ fisc2=['01','02','03','04','05','06','07','08','09','10','11','12','MAM','JJA','
 clim_edges=["-1-1","-2-1","-3-1","-4-1","-5-1","-6-1","-7-1","-8-1","-9-1","-10-1","-11-1","-12-1"]
 clim_edge_values=numpy.zeros((17,2),dtype=numpy.int)
 #JAN
-clim_edge_values[0,0]=0 
+clim_edge_values[0,0]=0
 clim_edge_values[0,1]=1
 #FEB
 clim_edge_values[1,0]=1
 clim_edge_values[1,1]=2
 #MAR
-clim_edge_values[2,0]=2 
+clim_edge_values[2,0]=2
 clim_edge_values[2,1]=3
 #APR
-clim_edge_values[3,0]=3 
+clim_edge_values[3,0]=3
 clim_edge_values[3,1]=4
 #MAY
-clim_edge_values[4,0]=4 
+clim_edge_values[4,0]=4
 clim_edge_values[4,1]=5
 #JUN
-clim_edge_values[5,0]=5 
+clim_edge_values[5,0]=5
 clim_edge_values[5,1]=6
 #JUL
-clim_edge_values[6,0]=6 
+clim_edge_values[6,0]=6
 clim_edge_values[6,1]=7
 #AUG
-clim_edge_values[7,0]=7 
+clim_edge_values[7,0]=7
 clim_edge_values[7,1]=8
 #SEP
-clim_edge_values[8,0]=8 
+clim_edge_values[8,0]=8
 clim_edge_values[8,1]=9
 #OCT
-clim_edge_values[9,0]=9 
+clim_edge_values[9,0]=9
 clim_edge_values[9,1]=10
 #NOV
 clim_edge_values[10,0]=10
 clim_edge_values[10,1]=11
 #DEC
-clim_edge_values[11,0]=11 
+clim_edge_values[11,0]=11
 clim_edge_values[11,1]=0
 #MAM
-clim_edge_values[12,0]=2 
+clim_edge_values[12,0]=2
 clim_edge_values[12,1]=5
 #JJA
 clim_edge_values[13,0]=5
@@ -163,14 +175,14 @@ for fi in fisc:
             print ".".join(['cdu',fi,'climatology(dattable, criteriaarg = [0.99,None])'])
             outputdattable=eval(".".join(['cdu',fi,'climatology(dattable, criteriaarg = [0.99,None])'])) #only full DJF ranges are included in the calculation
             outputdattable.cell_methods="time: mean over years"
-            
+
             #specify the time axis long_name and the units - uses the startyear-1-1 as the starting point
             time_axis=outputdattable.getAxis(0)
             time_axis.climatology="climatology_bnds"
             time_axis.long_name="time"
             time_axis.units="".join(["days since ",startyear,"-1-1"])
             outputdattable.setAxis(0,time_axis)
-            
+
             var_missing_value=outputdattable.missing_value  #obtain missing value for use later in appending _FillValue
             #Write out the attributes of the variable (dattable) onto the climatological-mean variable (outputdattable)
             att_keys = dattable.attributes.keys()
@@ -183,14 +195,14 @@ for fi in fisc:
             time_axis.climatology="climatology_bnds"
             outputdattable.setAxis(0,time_axis)
             f_out.write(outputdattable)
-    
+
     time_axis=f_out.getAxis('time')
     bnds_axis=f_out.getAxis('bound')
     climatology=None
     climo_start="".join([startyear,clim_edges[clim_edge_values[f_index,0]]])
     climo_end="".join([endyear,clim_edges[clim_edge_values[f_index,1]]])
     #climatology_bnds_value={climo_start, climo_end}
-    
+
     start_date_str=clim_edges[clim_edge_values[f_index,0]]
     end_date_str=clim_edges[clim_edge_values[f_index,1]]
     nothing,start_month,startdate=start_date_str.split("-")
@@ -213,7 +225,7 @@ for fi in fisc:
     climatology_bnds.setAxis(0,time_axis)
     climatology_bnds.setAxis(1,bnds_axis)
     f_out.write(climatology_bnds)
-    
+
     att_keys = f_in.attributes.keys()
     att_dic = {}
     for i in range(len(att_keys)):
@@ -232,7 +244,7 @@ for fi in fisc:
     f_out.history="".join([userinitials," [",time_format,"]: created time-mean climatology file using climatology.py", " // ",f_out.history])
     f_index=f_index+1
     f_out.close()
-    
+
     #introduce _FillValue attribute using NCO tools and remove missing_value from other variables
     print "      adding _FillValue attribute"
     print "".join(["       ncatted -a _FillValue,,o,f,",str(var_missing_value)," ",output_hostANDfilename])
@@ -241,6 +253,6 @@ for fi in fisc:
     call("".join(["ncatted -a missing_value,climatology_bnds,d,, ",output_hostANDfilename]), shell=True)
     call("".join(["ncatted -a _FillValue,climatology_bnds,d,, ",output_hostANDfilename]), shell=True)
     call("".join(["ncatted -a _FillValue,'^bounds',d,, ",output_hostANDfilename]), shell=True)
-    
+
     #Add git hash to climo file
 #    call("".join(["~/ACME/PreAndPostProcessingScripts/utils/add_git_hash_to_netcdf_metadata ",output_hostANDfilename]), shell=True)

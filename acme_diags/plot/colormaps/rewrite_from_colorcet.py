@@ -3,6 +3,7 @@ try:
 except BaseException:
     print("Cannot convert from colorcet w/o colorcet")
     import sys
+
     sys.exit()
 
 all_cms = colorcet.cm

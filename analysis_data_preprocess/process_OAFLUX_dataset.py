@@ -1,20 +1,31 @@
-
+# flake8: noqa
 #!/usr/bin/env cdat
 """
 Based on Chris Terai's original script for GPCP
 Modified for OAFlux by Jill Zhang (zhang40@llnl.gov) 2018-09-15
 """
-import argparse,datetime,gc,re,sys,time
-import cdat_info,cdtime,code,inspect,os,re,string,sys,pytz
-import cdms2 as cdm
-import MV2 as MV #stuff for dealing with masked values.
-import cdutil as cdu
+import argparse
+import code
+import datetime
+import gc
 import glob
+import inspect
 import os
+import re
+import string
+import sys
+import time
 from socket import gethostname
 from string import replace
-import numpy
 from subprocess import call
+
+import cdat_info
+import cdms2 as cdm
+import cdtime
+import cdutil as cdu
+import MV2 as MV  # stuff for dealing with masked values.
+import numpy
+import pytz
 
 # Set nc classic as outputs
 cdm.setCompressionWarnings(0) ; # Suppress warnings

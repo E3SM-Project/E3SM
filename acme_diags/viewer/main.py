@@ -1,25 +1,38 @@
-import os
 import collections
+import os
+
 from bs4 import BeautifulSoup
-from . import default_viewer, utils, area_mean_time_series_viewer, mean_2d_viewer, enso_diags_viewer, qbo_viewer, streamflow_viewer, arm_diags_viewer
+
 import acme_diags
+
+from . import (
+    area_mean_time_series_viewer,
+    arm_diags_viewer,
+    default_viewer,
+    enso_diags_viewer,
+    mean_2d_viewer,
+    qbo_viewer,
+    streamflow_viewer,
+    utils,
+)
 
 # A mapping of each diagnostics set to the viewer
 # that handles creating of the HTML pages.
 SET_TO_VIEWER = {
-    'lat_lon': default_viewer.create_viewer,
-    'polar': default_viewer.create_viewer,
-    'zonal_mean_xy': default_viewer.create_viewer,
-    'zonal_mean_2d': mean_2d_viewer.create_viewer,
-    'meridional_mean_2d': mean_2d_viewer.create_viewer,
-    'cosp_histogram': default_viewer.create_viewer,
-    'area_mean_time_series': area_mean_time_series_viewer.create_viewer,
-    'enso_diags': enso_diags_viewer.create_viewer,
-    'qbo': qbo_viewer.create_viewer,
-    'streamflow': streamflow_viewer.create_viewer,
-    'diurnal_cycle': default_viewer.create_viewer,
-    'arm_diags': arm_diags_viewer.create_viewer,
+    "lat_lon": default_viewer.create_viewer,
+    "polar": default_viewer.create_viewer,
+    "zonal_mean_xy": default_viewer.create_viewer,
+    "zonal_mean_2d": mean_2d_viewer.create_viewer,
+    "meridional_mean_2d": mean_2d_viewer.create_viewer,
+    "cosp_histogram": default_viewer.create_viewer,
+    "area_mean_time_series": area_mean_time_series_viewer.create_viewer,
+    "enso_diags": enso_diags_viewer.create_viewer,
+    "qbo": qbo_viewer.create_viewer,
+    "streamflow": streamflow_viewer.create_viewer,
+    "diurnal_cycle": default_viewer.create_viewer,
+    "arm_diags": arm_diags_viewer.create_viewer,
 }
+
 
 def create_index(root_dir, title_and_url_list):
     """
@@ -34,19 +47,20 @@ def create_index(root_dir, title_and_url_list):
       - Ex: 'Latitude-Longitude contour maps', 'Table',
         and 'Taylor Diagram' are all on a single line.
     """
+
     def insert_data_in_row(row_obj, name, url):
         """
         Given a row object, insert the name and url.
         """
         td = soup.new_tag("td")
         a = soup.new_tag("a")
-        a['href'] = url
+        a["href"] = url
         a.string = name
         td.append(a)
         row_obj.append(td)
 
-    path = os.path.join(acme_diags.INSTALL_PATH, 'viewer', 'index_template.html')
-    output = os.path.join(root_dir, 'index.html')
+    path = os.path.join(acme_diags.INSTALL_PATH, "viewer", "index_template.html")
+    output = os.path.join(root_dir, "index.html")
 
     soup = BeautifulSoup(open(path), "lxml")
 
@@ -57,7 +71,7 @@ def create_index(root_dir, title_and_url_list):
     # Adding the title.
     tr = soup.new_tag("tr")
     th = soup.new_tag("th")
-    th.string = 'Output Sets'
+    th.string = "Output Sets"
     tr.append(th)
 
     # Adding each of the rows.
@@ -78,7 +92,7 @@ def create_index(root_dir, title_and_url_list):
 
     with open(output, "wb") as f:
         f.write(html)
-        
+
     return output
 
 
@@ -92,7 +106,7 @@ def create_viewer(root_dir, parameters):
     for param in parameters:
         for set_name in param.sets:
             set_to_parameters[set_name].append(param)
-    
+
     # A list of (title, url) tuples that each viewer generates.
     # This is used to create the main index.
     title_and_url_list = []
@@ -103,11 +117,11 @@ def create_viewer(root_dir, parameters):
         result = viewer_function(root_dir, parameters)
         print(result)
         title_and_url_list.append(result)
-    
+
     # Add the provenance in the index as well.
-    prov_tuple = ('Provenance', '../prov')
+    prov_tuple = ("Provenance", "../prov")
     title_and_url_list.append(prov_tuple)
-    
+
     index_url = create_index(root_dir, title_and_url_list)
     utils.add_header(root_dir, index_url, parameters)
 

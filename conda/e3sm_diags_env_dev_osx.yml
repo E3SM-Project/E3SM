@@ -5,6 +5,7 @@ channels:
 dependencies:
   - attrs=20.3.0
   - beautifulsoup4=4.9.3
+  - black=20.8b1
   - bokeh=2.2.3
   - brotlipy=0.7.0
   - bzip2=1.0.8
@@ -31,6 +32,8 @@ dependencies:
   - esmf=8.0.1
   - esmpy=8.0.1
   - expat=2.2.9
+  - flake8=3.8.4
+  - flake8-isort==4.0.0
   - freetype=2.10.4
   - fsspec=0.8.4
   - future=0.18.2
@@ -87,6 +90,7 @@ dependencies:
   - matplotlib=3.3.3
   - matplotlib-base=3.3.3
   - msgpack-python=1.0.0
+  - mypy==0.790
   - nbformat=5.0.8
   - ncurses=6.2
   - netcdf-fortran=4.5.3
@@ -100,6 +104,7 @@ dependencies:
   - partd=1.1.0
   - pillow=8.0.1
   - pip=20.3
+  - pre-commit=2.10.0
   - proj=7.1.1
   - psutil=5.7.3
   - pycparser=2.20
@@ -138,6 +143,6 @@ dependencies:
   - zlib=1.2.11
   - zstd=1.4.5
   - pip:
-    - cdms2==3.1.5
-    - regrid2==3.1.5
+      - cdms2==3.1.5
+      - regrid2==3.1.5
 prefix: /Users/zhang40/miniconda3/envs/e3sm_diags_env_dev_osx

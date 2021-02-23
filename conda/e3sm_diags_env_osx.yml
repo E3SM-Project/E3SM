@@ -44,7 +44,6 @@ dependencies:
   - heapdict=1.0.1
   - icu=67.1
   - idna=2.10
-  - importlib-metadata=3.1.0
   - importlib_metadata=3.1.0
   - ipython_genutils=0.2.0
   - jasper=1.900.1
@@ -140,6 +139,6 @@ dependencies:
   - zlib=1.2.11
   - zstd=1.4.5
   - pip:
-    - cdms2==3.1.5
-    - regrid2==3.1.5
+      - cdms2==3.1.5
+      - regrid2==3.1.5
 prefix: /Users/zhang40/miniconda3/envs/e3sm_diags_env_osx

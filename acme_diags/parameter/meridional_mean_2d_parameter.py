@@ -1,6 +1,9 @@
 import numpy
-from .core_parameter import CoreParameter
+
 from acme_diags.driver.utils.general import monotonic
+
+from .core_parameter import CoreParameter
+
 
 class MeridionalMean2dParameter(CoreParameter):
     def __init__(self):
@@ -10,13 +13,13 @@ class MeridionalMean2dParameter(CoreParameter):
         self.plot_plevs = False
         # Granulating plevs causes duplicate plots in this case.
         # So keep all of the default values except plevs.
-        self.granulate.remove('plevs')
+        self.granulate.remove("plevs")
 
     def check_values(self):
         plevs = self.plevs
-        if not isinstance(plevs,list):
-           msg = 'plevs needs to be a list'
-           raise RuntimeError(msg)
+        if not isinstance(plevs, list):
+            msg = "plevs needs to be a list"
+            raise RuntimeError(msg)
 
         if len(plevs) > 1:
             if monotonic(plevs):
@@ -25,9 +28,8 @@ class MeridionalMean2dParameter(CoreParameter):
                     plevs = plevs[::-1]
                     self.plevs = plevs
             else:
-                msg = 'plevs should be monotonically increasing or decreasing'
+                msg = "plevs should be monotonically increasing or decreasing"
                 raise RuntimeError(msg)
         else:
             msg = "At least 2 plevs needed"
             raise RuntimeError(msg)
-

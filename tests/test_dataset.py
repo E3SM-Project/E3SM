@@ -1,10 +1,12 @@
-import unittest
 import os
+import unittest
+
 import cdms2
-from collections import OrderedDict
+
 from acme_diags.derivations import acme as acme_derivations
-from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.driver.utils.dataset import Dataset
+from acme_diags.parameter.core_parameter import CoreParameter
+
 
 def get_abs_file_path(relative_path):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
@@ -15,31 +17,29 @@ class TestDataset(unittest.TestCase):
         self.parameter = CoreParameter()
 
     def test_convert_units(self):
-        with cdms2.open(get_abs_file_path('unit_test_data/precc.nc')) as precc_file:
-            var = precc_file('PRECC')
+        with cdms2.open(get_abs_file_path("unit_test_data/precc.nc")) as precc_file:
+            var = precc_file("PRECC")
 
-        new_var = acme_derivations.convert_units(var, 'mm/day')
-        self.assertEqual(new_var.units, 'mm/day')
+        new_var = acme_derivations.convert_units(var, "mm/day")
+        self.assertEqual(new_var.units, "mm/day")
 
     def test_add_user_derived_vars(self):
         my_vars = {
-            'A_NEW_VAR': {
-                ('v1', 'v2'): lambda v1, v2: v1+v2,
-                ('v3', 'v4'): lambda v3, v4: v3-v4
+            "A_NEW_VAR": {
+                ("v1", "v2"): lambda v1, v2: v1 + v2,
+                ("v3", "v4"): lambda v3, v4: v3 - v4,
             },
-            'PRECT': {
-                ('MY_PRECT',): lambda my_prect: my_prect 
-            }
+            "PRECT": {("MY_PRECT",): lambda my_prect: my_prect},
         }
         self.parameter.derived_variables = my_vars
         data = Dataset(self.parameter, test=True)
-        self.assertTrue('A_NEW_VAR' in data.derived_vars)
+        self.assertTrue("A_NEW_VAR" in data.derived_vars)
 
         # In the default my_vars, each entry
         # ('PRECT', 'A_NEW_VAR', etc) is an OrderedDict.
         # We must check that what the user inserted is
         # first, so it's used first.
-        self.assertTrue(list(data.derived_vars['PRECT'].keys())[0] == ('MY_PRECT',))
+        self.assertTrue(list(data.derived_vars["PRECT"].keys())[0] == ("MY_PRECT",))
 
     def test_is_timeseries(self):
         self.parameter.ref_timeseries_input = True
@@ -79,14 +79,12 @@ class TestDataset(unittest.TestCase):
         # We pass in the path to a file, so the input directory
         # to the tests doesn't need to be like how it is for when e3sm_diags
         # is ran wit a bunch of diags.
-        self.parameter.reference_data_path = './unit_test_data'
-        self.parameter.ref_file = "ta_ERA-Interim_ANN_198001_201401_climo.nc"        
+        self.parameter.reference_data_path = "./unit_test_data"
+        self.parameter.ref_file = "ta_ERA-Interim_ANN_198001_201401_climo.nc"
         data = Dataset(self.parameter, ref=True)
-        self.assertEqual(data.get_attr_from_climo('Conventions', 'ANN'), 'CF-1.0')
+        self.assertEqual(data.get_attr_from_climo("Conventions", "ANN"), "CF-1.0")
 
-
-
-    '''
+    """
     def test_process_derived_var_passes(self):
         derived_var = {
             'PRECT': {
@@ -197,7 +195,8 @@ class TestDataset(unittest.TestCase):
             prcl = precl_file('PRECL')
 
         acme_derivations.mask_by(prcc, prcl, low_limit=2.0)
-    '''
+    """
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
