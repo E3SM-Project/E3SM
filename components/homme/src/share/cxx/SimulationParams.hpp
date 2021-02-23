@@ -70,7 +70,7 @@ inline void SimulationParams::print () {
   printf ("   ftype: %d\n", etoi(ftype));
   printf ("   theta_adv_form: %d\n", etoi(theta_adv_form));
   printf ("   rsplit: %d\n", rsplit);
-  printf ("   qsplit: %d\n", qsize);
+  printf ("   qsplit: %d\n", qsplit);
   printf ("   qsize: %d\n", qsize);
   printf ("   limiter_option: %d\n", limiter_option);
   printf ("   state_frequency: %d\n", state_frequency);
