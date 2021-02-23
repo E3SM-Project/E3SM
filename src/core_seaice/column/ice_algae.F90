@@ -33,11 +33,11 @@
                          snoice,       nbtrcr,      &
                          fsnow,        ntrcr,       &
                          trcrn,        bio_index,   &
-                         aice_old,                  &
+                         bio_index_o,  aice_old,    &
                          vice_old,     vsno_old,    &
                          vicen,        vsnon,       &
-                         aicen,        flux_bio_atm,& 
-                         n_cat,        n_algae,     & 
+                         aicen,        flux_bio_atm,&
+                         n_cat,        n_algae,     &
                          n_doc,        n_dic,       &
                          n_don,                     &
                          n_fed,        n_fep,       &
@@ -81,7 +81,8 @@
          ntrcr                 ! number of tracers
 
       integer (kind=int_kind), dimension (nbtrcr), intent(in) :: &
-         bio_index    ! references index of bio tracer (nbtrcr) to tracer array (ntrcr) 
+         bio_index, & ! references index of bio tracer (nbtrcr) to tracer array (ntrcr)
+         bio_index_o, ! references index of data arrays (eg. kscavz)
 
       real (kind=dbl_kind), intent(in) :: &
          dt,       &  ! time step
@@ -127,13 +128,13 @@
       real (kind=dbl_kind), dimension (nblyr+1), intent(in) :: &
          igrid      , & ! biology vertical interface points
          iTin       , & ! salinity vertical interface points
-         iphin      , & ! Porosity on the igrid   
+         iphin      , & ! Porosity on the igrid
          iDin           ! Diffusivity/h on the igrid (1/s)
- 
+
       real (kind=dbl_kind), dimension (nilyr+1), intent(in) :: &
-         cgrid            , &  ! CICE vertical coordinate   
-         icgrid     , & ! CICE interface coordinate   
-         fswthrul       ! visible short wave radiation on icgrid (W/m^2)  
+         cgrid            , &  ! CICE vertical coordinate
+         icgrid     , & ! CICE interface coordinate
+         fswthrul       ! visible short wave radiation on icgrid (W/m^2)
 
       real (kind=dbl_kind), dimension(:), &
          intent(in) :: &
@@ -141,26 +142,26 @@
 
       real (kind=dbl_kind), dimension(ntrcr), &
          intent(inout) :: &
-         trcrn 
+         trcrn
 
-      real (kind=dbl_kind), dimension (nblyr+1), intent(inout) :: & 
-         zfswin         ! visible Short wave flux on igrid (W/m^2)  
-       
-      real (kind=dbl_kind), dimension (nblyr+1), intent(inout) :: & 
+      real (kind=dbl_kind), dimension (nblyr+1), intent(inout) :: &
+         zfswin         ! visible Short wave flux on igrid (W/m^2)
+
+      real (kind=dbl_kind), dimension (nblyr+1), intent(inout) :: &
          Zoo            ! N losses to the system from reaction terms
-                        ! (ie. zooplankton/bacteria) (mmol/m^3)  
+                        ! (ie. zooplankton/bacteria) (mmol/m^3)
 
-      real (kind=dbl_kind), dimension (nbtrcr), intent(in) :: &   
+      real (kind=dbl_kind), dimension (nbtrcr), intent(in) :: &
          !change to  inout when updating ocean fields
-         ocean_bio      ! ocean concentrations (mmol/m^3) 
+         ocean_bio      ! ocean concentrations (mmol/m^3)
 
       real (kind=dbl_kind), dimension (nblyr+2), intent(in) :: &
          bphin          ! Porosity on the bgrid
 
-      real (kind=dbl_kind), intent(inout):: & 
+      real (kind=dbl_kind), intent(inout):: &
          PP_net     , & ! net PP (mg C/m^2/d)  times aice
          grow_net   , & ! net specific growth (m/d) times vice
-         upNO       , & ! tot nitrate uptake rate (mmol/m^2/d) times aice 
+         upNO       , & ! tot nitrate uptake rate (mmol/m^2/d) times aice
          upNH       , & ! tot ammonium uptake rate (mmol/m^2/d) times aice
          totalChla      ! total chla (mg chla/m^2)
 
@@ -213,7 +214,7 @@
          accuracy = 1.0e-13_dbl_kind
 
       character(len=char_len_long) :: &
-         warning  
+         warning
 
       real (kind=dbl_kind), dimension (nblyr+1) :: &
          zspace    ! vertical grid spacing
@@ -255,25 +256,26 @@
                                 vice_old,  vsno_old,     &
                                 vicen,     vsnon,        &
                                 aicen,     flux_bio_atm, &
-                                zbgc_atmn, flux_bio_sno)
+                                zbgc_atmn, flux_bio_snom &
+                                bio_index_o)
 
       call z_biogeochemistry   (n_cat,        dt,        &
                                 nilyr,        nslyr,     &
                                 nblyr,        nbtrcr,    &
-                                n_algae,      n_doc,     & 
+                                n_algae,      n_doc,     &
                                 n_dic,        n_don,     &
                                 n_fed,        n_fep,     &
                                 n_zaero,      first_ice, &
-                                aicen,        vicen,     & 
-                                hice_old,     ocean_bio, & 
+                                aicen,        vicen,     &
+                                hice_old,     ocean_bio, &
                                 flux_bion,    bphin,     &
-                                iphin,        trcrn,     &  
+                                iphin,        trcrn,     &
                                 iDin,         sss,       &
                                 fswthrul,     grow_alg,  &
                                 upNOn,        upNHn,     &
                                 dh_top,       dh_bot,    &
                                 dh_top_chl,   dh_bot_chl,&
-                                zfswin,       hbri,      & 
+                                zfswin,       hbri,      &
                                 hbri_old,     darcy_V,   &
                                 darcy_V_chl,  bgrid,     &
                                 igrid,        icgrid,    &

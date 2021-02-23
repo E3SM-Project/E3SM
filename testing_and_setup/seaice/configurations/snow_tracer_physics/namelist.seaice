@@ -265,7 +265,7 @@
 &shortwave
     config_shortwave_type = 'dEdd'
     config_albedo_type = 'ccsm3'
-    config_use_snicar_ad = false
+    config_use_snicar_ad = true
     config_visible_ice_albedo = 0.78
     config_infrared_ice_albedo = 0.36
     config_visible_snow_albedo = 0.98
