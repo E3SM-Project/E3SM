@@ -25,11 +25,16 @@ if (! -x $exe ) then
   endif
 endif
 
-# dont bother with threading
-setenv OMP_NUM_THREADS 1
+# for high-res I/O, important to set stripe:
+# lfs setstripe 32 .
 
 # interpolate file created above to a lat/lon grid
-srun -N $SLURM_NNODES -c 4   $exe <  $TOOLDIR/namelists/interpolate-eam.nl
+# run 17x8 - reduces I/O cost
+setenv KMP_AFFINITY granularity=core,scatter
+set bind = --cpu_bind=core
+setenv OMP_NUM_THREADS 8
+srun -N $SLURM_NNODES -c 16   $exe < $TOOLDIR/namelists/interpolate-eam.nl
+
 
 
 
