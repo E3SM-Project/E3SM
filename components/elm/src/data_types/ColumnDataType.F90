@@ -1043,7 +1043,7 @@ contains
     this%t_soisno(begc:endc,:) = spval
     call hist_addfld2d (fname='TSOI',  units='K', type2d='levgrnd', &
          avgflag='A', long_name='soil temperature (vegetated landunits only)', &
-         ptr_col=this%t_soisno, l2g_scale_type='veg')
+         standard_name='soil_temperature',ptr_col=this%t_soisno, l2g_scale_type='veg')
 
     this%t_soisno(begc:endc,:) = spval
     call hist_addfld2d (fname='TSOI_ICE',  units='K', type2d='levgrnd', &
@@ -1396,7 +1396,8 @@ contains
     this%h2osoi_liqice_10cm(begc:endc) = spval
     call hist_addfld1d (fname='SOILWATER_10CM',  units='kg/m2', &
          avgflag='A', long_name='soil liquid water + ice in top 10cm of soil (veg landunits only)', &
-         ptr_col=this%h2osoi_liqice_10cm, set_urb=spval, set_lake=spval, l2g_scale_type='veg')
+         standard_name='mass_content_of_water_in_soil_layer',ptr_col=this%h2osoi_liqice_10cm,  &
+         set_urb=spval, set_lake=spval, l2g_scale_type='veg')
 
     call hist_addfld1d (fname='H2OSNO',  units='mm',  &
          avgflag='A', long_name='snow depth (liquid water)', &
