@@ -298,7 +298,7 @@ MODULE MOSART_physics_mod
           end if
        enddo
        
-       if (Tctl%RoutingMethod == 4 ) then
+       if (Tctl%RoutingMethod == 2 ) then
           ! retrieve water depth in downstream channels
           call mct_aVect_zero(avsrc_dnstrm)
           cnt = 0
@@ -383,25 +383,25 @@ MODULE MOSART_physics_mod
                  do k=1,numSubSteps
                     call mainchannelRouting(iunit,nt,localDeltaT)    
                     TRunoff%wr(iunit,nt) = TRunoff%wr(iunit,nt) + TRunoff%dwr(iunit,nt) * localDeltaT
-                    ! check for negative channel storage
-                    if(TRunoff%wr(iunit,1) < -1.e-10) then
-                       write(iulog,*) 'Negative channel storage! ', iunit, TRunoff%wr(iunit,1), TRunoff%erin(iunit,1), TRunoff%erout(iunit,1), rtmCTL%nUp(iunit)
-                       call shr_sys_abort('mosart: negative channel storage')
-                    end if
+                    !! check for negative channel storage
+                    !if(TRunoff%wr(iunit,1) < -1.e-10) then
+                    !   write(iulog,*) 'Negative channel storage! ', iunit, TRunoff%wr(iunit,1), TRunoff%erin(iunit,1), TRunoff%erout(iunit,1), rtmCTL%nUp(iunit)
+                    !   call shr_sys_abort('mosart: negative channel storage')
+                    !end if
                     call UpdateState_mainchannel(iunit,nt)
                     temp_erout = temp_erout + TRunoff%erout(iunit,nt) ! erout here might be inflow to some downstream subbasin, so treat it differently than erlateral
                  end do
-             elseif(Tctl%RoutingMethod==4) then
-                 numSubSteps = 1 
+             elseif(Tctl%RoutingMethod==2) then ! diffusion wave routing method
+                 numSubSteps = 1 ! now set as 1, could be increased as needed.
                  localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/numSubSteps
                  TRunoff%rslp_energy(iunit) = CRRSLP(iunit)
                  do k=1,numSubSteps
                     call Leapfrog(iunit,nt,localDeltaT)  ! note updating wr and other states are done in Leapfrog
-                    ! check for negative channel storage
-                    if(TRunoff%wr(iunit,1) < -1.e-10) then
-                       write(iulog,*) 'Negative channel storage! ', iunit, TRunoff%wr(iunit,1), TRunoff%erin(iunit,1), TRunoff%erout(iunit,1), rtmCTL%nUp(iunit)
-                       call shr_sys_abort('mosart: negative channel storage')
-                    end if
+                    !! check for negative channel storage
+                    !if(TRunoff%wr(iunit,1) < -1.e-10) then
+                    !   write(iulog,*) 'Negative channel storage! ', iunit, TRunoff%wr(iunit,1), TRunoff%erin(iunit,1), TRunoff%erout(iunit,1), rtmCTL%nUp(iunit)
+                    !   call shr_sys_abort('mosart: negative channel storage')
+                    !end if
                     temp_erout = temp_erout + TRunoff%erout(iunit,nt) ! erout here might be inflow to some downstream subbasin, so treat it differently than erlateral
                  end do
              end if
@@ -628,13 +628,10 @@ MODULE MOSART_physics_mod
     if(Tctl%RoutingMethod == 1) then
        call Routing_KW(iunit, nt, theDeltaT)
     else if(Tctl%RoutingMethod == 2) then
-       call Routing_MC(iunit, nt, theDeltaT)
-    else if(Tctl%RoutingMethod == 3) then
-       call Routing_THREW(iunit, nt, theDeltaT)
-    else if(Tctl%RoutingMethod == 4) then
        call Routing_DW(iunit, nt, theDeltaT)
     else
-       print*, "Please check the routing method! There are only 4 methods available."
+       print*, "Please check the routing method! There are only 2 methods available. 1==KW, 2==DW."
+	   call shr_sys_abort('Error in selecting routing method!')
     end if
 
   end subroutine mainchannelRouting
