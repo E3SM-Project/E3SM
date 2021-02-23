@@ -24,4 +24,9 @@
     <lname>2000_DATM%IAF_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
   </compset>
 
+  <compset>
+    <alias>GWAV-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_SICE_MPASO%DATMFORCED_SROF_SGLC_WW3</lname>
+  </compset>
+
 </compsets>
