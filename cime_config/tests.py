@@ -56,9 +56,9 @@ _TESTS = {
     "e3sm_atm_integration" : {
         "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
-            "ERP_Ln9.ne4_ne4.F-EAMv1-AQP1",
-            "SMS_Ld1.ne4_ne4.F-EAMv1-AQP1.eam-clubb_only",
-            "ERP_Ln9.ne4_ne4.F-EAMv1-RCEMIP",
+            "ERP_Ln9.ne4_ne4.F-EAM-AQP1",
+            "SMS_Ld1.ne4_ne4.F-EAM-AQP1.eam-clubb_only",
+            "ERP_Ln9.ne4_ne4.F-EAM-RCEMIP",
             "PET_Ln5.ne4_ne4.FC5AV1C-L.allactive-mach-pet",
             "PEM_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.eam-cosplite_nhtfrq5",
@@ -79,7 +79,7 @@ _TESTS = {
             "SMS_D_Ln5.ne30_ne30.FC5AV1C-L",
             "ERP_Ln7.ne30_ne30.FC5AV1C-L",
             "SMS_Ly1.ne4_ne4.FC5AV1C-L",
-	    "SMS_D_Ln5.ne45pg2_ne45pg2.F-EAMv1-AQP1",
+	    "SMS_D_Ln5.ne45pg2_ne45pg2.F-EAM-AQP1",
             )
         },
 
@@ -128,7 +128,7 @@ _TESTS = {
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods",
-            "SMS_B.ne4_ne4.F-EAMv1-AQP1.eam-hommexx",
+            "SMS_B.ne4_ne4.F-EAM-AQP1.eam-hommexx",
             )
         },
 
