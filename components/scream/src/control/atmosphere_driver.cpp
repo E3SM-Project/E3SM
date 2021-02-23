@@ -144,9 +144,6 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   //         phys-dyn remapper (which uses homme's mpi infrastructure).
   m_atm_process_group->setup_remappers(*m_field_repo);
 
-  // Initialize atm inputs
-  init_atm_inputs ();
-
   // Set time steamp t0 to all fields
   m_field_repo->init_fields_time_stamp(t0);
 
