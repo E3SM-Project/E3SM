@@ -392,7 +392,7 @@ contains
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(k, S, T, p, T2, T3, p0, dp0dT, dp0dS, lamda0, dlambda0dT, dlambda0dS, &
+      !$omp private(k, S, T, p, T2, T3, p0, dp0dT, dp0dS, lambda0, dlambda0dT, dlambda0dS, &
       !$omp         alpha0, dalpha0dT, dalpha0dS, denom, denom2, drhodT, drhodS)
 #endif
 
