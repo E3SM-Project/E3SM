@@ -983,7 +983,7 @@
 	<nml_record name="eos">
 		<nml_option name="config_eos_type" type="character" default_value="linear" units="unitless"
 					description="Character string to choose EOS formulation"
-					possible_values="Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'"
+					possible_values="Jackett McDougall EOS = 'jm', Wright = 'wright', and Linear EOS = 'linear'"
 		/>
 		<nml_option name="config_open_ocean_freezing_temperature_coeff_0" type="real" default_value="0.0" units="C"
 					description="The freezing temperature at zero pressure and salinity in open ocean."
@@ -1041,6 +1041,12 @@
 		/>
 		<nml_option name="config_eos_linear_densityref" type="real" default_value="1000.0" units="kg m^{-3}"
 					description="Reference density, i.e. density when T=Tref and S=Sref"
+					possible_values="any positive real"
+		/>
+	</nml_record>
+	<nml_record name="eos_wright">
+		<nml_option name="config_eos_wright_ref_pressure" type="real" default_value="0.0" units="N m^{-2}"
+					description="Reference pressure for potential density"
 					possible_values="any positive real"
 		/>
 	</nml_record>
