@@ -2728,6 +2728,7 @@ contains
     integer :: numdims                   ! number of dimensions
     character(len=1)         :: avgflag  ! time averaging flag
     character(len=max_chars) :: long_name! long name
+    character(len=max_chars) :: standard_name! standard name
     character(len=max_chars) :: units    ! units
     character(len=max_namlen):: varname  ! variable name
     character(len=32) :: avgstr          ! time averaging type
@@ -2758,6 +2759,7 @@ contains
 
        varname    = tape(t)%hlist(f)%field%name
        long_name  = tape(t)%hlist(f)%field%long_name
+       standard_name  = tape(t)%hlist(f)%field%standard_name
        units      = tape(t)%hlist(f)%field%units
        avgflag    = tape(t)%hlist(f)%avgflag
        type1d_out = tape(t)%hlist(f)%field%type1d_out
@@ -2799,25 +2801,25 @@ contains
              if (numdims == 1) then
                 call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
                      dim1name=dim1name, dim2name='time', &
-                     long_name=long_name, units=units, cell_method=avgstr, &
-                     missing_value=spval, fill_value=spval)
+                     long_name=long_name, standard_name=standard_name,units=units,&
+                     cell_method=avgstr,  missing_value=spval, fill_value=spval)
              else
                 call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
                      dim1name=dim1name, dim2name=type2d, dim3name='time', &
-                     long_name=long_name, units=units, cell_method=avgstr, &
-                     missing_value=spval, fill_value=spval)
+                     long_name=long_name,standard_name=standard_name, units=units, &
+                     cell_method=avgstr,  missing_value=spval, fill_value=spval)
              end if
           else
              if (numdims == 1) then
                 call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
                      dim1name=dim1name, dim2name=dim2name, dim3name='time', &
-                     long_name=long_name, units=units, cell_method=avgstr, &
-                     missing_value=spval, fill_value=spval)
+                     long_name=long_name, standard_name=standard_name, &
+                     units=units, cell_method=avgstr, missing_value=spval, fill_value=spval)
              else
                 call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
                      dim1name=dim1name, dim2name=dim2name, dim3name=type2d, dim4name='time', &
-                     long_name=long_name, units=units, cell_method=avgstr, &
-                     missing_value=spval, fill_value=spval)
+                     long_name=long_name, standard_name=standard_name, units=units,&
+                     cell_method=avgstr, missing_value=spval, fill_value=spval)
              end if
           endif
 
@@ -3410,6 +3412,7 @@ contains
     character(len=max_namlen) :: name            ! variable name
     character(len=max_namlen) :: name_acc        ! accumulator variable name
     character(len=max_namlen) :: long_name       ! long name of variable
+    character(len=max_namlen) :: standard_name       ! standard_name of var
     character(len=max_chars)  :: long_name_acc   ! long name for accumulator
     character(len=max_chars)  :: units           ! units of variable
     character(len=max_chars)  :: units_acc       ! accumulator units
@@ -3531,6 +3534,7 @@ contains
              do f = 1,tape(t)%nflds
                 name           =  tape(t)%hlist(f)%field%name
                 long_name      =  tape(t)%hlist(f)%field%long_name
+                standard_name      =  tape(t)%hlist(f)%field%standard_name
                 units          =  tape(t)%hlist(f)%field%units
                 name_acc       =  trim(name) // "_acc"
                 units_acc      =  "unitless positive integer"
@@ -3555,14 +3559,16 @@ contains
                    if (num2d == 1) then
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, & 
                            dim1name=dim1name, &
-                           long_name=trim(long_name), units=trim(units))
+                           long_name=trim(long_name), &
+                           standard_name=standard_name, units=trim(units))
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
                            dim1name=dim1name, &
                            long_name=trim(long_name_acc), units=trim(units_acc))
                    else
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
                            dim1name=dim1name, dim2name=type2d, &
-                           long_name=trim(long_name), units=trim(units))
+                           long_name=trim(long_name), &
+                           standard_name=standard_name, units=trim(units))
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
                            dim1name=dim1name, dim2name=type2d, &
                            long_name=trim(long_name_acc), units=trim(units_acc))
@@ -3571,14 +3577,16 @@ contains
                    if (num2d == 1) then
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
                            dim1name=dim1name, dim2name=dim2name, &
-                           long_name=trim(long_name), units=trim(units))
+                           long_name=trim(long_name), &
+                           standard_name=standard_name, units=trim(units))
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
                            dim1name=dim1name, dim2name=dim2name, &
                            long_name=trim(long_name_acc), units=trim(units_acc))
                    else
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
                            dim1name=dim1name, dim2name=dim2name, dim3name=type2d, &
-                           long_name=trim(long_name), units=trim(units))
+                           long_name=trim(long_name), &
+                           standard_name=standard_name, units=trim(units))
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
                            dim1name=dim1name, dim2name=dim2name, dim3name=type2d, &
                            long_name=trim(long_name_acc), units=trim(units_acc))
