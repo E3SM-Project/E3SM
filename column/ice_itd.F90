@@ -1395,7 +1395,7 @@
       endif ! tr_aero
 
       if (z_tracers) then
-            dvssl  = min(p5*vsnon, hs_ssl*aicen)   !snow surface layer
+            dvssl  = min(p5*vsnon/real(nslyr,kind=dbl_kind), hs_ssl*aicen)   !snow surface layer
             dvint  = vsnon- dvssl                  !snow interior
 
             do it = 1, nbtrcr

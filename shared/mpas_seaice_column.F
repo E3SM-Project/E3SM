@@ -8531,13 +8531,15 @@ contains
          verticalHumicsIceCell, &
          verticalParticulateIronIceCell, &
          verticalDissolvedIronIceCell, &
-         verticalAerosolsIceCell
+         verticalAerosolsIceCell, &
+         verticalAerosolsSnowCell
 
     integer :: &
          iBioTracers, &
          iBioCount, &
          iLayers, &
-         iIceCount
+         iIceCount, &
+         iSnowCount
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
@@ -8612,6 +8614,7 @@ contains
     call MPAS_pool_get_array(tracers_aggregate, "verticalParticulateIronIceCell", verticalParticulateIronIceCell)
     call MPAS_pool_get_array(tracers_aggregate, "verticalDissolvedIronIceCell", verticalDissolvedIronIceCell)
     call MPAS_pool_get_array(tracers_aggregate, "verticalAerosolsIceCell", verticalAerosolsIceCell)
+    call MPAS_pool_get_array(tracers_aggregate, "verticalAerosolsSnowCell", verticalAerosolsSnowCell)
     call MPAS_pool_get_array(tracers_aggregate, "verticalSalinityCell", verticalSalinityCell)
     call MPAS_pool_get_array(tracers_aggregate, "brineFractionCell", brineFractionCell)
 
@@ -8890,6 +8893,7 @@ contains
           iBioCount = 0
           do iBioTracers = 1, nzAerosols
              iIceCount = (iBioTracers-1)*nBioLayersP1
+             iSnowCount = (iBioTracers-1)*2
 
              do iLayers = 1,nBioLayersP1
                 iBioCount = iBioCount + 1
@@ -8901,6 +8905,8 @@ contains
                 iBioCount = iBioCount + 1
                 verticalAerosolsConcCell(iBioCount,iCell) = &
                      tracerArrayCell(tracerObject % index_verticalAerosolsConc(iBioTracers)+iLayers-1)
+                verticalAerosolsSnowCell(iLayers-nBioLayersP1+iSnowCount,iCell) = &
+                     verticalAerosolsConcCell(iBioCount,iCell)
              enddo
           enddo
        endif
