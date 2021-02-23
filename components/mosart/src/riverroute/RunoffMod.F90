@@ -160,7 +160,7 @@ module RunoffMod
                                   ! Usually channel routing requires small time steps than hillslope routing.
      integer  :: DLevelR          ! The number of channel routing sub-time-steps at a higher level within one channel routing step at a lower level. 
      integer  :: Restart          ! flag, Restart=1 means starting from the state of last run, =0 means starting from model-inset initial state.
-     integer  :: RoutingMethod    ! Flag for routing methods. 1 --> variable storage method from SWAT model; 2 --> Muskingum method?  ( 1 -- Kinematic wave method; 4 -- Diffusion wave method. --Inund. )
+     integer  :: RoutingMethod    ! Flag for routing methods. 1 --> Kinematic wave routing method; 2 --> Diffusion wave method.
      integer  :: RoutingFlag      ! Flag for whether including hillslope and sub-network routing. 1--> include routing through hillslope, sub-network and main channel; 0--> main channel routing only.
  
      character(len=100) :: baseName    ! name of the case study, e.g., columbia
@@ -253,10 +253,6 @@ module RunoffMod
      integer , pointer :: dnID(:)      ! IDs of the downstream units, corresponding to the subbasin ID in the input table
      integer , pointer :: nUp(:)       ! number of upstream units, maximum 8
      integer , pointer :: iUp(:,:)     ! IDs of upstream units, corresponding to the subbasin ID in the input table
-  
-     integer , pointer :: indexDown(:) ! indices of the downstream units in the ID array. sometimes subbasins IDs may not be continuous
-     integer , pointer :: iDown(:)     ! indices of the downstream units, local
-     integer , pointer :: nUp_dstrm(:) ! number of upstream units, maximum 8
   
      integer , pointer :: numDT_r(:)   ! for a main reach, the number of sub-time-steps needed for numerical stability
      integer , pointer :: numDT_t(:)   ! for a subnetwork reach, the number of sub-time-steps needed for numerical stability

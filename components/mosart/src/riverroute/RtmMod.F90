@@ -183,7 +183,7 @@ contains
     integer  :: mon                           ! month (1, ..., 12)
     integer  :: day                           ! day of month (1, ..., 31)
     integer  :: numr                          ! tot num of roff pts on all pes
-    integer  :: RoutingMethod                 ! 1 = KW, 4 = DW
+    integer  :: RoutingMethod                 ! 1 = KW, 2 = DW
     integer  :: DLevelH2R                     !
     integer  :: DLevelR                       !
     integer  :: OPT_inund                     ! Options for inundation
@@ -3558,17 +3558,8 @@ contains
 
      end if
 
-     allocate(TUnit%nUp(begr:endr))
-     TUnit%nUp = 0
-
-     allocate(TUnit%iUp(begr:endr,8))
-     TUnit%iUp = 0
-
-     allocate(TUnit%indexDown(begr:endr))
-     TUnit%indexDown = 0
-   
      if (inundflag) then
-       if ( Tctl%RoutingMethod == 4 ) then       ! Use diffusion wave method in channel routing computation.
+       if ( Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
           allocate (TUnit%rlen_dstrm(begr:endr))
           allocate (TUnit%rslp_dstrm(begr:endr))
 
@@ -3787,7 +3778,7 @@ contains
      allocate (TPara%c_twid(begr:endr))
      TPara%c_twid = 1.0_r8
 
-     if ( Tctl%RoutingMethod == 4 ) then       ! Use diffusion wave method in channel routing computation.
+     if ( Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
         allocate (TRunoff%rslp_energy(begr:endr))
         TRunoff%rslp_energy = 0.0_r8
         
@@ -3824,7 +3815,7 @@ contains
         allocate (TRunoff%yr_exchg(begr:endr))
         TRunoff%yr_exchg = 0.0_r8
 
-        if ( Tctl%RoutingMethod == 4 ) then       ! Use diffusion wave method in channel routing computation.
+        if ( Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
            allocate (TRunoff%wr_exchg_dstrm(begr:endr))
            TRunoff%wr_exchg_dstrm = 0.0_r8
 
@@ -4054,7 +4045,7 @@ contains
   end if  ! endr >= begr
 
   ! retrieve the downstream channel attributes after some post-processing above
-  if (Tctl%RoutingMethod == 4 ) then       ! Use diffusion wave method in channel routing computation.
+  if (Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
      allocate (TUnit%rlen_dstrm(begr:endr))
      allocate (TUnit%rslp_dstrm(begr:endr))
 
