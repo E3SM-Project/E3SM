@@ -151,7 +151,7 @@ set_updated_group (const FieldGroup<Real>& group)
 
   // Now that we have Q, we have the exact count for tracers,
   // and we can use that info to setup tracers stuff in Homme
-  const int qsize = m_dyn_fields_out["Q"].get_header().get_identifier().get_layout().dims()[1];
+  const int qsize = group.m_info->size();
   auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
   auto& tracers = Homme::Context::singleton().get<Homme::Tracers>();
   params.qsize = qsize;
@@ -269,7 +269,6 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 #ifdef SCREAM_CIME_BUILD
     ekat::error::runtime_abort("Error! Homme should not initialize inputs in CIME builds.\n");
 #else
-    m_initializer->initialize_fields();
     for (auto& f : m_dyn_fields_in) {
       m_initializer->add_me_as_initializer(f.second);
       std::cout << "Added " << m_initializer->name() << " as initializer for " << f.second.get_header().get_identifier().name() << "\n";

@@ -288,12 +288,7 @@ do_remap_fwd() const
     const auto& phys = m_phys[i];
     const auto& dyn  = m_dyn[i];
 
-    const int itl = m_is_state_field[i] ? tl.np1 : -1;
-
-    // phys->dyn requires a halo-exchange. Since not all entries in dyn
-    // are overwritten before the exchange, to avoid leftover garbage,
-    // we need to set all entries of dyn to zero.
-    Kokkos::deep_copy(dyn.get_view(),0.0);
+    const int itl = m_is_state_field[i] ? tl.n0 : -1;
 
     const auto& ph = phys.get_header();
     const auto& dh = dyn.get_header();
@@ -307,6 +302,29 @@ do_remap_fwd() const
     const bool dyn_small_pack_alloc  = dyn_alloc_prop.template  is_compatible<small_pack_type>();
 
     const auto phys_lt = get_layout_type(ph.get_identifier().get_layout().tags());
+
+    // phys->dyn requires a halo-exchange. Since not all entries in dyn
+    // are overwritten before the exchange, to avoid leftover garbage,
+    // we need to set all entries of dyn to zero.
+    if (m_is_state_field[i]) {
+      // Fill only the slice we need
+      if (phys_lt==LayoutType::Scalar2D) {
+        auto v = ekat::subview_1(dyn.template get_reshaped_view<Real****>(),itl);
+        Kokkos::deep_copy(v,0.0);
+      } else if (phys_lt==LayoutType::Scalar3D) {
+        auto v = ekat::subview_1(dyn.template get_reshaped_view<Real*****>(),itl);
+        Kokkos::deep_copy(v,0.0);
+      } else if (phys_lt==LayoutType::Vector3D) {
+        auto v = ekat::subview_1(dyn.template get_reshaped_view<Real******>(),itl);
+        Kokkos::deep_copy(v,0.0);
+      } else {
+        EKAT_ERROR_MSG("Error! Unexpected layout for a dynamic state.\n");
+      }
+    } else {
+      // Fill the whole view
+      Kokkos::deep_copy(dyn.get_view(),0.0);
+    }
+
     switch (phys_lt) {
       case LayoutType::Scalar2D:
       case LayoutType::Vector2D:
@@ -330,7 +348,7 @@ do_remap_fwd() const
   }
 
   // Exchange only the current time levels
-  m_be[tl.np1]->exchange();
+  m_be[tl.n0]->exchange();
 }
 
 template<typename RealType>
