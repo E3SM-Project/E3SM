@@ -1683,6 +1683,10 @@ if (l_gw_drag) then
 
 end if ! l_gw_drag
 
+<<<<<<< HEAD
+=======
+!==> JS ADD
+>>>>>>> 832d2aca6476974a72067b6212ff3515ee71cbb6
     !===================================================
     ! Update Nudging values, if needed
     !===================================================
@@ -1690,6 +1694,10 @@ end if ! l_gw_drag
       call nudging_timestep_tend(state,ptend)
       call physics_update(state,ptend,ztodt,tend)
     endif
+<<<<<<< HEAD
+=======
+!==> JS END
+>>>>>>> 832d2aca6476974a72067b6212ff3515ee71cbb6
 
 if (l_ac_energy_chk) then
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -1756,6 +1764,19 @@ end if ! l_ac_energy_chk
        endif
     endif
 
+<<<<<<< HEAD
+=======
+!==> JS ADD
+    !===================================================
+    ! Update Nudging values, if needed
+    !===================================================
+!    if((Nudge_Model).and.(Nudge_ON)) then
+!      call nudging_timestep_tend(state,ptend)
+!      call physics_update_ndg(state,ptend,ztodt,tend)
+!    endif
+!==> JS END
+
+>>>>>>> 832d2aca6476974a72067b6212ff3515ee71cbb6
     call diag_phys_tend_writeout (state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, &
          tmp_t, qini, cldliqini, cldiceini)
 
@@ -1853,7 +1874,13 @@ subroutine tphysbc (ztodt,               &
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
+<<<<<<< HEAD
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
+=======
+!==> JS ADD
+    use nudging,         only: Nudge_Model,Nudge_Loc,nudging_calc_tend
+!==> JS END
+>>>>>>> 832d2aca6476974a72067b6212ff3515ee71cbb6
 
     implicit none
 
@@ -2018,7 +2045,6 @@ subroutine tphysbc (ztodt,               &
     logical :: l_st_mic
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
-
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -2673,12 +2699,22 @@ end if ! l_tracer_aero
 
     call t_stopf('bc_history_write')
 
+<<<<<<< HEAD
     !===================================
     ! Update Nudging tendency if needed
     !===================================
     if (Nudge_Model .and. Nudge_Loc_PhysOut) then
        call nudging_calc_tend(state)
     endif
+=======
+!==> JS ADD
+    ! Update Nudging values, if needed
+    !----------------------------------
+    if (Nudge_Model .and. Nudge_Loc) then
+       call nudging_calc_tend(state)
+    endif
+!==> JS END
+>>>>>>> 832d2aca6476974a72067b6212ff3515ee71cbb6
 
     !===================================================
     ! Write cloud diagnostics on history file

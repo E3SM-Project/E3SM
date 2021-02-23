@@ -1852,15 +1852,26 @@
         <command name="load">mvapich2/2.3.1</command>
       </modules>
       <modules mpilib="impi">
+<<<<<<< HEAD
         <command name="load">intelmpi/2019u4</command>
       </modules>
       <modules mpilib="impi" compiler="pgi">
         <command name="load">intelmpi/2019u3</command>
+=======
+        <command name="load">intelmpi/2019u5</command>
+>>>>>>> 832d2aca6476974a72067b6212ff3515ee71cbb6
       </modules>
       <modules>
         <command name="load">netcdf/4.6.3</command>
         <command name="load">pnetcdf/1.9.0</command>
         <command name="load">mkl/2019u5</command>
+<<<<<<< HEAD
+=======
+      </modules>
+      <modules mpilib="mpi-serial">
+        <command name="load">netcdf/4.6.3</command>
+        <command name="load">mkl/2019u5</command>
+>>>>>>> 832d2aca6476974a72067b6212ff3515ee71cbb6
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
