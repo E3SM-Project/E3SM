@@ -161,6 +161,7 @@ module histFileMod
   type field_info
      character(len=max_namlen) :: name         ! field name
      character(len=max_chars)  :: long_name    ! long name
+     character(len=max_chars)  :: standard_name  ! CF standard name
      character(len=max_chars)  :: units        ! units
      character(len=hist_dim_name_length) :: type1d                ! pointer to first dimension type from data type (nameg, etc)
      character(len=hist_dim_name_length) :: type1d_out            ! hbuf first dimension type from data type (nameg, etc)
@@ -282,8 +283,8 @@ contains
   end subroutine hist_printflds
 
   !-----------------------------------------------------------------------
-  subroutine masterlist_addfld (fname, type1d, type1d_out, &
-        type2d, numdims, num2d, units, avgflag, long_name, hpindex, &
+  subroutine masterlist_addfld (fname, type1d, type1d_out,&
+        type2d, numdims, num2d, units, avgflag, long_name, standard_name, hpindex, &
         p2c_scale_type, c2l_scale_type, l2g_scale_type, t2g_scale_type, &
         no_snow_behavior)
     !
@@ -306,6 +307,7 @@ contains
     character(len=*), intent(in)  :: units            ! units of field
     character(len=1), intent(in)  :: avgflag          ! time averaging flag
     character(len=*), intent(in)  :: long_name        ! long name of field
+    character(len=*), intent(in)  :: standard_name        ! long name of field
     integer         , intent(in)  :: hpindex          ! data type index for history buffer output
     character(len=*), intent(in)  :: p2c_scale_type   ! scale type for subgrid averaging of pfts to column
     character(len=*), intent(in)  :: c2l_scale_type   ! scale type for subgrid averaging of columns to landunits
@@ -364,6 +366,7 @@ contains
 
     masterlist(f)%field%name           = fname
     masterlist(f)%field%long_name      = long_name
+    masterlist(f)%field%standard_name  = standard_name
     masterlist(f)%field%units          = units
     masterlist(f)%field%type1d         = type1d
     masterlist(f)%field%type1d_out     = type1d_out
@@ -2050,6 +2053,7 @@ contains
     integer :: c,l,lev,ifld               ! indices
     integer :: ier                        ! error status
     character(len=max_chars) :: long_name ! variable long name
+    character(len=max_chars) :: standard_name ! variable CF standard_name
     character(len=max_namlen):: varname   ! variable name
     character(len=max_namlen):: units     ! variable units
     character(len=8) :: l2g_scale_type    ! scale type for subgrid averaging of landunits to grid cells
@@ -4267,7 +4271,7 @@ contains
   end function set_hist_filename
 
   !-----------------------------------------------------------------------
-  subroutine hist_addfld1d (fname, units, avgflag, long_name, type1d_out, &
+  subroutine hist_addfld1d (fname, units, avgflag, long_name, type1d_out, standard_name, &
                         ptr_gcell, ptr_topo, ptr_lunit, ptr_col, ptr_patch, ptr_lnd, &
                         ptr_atm, p2c_scale_type, c2l_scale_type, &
                         l2g_scale_type, t2g_scale_type, set_lake, set_nolake, set_urb, set_nourb, &
@@ -4289,6 +4293,7 @@ contains
     character(len=1), intent(in)           :: avgflag        ! time averaging flag
     character(len=*), intent(in)           :: long_name      ! long name of field
     character(len=*), optional, intent(in) :: type1d_out     ! output type (from data type)
+    character(len=*), optional, intent(in) :: standard_name  ! CF standard name
     real(r8)        , optional, pointer    :: ptr_gcell(:)   ! pointer to gridcell array
     real(r8)        , optional, pointer    :: ptr_topo(:)    ! pointer to topounit array
     real(r8)        , optional, pointer    :: ptr_lunit(:)   ! pointer to landunit array
@@ -4319,6 +4324,7 @@ contains
     character(len=8) :: scale_type_t2g ! scale type for subgrid averaging of topounits to gridcells
     type(bounds_type):: bounds         ! boudns 
     character(len=16):: l_default      ! local version of 'default'
+    character(len=max_namlen) :: lstandard_name  ! local standard name
     character(len=*),parameter :: subname = 'hist_addfld1d'
 !------------------------------------------------------------------------
 
@@ -4476,11 +4482,17 @@ contains
     if (present(t2g_scale_type)) scale_type_t2g = t2g_scale_type
     if (present(type1d_out)) l_type1d_out = type1d_out
 
+    if (present(standard_name)) then 
+     lstandard_name = standard_name
+    else 
+     lstandard_name = ' '
+    end if
+
     ! Add field to masterlist
 
     call masterlist_addfld (fname=trim(fname), type1d=l_type1d, type1d_out=l_type1d_out, &
-         type2d='unset', numdims=1, num2d=1, &
-         units=units, avgflag=avgflag, long_name=long_name, hpindex=hpindex, &
+         type2d='unset', numdims=1, num2d=1,  units=units, avgflag=avgflag, long_name=long_name, &
+         standard_name=lstandard_name, hpindex=hpindex, &
          p2c_scale_type=scale_type_p2c, c2l_scale_type=scale_type_c2l, l2g_scale_type=scale_type_l2g, &
          t2g_scale_type=scale_type_t2g)
 
@@ -4497,7 +4509,7 @@ contains
   end subroutine hist_addfld1d
 
   !-----------------------------------------------------------------------
-  subroutine hist_addfld2d (fname, type2d, units, avgflag, long_name, type1d_out, &
+  subroutine hist_addfld2d (fname, type2d, units, avgflag, long_name, type1d_out, standard_name, &
                         ptr_gcell, ptr_topo, ptr_lunit, ptr_col, ptr_patch, ptr_lnd, ptr_atm, &
                         p2c_scale_type, c2l_scale_type, l2g_scale_type, t2g_scale_type, &
                         set_lake, set_nolake, set_urb, set_nourb, set_spec, &
@@ -4525,6 +4537,7 @@ contains
     character(len=1), intent(in) :: avgflag                    ! time averaging flag
     character(len=*), intent(in) :: long_name                  ! long name of field
     character(len=*), optional, intent(in) :: type1d_out       ! output type (from data type)
+    character(len=*), optional, intent(in) :: standard_name    ! output type (from data type)
     real(r8)        , optional, pointer    :: ptr_atm(:,:)     ! pointer to atm array
     real(r8)        , optional, pointer    :: ptr_lnd(:,:)     ! pointer to lnd array
     real(r8)        , optional, pointer    :: ptr_gcell(:,:)   ! pointer to gridcell array
@@ -4556,6 +4569,7 @@ contains
     character(len=8) :: scale_type_t2g ! scale type for subgrid averaging of topounits to gridcells
     type(bounds_type):: bounds          
     character(len=16):: l_default      ! local version of 'default'
+    character(len=max_namlen) :: lstandard_name  ! local standard name
     character(len=*),parameter :: subname = 'hist_addfld2d'
 !------------------------------------------------------------------------
 
@@ -4820,11 +4834,19 @@ contains
     if (present(t2g_scale_type)) scale_type_t2g = t2g_scale_type
     if (present(type1d_out)) l_type1d_out = type1d_out
 
+    if (present(standard_name)) then 
+     lstandard_name = standard_name
+    else 
+     lstandard_name = ' '
+    end if
+
+
     ! Add field to masterlist
 
     call masterlist_addfld (fname=trim(fname), type1d=l_type1d, type1d_out=l_type1d_out, &
          type2d=type2d, numdims=2, num2d=num2d, &
-         units=units, avgflag=avgflag, long_name=long_name, hpindex=hpindex, &
+         units=units, avgflag=avgflag, long_name=long_name, &
+         standard_name=lstandard_name, hpindex=hpindex, &
          p2c_scale_type=scale_type_p2c, c2l_scale_type=scale_type_c2l, l2g_scale_type=scale_type_l2g, &
          t2g_scale_type=scale_type_t2g, no_snow_behavior=no_snow_behavior)
 
