@@ -92,12 +92,6 @@
                   filename_interval="none"
                   input_interval="initial_only" />
 
-<immutable_stream name="SnicarInput"
-                  type="input"
-                  filename_template="forcing/snicar_optics_5bnd_snow_and_aerosols.nc"
-                  filename_interval="none"
-                  input_interval="initial_only" />
-
 <stream name="abort_block"
         type="output"
         filename_template="abort_seaice_$Y-$M-$D_$h.$m.$s_block_$B.nc"
