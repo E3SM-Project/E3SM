@@ -471,7 +471,7 @@
 
       integer (kind=int_kind), dimension (nbtrcr), intent(in) :: &
          bio_index,  &
-         bio_index_o & ! provides index of scavenging (kscavz) data array
+         bio_index_o   ! provides index of scavenging (kscavz) data array
 
       real (kind=dbl_kind), intent(in) :: &
          dt                    ! time step
@@ -512,6 +512,7 @@
       real (kind=dbl_kind) :: &
          dzssl,  dzssl_new,      & ! snow ssl thickness
          dzint,  dzint_new,      & ! snow interior thickness
+         dz,                     & !
          hi,                     & ! ice  thickness (m)
          hilyr,                  & ! ice layer thickness (m)
          hs,                     & ! snow thickness (m)
