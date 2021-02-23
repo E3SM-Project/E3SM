@@ -82,7 +82,7 @@
 
       integer (kind=int_kind), dimension (nbtrcr), intent(in) :: &
          bio_index, & ! references index of bio tracer (nbtrcr) to tracer array (ntrcr)
-         bio_index_o, ! references index of data arrays (eg. kscavz)
+         bio_index_o  ! references index of data arrays (eg. kscavz)
 
       real (kind=dbl_kind), intent(in) :: &
          dt,       &  ! time step
@@ -256,7 +256,7 @@
                                 vice_old,  vsno_old,     &
                                 vicen,     vsnon,        &
                                 aicen,     flux_bio_atm, &
-                                zbgc_atmn, flux_bio_snom &
+                                zbgc_atmn, flux_bio_sno, &
                                 bio_index_o)
 
       call z_biogeochemistry   (n_cat,        dt,        &

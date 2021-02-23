@@ -1609,11 +1609,6 @@
          write(warning,*) ' aice = ', &
                             aice
          call add_warning(warning)
-         do k = 0, klev
-           write(warning,*) ' zbio(nlt_zaero_sw(1)+k) = ', &
-                              zbio(nlt_zaero_sw(1)+k)
-           call add_warning(warning)
-         end do
          write(warning,*) ' hs = ', &
                             hs
          call add_warning(warning)
@@ -2548,7 +2543,6 @@
                g(k)   = gs
             enddo       ! k
 
-
             ! aerosol in snow
              if (tr_zaero .and. dEdd_algae) then
                do k = 0,nslyr
@@ -2567,7 +2561,7 @@
                do na=1,4*n_aero,4
 ! mgf++
                if (modal_aero) then
-                  if (na == 1) then  
+                  if (na == 1) then
                   !interstitial BC
                      taer = taer + &
                           aero_mp(na)*kaer_bc_tab(ns,k_bcexs(k))
@@ -2577,7 +2571,7 @@
                      gaer = gaer + &
                           aero_mp(na)*kaer_bc_tab(ns,k_bcexs(k))* &
                            waer_bc_tab(ns,k_bcexs(k))*gaer_bc_tab(ns,k_bcexs(k))
-                  elseif (na == 5)then  
+                  elseif (na == 5)then
                   !within-ice BC
                       taer = taer + &
                            aero_mp(na)*kaer_bc_tab(ns,k_bcins(k))* &
@@ -2642,7 +2636,7 @@
                       gaer = gaer + &
                            (aero_mp(na+1)/rnslyr)*kaer_bc_tab(ns,k_bcins(k))* &
                            waer_bc_tab(ns,k_bcins(k))*gaer_bc_tab(ns,k_bcins(k))
-                      
+
                     else
                       ! other species (dust)
                       taer = taer + &
@@ -2688,9 +2682,9 @@
                ! no aerosol in pond
             enddo       ! k
          endif        ! srftyp
-         
+
          ! set optical properties of sea ice
-         
+
          ! bare or snow-covered sea ice layers
          if( srftyp <= 1 ) then
             ! ssl
@@ -2720,7 +2714,7 @@
             if( ns == 1 ) then
                ! total layer absorption optical depth fixed at value
                ! of kalg*0.50m, independent of actual layer thickness
-               kabs = kabs + kabs_chl(ns,k) 
+               kabs = kabs + kabs_chl(ns,k)
             endif
             sig        = ki_int(ns)*wi_int(ns)
             tau(k) = (kabs+sig)*dzk(k)
@@ -2735,7 +2729,7 @@
                                    (tau(k) + tzaer(ns,k))
                   tau(k) = tau(k) + tzaer(ns,k)
                enddo
-            elseif (tr_aero) then 
+            elseif (tr_aero) then
                k = kii   ! sea ice SSL
                taer = c0
                waer = c0
@@ -2763,7 +2757,7 @@
                           waer_bc_tab(ns,k_bcins(k))
                      gaer = gaer + &
                           aero_mp(na+2)*kaer_bc_tab(ns,k_bcins(k))* &
-                          waer_bc_tab(ns,k_bcins(k))*gaer_bc_tab(ns,k_bcins(k))    
+                          waer_bc_tab(ns,k_bcins(k))*gaer_bc_tab(ns,k_bcins(k))
                   else
                   ! other species (dust)
                      taer = taer + &
@@ -3354,9 +3348,6 @@
          smr      , & ! accumulator for rdif gaussian integration
          smt          ! accumulator for tdif gaussian integration
  
-      character(len=char_len_long) :: &
-         warning ! warning message
-
       ! Delta-Eddington solution expressions
       alpha(w,uu,gg,e) = p75*w*uu*((c1 + gg*(c1-w))/(c1 - e*e*uu*uu))
       agamm(w,uu,gg,e) = p5*w*((c1 + c3*gg*(c1-w)*uu*uu)/(c1-e*e*uu*uu))
@@ -3459,7 +3450,7 @@
             amg = alp - gam
             rdir(k) = apg*rdif_a(k) +  amg*(tdif_a(k)*trnlay(k) - c1)
             tdir(k) = apg*tdif_a(k) + (amg* rdif_a(k)-apg+c1)*trnlay(k)
-
+            
             ! recalculate rdif,tdif using direct angular integration over rdir,tdir,
             ! since Delta-Eddington rdif formula is not well-behaved (it is usually
             ! biased low and can even be negative); use ngmax angles and gaussian
@@ -3772,11 +3763,11 @@
                                     sw_grid,      hin,       &
                                     hbri,         ntrcr,     &
                                     nilyr,        nblyr,     &
-                                    i_grid,       aicen,     &
+                                    i_grid,                  &
                                     nbtrcr_sw,    n_zaero,   &
                                     skl_bgc,      z_tracers, &
                                     l_stop,       stop_label)
-      
+
       use ice_constants_colpkg, only: c0, c1, c2, p5, sk_l
       use ice_colpkg_tracers, only: nt_bgc_N, nt_zaero, tr_bgc_N, &
           tr_zaero, nlt_chl_sw, nlt_zaero_sw
@@ -3786,13 +3777,13 @@
 
       integer (kind=int_kind), intent(in) :: &
          nslyr, & ! number of snow layers
-         n_zaero    , & ! number of cells with aicen > puny 
+         n_zaero    , & ! number of cells with aicen > puny
          nbtrcr_sw, n_algae, & ! nilyr+nslyr+2 for chlorophyll
          ntrcr
 
       integer (kind=int_kind), intent(in) :: &
          nblyr      , & ! number of bio layers
-         nilyr          ! number of ice layers 
+         nilyr          ! number of ice layers
 
       real (kind=dbl_kind), dimension (ntrcr), intent(in) ::       &
          trcrn          ! aerosol or chlorophyll
@@ -3802,21 +3793,20 @@
          trcrn_sw       ! ice on shortwave grid tracers
 
       real (kind=dbl_kind), dimension (:), intent(in) :: &
-         sw_grid     , & ! 
-         i_grid          ! CICE bio grid 
-         
+         sw_grid     , & !
+         i_grid          ! CICE bio grid
+
       real(kind=dbl_kind), intent(in) :: &
          hin          , & ! CICE ice thickness
-         hbri         , & ! brine height
-         aicen
+         hbri             ! brine height
 
       logical (kind=log_kind), intent(in) :: &
-         skl_bgc, & ! skeletal layer bgc  
-         z_tracers  ! zbgc   
+         skl_bgc, & ! skeletal layer bgc
+         z_tracers  ! zbgc
 
       logical (kind=log_kind), intent(inout) :: &
          l_stop            ! if true, print diagnostics and abort on return
-        
+
       character (char_len), intent(inout) :: stop_label
 
       !  local variables
@@ -3831,7 +3821,7 @@
          icegrid        ! correct for large ice surface layers
 
       real (kind=dbl_kind):: &
-         top_conc       ! 1% (min_bgc) of surface concentration 
+         top_conc       ! 1% (min_bgc) of surface concentration
                         ! when hin > hbri:  just used in sw calculation
 
       !-----------------------------------------------------------------
@@ -3848,17 +3838,16 @@
       if (sw_grid(1)*hin*c2 > hi_ssl .and. hin > puny) then
          icegrid(1) = hi_ssl/c2/hin
       endif
-      icegrid(2) = c2*sw_grid(1) + (sw_grid(2) - sw_grid(1)) ! sw_grid(2) = zpace/c2
-
+      icegrid(2) = c2*sw_grid(1) + (sw_grid(2) - sw_grid(1))
       if (z_tracers) then
       if (tr_bgc_N)  then
          do k = 1, nblyr+1
             do n = 1, n_algae
                trtmp0(nt_bgc_N(1) + k-1) = trtmp0(nt_bgc_N(1) + k-1) + &
-                                R_chl2N(n)*F_abs_chl(n)*trcrn(nt_bgc_N(n)+k-1) !*aicen
+                                R_chl2N(n)*F_abs_chl(n)*trcrn(nt_bgc_N(n)+k-1)
             enddo ! n
          enddo    ! k
- 
+
          top_conc = trtmp0(nt_bgc_N(1))*min_bgc
          call remap_zbgc (ntrcr,             nilyr+1, &
                           nt_bgc_N(1),                &
@@ -3867,8 +3856,8 @@
                           1,                 nblyr+1, &
                           hin,               hbri,    &
                           icegrid(1:nilyr+1),         &
-                          i_grid(1:nblyr+1), top_conc, & 
-                          l_stop,            stop_label) 
+                          i_grid(1:nblyr+1), top_conc, &
+                          l_stop,            stop_label)
 
          if (l_stop) return
 
@@ -3878,11 +3867,11 @@
 
          do n = 1, n_algae   ! snow contribution
             trcrn_sw(nlt_chl_sw)= trcrn_sw(nlt_chl_sw) &
-                     + R_chl2N(n)*F_abs_chl(n)*trcrn(nt_bgc_N(n)+nblyr+1) 
+                     + R_chl2N(n)*F_abs_chl(n)*trcrn(nt_bgc_N(n)+nblyr+1)
                               ! snow surface layer
             trcrn_sw(nlt_chl_sw+1:nlt_chl_sw+nslyr) = &
                      trcrn_sw(nlt_chl_sw+1:nlt_chl_sw+nslyr) &
-                     + R_chl2N(n)*F_abs_chl(n)*trcrn(nt_bgc_N(n)+nblyr+2) 
+                     + R_chl2N(n)*F_abs_chl(n)*trcrn(nt_bgc_N(n)+nblyr+2)
                               ! only 1 snow layer in zaero
          enddo ! n
       endif    ! tr_bgc_N
@@ -3894,7 +3883,7 @@
             trtmp(:) = c0
 
             do k = 1, nblyr+1
-               trtmp0(nt_zaero(n) + k-1) = trcrn(nt_zaero(n)+k-1) !*aicen
+               trtmp0(nt_zaero(n) + k-1) = trcrn(nt_zaero(n)+k-1)
             enddo
 
             top_conc = trtmp0(nt_zaero(n))*min_bgc
@@ -4391,6 +4380,9 @@
                          ! Grenfell 1991 uses 0.004 (m^2/mg) which is (0.0078 * spectral weighting)
                          !chlorophyll mass extinction cross section (m^2/mg chla)
 
+      character(len=char_len_long) :: &
+         warning ! warning message
+
       ! SNICAR
       ! new inputs
       integer (kind=int_kind), parameter :: &
@@ -4488,9 +4480,6 @@
                             .0277_dbl_kind, .0277_dbl_kind /), &
          gi_int_mn_5bd = (/ .94_dbl_kind, .94_dbl_kind, .94_dbl_kind, &
                             .94_dbl_kind, .94_dbl_kind /)
-
-      character(len=char_len_long) :: &
-         warning ! warning message
 
 !-----------------------------------------------------------------------
 ! Initialize and tune bare ice/ponded ice iops
@@ -4856,93 +4845,11 @@
          !aerosol in snow
           if (tr_zaero .and. dEdd_algae) then
             do k = 0,nslyr
-
                g(k)   = (g(k)*w0(k)*tau(k) + gzaer_5bd(ns,k)) / &
                                (w0(k)*tau(k) + wzaer_5bd(ns,k))
                w0(k)  = (w0(k)*tau(k) + wzaer_5bd(ns,k)) / &
                                 (tau(k) + tzaer_5bd(ns,k))
-
-               if (w0(k) > c1) then
-                 write(warning,*) 'k = ',k
-                 call add_warning(warning)
-                 write(warning,*) 'w0(k) = ',w0(k)
-                 call add_warning(warning)
-                 write(warning,*) 'tau(k) = ',tau(k)
-                 call add_warning(warning)
-                 write(warning,*) 'g(k) = ',g(k)
-                 call add_warning(warning)
-                 write(warning,*) 'wzaer_5bd(ns,k) = ',wzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'tzaer_5bd(ns,k) = ',tzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'gzaer_5bd(ns,k) = ',gzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'k_bcexs(k)=', k_bcexs(k)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,1)=',kaer_bc_tab_5bd(ns,1)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,1)=',waer_bc_tab_5bd(ns,1)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,2)=',kaer_bc_tab_5bd(ns,2)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,2)=',waer_bc_tab_5bd(ns,2)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,3)=',kaer_bc_tab_5bd(ns,3)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,3)=',waer_bc_tab_5bd(ns,3)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(1)+k)=',zbio(nlt_zaero_sw(1)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(2)+k)=',zbio(nlt_zaero_sw(2)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(3)+k)=',zbio(nlt_zaero_sw(3)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'dzk(k)=',dzk(k)
-                 call add_warning(warning)
-                 w0(k) = c1
-               endif
-
-               if (g(k) .ge. c1) then
-                 write(warning,*) 'g(k) >= c1: k = ',k
-                 call add_warning(warning)
-                 write(warning,*) 'w0(k) = ',w0(k)
-                 call add_warning(warning)
-                 write(warning,*) 'tau(k) = ',tau(k)
-                 call add_warning(warning)
-                 write(warning,*) 'g(k) = ',g(k)
-                 call add_warning(warning)
-                 write(warning,*) 'wzaer_5bd(ns,k) = ',wzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'tzaer_5bd(ns,k) = ',tzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'gzaer_5bd(ns,k) = ',gzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'k_bcexs(k)=', k_bcexs(k)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,1)=',kaer_bc_tab_5bd(ns,1)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,1)=',waer_bc_tab_5bd(ns,1)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,2)=',kaer_bc_tab_5bd(ns,2)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,2)=',waer_bc_tab_5bd(ns,2)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,3)=',kaer_bc_tab_5bd(ns,3)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,3)=',waer_bc_tab_5bd(ns,3)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(1)+k)=',zbio(nlt_zaero_sw(1)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(2)+k)=',zbio(nlt_zaero_sw(2)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(3)+k)=',zbio(nlt_zaero_sw(3)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'dzk(k)=',dzk(k)
-                 call add_warning(warning)
-               endif
-
                tau(k) = tau(k) + tzaer_5bd(ns,k)
-
             enddo
           elseif (tr_aero) then
                k = 0  ! snow SSL
@@ -5107,86 +5014,6 @@
                                      (w0(k)*tau(k) + wzaer_5bd(ns,k))
                      w0(k)  = (w0(k)*tau(k) + wzaer_5bd(ns,k)) / &
                                       (tau(k) + tzaer_5bd(ns,k))
-
-               if (w0(k) > c1) then
-                 write(warning,*) 'k = ',k
-                 call add_warning(warning)
-                 write(warning,*) 'w0(k) = ',w0(k)
-                 call add_warning(warning)
-                 write(warning,*) 'tau(k) = ',tau(k)
-                 call add_warning(warning)
-                 write(warning,*) 'g(k) = ',g(k)
-                 call add_warning(warning)
-                 write(warning,*) 'wzaer_5bd(ns,k) = ',wzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'tzaer_5bd(ns,k) = ',tzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'gzaer_5bd(ns,k) = ',gzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'k_bcexs(k)=', k_bcexs(k)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,1)=',kaer_bc_tab_5bd(ns,1)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,1)=',waer_bc_tab_5bd(ns,1)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,2)=',kaer_bc_tab_5bd(ns,2)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,2)=',waer_bc_tab_5bd(ns,2)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,3)=',kaer_bc_tab_5bd(ns,3)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,3)=',waer_bc_tab_5bd(ns,3)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(1)+k)=',zbio(nlt_zaero_sw(1)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(2)+k)=',zbio(nlt_zaero_sw(2)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(3)+k)=',zbio(nlt_zaero_sw(3)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'dzk(k)=',dzk(k)
-                 call add_warning(warning)
-                 w0(k) = c1
-               endif
-
-               if (g(k) .ge. c1) then
-                 write(warning,*) 'g(k) >= c1: k = ',k
-                 call add_warning(warning)
-                 write(warning,*) 'w0(k) = ',w0(k)
-                 call add_warning(warning)
-                 write(warning,*) 'tau(k) = ',tau(k)
-                 call add_warning(warning)
-                 write(warning,*) 'g(k) = ',g(k)
-                 call add_warning(warning)
-                 write(warning,*) 'wzaer_5bd(ns,k) = ',wzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'tzaer_5bd(ns,k) = ',tzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'gzaer_5bd(ns,k) = ',gzaer_5bd(ns,k)
-                 call add_warning(warning)
-                 write(warning,*) 'k_bcexs(k)=', k_bcexs(k)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,1)=',kaer_bc_tab_5bd(ns,1)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,1)=',waer_bc_tab_5bd(ns,1)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,2)=',kaer_bc_tab_5bd(ns,2)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,2)=',waer_bc_tab_5bd(ns,2)
-                 call add_warning(warning)
-                 write(warning,*) 'kaer_bc_tab_5bd(ns,3)=',kaer_bc_tab_5bd(ns,3)
-                 call add_warning(warning)
-                 write(warning,*) 'waer_bc_tab_5bd(ns,3)=',waer_bc_tab_5bd(ns,3)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(1)+k)=',zbio(nlt_zaero_sw(1)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(2)+k)=',zbio(nlt_zaero_sw(2)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'zbio(nlt_zaero_sw(3)+k)=',zbio(nlt_zaero_sw(3)+k)
-                 call add_warning(warning)
-                 write(warning,*) 'dzk(k)=',dzk(k)
-                 call add_warning(warning)
-               endif
-
                      tau(k) = tau(k) + tzaer_5bd(ns,k)
                   enddo
                elseif (tr_aero) then
@@ -5380,8 +5207,8 @@
            enddo
        elseif (nsky == 2) then ! diffuse (keep the diffuse incident results)
            do k = 0, klevp
-                dfdif_snicar(k)  = dfdif(k)
-                rupdif_snicar(k) = rupdif(k)
+               dfdif_snicar(k)  = dfdif(k)
+               rupdif_snicar(k) = rupdif(k)
            enddo
        endif
       enddo ! end direct/diffuse incident nsky
