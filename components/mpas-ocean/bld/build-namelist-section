@@ -318,6 +318,12 @@ add_default($nl, 'config_eos_linear_Tref');
 add_default($nl, 'config_eos_linear_Sref');
 add_default($nl, 'config_eos_linear_densityref');
 
+##############################
+# Namelist group: eos_wright #
+##############################
+
+add_default($nl, 'config_eos_wright_ref_pressure');
+
 ########################################
 # Namelist group: split_timestep_share #
 ########################################

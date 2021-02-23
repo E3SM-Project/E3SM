@@ -344,6 +344,9 @@
 <config_eos_linear_Sref>35.0</config_eos_linear_Sref>
 <config_eos_linear_densityref>1000.0</config_eos_linear_densityref>
 
+<!-- eos_wright -->
+<config_eos_wright_ref_pressure>0.0</config_eos_wright_ref_pressure>
+
 <!-- split_timestep_share -->
 <config_n_ts_iter>2</config_n_ts_iter>
 <config_n_bcl_iter_beg>1</config_n_bcl_iter_beg>
