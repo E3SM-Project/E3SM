@@ -18,13 +18,9 @@ module ww3_cpl_indices
   integer :: index_x2w_So_bldepth     
   integer :: index_x2w_So_ssh
 
-  integer :: index_w2x_Sw_lamult
   integer :: index_w2x_Sw_ustokes
   integer :: index_w2x_Sw_vstokes
   integer :: index_w2x_Sw_hstokes
-  integer :: index_w2x_Sw_Sxx
-  integer :: index_w2x_Sw_Sxy
-  integer :: index_w2x_Sw_Syy
 
 contains
 
@@ -49,13 +45,8 @@ contains
     index_x2w_So_bldepth = mct_avect_indexra(x2w,'So_bldepth') ! Boundary layer depth
     index_x2w_So_ssh     = mct_avect_indexra(x2w,'So_ssh')     ! Sea surface height 
 
-    index_w2x_Sw_lamult  = mct_avect_indexra(w2x,'Sw_lamult')  ! Langmuir multiplier
     index_w2x_Sw_ustokes = mct_avect_indexra(w2x,'Sw_ustokes') ! Stokes drift u component
     index_w2x_Sw_vstokes = mct_avect_indexra(w2x,'Sw_vstokes') ! Stokes drift v component
-    index_w2x_Sw_hstokes = mct_avect_indexra(w2x,'Sw_hstokes') ! Stokes drift depth
-    index_w2x_Sw_Sxx     = mct_avect_indexra(w2x,'Sw_Sxx')     ! Radiation stress xx component
-    index_w2x_Sw_Sxy     = mct_avect_indexra(w2x,'Sw_Sxy')     ! Radiation stress xy component
-    index_w2x_Sw_Syy     = mct_avect_indexra(w2x,'Sw_Syy')     ! Radiation stress yy component
 
     call mct_aVect_clean(x2w)
     call mct_aVect_clean(w2x)

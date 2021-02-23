@@ -176,9 +176,7 @@
       use ww3_cpl_indices  , only : ww3_cpl_indices_set
       use ww3_cpl_indices  , only : index_x2w_Sa_u, index_x2w_Sa_v, index_x2w_Sa_tbot, index_x2w_Si_ifrac
       use ww3_cpl_indices  , only : index_x2w_So_t, index_x2w_So_u, index_x2w_So_v, index_x2w_So_bldepth, index_x2w_So_ssh
-      use ww3_cpl_indices  , only : index_w2x_Sw_lamult, index_w2x_Sw_ustokes
-      use ww3_cpl_indices  , only : index_w2x_Sw_vstokes, index_w2x_Sw_hstokes
-      use ww3_cpl_indices  , only : index_w2x_Sw_Sxx, index_w2x_Sw_Sxy, index_w2x_Sw_Syy
+      use ww3_cpl_indices  , only : index_w2x_Sw_ustokes, index_w2x_Sw_vstokes
 
       use shr_sys_mod      , only : shr_sys_flush, shr_sys_abort
       use shr_kind_mod     , only : in=>shr_kind_in, r8=>shr_kind_r8, &
@@ -744,10 +742,8 @@ CONTAINS
       ! QL, 150823, send initial state to driver
       ! QL, 160611, initial values for lamult, ustokes and vstokes
       do jsea=1, nseal
-          w2x_w%rattr(index_w2x_Sw_lamult,jsea) = 1.
           w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = 0.
           w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = 0.
-          !w2x_w%rattr(index_w2x_Sw_hstokes,jsea) = ??
       enddo
 
       ! end redirection of share output to wav log
@@ -960,22 +956,12 @@ CONTAINS
          IX  = MAPSF(ISEA,1)
          IY  = MAPSF(ISEA,2)
          if (MAPSTA(IY,IX) .eq. 1) then
-             ! QL, 160530, LAMULT now calculated in WW3 (w3iogomd.f90)
-             ! SB, w2x_w%rattr(index_w2x_Sw_lamult,jsea) = LAMULT(ISEA)
              w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = USSX(ISEA)
              w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = USSY(ISEA)
-             w2x_w%rattr(index_w2x_Sw_Sxx,jsea) = SXX(ISEA)
-             w2x_w%rattr(index_w2x_Sw_Sxy,jsea) = SXY(ISEA)
-             w2x_w%rattr(index_w2x_Sw_Syy,jsea) = SYY(ISEA)
           else
-             !SB, w2x_w%rattr(index_w2x_Sw_lamult,jsea) = 1.
              w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = 0.0
              w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = 0.0
-             w2x_w%rattr(index_w2x_Sw_Sxx,jsea) = 0.0
-             w2x_w%rattr(index_w2x_Sw_Sxy,jsea) = 0.0
-             w2x_w%rattr(index_w2x_Sw_Syy,jsea) = 0.0
           endif
-          ! w2x_w%rattr(index_w2x_Sw_hstokes,jsea) = ??
       enddo
 
       !      write(stdout,*) 'wrm tcx8'
