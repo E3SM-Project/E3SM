@@ -42,19 +42,19 @@ contains
     implicit none
     !-------------------------------------------------------
 
-    call RtmHistAddfld (fname='MASK', units='none',  &
+    call RtmHistAddfld (fname='MASK', units='1',  &
          avgflag='A', long_name='MOSART mask 1=land 2=ocean 3=outlet ', &
          ptr_rof=rtmCTL%rmask, default='active')
 
-    call RtmHistAddfld (fname='GINDEX', units='none',  &
+    call RtmHistAddfld (fname='GINDEX', units='1',  &
          avgflag='A', long_name='MOSART global index ', &
          ptr_rof=rtmCTL%rgindex, default='active')
 
-    call RtmHistAddfld (fname='DSIG', units='none',  &
+    call RtmHistAddfld (fname='DSIG', units='1',  &
          avgflag='A', long_name='MOSART downstream index ', &
          ptr_rof=rtmCTL%rdsig, default='active')
 
-    call RtmHistAddfld (fname='OUTLETG', units='none',  &
+    call RtmHistAddfld (fname='OUTLETG', units='1',  &
          avgflag='A', long_name='MOSART outlet index ', &
          ptr_rof=rtmCTL%routletg, default='active')
 
@@ -184,10 +184,10 @@ contains
       call RtmHistAddfld (fname='FLOODPLAIN_DEPTH', units='m',  &
          avgflag='A', long_name='MOSART floodplain water depth', &
          ptr_rof=rtmCTL%inundhf, default='active')
-      call RtmHistAddfld (fname='FLOODPLAIN_FRACTION', units='none',  &
+      call RtmHistAddfld (fname='FLOODPLAIN_FRACTION', units='1',  &
          avgflag='A', long_name='MOSART floodplain water area fraction', &
          ptr_rof=rtmCTL%inundff, default='active')
-      call RtmHistAddfld (fname='FLOODED_FRACTION', units='none',  &
+      call RtmHistAddfld (fname='FLOODED_FRACTION', units='1',  &
          avgflag='A', long_name='MOSART flooded water area fraction', &
          ptr_rof=rtmCTL%inundffunit, default='active')
     endif
