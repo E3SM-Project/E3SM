@@ -353,12 +353,12 @@ contains
     end if
 
     this%finundated_col(begc:endc) = spval
-    call hist_addfld1d (fname='FINUNDATED', units='unitless', &
+    call hist_addfld1d (fname='FINUNDATED', units='1', &
          avgflag='A', long_name='fractional inundated area of vegetated columns', &
          ptr_col=this%finundated_col)
 
     this%finundated_lag_col(begc:endc) = spval
-    call hist_addfld1d (fname='FINUNDATED_LAG', units='unitless',  &
+    call hist_addfld1d (fname='FINUNDATED_LAG', units='1',  &
          avgflag='A', long_name='time-lagged inundated fraction of vegetated columns', &
          ptr_col=this%finundated_lag_col)
 
@@ -523,28 +523,28 @@ contains
 
     if (hist_wrtch4diag) then
        this%o2stress_sat_col(begc:endc,1:nlevgrnd) = spval
-       call hist_addfld2d (fname='O2STRESS_SAT', units='unitless', type2d='levgrnd',  &
+       call hist_addfld2d (fname='O2STRESS_SAT', units='1', type2d='levgrnd',  &
             avgflag='A', long_name='Ratio of oxygen available to demanded for non-inundated area', &
             ptr_col=this%o2stress_sat_col)
     end if
 
     if (hist_wrtch4diag) then
        this%o2stress_unsat_col(begc:endc,1:nlevgrnd) = spval
-       call hist_addfld2d (fname='O2STRESS_UNSAT', units='unitless', type2d='levgrnd',  &
+       call hist_addfld2d (fname='O2STRESS_UNSAT', units='1', type2d='levgrnd',  &
             avgflag='A', long_name='Ratio of oxygen available to demanded for inundated / lake area', &
             ptr_col=this%o2stress_unsat_col)
     end if
 
     if (hist_wrtch4diag) then
        this%ch4stress_unsat_col(begc:endc,1:nlevgrnd) = spval
-       call hist_addfld2d (fname='CH4STRESS_UNSAT', units='unitless', type2d='levgrnd',  &
+       call hist_addfld2d (fname='CH4STRESS_UNSAT', units='1', type2d='levgrnd',  &
             avgflag='A', long_name='Ratio of methane available to total potential sink for inundated / lake area', &
             ptr_col=this%ch4stress_unsat_col)
     end if
 
     if (hist_wrtch4diag) then
        this%ch4stress_sat_col(begc:endc,1:nlevgrnd) = spval
-       call hist_addfld2d (fname='CH4STRESS_SAT', units='unitless', type2d='levgrnd',  &
+       call hist_addfld2d (fname='CH4STRESS_SAT', units='1', type2d='levgrnd',  &
             avgflag='A', long_name='Ratio of methane available to total potential sink for non-inundated area', &
             ptr_col=this%ch4stress_sat_col)
     end if
@@ -593,21 +593,21 @@ contains
 
     if (hist_wrtch4diag) then
        this%layer_sat_lag_col(begc:endc,1:nlevgrnd) = spval
-       call hist_addfld2d (fname='LAYER_SAT_LAG', units='unitless', type2d='levgrnd',  &
+       call hist_addfld2d (fname='LAYER_SAT_LAG', units='1', type2d='levgrnd',  &
             avgflag='A', long_name='lagged saturation status of layer in unsat. zone', &
             ptr_col=this%layer_sat_lag_col)
     end if
 
     if (hist_wrtch4diag) then
        this%annavg_finrw_col(begc:endc) = spval
-       call hist_addfld1d (fname='ANNAVG_FINRW', units='unitless',  &
+       call hist_addfld1d (fname='ANNAVG_FINRW', units='1',  &
             avgflag='A', long_name='annual average respiration-weighted FINUNDATED', &
             ptr_col=this%annavg_finrw_col)
     end if
 
     if (hist_wrtch4diag) then
        this%sif_col(begc:endc) = spval
-       call hist_addfld1d (fname='SIF', units='unitless',  &
+       call hist_addfld1d (fname='SIF', units='1',  &
             avgflag='A', long_name='seasonal inundation factor calculated for sat. CH4 prod. (non-lake)', &
             ptr_col=this%sif_col)
     end if

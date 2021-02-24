@@ -2117,9 +2117,9 @@ contains
           else if (ifld == 4) then
              long_name='saturated soil matric potential'; units = 'mm'
           else if (ifld == 5) then
-             long_name='slope of soil water retention curve'; units = 'unitless'
+             long_name='slope of soil water retention curve'; units = '1'
           else if (ifld == 6) then
-             long_name='saturated hydraulic conductivity'; units = 'unitless'
+             long_name='saturated hydraulic conductivity'; units = '1'
           else
              call endrun(msg=' ERROR: bad 3D time-constant field index'//errMsg(__FILE__, __LINE__))
           end if
@@ -2791,7 +2791,7 @@ contains
           case ('A')
              avgstr = 'mean'
           case ('I')
-             avgstr = 'instantaneous'
+             avgstr = 'point'
           case ('X')
              avgstr = 'maximum'
           case ('M')
@@ -3626,7 +3626,7 @@ contains
                units="absolute value of negative is in hours, 0=monthly, positive is time-steps",     &
                dim1name='scalar')
           call ncd_defvar(ncid=ncid_hist(t), varname='mfilt', xtype=ncd_int, &
-               long_name="Number of history time samples on a file", units="unitless",     &
+               long_name="Number of history time samples on a file", units="1",     &
                comment="Namelist item", &
                dim1name='scalar')
           call ncd_defvar(ncid=ncid_hist(t), varname='ncprec', xtype=ncd_int, &
@@ -3649,7 +3649,7 @@ contains
                dim1name='fname_lenp2', dim2name='max_flds' )
 
           call ncd_defvar(ncid=ncid_hist(t), varname='nflds', xtype=ncd_int, &
-               long_name="Number of fields on file", units="unitless",        &
+               long_name="Number of fields on file", units="1",        &
                dim1name='scalar')
           call ncd_defvar(ncid=ncid_hist(t), varname='ntimes', xtype=ncd_int, &
                long_name="Number of time steps on file", units="time-step",     &
@@ -3661,10 +3661,10 @@ contains
                dim1name='scalar')
    
           call ncd_defvar(ncid=ncid_hist(t), varname='num2d', xtype=ncd_int, &
-               long_name="Size of second dimension", units="unitless",     &
+               long_name="Size of second dimension", units="1",     &
                dim1name='max_nflds' )
           call ncd_defvar(ncid=ncid_hist(t), varname='hpindex', xtype=ncd_int, &
-               long_name="History pointer index", units="unitless",     &
+               long_name="History pointer index", units="1",     &
                dim1name='max_nflds' )
 
           call ncd_defvar(ncid=ncid_hist(t), varname='avgflag', xtype=ncd_char, &
