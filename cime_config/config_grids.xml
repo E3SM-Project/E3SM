@@ -1589,6 +1589,27 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="ne30pg2_oECv3_gis1to10" compset="_MALI">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.gis1to10km</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne120pg2_oECv3_gis1to10" compset="_MALI">
+      <grid name="atm">ne120np4.pg2</grid>
+      <grid name="lnd">ne120np4.pg2</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <!-- grid name="rof">r0125</grid -->
+      <grid name="glc">mpas.gis1to10km</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
     <model_grid alias="f09_g16_g" compset="_MALI">
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
@@ -4654,6 +4675,21 @@
       <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_r05_mono.200602.nc</map>
       <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_r05_mono.200602.nc</map>
     </gridmap>
+
+    <gridmap glc_grid="mpas.gis1to10km" lnd_grid="ne30pg2">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_gis1to10km_mono.200602.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_gis1to10km_bilin.200602.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_ne30pg2_mono.200602.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_ne30pg2_mono.200602.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.gis1to10km" lnd_grid="ne120pg2">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_gis1to10km_mono.200602.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_gis1to10km_bilin.200602.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_ne120pg2_mono.200602.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_ne120pg2_mono.200602.nc</map>
+    </gridmap>
+
 
     <gridmap glc_grid="mpas.gis1to10km" ocn_grid="oEC60to30v3">
       <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3/map_oEC60to30v3_to_gis1to10km_aave.200602.nc</map>
