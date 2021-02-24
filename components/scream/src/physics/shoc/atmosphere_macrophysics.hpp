@@ -80,8 +80,8 @@ public:
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
   // the set of fields stored in the field manager.  A structure like this defines those operations,
-  // which can then be called during run_imple in the main .cpp code.
-  // Structure to handle the local generation of data needed by p3_main in run_impl
+  // which can then be called during run_impl in the main .cpp code.
+  // Structure to handle the local generation of data needed by shoc_main in run_impl
   struct SHOCPreamble {
     SHOCPreamble() = default;
 
@@ -314,7 +314,7 @@ protected:
   Int m_num_tracers;
   Int hdtime;
 
-  // Store the structures for each arguement to p3_main;
+  // Store the structures for each arguement to shoc_main;
   SHF::SHOCInput input;
   SHF::SHOCInputOutput input_output;
   SHF::SHOCOutput output;
