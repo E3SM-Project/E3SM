@@ -17,7 +17,7 @@
 #SBATCH --account=condo
 #SBATCH -N 30
 #SBATCH --time=2:00:00
-#XXSBATCH -x b586
+#SBATCH -x b589
 
 
 set nlev=72
@@ -33,8 +33,8 @@ set NPTS = 4
 set qsize = 0         # number of tracers
 set topo = ''
 set toponame = ''
-set nu=3.4e-8
-#set nu=4.5e-8
+set nu=5.5e-8
+
 
 if ( $ne == 8 ) then
    # 3.75 degree     
@@ -48,8 +48,7 @@ if ( $ne == 15 ) then
     set tstep = 300   # H model
     #set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
     set topo = '/lcrc/group/acme/ac.mtaylor/topodata/ne30/USGS-gtopo30_ne30np4_fx2t.nc'
-
-    set toponame = fx2t-qalg11-b80
+    set toponame = fx2t
  endif
  if ( $ne == 120 ) then
     # 0.25 degree 

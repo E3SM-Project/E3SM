@@ -38,7 +38,10 @@ def lookfor1(fid,key1,key2="",allow_eof=0):
     raise search_failed("Search failed:  string='"+key1+"'")
     return 0
 
-    
+showplot=1
+if len(os.sys.argv) >= 2:
+   if os.sys.argv[1]=="-noX11":
+       showplot=0
 
 mumin=[]
 mumax=[]
@@ -193,6 +196,7 @@ except eof as e:
     plt.legend()
     plt.savefig("TS.png")
    
-    plt.show()
+    if showplot:
+        plt.show()
     sys.exit(0)
 

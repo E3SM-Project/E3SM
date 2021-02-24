@@ -18,9 +18,7 @@ hv_theta_correction=1
 limiter_option = 9
 dt_remap_factor = 1
 dt_tracer_factor = 1
-vert_remap_q_alg = 11
-vert_remap_bl = 8
-vert_remap_tom = 0
+vert_remap_q_alg = 10
 restartfreq   =  1
 restartfile   = "restart/R0001"
 restartdir    = "./restart/"
@@ -32,7 +30,7 @@ nu_top = 2.5e5  ! default 2.5e5    HSV1 1.5ok.  2.0 bad
                 ! timesplit version.  5e5 works.  10e5 crashes.  
 hypervis_scaling = 3  ! 0 for constant coeff HV
 hypervis_order = 2
-hypervis_subcycle = 1
+hypervis_subcycle = 2
 hypervis_subcycle_tom = 1
 /
 &vert_nl

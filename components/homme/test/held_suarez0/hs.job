@@ -30,8 +30,7 @@ set nmax =  5       # no. of timesteps.  ignored, unless ndays=0
 set rfreq = 1600   # no. of days, or n. of timesteps if ndays=0
 
 # use TensorHV order3 scalings, for all resolutions:
-#set nu = 3.4e-8
-set nu = 4e-8
+set nu = 4.5e-8
 
 
 # 0 = normal, 1=restart
@@ -56,8 +55,7 @@ if ( $ne == 30 ) then
    #set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
    #set topo = '/lcrc/group/acme/ac.mtaylor/topodata/ne30/USGS-gtopo30_ne30np4_16xdel2-nolim.nc'
    set topo = '/lcrc/group/acme/ac.mtaylor/topodata/ne30/USGS-gtopo30_ne30np4pg2_fx2t.nc'
-
-   set toponame = fx2t-qalg11-b30
+   set toponame = fx2t
 endif
 if ( $ne == 120 ) then
    # 0.25 degree 
