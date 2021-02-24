@@ -36,8 +36,15 @@ void Functions<S,D>::vd_shoc_decomp(
 
     // Compute shift of kv_term and tmpi
     Spack kv_term_k, kv_term_kp1, tmpi_k, tmpi_kp1;
-    auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
-    auto shift_range = range_pack;
+    const auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
+
+    // Original code was: auto shift_range = range_pack; but that caused mysterious test
+    // failures on blake.
+    IntSmallPack shift_range;
+    for (int s = 0; s < Spack::n; ++s) {
+      shift_range[s] = range_pack[s];
+    }
+
     shift_range.set(range_pack > nlev-1, 1); // don't calculate shift above nlev-1
     ekat::index_and_shift<1>(skv_term, shift_range, kv_term_k, kv_term_kp1);
     ekat::index_and_shift<1>(stmpi, shift_range, tmpi_k, tmpi_kp1);
