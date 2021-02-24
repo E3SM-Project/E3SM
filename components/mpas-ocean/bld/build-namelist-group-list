@@ -24,6 +24,7 @@ my @groups = qw(run_modes
                 pressure_gradient
                 eos
                 eos_linear
+                eos_wright
                 split_timestep_share
                 split_explicit_ts
                 semi_implicit_ts

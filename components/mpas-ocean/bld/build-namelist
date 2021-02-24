@@ -787,6 +787,12 @@ add_default($nl, 'config_eos_linear_Tref');
 add_default($nl, 'config_eos_linear_Sref');
 add_default($nl, 'config_eos_linear_densityref');
 
+##############################
+# Namelist group: eos_wright #
+##############################
+
+add_default($nl, 'config_eos_wright_ref_pressure');
+
 ########################################
 # Namelist group: split_timestep_share #
 ########################################
@@ -1601,6 +1607,7 @@ my @groups = qw(run_modes
                 pressure_gradient
                 eos
                 eos_linear
+                eos_wright
                 split_timestep_share
                 split_explicit_ts
                 semi_implicit_ts
