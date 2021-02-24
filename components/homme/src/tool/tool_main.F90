@@ -208,13 +208,10 @@ contains
     type (element_t)     , intent(inout), target :: elem(:)
     type (TimeLevel_t)   , intent(in)     :: tl     
 
-    character*8 :: varname
-
-    if (smooth_phis_numcycle>0) then
+    if (smooth_phis_numcycle>=0) then
        if (len(trim(infilenames(1)))==0 ) then
           call abortmp('homme_tool: topo_gll_to_smoothed requires infilenames 1 to be defined')
        end if
-       varname='PHIS'
        call pio_read_phis(elem,hybrid%par,'PHIS')
        call smooth_topo_datasets(elem, hybrid, 1, nelemd)
        test_case = 'phis-smoothed'
