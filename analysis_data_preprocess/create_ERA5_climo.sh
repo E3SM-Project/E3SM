@@ -22,8 +22,8 @@ cd $original_data_path
 #Note: in original data sets, 3d variables are stored one year of data per file
 
 for file0 in *197901-*nc
-do 
-    
+do
+
     #var=$(echo $(echo $file0 | cut -d'_' -f1) | cut -d'.' -f9)
     var=$(echo $file0 | cut -d'_' -f1)
     varname=$(echo $(echo $file0 | cut -d'_' -f1) | cut -d'.' -f9)
@@ -44,7 +44,7 @@ do
         done
     done
     echo ${var}
-    ncrcat ${tmp}ERA5_yearly_${var}_*.nc ${time_series_output_path}${varname}_${start_yr}01_${end_yr}12.nc 
+    ncrcat ${tmp}ERA5_yearly_${var}_*.nc ${time_series_output_path}${varname}_${start_yr}01_${end_yr}12.nc
     #ncclimo -a sdd --lnk_flg -c ERA5_monthly_${var}_${start_yr}01.nc -s $start_yr -e $end_yr -i ${tmp} -o ${climo_output_path}
     ncclimo -a sdd --no_amwg_link -c ERA5_monthly_${varname}_${start_yr}01.nc -s $start_yr -e $end_yr -i ${tmp} -o ${climo_output_path}
 #rm ${time_series_output_path}*yearly*nc

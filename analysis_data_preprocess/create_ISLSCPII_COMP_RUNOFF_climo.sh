@@ -29,9 +29,3 @@ done
 cd ${tmp}
 ncclimo -a sdd -c ISLSCPII_GRDC_198601.nc -s 1986 -e 1995
 mv *climo.nc $climo_output_path
-
-
-
-
-
-

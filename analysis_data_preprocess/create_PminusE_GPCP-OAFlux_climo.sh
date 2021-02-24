@@ -20,7 +20,7 @@ cdo splityear PminusE_197901_201312.nc ${tmp}GPCP_OAFLux
 
 for yr in $(eval echo "{$start_yr..$end_yr}"); do
     yyyy=`printf "%04d" $yr`
-   
+
 
     for mth in {1..12}; do
         mm=`printf "%02d" $mth`
@@ -31,12 +31,3 @@ cd ${tmp}
 
 ncclimo -a sdd --lnk_flg -c GPCP_OAFLux_${start_yr}01.nc -s $start_yr -e $end_yr
 mv *climo.nc $climo_output_path
-
-
-
-
-
-
-
-
-

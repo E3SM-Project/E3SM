@@ -22,15 +22,6 @@ exclude = '''
     | docs
     | config
     | conda
+    | analysis_data_preprocess
  )/
-# Ignore existing/old preprocessing scripts
-  | analysis_data_preprocess/create_AOD550_climo.py
-  | analysis_data_preprocess/create_GPCP_climo.py
-  | analysis_data_preprocess/create_OAFLUX_climo.py
-  | analysis_data_preprocess/create_PminusE_GPCP-OAFlux_timeseries.py
-  | analysis_data_preprocess/fix_HadISST_timebounds_sic_mask.py
-  | analysis_data_preprocess/fix_units_TRMM-3B43v-7_3hr.py
-  | analysis_data_preprocess/process_GPCP_dataset.py
-  | analysis_data_preprocess/process_ISLSCPII_COMP_RUNOFF.py
-  | analysis_data_preprocess/process_OAFLUX_dataset.py
 '''

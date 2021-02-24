@@ -794,16 +794,16 @@
                 {
                         "sets": ["lat_lon"],
                         "case_id": "ERA-Interim",
-                        "variables": ["Z3"],		
-                        "ref_name": "ERA-Interim",		
-                        "reference_name": "ERA-Interim Reanalysis 1980-2016",		
-                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],		
-                        "plevs": [500.0],		
-                        "contour_levels": [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58],		
-                        "diff_levels": [-1.8, -1.4, -1.0, -0.6, -0.2, 0.2, 0.6, 1.0, 1.4, 1.8]		
-                },		
-                {		
-                        "sets": ["lat_lon"],		
+                        "variables": ["Z3"],
+                        "ref_name": "ERA-Interim",
+                        "reference_name": "ERA-Interim Reanalysis 1980-2016",
+                        "seasons": ["ANN", "DJF", "MAM", "JJA", "SON"],
+                        "plevs": [500.0],
+                        "contour_levels": [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58],
+                        "diff_levels": [-1.8, -1.4, -1.0, -0.6, -0.2, 0.2, 0.6, 1.0, 1.4, 1.8]
+                },
+                {
+                        "sets": ["lat_lon"],
                         "case_id": "ERA-Interim",
                         "variables": ["T"],
                         "ref_name": "ERA-Interim",
@@ -1286,4 +1286,3 @@
 
         ]
 }
-

@@ -100,4 +100,3 @@ dependencies:
     - mv2==3.0.0
     - regrid2==3.0.0
 prefix: /export/zhang40/anaconda2/envs/obs_env_2019
-

@@ -18,7 +18,7 @@ cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and
 data_path = '/Users/zhang40/Documents/ACME/e3sm_arm_diags/data/20200922.F2010SC5.ne30pg2_r05.armsites/'
 out_path = '/Users/zhang40/Documents/ACME/e3sm_arm_diags/data/post-processed/20200922.F2010SC5.ne30pg2_r05.armsites/'
 p = Path(data_path)
-cmd = 'ncrcat -h '+data_path+'*h1*nc ' +data_path+'armsites_all_time.nc' 
+cmd = 'ncrcat -h '+data_path+'*h1*nc ' +data_path+'armsites_all_time.nc'
 os.popen(cmd).readlines()
 
 filename = data_path+'armsites_all_time.nc'
@@ -31,19 +31,19 @@ time_range = '000101_000112'
 
 
 for site in sites:
-    if sites_info[site][1] >0: 
+    if sites_info[site][1] >0:
         lon_lat = str(sites_info[site][0])+'e_'+str(sites_info[site][1])+'n'
     else:
         lon_lat = str(sites_info[site][0])+'e_'+str(abs(sites_info[site][1]))+'s'
-    
+
     for variable in variables:
         fout_1 = cdms2.open(out_path+ variable+'_'+site+'_'+time_range+'.nc','w')
         var_name = variable + '_' +lon_lat
-        
+
         print(var_name)
         var = fin(var_name,squeeze=1)
         var_time = var.getTime()
-    
+
         if ' 0000-' in var_time.units:
             units = var_time.units
             fakeUnits = units.replace(' 0000-', ' 0001-')   # valid units for cdtime https://github.com/CDAT/cdms/issues/334
@@ -65,18 +65,16 @@ for site in sites:
         fout_1.write(lat)
         fout_1.write(lon)
         if var.getLevel():
-            var1 = fin('PS'+ '_' +lon_lat,squeeze=1)  
+            var1 = fin('PS'+ '_' +lon_lat,squeeze=1)
             var1.id = 'PS'
-            var2 = fin('P0')  
+            var2 = fin('P0')
             var2.id = 'P0'
-            var3 = fin('hyam')  
+            var3 = fin('hyam')
             var3.id = 'hyam'
-            var4 = fin('hybm')  
+            var4 = fin('hybm')
             var4.id = 'hybm'
             fout_1.write(var1)
             fout_1.write(var2)
             fout_1.write(var3)
             fout_1.write(var4)
         fout_1.close()
-
-        

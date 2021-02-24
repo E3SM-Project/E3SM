@@ -21,7 +21,7 @@ cd $original_data_path
 #Note: in original data sets, 3d variables are stored one year of data per file
 #for file0 in *197901-*nc
 for file0 in *198001-*nc
-do 
+do
     var=$(echo $file0 | cut -d'_' -f1)
     echo "$var"
     vars="$vars $var"
@@ -40,7 +40,7 @@ do
            ncks -O -F -d time,${mth} ${tmp}MERRA2_yearly_${var}_${yyyy}.nc ${tmp}MERRA2_monthly_${var}_${yyyy}${mm}.nc
         done
     done
-    ncrcat ${tmp}MERRA2_yearly_${var}_*.nc ${time_series_output_path}${var}_${start_yr}01_${end_yr}12.nc 
+    ncrcat ${tmp}MERRA2_yearly_${var}_*.nc ${time_series_output_path}${var}_${start_yr}01_${end_yr}12.nc
     ncclimo -a sdd --lnk_flg -c MERRA2_monthly_${var}_${start_yr}01.nc -s $start_yr -e $end_yr -i ${tmp} -o ${climo_output_path}
 #rm ${tmp}*yearly*nc
 #rm ${tmp}*monthly*nc
@@ -65,4 +65,3 @@ done
 
 for i in MERRA2_monthly_vas*.nc; do mv "$i" "${i/MERRA2_monthly_vas/MERRA2}" ; done
 rm MERRA2_monthly_*.nc
-
