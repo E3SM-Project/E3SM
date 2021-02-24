@@ -671,9 +671,9 @@ CONTAINS
       ! Read namelist (set initfile in w3cesmmd)
       if ( iaproc .eq. napout ) then
          unitn = shr_file_getunit()
-         write(ndso,*) 'Read in ww3_inparm namelist from wav_in'//trim(inst_suffix)
+         write(ndso,*) 'Read in ww3_inparm namelist from ww3_in'//trim(inst_suffix)
 
-         open( unitn, file='wav_in'//trim(inst_suffix), status='old' )
+         open( unitn, file='ww3_in'//trim(inst_suffix), status='old' )
 
          call shr_nl_find_group_name(unitn, 'ww3_inparm', status=ierr)
          if (ierr == 0) then

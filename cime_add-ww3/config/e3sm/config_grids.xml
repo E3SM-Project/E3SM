@@ -1522,7 +1522,7 @@
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">wQU100</grid>
-      <mask>gx1v6</mask>
+      <mask>wQU100</mask>
     </model_grid>
 
     <model_grid alias="T62_wDE4" compset="_WW3">
@@ -2456,12 +2456,12 @@
       <desc>WW3 90 x 50 global grid</desc>
     </domain>
 
-    <domain name="wQU50">
-      <nx>98182</nx>
+    <domain name="wQU100">
+      <nx>18048</nx>
       <ny>1</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_wQU50.200603.nc</file>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_wQU50.200603.nc</file>
-      <desc>WW3 unstructured QU 50km global grid</desc>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_wQU100.210204.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_wQU100.210204.nc</file>
+      <desc>WW3 unstructured QU 100km global grid</desc>
     </domain>
 
     <domain name="wDE4">
@@ -3304,8 +3304,8 @@
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_ww3a_bilin.150617.nc</map>
     </gridmap>
 
-    <gridmap atm_grid="T62" wav_grid="wQU50">
-      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_wQU50_bilin.nc</map>
+    <gridmap atm_grid="T62" wav_grid="wQU100">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_wQU100_bilin.20210202.nc</map>
     </gridmap>
 
     <gridmap atm_grid="T62" wav_grid="wDE4">
