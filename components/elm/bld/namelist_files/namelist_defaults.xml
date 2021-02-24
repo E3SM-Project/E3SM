@@ -1895,7 +1895,7 @@ this mask will have smb calculated over the entire global land surface
 <use_vertsoilc                 bgc_mode="fates"  >.true.</use_vertsoilc>
 <use_century_decomp            bgc_mode="fates"  >.true.</use_century_decomp>
 <use_lch4                      bgc_mode="fates"  >.false.</use_lch4>
-<use_nitrif_denitrif           bgc_mode="fates"  >.false.</use_nitrif_denitrif>
+<use_nitrif_denitrif           bgc_mode="fates"  >.true.</use_nitrif_denitrif>
 
 
 </namelist_defaults>

@@ -303,7 +303,7 @@ sub process_commandline {
                maxpft                => "default",
                betr_mode             => "default",               
                methane               => 0,
-               nitrif_denitrif       => 0,
+               nitrif_denitrif       => 1,
                nutrient              => "default",
                nutrient_comp_pathway => "default",
                soil_decomp           => "default",
@@ -665,7 +665,6 @@ sub process_namelist_commandline_options {
   setup_cmdl_mask($opts, $nl_flags, $definition, $defaults, $nl);
   setup_cmdl_check_bgc($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_bgc($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
-  setup_cmdl_nitrif_denitrif($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_methane($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_soil_decomp($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_nutrient($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
@@ -1060,32 +1059,6 @@ sub setup_cmdl_bgc {
 
 #-------------------------------------------------------------------------------
 
-sub setup_cmdl_nitrif_denitrif {
-  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
-
-  my $var = "nitrif_denitrif";
-  my $val = $opts->{$var};
-
-  if ( $val eq 1 ) {
-    $var = "bgc_mode";
-    if ($nl_flags->{$var} eq "sp") {
-      fatal_error("-nitrif_denitrif option can ONLY be used for elm with -bgc cn|bgc|fates");
-    } else {
-      $var = "use_nitrif_denitrif";
-      $val = $nl->get_value($var);
-      $val = ".true.";
-
-      my $group = $definition->get_group_name($var);
-      $nl_flags->{$var} = $val;
-      $nl->set_variable_value($group, $var, $val);
-
-      if (  ! $definition->is_valid_value( $var, $val ) ) {
-        my @valid_values   = $definition->get_valid_values( $var );
-        fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
-      }
-    }
-  }
-} # nitrif_denitrif
 
 #-------------------------------------------------------------------------------
 
