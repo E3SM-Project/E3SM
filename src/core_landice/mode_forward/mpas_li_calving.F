@@ -1717,9 +1717,9 @@ module li_calving
       allocate(thicknessForAblation(nCells+1))
       thicknessForAblation = 0.0_RKIND
       allocate(uvelForAblation(nCells+1))
-      uvelForAblation(:) = 0.0_RKIND
+      uvelForAblation(:) = uReconstructX(1,:)
       allocate(vvelForAblation(nCells+1))
-      vvelForAblation(:) = 0.0_RKIND
+      vvelForAblation(:) = uReconstructY(1,:)
 
       ! 1. Calculate ablation rate for all non-dynamic cells by working with their ocean-going edges
       ablationSubtotal1 = 0.0_RKIND
@@ -1736,8 +1736,8 @@ module li_calving
                jCell = cellsOnCell(iNeighbor, iCell)
                if (li_mask_is_dynamic_ice(cellMask(jCell))) then
                   thkSum = thkSum + thickness(jCell)
-                  uvelSum = uvelSum + uReconstructX(1, jCell)
-                  vvelSum = vvelSum + uReconstructY(1, jCell)
+                  uvelSum = uvelSum + uvelForAblation(jCell)
+                  vvelSum = vvelSum + vvelforAblation(jCell)
                   ablationVelSum = ablationVelSum + ablationVelocity(jCell)
                   thkCount = thkCount + 1
                endif
@@ -1770,8 +1770,8 @@ module li_calving
                if ( li_mask_is_floating_ice(cellMask(jCell)) &
                     .and. (.not. li_mask_is_dynamic_ice(cellMask(jCell))) ) then
                   thkSum = thkSum + thickness(jCell)
-                  uvelSum = uvelSum + uReconstructX(1, jCell)
-                  vvelSum = vvelSum + uReconstructY(1, jCell)
+                  uvelSum = uvelSum + uvelForAblation(jCell)
+                  vvelSum = vvelSum + vvelForAblation(jCell)
                   ablationVelSum = ablationVelSum + ablationVelocity(jCell)
                   thkCount = thkCount + 1
                endif
@@ -2011,7 +2011,7 @@ module li_calving
 
        mag = sqrt(u**2 + v**2)
        if (mag == 0.0_RKIND) mag = 1.0_RKIND
-       scale_edge_length =  abs(u/mag * cos(-1.0*angleEdgeHere) + v/mag * sin(-1.0*angleEdgeHere))  ! dot product of unit vectors
+       scale_edge_length =  abs(u/mag * cos(angleEdgeHere) + v/mag * sin(angleEdgeHere))  ! dot product of unit vectors
        !scale_edge_length = abs(cos(angleEdgeHere - atan2(v, u)))
     end function scale_edge_length
 
