@@ -2686,6 +2686,10 @@
 			 description="CVMix/KPP: Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="bottomLayerShortwaveTemperatureFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Solar flux that reaches bottom of the ocean and does not impact temperature"
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
 			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 			 packages="forwardMode;analysisMode"
