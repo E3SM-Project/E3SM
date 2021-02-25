@@ -11,7 +11,6 @@ my $CASEROOT		= `./xmlquery CASEROOT       --value`;
 my $CASETOOLS		= `./xmlquery CASETOOLS      --value`;
 my $SRCROOT		= `./xmlquery SRCROOT        --value`;
 my $MACH		= `./xmlquery MACH           --value`;
-my $COMPILER            = `./xmlquery COMPILER       --value`;
 my $OBJROOT		= `./xmlquery OBJROOT        --value`;
 my $LIBROOT		= `./xmlquery LIBROOT        --value`;
 my $GMAKE_J		= `./xmlquery GMAKE_J        --value`;
@@ -29,17 +28,23 @@ my $modeldir = "$repodir/WW3/model";
 my $bindir = "$modeldir/bin";
 my $exedir = "$modeldir/exe";
 
-
 # Run w3_setup to create wwatch3.env file
 chdir $bindir;
 if ( -f "$bindir/wwatch3.env"){
   `rm wwatch3.env`
 }
+my $comp = ucfirst($COMPILER);
 `cp $repodir/switch_E3SM $bindir`;
 open(file,">w3_setup.inp") or die "Could not open file w3_setup.inp to write";
-print file "n\n";
+print file "y\n";
+print file "\n";
+print file "ifort\n";
+print file "icc\n";
+print file "\n";
+print file "\n";
+print file "\n";
+print file "y\n";
 close(file);
-my $comp = ucfirst($COMPILER);
 `./w3_setup $modeldir -c $comp -s E3SM < w3_setup.inp`;
 `rm w3_setup.inp`;
 `rm switch_E3SM`;
