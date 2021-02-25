@@ -11,5 +11,5 @@
   "python.linting.flake8Enabled": true,
   "python.linting.flake8Args": ["--config=setup.cfg"],
   "python.linting.mypyEnabled": true,
-  "python.pythonPath": "/opt/miniconda3/envs/e3sm_diags/bin/python"
+  "python.pythonPath": "/opt/miniconda3/envs/e3sm_diags_env_dev/bin/python"
 }
