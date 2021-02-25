@@ -68,7 +68,7 @@ MACHINE_METADATA = {
                 "bsub -I -q batch -W 0:30 -P cli115 -nnodes 1",
                 44,
                 6,
-                ""),
+                "/gpfs/alpine/cli115/proj-shared/scream/master-baselines"),
     "cori"   : (["eval $(../../cime/scripts/Tools/get_case_env)", "export OMP_NUM_THREADS=68"],
                 ["CC","ftn","cc"],
                 "srun --time 02:00:00 --nodes=1 --constraint=knl,quad,cache --exclusive -q regular --account e3sm",
