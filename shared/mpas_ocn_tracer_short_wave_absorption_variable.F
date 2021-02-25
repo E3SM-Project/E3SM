@@ -72,7 +72,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_short_wave_absorption_variable_tend(meshPool, swForcingPool, forcingPool, index_temperature, & !{{{
-                                  layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, err)
+                                  layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, &
+                                  bottomLayerShortwaveTemperatureFlux, err)
 
       !-----------------------------------------------------------------
       !
@@ -91,6 +92,9 @@ contains
 
       real (kind=RKIND), dimension(:), intent(out) :: &
         penetrativeTemperatureFluxOBL
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+        bottomLayerShortwaveTemperatureFlux
 
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Layer thicknesses
 
@@ -173,10 +177,10 @@ contains
           fluxRemaining = fluxRemaining - (weights(k) - weights(k+1))
         end do
 
+        ! based on coupled testing we simply log the shortwave temperature flux incident on the bottom of the ocean
         k = maxLevelCell(iCell)
         if(k > 0 .and. fluxRemaining > 0.0_RKIND) then
-           tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
-                                             * fluxRemaining
+           bottomLayerShortwaveTemperatureFlux(iCell) = penetrativeTemperatureFlux(iCell) * fluxRemaining
         end if
 
         depth = 0.0_RKIND
