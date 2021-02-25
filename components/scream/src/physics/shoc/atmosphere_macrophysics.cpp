@@ -177,6 +177,8 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
           qw("qw",m_num_cols,nlev_packs),
           cloud_frac("cloud_frac",m_num_cols,nlev_packs);
 
+  // TODO: Transpose of the tracers should be handled internally in shoc,
+  //       removing this allocation.
   view_3d tracers("tracers",m_num_cols,m_num_levs,num_tracer_packs);
 
   shoc_preamble.set_variables(m_num_cols,m_num_levs,m_num_tracers,nlev_packs,num_tracer_packs,t,alst,
@@ -224,6 +226,8 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   output.shoc_ql2 = shoc_ql2;
 
   // Ouput (diagnostic)
+  // TODO: A temporary buffer should be added to the AD for these local
+  //       views.
   view_2d shoc_mix("shoc_mix",m_num_cols,nlev_packs);
   view_2d isotropy("isotropy",m_num_cols,nlev_packs);
   view_2d w_sec("w_sec",m_num_cols,nlev_packs);
@@ -332,6 +336,7 @@ void SHOCMacrophysics::run_impl (const Real dt)
 
   // shoc_main() expects 3 extra slots in qtracer array
   // used for solving
+  // TODO: This should be handled internally (with tracer transpose)
   Kokkos::resize(input_output.qtracers,
                  m_num_cols,m_num_levs,ekat::npack<Spack>(m_num_tracers+3));
 
@@ -340,6 +345,7 @@ void SHOCMacrophysics::run_impl (const Real dt)
                  input,input_output,output,history_output);
 
   // Remove extra slots
+  // TODO: This should be handled internally (with tracer transpose)
   Kokkos::resize(input_output.qtracers,
                  m_num_cols,m_num_levs,ekat::npack<Spack>(m_num_tracers));
 
@@ -388,8 +394,6 @@ void SHOCMacrophysics::set_required_field_impl (const Field<const Real>& f) {
   // in the Homme's view, and be done with it.
   const auto& name = f.get_header().get_identifier().name();
   m_shoc_fields_in.emplace(name,f);
-  m_shoc_host_views_in[name] = Kokkos::create_mirror_view(f.get_view());
-  m_raw_ptrs_in[name] = m_shoc_host_views_in[name].data();
 
   // Add myself as customer to the field
   add_me_as_customer(f);
@@ -402,8 +406,6 @@ void SHOCMacrophysics::set_computed_field_impl (const Field<Real>& f) {
   // in the Homme's view, and be done with it.
   const auto& name = f.get_header().get_identifier().name();
   m_shoc_fields_out.emplace(name,f);
-  m_shoc_host_views_out[name] = Kokkos::create_mirror_view(f.get_view());
-  m_raw_ptrs_out[name] = m_shoc_host_views_out[name].data();
 
   // Add myself as provider for the field
   add_me_as_provider(f);
