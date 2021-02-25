@@ -1,0 +1,5 @@
+# Workaround for ICE in intel/2016.0.109
+ifeq (CPRINTEL,$(findstring CPRINTEL, $(FFLAGS)))
+RtmMod.o: RtmMod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(CONTIGUOUS_FLAG) -O1 $<
+endif

@@ -1,0 +1,165 @@
+#!/usr/bin/env python
+
+"""
+Builds the case.
+
+case.setup must be run before this. In addition, any changes to env_build.xml
+must be made before running this.
+
+This must be run before running case.submit.
+
+There are two usage modes; both modes accept the --caseroot option, but
+other options are specific to one mode or the other:
+
+1) To build the model:
+
+   Typical usage is simply:
+      ./case.build
+
+   This can be used for the initial build as well as for incrementally
+   rebuilding after changing some source files.
+
+   Optionally, you can specify one of the following options, although this is
+   not common:
+      --sharedlib-only
+      --model-only
+      --build ...
+
+   In addition, if you'd like to skip saving build provenance (typically because
+   there was some error in doing so), you can add:
+      --skip-provenance-check
+
+2) To clean part or all of the build:
+
+   To clean the whole build; this should be done after modifying either
+   env_build.xml or Macros.make:
+      ./case.build --clean-all
+
+   To clean select portions of the build, for example, after adding new source
+   files for one component:
+      ./case.build --clean ...
+   or:
+      ./case.build --clean-depends ...
+"""
+
+from standard_script_setup import *
+
+import CIME.build as build
+from CIME.case            import Case
+from CIME.utils           import find_system_test, get_model
+from CIME.test_status     import *
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build.\n"
+                        "Default is current directory.")
+
+    if get_model() == "e3sm":
+        parser.add_argument("--use-old", action="store_true",
+                            help="Use old Makefile build system (not cmake)")
+
+        parser.add_argument("--ninja", action="store_true",
+                            help="Use ninja backed for CMake (instead of gmake). "
+                            "The ninja backend is better at scanning fortran dependencies but "
+                            "seems to be less reliable across different platforms and compilers.")
+
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Just print the cmake and ninja commands.")
+
+    mutex_group = parser.add_mutually_exclusive_group()
+
+    # TODO mvertens: the following is hard-wired - otherwise it does not work with nuopc
+    # files = Files()
+    # config_file = files.get_value("CONFIG_CPL_FILE")
+    # component = Component(config_file, "CPL")
+    # comps = [x.lower() for x in component.get_valid_model_components()]
+    comps = ["cpl","atm","lnd","ice","ocn","rof","glc","wav","esp","iac"]
+    libs  = ["csmshare", "mct", "pio", "gptl"]
+    allobjs = comps + libs
+
+    mutex_group.add_argument("--sharedlib-only", action="store_true",
+                             help="Only build shared libraries.")
+
+    mutex_group.add_argument("-m", "--model-only", action="store_true",
+                             help="Assume shared libraries are already built.")
+
+    mutex_group.add_argument("-b", "--build", nargs="+", choices=allobjs,
+                             help="Libraries to build.\n"
+                             "Will cause namelist generation to be skipped.")
+
+    mutex_group.add_argument("--skip-provenance-check", action="store_true",
+                             help="Do not check and save build provenance")
+
+    mutex_group.add_argument("--clean-all", action="store_true",
+                             help="Clean all objects (including sharedlib objects that may be\n"
+                             "used by other builds).")
+
+    mutex_group.add_argument("--clean", nargs="*", choices=allobjs,
+                             help="Clean objects associated with specific libraries.\n"
+                             "With no arguments, clean all objects other than sharedlib objects.")
+
+    mutex_group.add_argument("--clean-depends", nargs="*", choices=comps+["csmshare"],
+                             help="Clean Depends and Srcfiles only.\n"
+                             "This allows you to rebuild after adding new\n"
+                             "files in the source tree or in SourceMods.")
+
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    clean_depends = args.clean_depends if args.clean_depends is None or len(args.clean_depends) else comps
+
+    cleanlist = args.clean if args.clean is None or len(args.clean) else comps
+    buildlist = None if args.build is None or len(args.build) == 0 else args.build
+
+    if get_model() != "e3sm":
+        args.use_old = False
+        args.ninja   = False
+
+    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends, not args.skip_provenance_check, args.use_old, args.ninja, args.dry_run
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    caseroot, sharedlib_only, model_only, cleanlist, clean_all, buildlist,clean_depends, save_build_provenance, use_old, ninja, dry_run = \
+        parse_command_line(sys.argv, description)
+
+    success = True
+    with Case(caseroot, read_only=False) as case:
+        testname = case.get_value('TESTCASE')
+
+        if cleanlist is not None or clean_all or clean_depends is not None:
+            build.clean(case, cleanlist=cleanlist, clean_all=clean_all, clean_depends=clean_depends)
+        elif(testname is not None):
+            logging.warning("Building test for {} in directory {}".format(testname,
+                                                                       caseroot))
+            try:
+                # The following line can throw exceptions if the testname is
+                # not found or the test constructor throws. We need to be
+                # sure to leave TestStatus in the appropriate state if that
+                # happens.
+                test = find_system_test(testname, case)(case)
+            except BaseException:
+                phase_to_fail = MODEL_BUILD_PHASE if model_only else SHAREDLIB_BUILD_PHASE
+                with TestStatus(test_dir=caseroot) as ts:
+                    ts.set_status(phase_to_fail, TEST_FAIL_STATUS, comments="failed to initialize")
+                raise
+
+            expect(buildlist is None, "Build lists don't work with tests")
+            success = test.build(sharedlib_only=sharedlib_only, model_only=model_only, old_build=use_old, ninja=ninja, dry_run=dry_run)
+        else:
+            success = build.case_build(caseroot, case=case, sharedlib_only=sharedlib_only,
+                                       model_only=model_only, buildlist=buildlist,
+                                       save_build_provenance=save_build_provenance,
+                                       use_old=use_old, ninja=ninja, dry_run=dry_run)
+
+    sys.exit(0 if success else 1)
+
+if __name__ == "__main__":
+    _main_func(__doc__)

@@ -1,0 +1,2 @@
+
+config_am_timeseriesstatsdaily_write_on_startup = .true.

@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+
+from standard_script_setup import *
+from CIME.utils import run_bld_cmd_ensure_logging
+from CIME.case import Case
+from CIME.build import get_standard_cmake_args
+
+logger = logging.getLogger(__name__)
+
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [--debug]
+OR
+{0} --verbose
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > {0}
+""" .format (os.path.basename(args[0])),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("buildroot",
+                        help="build path root")
+
+    parser.add_argument("installpath",
+                        help="install path ")
+
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build")
+
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    return args.buildroot, args.installpath, args.caseroot
+
+###############################################################################
+def buildlib(bldroot, installpath, case):
+###############################################################################
+    cimeroot = case.get_value("CIMEROOT")
+
+    # Generate macros and environment
+    compiler = case.get_value("COMPILER")
+    run_bld_cmd_ensure_logging("{}/tools/configure --mpilib=mpi-serial --macros-format=CMake --machine={} --compiler={}".format(cimeroot, case.get_value("MACH"), compiler), logger, from_dir=bldroot)
+
+    cmake_args = get_standard_cmake_args(case, "ignore_sharedpath", shared_lib=True)
+    os.environ["CIMEROOT"] = cimeroot
+    cmake_cmd = ". ./.env_mach_specific.sh && NETCDF=$(dirname $(dirname $(which nf-config))) cmake {cmake_args} -DMPILIB=mpi-serial -DDEBUG=FALSE -C Macros.cmake {cimeroot}/tools/cprnc -DCMAKE_PREFIX_PATH={dest_path} -DBLDROOT={bldroot}".\
+        format(cimeroot=cimeroot, dest_path=installpath, cmake_args=cmake_args, bldroot=bldroot)
+    run_bld_cmd_ensure_logging(cmake_cmd, logger, from_dir=bldroot)
+
+    gmake_cmd = case.get_value("GMAKE")
+    gmake_j = case.get_value("GMAKE_J")
+
+    run_bld_cmd_ensure_logging(". ./.env_mach_specific.sh && {} VERBOSE=1 -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot)
+
+def _main(argv, documentation):
+    bldroot, installpath, caseroot = parse_command_line(argv, documentation)
+    with Case(caseroot, read_only=False) as case:
+        buildlib(bldroot, installpath, case)
+
+if (__name__ == "__main__"):
+    _main(sys.argv, __doc__)

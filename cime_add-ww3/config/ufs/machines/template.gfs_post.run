@@ -1,0 +1,102 @@
+#!/bin/bash
+{{ batchdirectives }}
+
+# Check environment variable
+if [ -z "${NCEPLIBS_DIR}" ]; then
+  echo "NCEPLIBS_DIR needs to be set! Exiting ..."
+  exit
+fi
+
+# Set environment variables and load modules
+source {{ caseroot }}/.env_mach_specific.sh
+
+# Query run directory
+rundir=`./xmlquery --value RUNDIR`
+echo "run dir is $rundir"
+cd $rundir
+
+# Query build directory
+blddir="$rundir/../bld"
+
+# Link chgres executable to build directory
+cd $blddir
+ln -sf $NCEPLIBS_DIR/bin/ncep_post .
+cd -
+
+# Find date command
+OS=`uname -a`
+MACOS='Darwin'
+if [[ "$OS" == *"$MACOS"* ]]; then
+  date_cmd=gdate
+else
+  date_cmd=date
+fi
+
+# Query mpirun command
+runcmd='{{ mpirun }}'
+mpirun=`echo $runcmd | awk '{print $1}'`
+
+# Query file prefixes
+dyn_prefix=`cat model_configure | grep filename_base | awk -F: '{print $2}' | awk '{print $1}'`
+phy_prefix=`cat model_configure | grep filename_base | awk -F: '{print $2}' | awk '{print $2}'`
+
+# Query output format
+file_ext=`cat model_configure | grep output_file | awk -F: '{print $2}' | tr -d " "`
+if [ "$file_ext" == 'netcdf' ];then
+   file_ext="nc"
+fi
+if [ "$file_ext" == 'netcdf_esmf' ];then
+   file_ext="nc"
+fi
+
+# Query template namelist file
+date_str=`head -n 4 itag.tmp | tail -n 1`
+date_str=${date_str/_/" "}
+nlines=`cat itag.tmp | wc -l`
+echo $nlines
+
+# Run post to process all output files one by one
+for f in ${dyn_prefix}f*.$file_ext
+do
+  # Query time before starting post
+  export T1=$SECONDS
+
+  # Query time step and create new date for cycle
+  time_step=`echo $f | sed "s/${dyn_prefix}f//" | sed "s/\.$file_ext//"`
+  time_step_num=`expr $time_step + 0`
+  date_str_cycle=`${date_cmd} -d "$date_str $time_step_num hours" +%Y-%m-%d_%H:%M:%S`
+
+  # Create namelist for specific date
+  head -n 3 itag.tmp > itaga.$time_step
+  echo $date_str_cycle >> itaga.$time_step
+  tail -n $((nlines-4)) itag.tmp >> itaga.$time_step
+
+  # Update used flat file based on time step
+  if [ "$time_step_num" -eq "0" ]; then
+     ln -sf postxconfig-NT-GFS-F00.txt postxconfig-NT.txt
+     #sed 's/postxconfig-NT.txt/postxconfig-NT-GFS-F00.txt/' itaga.$time_step > .itaga.$time_step
+     #mv .itaga.$time_step itaga.$time_step
+  else
+     ln -sf postxconfig-NT-GFS.txt postxconfig-NT.txt
+     #sed 's/postxconfig-NT.txt/postxconfig-NT-GFS.txt/' itaga.$time_step > .itaga.$time_step
+     #mv .itaga.$time_step itaga.$time_step
+  fi
+
+  # Copy files with common name
+  cp ${dyn_prefix}f${time_step}.${file_ext} nemsfile
+  echo "cp ${dyn_prefix}f${time_step}.${file_ext} nemsfile"
+  cp ${phy_prefix}f${time_step}.${file_ext} flxfile
+  echo "cp ${phy_prefix}f${time_step}.${file_ext} flxfile"
+
+  # Copy cycle namelist with common name
+  cp itaga.$time_step itag
+
+  # Run post
+  eval "time $mpirun $blddir/ncep_post >oi.$time_step 2>ei.$time_step"
+
+  # Get timing resuts
+  export T2=$SECONDS
+  let dff=$T2'-'$T1
+  echo ran $DECOMP on `date` in $dff seconds >>TIMES
+  echo done >>DONEOUT
+done

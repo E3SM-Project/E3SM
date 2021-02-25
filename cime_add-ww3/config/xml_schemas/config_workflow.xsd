@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+   elementFormDefault="qualified"
+   version="2.0">
+  <!-- attributes -->
+  <xs:attribute name="version" type="xs:decimal"/>
+  <xs:attribute name="MACH" type="xs:NCName"/>
+  <xs:attribute name="id" type="xs:NCName"/>
+  <xs:attribute name="prepend" type="xs:NCName"/>
+  <xs:attribute name="append" type="xs:NCName"/>
+  <xs:attribute name="name" type="xs:NCName"/>
+
+  <!-- simple elements -->
+  <xs:element name="template" type="xs:anyURI"/>
+  <xs:element name="task_count" type="xs:string"/>
+  <xs:element name="tasks_per_node" type="xs:string"/>
+  <xs:element name="walltime" type="xs:string"/>
+  <xs:element name="dependency" type="xs:string"/>
+  <xs:element name="prereq" type="xs:string"/>
+
+  <!-- complex elements -->
+
+  <xs:element name="config_workflow">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="workflow_jobs" minOccurs="1" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute ref="version" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="workflow_jobs">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="job"/>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required"/>
+      <xs:attribute ref="prepend"/>
+      <xs:attribute ref="append"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="runtime_parameters">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" ref="task_count"/>
+        <xs:element minOccurs="0" ref="tasks_per_node"/>
+        <xs:element minOccurs="0" ref="walltime"/>
+      </xs:sequence>
+      <xs:attribute ref="MACH" />
+    </xs:complexType>
+  </xs:element>
+
+
+  <xs:element name="job">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="template"/>
+        <xs:element minOccurs="0" ref="dependency"/>
+        <xs:element ref="prereq"/>
+	<xs:element ref="runtime_parameters" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

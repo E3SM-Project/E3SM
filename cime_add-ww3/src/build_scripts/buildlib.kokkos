@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+
+from standard_script_setup import *
+from CIME.utils import expect, run_bld_cmd_ensure_logging, run_cmd_no_fail, run_cmd
+from CIME.case import Case
+from CIME.build import get_standard_makefile_args
+
+logger = logging.getLogger(__name__)
+
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [--debug]
+OR
+{0} --verbose
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > {0}
+""" .format (os.path.basename(args[0])),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("buildroot",
+                        help="build path root")
+
+    parser.add_argument("installpath",
+                        help="install path ")
+
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build")
+
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    return args.buildroot, args.installpath, args.caseroot
+
+###############################################################################
+def buildlib(bldroot, installpath, case):
+###############################################################################
+    srcroot = case.get_value("SRCROOT")
+    kokkos_dir = os.path.join(srcroot, "externals", "kokkos")
+    expect(os.path.isdir(kokkos_dir), "Missing kokkos submodule")
+
+    # We want to get the compiler and kokkos_options from Macros.make
+    # (generated from config_compilers.xml), but we want to otherwise
+    # let kokkos control flags
+    make_args = get_standard_makefile_args(case, shared_lib=True)
+    stat, output, _ = run_cmd("make -f Macros.make {} -p | grep KOKKOS_OPTIONS".format(make_args))
+    if stat == 0:
+        kokkos_options = output.split(":=")[-1].strip()
+    else:
+        # This is the default setup.
+        kokkos_options = "--with-serial"
+        build_threaded = case.get_build_threaded()
+        if build_threaded:
+            kokkos_options += " --with-openmp"
+        logger.warning("Failed to find custom kokkos options, using default: {:s}.".
+                       format(kokkos_options))
+
+    if "--with-cuda" in kokkos_options:
+        cxx = os.path.join(kokkos_dir, "bin/nvcc_wrapper")
+    else:
+        cxx = run_cmd_no_fail("make -f Macros.make {} -p | grep SCXX".format(make_args)).split(":=")[-1].strip()
+
+    gmake_cmd = case.get_value("GMAKE")
+    gmake_j = case.get_value("GMAKE_J")
+
+    gen_makefile_cmd = "{kokkos_dir}/generate_makefile.bash {kokkos_options} --compiler={cxx} --prefix={installpath}"\
+        .format(kokkos_dir=kokkos_dir, kokkos_options=kokkos_options, cxx=cxx, installpath=installpath)
+
+    run_bld_cmd_ensure_logging(gen_makefile_cmd, logger, from_dir=bldroot)
+    run_bld_cmd_ensure_logging("{} -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot)
+    run_bld_cmd_ensure_logging("{} install".format(gmake_cmd), logger, from_dir=bldroot)
+
+def _main(argv, documentation):
+    bldroot, installpath, caseroot = parse_command_line(argv, documentation)
+    with Case(caseroot, read_only=False) as case:
+        buildlib(bldroot, installpath, case)
+
+if (__name__ == "__main__"):
+    _main(sys.argv, __doc__)

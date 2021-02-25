@@ -1,0 +1,13 @@
+#######################################################################
+##
+## CIME Load Balancing Tool
+##
+## Originally Developed by Sheri Mickelson mickelso@ucar.edu
+##              Yuri Alekseev (ALCF/Argonne National Laboratory
+##
+## Updated 2017 Jason Sarich sarich@mcs.anl.gov (Argonne National Laboratory)
+########################################################################
+
+This Load Balancing tool finds reasonable PE layouts for CIME-driven models. It will find these from timing files you provide or from runs done by the tool.
+
+For more information, see the help message or complete documentation in the Miscellaneous Tools section of the CIME user's guide.

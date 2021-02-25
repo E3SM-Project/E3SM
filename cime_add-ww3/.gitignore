@@ -1,0 +1,22 @@
+# Ignore python bytecode files
+*.pyc
+buildnmlc
+buildlib.*c
+
+# Ignore emacs backup files
+*~
+
+# ignore for the merge to master and orphaning of the gh-pages branch
+doc/build
+
+# ignore temporary doc files
+doc/source/Tools_user/temp_files
+
+# ignore the JENKINS files created when make html is run
+scripts/Tools/JENKINS*
+
+# Ignore anything that are produced under scripts "cases" directory
+/scripts/cases/
+
+#Ignore nuopc driver available seperatly
+src/drivers/nuopc

@@ -1,0 +1,177 @@
+#! /usr/bin/env python
+
+"""
+Try to calculate and succinctly present the differences between two bld logs
+for the same component
+"""
+
+from standard_script_setup import *
+from CIME.utils import run_cmd_no_fail
+
+import argparse, sys, os, gzip
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} log1 log2
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    > {0} case1 case2
+""".format(os.path.basename(args[0])),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("log1", help="First log.")
+
+    parser.add_argument("log2", help="Second log.")
+
+    parser.add_argument("-I", "--ignore-includes", action="store_true",
+                        help="Ignore differences in include flags")
+
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    return args.log1, args.log2, args.ignore_includes
+
+###############################################################################
+def is_compile_line(line):
+###############################################################################
+    return line.count("-I") > 0 and not line.startswith("gmake ") and not line.startswith("make ")
+
+###############################################################################
+def get_compile_lines_from_log(logfile_text):
+###############################################################################
+    result = []
+    for line in logfile_text.splitlines():
+        if is_compile_line(line):
+            result.append(line)
+
+    return result
+
+_SRCFILE_ENDINGS = (".F", ".f", ".c", ".F90", ".f90", ".cpp")
+###############################################################################
+def parse_log(logfile_text):
+###############################################################################
+    compile_lines = get_compile_lines_from_log(logfile_text)
+    result = {}
+    for compile_line in compile_lines:
+        items = compile_line.split()
+        compiled_file = None
+        for item in items:
+            for ending in _SRCFILE_ENDINGS:
+                if item.endswith(ending):
+                    #expect(compiled_file is None, "Found multiple things that look like files in '{}'".format(compile_line))
+                    compiled_file = os.path.basename(item)
+                    break
+
+            if compiled_file:
+                break
+
+        if compiled_file is None:
+            print("WARNING: Found nothing that looks like a file in '{}'".format(compile_line))
+        else:
+            if compiled_file in result:
+                print("WARNING: Found multiple compilations of {}".format(compiled_file))
+            result[compiled_file] = items
+
+    # TODO - Need to capture link lines too
+
+    return result
+
+###############################################################################
+def get_case_from_log(logpath):
+###############################################################################
+    return os.path.abspath(os.path.join(os.path.dirname(logpath), ".."))
+
+###############################################################################
+def read_maybe_gzip(filepath):
+###############################################################################
+    opener = lambda: gzip.open(filepath, "rt") if filepath.endswith(".gz") else open(filepath, "r")
+    with opener() as fd:
+        return fd.read()
+
+###############################################################################
+def log_diff(log1, log2, repls, ignore_includes):
+###############################################################################
+    """
+    Search for build/link commands and compare them
+    """
+    are_same = True
+
+    # Read files
+    log1_contents = read_maybe_gzip(log1)
+    log2_contents = read_maybe_gzip(log2)
+
+    # Normalize log2
+    for replace_item, replace_with in repls.items():
+        log2_contents = log2_contents.replace(replace_item, replace_with)
+
+    # Transform log contents to a map of filename -> compile_args
+    compile_dict1 = parse_log(log1_contents)
+    compile_dict2 = parse_log(log2_contents)
+
+    file_set1 = set(compile_dict1.keys())
+    file_set2 = set(compile_dict2.keys())
+
+    for item in (file_set1 - file_set2):
+        print("{} is missing compilation of {}".format(log2, item))
+        are_same = False
+
+    for item in (file_set2 - file_set1):
+        print("{} has unexpected compilation of {}".format(log2, item))
+        are_same = False
+
+    for item in (file_set1 & file_set2):
+        print("Checking compilation of {}".format(item))
+        flags1 = compile_dict1[item]
+        flags2 = compile_dict2[item]
+
+        missing = set(flags1) - set(flags2)
+        extra   = set(flags2) - set(flags1)
+
+        # Let's not worry about order yet even though some flags are order-sensitive
+        for flag in missing:
+            if not (ignore_includes and flag.startswith("-I")) and item not in flag:
+                print("  Missing flag {}".format(flag))
+                are_same = False
+
+        for flag in extra:
+            if flag != "-o" and not flag.startswith("CMakeFiles") and not (ignore_includes and flag.startswith("-I")) and item not in flag:
+                print("  Extra flag {}".format(flag))
+                are_same = False
+
+    return are_same
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    log1, log2, ignore_includes = parse_command_line(sys.argv, description)
+
+    xml_normalize_fields = ["TEST_TESTID", "SRCROOT"]
+    repls = {}
+    for xml_normalize_field in xml_normalize_fields:
+        try:
+            case1 = get_case_from_log(log1)
+            case2 = get_case_from_log(log2)
+            val1 = run_cmd_no_fail("./xmlquery --value {}".format(xml_normalize_field), from_dir=case1)
+            val2 = run_cmd_no_fail("./xmlquery --value {}".format(xml_normalize_field), from_dir=case2)
+            if os.sep in val1:
+                repls[os.path.normpath(val2)] = os.path.normpath(val1)
+            else:
+                repls[val2] = val1
+        except Exception as e:
+            logging.warning("Warning, failed to normalize on {}: {}".format(xml_normalize_field, str(e)))
+            repls = {}
+
+    same = log_diff(log1, log2, repls, ignore_includes)
+    sys.exit(0 if same == 0 else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

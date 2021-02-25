@@ -1,0 +1,2 @@
+config_am_highfrequencyoutput_enable=false
+config_am_globalstats_enable=false

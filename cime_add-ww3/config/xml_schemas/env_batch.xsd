@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" version="2.0">
+    <xs:include schemaLocation="config_batch.xsd"/>
+
+
+  <!-- attributes -->
+  <xs:attribute name="id" type="xs:NCName"/>
+  <xs:attribute name="default" type="xs:NCName"/>
+  <xs:attribute name="nodemax" type="xs:integer"/>
+  <xs:attribute name="nodemin"  type="xs:integer"/>
+  <xs:attribute name="jobmax" type="xs:integer"/>
+  <xs:attribute name="jobmin"  type="xs:integer"/>
+  <xs:attribute name="jobname" type="xs:NCName"/>
+  <xs:attribute name="walltimemax" type="xs:NMTOKEN"/>
+
+  <!-- simple elements -->
+  <xs:element name="type" type="xs:NCName"/>
+  <xs:element name="desc" type="xs:string"/>
+  <xs:element name="valid_values" type="xs:string"/>
+  <xs:element name="header" type="xs:string"/>
+
+  <!-- complex elements -->
+  <xs:element name="file">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element ref="header"/>
+	<xs:choice maxOccurs="unbounded">
+	  <xs:element ref="batch_system"/>
+	  <xs:element ref="group"/>
+	</xs:choice>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required"/>
+      <xs:attribute ref="version" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="group">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element maxOccurs="unbounded" ref="entry"/>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="entry">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element ref="type"/>
+	<xs:element minOccurs="0" ref="valid_values"/>
+	<xs:element minOccurs="0" ref="desc"/>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required"/>
+      <xs:attribute name="value"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

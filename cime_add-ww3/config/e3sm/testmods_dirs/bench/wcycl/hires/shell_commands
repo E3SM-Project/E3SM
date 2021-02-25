@@ -1,0 +1,5 @@
+#!/bin/bash
+./xmlchange --append CAM_CONFIG_OPTS='-cosp'
+./xmlchange --id BUDGETS --val TRUE
+
+./xmlchange PIO_VERSION=2

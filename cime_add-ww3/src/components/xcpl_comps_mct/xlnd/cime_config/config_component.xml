@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="entry_id.xsl" ?>
+
+<entry_id version="3.0">
+  <description>
+    <desc lnd="XLND">Dead land component</desc>
+  </description>
+
+
+  <entry id="COMP_LND">
+    <type>char</type>
+    <valid_values>xlnd</valid_values>
+    <default_value>xlnd</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of land component</desc>
+  </entry>
+
+  <help>
+    =========================================
+    XLND naming conventions in compset name
+    =========================================
+  </help>
+
+</entry_id>

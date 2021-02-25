@@ -1,0 +1,165 @@
+module test_toString
+
+! Simple tests for printing intrinsic types.
+!
+! This module is somewhat repetitive, but it seems manageable enough that it's
+! not worth invoking complex methods such as genf90, cpp hacks, or parameterized
+! pFUnit tests to handle the different types.
+
+use pfunit_mod
+
+use shr_kind_mod, only: &
+     i4 => shr_kind_i4, &
+     i8 => shr_kind_i8, &
+     r4 => shr_kind_r4, &
+     r8 => shr_kind_r8
+
+use shr_infnan_mod, only: &
+     posinf => shr_infnan_posinf, &
+     neginf => shr_infnan_neginf, &
+     qnan => shr_infnan_qnan, &
+     snan => shr_infnan_snan, &
+     to_r4 => shr_infnan_to_r4, &
+     to_r8 => shr_infnan_to_r8
+
+use shr_strconvert_mod, only: toString
+
+implicit none
+
+contains
+
+@Test
+subroutine toString_prints_i4()
+  @assertEqual("1", toString(1_i4))
+end subroutine toString_prints_i4
+
+@Test
+subroutine toString_prints_i4_longest_value()
+  @assertEqual("-2147483648", toString(-huge(1_i4)-1_i4))
+end subroutine toString_prints_i4_longest_value
+
+@Test
+subroutine toString_prints_i4_with_format()
+  @assertEqual("00001", toString(1_i4, format_string="(I0.5)"))
+end subroutine toString_prints_i4_with_format
+
+@Test
+subroutine toString_prints_i8()
+  @assertEqual("1", toString(1_i8))
+end subroutine toString_prints_i8
+
+@Test
+subroutine toString_prints_i8_longest_value()
+  @assertEqual("-9223372036854775808", toString(-huge(1_i8)-1_i8))
+end subroutine toString_prints_i8_longest_value
+
+@Test
+subroutine toString_prints_i8_with_format()
+  @assertEqual("00001", toString(1_i8, format_string="(I0.5)"))
+end subroutine toString_prints_i8_with_format
+
+@Test
+subroutine toString_prints_positive_r4()
+  @assertEqual("+1.00000000E+00", toString(1._r4))
+end subroutine toString_prints_positive_r4
+
+@Test
+subroutine toString_prints_negative_r4()
+  @assertEqual("-1.00000000E+00", toString(-1._r4))
+end subroutine toString_prints_negative_r4
+
+@Test
+subroutine toString_prints_positive_infinity_r4()
+  character(len=:), allocatable :: string
+  string = toString(to_r4(posinf))
+  @assertEqual("+Inf", string(1:4))
+end subroutine toString_prints_positive_infinity_r4
+
+@Test
+subroutine toString_prints_negative_infinity_r4()
+  character(len=:), allocatable :: string
+  string = toString(to_r4(neginf))
+  @assertEqual("-Inf", string(1:4))
+end subroutine toString_prints_negative_infinity_r4
+
+@Test
+subroutine toString_prints_qnan_r4()
+  character(len=:), allocatable :: string
+  string = toString(to_r4(qnan))
+  @assertLessThan(0, len(string), message="String is empty!")
+  @assertEqual("NaN", string(1:3))
+end subroutine toString_prints_qnan_r4
+
+@Test
+subroutine toString_prints_snan_r4()
+  character(len=:), allocatable :: string
+  string = toString(to_r4(snan))
+  @assertLessThan(0, len(string), message="String is empty!")
+  @assertEqual("NaN", string(1:3))
+end subroutine toString_prints_snan_r4
+
+@Test
+subroutine toString_prints_r4_with_format()
+  ! Compiler-specific printing conventions, like the optional leading "+", or
+  ! putting a "0" before a leading decimal point, are not standardized if
+  ! format_string is specified. Therefore, pick a value that's not subject to
+  ! these compiler-defined behaviors.
+  @assertEqual("-1.50", toString(-1.5_r4, format_string="(F5.2)"))
+end subroutine toString_prints_r4_with_format
+
+@Test
+subroutine toString_prints_positive_r8()
+  @assertEqual("+1.0000000000000000E+000", toString(1._r8))
+end subroutine toString_prints_positive_r8
+
+@Test
+subroutine toString_prints_negative_r8()
+  @assertEqual("-1.0000000000000000E+000", toString(-1._r8))
+end subroutine toString_prints_negative_r8
+
+@Test
+subroutine toString_prints_positive_infinity_r8()
+  character(len=:), allocatable :: string
+  string = toString(to_r8(posinf))
+  @assertEqual("+Inf", string(1:4))
+end subroutine toString_prints_positive_infinity_r8
+
+@Test
+subroutine toString_prints_negative_infinity_r8()
+  character(len=:), allocatable :: string
+  string = toString(to_r8(neginf))
+  @assertEqual("-Inf", string(1:4))
+end subroutine toString_prints_negative_infinity_r8
+
+@Test
+subroutine toString_prints_qnan_r8()
+  character(len=:), allocatable :: string
+  string = toString(to_r8(qnan))
+  @assertLessThan(0, len(string), message="String is empty!")
+  @assertEqual("NaN", string(1:3))
+end subroutine toString_prints_qnan_r8
+
+@Test
+subroutine toString_prints_snan_r8()
+  character(len=:), allocatable :: string
+  string = toString(to_r8(snan))
+  @assertLessThan(0, len(string), message="String is empty!")
+  @assertEqual("NaN", string(1:3))
+end subroutine toString_prints_snan_r8
+
+@Test
+subroutine toString_prints_r8_with_format()
+  ! Compiler-specific printing conventions, like the optional leading "+", or
+  ! putting a "0" before a leading decimal point, are not standardized if
+  ! format_string is specified. Therefore, pick a value that's not subject to
+  ! these compiler-defined behaviors.
+  @assertEqual("-1.50", toString(-1.5_r8, format_string="(F5.2)"))
+end subroutine toString_prints_r8_with_format
+
+@Test
+subroutine toString_prints_logical()
+  @assertEqual("T", toString(.true.))
+  @assertEqual("F", toString(.false.))
+end subroutine toString_prints_logical
+
+end module test_toString

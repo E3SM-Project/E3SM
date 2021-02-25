@@ -1,0 +1,18 @@
+#! /bin/bash
+
+if [ "$#" -eq 0 ]; then
+    echo "Usage: simple-py-prof <python exec and arguments>"
+    echo ""
+    echo "This will produce a file called 'profile'."
+    echo "To turn this data into a graph, use the following command:"
+    echo "  gprof2dot -f pstats profile -o profile.dot"
+    echo ""
+    echo "To make the graph more easily viewable, convert to PDF:"
+    echo "dot -Tpdf profile.dot -o profile.pdf"
+    exit 0
+fi
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export PYTHONPATH=$DIR:$DIR/../lib:$PYTHONPATH
+
+python -m cProfile -s time -o profile "$@"

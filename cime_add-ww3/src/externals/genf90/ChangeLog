@@ -1,0 +1,62 @@
+================================================================================
+SVN $Id: ChangeLog 45058 2013-03-20 16:12:21Z jedwards $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/genf90/trunk/ChangeLog $
+================================================================================
+This file describes what tags were created and why
+===========================
+Originator: jedwards
+Date: Jan 21, 2014
+Model: genf90
+Version: genf90_140121
+One-line summary: add nctype and ctype data type support
+
+
+===========================
+Originator: jedwards
+Date: Nov 20, 2013
+Model: genf90
+Version: genf90_131120
+One-line summary: Added a documentation header and a logical type
+
+===========================
+Originator: jedwards
+Date: Nov 14, 2013
+Model: genf90
+Version: genf90_131114
+One-line summary: minor change to avoid undefined variable
+
+===========================
+Originator: jedwards
+Date: Nov 13, 2013
+Model: genf90
+Version: genf90_131113
+One-line summary: handles derived types and interface blocks better (Sean
+Santos)
+
+
+===========================
+Originator: jedwards
+Date: Apr 02, 2013
+Model: genf90
+Version: genf90_130402
+One-line summary: correct when dtypes.h is generated
+
+	M genf90.pl
+
+===========================
+Originator: jedwards
+Date: Mar 20, 2013
+Model: genf90
+Version: genf90_130320a
+One-line summary: generate helper file dtypes.h
+	M genf90.pl
+
+===========================
+Originator: jedwards
+Date: Mar 20, 2013
+Model: genf90
+Version: genf90_130320
+One-line summary: Move to new directory
+
+===========================
+
