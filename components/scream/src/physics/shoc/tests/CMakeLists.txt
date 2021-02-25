@@ -78,10 +78,10 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(shoc_tests "${SHOC_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1)
 endif()
 
-# Set huge tolerance for release builds. This will effectively disable all baseline
+# Set inf tolerance for release builds. This will effectively disable all baseline
 # checking, but we still want to ensure things run without crashing
 if (CMAKE_BUILD_TYPE MATCHES ".*Rel.*")
-  set(TOL_FLAG "--tol 1e15")
+  set(TOL_FLAG "--tol inf")
 endif()
 
 CreateUnitTest(shoc_run_and_cmp_cxx "shoc_run_and_cmp.cpp" "${NEED_LIBS}"
