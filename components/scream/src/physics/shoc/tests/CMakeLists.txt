@@ -91,7 +91,7 @@ CreateUnitTest(shoc_run_and_cmp_cxx "shoc_run_and_cmp.cpp" "${NEED_LIBS}"
 
 CreateUnitTest(shoc_run_and_cmp_f90 "shoc_run_and_cmp.cpp" "${NEED_LIBS}"
                THREADS ${SCREAM_TEST_MAX_THREADS}
-               EXE_ARGS "${TOL_FLAG} ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline"
+               EXE_ARGS "${TOL_FLAG} -f ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline"
                EXCLUDE_MAIN_CPP)
 
 # By default, baselines should be created using all fortran (make baseline). If the user wants
