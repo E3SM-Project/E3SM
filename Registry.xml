@@ -682,6 +682,10 @@
 					description="Depth over which to apply penetrating SW to sfcBuoyancyFlux"
 					possible_values="Real Values greater than zero less than bottomDepth"
 		/>
+		<nml_option name="config_enable_shortwave_energy_fixer" type="logical" default_value=".false." units="unitless"
+					description="Flag to enable the shortwave energy fixer for shallow ocean cells"
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="tidal_forcing" mode="init;forward">
 		<nml_option name="config_use_tidal_forcing" type="logical" default_value=".false." units="unitless"
@@ -2684,6 +2688,10 @@
 		/>
 		<var name="penetrativeTemperatureFluxOBL" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
 			 description="CVMix/KPP: Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="bottomLayerShortwaveTemperatureFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Solar flux that reaches bottom of the ocean and does not impact temperature"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
