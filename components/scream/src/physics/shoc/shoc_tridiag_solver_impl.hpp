@@ -41,6 +41,7 @@ void Functions<S,D>::vd_shoc_decomp(
     // Original code was: auto shift_range = range_pack; but that caused mysterious test
     // failures on blake.
     IntSmallPack shift_range;
+    vector_simd
     for (int s = 0; s < Spack::n; ++s) {
       shift_range[s] = range_pack[s];
     }
