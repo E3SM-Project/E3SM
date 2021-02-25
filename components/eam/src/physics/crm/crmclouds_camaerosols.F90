@@ -204,7 +204,7 @@ subroutine crmclouds_mixnuc_tend (state, ptend, dtime, cflx, pblht, pbuf,   &
     enddo 
   end do
 
-  call outfld('LENGC', lc, pcols, lchnk)
+  ! call outfld('LENGC', lc, pcols, lchnk)
 
   kkvh_crm = 0._r8
   do i=1, ncol
@@ -288,7 +288,7 @@ subroutine crmclouds_mixnuc_tend (state, ptend, dtime, cflx, pblht, pbuf,   &
 ! should we set omega to be zero ??
   omega(:ncol, :) = state%omega(:ncol, :)
 
-  call dropmixnuc(state, ptend, dtime, pbuf, wsub, lcldn, lcldo, tendnd,factnum, species_class,dommf )
+  call dropmixnuc(state, ptend, dtime, pbuf, wsub, lcldn, lcldo, tendnd,factnum, species_class, dommf )
   deallocate(factnum)
 
 

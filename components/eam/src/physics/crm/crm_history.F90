@@ -299,11 +299,12 @@ subroutine crm_history_init(species_class)
    call addfld('V_TEND_ESMT',(/'lev'/), 'A', 'm/s2 ','V tendency due to CRM (ESMT)' )
 #endif
    ! mixing diagnostics for dropmixnuc in the GCM grid
-   call addfld('MMF_KVH     ',(/'ilev'/),'A','m2/s',  'Vertical diffusivity in dropmixnuc for MMF')
-   call addfld('MMF_LCLOUD  ',(/'lev'/), 'A',' ',     'Liquid cloud fraction')
-   call addfld('MMF_NDROPMIX',(/'lev'/), 'A','#/kg/s','Droplet number mixing')
-   call addfld('MMF_NDROPSRC',(/'lev'/), 'A','#/kg/s','Droplet number source')
-   call addfld('MMF_NDROPCOL',horiz_only,'A','#/m2',  'Column droplet number')
+   call addfld('MMF_NDROPMIX   ',(/'lev'/), 'A','#/kg/s','Droplet number mixing')
+   call addfld('MMF_NDROPSRC   ',(/'lev'/), 'A','#/kg/s','Droplet number source')
+   call addfld('MMF_NDROPCOL   ',horiz_only,'A','#/m2',  'Column droplet number')
+   call addfld('MMF_NDROPLCLOUD',(/'lev'/), 'A',' ',     'Liquid cloud fraction')
+   call addfld('MMF_NDROPKVH   ',(/'ilev'/),'A','m2/s',  'Vertical diffusivity in dropmixnuc for MMF')
+   call addfld('MMF_NDROPWTKE  ',(/'lev'/), 'A',' ',     'Vertical velocity variance')
 
    call addfld('MMF_SUBCYCLE_FAC', horiz_only,'A',' ', 'CRM subcycle ratio: 1.0 = no subcycling' )
 
@@ -344,7 +345,7 @@ subroutine crm_history_init(species_class)
                tmpname = cnst_name_cw(l)
             end if
 
-            fieldname = trim(tmpname) // '_mixnuc_mmf'
+            fieldname = 'MMF_' // trim(tmpname) // '_mixnuc1'
             long_name = trim(tmpname) // ' dropmixnuc mixnuc column tendency in the mmf one '
             call addfld( fieldname,  horiz_only, 'A', unit, long_name)
 
@@ -354,7 +355,7 @@ subroutine crm_history_init(species_class)
 
    do m = 1, pcnst
       if(species_class(m).eq.spec_class_gas) then
-         fieldname = trim(cnst_name(m)) // '_mixnuc_mmf'
+         fieldname = 'MMF_' // trim(cnst_name(m)) // '_mixnuc1'
          long_name = trim(cnst_name(m)) // ' dropmixnuc mixnuc column tendency in the mmf one '
          call addfld( fieldname,  horiz_only, 'A', unit, long_name)
       end if

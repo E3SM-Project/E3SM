@@ -306,7 +306,7 @@ end subroutine ndrop_init
 
 subroutine dropmixnuc( &
    state, ptend, dtmicro, pbuf, wsub, &
-   cldn, cldo, tendnd, factnum, species_class,do_mmf) 
+   cldn, cldo, tendnd, factnum, species_class, do_mmf ) 
 
    ! vertical diffusion and nucleation of cloud droplets
    ! assume cloud presence controlled by cloud fraction
@@ -325,8 +325,8 @@ subroutine dropmixnuc( &
    real(r8), intent(in) :: wsub(pcols,pver)    ! subgrid vertical velocity
    real(r8), intent(in) :: cldn(pcols,pver)    ! cloud fraction
    real(r8), intent(in) :: cldo(pcols,pver)    ! cloud fraction on previous time step
-   logical,  intent(in),optional :: do_mmf      ! value insignificant - if variable present, is called in the mmf part.
-   integer, intent(in) :: species_class(:)    
+   integer,  intent(in), optional :: species_class(:) ! needed for MMF
+   logical,  intent(in), optional :: do_mmf           ! if present, is called in the MMF part.
 
    ! output arguments
    real(r8), intent(out) :: tendnd(pcols,pver) ! change in droplet number concentration (#/kg/s)
@@ -454,8 +454,6 @@ subroutine dropmixnuc( &
    character*200 fieldnamegas
 
    logical  :: use_MMF
-   logical  :: SPCAM_mmf
-   logical  :: SPCAM_notmmf
 
    !-------------------------------------------------------------------------------
 
@@ -526,11 +524,13 @@ subroutine dropmixnuc( &
    end do
 
    call phys_getopts(use_MMF_out=use_MMF)
-   SPCAM_mmf    = (use_MMF .and. present(do_mmf)) ! SPCAM called from mmf section
-   SPCAM_notmmf = (use_MMF .and. .not. present(do_mmf)) ! SPCAM not called from mmf section
+
+   if ( (use_MMF .and. present(do_mmf)) .and. .not.present(species_class) ) then
+      call endrun('ERROR: species_class not provided for MMF call to dropmixnuc')
+   end if
 
 #if (defined MODAL_AERO)
-   if (SPCAM_mmf) then
+   if (use_MMF .and. present(do_mmf)) then
       rgas  => state%q
       allocate(rgascol(pver, pcnst, 2))
       allocate(coltendgas(pcols))
@@ -613,18 +613,20 @@ subroutine dropmixnuc( &
          end do
       end do
 
-if (SPCAM_mmf) then
-! In the MMF model, turbulent mixing for tracer species are turned off.
-! So the turbulent for gas species mixing are added here.
-! (Previously, it had the turbulent mixing for aerosol species)
+
 #if (defined MODAL_AERO)
-   do m=1, pcnst
-      if(species_class(m).eq.spec_class_gas) then
-         rgascol(:,m,nsav) = rgas(i,:,m)
-      end if
-   end do
+      ! In the MMF, turbulent mixing for tracer species are turned off.
+      ! So the turbulent for gas species mixing are added here.
+      ! (Previously, it had the turbulent mixing for aerosol species)
+      if (use_MMF .and. present(do_mmf)) then
+         do m=1, pcnst
+            if(species_class(m).eq.spec_class_gas) then
+               rgascol(:,m,nsav) = rgas(i,:,m)
+            end if
+         end do
+      endif
 #endif
-endif
+
 
       ! droplet nucleation/aerosol activation
 
@@ -632,11 +634,8 @@ endif
       !    by (horizontal) exchange with clear air
       tau_cld_regenerate = 3600.0_r8 * 3.0_r8 
 
-      if (SPCAM_mmf) then
-         ! when this is called  in the MMF part, no cloud regeneration and decay.
-         ! set the time scale be very long so that no cloud regeneration.
-         tau_cld_regenerate = 3600.0_r8 * 24.0_r8 * 365.0_r8
-      endif
+      ! For MMF, set the time scale be very long to disable cloud regeneration and decay
+      if (use_MMF .and. present(do_mmf)) tau_cld_regenerate = 3600.0_r8 * 24.0_r8 * 365.0_r8
 
       ! k-loop for growing/shrinking cloud calcs .............................
       ! grow_shrink_main_k_loop: &
@@ -1074,20 +1073,23 @@ endif
             end do
          end do
 
-if (SPCAM_mmf) then
-! turbulent mixing for gas species 
+
+
 #if (defined MODAL_AERO)
-   do m=1, pcnst
-      if(species_class(m).eq.spec_class_gas) then
-         flxconv = 0.0_r8
-         zerogas(:) = 0.0_r8
-         call explmix(rgascol(1,m,nnew),zerogas,ekkp,ekkm,overlapp,overlapm,  &
-                    rgascol(1,m,nsav),zero, flxconv, pver,dtmix,&
-                      .true., zerogas)
-      end if
-   end do
+         ! turbulent mixing for gas species 
+         if (use_MMF .and. present(do_mmf)) then
+            do m=1, pcnst
+               if(species_class(m).eq.spec_class_gas) then
+                  flxconv = 0.0_r8
+                  zerogas(:) = 0.0_r8
+                  call explmix(rgascol(1,m,nnew),zerogas,ekkp,ekkm,overlapp,overlapm,  &
+                             rgascol(1,m,nsav),zero, flxconv, pver,dtmix,&
+                               .true., zerogas)
+               end if
+            end do
+         endif
 #endif
-endif
+
 
       end do ! old_cloud_nsubmix_loop
 
@@ -1149,46 +1151,47 @@ endif
 
       end if
 
-if (SPCAM_mmf) then
-! Gas tendency
+
+
 #ifdef MODAL_AERO
-   do m=1, pcnst
-      if(species_class(m).eq.spec_class_gas) then
+      ! Gas tendency
+      if (use_MMF .and. present(do_mmf)) then
+         do m=1, pcnst
+            if(species_class(m).eq.spec_class_gas) then
 #ifdef ECPP
-         ptend%lq(m) = .false.
-         ptend%q(i, :, m) = 0.0_r8
+               ptend%lq(m) = .false.
+               ptend%q(i, :, m) = 0.0_r8
 #else
-         ptend%lq(m) = .true.
-         ptend%q(i, :, m) = (rgascol(:,m,nnew)-rgas(i,:,m)) * dtinv
+               ptend%lq(m) = .true.
+               ptend%q(i, :, m) = (rgascol(:,m,nnew)-rgas(i,:,m)) * dtinv
 #endif
-      end if
-   end do
+            end if
+         end do
+      endif
 #endif 
-endif
+
 
    end do  ! overall_main_i_loop
    ! end of main loop over i/longitude ....................................
 
-   if (SPCAM_notmmf .or. .not. use_MMF) then ! called in the cam part.
+   if(use_MMF .and. present(do_mmf)) then  ! called in the mmf part.
+        call outfld('MMF_NDROPCOL   ', ndropcol  , pcols, lchnk   )
+        call outfld('MMF_NDROPSRC   ', nsource    , pcols, lchnk   )
+        call outfld('MMF_NDROPMIX   ', ndropmix    , pcols, lchnk   )
+        call outfld('MMF_NDROPLCLOUD', cldn    , pcols, lchnk   )
+        call outfld('MMF_NDROPWTKE  ', wtke    , pcols, lchnk   )
+        call outfld('MMF_NDROPKVH   ', kvh     , pcols, lchnk   )
+   else
         call outfld('NDROPCOL', ndropcol, pcols, lchnk)
         call outfld('NDROPSRC', nsource,  pcols, lchnk)
         call outfld('NDROPMIX', ndropmix, pcols, lchnk)
         call outfld('LCLOUD  ', cldn,     pcols, lchnk)
-        call outfld('WTKE    ', wtke,     pcols, lchnk)
-   else if(SPCAM_mmf) then  ! called in the mmf part.
-        call outfld('SPNDROPCOL', ndropcol  , pcols, lchnk   )
-        call outfld('SPNDROPSRC', nsource    , pcols, lchnk   )
-        call outfld('SPNDROPMIX', ndropmix    , pcols, lchnk   )
-        call outfld('SPLCLOUD  ', cldn    , pcols, lchnk   )
-        call outfld('SPWTKE    ', wtke    , pcols, lchnk   )
-        call outfld('SPKVH     ', kvh     , pcols, lchnk   )
+        call outfld('WTKE    ', wtke,     pcols, lchnk) 
    endif
 
    call ccncalc(state, pbuf, cs, ccn)
    do l = 1, psat
-      if ( (SPCAM_mmf) .or. .not. use_MMF) then ! called in the MMF part only or in the standard CAM
-        call outfld(ccn_name(l), ccn(1,1,l), pcols, lchnk)
-      endif
+      call outfld(ccn_name(l), ccn(1,1,l), pcols, lchnk)
    enddo
 
    if(do_aerocom_ind3) then 
@@ -1230,32 +1233,35 @@ endif
       do m = 1, ntot_amode
          do l = 0, nspec_amode(m)
             mm = mam_idx(m,l)
-            if (SPCAM_notmmf .or. .not. use_MMF) then ! called in the cam part.
+            if (use_MMF .and. present(do_mmf)) then
+              call outfld(trim('MMF_'//fieldname(mm)),    coltend(:,mm),    pcols, lchnk)
+              call outfld(trim('MMF_'//fieldname_cw(mm)), coltend_cw(:,mm), pcols, lchnk)
+            else
               call outfld(fieldname(mm),    coltend(:,mm),    pcols, lchnk)
-              call outfld(fieldname_cw(mm), coltend_cw(:,mm), pcols, lchnk)
-            else if (SPCAM_mmf) then
-              call outfld(trim(fieldname(mm))//'sp',    coltend(:,mm),    pcols, lchnk)
-              call outfld(trim(fieldname_cw(mm))//'sp', coltend_cw(:,mm), pcols, lchnk)
+              call outfld(fieldname_cw(mm), coltend_cw(:,mm), pcols, lchnk) 
             end if
          end do
       end do
    end if
 
-if(SPCAM_mmf) then
-! output column-integrated Gas tendency (this should be zero)
+
+
 #ifdef MODAL_AERO
-   do m=1, pcnst
-      if(species_class(m).eq.spec_class_gas) then
-         do i=1, ncol
-            coltendgas(i) = sum( pdel(i,:)*ptend%q(i,:,m) )/gravit
-         end do
-         fieldnamegas = trim(cnst_name(m)) // '_mixnuc1sp'
-         call outfld( trim(fieldnamegas), coltendgas, pcols, lchnk)
-      end if
-   end do
-   deallocate(rgascol, coltendgas)
+   ! output column-integrated Gas tendency (this should be zero)
+   if(use_MMF .and. present(do_mmf)) then
+      do m=1, pcnst
+         if(species_class(m).eq.spec_class_gas) then
+            do i=1, ncol
+               coltendgas(i) = sum( pdel(i,:)*ptend%q(i,:,m) )/gravit
+            end do
+            fieldnamegas = trim('MMF_'//cnst_name(m)) // '_mixnuc1'
+            call outfld( trim(fieldnamegas), coltendgas, pcols, lchnk)
+         end if
+      end do
+      deallocate(rgascol, coltendgas)
+   end if
 #endif
-end if
+
 
    deallocate( &
       nact,       &

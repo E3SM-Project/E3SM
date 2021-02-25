@@ -264,8 +264,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   crm_state_w_wind      => crm_state%w_wind     (1:ncrms,:,:,:)
   crm_state_temperature => crm_state%temperature(1:ncrms,:,:,:)
   crm_state_qt          => crm_state%qt         (1:ncrms,:,:,:)
+#ifndef m2005
   crm_state_qp          => crm_state%qp         (1:ncrms,:,:,:)
   crm_state_qn          => crm_state%qn         (1:ncrms,:,:,:)
+#endif
   
   crm_accel_ceaseflag = .false.
 
@@ -899,7 +901,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     ! Here ecpp_crm_stat is called every CRM time step (dt), not every subcycle time step (dtn).
     ! This is what the original MMF model did (crm_rad_temperature, crm_rad_qv, ...). Do we want to call ecpp_crm_stat
     ! every subcycle time step??? +++mhwang
-    call ecpp_crm_stat(ncrms)
+    call ecpp_crm_stat( ncrms, sgs_field(:,:,:,:,1), sgs_field_diag(:,:,:,:,1) )
 #endif
     !$acc parallel loop collapse(3) async(asyncid)
     do j = 1 , ny

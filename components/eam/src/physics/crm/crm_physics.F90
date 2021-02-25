@@ -78,6 +78,8 @@ module crm_physics
    integer :: icwmrsh_idx     = -1
    integer :: rprdsh_idx      = -1
    integer :: rprdtot_idx     = -1
+   integer :: cldtop_idx      = -1
+   integer :: cldbot_idx      = -1
    integer :: nevapr_shcu_idx = -1
    integer :: prec_sh_idx     = -1
    integer :: snow_sh_idx     = -1
@@ -150,6 +152,7 @@ subroutine crm_physics_register()
    logical           :: use_ECPP
    logical           :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
+   logical           :: prog_modal_aero
    integer, dimension(1) :: dims_gcm_1D
    integer, dimension(2) :: dims_gcm_2D
    integer, dimension(3) :: dims_crm_2D
@@ -172,9 +175,10 @@ subroutine crm_physics_register()
    dims_crm_aer = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz, ntot_amode/)
 #endif
 
-   call phys_getopts( use_ECPP_out = use_ECPP)
+   call phys_getopts( use_ECPP_out = use_ECPP )
    call phys_getopts( use_MMF_VT_out = use_MMF_VT )
-   call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+   call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme )
+   call phys_getopts( prog_modal_aero_out = prog_modal_aero )
 
    if(masterproc) then
       print*,'_____________________________________________________________'
@@ -282,6 +286,11 @@ subroutine crm_physics_register()
       call pbuf_add_field('CRM_QG', 'global', dtype_r8, dims_crm_3D, idx)
       call pbuf_add_field('CRM_NG', 'global', dtype_r8, dims_crm_3D, idx)
       call pbuf_add_field('CRM_QC', 'global', dtype_r8, dims_crm_3D, idx)
+
+      if (prog_modal_aero) then
+         call pbuf_add_field('RATE1_CW2PR_ST','physpkg',dtype_r8,(/pcols,pver/), idx)
+      end if
+
    else
       call pbuf_add_field('CRM_QT', 'global', dtype_r8, dims_crm_3D, idx)
       call pbuf_add_field('CRM_QP', 'global', dtype_r8, dims_crm_3D, idx)
@@ -333,6 +342,9 @@ subroutine crm_physics_register()
    call pbuf_add_field('ICWMRSH',    'physpkg',dtype_r8,(/pcols,pver/),icwmrsh_idx )
    call pbuf_add_field('RPRDSH',     'physpkg',dtype_r8,(/pcols,pver/),rprdsh_idx )
    call pbuf_add_field('RPRDTOT',    'physpkg',dtype_r8,(/pcols,pver/),rprdtot_idx )
+   call pbuf_add_field('CLDTOP',     'physpkg' ,dtype_r8,(/pcols,1/),  cldtop_idx )
+   call pbuf_add_field('CLDBOT',     'physpkg' ,dtype_r8,(/pcols,1/),  cldbot_idx )
+   ! call pbuf_add_field('cush',       'global'  ,dtype_r8,(/pcols,dyn_time_lvls/), cush_idx )  
    call pbuf_add_field('NEVAPR_SHCU','physpkg',dtype_r8,(/pcols,pver/),nevapr_shcu_idx )
    call pbuf_add_field('PREC_SH',    'physpkg',dtype_r8,(/pcols/),     prec_sh_idx )
    call pbuf_add_field('SNOW_SH',    'physpkg',dtype_r8,(/pcols/),     snow_sh_idx )
@@ -474,6 +486,12 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       call pbuf_set_field(pbuf2d, pbuf_get_index('NEVAPR_SHCU'), 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('PREC_SH')    , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('SNOW_SH')    , 0._r8)
+
+      call pbuf_set_field(pbuf2d, pbuf_get_index('ICIWPST')    , 0._r8)
+      call pbuf_set_field(pbuf2d, pbuf_get_index('ICLWPST')    , 0._r8)
+      call pbuf_set_field(pbuf2d, pbuf_get_index('ICSWP')      , 0._r8)
+      call pbuf_set_field(pbuf2d, pbuf_get_index('CLDFSNOW')      , 0._r8)
+      
    end if
 
 end subroutine crm_physics_init

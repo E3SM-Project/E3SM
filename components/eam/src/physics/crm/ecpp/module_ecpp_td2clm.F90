@@ -3015,17 +3015,17 @@ entdet_main_kloop_aa: &
     end do
     end do
 
-    if (ientry == 0) then
-    do l = param_first_ecpp, num_chem_ecpp
-!       tmpname = chem_dname_table(1,l)
-!       write(*,'(2a,6i5)') 'iphase, isize, itype, inmw, l, laicw_pairptr   ', tmpname,   &
-!==Guangxing Lin
-!           write(*,'(2a,7i5)') 'iphase, isize, itype, inmw, l, laicw_pairptr   ',  &
-           write(*,'(a,l2,7i5)') 'iphase, isize, itype, inmw, l, laicw_pairptr   ',     &
-        is_aerosol(l), iphase_of_aerosol(l), isize_of_aerosol(l), itype_of_aerosol(l),   &
-        inmw_of_aerosol(l), l, max(-999,laicwpair_of_aerosol(l))
-    end do
-    end if
+!     if (ientry == 0) then
+!     do l = param_first_ecpp, num_chem_ecpp
+! !       tmpname = chem_dname_table(1,l)
+! !       write(*,'(2a,6i5)') 'iphase, isize, itype, inmw, l, laicw_pairptr   ', tmpname,   &
+! !==Guangxing Lin
+! !           write(*,'(2a,7i5)') 'iphase, isize, itype, inmw, l, laicw_pairptr   ',  &
+!            write(*,'(a,l2,7i5)') 'iphase, isize, itype, inmw, l, laicw_pairptr   ',     &
+!         is_aerosol(l), iphase_of_aerosol(l), isize_of_aerosol(l), itype_of_aerosol(l),   &
+!         inmw_of_aerosol(l), l, max(-999,laicwpair_of_aerosol(l))
+!     end do
+!     end if
     ientry = 1
 
     return
