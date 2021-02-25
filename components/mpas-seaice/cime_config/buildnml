@@ -29,9 +29,9 @@ def buildnml(case, caseroot, compname):
     casename         = case.get_value("CASE")
     srcroot          = case.get_value("SRCROOT")
     din_loc_root     = case.get_value("DIN_LOC_ROOT")
+    compset          = case.get_value("COMPSET")
     ice_grid         = case.get_value("ICE_GRID")
     ice_mask         = case.get_value("MASK_GRID")
-    ic_mode          = case.get_value("MPASSI_IC_MODE")
     ice_bgc          = case.get_value("MPASSI_BGC")
     surface_mode     = case.get_value("MPASSI_SURFACE_MODE")
     iceberg_mode     = case.get_value("MPASSI_ICEBERG_MODE")
@@ -55,6 +55,15 @@ def buildnml(case, caseroot, compname):
     if not os.path.isdir(mpassiconf_dir): os.mkdir(mpassiconf_dir)
 
     #--------------------------------------------------------------------
+    # Determine if initial conditions are spunup, from compset
+    #--------------------------------------------------------------------
+    ice_ic_mode = 'cold_start'
+    if "SOI" in compset:
+        ice_ic_mode = 'spunup'
+    if ice_bgc == 'ice_bgc':
+        ice_ic_mode = 'spunup'
+
+    #--------------------------------------------------------------------
     # Determine date stamp, from grid names
     #--------------------------------------------------------------------
 
@@ -66,168 +75,209 @@ def buildnml(case, caseroot, compname):
     points_file = ''
 
     if ice_grid == 'oEC60to30':
-        grid_date += '151020'
-        grid_prefix += 'cice.EC60to30km'
-        decomp_date += '151020'
-        decomp_prefix += 'mpas-cice.graph.info.'
-    elif ice_grid == 'oEC60to30_ICG':
-        grid_date += '160827'
-        grid_prefix += 'cice.EC60to30km.restartFrom_eos1b'
-        decomp_date += '151020'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '151020'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '151020'
+        grid_prefix = 'cice.EC60to30km'
+        if ice_ic_mode == 'spunup':
+            grid_date = '160827'
+            grid_prefix = 'cice.EC60to30km.restartFrom_eos1b'
+
     elif ice_grid == 'oEC60to30v3':
-        grid_date += '161222'
-        grid_prefix += 'seaice.EC60to30v3'
-        decomp_date += '161222'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '161222'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '161222'
+        grid_prefix = 'seaice.EC60to30v3'
         if ice_bgc == 'ice_bgc':
             grid_date = '180418'
             grid_prefix = 'mpassi.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
             points_file = 'seaice_points_EC.60to30v3_netcdf3_05152018.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '200927'
+            grid_prefix = 'seaice.EC60to30v3.restartFrom_anvilG'
 
-    elif ice_grid == 'oEC60to30v3_ICG':
-        grid_date += '200927'
-        grid_prefix += 'seaice.EC60to30v3.restartFrom_anvilG'
-        decomp_date += '161222'
-        decomp_prefix += 'mpas-cice.graph.info.'
     elif ice_grid == 'oEC60to30wLI':
-        grid_date += '160830'
-        grid_prefix += 'cice.EC60to30wLI'
-        decomp_date += '160830'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '160830'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '160830'
+        grid_prefix = 'cice.EC60to30wLI'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oEC60to30v3wLI':
-        grid_date += '170913'
-        grid_prefix += 'seaice.EC60to30v3wLI'
-        decomp_date += '170905'
-        decomp_prefix += 'mpas-cice.graph.info.'
-        data_iceberg_file += 'data_iceberg_181022.EC60to30v3wLI.nc'
-    elif ice_grid == 'oEC60to30v3wLI_ICG':
-        grid_date += '171116'
-        grid_prefix += 'seaiceEC60to30v3wLI60lev.restart_theta_year26'
-        decomp_date += '170905'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '170905'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        data_iceberg_file = 'data_iceberg_181022.EC60to30v3wLI.nc'
+        grid_date = '170913'
+        grid_prefix = 'seaice.EC60to30v3wLI'
+        if ice_ic_mode == 'spunup':
+            grid_date = '171116'
+            grid_prefix = 'seaiceEC60to30v3wLI60lev.restart_theta_year26'
+
     elif ice_grid == 'ECwISC30to60E1r2':
-        grid_date += '200408'
-        grid_prefix += 'seaice.ECwISC30to60E1r2'
-        decomp_date += '200408'
-        decomp_prefix += 'mpas-o.graph.info.'
-        data_iceberg_file += 'Iceberg_Interannual_Merino_ECwISC30to60E1r2.nc'
+        decomp_date = '200408'
+        decomp_prefix = 'mpas-o.graph.info.'
+        data_iceberg_file = 'Iceberg_Interannual_Merino_ECwISC30to60E1r2.nc'
+        grid_date = '200408'
+        grid_prefix = 'seaice.ECwISC30to60E1r2'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'mpas120':
-        grid_date += '121116'
-        grid_prefix += 'cice120km'
-        decomp_date += '121116'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '121116'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '121116'
+        grid_prefix = 'cice120km'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oQU120':
-        grid_date += '151209'
-        grid_prefix += 'seaice.oQU120km'
-        decomp_date += '151209'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '151209'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '151209'
+        grid_prefix = 'seaice.oQU120km'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oQU240':
-        grid_date += '151209'
-        grid_prefix += 'seaice.oQU240km'
-        decomp_date += '151209'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '151209'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '151209'
+        grid_prefix = 'seaice.oQU240km'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oQU240wLI':
-        grid_date += '160929'
-        grid_prefix += 'cice.QU240wLI'
-        decomp_date += '160929'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '160929'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '160929'
+        grid_prefix = 'cice.QU240wLI'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oQU480':
-        grid_date += '180705'
-        grid_prefix += 'seaice.oQU480'
-        decomp_date += '180705'
-        decomp_prefix += 'mpas-seaice.graph.legacy.'
+        decomp_date = '180705'
+        decomp_prefix = 'mpas-seaice.graph.legacy.'
+        grid_date = '180705'
+        grid_prefix = 'seaice.oQU480'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'mpasgx1':
-        grid_date += '121116'
-        grid_prefix += 'grid_gx1'
-        decomp_date += '121116'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '121116'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '121116'
+        grid_prefix = 'grid_gx1'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oRRS30to10':
-        grid_date += '151031'
-        grid_prefix += 'seaice.RRS.30-10km'
-        decomp_date += '151031'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '151031'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '151031'
+        grid_prefix = 'seaice.RRS.30-10km'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oRRS30to10v3':
-        grid_date += '171128'
-        grid_prefix += 'seaice.RRS30to10v3'
-        decomp_date += '171128'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '171128'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '171128'
+        grid_prefix = 'seaice.RRS30to10v3'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oRRS30to10wLI':
-        grid_date += '160930'
-        grid_prefix += 'seaice.RRS30-10wLI'
-        decomp_date += '160930'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '160930'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '160930'
+        grid_prefix = 'seaice.RRS30-10wLI'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oRRS30to10v3wLI':
-        grid_date += '171109'
-        grid_prefix += 'seaice.RRS30to10v3wLI'
-        decomp_date += '171109'
-        decomp_prefix += 'mpas-cice.graph.info.'
-        data_iceberg_file += 'data_iceberg_181022.RRS30to10v3wLI.nc'
+        decomp_date = '171109'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        data_iceberg_file = 'data_iceberg_181022.RRS30to10v3wLI.nc'
+        grid_date = '171109'
+        grid_prefix = 'seaice.RRS30to10v3wLI'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oRRS18to6':
-        grid_date += '160830'
-        grid_prefix += 'seaice.RRS.18to6km'
-        decomp_date += '160830'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '160830'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '160830'
+        grid_prefix = 'seaice.RRS.18to6km'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oRRS18to6v3':
-        grid_date += '170111'
-        grid_prefix += 'seaice.RRS18to6v3'
-        decomp_date += '180214'
-        decomp_prefix += 'mpas-seaice.v2.'
-    elif ice_grid == 'oRRS18to6v3_ICG':
-        grid_date += '171031'
-        grid_prefix += 'seaice.RRS18to6v3_80Layer.restartFromAnvil'
-        decomp_date += '180214'
-        decomp_prefix += 'mpas-seaice.v2.'
+        decomp_date = '180214'
+        decomp_prefix = 'mpas-seaice.v2.'
+        grid_date = '170111'
+        grid_prefix = 'seaice.RRS18to6v3'
+        if ice_ic_mode == 'spunup':
+            grid_date = '171031'
+            grid_prefix = 'seaice.RRS18to6v3_80Layer.restartFromAnvil'
+
     elif ice_grid == 'oRRS15to5':
-        grid_date += '151209'
-        grid_prefix += 'seaice.RRS.15to5km'
-        decomp_date += '151209'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '151209'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '151209'
+        grid_prefix = 'seaice.RRS.15to5km'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'oARRM60to10':
-        grid_date += '180715'
-        grid_prefix += 'seaice.ARRM60to10'
-        decomp_date += '180723'
-        decomp_prefix += 'mpas-cice.graph.info.'
-    elif ice_grid == 'oARRM60to10_ICG':
-        grid_date += '200422'
-        grid_prefix += 'seaice.ARRM60to10.restart_grizzly'
-        decomp_date += '180723'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '180723'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '180715'
+        grid_prefix = 'seaice.ARRM60to10'
+        if ice_ic_mode == 'spunup':
+            grid_date = '200422'
+            grid_prefix = 'seaice.ARRM60to10.restart_grizzly'
+
     elif ice_grid == 'oARRM60to6':
-        grid_date += '180803'
-        grid_prefix += 'seaice.ARRM60to6'
-        decomp_date += '180820'
-        decomp_prefix += 'mpas-cice.graph.info.'
+        decomp_date = '180820'
+        decomp_prefix = 'mpas-cice.graph.info.'
+        grid_date = '180803'
+        grid_prefix = 'seaice.ARRM60to6'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ice_grid == 'EC30to60E2r2':
-        grid_date += '210210'
-        grid_prefix += 'seaice.EC30to60E2r2'
-        decomp_date += '200908'
-        decomp_prefix += 'mpas-seaice.graph.info.'
-    elif ice_grid == 'EC30to60E2r2_ICG':
-        grid_date += '210210'
-        grid_prefix += 'mpassi.EC30to60E2r2.rstFromG-anvil'
-        decomp_date += '200908'
-        decomp_prefix += 'mpas-seaice.graph.info.'
-    elif ice_grid == 'EC30to60E2r2-1900_ICG':
-        grid_date += '201001'
-        grid_prefix += 'mpassi.EC30to60E2r2-1900.rstFromG-anvil'
-        decomp_date += '200908'
-        decomp_prefix += 'mpas-seaice.graph.info.'
+        decomp_date = '200908'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        grid_date = '210210'
+        grid_prefix = 'seaice.EC30to60E2r2'
+        if ice_ic_mode == 'spunup':
+            grid_date = '210210'
+            grid_prefix = 'mpassi.EC30to60E2r2.rstFromG-anvil'
+
     elif ice_grid == 'WC14to60E2r3':
-        grid_date += '210210'
-        grid_prefix += 'seaice.WC14to60E2r3'
-        decomp_date += '200714'
-        decomp_prefix += 'mpas-seaice.graph.info.'
-    elif ice_grid == 'WC14to60E2r3_ICG':
-        grid_date += '210210'
-        grid_prefix += 'mpassi.WC14to60E2r3.rstFromG-anvil'
-        decomp_date += '200714'
-        decomp_prefix += 'mpas-seaice.graph.info.'
-    elif ice_grid == 'WC14to60E2r3-1900_ICG':
-        grid_date += '201002'
-        grid_prefix += 'mpassi.WC14to60E2r3-1900.rstFromG-anvil'
-        decomp_date += '200714'
-        decomp_prefix += 'mpas-seaice.graph.info.'
+        decomp_date = '200714'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        grid_date = '210210'
+        grid_prefix = 'seaice.WC14to60E2r3'
+        if ice_ic_mode == 'spunup':
+            grid_date = '210210'
+            grid_prefix = 'mpassi.WC14to60E2r3.rstFromG-anvil'
 
 
     #--------------------------------------------------------------------
@@ -310,7 +360,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -decomp_prefix '{}'".format(decomp_prefix)
         sysmod += " -date_stamp '{}'".format(decomp_date)
         sysmod += " -ice_grid '{}'".format(ice_mask)
-        sysmod += " -ic_mode '{}'".format(ic_mode)
+        sysmod += " -ice_ic_mode '{}'".format(ice_ic_mode)
         sysmod += " -ice_bgc '{}'".format(ice_bgc)
         sysmod += " -surface_mode '{}'".format(surface_mode)
         sysmod += " -iceberg_mode '{}'".format(iceberg_mode)
@@ -387,7 +437,7 @@ def buildnml(case, caseroot, compname):
         lines.append('                  output_interval="00-00-00_00:00:01" />')
         lines.append('')
 
-        if ic_mode == 'spunup':
+        if ice_ic_mode == 'spunup':
             lines.append('<immutable_stream name="restart_ic"')
             lines.append('                  type="input"')
             if ice_grid.startswith("oRRS1"):

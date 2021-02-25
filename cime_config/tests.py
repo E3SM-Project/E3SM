@@ -145,15 +145,15 @@ _TESTS = {
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne11_oQU240.A_WCYCL1850",
-            "SMS_D_Ld1.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.allactive-v1cmip6",
+            "SMS_D_Ld1.ne30_oECv3.A_WCYCL1850S_CMIP6.allactive-v1cmip6",
             "ERS_Ln9.ne4_ne4.FC5AV1C-L",
             #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
             "NCK.ne11_oQU240.A_WCYCL1850",
             "PET.f19_g16.X.allactive-mach-pet",
             "PET.f45_g37_rx1.A.allactive-mach-pet",
-            "PET_Ln9_PS.ne30_oECv3_ICG.A_WCYCL1850S.allactive-mach-pet",
-            "PEM_Ln9.ne30_oECv3_ICG.A_WCYCL1850S",
-            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S.allactive-pioroot1",
+            "PET_Ln9_PS.ne30_oECv3.A_WCYCL1850S.allactive-mach-pet",
+            "PEM_Ln9.ne30_oECv3.A_WCYCL1850S",
+            "ERP_Ld3.ne30_oECv3.A_WCYCL1850S.allactive-pioroot1",
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850.elm-bgcexp",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.elm-bgcexp",
@@ -178,7 +178,7 @@ _TESTS = {
     "e3sm_hi_res" : {
         "inherit" : "e3sm_atm_hi_res",
         "tests"   : (
-            "SMS.ne120_oRRS18v3_ICG.A_WCYCL2000_H01AS.eam-cosplite",
+            "SMS.ne120_oRRS18v3.A_WCYCL2000_H01AS.eam-cosplite",
             "SMS.T62_oRRS30to10v3wLI.GMPAS-IAF",
             )
         },
@@ -212,8 +212,8 @@ _TESTS = {
     "e3sm_prod" : {
         "inherit" : "e3sm_atm_prod",
         "tests"   : (
-            "SMS_Ld1.ne30pg2_r05_EC30to60E2r2-1900_ICG.A_WCYCL1850S_CMIP6.allactive-wcprod",
-            "SMS_PS.northamericax4v1pg2_WC14to60E2r3_ICG.A_WCYCL1850S_CMIP6.allactive-wcprodrrm",
+            "SMS_Ld1.ne30pg2_r05_EC30to60E2r2.A_WCYCL1850S_CMIP6.allactive-wcprod",
+            "SMS_PS.northamericax4v1pg2_WC14to60E2r3.A_WCYCL1850S_CMIP6.allactive-wcprodrrm",
             )
         },
 
@@ -222,8 +222,8 @@ _TESTS = {
         "tests"   :  (
                "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.allactive-v1bgc_1850",
                "SMS_Ld2.ne30_oECv3.BGCEXP_BCRD_CNPRDCTC_20TR.allactive-v1bgc",
-               "SMS_Ld2.ne30_oECv3_ICG.BGCEXP_BCRC_CNPECACNT_1850S.allactive-v1bgceca_1850",
-               "SMS_Ld2.ne30_oECv3_ICG.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
+               "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850S.allactive-v1bgceca_1850",
+               "SMS_Ld2.ne30_oECv3.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
                )
         },
 
@@ -339,9 +339,9 @@ _TESTS = {
         "inherit" : ("e3sm_bench_hires_g", "e3sm_bench_hires_f"),
         "time"    : "01:00:00",
         "tests"   : (
-                 "PFS_PS.ne120_oRRS18v3_ICG.A_WCYCL1950S_CMIP6_HR.bench-wcycl-hires",
-                 "PFS_PM.ne120_oRRS18v3_ICG.A_WCYCL1950S_CMIP6_HR.bench-wcycl-hires",
-                 "PFS_PL.ne120_oRRS18v3_ICG.A_WCYCL1950S_CMIP6_HR.bench-wcycl-hires",
+                 "PFS_PS.ne120_oRRS18v3.A_WCYCL1950S_CMIP6_HR.bench-wcycl-hires",
+                 "PFS_PM.ne120_oRRS18v3.A_WCYCL1950S_CMIP6_HR.bench-wcycl-hires",
+                 "PFS_PL.ne120_oRRS18v3.A_WCYCL1950S_CMIP6_HR.bench-wcycl-hires",
                  )
     },
     "e3sm_bench_lores_g" : {
@@ -367,9 +367,9 @@ _TESTS = {
         "inherit" : ("e3sm_bench_lores_g", "e3sm_bench_lores_f"),
         "time"    : "01:00:00",
         "tests"   : (
-                 "PFS_PS.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.bench-wcycl-lores",
-                 "PFS_PM.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.bench-wcycl-lores",
-                 "PFS_PL.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.bench-wcycl-lores",
+                 "PFS_PS.ne30_oECv3.A_WCYCL1850S_CMIP6.bench-wcycl-lores",
+                 "PFS_PM.ne30_oECv3.A_WCYCL1850S_CMIP6.bench-wcycl-lores",
+                 "PFS_PL.ne30_oECv3.A_WCYCL1850S_CMIP6.bench-wcycl-lores",
                  )
     },
     "e3sm_bench_all" : {
