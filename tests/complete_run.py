@@ -1,6 +1,7 @@
 import os
 import unittest
 
+# This test should be run with the latest E3SM Diags tutorial code.
 from examples.tutorials.tutorial_v2_3_0_all_sets_E3SM_machines import run_lcrc
 from tests.system.test_diags import compare_images
 
@@ -13,8 +14,8 @@ class TestCompleteRun(unittest.TestCase):
         actual_images_dir = run_lcrc(".")
 
         # The expected_images_file lists all images we expect to compare.
-        expected_images_file = "/lcrc/group/e3sm/public_html/e3sm_diags_test_data/unit_test_complete_run/expected_images_v2_3_0_all_sets_2021_02_22.txt"
-        expected_images_dir = "/lcrc/group/e3sm/public_html/e3sm_diags_test_data/unit_test_complete_run/v2_3_0_all_sets_2021_02_22"
+        expected_images_file = "/lcrc/group/e3sm/public_html/e3sm_diags_test_data/unit_test_complete_run/expected/image_list_all_sets.txt"
+        expected_images_dir = "/lcrc/group/e3sm/public_html/e3sm_diags_test_data/unit_test_complete_run/expected/all_sets"
 
         mismatched_images = []  # type:ignore
 
