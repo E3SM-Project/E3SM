@@ -46,33 +46,34 @@ jobs:
       - name: Cache Conda
         uses: actions/cache@v2
         env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          # Increase this value to reset cache if conda/e3sm_diags_env_dev.yml has not changed in the workflow
           CACHE_NUMBER: 0
         with:
           path: ~/conda_pkgs_dir
           key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('conda/e3sm_diags_env_testing.yml') }}
+            hashFiles('conda/e3sm_diags_env_dev.yml') }}
 
       - name: Build Conda Environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          activate-environment: e3sm_diags
-          environment-file: conda/e3sm_diags_env_testing.yml
+          activate-environment: e3sm_diags_env_dev
+          environment-file: conda/e3sm_diags_env_dev.yml
           channel-priority: strict
           python-version: 3.7
           auto-update-conda: true
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
-      - name: Additional Conda Config
+      - name: Show Conda Environment Info
         run: |
           conda config --set anaconda_upload no
+          conda info
+          conda list
 
-      - name: Install Dependencies
+      - name: Install `e3sm-diags` Package
         run: pip install .
 
       - name: Run Tests
         run: |
-          conda info
           bash tests/test.sh
 
   publish:
