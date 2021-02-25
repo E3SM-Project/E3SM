@@ -1043,7 +1043,7 @@ contains
     this%t_soisno(begc:endc,:) = spval
     call hist_addfld2d (fname='TSOI',  units='K', type2d='levgrnd', &
          avgflag='A', long_name='soil temperature (vegetated landunits only)', &
-         ptr_col=this%t_soisno, l2g_scale_type='veg')
+         standard_name='soil_temperature',ptr_col=this%t_soisno, l2g_scale_type='veg')
 
     this%t_soisno(begc:endc,:) = spval
     call hist_addfld2d (fname='TSOI_ICE',  units='K', type2d='levgrnd', &
@@ -1396,7 +1396,8 @@ contains
     this%h2osoi_liqice_10cm(begc:endc) = spval
     call hist_addfld1d (fname='SOILWATER_10CM',  units='kg/m2', &
          avgflag='A', long_name='soil liquid water + ice in top 10cm of soil (veg landunits only)', &
-         ptr_col=this%h2osoi_liqice_10cm, set_urb=spval, set_lake=spval, l2g_scale_type='veg')
+         standard_name='mass_content_of_water_in_soil_layer',ptr_col=this%h2osoi_liqice_10cm,  &
+         set_urb=spval, set_lake=spval, l2g_scale_type='veg')
 
     call hist_addfld1d (fname='H2OSNO',  units='mm',  &
          avgflag='A', long_name='snow depth (liquid water)', &
@@ -1440,12 +1441,12 @@ contains
     end if
 
     this%frac_sno(begc:endc) = spval
-    call hist_addfld1d (fname='FSNO',  units='unitless',  &
+    call hist_addfld1d (fname='FSNO',  units='1',  &
          avgflag='A', long_name='fraction of ground covered by snow', &
          ptr_col=this%frac_sno, c2l_scale_type='urbanf')
 
     this%frac_sno_eff(begc:endc) = spval
-    call hist_addfld1d (fname='FSNO_EFF',  units='unitless',  &
+    call hist_addfld1d (fname='FSNO_EFF',  units='1',  &
          avgflag='A', long_name='effective fraction of ground covered by snow', &
          ptr_col=this%frac_sno_eff, c2l_scale_type='urbanf')!, default='inactive')
 
@@ -1457,7 +1458,7 @@ contains
     end if
 
     this%frac_h2osfc(begc:endc) = spval
-    call hist_addfld1d (fname='FH2OSFC',  units='unitless',  &
+    call hist_addfld1d (fname='FH2OSFC',  units='1',  &
          avgflag='A', long_name='fraction of ground covered by surface water', &
          ptr_col=this%frac_h2osfc)
 
@@ -1754,12 +1755,12 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='frac_sno', xtype=ncd_double,  & 
          dim1name='column', &
-         long_name='fraction of ground covered by snow (0 to 1)',units='unitless',&
+         long_name='fraction of ground covered by snow (0 to 1)',units='1',&
          interpinic_flag='interp', readvar=readvar, data=this%frac_sno)
 
     call restartvar(ncid=ncid, flag=flag, varname='frac_sno_eff', xtype=ncd_double,  & 
          dim1name='column', &
-         long_name='fraction of ground covered by snow (0 to 1)',units='unitless', &
+         long_name='fraction of ground covered by snow (0 to 1)',units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%frac_sno_eff)
     if (flag == 'read' .and. .not. readvar) then
        this%frac_sno_eff(bounds%begc:bounds%endc) = 0.0_r8
@@ -5672,7 +5673,7 @@ contains
     else if (carbon_type == 'c12') then
        if (hist_wrtch4diag) then
           this%fphr(begc:endc,1:nlevgrnd) = spval
-          call hist_addfld_decomp (fname='FPHR'//trim(vr_suffix), units='unitless', type2d='levdcmp', &
+          call hist_addfld_decomp (fname='FPHR'//trim(vr_suffix), units='1', type2d='levdcmp', &
                avgflag='A', long_name='fraction of potential HR due to N limitation', &
                ptr_col=this%fphr)
        end if
@@ -5894,17 +5895,17 @@ contains
        ! still in C12 block
 
        this%t_scalar(begc:endc,:) = spval
-       call hist_addfld_decomp (fname='T_SCALAR', units='unitless',  type2d='levdcmp', &
+       call hist_addfld_decomp (fname='T_SCALAR', units='1',  type2d='levdcmp', &
             avgflag='A', long_name='temperature inhibition of decomposition', &
             ptr_col=this%t_scalar)
 
        this%w_scalar(begc:endc,:) = spval
-       call hist_addfld_decomp (fname='W_SCALAR', units='unitless',  type2d='levdcmp', &
+       call hist_addfld_decomp (fname='W_SCALAR', units='1',  type2d='levdcmp', &
             avgflag='A', long_name='Moisture (dryness) inhibition of decomposition', &
             ptr_col=this%w_scalar)
 
        this%o_scalar(begc:endc,:) = spval
-       call hist_addfld_decomp (fname='O_SCALAR', units='unitless', type2d='levdcmp', &
+       call hist_addfld_decomp (fname='O_SCALAR', units='1', type2d='levdcmp', &
             avgflag='A', long_name='fraction by which decomposition is reduced due to anoxia', &
             ptr_col=this%o_scalar)
 
@@ -8250,21 +8251,21 @@ contains
 
     if (use_nitrif_denitrif) then
        this%k_nitr_t_vr(begc:endc,:) = spval
-       call hist_addfld_decomp (fname='K_NITR_T', units='unitless', type2d='levdcmp', &
+       call hist_addfld_decomp (fname='K_NITR_T', units='1', type2d='levdcmp', &
             avgflag='A', long_name='K_NITR_T', &
             ptr_col=this%k_nitr_t_vr, default='inactive')
     end if
 
     if (use_nitrif_denitrif) then
        this%k_nitr_ph_vr(begc:endc,:) = spval
-       call hist_addfld_decomp (fname='K_NITR_PH', units='unitless', type2d='levdcmp', &
+       call hist_addfld_decomp (fname='K_NITR_PH', units='1', type2d='levdcmp', &
             avgflag='A', long_name='K_NITR_PH', &
             ptr_col=this%k_nitr_ph_vr, default='inactive')
     end if
 
     if (use_nitrif_denitrif) then
        this%k_nitr_h2o_vr(begc:endc,:) = spval
-       call hist_addfld_decomp (fname='K_NITR_H2O', units='unitless', type2d='levdcmp', &
+       call hist_addfld_decomp (fname='K_NITR_H2O', units='1', type2d='levdcmp', &
             avgflag='A', long_name='K_NITR_H2O', &
             ptr_col=this%k_nitr_h2o_vr, default='inactive')
     end if
@@ -8313,7 +8314,7 @@ contains
 
     if (use_nitrif_denitrif) then
        this%ratio_k1(begc:endc,:) = spval
-       call hist_addfld_decomp (fname='ratio_k1', units='none', type2d='levdcmp', &
+       call hist_addfld_decomp (fname='ratio_k1', units='1', type2d='levdcmp', &
             avgflag='A', long_name='ratio_k1', &
             ptr_col=this%ratio_k1, default='inactive')
     end if

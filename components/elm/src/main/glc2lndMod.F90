@@ -142,7 +142,7 @@ contains
     
     if (maxpatch_glcmec > 0) then
        this%icemask_grc(begg:endg) = spval
-       call hist_addfld1d (fname='ICE_MASK',  units='unitless',  &
+       call hist_addfld1d (fname='ICE_MASK',  units='1',  &
             avgflag='I', long_name='Ice sheet mask coverage', &
             ptr_gcell=this%icemask_grc)
     end if

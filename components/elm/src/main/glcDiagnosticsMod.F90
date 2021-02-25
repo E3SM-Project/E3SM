@@ -100,7 +100,7 @@ contains
     if (create_glacier_mec_landunit) then
 
        this%gris_mask_grc(begg:endg) = spval
-       call hist_addfld1d (fname='gris_mask',  units='unitless',  &
+       call hist_addfld1d (fname='gris_mask',  units='1',  &
             avgflag='A', long_name='Greenland mask', &
             ptr_gcell= this%gris_mask_grc)
 
@@ -110,7 +110,7 @@ contains
             ptr_gcell= this%gris_area_grc)
 
        this%aais_mask_grc(begg:endg) = spval
-       call hist_addfld1d (fname='aais_mask',  units='unitless',  &
+       call hist_addfld1d (fname='aais_mask',  units='1',  &
             avgflag='A', long_name='Antarctic mask', &
             ptr_gcell= this%aais_mask_grc)
 
