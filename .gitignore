@@ -15,9 +15,6 @@
 # Logs
 *.log
 
-# Ignore netCDF files.
-*.nc
-
 # Ignore python bytecode files
 *.pyc
 buildnmlc

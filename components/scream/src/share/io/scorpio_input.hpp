@@ -109,10 +109,12 @@ public:
 
 protected:
   // Internal functions
-  void register_dimensions(const std::string name);
   void register_variables();
   void set_degrees_of_freedom();
   void register_views();
+  std::vector<std::string> get_vec_of_dims(const std::vector<FieldTag> tags);
+  std::string get_io_decomp(std::vector<std::string> vec_of_dims);
+  std::vector<Int> get_var_dof(const int dof_len, const bool has_cols);
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
@@ -126,7 +128,6 @@ protected:
   std::vector<std::string>               m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
-  typename dofs_list_type::HostMirror    m_gids;
   std::map<std::string,view_type>        m_view_local;
 
   bool m_is_init  = false;
@@ -196,14 +197,14 @@ inline void AtmosphereInput::init()
     m_is_rhist = m_params.get<bool>("RHIST");
   }
 
-  // Gather data from grid manager:
+  // Check setup against information from grid manager:
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with input grid! scorpio_input.hpp class only supports input on a Physics grid for now.\n");
   auto gids_dev = m_gm->get_grid(m_grid_name)->get_dofs_gids();
-  m_gids = Kokkos::create_mirror_view( gids_dev );
-  Kokkos::deep_copy(m_gids,gids_dev); 
+  auto gids_hst = Kokkos::create_mirror_view( gids_dev );
+  Kokkos::deep_copy(gids_hst,gids_dev); 
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
   int total_dofs;
-  int local_dofs = m_gids.size();
+  int local_dofs = gids_hst.size();
   MPI_Allreduce(&local_dofs, &total_dofs, 1, MPI_INT, MPI_SUM, m_comm.mpi_comm());
   EKAT_REQUIRE_MSG(m_comm.size()<=total_dofs,"Error, PIO interface only allows for the IO comm group size to be less than or equal to the total # of columns in grid.  Consider decreasing size of IO comm group.\n");
 
@@ -214,8 +215,6 @@ inline void AtmosphereInput::init()
     /* Determine the variable name */
     std::string var_name = var_params.get<std::string>(ekat::strint("field",var_i+1));
     m_fields.push_back(var_name);
-    /* Check that all dimensions for this variable are set to be registered */
-    register_dimensions(var_name);
   }
 
   // Now that the fields have been gathered register the local views which will be used to determine output data to be written.
@@ -253,31 +252,6 @@ inline void AtmosphereInput::finalize()
   eam_pio_closefile(m_filename);
 } // finalize
 /* ---------------------------------------------------------- */
-inline void AtmosphereInput::register_dimensions(const std::string name)
-{
-/* 
- * Checks that the dimensions associated with a specific variable will be registered with IO file.
- * INPUT:
- *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
- */
-  auto f = m_field_repo->get_field(name, m_grid_name);
-  auto fid = f.get_header().get_identifier();
-  // check to see if all the dims for this field are already set to be registered.
-  for (int ii=0; ii<fid.get_layout().rank(); ++ii)
-  {
-    // check tag against m_dims map.  If not in there, then add it.
-    auto& tag = fid.get_layout().tags()[ii];
-    auto tag_loc = m_dims.find(e2str(tag));
-    if (tag_loc == m_dims.end()) 
-    { 
-      m_dims.emplace(std::make_pair(e2str(tag),fid.get_layout().dim(ii)));
-    } else {  
-      EKAT_REQUIRE_MSG(m_dims.at(e2str(tag))==fid.get_layout().dim(ii),
-        "Error! Dimension " + e2str(tag) + " on field " + name + " has conflicting lengths");
-    }
-  }
-} // register_dimensions
-/* ---------------------------------------------------------- */
 inline void AtmosphereInput::register_variables()
 {
 /* Register each variable in IO stream with the SCORPIO interface.  See scream_scorpio_interface.* for details.
@@ -293,18 +267,38 @@ inline void AtmosphereInput::register_variables()
     auto fmap = m_field_repo->get_field(name, m_grid_name);
     auto& fid  = fmap.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
-    std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
-    std::vector<std::string> vec_of_dims;
-    for (auto& tag_ii : fid.get_layout().tags()) {
-      io_decomp_tag += "-" + e2str(tag_ii); // Concatenate the dimension string to the io-decomp string
-      vec_of_dims.push_back(e2str(tag_ii)); // Add dimensions string to vector of dims.
-    }
-    std::reverse(vec_of_dims.begin(),vec_of_dims.end()); // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO, may need to delete this line when switching to fully C++/C implementation.
+    std::vector<std::string> vec_of_dims = get_vec_of_dims(fid.get_layout().tags());
+    std::string io_decomp_tag           = get_io_decomp(vec_of_dims);
     get_variable(m_filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);  // TODO  Need to change dtype to allow for other variables.  Currently the field_repo only stores Real variables so it is not an issue, but in the future if non-Real variables are added we will want to accomodate that.
     //TODO: Should be able to simply inquire fromt he netCDF the dimensions for each variable.
   }
   if (m_is_rhist) { get_variable(m_filename,"avg_count","avg_count",1,{"cnt"}, PIO_INT, "cnt"); }
 } // register_variables
+/* ---------------------------------------------------------- */
+inline std::vector<std::string> AtmosphereInput::get_vec_of_dims(const std::vector<FieldTag> tags)
+{
+/* Given a set of dimensions in field tags, extract a vector of strings for those dimensions to be used with IO */
+  std::vector<std::string> vec_of_dims;
+  for (auto& tag_ii : tags)
+  {
+    vec_of_dims.push_back(e2str(tag_ii));
+  }
+  std::reverse(vec_of_dims.begin(),vec_of_dims.end()); // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO, may need to delete this line when switching to fully C++/C implementation.
+  return vec_of_dims;
+}
+/* ---------------------------------------------------------- */
+inline std::string AtmosphereInput::get_io_decomp(std::vector<std::string> vec_of_dims)
+{
+/* Given a vector of field dimensions, create a unique decomp string to register with I/O/
+ * Note: We are hard-coding for only REAL input here.  TODO: would be to allow for other dtypes
+ */
+  std::string io_decomp_tag = "Real";
+  for (auto& tag_ii : vec_of_dims)
+  {
+    io_decomp_tag += "-" + tag_ii;
+  }
+  return io_decomp_tag;
+}
 /* ---------------------------------------------------------- */
 inline void AtmosphereInput::register_views()
 {
@@ -343,35 +337,11 @@ inline void AtmosphereInput::set_degrees_of_freedom()
   {
     auto fmap = m_field_repo->get_field(name, m_grid_name);
     auto& fid  = fmap.get_header().get_identifier();
-    // bool has_cols = true;
-    Int dof_len, n_dim_len, num_cols;
-    // Total number of values represented by this rank for this field is given by the field_layout size.
-    dof_len = fid.get_layout().size();
-    // For a SCREAM Physics grid, only the total number of columns is decomposed over MPI ranks.  The global id (gid)
-    // is stored here as m_gids.  Thus, for this field, the total number of dof's in the other dimensions (i.e. levels)
-    // can be found by taking the quotient of dof_len and the length of m_gids.
-    if (fid.get_layout().has_tag(FieldTag::Column))
-    {
-      num_cols = m_gids.size();
-    } else {
-      // This field is not defined over columns
-      // TODO, when we allow for dynamics mesh this check will need to be adjusted for the element tag as well.
-      num_cols = 1;
-      // has_cols = false;
-    }
-    n_dim_len = dof_len/num_cols;
     // Given dof_len and n_dim_len it should be possible to create an integer array of "global input indices" for this
     // field and this rank. For every column (i.e. gid) the PIO indices would be (gid * n_dim_len),...,( (gid+1)*n_dim_len - 1).
-    std::vector<Int> var_dof;
-    for (size_t ii=0;ii<m_gids.size();++ii)
-    {
-      for (int jj=0;jj<n_dim_len;++jj)
-      {
-        var_dof.push_back(m_gids(ii)*n_dim_len + jj);
-      }
-    }
-    set_dof(m_filename,name,dof_len,var_dof.data());
-    m_dofs.emplace(std::make_pair(name,dof_len));
+    std::vector<Int> var_dof = get_var_dof(fid.get_layout().size(), fid.get_layout().has_tag(FieldTag::Column));
+    set_dof(m_filename,name,var_dof.size(),var_dof.data());
+    m_dofs.emplace(std::make_pair(name,var_dof.size()));
   }
   if (m_is_rhist)
   {
@@ -380,10 +350,41 @@ inline void AtmosphereInput::set_degrees_of_freedom()
     m_dofs.emplace(std::make_pair("avg_count",1));
   }
   /* TODO: 
-   * Adjust DOF to accomodate packing for fields 
    * Gather DOF info directly from grid manager
   */
 } // set_degrees_of_freedom
+/* ---------------------------------------------------------- */
+inline std::vector<Int> AtmosphereInput::get_var_dof(const int dof_len, const bool has_cols)
+{
+  std::vector<Int> var_dof;
+  int num_cols;
+  // Gather the column degrees of freedom for this variable
+  // Total number of values represented by this rank for this field is given by the dof_len.
+  // For a SCREAM Physics grid, only the total number of columns is decomposed over MPI ranks.  The global id (gid)
+  // is stored here as gids_hst. Thus, for this field, the total number of dof's in the other dimensions (i.e. levels)
+  // can be found by taking the quotient of dof_len and the length of gids_hst.
+  auto gids_dev = m_gm->get_grid(m_grid_name)->get_dofs_gids();
+  auto gids_hst = Kokkos::create_mirror_view( gids_dev );
+  Kokkos::deep_copy(gids_hst,gids_dev);
+  if (has_cols)
+  {
+    num_cols = gids_hst.size();
+  } else {
+    // This field is not defined over columns
+    // TODO, when we allow for dynamics mesh this check will need to be adjusted for the element tag as well.
+    num_cols = 1;
+  } 
+  Int n_dim_len = dof_len/num_cols;
+  // Determine the individual index locations for each degree of freedom.
+  for (int ii=0;ii<num_cols;++ii)
+  {
+    for (int jj=0;jj<n_dim_len;++jj)
+    {
+      var_dof.push_back(gids_hst(ii)*n_dim_len + jj);
+    }
+  }
+  return var_dof; 
+}
 /* ---------------------------------------------------------- */
 } //namespace scream
 #endif // SCREAM_SCORPIO_INPUT_HPP
