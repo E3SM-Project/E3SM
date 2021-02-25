@@ -139,7 +139,7 @@ module ncdio_pio
   integer,parameter,private :: debug = 0             ! local debug level
 
   integer , parameter  , public  :: max_string_len = 256     ! length of strings
-  real(r8), parameter  , public  :: fillvalue = 1.e20_r8     ! fill value for netcdf fields
+  real(r8), parameter  , public  :: fillvalue = 1.e36_r8     ! fill value for netcdf fields
 
   integer, public :: io_type
 
