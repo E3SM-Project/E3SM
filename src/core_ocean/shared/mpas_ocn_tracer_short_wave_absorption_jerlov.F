@@ -130,7 +130,7 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND) :: depth, fluxRemaining
+      real (kind=RKIND) :: depth, fluxRemaining, layerFraction
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
 
@@ -189,6 +189,23 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
+
+      if(config_enable_shortwave_energy_fixer) then
+#ifndef CPRPGI
+         !$omp parallel
+         !$omp do schedule(runtime) private(k, layerFraction)
+#endif
+         do iCell = 1, nCells
+            layerFraction = bottomlayerShortwaveTemperatureFlux(iCell) / (maxLevelCell(iCell) + 1.0E-15_RKIND)
+            do k=1,maxLevelCell(iCell)
+               tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + layerFraction
+            end do
+         end do
+#ifndef CPRPGI
+         !$omp end do
+         !$omp end parallel
+#endif
+      end if
 
       deallocate(weights)
 
