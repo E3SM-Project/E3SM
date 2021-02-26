@@ -12,6 +12,7 @@ module lnd2atmType
   use elm_varpar    , only : numrad, ndst, nlevsno, nlevgrnd !ndst = number of dust bins.
   use elm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
   use elm_varctl    , only : iulog, use_c13, use_cn, use_lch4
+  use elm_varctl    , only : use_lake_bgc
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   !
@@ -43,12 +44,14 @@ module lnd2atmType
      real(r8), pointer :: fsa_grc            (:)   => null() ! solar rad absorbed (total) (W/m**2)
      real(r8), pointer :: nee_grc            (:)   => null() ! net CO2 flux (kg CO2/m**2/s) [+ to atm]
      real(r8), pointer :: nem_grc            (:)   => null() ! gridcell average net methane correction to CO2 flux (g C/m^2/s)
+     real(r8), pointer :: nem_lake_grc       (:)   => null() ! gridcell average net methane correction to CO2 flux by lake methane production (g C/m^2/s)
      real(r8), pointer :: ram1_grc           (:)   => null() ! aerodynamical resistance (s/m)
      real(r8), pointer :: fv_grc             (:)   => null() ! friction velocity (m/s) (for dust model)
      real(r8), pointer :: flxdst_grc         (:,:) => null() ! dust flux (size bins)
      real(r8), pointer :: ddvel_grc          (:,:) => null() ! dry deposition velocities
      real(r8), pointer :: flxvoc_grc         (:,:) => null() ! VOC flux (size bins)
      real(r8), pointer :: flux_ch4_grc       (:)   => null() ! net CH4 flux (kg C/m**2/s) [+ to atm]
+     real(r8), pointer :: flux_lake_ch4_grc  (:)   => null() ! net CH4 flux from lakes (kg C/m**2/s) [+ to atm]
      ! lnd->rof
      real(r8), pointer :: qflx_rofliq_grc      (:) => null() ! rof liq forcing
      real(r8), pointer :: qflx_rofliq_qsur_grc (:) => null() ! rof liq -- surface runoff component
@@ -128,10 +131,12 @@ contains
     allocate(this%fsa_grc              (begg:endg))            ; this%fsa_grc              (:) =ival
     allocate(this%nee_grc              (begg:endg))            ; this%nee_grc              (:) =ival
     allocate(this%nem_grc              (begg:endg))            ; this%nem_grc              (:) =ival
+    allocate(this%nem_lake_grc         (begg:endg))            ; this%nem_lake_grc         (:) =ival
     allocate(this%ram1_grc             (begg:endg))            ; this%ram1_grc             (:) =ival
     allocate(this%fv_grc               (begg:endg))            ; this%fv_grc               (:) =ival
     allocate(this%flxdst_grc           (begg:endg,1:ndst))     ; this%flxdst_grc         (:,:) =ival
     allocate(this%flux_ch4_grc         (begg:endg))            ; this%flux_ch4_grc         (:) =ival
+    allocate(this%flux_lake_ch4_grc    (begg:endg))            ; this%flux_lake_ch4_grc    (:) =ival
     allocate(this%qflx_rofliq_grc      (begg:endg))            ; this%qflx_rofliq_grc      (:) =ival
     allocate(this%qflx_rofliq_qsur_grc (begg:endg))            ; this%qflx_rofliq_qsur_grc (:) =ival
     allocate(this%coszen_str           (begg:endg))            ; this%coszen_str           (:) =ival
@@ -194,7 +199,7 @@ contains
          avgflag='A', long_name='excess snowfall due to snow capping', &
          ptr_lnd=this%qflx_rofice_grc)
 
-    if (use_lch4) then
+    if (use_lch4 .or. use_lake_bgc) then
        this%flux_ch4_grc(begg:endg) = 0._r8
        call hist_addfld1d (fname='FCH4', units='kgC/m2/s', &
             avgflag='A', long_name='Gridcell surface CH4 flux to atmosphere (+ to atm)', &

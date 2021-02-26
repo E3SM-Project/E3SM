@@ -12,6 +12,7 @@ module lnd2atmMod
   use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit
+  use elm_varctl           , only : use_lake_bgc
   use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
@@ -138,9 +139,16 @@ contains
   !------------------------------------------------------------------------
   subroutine lnd2atm(bounds, &
        atm2lnd_vars, surfalb_vars, frictionvel_vars, &
+<<<<<<< HEAD
        energyflux_vars, &
        solarabs_vars, drydepvel_vars, &
        vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars)
+=======
+       waterstate_vars, waterflux_vars, energyflux_vars, &
+       solarabs_vars, carbonflux_vars, drydepvel_vars, &
+       vocemis_vars, dust_vars, ch4_vars, lakebgc_vars, &
+       soilhydrology_vars, lnd2atm_vars) 
+>>>>>>> First draft of the E3SM-LakeBGC model
     !
     ! !DESCRIPTION:
     ! Compute lnd2atm_vars component of gridcell derived type
@@ -160,6 +168,7 @@ contains
     type(vocemis_type)     , intent(in)     :: vocemis_vars
     type(dust_type)        , intent(in)     :: dust_vars
     type(ch4_type)         , intent(in)     :: ch4_vars
+    type(lakebgc_type)     , intent(in)     :: lakebgc_vars
     type(soilhydrology_type), intent(in)    :: soilhydrology_vars
     type(lnd2atm_type)     , intent(inout)  :: lnd2atm_vars
     !
@@ -302,6 +311,7 @@ contains
             nee_grc(bounds%begg:bounds%endg)   , &
             c2l_scale_type= unity, l2g_scale_type=unity)
 
+<<<<<<< HEAD
        if (use_lch4) then
           if (.not. ch4offline) then
              ! Adjust flux of CO2 by the net conversion of mineralizing C to CH4
@@ -310,6 +320,23 @@ contains
                 nee_grc(g) = nee_grc(g) + lnd2atm_vars%nem_grc(g)
              end do
           end if
+=======
+       if (use_lch4 .and. (.not. ch4offline)) then
+          ! Adjust flux of CO2 by the net conversion of mineralizing C to CH4
+          do g = bounds%begg,bounds%endg
+             ! nem is in g C/m2/sec
+             if (use_lake_bgc) then
+                lnd2atm_vars%nem_grc(g) = lnd2atm_vars%nem_grc(g) + lnd2atm_vars%nem_lake_grc(g)
+             end if
+             lnd2atm_vars%nee_grc(g) = lnd2atm_vars%nee_grc(g) + lnd2atm_vars%nem_grc(g) 
+          end do
+       else if (use_lake_bgc) then
+          do g = bounds%begg,bounds%endg
+             ! nem is in g C/m2/sec
+             lnd2atm_vars%nem_grc(g) = lnd2atm_vars%nem_lake_grc(g)
+             lnd2atm_vars%nee_grc(g) = lnd2atm_vars%nee_grc(g) + lnd2atm_vars%nem_grc(g)
+          end do
+>>>>>>> First draft of the E3SM-LakeBGC model
        end if
 
        ! Convert from gC/m2/s to kgCO2/m2/s
@@ -344,13 +371,47 @@ contains
          flxdst_grc           (bounds%begg:bounds%endg,:), &
          p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
 
+    if (use_lake_bgc) then
+       call c2g( bounds, &
+            lakebgc_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
+            lnd2atm_vars%flux_lake_ch4_grc     (bounds%begg:bounds%endg), &
+            c2l_scale_type = 'unity', l2g_scale_type='unity' )
+    end if
 
     ! ch4 flux
-    if (use_lch4 .and. (.not. is_active_betr_bgc)) then
+    if ((use_lch4 .and. (.not. is_active_betr_bgc)) .and. use_lake_bgc) then
        call c2g( bounds,     &
+<<<<<<< HEAD
             ch4_surf_flux_tot_col(bounds%begc:bounds%endc) , &
             flux_ch4_grc         (bounds%begg:bounds%endg) , &
             c2l_scale_type= unity, l2g_scale_type=unity )
+=======
+            ch4_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
+            lnd2atm_vars%flux_ch4_grc      (bounds%begg:bounds%endg), &
+            c2l_scale_type= 'unity', l2g_scale_type='unity' )
+
+       call c2g( bounds, &
+            lakebgc_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
+            lnd2atm_vars%flux_lake_ch4_grc     (bounds%begg:bounds%endg), &
+            c2l_scale_type = 'unity', l2g_scale_type='unity' )
+
+       do g = bounds%begg, bounds%endg
+          lnd2atm_vars%flux_ch4_grc(g) = lnd2atm_vars%flux_ch4_grc(g) + lnd2atm_vars%flux_lake_ch4_grc(g)
+       end do
+    else if (use_lch4 .and. (.not. is_active_betr_bgc)) then
+       call c2g( bounds,     &
+            ch4_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
+            lnd2atm_vars%flux_ch4_grc      (bounds%begg:bounds%endg), &
+            c2l_scale_type= 'unity', l2g_scale_type='unity' )
+    else if (use_lake_bgc) then
+       call c2g( bounds, &
+            lakebgc_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
+            lnd2atm_vars%flux_lake_ch4_grc     (bounds%begg:bounds%endg), &
+            c2l_scale_type = 'unity', l2g_scale_type='unity' )
+       do g = bounds%begg, bounds%endg
+          lnd2atm_vars%flux_ch4_grc(g) = lnd2atm_vars%flux_lake_ch4_grc(g)
+       end do
+>>>>>>> First draft of the E3SM-LakeBGC model
     end if
 
     !----------------------------------------------------

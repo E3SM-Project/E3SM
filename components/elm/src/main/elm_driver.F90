@@ -14,7 +14,7 @@ module elm_driver
   use elm_varpar             , only : nlevtrc_soil, nlevsoi
   use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr, use_extrasnowlayers
   use elm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
-  use elm_varctl             , only : use_erosion, use_fates_sp
+  use elm_varctl             , only : use_erosion, use_fates_sp, use_lake_bgc
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
   use clm_time_manager       , only : get_curr_calday, get_days_per_year
   use elm_varpar             , only : nlevsno, nlevgrnd, crop_prog
@@ -75,6 +75,7 @@ module elm_driver
   use pdepStreamMod          , only : pdep_interp
   use ActiveLayerMod         , only : alt_calc
   use CH4Mod                 , only : CH4
+  use LakeBGCDynMod          , only : LakeBGCDynamics
   use DUSTMod                , only : DustDryDep, DustEmission
   use VOCEmissionMod         , only : VOCEmission
 
@@ -108,6 +109,7 @@ module elm_driver
   use elm_instMod            , only : energyflux_vars
   use elm_instMod            , only : frictionvel_vars
   use elm_instMod            , only : lakestate_vars
+  use elm_instMod            , only : lakebgc_vars 
   use elm_instMod            , only : photosyns_vars
   use elm_instMod            , only : sedflux_vars
   use elm_instMod            , only : soilstate_vars
@@ -808,7 +810,7 @@ contains
        call LakeTemperature(bounds_clump,             &
             filter(nc)%num_lakec, filter(nc)%lakec,   &
             filter(nc)%num_lakep, filter(nc)%lakep,   &
-            solarabs_vars, soilstate_vars,  ch4_vars, &
+            solarabs_vars, soilstate_vars,            &
             energyflux_vars, lakestate_vars)
        call t_stopf('bgplake')
 
@@ -1153,12 +1155,20 @@ contains
           call t_startf('ch4')
           call CH4 (bounds_clump,                                                                  &
                filter(nc)%num_soilc, filter(nc)%soilc,                                             &
-               filter(nc)%num_lakec, filter(nc)%lakec,                                             &
                filter(nc)%num_soilp, filter(nc)%soilp,                                             &
                atm2lnd_vars, lakestate_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
                energyflux_vars, ch4_vars, lnd2atm_vars, alm_fates)
           call t_stopf('ch4')
        end if
+
+         if (use_lake_bgc) then
+            call t_startf('lakech4')
+            call LakeBGCDynamics (bounds_clump,                                             &
+                 filter(nc)%num_lakec, filter(nc)%lakec,                                   &
+                 filter(nc)%num_lakep, filter(nc)%lakep,                                   &
+                 soilstate_vars, lakestate_vars, lakebgc_vars, lnd2atm_vars)
+            call t_stopf('lakech4')
+         end if
 
        ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
        call t_startf('depvel')
@@ -1474,7 +1484,7 @@ contains
           call restFile_write( bounds_proc, filer,                                            &
                atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
                carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, lakebgc_vars,     &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
                waterflux_vars, waterstate_vars, sedflux_vars,                                 &

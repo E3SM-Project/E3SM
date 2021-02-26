@@ -11,6 +11,7 @@ module TopounitDataType
   use abortutils     , only : endrun
   use elm_varcon     , only : spval, ispval
   use elm_varctl     , only : iulog, use_cn, use_fates, use_lch4
+  use elm_varctl     , only : use_lake_bgc
   use elm_varpar     , only : numrad
   use histFileMod    , only : hist_addfld1d, hist_addfld2d
   use ncdio_pio      , only : file_desc_t, ncd_double
@@ -176,7 +177,7 @@ module TopounitDataType
          avgflag='A', long_name='atmospheric partial pressure of CO2', &
          ptr_topo=this%pco2bot,t2g_scale_type='unity')
 
-    if (use_lch4) then
+    if (use_lch4 .or. use_lake_bgc) then
        this%pch4bot(begt:endt) = spval
        call hist_addfld1d (fname='PCH4', units='Pa',  &
             avgflag='A', long_name='atmospheric partial pressure of CH4', &

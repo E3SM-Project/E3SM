@@ -25,16 +25,18 @@ module LakeStateType
      real(r8), pointer :: etal_col          (:)   => null()! col lake extinction coefficient from surface data (1/m)
 
      ! Time varying variables
-     real(r8), pointer :: lake_raw_col      (:)   => null()! col aerodynamic resistance for moisture (s/m)
-     real(r8), pointer :: ks_col            (:)   => null()! col coefficient for calculation of decay of eddy diffusivity with depth
-     real(r8), pointer :: ws_col            (:)   => null()! col surface friction velocity (m/s)
-     real(r8), pointer :: ust_lake_col      (:)   => null()! col friction velocity (m/s)
-     real(r8), pointer :: betaprime_col     (:)   => null()! col effective beta: sabg_lyr(p,jtop) for snow layers, beta otherwise
-     real(r8), pointer :: savedtke1_col     (:)   => null()! col top level eddy conductivity from previous timestep (W/mK)
-     real(r8), pointer :: lake_icefrac_col  (:,:) => null()! col mass fraction of lake layer that is frozen
-     real(r8), pointer :: lake_icethick_col (:)   => null()! col ice thickness (m) (integrated if lakepuddling)
-     real(r8), pointer :: lakeresist_col    (:)   => null()! col [s/m] (Needed for calc. of grnd_ch4_cond)
-     real(r8), pointer :: ram1_lake_patch   (:)   => null()! patch aerodynamical resistance (s/m)
+     real(r8), pointer :: lake_raw_col      (:)   ! col aerodynamic resistance for moisture (s/m)
+     real(r8), pointer :: ks_col            (:)   ! col coefficient for calculation of decay of eddy diffusivity with depth
+     real(r8), pointer :: ws_col            (:)   ! col surface friction velocity (m/s)
+     real(r8), pointer :: ust_lake_col      (:)   ! col friction velocity (m/s)          
+     real(r8), pointer :: betaprime_col     (:)   ! col effective beta: sabg_lyr(p,jtop) for snow layers, beta otherwise
+     real(r8), pointer :: savedtke1_col     (:)   ! col top level eddy conductivity from previous timestep (W/mK)
+     real(r8), pointer :: lake_icefrac_col  (:,:) ! col mass fraction of lake layer that is frozen
+     real(r8), pointer :: lake_icethick_col (:)   ! col ice thickness (m) (integrated if lakepuddling)
+     real(r8), pointer :: lake_kme_col      (:,:) ! col molecular + eddy diffusion coefficient (m**2/s) 
+     real(r8), pointer :: lake_hmix_col     (:)   ! col mixing depth (m)
+     real(r8), pointer :: ram1_lake_patch   (:)   ! patch aerodynamical resistance (s/m)
+     real(r8), pointer :: lake_fsds_vis_col (:,:) ! col incident vis radiation (W/m^2) 
 
    contains
 
@@ -69,7 +71,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
-    use elm_varpar    , only: nlevlak, nlevsno
+    use elm_varpar    , only: nlevlak, nlevsno, nlevgrnd 
     !
     ! !ARGUMENTS:
     class(lakestate_type) :: this
@@ -90,16 +92,18 @@ contains
 
     allocate(this%etal_col           (begc:endc))           ; this%etal_col           (:)   = nan
     allocate(this%lakefetch_col      (begc:endc))           ; this%lakefetch_col      (:)   = nan
-    allocate(this%lakeresist_col     (begc:endc))           ; this%lakeresist_col     (:)   = nan
-    allocate(this%savedtke1_col      (begc:endc))           ; this%savedtke1_col      (:)   = spval
+    allocate(this%savedtke1_col      (begc:endc))           ; this%savedtke1_col      (:)   = spval  
     allocate(this%lake_icefrac_col   (begc:endc,1:nlevlak)) ; this%lake_icefrac_col   (:,:) = nan
     allocate(this%lake_icethick_col  (begc:endc))           ; this%lake_icethick_col  (:)   = nan
-    allocate(this%ust_lake_col       (begc:endc))           ; this%ust_lake_col       (:)   = spval
+    allocate(this%ust_lake_col       (begc:endc))           ; this%ust_lake_col       (:)   = spval   
     allocate(this%ram1_lake_patch    (begp:endp))           ; this%ram1_lake_patch    (:)   = nan
     allocate(this%lake_raw_col       (begc:endc))           ; this%lake_raw_col       (:)   = nan
     allocate(this%ks_col             (begc:endc))           ; this%ks_col             (:)   = nan
     allocate(this%ws_col             (begc:endc))           ; this%ws_col             (:)   = nan
+    allocate(this%lake_hmix_col      (begc:endc))           ; this%lake_hmix_col      (:)   = nan
     allocate(this%betaprime_col      (begc:endc))           ; this%betaprime_col      (:)   = nan
+    allocate(this%lake_kme_col       (begc:endc,1:nlevlak+nlevgrnd)) ; this%lake_kme_col       (:,:) = nan
+    allocate(this%lake_fsds_vis_col  (begc:endc,1:nlevlak)) ; this%lake_fsds_vis_col  (:,:) = nan
 
   end subroutine InitAllocate
 
@@ -150,6 +154,11 @@ contains
            avgflag='A', long_name='friction velocity (lakes only)', &
            ptr_col=this%ust_lake_col, set_nolake=spval, default='inactive')
 
+      this%lake_fsds_vis_col(begc:endc,:) = spval
+      call hist_addfld2d (fname='FSDS_VIS_LAKE',  units='W/m^2', type2d='levlak', &
+           avgflag='A', long_name='incident vis radiation', &
+           ptr_col=this%lake_fsds_vis_col, default='inactive')
+
     end subroutine InitHistory
 
     !-----------------------------------------------------------------------
@@ -161,8 +170,8 @@ contains
       ! !USES:
       use elm_varctl , only : fsurdat
       use elm_varctl , only : iulog
-      use elm_varpar , only : nlevlak
-      use elm_varcon , only : tkwat
+      use elm_varpar , only : nlevlak, nlevgrnd
+      use elm_varcon , only : tkwat, denh2o, cpliq
       use fileutils  , only : getfil
       use ncdio_pio  , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
       use ncdio_pio  , only : ncd_pio_openfile, ncd_inqfdims, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
@@ -242,6 +251,15 @@ contains
 
             ! Set column friction vlocity
             this%ust_lake_col(c)  = 0.1_r8
+
+            this%lake_hmix_col(c) = 0._r8
+
+            ! Set heat diffusivity
+            this%lake_kme_col(c,1:nlevlak) = tkwat / (cpliq*denh2o) 
+            this%lake_kme_col(c,nlevlak+1:nlevlak+nlevgrnd) = 2.57e-7_r8 
+
+            ! Set incident vis radiation
+            this%lake_fsds_vis_col(c,1:nlevlak) = 0._r8
          end if
       end do
 

@@ -16,7 +16,7 @@ module restFileMod
   use histFileMod          , only : hist_restart_ncd
   use elm_varpar           , only : crop_prog
   use elm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
-  use elm_varctl           , only : use_erosion
+  use elm_varctl           , only : use_erosion, use_lake_bgc
   use elm_varctl           , only : create_glacier_mec_landunit, iulog 
   use elm_varcon           , only : c13ratio, c14ratio
   use elm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
@@ -37,6 +37,7 @@ module restFileMod
   use EnergyFluxType       , only : energyflux_type
   use FrictionVelocityType , only : frictionvel_type
   use LakeStateType        , only : lakestate_type
+  use LakeBGCType          , only : lakebgc_type
   use PhotosynthesisType   , only : photosyns_type
   use SedFluxType          , only : sedflux_type
   use SoilHydrologyType    , only : soilhydrology_type  
@@ -112,7 +113,7 @@ contains
   subroutine restFile_write( bounds, file,                                            &
        atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-       ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+       ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, lakebgc_vars,     &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
        waterflux_vars, waterstate_vars, sedflux_vars,                                 &
@@ -145,6 +146,7 @@ contains
     type(energyflux_type)          , intent(in)    :: energyflux_vars
     type(frictionvel_type)         , intent(inout) :: frictionvel_vars
     type(lakestate_type)           , intent(in)    :: lakestate_vars
+    type(lakebgc_type)             , intent(in)    :: lakebgc_vars
     type(nitrogenstate_type)       , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)        , intent(in)    :: nitrogenflux_vars
     type(photosyns_type)           , intent(in)    :: photosyns_vars
@@ -260,6 +262,9 @@ contains
        call ch4_vars%restart(bounds, ncid, flag='define')
     end if
 
+    if (use_lake_bgc) then
+       call lakebgc_vars%restart(bounds, ncid, flag='define')
+    end if
 
     if (use_cn .or. use_fates) then
         call cnstate_vars%Restart(bounds, ncid, flag='define')
@@ -408,6 +413,10 @@ contains
         call col_pf%Restart(bounds, ncid, flag='write')
     end if
    
+    if (use_lake_bgc) then
+       call lakebgc_vars%restart( bounds, ncid, flag='write' )
+    end if
+
     if (use_cn) then
        call veg_cs%restart(bounds, ncid, flag='write', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
@@ -482,7 +491,7 @@ contains
   subroutine restFile_read( bounds, file,                                             &
        atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-       ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
+       ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, lakebgc_vars,     &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
        waterflux_vars, waterstate_vars, sedflux_vars,                                 &
@@ -520,6 +529,7 @@ contains
     type(energyflux_type)          , intent(inout) :: energyflux_vars
     type(frictionvel_type)         , intent(inout) :: frictionvel_vars
     type(lakestate_type)           , intent(inout) :: lakestate_vars
+    type(lakebgc_type)             , intent(inout) :: lakebgc_vars
     type(nitrogenstate_type)       , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)        , intent(inout) :: nitrogenflux_vars
     type(photosyns_type)           , intent(inout) :: photosyns_vars
@@ -648,6 +658,10 @@ contains
         call col_pf%Restart(bounds, ncid, flag='read')
     end if
    
+    if (use_lake_bgc) then
+       call lakebgc_vars%restart( bounds, ncid, flag='read' )
+    end if
+
     if (use_cn) then
        call veg_cs%restart(bounds, ncid, flag='read', &
             carbon_type='c12', cnstate_vars=cnstate_vars)

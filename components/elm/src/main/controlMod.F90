@@ -271,7 +271,8 @@ contains
     namelist /elm_inparm/ &
          use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
-         use_snicar_ad, use_extrasnowlayers, use_vancouver, use_mexicocity, use_noio
+         use_snicar_ad, use_extrasnowlayers, use_vancouver, use_mexicocity, &
+         use_noio, use_lake_bgc
 
     ! cpl_bypass variables
     namelist /elm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
@@ -665,6 +666,7 @@ contains
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_lake_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! initial file variables
     call mpi_bcast (nrevsn, len(nrevsn), MPI_CHARACTER, 0, mpicom, ier)
@@ -944,6 +946,8 @@ contains
     write(iulog,*) '    use_betr = ', use_betr
     write(iulog,*) '    use_atm_downscaling_to_topunit = ', use_atm_downscaling_to_topunit
     write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method
+    write(iulog,*) '    use_lake_bgc = ', use_lake_bgc
+    write(iulog,*) '    use_erosion = ', use_erosion
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
     write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)    
@@ -1097,6 +1101,9 @@ contains
     if (use_lch4) then
        write(iulog,*) ' anoxia (applied to soil decomposition)             = ',anoxia
        write(iulog,*) ' anoxia_wtsat (weight anoxia by inundated fraction) = ',anoxia_wtsat
+    end if
+    if (use_erosion) then
+       write(iulog,*) ' erosion_ccycle = ', erosion_ccycle
     end if
     ! Lakes
     write(iulog,*)

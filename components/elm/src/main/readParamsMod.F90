@@ -6,7 +6,7 @@ module readParamsMod
   ! module used to read parameters for individual modules
   !
   use elm_varctl   , only: use_cn, use_century_decomp
-  use elm_varctl   , only: use_lch4, use_fates
+  use elm_varctl   , only: use_lch4, use_fates, use_lake_bgc
   implicit none
   save
   private
@@ -89,6 +89,7 @@ contains
     use NitrifDenitrifMod      , only : readNitrifDenitrifParams
     use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
     use CH4Mod                   , only : readCH4Params
+    use LakeBGCDynMod            , only : readLakeBGCParams
     use elm_varctl               , only : paramfile, iulog, use_betr, use_hydrstress
     use spmdMod                  , only : masterproc
     use fileutils                , only : getfil
@@ -162,6 +163,10 @@ contains
        else
          call readGapMortParams (ncid)
        endif
+
+       if (use_lake_bgc) then
+         call readLakeBGCParams (ncid)
+       end if
     end if
     !
     ! Biogeophysics

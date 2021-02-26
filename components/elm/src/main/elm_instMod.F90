@@ -28,6 +28,7 @@ module elm_instMod
   use EnergyFluxType             , only : energyflux_type
   use FrictionVelocityType       , only : frictionvel_type
   use LakeStateType              , only : lakestate_type
+  use LakeBGCType                , only : lakebgc_type
   use PhotosynthesisType         , only : photosyns_type
   use SedFluxType                , only : sedflux_type
   use SoilHydrologyType          , only : soilhydrology_type
@@ -110,6 +111,7 @@ module elm_instMod
   type(energyflux_type)                               :: energyflux_vars
   type(frictionvel_type)                              :: frictionvel_vars
   type(lakestate_type)                                :: lakestate_vars
+  type(lakebgc_type)                                  :: lakebgc_vars
   type(photosyns_type)                                :: photosyns_vars
   type(sedflux_type)                                  :: sedflux_vars
   type(soilstate_type)                                :: soilstate_vars
@@ -435,6 +437,8 @@ contains
     call frictionvel_vars%Init(bounds_proc)
 
     call lakestate_vars%Init(bounds_proc)
+
+    call lakebgc_vars%Init(bounds_proc)
 
     call photosyns_vars%Init(bounds_proc)
 
