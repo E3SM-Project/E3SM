@@ -870,7 +870,7 @@ contains
     !-----------------------------------------------------------------------      
     !         ... Set upper boundary mmr values
     !-----------------------------------------------------------------------      
-    call set_fstrat_vals( vmr, pmid, pint, troplev, calday, ncol,lchnk )
+    if(.not. linoz_v3) call set_fstrat_vals( vmr, pmid, pint, troplev, calday, ncol,lchnk )
 
     !-----------------------------------------------------------------------      
     !         ... Set fixed lower boundary mmr values
