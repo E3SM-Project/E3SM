@@ -1,2 +1,0 @@
-This directory contains a stub implementation of (a subset of) PIO. This can be
-built in place of the true PIO library in unit tests.

@@ -1,2 +1,0 @@
-This directory tests the version of shr_abort_mod that is used in unit tests. It
-does NOT test the production version of shr_abort_mod.

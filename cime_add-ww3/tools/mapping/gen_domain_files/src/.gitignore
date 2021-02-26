@@ -1,7 +1,0 @@
-.env_mach*
-env_mach*
-Depends*
-Macros.make
-*.o
-*.mod
-*.optrpt

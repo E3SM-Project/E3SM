@@ -1,6 +1,0 @@
-These modifications should result in a case that has the same namelist settings as the
-v1 low-res CMIP6 production runs.
-
-Run these for at least 1 day to see all output.
-Also use the CMIP6 compsets.
-If running longer, change the nhtfrq for the first history file.

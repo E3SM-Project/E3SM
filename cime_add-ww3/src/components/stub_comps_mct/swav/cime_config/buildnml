@@ -1,9 +1,0 @@
-#!/usr/bin/env python
-
-"""
-build stub model namelist
-"""
-# DO NOTHING
-#pylint: disable=unused-argument
-def buildnml(case, caseroot, compname):
-    pass

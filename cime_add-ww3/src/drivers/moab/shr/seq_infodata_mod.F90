@@ -1,1 +1,0 @@
-../../mct/shr/seq_infodata_mod.F90

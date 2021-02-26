@@ -1,2 +1,0 @@
-./xmlchange HIST_OPTION=ndays
-./xmlchange HIST_N=1
