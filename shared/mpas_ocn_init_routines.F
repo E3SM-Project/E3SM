@@ -145,15 +145,26 @@ subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
       call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
       ! minLevelEdgeTop is the minimum (shallowest) of the surrounding cells
+      ! if the water column is dry, set minLevelCell outside of bounds
+      
+      ! prevent dry cells from determining minimum
+      do iCell = 1, nCells+1
+         if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = nVertLevels+1 
+      end do
       do iEdge = 1, nEdges
          minLevelEdgeTop(iEdge) = &
             min( minLevelCell(cellsOnEdge(1,iEdge)), &
                  minLevelCell(cellsOnEdge(2,iEdge)) )
       end do
+      ! set back to default
+      do iCell = 1, nCells+1
+         if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = 1 
+      end do
 
       minLevelEdgeTop(nEdges+1) = 0
 
       ! minLevelEdgeBot is the maximum (deepest) of the surrounding cells
+      
       do iEdge = 1, nEdges
          minLevelEdgeBot(iEdge) = &
             max( minLevelCell(cellsOnEdge(1,iEdge)), &
@@ -175,6 +186,8 @@ subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
       minLevelVertexBot(nVertices+1) = 0
 
       ! minLevelVertexTop is the minimum (shallowest) of the surrounding cells
+      ! if the water column is dry, set minLevelCell outside of bounds
+      
       do iVertex = 1,nVertices
          minLevelVertexTop(iVertex) = minLevelCell(cellsOnVertex(1,iVertex))
          do i = 2, vertexDegree
