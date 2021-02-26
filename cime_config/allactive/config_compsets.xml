@@ -20,7 +20,7 @@
     OCN  = [MPASO, DOCN, SOCN]
     ROF  = [MOSART, SROF]
     GLC  = [MALI, SGLC]
-    WAV  = [DWAV, XWAV, SWAV]
+    WAV  = [WW3,DWAV, XWAV, SWAV]
     ESP  = [SESP]
     BGC  = optional BGC scenario
 
