@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+
+"""
+Create a netcdf file for a cubed sphere geometry, with given vertical and
+horizontal resolution, adding requested variable (to be set to 0).
+"""
+
+from utils import check_minimum_python_version
+check_minimum_python_version(3, 4)
+
+import argparse, sys, os, pathlib
+
+from nc_file_init import NcFileInit
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <ARGS> [--verbose]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Creates netcdf file 'my_file.nc' for ne=4 and 72 vertical levels, adding no variables\033[0m
+
+        > ./{0} -c -f my_file.nc --ne 4 --np 4 --nlev 72
+
+    \033[1;32m# Appends to existing netcdf file, adding 3d mid-layer vector (2 components) 'horiz_velocity'
+
+        > ./{0} -f my_file.nc --mid-vector-3d horiz_velocity:2
+
+    \033[1;32m# Appends to existing netcdf file, adding 3d mid-layer scalars 'temperature' and 'pressure',
+      initing pressure to 1.0 and temperature to 273.
+
+        > ./{0} -a my_file.nc --mid-scalars-3d temperature=273.0 pressure=1.0
+
+    \033[1;32m# Generate netcdf file, and specifies 
+      initing pressure to 1.0 and temperature to 273.
+
+        > ./{0} -a my_file.nc --mid-scalars-3d temperature=273.0 pressure=1.0
+
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("-f","--filename", help="Name of the netcdf file", required=True)
+    parser.add_argument("-c","--create", help="Create output netcdf file", action='store_true',default=False)
+    parser.add_argument("-ne","--ne", type=int, help="Number of elements on cube edge")
+    parser.add_argument("-np","--np", type=int, help="Number of GLL points on element edge", default=4)
+    parser.add_argument("-nlev","--nlev", type=int, help="Number of vertical levels")
+    parser.add_argument("-pg","--phys-grid", help="Type of phys grid", default="gll")
+
+    parser.add_argument("--mid-scalars-1d", nargs='+', default=[],
+            help="1d variables to add to the file. Dimensions (nlev)")
+    parser.add_argument("--int-scalars-1d", nargs='+', default=[],
+            help="1d variables to add to the file. Dimensions (nlev+1)")
+    parser.add_argument("--scalars-2d", nargs='+', default=[],
+            help="2d scalar variables to add to the file. Dimensions (ncols)")
+    parser.add_argument("--vectors-2d", nargs='+', default=[],
+            help="2d vector variables to add to the file. Dimensions (ncols,2)")
+    parser.add_argument("--mid-scalars-3d", nargs='+', default=[],
+            help="3d mid-layer scalar variables to add to the file. Dimensions (ncols,nlevs)")
+    parser.add_argument("--int-scalars-3d", nargs='+', default=[],
+            help="3d layer-interface scalar variables to add to the file. Dimensions (ncols,nlevs+1)")
+    parser.add_argument("--mid-vectors-3d", nargs='+', default=[],
+            help="3d mid-layer vector variables to add to the file. Dimensions (ncols,2,nlevs)")
+    parser.add_argument("--int-vectors-3d", nargs='+', default=[],
+            help="3d layer-interface vector variables to add to the file. Dimensions (ncols,2,nlevs+1)")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    nfi = NcFileInit(**vars(parse_command_line(sys.argv, description)))
+
+    success = nfi.process_nc_file()
+
+    print("File generation: {}".format("SUCCESS" if success else "FAIL"))
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
