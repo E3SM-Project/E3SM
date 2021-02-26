@@ -1822,8 +1822,32 @@ module li_calving
       !call mpas_log_write("Done calculating calving for non-dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal1/))
 
 
+
       ! 2. Calculate calving for dynamic cells
       ablationSubtotal2 = 0.0_RKIND
+
+      ! 2a1. for grounded dynamic margins, don't use the thickness there because it may be unrealistically thin due to ablation
+      ! from previous time steps.  Instead copy forward the thickness from the row cells behind.
+      do iCell = 1, nCellsSolve
+         if (frontAblationMask(iCell)>0 .and. li_mask_is_margin(cellMask(iCell)) .and. li_mask_is_grounded_ice(cellMask(iCell))) then
+            thkSum = 0.0_RKIND
+            thkCount = 0
+            do iNeighbor = 1, nEdgesOnCell(iCell)
+               jCell = cellsOnCell(iNeighbor, iCell)
+               if (li_mask_is_dynamic_ice(cellMask(jCell)) .and. li_mask_is_grounded_ice(cellMask(iCell)) .and. &
+                       .not. li_mask_is_margin(cellMask(iCell))) then
+                  thkSum = thkSum + thickness(jCell)
+                  thkCount = thkCount + 1
+               endif
+            enddo
+            if (thkCount == 0) then
+               !call mpas_log_write("Found a stranded non-dynamic floating cell: cell $i with thickness=$r m.", MPAS_LOG_WARN, &
+               !   intArgs=(/iCell/), realArgs=(/thickness(iCell)/))
+            else
+               thicknessForAblation(iCell) = thkSum / real(thkCount, kind=RKIND)
+            endif
+         endif
+      enddo
 
       ! a. Calculate calving on dynamic margin edges
       do iCell = 1, nCellsSolve
