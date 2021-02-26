@@ -669,6 +669,7 @@ if (($OCN_ICEBERG eq 'true') && ($OCN_FORCING eq 'active_atm')) {
 add_default($nl, 'config_sw_absorption_type');
 add_default($nl, 'config_jerlov_water_type');
 add_default($nl, 'config_surface_buoyancy_depth');
+add_default($nl, 'config_enable_shortwave_energy_fixer');
 
 ###########################################
 # Namelist group: tidal_potential_forcing #

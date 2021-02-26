@@ -247,6 +247,7 @@
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
 <config_jerlov_water_type>3</config_jerlov_water_type>
 <config_surface_buoyancy_depth>1</config_surface_buoyancy_depth>
+<config_enable_shortwave_energy_fixer>.false.</config_enable_shortwave_energy_fixer>
 
 <!-- tidal_potential_forcing -->
 <config_use_tidal_potential_forcing>.false.</config_use_tidal_potential_forcing>

@@ -1044,6 +1044,14 @@ Valid values: Real Values greater than zero less than bottomDepth
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_enable_shortwave_energy_fixer" type="logical"
+	category="shortwaveRadiation" group="shortwaveRadiation">
+Flag to enable the shortwave energy fixer for shallow ocean cells
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- tidal_potential_forcing -->
 
