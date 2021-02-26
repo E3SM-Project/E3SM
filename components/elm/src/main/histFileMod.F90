@@ -161,6 +161,7 @@ module histFileMod
   type field_info
      character(len=max_namlen) :: name         ! field name
      character(len=max_chars)  :: long_name    ! long name
+     character(len=max_chars)  :: standard_name  ! CF standard name
      character(len=max_chars)  :: units        ! units
      character(len=hist_dim_name_length) :: type1d                ! pointer to first dimension type from data type (nameg, etc)
      character(len=hist_dim_name_length) :: type1d_out            ! hbuf first dimension type from data type (nameg, etc)
@@ -282,8 +283,8 @@ contains
   end subroutine hist_printflds
 
   !-----------------------------------------------------------------------
-  subroutine masterlist_addfld (fname, type1d, type1d_out, &
-        type2d, numdims, num2d, units, avgflag, long_name, hpindex, &
+  subroutine masterlist_addfld (fname, type1d, type1d_out,&
+        type2d, numdims, num2d, units, avgflag, long_name, standard_name, hpindex, &
         p2c_scale_type, c2l_scale_type, l2g_scale_type, t2g_scale_type, &
         no_snow_behavior)
     !
@@ -306,6 +307,7 @@ contains
     character(len=*), intent(in)  :: units            ! units of field
     character(len=1), intent(in)  :: avgflag          ! time averaging flag
     character(len=*), intent(in)  :: long_name        ! long name of field
+    character(len=*), intent(in)  :: standard_name        ! long name of field
     integer         , intent(in)  :: hpindex          ! data type index for history buffer output
     character(len=*), intent(in)  :: p2c_scale_type   ! scale type for subgrid averaging of pfts to column
     character(len=*), intent(in)  :: c2l_scale_type   ! scale type for subgrid averaging of columns to landunits
@@ -364,6 +366,7 @@ contains
 
     masterlist(f)%field%name           = fname
     masterlist(f)%field%long_name      = long_name
+    masterlist(f)%field%standard_name  = standard_name
     masterlist(f)%field%units          = units
     masterlist(f)%field%type1d         = type1d
     masterlist(f)%field%type1d_out     = type1d_out
@@ -1817,6 +1820,9 @@ contains
     ! data set as a whole, as opposed to a single variable
 
     call ncd_putatt(lnfid, ncd_global, 'source'  , trim(source))
+    call ncd_putatt(lnfid, ncd_global, 'source_id'  , trim(version))
+    call ncd_putatt(lnfid, ncd_global, 'product'  , 'model-output')
+    call ncd_putatt(lnfid, ncd_global, 'realm'  , 'land')
     call ncd_putatt(lnfid, ncd_global, 'case', trim(caseid))
     call ncd_putatt(lnfid, ncd_global, 'username', trim(username))
     call ncd_putatt(lnfid, ncd_global, 'hostname', trim(hostname))
@@ -1825,6 +1831,17 @@ contains
     str = 'created on ' // curdate // ' ' // curtime
     call ncd_putatt(lnfid, ncd_global, 'history' , trim(str))
     call ncd_putatt(lnfid, ncd_global, 'institution_id', 'E3SM-Project')
+    call ncd_putatt(lnfid, ncd_global, 'institution', &
+    'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); &
+    &ANL (Argonne National Laboratory, Argonne, IL 60439, USA); &
+    &BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); &
+    &LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); &
+    &LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); &
+    &ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
+    &PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
+    &SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
+    &Mailing address: LLNL Climate Program, c/o David C. Bader, &
+    &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
     call ncd_putatt(lnfid, ncd_global, 'contact', &
           'e3sm-data-support@listserv.llnl.gov')
     call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
@@ -2050,6 +2067,7 @@ contains
     integer :: c,l,lev,ifld               ! indices
     integer :: ier                        ! error status
     character(len=max_chars) :: long_name ! variable long name
+    character(len=max_chars) :: standard_name ! variable CF standard_name
     character(len=max_namlen):: varname   ! variable name
     character(len=max_namlen):: units     ! variable units
     character(len=8) :: l2g_scale_type    ! scale type for subgrid averaging of landunits to grid cells
@@ -2099,9 +2117,9 @@ contains
           else if (ifld == 4) then
              long_name='saturated soil matric potential'; units = 'mm'
           else if (ifld == 5) then
-             long_name='slope of soil water retention curve'; units = 'unitless'
+             long_name='slope of soil water retention curve'; units = '1'
           else if (ifld == 6) then
-             long_name='saturated hydraulic conductivity'; units = 'unitless'
+             long_name='saturated hydraulic conductivity'; units = '1'
           else
              call endrun(msg=' ERROR: bad 3D time-constant field index'//errMsg(__FILE__, __LINE__))
           end if
@@ -2724,6 +2742,7 @@ contains
     integer :: numdims                   ! number of dimensions
     character(len=1)         :: avgflag  ! time averaging flag
     character(len=max_chars) :: long_name! long name
+    character(len=max_chars) :: standard_name! standard name
     character(len=max_chars) :: units    ! units
     character(len=max_namlen):: varname  ! variable name
     character(len=32) :: avgstr          ! time averaging type
@@ -2754,6 +2773,7 @@ contains
 
        varname    = tape(t)%hlist(f)%field%name
        long_name  = tape(t)%hlist(f)%field%long_name
+       standard_name  = tape(t)%hlist(f)%field%standard_name
        units      = tape(t)%hlist(f)%field%units
        avgflag    = tape(t)%hlist(f)%avgflag
        type1d_out = tape(t)%hlist(f)%field%type1d_out
@@ -2771,7 +2791,7 @@ contains
           case ('A')
              avgstr = 'mean'
           case ('I')
-             avgstr = 'instantaneous'
+             avgstr = 'point'
           case ('X')
              avgstr = 'maximum'
           case ('M')
@@ -2795,25 +2815,25 @@ contains
              if (numdims == 1) then
                 call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
                      dim1name=dim1name, dim2name='time', &
-                     long_name=long_name, units=units, cell_method=avgstr, &
-                     missing_value=spval, fill_value=spval)
+                     long_name=long_name, standard_name=standard_name,units=units,&
+                     cell_method=avgstr,  missing_value=spval, fill_value=spval)
              else
                 call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
                      dim1name=dim1name, dim2name=type2d, dim3name='time', &
-                     long_name=long_name, units=units, cell_method=avgstr, &
-                     missing_value=spval, fill_value=spval)
+                     long_name=long_name,standard_name=standard_name, units=units, &
+                     cell_method=avgstr,  missing_value=spval, fill_value=spval)
              end if
           else
              if (numdims == 1) then
                 call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
                      dim1name=dim1name, dim2name=dim2name, dim3name='time', &
-                     long_name=long_name, units=units, cell_method=avgstr, &
-                     missing_value=spval, fill_value=spval)
+                     long_name=long_name, standard_name=standard_name, &
+                     units=units, cell_method=avgstr, missing_value=spval, fill_value=spval)
              else
                 call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
                      dim1name=dim1name, dim2name=dim2name, dim3name=type2d, dim4name='time', &
-                     long_name=long_name, units=units, cell_method=avgstr, &
-                     missing_value=spval, fill_value=spval)
+                     long_name=long_name, standard_name=standard_name, units=units,&
+                     cell_method=avgstr, missing_value=spval, fill_value=spval)
              end if
           endif
 
@@ -3406,6 +3426,7 @@ contains
     character(len=max_namlen) :: name            ! variable name
     character(len=max_namlen) :: name_acc        ! accumulator variable name
     character(len=max_namlen) :: long_name       ! long name of variable
+    character(len=max_namlen) :: standard_name       ! standard_name of var
     character(len=max_chars)  :: long_name_acc   ! long name for accumulator
     character(len=max_chars)  :: units           ! units of variable
     character(len=max_chars)  :: units_acc       ! accumulator units
@@ -3527,6 +3548,7 @@ contains
              do f = 1,tape(t)%nflds
                 name           =  tape(t)%hlist(f)%field%name
                 long_name      =  tape(t)%hlist(f)%field%long_name
+                standard_name      =  tape(t)%hlist(f)%field%standard_name
                 units          =  tape(t)%hlist(f)%field%units
                 name_acc       =  trim(name) // "_acc"
                 units_acc      =  "unitless positive integer"
@@ -3551,14 +3573,16 @@ contains
                    if (num2d == 1) then
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, & 
                            dim1name=dim1name, &
-                           long_name=trim(long_name), units=trim(units))
+                           long_name=trim(long_name), &
+                           standard_name=standard_name, units=trim(units))
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
                            dim1name=dim1name, &
                            long_name=trim(long_name_acc), units=trim(units_acc))
                    else
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
                            dim1name=dim1name, dim2name=type2d, &
-                           long_name=trim(long_name), units=trim(units))
+                           long_name=trim(long_name), &
+                           standard_name=standard_name, units=trim(units))
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
                            dim1name=dim1name, dim2name=type2d, &
                            long_name=trim(long_name_acc), units=trim(units_acc))
@@ -3567,14 +3591,16 @@ contains
                    if (num2d == 1) then
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
                            dim1name=dim1name, dim2name=dim2name, &
-                           long_name=trim(long_name), units=trim(units))
+                           long_name=trim(long_name), &
+                           standard_name=standard_name, units=trim(units))
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
                            dim1name=dim1name, dim2name=dim2name, &
                            long_name=trim(long_name_acc), units=trim(units_acc))
                    else
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
                            dim1name=dim1name, dim2name=dim2name, dim3name=type2d, &
-                           long_name=trim(long_name), units=trim(units))
+                           long_name=trim(long_name), &
+                           standard_name=standard_name, units=trim(units))
                       call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
                            dim1name=dim1name, dim2name=dim2name, dim3name=type2d, &
                            long_name=trim(long_name_acc), units=trim(units_acc))
@@ -3600,7 +3626,7 @@ contains
                units="absolute value of negative is in hours, 0=monthly, positive is time-steps",     &
                dim1name='scalar')
           call ncd_defvar(ncid=ncid_hist(t), varname='mfilt', xtype=ncd_int, &
-               long_name="Number of history time samples on a file", units="unitless",     &
+               long_name="Number of history time samples on a file", units="1",     &
                comment="Namelist item", &
                dim1name='scalar')
           call ncd_defvar(ncid=ncid_hist(t), varname='ncprec', xtype=ncd_int, &
@@ -3623,7 +3649,7 @@ contains
                dim1name='fname_lenp2', dim2name='max_flds' )
 
           call ncd_defvar(ncid=ncid_hist(t), varname='nflds', xtype=ncd_int, &
-               long_name="Number of fields on file", units="unitless",        &
+               long_name="Number of fields on file", units="1",        &
                dim1name='scalar')
           call ncd_defvar(ncid=ncid_hist(t), varname='ntimes', xtype=ncd_int, &
                long_name="Number of time steps on file", units="time-step",     &
@@ -3635,10 +3661,10 @@ contains
                dim1name='scalar')
    
           call ncd_defvar(ncid=ncid_hist(t), varname='num2d', xtype=ncd_int, &
-               long_name="Size of second dimension", units="unitless",     &
+               long_name="Size of second dimension", units="1",     &
                dim1name='max_nflds' )
           call ncd_defvar(ncid=ncid_hist(t), varname='hpindex', xtype=ncd_int, &
-               long_name="History pointer index", units="unitless",     &
+               long_name="History pointer index", units="1",     &
                dim1name='max_nflds' )
 
           call ncd_defvar(ncid=ncid_hist(t), varname='avgflag', xtype=ncd_char, &
@@ -4267,7 +4293,7 @@ contains
   end function set_hist_filename
 
   !-----------------------------------------------------------------------
-  subroutine hist_addfld1d (fname, units, avgflag, long_name, type1d_out, &
+  subroutine hist_addfld1d (fname, units, avgflag, long_name, type1d_out, standard_name, &
                         ptr_gcell, ptr_topo, ptr_lunit, ptr_col, ptr_patch, ptr_lnd, &
                         ptr_atm, p2c_scale_type, c2l_scale_type, &
                         l2g_scale_type, t2g_scale_type, set_lake, set_nolake, set_urb, set_nourb, &
@@ -4289,6 +4315,7 @@ contains
     character(len=1), intent(in)           :: avgflag        ! time averaging flag
     character(len=*), intent(in)           :: long_name      ! long name of field
     character(len=*), optional, intent(in) :: type1d_out     ! output type (from data type)
+    character(len=*), optional, intent(in) :: standard_name  ! CF standard name
     real(r8)        , optional, pointer    :: ptr_gcell(:)   ! pointer to gridcell array
     real(r8)        , optional, pointer    :: ptr_topo(:)    ! pointer to topounit array
     real(r8)        , optional, pointer    :: ptr_lunit(:)   ! pointer to landunit array
@@ -4319,6 +4346,7 @@ contains
     character(len=8) :: scale_type_t2g ! scale type for subgrid averaging of topounits to gridcells
     type(bounds_type):: bounds         ! boudns 
     character(len=16):: l_default      ! local version of 'default'
+    character(len=max_namlen) :: lstandard_name  ! local standard name
     character(len=*),parameter :: subname = 'hist_addfld1d'
 !------------------------------------------------------------------------
 
@@ -4476,11 +4504,17 @@ contains
     if (present(t2g_scale_type)) scale_type_t2g = t2g_scale_type
     if (present(type1d_out)) l_type1d_out = type1d_out
 
+    if (present(standard_name)) then 
+     lstandard_name = standard_name
+    else 
+     lstandard_name = ' '
+    end if
+
     ! Add field to masterlist
 
     call masterlist_addfld (fname=trim(fname), type1d=l_type1d, type1d_out=l_type1d_out, &
-         type2d='unset', numdims=1, num2d=1, &
-         units=units, avgflag=avgflag, long_name=long_name, hpindex=hpindex, &
+         type2d='unset', numdims=1, num2d=1,  units=units, avgflag=avgflag, long_name=long_name, &
+         standard_name=lstandard_name, hpindex=hpindex, &
          p2c_scale_type=scale_type_p2c, c2l_scale_type=scale_type_c2l, l2g_scale_type=scale_type_l2g, &
          t2g_scale_type=scale_type_t2g)
 
@@ -4497,7 +4531,7 @@ contains
   end subroutine hist_addfld1d
 
   !-----------------------------------------------------------------------
-  subroutine hist_addfld2d (fname, type2d, units, avgflag, long_name, type1d_out, &
+  subroutine hist_addfld2d (fname, type2d, units, avgflag, long_name, type1d_out, standard_name, &
                         ptr_gcell, ptr_topo, ptr_lunit, ptr_col, ptr_patch, ptr_lnd, ptr_atm, &
                         p2c_scale_type, c2l_scale_type, l2g_scale_type, t2g_scale_type, &
                         set_lake, set_nolake, set_urb, set_nourb, set_spec, &
@@ -4525,6 +4559,7 @@ contains
     character(len=1), intent(in) :: avgflag                    ! time averaging flag
     character(len=*), intent(in) :: long_name                  ! long name of field
     character(len=*), optional, intent(in) :: type1d_out       ! output type (from data type)
+    character(len=*), optional, intent(in) :: standard_name    ! output type (from data type)
     real(r8)        , optional, pointer    :: ptr_atm(:,:)     ! pointer to atm array
     real(r8)        , optional, pointer    :: ptr_lnd(:,:)     ! pointer to lnd array
     real(r8)        , optional, pointer    :: ptr_gcell(:,:)   ! pointer to gridcell array
@@ -4556,6 +4591,7 @@ contains
     character(len=8) :: scale_type_t2g ! scale type for subgrid averaging of topounits to gridcells
     type(bounds_type):: bounds          
     character(len=16):: l_default      ! local version of 'default'
+    character(len=max_namlen) :: lstandard_name  ! local standard name
     character(len=*),parameter :: subname = 'hist_addfld2d'
 !------------------------------------------------------------------------
 
@@ -4820,11 +4856,19 @@ contains
     if (present(t2g_scale_type)) scale_type_t2g = t2g_scale_type
     if (present(type1d_out)) l_type1d_out = type1d_out
 
+    if (present(standard_name)) then 
+     lstandard_name = standard_name
+    else 
+     lstandard_name = ' '
+    end if
+
+
     ! Add field to masterlist
 
     call masterlist_addfld (fname=trim(fname), type1d=l_type1d, type1d_out=l_type1d_out, &
          type2d=type2d, numdims=2, num2d=num2d, &
-         units=units, avgflag=avgflag, long_name=long_name, hpindex=hpindex, &
+         units=units, avgflag=avgflag, long_name=long_name, &
+         standard_name=lstandard_name, hpindex=hpindex, &
          p2c_scale_type=scale_type_p2c, c2l_scale_type=scale_type_c2l, l2g_scale_type=scale_type_l2g, &
          t2g_scale_type=scale_type_t2g, no_snow_behavior=no_snow_behavior)
 
