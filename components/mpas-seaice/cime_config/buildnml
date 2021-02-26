@@ -267,7 +267,7 @@ def buildnml(case, caseroot, compname):
         grid_date = '210210'
         grid_prefix = 'seaice.EC30to60E2r2'
         if ice_ic_mode == 'spunup':
-            grid_date = '210210'
+            grid_date = '201001'
             grid_prefix = 'mpassi.EC30to60E2r2.rstFromG-anvil'
 
     elif ice_grid == 'WC14to60E2r3':
@@ -276,7 +276,7 @@ def buildnml(case, caseroot, compname):
         grid_date = '210210'
         grid_prefix = 'seaice.WC14to60E2r3'
         if ice_ic_mode == 'spunup':
-            grid_date = '210210'
+            grid_date = '210226'
             grid_prefix = 'mpassi.WC14to60E2r3.rstFromG-anvil'
 
 
