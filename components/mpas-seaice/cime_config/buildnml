@@ -88,13 +88,13 @@ def buildnml(case, caseroot, compname):
         decomp_prefix = 'mpas-cice.graph.info.'
         grid_date = '161222'
         grid_prefix = 'seaice.EC60to30v3'
+        if ice_ic_mode == 'spunup':
+            grid_date = '200927'
+            grid_prefix = 'seaice.EC60to30v3.restartFrom_anvilG'
         if ice_bgc == 'ice_bgc':
             grid_date = '180418'
             grid_prefix = 'mpassi.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
             points_file = 'seaice_points_EC.60to30v3_netcdf3_05152018.nc'
-        if ice_ic_mode == 'spunup':
-            grid_date = '200927'
-            grid_prefix = 'seaice.EC60to30v3.restartFrom_anvilG'
 
     elif ice_grid == 'oEC60to30wLI':
         decomp_date = '160830'

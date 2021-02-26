@@ -97,14 +97,14 @@ def buildnml(case, caseroot, compname):
         analysis_mask_file = 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
         ic_date = '170905'
         ic_prefix = 'oEC60to30v3_60layer'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '200927'
+            ic_prefix = 'oEC60to30v3.restartFrom_anvilG'
         #  modify initial condition file if ocean BGC is turned on
         if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
             ic_date = '180418'
             ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
             eco_forcing_file = 'oEC60to30v3.monthlySurfaceForcingBGC.171120.nc'
-        if ocn_ic_mode == 'spunup':
-            ic_date = '200927'
-            ic_prefix = 'oEC60to30v3.restartFrom_anvilG'
 
     elif ocn_grid == 'oEC60to30wLI':
         decomp_date = '160830'
