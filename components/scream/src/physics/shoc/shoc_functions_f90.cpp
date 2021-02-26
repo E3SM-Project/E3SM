@@ -2247,7 +2247,9 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
 
   view_3d
     tracer_d(temp_3d_d[0]);
-  Kokkos::resize(Kokkos::WithoutInitializing, tracer_d,
+
+  // update_prognostics_implicit() expects 3 extra tracer slots
+  Kokkos::resize(tracer_d,
                  shcol,nlev,ekat::npack<Spack>(num_tracer+3));
 
   // Local variables
@@ -2296,8 +2298,8 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
                                      thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s);
   });
 
-  // Remove extra slots in tracers view
-  Kokkos::resize(Kokkos::WithoutInitializing, tracer_d,
+  // Remove extra tracer slots
+  Kokkos::resize(tracer_d,
                  shcol,nlev,ekat::npack<Spack>(num_tracer));
 
   // Sync back to host
@@ -2870,7 +2872,7 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* hos
     qtracers_d(temp_3d_d[0]);
 
   // Add temporary slots for solving
-  Kokkos::resize(Kokkos::WithoutInitializing, qtracers_d,
+  Kokkos::resize(qtracers_d,
                  shcol,nlev,ekat::npack<Spack>(num_qtracers+3));
 
   // Pack our data into structs and ship it off to shoc_main.
@@ -2893,8 +2895,9 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* hos
   (void)elapsed_microsec;
 
   // Remove temporary slots
-  Kokkos::resize(Kokkos::WithoutInitializing, qtracers_d,
+  Kokkos::resize(qtracers_d,
                  shcol,nlev,ekat::npack<Spack>(num_qtracers));
+
 
   // Sync back to host
   // 1d

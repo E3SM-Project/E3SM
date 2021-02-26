@@ -71,42 +71,46 @@ struct Functions
 
   // This struct stores input views for shoc_main.
   struct SHOCInput {
+    SHOCInput() = default;
+
     // Grid spacing of host model in x direction [m]
-    view_1d<Pack1d> host_dx;
+    view_1d<const Pack1d> host_dx;
     // grid spacing of host model in y direction [m]
-    view_1d<Pack1d> host_dy;
+    view_1d<const Pack1d> host_dy;
     // heights, for thermo grid [m]
-    view_2d<Spack>  zt_grid;
+    view_2d<const Spack>  zt_grid;
     // heights, for interface grid [m]
-    view_2d<Spack>  zi_grid;
+    view_2d<const Spack>  zi_grid;
     // pressure levels on thermo grid [Pa]
-    view_2d<Spack>  pres;
+    view_2d<const Spack>  pres;
     // pressure levels on interface grid [Pa]
-    view_2d<Spack>  presi;
+    view_2d<const Spack>  presi;
     // Differences in pressure levels [Pa]
-    view_2d<Spack>  pdel;
+    view_2d<const Spack>  pdel;
     // virtual potential temperature [K]
-    view_2d<Spack>  thv;
+    view_2d<const Spack>  thv;
     // large scale vertical velocity [m/s]
-    view_2d<Spack>  w_field;
+    view_2d<const Spack>  w_field;
     // Surface sensible heat flux [K m/s]
-    view_1d<Pack1d> wthl_sfc;
+    view_1d<const Pack1d> wthl_sfc;
     // Surface latent heat flux [kg/kg m/s]
-    view_1d<Pack1d> wqw_sfc;
+    view_1d<const Pack1d> wqw_sfc;
     // Surface momentum flux (u-direction) [m2/s2]
-    view_1d<Pack1d> uw_sfc;
+    view_1d<const Pack1d> uw_sfc;
     // Surface momentum flux (v-direction) [m2/s2]
-    view_1d<Pack1d> vw_sfc;
+    view_1d<const Pack1d> vw_sfc;
     // Surface flux for tracers [varies]
-    view_2d<Spack>  wtracer_sfc;
+    view_2d<const Spack>  wtracer_sfc;
     // Exner function [-]
-    view_2d<Spack>  exner;
+    view_2d<const Spack>  exner;
     // Host model surface geopotential height
-    view_1d<Pack1d> phis;
+    view_1d<const Pack1d> phis;
   };
 
   // This struct stores input/outputs views for shoc_main.
   struct SHOCInputOutput {
+    SHOCInputOutput() = default;
+
     // prognostic temp variable of host model
     // dry static energy [J/kg]
     // dse = Cp*T + g*z + phis
@@ -137,6 +141,8 @@ struct Functions
 
   // This struct stores output only views for shoc_main.
   struct SHOCOutput {
+    SHOCOutput() = default;
+
     // planetary boundary layer depth [m]
     view_1d<Pack1d> pblh;
     // cloud liquid mixing ratio variance [kg^2/kg^2]
@@ -145,6 +151,8 @@ struct Functions
 
   // This struct stores output views for SHOC diagnostics for shoc_main.
   struct SHOCHistoryOutput {
+    SHOCHistoryOutput() = default;
+
     // Turbulent length scale [m]
     view_2d<Spack>  shoc_mix;
     // vertical velocity variance [m2/s2]
