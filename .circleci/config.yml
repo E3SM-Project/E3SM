@@ -3,9 +3,6 @@ jobs:
   build:
     machine:
       image: ubuntu-2004:202010-01
-    branches:
-      only:
-        - master
     steps:
       - checkout
       - run: bash .circleci/setup.sh
