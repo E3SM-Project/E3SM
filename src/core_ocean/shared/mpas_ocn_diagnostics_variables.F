@@ -86,6 +86,7 @@ module ocn_diagnostics_variables
    integer, pointer :: indexBLT, indexBLS, indexHeatTrans, indexSaltTrans
 
    real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFluxOBL
+   real (kind=RKIND), dimension(:), pointer :: bottomLayerShortwaveTemperatureFlux
 
    real (kind=RKIND), dimension(:), pointer :: surfaceBuoyancyForcing
    real (kind=RKIND), dimension(:), pointer :: surfaceFrictionVelocity
@@ -278,6 +279,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
       call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMag)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
+      call mpas_pool_get_array(diagnosticsPool, 'bottomLayerShortwaveTemperatureFlux', bottomLayerShortwaveTemperatureFlux)
       call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
 
       !
