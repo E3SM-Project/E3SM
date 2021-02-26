@@ -600,7 +600,7 @@ end if
    u3(:)=ufcst(:)
    v3(:)=vfcst(:)
 
-   if (scm_relaxation) then
+   if (scm_relaxation .and. .not. iop_mode) then
 !
 !    THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED
 !    The relaxation can be thought of as a part of the "adjustment" physics

@@ -180,25 +180,29 @@ subroutine scm_setfield(elem,iop_update_phase1)
 
 end subroutine scm_setfield
 
-subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
+subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
 ! 
-    use scamMod, only: single_column, use_3dfrc
+    use scamMod
     use kinds, only : real_kind
-    use dimensions_mod, only : np, np, nlev, npsq
+    use dimensions_mod, only : np, np, nlev, npsq, nelem
     use control_mod, only : use_cpstar, qsplit
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
     use physical_constants, only : Cp, Rgas, cpwater_vapor
     use time_mod
+    use hybrid_mod, only : hybrid_t
     use constituents, only: pcnst
     use time_manager, only: get_nstep
     use cam_history, only: outfld
+    use parallel_mod, only: global_shared_buf, global_shared_sum
+    use global_norms_mod, only: wrap_repro_sum
     use shr_const_mod, only: SHR_CONST_PI
 
     integer :: t1,t2,n,nets,nete,pp
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(in)       :: tl
+    type(hybrid_t),             intent(in) :: hybrid    
     logical :: t_before_advance, do_column_scm
     real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
 
@@ -219,7 +223,9 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(nlev) :: dummy1, dummy2, forecast_t, forecast_u, forecast_v
     real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn, temp_tend
     real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
-    real (kind=real_kind) :: forecast_ps
+    real (kind=real_kind), dimension(nlev) :: domain_q, domain_t, domain_u, domain_v, rtau
+    real (kind=real_kind), dimension(nlev) :: relax_t, relax_q, relax_u, relax_v
+    real (kind=real_kind) :: forecast_ps, Rstar1d
     real (kind=real_kind) :: temperature(np,np,nlev)
     logical :: wet
 
@@ -331,6 +337,63 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
       endif
     
     enddo
+    
+    if (scm_relaxation .and. iop_mode) then 
+   
+      do k=1,nlev
+        do ie=1,nelemd_todo
+          call get_temperature(elem(ie),temperature,hvcoord,t1)
+          global_shared_buf(ie,1) = 0.0_real_kind
+          global_shared_buf(ie,2) = 0.0_real_kind
+          global_shared_buf(ie,3) = 0.0_real_kind
+          global_shared_buf(ie,4) = 0.0_real_kind
+          global_shared_buf(ie,1) = global_shared_buf(ie,1) + SUM(elem(ie)%state%Q(:,:,k,1))
+          global_shared_buf(ie,2) = global_shared_buf(ie,2) + SUM(temperature(:,:,k))
+          global_shared_buf(ie,3) = global_shared_buf(ie,3) + SUM(elem(ie)%state%v(:,:,1,k,t1))
+          global_shared_buf(ie,4) = global_shared_buf(ie,4) + SUM(elem(ie)%state%v(:,:,2,k,t1))
+        enddo
+        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+        domain_q(k) = global_shared_sum(1)/(dble(nelem)*dble(np)*dble(np))
+        domain_t(k) = global_shared_sum(2)/(dble(nelem)*dble(np)*dble(np))
+        domain_u(k) = global_shared_sum(3)/(dble(nelem)*dble(np)*dble(np))
+        domain_v(k) = global_shared_sum(4)/(dble(nelem)*dble(np)*dble(np))
+      enddo
+
+      do k=1,nlev
+      
+        rtau(k) = 10800._real_kind
+        rtau(k) = max(dt,rtau(k))
+        
+        relax_q(k) = -(domain_q(k) - qobs(k))/rtau(k)
+        relax_t(k) = -(domain_t(k) - tobs(k))/rtau(k)
+        relax_u(k) = -(domain_u(k) - uobs(k))/rtau(k)
+        relax_v(k) = -(domain_v(k) - vobs(k))/rtau(k)
+      
+      enddo
+      
+      do ie=1,nelemd_todo
+        call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
+        do j=1,np_todo
+          do i=1,np_todo
+            do k=1,nlev
+              elem(ie)%state%Q(i,j,k,1) = elem(ie)%state%Q(i,j,k,1) + relax_q(k) * dt
+              elem(ie)%state%v(i,j,1,k,t1) = elem(ie)%state%v(i,j,1,k,t1) + relax_u(k) * dt
+              elem(ie)%state%v(i,j,2,k,t1) = elem(ie)%state%v(i,j,2,k,t1) + relax_v(k) * dt
+                       
+              temperature(i,j,k) = temperature(i,j,k) + relax_t(k) * dt
+               
+#ifdef MODEL_THETA_L
+              elem(ie)%state%vtheta_dp(i,j,k,t1) = (temperature(i,j,k)*Rstar(i,j,k)*dp(i,j,k))/&
+                (Rgas*exner(i,j,k))
+#else
+              elem(ie)%state%T(i,j,k,t1) = temperature(i,j,k)           
+#endif            
+            enddo
+          enddo
+        enddo
+      enddo
+    
+    endif
 
     end subroutine apply_SC_forcing
 

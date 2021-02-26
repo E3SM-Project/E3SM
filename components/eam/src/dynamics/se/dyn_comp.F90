@@ -390,7 +390,7 @@ CONTAINS
        endif
 
        if (single_column) then
-         call apply_SC_forcing(dyn_state%elem,hvcoord,TimeLevel,3,.false.,nets,nete)
+         call apply_SC_forcing(dyn_state%elem,hvcoord,hybrid,TimeLevel,3,.false.,nets,nete)
        endif
 
 #ifdef HORIZ_OPENMP
