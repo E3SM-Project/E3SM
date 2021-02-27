@@ -198,7 +198,7 @@
   <!-- Radiative-Convective Equilibrium (RCE) -->
   <!-- *********************************** -->
   <compset>
-    <alias>F-EAMv1-RCEMIP</alias>
+    <alias>F-EAM-RCEMIP</alias>
     <lname>2000_EAM%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
