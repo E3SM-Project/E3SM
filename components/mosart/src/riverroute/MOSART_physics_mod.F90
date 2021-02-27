@@ -221,26 +221,6 @@ MODULE MOSART_physics_mod
        endif  ! euler_calc
        end do ! nt
        call t_stopf('mosartr_subnetwork')    
-
-        if (inundflag) then
-          ! Channel -- floodplain exchange computation :      
-          call ChnlFPexchg ( )
-            ! update variables after channel-floodplain exchanges
-            ! Floodplain water volume :
-              TRunoff%wf_ini = TRunoff%wf_exchg
-            ! Floodplain max water depth :
-              TRunoff%hf_ini = TRunoff%hf_exchg     
-            ! Floodplain area fraction (not including channel)
-              TRunoff%ff_ini = TRunoff%ff_fp
-            ! Flooded area fraction (including channel):
-              TRunoff%ffunit_ini = TRunoff%ff_unit
-            ! Channel water depth
-              TRunoff%yr(:,1) = TRunoff%yr_exchg
-            ! Channel storage
-              TRunoff%wr(:,1) = TRunoff%wr_exchg
-            ! Aggregate net floodplain storage change from subcycle to timestep 
-              TRunoff%se_rf = TRunoff%se_rf + TRunoff%netchange
-        end if
        !------------------
        ! upstream interactions
        !------------------
@@ -407,7 +387,26 @@ MODULE MOSART_physics_mod
 
        end do ! iunit
        endif  ! euler_calc
-       end do ! nt
+       end do ! nt       
+       if (inundflag) then
+            ! Channel -- floodplain exchange computation :      
+              call ChnlFPexchg ( )
+            ! update variables after channel-floodplain exchanges
+            ! Floodplain water volume :
+              TRunoff%wf_ini = TRunoff%wf_exchg
+            ! Floodplain max water depth :
+              TRunoff%hf_ini = TRunoff%hf_exchg     
+            ! Floodplain area fraction (not including channel) ! will be deleted
+              TRunoff%ff_ini = TRunoff%ff_fp
+            ! Flooded area fraction (including channel):
+              TRunoff%ffunit_ini = TRunoff%ff_unit
+            ! Channel water depth
+              TRunoff%yr(:,1) = TRunoff%yr_exchg
+            ! Channel storage
+              TRunoff%wr(:,1) = TRunoff%wr_exchg
+            ! Aggregate net floodplain storage change from subcycle to timestep 
+              TRunoff%se_rf = TRunoff%se_rf + TRunoff%netchange
+        end if                   
        negchan = min(negchan, minval(TRunoff%wr(:,:)))
        call t_stopf('mosartr_chanroute') 
     end do  ! DLevelH2R

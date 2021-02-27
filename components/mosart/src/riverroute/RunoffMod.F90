@@ -72,12 +72,16 @@ module RunoffMod
      real(r8), pointer :: inundffunit(:)   ! Inundation  water volume (m3) 
      real(r8), pointer :: inundwf(:)       ! Inundation floodplain water volume (m3)
      real(r8), pointer :: inundhf(:)       ! Inundation floodplain water depth (m)
-     real(r8), pointer :: inundff(:)       ! Inundation floodplain water area fraction (no unit) added by Tian Dec 2017
+     real(r8), pointer :: inundff(:)       ! Inundation floodplain water area fraction (no unit)
 
      !    - restarts
      real(r8), pointer :: wh(:,:)          ! MOSART hillslope surface water storage (m)
      real(r8), pointer :: wt(:,:)          ! MOSART sub-network water storage (m3)
      real(r8), pointer :: wr(:,:)          ! MOSART main channel water storage (m3)
+     real(r8), pointer :: mr(:,:)          ! MOSART channel area
+     real(r8), pointer :: yr(:,:)          ! MOSART channel water depth
+     real(r8), pointer :: pr(:,:)          ! MOSART channel wetted p
+     real(r8), pointer :: rr(:,:)          ! MOSART channel hydraulic r
      real(r8), pointer :: erout(:,:)       ! MOSART flow out of the main channel, instantaneous (m3/s) (negative is out)
      real(r8), pointer :: Tqsur(:)         ! MOSART hillslope surface runoff water temperature (K)
      real(r8), pointer :: Tqsub(:)         ! MOSART hillslope subsurface runoff water temperature (K)
@@ -539,6 +543,10 @@ contains
              rtmCTL%wh(begr:endr,nt_rtm),         &
              rtmCTL%wt(begr:endr,nt_rtm),         &
              rtmCTL%wr(begr:endr,nt_rtm),         &
+             rtmCTL%mr(begr:endr,nt_rtm),         &
+             rtmCTL%yr(begr:endr,nt_rtm),         &
+             rtmCTL%pr(begr:endr,nt_rtm),         &
+             rtmCTL%rr(begr:endr,nt_rtm),         &
              rtmCTL%erout(begr:endr,nt_rtm),      &
              rtmCTL%qsur(begr:endr,nt_rtm),       & 
              rtmCTL%qsub(begr:endr,nt_rtm),       &

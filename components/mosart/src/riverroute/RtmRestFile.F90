@@ -397,10 +397,10 @@ contains
     stormth_read = .true.
 
 if (wrmflag) then
-    nvmax = 10
+    nvmax = 18
 else
 
-    nvmax = 7
+    nvmax = 15
 endif
 
 
@@ -445,6 +445,50 @@ endif
           uname = 'm3/s'
           dfld  => rtmCTL%erout(:,nt)
        elseif (nv == 8 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          vname = 'RTM_INUNDFFU_'//trim(rtm_tracers(nt))
+          lname = 'inundation area fraction include channel'
+          uname = 'no unit'
+          dfld  => rtmCTL%inundffunit(:)
+       elseif (nv == 9 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          vname = 'RTM_INUNDWF_'//trim(rtm_tracers(nt))
+          lname = 'inundation fp water volume'
+          uname = 'm3'
+          dfld  => rtmCTL%inundwf(:)
+       elseif (nv == 10 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          vname = 'RTM_INUNDHF_'//trim(rtm_tracers(nt))
+          lname = 'inundation fp water depth'
+          uname = 'm'
+          dfld  => rtmCTL%inundhf(:)
+       elseif (nv == 11 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          vname = 'RTM_INUNDFF_'//trim(rtm_tracers(nt))
+          lname = 'inundation fp area fraction'
+          uname = 'no unit'
+          dfld  => rtmCTL%inundff(:)
+          
+          
+       elseif (nv == 12 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          vname = 'RTM_MR_'//trim(rtm_tracers(nt))
+          lname = 'mr'
+          uname = 'no unit'
+          dfld  => rtmCTL%mr(:,nt)   
+       elseif (nv == 13 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          vname = 'RTM_YR_'//trim(rtm_tracers(nt))
+          lname = 'yr'
+          uname = 'no unit'
+          dfld  => rtmCTL%yr(:,nt)   
+       elseif (nv == 14 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          vname = 'RTM_PR_'//trim(rtm_tracers(nt))
+          lname = 'pr'
+          uname = 'no unit'
+          dfld  => rtmCTL%pr(:,nt)   
+       elseif (nv == 15 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          vname = 'RTM_RR_'//trim(rtm_tracers(nt))
+          lname = 'rr'
+          uname = 'no unit'
+          dfld  => rtmCTL%rr(:,nt)
+
+          
+       elseif (nv == 16 .and. trim(rtm_tracers(nt)) == 'LIQ') then
           varok = .false.
           if (wrmflag) then
              varok = .true.
@@ -460,7 +504,7 @@ endif
              uname = 'm3'
              dfld  => StorWater%storageG(:)
           endif
-       elseif (nv == 9 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+       elseif (nv == 17 .and. trim(rtm_tracers(nt)) == 'LIQ') then
           varok = .false.
           if (wrmflag) then
              varok = .true.
@@ -476,7 +520,7 @@ endif
              uname = 'm3'
              dfld  => StorWater%releaseG(:)
           endif
-       elseif (nv == 10 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+       elseif (nv == 18 .and. trim(rtm_tracers(nt)) == 'LIQ') then
           varok = .false.
           if (wrmflag) then
              varok = .true.
@@ -536,6 +580,10 @@ endif
              if (abs(rtmCTL%wt(n,nt))      > 1.e30) rtmCTL%wt(n,nt) = 0.
              if (abs(rtmCTL%wr(n,nt))      > 1.e30) rtmCTL%wr(n,nt) = 0.
              if (abs(rtmCTL%erout(n,nt))   > 1.e30) rtmCTL%erout(n,nt) = 0.
+             if (abs(rtmCTL%inundffunit(n))> 1.e30) rtmCTL%inundffunit(n) = 0.
+             if (abs(rtmCTL%inundwf(n))    > 1.e30) rtmCTL%inundwf(n) = 0.
+             if (abs(rtmCTL%inundhf(n))    > 1.e30) rtmCTL%inundhf(n) = 0.
+             if (abs(rtmCTL%inundff(n))    > 1.e30) rtmCTL%inundff(n) = 0.
           end do  ! nt
 
           if (wrmflag) then

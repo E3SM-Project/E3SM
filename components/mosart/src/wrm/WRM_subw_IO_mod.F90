@@ -13,7 +13,7 @@ MODULE WRM_subw_IO_mod
   use RtmVar        , only : iulog, inst_suffix, smat_option, rstraflag, ngeom, nlayers, rinittemp
   use RtmFileUtils  , only : getfil, getavu, relavu
   use RtmIO         , only : pio_subsystem, ncd_pio_openfile, ncd_pio_closefile
-  use RtmTimeManager, only : get_curr_date
+  use RtmTimeManager, only : get_curr_date, is_new_month
   use rof_cpl_indices, only : nt_rtm
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
@@ -486,8 +486,6 @@ MODULE WRM_subw_IO_mod
 
      allocate (WRMUnit%YEAR(ctlSubwWRM%localNumDam))
      WRMUnit%YEAR = 1900
-     allocate (WRMUnit%active_stage(ctlSubwWRM%localNumDam))
-     WRMUnit%active_stage = 0
      allocate (WRMUnit%SurfArea(ctlSubwWRM%localNumDam))
      WRMUnit%SurfArea = 0._r8
      allocate (WRMUnit%InstCap(ctlSubwWRM%localNumDam))
@@ -588,6 +586,8 @@ MODULE WRM_subw_IO_mod
      StorWater%storage = 0._r8
      allocate (StorWater%release(ctlSubwWRM%localNumDam))
      StorWater%release = 0._r8
+     allocate (StorWater%active_stage(ctlSubwWRM%localNumDam))
+     StorWater%active_stage = 0                                                         
      allocate (StorWater%FCrelease(ctlSubwWRM%localNumDam))
      StorWater%FCrelease = 0._r8
      allocate (StorWater%pot_evap(begr:endr))
@@ -990,28 +990,31 @@ MODULE WRM_subw_IO_mod
 
    do idam = 1, ctlSubwWRM%localNumDam
     if (ctlSubwWRM%DamConstructionFlag .eq. 1) then ! allow reseroirs to be filled to 80% of storage within 10 years after construction
-      if (WRMUnit%active_stage(idam) < 2) then ! 2 means fully functional, 1 means during filling, 0 means not built yet
+      if (StorWater%active_stage(idam) < 2) then ! 2 means fully functional, 1 means during filling, 0 means not built yet
        if (WRMUnit%YEAR(idam) <= yr .and. WRMUnit%YEAR(idam) > yr-10) then
-           WRMUnit%active_stage(idam) = 1
+           StorWater%active_stage(idam) = 1
            if (StorWater%storage(idam) > 0.8_r8 * WRMUnit%StorCap(idam)) then
-             WRMUnit%active_stage(idam) = 2
+             StorWater%active_stage(idam) = 2
            endif
        endif
        
        if (WRMUnit%YEAR(idam) <= yr-10) then
-         WRMUnit%active_stage(idam) = 2
+         StorWater%active_stage(idam) = 2
        endif
       endif     
     else
-      WRMUnit%active_stage(idam) = 2
+      StorWater%active_stage(idam) = 2
     endif
    enddo    
 
-     do idam=1,ctlSubwWRM%localNumDam
+   if ( is_new_month() ) then  ! add this in case restart doesn't start from the first day of a new month ..TZ
+     do idam=1,ctlSubwWRM%localNumDam  
         if ( mon .eq. WRMUnit%MthStOp(idam)) then
            WRMUnit%StorMthStOp(idam) = StorWater%storage(idam)
-    end if
+        end if 
      enddo
+   endif
+ 
      call RegulationRelease()
      call WRM_storage_targets()
 

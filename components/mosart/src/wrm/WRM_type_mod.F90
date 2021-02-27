@@ -79,7 +79,6 @@ MODULE WRM_type_mod
      real(r8), pointer :: MaxStorTarget(:)  ! (nd)
 
      integer , pointer :: YEAR(:)           ! (nd) year dam was constructed and operationnal
-     integer , pointer :: active_stage(:)   ! (nd) whether dam is not functional (before construction) or during filling (<10 yrs after built and <80% of capacity) or fully functional (10 yrs after built or >80% of capacity) 
      integer , pointer :: use_Irrig(:)      ! (nd) reservoir purpose irrigation 
      integer , pointer :: use_Elec(:)       ! (nd) hydropower
      integer , pointer :: use_FCon(:)       ! (nd) flood control
@@ -144,7 +143,6 @@ MODULE WRM_type_mod
 !constraints based on points of extractions along the maoin stem. Here ensure the release is the environmental flow.
 
      real(r8), pointer :: supply(:)         ! (b:e) supply of surface water [m3]
-	 !real(r8), pointer :: SupplyFrac(:)     ! (b:e) supply fraction relative to the demand ! Tian June 2018
      real(r8), pointer :: deficit(:)        ! (b:e) unmet demand [m3]
      real(r8), pointer :: demand(:)         ! (b:e) total withdrawl water demand [m3]
      real(r8), pointer :: demand0(:)        ! (b:e) baseline total withdrawl water rate demand [m3/s]
@@ -167,6 +165,7 @@ MODULE WRM_type_mod
      real(r8), pointer :: FCrelease (:)     ! (nd) Flood control release to get to storage target
      real(r8), pointer :: pot_evap(:)       ! (b:e) potential evaporation in mm from the grid
      real(r8), pointer :: Conveyance (:)    ! (nd) Conveyance loss flux
+     integer , pointer :: active_stage(:)   ! (nd) whether dam is not functional (before construction) or during filling (<10 yrs after built and <80% of capacity) or fully functional (10 yrs after built or >80% of capacity)
   end type WRMwater
 
   ! parameters to be calibrated. Ideally, these parameters are supposed to be uniform for one region
