@@ -25,7 +25,7 @@ module rof_comp_mct
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
                                 inst_index, inst_suffix, inst_name, RtmVarSet, &
-                                wrmflag, heatflag, inundflag, use_lnd_rof_two_way
+                                wrmflag, heatflag, sediflag, inundflag, use_lnd_rof_two_way
   use RtmSpmd          , only : masterproc, mpicom_rof, npes, iam, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size
@@ -44,6 +44,8 @@ module rof_comp_mct
                                 index_x2r_Faxa_lwdn , &
                                 index_x2r_Faxa_swvdr, index_x2r_Faxa_swvdf, &
                                 index_x2r_Faxa_swndr, index_x2r_Faxa_swndf, &
+                                index_x2r_Flrl_rofdto, &
+                                index_x2r_Flrl_rofmud, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
@@ -563,9 +565,9 @@ contains
     type(mct_aVect), intent(inout) :: x2r_r         
     !
     ! LOCAL VARIABLES
-    integer :: n2, n, nt, begr, endr, nliq, nfrz
     real(R8) :: tmp1, tmp2
     real(R8) :: shum
+    integer :: n2, n, nt, begr, endr, nliq, nfrz, nmud, nsan
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
     
@@ -573,6 +575,8 @@ contains
 
     nliq = 0
     nfrz = 0
+    nmud = 0
+    nsan = 0
     do nt = 1,nt_rtm
        if (trim(rtm_tracers(nt)) == 'LIQ') then
           nliq = nt
@@ -580,9 +584,15 @@ contains
        if (trim(rtm_tracers(nt)) == 'ICE') then
           nfrz = nt
        endif
+       if (trim(rtm_tracers(nt)) == 'MUD') then
+          nmud = nt
+       endif
+       if (trim(rtm_tracers(nt)) == 'SAN') then
+          nsan = nt
+       endif
     enddo
-    if (nliq == 0 .or. nfrz == 0) then
-       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE ',nliq,nfrz,rtm_tracers
+    if (nliq == 0 .or. nfrz == 0 .or. nmud == 0 .or. nsan == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE MUD SAN',nliq,nfrz,nmud,nsan, rtm_tracers
        call shr_sys_abort()
     endif
 
@@ -629,11 +639,21 @@ contains
           THeat%forc_vp(n)   = shum * THeat%forc_pbot(n)  / (0.622_r8 + 0.378_r8 * shum)
           THeat%coszen(n)    = x2r_r%rAttr(index_x2r_coszen_str,n2)
        end if
+       rtmCTL%qsur(n,nmud) = 0.0_r8
+       rtmCTL%qsur(n,nsan) = 0.0_r8
 
        if (use_lnd_rof_two_way) then
           rtmCTL%inundinf(n) = x2r_r%rAttr(index_x2r_Flrl_inundinf,n2) * (rtmCTL%area(n)*0.001_r8)
        endif
     enddo
+
+    if(sediflag) then
+      do n = begr,endr
+         n2 = n - begr + 1
+         rtmCTL%qsur(n,nmud) = x2r_r%rAttr(index_x2r_Flrl_rofmud,n2) * (rtmCTL%area(n)) ! kg/m2/s --> kg/s for sediment
+         rtmCTL%qsur(n,nsan) = 0.0_r8
+      enddo
+    end if
 
   end subroutine rof_import_mct
 

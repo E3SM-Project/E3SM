@@ -1411,6 +1411,7 @@ contains
        endif
        l2x(index_l2x_Flrl_Tqsur,i)  = lnd2atm_vars%Tqsur_grc(g)
        l2x(index_l2x_Flrl_Tqsub,i)  = lnd2atm_vars%Tqsub_grc(g)
+       l2x(index_l2x_Flrl_rofmud,i) = lnd2atm_vars%qflx_rofmud_grc(g)
        l2x(index_l2x_coszen_str,i) = lnd2atm_vars%coszen_str(g)
 
        if (use_lnd_rof_two_way) then
