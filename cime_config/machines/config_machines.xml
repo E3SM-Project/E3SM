@@ -2755,12 +2755,12 @@
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpi-serial</MPILIBS>
     <PROJECT>ngeet</PROJECT>
-    <CIME_OUTPUT_ROOT>/home/lbleco/e3sm/</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/home/lbleco/cesm/cesm_input_datasets/</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/lbleco/cesm/cesm_input_datasets/atm/datm7/</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/home/lbleco/acme/cesm_archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/home/lbleco/acme/cesm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/lbleco/cesm/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+    <CIME_OUTPUT_ROOT>/raid1/lbleco/e3sm/</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/raid1/lbleco/cesm/cesm_input_datasets/</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/raid1/lbleco/cesm/cesm_input_datasets/atm/datm7/</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/raid1/lbleco/acme/cesm_archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/raid1/lbleco/acme/cesm_baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/raid1/lbleco/cesm/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>1</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <SUPPORTED_BY>rgknox at lbl gov</SUPPORTED_BY>
