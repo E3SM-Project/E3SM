@@ -647,6 +647,7 @@ contains
     mbintxoa = -1 ! iMOAB id for atm intx with mpas ocean
     mblxid = -1   ! iMOAB id for land on coupler pes
     mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes
+    mpsiid = -1   ! iMOAB for sea-ice
     num_moab_exports = 0 ! mostly used in debugging
 
 >>>>>>> 9f1898ff7... add iulian787/compute_graph changes:cime/src/drivers/moab/shr/seq_comm_mct.F90
