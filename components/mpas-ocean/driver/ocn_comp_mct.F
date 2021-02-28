@@ -39,6 +39,7 @@ module ocn_comp_mct
    use mpas_log
 #ifdef HAVE_MOAB
    use mpas_moabmesh
+   use seq_comm_mct, only: MPOID
 #endif
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
    use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
@@ -211,6 +212,9 @@ contains
     real (kind=RKIND), dimension(:),   pointer :: filteredSSHGradientZonal, filteredSSHGradientMeridional
     real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
 
+#ifdef HAVE_MOAB
+    character*100 outfile, wopts
+#endif
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
           use iso_c_binding, only : c_char, c_ptr, c_int
@@ -559,11 +563,12 @@ contains
     if ( ierr /= 0 ) then
        call mpas_log_write('Core init failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
+    call t_stopf('mpaso_init2')
 #ifdef HAVE_MOAB
-    call mpas_moab_instance(domain_ptr) ! should return MPOID ..
+    call mpas_moab_instance(domain_ptr, OCNID, MPOID) ! should return MPOID ..
     call mpas_log_write('initialized MOAB MPAS ocean instance... ')
 #endif
-    call t_stopf('mpaso_init2')
+
 
 !-----------------------------------------------------------------------
 !
