@@ -19,6 +19,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : sameg_al ! same grid atm lnd, and land is point cloud
+  use seq_comm_mct, only : MPSIID  !  sea-ice
   use shr_mpi_mod,  only: shr_mpi_max
   use dimensions_mod, only : np     ! for atmosphere
 
@@ -1004,7 +1005,7 @@ contains
     integer, external        :: iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph
     integer                  :: ierr, context_id
     character*32             :: appname, outfile, wopts, tagnameProj
-    integer                  :: maxMH, maxMPO, maxMLID ! max pids for moab apps atm, ocn, lnd
+    integer                  :: maxMH, maxMPO, maxMLID, maxMSID ! max pids for moab apps atm, ocn, lnd, sea-ice
     integer                  :: tagtype, numco,  tagindex, partMethod
     integer                  :: rank, ent_type
     integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
@@ -1041,6 +1042,7 @@ contains
     call shr_mpi_max(mhid, maxMH, mpicom_join, all=.true.) ! if on atm / cpl joint, maxMH /= -1
     call shr_mpi_max(mpoid, maxMPO, mpicom_join, all=.true.)
     call shr_mpi_max(mlnid, maxMLID, mpicom_join, all=.true.)
+    call shr_mpi_max(MPSIID, maxMSID, mpicom_join, all=.true.)
     if (seq_comm_iamroot(CPLID) ) then
        write(logunit, *) "MOAB coupling:  maxMH: ", maxMH, " maxMPO: ", maxMPO, &
           " maxMLID: ", maxMLID
@@ -1153,6 +1155,17 @@ contains
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
 
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
+           !     write out the mesh file to disk, in parallel
+#ifdef MOABDEBUG
+        outfile = 'wholeOcn.h5m'//CHAR(0)
+        wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+        ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing ocean mesh '
+          call shr_sys_abort(subname//' ERROR in writing ocean mesh ')
+        endif
+#endif
+
         !  send mesh to coupler
         ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
         if (ierr .ne. 0) then
@@ -1306,6 +1319,21 @@ contains
            write(logunit,*) subname,' error in freeing buffers'
            call shr_sys_abort(subname//' ERROR in freeing buffers')
         endif
+      endif
+    endif
+
+    ! sea - ice
+    if (comp%oneletterid == 'i'  .and. maxMSID /= -1) then
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
+#ifdef MOABDEBUG
+        outfile = 'wholeSeaIce.h5m'//CHAR(0)
+        wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+        ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
+        if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in writing sea-ice'
+           call shr_sys_abort(subname//' ERROR in writing sea-ice')
+        endif
+#endif
       endif
     endif
 
