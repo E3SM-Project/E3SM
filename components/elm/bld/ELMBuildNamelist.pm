@@ -96,13 +96,13 @@ OPTIONS
                                 sp    = Satellite Phenology (SP)
                                 cn    = Carbon Nitrogen model (CN)
                                         (ELMCN use_cn=true)
-                                bgc   = Carbon Nitrogen with methane, nitrification, vertical soil C,
+                                bgc   = Carbon Nitrogen with methane, vertical soil C,
                                         CENTURY decomposition
                                         (or ELMBGC use_cn=true, use_vertsoilc=true,
-                                         use_century_decomp=true, use_nitrif_denitrif=true, use_lch4=true,
+                                         use_century_decomp=true, use_lch4=true,
                                          and use_snicar_ad=true, use_dynroot)
                                         This toggles on the namelist variables:
-                                         use_cn, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_century_decomp, use_snicar_ad
+                                         use_cn, use_lch4, use_vertsoilc, use_century_decomp, use_snicar_ad
                                          use_dynroot
                                 fates    = functionaly assembled terrestrial ecosystem simulator
                                           with native below ground bgc
@@ -207,9 +207,6 @@ OPTIONS
      -namelist "namelist"     Specify namelist settings directly on the commandline by supplying
                               a string containing FORTRAN namelist syntax, e.g.,
                                  -namelist "&elm_inparm dt=1800 /"
-     -nitrif_denitrif         Toggle for nitrification-denitrification process.
-                              This flag is only allowed for bgc=cn mode (default is off)
-			      This turns on namelist variable: use_nitrif_denitrif
      -no-megan                DO NOT PRODUCE a megan_emis_nl namelist that will go into the
                               "drv_flds_in" file for the driver to pass VOCs to the atm.
                               MEGAN (Model of Emissions of Gases and Aerosols from Nature)
@@ -303,7 +300,6 @@ sub process_commandline {
                maxpft                => "default",
                betr_mode             => "default",               
                methane               => 0,
-               nitrif_denitrif       => 1,
                nutrient              => "default",
                nutrient_comp_pathway => "default",
                soil_decomp           => "default",
@@ -354,7 +350,6 @@ sub process_commandline {
              "version"                   => \$opts{'version'},
              "betr_mode=s"               => \$opts{'betr_mode'},             
              "methane"                   => \$opts{'methane'},
-             "nitrif_denitrif"           => \$opts{'nitrif_denitrif'},
              "nutrient=s"                => \$opts{'nutrient'},
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
              "soil_decomp=s"             => \$opts{'soil_decomp'},
@@ -906,16 +901,6 @@ sub setup_cmdl_check_bgc {
   my $var;
   my $val;
 
-  $var = "nitrif_denitrif";
-  $val = $opts->{$var};
-  if ( $val eq 1 ) {
-    $val = ".true.";
-    $var = "use_nitrif_denitrif";
-    if ( defined($nl->get_value($var)) && ($nl->get_value($var) ne $val)) {
-      fatal_error("$var has a value (".$nl_flags->{$var}.") that is NOT consistent with the commandline setting of -nitrif_denitrif\n");
-    }
-  }
-
   $var = "methane";
   $val = $opts->{$var};
   if ( $val eq 1 ) {
@@ -995,7 +980,7 @@ sub setup_cmdl_bgc {
   }
 
   # If the variable has already been set use it, if not set to the value defined by the bgc_mode
-  my @list  = (  "use_lch4", "use_nitrif_denitrif", "use_vertsoilc", "use_century_decomp", "use_snicar_ad" );
+  my @list  = (  "use_lch4", "use_vertsoilc", "use_century_decomp", "use_snicar_ad" );
   my $ndiff = 0;
   foreach my $var ( @list ) {
     if ( ! defined($nl->get_value($var))  ) {
@@ -1074,30 +1059,25 @@ sub setup_cmdl_methane {
     if ($nl_flags->{$var} eq "sq") {
       fatal_error("-methane option can ONLY be used for elm with -bgc cn|bgc|fates");
     } else {
-      $val = $nl_flags->{'use_nitrif_denitrif'};
-      if ($val ne ".true.") {
-        $var = "use_nitrif_denitrif";
-        fatal_error("-methane used with $var = $val, thus it is NOT valid.\n");
-      } else {
+
         $var = "use_lch4";
         $val = ".true.";
-
+	
         if ( defined($nl->get_value($var)) && $nl->get_value($var) ne $val ) {
-          fatal_error("$var is inconsistent with the commandline setting of -methane");
+	    fatal_error("$var is inconsistent with the commandline setting of -methane");
         }
-
+	
         my $group = $definition->get_group_name($var);
         $nl_flags->{$var} = $val;
         $nl->set_variable_value($group, $var, $val);
-
+	
         if (  ! $definition->is_valid_value( $var, $val ) ) {
-          my @valid_values   = $definition->get_valid_values( $var );
-          fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+	    my @valid_values   = $definition->get_valid_values( $var );
+	    fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
         }
-      }
     }
   }
-} # methane
+}
 
 #-------------------------------------------------------------------------------
 
@@ -2322,7 +2302,6 @@ sub setup_logic_demand {
   $settings{'use_cn'}              = $nl_flags->{'use_cn'};
   $settings{'use_cndv'}            = $nl_flags->{'use_cndv'};
   $settings{'use_lch4'}            = $nl_flags->{'use_lch4'};
-  $settings{'use_nitrif_denitrif'} = $nl_flags->{'use_nitrif_denitrif'};
   $settings{'use_vertsoilc'}       = $nl_flags->{'use_vertsoilc'};
   $settings{'use_snicar_ad'}       = $nl_flags->{'use_snicar_ad'};
   $settings{'use_century_decomp'}  = $nl_flags->{'use_century_decomp'};
@@ -2422,7 +2401,6 @@ sub setup_logic_initial_conditions {
         'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
         'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
         'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
-        'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
         'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
         'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
         'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
@@ -2442,7 +2420,6 @@ sub setup_logic_initial_conditions {
         'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
         'ic_md'=>$ic_date, 'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
         'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
-        'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
         'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
         'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
         'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
@@ -2462,7 +2439,6 @@ sub setup_logic_initial_conditions {
         'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
         'ic_ymd'=>$ic_date, 'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
         'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
-        'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
         'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
         'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
         'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
