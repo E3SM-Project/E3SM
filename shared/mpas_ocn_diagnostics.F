@@ -683,6 +683,7 @@ contains
                                     * kiteAreasOnVertex(i,iVertex)
             end do
             layerThicknessVertex = layerThicknessVertex * invAreaTri1
+            if (layerThicknessVertex == 0) cycle
 
             normalizedRelativeVorticityVertex(k,iVertex) = relativeVorticity(k,iVertex) / layerThicknessVertex
             normalizedPlanetaryVorticityVertex(k,iVertex) = fVertex(iVertex) / layerThicknessVertex
