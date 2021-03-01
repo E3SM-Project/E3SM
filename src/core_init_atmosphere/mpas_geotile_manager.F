@@ -115,6 +115,8 @@ module mpas_geotile_manager
         character (len=StrKIND), pointer :: endian
         integer, pointer :: tile_nx ! Number of pixels in the x-direction for a single tile
         integer, pointer :: tile_ny ! Number of pixels in the y-direction for a single tile
+        integer, pointer :: tile_nz ! Number of pixels in the z-direction for a single tile
+        integer, pointer :: tile_z_start, tile_z_end
         integer, pointer :: signed
         integer, pointer :: tile_bdr
         integer, pointer :: iswater, islake, isice, isurban, isoilwater
@@ -262,6 +264,33 @@ module mpas_geotile_manager
                 call mpas_pool_add_config(mgr % pool, 'isoilwater', isoilwater)
             endif
         endif
+
+        !
+        ! Some datasets describe their z dimension as either tile_z or tile_z_start
+        ! and tile_z_end. mpas_parse_index will return either one or the other. However,
+        ! we will need a tile_z value to pass to read_geogrid and we should allocated
+        ! each z coordinate of a tile in Fortran to be between tile_z_start and tile_z_end.
+        !
+        ! Currently, no static dataset that MPAS uses describes its z coordinate with a lowerbound
+        ! other than 1.
+        !
+        tile_nz => null()
+        tile_z_start => null()
+        tile_z_end => null()
+
+        call mpas_pool_get_config(mgr % pool, 'tile_z', tile_nz)
+        call mpas_pool_get_config(mgr % pool, 'tile_z_start', tile_z_start)
+        call mpas_pool_get_config(mgr % pool, 'tile_z_end', tile_z_end)
+
+        if (associated(tile_nz)) then
+            ! Here we are assuming that if tile_z is specified then tile_z_start and tile_z_end
+            ! are not. This is safe currently as no dataset that MPAS uses specifies both.
+            call mpas_pool_add_config(mgr % pool, 'tile_z_start', 1)
+            call mpas_pool_add_config(mgr % pool, 'tile_z_end', tile_nz)
+        else
+            call mpas_pool_add_config(mgr % pool, 'tile_z', tile_z_end - tile_z_start + 1)
+        end if
+
 
         ! Reset the pool's error level
         call mpas_pool_set_error_level(err_level)
@@ -521,11 +550,13 @@ module mpas_geotile_manager
 
         ! Local variables
         integer, pointer :: tile_nx, tile_ny, tile_nz
+        integer, pointer :: tile_z_start, tile_z_end
         integer, pointer :: tile_bdr
         integer, pointer :: wordsize
         integer :: start_x, start_y
         integer, pointer :: signed
         character (len=StrKIND), pointer :: endian
+        integer :: err_level
         logical :: res
 
         character (len=StrKIND) :: fname
@@ -539,9 +570,19 @@ module mpas_geotile_manager
 
         ierr = 0
 
+        tile_nx => null()
+        tile_ny => null()
+        tile_nz => null()
+        tile_z_start => null()
+        tile_z_end => null()
+        tile_bdr => null()
+        wordsize => null()
         tile => null()
         endian => null()
         signed => null()
+
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
 
         call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
         call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
@@ -550,10 +591,16 @@ module mpas_geotile_manager
         call mpas_pool_get_config(mgr % pool, 'wordsize', wordsize)
         call mpas_pool_get_config(mgr % pool, 'signed', signed)
         call mpas_pool_get_config(mgr % pool, 'endian', endian)
+        call mpas_pool_get_config(mgr % pool, 'tile_z_start', tile_z_start)
+        call mpas_pool_get_config(mgr % pool, 'tile_z_end', tile_z_end)
+
+        ! Reset the pool's error level
+        call mpas_pool_set_error_level(err_level)
 
         c_tile_nx = tile_nx + 2 * tile_bdr ! The number of pixels in the x direction, including halo cells
         c_tile_ny = tile_ny + 2 * tile_bdr ! The number of pixels in the y direction, including halo cells
-        c_tile_nz = tile_nz ! The number of pixels in the z direction
+        c_tile_nz = tile_nz
+
         c_wordsize = wordsize
         c_signed = signed
 
@@ -590,7 +637,7 @@ module mpas_geotile_manager
         ! Allocate and read the tile
         !
         allocate(tile)
-        allocate(tile % tile(tile_nx + (tile_bdr * 2), tile_ny + (tile_bdr * 2), tile_nz))
+        allocate(tile % tile(tile_nx + (tile_bdr * 2), tile_ny + (tile_bdr * 2), tile_z_start:tile_z_end))
         c_tile_ptr = c_loc(tile % tile)
         call read_geogrid(c_fname, c_tile_ptr, c_tile_nx, c_tile_ny, c_tile_nz, c_signed, c_endian, c_wordsize, status)
         if (status /= 0) then

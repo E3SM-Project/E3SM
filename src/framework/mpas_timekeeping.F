@@ -14,12 +14,6 @@ module mpas_timekeeping
    use mpas_log
 
    use ESMF
-   use ESMF_BaseMod
-   use ESMF_Stubs
-   use ESMF_CalendarMod
-   use ESMF_ClockMod
-   use ESMF_TimeMod
-   use ESMF_TimeIntervalMod
 
    private :: mpas_calibrate_alarms
    private :: mpas_in_ringing_envelope
