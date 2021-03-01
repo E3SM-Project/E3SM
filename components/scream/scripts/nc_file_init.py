@@ -64,183 +64,106 @@ class NcFileInit(object):
         return ds
 
     ###########################################################################
-    def add_variables(self,ds):
+    def get_scalar_name_and_value(self,arg_str):
     ###########################################################################
+        if arg_str.find('='):
+            name_val = arg_str.split('=')
+            expect (len(name_val)==2,
+                    "Error! Scalar variables must be specified with 'var_name' or 'var_name=value'."
+                    "       You cannot have '=' in the variable name.")
+            name = name_val[0]
+            val = float(name_val[1])
+        else:
+            name = arg_str
+            val = 0.0
+
+        return name, val
+
+    ###########################################################################
+    def get_vector_name_and_values(self,arg_str):
+    ###########################################################################
+        if ':' in arg_str:
+            var_dim = arg_str.split(':')
+            expect (len(var_dim)==2,
+                    "Error! Vector variables must be specified with 'var_name:vec_dim' or 'var_name=[val0,...,valN]'."
+                    "       You cannot have ':' in the variable name.")
+            name = var_dim[0]
+            dim = var_dim[1];
+            expect (dim.isdigit() and int(dim)>0,
+                    "Error! Invalid vector dimension '{}' for variable {}".format(dim,name))
+            values = [0.0] * int(dim)
+        else:
+            print ("arg str: {}".format(arg_str))
+            expect ('=' in arg_str,
+                    "Error! Vector variables must be specified with 'name:dim' or 'name=[val0,...,valN]'.")
+
+            var_vals = arg_str.split('=')
+            name = var_vals[0]
+            vals = var_vals[1]
+            expect(vals[0]=='[' and vals[-1]==']',
+                    "Error! Vector variable must be specified with 'name:dim' or 'name=[val0,...,valN]'.")
+            values = [float(d) for d in vals[1:-1].split(',')]
+            dim = len(values)
+
+        return name, values
+
+    ###########################################################################
+    def add_scalar_variable(self,ds,name,dims,value):
+    ###########################################################################
+
         # re.match(r'^\w+$', string) is a very compact regexp check, to ensure
         # the string only contains alphanumeric chars and underscores
+        expect(re.match(r'^\w+$', name),
+                "Error! Variable names must contain only alphanumeric characters or underscores.\n")
 
-        # 1d variables
+        var = ds.createVariable(name,"f8",dims)
+        var[:] = value
+
+    ###########################################################################
+    def add_vector_variable(self,ds,base_name,dims,values):
+    ###########################################################################
+
+        for i in range(len(values)):
+            self.add_scalar_variable(ds,"{}_{}".format(base_name,i),dims,values[i])
+
+    ###########################################################################
+    def add_variables(self,ds):
+    ###########################################################################
+
+        # 1d variables (midpoints and interfaces)
         for item in self._1d_mid_s:
-            if item.find('='):
-                name_val = item.split('=')
-                expect (len(name_val)==2,
-                        "Error! Scalar variables must be specified with 'var_name' or 'var_name=value'."
-                        "       You cannot have '=' in the variable name.")
-                name = name_val[0]
-                val = float(name_val[1])
-            else:
-                name = item
-                val = 0.0
+            name, val = self.get_scalar_name_and_value(item)
+            self.add_scalar_variable (ds,name,("LEV"),val)
 
-            expect(re.match(r'^\w+$', name),
-                    "Error! Variable names must contain only alphanumeric characters or underscores.\n")
-
-            var = ds.createVariable(name,"f8",("LEV"))
-            var[:] = val
         for item in self._1d_int_s:
-            if item.find('='):
-                name_val = item.split('=')
-                expect (len(name_val)==2,
-                        "Error! Scalar variables must be specified with 'var_name' or 'var_name=value'."
-                        "       You cannot have '=' in the variable name.")
-                name = name_val[0]
-                val = float(name_val[1])
-            else:
-                name = item
-                val = 0.0
+            name, val = self.get_scalar_name_and_value(item)
+            self.add_scalar_variable (ds,name,("ILEV"),val)
 
-            expect(re.match(r'^\w+$', name),
-                    "Error! Variable names must contain only alphanumeric characters or underscores.\n")
-
-            var = ds.createVariable(name,"f8",("ILEV"))
-            var[:] = val
-
-        # 2d variables
+        # 2d variables (scalars and vectors)
         for item in self._2d_s:
-            if item.find('='):
-                name_val = item.split('=')
-                expect (len(name_val)==2,
-                        "Error! Scalar variables must be specified with 'var_name' or 'var_name=value'."
-                        "       You cannot have '=' in the variable name.")
-                name = name_val[0]
-                val = float(name_val[1])
-            else:
-                name = item
-                val = 0.0
+            name, val = self.get_scalar_name_and_value(item)
+            self.add_scalar_variable (ds,name,("COL"),val)
 
-            expect(re.match(r'^\w+$', name),
-                   "Error! Variable names must contain only alphanumeric characters or underscores.\n")
-
-            var = ds.createVariable(name,"f8",("COL"))
-            var[:] = val
         for item in self._2d_v:
-            values = []
-            if ':' in item:
-                var_dim = item.split(':')
-                expect (len(var_dim)==2,
-                        "Error! Vector variables must be specified with 'var_name:vec_dim' or 'var_name=[val0,...,valN]'."
-                        "       You cannot have ':' in the variable name.")
-                name = var_dim[0]
-                dim = var_dim[1];
-                expect (dim.isdigit() and int(dim)>0,
-                        "Error! Invalid vector dimension '{}' for variable {}".format(dim,name))
-                values = [0.0] * int(dim)
-            else:
-                expect ('=' in item,
-                        "Error! Vector variable must be specified with 'name:dim' or 'name=[val0,...,valN]'.")
+            name, values = self.get_vector_name_and_values(item)
+            self.add_vector_variable (ds,name,("COL"),values)
 
-                var_vals = item.split('=')
-                name = var_vals[0]
-                vals = var_vals[1]
-                expect(vals[0]=='[' and vals[-1]==']',
-                        "Error! Vector variable must be specified with 'name:dim' or 'name=[val0,...,valN]'.")
-                values = [float(d) for d in vals[1:-1].split(',')]
-                dim = len(values)
-
-            for i in range(dim):
-                var = ds.createVariable("{}_{}".format(name,i),"f8",("COL"))
-                var[:] = values[i]
-
-        # 3d variables
+        # 3d variables (scalars and vectors, at midpoints and interfaces)
         for item in self._3d_mid_s:
-            if item.find('='):
-                name_val = item.split('=')
-                expect (len(name_val)==2,
-                        "Error! Scalar variables must be specified with 'var_name' or 'var_name=value'."
-                        "       You cannot have '=' in the variable name.")
-                name = name_val[0]
-                val = float(name_val[1])
-            else:
-                name = item
-                val = 0.0
+            name, val = self.get_scalar_name_and_value(item)
+            self.add_scalar_variable (ds,name,("COL","LEV"),val)
 
-            expect(re.match(r'^\w+$', name),
-                   "Error! Variable names must contain only alphanumeric characters or underscores.\n")
-
-            var = ds.createVariable(name,"f8",("COL","LEV"))
-            var[:] = val
         for item in self._3d_int_s:
-            if item.find('='):
-                name_val = item.split('=')
-                expect (len(name_val)==2,
-                        "Error! Scalar variables must be specified with 'var_name' or 'var_name=value'."
-                        "       You cannot have '=' in the variable name.")
-                name = name_val[0]
-                val = float(name_val[1])
-            else:
-                name = item
-                val = 0.0
-
-            expect(re.match(r'^\w+$', name),
-                   "Error! Variable names must contain only alphanumeric characters or underscores.\n")
-
-            var = ds.createVariable(name,"f8",("COL","ILEV"))
-            var[:] = val
+            name, val = self.get_scalar_name_and_value(item)
+            self.add_scalar_variable (ds,name,("COL","ILEV"),val)
 
         for item in self._3d_mid_v:
-            values = []
-            if ':' in item:
-                var_dim = item.split(':')
-                expect (len(var_dim)==2,
-                        "Error! Vector variables must be specified with 'var_name:vec_dim' or 'var_name=[val0,...,valN]'."
-                        "       You cannot have ':' in the variable name.")
-                name = var_dim[0]
-                dim = var_dim[1];
-                expect (dim.isdigit() and int(dim)>0,
-                        "Error! Invalid vector dimension '{}' for variable {}".format(dim,name))
-                values = [0.0] * int(dim)
-            else:
-                expect ('=' in item,
-                        "Error! Vector variable must be specified with 'name:dim' or 'name=[val0,...,valN]'.")
+            name, values = self.get_vector_name_and_values(item)
+            self.add_vector_variable (ds,name,("COL","LEV"),values)
 
-                var_vals = item.split('=')
-                name = var_vals[0]
-                vals = var_vals[1]
-                expect(vals[0]=='[' and vals[-1]==']',
-                        "Error! Vector variable must be specified with 'name:dim' or 'name=[val0,...,valN]'.")
-                values = [float(d) for d in vals[1:-1].split(',')]
-                dim = len(values)
-
-            for i in range(dim):
-                var = ds.createVariable("{}_{}".format(name,i),"f8",("COL","LEV"))
-                var[:] = values[i]
         for item in self._3d_int_v:
-            values = []
-            if ':' in item:
-                var_dim = item.split(':')
-                expect (len(var_dim)==2,
-                        "Error! Vector variables must be specified with 'var_name:vec_dim' or 'var_name=[val0,...,valN]'."
-                        "       You cannot have ':' in the variable name.")
-                name = var_dim[0]
-                dim = var_dim[1];
-                expect (dim.isdigit() and int(dim)>0,
-                        "Error! Invalid vector dimension '{}' for variable {}".format(dim,name))
-                values = [0.0] * int(dim)
-            else:
-                expect ('=' in item,
-                        "Error! Vector variable must be specified with 'name:dim' or 'name=[val0,...,valN]'.")
-
-                var_vals = item.split('=')
-                name = var_vals[0]
-                vals = var_vals[1]
-                expect(vals[0]=='[' and vals[-1]==']',
-                        "Error! Vector variable must be specified with 'name:dim' or 'name=[val0,...,valN]'.")
-                values = [float(d) for d in vals[1:-1].split(',')]
-                dim = len(values)
-
-            for i in range(dim):
-                var = ds.createVariable("{}_{}".format(name,i),"f8",("COL","ILEV"))
-                var[:] = values[i]
+            name, values = self.get_vector_name_and_values(item)
+            self.add_vector_variable (ds,name,("COL","ILEV"),values)
 
     ###########################################################################
     def process_nc_file(self):
