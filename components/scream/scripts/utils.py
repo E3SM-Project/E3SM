@@ -474,9 +474,10 @@ def ensure_pip():
 
         ensurepip.bootstrap(user=True)
 
-        site.main() # needed to "rehash" available libs
+        # needed to "rehash" available libs
+        site.main() # pylint: disable=no-member
 
-        import pip
+        import pip # pylint: disable=import-error
 
 ###############################################################################
 def ensure_yaml():
@@ -489,12 +490,13 @@ def ensure_yaml():
         ensure_pip()
 
         # --trusted-host may not work for ancient versions of python
-        stat, out, err = run_cmd("{} -m pip install pyyaml --trusted-host files.pythonhosted.org --user".format(sys.executable))
+        stat, _, err = run_cmd("{} -m pip install pyyaml --trusted-host files.pythonhosted.org --user".format(sys.executable))
         expect(stat == 0, "Failed to install pyyaml, cannot continue:\n{}".format(err))
 
-        site.main() # needed to "rehash" available libs
+        # needed to "rehash" available libs
+        site.main() # pylint: disable=no-member
 
-        import yaml
+        import yaml # pylint: disable=import-error
 
 ###############################################################################
 def multilevel_dict_change(ml_dict, keys, value):
