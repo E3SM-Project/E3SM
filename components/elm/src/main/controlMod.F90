@@ -445,10 +445,10 @@ contains
             errMsg(__FILE__, __LINE__))
        end if
        
-       if (.not. use_crop .and. irrigate) then
-          call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
-            errMsg(__FILE__, __LINE__))
-       end if
+       !if (.not. use_crop .and. irrigate) then
+       !   call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
+       !     errMsg(__FILE__, __LINE__))
+       !end if
 
        if (.not. use_erosion .and. ero_ccycle) then
           call endrun(msg=' ERROR: ero_ccycle = .true. requires erosion model active.'//&
