@@ -224,7 +224,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn, temp_tend
     real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
     real (kind=real_kind), dimension(nlev) :: domain_q, domain_t, domain_u, domain_v, rtau
-    real (kind=real_kind), dimension(nlev) :: relax_t, relax_q, relax_u, relax_v
+    real (kind=real_kind), dimension(nlev) :: relax_t, relax_q, relax_u, relax_v, iop_pres
     real (kind=real_kind) :: forecast_ps, Rstar1d
     real (kind=real_kind) :: temperature(np,np,nlev)
     logical :: wet
@@ -252,6 +252,11 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
+
+    ! Compute pressure for IOP observations
+    do k=1,nlev
+      iop_pres(k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*psobs
+    end do
 
     do ie=1,nelemd_todo
 
@@ -352,22 +357,34 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
           global_shared_buf(ie,3) = global_shared_buf(ie,3) + SUM(elem(ie)%state%v(:,:,1,k,t1))
           global_shared_buf(ie,4) = global_shared_buf(ie,4) + SUM(elem(ie)%state%v(:,:,2,k,t1))
         enddo
-        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+        call wrap_repro_sum(nvars=4, comm=hybrid%par%comm)
         domain_q(k) = global_shared_sum(1)/(dble(nelem)*dble(np)*dble(np))
         domain_t(k) = global_shared_sum(2)/(dble(nelem)*dble(np)*dble(np))
         domain_u(k) = global_shared_sum(3)/(dble(nelem)*dble(np)*dble(np))
         domain_v(k) = global_shared_sum(4)/(dble(nelem)*dble(np)*dble(np))
       enddo
 
+      ! Initialize relaxation arrays
       do k=1,nlev
+        relax_q(k) = 0._real_kind
+        relax_t(k) = 0._real_kind
+        relax_u(k) = 0._real_kind
+        relax_v(k) = 0._real_kind
+      enddo
+
+      do k=1,nlev
+
+        if (iop_pres(k) .le. scm_relaxation_low*100._real_kind .and. &
+          iop_pres(k) .ge. scm_relaxation_high*100._real_kind) then
       
-        rtau(k) = 10800._real_kind
-        rtau(k) = max(dt,rtau(k))
+          rtau(k) = 10800._real_kind
+          rtau(k) = max(dt,rtau(k))
         
-        relax_q(k) = -(domain_q(k) - qobs(k))/rtau(k)
-        relax_t(k) = -(domain_t(k) - tobs(k))/rtau(k)
-        relax_u(k) = -(domain_u(k) - uobs(k))/rtau(k)
-        relax_v(k) = -(domain_v(k) - vobs(k))/rtau(k)
+          relax_q(k) = -(domain_q(k) - qobs(k))/rtau(k)
+          relax_t(k) = -(domain_t(k) - tobs(k))/rtau(k)
+          relax_u(k) = -(domain_u(k) - uobs(k))/rtau(k)
+          relax_v(k) = -(domain_v(k) - vobs(k))/rtau(k)
+        endif
       
       enddo
       
