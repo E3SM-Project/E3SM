@@ -343,7 +343,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     
     enddo
     
-    if (scm_relaxation .and. iop_mode) then 
+    if (iop_relaxation .and. iop_mode) then
    
       do k=1,nlev
         do ie=1,nelemd_todo
@@ -374,10 +374,10 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
 
       do k=1,nlev
 
-        if (iop_pres(k) .le. scm_relaxation_low*100._real_kind .and. &
-          iop_pres(k) .ge. scm_relaxation_high*100._real_kind) then
+        if (iop_pres(k) .le. iop_relaxation_low*100._real_kind .and. &
+          iop_pres(k) .ge. iop_relaxation_high*100._real_kind) then
       
-          rtau(k) = 10800._real_kind
+          rtau(k) = iop_relaxation_tscale
           rtau(k) = max(dt,rtau(k))
         
           relax_q(k) = -(domain_q(k) - qobs(k))/rtau(k)

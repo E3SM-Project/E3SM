@@ -566,21 +566,6 @@ end if
             ufcst(k) = u3m2(k)
             vfcst(k) = v3m2(k)
          enddo
- 
-         ! Relax winds for IOP mode
-!         if (iop_mode) then
-! 
-!           do k=1,plev
-!             rtau(k) = 10800._r8
-!             rtau(k) = max(ztodt,rtau(k))
-!             relaxu(k) = -(ufcst(k) - uobs(k))/rtau(k)
-!             relaxv(k) = -(vfcst(k) - vobs(k))/rtau(k)
-!   
-!             ufcst(k) = ufcst(k) + relaxu(k)*ztodt
-!             vfcst(k) = vfcst(k) + relaxv(k)*ztodt
-!           enddo
-!   
-!         endif
 
       endif      ! from  if (use_iop .and. have_v .and. have_u) 
       
@@ -600,7 +585,7 @@ end if
    u3(:)=ufcst(:)
    v3(:)=vfcst(:)
 
-   if (scm_relaxation .and. .not. iop_mode) then
+   if (iop_relaxation .and. .not. iop_mode) then
 !
 !    THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED
 !    The relaxation can be thought of as a part of the "adjustment" physics
@@ -621,10 +606,10 @@ end if
 !
       do k=1,plev
            
-        if (pmidm1(k) .le. scm_relaxation_low*100._r8 .and. &
-          pmidm1(k) .ge. scm_relaxation_high*100._r8) then
+        if (pmidm1(k) .le. iop_relaxation_low*100._r8 .and. &
+          pmidm1(k) .ge. iop_relaxation_high*100._r8) then
 
-          rtau(k)   = 10800._r8          ! 3-hr adj. time scale
+          rtau(k)   = iop_relaxation_tscale          ! 3-hr adj. time scale
           rtau(k)   = max(ztodt,rtau(k))
           relaxt(k) = -(t3(k)   - tobs(k))/rtau(k)
           relaxq(k) = -(q3(k,1) - qobs(k))/rtau(k)
