@@ -50,28 +50,23 @@
 </compset>
 
 <compset>
+  <alias>WCYCL1950</alias>
+  <lname>1950SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>A_WCYCL20TRS_CMIP6</alias>
+  <lname>20TRSOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR</alias>
   <lname>20TRSOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>A_WCYCLSSP585_CMIP6</alias>
   <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL1950S_CMIP6_LR</alias>
-  <lname>1950SOI_EAM%CMIP6-LR_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL1950S_CMIP6_HR</alias>
-  <lname>1950SOI_EAM%CMIP6-HR_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>A_WCYCL1950S_CMIP6_LRtunedHR</alias>
-  <lname>1950SOI_EAM%CMIP6-LRtunedHR_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- E3SM v1 science compsets -->
