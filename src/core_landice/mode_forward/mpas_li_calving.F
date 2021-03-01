@@ -1606,6 +1606,7 @@ module li_calving
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
+
       ! Step 0: Define the frontAblationMask that will be used to determine where ablation should be applied.
       ! This mask can be for 1. a floating calving front, 2. a grounded marine margin (no dynamic floating ice shelf attached),
       ! 3. along the grounding line (whether or not there is floating ice adjacent), or any combination of the three.
@@ -1682,7 +1683,7 @@ module li_calving
                iNeighbor = cellsOnCell(iEdge, iCell)
                if ( li_mask_is_floating_ice(cellMask(iNeighbor)) .and. &
                   .not. li_mask_is_dynamic_ice(cellMask(iNeighbor)) ) then
-                  frontAblationMask(iNeighbor) = 2
+                  frontAblationMask(iNeighbor) = 2 ! Use 2 for these non-dynamic floating neighbors
                endif
             enddo
          endif
@@ -1693,9 +1694,9 @@ module li_calving
             ! Check if this non-dynamic masked cell has any non-dynamic, floating, but unmasked neighbors we need to include
             do iEdge = 1, nEdgesOnCell(iCell)
                iNeighbor = cellsOnCell(iEdge, iCell)
-               if ((.not. li_mask_is_dynamic_ice(cellMask(iNeighbor))) .and. li_mask_is_floating_ice(iNeighbor) &
+               if ((.not. li_mask_is_dynamic_ice(cellMask(iNeighbor))) .and. li_mask_is_floating_ice(cellMask(iNeighbor)) &
                   .and. frontAblationMask(iNeighbor) == 0) then
-                  frontAblationMask(iNeighbor) = 1
+                  frontAblationMask(iNeighbor) = 3 ! Use 3 for these extended non-dynamic neighbors
                endif
             enddo
          endif
@@ -1715,7 +1716,7 @@ module li_calving
       requiredAblationVolumeDynEdge(:) = 0.0_RKIND
       requiredAblationVolumeDynCell(:) = 0.0_RKIND
       allocate(thicknessForAblation(nCells+1))
-      thicknessForAblation = 0.0_RKIND
+      thicknessForAblation = thickness
       allocate(uvelForAblation(nCells+1))
       uvelForAblation(:) = uReconstructX(1,:)
       allocate(vvelForAblation(nCells+1))
@@ -1735,7 +1736,7 @@ module li_calving
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if (li_mask_is_dynamic_ice(cellMask(jCell))) then
-                  thkSum = thkSum + thickness(jCell)
+                  thkSum = thkSum + thicknessForAblation(jCell)
                   uvelSum = uvelSum + uvelForAblation(jCell)
                   vvelSum = vvelSum + vvelforAblation(jCell)
                   ablationVelSum = ablationVelSum + ablationVelocity(jCell)
@@ -1754,6 +1755,7 @@ module li_calving
          endif
       enddo
 
+
           ! a2.Set thicknessForAblation and ablationVelocity of stranded non-dynamic cells to
           ! average of non-dynamic neighbors. Stranded non-dynamic cells are
           ! identified as those that still have thicknessForAblation == 0.0
@@ -1769,7 +1771,7 @@ module li_calving
                jCell = cellsOnCell(iNeighbor, iCell)
                if ( li_mask_is_floating_ice(cellMask(jCell)) &
                     .and. (.not. li_mask_is_dynamic_ice(cellMask(jCell))) ) then
-                  thkSum = thkSum + thickness(jCell)
+                  thkSum = thkSum + thicknessForAblation(jCell)
                   uvelSum = uvelSum + uvelForAblation(jCell)
                   vvelSum = vvelSum + vvelForAblation(jCell)
                   ablationVelSum = ablationVelSum + ablationVelocity(jCell)
@@ -1834,9 +1836,9 @@ module li_calving
             thkCount = 0
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
-               if (li_mask_is_dynamic_ice(cellMask(jCell)) .and. li_mask_is_grounded_ice(cellMask(iCell)) .and. &
-                       .not. li_mask_is_margin(cellMask(iCell))) then
-                  thkSum = thkSum + thickness(jCell)
+               if (li_mask_is_dynamic_ice(cellMask(jCell)) .and. li_mask_is_grounded_ice(cellMask(jCell)) .and. &
+                       .not. li_mask_is_margin(cellMask(jCell))) then
+                  thkSum = thkSum + thicknessForAblation(jCell)
                   thkCount = thkCount + 1
                endif
             enddo
@@ -1859,7 +1861,7 @@ module li_calving
                   iEdge = edgesOnCell(iNeighbor, iCell)
                   edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uvelForAblation(iCell), vvelForAblation(iCell))
                   requiredAblationVolumeDynEdge(iEdge) = ablationVelocity(iCell) * &
-                          edgeLengthScaling * dvEdge(iEdge) * thickness(iCell) * deltat
+                          edgeLengthScaling * dvEdge(iEdge) * thicknessForAblation(iCell) * deltat
                endif
             enddo
          endif
