@@ -1723,7 +1723,7 @@ module li_calving
 
       ! 1. Calculate ablation rate for all non-dynamic cells by working with their ocean-going edges
       ablationSubtotal1 = 0.0_RKIND
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          if ((frontAblationMask(iCell)>0) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) ) then
             ! a1. Translate the calving front height based on dynamic cells to the non-dynamic locations
             ! find mean (or min?) of thickness in dynamic neighbors
@@ -1757,7 +1757,7 @@ module li_calving
           ! a2.Set thicknessForAblation and ablationVelocity of stranded non-dynamic cells to
           ! average of non-dynamic neighbors. Stranded non-dynamic cells are
           ! identified as those that still have thicknessForAblation == 0.0
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          if ( thicknessForAblation(iCell) == 0.0_RKIND .and. frontAblationMask(iCell)>0 &
               .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
             ablationVelSum = 0.0_RKIND
@@ -1790,7 +1790,7 @@ module li_calving
 
             ! b. Translate the ablationVelocity and thickness from non-dynamic cells to their ocean-going edges
             !    to calculate the calving volume on those edges and this cell
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          if (frontAblationMask(iCell)>0 .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
 
             do iNeighbor = 1, nEdgesOnCell(iCell)
@@ -1813,7 +1813,7 @@ module li_calving
             ablatedVolumeNonDynCell(iCell) = removeVolumeHere
             unablatedVolumeNonDynCell(iCell) = requiredAblationVolumeNonDynCell(iCell) - removeVolumeHere
             cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
-            ablationSubtotal1 = ablationSubtotal1 + removeVolumeHere
+            if (iCell <= nCellsSolve) ablationSubtotal1 = ablationSubtotal1 + removeVolumeHere
          endif
       enddo
       call mpas_timer_start("halo updates")
@@ -1828,7 +1828,7 @@ module li_calving
 
       ! 2a1. for grounded dynamic margins, don't use the thickness there because it may be unrealistically thin due to ablation
       ! from previous time steps.  Instead copy forward the thickness from the row cells behind.
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          if (frontAblationMask(iCell)>0 .and. li_mask_is_margin(cellMask(iCell)) .and. li_mask_is_grounded_ice(cellMask(iCell))) then
             thkSum = 0.0_RKIND
             thkCount = 0
@@ -1850,7 +1850,7 @@ module li_calving
       enddo
 
       ! a. Calculate calving on dynamic margin edges
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          if ( frontAblationMask(iCell)>0 .and. li_mask_is_dynamic_ice(cellMask(iCell)) & ! a dynamic cell in the mask...
             .and. li_mask_is_margin(cellMask(iCell)) ) then                            ! that is at the edge of the ice
             do iNeighbor = 1, nEdgesOnCell(iCell)
@@ -1915,7 +1915,7 @@ module li_calving
       call mpas_timer_stop("halo updates")
 
       ! c. Now apply ablation to each cell
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          if ((li_mask_is_dynamic_ice(cellMask(iCell))) .and. (bedTopography(iCell) <= config_sea_level)) then
             ! Can loop over all dyn cells - only ones with calving on their edges will have calving applied.
             ! Note, we ignore any leftover calving/melting if it would be applied to cells where the bed is above sea level.
@@ -1931,14 +1931,14 @@ module li_calving
             ablatedVolumeDynCell(iCell) = removeVolumeHere
             unablatedVolumeDynCell(iCell) = requiredAblationVolumeDynCell(iCell) - removeVolumeHere
             cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
-            ablationSubtotal2 = ablationSubtotal2 + removeVolumeHere
+            if (iCell <= nCellsSolve) ablationSubtotal2 = ablationSubtotal2 + removeVolumeHere
          endif
       enddo
       !call mpas_log_write("Done calculating ablation for dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal2/))
 
 
       ! Clean up to account for roundoff level errors that can occur
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          if (abs(ablationThickness(iCell) - thickness(iCell)) < ablationSmallThk) then
             ablationThickness(iCell) = thickness(iCell)
          endif
@@ -1946,7 +1946,7 @@ module li_calving
 
       ! Clean up - zap any stranded ice.  This only needs to be considered for floating ice.
       ablationSubtotal3 = 0.0_RKIND
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
             thkCount = 0
             do iNeighbor = 1, nEdgesOnCell(iCell)
@@ -1957,7 +1957,7 @@ module li_calving
             enddo
             if (thkCount == 0) then
                ablationThickness(iCell) = thickness(iCell)
-               ablationSubtotal3 = ablationSubtotal3 + ablationThickness(iCell)
+               if (iCell <= nCellsSolve) ablationSubtotal3 = ablationSubtotal3 + ablationThickness(iCell)
             endif
          endif
          if (isnan(areaCell(iCell))) then
