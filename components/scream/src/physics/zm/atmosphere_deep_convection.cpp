@@ -36,10 +36,10 @@ void ZMDeepConvection::set_grids(const std::shared_ptr<const GridsManager> grids
 
   using namespace ShortFieldTagsNames;
 
-  FieldLayout scalar3d_layout_mid { {COL,VL}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
-  FieldLayout scalar3d_layout_int { {COL,VL}, {nc,NVL+1} }; // Note that C++ and Fortran read array dimensions in reverse
-  FieldLayout vector3d_layout_mid{ {COL,CMP,VL}, {nc,QSZ,NVL} };
-  FieldLayout tracers_layout { {COL,VAR,VL}, {nc,QSZ,NVL} };
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
+  FieldLayout scalar3d_layout_int { {COL,ILEV}, {nc,NVL+1} }; // Note that C++ and Fortran read array dimensions in reverse
+  FieldLayout vector3d_layout_mid{ {COL,CMP,LEV}, {nc,QSZ,NVL} };
+  FieldLayout tracers_layout { {COL,VAR,LEV}, {nc,QSZ,NVL} };
   FieldLayout scalar2d_layout{ {COL}, {nc} };
 
   std::vector<FieldLayout> layout_opts = {scalar3d_layout_mid, scalar3d_layout_int,

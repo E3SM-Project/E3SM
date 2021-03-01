@@ -40,11 +40,11 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   // Layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
-  FieldLayout scalar2d_layout_lev{ {VL},  {m_num_levs} };
+  FieldLayout scalar2d_layout_lev{ {LEV},  {m_num_levs} };
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
-  FieldLayout scalar3d_layout_mid { {COL,VL}, {m_num_cols,m_num_levs} };
-  FieldLayout scalar3d_layout_int { {COL,VL}, {m_num_cols,m_num_levs+1} };
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
+  FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
 
   // Define fields needed in SHOC.
   // Note: shoc_main is organized by a set of 5 structures, variables below are organized

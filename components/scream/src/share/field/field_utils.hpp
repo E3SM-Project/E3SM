@@ -22,18 +22,9 @@ enum class LayoutType {
 inline LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
   using ekat::erase;
   using ekat::count;
+  using namespace ShortFieldTagsNames;
 
   auto tags = field_tags;
-
-  constexpr auto EL   = FieldTag::Element;
-  constexpr auto COL  = FieldTag::Column;
-  constexpr auto GP   = FieldTag::GaussPoint;
-  constexpr auto TL   = FieldTag::TimeLevel;
-  constexpr auto CMP  = FieldTag::Component;
-  constexpr auto CMPX = FieldTag::ComponentX;
-  constexpr auto CMPY = FieldTag::ComponentY;
-  constexpr auto VAR  = FieldTag::Variable;
-  constexpr auto VL   = FieldTag::VerticalLevel;
 
   const int n_element = count(tags,EL);
   const int n_column  = count(tags,COL);
@@ -66,22 +57,22 @@ inline LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
       result = LayoutType::Scalar2D;
       break;
     case 1:
-      // The only tag left should be 'Component', 'TimeLevel', 'Variable', or 'VerticalLevel
+      // The only tag left should be 'CMP', 'TL', 'VAR', or 'LEV'/'ILEV'
       if (tags[0]==CMP || tags[0]==TL || tags[0]==VAR) {
         result = LayoutType::Vector2D;
-      } else if (tags[0]==VL) {
+      } else if (tags[0]==LEV || tags[0]==ILEV) {
         result = LayoutType::Scalar3D;
       }
       break;
     case 2:
-      // Two possible scenarios:
-      //  1) <Component|Variable|TimeLevel,VerticalLevel>
-      //  2) <Variable|TimeLevel,Component>
-      //  3) <TimeLevel,Variable>
-      //  4) <ComponentX,ComponentY>
-      if (tags[1]==VL && (tags[0]==CMP || tags[0]==VAR || tags[0]==TL)) {
+      // Possible scenarios:
+      //  1) <CMP|VAR|TL,LEV|ILEV>
+      //  2) <VAR|TL,CMP>
+      //  3) <TL,VAR>
+      //  4) <CMP1,CMP2>
+      if ( (tags[1]==LEV || tags[1]==ILEV) && (tags[0]==CMP || tags[0]==VAR || tags[0]==TL)) {
         result = LayoutType::Vector3D;
-      } else if ((tags[0]==CMPX && tags[1]==CMPY) ||
+      } else if ((tags[0]==CMP1 && tags[1]==CMP2) ||
                  (tags[1]==CMP && (tags[0]==VAR || tags[0]==TL)) ||
                  (tags[0]==TL && tags[1]==VAR)) {
         result = LayoutType::Tensor2D;
@@ -89,11 +80,11 @@ inline LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
       break;
     case 3:
       // The only scenarios are:
-      //  1) <ComponentX, ComponentY, VerticalLevel>
-      //  2) <TimeLevel,  Variable, VerticalLevel>
-      //  3) <TimeLevel|Variable,  Component, VerticalLevel>
-      if (tags[2]==VL) {
-        if ((tags[0]==CMPX && tags[1]==CMPY) ||
+      //  1) <CMP1, CMP2, LEV|ILEV>
+      //  2) <TL,  VAR, LEV|ILEV>
+      //  3) <TL|VAR,  CMP, LEV|ILEV>
+      if (tags[2]==LEV || tags[2]==ILEV) {
+        if ((tags[0]==CMP1 && tags[1]==CMP2) ||
             (tags[0]==TL && (tags[1]==VAR || tags[1]==CMP)) ||
             (tags[0]==VAR && tags[1]==CMP)) {
           result = LayoutType::Tensor3D;

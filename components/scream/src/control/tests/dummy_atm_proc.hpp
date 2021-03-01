@@ -56,10 +56,10 @@ public:
     std::vector<FieldTag> tags;
     std::vector<int> dims;
     if (m_grid->name()=="Point Grid A") {
-      tags = {COL,VL};
+      tags = {COL,LEV};
       dims = {num_cols, num_levs};
     } else {
-      tags = {VL,COL};
+      tags = {LEV,COL};
       dims = {num_levs,num_cols};
     }
     FieldLayout layout (tags,dims);
@@ -148,7 +148,7 @@ public:
       const auto view_C = m_outputs["C"].get_reshaped_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-        // A to BC is on grid A: (COL,VL)
+        // A to BC is on grid A: (COL,LEV)
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
 
@@ -161,7 +161,7 @@ public:
       const auto view_C = m_outputs["C"].get_reshaped_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-        // Group to Group is on grid B: (VL,COL)
+        // Group to Group is on grid B: (LEV,COL)
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
 
@@ -174,7 +174,7 @@ public:
       const auto view_A = m_outputs["A"].get_reshaped_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-        // Group to A is on grid A: (COL,VL)
+        // Group to A is on grid A: (COL,LEV)
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
 

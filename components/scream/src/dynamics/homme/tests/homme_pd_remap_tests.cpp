@@ -113,17 +113,17 @@ TEST_CASE("remap", "") {
   // Create tags and dimensions
   std::vector<FieldTag> s_2d_dyn_tags   = {EL,          GP, GP    };
   std::vector<FieldTag> v_2d_dyn_tags   = {EL,     CMP, GP, GP    };
-  std::vector<FieldTag> s_3d_dyn_tags   = {EL,          GP, GP, VL};
-  std::vector<FieldTag> v_3d_dyn_tags   = {EL,     CMP, GP, GP, VL};
-  std::vector<FieldTag> ss_3d_dyn_tags  = {EL, TL,      GP, GP, VL};
-  std::vector<FieldTag> vs_3d_dyn_tags  = {EL, TL, CMP, GP, GP, VL};
+  std::vector<FieldTag> s_3d_dyn_tags   = {EL,          GP, GP, LEV};
+  std::vector<FieldTag> v_3d_dyn_tags   = {EL,     CMP, GP, GP, LEV};
+  std::vector<FieldTag> ss_3d_dyn_tags  = {EL, TL,      GP, GP, LEV};
+  std::vector<FieldTag> vs_3d_dyn_tags  = {EL, TL, CMP, GP, GP, LEV};
 
   std::vector<FieldTag> s_2d_phys_tags  = {COL         };
   std::vector<FieldTag> v_2d_phys_tags  = {COL, CMP    };
-  std::vector<FieldTag> s_3d_phys_tags  = {COL,      VL};
-  std::vector<FieldTag> v_3d_phys_tags  = {COL, CMP, VL};
-  std::vector<FieldTag> vs_3d_phys_tags = {COL, CMP, VL};
-  std::vector<FieldTag> ss_3d_phys_tags = {COL,      VL};
+  std::vector<FieldTag> s_3d_phys_tags  = {COL,      LEV};
+  std::vector<FieldTag> v_3d_phys_tags  = {COL, CMP, LEV};
+  std::vector<FieldTag> vs_3d_phys_tags = {COL, CMP, LEV};
+  std::vector<FieldTag> ss_3d_phys_tags = {COL,      LEV};
 
   std::vector<int> s_2d_dyn_dims   = {nle,          np, np     };
   std::vector<int> v_2d_dyn_dims   = {nle,       2, np, np     };

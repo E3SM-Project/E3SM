@@ -161,12 +161,14 @@ TEST_CASE("restart","io")
 /*===================================================================================================================*/
 std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs)
 {
+  using namespace ShortFieldTagsNames;
+
   // Create a repo
   std::shared_ptr<FieldRepository<Real>>  repo = std::make_shared<FieldRepository<Real>>();
   // Create some fields for this repo
-  std::vector<FieldTag> tag_h  = {FieldTag::Column};
-  std::vector<FieldTag> tag_v  = {FieldTag::VerticalLevel};
-  std::vector<FieldTag> tag_2d = {FieldTag::Column,FieldTag::VerticalLevel};
+  std::vector<FieldTag> tag_h  = {COL};
+  std::vector<FieldTag> tag_v  = {LEV};
+  std::vector<FieldTag> tag_2d = {COL,LEV};
 
   std::vector<Int>     dims_h  = {num_lcols};
   std::vector<Int>     dims_v  = {num_levs};

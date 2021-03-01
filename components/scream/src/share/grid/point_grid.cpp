@@ -53,6 +53,7 @@ PointGrid::get_3d_scalar_layout (const bool midpoints) const
   using namespace ShortFieldTagsNames;
 
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
+  auto VL = midpoints ? LEV : ILEV;
 
   return FieldLayout({COL,VL},{m_num_local_dofs,nvl});
 }
@@ -63,6 +64,7 @@ PointGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag
   using namespace ShortFieldTagsNames;
 
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
+  auto VL = midpoints ? LEV : ILEV;
 
   return FieldLayout({COL,vector_tag,VL},{m_num_local_dofs,vector_dim,nvl});
 }

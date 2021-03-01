@@ -27,12 +27,14 @@ namespace scream
 enum class FieldTag {
   Invalid,
   Element,
-  VerticalLevel,
+  LevelMidPoint,
+  LevelInterface,
   Column,
   GaussPoint,
   Component,
-  ComponentX,
-  ComponentY,
+  Component1,
+  Component2,
+  Component3,
   TimeLevel,
   Variable
 };
@@ -46,8 +48,11 @@ inline std::string e2str (const FieldTag ft) {
     case FieldTag::Element:
       name = "EL";
       break;
-    case FieldTag::VerticalLevel:
-      name = "VL";
+    case FieldTag::LevelMidPoint:
+      name = "LEV";
+      break;
+    case FieldTag::LevelInterface:
+      name = "ILEV";
       break;
     case FieldTag::TimeLevel:
       name = "TL";
@@ -61,11 +66,14 @@ inline std::string e2str (const FieldTag ft) {
     case FieldTag::Component:
       name = "CMP";
       break;
-    case FieldTag::ComponentX:
-      name = "CMPX";
+    case FieldTag::Component1:
+      name = "CMP1";
       break;
-    case FieldTag::ComponentY:
-      name = "CMPY";
+    case FieldTag::Component2:
+      name = "CMP2";
+      break;
+    case FieldTag::Component3:
+      name = "CMP3";
       break;
     case FieldTag::Variable:
       name = "VAR";
@@ -85,10 +93,12 @@ namespace ShortFieldTagsNames {
   constexpr auto GP   = FieldTag::GaussPoint;
   constexpr auto TL   = FieldTag::TimeLevel;
   constexpr auto VAR  = FieldTag::Variable;
-  constexpr auto VL   = FieldTag::VerticalLevel;
+  constexpr auto LEV  = FieldTag::LevelMidPoint;
+  constexpr auto ILEV = FieldTag::LevelInterface;
   constexpr auto CMP  = FieldTag::Component;
-  constexpr auto CMPX = FieldTag::ComponentX;
-  constexpr auto CMPY = FieldTag::ComponentY;
+  constexpr auto CMP1 = FieldTag::Component1;
+  constexpr auto CMP2 = FieldTag::Component2;
+  constexpr auto CMP3 = FieldTag::Component3;
 }
 
 } // namespace scream

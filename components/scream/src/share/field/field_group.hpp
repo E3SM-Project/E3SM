@@ -42,7 +42,7 @@ namespace scream {
  *
  * E.g., say we have 3d scalar fields F1,F2,F3,F4 belonging to group MyGroup,
  * which is then allocated as a bundled field F. F will have layout
- * given by grid->get_3d_vector_layout(). Say this layout is (COL,CMP,VL).
+ * given by grid->get_3d_vector_layout(). Say this layout is (COL,CMP,LEV).
  * Each field is subviewed along m_subview_dim=1, at entry 0,1,2,3 respectively.
  * Note: as of 02/2021 m_subview_dim is *always* 1, but we store this bit
  *       of info nevertheless, in case things change later on.
