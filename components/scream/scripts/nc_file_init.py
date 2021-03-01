@@ -9,7 +9,7 @@ class NcFileInit(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self,filename,create=False,ne=0,np=0,nlev=0,phys_grid="gll",
+    def __init__(self,filename,create=False,ne=0,np=0,nlev=0,phys_grid="gll",overwrite=False,
                  mid_scalars_1d=None,int_scalars_1d=None,
                  scalars_2d=None,vectors_2d=None,
                  mid_scalars_3d=None,int_scalars_3d=None,
@@ -18,24 +18,25 @@ class NcFileInit(object):
 
         #### TODO: change var-names to scalars2d, scalars3d_mid, scalars3d_int, vectors_2d...
 
-        self._create   = create
-        self._fname    = filename
-        self._ne       = ne
-        self._np       = np
-        self._nlev     = nlev
-        self._pg       = phys_grid
-        self._1d_mid_s = mid_scalars_1d
-        self._1d_int_s = int_scalars_1d
-        self._2d_s     = scalars_2d
-        self._2d_v     = vectors_2d
-        self._3d_mid_s = mid_scalars_3d
-        self._3d_int_s = int_scalars_3d
-        self._3d_mid_v = mid_vectors_3d
-        self._3d_int_v = int_vectors_3d
+        self._create    = create
+        self._overwrite = overwrite
+        self._fname     = filename
+        self._ne        = ne
+        self._np        = np
+        self._nlev      = nlev
+        self._pg        = phys_grid
+        self._1d_mid_s  = mid_scalars_1d
+        self._1d_int_s  = int_scalars_1d
+        self._2d_s      = scalars_2d
+        self._2d_v      = vectors_2d
+        self._3d_mid_s  = mid_scalars_3d
+        self._3d_int_s  = int_scalars_3d
+        self._3d_mid_v  = mid_vectors_3d
+        self._3d_int_v  = int_vectors_3d
 
         expect (filename is not None, "Error! Missing output file name.")
-        expect (create is False or ne > 1, "Error! Invalid value for ne.")
-        expect (create is False or nlev > 1, "Error! Invalid value for nlev.")
+        expect (create is False or ne > 1, "Error! Invalid value for ne (must be >=2).")
+        expect (create is False or nlev > 1, "Error! Invalid value for nlev (must be >=2).")
         expect (phys_grid=="gll", "Error! So far, only GLL physics grid supported.")
 
     ###########################################################################
@@ -108,6 +109,20 @@ class NcFileInit(object):
         return name, values
 
     ###########################################################################
+    def correct_dims(self,var,dim_names):
+    ###########################################################################
+        var_dims = var.get_dims()
+        l = len(dim_names)
+        if len(var_dims)!=l:
+            return False
+
+        for i in range(1,l):
+            if var_dims[i].name != dim_names[i]:
+                return False
+
+        return True
+
+    ###########################################################################
     def add_scalar_variable(self,ds,name,dims,value):
     ###########################################################################
 
@@ -116,7 +131,19 @@ class NcFileInit(object):
         expect(re.match(r'^\w+$', name),
                 "Error! Variable names must contain only alphanumeric characters or underscores.\n")
 
-        var = ds.createVariable(name,"f8",dims)
+        if name in ds.variables.keys() and self._overwrite:
+            var = ds.variables[name]
+            var_dims = var.get_dims()
+
+            expect (self.correct_dims(var,dims),
+                    "Error! Trying to overwrite variable {} using wrong dimensions: ({}) insted of ({}).".
+                        format (name,
+                                ",".join(dims),
+                                ",".join([dim.name for dim in var_dims])))
+        else:
+            expect (not name in ds.variables.keys(),
+                    "Error! Variable '{}' already exists. To overwrite values, use -o flag.".format(name))
+            var = ds.createVariable(name,"f8",dims)
         var[:] = value
 
     ###########################################################################
