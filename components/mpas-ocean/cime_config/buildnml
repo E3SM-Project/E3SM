@@ -272,7 +272,7 @@ def buildnml(case, caseroot, compname):
         ic_date = '210210'
         ic_prefix = 'ocean.EC30to60E2r2'
         if ocn_ic_mode == 'spunup':
-            ic_date = '210210'
+            ic_date = '201001'
             ic_prefix = 'mpaso.EC30to60E2r2.rstFromG-anvil'
 
     elif ocn_grid == 'WC14to60E2r3':
@@ -283,7 +283,7 @@ def buildnml(case, caseroot, compname):
         ic_date = '210210'
         ic_prefix = 'ocean.WC14to60E2r3'
         if ocn_ic_mode == 'spunup':
-            ic_date = '210210'
+            ic_date = '210226'
             ic_prefix = 'mpaso.WC14to60E2r3.rstFromG-anvil'
 
 
