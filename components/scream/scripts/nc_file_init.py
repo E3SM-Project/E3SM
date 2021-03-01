@@ -9,7 +9,7 @@ class NcFileInit(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self,filename,create=False,ne=0,np=0,nlev=0,phys_grid="gll",overwrite=False,
+    def __init__(self,filename,create=False,ne=0,np=0,ncol=0,nlev=0,phys_grid="gll",overwrite=False,
                  mid_scalars_1d=None,int_scalars_1d=None,
                  scalars_2d=None,vectors_2d=None,
                  mid_scalars_3d=None,int_scalars_3d=None,
@@ -24,6 +24,7 @@ class NcFileInit(object):
         self._ne        = ne
         self._np        = np
         self._nlev      = nlev
+        self._ncol      = ncol
         self._pg        = phys_grid
         self._1d_mid_s  = mid_scalars_1d
         self._1d_int_s  = int_scalars_1d
@@ -35,8 +36,12 @@ class NcFileInit(object):
         self._3d_int_v  = int_vectors_3d
 
         expect (filename is not None, "Error! Missing output file name.")
-        expect (create is False or ne > 1, "Error! Invalid value for ne (must be >=2).")
-        expect (create is False or nlev > 1, "Error! Invalid value for nlev (must be >=2).")
+        if create:
+            expect (ncol >= 1 or (ne>1 and np>1),
+                    "Error! In order to create a database, do one of the following:\n"
+                    "   - specify ncol via -ncol flag (ncol>=1)\n"
+                    "   - specify ne via -ne flag, and possibly np via -np flag (ne>=2, np>=2)\n")
+            expect (nlev > 1, "Error! Invalid value for nlev (must be >=2).")
         expect (phys_grid=="gll", "Error! So far, only GLL physics grid supported.")
 
     ###########################################################################
@@ -44,9 +49,13 @@ class NcFileInit(object):
     ###########################################################################
 
         if self._create:
-            npm1 = self._np - 1
-            nelems = self._ne*self._ne*6
-            ncols = nelems*npm1*npm1 + 2
+            # Allow user to specify arbitrary ncols, which can be handy for small unit tests
+            if self._ncol>0:
+                ncols = self._ncol
+            else:
+                npm1 = self._np - 1
+                nelems = self._ne*self._ne*6
+                ncols = nelems*npm1*npm1 + 2
 
             f = pathlib.Path(self._fname).resolve().absolute()
             expect (not f.exists(),
@@ -94,7 +103,6 @@ class NcFileInit(object):
                     "Error! Invalid vector dimension '{}' for variable {}".format(dim,name))
             values = [0.0] * int(dim)
         else:
-            print ("arg str: {}".format(arg_str))
             expect ('=' in arg_str,
                     "Error! Vector variables must be specified with 'name:dim' or 'name=[val0,...,valN]'.")
 

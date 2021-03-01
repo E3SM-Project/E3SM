@@ -48,6 +48,7 @@ OR
     parser.add_argument("-c","--create", help="Create output netcdf file", action='store_true',default=False)
     parser.add_argument("-ne","--ne", type=int, help="Number of elements on cube edge", default=0)
     parser.add_argument("-np","--np", type=int, help="Number of GLL points on element edge", default=4)
+    parser.add_argument("-ncol","--ncol", type=int, help="Number of columns", default=0)
     parser.add_argument("-nlev","--nlev", type=int, help="Number of vertical levels", default=0)
     parser.add_argument("-pg","--phys-grid", help="Type of phys grid", default="gll")
     parser.add_argument("-o","--overwrite", help="Overwrite possibly existing variable values", action="store_true", default=False)
