@@ -660,11 +660,7 @@ CONTAINS
        infodata%wav_gnam              = wav_gnam
        infodata%iac_gnam              = iac_gnam
        infodata%shr_map_dopole        = shr_map_dopole
-#ifdef COMPARE_TO_NUOPC
-       infodata%vect_map              = 'none'
-#else
        infodata%vect_map              = vect_map
-#endif
        infodata%aoflux_grid           = aoflux_grid
        infodata%cpl_decomp            = cpl_decomp
        infodata%cpl_seq_option        = cpl_seq_option
