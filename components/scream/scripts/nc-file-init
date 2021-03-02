@@ -25,19 +25,26 @@ OR
 
         > ./{0} -c -f my_file.nc --ne 4 --np 4 --nlev 72
 
-    #  \033[1;32m# Appends to existing netcdf file, adding 3d mid-layer vector (2 components) 'horiz_velocity'
+    \033[1;32m# Appends to existing netcdf file, adding 3d interface level var w, init-ed to 0
 
-    #      > ./{0} -f my_file.nc --mid-vector-3d horiz_velocity:2
+        > ./{0} -f my_file.nc -avars 'w(COL,ILEV)'
 
-    #  \033[1;32m# Appends to existing netcdf file, adding 3d mid-layer scalars 'temperature' and 'pressure',
-    #    initing pressure to 1.0 and temperature to 273.
+    \033[1;32m# Appends to existing netcdf file, adding 3d midpoints level vars v_0,v_1, init-ed to 1.0 and 2.0 respectively
 
-    #      > ./{0} -a my_file.nc --mid-scalars-3d temperature=273.0 pressure=1.0
+        > ./{0} -f my_file.nc -avars 'v(COL,2,LEV)=[1.0,2.0]'
 
-    #  \033[1;32m# Generate netcdf file, and specifies 
-    #    initing pressure to 1.0 and temperature to 273.
+    \033[1;32m# Appends to existing netcdf file, importing v from file f2.nc, but added as 'horiz_v'
 
-    #      > ./{0} -a my_file.nc --mid-scalars-3d temperature=273.0 pressure=1.0
+        > ./{0} -f my_file.nc -ifile f2.nc -ivars horiz_v=v
+
+    \033[1;32m# Appends to existing netcdf file, computing p=rho*T^1.5 (assuming rho and T are in the nc file already)
+
+        > ./{0} -f my_file.nc -cvars p=rho*T^1.5
+
+    \033[1;32m# Appends to existing netcdf file, importing rho and T from file f2.nc, computing p=rho*T^1.5,
+      and removing rho,T from the output file
+
+        > ./{0} -f my_file.nc -ifile f2.nc -ivars rho T -cvars p=rho*T^1.5 -rvars rho T
 
 """.format(pathlib.Path(args[0]).name),
         description=description,
