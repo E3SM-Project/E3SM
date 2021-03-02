@@ -44,31 +44,50 @@ OR
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
+    # The file name
     parser.add_argument("-f","--filename", help="Name of the netcdf file", required=True)
+
+    # If we're creating the file, we need a few info
     parser.add_argument("-c","--create", help="Create output netcdf file", action='store_true',default=False)
     parser.add_argument("-ne","--ne", type=int, help="Number of elements on cube edge", default=0)
     parser.add_argument("-np","--np", type=int, help="Number of GLL points on element edge", default=4)
     parser.add_argument("-ncol","--ncol", type=int, help="Number of columns", default=0)
     parser.add_argument("-nlev","--nlev", type=int, help="Number of vertical levels", default=0)
     parser.add_argument("-pg","--phys-grid", help="Type of phys grid", default="gll")
+
+    # Whether we're allowed to overwrite existing data
     parser.add_argument("-o","--overwrite", help="Overwrite possibly existing variable values", action="store_true", default=False)
 
-    parser.add_argument("--mid-scalars-1d", nargs='+', default=[],
+    # The following add variables, possibly init-ing at a given constant value
+    parser.add_argument("--add-mid-scalars-1d", nargs='+', default=[],
             help="1d variables to add to the file. Dimensions (nlev)")
-    parser.add_argument("--int-scalars-1d", nargs='+', default=[],
+    parser.add_argument("--add-int-scalars-1d", nargs='+', default=[],
             help="1d variables to add to the file. Dimensions (nlev+1)")
-    parser.add_argument("--scalars-2d", nargs='+', default=[],
+    parser.add_argument("--add-scalars-2d", nargs='+', default=[],
             help="2d scalar variables to add to the file. Dimensions (ncols)")
-    parser.add_argument("--vectors-2d", nargs='+', default=[],
+    parser.add_argument("--add-vectors-2d", nargs='+', default=[],
             help="2d vector variables to add to the file. Dimensions (ncols,2)")
-    parser.add_argument("--mid-scalars-3d", nargs='+', default=[],
+    parser.add_argument("--add-mid-scalars-3d", nargs='+', default=[],
             help="3d mid-layer scalar variables to add to the file. Dimensions (ncols,nlevs)")
-    parser.add_argument("--int-scalars-3d", nargs='+', default=[],
+    parser.add_argument("--add-int-scalars-3d", nargs='+', default=[],
             help="3d layer-interface scalar variables to add to the file. Dimensions (ncols,nlevs+1)")
-    parser.add_argument("--mid-vectors-3d", nargs='+', default=[],
+    parser.add_argument("--add-mid-vectors-3d", nargs='+', default=[],
             help="3d mid-layer vector variables to add to the file. Dimensions (ncols,2,nlevs)")
-    parser.add_argument("--int-vectors-3d", nargs='+', default=[],
+    parser.add_argument("--add-int-vectors-3d", nargs='+', default=[],
             help="3d layer-interface vector variables to add to the file. Dimensions (ncols,2,nlevs+1)")
+
+    # The following set variables depending on other variables
+    parser.add_argument("-ifile","--input-file",
+                        help="File from which variable can be imported.", default=[])
+    parser.add_argument("-ivars","--import-variables",nargs='+',
+                        help="Import variables from another file (requires valid input for -ifile)", default=[])
+
+    parser.add_argument("-cvars","--compute-variables",nargs='+',
+                        help="Compute variables from given expressions (may involve other vars)", default=[])
+
+    parser.add_argument("-rvars","--remove-variables",nargs='+',
+                        help="Remove variables from output file (can be also used to purge 'temporarily' imported "
+                             "vars from another file, used just to compute some quantity)", default=[])
 
     return parser.parse_args(args[1:])
 
