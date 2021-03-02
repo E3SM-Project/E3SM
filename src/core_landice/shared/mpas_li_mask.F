@@ -358,7 +358,7 @@ contains
           if (li_mask_is_ice(cellMask(i))) then
               isMargin = .false.
               do j=1,nEdgesOnCell(i) ! Check if any neighbors are non-ice
-                  if (cellsOnCell(j,i) > 0) then
+                  if (cellsOnCell(j,i) <= nCells) then
                      isMargin = ( isMargin .or. (.not. li_mask_is_ice(cellMask(cellsOnCell(j,i)))) )
                   endif
               enddo
@@ -417,7 +417,9 @@ contains
           if (li_mask_is_dynamic_ice(cellMask(i))) then
               isMargin = .false.
               do j=1,nEdgesOnCell(i) ! Check if any neighbors are not dynamic
-                  isMargin = ( isMargin .or. (.not. li_mask_is_dynamic_ice(cellMask(cellsOnCell(j,i)))) )
+                  if (cellsOnCell(j,i) <= nCells) then
+                     isMargin = ( isMargin .or. (.not. li_mask_is_dynamic_ice(cellMask(cellsOnCell(j,i)))) )
+                  endif
               enddo
               if (isMargin) then
                  cellMask(i) = ior(cellMask(i), li_mask_ValueDynamicMargin)
