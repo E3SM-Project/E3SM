@@ -1758,10 +1758,9 @@ module li_calving
 
           ! a2.Set thicknessForAblation and ablationVelocity of stranded non-dynamic cells to
           ! average of non-dynamic neighbors. Stranded non-dynamic cells are
-          ! identified as those that still have thicknessForAblation == 0.0
+          ! identified as those with frontAblationMask == 3
       do iCell = 1, nCells
-         if ( thicknessForAblation(iCell) == 0.0_RKIND .and. frontAblationMask(iCell)>0 &
-              .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
+         if ( frontAblationMask(iCell) == 3.0 ) then
             ablationVelSum = 0.0_RKIND
             thkSum = 0.0_RKIND
             uvelSum = 0.0_RKIND
