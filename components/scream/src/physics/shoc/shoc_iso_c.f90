@@ -47,6 +47,32 @@ contains
     npbl = nlev ! set pbl layer explicitly so we don't need pref_mid.
   end subroutine shoc_init_c
 
+  ! shoc_init for shoc_main_bfb testing
+  subroutine shoc_init_for_main_bfb_c(nlev, gravit, rair, rh2o, cpair, &
+                                      zvir, latvap, latice, karman,pref_mid,&
+                                      nbot_shoc, ntop_shoc) bind(c)
+    use shoc, only: shoc_init, npbl
+
+    integer(kind=c_int), value, intent(in) :: nlev ! number of levels
+    integer(kind=c_int), value, intent(in) :: nbot_shoc ! Bottom level to which SHOC is applied
+    integer(kind=c_int), value, intent(in) :: ntop_shoc ! Top level to which SHOC is applied
+
+    real(kind=c_real), value, intent(in)  :: gravit ! gravity
+    real(kind=c_real), value, intent(in)  :: rair   ! dry air gas constant
+    real(kind=c_real), value, intent(in)  :: rh2o   ! water vapor gas constant
+    real(kind=c_real), value, intent(in)  :: cpair  ! specific heat of dry air
+    real(kind=c_real), value, intent(in)  :: zvir   ! rh2o/rair - 1
+    real(kind=c_real), value, intent(in)  :: latvap ! latent heat of vaporization
+    real(kind=c_real), value, intent(in)  :: latice ! latent heat of fusion
+    real(kind=c_real), value, intent(in)  :: karman ! Von Karman's constant
+
+    real(kind=c_real), intent(in), dimension(nlev) :: pref_mid ! reference pressures at midpoints
+    call shoc_init(nlev, gravit, rair, rh2o, cpair, &
+                   zvir, latvap, latice, karman, &
+                   pref_mid, nbot_shoc, ntop_shoc)
+  end subroutine shoc_init_for_main_bfb_c
+
+
   subroutine shoc_main_c(shcol,nlev,nlevi,dtime,nadv,host_dx, host_dy, thv,  &
      zt_grid, zi_grid, pres, presi, pdel, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &
      wtracer_sfc, num_qtracers, w_field, exner,phis, host_dse, tke, thetal,  &

@@ -788,16 +788,31 @@ struct ShocMainData : public PhysicsTestData {
   Real dtime;
   Real *host_dx, *host_dy, *thv, *zt_grid, *zi_grid, *pres, *presi, *pdel, *wthl_sfc, *wqw_sfc, *uw_sfc, *vw_sfc, *wtracer_sfc, *w_field, *exner, *phis;
 
+  // Inputs for shoc_init
+  Int nbot_shoc, ntop_shoc;
+  Real *pref_mid;
+
   // Inputs/Outputs
   Real *host_dse, *tke, *thetal, *qw, *u_wind, *v_wind, *qtracers, *wthv_sec, *tkh, *tk, *shoc_ql, *shoc_cldfrac;
 
   // Outputs
   Real *pblh, *shoc_mix, *isotropy, *w_sec, *thl_sec, *qw_sec, *qwthl_sec, *wthl_sec, *wqw_sec, *wtke_sec, *uw_sec, *vw_sec, *w3, *wqls_sec, *brunt, *shoc_ql2;
 
-  ShocMainData(Int shcol_, Int nlev_, Int nlevi_, Int num_qtracers_, Real dtime_, Int nadv_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, num_qtracers_ }, { shcol_, nlev_, num_qtracers_ }}, {{ &host_dx, &host_dy, &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc, &phis, &pblh }, { &thv, &zt_grid, &pres, &pdel, &w_field, &exner, &host_dse, &tke, &thetal, &qw, &u_wind, &v_wind, &wthv_sec, &tkh, &tk, &shoc_ql, &shoc_cldfrac, &shoc_mix, &isotropy, &w_sec, &wqls_sec, &brunt, &shoc_ql2 }, { &zi_grid, &presi, &thl_sec, &qw_sec, &qwthl_sec, &wthl_sec, &wqw_sec, &wtke_sec, &uw_sec, &vw_sec, &w3 }, { &wtracer_sfc }, { &qtracers }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), nadv(nadv_), num_qtracers(num_qtracers_), dtime(dtime_) {}
+  ShocMainData(Int shcol_, Int nlev_, Int nlevi_, Int num_qtracers_, Real dtime_, Int nadv_, Int nbot_shoc_, Int ntop_shoc_) :
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, num_qtracers_ }, { shcol_, nlev_, num_qtracers_ }, { nlev_ }},
+                    {{ &host_dx, &host_dy, &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc, &phis, &pblh },
+                     { &thv, &zt_grid, &pres, &pdel, &w_field, &exner, &host_dse, &tke, &thetal,
+                       &qw, &u_wind, &v_wind, &wthv_sec, &tkh, &tk, &shoc_ql, &shoc_cldfrac,
+                       &shoc_mix, &isotropy, &w_sec, &wqls_sec, &brunt, &shoc_ql2 },
+                     { &zi_grid, &presi, &thl_sec, &qw_sec, &qwthl_sec, &wthl_sec,
+                       &wqw_sec, &wtke_sec, &uw_sec, &vw_sec, &w3 },
+                     { &wtracer_sfc },
+                     { &qtracers },
+                     { &pref_mid }}),
+                    shcol(shcol_), nlev(nlev_), nlevi(nlevi_), nadv(nadv_),
+                    num_qtracers(num_qtracers_), dtime(dtime_), nbot_shoc(nbot_shoc_), ntop_shoc(ntop_shoc_) {}
 
-  PTD_STD_DEF(ShocMainData, 6, shcol, nlev, nlevi, num_qtracers, dtime, nadv);
+  PTD_STD_DEF(ShocMainData, 8, shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc);
 };
 
 struct PblintdHeightData : public PhysicsTestData {
@@ -947,6 +962,7 @@ void diag_second_shoc_moments                       (DiagSecondShocMomentsData& 
 void compute_shoc_vapor                             (ComputeShocVaporData& d);
 void update_prognostics_implicit                    (UpdatePrognosticsImplicitData& d);
 void shoc_main                                      (ShocMainData& d);
+void shoc_main_with_init                            (ShocMainData& d);
 void pblintd_height                                 (PblintdHeightData& d);
 void vd_shoc_decomp_and_solve                       (VdShocDecompandSolveData& d);
 void pblintd_surf_temp(PblintdSurfTempData& d);
@@ -1036,7 +1052,8 @@ void isotropic_ts_f(Int nlev, Int shcol, Real* brunt_int, Real* tke,
                     Real* a_diss, Real* brunt, Real* isotropy);
 void dp_inverse_f(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt);
 
-void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* host_dx, Real* host_dy, Real* thv,
+int shoc_init_f(Int nlev, Real* pref_mid, Int nbot_shoc, Int ntop_shoc);
+void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, Real* host_dx, Real* host_dy, Real* thv,
                  Real* zt_grid, Real* zi_grid, Real* pres, Real* presi, Real* pdel, Real* wthl_sfc, Real* wqw_sfc,
                  Real* uw_sfc, Real* vw_sfc, Real* wtracer_sfc, Int num_qtracers, Real* w_field, Real* exner,
                  Real* phis, Real* host_dse, Real* tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind,

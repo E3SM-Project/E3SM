@@ -16,6 +16,49 @@ namespace shoc {
  */
 
 template<typename S, typename D>
+Int Functions<S,D>::shoc_init(
+  const Int&                  nbot_shoc,
+  const Int&                  ntop_shoc,
+  const view_1d<const Spack>& pref_mid)
+{
+  // This function calculates the maximum number of levels
+  // in pbl from surface
+
+  using ExeSpace = typename KT::ExeSpace;
+  view_1d<Int> npbl_d("npbl",1);
+
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+
+    const Scalar pblmaxp = SC::pblmaxp;
+
+    int npbl_val = 0;
+
+    const int begin_pack_indx = ntop_shoc/Spack::n;
+    const int end_pack_indx   = nbot_shoc/Spack::n+1;
+    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, begin_pack_indx, end_pack_indx),
+                                                    [&] (const Int& k, Int& local_sum) {
+      const auto range = ekat::range<IntSmallPack>(k*Spack::n);
+      const auto in_range = (range >= ntop_shoc && range < nbot_shoc);
+      const auto condition = (in_range && pref_mid(k) >= pblmaxp);
+
+      IntSmallPack greater_than_pblmaxp(0);
+      greater_than_pblmaxp.set(condition, 1);
+
+      ekat::reduce_sum(greater_than_pblmaxp, local_sum);
+    }, Kokkos::Sum<Int>(npbl_val));
+
+    if (npbl_val==0) npbl_val=1;
+    npbl_d(0) = npbl_val;
+  });
+
+  const auto host_view = Kokkos::create_mirror_view(npbl_d);
+  Kokkos::deep_copy(host_view, npbl_d);
+
+  return host_view(0);
+}
+
+template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::shoc_main_internal(
   const MemberType&            team,

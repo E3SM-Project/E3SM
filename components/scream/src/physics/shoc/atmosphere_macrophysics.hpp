@@ -290,7 +290,8 @@ protected:
   ekat::Comm          m_shoc_comm;
   ekat::ParameterList m_shoc_params;
 
-  // Keep track of field dimensions
+  // Keep track of field dimensions and other scalar values
+  // needed in shoc_main
   Int m_num_cols;
   Int m_num_levs;
   Int m_npbl;

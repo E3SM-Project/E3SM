@@ -324,8 +324,12 @@ void SHOCMacrophysics::run_impl (const Real dt)
                        shoc_preamble); // Kokkos::parallel_for(shoc_main_local_vals)
   Kokkos::fence();
 
-  // TODO: add shoc_init function, for now hard coded.
-  m_npbl = m_num_levs;
+
+  // Calculate maximum number of levels in pbl from surface
+  const auto pref_mid = m_shoc_fields_in["pref_mid"].get_reshaped_view<const Spack*>();
+  const int ntop_shoc = 0;
+  const int nbot_shoc = m_num_levs;
+  m_npbl = SHF::shoc_init(nbot_shoc,ntop_shoc,pref_mid);
 
   // For now set the host timestep to the shoc timestep. This forces
   // number of SHOC timesteps (nadv) to be 1.
