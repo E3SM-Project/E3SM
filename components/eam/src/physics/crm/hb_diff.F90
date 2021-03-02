@@ -43,7 +43,7 @@ module hb_diff
 #ifdef MMF_HBML
   real(r8), parameter :: ml    = MMF_HBML        ! mixing length scale used for ml2
 #else
-  real(r8), parameter :: ml    = 30.0_r8        ! mixing length scale used for ml2
+  real(r8), parameter :: ml    = 10.0_r8        ! mixing length scale used for ml2
 #endif
   
 
@@ -590,7 +590,6 @@ subroutine austausch_pbl(lchnk ,ncol    ,  &
 
   !-----------------------------------------------------------------------------
   ! Check whether last allowed midpoint is within pbl
-  
   ! apply new diffusivity at entrainment zone 
   do i = 1,ncol
     if (bge(i) > 1.e-7_r8) then
