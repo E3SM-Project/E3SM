@@ -194,8 +194,6 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     use constituents, only: pcnst
     use time_manager, only: get_nstep
     use cam_history, only: outfld
-    use parallel_mod, only: global_shared_buf, global_shared_sum
-    use global_norms_mod, only: wrap_repro_sum
     use shr_const_mod, only: SHR_CONST_PI
 
     integer :: t1,t2,n,nets,nete,pp
@@ -223,8 +221,6 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(nlev) :: dummy1, dummy2, forecast_t, forecast_u, forecast_v
     real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn, temp_tend
     real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
-    real (kind=real_kind), dimension(nlev) :: domain_q, domain_t, domain_u, domain_v, rtau
-    real (kind=real_kind), dimension(nlev) :: relax_t, relax_q, relax_u, relax_v, iop_pres
     real (kind=real_kind) :: forecast_ps, Rstar1d
     real (kind=real_kind) :: temperature(np,np,nlev)
     logical :: wet
@@ -252,11 +248,6 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
-
-    ! Compute pressure for IOP observations
-    do k=1,nlev
-      iop_pres(k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*psobs
-    end do
 
     do ie=1,nelemd_todo
 
@@ -344,74 +335,139 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     enddo
     
     if (iop_relaxation .and. iop_mode) then
+      ! If running in a doubly periodic IOP mode, then nudge the domain
+      !   based on the domain mean and observed quantities of T, Q, u, and v
+      call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
+                                 nelemd_todo,np_todo,dt)
+    endif
    
-      do k=1,nlev
-        do ie=1,nelemd_todo
-          call get_temperature(elem(ie),temperature,hvcoord,t1)
-          global_shared_buf(ie,1) = 0.0_real_kind
-          global_shared_buf(ie,2) = 0.0_real_kind
-          global_shared_buf(ie,3) = 0.0_real_kind
-          global_shared_buf(ie,4) = 0.0_real_kind
-          global_shared_buf(ie,1) = global_shared_buf(ie,1) + SUM(elem(ie)%state%Q(:,:,k,1))
-          global_shared_buf(ie,2) = global_shared_buf(ie,2) + SUM(temperature(:,:,k))
-          global_shared_buf(ie,3) = global_shared_buf(ie,3) + SUM(elem(ie)%state%v(:,:,1,k,t1))
-          global_shared_buf(ie,4) = global_shared_buf(ie,4) + SUM(elem(ie)%state%v(:,:,2,k,t1))
-        enddo
-        call wrap_repro_sum(nvars=4, comm=hybrid%par%comm)
-        domain_q(k) = global_shared_sum(1)/(dble(nelem)*dble(np)*dble(np))
-        domain_t(k) = global_shared_sum(2)/(dble(nelem)*dble(np)*dble(np))
-        domain_u(k) = global_shared_sum(3)/(dble(nelem)*dble(np)*dble(np))
-        domain_v(k) = global_shared_sum(4)/(dble(nelem)*dble(np)*dble(np))
-      enddo
 
-      ! Initialize relaxation arrays
-      do k=1,nlev
-        relax_q(k) = 0._real_kind
-        relax_t(k) = 0._real_kind
-        relax_u(k) = 0._real_kind
-        relax_v(k) = 0._real_kind
-      enddo
 
-      do k=1,nlev
+end subroutine apply_SC_forcing
 
-        if (iop_pres(k) .le. iop_relaxation_low*100._real_kind .and. &
-          iop_pres(k) .ge. iop_relaxation_high*100._real_kind) then
+
+subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
+                                 nelemd_todo,np_todo,dt)
+
+  ! Subroutine intended to nudge a uniformly forced grid with heterogenous
+  !   surface (i.e. doubly-periodic SCREAM).
+
+  use scamMod
+  use dimensions_mod, only : np, np, nlev, npsq, nelem
+  use parallel_mod, only: global_shared_buf, global_shared_sum
+  use global_norms_mod, only: wrap_repro_sum
+  use hybvcoord_mod, only : hvcoord_t
+  use hybrid_mod, only : hybrid_t
+  use element_mod, only : element_t
+  use time_mod
+  use physical_constants, only : Cp, Rgas
+
+  ! Input/Output variables
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (hvcoord_t)                  :: hvcoord
+  type(hybrid_t),             intent(in) :: hybrid
+  integer, intent(in) :: nelemd_todo, np_todo, t1
+  real (kind=real_kind), intent(in):: dt
+  real (kind=real_kind), intent(in):: dp(np,np,nlev), exner(np,np,nlev)
+
+  ! Local variables
+  real (kind=real_kind), dimension(nlev) :: domain_q, domain_t, domain_u, domain_v, rtau
+  real (kind=real_kind), dimension(nlev) :: relax_t, relax_q, relax_u, relax_v, iop_pres
+  real (kind=real_kind) :: temperature(np,np,nlev), Rstar(np,np,nlev)
+  integer :: ie, i, j, k
+
+  ! Compute pressure for IOP observations
+  do k=1,nlev
+    iop_pres(k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*psobs
+  end do
+
+  ! Compute the domain means for temperature, moisture, u, and v
+  do k=1,nlev
+    do ie=1,nelemd_todo
+      ! Get absolute temperature
+      call get_temperature(elem(ie),temperature,hvcoord,t1)
       
-          rtau(k) = iop_relaxation_tscale
-          rtau(k) = max(dt,rtau(k))
-        
-          relax_q(k) = -(domain_q(k) - qobs(k))/rtau(k)
-          relax_t(k) = -(domain_t(k) - tobs(k))/rtau(k)
-          relax_u(k) = -(domain_u(k) - uobs(k))/rtau(k)
-          relax_v(k) = -(domain_v(k) - vobs(k))/rtau(k)
-        endif
+      ! Initialize the global buffer
+      global_shared_buf(ie,1) = 0.0_real_kind
+      global_shared_buf(ie,2) = 0.0_real_kind
+      global_shared_buf(ie,3) = 0.0_real_kind
+      global_shared_buf(ie,4) = 0.0_real_kind
       
-      enddo
-      
-      do ie=1,nelemd_todo
-        call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
-        do j=1,np_todo
-          do i=1,np_todo
-            do k=1,nlev
-              elem(ie)%state%Q(i,j,k,1) = elem(ie)%state%Q(i,j,k,1) + relax_q(k) * dt
-              elem(ie)%state%v(i,j,1,k,t1) = elem(ie)%state%v(i,j,1,k,t1) + relax_u(k) * dt
-              elem(ie)%state%v(i,j,2,k,t1) = elem(ie)%state%v(i,j,2,k,t1) + relax_v(k) * dt
-                       
-              temperature(i,j,k) = temperature(i,j,k) + relax_t(k) * dt
-               
-#ifdef MODEL_THETA_L
-              elem(ie)%state%vtheta_dp(i,j,k,t1) = (temperature(i,j,k)*Rstar(i,j,k)*dp(i,j,k))/&
-                (Rgas*exner(i,j,k))
-#else
-              elem(ie)%state%T(i,j,k,t1) = temperature(i,j,k)           
-#endif            
-            enddo
-          enddo
-        enddo
-      enddo
-    
+      ! Sum each variable for each level
+      global_shared_buf(ie,1) = global_shared_buf(ie,1) + SUM(elem(ie)%state%Q(:,:,k,1))
+      global_shared_buf(ie,2) = global_shared_buf(ie,2) + SUM(temperature(:,:,k))
+      global_shared_buf(ie,3) = global_shared_buf(ie,3) + SUM(elem(ie)%state%v(:,:,1,k,t1))
+      global_shared_buf(ie,4) = global_shared_buf(ie,4) + SUM(elem(ie)%state%v(:,:,2,k,t1))
+    enddo
+
+    ! Compute the domain mean
+    call wrap_repro_sum(nvars=4, comm=hybrid%par%comm)
+    domain_q(k) = global_shared_sum(1)/(dble(nelem)*dble(np)*dble(np))
+    domain_t(k) = global_shared_sum(2)/(dble(nelem)*dble(np)*dble(np))
+    domain_u(k) = global_shared_sum(3)/(dble(nelem)*dble(np)*dble(np))
+    domain_v(k) = global_shared_sum(4)/(dble(nelem)*dble(np)*dble(np))
+  enddo
+
+  ! Initialize relaxation arrays
+  do k=1,nlev
+    relax_q(k) = 0._real_kind
+    relax_t(k) = 0._real_kind
+    relax_u(k) = 0._real_kind
+    relax_v(k) = 0._real_kind
+  enddo
+
+  ! Compute the relaxation for each level.  This is the relaxation based
+  !   on the domain mean and observed quantity from IOP file.
+  do k=1,nlev
+
+    ! Restrict nudging to certain levels if requested by user
+    if (iop_pres(k) .le. iop_relaxation_low*100._real_kind .and. &
+      iop_pres(k) .ge. iop_relaxation_high*100._real_kind) then
+
+      ! Define nudging timescale
+      rtau(k) = iop_relaxation_tscale
+      rtau(k) = max(dt,rtau(k))
+
+      ! compute relaxation for each variable
+      !  units are [unit/s] (i.e. K/s for temperature)
+      relax_q(k) = -(domain_q(k) - qobs(k))/rtau(k)
+      relax_t(k) = -(domain_t(k) - tobs(k))/rtau(k)
+      relax_u(k) = -(domain_u(k) - uobs(k))/rtau(k)
+      relax_v(k) = -(domain_v(k) - vobs(k))/rtau(k)
     endif
 
-    end subroutine apply_SC_forcing
+  enddo
+
+  ! Now apply the nudging tendency for each variable
+  do ie=1,nelemd_todo
+    ! Get updated Rstar to convert to density weighted potential temperature
+    call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
+    do j=1,np_todo
+      do i=1,np_todo
+        do k=1,nlev
+
+          ! Apply vapor relaxation
+          elem(ie)%state%Q(i,j,k,1) = elem(ie)%state%Q(i,j,k,1) + relax_q(k) * dt
+
+          ! Apply u and v relaxation
+          elem(ie)%state%v(i,j,1,k,t1) = elem(ie)%state%v(i,j,1,k,t1) + relax_u(k) * dt
+          elem(ie)%state%v(i,j,2,k,t1) = elem(ie)%state%v(i,j,2,k,t1) + relax_v(k) * dt
+
+          ! Apply temperature relaxation
+          temperature(i,j,k) = temperature(i,j,k) + relax_t(k) * dt
+
+          ! Update temperature appropriately based on dycore used
+#ifdef MODEL_THETA_L
+          elem(ie)%state%vtheta_dp(i,j,k,t1) = (temperature(i,j,k)*Rstar(i,j,k)*dp(i,j,k))/&
+            (Rgas*exner(i,j,k))
+#else
+          elem(ie)%state%T(i,j,k,t1) = temperature(i,j,k)
+#endif            
+        enddo
+      enddo
+    enddo
+  enddo
+
+end subroutine iop_domain_relaxation
 
 end module se_single_column_mod
