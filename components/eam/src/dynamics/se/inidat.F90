@@ -20,7 +20,7 @@ module inidat
   use spmd_utils,   only: iam, masterproc
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
-  use scamMod, only: single_column, precip_off, scmlat, scmlon, iop_mode, iop_perturb_high
+  use scamMod, only: single_column, precip_off, scmlat, scmlon, uniform_grid_mode, iop_perturb_high
   implicit none
   private
   public read_inidat
@@ -136,7 +136,7 @@ contains
     end if
 
 !   Determine column closest to SCM point
-    if (single_column .and. .not. iop_mode .and. par%dynproc) then
+    if (single_column .and. .not. uniform_grid_mode .and. par%dynproc) then
       if (scmlon .lt. 0._r8) then
         scmposlon=scmlon+360._r8
       else
@@ -178,7 +178,7 @@ contains
 
     endif ! single_column
 
-    if (iop_mode) then
+    if (uniform_grid_mode) then
       indx_scm = 1
     endif
 
@@ -192,7 +192,7 @@ contains
     fieldname = 'U'
     tmp = 0.0_r8
     
-    if (.not. iop_mode) then
+    if (.not. uniform_grid_mode) then
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -211,8 +211,8 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
-             if (single_column .and. .not. iop_mode) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
-             if (iop_mode) elem(ie)%state%v(i,j,1,:,tl)=tmp_iop(indx_scm,:)
+             if (single_column .and. .not. uniform_grid_mode) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
+             if (uniform_grid_mode) elem(ie)%state%v(i,j,1,:,tl)=tmp_iop(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -221,7 +221,7 @@ contains
     fieldname = 'V'
     tmp = 0.0_r8
 
-    if (.not. iop_mode) then
+    if (.not. uniform_grid_mode) then
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -239,8 +239,8 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
-             if (single_column .and. .not. iop_mode) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
-             if (iop_mode) elem(ie)%state%v(i,j,2,:,tl)=tmp_iop(indx_scm,:)
+             if (single_column .and. .not. uniform_grid_mode) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
+             if (uniform_grid_mode) elem(ie)%state%v(i,j,2,:,tl)=tmp_iop(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -249,7 +249,7 @@ contains
     fieldname = 'T'
     tmp_iop = 0.0_r8
 
-    if (.not. iop_mode) then
+    if (.not. uniform_grid_mode) then
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -274,13 +274,13 @@ contains
 #ifdef MODEL_THETA_L
              elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
 
-             if (iop_mode) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
-             if (single_column .and. .not. iop_mode) elem(ie)%derived%FT(i,j,:) = tmp(indx_scm,:,ie_scm)
+             if (uniform_grid_mode) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
+             if (single_column .and. .not. uniform_grid_mode) elem(ie)%derived%FT(i,j,:) = tmp(indx_scm,:,ie_scm)
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
 
-             if (single_column .and. .not. iop_mode) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
-             if (iop_mode) elem(ie)%state%T(i,j,:,tl) = tmp_iop(indx_scm,:)
+             if (single_column .and. .not. uniform_grid_mode) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
+             if (uniform_grid_mode) elem(ie)%state%T(i,j,:,tl) = tmp_iop(indx_scm,:)
 #endif
              indx = indx + 1
           end do
@@ -314,7 +314,7 @@ contains
     
           else
     
-            if (.not. iop_mode) then
+            if (.not. uniform_grid_mode) then
               tmp = 0.0_r8
               call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
                    1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
@@ -398,8 +398,8 @@ contains
           do j = 1, np
              do i = 1, np
                 elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx,:,ie)
-                if (single_column .and. .not. iop_mode) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
-                if (iop_mode) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_iop(indx_scm,:) 
+                if (single_column .and. .not. uniform_grid_mode) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
+                if (uniform_grid_mode) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_iop(indx_scm,:) 
                 indx = indx + 1
              end do
           end do
@@ -413,7 +413,7 @@ contains
 
     fieldname = 'PS'
     tmp(:,1,:) = 0.0_r8
-    if (.not. iop_mode) then
+    if (.not. uniform_grid_mode) then
       call infld(fieldname, ncid_ini, ncol_name,      &
            1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
     else
@@ -428,7 +428,7 @@ contains
     allocate(tmpmask(npsq,nelemd))
     tmpmask = (reshape(ldof, (/npsq,nelemd/)) /= 0)
 
-    if(minval(tmp(:,1,:), mask=tmpmask) < 10000._r8 .and. .not. iop_mode) then
+    if(minval(tmp(:,1,:), mask=tmpmask) < 10000._r8 .and. .not. uniform_grid_mode) then
        call endrun('Problem reading ps field')
     end if
     deallocate(tmpmask)
@@ -439,8 +439,8 @@ contains
           do j = 1, np
              do i = 1, np
                 elem(ie)%state%ps_v(i,j,tl) = tmp(indx,1,ie)
-                if (single_column .and. .not. iop_mode) elem(ie)%state%ps_v(i,j,tl) = tmp(indx_scm,1,ie_scm)
-                if (iop_mode) elem(ie)%state%ps_v(i,j,tl) = tmp(1,1,1)
+                if (single_column .and. .not. uniform_grid_mode) elem(ie)%state%ps_v(i,j,tl) = tmp(indx_scm,1,ie_scm)
+                if (uniform_grid_mode) elem(ie)%state%ps_v(i,j,tl) = tmp(1,1,1)
                 indx = indx + 1
              end do
           end do
@@ -454,7 +454,7 @@ contains
       fieldname = 'PHIS'
       tmp(:,1,:) = 0.0_r8
       if (fv_nphys == 0) then
-         if (.not. iop_mode) then
+         if (.not. uniform_grid_mode) then
            call infld(fieldname, ncid_topo, ncol_name,      &
               1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
          else
@@ -495,8 +495,8 @@ contains
          do j = 1, np
             do i = 1, np
                elem(ie)%state%phis(i,j) = tmp(indx,1,ie)
-               if (single_column .and. .not. iop_mode) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
-               if (iop_mode) elem(ie)%state%phis(i,j) = tmp(1,1,1)
+               if (single_column .and. .not. uniform_grid_mode) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
+               if (uniform_grid_mode) elem(ie)%state%phis(i,j) = tmp(1,1,1)
                indx = indx + 1
             end do
          end do
@@ -507,7 +507,7 @@ contains
       iop_update_surface = .false.
       if (masterproc) call setiopupdate()
       if (masterproc) call readiopdata(iop_update_surface,hyam,hybm)
-      if (iop_mode) call scm_broadcast()
+      if (uniform_grid_mode) call scm_broadcast()
       call scm_setinitial(elem)
     endif
 
@@ -517,7 +517,7 @@ contains
                        'by +/- ', pertlim, ' to initial temperature field'
       end if
 
-      if (iop_mode) then
+      if (uniform_grid_mode) then
         ! Restrict perturbations to lowest layers based on reference pressure
         do k=1,nlev
           p_ref(k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*hvcoord%ps0
@@ -557,7 +557,7 @@ contains
               pertval = D2_0*pertlim*(D0_5 - pertval)
 
               ! If IOP mode potentially only perturb a portion of the profile
-              if (.not. iop_mode .or. p_ref(k) .gt. iop_perturb_high*100._r8) then
+              if (.not. uniform_grid_mode .or. p_ref(k) .gt. iop_perturb_high*100._r8) then
 
 #ifdef MODEL_THETA_L
                 elem(ie)%derived%FT(i,j,k) = elem(ie)%derived%FT(i,j,k)*(D1_0 + pertval)

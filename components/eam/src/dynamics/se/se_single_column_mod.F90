@@ -99,13 +99,13 @@ subroutine scm_setinitial(elem)
               !  If IOP mode we do NOT want to write over the dy-core vertical 
               !    velocity with the large-scale one.  wfld is used in forecast.F90
               !    for the compuation of the large-scale subsidence.
-              if (have_omega .and. .not. iop_mode) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
-              if (iop_mode) elem(ie)%derived%omega_p(i,j,k) = 0.0_real_kind
+              if (have_omega .and. .not. uniform_grid_mode) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
+              if (uniform_grid_mode) elem(ie)%derived%omega_p(i,j,k) = 0.0_real_kind
             enddo
 
             ! If doubly periodic IOP mode then SHOC/CLUBB needs to know about
             !   length size.  Note that planar dycore only supports uniform grids.
-            if (iop_mode) then
+            if (uniform_grid_mode) then
               ! convert from km to m
               dyn_dx_size = elem(ie)%dx_short * 1000.0_real_kind
             endif
@@ -174,7 +174,7 @@ subroutine scm_setfield(elem,iop_update_phase1)
     if (have_ps .and. .not. use_replay) elem(ie)%state%ps_v(:,:,:) = psobs
     do i=1, PLEV
       ! If IOP mode do NOT write over dycore vertical velocity
-      if ((have_omega .and. iop_update_phase1) .and. .not. iop_mode) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
+      if ((have_omega .and. iop_update_phase1) .and. .not. uniform_grid_mode) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
     end do
   end do
 
@@ -240,7 +240,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     nelemd_todo = 1
     np_todo = 1
     
-    if (iop_mode) then
+    if (uniform_grid_mode) then
       nelemd_todo = nelemd
       np_todo = np
     endif
@@ -276,7 +276,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
           stateQin1(:,:) = stateQin_qfcst(:,:)
           stateQin2(:,:) = stateQin_qfcst(:,:)        
 
-          if (.not. use_3dfrc .or. iop_mode) then
+          if (.not. use_3dfrc .or. uniform_grid_mode) then
             temp_tend(:) = 0.0_real_kind
           else
             temp_tend(:) = elem(ie)%derived%fT(i,j,:)
@@ -324,7 +324,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
         enddo
       enddo
       
-      if (iop_mode) then
+      if (uniform_grid_mode) then
         call outfld('TDIFF',tdiff_out,npsq,ie)
         call outfld('QDIFF',qdiff_out,npsq,ie)
       else
@@ -334,7 +334,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     
     enddo
     
-    if (iop_relaxation .and. iop_mode) then
+    if (iop_relaxation .and. uniform_grid_mode) then
       ! If running in a doubly periodic IOP mode, then nudge the domain
       !   based on the domain mean and observed quantities of T, Q, u, and v
       call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
