@@ -61,9 +61,10 @@ class NcFileInit(object):
             ds.ne   = ne
             ds.np   = np
 
-        ds.createDimension("COL",ncols)
-        ds.createDimension("LEV",nlev)
-        ds.createDimension("ILEV",nlev+1)
+        ds.createDimension("time",1)
+        ds.createDimension("ncol",ncols)
+        ds.createDimension("lev",nlev)
+        ds.createDimension("ilev",nlev+1)
 
         ds.ncol = ncols
         ds.nlev = nlev
