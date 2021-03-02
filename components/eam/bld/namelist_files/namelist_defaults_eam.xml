@@ -975,8 +975,6 @@
 <use_MMF    use_MMF="1"   > .true. </use_MMF>
 <use_ECPP                 > .false.</use_ECPP>
 <use_ECPP   use_ECPP="1"  > .true. </use_ECPP>
-<use_MAML                 > .false.</use_MAML>
-<use_MAML   use_MAML="1"  > .true. </use_MAML>
 <use_MMF_VT               > .false.</use_MMF_VT>
 <use_MMF_VT use_MMF_VT="1"> .true. </use_MMF_VT>
 <MMF_VT_wn_max            > 0      </MMF_VT_wn_max>

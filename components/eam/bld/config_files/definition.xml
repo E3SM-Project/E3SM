@@ -323,9 +323,6 @@ Switch to enable or disable MMF variance transport: 0=off, 1=on.
 <entry id="use_ECPP" valid_values="0,1" value="0">
 Switch to enable or disable ECPP in CAM: 0=off, 1=on.
 </entry>
-<entry id="use_MAML" valid_values="0,1" value="0">
-Switch to enable or disable MAML in CAM: 0=off, 1=on.
-</entry>
 <entry id="use_crm_cldfrac" valid_values="0,1" value="0">
 Switch to enable or disable fractional cloudiness in m2005 microphysics in CRM: 0=off, 1=on.
 </entry>

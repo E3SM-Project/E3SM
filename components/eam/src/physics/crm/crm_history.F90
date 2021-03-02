@@ -142,12 +142,6 @@ subroutine crm_history_init(species_class)
    call addfld('CRM_FLNSC',dims_crm_2D, 'A','unitless','net surface clear-sky longwave fluxes at CRM grids')
    call addfld('CRM_TK   ',dims_crm_3D, 'A','m^2/s',   'Eddy viscosity from CRM')
    call addfld('CRM_TKH  ',dims_crm_3D, 'A','m^2/s',   'Eddy viscosity from CRM')
-#ifdef MAML
-   call addfld('CRM_SHF  ',dims_crm_2D, 'I', 'W/m2',     'CRM Sfc sensible heat flux')
-   call addfld('CRM_LHF  ',dims_crm_2D, 'I', 'W/m2',     'CRM Sfc latent heat flux'  )
-   call addfld('CRM_SNOW ',dims_crm_2D, 'I', 'm/s',      'CRM Snow Rate'             )
-   call addfld('CRM_PCP  ',dims_crm_2D, 'I', 'm/s',      'CRM Precipitation Rate'    )
-#endif
 
    ! Aerosol optical depth
    call addfld('CRM_AODVIS', dims_crm_2D,'A', 'unitless', 'Aerosol optical depth at 550nm in CRM grids', flag_xyfill=.true.)
@@ -549,14 +543,6 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('EU_CRM  ', crm_output%eu_crm, pcols, lchnk )
    call outfld('DU_CRM  ', crm_output%du_crm, pcols, lchnk )
    call outfld('ED_CRM  ', crm_output%ed_crm, pcols, lchnk )
-
-#ifdef MAML
-   ! Lower boundary fluxes
-   call outfld('CRM_SHF ', cam_in%shf,         pcols, lchnk )
-   call outfld('CRM_LHF ', cam_in%lhf,         pcols, lchnk )
-   call outfld('CRM_SNOW', crm_output%crm_pcp, pcols, lchnk )
-   call outfld('CRM_PCP',  crm_output%crm_snw, pcols, lchnk )
-#endif
 
 #ifdef m2005
    if (MMF_microphysics_scheme .eq. 'm2005') then

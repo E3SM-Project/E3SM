@@ -335,10 +335,6 @@
     <lname>2000_EAM%SP1V1_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>FSP1V1-MAML</alias>
-    <lname>2000_EAM%SP1V1-MAML_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
     <alias>FSP2V1</alias>
     <lname>2000_EAM%SP2V1_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
@@ -353,20 +349,12 @@
     <lname>2000_EAM%MMFXX_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-MMF1-MAML</alias>
-    <lname>2000_EAM%MMF1-MAML_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
     <alias>F-MMF2</alias>
     <lname>2000_EAM%MMF2_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-MMF2-ECPP</alias>
     <lname>2000_EAM%MMF2-ECPP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF2-MAML</alias>
-    <lname>2000_EAM%MMF2-MAML_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- ******************************* -->

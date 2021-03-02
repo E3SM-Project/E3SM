@@ -278,7 +278,6 @@ OPTIONS
      -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols
      -crm_adv           CRM advection scheme [MPDATA | UM5]
      -crm <model>       CRM model [sam | samxx]
-     -use_MAML          use multiple atmosphere and multiple land version of MMF
 EOF
 }
 
@@ -341,7 +340,6 @@ GetOptions(
     "use_MMF"                   => \$opts{'use_MMF'},
     "use_MMF_VT"                => \$opts{'use_MMF_VT'},
     "use_ECPP"                  => \$opts{'use_ECPP'},
-    "use_MAML"                  => \$opts{'use_MAML'},
     "crm_nx=s"                  => \$opts{'crm_nx'},
     "crm_ny=s"                  => \$opts{'crm_ny'},
     "crm_nz=s"                  => \$opts{'crm_nz'},
@@ -1274,7 +1272,6 @@ if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 # Multiscale Modelling Framework mode (MMF)
 if (defined $opts{'use_MMF'}) {
     if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
-    if (defined $opts{'use_MAML'})            { $cfg_ref->set('use_MAML', 1); }
     if (defined $opts{'use_MMF_VT'})          { $cfg_ref->set('use_MMF_VT', 1); }
     $cfg_ref->set('use_MMF', 1);
     $cfg_ref->set('crm_nx', $opts{'crm_nx'});
@@ -1795,7 +1792,6 @@ if (defined $opts{'use_MMF'}) {
     $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
     $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
     if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
-    if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
     if (defined $opts{'crm_nx_rad'}) {
         $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad "
     } else {

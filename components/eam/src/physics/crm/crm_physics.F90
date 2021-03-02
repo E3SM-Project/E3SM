@@ -98,9 +98,6 @@ module crm_physics
    integer :: niwat_idx       = -1 ! niwat index in physics buffer
    integer :: tcwat_idx       = -1 ! tcwat index in physics buffer
 
-#ifdef MAML
-   integer :: crm_pcp_idx,crm_snw_idx
-#endif
    real(r8),pointer                        :: acldy_cen_tbeg(:,:)        ! cloud fraction
    real(r8), pointer, dimension(:,:)       :: cldo
 
@@ -315,17 +312,9 @@ subroutine crm_physics_register()
    ! ACLDY_CEN has to be global in the physcal buffer to be saved in the restart file
    ! total (all sub-classes) cloudy fractional area in previous time step 
    call pbuf_add_field('ACLDY_CEN','global', dtype_r8, dims_gcm_2D, idx) 
-
-#ifdef MAML
-   ! special vars for passing CRM-scale precipition/snow into CLM
-   call pbuf_add_field('CRM_PCP', 'physpkg', dtype_r8, dims_crm_2D, crm_pcp_idx)
-   call pbuf_add_field('CRM_SNW', 'physpkg', dtype_r8, dims_crm_2D, crm_snw_idx)
-#endif
    
-   ! CRM orientation angle needs to persist for MAML 
-   ! (to pass crm info to coupler) and MMF_ORIENT_RAND
+   ! CRM orientation angle needs to persist across time steps
    call pbuf_add_field('CRM_ANGLE', 'global', dtype_r8, dims_gcm_1D, idx)
-
 
    !----------------------------------------------------------------------------
    ! pbuf fields previously added by offline parameterizations
@@ -640,14 +629,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    type(crm_rad_type)    :: crm_rad
    type(crm_input_type)  :: crm_input
    type(crm_output_type) :: crm_output
-#ifdef MAML
-   real(r8), pointer, dimension(:,:,:) :: crm_pcp
-   real(r8), pointer, dimension(:,:,:) :: crm_snw
-   real(r8) :: factor_xy
-   real(r8) :: tau00_avg, bflxls_avg, fluxu00_avg, fluxv00_avg 
-   real(r8) :: fluxt00_avg, fluxq00_avg 
-   factor_xy = 1._r8/dble(crm_nx*crm_ny)
-#endif
 
 #if defined( MMF_ORIENT_RAND )
    real(crm_rknd) :: unif_rand1           ! uniform random number 
@@ -844,10 +825,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    itim = pbuf_old_tim_idx()
    ifld = pbuf_get_index('CLD')
    call pbuf_get_field(pbuf, ifld, cld, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
-#ifdef MAML
-   call pbuf_get_field (pbuf, crm_pcp_idx, crm_pcp)
-   call pbuf_get_field (pbuf, crm_snw_idx, crm_snw)
-#endif
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -915,11 +892,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%q(:,:,ixcldliq) = 0.
       ptend%q(:,:,ixcldice) = 0.
 
-#ifdef MAML
-      crm_pcp(:,:,:) = 0.
-      crm_snw(:,:,:) = 0.
-#endif
-
 #ifdef ECPP
       if (use_ECPP) then
          
@@ -943,11 +915,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%q(:,:,1) = 0.  ! necessary?
       ptend%q(:,:,ixcldliq) = 0.
       ptend%q(:,:,ixcldice) = 0.
-
-#ifdef MAML
-      crm_pcp = 0.
-      crm_snw = 0.
-#endif
 
       do m = 1,crm_nz
          k = pver-m+1
@@ -1014,37 +981,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       crm_input%vl_esmt(1:ncol,1:pver) = state%v(1:ncol,1:pver)
 #endif /* MMF_ESMT */
       do i = 1,ncol
-#ifdef MAML
-         tau00_avg =0._r8
-         bflxls_avg =0._r8
-         fluxu00_avg =0._r8
-         fluxv00_avg =0._r8
-         fluxt00_avg =0._r8
-         fluxq00_avg =0._r8
-         do ii = 1, crm_nx*crm_ny
-            !seems none of variables below is used, so I don't use the CRM-level
-            !input. Later on, they can be changed if needed   
-            tau00_avg = tau00_avg + sqrt(cam_in%wsx(i,ii)**2 + cam_in%wsy(i,ii)**2)
-            bflxls_avg = bflxls_avg + cam_in%shf(i,ii)/cpair + 0.61*state%t(i,pver)*cam_in%lhf(i,ii)/latvap
-            fluxu00_avg = fluxu00_avg + cam_in%wsx(i,ii)          ! N/m2
-            fluxv00_avg = fluxv00_avg + cam_in%wsy(i,ii)          ! N/m2
-            fluxt00_avg = fluxt00_avg + cam_in%shf(i,ii)/cpair    ! K Kg/ (m2 s)
-            fluxq00_avg = fluxq00_avg + cam_in%lhf(i,ii)/latvap   ! Kg/(m2 s)
-         end do
-         crm_input%tau00(i) = tau00_avg*factor_xy 
-         crm_input%bflxls(i) = bflxls_avg*factor_xy 
-         crm_input%fluxu00(i) = fluxu00_avg*factor_xy    ! N/m2
-         crm_input%fluxv00(i) = fluxv00_avg*factor_xy    ! N/m2
-         crm_input%fluxt00(i) = fluxt00_avg*factor_xy    ! K Kg/ (m2 s)
-         crm_input%fluxq00(i) = fluxq00_avg*factor_xy    ! Kg/(m2 s)
-#else
          crm_input%tau00(i) = sqrt(cam_in%wsx(i)**2 + cam_in%wsy(i)**2)
          crm_input%bflxls(i) = cam_in%shf(i)/cpair + 0.61*state%t(i,pver)*cam_in%lhf(i)/latvap
          crm_input%fluxu00(i) = cam_in%wsx(i)     !N/m2
          crm_input%fluxv00(i) = cam_in%wsy(i)     !N/m2
          crm_input%fluxt00(i) = cam_in%shf(i)/cpair  ! K Kg/ (m2 s)
          crm_input%fluxq00(i) = cam_in%lhf(i)/latvap ! Kg/(m2 s)
-#endif  
          crm_input%wndls(i) = sqrt(state%u(i,pver)**2 + state%v(i,pver)**2)
       end do
 #if (defined m2005 && defined MODAL_AERO)
@@ -1249,11 +1191,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ! TODO: do we need to zero out the elements beyond ncol here?
       prec_dp(1:ncol) = crm_output%precc(1:ncol)
       snow_dp(1:ncol) = crm_output%precsc(1:ncol)
-
-#ifdef MAML
-      crm_pcp(:ncol,:,:) = crm_output%crm_pcp(:ncol,:,:)
-      crm_snw(:ncol,:,:) = crm_output%crm_snw(:ncol,:,:)
-#endif
 
       !---------------------------------------------------------------------------------------------
       ! Output for ECPP
@@ -1506,11 +1443,7 @@ subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
       g_dp = gravit * state%rpdel(icol,pver)             ! note : rpdel = 1./pdel
       ! ptend%s(icol,:)   = 0.
       ! ptend%q(icol,:,1) = 0.
-! #ifdef MAML
-!       ptend%s(icol,pver)   = g_dp * cam_in%shf(icol,1)
-! #else
       ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)
-! #endif
       ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1)
    end do
 
