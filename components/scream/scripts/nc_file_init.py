@@ -1,9 +1,6 @@
 from utils import expect
-#  import sys
-#  sys.path.insert(0,'/home/luca/temp/netcdf4-python/install/usr/local/lib64/python3.6/site-packages')
 
 from netCDF4 import Dataset
-from netCDF4 import Variable as NCVar
 
 import re, pathlib
 
@@ -150,16 +147,16 @@ class NcFileInit(object):
     ###########################################################################
     def get_dims(self,name_dims):
     ###########################################################################
-        open = name_dims.find('(')
-        close = name_dims.find(')')
+        opn = name_dims.find('(')
+        cls = name_dims.find(')')
 
         # Check format
-        expect (open!=-1,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
-        expect (close!=-1,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
-        expect (close>open,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
-        expect (close==len(name_dims)-1,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+        expect (opn!=-1,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+        expect (cls!=-1,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+        expect (cls>opn,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+        expect (cls==len(name_dims)-1,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
 
-        dims = name_dims[open+1:close].split(',')
+        dims = name_dims[opn+1:cls].split(',')
         expect (len(dims)>0,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
 
         return dims
@@ -205,22 +202,22 @@ class NcFileInit(object):
                 # the user passed a single value for all vector components
                 value = float(vals_str)
                 return [value]*vec_dim
-            except:
+            except ValueError:
                 # Didn't work. Then we must have a [v1,...,vN] format
-                open = vals_str.find('[')
-                close = vals_str.find(']')
-                expect (open!=-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
-                expect (close!=-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
-                expect (close>open,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
-                expect (close==len(vals_str)-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
-                vals = vals_str[open+1:close].split(',')
+                opn = vals_str.find('[')
+                cls = vals_str.find(']')
+                expect (opn!=-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
+                expect (cls!=-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
+                expect (cls>opn,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
+                expect (cls==len(vals_str)-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
+                vals = vals_str[opn+1:cls].split(',')
                 expect (len(vals)==vec_dim,
                         "Error! Var values specification has the wrong length: {} instead of {}."
                         .format(len(vals),vec_dim))
                 try:
                     values = [float(v) for v in vals]
                     return values
-                except:
+                except ValueError:
                     expect(False, "Error! Something went wrong converting strings '{}' to floats.".format(vals))
 
 
