@@ -45,6 +45,10 @@ module physpkg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_reg
 
+!++BEH
+  use co2_diagnostics,  only: co2_gmean_check_wflux, co2_gmean_check2_wflux
+!--BEH
+
   implicit none
   private
 
@@ -1009,6 +1013,11 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #ifdef TRACER_CHECK
        call gmean_mass ('before tphysbc DRY', phys_state)
 #endif
+!++BEH
+!       call gmean_mass ('before tphysbc DRY', phys_state)
+!       call co2_gmean_check ('CO2 before tphysbc DRY', phys_state)
+       call co2_gmean_check_wflux ('CO2 before tphysbc DRY', phys_state, cam_in)
+!--BEH
 
 
        !-----------------------------------------------------------------------
@@ -1061,6 +1070,11 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #ifdef TRACER_CHECK
        call gmean_mass ('between DRY', phys_state)
 #endif
+!++BEH
+!       call gmean_mass ('between DRY', phys_state)
+!       call co2_gmean_check ('CO2 between DRY', phys_state)
+       call co2_gmean_check_wflux ('CO2 between DRY', phys_state, cam_in)
+!--BEH
     end if
 
 end subroutine phys_run1
@@ -1308,6 +1322,11 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #ifdef TRACER_CHECK
     call gmean_mass ('after tphysac FV:WET)', phys_state)
 #endif
+!++BEH
+!    call gmean_mass ('after tphysac FV:WET)', phys_state)
+!    call co2_gmean_check ('CO2 after tphysac FV:WET)', phys_state)
+    call co2_gmean_check_wflux ('CO2 after tphysac FV:WET)', phys_state, cam_in)
+!--BEH
 
     call t_startf ('physpkg_st2')
     call pbuf_deallocate(pbuf2d, 'physpkg')
@@ -1413,7 +1432,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
-    use co2_cycle,          only: co2_cycle_set_ptend
+    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport
 
     implicit none
 
@@ -1768,6 +1787,18 @@ if (l_ac_energy_chk) then
     !-------------- Energy budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end if ! l_ac_energy_chk
 
+    !-------------- Carbon budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+! Need to make this feature toggle-able
+!if (check_carbon_budget) then
+   if (co2_transport()) then
+      !call co2_gmean_check('End of physics', state)
+      !call gmean_mass_subset('End of physics', state, c_i(:))
+!      call gmean_mass2('End of physics', state)
+!      call co2_gmean_check2('CO2 End of physics', state)
+      call co2_gmean_check2_wflux('CO2 End of physics WET', state, ptend, cam_in, pbuf)
+   end if
+!end if
+    !-------------- Carbon budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     if (aqua_planet) then
        labort = .false.
