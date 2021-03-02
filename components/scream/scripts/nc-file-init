@@ -25,19 +25,19 @@ OR
 
         > ./{0} -c -f my_file.nc --ne 4 --np 4 --nlev 72
 
-    \033[1;32m# Appends to existing netcdf file, adding 3d mid-layer vector (2 components) 'horiz_velocity'
+    #  \033[1;32m# Appends to existing netcdf file, adding 3d mid-layer vector (2 components) 'horiz_velocity'
 
-        > ./{0} -f my_file.nc --mid-vector-3d horiz_velocity:2
+    #      > ./{0} -f my_file.nc --mid-vector-3d horiz_velocity:2
 
-    \033[1;32m# Appends to existing netcdf file, adding 3d mid-layer scalars 'temperature' and 'pressure',
-      initing pressure to 1.0 and temperature to 273.
+    #  \033[1;32m# Appends to existing netcdf file, adding 3d mid-layer scalars 'temperature' and 'pressure',
+    #    initing pressure to 1.0 and temperature to 273.
 
-        > ./{0} -a my_file.nc --mid-scalars-3d temperature=273.0 pressure=1.0
+    #      > ./{0} -a my_file.nc --mid-scalars-3d temperature=273.0 pressure=1.0
 
-    \033[1;32m# Generate netcdf file, and specifies 
-      initing pressure to 1.0 and temperature to 273.
+    #  \033[1;32m# Generate netcdf file, and specifies 
+    #    initing pressure to 1.0 and temperature to 273.
 
-        > ./{0} -a my_file.nc --mid-scalars-3d temperature=273.0 pressure=1.0
+    #      > ./{0} -a my_file.nc --mid-scalars-3d temperature=273.0 pressure=1.0
 
 """.format(pathlib.Path(args[0]).name),
         description=description,
@@ -56,29 +56,16 @@ OR
     parser.add_argument("-pg","--phys-grid", help="Type of phys grid", default="gll")
 
     # Whether we're allowed to overwrite existing data
-    parser.add_argument("-o","--overwrite", help="Overwrite possibly existing variable values", action="store_true", default=False)
+    parser.add_argument("-o","--overwrite",
+                        help="Overwrite possibly existing variable values", action="store_true", default=False)
 
-    # The following add variables, possibly init-ing at a given constant value
-    parser.add_argument("--add-mid-scalars-1d", nargs='+', default=[],
-            help="1d variables to add to the file. Dimensions (nlev)")
-    parser.add_argument("--add-int-scalars-1d", nargs='+', default=[],
-            help="1d variables to add to the file. Dimensions (nlev+1)")
-    parser.add_argument("--add-scalars-2d", nargs='+', default=[],
-            help="2d scalar variables to add to the file. Dimensions (ncols)")
-    parser.add_argument("--add-vectors-2d", nargs='+', default=[],
-            help="2d vector variables to add to the file. Dimensions (ncols,2)")
-    parser.add_argument("--add-mid-scalars-3d", nargs='+', default=[],
-            help="3d mid-layer scalar variables to add to the file. Dimensions (ncols,nlevs)")
-    parser.add_argument("--add-int-scalars-3d", nargs='+', default=[],
-            help="3d layer-interface scalar variables to add to the file. Dimensions (ncols,nlevs+1)")
-    parser.add_argument("--add-mid-vectors-3d", nargs='+', default=[],
-            help="3d mid-layer vector variables to add to the file. Dimensions (ncols,2,nlevs)")
-    parser.add_argument("--add-int-vectors-3d", nargs='+', default=[],
-            help="3d layer-interface vector variables to add to the file. Dimensions (ncols,2,nlevs+1)")
+    parser.add_argument("-ifile","--import-file",
+                        help="File from which variable can be imported.", default=[])
+
+    parser.add_argument("-avars","--add-variables",nargs='+',
+                        help="Add variables with given dimension, setting them to 0 everywhere", default=[])
 
     # The following set variables depending on other variables
-    parser.add_argument("-ifile","--input-file",
-                        help="File from which variable can be imported.", default=[])
     parser.add_argument("-ivars","--import-variables",nargs='+',
                         help="Import variables from another file (requires valid input for -ifile)", default=[])
 
@@ -88,6 +75,7 @@ OR
     parser.add_argument("-rvars","--remove-variables",nargs='+',
                         help="Remove variables from output file (can be also used to purge 'temporarily' imported "
                              "vars from another file, used just to compute some quantity)", default=[])
+
 
     return parser.parse_args(args[1:])
 

@@ -12,28 +12,16 @@ class NcFileInit(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self,filename,create=False,ne=0,np=0,ncol=0,nlev=0,phys_grid="gll",overwrite=False,
-                 add_mid_scalars_1d=None,add_int_scalars_1d=None,
-                 add_scalars_2d=None,add_vectors_2d=None,
-                 add_mid_scalars_3d=None,add_int_scalars_3d=None,
-                 add_mid_vectors_3d=None,add_int_vectors_3d=None,
-                 input_file=None,import_variables=None,
+    def __init__(self,filename,create=False,ne=0,np=0,ncol=0,nlev=0,phys_grid="gll",
+                 overwrite=False,import_file=None,
+                 add_variables=None,import_variables=None,
                  compute_variables=None,remove_variables=None):
     ###########################################################################
 
-        #### TODO: change var-names to scalars2d, scalars3d_mid, scalars3d_int, vectors_2d...
-
-        import netCDF4
         self._overwrite = overwrite
-        self._1d_mid_s  = add_mid_scalars_1d
-        self._1d_int_s  = add_int_scalars_1d
-        self._2d_s      = add_scalars_2d
-        self._2d_v      = add_vectors_2d
-        self._3d_mid_s  = add_mid_scalars_3d
-        self._3d_int_s  = add_int_scalars_3d
-        self._3d_mid_v  = add_mid_vectors_3d
-        self._3d_int_v  = add_int_vectors_3d
-        self._ifile     = input_file
+
+        self._avars     = add_variables
+        self._ifile     = import_file
         self._ivars     = import_variables
         self._cvars     = compute_variables
         self._fname     = filename
@@ -94,58 +82,14 @@ class NcFileInit(object):
         return ds
 
     ###########################################################################
-    def get_scalar_name_and_value(self,arg_str):
+    def same_dims(self,dims1,dims2):
     ###########################################################################
-        if arg_str.find('='):
-            name_val = arg_str.split('=')
-            expect (len(name_val)==2,
-                    "Error! Scalar variables must be specified with 'var_name' or 'var_name=value'."
-                    "       You cannot have '=' in the variable name.")
-            name = name_val[0]
-            val = float(name_val[1])
-        else:
-            name = arg_str
-            val = 0.0
-
-        return name, val
-
-    ###########################################################################
-    def get_vector_name_and_values(self,arg_str):
-    ###########################################################################
-        if ':' in arg_str:
-            var_dim = arg_str.split(':')
-            expect (len(var_dim)==2,
-                    "Error! Vector variables must be specified with 'var_name:vec_dim' or 'var_name=[val0,...,valN]'."
-                    "       You cannot have ':' in the variable name.")
-            name = var_dim[0]
-            dim = var_dim[1];
-            expect (dim.isdigit() and int(dim)>0,
-                    "Error! Invalid vector dimension '{}' for variable {}".format(dim,name))
-            values = [0.0] * int(dim)
-        else:
-            expect ('=' in arg_str,
-                    "Error! Vector variables must be specified with 'name:dim' or 'name=[val0,...,valN]'.")
-
-            var_vals = arg_str.split('=')
-            name = var_vals[0]
-            vals = var_vals[1]
-            expect(vals[0]=='[' and vals[-1]==']',
-                    "Error! Vector variable must be specified with 'name:dim' or 'name=[val0,...,valN]'.")
-            values = [float(d) for d in vals[1:-1].split(',')]
-            dim = len(values)
-
-        return name, values
-
-    ###########################################################################
-    def correct_dims(self,var,dim_names):
-    ###########################################################################
-        var_dims = var.get_dims()
-        l = len(dim_names)
-        if len(var_dims)!=l:
+        l = len(dims1)
+        if len(dims2)!=l:
             return False
 
         for i in range(1,l):
-            if var_dims[i].name != dim_names[i]:
+            if dims1[i] != dims2[i]:
                 return False
 
         return True
@@ -165,70 +109,159 @@ class NcFileInit(object):
                 "Error! Variable '{}' already exists. To overwrite values, use -o flag.".format(var_name))
 
     ###########################################################################
-    def add_scalar_variable(self,ds,name,dims,value):
+    def add_variable(self,name,dims,value):
     ###########################################################################
 
+        # Check the var name is good (does not contain bad chars)
         self.check_var_name(name)
 
+        # Check we are not overwriting (unless allowed)
         self.check_overwrite_var(name)
-        if name in ds.variables.keys():
-            var = ds.variables[name]
+
+        if name in self._ds.variables.keys():
+            # If overwriting, make sure the dimensions are the same
+            var = self._ds.variables[name]
             var_dims = var.get_dims()
 
-            expect (self.correct_dims(var,dims),
+            expect (self.same_dims(var.get_dims(),dims),
                     "Error! Trying to overwrite variable {} using wrong dimensions: ({}) insted of ({}).".
                         format (name,
                                 ",".join(dims),
                                 ",".join([dim.name for dim in var_dims])))
         else:
-            var = ds.createVariable(name,"f8",dims)
+            var = self._ds.createVariable(name,"f8",dims)
         var[:] = value
 
     ###########################################################################
-    def add_vector_variable(self,ds,base_name,dims,values):
+    def get_name(self,name_dims):
+    ###########################################################################
+        open = name_dims.find('(')
+        close = name_dims.find(')')
+
+        # Check format
+        expect (open!=-1,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+        expect (close!=-1,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+        expect (close>open,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+
+        name = name_dims[0:open]
+        return name
+
+    ###########################################################################
+    def get_dims(self,name_dims):
+    ###########################################################################
+        open = name_dims.find('(')
+        close = name_dims.find(')')
+
+        # Check format
+        expect (open!=-1,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+        expect (close!=-1,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+        expect (close>open,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+        expect (close==len(name_dims)-1,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+
+        dims = name_dims[open+1:close].split(',')
+        expect (len(dims)>0,"Error! Var declaration should be 'name(dim1,...,dimN)'.")
+
+        return dims
+
+    ###########################################################################
+    def is_vector_layout(self,dims):
+    ###########################################################################
+        valid = ["COL", "LEV", "ILEV"]
+        for dim in dims:
+            if dim not in valid:
+                expect (dim.isdigit(), "Error! Unexpected dimension '{}'".format(dim))
+                return True
+        return False
+
+    ###########################################################################
+    def get_scalar_dims(self,dims):
+    ###########################################################################
+        valid = ["COL", "LEV", "ILEV"]
+        s_dims = []
+        vec_dim_id = -1 
+        for i in range(0,len(dims)):
+            if dims[i] in valid:
+                s_dims.append(dims[i])
+            else:
+                expect (vec_dim_id==-1,
+                        "Error! Multiple integer extents found in dims specification '{}'.\n"
+                        "       Only vectors are supported, for non-scalar layouts.".format(dims))
+                vec_dim_id = i
+
+        expect(vec_dim_id>0, "Error! Something went wrong while detecting vector dim id from '{}'.".format(dims))
+
+        return vec_dim_id, s_dims
+
+    ###########################################################################
+    def get_values(self,vals_str,vec_dim):
+    ###########################################################################
+        if vals_str=="":
+            # User did not specify values. Use all zeros.
+            return [0]*vec_dim
+        else:
+            try:
+                # Try to convert vals_str to a single float. If successful,
+                # the user passed a single value for all vector components
+                value = float(vals_str)
+                return [value]*vec_dim
+            except:
+                # Didn't work. Then we must have a [v1,...,vN] format
+                open = vals_str.find('[')
+                close = vals_str.find(']')
+                expect (open!=-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
+                expect (close!=-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
+                expect (close>open,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
+                expect (close==len(vals_str)-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
+                vals = vals_str[open+1:close].split(',')
+                expect (len(vals)==vec_dim,
+                        "Error! Var values specification has the wrong length: {} instead of {}."
+                        .format(len(vals),vec_dim))
+                try:
+                    values = [float(v) for v in vals]
+                    return values
+                except:
+                    expect(False, "Error! Something went wrong converting strings '{}' to floats.".format(vals))
+
+
+    ###########################################################################
+    def add_variables(self):
     ###########################################################################
 
-        for i in range(len(values)):
-            self.add_scalar_variable(ds,"{}_{}".format(base_name,i),dims,values[i])
+        for item in self._avars:
+            if '=' in item:
+                # User provided initial values
+                name_dims_vals = item.split('=')
+                expect (len(name_dims_vals)==2, "Error! Invalid variable declaration: {}".format(item))
+                name_dims = name_dims_vals[0]
+                vals_str = name_dims_vals[1]
+            else:
+                name_dims = item
+                vals_str = ""
 
-    ###########################################################################
-    def add_variables(self,ds):
-    ###########################################################################
+            # From the string name(dim1,...,dimN) extract name and dimensions
+            name = self.get_name(name_dims)
+            dims = self.get_dims(name_dims)
 
-        # 1d variables (midpoints and interfaces)
-        for item in self._1d_mid_s:
-            name, val = self.get_scalar_name_and_value(item)
-            self.add_scalar_variable (ds,name,("LEV"),val)
+            is_vector = self.is_vector_layout(dims)
 
-        for item in self._1d_int_s:
-            name, val = self.get_scalar_name_and_value(item)
-            self.add_scalar_variable (ds,name,("ILEV"),val)
+            if is_vector:
+                # From the list (dim1,...,dimN), check if it is a vector field,
+                # and if so, get the idx of the vector dimension, the extent
+                # along that dimension, and the dims list without the vector dim.
+                vec_dim_id, scalar_dims = self.get_scalar_dims(dims)
 
-        # 2d variables (scalars and vectors)
-        for item in self._2d_s:
-            name, val = self.get_scalar_name_and_value(item)
-            self.add_scalar_variable (ds,name,("COL"),val)
+                vec_dim = 1 if vec_dim_id==-1 else int(dims[vec_dim_id])
 
-        for item in self._2d_v:
-            name, values = self.get_vector_name_and_values(item)
-            self.add_vector_variable (ds,name,("COL"),values)
+                # From the string after the = (if any), get the initialization
+                # values. The string can be a single value (for scalar or vector
+                # fields) or a list of values [v1,...,vn] (for vector field)
+                values = self.get_values(vals_str,vec_dim)
 
-        # 3d variables (scalars and vectors, at midpoints and interfaces)
-        for item in self._3d_mid_s:
-            name, val = self.get_scalar_name_and_value(item)
-            self.add_scalar_variable (ds,name,("COL","LEV"),val)
-
-        for item in self._3d_int_s:
-            name, val = self.get_scalar_name_and_value(item)
-            self.add_scalar_variable (ds,name,("COL","ILEV"),val)
-
-        for item in self._3d_mid_v:
-            name, values = self.get_vector_name_and_values(item)
-            self.add_vector_variable (ds,name,("COL","LEV"),values)
-
-        for item in self._3d_int_v:
-            name, values = self.get_vector_name_and_values(item)
-            self.add_vector_variable (ds,name,("COL","ILEV"),values)
+                for i in range(0,len(values)):
+                    self.add_variable("{}_{}".format(name,i),scalar_dims,values[i])
+            else:
+                value = 0.0 if vals_str=="" else float(vals_str)
+                self.add_variable(name,dims,value)
 
     ###########################################################################
     def check_dims(self,ds,dims):
@@ -308,7 +341,7 @@ class NcFileInit(object):
     ###########################################################################
 
         # Add vars, initing to constant value
-        self.add_variables(self._ds)
+        self.add_variables()
 
         # Import vars from another file
         self.import_variables()
