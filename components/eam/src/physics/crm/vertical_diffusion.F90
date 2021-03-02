@@ -476,7 +476,7 @@ subroutine vertical_diffusion_tend( ztodt    , state    ,                  &
   use physics_types,      only : set_dry_to_wet, set_wet_to_dry
   use cam_history,        only : outfld
   use trb_mtn_stress,     only : compute_tms
-  use hb_diff,        only : compute_hb_diff
+  use hb_diff,            only : compute_hb_diff
   use wv_saturation,      only : qsat
   use molec_diff,         only : compute_molec_diff, vd_lu_qdecomp
   use constituents,       only : qmincg, qmin, cnst_type
@@ -640,11 +640,11 @@ subroutine vertical_diffusion_tend( ztodt    , state    ,                  &
   th(:ncol,:pver) = state%t(:ncol,:pver) * state%exner(:ncol,:pver)
 
   call compute_hb_diff( lchnk     , ncol     ,                            &
-                            th        , state%t  , state%q , state%zm , state%zi, &
-                            state%pmid, state%u  , state%v , tautotx  , tautoty , &
-                            shflx     , cflx(:,1), obklen  , ustar    , pblh    , &
-                            kvm       , kvh      , kvq     , cgh      , cgs     , &
-                            tpert     , qpert    , cldn    , tke      , ri        )
+                        th        , state%t  , state%q , state%zm , state%zi, &
+                        state%pmid, state%u  , state%v , tautotx  , tautoty , &
+                        shflx     , cflx(:,1), obklen  , ustar    , pblh    , &
+                        kvm       , kvh      , kvq     , cgh      , cgs     , &
+                        tpert     , qpert    , cldn    , tke      , ri        )
 
   call outfld( 'HB_ri',         ri, pcols, lchnk )
   call outfld( 'ustar',   ustar(:), pcols, lchnk )
@@ -685,7 +685,7 @@ subroutine vertical_diffusion_tend( ztodt    , state    ,                  &
   shflx_tmp = shflx
   cflx_tmp = cflx
 
-#if defined( MMF_FLUX_BYPASS ) || defined( MMF_CRM_SFC_FLX )
+#if defined( MMF_FLUX_BYPASS )
   shflx_tmp(:)  = 0.
   cflx_tmp(:,1) = 0.
 #endif
