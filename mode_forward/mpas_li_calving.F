@@ -1760,7 +1760,7 @@ module li_calving
           ! average of non-dynamic neighbors. Stranded non-dynamic cells are
           ! identified as those with frontAblationMask == 3
       do iCell = 1, nCells
-         if ( frontAblationMask(iCell) == 3.0 ) then
+         if ( frontAblationMask(iCell) == 3 ) then
             ablationVelSum = 0.0_RKIND
             thkSum = 0.0_RKIND
             uvelSum = 0.0_RKIND
