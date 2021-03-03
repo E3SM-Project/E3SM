@@ -1250,7 +1250,7 @@ end subroutine physics_ptend_copy
 !-----------------------------------------------------------------------
 
 
-
+!MATCHES dme adjust with q adjust, which is dp3d adjust
 !===============================================================================
   subroutine physics_dme_adjust_q7(state, tend, qini, dt)
     use constituents, only : cnst_get_type_byind

@@ -98,8 +98,8 @@ module physpkg
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
 
-#define ADDCP
-!#undef ADDCP
+!#define ADDCP
+#undef ADDCP
 
 
   !======================================================================= 
@@ -1788,7 +1788,8 @@ if (l_ac_energy_chk) then
     state%tebefore(:ncol) = state%te_cur(:ncol)
 
 !adjust pressure
-#define Q7
+#undef Q7
+!#define Q7
 #ifdef Q7
     call physics_dme_adjust_q7(state, tend, qini, ztodt)
 #else
@@ -1803,26 +1804,21 @@ if (l_ac_energy_chk) then
 
 !reverse TE to TE before pressure adjustment
 !comment this line when discarding pppw
-    state%te_cur(:ncol) = state%tebefore(:ncol)
+!    state%te_cur(:ncol) = state%tebefore(:ncol)
 
 !revert pressure to the previous
     state%ps = state%oldps
     state%pdel = state%oldpdel
 #ifdef Q7
-    state%q(:,:,1:7) = state%oldq
+    state%q(:,:,1:7) = state%oldq(:,:,1:7)
 #endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #ifdef ADDCP
 !take CP term out of te_cur
-!original
-
     state%te_cur(:ncol) = state%te_cur(:ncol) - state%cptermp(:ncol)*ztodt &
                                               + state%cpterme(:ncol)*ztodt 
-
-!                        + cam_in%cflx(:ncol,1)*ztodt*cpair*state%t(:ncol,pver)
-!    state%te_cur(:ncol) = state%te_cur(:ncol) -( state%tebefore(:ncol)-state%teafter(:ncol) )
 #endif
 
     call outfld('CPflux', (state%cptermp - state%cpterme) , pcols, lchnk )
@@ -1830,6 +1826,8 @@ if (l_ac_energy_chk) then
     call outfld('CPfluxp', state%cptermp , pcols, lchnk )
     call outfld('PWflux', (state%tebefore - state%teafter ) /ztodt , pcols, lchnk )
     call outfld('PWmCPflu', (state%tebefore - state%teafter)/ztodt - (state%cptermp - state%cpterme) , pcols, lchnk )
+
+
 
     call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/)) 
 
