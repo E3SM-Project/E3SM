@@ -32,23 +32,23 @@ Int Functions<S,D>::shoc_init(
 
     const Scalar pblmaxp = SC::pblmaxp;
 
-    int npbl_val = 0;
+    Int npbl_val = 1;
 
     const int begin_pack_indx = ntop_shoc/Spack::n;
     const int end_pack_indx   = nbot_shoc/Spack::n+1;
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, begin_pack_indx, end_pack_indx),
-                                                    [&] (const Int& k, Int& local_sum) {
-      const auto range = ekat::range<IntSmallPack>(k*Spack::n);
-      const auto in_range = (range >= ntop_shoc && range < nbot_shoc);
-      const auto condition = (in_range && pref_mid(k) >= pblmaxp);
+                                                    [&] (const Int& k, Int& local_max) {
+      auto range = ekat::range<IntSmallPack>(k*Spack::n);
+      const auto condition = (range >= ntop_shoc && range < nbot_shoc && pref_mid(k) >= pblmaxp);
 
-      IntSmallPack greater_than_pblmaxp(0);
-      greater_than_pblmaxp.set(condition, 1);
+      auto levels_from_surface = nbot_shoc - range;
+      levels_from_surface.set(!condition, 1);
 
-      ekat::reduce_sum(greater_than_pblmaxp, local_sum);
-    }, Kokkos::Sum<Int>(npbl_val));
+      if (local_max < ekat::max(levels_from_surface))
+        local_max = ekat::max(levels_from_surface);
 
-    if (npbl_val==0) npbl_val=1;
+    }, Kokkos::Max<Int>(npbl_val));
+
     npbl_d(0) = npbl_val;
   });
 
@@ -368,6 +368,8 @@ Int Functions<S,D>::shoc_main(
 
     const auto X1_s       = Kokkos::subview(X1_d, i, Kokkos::ALL(), Kokkos::ALL());
     const auto qtracers_s = Kokkos::subview(shoc_input_output.qtracers, i, Kokkos::ALL(), Kokkos::ALL());
+
+                         std::cout << npbl << std::endl;
 
     shoc_main_internal(team, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
                        host_dx_s, host_dy_s, zt_grid_s, zi_grid_s,             // Input

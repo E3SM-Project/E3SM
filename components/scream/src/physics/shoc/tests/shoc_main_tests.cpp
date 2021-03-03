@@ -329,6 +329,28 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     // Generate random input data
     int count = 0;
     for (auto& d : f90_data) {
+      d.randomize({{d.presi, {700e2,1000e2}},
+                   {d.tkh, {3,20}},
+                   {d.wthl_sfc, {-1,1}},
+                   {d.thetal, {900, 1000}}});
+
+      // Generate grid as decreasing set of points.
+      // Allows interpolated values to stay withing
+      // reasonable range, avoiding errors in
+      // shoc_assumed_pdf.
+      Real upper = 10;
+      Real lower = 0;
+      for (Int s = 0; s < d.shcol; ++s) {
+        for (Int k=0; k<d.nlevi; ++k) {
+          const auto zi_k = upper - k*(upper-lower)/(d.nlevi-1);
+          d.zi_grid[k+s*d.nlevi] = zi_k;
+
+          if (k!=d.nlevi-1) {
+            const auto zi_kp1 = upper - (k+1)*(upper-lower)/(d.nlevi-1);
+            d.zt_grid[k+s*d.nlev] = 0.5*(zi_k + zi_kp1);
+          }
+        }
+      }
 
       // 3 types of pref_mid ranges:
       std::pair<Real,Real> pref_mid_range;
@@ -349,28 +371,11 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       }
       ++count;
 
-      d.randomize({{d.presi, {700e2,1000e2}},
-                   {d.tkh, {3,20}},
-                   {d.wthl_sfc, {-1,1}},
-                   {d.thetal, {900, 1000}},
-                   {d.pref_mid, pref_mid_range}});
-
-      // Generate grid as decreasing set of points.
-      // Allows interpolated values to stay withing
-      // reasonable range, avoiding errors in
-      // shoc_assumed_pdf.
-      const Real upper = 10;
-      const Real lower = 0;
-      for (Int s = 0; s < d.shcol; ++s) {
-        for (Int k=0; k<d.nlevi; ++k) {
-          const auto zi_k = upper - k*(upper-lower)/(d.nlevi-1);
-          d.zi_grid[k+s*d.nlevi] = zi_k;
-
-          if (k!=d.nlevi-1) {
-            const auto zi_kp1 = upper - (k+1)*(upper-lower)/(d.nlevi-1);
-            d.zt_grid[k+s*d.nlev] = 0.5*(zi_k + zi_kp1);
-          }
-        }
+      // pref_mid must be monotonically increasing
+      upper = pref_mid_range.first;
+      lower = pref_mid_range.second;
+      for (Int k=0; k<d.nlev; ++k) {
+        d.pref_mid[k] = upper - k*(upper-lower)/(d.nlev-1);
       }
     }
 
