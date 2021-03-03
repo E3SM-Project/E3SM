@@ -93,7 +93,7 @@ end subroutine flux_avg_init
 
 !===============================================================================
 
-subroutine flux_avg_run(state, cam_in,  pbuf, nstep, deltat, timescale)
+subroutine flux_avg_run(state, cam_in,  pbuf, nstep, deltat)
   use physics_buffer, only : physics_buffer_desc, pbuf_get_field
    !---------------------------------------------------------------------------- 
    ! Purpose: smooth fluxes from surface components
@@ -105,7 +105,8 @@ subroutine flux_avg_run(state, cam_in,  pbuf, nstep, deltat, timescale)
    
    integer,             intent(in)    :: nstep
    real(r8),            intent(in)    :: deltat
-   real(r8),            intent(in)    :: timescale
+   
+   real(r8), parameter :: timescale = 7200 ! smoothing time scale [s]
 
    ! Local variables
    integer :: lchnk                  ! chunk identifier

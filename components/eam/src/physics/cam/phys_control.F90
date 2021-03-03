@@ -57,7 +57,6 @@ character(len=16) :: microp_scheme        = unset_str  ! microphysics package
 character(len=16) :: macrop_scheme        = unset_str  ! macrophysics package
 character(len=16) :: radiation_scheme     = unset_str  ! radiation package
 integer           :: srf_flux_avg         = unset_int  ! 1 => smooth surface fluxes, 0 otherwise
-real(r8)          :: srf_flux_avg_tau     = 0          ! timescale for smoothing surface fluxes
 integer           :: conv_water_in_rad    = unset_int  ! 0==> No; 1==> Yes-Arithmetic average;
                                                        ! 2==> Yes-Average in emissivity.
 
@@ -183,7 +182,7 @@ subroutine phys_ctl_readnl(nlfile)
    character(len=*), parameter :: subname = 'phys_ctl_readnl'
 
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
-      eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, srf_flux_avg_tau, &
+      eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
       MMF_microphysics_scheme, use_MMF, use_ECPP, &
       use_MMF_VT, MMF_VT_wn_max, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
@@ -231,7 +230,6 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(radiation_scheme, len(radiation_scheme) , mpichar, 0, mpicom)
    call mpibcast(macrop_scheme,    len(macrop_scheme)    , mpichar, 0, mpicom)
    call mpibcast(srf_flux_avg,                    1 , mpiint,  0, mpicom)
-   call mpibcast(srf_flux_avg_tau,                1 , mpir8,   0, mpicom)
    call mpibcast(MMF_microphysics_scheme, len(MMF_microphysics_scheme) , mpichar, 0, mpicom)
    call mpibcast(use_MMF,                         1 , mpilog,  0, mpicom)
    call mpibcast(use_ECPP,                        1 , mpilog,  0, mpicom)
@@ -447,7 +445,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         use_mass_borrower_out, & 
                         use_qqflx_fixer_out, & 
                         print_fixer_message_out, & 
-                        srf_flux_avg_tau_out, &
                         cld_macmic_num_steps_out, micro_do_icesupersat_out, &
                         fix_g1_err_ndrop_out, ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
                         convproc_do_gas_out, convproc_method_activate_out, mam_amicphys_optaa_out, n_so4_monolayers_pcage_out, &
@@ -531,7 +528,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: l_rad_out
    logical,           intent(out), optional :: mg_prc_coeff_fix_out
    logical,           intent(out), optional :: rrtmg_temp_fix_out
-   real(r8),          intent(out), optional :: srf_flux_avg_tau_out
    integer,           intent(out), optional :: cld_macmic_num_steps_out
    real(r8),          intent(out), optional :: prc_coef1_out
    real(r8),          intent(out), optional :: prc_exp_out
@@ -604,7 +600,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(l_st_mac_out            ) ) l_st_mac_out          = l_st_mac
    if ( present(l_st_mic_out            ) ) l_st_mic_out          = l_st_mic
    if ( present(l_rad_out               ) ) l_rad_out             = l_rad
-   if ( present(srf_flux_avg_tau_out    ) ) srf_flux_avg_tau_out  = srf_flux_avg_tau
    if ( present(cld_macmic_num_steps_out) ) cld_macmic_num_steps_out = cld_macmic_num_steps
    if ( present(prc_coef1_out           ) ) prc_coef1_out            = prc_coef1
    if ( present(prc_exp_out             ) ) prc_exp_out              = prc_exp
