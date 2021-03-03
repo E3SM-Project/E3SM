@@ -173,7 +173,7 @@ TEST_CASE("input_output_basic","io")
   
   // Test pulling input without the field manager:
   using view_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
-  view_2d loc_field_3("field_3",num_lcols,num_levs);
+  view_2d::HostMirror loc_field_3("field_3",num_lcols,num_levs);
   std::string filename = ins_params.get<std::string>("FILENAME");
   std::string var_name = loc_field_3.label();
   std::vector<std::string> var_dims = {"VL","COL"};
