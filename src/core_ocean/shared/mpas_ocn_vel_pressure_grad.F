@@ -550,12 +550,12 @@ contains
 
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
-         !$acc    present(angleEdge,maxLevelEdgeTop, tend, edgeMask)
-         !$acc    private(pGrad)
+         !$acc    present(angleEdge,maxLevelEdgeTop, tend, edgeMask) &
+         !$acc    private(pGrad, k)
 #else
          !$omp parallel
          !$omp do schedule(runtime) &
-         !$omp    private(pGrad)
+         !$omp    private(pGrad, k)
 #endif
          do iEdge=1,nEdgesOwned
             ! compute the pressure gradient to be applied at the edge
