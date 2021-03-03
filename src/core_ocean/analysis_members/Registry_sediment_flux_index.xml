@@ -84,6 +84,7 @@
 		<stream name="sedimentFluxIndexOutput"
 				mode="forward;analysis"
 				type="output"
+				precision="single"
 				filename_template="analysis_members/sedimentFluxIndex.$Y-$M-$D_$h.$m.$s.nc"
 				output_interval="00-00-00_00:01:00"
 				filename_interval="01-00-00_00:00:00"
