@@ -120,6 +120,7 @@
 		<stream name="regionalStatsDailyOutput"
 				type="output"
 				mode="forward;analysis"
+				precision="single"
 				filename_template="analysis_members/regionalStatsDaily.$Y-$M.nc"
 				filename_interval="00-01-00_00:00:00"
 				output_interval="00-00-01_00:00:00"

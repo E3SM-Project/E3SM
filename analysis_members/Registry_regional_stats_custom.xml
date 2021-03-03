@@ -121,6 +121,7 @@
 		<stream name="regionalStatsCustomOutput"
 				type="output"
 				mode="forward;analysis"
+				precision="single"
 				filename_template="analysis_members/regionalStatsCustom.$Y-$M-$D.nc"
 				filename_interval="00-00-01_00:00:00"
 				output_interval="00-00-00_01:00:00"
