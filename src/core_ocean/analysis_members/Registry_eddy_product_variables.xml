@@ -65,6 +65,7 @@
 	<streams>
 		<stream name="eddyProductVariablesOutput" type="output"
 				mode="forward;analysis"
+				precision="single"
 				filename_template="analysis_members/eddyProductVariables.$Y-$M-$D.nc"
 				filename_interval="01-00-00_00:00:00"
 				output_interval="99-00-00_00:00:00"

@@ -121,6 +121,7 @@
 		<stream name="regionalStatsWeeklyOutput"
 				type="output"
 				mode="forward;analysis"
+				precision="single"
 				filename_template="analysis_members/regionalStatsWeekly.$Y-$M.nc"
 				filename_interval="00-03-00_00:00:00"
 				output_interval="00-00-07_00:00:00"
