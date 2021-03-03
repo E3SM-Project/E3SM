@@ -369,8 +369,6 @@ Int Functions<S,D>::shoc_main(
     const auto X1_s       = Kokkos::subview(X1_d, i, Kokkos::ALL(), Kokkos::ALL());
     const auto qtracers_s = Kokkos::subview(shoc_input_output.qtracers, i, Kokkos::ALL(), Kokkos::ALL());
 
-                         std::cout << npbl << std::endl;
-
     shoc_main_internal(team, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
                        host_dx_s, host_dy_s, zt_grid_s, zi_grid_s,             // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,              // Input
