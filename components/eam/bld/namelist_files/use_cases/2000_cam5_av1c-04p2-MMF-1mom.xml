@@ -39,15 +39,14 @@
 <use_rad_dt_cosz>.true.</use_rad_dt_cosz>
 
 <!-- Tunable parameters -->
-<effgw_oro>               0.25    </effgw_oro>
-<seasalt_emis_scale>      0.85   </seasalt_emis_scale>
-<dust_emis_fact>          2.05D0 </dust_emis_fact>
-<effgw_beres>             0.4    </effgw_beres>
-<so4_sz_thresh_icenuc>    0.075e-6</so4_sz_thresh_icenuc>
-<n_so4_monolayers_pcage>  8.0D0 </n_so4_monolayers_pcage>
-<taubgnd>                 2.5D-3 </taubgnd>
-<raytau0>                 5.0D0 </raytau0>
-<se_ftype>                2 </se_ftype>
+<effgw_oro               >0.25    </effgw_oro>
+<seasalt_emis_scale      >0.85   </seasalt_emis_scale>
+<dust_emis_fact          >2.05D0 </dust_emis_fact>
+<effgw_beres             >0.4    </effgw_beres>
+<so4_sz_thresh_icenuc    >0.075e-6</so4_sz_thresh_icenuc>
+<n_so4_monolayers_pcage  >8.0D0 </n_so4_monolayers_pcage>
+<taubgnd                 >2.5D-3 </taubgnd>
+<raytau0                 >5.0D0 </raytau0>
 
 <!-- Prescribed aerosols -->
 <prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
