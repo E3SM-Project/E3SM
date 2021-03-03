@@ -103,7 +103,7 @@ module phys_grid
    use cam_abortutils,   only: endrun
    use perf_mod
    use cam_logfile,      only: iulog
-   use scamMod,          only: single_column, scmlat, scmlon, uniform_grid_mode
+   use scamMod,          only: single_column, scmlat, scmlon, scm_domain
    use shr_const_mod,    only: SHR_CONST_PI
    use dycore,           only: dycore_is
    use units,            only: getunit, freeunit
@@ -490,9 +490,9 @@ contains
     !
     ! Initialize physics grid, using dynamics grid
     ! a) column coordinates
-    if (single_column .and. .not. uniform_grid_mode .and. dycore_is ('SE')) lbal_opt = -1
+    if (single_column .and. .not. scm_domain .and. dycore_is ('SE')) lbal_opt = -1
     call get_horiz_grid_dim_d(hdim1_d,hdim2_d)
-    if (single_column .and. .not. uniform_grid_mode .and. dycore_is('SE')) then
+    if (single_column .and. .not. scm_domain .and. dycore_is('SE')) then
       ngcols = 1
     else
       ngcols = hdim1_d*hdim2_d
@@ -724,7 +724,7 @@ contains
        !
        ! Calculate maximum block size for each process
        !
-       if (single_column .and. .not. uniform_grid_mode .and. dycore_is('SE')) then
+       if (single_column .and. .not. scm_domain .and. dycore_is('SE')) then
           maxblksiz_proc(:) = 1
        else
           maxblksiz_proc(:) = 0
@@ -772,7 +772,7 @@ contains
        !
        ! Determine total number of chunks
        !
-       if (single_column .and. .not. uniform_grid_mode .and. dycore_is('SE')) then
+       if (single_column .and. .not. scm_domain .and. dycore_is('SE')) then
          nchunks = 1
        else
 	 nchunks = (lastblock-firstblock+1)
@@ -795,7 +795,7 @@ contains
 
        do cid=1,nchunks
           ! get number of global column indices in block
-          if (single_column .and. .not. uniform_grid_mode .and. dycore_is('SE')) then
+          if (single_column .and. .not. scm_domain .and. dycore_is('SE')) then
             max_ncols = 1
           else
             max_ncols = get_block_gcol_cnt_d(cid+firstblock-1)
@@ -1037,10 +1037,10 @@ contains
     area_d = 0.0_r8
     wght_d = 0.0_r8
 
-    if (single_column .and. .not. uniform_grid_mode .and. dycore_is('SE')) then
+    if (single_column .and. .not. scm_domain .and. dycore_is('SE')) then
       area_d = 4.0_r8*pi
       wght_d = 4.0_r8*pi
-    else if (uniform_grid_mode .and. dycore_is('SE')) then
+    else if (scm_domain .and. dycore_is('SE')) then
       area_d(1:ngcols) = 4.0_r8*pi/ngcols
       wght_d(1:ngcols) = 4.0_r8*pi/ngcols
     else

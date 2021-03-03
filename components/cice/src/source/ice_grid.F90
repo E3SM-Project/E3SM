@@ -943,7 +943,7 @@
 !
 !     use ice_boundary
       use ice_domain_size
-      use ice_scam, only : scmlat, scmlon, single_column, uniform_grid_mode
+      use ice_scam, only : scmlat, scmlon, single_column, scm_domain
       use netcdf
 !
 ! !INPUT/OUTPUT PARAMETERS:
@@ -1038,7 +1038,7 @@
         if (my_task == master_task) then
          ! Check for consistency
          if (my_task == master_task) then
-            if (((nx_global /= 1).or. (ny_global /= 1)) .and. (.not. uniform_grid_mode)) then
+            if (((nx_global /= 1).or. (ny_global /= 1)) .and. (.not. scm_domain)) then
                write(nu_diag,*) 'Because you have selected the column model flag'
                write(nu_diag,*) 'Please set nx_global=ny_global=1 in file'
                write(nu_diag,*) 'ice_domain_size.F and recompile'

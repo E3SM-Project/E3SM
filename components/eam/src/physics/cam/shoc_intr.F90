@@ -450,7 +450,7 @@ end function shoc_implements_cnst
     use trb_mtn_stress,            only: compute_tms
     use shoc,           only: shoc_main
     use cam_history,    only: outfld
-    use scamMod,        only: single_column, uniform_grid_mode  
+    use scamMod,        only: single_column, scm_domain
  
     implicit none
     
@@ -690,10 +690,10 @@ end function shoc_implements_cnst
 
    ! Set grid space, in meters. If SCM, set to a grid size representative
    !  of a typical GCM.  Otherwise, compute locally.    
-   if (single_column .and. .not. uniform_grid_mode) then
+   if (single_column .and. .not. scm_domain) then
      host_dx_in(:) = 100000._r8
      host_dy_in(:) = 100000._r8
-   else if (uniform_grid_mode) then
+   else if (scm_domain) then
      call grid_size_planar_uniform(host_dx, host_dy)
      host_dx_in(:) = host_dx
      host_dy_in(:) = host_dy

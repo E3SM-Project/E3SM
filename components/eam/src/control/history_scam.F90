@@ -15,7 +15,7 @@ module history_scam
    use pmgrid,       only: plev
    use cam_history,  only:    addfld, horiz_only, outfld, add_default
 
-   use scamMod, only :divq3d,divt3d,wfld,divq,divt,divu,divv,uniform_grid_mode
+   use scamMod, only :divq3d,divt3d,wfld,divq,divt,divu,divv,scm_domain
 
    implicit none
 
@@ -59,7 +59,7 @@ CONTAINS
 ! Call addfld to add each field to the Master Field List.
 !
       !+ Make this have backwards compatibility with Eulerian core
-      if (uniform_grid_mode) then
+      if (scm_domain) then
         call addfld ('TDIFF',(/ 'lev' /),    'A','K','difference from observed temp',gridname='GLL')
         call addfld ('QDIFF',(/ 'lev' /),    'A','kg/kg','difference from observed water',gridname='GLL')
       else 

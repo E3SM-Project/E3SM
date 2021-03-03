@@ -181,13 +181,13 @@ logical  :: scm_observed_aero
 logical  :: swrad_off
 logical  :: lwrad_off
 logical  :: precip_off
-logical  :: uniform_grid_mode
+logical  :: scm_domain
 
 contains
 
 !=======================================================================
 
-  subroutine read_namelist(single_column_in, scmlon_in, scmlat_in, uniform_grid_mode_in, nlfilename_in )
+  subroutine read_namelist(single_column_in, scmlon_in, scmlat_in, scm_domain_in, nlfilename_in )
 
    !----------------------------------------------------------------------- 
    ! 
@@ -283,7 +283,7 @@ contains
 !---------------------------Arguments-----------------------------------
 
    logical , intent(in), optional :: single_column_in 
-   logical , intent(in), optional :: uniform_grid_mode_in
+   logical , intent(in), optional :: scm_domain_in
    real(r8), intent(in), optional :: scmlon_in
    real(r8), intent(in), optional :: scmlat_in
    character(len=*)    , optional :: nlfilename_in
@@ -387,7 +387,7 @@ contains
         swrad_off_out=swrad_off, &
         lwrad_off_out=lwrad_off, &
         precip_off_out=precip_off, &
-        uniform_grid_mode_out=uniform_grid_mode, &
+        scm_domain_out=scm_domain, &
         scm_clubb_iop_name_out=scm_clubb_iop_name)
    end if
 
@@ -455,7 +455,7 @@ contains
          single_column = single_column_in
          scmlon = scmlon_in
          scmlat = scmlat_in
-         uniform_grid_mode = uniform_grid_mode_in
+         scm_domain = scm_domain_in
          call scam_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
                             iopfile_in=iopfile,single_column_in=single_column,&
                             scm_iop_srf_prop_in=scm_iop_srf_prop,&
@@ -470,7 +470,7 @@ contains
                             swrad_off_in=swrad_off, &
                             lwrad_off_in=lwrad_off, &
                             precip_off_in=precip_off, &
-                            uniform_grid_mode_in=uniform_grid_mode,&
+                            scm_domain_in=scm_domain,&
                             scm_clubb_iop_name_in=scm_clubb_iop_name)
       end if
    endif

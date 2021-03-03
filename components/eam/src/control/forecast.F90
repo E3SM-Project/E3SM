@@ -262,11 +262,14 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !  Eulerian forecast for u,v,t, and q
 !
 !  If three-dimensional forcing is not provided in the IOP-forcing file
+!    and we are running with multiple columns (i.e. doubly periodic CRM)
 !    then we need to add the effects of large-scale vertical advection for
 !    t, u, v, and q.  Use the prescribed large-scale vertical velocity and 
-!    an Eulerian calculation for this.
+!    an Eulerian calculation for this.  If we are in pure SCM mode then the
+!    dynamical core calculates the LS vertical advection thus this section
+!    can be skipped if single_column = .true. AND scm_domain = .false.
 
-   if (uniform_grid_mode) then 
+   if (scm_domain) then
 
      do k=2,plev-1
        fac = ztodt/(2.0_r8*pdelm1(k))
@@ -554,7 +557,7 @@ end if
    
    if(.not.l_uvadvect) then
 
-      if (use_iop .and. have_v .and. have_u .and. .not. uniform_grid_mode) then
+      if (use_iop .and. have_v .and. have_u .and. .not. scm_domain) then
          do k=1,plev
             ufcst(k) = uobs(k)
             vfcst(k) = vobs(k)
@@ -585,7 +588,7 @@ end if
    u3(:)=ufcst(:)
    v3(:)=vfcst(:)
 
-   if (iop_relaxation .and. .not. uniform_grid_mode) then
+   if (iop_relaxation .and. .not. scm_domain) then
 !
 !    THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED
 !    The relaxation can be thought of as a part of the "adjustment" physics

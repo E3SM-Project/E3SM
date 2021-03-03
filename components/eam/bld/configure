@@ -172,7 +172,7 @@ OPTIONS
      
   Options relevent to IOP mode:
   
-     -uniform_grid_mode        
+     -scm_domain  
 
   EAM parallelization:
 
@@ -409,7 +409,7 @@ GetOptions(
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
-    "uniform_grid_mode"                  => \$opts{'uniform_grid_mode'},
+    "scm_domain"                  => \$opts{'scm_domain'},
     "s|silent"                  => \$opts{'silent'},
     "smp!"                      => \$opts{'smp'},
     "spmd!"                     => \$opts{'spmd'},
@@ -1309,20 +1309,20 @@ if ($print>=2) { print "EAM single column mode (SCAM): $scam$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # IOP Mode
-if (defined $opts{'uniform_grid_mode'}) {
-    $cfg_ref->set('uniform_grid_mode', 1);
+if (defined $opts{'scm_domain'}) {
+    $cfg_ref->set('scm_domain', 1);
 }
-my $uniform_grid_mode = $cfg_ref->get('uniform_grid_mode') ? "ON" : "OFF";
+my $scm_domain = $cfg_ref->get('scm_domain') ? "ON" : "OFF";
 
 # Currently only Spectral Element dycores support IOP mode
-if ($uniform_grid_mode eq 'ON' and $dyn_pkg ne 'se') {
+if ($scm_domain eq 'ON' and $dyn_pkg ne 'se') {
     die <<"EOF";
 **  ERROR: IOP mode only works with Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
 EOF
 }
 
-if ($print>=2) { print "IOP mode: $uniform_grid_mode$eol"; }
+if ($print>=2) { print "IOP mode: $scm_domain$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Generate IOP

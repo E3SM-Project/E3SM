@@ -634,8 +634,8 @@ if ($scam) {
 }
 
 # IOP mode
-my $uniform_grid_mode = $cfg->get('uniform_grid_mode');
-if ($uniform_grid_mode) {
+my $scm_domain = $cfg->get('scm_domain');
+if ($scm_domain) {
     add_default($nl, 'omega');
 }
 

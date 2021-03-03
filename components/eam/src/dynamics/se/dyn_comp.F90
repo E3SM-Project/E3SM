@@ -321,7 +321,7 @@ CONTAINS
   subroutine dyn_run( dyn_state, rc )
 
     ! !USES:
-    use scamMod,          only: single_column, uniform_grid_mode, use_3dfrc
+    use scamMod,          only: single_column, scm_domain, use_3dfrc
     use se_single_column_mod, only: apply_SC_forcing
     use parallel_mod,     only : par
     use prim_driver_mod,  only: prim_run_subcycle
@@ -367,7 +367,7 @@ CONTAINS
        !   thus turn this switch to false for dycore input.  NOTE that
        !   dycore in SCM mode means that only the large scale vertical 
        !   advection is computed (i.e. no horizontal communication)
-       if (uniform_grid_mode) then
+       if (scm_domain) then
          single_column_in = .false.
        endif
        
@@ -375,7 +375,7 @@ CONTAINS
        !   dynamical core if 3D forcing is prescribed
        !   (since large scale vertical advection is accounted for
        !   in that forcing)
-       if (single_column .and. .not. uniform_grid_mode) then
+       if (single_column .and. .not. scm_domain) then
          if (use_3dfrc) do_prim_run = .false.
        endif
        

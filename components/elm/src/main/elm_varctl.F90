@@ -285,11 +285,11 @@ module elm_varctl
   !----------------------------------------------------------
 
   logical,  public :: single_column = .false. ! true => single column mode
-  logical,  public :: uniform_grid_mode      = .false. ! true => iop mode
+  logical,  public :: scm_domain      = .false. ! true => iop mode
   real(r8), public :: scmlat        = rundef  ! single column lat
   real(r8), public :: scmlon        = rundef  ! single column lon
-  integer,  public :: iop_nx        = -1      ! doubly periodic points x direction
-  integer,  public :: iop_ny        = -1      ! doubly periodic points y direction
+  integer,  public :: scm_nx        = -1      ! doubly periodic points x direction
+  integer,  public :: scm_ny        = -1      ! doubly periodic points y direction
 
   !----------------------------------------------------------
   ! instance control
@@ -449,7 +449,7 @@ contains
 
   !---------------------------------------------------------------------------
   subroutine elm_varctl_set( caseid_in, ctitle_in, brnch_retain_casename_in,    &
-       single_column_in, uniform_grid_mode_in, scmlat_in, scmlon_in, iop_nx_in, iop_ny_in, &
+       single_column_in, scm_domain_in, scmlat_in, scmlon_in, scm_nx_in, scm_ny_in, &
        nsrest_in, version_in, hostname_in, username_in)
     !
     ! !DESCRIPTION:
@@ -461,11 +461,11 @@ contains
     logical,            optional, intent(IN) :: brnch_retain_casename_in ! true => allow case name to remain the 
                                                                          ! same for branch run
     logical,            optional, intent(IN) :: single_column_in         ! true => single column mode
-    logical,            optional, intent(IN) :: uniform_grid_mode_in              ! IOP mode
+    logical,            optional, intent(IN) :: scm_domain_in              ! IOP mode
     real(r8),           optional, intent(IN) :: scmlat_in                ! single column lat
     real(r8),           optional, intent(IN) :: scmlon_in                ! single column lon
-    integer,            optional, intent(IN) :: iop_nx_in                ! x direction points
-    integer,            optional, intent(IN) :: iop_ny_in                ! y direction points
+    integer,            optional, intent(IN) :: scm_nx_in                ! x direction points
+    integer,            optional, intent(IN) :: scm_ny_in                ! y direction points
     integer,            optional, intent(IN) :: nsrest_in                ! 0: initial run. 1: restart: 3: branch
     character(len=256), optional, intent(IN) :: version_in               ! model version
     character(len=256), optional, intent(IN) :: hostname_in              ! hostname running on
@@ -479,11 +479,11 @@ contains
     if ( present(caseid_in       ) ) caseid        = caseid_in
     if ( present(ctitle_in       ) ) ctitle        = ctitle_in
     if ( present(single_column_in) ) single_column = single_column_in
-    if ( present(uniform_grid_mode_in     ) ) uniform_grid_mode      = uniform_grid_mode_in
+    if ( present(scm_domain_in     ) ) scm_domain      = scm_domain_in
     if ( present(scmlat_in       ) ) scmlat        = scmlat_in
     if ( present(scmlon_in       ) ) scmlon        = scmlon_in
-    if ( present(iop_nx_in       ) ) iop_nx        = iop_nx_in
-    if ( present(iop_ny_in       ) ) iop_ny        = iop_ny_in
+    if ( present(scm_nx_in       ) ) scm_nx        = scm_nx_in
+    if ( present(scm_ny_in       ) ) scm_ny        = scm_ny_in
     if ( present(nsrest_in       ) ) nsrest        = nsrest_in
     if ( present(brnch_retain_casename_in) ) brnch_retain_casename = brnch_retain_casename_in
     if ( present(version_in      ) ) version       = version_in

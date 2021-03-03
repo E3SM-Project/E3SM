@@ -8,7 +8,10 @@ module ice_scam
   ! single column control variables (only used for latlon grid)
 
   logical :: single_column       ! true => single column mode
-  logical :: uniform_grid_mode            ! true => IOP mode
+  logical :: scm_domain          ! true => use single column functionality
+                                 ! but over multiple columns across the
+                                 ! entire domain (i.e. when you want surface
+                                 ! of domain to be homogeneous everywhere)
   real (kind=dbl_kind) scmlat    ! single column latitude (degrees)
   real (kind=dbl_kind) scmlon    ! single column longitude (degrees)
 
