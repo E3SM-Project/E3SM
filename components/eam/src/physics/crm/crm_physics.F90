@@ -250,21 +250,20 @@ subroutine crm_physics_register()
    call pbuf_add_field('NEVAPR',     'physpkg',dtype_r8,(/pcols,pver/), nevapr_idx)
    call pbuf_add_field('PRER_EVAP',  'global', dtype_r8,(/pcols,pver/), prer_evap_idx)
 
-  call pbuf_add_field('WSEDL',      'physpkg',dtype_r8,(/pcols,pver/), wsedl_idx)
+   call pbuf_add_field('WSEDL',      'physpkg',dtype_r8,(/pcols,pver/), wsedl_idx)
 
-  call pbuf_add_field('REI',     'physpkg',dtype_r8,(/pcols,pver/), rei_idx)
-  call pbuf_add_field('REL',     'physpkg',dtype_r8,(/pcols,pver/), rel_idx)
-  call pbuf_add_field('DEI',     'physpkg',dtype_r8,(/pcols,pver/), dei_idx)        ! Mitchell ice effective diameter for radiation
-  call pbuf_add_field('MU',      'physpkg',dtype_r8,(/pcols,pver/), mu_idx)         ! Size distribution shape parameter for radiation
-  call pbuf_add_field('LAMBDAC', 'physpkg',dtype_r8,(/pcols,pver/), lambdac_idx)    ! Size distribution shape parameter for radiation
-  call pbuf_add_field('ICIWPST', 'physpkg',dtype_r8,(/pcols,pver/), iciwpst_idx)    ! Stratiform only in cloud ice water path for radiation
-  call pbuf_add_field('ICLWPST', 'physpkg',dtype_r8,(/pcols,pver/), iclwpst_idx)    ! Stratiform in cloud liquid water path for radiation
-  call pbuf_add_field('DES',     'physpkg',dtype_r8,(/pcols,pver/), des_idx)        ! Snow effective diameter for radiation
-  call pbuf_add_field('ICIWP',   'physpkg',dtype_r8,(/pcols,pver/), iciwp_idx)      ! In cloud ice water path for radiation
-  call pbuf_add_field('ICLWP',   'physpkg',dtype_r8,(/pcols,pver/), iclwp_idx)      ! In cloud liquid water path for radiation
-  call pbuf_add_field('ICSWP',   'physpkg',dtype_r8,(/pcols,pver/), icswp_idx)      ! In cloud snow water path for radiation
-  call pbuf_add_field('CLDFSNOW','physpkg',dtype_r8,(/pcols,pver,dyn_time_lvls/), cldfsnow_idx) ! Cloud fraction for liquid drops + snow
-
+   call pbuf_add_field('REI',     'physpkg',dtype_r8,(/pcols,pver/), rei_idx)
+   call pbuf_add_field('REL',     'physpkg',dtype_r8,(/pcols,pver/), rel_idx)
+   call pbuf_add_field('DEI',     'physpkg',dtype_r8,(/pcols,pver/), dei_idx)        ! Mitchell ice effective diameter for radiation
+   call pbuf_add_field('MU',      'physpkg',dtype_r8,(/pcols,pver/), mu_idx)         ! Size distribution shape parameter for radiation
+   call pbuf_add_field('LAMBDAC', 'physpkg',dtype_r8,(/pcols,pver/), lambdac_idx)    ! Size distribution shape parameter for radiation
+   call pbuf_add_field('ICIWPST', 'physpkg',dtype_r8,(/pcols,pver/), iciwpst_idx)    ! Stratiform only in cloud ice water path for radiation
+   call pbuf_add_field('ICLWPST', 'physpkg',dtype_r8,(/pcols,pver/), iclwpst_idx)    ! Stratiform in cloud liquid water path for radiation
+   call pbuf_add_field('DES',     'physpkg',dtype_r8,(/pcols,pver/), des_idx)        ! Snow effective diameter for radiation
+   call pbuf_add_field('ICIWP',   'physpkg',dtype_r8,(/pcols,pver/), iciwp_idx)      ! In cloud ice water path for radiation
+   call pbuf_add_field('ICLWP',   'physpkg',dtype_r8,(/pcols,pver/), iclwp_idx)      ! In cloud liquid water path for radiation
+   call pbuf_add_field('ICSWP',   'physpkg',dtype_r8,(/pcols,pver/), icswp_idx)      ! In cloud snow water path for radiation
+   call pbuf_add_field('CLDFSNOW','physpkg',dtype_r8,(/pcols,pver,dyn_time_lvls/), cldfsnow_idx) ! Cloud fraction for liquid drops + snow
 
    if (MMF_microphysics_scheme .eq. 'm2005') then
       call pbuf_add_field('CRM_NC_RAD','physpkg', dtype_r8, dims_crm_rad, idx)
@@ -325,6 +324,9 @@ subroutine crm_physics_register()
    call pbuf_add_field('NEVAPR_DPCU','physpkg',dtype_r8,(/pcols,pver/),nevapr_dpcu_idx)
    call pbuf_add_field('PREC_DP',    'physpkg',dtype_r8,(/pcols/),     prec_dp_idx)
    call pbuf_add_field('SNOW_DP',    'physpkg',dtype_r8,(/pcols/),     snow_dp_idx)
+
+   call pbuf_add_field('SH_FRAC', 'physpkg', dtype_r8, (/pcols,pver/), idx) 
+   call pbuf_add_field('DP_FRAC', 'physpkg', dtype_r8, (/pcols,pver/), idx) 
 
    if (use_gw_convect) call pbuf_add_field('TTEND_DP','physpkg',dtype_r8,(/pcols,pver/),ttend_dp_idx)
 

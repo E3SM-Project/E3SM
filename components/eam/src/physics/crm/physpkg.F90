@@ -93,7 +93,6 @@ subroutine phys_register
   use spmd_utils,               only: masterproc
   use constituents,             only: pcnst, cnst_add, cnst_chk_dim, cnst_name
   use chemistry,                only: chem_register
-  use cloud_fraction,           only: cldfrc_register
   ! use stratiform,               only: stratiform_register
   ! use microp_driver,            only: microp_driver_register
   ! use microp_aero,              only: microp_aero_register
@@ -160,8 +159,6 @@ subroutine phys_register
 
   ! register fluxes for saving across time
   if (phys_do_flux_avg()) call flux_avg_register()
-
-  call cldfrc_register()
 
   ! ! cloud water
   ! if( microp_scheme == 'RK' ) then
@@ -574,8 +571,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use aerodep_flx,        only: aerodep_flx_init
   use aircraft_emit,      only: aircraft_emit_init
   use prescribed_volcaero,only: prescribed_volcaero_init
-  use cloud_fraction,     only: cldfrc_init
-  use cldfrc2m,           only: cldfrc2m_init
   use co2_cycle,          only: co2_init, co2_transport
   ! use convect_deep,       only: convect_deep_init
   ! use convect_shallow,    only: convect_shallow_init
@@ -708,9 +703,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   call radheat_init(pref_mid)
 
   ! call convect_shallow_init(pref_edge, pbuf2d)
-
-  call cldfrc_init(dp1)! for passing dp1 on to clubb
-  call cldfrc2m_init()
 
   ! call convect_deep_init(pref_edge)
   ! if( microp_scheme == 'RK' ) then
