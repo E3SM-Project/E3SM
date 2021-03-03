@@ -8,7 +8,7 @@ horizontal resolution, adding requested variable (to be set to 0).
 from utils import check_minimum_python_version
 check_minimum_python_version(3, 4)
 
-import argparse, sys, os, pathlib
+import argparse, sys, pathlib
 
 from nc_file_init import nc_file_init
 

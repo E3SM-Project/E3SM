@@ -8,7 +8,7 @@ from another file, or by computing them as function of other existing ones.
 from utils import check_minimum_python_version
 check_minimum_python_version(3, 4)
 
-import argparse, sys, os, pathlib
+import argparse, sys, pathlib
 
 from populate_nc_file import PopulateNcFile
 
