@@ -22,6 +22,7 @@ module ocn_vmix_gotm
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    ! TODO: read in GOTM namelist for testing <20200512, Qing Li> !
    use mpas_io_units
@@ -82,7 +83,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_coefs_gotm_build(meshPool, statePool, forcingPool, diagnosticsPool, err, timeLevelIn)!{{{
+   subroutine ocn_vmix_coefs_gotm_build(meshPool, statePool, forcingPool, err, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -104,9 +105,6 @@ contains
 
       type (mpas_pool_type), intent(inout) :: &
          statePool         !< Input/Output: state information
-
-      type (mpas_pool_type), intent(inout) :: &
-         diagnosticsPool   !< Input/Output: diagnostic information
 
       type (mpas_pool_type), intent(inout) :: &
          forcingPool   !< Input/Output: forcing information
@@ -133,12 +131,11 @@ contains
       integer, dimension(:,:), pointer :: edgesOnCell
 
       real (kind=RKIND), dimension(:), pointer :: &
-        bottomDepth, surfaceFrictionVelocity, &
+        bottomDepth, &
         dcEdge, dvEdge, areaCell
 
       real (kind=RKIND), dimension(:,:), pointer :: &
-        vertViscTopOfCell, vertDiffTopOfCell, layerThickness, &
-        BruntVaisalaFreqTop, normalVelocity, zMid, kineticEnergyCell, &
+        normalVelocity, layerThickness, &
         gotmVertViscTopOfCellCur, gotmVertDiffTopOfCellCur, &
         gotmTKETopOfCellCur, gotmDissTopOfCellCur, gotmLengthTopOfCellCur, &
         gotmKbTopOfCellCur, gotmEpsbTopOfCellCur, &
@@ -198,30 +195,6 @@ contains
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
       !
-      ! set pointers for fields related ocean state
-      !
-      call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop',BruntVaisalaFreqTop)
-
-      !
-      ! set pointers for fields related forcing at ocean surface
-      !
-      call mpas_pool_get_array(diagnosticsPool, 'surfaceFrictionVelocity', surfaceFrictionVelocity)
-
-      !
-      ! set pointer for z at the midpoint of vertical grid
-      !
-      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-
-      !
-      ! set pointers for viscosity/diffusivity
-      !
-      call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', vertViscTopOfCell)
-      call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
-
-      ! set pointer for kinetic energy
-      call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
-
-      !
       ! set pointers for GOTM viscosity/diffusivity, TKE, rate of dissipation and turbulent length scale
       ! (current and new state)
       !
@@ -264,8 +237,8 @@ contains
       !$omp do schedule(runtime) &
       !$omp private(i, k, ki, shearSquaredTop, NSquaredTop, hLayer, &
       !$omp         invAreaCell, iEdge, factor, delU2, bottomFrictionVelocity, &
-      !$omp         gotm_dt, gotmBottomDragCoef, gotmSurfaceRoughnessLength, &
-      !$omp         gotmBottomRoughnessLength)
+      !$omp         gotm_vertVisc, gotm_vertDiffT, gotm_vertDiffS, gotm_TKE, gotm_eps, &
+      !$omp         gotm_L, gotm_kb, gotm_epsb)
       do iCell = 1, nCells
 
          ! initialize arrays
