@@ -2009,7 +2009,9 @@ contains
 #endif
     if (single_column) areafact_samegrid = .true.
 
+#ifdef COMPARE_TO_NUOPC
     areafact_samegrid = .true.
+#endif
 
     call t_startf ('CPL:init_areacor')
     call t_adj_detailf(+2)
