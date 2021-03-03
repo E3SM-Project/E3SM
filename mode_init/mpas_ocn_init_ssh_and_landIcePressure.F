@@ -101,6 +101,8 @@ contains
      real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceDraft, &
                                                  effectiveDensityInLandIce
 
+     integer, dimension(:), pointer :: minLevelCell
+
      integer, pointer :: nCells
 
      integer :: iCell
@@ -138,6 +140,8 @@ contains
 
        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
+       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
+
        call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
 
        call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
@@ -165,9 +169,10 @@ contains
            cycle
          end if
 
-         landIcePressure(iCell) = max(0.0_RKIND, -density(1,iCell)*gravity*ssh(iCell))
+         landIcePressure(iCell) = &
+           max(0.0_RKIND, -density(minLevelCell(iCell), iCell)*gravity*ssh(iCell))
          if (associated(effectiveDensityInLandIce)) &
-           effectiveDensityInLandIce(iCell) = density(1,iCell)
+           effectiveDensityInLandIce(iCell) = density(minLevelCell(iCell), iCell)
        end do
 
        ! copy the SSH into the landIceDraft so we can use it later to remove it when
