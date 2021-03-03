@@ -94,7 +94,6 @@
       <value compset="_EAM%MMF"               >-crm_dx 1000 -crm_dt 5 </value>
       <value compset="_EAM%MMF[12]"           >-crm sam</value>
       <value compset="_EAM%MMFXX"             >-crm samxx</value>
-      <value compset="_EAM%MMF"               >-microphys mg2  </value>
       <value compset="_EAM%MMF"               >-cppdefs ' -DMMF_DIR_NS ' </value>
       <value compset="_EAM%MMF"               >-rad rrtmgp </value>
       <value compset="_EAM%MMF[1X]"           >-MMF_microphysics_scheme sam1mom -chem none</value>
@@ -102,10 +101,9 @@
       <value compset="_EAM%MMF2"              >-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero </value>
       <value compset="_EAM%MMF2-ECPP"         >-use_ECPP </value>
       <value compset="_EAM%MMF[12X]"          >-crm_nx 64 -crm_nx_rad 16 -crm_ny 1 -crm_ny_rad 1 </value>
-      <value compset="_EAM%MMF[12]-AQUA"      >-aquaplanet </value>
-      <value compset="_EAM%MMF[12]-RCE"       >-aquaplanet -rce </value>
-      <value compset="_EAM%MMFXX-AQUA"        >-aquaplanet </value>
-      <value compset="_EAM%MMFXX-RCE"         >-aquaplanet -rce </value>
+      <value compset="_EAM%MMF*-AQUA"         >-aquaplanet </value>
+      <value compset="_EAM%MMF*-RCE"          >-aquaplanet -rce </value>
+
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
       <value compset="GEOS_EAM"      >-nlev 56</value>
@@ -204,10 +202,8 @@
       <value compset="2000_EAM%SP2"     >2000_cam5_av1c-04p2-MMF-2mom</value>
       <value compset="2000_EAM%MMF[1X]" >2000_cam5_av1c-04p2-MMF-1mom</value>
       <value compset="2000_EAM%MMF2"    >2000_cam5_av1c-04p2-MMF-2mom</value>
-      <value compset="_EAM%MMF[12]-RCE" >RCEMIP_EAMv1</value>
-      <value compset="_EAM%MMFXX-RCE"   >RCEMIP_EAMv1</value>
-      <value compset="_EAM%MMF1-AQUA"   >aquaplanet_MMF-1mom</value>
-      <value compset="_EAM%MMFXX-AQUA"  >aquaplanet_MMF-1mom</value>
+      <value compset="_EAM%MMF*-RCE"    >RCEMIP_EAMv1</value>
+      <value compset="_EAM%MMF*-AQUA"   >aquaplanet_MMF-1mom</value>
     </values>
 
     <group>run_component_cam</group>
@@ -303,9 +299,9 @@
     <desc compset="_EAM%SP2V1_"    >SP-E3SM with 64x1km CRM, RRTMG radiation, 2-mom micro, prognostic aerosol</desc>
     <desc compset="_EAM%SP2V1-ECPP">SP-E3SM with 64x1km CRM, RRTMG radiation, 2-mom micro, prognostic aerosol, ECPP</desc>
     <!-- new MMF / Super-Parameterization -->
-    <desc compset="_EAM%MMF1_"    >E3SM-MMF with 64x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol</desc>
-    <desc compset="_EAM%MMF2_"    >E3SM-MMF with 64x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol</desc>
-    <desc compset="_EAM%MMF2-ECPP">E3SM-MMF with 64x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol, ECPP </desc>
+    <desc compset="_EAM%MMF1"     >E3SM-MMF (Fortran) with 64x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_EAM%MMF2-ECPP">E3SM-MMF (Fortran) with 64x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol, ECPP </desc>
+    <desc compset="_EAM%MMFXX"    >E3SM-MMF (C++) with 64x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol</desc>
     <!--  -->
   </description>
 
@@ -318,7 +314,7 @@
     <value compset="DOCN%AQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
     <value compset="DOCN%SOMAQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
     <value compset="EAM%RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
-    <value compset="EAM%MMF[12X]-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
+    <value compset="EAM%MMF*-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
     </values>
     <group>run_component_cam</group>
     <file>env_case.xml</file>
