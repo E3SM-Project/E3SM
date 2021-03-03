@@ -6,7 +6,8 @@ $(info "EXCLUDE_INIT_MODE found")
 endif
 
 OCEAN_SHARED_INCLUDES = -I$(PWD)/../framework -I$(PWD)/../external/esmf_time_f90 -I$(PWD)/../operators
-OCEAN_SHARED_INCLUDES += -I$(PWD)/BGC -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/cvmix/src/shared -I$(PWD)/gotm/build -I$(PWD)/mode_forward -I$(PWD)/mode_analysis
+OCEAN_SHARED_INCLUDES += -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/mode_forward -I$(PWD)/mode_analysis
+OCEAN_SHARED_INCLUDES += -I$(PWD)/BGC -I$(PWD)/cvmix/src/shared -I$(PWD)/gotm/build -I$(PWD)/gotm/build/modules
 ifneq "$(EXCLUDE_INIT_MODE)" "true"
 	OCEAN_SHARED_INCLUDES += -I$(PWD)/mode_init
 endif
