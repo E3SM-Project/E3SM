@@ -3671,11 +3671,6 @@ add_default($nl, 'MMF_microphysics_scheme');
 add_default($nl, 'use_MMF');
 add_default($nl, 'use_ECPP');
 
-if ($cfg->get('use_MMF')) {
-  add_default($nl, 'clubb_ice_deep');
-  add_default($nl, 'clubb_C1');
-}
-
 # MMF Variance Transport
 add_default($nl, 'use_MMF_VT');
 add_default($nl, 'MMF_VT_wn_max');
