@@ -1507,7 +1507,9 @@ subroutine tphysac (ztodt,   cam_in,  &
                      )
 
     ! Adjust the surface fluxes to reduce instabilities in near sfc layer
-    if (phys_do_flux_avg()) call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
+    if (phys_do_flux_avg()) then 
+       call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
+    endif
 
     ! Validate the physics state.
     if (state_debug_checks) &
