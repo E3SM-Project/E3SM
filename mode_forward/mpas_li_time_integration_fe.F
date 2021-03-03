@@ -117,6 +117,13 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("advection prep")
 
+!TODO: Determine whether grounded melting should in fact be called first
+! === Face melting for grounded ice ===========
+      call mpas_timer_start("face melting for grounded ice")
+      call li_face_melt_grounded_ice(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("face melting for grounded ice")
+
 ! === Basal melting for floating ice ===========
       call mpas_timer_start("basal melting for floating ice")
       call li_basal_melt_floating_ice(domain, err_tmp)
