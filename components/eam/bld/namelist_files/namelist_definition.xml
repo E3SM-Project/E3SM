@@ -3466,12 +3466,6 @@ in the surface layer.  Set to 1 to turn on the adjustments.
 Default: 0
 </entry>
 
-<entry id="srf_flux_avg_tau" type="real" category="pbl"
-       group="phys_ctl_nl" valid_values="" >
-Timescale in seconds for surface flux smoothing used when srf_flux_avg=1
-Default: 7200
-</entry>
-
 <entry id="eddy_scheme" type="char*16" category="pbl"
        group="phys_ctl_nl" valid_values="off,HB,diag_TKE,HBR,CLUBB_SGS" >
 Type of eddy scheme employed by the vertical diffusion package.  'HB' for
