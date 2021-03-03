@@ -335,10 +335,11 @@ subroutine crm_physics_register()
    call pbuf_add_field('RPRDTOT',    'physpkg',dtype_r8,(/pcols,pver/),rprdtot_idx )
    call pbuf_add_field('CLDTOP',     'physpkg' ,dtype_r8,(/pcols,1/),  cldtop_idx )
    call pbuf_add_field('CLDBOT',     'physpkg' ,dtype_r8,(/pcols,1/),  cldbot_idx )
-   ! call pbuf_add_field('cush',       'global'  ,dtype_r8,(/pcols,dyn_time_lvls/), cush_idx )  
    call pbuf_add_field('NEVAPR_SHCU','physpkg',dtype_r8,(/pcols,pver/),nevapr_shcu_idx )
    call pbuf_add_field('PREC_SH',    'physpkg',dtype_r8,(/pcols/),     prec_sh_idx )
    call pbuf_add_field('SNOW_SH',    'physpkg',dtype_r8,(/pcols/),     snow_sh_idx )
+
+   call pbuf_add_field('cush',       'global'  ,dtype_r8,(/pcols,dyn_time_lvls/), idx )  
 
    call pbuf_add_field('AST',      'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), ast_idx)
    call pbuf_add_field('FICE',     'physpkg', dtype_r8, (/pcols,pver/), fice_idx)

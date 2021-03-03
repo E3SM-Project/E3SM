@@ -808,7 +808,7 @@ subroutine diag_init()
   tke_idx  = pbuf_get_index('tke')
   kvm_idx  = pbuf_get_index('kvm')
   kvh_idx  = pbuf_get_index('kvh')
-  ! cush_idx = pbuf_get_index('cush')
+  cush_idx = pbuf_get_index('cush')
   
   pblh_idx  = pbuf_get_index('pblh')
   tpert_idx = pbuf_get_index('tpert')
@@ -2219,8 +2219,8 @@ end subroutine diag_export
       call pbuf_get_field(pbuf, kvh_idx,  conv_var_3d)
       call outfld('KVH&IC    ',conv_var_3d, pcols,lchnk)
  
-      ! call pbuf_get_field(pbuf, cush_idx, conv_var_2d ,(/1,itim_old/),  (/pcols,1/))
-      ! call outfld('CUSH&IC   ',conv_var_2d, pcols,lchnk)
+      call pbuf_get_field(pbuf, cush_idx, conv_var_2d ,(/1,itim_old/),  (/pcols,1/))
+      call outfld('CUSH&IC   ',conv_var_2d, pcols,lchnk)
 
       if (qpert_idx > 0) then 
          call pbuf_get_field(pbuf, qpert_idx, qpert)
