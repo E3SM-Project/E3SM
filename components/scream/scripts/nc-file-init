@@ -10,7 +10,7 @@ check_minimum_python_version(3, 4)
 
 import argparse, sys, os, pathlib
 
-from nc_file_init import NcFileInit
+from nc_file_init import nc_file_init
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -21,30 +21,14 @@ OR
 {0} --help
 
 \033[1mEXAMPLES:\033[0m
-    \033[1;32m# Creates netcdf file 'my_file.nc' for ne=4 and 72 vertical levels, adding no variables\033[0m
+    \033[1;32m# Creates netcdf file 'my_file.nc' for ne4np4 and 72 vertical levels\033[0m
 
-        > ./{0} -c -f my_file.nc --ne 4 --np 4 --nlev 72
+        > ./{0} -f my_file.nc -ne 4 -np 4 -nlev 72
 
-    \033[1;32m# Appends to existing netcdf file, adding 3d interface level var w, init-ed to 0
+    \033[1;32m# Creates netcdf file 'my_file.nc' for with 63 columns and 72 vertical levels.
+      If a file named 'my_file.nc' already exists, it overwrites it.\033[0m
 
-        > ./{0} -f my_file.nc -avars 'w(COL,ILEV)'
-
-    \033[1;32m# Appends to existing netcdf file, adding 3d midpoints level vars v_0,v_1, init-ed to 1.0 and 2.0 respectively
-
-        > ./{0} -f my_file.nc -avars 'v(COL,2,LEV)=[1.0,2.0]'
-
-    \033[1;32m# Appends to existing netcdf file, importing v from file f2.nc, but added as 'horiz_v'
-
-        > ./{0} -f my_file.nc -ifile f2.nc -ivars horiz_v=v
-
-    \033[1;32m# Appends to existing netcdf file, computing p=rho*T^1.5 (assuming rho and T are in the nc file already)
-
-        > ./{0} -f my_file.nc -cvars p=rho*T^1.5
-
-    \033[1;32m# Appends to existing netcdf file, importing rho and T from file f2.nc, computing p=rho*T^1.5,
-      and removing rho,T from the output file
-
-        > ./{0} -f my_file.nc -ifile f2.nc -ivars rho T -cvars p=rho*T^1.5 -rvars rho T
+        > ./{0} -o -f my_file.nc -ncol 63 -nlev 72
 
 """.format(pathlib.Path(args[0]).name),
         description=description,
@@ -52,10 +36,9 @@ OR
     )
 
     # The file name
-    parser.add_argument("-f","--filename", help="Name of the netcdf file", required=True)
+    parser.add_argument("-f","--output-file", help="Name of the netcdf file", required=True)
 
     # If we're creating the file, we need a few info
-    parser.add_argument("-c","--create", help="Create output netcdf file", action='store_true',default=False)
     parser.add_argument("-ne","--ne", type=int, help="Number of elements on cube edge", default=0)
     parser.add_argument("-np","--np", type=int, help="Number of GLL points on element edge", default=4)
     parser.add_argument("-ncol","--ncol", type=int, help="Number of columns", default=0)
@@ -63,35 +46,16 @@ OR
     parser.add_argument("-pg","--phys-grid", help="Type of phys grid", default="gll")
 
     # Whether we're allowed to overwrite existing data
-    parser.add_argument("-o","--overwrite",
-                        help="Overwrite possibly existing variable values", action="store_true", default=False)
-
-    parser.add_argument("-ifile","--import-file",
-                        help="File from which variable can be imported.", default=[])
-
-    parser.add_argument("-avars","--add-variables",nargs='+',
-                        help="Add variables with given dimension, setting them to 0 everywhere", default=[])
-
-    # The following set variables depending on other variables
-    parser.add_argument("-ivars","--import-variables",nargs='+',
-                        help="Import variables from another file (requires valid input for -ifile)", default=[])
-
-    parser.add_argument("-cvars","--compute-variables",nargs='+',
-                        help="Compute variables from given expressions (may involve other vars)", default=[])
-
-    parser.add_argument("-rvars","--remove-variables",nargs='+',
-                        help="Remove variables from output file (can be also used to purge 'temporarily' imported "
-                             "vars from another file, used just to compute some quantity)", default=[])
-
+    parser.add_argument("-o","--overwrite", help="Overwrite possibly existing variable values",
+                        action="store_true", default=False)
 
     return parser.parse_args(args[1:])
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    nfi = NcFileInit(**vars(parse_command_line(sys.argv, description)))
 
-    success = nfi.process_nc_file()
+    success = nc_file_init(**vars(parse_command_line(sys.argv, description)))
 
     print("File generation: {}".format("SUCCESS" if success else "FAIL"))
 
