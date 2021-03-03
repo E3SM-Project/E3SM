@@ -1271,6 +1271,10 @@ if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Multiscale Modelling Framework mode (MMF)
 if (defined $opts{'use_MMF'}) {
+    # disable other scheme options
+    $cfg_ref->set('pbl', 'none');
+    $cfg_ref->set('macrophys', 'none');
+    $cfg_ref->set('microphys', 'none');
     if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
     if (defined $opts{'use_MMF_VT'})          { $cfg_ref->set('use_MMF_VT', 1); }
     $cfg_ref->set('use_MMF', 1);
@@ -1474,7 +1478,7 @@ else {
     # If neither adiabatic nor ideal physics are used, then accumulate advected constituents
     # from the moist physics and chemistry processes.
 
-    unless ($phys_pkg eq 'ideal' or $phys_pkg eq 'adiabatic') {
+    unless ($phys_pkg eq 'ideal' or $phys_pkg eq 'adiabatic' or defined $opts{'use_MMF'}) {
 
         # Microphysics parameterization
         if ($microphys_pkg eq 'rk') {
@@ -1507,10 +1511,17 @@ else {
 
     }
 
-    if (defined $opts{'use_MMF_VT'}) {
-        $nadv += 2; # add tracers for CRM t and q variance transport
-        if ($print>=2) { print "Advected variance constituent added for MMF: 2$eol"; }
+    ### advected tracers for MMF
+    if (defined $opts{'use_MMF'}) {
+        $nadv += 8;
+        if ($print>=2) { print "Advected constituents added for MMF physics package: 8$eol"; }
+
+        if (defined $opts{'use_MMF_VT'}) {
+            $nadv += 2; # add tracers for CRM t and q variance transport
+            if ($print>=2) { print "Advected variance constituent added for MMF: 2$eol"; }
+        }
     }
+
 
     # Add in specified test tracers.  These may be present with adiabatic or ideal physics.
     $nadv += $ttrac_nadv;
