@@ -2094,6 +2094,61 @@ detrainment into the stratiform cloud scheme.
 Default: .true.
 </entry>
 
+<!-- general microphysics -->
+<entry id="micro_p3_tableversion" type="char*16" category="microphys"
+       group="micro_nl" valid_values="" >
+Version number for P3 microphysics tables.
+Default: 1
+</entry>
+
+<entry id="micro_p3_lookup_dir" type="char*128" input_pathname="abs" category="conv"
+       group="micro_nl" valid_values="" >
+Directory where P3 initialization files are located.
+</entry>
+
+<entry id="micro_aerosolactivation" type="logical" category="microphys"
+       group="micro_nl" valid_values="" >
+Specify if aerosol activation is used in microphysics scheme.
+Default: TRUE
+</entry>
+
+<entry id="micro_subgrid_cloud" type="logical" category="microphys"
+       group="micro_nl" valid_values="" >
+Specify if cloud fraction is applied to microphysics tendencies.
+Default: TRUE
+</entry>
+
+<entry id="micro_tend_output" type="logical" category="microphys"
+       group="micro_nl" valid_values="" >
+Output microphysics tendencies in standard atm output file.
+Default: TRUE
+</entry>
+
+<!-- micro_p3 -->
+<entry id="p3_qc_autoCon_Expon" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Exponent of power function fit used by P3 qc in autoconversion 
+Default: 2.47_rtype
+</entry>
+
+<entry id="p3_qc_accret_Expon" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Exponent of power function fit used by P3 qc in accretion 
+Default: 1.15_rtype
+</entry>
+
+<entry id="do_prescribed_CCN" type="logical" category="microphys"
+       group="micro_nl" valid_values="" >
+Specify if CCN concentration is read in from ncdf file within p3.
+Default: FALSE
+</entry>
+
+<entry id="do_Cooper_inP3" type="logical" category="microphys"
+       group="micro_nl" valid_values="" >
+Specify if ice nucleation is done using the Cooper scheme within p3.
+Default: FALSE
+</entry>
+
 <!-- micro_mg -->
 <entry id="micro_do_nccons" type="logical" category="microphys"
        group="micro_mg_nl" valid_values="" >
@@ -2719,10 +2774,11 @@ Default: 'ZM' unless using 'UNICON'
 </entry>
 
 <entry id="microp_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="RK,MG" >
+       group="phys_ctl_nl" valid_values="RK,MG,P3" >
 Type of microphysics scheme employed.  'RK' for Rasch and Kristjansson
 (1998); 'MG' for Morrison and Gettelman (2008), Gettelman et al (2010)
-two moment scheme for CAM5.1
+two moment scheme for CAM5.1; P3 for the P3 microphysics scheme, 
+Morrison and Milbrandt (2015),Milbrandt and Morrison (2016)
 Default: set by build-namelist (depends on value set in configure).
 </entry>
 
