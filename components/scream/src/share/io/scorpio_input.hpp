@@ -169,7 +169,7 @@ inline void AtmosphereInput::pull_input(const std::string filename, const std::s
   int data_length = 1;
   for (auto& dim : dim_lens) { data_length *= dim; }
   std::vector<Int> var_dof = get_var_dof(data_length, has_columns);
-  set_dof(m_filename,var_name,var_dof.size(),var_dof.data());
+  set_dof(filename,var_name,var_dof.size(),var_dof.data());
   set_decomp(filename);
   grid_read_data_array(filename,var_name,dim_lens,data_length,padding,data);
   eam_pio_closefile(filename);  

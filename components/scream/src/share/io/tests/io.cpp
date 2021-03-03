@@ -184,8 +184,6 @@ TEST_CASE("input_output_basic","io")
   int padding = 0;
   input_type loc_input(io_comm,"Physics",grid_man);
   loc_input.pull_input(filename, var_name, var_dims, has_columns, dim_lens, padding, loc_field_3.data());
-//  auto tmp = loc_field_3.extent;
-  
 
   // All Done 
   scorpio::eam_pio_finalize();
