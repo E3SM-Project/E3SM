@@ -1,5 +1,4 @@
 #include "ekat/ekat_assert.hpp"
-#include "physics/shoc/scream_shoc_interface.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 #include "physics/shoc/shoc_inputs_initializer.hpp"
 
