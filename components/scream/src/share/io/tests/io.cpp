@@ -107,11 +107,9 @@ TEST_CASE("input_output_basic","io")
   f3.sync_to_host();
   f4.sync_to_host();
 
-  int view_cnt = 0;
   for (int ii=0;ii<num_lcols;++ii) {
     REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
     for (int jj=0;jj<num_levs;++jj) {
-      view_cnt += 1;
       REQUIRE(std::abs(f3_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
       REQUIRE(std::abs(f4_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
     }
@@ -184,6 +182,11 @@ TEST_CASE("input_output_basic","io")
   int padding = 0;
   input_type loc_input(io_comm,"Physics",grid_man);
   loc_input.pull_input(filename, var_name, var_dims, has_columns, dim_lens, padding, loc_field_3.data());
+  for (int ii=0;ii<num_lcols;++ii) {
+    for (int jj=0;jj<num_levs;++jj) {
+      REQUIRE(std::abs(loc_field_3(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
+    }
+  }
 
   // All Done 
   scorpio::eam_pio_finalize();
