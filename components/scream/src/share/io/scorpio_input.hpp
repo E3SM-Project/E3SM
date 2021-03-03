@@ -96,10 +96,19 @@ public:
     m_field_repo = repo;
     m_gm         = gm;
   }
+  AtmosphereInput(const ekat::Comm& comm, const std:: string grid_name,
+                  const std::shared_ptr<const GridsManager>& gm)
+  {
+    m_comm       = comm;
+    m_grid_name  = grid_name;
+    m_gm         = gm;
+  }
 
   // Main Functions
   void pull_input();
   void pull_input(const std::string name, view_type view_out);
+  void pull_input(const std::string filename, const std::string var_name, const std::vector<std::string> var_dims,
+                                        const bool has_columns, const std::vector<int> dim_lens, const int padding, Real* data);
   void init();
   view_type run(const std::string name);
   void finalize();
@@ -144,6 +153,28 @@ private:
  *  also outward facing but do not need those respective sections of the AD, 
  *  i.e. during ad.init, ad.run and ad.finalize.
  */
+/* ---------------------------------------------------------- */
+inline void AtmosphereInput::pull_input(const std::string filename, const std::string var_name, const std::vector<std::string> var_dims,
+                                        const bool has_columns, const std::vector<int> dim_lens, const int padding, Real* data)
+{
+  using namespace scream;
+  using namespace scream::scorpio;
+
+  // Open the file in PIO
+  register_infile(filename);
+  // Register the variable information in PIO
+  std::string io_decomp_tag = get_io_decomp(var_dims);
+  get_variable(filename, var_name, var_name, var_dims.size(), var_dims, PIO_REAL, io_decomp_tag);
+  // Determine the degree's of freedom for this variable on this rank, and register with PIO
+  int data_length = 1;
+  for (auto& dim : dim_lens) { data_length *= dim; }
+  std::vector<Int> var_dof = get_var_dof(data_length, has_columns);
+  set_dof(m_filename,var_name,var_dof.size(),var_dof.data());
+  set_decomp(filename);
+  grid_read_data_array(filename,var_name,dim_lens,data_length,padding,data);
+  eam_pio_closefile(filename);  
+}
+/* ---------------------------------------------------------- */
 inline void AtmosphereInput::pull_input(const std::string name, view_type view_out)
 {
 /*  Run through the sequence of opening the file, reading input and then closing the file.  

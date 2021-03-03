@@ -172,7 +172,22 @@ TEST_CASE("input_output_basic","io")
   for (int jj=0;jj<num_levs;++jj) {
     REQUIRE(std::abs(f2_host(jj)-((jj+1)/10.))<tol);
   }
-   
+  
+  // Test pulling input without the field manager:
+  using view_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
+  view_2d loc_field_3("field_3",num_lcols,num_levs);
+  std::string filename = ins_params.get<std::string>("FILENAME");
+  std::string var_name = loc_field_3.label();
+  std::vector<std::string> var_dims = {"VL","COL"};
+  bool has_columns = true;
+  std::vector<int> dim_lens = {num_lcols,num_levs};
+  int padding = 0;
+  input_type loc_input(io_comm,"Physics",grid_man);
+  loc_input.pull_input(filename, var_name, var_dims, has_columns, dim_lens, padding, loc_field_3.data());
+//  auto tmp = loc_field_3.extent;
+  
+
+  // All Done 
   scorpio::eam_pio_finalize();
   (*grid_man).clean_up();
 } // TEST_CASE output_instance
