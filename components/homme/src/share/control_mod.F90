@@ -83,6 +83,7 @@ module control_mod
 ! advect theta 0: conservation form 
 !              1: expanded divergence form (less noisy, non-conservative)
  integer, public :: theta_advect_form = 0
+ real (kind=real_kind), public :: vtheta_thresh = 100  ! threshold for virtual potential temperature minimum limiter
 
  integer, public :: cubed_sphere_map = -1  ! -1 = chosen at run time
                                            !  0 = equi-angle Gnomonic (default)
