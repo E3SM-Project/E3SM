@@ -20,7 +20,7 @@ setenv project       e3sm
 
 ### SOURCE CODE OPTIONS
 set fetch_code     = false
-set e3sm_tag       = ''
+set e3sm_tag       = jacobshpundpnnl/atm/E3SMv2_alpha5_59_wP3v4
 set tag_name       = E3SM_alpha5_59_v2candidate_NGD_Conv
 
 ### CUSTOM CASE_NAME
@@ -995,18 +995,19 @@ cat <<EOF >> user_nl_eam
 
  cosp_lite = .true.
 
-! avgflag_pertape = 'A','A','A','A','A'
-  avgflag_pertape = 'A','A','A','A'
-  nhtfrq = 0,-24,-6,-3
-! nhtfrq = 0,-24,-6,-3,-1
+ avgflag_pertape = 'A','A','A','A','A'
+!  avgflag_pertape = 'A','A','A','A'
+!  nhtfrq = 0,-24,-6,-3
+ nhtfrq = 0,-24,-6,-3,-1
 ! nhtfrq = 0,-24,-3
 
-  fincl2 = 'PRECC','PRECL','PRECT','U200','V200'
+  fincl1 = 'TVQ','TUQ'
+  fincl2 = 'PRECC','PRECT','U200','V200','TMQ'
   fincl3 = 'OMEGA500','PRECT','U200','U850','FLUT'
-  fincl4 = 'PRECT'
+  fincl4 = 'PRECT','TMQ'
 
-  mfilt = 1,30,120,240
-! mfilt = 1,30,120,240,720
+! mfilt = 1,30,120,240
+  mfilt = 1,30,120,240,720
 ! mfilt = 1,30
 
  ieflx_opt = 0 ! =0 AMIP simulations, = 2 for coupled
@@ -1096,7 +1097,7 @@ cat <<EOF >> user_nl_eam
  taubgnd                 = 2.5D-3    !! same as in default
  raytau0                 = 5.0D0     !! same as in default 
 
- state_debug_checks = .true.
+! state_debug_checks = .true.   ! turn on if wanting to debug crashes
  history_budget = .true.
  nucleate_ice_subgrid = 1.2d0
  use_hetfrz_classnuc = .true.
