@@ -655,6 +655,10 @@ contains
          pGradType = pGradTypeJacobTS
          call mpas_log_write(' Pressure type is: Jacobian_from_TS')
 
+      case ('constant_forced')
+         pGradType = pGradTypeConstForced
+         call mpas_log_write(' Pressure type is: constant_forced')
+
       case default
          call mpas_log_write( &
             ' Incorrect choice of config_pressure_gradient_type.', &
