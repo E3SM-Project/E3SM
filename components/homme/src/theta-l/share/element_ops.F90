@@ -735,8 +735,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   ! reference T = 288K.  reference lapse rate = 6.5K/km   = .0065 K/m
   ! Tref = T0+T1*exner
   ! Thetaref = T0/exner + T1
-  T1 = .0065*TREF*Cp/g ! = 191
-  T0 = TREF-T1         ! = 97
+  T1 = .0065_real_kind*TREF*Cp/g ! = 191
+  T0 = TREF-T1           ! = 97
 
   p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
   do k=1,nlev
