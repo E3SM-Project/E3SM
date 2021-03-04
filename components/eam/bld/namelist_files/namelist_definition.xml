@@ -5615,15 +5615,15 @@ Default: 1.
 <entry id="vtheta_thresh" type="real" category="se"
        group="ctl_nl" valid_values="" >
 Minimum threshold for virtual potential temperature in the theta dycore.
-Values below this will trigger a warning and be truncated.
+Values below this will trigger a warning and be clipped.
 Default: (set by dycore).
 </entry>
 
 <entry id="cubed_sphere_map" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Defines which map is used for referene element in homme.
+Defines which map is used for reference element in homme.
 Must be 2 for compsets using TempestRemap mapping files.          
-Default: 0
+Default: 2
 </entry>
 
 
