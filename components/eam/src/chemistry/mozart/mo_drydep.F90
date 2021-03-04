@@ -2013,10 +2013,9 @@ contains
       if(lexist) then
          call cam_pio_openfile(piofile, locfn, PIO_NOWRITE)
 
-!         call infld('fraction_landuse', piofile, 'ncol','class',' ',1,pcols,1,n_land_type, begchunk,endchunk, &
-!              fraction_landuse, readvar, gridname='physgrid')
+         call infld('fraction_landuse', piofile, 'ncol','class',' ',1,pcols,1,n_land_type, begchunk,endchunk, &
+              fraction_landuse, readvar, gridname='physgrid')
 
-         fraction_landuse = 0.0
          if(do_soilw) then
             call infld('soilw', piofile, 'ncol','month',' ',1,pcols,1,12, begchunk,endchunk, &
                  soilw_3d, readvar, gridname='physgrid')

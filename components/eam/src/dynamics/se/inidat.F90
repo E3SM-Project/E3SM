@@ -166,12 +166,7 @@ contains
           enddo
         enddo
       enddo
- 
-      ! temp hardwired mods
-      ie_scm = 1
-      i_scm = 1
-      j_scm = 1
-      indx_scm = indx     
+
       if (ie_scm == 0 .or. i_scm == 0 .or. j_scm == 0 .or. indx_scm == 0) then
         call endrun('Could not find closest SCM point on input datafile')
       endif
