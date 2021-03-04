@@ -1494,10 +1494,10 @@ else {
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
         }
 
-	if ($clubb_do_adv) {
-	    $nadv += 9;
-            if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
-	}
+        if ($clubb_do_adv) {
+            $nadv += 9;
+                if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
+        }
 
         # co2_cycle
         if ($co2_cycle) {
@@ -1516,12 +1516,15 @@ else {
         $nadv += 8;
         if ($print>=2) { print "Advected constituents added for MMF physics package: 8$eol"; }
 
+        # Chemistry package
+        $nadv += $chem_nadv;
+        if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
+
         if (defined $opts{'use_MMF_VT'}) {
             $nadv += 2; # add tracers for CRM t and q variance transport
             if ($print>=2) { print "Advected variance constituent added for MMF: 2$eol"; }
         }
     }
-
 
     # Add in specified test tracers.  These may be present with adiabatic or ideal physics.
     $nadv += $ttrac_nadv;
