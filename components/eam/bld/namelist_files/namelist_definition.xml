@@ -4017,6 +4017,12 @@ IOP name for CLUBB running in single column mode
 Default: ""
 </entry>
 
+<entry id="dp_crm" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Set to TRUE to turn on doubly periodic cloud resolving model mode.
+Default: FALSE
+</entry>
+
 <entry id="iop_relaxation" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Use relaxation.
@@ -6588,12 +6594,6 @@ Default: none.
 <entry id="single_column" type="logical" category="scam"
        group="seq_infodata_inparm" valid_values="">
 Set to TRUE to turn on single column mode.
-Default: FALSE
-</entry>
-
-<entry id="dp_crm" type="logical" category="scam"
-       group="seq_infodata_inparm" valid_values="">
-Set to TRUE to turn on doubly periodic cloud resolving model mode.
 Default: FALSE
 </entry>
 

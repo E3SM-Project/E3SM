@@ -1470,7 +1470,7 @@
 <iopfile dyn="eul">atm/cam/scam/iop/ARM95_4scam.nc</iopfile>
 
 <!-- Doubly periodic CRM mode -->
-<omega dp_crm="1">0.D0</omega>
+<omega dpcrm_mode="1">0.D0</omega>
 
 <!-- physics loadbalance -->
 <phys_loadbalance dyn="se"> 2 </phys_loadbalance>

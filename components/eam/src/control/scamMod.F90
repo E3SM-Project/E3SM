@@ -359,6 +359,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   
 #ifdef SPMD
   call mpibcast(scm_iop_srf_prop,1,mpilog,0,mpicom)
+  call mpibcast(dp_crm,1,mpilog,0,mpicom)
   call mpibcast(iop_relaxation,1,mpilog,0,mpicom)
   call mpibcast(iop_relaxation_high,1,mpir8,0,mpicom)
   call mpibcast(iop_relaxation_low,1,mpir8,0,mpicom)

@@ -611,7 +611,9 @@ end if
       end do
 !
       do k=1,plev
-           
+
+        ! pmidm1 variable is in unitis of [Pa], while iop_relaxation_low/high
+        !   is in units of [hPa], thus convert iop_relaxation_low/high
         if (pmidm1(k) .le. iop_relaxation_low*100._r8 .and. &
           pmidm1(k) .ge. iop_relaxation_high*100._r8) then
 

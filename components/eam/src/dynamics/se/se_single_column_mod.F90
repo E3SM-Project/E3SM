@@ -421,6 +421,8 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
   do k=1,nlev
 
     ! Restrict nudging to certain levels if requested by user
+    ! pmidm1 variable is in unitis of [Pa], while iop_relaxation_low/high
+    !   is in units of [hPa], thus convert iop_relaxation_low/high
     if (iop_pres(k) .le. iop_relaxation_low*100._real_kind .and. &
       iop_pres(k) .ge. iop_relaxation_high*100._real_kind) then
 

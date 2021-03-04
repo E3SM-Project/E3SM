@@ -148,7 +148,7 @@ Modifications that allow perturbation growth testing: 0=off, 1=on.
 Configure CAM for single column mode: 0=off, 1=on.  This option only
 supported for the Eulerian dycore.
 </entry>
-<entry id="dp_crm" valid_values="0,1" value="0">
+<entry id="dpcrm_mode" valid_values="0,1" value="0">
 Use atmosphere model as a doubly periodic cloud resolving model.  Currently only
 supported for the SE dycore (preqx, theta-l). 0=off, 1=on.
 </entry>

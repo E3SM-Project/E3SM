@@ -172,7 +172,7 @@ OPTIONS
      
   Options relevent for doubly periodic cloud resolving model (CRM) mode:
   
-     -dp_crm
+     -dpcrm_mode
 
   EAM parallelization:
 
@@ -409,7 +409,7 @@ GetOptions(
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
-    "dp_crm"                    => \$opts{'dp_crm'},
+    "dpcrm_mode"                => \$opts{'dpcrm_mode'},
     "s|silent"                  => \$opts{'silent'},
     "smp!"                      => \$opts{'smp'},
     "spmd!"                     => \$opts{'spmd'},
@@ -1309,20 +1309,20 @@ if ($print>=2) { print "EAM single column mode (SCAM): $scam$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Doubly periodic (DP) cloud resolving model (CRM) mode
-if (defined $opts{'dp_crm'}) {
-    $cfg_ref->set('dp_crm', 1);
+if (defined $opts{'dpcrm_mode'}) {
+    $cfg_ref->set('dpcrm_mode', 1);
 }
-my $scm_domain = $cfg_ref->get('dp_crm') ? "ON" : "OFF";
+my $dpcrm_mode = $cfg_ref->get('dpcrm_mode') ? "ON" : "OFF";
 
 # Currently only Spectral Element dycores support DP CRM mode
-if ($scm_domain eq 'ON' and $dyn_pkg ne 'se') {
+if ($dpcrm_mode eq 'ON' and $dyn_pkg ne 'se') {
     die <<"EOF";
 **  ERROR: Doubly periodic cloud resolving model only works with Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
 EOF
 }
 
-if ($print>=2) { print "DP CRM mode: $dp_crm$eol"; }
+if ($print>=2) { print "DP CRM mode: $dpcrm_mode$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Generate IOP

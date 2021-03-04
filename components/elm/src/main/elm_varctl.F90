@@ -285,7 +285,7 @@ module elm_varctl
   !----------------------------------------------------------
 
   logical,  public :: single_column = .false. ! true => single column mode
-  logical,  public :: scm_domain      = .false. ! true => iop mode
+  logical,  public :: scm_domain    = .false. ! true => SCM domain mode
   real(r8), public :: scmlat        = rundef  ! single column lat
   real(r8), public :: scmlon        = rundef  ! single column lon
   integer,  public :: scm_nx        = -1      ! doubly periodic points x direction
@@ -479,7 +479,7 @@ contains
     if ( present(caseid_in       ) ) caseid        = caseid_in
     if ( present(ctitle_in       ) ) ctitle        = ctitle_in
     if ( present(single_column_in) ) single_column = single_column_in
-    if ( present(scm_domain_in     ) ) scm_domain      = scm_domain_in
+    if ( present(scm_domain_in     ) ) scm_domain  = scm_domain_in
     if ( present(scmlat_in       ) ) scmlat        = scmlat_in
     if ( present(scmlon_in       ) ) scmlon        = scmlon_in
     if ( present(scm_nx_in       ) ) scm_nx        = scm_nx_in

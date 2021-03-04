@@ -634,8 +634,8 @@ if ($scam) {
 }
 
 # Doubly periodic (DP) cloud resolving model (CRM)
-my $dp_crm = $cfg->get('dp_crm');
-if ($dp_crm) {
+my $dpcrm_mode = $cfg->get('dpcrm_mode');
+if ($dpcrm_mode) {
     add_default($nl, 'omega');
     add_default($nl, 'dp_crm', 'val'=>'.true.');
 }
