@@ -22,7 +22,7 @@ use edge_mod, only : edgevpack_nlyr, edgevunpack_nlyr
 
 use bndry_mod, only : bndry_exchangev
 use control_mod, only : hypervis_scaling, nu, nu_div, theta_hydrostatic_mode,&
-     hv_theta_correction
+     hv_theta_correction, hv_theta_thresh
 use perf_mod, only: t_startf, t_stopf
 
 implicit none
@@ -60,7 +60,6 @@ real (kind=real_kind), dimension(np,np) :: tmp2
 real (kind=real_kind), dimension(np,np,nlevp) :: p_i
 real (kind=real_kind), dimension(np,np,2) :: v
 real (kind=real_kind) :: nu_ratio1, nu_ratio2
-real (kind=real_kind) :: dp_thresh
 logical var_coef1
 
 #ifdef HOMMEXX_BFB_TESTING
@@ -124,8 +123,7 @@ endif
          enddo
          do k=1,nlev
             tmp(:,:) = (p_i(:,:,k+1)-p_i(:,:,k))/elem(ie)%derived%dp_ref(:,:,k)
-            dp_thresh=.025*hv_theta_correction
-            tmp(:,:)=tmp(:,:) / (1 + abs(tmp(:,:))/dp_thresh)
+            tmp(:,:)=tmp(:,:) / (1 + abs(tmp(:,:))/hv_theta_thresh)
             stens(:,:,k,2,ie)=stens(:,:,k,2,ie)-tmp(:,:)*elem(ie)%derived%lap_p_wk(:,:,k)
          enddo
       endif

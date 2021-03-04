@@ -5600,20 +5600,34 @@ Default: 1.
 </entry>
 
 <entry id="pgrad_correction" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
+       group="ctl_nl" valid_values="0,1" >
+Turn on use of balanced geopotential state to reduce
+pressure gradient discretization error.
+Default: 0
 </entry>
 <entry id="hv_ref_profiles" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
+       group="ctl_nl" valid_values="0,1,2" >
+Modifications to hyperviscosity to minimize dissipation of 
+background reference states.
+Default: 0
 </entry>
 <entry id="hv_theta_correction" type="integer" category="se"
+       group="ctl_nl" valid_values="0,1" >
+For potential temperature equation, use Laplacian on pressure surfaces in 
+hyperviscosity operator.
+Default: 0
+</entry>
+<entry id="hv_theta_thresh" type="real" category="se"
        group="ctl_nl" valid_values="" >
+Max threshold for Laplacian on pressure surface d(theta)/dp correction term. 
+Default (set by dycore)
 </entry>
 
 <entry id="cubed_sphere_map" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Defines which map is used for referene element in homme.
+Defines which map is used for referece element in HOMME.
 Must be 2 for compsets using TempestRemap mapping files.          
-Default: 0
+Default: 2
 </entry>
 
 
@@ -5776,7 +5790,7 @@ Default: Set by build-namelist.
 Tracer transport algorithm:
 0: Eulerian flux-form.
 12: COMPOSE semi-Lagrangian.
-Default: 0 (preqx), 12 (theta)
+Default: 12
 </entry>
 
 <entry id="semi_lagrange_cdr_alg" type="integer" category="se"
