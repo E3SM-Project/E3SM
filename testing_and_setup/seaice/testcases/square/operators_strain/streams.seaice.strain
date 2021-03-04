@@ -57,6 +57,13 @@
 	<var name="stressDivergenceV"/>
 	<var name="solveStress"/>
 	<var name="solveVelocity"/>
+	<var name="basisIntegralsU"/>
+	<var name="basisIntegralsV"/>
+	<var name="basisIntegralsMetric"/>
+	<var name="basisGradientU"/>
+	<var name="basisGradientV"/>
+	<var name="normalVectorPolygon"/>
+
 </stream>
 
 <immutable_stream name="LYqSixHourlyForcing"

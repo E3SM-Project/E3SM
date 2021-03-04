@@ -9,25 +9,6 @@
                   filename_interval="none"
                   input_interval="initial_only" />
 
-<stream name="initialConditions"
-        type="input"
-        filename_template="ic.nc"
-        filename_interval="none"
-        input_interval="initial_only">
-
-	<var name="stress11var"/>
-	<var name="stress22var"/>
-	<var name="stress12var"/>
-	<var name="stress11weak"/>
-	<var name="stress22weak"/>
-	<var name="stress12weak"/>
-        <var name="uVelocity"/>
-        <var name="vVelocity"/>
-	<var name="solveVelocityPrevious"/>
-	<var name="solveVelocity"/>
-	<var name="solveStress"/>
-</stream>
-
 <immutable_stream name="restart"
                   type="input;output"
                   filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
@@ -61,11 +42,14 @@
 	<var name="strain12weak"/>
 	<var name="stressDivergenceU"/>
 	<var name="stressDivergenceV"/>
-	<var name="solveVelocityPrevious"/>
-	<var name="solveVelocity"/>
 	<var name="solveStress"/>
+	<var name="solveVelocity"/>
 	<var name="basisIntegralsU"/>
 	<var name="basisIntegralsV"/>
+	<var name="basisIntegralsMetric"/>
+	<var name="basisGradientU"/>
+	<var name="basisGradientV"/>
+	<var name="normalVectorPolygon"/>
 	<var name="normalVectorTriangle"/>
 </stream>
 
