@@ -461,7 +461,7 @@ contains
     logical,            optional, intent(IN) :: brnch_retain_casename_in ! true => allow case name to remain the 
                                                                          ! same for branch run
     logical,            optional, intent(IN) :: single_column_in         ! true => single column mode
-    logical,            optional, intent(IN) :: scm_domain_in              ! IOP mode
+    logical,            optional, intent(IN) :: scm_domain_in            ! multiple identially forced columns
     real(r8),           optional, intent(IN) :: scmlat_in                ! single column lat
     real(r8),           optional, intent(IN) :: scmlon_in                ! single column lon
     integer,            optional, intent(IN) :: scm_nx_in                ! x direction points

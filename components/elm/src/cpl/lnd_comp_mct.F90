@@ -228,7 +228,7 @@ contains
        call endrun( sub//' ERROR: unknown starttype' )
     end if
 
-    ! If IOP mode, force single_column flag to be false for this
+    ! If SCM domain mode, force single_column flag to be false for this
     !  block of code, as special treatment is needed
     if (scm_domain) single_column = .false.
     call elm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                      &

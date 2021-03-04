@@ -20,7 +20,7 @@ module inidat
   use spmd_utils,   only: iam, masterproc
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
-  use scamMod, only: single_column, precip_off, scmlat, scmlon, scm_domain, iop_perturb_high
+  use scamMod, only: single_column, precip_off, scmlat, scmlon, scm_domain, dp_crm, iop_perturb_high
   implicit none
   private
   public read_inidat
@@ -512,7 +512,7 @@ contains
                        'by +/- ', pertlim, ' to initial temperature field'
       end if
 
-      if (scm_domain) then
+      if (dp_crm) then
         ! Restrict perturbations to lowest layers based on reference pressure
         do k=1,nlev
           p_ref(k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*hvcoord%ps0
@@ -551,8 +551,8 @@ contains
               endif
               pertval = D2_0*pertlim*(D0_5 - pertval)
 
-              ! If IOP mode potentially only perturb a portion of the profile
-              if (.not. scm_domain .or. p_ref(k) .gt. iop_perturb_high*100._r8) then
+              ! If DP-CRM mode potentially only perturb a portion of the profile
+              if (.not. dp_crm .or. p_ref(k) .gt. iop_perturb_high*100._r8) then
 
 #ifdef MODEL_THETA_L
                 elem(ie)%derived%FT(i,j,k) = elem(ie)%derived%FT(i,j,k)*(D1_0 + pertval)

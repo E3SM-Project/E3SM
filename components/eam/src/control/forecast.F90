@@ -267,9 +267,9 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !    t, u, v, and q.  Use the prescribed large-scale vertical velocity and 
 !    an Eulerian calculation for this.  If we are in pure SCM mode then the
 !    dynamical core calculates the LS vertical advection thus this section
-!    can be skipped if single_column = .true. AND scm_domain = .false.
+!    can be skipped if single_column = .true. AND dp_crm = .false.
 
-   if (scm_domain) then
+   if (dp_crm) then
 
      do k=2,plev-1
        fac = ztodt/(2.0_r8*pdelm1(k))
@@ -557,7 +557,7 @@ end if
    
    if(.not.l_uvadvect) then
 
-      if (use_iop .and. have_v .and. have_u .and. .not. scm_domain) then
+      if (use_iop .and. have_v .and. have_u .and. .not. dp_crm) then
          do k=1,plev
             ufcst(k) = uobs(k)
             vfcst(k) = vobs(k)
@@ -588,7 +588,7 @@ end if
    u3(:)=ufcst(:)
    v3(:)=vfcst(:)
 
-   if (iop_relaxation .and. .not. scm_domain) then
+   if (iop_relaxation .and. .not. dp_crm) then
 !
 !    THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED
 !    The relaxation can be thought of as a part of the "adjustment" physics
@@ -601,6 +601,9 @@ end if
 !    to the code we move the outfld calls for the relaxed variables
 !    (in this case T and q) from linemsbc into this routine after the
 !    relaxation terms have been applied.
+
+!    Note that doubly periodic CRM mode has it's own nudging routine, thus
+!      is not used here.
 !
       do k=1,plev
          relaxt(k) = 0.0_r8

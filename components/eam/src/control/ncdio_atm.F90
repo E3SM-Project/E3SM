@@ -107,7 +107,7 @@ contains
     integer                   :: strt(1) = 1 ! start ncol index for netcdf 1-d
     integer                   :: cnt (1) = 1 ! ncol count for netcdf 1-d
         
-    ! Offsets for reading global variables for IOP mode
+    ! Offsets for reading global variables for SCM domain mode
     integer                   :: strt_iop(2) = 1 ! start ncol index for netcdf 1-d
     integer                   :: cnt_iop (2) = 1 ! ncol count for netcdf 1-d
     character(len=PIO_MAX_NAME) :: tmpname

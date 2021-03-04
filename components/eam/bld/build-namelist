@@ -633,10 +633,11 @@ if ($scam) {
     }
 }
 
-# IOP mode
-my $scm_domain = $cfg->get('scm_domain');
-if ($scm_domain) {
+# Doubly periodic (DP) cloud resolving model (CRM)
+my $dp_crm = $cfg->get('dp_crm');
+if ($dp_crm) {
     add_default($nl, 'omega');
+    add_default($nl, 'dp_crm', 'val'=>'.true.');
 }
 
 ######################################

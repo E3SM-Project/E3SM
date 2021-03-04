@@ -170,9 +170,9 @@ OPTIONS
                         This switch only works with the Spectral Element dycore.
      -scam              Compiles model in single column mode.  Only works with SE dycore.
      
-  Options relevent to IOP mode:
+  Options relevent for doubly periodic cloud resolving model (CRM) mode:
   
-     -scm_domain  
+     -dp_crm
 
   EAM parallelization:
 
@@ -409,7 +409,7 @@ GetOptions(
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
-    "scm_domain"                  => \$opts{'scm_domain'},
+    "dp_crm"                    => \$opts{'dp_crm'},
     "s|silent"                  => \$opts{'silent'},
     "smp!"                      => \$opts{'smp'},
     "spmd!"                     => \$opts{'spmd'},
@@ -1308,21 +1308,21 @@ EOF
 if ($print>=2) { print "EAM single column mode (SCAM): $scam$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# IOP Mode
-if (defined $opts{'scm_domain'}) {
-    $cfg_ref->set('scm_domain', 1);
+# Doubly periodic (DP) cloud resolving model (CRM) mode
+if (defined $opts{'dp_crm'}) {
+    $cfg_ref->set('dp_crm', 1);
 }
-my $scm_domain = $cfg_ref->get('scm_domain') ? "ON" : "OFF";
+my $scm_domain = $cfg_ref->get('dp_crm') ? "ON" : "OFF";
 
-# Currently only Spectral Element dycores support IOP mode
+# Currently only Spectral Element dycores support DP CRM mode
 if ($scm_domain eq 'ON' and $dyn_pkg ne 'se') {
     die <<"EOF";
-**  ERROR: IOP mode only works with Spectral Element dycore.
+**  ERROR: Doubly periodic cloud resolving model only works with Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
 EOF
 }
 
-if ($print>=2) { print "IOP mode: $scm_domain$eol"; }
+if ($print>=2) { print "DP CRM mode: $dp_crm$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Generate IOP

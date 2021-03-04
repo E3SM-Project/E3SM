@@ -96,16 +96,16 @@ subroutine scm_setinitial(elem)
               if (have_cldliq) elem(ie)%state%Q(i,j,k,icldliq) = cldliqobs(k)
               if (have_numice) elem(ie)%state%Q(i,j,k,inumice) = numiceobs(k)
               if (have_cldice) elem(ie)%state%Q(i,j,k,icldice) = cldiceobs(k)
-              !  If IOP mode we do NOT want to write over the dy-core vertical 
+              !  If DP-CRM mode we do NOT want to write over the dy-core vertical
               !    velocity with the large-scale one.  wfld is used in forecast.F90
               !    for the compuation of the large-scale subsidence.
-              if (have_omega .and. .not. scm_domain) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
-              if (scm_domain) elem(ie)%derived%omega_p(i,j,k) = 0.0_real_kind
+              if (have_omega .and. .not. dp_crm) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
+              if (dp_crm) elem(ie)%derived%omega_p(i,j,k) = 0.0_real_kind
             enddo
 
-            ! If doubly periodic IOP mode then SHOC/CLUBB needs to know about
+            ! If DP-CRM mode then SHOC/CLUBB needs to know about
             !   length size.  Note that planar dycore only supports uniform grids.
-            if (scm_domain) then
+            if (dp_crm) then
               ! convert from km to m
               dyn_dx_size = elem(ie)%dx_short * 1000.0_real_kind
             endif
@@ -173,8 +173,8 @@ subroutine scm_setfield(elem,iop_update_phase1)
     if (have_ps .and. use_replay .and. .not. iop_update_phase1) elem(ie)%state%ps_v(:,:,:) = psobs
     if (have_ps .and. .not. use_replay) elem(ie)%state%ps_v(:,:,:) = psobs
     do i=1, PLEV
-      ! If IOP mode do NOT write over dycore vertical velocity
-      if ((have_omega .and. iop_update_phase1) .and. .not. scm_domain) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
+      ! If DP CRM mode do NOT write over dycore vertical velocity
+      if ((have_omega .and. iop_update_phase1) .and. .not. dp_crm) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
     end do
   end do
 
@@ -276,7 +276,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
           stateQin1(:,:) = stateQin_qfcst(:,:)
           stateQin2(:,:) = stateQin_qfcst(:,:)        
 
-          if (.not. use_3dfrc .or. scm_domain) then
+          if (.not. use_3dfrc .or. dp_crm) then
             temp_tend(:) = 0.0_real_kind
           else
             temp_tend(:) = elem(ie)%derived%fT(i,j,:)
@@ -334,8 +334,8 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     
     enddo
     
-    if (iop_relaxation .and. scm_domain) then
-      ! If running in a doubly periodic IOP mode, then nudge the domain
+    if (iop_relaxation .and. dp_crm) then
+      ! If running in a doubly periodic CRM mode, then nudge the domain
       !   based on the domain mean and observed quantities of T, Q, u, and v
       call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
                                  nelemd_todo,np_todo,dt)

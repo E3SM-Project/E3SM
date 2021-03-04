@@ -26,7 +26,7 @@ module stepon
    use edge_mod,       only: edge_g, edgeVpack_nlyr, edgeVunpack_nlyr
    use parallel_mod,   only : par
    use scamMod,        only: use_iop, doiopupdate, single_column, &
-                             setiopupdate, readiopdata, scm_domain
+                             setiopupdate, readiopdata, dp_crm
    use element_mod,    only: element_t
    use shr_const_mod,       only: SHR_CONST_PI
    use se_single_column_mod, only: scm_broadcast
@@ -208,7 +208,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
     iop_update_phase1 = .true. 
     if (doiopupdate .and. masterproc) call readiopdata( iop_update_phase1,hyam,hybm )
     call scm_broadcast()
-    if (.not. scm_domain) call scm_setfield(elem,iop_update_phase1)
+    if (.not. dp_crm) call scm_setfield(elem,iop_update_phase1)
   endif
   
    call t_barrierf('sync_d_p_coupling', mpicom)
@@ -264,7 +264,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
-   if (.not. single_column .or. scm_domain) then
+   if (.not. single_column .or. dp_crm) then
       do ie=1,nelemd
 
          if (fv_nphys>0) then
@@ -305,7 +305,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    do ie=1,nelemd
   
-      if (.not. single_column .or. scm_domain) then
+      if (.not. single_column .or. dp_crm) then
 
          kptr=0
 
@@ -516,7 +516,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
        call scm_setinitial(elem)
        if (masterproc) call readiopdata(iop_update_phase1,hyam,hybm)
        call scm_broadcast()
-       if (.not. scm_domain) call scm_setfield(elem,iop_update_phase1)
+       if (.not. dp_crm) call scm_setfield(elem,iop_update_phase1)
      endif  
 
    endif

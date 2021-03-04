@@ -148,12 +148,9 @@ Modifications that allow perturbation growth testing: 0=off, 1=on.
 Configure CAM for single column mode: 0=off, 1=on.  This option only
 supported for the Eulerian dycore.
 </entry>
-<entry id="scm_domain" valid_values="0,1" value="0">
-Use single column functionality but over multiple columns across the entire domain.
-This option is useful when you want the entire domain (i.e. surface type and initialization)
-to be the same and forced by a SCM IOP forcing file identically.  This feature originally
-implemented to support a doubly-periodic cloud resolving model but could be used by other
-applications and configurations.
+<entry id="dp_crm" valid_values="0,1" value="0">
+Use atmosphere model as a doubly periodic cloud resolving model.  Currently only
+supported for the SE dycore (preqx, theta-l). 0=off, 1=on.
 </entry>
 <entry id="e3smreplay" valid_values="0,1" value="0">
 Configure E3SM to generate an IOP file that can be used to drive the SCM: 0=no, 1=yes.

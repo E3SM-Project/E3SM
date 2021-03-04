@@ -4045,7 +4045,7 @@ Default: 10800 (s)
 
 <entry id="iop_perturb_high" type="real" category="scam"
        group="cam_inparm" valid_values="">
-Highest layer to apply perturbations for doubly periodic IOP mode.
+Highest layer to apply perturbations for doubly periodic CRM mode.
 Default: 0.e3 (hPa)
 </entry>
 
@@ -6588,6 +6588,12 @@ Default: none.
 <entry id="single_column" type="logical" category="scam"
        group="seq_infodata_inparm" valid_values="">
 Set to TRUE to turn on single column mode.
+Default: FALSE
+</entry>
+
+<entry id="dp_crm" type="logical" category="scam"
+       group="seq_infodata_inparm" valid_values="">
+Set to TRUE to turn on doubly periodic cloud resolving model mode.
 Default: FALSE
 </entry>
 
