@@ -3703,7 +3703,6 @@ Default: set by build-namelist
 					 linoz_mam4_resus_mom_soag,
                                          super_fast_llnl,super_fast_llnl_mam3,
 					 superfast_mam4_resus_mom_soag,
-					 linoz_mam4_resus_soa_mom_soag,
 					 linoz_mam4_resus_soa_mom_soag_vbs, none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure

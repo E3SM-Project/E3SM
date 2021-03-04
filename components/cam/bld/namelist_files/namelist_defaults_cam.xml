@@ -830,7 +830,6 @@
 <drydep_method chem="linoz_mam4_resus_soag">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_mom">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_mom_soag">xactive_atm</drydep_method>
-<drydep_method chem="linoz_mam4_resus_soa_mom_soag">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_soa_mom_soag_vbs">xactive_atm</drydep_method>
 <drydep_method chem="superfast_mam4_resus_mom_soag">xactive_atm</drydep_method>
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>

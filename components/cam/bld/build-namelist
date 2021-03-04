@@ -2876,7 +2876,7 @@ if ($chem eq 'trop_mam4_mom' || $chem eq 'trop_mam4_resus_mom') {
 }
 
 if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag' ||
-    $chem eq 'linoz_mam4_resus_soa_mom_soag' || $chem eq 'linoz_mam4_resus_soa_mom_soag_vbs' ) {
+    $chem eq 'linoz_mam4_resus_soa_mom_soag_vbs' ) {
 
     my %species;
 
@@ -2896,8 +2896,7 @@ if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag' ||
                     'num_a2    -> ' => 'num_a2_emis_file',
                     'num_a4    -> ' => 'mam7_num_a3_emis_file',
             );
-    } elsif ($chem eq 'linoz_mam4_resus_mom_soag' ||  
-        $chem eq 'linoz_mam4_resus_soa_mom_soag') {
+    } elsif ($chem eq 'linoz_mam4_resus_mom_soag') {
 	%species = ('DMS       -> ' => 'dms_emis_file',
 		    'SO2       -> ' => 'so2_emis_file',
 		    'bc_a4     -> ' => 'bc_a4_emis_file',
@@ -2952,8 +2951,7 @@ if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag' ||
                     'num_a1      -> ' => 'mam7_num_a1_ext_file',
                     'num_a2      -> ' => 'num_a2_ext_file',
                     'num_a4      -> ' => 'mam7_num_a3_ext_file', );
-    } elsif ($chem eq 'linoz_mam4_resus_mom_soag' ||
-	$chem eq 'linoz_mam4_resus_soa_mom_soag') {
+    } elsif ($chem eq 'linoz_mam4_resus_mom_soag') {
 	%species = ('SO2         -> ' => 'so2_ext_file',
 		    'SOAG        -> ' => 'soag_ext_file',
 		    'so4_a1      -> ' => 'so4_a1_ext_file',
