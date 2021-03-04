@@ -144,7 +144,7 @@ create_src_layout (const FieldLayout& tgt_layout) const {
   auto dims = tgt_layout.dims();
 
   // Note down the position of the first 'GaussPoint' tag.
-  int pos = std::distance(tags.cbegin(),ekat::find(tags,SFTN::GP));
+  int pos = std::distance(tags.begin(),ekat::find(tags,SFTN::GP));
 
   // We replace 'Element' with 'Column'. The number of columns is taken from the src grid.
   tags[0] = SFTN::COL;
@@ -159,7 +159,7 @@ create_src_layout (const FieldLayout& tgt_layout) const {
   // If the tgt layout contains the TimeLevel tag, we slice it off.
   auto it_tl = ekat::find(tags,SFTN::TL);
   if (it_tl!=tags.end()) {
-    pos = std::distance(tags.cbegin(),it_tl);
+    pos = std::distance(tags.begin(),it_tl);
     tags.erase(tags.begin()+pos);
     dims.erase(dims.begin()+pos);
   }

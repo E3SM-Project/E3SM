@@ -421,7 +421,7 @@ int AtmProcDAG::add_fid (const FieldIdentifier& fid) {
     m_fids.push_back(fid);
     return m_fids.size()-1;
   } else {
-    return std::distance(m_fids.cbegin(),it);
+    return std::distance(m_fids.begin(), it);
   }
 }
 
