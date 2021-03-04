@@ -5598,6 +5598,12 @@ Indicates form of eqn. for vtheta in theta model.
 0 is conservation form, 1 is expanded div form.
 Default: 1.
 </entry>
+<entry id="vtheta_thresh" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Minim threshold for virtual potential temperature in the theta dycore.
+Values below this will trigger a warning and be truncated.
+Default: (set by dycore).
+</entry>
 
 <entry id="pgrad_correction" type="integer" category="se"
        group="ctl_nl" valid_values="0,1" >

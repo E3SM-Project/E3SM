@@ -93,6 +93,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     tol,           &
     debug_level,   &
     theta_advect_form,   &
+    vtheta_thresh,   &
     pgrad_correction,    &
     hv_ref_profiles,     &
     hv_theta_correction, &
@@ -280,6 +281,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       rotate_grid,   &
       mesh_file,     &               ! Name of mesh file
       theta_advect_form,     &
+      vtheta_thresh,         &
       pgrad_correction,      &
       hv_ref_profiles,       &
       hv_theta_correction,   &
@@ -721,6 +723,7 @@ end if
     call MPI_bcast(limiter_option,  1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(se_ftype,        1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(theta_advect_form,1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(vtheta_thresh,    1, MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(pgrad_correction,   1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(hv_ref_profiles,    1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(hv_theta_correction,1, MPIinteger_t, par%root,par%comm,ierr)
@@ -1147,6 +1150,7 @@ end if
        write(iulog,*)"readnl: semi_lagrange_nearest_point_lev   = ",semi_lagrange_nearest_point_lev
        write(iulog,*)"readnl: tstep_type    = ",tstep_type
        write(iulog,*)"readnl: theta_advect_form = ",theta_advect_form
+       write(iulog,*)"readnl: vtheta_thresh     = ",vtheta_thresh
        write(iulog,*)"readnl: pgrad_correction  = ",pgrad_correction
        write(iulog,*)"readnl: hv_ref_profiles   = ",hv_ref_profiles
        write(iulog,*)"readnl: hv_theta_correction= ",hv_theta_correction
