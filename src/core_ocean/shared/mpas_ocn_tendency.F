@@ -524,7 +524,7 @@ contains
       !
       ! local integers/reals/logicals
       !
-      integer :: err, iCell, iEdge, k, timeLevel, nTracersEcosys
+      integer :: err, iCell, iEdge, k, n, timeLevel, nTracersEcosys
       logical :: activeTracersOnly, isActiveTracer    ! if true, only compute for active tracers
 
       ! Scratch Arrays
@@ -912,7 +912,8 @@ contains
                   endif
 
                   call ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, indexTemperature, &
-                           layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tracerGroupTend, err)
+                           layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tracerGroupTend, &
+                           bottomLayerShortwaveTemperatureFlux, err)
 
                   if (config_compute_active_tracer_budgets) then
                      !$omp parallel
@@ -948,7 +949,13 @@ contains
                            !$omp parallel
                            !$omp do schedule(runtime)
                            do iCell = 1, nCells
-                              activeTracerNonLocalTendency(:,:,iCell) = tracerGroupTend(:,:,iCell)-activeTracerNonLocalTendency(:,:,iCell)
+                           do k = 1, nVertLevels
+                           do n = 1, nTracerGroup
+                              activeTracerNonLocalTendency(n,k,iCell) = &
+                                           tracerGroupTend(n,k,iCell) - &
+                              activeTracerNonLocalTendency(n,k,iCell)
+                           end do
+                           end do
                            end do
                            !$omp end do
                            !$omp end parallel

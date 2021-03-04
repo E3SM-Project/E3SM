@@ -76,7 +76,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, &
-                                        penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, err)!{{{
+                                        penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, &
+                                        bottomLayerShortwaveTemperatureFlux, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -92,6 +93,9 @@ contains
 
       real (kind=RKIND), dimension(:), intent(out) :: &
         penetrativeTemperatureFluxOBL
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+        bottomLayerShortwaveTemperatureFlux
 
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Layer thicknesses
 
@@ -126,7 +130,7 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND) :: depth
+      real (kind=RKIND) :: depth, fluxRemaining, layerFraction
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
 
@@ -146,18 +150,26 @@ contains
 
 #ifndef CPRPGI
       !$omp parallel
-      !$omp do schedule(runtime) private(depth, k, depLev) &
+      !$omp do schedule(runtime) private(fluxRemaining, depth, k, depLev) &
       !$omp firstprivate(weights)
 #endif
       do iCell = 1, nCells
          depth = 0.0_RKIND
+         fluxRemaining = 1.0_RKIND
          do k = 1, maxLevelCell(iCell)
             depth = depth + layerThickness(k, iCell)
 
             call ocn_get_jerlov_fraction(depth, weights(k+1))
             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
                                               * (weights(k) - weights(k+1))
+            fluxRemaining = fluxRemaining - (weights(k) - weights(k+1))
          end do
+
+         ! based on coupled testing we only track the solar induced warming incident on the bottom ocean
+         k = maxLevelCell(iCell)
+         if(k > 0 .and. fluxRemaining > 0.0_RKIND) then
+            bottomLayerShortwaveTemperatureFlux(iCell) = penetrativeTemperatureFlux(iCell) * fluxRemaining
+         end if
 
          depth = 0.0_RKIND
          do k=1,maxLevelCell(iCell)
@@ -177,6 +189,23 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
+
+      if(config_enable_shortwave_energy_fixer) then
+#ifndef CPRPGI
+         !$omp parallel
+         !$omp do schedule(runtime) private(k, layerFraction)
+#endif
+         do iCell = 1, nCells
+            layerFraction = bottomlayerShortwaveTemperatureFlux(iCell) / (maxLevelCell(iCell) + 1.0E-15_RKIND)
+            do k=1,maxLevelCell(iCell)
+               tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + layerFraction
+            end do
+         end do
+#ifndef CPRPGI
+         !$omp end do
+         !$omp end parallel
+#endif
+      end if
 
       deallocate(weights)
 
