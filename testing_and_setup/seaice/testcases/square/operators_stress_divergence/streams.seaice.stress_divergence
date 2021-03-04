@@ -64,6 +64,11 @@
 	<var name="solveVelocityPrevious"/>
 	<var name="solveVelocity"/>
 	<var name="solveStress"/>
+	<var name="basisIntegralsU"/>
+	<var name="basisIntegralsV"/>
+	<var name="basisIntegralsMetric"/>
+	<var name="basisGradientU"/>
+	<var name="basisGradientV"/>
 </stream>
 
 <immutable_stream name="LYqSixHourlyForcing"

@@ -1,15 +1,15 @@
 from netCDF4 import Dataset
 import numpy as np
-from math import sin, cos, pi
-
-A = 2.56#np.random.uniform(2,4)
-B = 2.56#np.random.uniform(2,4)
-C = 2.56#np.random.uniform(2,4)
-D = 2.56#np.random.uniform(2,4)
+from math import sin, cos, pi, radians
 
 #-------------------------------------------------------------
 
 def velocities_strains_stress_divergences(x, y):
+
+    A = 2.56#np.random.uniform(2,4)
+    B = 2.56#np.random.uniform(2,4)
+    C = 2.56#np.random.uniform(2,4)
+    D = 2.56#np.random.uniform(2,4)
 
     Lx = 1.0
     Ly = 1.0

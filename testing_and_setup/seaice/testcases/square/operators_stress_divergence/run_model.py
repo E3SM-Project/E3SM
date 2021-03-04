@@ -10,9 +10,10 @@ except ImportError:
 def run_model():
 
     operatorMethods = ["wachspress","pwl","weak"]
+    #operatorMethods = ["wachspress","pwl"]
 
     gridTypes = ["hex","quad"]
-    #gridTypes = ["quad"]
+    #gridTypes = ["hex"]
 
     grids = {"hex" :["0082x0094",
                      "0164x0188",
