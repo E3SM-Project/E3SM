@@ -742,6 +742,7 @@ module ocn_time_integration_split
             ! Allocate subcycled scratch fields before starting
             ! subcycle loop
             allocate(btrvel_temp(nEdgesAll+1))
+            btrvel_temp(:) = 0.0_RKIND
 
             cellHaloComputeCounter = 0
             edgeHaloComputeCounter = 0
