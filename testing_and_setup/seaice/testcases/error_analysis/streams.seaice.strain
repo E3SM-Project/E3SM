@@ -9,19 +9,6 @@
                   filename_interval="none"
                   input_interval="initial_only" />
 
-<stream name="initialConditions"
-        type="input"
-        filename_template="ic.nc"
-        filename_interval="none"
-        input_interval="initial_only">
-
-        <var name="uVelocity"/>
-        <var name="vVelocity"/>
-	<var name="solveVelocity"/>
-	<var name="solveVelocityPrevious"/>
-	<var name="solveStress"/>
-</stream>
-
 <immutable_stream name="restart"
                   type="input;output"
                   filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
@@ -63,7 +50,7 @@
 	<var name="basisGradientU"/>
 	<var name="basisGradientV"/>
 	<var name="normalVectorPolygon"/>
-
+	<var name="normalVectorTriangle"/>
 </stream>
 
 <immutable_stream name="LYqSixHourlyForcing"

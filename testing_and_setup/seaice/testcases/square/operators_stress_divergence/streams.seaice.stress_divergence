@@ -69,6 +69,7 @@
 	<var name="basisIntegralsMetric"/>
 	<var name="basisGradientU"/>
 	<var name="basisGradientV"/>
+	<var name="normalVectorTriangle"/>
 </stream>
 
 <immutable_stream name="LYqSixHourlyForcing"
