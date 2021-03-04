@@ -14,7 +14,6 @@ set(SHOC_SRCS
   shoc_iso_f.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/shoc.F90
   atmosphere_macrophysics.cpp
-  scream_shoc_interface.F90
   shoc_diag_second_moments_srf.cpp
   shoc_diag_second_moments_ubycond.cpp
   shoc_diag_second_moments_lbycond.cpp
@@ -27,7 +26,6 @@ set(SHOC_SRCS
 set(SHOC_HEADERS
   shoc.hpp
   atmosphere_macrophysics.hpp
-  scream_shoc_interface.hpp
   shoc_constants.hpp
 )
 
