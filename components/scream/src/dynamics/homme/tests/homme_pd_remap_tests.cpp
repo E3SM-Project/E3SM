@@ -21,7 +21,7 @@
 extern "C" {
 // These are specific C/F calls for these tests (i.e., not part of scream_homme_interface.hpp)
 void set_test_params_f90 (const int& ne_in);
-void cleanup_geometry_f90 ();
+void cleanup_test_f90 ();
 }
 
 namespace {
@@ -570,7 +570,7 @@ TEST_CASE("remap", "") {
   Homme::Context::finalize_singleton();
 
   // Cleanup f90 structures
-  cleanup_geometry_f90();
+  cleanup_test_f90();
 }
 
 TEST_CASE("combo_remap", "") {
@@ -1140,7 +1140,7 @@ TEST_CASE("combo_remap", "") {
   Homme::Context::finalize_singleton();
 
   // Cleanup f90 structures
-  cleanup_geometry_f90();
+  cleanup_test_f90();
 }
 
 } // anonymous namespace
