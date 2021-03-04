@@ -65,7 +65,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, index_temperature, & !{{{
-                    layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, err)
+                    layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, &
+                    bottomLayerShortwaveTemperatureFlux, err)
 
       !-----------------------------------------------------------------
       !
@@ -81,6 +82,9 @@ contains
 
       real (kind=RKIND), dimension(:), intent(inout) :: &
          penetrativeTemperatureFluxOBL
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         bottomLayerShortwaveTemperatureFlux
 
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Layer thicknesses
 
@@ -116,10 +120,12 @@ contains
       err = 0
       if(useJerlov) then
          call ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, &
-                                        penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, err)
+                                        penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, &
+                                        bottomLayerShortwaveTemperatureFLux, err)
       else
          call ocn_tracer_short_wave_absorption_variable_tend(meshPool,swForcingPool, forcingPool, index_temperature, &
-                                        layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL,tend,err)
+                                        layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL,tend, &
+                                        bottomLayerShortwaveTemperatureFlux, err)
       endif
 
       call mpas_timer_stop("short wave")
