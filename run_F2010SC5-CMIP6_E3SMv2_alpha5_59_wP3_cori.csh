@@ -903,7 +903,7 @@ if ( `lowercase $debug_queue` == true ) then
   if ( $machine == quartz || $machine == syrah ) then
     $xmlchange_exe --id JOB_QUEUE --val 'pdebug'
   else if ($machine != sandiatoss3 && $machine != bebop && $machine != blues) then
-    $xmlchange_exe --id JOB_QUEUE --val 'short'
+    $xmlchange_exe --id JOB_QUEUE --val 'debug'
   endif
 endif
 
@@ -1108,7 +1108,7 @@ EOF
 cat >> user_nl_elm <<EOF
 
  check_finidat_year_consistency = .true.
- finidat = '/compyfs/linw288/inputdata/20201103.IELM.r05_oECv3.elm.r.0030-01-01-00000.nc'
+ finidat = '/global/cfs/cdirs/e3sm/shpundk/elm_inputdata/20201103.IELM.r05_oECv3.elm.r.0030-01-01-00000.nc'
 
 EOF
 
