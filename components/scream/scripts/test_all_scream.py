@@ -109,6 +109,8 @@ class TestAllScream(object):
                      ("SCREAM_SMALL_PACK_SIZE", "1"),
                      ("EKAT_DEFAULT_BFB", "True")],
             "opt" : [("CMAKE_BUILD_TYPE", "Release")],
+            "valg" : [("CMAKE_BUILD_TYPE", "Debug"),
+                      ("EKAT_ENABLE_VALGRIND", "True")],
         }
 
         self._test_full_names = OrderedDict([
@@ -116,11 +118,13 @@ class TestAllScream(object):
             ("sp"  , "full_sp_debug"),
             ("fpe" , "debug_nopack_fpe"),
             ("opt" , "release"),
+            ("valg" , "valgrind"),
         ])
 
         if not self._tests:
             # default to all test types except do not do fpe on CUDA
             self._tests = list(self._test_full_names.keys())
+            self._tests.remove("valg") # don't want this on by default
             if is_cuda_machine(self._machine):
                 self._tests.remove("fpe")
         else:
@@ -232,6 +236,7 @@ class TestAllScream(object):
             "sp"  : ctest_max_jobs,
             "fpe" : ctest_max_jobs,
             "opt" : ctest_max_jobs,
+            "valg" : ctest_max_jobs,
         }
 
         # Deduce how many compilation resources per test
@@ -247,6 +252,7 @@ class TestAllScream(object):
             "sp"  : make_max_jobs,
             "fpe" : make_max_jobs,
             "opt" : make_max_jobs,
+            "valg" : make_max_jobs,
         }
 
         if self._parallel:
