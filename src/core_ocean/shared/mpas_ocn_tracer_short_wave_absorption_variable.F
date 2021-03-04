@@ -129,7 +129,7 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND) :: depth, layerFraction
+      real (kind=RKIND) :: depth
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
       real (kind=RKIND), dimension(:), pointer :: chlorophyllA, zenithAngle, clearSkyRadiation
@@ -181,6 +181,8 @@ contains
         k = maxLevelCell(iCell)
         if(k > 0 .and. fluxRemaining > 0.0_RKIND) then
            bottomLayerShortwaveTemperatureFlux(iCell) = penetrativeTemperatureFlux(iCell) * fluxRemaining
+        else
+           bottomLayerShortwaveTemperatureFlux(iCell) = 0.0_RKIND
         end if
 
         depth = 0.0_RKIND
@@ -203,13 +205,12 @@ contains
       if(config_enable_shortwave_energy_fixer) then!
 #ifndef CPRPGI!
          !$omp parallel!
-         !$omp do schedule(runtime) private(k, layerFraction)!
+         !$omp do schedule(runtime) private(k)
 #endif!
-         do iCell = 1, nCells!
-            layerFraction = bottomlayerShortwaveTemperatureFlux(iCell) / (maxLevelCell(iCell) + 1.0E-15_RKIND)!
-            do k=1,maxLevelCell(iCell)!
-               tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + layerFraction!
-            end do!
+         do iCell = 1, nCells
+            k = maxLevelCell(iCell)
+            tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + &
+                bottomLayerShortwaveTemperatureFlux(iCell)
          end do!
 #ifndef CPRPGI!
          !$omp end do!
