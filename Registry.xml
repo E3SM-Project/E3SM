@@ -3421,10 +3421,6 @@
 			 description="Outer product, $u_e \otimes n_e$, at each edge."
 		/>
 
-		<!-- defined to enable openmp -->
-		<var name="btrvel_temp" persistence="scratch" type="real" dimensions="nEdgesP1" units=""
-			 description="btrvel_temp"
-		/>
 		<!-- FIELDS FOR LAND-ICE PRESSURE AND SSH INITIALIZATION -->
 		<var name="scratchZMid"
 			persistence="scratch"
