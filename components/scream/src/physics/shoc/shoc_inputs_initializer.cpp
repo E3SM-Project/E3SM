@@ -257,7 +257,15 @@ void SHOCInputsInitializer::initialize_fields ()
       Spack zi_k, zi_kp1;
       auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
       auto range_pack2 = range_pack1;
-      range_pack2.set(range_pack1 > nlev, 1);
+
+      // Original code was: range_pack2.set(range_pack1 > nlev, 1); but that caused mysterious test
+      // failures on blake.
+      vector_simd
+      for (int s = 0; s < Spack::n; ++s) {
+        if (range_pack1[s] > nlev) {
+          range_pack2[s] = 1;
+        }
+      }
       ekat::index_and_shift<1>(s_zi, range_pack2, zi_k, zi_kp1);
 
       d_zm(i,k).set(range_pack1 < nlev, 0.5*(zi_k + zi_kp1));
