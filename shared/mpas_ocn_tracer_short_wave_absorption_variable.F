@@ -72,7 +72,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_short_wave_absorption_variable_tend(meshPool, swForcingPool, forcingPool, index_temperature, & !{{{
-                                  layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, err)
+                                  layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, &
+                                  bottomLayerShortwaveTemperatureFlux, err)
 
       !-----------------------------------------------------------------
       !
@@ -91,6 +92,9 @@ contains
 
       real (kind=RKIND), dimension(:), intent(out) :: &
         penetrativeTemperatureFluxOBL
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+        bottomLayerShortwaveTemperatureFlux
 
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Layer thicknesses
 
@@ -125,13 +129,13 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND) :: depth
+      real (kind=RKIND) :: depth, layerFraction
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
       real (kind=RKIND), dimension(:), pointer :: chlorophyllA, zenithAngle, clearSkyRadiation
       real (kind=RKIND), dimension(4) :: Avals, Kvals
       real (kind=RKIND) :: cloudRatio ! cloud Ratio = 1 - incident_sfc_sw_radiation/clearSkyRadiation
-
+      real (kind=RKIND) :: fluxRemaining ! amount of incident solar left to be distributed
       err = 0
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
@@ -154,9 +158,10 @@ contains
       nCells = nCellsArray( 3 )
 
       !$omp parallel
-      !$omp do schedule(runtime) private(depth, cloudRatio, k, depLev, Avals, Kvals, weights)
+      !$omp do schedule(runtime) private(fluxRemaining, depth, cloudRatio, k, depLev, Avals, Kvals, weights)
       do iCell = 1, nCells
         depth = 0.0_RKIND
+        fluxRemaining = 1.0_RKIND
         cloudRatio = min(1.0_RKIND, 1.0_RKIND - penetrativeTemperatureFlux(iCell)/(hflux_factor*(1.0E-15_RKIND + &
                                                      clearSkyRadiation(iCell))))
         cloudRatio = max(0.0_RKIND, cloudRatio)
@@ -169,7 +174,14 @@ contains
           call ocn_get_variable_sw_fraction(depth, weights(k+1), Avals, Kvals)
           tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
                                             * (weights(k) - weights(k+1) )
+          fluxRemaining = fluxRemaining - (weights(k) - weights(k+1))
         end do
+
+        ! based on coupled testing we simply log the shortwave temperature flux incident on the bottom of the ocean
+        k = maxLevelCell(iCell)
+        if(k > 0 .and. fluxRemaining > 0.0_RKIND) then
+           bottomLayerShortwaveTemperatureFlux(iCell) = penetrativeTemperatureFlux(iCell) * fluxRemaining
+        end if
 
         depth = 0.0_RKIND
         do k=1,maxLevelCell(iCell)
@@ -187,6 +199,23 @@ contains
       end do
       !$omp end do
       !$omp end parallel
+
+      if(config_enable_shortwave_energy_fixer) then!
+#ifndef CPRPGI!
+         !$omp parallel!
+         !$omp do schedule(runtime) private(k, layerFraction)!
+#endif!
+         do iCell = 1, nCells!
+            layerFraction = bottomlayerShortwaveTemperatureFlux(iCell) / (maxLevelCell(iCell) + 1.0E-15_RKIND)!
+            do k=1,maxLevelCell(iCell)!
+               tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + layerFraction!
+            end do!
+         end do!
+#ifndef CPRPGI!
+         !$omp end do!
+         !$omp end parallel!
+#endif
+      end if
 
       deallocate(weights)
 

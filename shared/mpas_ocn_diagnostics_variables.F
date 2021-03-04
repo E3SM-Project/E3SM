@@ -86,6 +86,7 @@ module ocn_diagnostics_variables
    integer, pointer :: indexBLT, indexBLS, indexHeatTrans, indexSaltTrans
 
    real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFluxOBL
+   real (kind=RKIND), dimension(:), pointer :: bottomLayerShortwaveTemperatureFlux
 
    real (kind=RKIND), dimension(:), pointer :: surfaceBuoyancyForcing
    real (kind=RKIND), dimension(:), pointer :: surfaceFrictionVelocity
@@ -107,7 +108,7 @@ module ocn_diagnostics_variables
    integer, dimension(:), pointer :: smoothingMask
    real (kind=RKIND), dimension(:,:), pointer :: verticalStretch
 
-   integer, dimension(:), pointer :: modifySSHMask
+   integer, dimension(:), pointer :: modifyLandIcePressureMask
 
    real (kind=RKIND), dimension(:,:), pointer :: velocityMeridional
    real (kind=RKIND), dimension(:,:), pointer :: velocityZonal
@@ -278,6 +279,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
       call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMag)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
+      call mpas_pool_get_array(diagnosticsPool, 'bottomLayerShortwaveTemperatureFlux', bottomLayerShortwaveTemperatureFlux)
       call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
 
       !
@@ -330,7 +332,7 @@ contains
       call mpas_pool_get_field(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMaskField, 1)
       call mpas_pool_get_field(diagnosticsPool, 'verticalStretch', verticalStretchField, 1)
 
-      call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
+      call mpas_pool_get_array(diagnosticsPool, 'modifyLandIcePressureMask', modifyLandIcePressureMask)
 
       call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
       call mpas_pool_get_array(diagnosticsPool, 'velocityY', velocityY)

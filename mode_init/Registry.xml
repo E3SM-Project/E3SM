@@ -38,10 +38,6 @@
 		/>
 	</nml_record>
 	<nml_record name="init_setup" mode="init">
-		<nml_option name="config_vert_levels" type="integer" default_value="-1" units="unitless"
-					description="Number of vertical levels to create within the configuration."
-					possible_values="Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition."
-		/>
 		<nml_option name="config_init_configuration" type="character" default_value="none" units="unitless"
 					description="Name of configuration to create."
 					possible_values="Any configuration name"
@@ -75,12 +71,6 @@
 		<nml_option name="config_1dCVTgenerator_dzSeed" type="real" default_value="1.2" units="unitless"
 					description="Seed thickness of the first layer for the 1D CVT vertical grid generator."
 					possible_values="Any positive non-zero integer."
-		/>
-	</nml_record>
-	<nml_record name="init_ssh_and_landIcePressure" mode="init">
-		<nml_option name="config_iterative_init_variable" type="character" default_value="landIcePressure" units="unitless"
-					description="Which variable, ssh or landIcePressure, is computed from the other.  If landIcePressure is to be computed, 'landIcePressure_from_top_density' indicates that the top density (rather than the mean density displaced by land ice) should be used to compute the landIcePressure."
-					possible_values="'ssh', 'landIcePressure_from_top_density' or 'landIcePressure'"
 		/>
 	</nml_record>
 	<nml_record name="constrain_Haney_number" mode="init">

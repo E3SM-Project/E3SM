@@ -682,6 +682,10 @@
 					description="Depth over which to apply penetrating SW to sfcBuoyancyFlux"
 					possible_values="Real Values greater than zero less than bottomDepth"
 		/>
+		<nml_option name="config_enable_shortwave_energy_fixer" type="logical" default_value=".false." units="unitless"
+					description="Flag to enable the shortwave energy fixer for shallow ocean cells"
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="tidal_forcing" mode="init;forward">
 		<nml_option name="config_use_tidal_forcing" type="logical" default_value=".false." units="unitless"
@@ -983,7 +987,7 @@
 	<nml_record name="eos">
 		<nml_option name="config_eos_type" type="character" default_value="linear" units="unitless"
 					description="Character string to choose EOS formulation"
-					possible_values="Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'"
+					possible_values="Jackett McDougall EOS = 'jm', Wright = 'wright', and Linear EOS = 'linear'"
 		/>
 		<nml_option name="config_open_ocean_freezing_temperature_coeff_0" type="real" default_value="0.0" units="C"
 					description="The freezing temperature at zero pressure and salinity in open ocean."
@@ -1041,6 +1045,12 @@
 		/>
 		<nml_option name="config_eos_linear_densityref" type="real" default_value="1000.0" units="kg m^{-3}"
 					description="Reference density, i.e. density when T=Tref and S=Sref"
+					possible_values="any positive real"
+		/>
+	</nml_record>
+	<nml_record name="eos_wright">
+		<nml_option name="config_eos_wright_ref_pressure" type="real" default_value="0.0" units="N m^{-2}"
+					description="Reference pressure for potential density"
 					possible_values="any positive real"
 		/>
 	</nml_record>
@@ -1300,6 +1310,12 @@
 		<nml_option name="config_tensor_test_function" type="character" default_value="sph_uCosCos" units="unitless"
 					description="Character string to choose tensor test fuction"
 					possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
+		/>
+	</nml_record>
+	<nml_record name="init_mode_vert_levels">
+		<nml_option name="config_vert_levels" type="integer" default_value="-1" units="unitless"
+					description="Number of vertical levels to create within the configuration."
+					possible_values="Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition."
 		/>
 	</nml_record>
 	<packages>
@@ -2400,8 +2416,8 @@
 		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 description="pressure used in the momentum equation"
 		/>
-		<var name="modifySSHMask" type="integer" dimensions="nCells Time" units="unitless"
-			description="A mask indicating where the SSH can be modified from refSSH through iteriative init/forward runs.  The mask is 1 under (and perhaps near) ice shelves and 0 elsenwere."
+		<var name="modifyLandIcePressureMask" type="integer" dimensions="nCells Time" units="unitless"
+			description="A mask indicating where landIcePressure can be modified during iterative init.  The mask is 1 under (and perhaps near) ice shelves and 0 elsewhere."
 			packages="initMode"
 		/>
 		<var name="normalTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
@@ -2672,6 +2688,10 @@
 		/>
 		<var name="penetrativeTemperatureFluxOBL" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
 			 description="CVMix/KPP: Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="bottomLayerShortwaveTemperatureFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Solar flux that reaches bottom of the ocean and does not impact temperature"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
@@ -3420,18 +3440,6 @@
 			 type="real" dimensions="SIX nVertLevels nEdges" units="m^2 s^{-1}"
 			 description="Outer product, $u_e \otimes n_e$, at each edge."
 		/>
-
-		<!-- FIELDS FOR LAND-ICE PRESSURE AND SSH INITIALIZATION -->
-		<var name="scratchZMid"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nCells" units="m"
-			description="reference z-midpoint of cells for vertical interpolation of tracers"
-		/>
-		<var name="scratchMaxLevelCell"
-			persistence="scratch"
-			type="integer" dimensions="nCells" units="unitless"
-			description="reference maxLevelCell for vertical interpolation of tracers"
-		/>
 		<!-- FIELDS FOR HORIZONTAL SMOOTHING DURING INITIALIZATION -->
 		<var name="smoothedField"
 			persistence="scratch"
@@ -3593,5 +3601,7 @@
 <!-- Include registry files from subdirectories -->
 #include "tracer_groups/Registry_tracers.xml"
 #include "analysis_members/Registry_analysis_members.xml"
+#ifndef EXCLUDE_INIT_MODE
 #include "mode_init/Registry.xml"
+#endif
 </registry>
