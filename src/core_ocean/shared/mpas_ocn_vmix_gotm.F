@@ -24,7 +24,6 @@ module ocn_vmix_gotm
    use ocn_config
    use ocn_diagnostics_variables
 
-   ! TODO: read in GOTM namelist for testing <20200512, Qing Li> !
    use mpas_io_units
 
    use turbulence, only: init_turbulence, do_turbulence, clean_turbulence
@@ -247,7 +246,6 @@ contains
          hLayer = 0.0_RKIND
 
          ! compute shear frequency squared
-         ! TODO: use KE conserving shear following Burchard (2002)? <20200514, Qing Li> !
          invAreaCell = 1.0_RKIND / areaCell(iCell)
          do k=2,maxLevelCell(iCell)
             do i = 1, nEdgesOnCell(iCell)
@@ -384,7 +382,6 @@ contains
         gotmTKETopOfCellCur, gotmDissTopOfCellCur, gotmLengthTopOfCellCur, &
         gotmKbTopOfCellCur, gotmEpsbTopOfCellCur
 
-      ! TODO: read in namelist for testing <20200512, Qing Li> !
       integer :: namlstUnit !< unit for GOTM namelist file
       integer :: k, ki, iCell, nCells
       type (MPAS_timeInterval_type) :: timeStep
@@ -407,7 +404,8 @@ contains
       !
       ! test here, err=1 if a problem
 
-      ! TODO: use MPAS-O dt for testing. Sub-stepping is possible, though it may not help too much without updating the shear and stratification in the substeps <20200604, Qing Li> !
+      ! use MPAS-O dt here. Sub-stepping is possible, though it may not help too much
+      ! without updating the shear and stratification in the substeps
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=err)
       call mpas_get_timeInterval(timeStep, dt=gotm_dt)
       !
@@ -422,7 +420,7 @@ contains
 
       !
       ! initialize GOTM turbulence module
-      ! TODO: read in namelist for now, will need to modify init_turbulence if not reading namelist from this subroutine? <20200512, Qing Li> !
+      ! read in GOTM namelist, required by init_turbulence
       call mpas_new_unit(namlstUnit)
       call init_turbulence(namlstUnit, trim(config_gotm_namelist_file), nVertLevels)
       call mpas_release_unit(namlstUnit)
