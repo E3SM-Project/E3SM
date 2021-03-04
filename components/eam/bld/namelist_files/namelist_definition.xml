@@ -5614,7 +5614,7 @@ Default: 1.
 
 <entry id="vtheta_thresh" type="real" category="se"
        group="ctl_nl" valid_values="" >
-Minim threshold for virtual potential temperature in the theta dycore.
+Minimum threshold for virtual potential temperature in the theta dycore.
 Values below this will trigger a warning and be truncated.
 Default: (set by dycore).
 </entry>
