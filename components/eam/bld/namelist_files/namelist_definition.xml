@@ -5631,7 +5631,7 @@ Default (set by dycore)
 
 <entry id="cubed_sphere_map" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Defines which map is used for referece element in HOMME.
+Defines which map is used for reference element in HOMME.
 Must be 2 for compsets using TempestRemap mapping files.          
 Default: 2
 </entry>
