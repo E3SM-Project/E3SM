@@ -1,0 +1,429 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Defining Parameters &mdash; E3SM Diags  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Available Parameters" href="available-parameters.html" />
+    <link rel="prev" title="Configuration and Running" href="config-run.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> E3SM Diags
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">E3SM Diagnostics Package v2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input-data-requirement.html">Input Data Requirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickguides/index.html">Quick Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config-run.html">Configuration and Running</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Defining Parameters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ways-to-define-parameters">Ways to define parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#examples">Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#running-with-just-the-parameters-file">Running with just the parameters file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#running-with-the-diagnostics-file">Running with the diagnostics file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#running-with-command-line-arguments">Running with command line arguments</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#selecting-certain-parameters">Selecting certain parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#using-the-selectors-parameter">Using the selectors parameter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="available-parameters.html">Available Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="colormaps.html">Colormaps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="add-new-diagnostics.html">How to Add New Diagnostics Runs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev_guide/index.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to E3SM Diags</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">E3SM Diags</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Defining Parameters</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/defining-parameters.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="defining-parameters">
+<h1>Defining Parameters<a class="headerlink" href="#defining-parameters" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="ways-to-define-parameters">
+<h2>Ways to define parameters<a class="headerlink" href="#ways-to-define-parameters" title="Permalink to this headline">¶</a></h2>
+<p>There are three ways to input parameters to the diagnostics:</p>
+<ol class="arabic simple">
+<li><p><strong>Command line</strong>: For example: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">run_e3sm_diags.py</span> <span class="pre">--variables</span> <span class="pre">T</span> <span class="pre">PRECT</span></code> or
+<code class="docutils literal notranslate"><span class="pre">e3sm_diags</span> <span class="pre">-p</span> <span class="pre">myparam.py</span> <span class="pre">--variables</span> <span class="pre">T</span> <span class="pre">PRECT</span></code>
+will set the <code class="docutils literal notranslate"><span class="pre">variables</span></code> parameter to <code class="docutils literal notranslate"><span class="pre">['T',</span> <span class="pre">'PRECT']</span></code>.</p></li>
+<li><p><strong>Parameters file</strong>: In the command <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">run_e3sm_diags.py</span></code>, the parameters file is <code class="docutils literal notranslate"><span class="pre">run_e3sm_diags.py</span></code>.
+In the command <code class="docutils literal notranslate"><span class="pre">e3sm_diags</span> <span class="pre">-p</span> <span class="pre">myparams.py</span></code>, the parameters file is <code class="docutils literal notranslate"><span class="pre">myparams.py</span></code>.</p></li>
+<li><p><strong>Diagnostics file</strong>: In the command <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">run_e3sm_diags.py</span> <span class="pre">-d</span> <span class="pre">mydiags.cfg</span></code> or <code class="docutils literal notranslate"><span class="pre">e3sm_diags</span> <span class="pre">-d</span> <span class="pre">mydiags.cfg</span></code>,
+the diagnostics file is <code class="docutils literal notranslate"><span class="pre">mydiags.cfg</span></code>.</p></li>
+</ol>
+<p><strong>Each of these ways have a level of priority, with the command line
+input having the highest priority and the diagnostics file having the
+lowest priority.</strong></p>
+<div class="section" id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<p>Say that we have the following files:</p>
+<p><code class="docutils literal notranslate"><span class="pre">run_e3sm_diags.py:</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">acme_diags.parameter.core_parameter</span> <span class="kn">import</span> <span class="n">CoreParameter</span>
+<span class="kn">from</span> <span class="nn">acme_diags.run</span> <span class="kn">import</span> <span class="n">runner</span>
+
+<span class="n">param</span> <span class="o">=</span> <span class="n">CoreParameter</span><span class="p">()</span>
+
+<span class="n">param</span><span class="o">.</span><span class="n">reference_data_path</span> <span class="o">=</span> <span class="s1">&#39;/p/user_pub/e3sm/e3sm_diags_data/obs_for_e3sm_diags/climatology/&#39;</span>
+<span class="n">param</span><span class="o">.</span><span class="n">test_data_path</span> <span class="o">=</span> <span class="s1">&#39;/p/user_pub/e3sm/e3sm_diags_data/test_model_data_for_acme_diags/climatology/&#39;</span>
+<span class="n">param</span><span class="o">.</span><span class="n">test_name</span> <span class="o">=</span> <span class="s1">&#39;20161118.beta0.FC5COSP.ne30_ne30.edison&#39;</span>
+<span class="n">prefix</span> <span class="o">=</span> <span class="s1">&#39;/var/www/acme/acme-diags/zhang40/tests/&#39;</span>
+<span class="n">param</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="s1">&#39;lat_lon_demo&#39;</span><span class="p">)</span>
+
+<span class="n">param</span><span class="o">.</span><span class="n">seasons</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;DJF&#39;</span><span class="p">,</span> <span class="s1">&#39;MAM&#39;</span><span class="p">,</span> <span class="s1">&#39;JJA&#39;</span><span class="p">,</span> <span class="s1">&#39;SON&#39;</span><span class="p">]</span>
+<span class="n">param</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">]</span>
+<span class="n">runner</span><span class="o">.</span><span class="n">sets_to_run</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;lat_lon&#39;</span><span class="p">]</span>
+<span class="n">runner</span><span class="o">.</span><span class="n">run_diags</span><span class="p">([</span><span class="n">param</span><span class="p">])</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">myparams.py:</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sets</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;lat_lon&#39;</span><span class="p">]</span>
+<span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">]</span>
+<span class="n">seasons</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;DJF&#39;</span><span class="p">,</span> <span class="s1">&#39;MAM&#39;</span><span class="p">,</span> <span class="s1">&#39;JJA&#39;</span><span class="p">,</span> <span class="s1">&#39;SON&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">mydiags.cfg:</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="c1">#]</span>
+<span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PRECT&quot;</span><span class="p">]</span>
+<span class="n">regions</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;global&quot;</span><span class="p">]</span>
+<span class="n">seasons</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ANN&quot;</span><span class="p">]</span>
+
+<span class="p">[</span><span class="c1">#]</span>
+<span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;SST&quot;</span><span class="p">]</span>
+<span class="n">regions</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ocean&quot;</span><span class="p">]</span>
+<span class="n">seasons</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;JJA&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="running-with-just-the-parameters-file">
+<h4>Running with just the parameters file<a class="headerlink" href="#running-with-just-the-parameters-file" title="Permalink to this headline">¶</a></h4>
+<p>Running <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">run_e3sm_diags.py</span></code> will just run the
+lat-lon contour diagnostics once with the parameters being:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">]</span>
+<span class="n">seasons</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;DJF&#39;</span><span class="p">,</span> <span class="s1">&#39;MAM&#39;</span><span class="p">,</span> <span class="s1">&#39;JJA&#39;</span><span class="p">,</span> <span class="s1">&#39;SON&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-with-the-diagnostics-file">
+<h4>Running with the diagnostics file<a class="headerlink" href="#running-with-the-diagnostics-file" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">cfg</span></code> files support all of the non-programatic parameters covered
+below in the <a class="reference internal" href="available-parameters.html"><span class="doc">available parameters</span></a> section. <code class="docutils literal notranslate"><span class="pre">cfg</span></code> files are also the
+way of defining multiple diagnostics runs. In <code class="docutils literal notranslate"><span class="pre">mydiags.cfg</span></code> defined
+above, we have two runs.</p>
+<p>Running <code class="docutils literal notranslate"><span class="pre">e3sm_diags</span> <span class="pre">-d</span> <span class="pre">mydiags.cfg</span></code> will have two runs with
+the following parameters</p>
+<p>Run 1:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PRECT&#39;</span><span class="p">]</span>
+<span class="n">regions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;global&#39;</span><span class="p">]</span>
+<span class="n">seasons</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ANN&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Run 2:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;SST&#39;</span><span class="p">]</span>
+<span class="n">regions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ocean&#39;</span><span class="p">]</span>
+<span class="n">seasons</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;JJA&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Running <code class="docutils literal notranslate"><span class="pre">e3sm_diags</span> <span class="pre">-p</span> <span class="pre">myparams.py</span> <span class="pre">-d</span> <span class="pre">mydiags.cfg</span></code> (or <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">run_e3sm_diags.py</span> <span class="pre">-d</span> <span class="pre">mydiags.cfg</span></code>) will also
+have two runs, but the parameters in <code class="docutils literal notranslate"><span class="pre">myparams.py</span></code> (or <code class="docutils literal notranslate"><span class="pre">run_e3sm_diags.py</span></code>) will take priority
+over the ones described in <code class="docutils literal notranslate"><span class="pre">mydiags.cfg</span></code>. So the runs will be:</p>
+<p>Run 1:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">]</span>
+<span class="n">regions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;global&#39;</span><span class="p">]</span>
+<span class="n">seasons</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;DJF&#39;</span><span class="p">,</span> <span class="s1">&#39;MAM&#39;</span><span class="p">,</span> <span class="s1">&#39;JJA&#39;</span><span class="p">,</span> <span class="s1">&#39;SON&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Run 2:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">]</span>
+<span class="n">regions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ocean&#39;</span><span class="p">]</span>
+<span class="n">seasons</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;DJF&#39;</span><span class="p">,</span> <span class="s1">&#39;MAM&#39;</span><span class="p">,</span> <span class="s1">&#39;JJA&#39;</span><span class="p">,</span> <span class="s1">&#39;SON&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-with-command-line-arguments">
+<h4>Running with command line arguments<a class="headerlink" href="#running-with-command-line-arguments" title="Permalink to this headline">¶</a></h4>
+<p>Command line arguments take precedence over both the parameters file and the diagnostics file.</p>
+<p>So, running <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">run_e3sm_diags.py</span> <span class="pre">-d</span> <span class="pre">mydiags.cfg</span> <span class="pre">--variables</span> <span class="pre">PREH2O</span></code> or
+<code class="docutils literal notranslate"><span class="pre">e3sm_diags</span> <span class="pre">-p</span> <span class="pre">myparams.py</span> <span class="pre">-d</span> <span class="pre">mydiags.cfg</span> <span class="pre">--variables</span> <span class="pre">PREH2O</span></code>
+will have the variables in both runs be <code class="docutils literal notranslate"><span class="pre">PREH2O</span></code>:</p>
+<p>Run 1:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PREH2O&#39;</span><span class="p">]</span>
+<span class="n">regions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;global&#39;</span><span class="p">]</span>
+<span class="n">seasons</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;DJF&#39;</span><span class="p">,</span> <span class="s1">&#39;MAM&#39;</span><span class="p">,</span> <span class="s1">&#39;JJA&#39;</span><span class="p">,</span> <span class="s1">&#39;SON&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Run 2:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PREH2O&#39;</span><span class="p">]</span>
+<span class="n">regions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ocean&#39;</span><span class="p">]</span>
+<span class="n">seasons</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;DJF&#39;</span><span class="p">,</span> <span class="s1">&#39;MAM&#39;</span><span class="p">,</span> <span class="s1">&#39;JJA&#39;</span><span class="p">,</span> <span class="s1">&#39;SON&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="selecting-certain-parameters">
+<h2>Selecting certain parameters<a class="headerlink" href="#selecting-certain-parameters" title="Permalink to this headline">¶</a></h2>
+<p>When you run <code class="docutils literal notranslate"><span class="pre">e3sm_diags</span></code> with a file passed in via <code class="docutils literal notranslate"><span class="pre">-p</span></code>,
+the parameters in that file are inserted into each diagnostics from default diagnostic files like
+<a class="reference external" href="https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/default_diags/lat_lon_model_vs_obs.cfg/">this</a>,
+overwriting any duplicates in the process.
+A single diagnostics starts with <code class="docutils literal notranslate"><span class="pre">[#]</span></code>.
+If you provide your own cfg file with <code class="docutils literal notranslate"><span class="pre">-d</span></code>, the same happens.</p>
+<p>For example, say we have the following parameters in a Python file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reference_data_path</span> <span class="o">=</span> <span class="s1">&#39;/global/cfs/cdirs/e3sm/acme_diags/obs_for_acme_diags/&#39;</span>
+<span class="n">test_data_path</span> <span class="o">=</span> <span class="s1">&#39;/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/&#39;</span>
+
+<span class="n">test_name</span> <span class="o">=</span> <span class="s1">&#39;20161118.beta0.FC5COSP.ne30_ne30.edison&#39;</span>
+
+<span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PRECT&#39;</span><span class="p">]</span>
+<span class="n">sets</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;lat_lon&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Since we’re running the <code class="docutils literal notranslate"><span class="pre">lat_lon</span></code> plotset, and since it defaults to <code class="docutils literal notranslate"><span class="pre">model_vs_obs</span></code>,
+it will open
+<a class="reference external" href="https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/default_diags/lat_lon_model_vs_obs.cfg/">this file</a>.
+Each of the parameters in the Python file will be inserted into each of the diagnostics runs.</p>
+<p>So each of the 100+ <code class="docutils literal notranslate"><span class="pre">lat_lon</span></code> diagnostics will be done with <code class="docutils literal notranslate"><span class="pre">variables</span> <span class="pre">=</span> <span class="pre">['PRECT']</span></code>.
+However, this is nonsensical.
+<strong>What we want to do is to “select” the diagnostics</strong>
+<a class="reference external" href="https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/driver/default_diags/lat_lon_model_vs_obs.cfg/">from here</a>
+<strong>that use PRECT.</strong></p>
+<div class="section" id="using-the-selectors-parameter">
+<span id="selector-ex"></span><h3>Using the selectors parameter<a class="headerlink" href="#using-the-selectors-parameter" title="Permalink to this headline">¶</a></h3>
+<p>In the above Python file, we can designate the <code class="docutils literal notranslate"><span class="pre">variables</span></code> parameter to be a “selector”.</p>
+<p>First, find the default <code class="docutils literal notranslate"><span class="pre">selectors</span></code> used
+<a class="reference external" href="https://github.com/E3SM-Project/e3sm_diags/blob/master/acme_diags/parameter/core_parameter.py">here</a>
+and copy what current parameters are used as selectors. This is the value of <code class="docutils literal notranslate"><span class="pre">self.selectors</span></code>.</p>
+<p>In <strong>your Python file</strong>, paste these along with any parameters you want as selectors.
+It should look something like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reference_data_path</span> <span class="o">=</span> <span class="s1">&#39;/global/cfs/cdirs/e3sm/acme_diags/obs_for_acme_diags/&#39;</span>
+<span class="n">test_data_path</span> <span class="o">=</span> <span class="s1">&#39;/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/&#39;</span>
+
+<span class="n">test_name</span> <span class="o">=</span> <span class="s1">&#39;20161118.beta0.FC5COSP.ne30_ne30.edison&#39;</span>
+
+<span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PRECT&#39;</span><span class="p">]</span>
+<span class="n">sets</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;lat_lon&#39;</span><span class="p">]</span>
+<span class="c1"># &#39;sets&#39; and &#39;seasons&#39; were our default values. We added &#39;variables&#39;</span>
+<span class="n">selectors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;sets&#39;</span><span class="p">,</span> <span class="s1">&#39;seasons&#39;</span><span class="p">,</span> <span class="s1">&#39;variables&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>If you run <code class="docutils literal notranslate"><span class="pre">e3sm_diags</span></code> now like this, you’ll only run the diagnostics
+that had the variables originally as <code class="docutils literal notranslate"><span class="pre">'PRECT'</span></code>.</p>
+<p><strong>Remember that you can use any of the parameters defined</strong>
+<a class="reference internal" href="available-parameters.html"><span class="doc">here</span></a>
+<strong>as selectors.</strong></p>
+<p>Say we only wanted to select the diagnostics using <code class="docutils literal notranslate"><span class="pre">'PRECT'</span></code> and using specific observational data.
+We can do the following:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reference_data_path</span> <span class="o">=</span> <span class="s1">&#39;/global/cfs/cdirs/e3sm/acme_diags/obs_for_acme_diags/&#39;</span>
+<span class="n">test_data_path</span> <span class="o">=</span> <span class="s1">&#39;/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_acme_diags/&#39;</span>
+
+<span class="n">test_name</span> <span class="o">=</span> <span class="s1">&#39;20161118.beta0.FC5COSP.ne30_ne30.edison&#39;</span>
+
+<span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PRECT&#39;</span><span class="p">]</span>
+<span class="n">sets</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;lat_lon&#39;</span><span class="p">]</span>
+<span class="n">ref_name</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;GPCP_v2.2&#39;</span><span class="p">,</span> <span class="s1">&#39;ERA-Interim&#39;</span><span class="p">]</span>
+<span class="c1"># &#39;sets&#39; and &#39;seasons&#39; were our default values.</span>
+<span class="n">selectors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;sets&#39;</span><span class="p">,</span> <span class="s1">&#39;seasons&#39;</span><span class="p">,</span> <span class="s1">&#39;variables&#39;</span><span class="p">,</span> <span class="s1">&#39;ref_name&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="available-parameters.html" class="btn btn-neutral float-right" title="Available Parameters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="config-run.html" class="btn btn-neutral float-left" title="Configuration and Running" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, E3SM
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

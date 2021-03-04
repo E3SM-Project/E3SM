@@ -1,0 +1,273 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Interactive session on compute nodes &mdash; E3SM Diags  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link href="../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> E3SM Diags
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">E3SM Diagnostics Package v2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../input-data-requirement.html">Input Data Requirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Quick Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config-run.html">Configuration and Running</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../defining-parameters.html">Defining Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../available-parameters.html">Available Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../colormaps.html">Colormaps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../add-new-diagnostics.html">How to Add New Diagnostics Runs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev_guide/index.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to E3SM Diags</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">E3SM Diags</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Interactive session on compute nodes</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/quickguides/quick-guide-multiprocessing-cori.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <p>To enable multiprocessing rather than running in serial, the program will need to be run in an
+<strong>interactive session</strong> on compute nodes, or as a <strong>batch job</strong>.</p>
+<div class="section" id="interactive-session-on-compute-nodes">
+<h1>Interactive session on compute nodes<a class="headerlink" href="#interactive-session-on-compute-nodes" title="Permalink to this headline">¶</a></h1>
+<p>First, request an interactive session with a single node
+(32 cores with Cori Haswell, 68 cores with Cori KNL)
+for one hour (running this example should take much less than this).
+If obtaining a session takes too long, try to use the <code class="docutils literal notranslate"><span class="pre">debug</span></code> partition.
+Note that the maximum time allowed for that partition is <code class="docutils literal notranslate"><span class="pre">00:30:00</span></code>.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">salloc</span> <span class="o">--</span><span class="n">nodes</span><span class="o">=</span><span class="mi">1</span> <span class="o">--</span><span class="n">partition</span><span class="o">=</span><span class="n">regular</span> <span class="o">--</span><span class="n">time</span><span class="o">=</span><span class="mi">01</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="o">-</span><span class="n">C</span> <span class="n">haswell</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Once the session is available, launch E3SM Diagnostics, to activate <code class="docutils literal notranslate"><span class="pre">e3sm_unified</span></code>:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">/</span><span class="k">global</span><span class="o">/</span><span class="n">cfs</span><span class="o">/</span><span class="n">cdirs</span><span class="o">/</span><span class="n">e3sm</span><span class="o">/</span><span class="n">software</span><span class="o">/</span><span class="n">anaconda_envs</span><span class="o">/</span><span class="n">load_latest_e3sm_unified</span><span class="o">.</span><span class="n">sh</span>
+<span class="n">python</span> <span class="n">run_e3sm_diags</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">multiprocessing</span> <span class="o">--</span><span class="n">num_workers</span><span class="o">=</span><span class="mi">32</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>We could have also set these multiprocessing parameters in the <code class="docutils literal notranslate"><span class="pre">run_e3sm_diags.py</span></code> as well
+but we’re showing that you can still submit parameters via the command line.</p>
+</div>
+<div class="section" id="batch-job">
+<h1>Batch job<a class="headerlink" href="#batch-job" title="Permalink to this headline">¶</a></h1>
+<p>Alternatively, you can also create a script and submit it to the batch system.
+Copy and paste the code below into a file named <code class="docutils literal notranslate"><span class="pre">diags.bash</span></code>.</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash -l</span>
+<span class="c1">#SBATCH --job-name=diags</span>
+<span class="c1">#SBATCH --output=diags.o%j</span>
+<span class="c1">#SBATCH --partition=regular</span>
+<span class="c1">#SBATCH --account=acme</span>
+<span class="c1">#SBATCH --nodes=1</span>
+<span class="c1">#SBATCH --time=01:00:00</span>
+<span class="c1">#SBATCH -C haswell</span>
+
+<span class="nb">source</span> /global/cfs/cdirs/e3sm/software/anaconda_envs/load_latest_e3sm_unified.sh
+python run_e3sm_diags.py --multiprocessing --num_workers<span class="o">=</span><span class="m">32</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>And then submit it:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sbatch</span> <span class="n">diags</span><span class="o">.</span><span class="n">bash</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>View the status of your job with <code class="docutils literal notranslate"><span class="pre">squeue</span> <span class="pre">-u</span> <span class="pre">&lt;username&gt;</span></code>.
+Here’s the meaning of some values under the State (<code class="docutils literal notranslate"><span class="pre">ST</span></code>) column:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">PD</span></code>: Pending</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">R</span></code>: Running</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CA</span></code>: Cancelled</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CD</span></code>: Completed</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">F</span></code>: Failed</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TO</span></code>: Timeout</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NF</span></code>: Node Failure</p></li>
+</ul>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, E3SM
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

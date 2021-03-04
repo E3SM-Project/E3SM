@@ -1,0 +1,406 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Quick guide for using Docker (v1) &mdash; E3SM Diags  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Quick guide for NERSC Cori using Shifter (v1)" href="quick-guide-cori.html" />
+    <link rel="prev" title="Quick guide for running in e3sm_unified environment for Compy and Others (v1)" href="quick-guide-compy.html" />
+    <link href="../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> E3SM Diags
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">E3SM Diagnostics Package v2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../input-data-requirement.html">Input Data Requirement</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Quick Guides</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../quick-guide-general.html">General quick guide for running e3sm_diags v2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick-guide-acme1.html">Acme1 quick guide for running e3sm_diags v2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick-guide-lcrc.html">LCRC quick guide for running e3sm_diags v2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick-guide-compy.html">Compy quick guide for running e3sm_diags v2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick-guide-cori.html">Cori quick guide for running e3sm_diags v2</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Old Quick Guides for v1</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="quick-guide-edison.html">Quick guide for NERSC Edison (v1)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="quick-guide-edison-shifter.html">Quick guide for NERSC Edison using Shifter (v1)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="quick-guide-compy.html">Quick guide for running in e3sm_unified environment for Compy and Others (v1)</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Quick guide for using Docker (v1)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#obtaining-the-container-image">Obtaining the container image</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#running-a-quick-test">Running a quick test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#running-more-diagnostics">Running more diagnostics</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="quick-guide-cori.html">Quick guide for NERSC Cori using Shifter (v1)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="quick-guide-cooley.html">Quick guide for ANL ALCF Cooley using Singularity (v1)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="quick-guide-aims4.html">Quick guide for LLNL AIMS4 or ACME1 (v1)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="quick-guide-rhea.html">Quick guide for OLCF Rhea (v1)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config-run.html">Configuration and Running</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../defining-parameters.html">Defining Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../available-parameters.html">Available Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../colormaps.html">Colormaps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../add-new-diagnostics.html">How to Add New Diagnostics Runs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev_guide/index.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to E3SM Diags</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">E3SM Diags</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Quick Guides</a> &raquo;</li>
+        
+          <li><a href="index.html">Old Quick Guides for v1</a> &raquo;</li>
+        
+      <li>Quick guide for using Docker (v1)</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/quickguides/old/quick-guide-docker.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="quick-guide-for-using-docker-v1">
+<h1>Quick guide for using Docker (v1)<a class="headerlink" href="#quick-guide-for-using-docker-v1" title="Permalink to this headline">¶</a></h1>
+<p>Docker allows software packages, called containers, to be ran.
+E3SM Diagnostics has a Docker container that makes running the
+software easier than traditional methods.
+Any machine that has Docker installed can use the
+instructions below to run E3SM Diagnostics.</p>
+<div class="section" id="obtaining-the-container-image">
+<h2>Obtaining the container image<a class="headerlink" href="#obtaining-the-container-image" title="Permalink to this headline">¶</a></h2>
+<p>1. Make sure that Docker is installed and running on your machine.
+To check this, run the command below and you should see some output.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">info</span>
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="arabic" start="2">
+<li><p>View all of the <code class="docutils literal notranslate"><span class="pre">e3sm_diags</span></code> images.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">images</span> <span class="o">|</span> <span class="n">grep</span> <span class="n">e3sm_diags</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+<p>If the version you want to use is already available, then please continue to step 4.</p>
+<p>Otherwise, you’ll need to download the image you want, shown in step 3.</p>
+<p>3. If the specific version you want or the <code class="docutils literal notranslate"><span class="pre">latest</span></code> image is <strong>not</strong> shown,
+download it. You can view all of the images available on the
+<a class="reference external" href="https://hub.docker.com/r/e3sm/e3sm_diags/tags/">e3sm_diags Docker Hub</a>.</p>
+<p>Below, we are getting the image with the latest tag:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">pull</span> <span class="n">e3sm</span><span class="o">/</span><span class="n">e3sm_diags</span><span class="p">:</span><span class="n">latest</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="running-a-quick-test">
+<h2>Running a quick test<a class="headerlink" href="#running-a-quick-test" title="Permalink to this headline">¶</a></h2>
+<p>Since you probably don’t have much sample data on your machine,
+below are the steps to run a quick test. If you do have data,
+please go to the “Running more diagnostics” section below.</p>
+<ol class="arabic" start="4">
+<li><p>Clone the <code class="docutils literal notranslate"><span class="pre">e3sm_diags</span></code> repo, and go to the test directory.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">E3SM</span><span class="o">-</span><span class="n">Project</span><span class="o">/</span><span class="n">e3sm_diags</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">e3sm_diags</span><span class="o">/</span><span class="n">tests</span><span class="o">/</span><span class="n">system</span><span class="o">/</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wget</span></code> or <code class="docutils literal notranslate"><span class="pre">curl</span></code> the script to run the container.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">E3SM</span><span class="o">-</span><span class="n">Project</span><span class="o">/</span><span class="n">e3sm_diags</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">acme_diags</span><span class="o">/</span><span class="n">container</span><span class="o">/</span><span class="n">e3sm_diags_container</span><span class="o">.</span><span class="n">py</span>
+
+<span class="c1"># Or use this:</span>
+<span class="n">curl</span> <span class="o">-</span><span class="n">O</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">E3SM</span><span class="o">-</span><span class="n">Project</span><span class="o">/</span><span class="n">e3sm_diags</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">acme_diags</span><span class="o">/</span><span class="n">container</span><span class="o">/</span><span class="n">e3sm_diags_container</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Run your diagnostics and examine the sample output.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">e3sm_diags_container</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">docker</span> <span class="o">-</span><span class="n">p</span> <span class="n">all_sets</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">d</span> <span class="n">all_sets</span><span class="o">.</span><span class="n">cfg</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+<p><strong>Tip:</strong> You can select the version of the container you want to run with the <code class="docutils literal notranslate"><span class="pre">--container_version</span></code> argument.
+If this argument isn’t defined, it defaults to the <code class="docutils literal notranslate"><span class="pre">latest</span></code> container.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">e3sm_diags_container</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">docker</span> <span class="o">--</span><span class="n">container_version</span> <span class="n">v1</span><span class="o">.</span><span class="mf">6.0</span> <span class="o">-</span><span class="n">p</span> <span class="n">myparams</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="arabic" start="7">
+<li><p>Open the html below to view the results.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">all_sets_results</span><span class="o">/</span><span class="n">viewer</span><span class="o">/</span><span class="n">index</span><span class="o">.</span><span class="n">html</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</div>
+<div class="section" id="running-more-diagnostics">
+<h2>Running more diagnostics<a class="headerlink" href="#running-more-diagnostics" title="Permalink to this headline">¶</a></h2>
+<p>To run other, more interesting diagnostics, you must download the data from one of our supported
+machines (ALCF Cooley, NERSC Cori and others).
+For more information on the format of the input data, please see the
+<a class="reference internal" href="../../input-data-requirement.html"><span class="doc">input data requirements</span></a>.</p>
+<p>Below are the paths to the <strong>observational data</strong>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>Climatology data (6GB):</dt><dd><ul>
+<li><p>NERSC: <code class="docutils literal notranslate"><span class="pre">/global/project/projectdirs/acme/acme_diags/obs_for_e3sm_diags/climatology/</span></code></p></li>
+<li><p>ALCF: <code class="docutils literal notranslate"><span class="pre">/lus/theta-fs0/projects/ClimateEnergy_3/e3sm_diags/obs_for_e3sm_diags/climatology/</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Time-series data (145GB):</dt><dd><ul>
+<li><p>NERSC: <code class="docutils literal notranslate"><span class="pre">/global/project/projectdirs/acme/acme_diags/obs_for_e3sm_diags/time-series/</span></code></p></li>
+<li><p>ALCF: <code class="docutils literal notranslate"><span class="pre">/lus/theta-fs0/projects/ClimateEnergy_3/e3sm_diags/obs_for_e3sm_diags/time-series/</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p>We also have <strong>sample model data</strong> as well. You can use your own model data as well,
+either climatology or time-series files created via <code class="docutils literal notranslate"><span class="pre">nco</span></code>.
+Again, if you want to use your own data, please see the
+<a class="reference internal" href="../../input-data-requirement.html"><span class="doc">input data requirements</span></a>.</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>Climatology data (42GB):</dt><dd><ul>
+<li><p>We have data from three models in these directories, from about 11.5GB to 19GB.</p></li>
+<li><p>NERSC: <code class="docutils literal notranslate"><span class="pre">/global/project/projectdirs/acme/acme_diags/test_model_data_for_acme_diags/climatology/</span></code></p></li>
+<li><p>ALCF: <code class="docutils literal notranslate"><span class="pre">/lus/theta-fs0/projects/ClimateEnergy_3/e3sm_diags/test_model_data_for_e3sm_diags/climatology/</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Time-series data (107GB):</dt><dd><ul>
+<li><p>We have E3SM v1 data (94GB) and CESM1-CAM5 CMIP data (14GB).</p></li>
+<li><p>NERSC: <code class="docutils literal notranslate"><span class="pre">/global/project/projectdirs/acme/acme_diags/test_model_data_for_acme_diags/time-series/</span></code></p></li>
+<li><p>ALCF: <code class="docutils literal notranslate"><span class="pre">/lus/theta-fs0/projects/ClimateEnergy_3/e3sm_diags/test_model_data_for_e3sm_diags/time-series/</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p>Once the data is downloaded you can follow one of the
+<span class="xref std std-doc">many examples that we have</span>.</p>
+<p>Some points to remember:</p>
+<blockquote>
+<div><ul>
+<li><p>You must change the <code class="docutils literal notranslate"><span class="pre">reference_data_path</span></code> and <code class="docutils literal notranslate"><span class="pre">test_data_path</span></code> accordingly.</p></li>
+<li><p>Every instance of <code class="docutils literal notranslate"><span class="pre">e3sm_diags</span></code> should be <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">e3sm_diags_container.py</span> <span class="pre">--docker</span></code>.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Ex: Use <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">e3sm_diags_container.py</span> <span class="pre">--docker</span> <span class="pre">-p</span> <span class="pre">myparams.py</span></code> instead of <code class="docutils literal notranslate"><span class="pre">e3sm_diags</span> <span class="pre">-p</span> <span class="pre">myparams.py</span></code>.</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="quick-guide-cori.html" class="btn btn-neutral float-right" title="Quick guide for NERSC Cori using Shifter (v1)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="quick-guide-compy.html" class="btn btn-neutral float-left" title="Quick guide for running in e3sm_unified environment for Compy and Others (v1)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, E3SM
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

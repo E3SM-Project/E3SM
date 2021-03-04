@@ -1,0 +1,474 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>E3SM Diagnostics Package v2 &mdash; E3SM Diags  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Input Data Requirement" href="input-data-requirement.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home" alt="Documentation Home"> E3SM Diags
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">E3SM Diagnostics Package v2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input-data-requirement.html">Input Data Requirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickguides/index.html">Quick Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config-run.html">Configuration and Running</a></li>
+<li class="toctree-l1"><a class="reference internal" href="defining-parameters.html">Defining Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available-parameters.html">Available Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="colormaps.html">Colormaps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="add-new-diagnostics.html">How to Add New Diagnostics Runs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev_guide/index.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to E3SM Diags</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">E3SM Diags</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>E3SM Diagnostics Package v2</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="e3sm-diagnostics-package-v2">
+<span id="index-label"></span><h1>E3SM Diagnostics Package v2<a class="headerlink" href="#e3sm-diagnostics-package-v2" title="Permalink to this headline">¶</a></h1>
+<p>This documentation reflects the <code class="docutils literal notranslate"><span class="pre">v2.3.0</span></code> release of E3SM Diags.</p>
+
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">E3SM Diagnostics Package v2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input-data-requirement.html">Input Data Requirement</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="input-data-requirement.html#preprocessing-steps">Preprocessing Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quickguides/index.html">Quick Guides</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quickguides/quick-guide-general.html">General quick guide for running e3sm_diags v2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickguides/quick-guide-acme1.html">Acme1 quick guide for running e3sm_diags v2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickguides/quick-guide-lcrc.html">LCRC quick guide for running e3sm_diags v2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickguides/quick-guide-compy.html">Compy quick guide for running e3sm_diags v2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickguides/quick-guide-cori.html">Cori quick guide for running e3sm_diags v2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickguides/old/index.html">Old Quick Guides for v1</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#id1">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#running-the-examples">Running the Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#activate-e3sm-unified-environment">Activate <strong>e3sm_unified</strong> environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#installation-in-a-conda-environment">Installation in a conda environment</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config-run.html">Configuration and Running</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="config-run.html#python-api-preferred-method">Python API (preferred method)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config-run.html#e3sm-diags-p-older-method">e3sm_diags -p (older method)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="defining-parameters.html">Defining Parameters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="defining-parameters.html#ways-to-define-parameters">Ways to define parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="defining-parameters.html#selecting-certain-parameters">Selecting certain parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="available-parameters.html">Available Parameters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="available-parameters.html#parameters-for-diagnostics">Parameters for diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="available-parameters.html#parameters-for-plotting">Parameters for plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="available-parameters.html#set-specific-parameters">Set-specific parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="available-parameters.html#other-parameters">Other parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="available-parameters.html#deprecated-parameters">Deprecated parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="colormaps.html">Colormaps</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="colormaps.html#default">Default</a></li>
+<li class="toctree-l2"><a class="reference internal" href="colormaps.html#precipitation">Precipitation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="colormaps.html#wind">Wind</a></li>
+<li class="toctree-l2"><a class="reference internal" href="colormaps.html#customizing">Customizing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="add-new-diagnostics.html">How to Add New Diagnostics Runs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="add-new-diagnostics.html#adding-derived-variables">Adding Derived Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="add-new-diagnostics.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dev_guide/index.html">Developer Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dev_guide/adding-new-diags-sets.html">How to Add Diagnostic Sets to E3SM Diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dev_guide/releasing-e3sm-diags.html">How to Prepare a Release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dev_guide/create-new-env.html">Creating a New Environment from Scratch</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to E3SM Diags</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#code">Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#documentation">Documentation</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>This diagnostics package is constructed to support the diagnostics
+needs of DOE’s <a class="reference external" href="https://climatemodeling.science.energy.gov/projects/energy-exascale-earth-system-model">Energy Exascale Earth System Model (E3SM) project</a>,
+formerly known as Accelerated Climate Modeling for Energy (ACME).
+The ultimate goal of this work is to develop a comprehensive diagnostics package
+that:</p>
+<ul class="simple">
+<li><p>integrates the basic functionality of NCAR’s AMWG diagnostics
+package;</p></li>
+<li><p>utilizes most updated observational datasets, including remote
+sensing, reanalysis and in-situ datasets;</p></li>
+<li><p>interfaces with diagnostics developed from different E3SM focus
+groups: atmosphere group, coupled simulation group, land group;</p></li>
+<li><p>interacts effectively with the PCMDI’s metrics package and the ARM
+diagnostics package through a unifying framework: <a class="reference external" href="https://github.com/CDAT/cdp">Community
+Diagnostics Package (CDP)</a>.</p></li>
+<li><p>is flexible for user-specified diagnostics and configuration for
+use by other climate models.</p></li>
+</ul>
+</div>
+<div class="section" id="current-state-v2-release">
+<h2>Current State (v2 release)<a class="headerlink" href="#current-state-v2-release" title="Permalink to this headline">¶</a></h2>
+<p>Algorithm and visualization codes for <strong>latitude-longitude contour maps</strong>,
+<strong>polar contour maps</strong>, the accompanying <strong>summarizing table</strong> and <strong>Taylor diagram plots</strong>,  <strong>pressure-latitude zonal mean contour plots</strong>,
+<strong>zonal mean line plots</strong>, <strong>pressure-longitude meridional mean contour plots</strong>, <strong>area mean time series plots</strong>, and <strong>Cloud Top Height-Tau</strong> joint histograms
+from COSP cloud simulator output. Plots can be created for annual
+and seasonal climatologies, and monthly mean time series.</p>
+<p>The package also supports custom user diagnostics, by specifying
+plot type, desired region (global, ocean, land, etc.),
+pressure levels for variables with the vertical dimension.</p>
+<p>For flexibility, the code structure cleanly separates data manipulation
+(reading input files, processing data, etc) from plotting functions.
+One back-end is available:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://matplotlib.org">matplotlib</a>/ <a class="reference external" href="http://scitools.org.uk/cartopy">cartopy</a> (<strong>mpl</strong>)</p></li>
+</ul>
+<p>Additional back-ends could be implemented if the need arose.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><div class="figure align-center" id="id1">
+<a class="reference external image-reference" href="_static/index/fig01.png"><img alt="_images/fig01.png" src="_images/fig01.png" /></a>
+<p class="caption"><span class="caption-text">Latitude-longitude contour map</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+<td><div class="figure align-center" id="id2">
+<a class="reference external image-reference" href="_static/index/fig02.png"><img alt="_images/fig02.png" src="_images/fig02.png" /></a>
+<p class="caption"><span class="caption-text">Summary table</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><div class="figure align-center" id="id3">
+<a class="reference external image-reference" href="_static/index/fig03.png"><img alt="_images/fig03.png" src="_images/fig03.png" /></a>
+<p class="caption"><span class="caption-text">Taylor Diagram</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+<td><div class="figure align-center" id="id4">
+<a class="reference external image-reference" href="_static/index/fig04.png"><img alt="_images/fig04.png" src="_images/fig04.png" /></a>
+<p class="caption"><span class="caption-text">Zonal mean line plot</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><div class="figure align-center" id="id5">
+<a class="reference external image-reference" href="_static/index/fig05.png"><img alt="_images/fig05.png" src="_images/fig05.png" /></a>
+<p class="caption"><span class="caption-text">Pressure-latitude zonal mean contour</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+<td><div class="figure align-center" id="id6">
+<a class="reference external image-reference" href="_static/index/fig06.png"><img alt="_images/fig06.png" src="_images/fig06.png" /></a>
+<p class="caption"><span class="caption-text">Polar contour map</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><div class="figure align-center" id="id7">
+<a class="reference external image-reference" href="_static/index/fig07.png"><img alt="_images/fig07.png" src="_images/fig07.png" /></a>
+<p class="caption"><span class="caption-text">Cloud Top Height-Tau joint histograms</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+<td><div class="figure align-center" id="id8">
+<a class="reference external image-reference" href="_static/index/fig08.png"><img alt="_images/fig08.png" src="_images/fig08.png" /></a>
+<p class="caption"><span class="caption-text">Pressure-longitude meridional mean contour</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><div class="figure align-center" id="id9">
+<a class="reference external image-reference" href="_static/index/fig09.png"><img alt="_images/fig09.png" src="_images/fig09.png" /></a>
+<p class="caption"><span class="caption-text">ENSO diagnostics map</span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+<td><div class="figure align-center" id="id10">
+<a class="reference external image-reference" href="_static/index/fig10.png"><img alt="_images/fig10.png" src="_images/fig10.png" /></a>
+<p class="caption"><span class="caption-text">ENSO diagnostics scatter plot</span><a class="headerlink" href="#id10" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><div class="figure align-center" id="id11">
+<a class="reference external image-reference" href="_static/index/fig11.png"><img alt="_images/fig11.png" src="_images/fig11.png" /></a>
+<p class="caption"><span class="caption-text">QBO</span><a class="headerlink" href="#id11" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+<td><div class="figure align-center" id="id12">
+<a class="reference external image-reference" href="_static/index/fig12.png"><img alt="_images/fig12.png" src="_images/fig12.png" /></a>
+<p class="caption"><span class="caption-text">Area Mean time series</span><a class="headerlink" href="#id12" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><div class="figure align-center" id="id13">
+<a class="reference external image-reference" href="_static/index/fig13.png"><img alt="_images/fig13.png" src="_images/fig13.png" /></a>
+<p class="caption"><span class="caption-text">Diurnal cycle phase maps</span><a class="headerlink" href="#id13" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+<td><div class="figure align-center" id="id14">
+<a class="reference external image-reference" href="_static/index/fig14.png"><img alt="_images/fig14.png" src="_images/fig14.png" /></a>
+<p class="caption"><span class="caption-text">Streamflow seasonality map</span><a class="headerlink" href="#id14" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><div class="figure align-center" id="id15">
+<a class="reference external image-reference" href="_static/index/fig15.png"><img alt="_images/fig15.png" src="_images/fig15.png" /></a>
+<p class="caption"><span class="caption-text">Mean annual streamflow map</span><a class="headerlink" href="#id15" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+<td><div class="figure align-center" id="id16">
+<a class="reference external image-reference" href="_static/index/fig16.png"><img alt="_images/fig16.png" src="_images/fig16.png" /></a>
+<p class="caption"><span class="caption-text">Mean annual streamflow scatter plot</span><a class="headerlink" href="#id16" title="Permalink to this image">¶</a></p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The above plots and more can be found
+<a class="reference external" href="https://portal.nersc.gov/cfs/e3sm/zhang40/tutorials/run_v230_allsets/viewer/">here</a>.</p>
+<div class="section" id="feature-availability-for-each-backend">
+<h3>Feature availability for each backend<a class="headerlink" href="#feature-availability-for-each-backend" title="Permalink to this headline">¶</a></h3>
+<p>The table below summarizes current status of features supported by the backend.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 83%" />
+<col style="width: 17%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Plot set or Feature</p></th>
+<th class="head"><p>mpl</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Latitude-longitude contour maps</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>Polar contour maps</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>Pressure-latitude zonal mean contour plots</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>Pressure-longitude meridional mean contour</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>Zonal mean line plots</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>Cloud Top Height-Tau joint histograms</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>Area Mean time series plots</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>Multi-processing</p></td>
+<td><p>✔</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="input-data-requirement.html" class="btn btn-neutral float-right" title="Input Data Requirement" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, E3SM
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
