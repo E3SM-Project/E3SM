@@ -7,6 +7,7 @@
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/ekat_pack_utils.hpp"
 
 #include "share/io/scream_scorpio_interface.hpp"
 
@@ -109,6 +110,19 @@ public:
   void pull_input(const std::string& name, view_type view_out);
   void pull_input(const std::string& filename, const std::string& var_name, const std::vector<std::string>& var_dims,
                   const bool has_columns, const std::vector<int>& dim_lens, const int padding, Real* data);
+
+  // Determine padding from the type of the variable.
+  template<typename ValueType>
+  void pull_input(const std::string& filename, const std::string& var_name, const std::vector<std::string>& var_dims,
+                  const bool has_columns, const std::vector<int>& dim_lens, ValueType* data)
+  {
+    // Determine the padding for this data
+    constexpr int pack_size = sizeof(ValueType) / sizeof(Real);
+    const int padding = ekat::PackInfo<pack_size>::padding(dim_lens.back());
+    // Make sure to pass the data as a Real pointer.
+    auto data_real = reinterpret_cast<Real*>(data);
+    pull_input(filename, var_name, var_dims, has_columns, dim_lens, padding, data_real);
+  }
   void init();
   view_type run(const std::string& name);
   void finalize();

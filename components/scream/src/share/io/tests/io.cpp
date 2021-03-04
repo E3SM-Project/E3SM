@@ -21,6 +21,9 @@ namespace {
 using namespace scream;
 using namespace ekat::units;
 using input_type = AtmosphereInput;
+// Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
+const int packsize = 2;
+using Pack         = ekat::Pack<Real,packsize>;
 
 std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs);
 std::shared_ptr<UserProvidedGridsManager>            get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
@@ -172,19 +175,24 @@ TEST_CASE("input_output_basic","io")
   }
   
   // Test pulling input without the field manager:
-  using view_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
+  using view_2d  = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
+  using pview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Pack>;
+  int num_packs = ekat::npack<Pack>(num_levs);
   view_2d::HostMirror loc_field_3("field_3",num_lcols,num_levs);
+  pview_2d::HostMirror loc_field_4("field_packed",num_lcols,num_packs);
   std::string filename = ins_params.get<std::string>("FILENAME");
-  std::string var_name = loc_field_3.label();
   std::vector<std::string> var_dims = {"VL","COL"};
   bool has_columns = true;
   std::vector<int> dim_lens = {num_lcols,num_levs};
-  int padding = 0;
   input_type loc_input(io_comm,"Physics",grid_man);
-  loc_input.pull_input(filename, var_name, var_dims, has_columns, dim_lens, padding, loc_field_3.data());
+  loc_input.pull_input<Real>(filename, loc_field_3.label(), var_dims, has_columns, dim_lens, loc_field_3.data());
+  loc_input.pull_input<Pack>(filename, loc_field_4.label(), var_dims, has_columns, dim_lens, loc_field_4.data());
   for (int ii=0;ii<num_lcols;++ii) {
     for (int jj=0;jj<num_levs;++jj) {
+      int ipack = jj / packsize;
+      int ivec  = jj % packsize;
       REQUIRE(std::abs(loc_field_3(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(loc_field_4(ii,ipack)[ivec]-(ii+max_steps*dt + (jj+1)/10.))<tol);
     }
   }
 
@@ -217,9 +225,6 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
 
   // Register fields with repo
   using Spack        = ekat::Pack<Int,SCREAM_SMALL_PACK_SIZE>;
-  // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
-  const int packsize = 2;
-  using Pack         = ekat::Pack<Real,packsize>;
   repo->registration_begins();
   repo->register_field(fid1,{"output"});
   repo->register_field(fid2,{"output","restart"});
