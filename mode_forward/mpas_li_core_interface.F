@@ -111,7 +111,7 @@ module li_core_interface
       logical, pointer :: SIAvelocityActive
       logical, pointer :: hydroActive
       logical, pointer :: observationsActive
-      logical, pointer :: ismip6MeltActive
+      logical, pointer :: ismip6ShelfMeltActive
       logical, pointer :: ismip6GroundedFaceMeltActive
       logical, pointer :: thermalActive
 
@@ -128,7 +128,7 @@ module li_core_interface
       call mpas_pool_get_package(packagePool, 'higherOrderVelocityActive', higherOrderVelocityActive)
       call mpas_pool_get_package(packagePool, 'hydroActive', hydroActive)
       call mpas_pool_get_package(packagePool, 'observationsActive', observationsActive)
-      call mpas_pool_get_package(packagePool, 'ismip6MeltActive', ismip6MeltActive)
+      call mpas_pool_get_package(packagePool, 'ismip6ShelfMeltActive', ismip6ShelfMeltActive)
       call mpas_pool_get_package(packagePool, 'ismip6GroundedFaceMeltActive', ismip6GroundedFaceMeltActive)
       call mpas_pool_get_package(packagePool, 'thermalActive', thermalActive)
 
@@ -154,7 +154,7 @@ module li_core_interface
       endif
 
       if (trim(config_basal_mass_bal_float) == 'ismip6') then
-         ismip6MeltActive = .true.
+         ismip6ShelfMeltActive = .true.
          call mpas_log_write("The 'ismip6Melt' package and assocated variables have been enabled because " // &
               "'config_basal_mass_bal_float' is set to 'ismip6'")
       endif
