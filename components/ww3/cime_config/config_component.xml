@@ -3,7 +3,7 @@
 <definitions_variables>
 
   <description>
-    <desc wav="WW3" >Wave Watch III</desc>
+    <desc compset="_WW3" >Wave Watch III</desc>
   </description>
 
   <entry id="COMP_WAV">
