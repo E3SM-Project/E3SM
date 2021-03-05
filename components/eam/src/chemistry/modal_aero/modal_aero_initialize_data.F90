@@ -535,11 +535,7 @@ contains
        call phys_getopts(use_MMF_out     = use_MMF)
        call phys_getopts(microp_scheme_out = microp_scheme)
        if (use_MMF) then
-         ! if ( microp_scheme .eq. 'MG' ) then
-            icldphy = 5
-         ! else if ( microp_scheme .eq. 'RK' ) then
-         !    icldphy = 3
-         ! end if
+         icldphy = 5
          species_class(1:icldphy) = spec_class_cldphysics
 loop:    do i = icldphy+1, pcnst
             do m = 1,ntot_amode
