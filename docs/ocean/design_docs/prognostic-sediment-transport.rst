@@ -208,7 +208,7 @@ where :math:`\kappa` is the von Karman constant (0.4) and
 :math:`u_*` is the shear friction velocity (:math:`m\,s^{-1}`).
 The shear stress :math:`\tau = C_d \overline{U}^2={u_*}^2`, so :math:`u_*={C_d}^{0.5} \overline{U}`.
 
-We provde two options to compute :math:`C_{ref}` and :math:`z_{ref}`:
+We provide two options to compute :math:`C_{ref}` and :math:`z_{ref}`:
 
 - `Zyserman and Fredsoe, 1994 <https://ascelibrary.org/doi/pdf/10.1061/%28ASCE%290733-9429%281994%29120%3A9%281021%29>`_
 
@@ -293,7 +293,7 @@ Contributors: Zhendong Cao, Xylar Asay-Davis
 
 The sediment bedload transport requires the pre-definitions of the following namelist options:
 
-- A logical variable to switch ON/OFF the bedload transport: :code:`config_sediment_bedload_enabled`
+- A logical variable to switch ON/OFF the bedload transport: :code:`config_sediment_bedload_enable`
 
 - A character variable to define the bedload transport method: :code:`config_sediment_bedload_formulation`
   And there are three options for it:
@@ -309,7 +309,7 @@ These can be defined in **Registry.xml** as follows:
 .. code-block::
 
   <nml_record name="sediment_transport" mode="init;forward">
-        <nml_option name="config_sediment_bedload_enabled" type="logical" default_value=".false." units="unitless"
+        <nml_option name="config_sediment_bedload_enable" type="logical" default_value=".false." units="unitless"
                     description="Controls if sediment bedload transport is computed."
                     possible_values=".true. or .false."
         />
@@ -345,7 +345,7 @@ Contributors: Zhendong Cao, Xylar Asay-Davis
 
 The following namelist options should be defined:
 
-- A logical swith to turn ON/OFF suspended sediment transport: :code:`config_sediment_suspended_enabled`
+- A logical swith to turn ON/OFF suspended sediment transport: :code:`config_sediment_suspended_enable`
 
 - A character-type variable to define the empirical suspended transport method: :code:`config_sediment_suspended_formulation`. There are three options for it:
 
@@ -372,7 +372,7 @@ These can be defined in **Registry.xml** as follows:
 .. code-block::
 
   <nml_record name="sediment_transport" mode="init;forward">
-        <nml_option name="config_sediment_suspended_enabled" type="logical" default_value=".false." units="unitless"
+        <nml_option name="config_sediment_suspended_enable" type="logical" default_value=".false." units="unitless"
                     description="Controls if suspended sediment transport is computed."
                     possible_values=".true. or .false."
         />
