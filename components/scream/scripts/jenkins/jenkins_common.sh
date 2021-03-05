@@ -32,6 +32,11 @@ if [ $skip_testing -eq 0 ]; then
   BASELINES_DIR=AUTO
 
   ./scream/components/scream/scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+
+  # Add a valgrind test for mappy for nightlies
+  if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "mappy" ]]; then
+      ./scream/components/scream/scripts/gather-all-data "./scripts/test-all-scream -t valg --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+  fi
 else
   echo "Tests were skipped, since the Github label 'CI: Integrate Without Testing' was found.\n"
 fi
