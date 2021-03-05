@@ -508,6 +508,8 @@ this mask will have smb calculated over the entire global land surface
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.gis20km">glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>  <!-- the CISM one works fine for this mesh -->
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.ais20km">lnd/clm2/griddata/glcmaskdata_0.9x1.25_60S.nc</fglcmask>
 <fglcmask hgrid="r05"      glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_0.5x0.5_GIS_AIS.nc</fglcmask>
+<fglcmask hgrid="r0125"      glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_0.125x0.125_gis1to10km.nc</fglcmask>
+<fglcmask hgrid="ne30pg2"      glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_ne30pg2_gis1to10km.nc</fglcmask>
 
 <!-- Land topo datasets (when running glc_nec) (relative to {csmdata}) -->
 <flndtopo hgrid="ne30np4"  >lnd/clm2/griddata/topodata_ne30np4_USGS_171002.nc</flndtopo>
