@@ -274,7 +274,7 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
             size_t i = 0;
             for (auto it : members) {
               const auto& mfid = it.second->get_header().get_identifier();
-              const auto mfid_id = get_fid_id(mfid);
+              const auto mfid_id = get_fid_index(mfid);
               std::string mfc = "<font color=\"";
               mfc += (ekat::contains(unmet,mfid_id) ? "red" : "black");
               mfc += "\">";
@@ -323,7 +323,7 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
             size_t i = 0;
             for (auto it : members) {
               const auto& mfid = it.second->get_header().get_identifier();
-              const auto mfid_id = get_fid_id(mfid);
+              const auto mfid_id = get_fid_index(mfid);
               std::string mfc = "<font color=\"";
               mfc += (ekat::contains(unmet,mfid_id) ? "red" : "black");
               mfc += "\">";
@@ -616,7 +616,7 @@ int AtmProcDAG::add_fid (const FieldIdentifier& fid) {
   }
 }
 
-int AtmProcDAG::get_fid_id (const FieldIdentifier& fid) const {
+int AtmProcDAG::get_fid_index (const FieldIdentifier& fid) const {
   auto it = ekat::find(m_fids,fid);
   if (it==m_fids.end()) {
     return -1;

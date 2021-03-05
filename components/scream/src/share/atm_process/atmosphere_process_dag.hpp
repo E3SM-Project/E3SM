@@ -39,7 +39,9 @@ protected:
   // If already stored, simply return its position
   int add_fid (const FieldIdentifier& fid);
 
-  int get_fid_id (const FieldIdentifier& fid) const;
+  // Internally, we store FID's in a vector. This method find the index
+  // of the input FID in said vector.
+  int get_fid_index (const FieldIdentifier& fid) const;
 
   void update_unmet_deps ();
 
