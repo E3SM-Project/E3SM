@@ -47,8 +47,8 @@ TEST_CASE ("surface_coupling")
   // Create some field ids, and register them in a field repo
   // Note: we create two repos, so we can compare outputs with inputs
   FID s2d_id("s2d",FL{{COL},{ncols}},Pa,grid->name());
-  FID s3d_id("s3d",FL{{COL,VL},{ncols,nlevs}},Pa,grid->name());
-  FID v3d_id("v3d",FL{{COL,CMP,VL},{ncols,2,nlevs}},m/s,grid->name());
+  FID s3d_id("s3d",FL{{COL,LEV},{ncols,nlevs}},Pa,grid->name());
+  FID v3d_id("v3d",FL{{COL,CMP,LEV},{ncols,2,nlevs}},m/s,grid->name());
 
   // NOTE: if you add fields abovew, you will have to modify these counters too.
   const int num_s2d = 1;

@@ -62,23 +62,18 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
   // Create the identifiers of input and output fields
   using namespace ShortFieldTagsNames;
-  using Tags = std::vector<FieldTag>;
-  Tags dyn_3d_scalar_tags        {EL,       GP,GP,VL};
-  Tags dyn_3d_vector_tags        {EL,   CMP,GP,GP,VL};
-  Tags dyn_3d_scalar_state_tags  {EL,TL,    GP,GP,VL};
-  Tags dyn_3d_vector_state_tags  {EL,TL,CMP,GP,GP,VL};
 
   // Inputs
-  FieldLayout FM_layout  { {EL,CMP,GP,GP,VL}, {ne,nmf,NGP,NGP,NVL} };
-  FieldLayout FT_layout  { {EL,    GP,GP,VL}, {ne,    NGP,NGP,NVL} };
+  FieldLayout FM_layout  { {EL,CMP,GP,GP,LEV}, {ne,nmf,NGP,NGP,NVL} };
+  FieldLayout FT_layout  { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
 
   m_required_fields.emplace("FM", FM_layout, m/pow(s,2), dyn_grid_name);
   m_required_fields.emplace("FT", FT_layout, K/s,        dyn_grid_name);
 
   // Outputs
-  FieldLayout dyn_scalar_3d_mid_layout { dyn_3d_scalar_state_tags,  {ne, NTL,    NGP,NGP,NVL} };
-  FieldLayout dyn_scalar_3d_int_layout { dyn_3d_scalar_state_tags,  {ne, NTL,    NGP,NGP,NVL+1} };
-  FieldLayout dyn_vector_3d_mid_layout { dyn_3d_vector_state_tags,  {ne, NTL,  2,NGP,NGP,NVL} };
+  FieldLayout dyn_scalar_3d_mid_layout { {EL,TL,GP,GP,LEV},      {ne, NTL,    NGP,NGP,NVL} };
+  FieldLayout dyn_scalar_3d_int_layout { {EL,TL,GP,GP,ILEV},     {ne, NTL,    NGP,NGP,NVL+1} };
+  FieldLayout dyn_vector_3d_mid_layout { {EL,TL,CMP,GP,GP,LEV},  {ne, NTL,  2,NGP,NGP,NVL} };
   m_computed_fields.emplace("u",       dyn_vector_3d_mid_layout, m/s, dyn_grid_name);
   m_computed_fields.emplace("vtheta",  dyn_scalar_3d_mid_layout, K,   dyn_grid_name);
   m_computed_fields.emplace("phi",     dyn_scalar_3d_int_layout, Pa*pow(m,3)/kg, dyn_grid_name);

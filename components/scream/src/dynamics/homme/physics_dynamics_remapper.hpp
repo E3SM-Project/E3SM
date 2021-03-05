@@ -138,26 +138,26 @@ PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
 template<typename RealType>
 FieldLayout PhysicsDynamicsRemapper<RealType>::
 create_src_layout (const FieldLayout& tgt_layout) const {
-  namespace SFTN = ShortFieldTagsNames;
+  using namespace ShortFieldTagsNames;
 
   auto tags = tgt_layout.tags();
   auto dims = tgt_layout.dims();
 
   // Note down the position of the first 'GaussPoint' tag.
-  int pos = std::distance(tags.begin(),ekat::find(tags,SFTN::GP));
+  int pos = std::distance(tags.begin(),ekat::find(tags,GP));
 
   // We replace 'Element' with 'Column'. The number of columns is taken from the src grid.
-  tags[0] = SFTN::COL;
+  tags[0] = COL;
   dims[0] = this->m_src_grid->get_num_local_dofs();
 
   // Delete GP tags/dims
-  ekat::erase(tags,SFTN::GP);
-  ekat::erase(tags,SFTN::GP);
+  ekat::erase(tags,GP);
+  ekat::erase(tags,GP);
   dims.erase(dims.begin()+pos);
   dims.erase(dims.begin()+pos);
 
   // If the tgt layout contains the TimeLevel tag, we slice it off.
-  auto it_tl = ekat::find(tags,SFTN::TL);
+  auto it_tl = ekat::find(tags,TL);
   if (it_tl!=tags.end()) {
     pos = std::distance(tags.begin(),it_tl);
     tags.erase(tags.begin()+pos);
@@ -170,13 +170,13 @@ create_src_layout (const FieldLayout& tgt_layout) const {
 template<typename RealType>
 FieldLayout PhysicsDynamicsRemapper<RealType>::
 create_tgt_layout (const FieldLayout& src_layout) const {
-  namespace SFTN = ShortFieldTagsNames;
+  using namespace ShortFieldTagsNames;
 
   auto tags = src_layout.tags();
   auto dims = src_layout.dims();
 
   // Replace COL with EL, and num_cols with num_elems
-  tags[0] = SFTN::EL;
+  tags[0] = EL;
   dims[0] = this->m_tgt_grid->get_num_local_dofs() / (HOMMEXX_NP*HOMMEXX_NP);
 
   // For position of GP and NP, it's easier to switch between 2d and 3d
@@ -187,8 +187,8 @@ create_tgt_layout (const FieldLayout& src_layout) const {
     case LayoutType::Tensor2D:
       // Simple: GP/NP are at the end.
       // Push back GP/NP twice
-      tags.push_back(SFTN::GP);
-      tags.push_back(SFTN::GP);
+      tags.push_back(GP);
+      tags.push_back(GP);
       dims.push_back(HOMMEXX_NP);
       dims.push_back(HOMMEXX_NP);
       break;
@@ -196,18 +196,17 @@ create_tgt_layout (const FieldLayout& src_layout) const {
     case LayoutType::Vector3D:
     case LayoutType::Tensor3D:
       {
-        // Replace last tag/tim with GP/NP, then push back GP/NP and VL/nvl
+        // Replace last tag/tim with GP/NP, then push back GP/NP and LEV/nvl
 
         // Note down num levels
-        const int nvl = dims.back();
-        tags.back() = SFTN::GP;
+        tags.back() = GP;
         dims.back() = HOMMEXX_NP;
 
-        tags.push_back(SFTN::GP);
+        tags.push_back(GP);
         dims.push_back(HOMMEXX_NP);
 
-        tags.push_back(SFTN::VL);
-        dims.push_back(nvl);
+        tags.push_back(src_layout.tags().back()); // LEV or ILEV
+        dims.push_back(src_layout.dims().back()); // nlev or nlev+1
         break;
       }
     default:

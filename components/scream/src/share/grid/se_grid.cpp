@@ -83,6 +83,7 @@ SEGrid::get_3d_scalar_layout (const bool midpoints) const
   using namespace ShortFieldTagsNames;
 
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
+  auto VL = midpoints ? LEV : ILEV;
 
   return FieldLayout({EL,GP,GP,VL},{m_num_local_elem,m_num_gp,m_num_gp,nvl});
 }
@@ -93,6 +94,7 @@ SEGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, c
   using namespace ShortFieldTagsNames;
 
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
+  auto VL = midpoints ? LEV : ILEV;
 
   return FieldLayout({EL,vector_tag,GP,GP,VL},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp,nvl});
 }

@@ -41,8 +41,8 @@ TEST_CASE("field_identifier", "") {
   REQUIRE(false); // force this test to fail
 #endif
 
-  std::vector<FieldTag> tags1 = {EL, VL, CMP};
-  std::vector<FieldTag> tags2 = {EL, CMP, VL};
+  std::vector<FieldTag> tags1 = {EL, LEV, CMP};
+  std::vector<FieldTag> tags2 = {EL, CMP, LEV};
 
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 4, 3};
@@ -88,7 +88,7 @@ TEST_CASE("field", "") {
   using P8 = ekat::Pack<Real,8>;
   using P16 = ekat::Pack<Real,16>;
 
-  std::vector<FieldTag> tags = {COL,VL};
+  std::vector<FieldTag> tags = {COL,LEV};
   std::vector<int> dims = {3,24};
 
   FieldIdentifier fid ("field_1", {tags,dims}, m/s,"some_grid");
@@ -186,7 +186,7 @@ TEST_CASE("field", "") {
 
   // Subfields
   SECTION ("subfield") {
-    std::vector<FieldTag> t1 = {COL,VAR,CMP,VL};
+    std::vector<FieldTag> t1 = {COL,VAR,CMP,LEV};
     std::vector<int> d1 = {3,10,2,24};
 
     FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
@@ -262,8 +262,8 @@ TEST_CASE("field_repo", "") {
 
   std::vector<FieldTag> tags1 = {EL, GP, GP};
   std::vector<FieldTag> tags2 = {COL};
-  std::vector<FieldTag> tags3 = {VL};
-  std::vector<FieldTag> tags4 = {COL,VL};
+  std::vector<FieldTag> tags3 = {ILEV};
+  std::vector<FieldTag> tags4 = {COL,LEV};
 
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 3, 3};
@@ -380,7 +380,7 @@ TEST_CASE("tracers_bundle", "") {
   const int ncols = 4;
   const int nlevs = 7;
 
-  std::vector<FieldTag> tags = {COL,VL};
+  std::vector<FieldTag> tags = {COL,LEV};
   std::vector<int> dims = {ncols,nlevs};
 
   const auto nondim = Units::nondimensional();
@@ -483,8 +483,9 @@ TEST_CASE("field_property_check", "") {
 
   using namespace scream;
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
-  std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::VerticalLevel};
+  std::vector<FieldTag> tags = {EL, GP, LEV};
   std::vector<int> dims = {2, 3, 12};
 
   FieldIdentifier fid ("field_1",{tags,dims}, m/s,"some_grid");

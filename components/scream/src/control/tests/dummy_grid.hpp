@@ -9,8 +9,8 @@ namespace scream {
  * The dummy remapper has limited abilities. It can only handle
  * rank 1 and rank 2 fields, from 'Point Grid A' and 'Point Grid B'.
  * Rank 1 fields are simply deep-copied, while rank 2 fields get
- * their layout swapped during remap (meaning a (COL,VL) field
- * is remapped into a (VL,COL) field).
+ * their layout swapped during remap (meaning a (COL,LEV) field
+ * is remapped into a (LEV,COL) field).
  */
 
 template<typename RealType>

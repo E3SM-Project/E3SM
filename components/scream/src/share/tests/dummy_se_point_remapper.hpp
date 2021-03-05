@@ -56,9 +56,9 @@ public:
       case 3:
         return FieldLayout (TV{COL},IV{ncol});
       case 4:
-        return FieldLayout (TV{COL,VL},IV{ncol,tgt.dim(3)});
+        return FieldLayout (TV{COL,tgt.tags().back()},IV{ncol,tgt.dim(3)});
       case 5:
-        return FieldLayout (TV{COL,CMP,VL},IV{ncol,tgt.dim(1),tgt.dim(4)});
+        return FieldLayout (TV{COL,CMP,tgt.tags().back()},IV{ncol,tgt.dim(1),tgt.dim(4)});
       default:
         return FieldLayout (TV{},IV{});
     }
@@ -81,7 +81,7 @@ public:
       case 2:
         return FieldLayout (TV{EL,GP,GP,src.tag(1)},IV{nele,4,4,src.dim(1)});
       case 3:
-        return FieldLayout (TV{EL,CMP,GP,GP,VL},IV{nele,src.dim(1),4,4,src.dim(2)});
+        return FieldLayout (TV{EL,CMP,GP,GP,src.tags().back()},IV{nele,src.dim(1),4,4,src.dim(2)});
       default:
         return FieldLayout (TV{},IV{});
     }
