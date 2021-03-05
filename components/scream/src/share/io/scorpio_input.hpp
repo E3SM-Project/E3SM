@@ -28,7 +28,7 @@
  *  files that will be opened, read and closed within the same timestep and only
  *  store one timesnap of data.
  *
- *  Note: the init, run and finalize are separate routines that are outward facing in
+ *  Note: the init, and finalize are separate routines that are outward facing in
  *  this class to facilitate cases where reading input over some number of simulation
  *  timesteps is possible.
  *
@@ -107,7 +107,11 @@ public:
 
   // Main Functions
   void pull_input();
-  void pull_input(const std::string& name, view_type view_out);
+  view_type pull_input(const std::string& name);  // Used by scorpio_output when handling restart history files.
+  // var_dims is a list of tags for each of the physical dimensions of this variable.
+  // dim_lens is a vector of the physical dimension lengths without any padding, in other words
+  // dim_lens is a vector of integer for the physical length of each of the tags in var_dims.
+  // one last way to think of dim_lens would be the array dimensions lengths if ValueType=Real (no padding)
   void pull_input(const std::string& filename, const std::string& var_name, const std::vector<std::string>& var_dims,
                   const bool has_columns, const std::vector<int>& dim_lens, const int padding, Real* data);
 
@@ -124,7 +128,6 @@ public:
     pull_input(filename, var_name, var_dims, has_columns, dim_lens, padding, data_real);
   }
   void init();
-  view_type run(const std::string& name);
   void finalize();
 
   // Helper Functions
@@ -134,7 +137,6 @@ protected:
   // Internal functions
   void register_variables();
   void set_degrees_of_freedom();
-  void register_views();
   std::vector<std::string> get_vec_of_dims(const std::vector<FieldTag>& tags);
   std::string get_io_decomp(const std::vector<std::string>& vec_of_dims);
   std::vector<Int> get_var_dof(const int dof_len, const bool has_cols);
@@ -151,7 +153,7 @@ protected:
   std::vector<std::string>               m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
-  std::map<std::string,view_type>        m_view_local;
+  typename dofs_list_type::HostMirror    m_gids_host;
 
   bool m_is_init  = false;
   bool m_is_rhist = false;

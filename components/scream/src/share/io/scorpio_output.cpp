@@ -85,11 +85,10 @@ void AtmosphereOutput::init()
     rhist_in.init();
     for (auto name : m_fields)
     {
-      auto l_view = m_view_local.at(name);
-      rhist_in.pull_input(name,l_view);
+      auto l_view = rhist_in.pull_input(name);
+      Kokkos::deep_copy(m_view_local.at(name),l_view);
     }
-    view_type avg_count("",1);
-    rhist_in.pull_input("avg_count",avg_count);
+    auto avg_count = rhist_in.pull_input("avg_count");
     m_status["Avg Count"] = avg_count(0);
     rhist_in.finalize();
   }
@@ -192,11 +191,11 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
   for (auto const& name : m_fields)
   {
     // Get all the info for this field.
-    auto fmap = m_field_repo->get_field(name, m_grid_name);
-    auto view_d = fmap.get_view();
+    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto view_d = field.get_view();
     auto g_view = Kokkos::create_mirror_view( view_d );
     Kokkos::deep_copy(g_view, view_d);
-    Int  f_len  = fmap.get_header().get_identifier().get_layout().size();
+    Int  f_len  = field.get_header().get_identifier().get_layout().size();
     auto l_view = m_view_local.at(name);
     // The next two operations do not need to happen if the frequency of output is instantaneous.
     if (m_avg_type == "Instant")
@@ -220,8 +219,8 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
       }
     } // m_avg_type != "Instant"
     if (is_write) {
-      auto l_dims = fmap.get_header().get_identifier().get_layout().dims();
-      Int padding = fmap.get_header().get_alloc_properties().get_padding();
+      auto l_dims = field.get_header().get_identifier().get_layout().dims();
+      Int padding = field.get_header().get_alloc_properties().get_padding();
       grid_write_data_array(filename,name,l_dims,m_dofs.at(name),padding,l_view.data());
       if (is_typical) { 
         for (int ii=0; ii<f_len; ++ii) { l_view(ii) = g_view(ii); }  // Reset local view after writing.  Only for typical output.
@@ -304,12 +303,11 @@ void AtmosphereOutput::register_views()
   // Cycle through all fields and register.
   for (auto const& name : m_fields)
   {
-    auto fmap = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_repo->get_field(name, m_grid_name);
     // If the "averaging type" is instant then just need a ptr to the view.
-    auto view_d = fmap.get_view();
+    auto view_d = field.get_view();
     // Create a local copy of view to be stored by output stream.
-    auto view_copy_h = Kokkos::create_mirror_view( view_d );
-    view_type view_copy("",view_copy_h.extent(0));
+    view_type view_copy("",view_d.extent(0));
     Kokkos::deep_copy(view_copy, view_d);
     m_view_local.emplace(name,view_copy);
   }
@@ -323,8 +321,8 @@ void AtmosphereOutput::register_variables(const std::string& filename)
   // Cycle through all fields and register.
   for (auto const& name : m_fields)
   {
-    auto fmap = m_field_repo->get_field(name, m_grid_name);
-    auto& fid  = fmap.get_header().get_identifier();
+    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto& fid  = field.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
     std::vector<std::string> vec_of_dims;
@@ -350,8 +348,8 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
   // Cycle through all fields and set dof.
   for (auto const& name : m_fields)
   {
-    auto fmap = m_field_repo->get_field(name, m_grid_name);
-    auto& fid  = fmap.get_header().get_identifier();
+    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto& fid  = field.get_header().get_identifier();
     // bool has_cols = true;
     Int dof_len, n_dim_len, num_cols;
     // Total number of values represented by this rank for this field is given by the field_layout size.

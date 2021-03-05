@@ -17,6 +17,10 @@ void AtmosphereInput::pull_input(const std::string& filename, const std::string&
   using namespace scream;
   using namespace scream::scorpio;
 
+  
+  auto gids_dev = m_gm->get_grid(m_grid_name)->get_dofs_gids();
+  m_gids_host = Kokkos::create_mirror_view( gids_dev );
+  Kokkos::deep_copy(m_gids_host,gids_dev);
   // Open the file in PIO
   register_infile(filename);
   // Register the variable information in PIO
@@ -32,7 +36,7 @@ void AtmosphereInput::pull_input(const std::string& filename, const std::string&
   eam_pio_closefile(filename);  
 }
 /* ---------------------------------------------------------- */
-void AtmosphereInput::pull_input(const std::string& name, view_type view_out)
+AtmosphereInput::view_type AtmosphereInput::pull_input(const std::string& name)
 {
 /*  Run through the sequence of opening the file, reading input and then closing the file.  
  *  Overloaded case to deal with just one output and to not put output into field repo.
@@ -40,8 +44,18 @@ void AtmosphereInput::pull_input(const std::string& name, view_type view_out)
  *  to be opened and closed multiple times if there is more than one variable.  TODO: Make this
  *  a lot more efficient, most likely will need to overhaul the "pull_input" paradigm.
  */
-  auto l_view = run(name);
-  Kokkos::deep_copy(view_out,l_view);
+  using namespace scream;
+  using namespace scream::scorpio;
+  if (name=="avg_count") {
+    view_type l_view("",1);
+    grid_read_data_array(m_filename,name,m_dofs.at(name),l_view.data());
+    return l_view;
+  } else {
+    auto field = m_field_repo->get_field(name, m_grid_name);
+    view_type l_view("",field.get_view().extent(0));
+    grid_read_data_array(m_filename,name,m_dofs.at(name),l_view.data());
+    return l_view;
+  }
 } 
 /* ---------------------------------------------------------- */
 void AtmosphereInput::pull_input()
@@ -52,14 +66,12 @@ void AtmosphereInput::pull_input()
   init();
   for (auto const& name : m_fields)
   {
-    auto fmap = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_repo->get_field(name, m_grid_name);
     // Get all the info for this field.
-    auto l_view_dev = fmap.get_view();
-    view_type l_view = m_view_local.at(name);
-    auto l_dims = fmap.get_header().get_identifier().get_layout().dims();
-    Int padding = fmap.get_header().get_alloc_properties().get_padding();
-    grid_read_data_array(m_filename,name,l_dims,m_dofs.at(name),padding,l_view.data());
-    Kokkos::deep_copy(l_view_dev,l_view);
+    auto l_dims = field.get_header().get_identifier().get_layout().dims();
+    Int padding = field.get_header().get_alloc_properties().get_padding();
+    grid_read_data_array(m_filename,name,l_dims,m_dofs.at(name),padding,field.get_view<Host>().data());
+    field.sync_to_dev();
   }
   finalize();
 } 
@@ -88,11 +100,11 @@ void AtmosphereInput::init()
   // Check setup against information from grid manager:
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with input grid! scorpio_input.hpp class only supports input on a Physics grid for now.\n");
   auto gids_dev = m_gm->get_grid(m_grid_name)->get_dofs_gids();
-  auto gids_hst = Kokkos::create_mirror_view( gids_dev );
-  Kokkos::deep_copy(gids_hst,gids_dev); 
+  m_gids_host = Kokkos::create_mirror_view( gids_dev );
+  Kokkos::deep_copy(m_gids_host,gids_dev); 
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
   int total_dofs;
-  int local_dofs = gids_hst.size();
+  int local_dofs = m_gids_host.size();
   MPI_Allreduce(&local_dofs, &total_dofs, 1, MPI_INT, MPI_SUM, m_comm.mpi_comm());
   EKAT_REQUIRE_MSG(m_comm.size()<=total_dofs,"Error, PIO interface only allows for the IO comm group size to be less than or equal to the total # of columns in grid.  Consider decreasing size of IO comm group.\n");
 
@@ -105,9 +117,6 @@ void AtmosphereInput::init()
     m_fields.push_back(var_name);
   }
 
-  // Now that the fields have been gathered register the local views which will be used to determine output data to be written.
-  register_views();
-
   // Register new netCDF file for input.
   register_infile(m_filename);
 
@@ -119,18 +128,6 @@ void AtmosphereInput::init()
   set_decomp  (m_filename); 
 
 } // init
-/* ---------------------------------------------------------- */
-AtmosphereInput::view_type AtmosphereInput::run(const std::string& name)
-{
-/* Load data from the input file */
-  using namespace scream;
-  using namespace scream::scorpio;
-
-    view_type l_view_host = m_view_local.at(name);
-    grid_read_data_array(m_filename,name,m_dofs.at(name),l_view_host.data());
-    return l_view_host;
-
-} // run
 /* ---------------------------------------------------------- */
 void AtmosphereInput::finalize() 
 {
@@ -152,8 +149,8 @@ void AtmosphereInput::register_variables()
   // Cycle through all fields and register.
   for (auto const& name : m_fields)
   {
-    auto fmap = m_field_repo->get_field(name, m_grid_name);
-    auto& fid  = fmap.get_header().get_identifier();
+    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto& fid  = field.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::vector<std::string> vec_of_dims = get_vec_of_dims(fid.get_layout().tags());
     std::string io_decomp_tag           = get_io_decomp(vec_of_dims);
@@ -188,30 +185,6 @@ std::string AtmosphereInput::get_io_decomp(const std::vector<std::string>& vec_o
   return io_decomp_tag;
 }
 /* ---------------------------------------------------------- */
-void AtmosphereInput::register_views()
-{
-  using namespace scream;
-  using namespace scream::scorpio;
-
-  // Cycle through all fields and register.
-  for (auto const& name : m_fields)
-  {
-    auto fmap = m_field_repo->get_field(name, m_grid_name);
-    // If the "averaging type" is instant then just need a ptr to the view.
-    auto view_d = fmap.get_view();
-    // Create a local copy of view to be stored by input stream.
-    auto view_copy_h = Kokkos::create_mirror_view( view_d );
-    view_type view_copy("",view_copy_h.extent(0));
-    Kokkos::deep_copy(view_copy, view_d);
-    m_view_local.emplace(name,view_copy);
-  }
-  if (m_is_rhist)
-  {
-    view_type l_view("",1);
-    m_view_local.emplace("avg_count",l_view);
-  }
-}
-/* ---------------------------------------------------------- */
 void AtmosphereInput::set_degrees_of_freedom()
 {
 /* 
@@ -223,8 +196,8 @@ void AtmosphereInput::set_degrees_of_freedom()
   // Cycle through all fields and set dof.
   for (auto const& name : m_fields)
   {
-    auto fmap = m_field_repo->get_field(name, m_grid_name);
-    auto& fid  = fmap.get_header().get_identifier();
+    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto& fid  = field.get_header().get_identifier();
     // Given dof_len and n_dim_len it should be possible to create an integer array of "global input indices" for this
     // field and this rank. For every column (i.e. gid) the PIO indices would be (gid * n_dim_len),...,( (gid+1)*n_dim_len - 1).
     std::vector<Int> var_dof = get_var_dof(fid.get_layout().size(), fid.get_layout().has_tag(FieldTag::Column));
@@ -249,14 +222,11 @@ std::vector<Int> AtmosphereInput::get_var_dof(const int dof_len, const bool has_
   // Gather the column degrees of freedom for this variable
   // Total number of values represented by this rank for this field is given by the dof_len.
   // For a SCREAM Physics grid, only the total number of columns is decomposed over MPI ranks.  The global id (gid)
-  // is stored here as gids_hst. Thus, for this field, the total number of dof's in the other dimensions (i.e. levels)
-  // can be found by taking the quotient of dof_len and the length of gids_hst.
-  auto gids_dev = m_gm->get_grid(m_grid_name)->get_dofs_gids();
-  auto gids_hst = Kokkos::create_mirror_view( gids_dev );
-  Kokkos::deep_copy(gids_hst,gids_dev);
+  // is stored here as gids_host. Thus, for this field, the total number of dof's in the other dimensions (i.e. levels)
+  // can be found by taking the quotient of dof_len and the length of gids_host.
   if (has_cols)
   {
-    num_cols = gids_hst.size();
+    num_cols = m_gids_host.size();
   } else {
     // This field is not defined over columns
     // TODO, when we allow for dynamics mesh this check will need to be adjusted for the element tag as well.
@@ -268,7 +238,7 @@ std::vector<Int> AtmosphereInput::get_var_dof(const int dof_len, const bool has_
   {
     for (int jj=0;jj<n_dim_len;++jj)
     {
-      var_dof.push_back(gids_hst(ii)*n_dim_len + jj);
+      var_dof.push_back(m_gids_host(ii)*n_dim_len + jj);
     }
   }
   return var_dof; 
