@@ -147,7 +147,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       }
     }
     // Initialize data structure for bridging to F90
-    ShocMainData SDS(shcol,nlev,nlevi,num_qtracers,dtime,nadv);
+    ShocMainData SDS(shcol,nlev,nlevi,num_qtracers,dtime,nadv,0,0);
 
     // Test the inputs are good
     REQUIRE(SDS.shcol == shcol);
@@ -317,14 +317,17 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
   static void run_bfb()
   {
     ShocMainData f90_data[] = {
-      // shcol, nlev, nlevi, num_qtracers, dtime, nadv
-      ShocMainData(12, 72, 73,  5, 5, 15),
-      ShocMainData(8,  12, 13,  3, 6, 10),
-      ShocMainData(7,  16, 17,  3, 1,  1),
-      ShocMainData(2,   7,  8,  2, 1,  5)
+      // shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++ indexing)
+      ShocMainData(12, 72, 73,  5, 5, 15, 72, 0),
+      ShocMainData(8,  12, 13,  3, 6, 10, 8, 3),
+      ShocMainData(7,  16, 17,  3, 1,  1, 12, 0),
+      ShocMainData(2,   7,  8,  2, 1,  5, 7, 4)
     };
 
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocMainData);
+
     // Generate random input data
+    int count = 0;
     for (auto& d : f90_data) {
       d.randomize({{d.presi, {700e2,1000e2}},
                    {d.tkh, {3,20}},
@@ -335,8 +338,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       // Allows interpolated values to stay withing
       // reasonable range, avoiding errors in
       // shoc_assumed_pdf.
-      const Real upper = 10;
-      const Real lower = 0;
+      Real upper = 10;
+      Real lower = 0;
       for (Int s = 0; s < d.shcol; ++s) {
         for (Int k=0; k<d.nlevi; ++k) {
           const auto zi_k = upper - k*(upper-lower)/(d.nlevi-1);
@@ -347,6 +350,32 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
             d.zt_grid[k+s*d.nlev] = 0.5*(zi_k + zi_kp1);
           }
         }
+      }
+
+      // 3 types of pref_mid ranges:
+      std::pair<Real,Real> pref_mid_range;
+      if (count == 0) {
+        // all(pref_mid) >= pblmaxp
+        pref_mid_range.first  = 1e5;
+        pref_mid_range.second = 8e5;
+      }
+      else if (count == 1) {
+        // all(pref_mid) < pblmaxp
+        pref_mid_range.first  = 1e3;
+        pref_mid_range.second = 8e3;
+      }
+      else {
+        // both pref_mid >= pblmaxp and pref_mid < pblmaxp values
+        pref_mid_range.first  = 1e4;
+        pref_mid_range.second = 8e4;
+      }
+      ++count;
+
+      // pref_mid must be monotonically increasing
+      upper = pref_mid_range.first;
+      lower = pref_mid_range.second;
+      for (Int k=0; k<d.nlev; ++k) {
+        d.pref_mid[k] = upper - k*(upper-lower)/(d.nlev-1);
       }
     }
 
@@ -364,13 +393,15 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     // Get data from fortran
     for (auto& d : f90_data) {
       // expects data in C layout
-      shoc_main(d);
+      shoc_main_with_init(d);
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      shoc_main_f(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, d.host_dx, d.host_dy,
+      const int npbl = shoc_init_f(d.nlev, d.pref_mid, d.nbot_shoc, d.ntop_shoc);
+
+      shoc_main_f(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, npbl, d.host_dx, d.host_dy,
                   d.thv, d.zt_grid, d.zi_grid, d.pres, d.presi, d.pdel, d.wthl_sfc,
                   d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.wtracer_sfc, d.num_qtracers,
                   d.w_field, d.exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw,
@@ -383,7 +414,6 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
 
     // Verify BFB results, all data should be in C layout
 #ifndef NDEBUG
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocMainData);
     for (Int i = 0; i < num_runs; ++i) {
       ShocMainData& d_f90 = f90_data[i];
       ShocMainData& d_cxx = cxx_data[i];

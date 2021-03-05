@@ -574,6 +574,12 @@ struct Functions
     const uview_1d<Spack>&       rdp_zt);
 
   KOKKOS_FUNCTION
+  static Int shoc_init(
+    const Int&                  nbot_shoc,
+    const Int&                  ntop_shoc,
+    const view_1d<const Spack>& pref_mid);
+
+  KOKKOS_FUNCTION
   static void shoc_main_internal(
     const MemberType&            team,
     const Int&                   nlev,         // Number of levels
