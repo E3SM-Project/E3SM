@@ -125,7 +125,7 @@ contains
       ! appied to bottom layer only.
       ! This term comes from the bottom boundary condition in the vertical
       ! momentum mixing, and is explicit if both |u| and u are chosen to be at
-      ! time level n. 
+      ! time level n.
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
@@ -141,9 +141,11 @@ contains
         cell2 = cellsOnEdge(2,iEdge)
         k =  maxLevelEdgeTop(iEdge)
 
-        tend(k,iEdge) = tend(k,iEdge) - dragCoeff* & 
-                        sqrt(KECell(k,cell1) + KECell(k,cell2))* &
-                        normVelocity(k,iEdge)/layerThickEdge(k,iEdge)
+        if (k > 0) then
+           tend(k,iEdge) = tend(k,iEdge) - dragCoeff* &
+                           sqrt(KECell(k,cell1) + KECell(k,cell2))* &
+                           normVelocity(k,iEdge)/layerThickEdge(k,iEdge)
+        end if
 
       enddo
 #ifndef MPAS_OPENACC
