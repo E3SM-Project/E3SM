@@ -1524,7 +1524,9 @@
 
 <se_partmethod> 4 </se_partmethod>
 <se_topology> "cube" </se_topology>
+<se_topology dpcrm_mode="1"> "planar" </se_topology>
 <se_geometry> "sphere" </se_geometry>
+<se_geometry dpcrm_mode="1"> "planar" </se_geometry>
 <se_ne_x> -1 </se_ne_x>
 <se_ne_y> -1 </se_ne_y>
 <se_lx> 0.0 </se_lx>
