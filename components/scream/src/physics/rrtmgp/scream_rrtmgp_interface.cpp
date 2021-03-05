@@ -1,12 +1,12 @@
 #include "scream_rrtmgp_interface.hpp"
 #include "mo_load_coefficients.h"
 #include "mo_load_cloud_coefficients.h"
-#include "mo_gas_concentrations.h"
-#include "mo_gas_optics_rrtmgp.h"
-#include "mo_cloud_optics.h"
-#include "mo_rte_sw.h"
-#include "mo_rte_lw.h"
-#include "const.h"
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
+#include "cpp/rrtmgp/mo_gas_optics_rrtmgp.h"
+#include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
+#include "cpp/rte/mo_rte_sw.h"
+#include "cpp/rte/mo_rte_lw.h"
+#include "cpp/const.h"
 
 namespace scream {
     namespace rrtmgp {
@@ -44,7 +44,7 @@ namespace scream {
          * objects. So we will initialize once, and then just update values
          * at runtime.
          */
-        GasConcs gas_concs;
+        //GasConcs gas_concs;
 
         bool initialized = false;
 
@@ -53,38 +53,17 @@ namespace scream {
          * can be used as-is, but are intended to be wrapped by the SCREAM AD
          * interface to radiation.
          */
-        void rrtmgp_initialize(int ngas, const std::string gas_names[]) {
+        void rrtmgp_initialize(GasConcs &gas_concs) {
 
-            /* If we've already initialized, just exit */
+            // If we've already initialized, just exit
             if (initialized) { 
                 std::cout << "RRTMGP is already initialized; skipping\n";
                 return; 
             }
 
-            /* Initialize YAKL */
+            // Initialize YAKL
             if (!yakl::isInitialized()) {
                 yakl::init();
-            }
-
-            /* 
-             * Names of active gases
-             * TODO: this should come from the calling program! This is the list
-             * of gases that the model will use, not necessarily the complete
-             * list of gases that RRTMGP knows about.
-             * NOTE: YAKL uses 1-based indexing!!!!
-             */
-            string1d gas_names_1d("gas_names",ngas);
-            for (int igas = 1; igas <= ngas; igas++) {
-                gas_names_1d(igas) = gas_names[igas-1];
-            }
-
-            // Initialize GasConcs object but populate with dummy values 
-            int ncol = 128;
-            int nlay = 42;
-            GasConcs gas_concs;
-            gas_concs.init(gas_names_1d,ncol,nlay);
-            for (int igas = 1; igas < ngas+1; igas++) {
-                gas_concs.set_vmr(gas_names_1d(igas), 0.0);
             }
 
             // Load and initialize absorption coefficient data
@@ -115,7 +94,7 @@ namespace scream {
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
                 real2d &lw_flux_up, real2d &lw_flux_dn) {
 
-            // Setup pointers to RRTMGP Sw fluxes
+            // Setup pointers to RRTMGP SW fluxes
             FluxesBroadband fluxes_sw;
             fluxes_sw.flux_up = sw_flux_up;
             fluxes_sw.flux_dn = sw_flux_dn;
@@ -132,13 +111,15 @@ namespace scream {
 
             // Do shortwave
             rrtmgp_sw(
-                    k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, 
-                    sfc_alb_dir, sfc_alb_dif, mu0, clouds_sw, fluxes_sw);
+                k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, 
+                sfc_alb_dir, sfc_alb_dif, mu0, clouds_sw, fluxes_sw
+            );
 
             // Do longwave
             rrtmgp_lw(
-                    k_dist_lw, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry,
-                    clouds_lw, fluxes_lw);
+                k_dist_lw, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry,
+                clouds_lw, fluxes_lw
+            );
             
             // Calculate heating rates
         }
@@ -154,7 +135,7 @@ namespace scream {
             // Initialize optics
             OpticalProps2str clouds;
             clouds.init(kdist.get_band_lims_wavenumber());
-            clouds.alloc_2str(ncol, nlay);  // this is dumb, why do we need to init and alloc separately?!
+            clouds.alloc_2str(ncol, nlay);
 
             // Needed for consistency with all-sky example problem?
             cloud_optics.set_ice_roughness(2);
@@ -210,7 +191,9 @@ namespace scream {
 
             // Do gas optics
             real2d toa_flux("toa_flux", ncol, ngpt);
-            bool top_at_1 = p_lay(1, 1) < p_lay(1, nlay);
+            auto p_lay_host = p_lay.createHostCopy();
+            bool top_at_1 = p_lay_host(1, 1) < p_lay_host(1, nlay);
+
             k_dist.gas_optics(top_at_1, p_lay, p_lev, t_lay, gas_concs, optics, toa_flux);
 
             // Combine gas and cloud optics
@@ -245,13 +228,13 @@ namespace scream {
             real2d emis_sfc("emis_sfc",nbnd,ncol);
 
             // Surface temperature
-            bool top_at_1 = p_lay(1, 1) < p_lay(1, nlay);
+            auto p_lay_host = p_lay.createHostCopy();
+            bool top_at_1 = p_lay_host(1, 1) < p_lay_host(1, nlay);
             auto t_lev_host = t_lev.createHostCopy();
             memset( t_sfc    , t_lev_host(1, merge(nlay+1, 1, top_at_1)) );
             memset( emis_sfc , 0.98_wp                                   );
 
             // Do gas optics
-            //k_dist.gas_optics(top_at_1, p_lay, p_lev, t_lay, gas_concs, optics, toa_flux);
             k_dist.gas_optics(top_at_1, p_lay, p_lev, t_lay, t_sfc, gas_concs, optics, lw_sources, real2d(), t_lev);
 
             // Combine gas and cloud optics

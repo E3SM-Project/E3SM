@@ -105,6 +105,11 @@ else()
   set(CUDA_BUILD FALSE)
 endif ()
 
+# Add CUDA as a language for CUDA builds
+if (CUDA_BUILD)
+    enable_language(CUDA)
+endif()
+
 ### Scream default configuration options
 set(DEFAULT_MAX_RANKS 4)
 set(DEFAULT_MAX_THREADS 16)

@@ -1,3 +1,5 @@
+#ifndef SIMPLE_NETCDF_HPP
+#define SIMPLE_NETCDF_HPP
 #include <netcdf.h>
 #include "YAKL.h"
 
@@ -248,7 +250,11 @@ namespace simple_netcdf {
                 }
 
                 // Write data to file
-                putVar(arr.data(), varName);
+                if (myMem == memDevice) {
+                    putVar(arr.createHostCopy().data(), varName);
+                } else {
+                    putVar(arr.data(), varName);
+                }
             }
 
             template <class T> void write(T arr, std::string varName) {
@@ -282,3 +288,4 @@ namespace simple_netcdf {
     };  // class SimpleNetCDF
 
 } // namespace simple_netcdf
+#endif

@@ -1,10 +1,9 @@
 #ifndef SCREAM_RRTMGP_INTERFACE_HPP
 #define SCREAM_RRTMGP_INTERFACE_HPP
 
-#include "ekat/ekat_assert.hpp"
-#include "mo_gas_optics_rrtmgp.h"
-#include "mo_cloud_optics.h"
-#include "mo_fluxes.h"
+#include "cpp/rrtmgp/mo_gas_optics_rrtmgp.h"
+#include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
+#include "cpp/rte/mo_fluxes.h"
 
 namespace scream {
     namespace rrtmgp {
@@ -23,9 +22,13 @@ namespace scream {
         extern CloudOptics cloud_optics_sw;
         extern CloudOptics cloud_optics_lw;
         /*
+         * Flag to indicate whether or not we have initialized RRTMGP
+         */
+        extern bool initialized;
+        /*
          * Initialize data for RRTMGP driver
          */
-        extern void rrtmgp_initialize(int ngas, const std::string gas_names[]);
+        extern void rrtmgp_initialize(GasConcs &gas_concs);
         /*
          * Main driver code to run RRTMGP
          */

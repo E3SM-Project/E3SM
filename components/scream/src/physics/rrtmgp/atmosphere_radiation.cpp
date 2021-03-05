@@ -2,7 +2,8 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_inputs_initializer.hpp"
-#include "mo_gas_concentrations.h"
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
+#include "YAKL/YAKL.h"
 
 namespace scream {
     RRTMGPRadiation::RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params) 
@@ -11,11 +12,7 @@ namespace scream {
          * Anything that can be initialized without grid information can be initialized here.
          * I.e., universal constants, options, etc.
          */
-          if (!m_rrtmgp_params.isParameter("Grid")) {
-              m_rrtmgp_params.set("Grid",std::string("SE Physics"));
-          }
-
-          m_initializer = create_field_initializer<RRTMGPInputsInitializer>();
+        m_initializer = create_field_initializer<RRTMGPInputsInitializer>();
     }  // RRTMGPRadiation::RRTMGPRadiation
 
     void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -25,7 +22,6 @@ namespace scream {
         auto kgkg = kg/kg;
         kgkg.set_string("kg/kg");
         auto m3 = m * m * m;
-        m3.set_string("m3");
         auto Wm2 = W / m / m;
         Wm2.set_string("Wm2");
         auto nondim = m/m;  // dummy unit for non-dimensional fields
@@ -37,16 +33,16 @@ namespace scream {
         auto CMP = FieldTag::Component;
 
         auto grid = grids_manager->get_grid("Physics");
-        ncol = grid->get_num_local_dofs();
-        nlay = grid->get_num_vertical_levels();
+        m_ncol = grid->get_num_local_dofs();
+        m_nlay = grid->get_num_vertical_levels();
 
         // Set up dimension layouts
-        FieldLayout scalar2d_layout     { {COL   }, {ncol    } };
-        FieldLayout scalar3d_layout_mid { {COL,VL}, {ncol,nlay} };
-        FieldLayout scalar3d_layout_int { {COL,VL}, {ncol,nlay+1} };
+        FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };
+        FieldLayout scalar3d_layout_mid { {COL,VL}, {m_ncol,m_nlay} };
+        FieldLayout scalar3d_layout_int { {COL,VL}, {m_ncol,m_nlay+1} };
         // Use VAR field tag for gases for now; consider adding a tag?
-        FieldLayout gas_layout          { {VAR,COL,VL}, {ngas,ncol,nlay} };
-        FieldLayout scalar2d_swband_layout { {CMP,COL}, {nswbands,ncol} };
+        FieldLayout gas_layout          { {VAR,COL,VL}, {m_ngas,m_ncol,m_nlay} };
+        FieldLayout scalar2d_swband_layout { {CMP,COL}, {m_nswbands,m_ncol} };
 
         // Set required (input) fields here
         m_required_fields.emplace("pmid" , scalar3d_layout_mid, Pa, grid->name());
@@ -73,6 +69,22 @@ namespace scream {
     }  // RRTMGPRadiation::set_grids
 
     void RRTMGPRadiation::initialize_impl(const util::TimeStamp& t0) {
+        // Names of active gases
+        // TODO: this needs to be not hard-coded...I wanted to get these from
+        // input files, but need to get around the rrtmgp_initializer logic.
+        // Maybe can store the gas names somewhere else?
+        string1d gas_names_1d("gas_names",m_ngas);
+        for (int igas = 1; igas <= m_ngas; igas++) {
+            gas_names_1d(igas) = m_gas_names[igas-1];
+        }
+
+        // Initialize GasConcs object to pass to RRTMGP initializer;
+        // This is just to provide gas names
+        // Make GasConcs from gas_vmr and gas_names_1d
+        GasConcs gas_concs;
+        gas_concs.init(gas_names_1d,1,1);
+        rrtmgp::rrtmgp_initialize(gas_concs);
+
         // We may have to init some fields from within RRTMGP. This can be the case in a RRTMGP standalone run.
         // Some options:
         //  - we can tell RRTMGP it can init all inputs or specify which ones it can init. We call the
@@ -118,14 +130,12 @@ namespace scream {
                 "       RRTMGP was requested to init either all or none of the inputs.\n"
             );
         }
-        rrtmgp::rrtmgp_initialize(ngas, gas_names);
     }
 
     void RRTMGPRadiation::run_impl      (const Real dt) {
         // Get data from AD; RRTMGP wants YAKL views
         // TODO: how can I just keep these around without having to create every time?
         // They are just pointers, so should be able to keep them somewhere else and just associate them once?
-
         // Get device views
         auto d_pmid = m_rrtmgp_fields_in.at("pmid").get_view();
         auto d_pint = m_rrtmgp_fields_in.at("pint").get_view();
@@ -147,42 +157,42 @@ namespace scream {
         auto d_lw_flux_dn = m_rrtmgp_fields_out.at("lw_flux_dn").get_view();
  
         // Map to YAKL
-        yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay  ("p_lay", const_cast<Real*>(d_pmid.data()), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay  ("t_lay", const_cast<Real*>(d_tmid.data()), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev  ("p_lev",const_cast<Real*>(d_pint.data()), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> t_lev  ("t_lev",const_cast<Real*>(d_tint.data()), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> col_dry("col_dry",const_cast<Real*>(d_col_dry.data()), ncol, nlay);
-        yakl::Array<double,3,memDevice,yakl::styleFortran> gas_vmr("gas_vmr",const_cast<Real*>(d_gas_vmr.data()), ngas, ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dir("sfc_alb_dir",const_cast<Real*>(d_sfc_alb_dir.data()), nswbands, ncol);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dif("sfc_alb_dif",const_cast<Real*>(d_sfc_alb_dif.data()), nswbands, ncol);
-        yakl::Array<double,1,memDevice,yakl::styleFortran> mu0("mu0",const_cast<Real*>(d_mu0.data()), ncol);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> lwp("lwp",const_cast<Real*>(d_lwp.data()), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> iwp("iwp",const_cast<Real*>(d_iwp.data()), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> rel("rel",const_cast<Real*>(d_rel.data()), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> rei("rei",const_cast<Real*>(d_rei.data()), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_up("sw_flux_up", d_sw_flux_up.data(), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn("sw_flux_dn", d_sw_flux_dn.data(), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn_dir("sw_flux_dn_dir", d_sw_flux_dn_dir.data(), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_up("lw_flux_up", d_lw_flux_up.data(), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_dn("lw_flux_dn", d_lw_flux_dn.data(), ncol, nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay  ("p_lay", const_cast<Real*>(d_pmid.data()), m_ncol, m_nlay);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay  ("t_lay", const_cast<Real*>(d_tmid.data()), m_ncol, m_nlay);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev  ("p_lev",const_cast<Real*>(d_pint.data()), m_ncol, m_nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> t_lev  ("t_lev",const_cast<Real*>(d_tint.data()), m_ncol, m_nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> col_dry("col_dry",const_cast<Real*>(d_col_dry.data()), m_ncol, m_nlay);
+        yakl::Array<double,3,memDevice,yakl::styleFortran> gas_vmr("gas_vmr",const_cast<Real*>(d_gas_vmr.data()), m_ncol, m_nlay, m_ngas);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dir("sfc_alb_dir",const_cast<Real*>(d_sfc_alb_dir.data()), m_nswbands, m_ncol);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dif("sfc_alb_dif",const_cast<Real*>(d_sfc_alb_dif.data()), m_nswbands, m_ncol);
+        yakl::Array<double,1,memDevice,yakl::styleFortran> mu0("mu0",const_cast<Real*>(d_mu0.data()), m_ncol);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> lwp("lwp",const_cast<Real*>(d_lwp.data()), m_ncol, m_nlay);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> iwp("iwp",const_cast<Real*>(d_iwp.data()), m_ncol, m_nlay);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> rel("rel",const_cast<Real*>(d_rel.data()), m_ncol, m_nlay);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> rei("rei",const_cast<Real*>(d_rei.data()), m_ncol, m_nlay);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_up("sw_flux_up", d_sw_flux_up.data(), m_ncol, m_nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn("sw_flux_dn", d_sw_flux_dn.data(), m_ncol, m_nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn_dir("sw_flux_dn_dir", d_sw_flux_dn_dir.data(), m_ncol, m_nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_up("lw_flux_up", d_lw_flux_up.data(), m_ncol, m_nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_dn("lw_flux_dn", d_lw_flux_dn.data(), m_ncol, m_nlay+1);
 
         // Make GasConcs from gas_vmr and gas_names
         // TODO: only allocate at initialization and 
         // just update values here
-        string1d gas_names_1d("gas_names",ngas);
-        for (int igas = 1; igas <= ngas; igas++) {
-            gas_names_1d(igas) = gas_names[igas-1];
+        string1d gas_names_1d("gas_names",m_ngas);
+        for (int igas = 1; igas <= m_ngas; igas++) {
+            gas_names_1d(igas) = m_gas_names[igas-1];
         }
+        
+        // Create and populate a GasConcs object to pass to RRTMGP driver
         GasConcs gas_concs;
-        gas_concs.init(gas_names_1d,ncol,nlay);
+        gas_concs.init(gas_names_1d,m_ncol,m_nlay);
         real2d tmp2d;
-        tmp2d = real2d("tmp", ncol, nlay);
-        for (int igas = 1; igas <= ngas; igas++) {
-            for (int icol = 1; icol <= ncol; icol++) {
-                for (int ilay = 1; ilay <= nlay; ilay++) {
-                    tmp2d(icol,ilay) = gas_vmr(igas,icol,ilay);
-                }
-            }
+        tmp2d = real2d("tmp", m_ncol, m_nlay);
+        for (int igas = 1; igas <= m_ngas; igas++) {
+            parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
+                tmp2d(icol,ilay) = gas_vmr(icol,ilay,igas);
+            });
             gas_concs.set_vmr(gas_names_1d(igas), tmp2d);
         }
 

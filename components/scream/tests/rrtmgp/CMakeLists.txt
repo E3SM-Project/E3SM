@@ -1,23 +1,36 @@
 INCLUDE (ScreamUtils)
 
-# Required libraries
-set (NEED_LIBS rrtmgp scream_control scream_share yakl)
-
-set (SRC rrtmgp_stand_alone.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
-
-# Copy yaml input file to run directory
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/input.yaml COPYONLY)
-
+# Add CUDA flags for YAKL
+if (CUDA_BUILD)
+    set(ARCH "CUDA")
+    set(YAKL_CXX_FLAGS "-D__USE_CUDA__ --expt-extended-lambda --expt-relaxed-constexpr ${CUDA_FLAGS} ${YAKL_CXX_FLAGS}")
+endif()
 # Test atmosphere processes
 if (NOT ${SCREAM_BASELINES_ONLY})
+
+    # Required libraries
+    find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
+    set (NEED_LIBS scream_rrtmgp rrtmgp ${NETCDF_C} scream_control scream_share physics_share yakl)
+
+    # Add source files
+    set (SRC rrtmgp_stand_alone.cpp ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests/rrtmgp_test_utils.cpp)
+
     CreateUnitTest(
         rrtmgp_stand_alone "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics"
         EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
     )
-    set_source_files_properties("${SRC}" PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
-    target_include_directories(rrtmgp_stand_alone PUBLIC ${SCREAM_BASE_DIR}/../../externals/YAKL)
-    target_include_directories(rrtmgp_stand_alone PUBLIC ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests)
+    message(STATUS "rrtmgp_stand_alone YAKL_CXX_FLAGS: ${YAKL_CXX_FLAGS}")
+    set_target_properties(rrtmgp_stand_alone PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+    target_include_directories(rrtmgp_stand_alone PUBLIC
+          ${SCREAM_BASE_DIR}/src/physics/rrtmgp
+          ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests
+          ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp
+          ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp
+          ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp/kernels
+          ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte
+          ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels
+          ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
+    )
 
     # Copy yaml input file to run directory
     CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml

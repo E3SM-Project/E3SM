@@ -45,7 +45,8 @@ namespace scream {
             const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
             const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
 
-        protected:
+        // NOTE: cannot use lambda functions for CUDA devices if these are protected!
+        public:
             // The three main interfaces for the subcomponent
             void initialize_impl (const util::TimeStamp& t0);
             void run_impl        (const Real dt);
@@ -84,17 +85,17 @@ namespace scream {
             ekat::ParameterList   m_rrtmgp_params;
 
             // Keep track of number of columns and levels
-            int ncol;
-            int nlay;
+            int m_ncol;
+            int m_nlay;
 
             // Need to hard-code some dimension sizes for now. 
             // TODO: find a better way of configuring this
-            const int nswbands = 14;
-            const int nlwbands = 16;
+            const int m_nswbands = 14;
+            const int m_nlwbands = 16;
 
             // These are the gases that we keep track of
-            const int ngas = 8;
-            const std::string gas_names[8] = {
+            const int m_ngas = 8;
+            const std::string m_gas_names[8] = {
                 "h2o", "co2", "o3", "n2o",
                 "co" , "ch4", "o2", "n2"
             };

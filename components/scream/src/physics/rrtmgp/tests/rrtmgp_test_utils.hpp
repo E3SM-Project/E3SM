@@ -1,7 +1,6 @@
-#include "mo_gas_concentrations.h"
-#include "mo_fluxes.h"
-#include "mo_cloud_optics.h"
-
+#ifndef RRTMGP_TEST_UTILS_HPP
+#define RRTMGP_TEST_UTILS_HPP
+#include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
 namespace rrtmgpTest {
     bool file_exists(const char *filename);
     bool all_equals(real2d &arr1, real2d &arr2);
@@ -26,3 +25,4 @@ namespace rrtmgpTest {
             real2d &lw_flux_up, real2d &lw_flux_dn
         );
 }
+#endif

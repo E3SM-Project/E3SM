@@ -1,25 +1,16 @@
 #include <iostream>
 #include <cmath>
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "rrtmgp_test_utils.hpp"
-#include "mo_gas_concentrations.h"
-#include "mo_fluxes.h"
-#include "mo_cloud_optics.h"
-#include "mo_garand_atmos_io.h"
-#include "Intrinsics.h"
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
+#include "physics/rrtmgp/mo_garand_atmos_io.h"
+#include "YAKL/Intrinsics.h"
+#include "physics/rrtmgp/tests/rrtmgp_test_utils.hpp"
+#include "share/scream_types.hpp"
+#include "share/scream_session.hpp"
 
-template <class T> double arrmin(T &arr) {
-    double minval = arr.myData[0];
-    for (int i = 0; i<arr.totElems(); i++) {
-        if (arr.myData[i] < minval) {
-            minval = arr.myData[i];
-        }
-    }
-    return minval;
-}
+using namespace scream;
 
 int main(int argc, char** argv) {
-
     // Parse command line arguments
     if (argc != 3) {
         std::cout << "argc: " << argc << std::endl;
@@ -40,9 +31,11 @@ int main(int argc, char** argv) {
     }
 
     // Initialize yakl
+    std::cout << "Initialize yakl...\n";
     yakl::init();
 
     // Get reference fluxes from input file; do this here so we can get ncol dimension
+    std::cout << "Read fluxes...\n";
     real2d sw_flux_up_ref;
     real2d sw_flux_dn_ref;
     real2d sw_flux_dir_ref;
@@ -62,12 +55,21 @@ int main(int argc, char** argv) {
     // this will copy the first column of the input data (the first profile) ncol
     // times. We will then fill some fraction of these columns with clouds for
     // the test problem.
+    std::cout << "Read dummy atmos...\n";
     real2d p_lay;
     real2d t_lay;
     real2d p_lev;
     real2d t_lev;
     real2d col_dry;
     GasConcs gas_concs;
+    read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, ncol);
+
+    // Initialize absorption coefficients
+    std::cout << "Initialize RRTMGP...\n";
+    scream::rrtmgp::rrtmgp_initialize(gas_concs);
+
+    // Setup our dummy atmosphere based on the input data we read in
+    std::cout << "Setup dummy atmos...\n";
     real2d sfc_alb_dir;
     real2d sfc_alb_dif;
     real1d mu0;
@@ -75,18 +77,6 @@ int main(int argc, char** argv) {
     real2d iwp;
     real2d rel;
     real2d rei;
-    read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, ncol);
-
-    // Initialize absorption coefficients
-    int ngas = gas_concs.get_num_gases();
-    string1d gas_names_1d = gas_concs.get_gas_names();
-    std::string gas_names[ngas];
-    for (int igas = 0; igas < ngas; igas++) {
-        gas_names[igas] = gas_names_1d(igas+1);
-    }
-    scream::rrtmgp::rrtmgp_initialize(ngas, gas_names);
-
-    // Setup our dummy atmosphere based on the input data we read in
     rrtmgpTest::dummy_atmos(
             inputfile, ncol, p_lay, t_lay,
             sfc_alb_dir, sfc_alb_dif, mu0,
@@ -97,6 +87,7 @@ int main(int argc, char** argv) {
     // input/outputs into the driver (persisting between calls), and
     // we would just have to setup the pointers to them in the
     // FluxesBroadband object
+    std::cout << "Setup fluxes...\n";
     real2d sw_flux_up ("sw_flux_up" ,ncol,nlay+1);
     real2d sw_flux_dn ("sw_flux_dn" ,ncol,nlay+1);
     real2d sw_flux_dir("sw_flux_dir",ncol,nlay+1);
@@ -104,6 +95,7 @@ int main(int argc, char** argv) {
     real2d lw_flux_dn ("lw_flux_dn" ,ncol,nlay+1);
 
     // Run RRTMGP code on dummy atmosphere
+    std::cout << "Run RRTMGP...\n";
     scream::rrtmgp::rrtmgp_main(
             p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, 
             sfc_alb_dir, sfc_alb_dif, mu0,
@@ -112,6 +104,7 @@ int main(int argc, char** argv) {
             lw_flux_up, lw_flux_dn);
 
     // Check values against baseline
+    std::cout << "Check values...\n";
     rrtmgpTest::read_fluxes(
         baseline, 
         sw_flux_up_ref, sw_flux_dn_ref, sw_flux_dir_ref,

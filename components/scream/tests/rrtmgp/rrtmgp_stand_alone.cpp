@@ -41,16 +41,14 @@ namespace scream {
         REQUIRE(rrtmgpTest::file_exists(baseline.c_str()));
 
         // Initialize yakl
-        yakl::init();
+        if(!yakl::isInitialized()) { yakl::init(); }
 
-        // Read reference fluxes from input file
+        // Read reference fluxes from baseline file
         real2d sw_flux_up_ref;
         real2d sw_flux_dn_ref;
         real2d sw_flux_dn_dir_ref;
         real2d lw_flux_up_ref;
         real2d lw_flux_dn_ref;
-        // TODO: this should read BASELINE instead, but those need to exist
-        // before cmake is run?
         rrtmgpTest::read_fluxes(baseline, sw_flux_up_ref, sw_flux_dn_ref, sw_flux_dn_dir_ref, lw_flux_up_ref, lw_flux_dn_ref );
 
         // Get dimension sizes
@@ -62,7 +60,6 @@ namespace scream {
         std::string fname = "input.yaml";
         ekat::ParameterList ad_params("Atmosphere Driver");
         REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
-
         // Create a MPI communicator
         ekat::Comm atm_comm (MPI_COMM_WORLD);
 
@@ -121,7 +118,6 @@ namespace scream {
         lw_flux_dn_test.deallocate();
         ad.finalize();
         yakl::finalize();
-
         // If we got this far, we were able to run the code through the AD
         REQUIRE(true);
     }

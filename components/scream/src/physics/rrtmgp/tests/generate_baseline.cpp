@@ -1,26 +1,12 @@
 #include <iostream>
 #include <cmath>
-//#include <catch2/catch.hpp>
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "mo_gas_concentrations.h"
-#include "mo_garand_atmos_io.h"
-#include "Intrinsics.h"
-#include "rrtmgp_test_utils.hpp"
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
+#include "physics/rrtmgp/mo_garand_atmos_io.h"
+#include "YAKL/Intrinsics.h"
+#include "physics/rrtmgp/tests/rrtmgp_test_utils.hpp"
 #include "share/scream_types.hpp"
 #include "share/scream_session.hpp"
-
-/*
- * Run standalone test problem for RRTMGP. Two tests are run, one that uses
- * just the RRTMGP interface, one that runs the test through the SCREAM AD to
- * test the coupling with SCREAM. These should be produce identical results,
- * and the results from both tests are each compared with the reference fluxes
- * saved in the input file.
- */
-
-// Input file that contains example atmosphere and reference fluxes
-//std::string inputfile = "./data/rrtmgp-allsky.nc";
-//std::string baseline = "./data/rrtmgp-allsky-baseline.nc";
-
 
 using namespace scream;
 
@@ -69,18 +55,10 @@ int main (int argc, char** argv) {
     GasConcs gas_concs;
     read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, ncol);
 
-    // Get gas names from dummy atmos
-    int ngas = gas_concs.get_num_gases();
-    auto gas_names_1d = gas_concs.get_gas_names();
-    std::string gas_names[ngas];
-    for (int igas = 1; igas <=ngas; igas++) {
-        gas_names[igas-1] = gas_names_1d(igas);
-    }
-
     // Initialize the RRTMGP interface; this will read in the k-distribution
     // data that contains information about absorption coefficients for gases
     std::cout << "rrtmgp_initialize..." << std::endl;
-    rrtmgp::rrtmgp_initialize(ngas, gas_names);
+    rrtmgp::rrtmgp_initialize(gas_concs);
 
     // Setup dummy all-sky problem
     real2d sfc_alb_dir;

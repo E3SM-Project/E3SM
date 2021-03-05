@@ -1,11 +1,11 @@
 #include <iostream>
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "rrtmgp_test_utils.hpp"
-#include "mo_gas_concentrations.h"
-#include "mo_garand_atmos_io.h"
-#include "mo_fluxes.h"
-#include "mo_cloud_optics.h"
-#include "simple_netcdf.hpp"
+#include "physics/rrtmgp/tests/rrtmgp_test_utils.hpp"
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
+#include "physics/rrtmgp/mo_garand_atmos_io.h"
+#include "cpp/rte/mo_fluxes.h"
+#include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
+#include "physics/rrtmgp/simple_netcdf.hpp"
 #include <netcdf.h>
 
 namespace rrtmgpTest {
@@ -33,10 +33,12 @@ namespace rrtmgpTest {
         */
         int nx = arr1.dimension[0];
         int ny = arr2.dimension[1];
+        auto arr1_h = arr1.createHostCopy();
+        auto arr2_h = arr2.createHostCopy();
         for (int i=1; i<nx+1; i++) {
             for (int j=1; j<ny+1; j++) {
-                if (abs(arr1(i,j) - arr2(i,j)) > tolerance) {
-                    printf("arr1 = %f, arr2 = %f\n", arr1(i,j), arr2(i,j));
+                if (abs(arr1_h(i,j) - arr2_h(i,j)) > tolerance) {
+                    printf("arr1 = %f, arr2 = %f\n", arr1_h(i,j), arr2_h(i,j));
                     return false;
                 }
             }
