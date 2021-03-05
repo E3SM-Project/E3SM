@@ -83,7 +83,7 @@ subroutine scm_setinitial(elem)
 #ifdef MODEL_THETA_L
               if (have_t) elem(ie)%derived%FT(i,j,k)=tobs(k)
 #else
-              if (have_t) elem(ie)%state%T(i,j,k,:)=tobs(k)
+              if (have_t) elem(ie)%state%T(i,j,k,1)=tobs(k)
 #endif
               if (have_q) elem(ie)%state%Q(i,j,k,1)=qobs(k)
             enddo
