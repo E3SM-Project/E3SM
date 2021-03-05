@@ -51,7 +51,7 @@ OPTIONS
                            If not defined, location is set as \$ProgDir or \$cwd
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
-     -ic_mode              variable for initial condition file mode
+     -ice_ic_mode          variable for initial condition file mode
                            Options are: spunup, cold_start
      -ice_bgc              variable for enabling sea ice BGC
      -surface_mode         variable for surface mode
@@ -103,7 +103,7 @@ my %opts = ( help            => 0,
              ice_grid        => undef,
              decomp_prefix   => undef,
              date_stamp      => undef,
-             ic_mode         => undef,
+             ice_ic_mode     => undef,
              ice_bgc         => undef,
              surface_mode    => undef,
              iceberg_mode    => undef,
@@ -125,7 +125,7 @@ GetOptions(
     "ice_grid=s"        => \$opts{'ice_grid'},
     "decomp_prefix=s"   => \$opts{'decomp_prefix'},
     "date_stamp=s"      => \$opts{'date_stamp'},
-    "ic_mode=s"         => \$opts{'ic_mode'},
+    "ice_ic_mode=s"     => \$opts{'ice_ic_mode'},
     "ice_bgc=s"         => \$opts{'ice_bgc'},
     "surface_mode=s"    => \$opts{'surface_mode'},
     "iceberg_mode=s"    => \$opts{'iceberg_mode'},
@@ -164,7 +164,7 @@ my $inst_string     = $opts{'inst_string'};
 my $ICE_GRID        = $opts{'ice_grid'};
 my $decomp_prefix   = $opts{'decomp_prefix'};
 my $date_stamp      = $opts{'date_stamp'};
-my $ic_mode         = $opts{'ic_mode'};
+my $ice_ic_mode     = $opts{'ice_ic_mode'};
 my $ice_bgc         = $opts{'ice_bgc'};
 my $surface_mode    = $opts{'surface_mode'};
 my $iceberg_mode    = $opts{'iceberg_mode'};
@@ -534,7 +534,7 @@ add_default($nl, 'config_nSnowLayers');
 # Namelist group: initialize #
 ##############################
 
-if ($ic_mode eq 'spunup') {
+if ($ice_ic_mode eq 'spunup') {
         add_default($nl, 'config_initial_condition_type', 'val'=>"restart");
 } else {
         add_default($nl, 'config_initial_condition_type');

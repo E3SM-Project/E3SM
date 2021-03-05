@@ -31,7 +31,7 @@ void run_remap_f90 (const int& np1, const int& np1_qdp, const Real& dt,
                     const int& rsplit, const int& qsize, const int& remap_alg,
                     Real*& dp_ptr, Real*& vtheta_dp_ptr, Real*& w_i_ptr,
                     Real*& phi_i_ptr, Real*& v_ptr, Real*& ps_ptr,
-                    Real*& eta_dot_dpdn_ptr);
+                    Real*& eta_dot_dpdn_ptr, Real*& qdp_ptr);
 void cleanup_f90();
 } // extern "C"
 
@@ -113,7 +113,6 @@ TEST_CASE("remap", "remap_testing") {
   // Do not use all tracers, for better testing 
   auto& tracers = c.create<Tracers>();
   tracers.init(elems.num_elems(),params.qsize);
-  tracers.randomize(seed);
 
   // Init f90
   auto d        = Kokkos::create_mirror_view(geo.m_d);
@@ -143,6 +142,7 @@ TEST_CASE("remap", "remap_testing") {
   using ScalarStateF90    = HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][NP][NP]>;
   using ScalarStateIntF90 = HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_INTERFACE_LEV][NP][NP]>;
   using VectorStateF90    = HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][2][NP][NP]>;
+  using TracerStateF90    = HostViewManaged<Real*[Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>;
 
   Scalar2dF90       ps_f90("",elems.num_elems());
   ScalarStateF90    dp3d_f90("",elems.num_elems());
@@ -150,6 +150,7 @@ TEST_CASE("remap", "remap_testing") {
   ScalarStateIntF90 w_i_f90("",elems.num_elems());
   ScalarStateIntF90 phinh_i_f90("",elems.num_elems());
   VectorStateF90    v_f90("",elems.num_elems());
+  TracerStateF90    qdp_f90("",elems.num_elems());
 
   ScalarIntF90 eta_dot_dpdn_f90("",elems.num_elems());
 
@@ -206,9 +207,10 @@ TEST_CASE("remap", "remap_testing") {
           const int  np1     = IPDF(0,NUM_TIME_LEVELS-1)(engine);
           const int  np1_qdp = IPDF(0,Q_NUM_TIME_LEVELS-1)(engine);
 
-          // Randomize state/derived
+          // Randomize state/derived/tracers
           elems.m_state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
           elems.m_derived.randomize(seed,dp3d_min(elems.m_state.m_dp3d));
+          tracers.randomize(seed);
 
           // Copy initial values to f90
           sync_to_host(elems.m_state.m_dp3d, dp3d_f90);
@@ -218,6 +220,7 @@ TEST_CASE("remap", "remap_testing") {
           sync_to_host(elems.m_state.m_v, v_f90);
           Kokkos::deep_copy(ps_f90,elems.m_state.m_ps_v); // Same mem layout, use Kokkos::deep_copy
           sync_to_host(elems.m_derived.m_eta_dot_dpdn, eta_dot_dpdn_f90);
+          sync_to_host(tracers.qdp, qdp_f90);
 
           // Create the remap functor
           // Note: ALL the options must be set in params *before* creating the vrm.
@@ -237,10 +240,11 @@ TEST_CASE("remap", "remap_testing") {
           auto v_ptr = v_f90.data();
           auto ps_ptr = ps_f90.data();
           auto eta_dot_dpdn_ptr = eta_dot_dpdn_f90.data();
+          auto qdp_ptr = qdp_f90.data();
           run_remap_f90 (np1+1, np1_qdp+1, dt,
                          rsplit, params.qsize, remap_alg_f90(alg),
                          dp3d_ptr, vtheta_dp_ptr, w_i_ptr,
-                         phinh_i_ptr, v_ptr, ps_ptr, eta_dot_dpdn_ptr);
+                         phinh_i_ptr, v_ptr, ps_ptr, eta_dot_dpdn_ptr, qdp_ptr);
 
           // Compare answers
           auto h_dp3d      = Kokkos::create_mirror_view(elems.m_state.m_dp3d);
@@ -248,12 +252,14 @@ TEST_CASE("remap", "remap_testing") {
           auto h_w_i       = Kokkos::create_mirror_view(elems.m_state.m_w_i);
           auto h_phinh_i   = Kokkos::create_mirror_view(elems.m_state.m_phinh_i);
           auto h_v         = Kokkos::create_mirror_view(elems.m_state.m_v);
+          auto h_qdp       = Kokkos::create_mirror_view(tracers.qdp);
 
           Kokkos::deep_copy(h_dp3d     , elems.m_state.m_dp3d);
           Kokkos::deep_copy(h_vtheta_dp, elems.m_state.m_vtheta_dp);
           Kokkos::deep_copy(h_w_i      , elems.m_state.m_w_i);
           Kokkos::deep_copy(h_phinh_i  , elems.m_state.m_phinh_i);
           Kokkos::deep_copy(h_v        , elems.m_state.m_v);
+          Kokkos::deep_copy(h_qdp      , tracers.qdp);
 
           for (int ie=0; ie<num_elems; ++ie) {
             auto dp3d_cxx      = viewAsReal(Homme::subview(h_dp3d,ie,np1));
@@ -261,6 +267,7 @@ TEST_CASE("remap", "remap_testing") {
             auto w_i_cxx       = viewAsReal(Homme::subview(h_w_i,ie,np1));
             auto phinh_i_cxx   = viewAsReal(Homme::subview(h_phinh_i,ie,np1));
             auto v_cxx         = viewAsReal(Homme::subview(h_v,ie,np1));
+            auto qdp_cxx       = viewAsReal(Homme::subview(h_qdp,ie,np1_qdp));
 
             for (int igp=0; igp<NP; ++igp) {
               for (int jgp=0; jgp<NP; ++jgp) {
@@ -312,6 +319,14 @@ TEST_CASE("remap", "remap_testing") {
                     printf("v f90: %3.40f\n",v_f90(ie,np1,k,1,igp,jgp));
                   }
                   REQUIRE(v_cxx(1,igp,jgp,k)==v_f90(ie,np1,k,1,igp,jgp));
+                  for (int iq=0; iq<params.qsize; ++iq) {
+                    if(qdp_cxx(iq,igp,jgp,k)!=qdp_f90(ie,np1_qdp,iq,k,igp,jgp)) {
+                      printf("ie,q,k,igp,jgp: %d, %d, %d, %d, %d\n",ie,iq,k,igp,jgp);
+                      printf("qdp cxx: %3.40f\n",qdp_cxx(iq,igp,jgp,k));
+                      printf("qdp f90: %3.40f\n",qdp_f90(ie,np1_qdp,iq,k,igp,jgp));
+                    }
+                    REQUIRE(qdp_cxx(iq,igp,jgp,k)==qdp_f90(ie,np1_qdp,iq,k,igp,jgp));
+                  }
                 }
 
                 // Check last interface for w_i and phinh_i

@@ -2093,7 +2093,7 @@ CONTAINS
     case ('B')
       time_op(:) = 'mean00z'
     case ('I')
-      time_op(:) = ' '
+      time_op(:) = 'point'
     case ('X')
       time_op(:) = 'maximum'
     case ('M')
@@ -3744,6 +3744,9 @@ end subroutine print_active_fldlst
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'E3SM_GENERATED_FORCING','create SCM IOP dataset')
 #endif
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'source', 'E3SM Atmosphere Model')
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'source_id', version)
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'product', 'model-output')
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'realm', 'atmos')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'case',caseid)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'username',username)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'hostname', hostname)
@@ -3751,9 +3754,20 @@ end subroutine print_active_fldlst
     call datetime(curdate, curtime)
     str = 'created on ' // curdate // ' ' // curtime
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'history' , trim(str))
-    str = 'CF-1.0'
+    str = 'CF-1.7'
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution', &
+    'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); &
+    &ANL (Argonne National Laboratory, Argonne, IL 60439, USA); &
+    &BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); &
+    &LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); &
+    &LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); &
+    &ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
+    &PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
+    &SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
+    &Mailing address: LLNL Climate Program, c/o David C. Bader, &
+    &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'contact',  &
                       'e3sm-data-support@listserv.llnl.gov')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'initial_file', ncdata)
@@ -4056,12 +4070,19 @@ end subroutine print_active_fldlst
         ierr=pio_put_att (tape(t)%File, varid, 'long_name', trim(str))
         call cam_pio_handle_error(ierr,                                       &
              'h_define: cannot define long_name for '//trim(fname_tmp))
+
+        str = tape(t)%hlist(f)%field%standard_name
+        if (str /= ' ') then
+          ierr=pio_put_att (tape(t)%File, varid, 'standard_name', trim(str))
+          call cam_pio_handle_error(ierr,                                       &
+               'h_define: cannot define standard_name for '//trim(fname_tmp))
+        endif
         !
         ! Assign field attributes defining valid levels and averaging info
         !
         str = tape(t)%hlist(f)%time_op
         select case (str)
-        case ('mean', 'maximum', 'minimum' )
+        case ('mean', 'maximum', 'minimum','point' )
           ierr = pio_put_att(tape(t)%File, varid, 'cell_methods', 'time: '//str)
           call cam_pio_handle_error(ierr,                                     &
                'h_define: cannot define cell_methods for '//trim(fname_tmp))
@@ -4870,7 +4891,7 @@ end subroutine print_active_fldlst
 
     ! If the field is an advected constituent determine whether its concentration
     ! is based on dry or wet air.
-    call cnst_get_ind(fname_tmp, idx, abort=.false.)
+    call cnst_get_ind(fname_tmp, idx, abrtf=.false.)
     mixing_ratio = ''
     if (idx > 0) then
        mixing_ratio = cnst_get_type_byind(idx)
@@ -4890,6 +4911,12 @@ end subroutine print_active_fldlst
     listentry%htapeindx(:) = -1
     listentry%act_sometape = .false.
     listentry%actflag(:) = .false.
+
+    if (present(standard_name)) then
+     listentry%field%standard_name = standard_name
+    else
+     listentry%field%standard_name = ' '
+    end if
 
     ! Make sure we have a valid gridname
     if (present(gridname)) then

@@ -223,7 +223,7 @@ contains
 
     if (use_cn) then
        this%bsw_col(begc:endc,:) = spval 
-       call hist_addfld2d (fname='bsw', units='unitless', type2d='levgrnd', &
+       call hist_addfld2d (fname='bsw', units='1', type2d='levgrnd', &
             avgflag='A', long_name='clap and hornberger B', &
             ptr_col=this%bsw_col, default='inactive')
     end if
@@ -276,12 +276,12 @@ contains
          ptr_col=this%hk_l_col, set_spec=spval, l2g_scale_type='veg', default='inactive')
 
     this%soilalpha_col(begc:endc) = spval
-    call hist_addfld1d (fname='SoilAlpha',  units='unitless',  &
+    call hist_addfld1d (fname='SoilAlpha',  units='1',  &
          avgflag='A', long_name='factor limiting ground evap', &
          ptr_col=this%soilalpha_col, set_urb=spval)
 
     this%soilalpha_u_col(begc:endc) = spval
-    call hist_addfld1d (fname='SoilAlpha_U',  units='unitless',  &
+    call hist_addfld1d (fname='SoilAlpha_U',  units='1',  &
          avgflag='A', long_name='urban factor limiting ground evap', &
          ptr_col=this%soilalpha_u_col, set_nourb=spval)
 

@@ -1056,7 +1056,7 @@ integer function get_cam_idx(source, name, routine)
 
    else if (source(1:1) == 'A') then
 
-      call cnst_get_ind(trim(name), idx, abort=.false.)
+      call cnst_get_ind(trim(name), idx, abrtf=.false.)
       if (idx < 0) then
          call endrun(routine//' ERROR: cannot find constituent field '//trim(name))
       end if

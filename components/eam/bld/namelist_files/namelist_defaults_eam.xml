@@ -4,12 +4,6 @@
 
 <!-- Timestep size (this is the dynamics/physics coupling interval) -->
 <dtime dyn="eul"                   >1200</dtime>
-<dtime dyn="eul"   hgrid="256x512" >300 </dtime>
-<dtime dyn="eul"   hgrid="128x256" >600 </dtime>
-<dtime dyn="eul"   hgrid="64x128"  >1200</dtime>
-<dtime dyn="eul"   hgrid="48x96"   >1800</dtime>
-<dtime dyn="eul"   hgrid="32x64"   >1800</dtime>
-<dtime dyn="eul"   hgrid="8x16"    >1800</dtime>
 
 <dtime dyn="fv"                    >1800</dtime>
 <dtime dyn="fv"    waccmx="1"      >300 </dtime>
@@ -35,113 +29,7 @@
 <dtime dyn="sld"                   >3600</dtime>
 
 <!-- Initial conditions -->
-<ncdata dyn="fv"  hgrid="0.23x0.31" nlev="26" ic_ymd="101"      >atm/cam/inic/fv/cami_0000-01-01_0.23x0.31_L26_c100513.nc</ncdata>
-<ncdata dyn="fv"  hgrid="0.23x0.31" nlev="26" ic_ymd="901"      >atm/cam/inic/fv/cami_0000-09-01_0.23x0.31_L26_c061106.nc</ncdata>
-<ncdata dyn="fv"  hgrid="0.47x0.63" nlev="26" ic_ymd="101"      >atm/cam/inic/fv/cami_1980-01-01_0.47x0.63_L26_c071226.nc</ncdata>
-<ncdata dyn="fv"  hgrid="0.47x0.63" nlev="26" ic_ymd="901"      >atm/cam/inic/fv/cami_0000-09-01_0.47x0.63_L26_c061106.nc</ncdata>
-<ncdata dyn="fv"  hgrid="0.5x0.625" nlev="26" ic_ymd="1001"     >atm/cam/inic/fv/cami_0000-10-01_0.5x0.625_L26_c031204.nc</ncdata>
-<ncdata dyn="fv"  hgrid="0.9x1.25"  nlev="26" ic_ymd="101"      >atm/cam/inic/fv/cami_1987-01-01_0.9x1.25_L26_c060703.nc</ncdata>
-<ncdata dyn="fv"  hgrid="0.9x1.25"  nlev="26" ic_ymd="901"      >atm/cam/inic/fv/cami_0000-09-01_0.9x1.25_L26_c051205.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="26" ic_ymd="101"      >atm/cam/inic/fv/cami_0000-01-01_1.9x2.5_L26_c070408.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="26" ic_ymd="901"      >atm/cam/inic/fv/cami_0000-09-01_1.9x2.5_L26_c040809.nc</ncdata>
-<ncdata dyn="fv"  hgrid="2.5x3.33"  nlev="26" ic_ymd="101"      >atm/cam/inic/fv/cami_0000-01-01_2.5x3.33_L26_c110309.nc</ncdata>
-<ncdata dyn="fv"  hgrid="2.5x3.33"  nlev="26" ic_ymd="901"      >atm/cam/inic/fv/cami_0000-09-01_2.5x3.33_L26_c091007.nc</ncdata>
-<ncdata dyn="fv"  hgrid="4x5"       nlev="26" ic_ymd="101"      >atm/cam/inic/fv/cami_0001-01-01_4x5_L26_c060608.nc</ncdata>
-<ncdata dyn="fv"  hgrid="10x15"     nlev="26" ic_ymd="101"      >atm/cam/inic/fv/cami_0000-01-01_10x15_L26_c030918.nc</ncdata>
-
-<ncdata dyn="fv"  hgrid="0.23x0.31" nlev="30"  ic_ymd="101"     >atm/cam/inic/fv/cami-mam3_0000-01-01_0.23x0.31_L30_c110527.nc</ncdata>
-<ncdata dyn="fv"  hgrid="0.47x0.63" nlev="30"  ic_ymd="101"     >atm/cam/inic/fv/cami-mam3_0000-01-01_0.47x0.63_L30_c100929.nc</ncdata>
-<ncdata dyn="fv"  hgrid="0.9x1.25"  nlev="30"  ic_ymd="101"     >atm/cam/inic/fv/cami-mam3_0000-01-01_0.9x1.25_L30_c100618.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  ic_ymd="101"     >atm/cam/inic/fv/cami_0000-01-01_1.9x2.5_L30_c070703.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  ic_ymd="901"     >atm/cam/inic/fv/cami_0000-09-01_1.9x2.5_L30_c070109.nc</ncdata>
-<ncdata dyn="fv"  hgrid="2.5x3.33"  nlev="30"  ic_ymd="101"     >atm/cam/inic/fv/cami_0000-01-01_2.5x3.33_L30_c110309.nc </ncdata>
-<ncdata dyn="fv"  hgrid="2.5x3.33"  nlev="30"  ic_ymd="901"     >atm/cam/inic/fv/cami_0000-09-01_2.5x3.33_L30_c100831.nc</ncdata>
-<ncdata dyn="fv"  hgrid="4x5"       nlev="30"  ic_ymd="101"     >atm/cam/inic/fv/cami_0000-01-01_4x5_L30_c090108.nc</ncdata>
-<ncdata dyn="fv"  hgrid="10x15"     nlev="30"  ic_ymd="101"     >atm/cam/inic/fv/cami_0000-01-01_10x15_L30_c081013.nc</ncdata>
-
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="64"  ic_ymd="101"     >atm/cam/inic/fv/cami_0000-01-01_1.9x2.5_L64_c070703.nc</ncdata>
-<ncdata dyn="fv"  hgrid="4x5"       nlev="64"  ic_ymd="101"     >atm/cam/inic/fv/cami_0000-01-01_4x5_L64_c090108.nc</ncdata>
-<ncdata dyn="fv"  hgrid="10x15"     nlev="64"  ic_ymd="101"     >atm/cam/inic/fv/cami_0000-01-01_10x15_L64_c081013.nc</ncdata>
-
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  chem="trop_mam3" ic_ymd="101">atm/cam/inic/fv/cami-mam3_0000-01-01_1.9x2.5_L30_c090306.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  chem="linoz_mam3" ic_ymd="101">atm/cam/inic/fv/cami-mam3_0000-01-01_1.9x2.5_L30_c090306.nc</ncdata>
-
-<ncdata dyn="fv"  hgrid="0.47x0.63" nlev="26"  ocn="aquaplanet"  ic_ymd="101" >atm/cam/inic/fv/cami_0000-01-01_0.47x0.63_L26_APE_c080227.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="26"  ocn="aquaplanet"  ic_ymd="101" >atm/cam/inic/fv/cami_0000-01-01_1.9x2.5_L26_APE_c080203.nc</ncdata>
-
-<ncdata dyn="fv"  hgrid="0.9x1.25"  nlev="30"  chem="trop_mozart" ic_ymd="19900101" >atm/cam/inic/fv/cami-chem_1990-01-01_0.9x1.25_L30_c080724.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="26"  chem="trop_mozart" ic_ymd="19900101" >atm/cam/inic/fv/cami-chem_1990-01-01_1.9x2.5_L26_c080114.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  chem="trop_mozart" ic_ymd="19900101" >atm/cam/inic/fv/cami-chem_1990-01-01_1.9x2.5_L30_c080215.nc</ncdata>
-
-<ncdata dyn="fv" hgrid="10x15"   nlev="26" chem="trop_mozart" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_10x15_L26_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="10x15"   nlev="30" chem="trop_mozart" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_10x15_L30_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="4x5"     nlev="26" chem="trop_mozart" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_4x5_L26_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="4x5"     nlev="30" chem="trop_mozart" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_4x5_L30_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="1.9x2.5" nlev="26" chem="trop_mozart" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L26_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="trop_mozart" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L30_c081104.nc</ncdata>
-
-<ncdata dyn="fv" hgrid="10x15"   nlev="26" chem="trop_mozart_soa" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_10x15_L26_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="10x15"   nlev="30" chem="trop_mozart_soa" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_10x15_L30_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="4x5"     nlev="26" chem="trop_mozart_soa" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_4x5_L26_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="4x5"     nlev="30" chem="trop_mozart_soa" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_4x5_L30_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="1.9x2.5" nlev="26" chem="trop_mozart_soa" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L26_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="trop_mozart_soa" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L30_c081104.nc</ncdata>
-
-<ncdata dyn="fv" hgrid="10x15"   nlev="30" chem="trop_mozart_mam3" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam3_chem_2000-01-01_10x15_L30_c120222.nc</ncdata>
-<ncdata dyn="fv" hgrid="4x5"     nlev="30" chem="trop_mozart_mam3" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam3_chem_2000-01-01_4x5_L30_c120222.nc</ncdata>
-<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="trop_mozart_mam3" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam3_chem_2000-01-01_1.9x2.5_L30_c120222.nc</ncdata>
-
-<ncdata dyn="fv" hgrid="10x15"   nlev="30" chem="trop_strat_mam3" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam3_chem_2000-01-01_10x15_L30_c121015.nc</ncdata>
-<ncdata dyn="fv" hgrid="4x5"     nlev="30" chem="trop_strat_mam3" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam3_chem_2000-01-01_4x5_L30_c121015.nc</ncdata>
-<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="trop_strat_mam3" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam3_chem_2000-01-01_1.9x2.5_L30_c121015.nc</ncdata>
-
-<ncdata dyn="fv" hgrid="10x15"   nlev="30" chem="trop_strat_mam7" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam7_chem_2000-01-01_10x15_L30_c121011.nc</ncdata>
-<ncdata dyn="fv" hgrid="4x5"     nlev="30" chem="trop_strat_mam7" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam7_chem_2000-01-01_4x5_L30_c121011.nc</ncdata>
-<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="trop_strat_mam7" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam7_chem_2000-01-01_1.9x2.5_L30_c121011.nc</ncdata>
-
-<ncdata dyn="fv" hgrid="10x15"   nlev="26" chem="super_fast_llnl" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_10x15_L26_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="10x15"   nlev="30" chem="super_fast_llnl" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_10x15_L30_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="4x5"     nlev="26" chem="super_fast_llnl" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_4x5_L26_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="4x5"     nlev="30" chem="super_fast_llnl" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_4x5_L30_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="1.9x2.5" nlev="26" chem="super_fast_llnl" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L26_c081104.nc</ncdata>
-<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="super_fast_llnl" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L30_c081104.nc</ncdata>
-
-<ncdata dyn="fv"  hgrid="4x5"       nlev="26"  chem="trop_mozart" ic_ymd="901" >atm/cam/chem/trop_mozart/ic/cami_0000-09-01_4x5_L26_c060217.nc</ncdata>
-<ncdata dyn="fv"  hgrid="10x15"     nlev="26"  chem="trop_mozart" ic_ymd="901" >atm/cam/chem/trop_mozart/ic/cami_0000-09-01_10x15_L26_c060216.nc</ncdata>
-
-<ncdata dyn="fv"  hgrid="0.9x1.25"  nlev="66"   ic_ymd="20000201" >atm/waccm/ic/cami_2000-02-01_0.9x1.25_L66_c040928.nc</ncdata>
-<ncdata dyn="fv"  hgrid="0.9x1.25"  nlev="103"  ic_ymd="20000201" >atm/waccm/ic/cami_2000-02-01_0.9x1.25_L103_c041005.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="66"   ic_ymd="20000701" >atm/waccm/ic/cami_2000-07-01_1.9x2.5_L66_c040928.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="70"   ic_ymd="20000101" >atm/waccm/ic/f2000.waccm-mam3_1.9x2.5_L70.cam2.i.0017-01-01.c120410.nc</ncdata>
-<ncdata dyn="fv"  hgrid="4x5"       nlev="70"   ic_ymd="20000101" >atm/waccm/ic/f2000.waccm-mam3_4x5_L70.cam2.i.0017-01-01.c121113.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="70"   ic_ymd="18500101" >atm/waccm/ic/b1850.waccm-mam3_1.9x2.5_L70.cam2.i.0156-01-01.c120523.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="103"  ic_ymd="20000501" >atm/waccm/ic/cami_2000-05-01_1.9x2.5_L103_c040928.nc</ncdata>
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="125"  ic_ymd="20000701" >atm/waccm/ic/cami_2000-07-01_1.9x2.5_L125_c040928.nc</ncdata>
-<ncdata dyn="fv"  hgrid="4x5"       nlev="66"   ic_ymd="19600101" >atm/waccm/ic/wa3_4x5_1950_spinup.cam2.i.1960-01-01-00000.nc</ncdata>
-<ncdata dyn="fv"  hgrid="10x15"     nlev="66"   ic_ymd="20000101" >atm/waccm/ic/cami_2000-01-01_10x15_L66_c041121.nc</ncdata>
-
-<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="81"  waccmx="1"  ic_ymd="20000101" >atm/waccm/ic/WAX3548T08CO_2003top_f2000.waccm_0017bottom_L81_c110906.nc</ncdata>
-
-<ncdata dyn="eul" hgrid="512x1024"  nlev="26"              ic_ymd="101" >atm/cam/inic/gaus/T341clim01.cam2.i.0024-01-01-00000.nc</ncdata>
-<ncdata dyn="eul" hgrid="256x512"   nlev="26"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_256x512_L26_c030918.nc</ncdata>
-
-<ncdata dyn="eul" hgrid="128x256"   nlev="26"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_128x256_L26_c030918.nc</ncdata>
-<ncdata dyn="eul" hgrid="128x256"   nlev="26"              ic_ymd="901" >atm/cam/inic/gaus/cami_0000-09-01_128x256_L26_c040422.nc</ncdata>
-
-<ncdata           hgrid="64x128"    nlev="26"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_64x128_T42_L26_c031110.nc</ncdata>
-<ncdata           hgrid="64x128"    nlev="26"              ic_ymd="901" >atm/cam/inic/gaus/cami_0000-09-01_64x128_L26_c030918.nc</ncdata>
-<ncdata           hgrid="64x128"    nlev="30"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_64x128_L30_c090102.nc</ncdata>
-<ncdata           hgrid="64x128"    nlev="30"              ic_ymd="901" >atm/cam/inic/gaus/cami_0000-09-01_64x128_L30_c031210.nc</ncdata>
 <ncdata           hgrid="64x128"    nlev="72"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_64x128_L72_c031210.nc</ncdata>
-<ncdata           hgrid="48x96"     nlev="26"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_48x96_L26_c091218.nc</ncdata>
-<ncdata dyn="eul" hgrid="48x96"     nlev="26"              ic_ymd="901" >atm/cam/inic/gaus/cami_0000-09-01_48x96_L26_c040420.nc</ncdata>
-<ncdata           hgrid="48x96"     nlev="30"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_48x96_L30_c100426.nc</ncdata>
-<ncdata           hgrid="32x64"     nlev="26"              ic_ymd="901" >atm/cam/inic/gaus/cami_0000-09-01_32x64_L26_c030918.nc</ncdata>
-<ncdata           hgrid="32x64"     nlev="30"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_32x64_L30_c090107.nc</ncdata>
-<ncdata           hgrid="8x16"      nlev="26"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_8x16_L26_c030228.nc</ncdata>
-<ncdata           hgrid="8x16"      nlev="26"              ic_ymd="901" >atm/cam/inic/gaus/cami_0000-09-01_8x16_L26_c030918.nc</ncdata>
-<ncdata           hgrid="8x16"      nlev="30"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_8x16_L30_c090102.nc</ncdata>
-
 
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160909.nc</ncdata>
 <ncdata dyn="se" hgrid="ne4np4"   nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_0000-01-01_ne4np4_L30_c161102.nc</ncdata>
@@ -217,21 +105,7 @@
 
 
 <!-- Topography -->
-<bnd_topo hgrid="256x512" >atm/cam/topo/topo-from-cami_0000-01-01_256x512_L26_c030918.nc</bnd_topo>
-<bnd_topo hgrid="128x256" >atm/cam/topo/USGS-gtopo30_128x256_c050520.nc</bnd_topo>
 <bnd_topo hgrid="64x128"  >atm/cam/topo/USGS-gtopo30_64x128_c050520.nc</bnd_topo>
-<bnd_topo hgrid="48x96"   >atm/cam/topo/USGS-gtopo30_48x96_c050520.nc</bnd_topo>
-<bnd_topo hgrid="32x64"   >atm/cam/topo/USGS-gtopo30_32x64_c050520.nc</bnd_topo>
-<bnd_topo hgrid="8x16"    >atm/cam/topo/USGS-gtopo30_8x16_c050520.nc</bnd_topo>
-
-<bnd_topo hgrid="0.23x0.31" >atm/cam/topo/USGS_gtopo30_0.23x0.31_remap_c061107.nc</bnd_topo>
-<bnd_topo hgrid="0.47x0.63" >atm/cam/topo/USGS_gtopo30_0.47x0.63_remap_c061106.nc</bnd_topo>
-<bnd_topo hgrid="0.5x0.625" >atm/cam/topo/topo-from-cami_0000-10-01_0.5x0.625_L26_c031204.nc</bnd_topo>
-<bnd_topo hgrid="0.9x1.25"  >atm/cam/topo/USGS-gtopo30_0.9x1.25_remap_c051027.nc</bnd_topo>
-<bnd_topo hgrid="1.9x2.5"   >atm/cam/topo/USGS-gtopo30_1.9x2.5_remap_c050602.nc</bnd_topo>
-<bnd_topo hgrid="2.5x3.33"  >atm/cam/topo/USGS-gtopo30_2.5x3.33_remap_c100204.nc</bnd_topo>
-<bnd_topo hgrid="4x5"       >atm/cam/topo/USGS-gtopo30_4x5_remap_c050520.nc</bnd_topo>
-<bnd_topo hgrid="10x15"     >atm/cam/topo/USGS-gtopo30_10x15_remap_c050520.nc</bnd_topo>
 
 <bnd_topo hgrid="ne4np4"   npg="0">atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne4np4"   npg="2">atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</bnd_topo>
@@ -584,10 +458,7 @@
 <co2flux_fuel_file  sim_year="1850-2000">atm/cam/ggas/co2flux_fossil_1751-2006-monthly_0.9x1.25_c20100204.nc</co2flux_fuel_file>
 
 <!-- DMS surface emissions -->
-<bndtvdms          hgrid="128x256"  >atm/cam/scyc/DMS_emissions_128x256_clim_c040122.nc</bndtvdms>
 <bndtvdms          hgrid="64x128"   >atm/cam/scyc/DMS_emissions_64x128_c030722.nc</bndtvdms>
-<bndtvdms          hgrid="32x64"    >atm/cam/scyc/DMS_emissions_32x64_c030722.nc</bndtvdms>
-<bndtvdms dyn="fv" hgrid="4x5"      >atm/cam/scyc/DMS_emissions_4x5_noncon_c050306.nc</bndtvdms>
 
 <!-- Ocean macromolecule concentrations for marine organic matter emissions -->
 <mam_mom_specifier>'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'</mam_mom_specifier>
@@ -602,16 +473,10 @@
 <mam_mom_parameterization>1</mam_mom_parameterization>
 
 <!-- oxidant data for prognostic sulfur cycle -->
-<bndtvoxid          hgrid="128x256" >atm/cam/scyc/oxid_128x256_L26_clim_c040112.nc</bndtvoxid>
 <bndtvoxid          hgrid="64x128"  >atm/cam/scyc/oxid_3d_64x128_L26_c030722.nc</bndtvoxid>
-<bndtvoxid          hgrid="32x64"   >atm/cam/scyc/oxid_3d_32x64_L26_c030722.nc</bndtvoxid>
-<bndtvoxid dyn="fv" hgrid="4x5"     >atm/cam/scyc/oxid_4x5_L26_noncon_c050306.nc</bndtvoxid>
 
 <!-- SOx surface emissions -->
-<bndtvsox          hgrid="128x256"  >atm/cam/scyc/SOx_emissions_128x256_L2_1850-2000_c040321.nc</bndtvsox>
 <bndtvsox          hgrid="64x128"   >atm/cam/scyc/SOx_emissions_64x128_L2_c030722.nc</bndtvsox>
-<bndtvsox          hgrid="32x64"    >atm/cam/scyc/SOx_emissions_32x64_L2_c030722.nc</bndtvsox>
-<bndtvsox dyn="fv" hgrid="4x5"      >atm/cam/scyc/SOx_emissions_4x5_noncon_c050306.nc</bndtvsox>
 
 <!-- Greenhouse gas production/loss rates -->
 <bndtvg>atm/cam/ggas/noaamisc.r8.nc</bndtvg>
@@ -904,13 +769,7 @@
 <!-- Maintain FV 1-deg version since production model tuned with it. -->
 <soil_erod_file  hgrid="0.9x1.25">atm/cam/dst/dst_0.9x1.25_c100121.nc</soil_erod_file>
 <!-- Use some special files at low resolutions for backwards compatibility only -->
-<soil_erod_file  hgrid="4x5"     >atm/cam/dst/dst_4x5_c090203.nc</soil_erod_file>
-<soil_erod_file  hgrid="10x15"   >atm/cam/dst/dst_10x15_c090203.nc</soil_erod_file>
-<soil_erod_file  hgrid="8x16"    >atm/cam/dst/dst_8x16_c090203.nc</soil_erod_file>
-<soil_erod_file  hgrid="32x64"   >atm/cam/dst/dst_32x64_c090203.nc</soil_erod_file>
-<soil_erod_file  hgrid="48x96"   >atm/cam/dst/dst_48x96_c090203.nc</soil_erod_file>
 <soil_erod_file  hgrid="64x128"  >atm/cam/dst/dst_64x128_c090203.nc</soil_erod_file>
-<soil_erod_file  hgrid="128x256" >atm/cam/dst/dst_128x256_c090203.nc</soil_erod_file>
 
 
 <!-- Turbulent Mountain Stress -->
@@ -1202,67 +1061,21 @@
 
 <cldfrc_rhminl                                                        > 0.900D0 </cldfrc_rhminl>
 <cldfrc_rhminl                   phys="default" microphys="mg2"          > 0.950D0 </cldfrc_rhminl>
-<cldfrc_rhminl                   phys="cam5"                          > 0.8975D0 </cldfrc_rhminl>
-<cldfrc_rhminl hgrid="1.9x2.5"   phys="cam5" microphys="mg1.5"        > 0.9125D0 </cldfrc_rhminl>
-<cldfrc_rhminl hgrid="1.9x2.5"   phys="cam5"                          > 0.8875D0 </cldfrc_rhminl>
-
-<cldfrc_rhminl hgrid="1.9x2.5"   phys="cam4"                          > 0.910D0 </cldfrc_rhminl>
-<cldfrc_rhminl hgrid="0.9x1.25"  phys="cam4"                          > 0.920D0 </cldfrc_rhminl>
-<cldfrc_rhminl hgrid="0.47x0.63" phys="cam4"                          > 0.920D0 </cldfrc_rhminl>
-<cldfrc_rhminl hgrid="0.47x0.63" phys="cam4" ocn="docn"               > 0.913D0 </cldfrc_rhminl>
-<cldfrc_rhminl hgrid="512x1024"  phys="cam4"                          > 0.903D0 </cldfrc_rhminl>
-<cldfrc_rhminl hgrid="128x256"   phys="cam4"                          > 0.905D0 </cldfrc_rhminl>
-<cldfrc_rhminl hgrid="48x96"     phys="cam4"                          > 0.880D0 </cldfrc_rhminl>
-<cldfrc_rhminl dyn="se"       phys="cam4"                             > 0.910D0 </cldfrc_rhminl>
-
 
 <cldfrc_rhminl_adj_land                                               > 0.100D0 </cldfrc_rhminl_adj_land>
 
 <cldfrc_rhminh                                                        > 0.800D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="0.23x0.31" phys="cam4"                          > 0.770D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="0.47x0.63" phys="cam4"                          > 0.700D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="0.9x1.25"  phys="cam4"                          > 0.770D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="48x96"     phys="cam4"                          > 0.500D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="4x5"       phys="cam4" chem="waccm_mozart"      > 0.900D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="4x5"       phys="cam4" chem="waccm_mozart_sulfur"> 0.900D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="4x5"       phys="cam4" chem="waccm_ghg"         > 0.900D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="10x15"     phys="cam4" chem="waccm_mozart"      > 0.900D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="10x15"     phys="cam4" chem="waccm_mozart_sulfur"> 0.900D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="10x15"     phys="cam4" chem="waccm_ghg"         > 0.900D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="128x256"                                        > 0.680D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="128x256"                                        > 0.680D0 </cldfrc_rhminh>
-<cldfrc_rhminh hgrid="512x1024"                                       > 0.650D0 </cldfrc_rhminh>
-
 
 <cldfrc_sh1                                                           > 0.07D0 </cldfrc_sh1>
-<cldfrc_sh1 dyn="fv"                                                  > 0.04D0 </cldfrc_sh1>
-<cldfrc_sh1 dyn="fv"     hgrid="0.47x0.63"  phys="cam4"               > 0.10D0 </cldfrc_sh1>
 <cldfrc_sh1 dyn="se"                                               > 0.04D0 </cldfrc_sh1>
 
 <cldfrc_sh2                                                           > 500.0D0 </cldfrc_sh2>
 
 <cldfrc_dp1                                                           > 0.14D0 </cldfrc_dp1>
-<cldfrc_dp1             phys="cam5"                                   > 0.10D0 </cldfrc_dp1>
-<cldfrc_dp1 dyn="fv"    phys="cam4"                                   > 0.10D0 </cldfrc_dp1>
-<cldfrc_dp1 dyn="se" phys="cam4"                                      > 0.10D0 </cldfrc_dp1>
 <cldfrc_dp2                                                           > 500.0D0 </cldfrc_dp2>
-<cldfrc_dp2          phys="cam5"                                      > 500.0D0 </cldfrc_dp2>
 
 <cldfrc_premit                                                        > 75000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="fv"  hgrid="0.23x0.31"                            > 25000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="fv"  hgrid="0.47x0.63"                            > 25000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="fv"  hgrid="0.5x0.625"                            > 25000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="eul" hgrid="128x256"                              > 25000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="eul" hgrid="256x512"                              > 25000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="eul" hgrid="512x1024"                             > 25000.0D0 </cldfrc_premit>
 <cldfrc_premit dyn="se"                                            > 25000.0D0 </cldfrc_premit>
-<cldfrc_premit                                      pbl="uw"          > 40000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="fv"  hgrid="0.23x0.31"          pbl="uw"          > 40000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="fv"  hgrid="0.47x0.63"          pbl="uw"          > 40000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="fv"  hgrid="0.5x0.625"          pbl="uw"          > 40000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="eul" hgrid="128x256"            pbl="uw"          > 40000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="eul" hgrid="256x512"            pbl="uw"          > 40000.0D0 </cldfrc_premit>
-<cldfrc_premit dyn="eul" hgrid="512x1024"           pbl="uw"          > 40000.0D0 </cldfrc_premit>
 <cldfrc_premit dyn="se"                          pbl="uw"          > 40000.0D0 </cldfrc_premit>
 
 <cldfrc_premib              > 750.0D2 </cldfrc_premib>
@@ -1281,88 +1094,35 @@
 
 <!-- Cldwat -->
 <cldwat_icritc                                                        >  5.0e-6  </cldwat_icritc>
-<cldwat_icritc  dyn="fv"                                              >  9.5e-6  </cldwat_icritc>
-<cldwat_icritc  dyn="fv"  hgrid="0.23x0.31"                           > 45.0e-6  </cldwat_icritc>
-<cldwat_icritc  dyn="fv"  hgrid="0.47x0.63"                           > 45.0e-6  </cldwat_icritc>
-<cldwat_icritc  dyn="fv"  hgrid="0.5x0.625"                           > 45.0e-6  </cldwat_icritc>
-<cldwat_icritc  dyn="fv"  hgrid="0.9x1.25"                            > 18.0e-6  </cldwat_icritc>
-<cldwat_icritc  dyn="fv"  hgrid="1x1.25"                              > 18.0e-6  </cldwat_icritc>
-<cldwat_icritc  dyn="fv"  hgrid="1.9x2.5"                             >  9.5e-6  </cldwat_icritc>
-<cldwat_icritc  dyn="fv"  hgrid="2x2.5"                               >  9.5e-6  </cldwat_icritc>
-<cldwat_icritc  hgrid="512x1024"                                      > 30.0e-6  </cldwat_icritc>
-<cldwat_icritc  hgrid="256x512"                                       > 20.0e-6  </cldwat_icritc>
-<cldwat_icritc  hgrid="128x256"                                       > 16.0e-6  </cldwat_icritc>
-<cldwat_icritc  hgrid="48x96"                                         >  1.0e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="se"                                           > 18.0e-6  </cldwat_icritc>
 
 <cldwat_icritw                                                        >  4.0e-4  </cldwat_icritw>
-<cldwat_icritw  dyn="fv"                                              >  2.0e-4  </cldwat_icritw>
-<cldwat_icritw  dyn="fv"  hgrid="0.47x0.63"   phys="cam4"             >  2.0e-6  </cldwat_icritw>
 <cldwat_icritw  dyn="se"                                           >  2.0e-4  </cldwat_icritw>
 
 <cldwat_conke                                                        >  10.0e-6 </cldwat_conke>
-<cldwat_conke dyn="fv"                                               >  5.0e-6  </cldwat_conke>
-<cldwat_conke dyn="eul"  hgrid="512x1024"                            >  5.0e-6  </cldwat_conke>
-<cldwat_conke dyn="eul"  hgrid="256x512"                             >  5.0e-6  </cldwat_conke>
-<cldwat_conke dyn="eul"  hgrid="128x256"                             >  5.0e-6  </cldwat_conke>
 <cldwat_conke dyn="se"                                            >  5.0e-6  </cldwat_conke>
 
 <cldwat_r3lcrit                                                      >  10.0e-6  </cldwat_r3lcrit>
-<cldwat_r3lcrit  hgrid="48x96"                                       >   1.0e-6  </cldwat_r3lcrit>
 
 <!-- hkconv Moist Convection -->
 <hkconv_cmftau> 1800.0D0 </hkconv_cmftau>
-<hkconv_c0 dyn="fv"                                                >  1.0e-4 </hkconv_c0>
-<hkconv_c0 dyn="fv"   hgrid="0.23x0.31"                            >  5.0e-5 </hkconv_c0>
-<hkconv_c0 dyn="fv"   hgrid="0.47x0.63"                            >  5.0e-5 </hkconv_c0>
-<hkconv_c0 dyn="fv"   hgrid="0.5x0.625"                            >  5.0e-5 </hkconv_c0>
-<hkconv_c0 dyn="fv"   hgrid="4x5"                                  >  2.0e-4 </hkconv_c0>
-
 <hkconv_c0                                                         >  2.0e-4 </hkconv_c0>
-<hkconv_c0   hgrid="512x1024"                                      >  1.0e-5 </hkconv_c0>
-<hkconv_c0   hgrid="256x512"                                       >  1.0e-5 </hkconv_c0>
-<hkconv_c0   hgrid="48x96"                                         >  1.0e-4 </hkconv_c0>
-<hkconv_c0   hgrid="128x256"                                       >  1.0e-4 </hkconv_c0>
 <hkconv_c0   dyn="se"                                           >  1.0e-4 </hkconv_c0>
 
 <!-- uwshcu Moist Convection -->
 <uwshcu_rpen                                                       >  10.0 </uwshcu_rpen>
-<uwshcu_rpen hgrid="1.9x2.5"                                       >   5.0 </uwshcu_rpen>
-<uwshcu_rpen hgrid="1.9x2.5"  microphys="mg1.5"                    >  10.0 </uwshcu_rpen>
 
 <uwshcu_rpen dyn="se"                                           >   5.0 </uwshcu_rpen>
 
 <!-- zm conv -->
 <zmconv_c0_lnd                                                        > 0.0030D0 </zmconv_c0_lnd>
-<zmconv_c0_lnd                                    phys="cam5"         > 0.0059D0 </zmconv_c0_lnd>
-<zmconv_c0_lnd                   hgrid="ne120np4" phys="cam5"         > 0.0035D0 </zmconv_c0_lnd>
-<zmconv_c0_lnd  microphys="mg2"  clubb_sgs="1"    phys="cam5"         > 0.0075D0 </zmconv_c0_lnd>
-<zmconv_c0_lnd  dyn="fv"                          phys="cam4"         > 0.0035D0 </zmconv_c0_lnd>
-<zmconv_c0_lnd  dyn="se"                       phys="cam4"         > 0.0035D0 </zmconv_c0_lnd>
-<zmconv_c0_lnd                   hgrid="48x96"    phys="cam4"         > 0.0020D0 </zmconv_c0_lnd>
-<zmconv_c0_lnd                   hgrid="128x256"  phys="cam4"         > 0.0040D0 </zmconv_c0_lnd>
-<zmconv_c0_lnd                   hgrid="256x512"  phys="cam4"         > 0.0040D0 </zmconv_c0_lnd>
-<zmconv_c0_lnd                   hgrid="512x1024" phys="cam4"         > 0.0040D0 </zmconv_c0_lnd>
-
 <zmconv_c0_ocn                                                        > 0.0030D0 </zmconv_c0_ocn>
-<zmconv_c0_ocn                                    phys="cam5"         > 0.0450D0 </zmconv_c0_ocn>
-<zmconv_c0_ocn                   hgrid="ne120np4" phys="cam5"         > 0.0035D0 </zmconv_c0_ocn>
-<zmconv_c0_ocn  dyn="fv"                          phys="cam4"         > 0.0035D0 </zmconv_c0_ocn>
-<zmconv_c0_ocn  dyn="se"                       phys="cam4"         > 0.0035D0 </zmconv_c0_ocn>
-<zmconv_c0_ocn                   hgrid="48x96"    phys="cam4"         > 0.0020D0 </zmconv_c0_ocn>
-<zmconv_c0_ocn                   hgrid="128x256"  phys="cam4"         > 0.0040D0 </zmconv_c0_ocn>
-<zmconv_c0_ocn                   hgrid="256x512"  phys="cam4"         > 0.0040D0 </zmconv_c0_ocn>
-<zmconv_c0_ocn                   hgrid="512x1024" phys="cam4"         > 0.0040D0 </zmconv_c0_ocn>
 
 <zmconv_tau			                                                      > 3600</zmconv_tau>
 <zmconv_alfa			                                                      > 0.1</zmconv_alfa>
 
 <zmconv_ke                                                            > 3.0E-6 </zmconv_ke>
-<zmconv_ke      dyn="fv"                                              > 1.0E-6 </zmconv_ke>
 <zmconv_ke      dyn="se"                                           > 1.0E-6 </zmconv_ke>
-<zmconv_ke                       hgrid="128x256"                      > 1.0E-6 </zmconv_ke>
-<zmconv_ke                       hgrid="256x512"                      > 1.0E-6 </zmconv_ke>
-<zmconv_ke                       hgrid="512x1024"                     > 1.0E-6 </zmconv_ke>
 
 <zmconv_trigdcape_ull                                                 >.false. </zmconv_trigdcape_ull>
 <zmconv_trig_dcape_only                                               >.false. </zmconv_trig_dcape_only>
@@ -1384,20 +1144,11 @@
 <fcrit2              >1.0</fcrit2>
 
 <!-- FV dycore -->
-<fft_flt phys="cam3"  >0</fft_flt>
 <fft_flt              >1</fft_flt>
 
 <div24del2flag                              > 2</div24del2flag>
-<div24del2flag                   phys="cam5"> 4</div24del2flag>
-<div24del2flag hgrid="0.23x0.31" phys="cam4">42</div24del2flag>
-<div24del2flag hgrid="0.47x0.63" phys="cam4">42</div24del2flag>
-<div24del2flag hgrid="0.23x0.31" phys="cam5">42</div24del2flag>
-<div24del2flag hgrid="0.47x0.63" phys="cam5">42</div24del2flag>
 
 <nspltvrm                  >1</nspltvrm>
-<nspltvrm hgrid="0.9x1.25" >2</nspltvrm>
-<nspltvrm hgrid="0.47x0.63">2</nspltvrm>
-<nspltvrm hgrid="0.23x0.31">2</nspltvrm>
 <nspltvrm    waccm_phys="1">2</nspltvrm>
 <nspltrac    waccm_phys="1">2</nspltrac>
 
@@ -1406,11 +1157,9 @@
 <del2coef                >3.e+5</del2coef>
 
 <filtcw                  >0</filtcw>
-<filtcw hgrid="0.23x0.31">1</filtcw>
 
 <!--for subcycling spectral-->
 <eul_nsplit dyn="eul"> 1 </eul_nsplit>
-<eul_nsplit dyn="eul" hgrid="512x1024"> 12 </eul_nsplit>
 
 <!-- iop dataset for SCAM mode -->
 <iopfile dyn="eul">atm/cam/scam/iop/ARM95_4scam.nc</iopfile>
@@ -1741,9 +1490,6 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <hypervis_subcycle hgrid="ne0np4_twpx4v1" dyn_target="preqx"> 7 </hypervis_subcycle>
 
 
-
-
-
 <!-- ================================================================== -->
 <!-- Defaults for driver namelist seq_infodata_inparm                   -->
 <!-- ================================================================== -->
@@ -1792,13 +1538,6 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <!-- so that they will be used when the default 101 climatology start date -->
 <!-- is used.  The sim_year attribute defaults to 2000 in build-namelist, -->
 <!-- and is set explicitly in the use case files -->
-<finidat hgrid="0.9x1.25"  ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.BCN.2000-01-01_0.9x1.25_gx1v6_simyr2000_c100303.nc</finidat>
-<finidat hgrid="1.9x2.5"   ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.BCN.2000-01-01_1.9x2.5_gx1v6_simyr2000_c100309.nc</finidat>
-<finidat hgrid="48x96"     ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.BCN_0051-01-01_48x96_gx3v7_simyr2000_c110509.nc</finidat>
-
-<finidat hgrid="0.9x1.25"  ic_ymd="101" sim_year="1850">ccsm4_init/b40.1850.track1.1deg.006/0863-01-01/b40.1850.track1.1deg.006.clm2.r.0863-01-01-00000.nc</finidat>
-<finidat hgrid="1.9x2.5"   ic_ymd="101" sim_year="1850">ccsm4_init/b40.1850.track1.2deg.003/year_401/b40.1850.track1.2deg.003.clm2.r.0401-01-01-00000.nc</finidat>
-<finidat hgrid="48x96"     ic_ymd="101" sim_year="1850">lnd/clm2/initdata/clmi.BCN.1850-01-01_48x96_gx3v7_simyr1850_c110421.nc</finidat>
 <finidat hgrid="ne30np4"   ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.BCN.2000-01-01_ne30np4_gx1v6_simyr2000_c110328.nc</finidat>
 <finidat hgrid="ne0np4_arm_x8v3_lowcon"  ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.armx8v3.1850-01-01.nc</finidat>
 <!-- for CLM4.0finidat hgrid="ne0np4_conus_x4v1_lowcon" ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.conusx4v1.2000-01-01_c141106.nc</finidat-->
@@ -1808,20 +1547,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 
 <!-- Surface datasets (relative to {csmdata}) -->
 <!-- for present day simulations - year 2000 -->
-<fsurdat hgrid="128x256"   sim_year="2000">lnd/clm2/surfdata/surfdata_128x256_simyr2000_c100406.nc</fsurdat>
 <fsurdat hgrid="64x128"    sim_year="2000">lnd/clm2/surfdata/surfdata_64x128_simyr2000_c090928.nc</fsurdat>
-<fsurdat hgrid="48x96"     sim_year="2000">lnd/clm2/surfdata/surfdata_48x96_simyr2000_c100505.nc</fsurdat>
-<fsurdat hgrid="32x64"     sim_year="2000">lnd/clm2/surfdata/surfdata_32x64_simyr2000_c090928.nc</fsurdat>
-<fsurdat hgrid="8x16"      sim_year="2000">lnd/clm2/surfdata/surfdata_8x16_simyr2000_c090928.nc</fsurdat>
-
-<fsurdat hgrid="0.23x0.31" sim_year="2000">lnd/clm2/surfdata/surfdata_0.23x0.31_simyr2000_c100406.nc</fsurdat>
-<fsurdat hgrid="0.47x0.63" sim_year="2000">lnd/clm2/surfdata/surfdata_0.47x0.63_simyr2000_c091023.nc</fsurdat>
-<fsurdat hgrid="0.9x1.25"  sim_year="2000">lnd/clm2/surfdata/surfdata_0.9x1.25_simyr2000_c091006.nc</fsurdat>
-<fsurdat hgrid="1.9x2.5"   sim_year="2000">lnd/clm2/surfdata/surfdata_1.9x2.5_simyr2000_c091005.nc</fsurdat>
-<fsurdat hgrid="2.5x3.33"  sim_year="2000">lnd/clm2/surfdata/surfdata_2.5x3.33_simyr2000_c091023.nc</fsurdat>
-<fsurdat hgrid="4x5"       sim_year="2000">lnd/clm2/surfdata/surfdata_4x5_simyr2000_c090928.nc</fsurdat>
-<fsurdat hgrid="10x15"     sim_year="2000">lnd/clm2/surfdata/surfdata_10x15_simyr2000_c090928.nc</fsurdat>
-
 <fsurdat hgrid="ne16np4"   sim_year="2000">lnd/clm2/surfdata_map/surfdata_ne16np4_simyr2000_c120126.nc</fsurdat>
 <fsurdat hgrid="ne30np4"   sim_year="2000">lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2000_c110801.nc</fsurdat>
 <fsurdat hgrid="ne60np4"   sim_year="2000">lnd/clm2/surfdata_map/surfdata_ne60np4_simyr2000_c120416.nc</fsurdat>
@@ -1829,20 +1555,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <fsurdat hgrid="ne240np4"  sim_year="2000">lnd/clm2/surfdata_map/surfdata_ne240np4_simyr2000_c110801.nc</fsurdat>
 
 <!-- for pre-industrial simulations - year 1850 -->
-<fsurdat hgrid="512x1024"  sim_year="1850">lnd/clm2/surfdata/surfdata_512x1024_simyr1850_c100315.nc</fsurdat>
-<fsurdat hgrid="128x256"   sim_year="1850">lnd/clm2/surfdata/surfdata_128x256_simyr1850_c100406.nc</fsurdat>
 <fsurdat hgrid="64x128"    sim_year="1850">lnd/clm2/surfdata/surfdata_64x128_simyr1850_c090928.nc</fsurdat>
-<fsurdat hgrid="48x96"     sim_year="1850">lnd/clm2/surfdata/surfdata_48x96_simyr1850_c110114.nc</fsurdat>
-<fsurdat hgrid="32x64"     sim_year="1850">lnd/clm2/surfdata/surfdata_32x64_simyr1850_c090928.nc</fsurdat>
-<fsurdat hgrid="8x16"      sim_year="1850">lnd/clm2/surfdata/surfdata_8x16_simyr1850_c090928.nc</fsurdat>
-
-<fsurdat hgrid="0.23x0.31" sim_year="1850">lnd/clm2/surfdata/surfdata_0.23x0.31_simyr1850_c100404.nc</fsurdat>
-<fsurdat hgrid="0.47x0.63" sim_year="1850">lnd/clm2/surfdata/surfdata_0.47x0.63_simyr1850_c100826.nc</fsurdat>
-<fsurdat hgrid="0.9x1.25"  sim_year="1850">lnd/clm2/surfdata/surfdata_0.9x1.25_simyr1850_c091006.nc</fsurdat>
-<fsurdat hgrid="1.9x2.5"   sim_year="1850">lnd/clm2/surfdata/surfdata_1.9x2.5_simyr1850_c091108.nc</fsurdat>
-<fsurdat hgrid="2.5x3.33"  sim_year="1850">lnd/clm2/surfdata/surfdata_2.5x3.33_simyr1850_c091109.nc</fsurdat>
-<fsurdat hgrid="4x5"       sim_year="1850">lnd/clm2/surfdata/surfdata_4x5_simyr1850_c090928.nc</fsurdat>
-<fsurdat hgrid="10x15"     sim_year="1850">lnd/clm2/surfdata/surfdata_10x15_simyr1850_c100202.nc</fsurdat>
 
 <fsurdat hgrid="ne16np4"   sim_year="1850">lnd/clm2/surfdata/surfdata_ne16np4_simyr1850_c120126.nc</fsurdat>
 <fsurdat hgrid="ne30np4"   sim_year="1850">lnd/clm2/surfdata/surfdata_ne30np4_simyr1850_c110727.nc</fsurdat>
@@ -1851,9 +1564,6 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <fsurdat hgrid="ne240np4"  sim_year="1850">lnd/clm2/surfdata/surfdata_ne240np4_simyr1850_c120127.nc</fsurdat>
 
 <!-- Dynamic PFT surface datasets (relative to {csmdata}) -->
-<fpftdyn hgrid="48x96"         sim_year="1850-2000" >lnd/clm2/surfdata/surfdata.pftdyn_48x96_hist_simyr1850-2005_c110114.nc</fpftdyn>
-
-<fpftdyn hgrid="0.9x1.25"      sim_year="1850-2000" >lnd/clm2/surfdata/surfdata.pftdyn_0.9x1.25_simyr1850-2005_c091008.nc</fpftdyn>
 <fpftdyn hgrid="1.9x2.5"       sim_year="1850-2000" >lnd/clm2/surfdata/surfdata.pftdyn_1.9x2.5_simyr1850-2005_c091108.nc</fpftdyn>
 <fpftdyn hgrid="2.5x3.33"      sim_year="1850-2000" >lnd/clm2/surfdata/surfdata.pftdyn_2.5x3.33_simyr1850-2005_c091109.nc</fpftdyn>
 <fpftdyn hgrid="10x15"         sim_year="1850-2000" >lnd/clm2/surfdata/surfdata.pftdyn_10x15_simyr1850-2005_c100205.nc</fpftdyn>
@@ -1878,19 +1588,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 
 <!-- Grid/Fraction datasets (relative to {csmdata}) -->
 
-<fatmlndfrc hgrid="128x256"   >share/domains/domain.clm/domain.lnd.T85_USGS.111004.nc</fatmlndfrc>
 <fatmlndfrc hgrid="64x128"    >share/domains/domain.clm/domain.lnd.T42_USGS.111004.nc</fatmlndfrc>
-<fatmlndfrc hgrid="48x96"     >share/domains/domain.lnd.T31_gx3v7.090928.nc</fatmlndfrc>
-<fatmlndfrc hgrid="32x64"     >share/domains/domain.lnd.T21_USGS.111004.nc</fatmlndfrc>
-<fatmlndfrc hgrid="8x16"      >share/domains/domain.clm/domain.lnd.T5_USGS.111004.nc</fatmlndfrc>
-
-<fatmlndfrc hgrid="0.23x0.31" >share/domains/domain.lnd.fv0.23x0.31_gx1v6.100517.nc</fatmlndfrc>
-<fatmlndfrc hgrid="0.47x0.63" >share/domains/domain.lnd.fv0.47x0.63_gx1v6.090407.nc</fatmlndfrc>
-<fatmlndfrc hgrid="0.9x1.25"  >share/domains/domain.lnd.fv0.9x1.25_gx1v6.090309.nc</fatmlndfrc>
-<fatmlndfrc hgrid="1.9x2.5"   >share/domains/domain.lnd.fv1.9x2.5_gx1v6.090206.nc</fatmlndfrc>
-<fatmlndfrc hgrid="2.5x3.33"  >share/domains/domain.lnd.fv2.5x3.33_gx3v7.110223.nc</fatmlndfrc>
-<fatmlndfrc hgrid="4x5"       >share/domains/domain.lnd.fv4x5_USGS.110713.nc</fatmlndfrc>
-<fatmlndfrc hgrid="10x15"     >share/domains/domain.lnd.fv10x15_USGS.110713.nc</fatmlndfrc>
 
 <fatmlndfrc hgrid="ne16np4"   >share/domains/domain.lnd.ne16np4_gx3v7.120406.nc</fatmlndfrc>
 <fatmlndfrc hgrid="ne30np4"   >share/domains/domain.lnd.ne30np4_gx1v6.110905.nc</fatmlndfrc>
@@ -1914,55 +1612,16 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <!-- SST datasets used with DOM/CSIM4 and DOCN -->
 <!-- Present day SST -->
 <!-- Warning: I think bndtvs has been superseded by SSTICE* (pjc, 2016-8-5) -->
-<bndtvs hgrid="0.23x0.31"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_c061106.nc</bndtvs>
-<bndtvs hgrid="0.47x0.63"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_clim_c061106.nc</bndtvs>
-<bndtvs hgrid="0.5x0.625"  sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.5x0.625_1949_2001_c040402.nc</bndtvs>
-<bndtvs hgrid="0.9x1.25"   sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926a.nc</bndtvs>
-<bndtvs hgrid="1.9x2.5"    sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_clim_c061031.nc</bndtvs>
-<bndtvs hgrid="2.5x3.33"   sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_2.5x3.33_clim_c091210.nc</bndtvs>
-<bndtvs hgrid="4x5"        sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_4x5_clim_c061031.nc</bndtvs>
-<bndtvs hgrid="10x15"      sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_10x15_clim_c050526.nc</bndtvs>
-
-<bndtvs hgrid="256x512"    sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_256x512_clim_c031031.nc</bndtvs>
-<bndtvs hgrid="128x256"    sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_128x256_clim_c050526.nc</bndtvs>
 <bndtvs hgrid="64x128"     sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_64x128_clim_c050526.nc</bndtvs>
-<bndtvs hgrid="48x96"      sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_48x96_clim_c050526.nc</bndtvs>
-<bndtvs hgrid="32x64"      sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_32x64_clim_c050526.nc</bndtvs>
-<bndtvs hgrid="8x16"       sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_8x16_clim_c050526.nc</bndtvs>
 
 <bndtvs dyn="se"        sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_1x1_clim_c101029.nc</bndtvs>
 
 <!-- Pre-industrial SST: 1850 -->
-<bndtvs hgrid="0.23x0.31"  sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_pi_c091020.nc</bndtvs>
-<bndtvs hgrid="0.47x0.63"  sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_clim_pi_c100128.nc</bndtvs>
-<bndtvs hgrid="0.9x1.25"   sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_pi_c100127.nc</bndtvs>
-<bndtvs hgrid="1.9x2.5"    sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_clim_pi_c100127.nc</bndtvs>
-<bndtvs hgrid="2.5x3.33"   sim_year="1850">ocn/docn7/SSTDATA/sst_HadOIBl_bc_2.5x3.33_clim_pi_c091020.nc</bndtvs>
-<bndtvs hgrid="4x5"        sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_4x5_clim_pi_c100127.nc</bndtvs>
-<bndtvs hgrid="10x15"      sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_10x15_clim_pi_c100127.nc</bndtvs>
-
-<bndtvs hgrid="128x256"    sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_128x256_clim_pi_c100128.nc</bndtvs>
-<bndtvs hgrid="64x128"     sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_64x128_clim_pi_c100128.nc</bndtvs>
-<bndtvs hgrid="48x96"      sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_48x96_clim_pi_c100128.nc</bndtvs>
-<bndtvs hgrid="32x64"      sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_32x64_clim_pi_c100128.nc</bndtvs>
-<bndtvs hgrid="8x16"       sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_8x16_clim_pi_c100128.nc</bndtvs>
 
 <bndtvs dyn="se"        sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_1x1_clim_pi_c100129.nc</bndtvs>
 
 <!-- Time-varying SSTs: 1850-2005 -->
-<bndtvs hgrid="0.23x0.31"  sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_pi_c091020.nc</bndtvs>
-<bndtvs hgrid="0.47x0.63"  sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_1850_2012_c130411.nc</bndtvs>
-<bndtvs hgrid="0.9x1.25"   sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_1850_2012_c130411.nc</bndtvs>
-<bndtvs hgrid="1.9x2.5"    sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_1850_2012_c130411.nc</bndtvs>
-<bndtvs hgrid="2.5x3.33"   sim_year="1850-2000">ocn/docn7/SSTDATA/sst_HadOIBl_bc_2.5x3.33_1870_2008_c091020.nc</bndtvs>
-<bndtvs hgrid="4x5"        sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_4x5_1850_2012_c130411.nc</bndtvs>
-<bndtvs hgrid="10x15"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_10x15_1850_2012_c130411.nc</bndtvs>
-
-<bndtvs hgrid="128x256"    sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_128x256_1850_2012_c130411.nc</bndtvs>
 <bndtvs hgrid="64x128"     sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_64x128_1850_2012_c130411.nc</bndtvs>
-<bndtvs hgrid="48x96"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_48x96_1850_2008_c100128.nc</bndtvs>
-<bndtvs hgrid="32x64"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_32x64_1850_2012_c130411.nc</bndtvs>
-<bndtvs hgrid="8x16"       sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_8x16_1850_2012_c130411.nc</bndtvs>
 
 <bndtvs dyn="se"        sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_1x1_1850_2012_c130411.nc</bndtvs>
 
@@ -1970,19 +1629,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <bndtvs_domain dyn="se"  >ocn/docn7/domain.ocn.1x1.111007.nc</bndtvs_domain>
 
 <!-- Ocean domain files -->
-<focndomain hgrid="128x256" >atm/cam/ocnfrac/domain.camocn.128x256_USGS_070807.nc</focndomain>
 <focndomain hgrid="64x128"  >atm/cam/ocnfrac/domain.camocn.64x128_USGS_070807.nc</focndomain>
-<focndomain hgrid="48x96"   >atm/cam/ocnfrac/domain.camocn.48x96_gx3v7_100114.nc</focndomain>
-<focndomain hgrid="32x64"   >atm/cam/ocnfrac/domain.camocn.32x64_USGS_070807.nc</focndomain>
-<focndomain hgrid="8x16"    >atm/cam/ocnfrac/domain.camocn.8x16_USGS_070807.nc</focndomain>
-
-<focndomain hgrid="0.23x0.31" >atm/cam/ocnfrac/domain.camocn.0.23x0.31_gx1v6_101108.nc</focndomain>
-<focndomain hgrid="0.47x0.63" >atm/cam/ocnfrac/domain.camocn.0.47x0.63_gx1v6_090408.nc</focndomain>
-<focndomain hgrid="0.9x1.25"  >atm/cam/ocnfrac/domain.camocn.0.9x1.25_gx1v6_090403.nc</focndomain>
-<focndomain hgrid="1.9x2.5"   >atm/cam/ocnfrac/domain.camocn.1.9x2.5_gx1v6_090403.nc</focndomain>
-<focndomain hgrid="2.5x3.33"  >atm/cam/ocnfrac/domain.camocn.fv2.5x3.33_gx3v7_110223.nc</focndomain>
-<focndomain hgrid="4x5"       >atm/cam/ocnfrac/domain.camocn.4x5_USGS_070807.nc</focndomain>
-<focndomain hgrid="10x15"     >atm/cam/ocnfrac/domain.camocn.10x15_USGS_070807.nc</focndomain>
 
 <focndomain hgrid="ne16np4"   >share/domains/domain.ocn.ne16np4_gx3v7.121113.nc</focndomain>
 <focndomain hgrid="ne30np4"   >share/domains/domain.ocn.ne30np4_gx1v6_110217.nc</focndomain>

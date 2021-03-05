@@ -184,7 +184,8 @@ module control_mod
   !
 
   ! hyperviscosity parameters used for smoothing topography
-  integer, public :: smooth_phis_numcycle = 0   ! 0 = disable
+  integer, public :: smooth_phis_numcycle = -1   ! -1 = disable
+  integer, public :: smooth_phis_p2filt = -1     ! -1 = disable
   real (kind=real_kind), public :: smooth_phis_nudt = 0
 
   integer, public :: prescribed_wind=0    ! fix the velocities?
@@ -255,7 +256,7 @@ contains
 
   function timestep_make_parameters_consistent(par, rsplit, qsplit, &
        dt_remap_factor, dt_tracer_factor, tstep, dtime, nsplit, nstep_factor, &
-       abort, silent) result(status)
+       abrtf, silent) result(status)
 
     ! Current and future development require a more flexibility in
     ! specifying time steps. This routine analyzes the settings and
@@ -287,7 +288,7 @@ contains
     integer, intent(inout) :: &
          ! Physics-dynamics coupling time step.
          dtime
-    logical, intent(in), optional :: abort, silent
+    logical, intent(in), optional :: abrtf, silent
     integer :: status
 
     real(kind=real_kind), parameter :: &
@@ -298,7 +299,7 @@ contains
     logical :: abort_in, silent_in
 
     abort_in = .true.
-    if (present(abort)) abort_in = abort
+    if (present(abrtf)) abort_in = abrtf
     silent_in = .false.
     if (present(silent)) silent_in = silent
 
@@ -312,21 +313,21 @@ contains
   end function timestep_make_parameters_consistent
 
   function timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, &
-       dt_remap_factor, dt_tracer_factor, abort, silent) result(status)
+       dt_remap_factor, dt_tracer_factor, abrtf, silent) result(status)
 
     use parallel_mod, only: abortmp, parallel_t
     use kinds, only: iulog
 
     type (parallel_t), intent(in) :: par
     integer, intent(inout) :: rsplit, qsplit, dt_remap_factor, dt_tracer_factor
-    logical, intent(in), optional :: abort, silent
+    logical, intent(in), optional :: abrtf, silent
     integer :: status
 
     integer :: qsplit_prev, rsplit_prev
     logical :: split_specified, factor_specified, split_is_master, abort_in, silent_in
 
     abort_in = .true.
-    if (present(abort)) abort_in = abort
+    if (present(abrtf)) abort_in = abrtf
     silent_in = .false.
     if (present(silent)) silent_in = silent
 
@@ -399,7 +400,7 @@ contains
   end function timestep_make_subcycle_parameters_consistent
 
   function timestep_make_eam_parameters_consistent(par, dt_remap_factor, dt_tracer_factor, &
-       nsplit, nstep_factor, tstep, dtime, abort, silent) result(status)
+       nsplit, nstep_factor, tstep, dtime, abrtf, silent) result(status)
 
     use parallel_mod, only: abortmp, parallel_t
     use kinds, only: iulog
@@ -410,7 +411,7 @@ contains
     integer, intent(out) :: nstep_factor
     real(kind=real_kind), intent(inout) :: tstep
     integer, intent(inout) :: dtime
-    logical, intent(in), optional :: abort, silent
+    logical, intent(in), optional :: abrtf, silent
     integer :: status
 
     real(kind=real_kind), parameter :: &
@@ -423,7 +424,7 @@ contains
     logical :: abort_in, silent_in
 
     abort_in = .true.
-    if (present(abort)) abort_in = abort
+    if (present(abrtf)) abort_in = abrtf
     silent_in = .false.
     if (present(silent)) silent_in = silent
 

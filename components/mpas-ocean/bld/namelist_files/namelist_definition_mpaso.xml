@@ -1044,6 +1044,14 @@ Valid values: Real Values greater than zero less than bottomDepth
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_enable_shortwave_energy_fixer" type="logical"
+	category="shortwaveRadiation" group="shortwaveRadiation">
+Flag to enable the shortwave energy fixer for shallow ocean cells
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- tidal_potential_forcing -->
 
@@ -1480,7 +1488,7 @@ Default: Defined in namelist_defaults.xml
 	category="eos" group="eos">
 Character string to choose EOS formulation
 
-Valid values: Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'
+Valid values: Jackett McDougall EOS = 'jm', Wright = 'wright', and Linear EOS = 'linear'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1594,6 +1602,17 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_eos_linear_densityref" type="real"
 	category="eos_linear" group="eos_linear">
 Reference density, i.e. density when T=Tref and S=Sref
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- eos_wright -->
+
+<entry id="config_eos_wright_ref_pressure" type="real"
+	category="eos_wright" group="eos_wright">
+Reference pressure for potential density
 
 Valid values: any positive real
 Default: Defined in namelist_defaults.xml

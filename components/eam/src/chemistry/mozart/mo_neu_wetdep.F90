@@ -132,7 +132,7 @@ subroutine neu_wetdep_init
   mapping_to_mmr = -99
   do m=1,gas_wetdep_cnt
     if ( debug ) print '(i4,a)',m,trim(gas_wetdep_list(m))
-    call cnst_get_ind(gas_wetdep_list(m), mapping_to_mmr(m), abort=.false. )
+    call cnst_get_ind(gas_wetdep_list(m), mapping_to_mmr(m), abrtf=.false. )
     if ( debug ) print '(a,i4)','mapping_to_mmr ',mapping_to_mmr(m)
     if ( mapping_to_mmr(m) <= 0 ) then
       print *,'problem with mapping_to_mmr of ',gas_wetdep_list(m)

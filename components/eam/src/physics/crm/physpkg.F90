@@ -647,9 +647,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
   teout_idx = pbuf_get_index( 'TEOUT')
 
-  if (nsrest .eq. 0) then
-    call phys_inidat(cam_out, pbuf2d) 
-  end if
+  if (nsrest .eq. 0) call phys_inidat(cam_out, pbuf2d) 
   
   ! wv_saturation is relatively independent of everything else and
   ! low level, so init it early. Must at least do this before radiation.
@@ -670,8 +668,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   call prescribed_ozone_init()
   call prescribed_ghg_init()
   call prescribed_aero_init()
-  call aerodep_flx_init(phys_state,pbuf2d)
-  call aircraft_emit_init()
+  call aerodep_flx_init()
+  call aircraft_emit_init(phys_state,pbuf2d)
   !when is_cmip6_volc is true ,cmip6 style volcanic file is read
   !Initialized to .false. here but it gets its values from prescribed_volcaero_init
   is_cmip6_volc = .false. 
@@ -1146,6 +1144,10 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
 
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt, cam_in%cflx)
+
+    ! add tendency from aircraft emissions
+    call co2_cycle_set_ptend(state, pbuf, ptend)
+    call physics_update(state, ptend, ztodt, tend)
 
     ! add tendency from aircraft emissions
     call co2_cycle_set_ptend(state, pbuf, ptend)
