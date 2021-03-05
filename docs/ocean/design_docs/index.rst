@@ -7,3 +7,4 @@ Design document describing new capabilities added to MPAS-Ocean.
    :titlesonly:
 
    time-varying-wind
+   prognostic-sediment-transport
