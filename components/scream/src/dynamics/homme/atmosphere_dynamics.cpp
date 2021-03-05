@@ -108,7 +108,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 void HommeDynamics::
 set_required_group (const FieldGroup<const Real>& group)
 {
-  if (group.m_info->size()>0) {
+  if (not group.m_info->empty()) {
     const auto& name = group.m_info->m_group_name;
 
     EKAT_REQUIRE_MSG(name=="TRACERS TENDENCY",
@@ -140,7 +140,7 @@ set_updated_group (const FieldGroup<Real>& group)
   EKAT_REQUIRE_MSG(name=="TRACERS",
     "Error! We were not expecting a field group called '" << name << "\n");
 
-  EKAT_REQUIRE_MSG(group.m_info->size()>0,
+  EKAT_REQUIRE_MSG(not group.m_info->empty(),
     "Error! There should be at least one tracer (qv) in the 'TRACERS' group.\n");
 
   EKAT_REQUIRE_MSG(group.m_info->m_bundled,

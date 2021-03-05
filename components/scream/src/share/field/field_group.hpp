@@ -65,6 +65,8 @@ struct FieldGroupInfo
 
   int size() const { return m_fields_names.size(); }
 
+  bool empty() const { return size()==0; }
+
   // The name of the group
   ci_string m_group_name;
 
