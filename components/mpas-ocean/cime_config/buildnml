@@ -1082,6 +1082,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="rainFlux"/>')
         lines.append('    <var name="snowFlux"/>')
         lines.append('    <var name="vertNonLocalFlux"/>')
+        lines.append('    <var name="bottomLayerShortwaveTemperatureFlux"/>')
         lines.append('    <var_array name="activeTracersTend"/>')
         lines.append('    <var name="salinitySurfaceRestoringTendency"/>')
         lines.append('    <var_array name="activeTracerHorizontalAdvectionTendency"/>')
