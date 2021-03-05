@@ -1666,17 +1666,6 @@ contains
                            state%pmid, cld, cldfsnow, &
                            cld_tau_bnd_lw, cld_tau_gpt_lw &
                         )
-
-                        call assert_valid(   iclwp(1:state%ncol,1:pver), 'iclwp')
-                        call assert_valid(   iciwp(1:state%ncol,1:pver), 'iciwp')
-                        call assert_valid(   icswp(1:state%ncol,1:pver), 'icswp')
-                        call assert_valid(     cld(1:state%ncol,1:pver), 'cld')
-                        call assert_valid(cldfsnow(1:state%ncol,1:pver), 'cldfsnow')
-                        ! call assert_valid(lambdac(1:state%ncol,1:pver,1:nlwbands), 'lambdac')
-                        ! call assert_valid(mu(1:state%ncol,1:pver,1:nlwbands), 'mu')
-                        ! call assert_valid((1:state%ncol,1:pver,1:nlwbands), '')
-                        call assert_valid(cld_tau_bnd_lw(1:state%ncol,1:pver,1:nlwbands), 'cld_tau_bnd_lw')
-
                         call output_cloud_optics_lw(state, cld_tau_bnd_lw)
                         call t_stopf('rad_cloud_optics_lw')
                         ! Check (and possibly clip) values before passing to RRTMGP driver
