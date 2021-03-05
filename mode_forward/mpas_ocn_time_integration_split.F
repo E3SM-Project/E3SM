@@ -70,7 +70,7 @@ module ocn_time_integration_split
    !--------------------------------------------------------------------
 
    character (len=*), parameter :: &
-      subcycleGroupName = 'subcycleFields', &! name for cached halo exch 
+      subcycleGroupName = 'subcycleFields', &! name for cached halo exch
       finalBtrGroupName = 'finalBtrFields'   ! name for cached halo exch
 
    logical :: &
@@ -88,7 +88,7 @@ module ocn_time_integration_split
 
    real (kind=RKIND) :: &
       useVelocityCorrection,&! mask for velocity correction
-      splitFact          ! mask for terms in split or unsplit cases 
+      splitFact          ! mask for terms in split or unsplit cases
 
 !***********************************************************************
 
@@ -102,8 +102,8 @@ module ocn_time_integration_split
 !> \author Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This routine integrates the ocean model forward one master time 
-!>  step (dt) using a split-explicit method in which the fast 
+!>  This routine integrates the ocean model forward one master time
+!>  step (dt) using a split-explicit method in which the fast
 !>  barotropic mode is sub-cycled using a shorter explicit time step.
 !
 !-----------------------------------------------------------------------
@@ -364,7 +364,7 @@ module ocn_time_integration_split
       ! Note that normalBaroclinicVelocity may now include a
       ! barotropic component, because the weights layerThickness
       ! have changed.  That is OK, because the barotropicForcing
-      ! variable subtracts out the barotropic component from the 
+      ! variable subtracts out the barotropic component from the
       ! baroclinic.
 
       !$omp parallel
@@ -434,7 +434,7 @@ module ocn_time_integration_split
 
       if (associated(lowFreqDivergenceNew)) then
          !$omp parallel
-         !$omp do schedule(runtime) private(k) 
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCellsAll
          do k = 1,nVertLevels
             lowFreqDivergenceNew(k,iCell) = &
@@ -456,7 +456,7 @@ module ocn_time_integration_split
          if (config_disable_thick_all_tend .and. &
              config_disable_vel_all_tend .and. &
              config_disable_tr_all_tend) then
-            exit ! don't compute in loop meant to update velocity, 
+            exit ! don't compute in loop meant to update velocity,
                  ! thickness, and tracers
          end if
 
@@ -483,7 +483,7 @@ module ocn_time_integration_split
          call mpas_timer_stop("se halo diag")
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !  Stage 1: Baroclinic velocity (3D) prediction, explicit with 
+         !  Stage 1: Baroclinic velocity (3D) prediction, explicit with
          !           long timestep
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -579,7 +579,7 @@ module ocn_time_integration_split
                   ! normalBaroclinicVelocityOld +
                   !                dt*(-f*normalBaroclinicVelocityPerp
                   !                    + T(u*,w*,p*) + g*grad(SSH*) )
-                  ! Here uNew is a work variable containing 
+                  ! Here uNew is a work variable containing
                   !  -fEdge(iEdge)*normalBaroclinicVelocityPerp(k,iEdge)
                   uTemp(k) = normalBaroclinicVelocityCur(k,iEdge) &
                            + dt * (normalVelocityTend(k,iEdge) &
@@ -698,7 +698,7 @@ module ocn_time_integration_split
 
             if (config_filter_btr_mode) then
                !$omp parallel
-               !$omp do schedule(runtime) 
+               !$omp do schedule(runtime)
                do iEdge = 1, nEdgesAll
                   barotropicForcing(iEdge) = 0.0_RKIND
                end do
@@ -707,14 +707,14 @@ module ocn_time_integration_split
             endif
 
             !$omp parallel
-            !$omp do schedule(runtime) 
+            !$omp do schedule(runtime)
             do iCell = 1, nCellsAll
                ! sshSubcycleOld = sshOld
                sshSubcycleCur(iCell) = sshCur(iCell)
             end do
             !$omp end do
 
-            !$omp do schedule(runtime) 
+            !$omp do schedule(runtime)
             do iEdge = 1, nEdgesAll
 
                ! normalBarotropicVelocitySubcycleOld =
@@ -1061,7 +1061,7 @@ module ocn_time_integration_split
                                           config_num_halos))
 
                   !$omp parallel
-                  !$omp do schedule(runtime) 
+                  !$omp do schedule(runtime)
                   do iEdge = 1, nEdges+1
                      btrvel_temp(iEdge) = &
                          normalBarotropicVelocitySubcycleNew(iEdge)
@@ -1229,7 +1229,7 @@ module ocn_time_integration_split
                      sshSubcycleNew(iCell) = sshSubcycleCur(iCell) &
                                         + dt/nBtrSubcycles * &
                                           sshTend(iCell)/areaCell(iCell)
-                  end do ! cell loop for ssh 
+                  end do ! cell loop for ssh
                   !$omp end do
 
                   ! compute barotropic thickness flux on edges
@@ -1301,7 +1301,7 @@ module ocn_time_integration_split
                ! be merged with the above code.
 
                !$omp parallel
-               !$omp do schedule(runtime) 
+               !$omp do schedule(runtime)
                do iEdge = 1, nEdgesAll
                   normalBarotropicVelocityNew(iEdge) = &
                   normalBarotropicVelocityNew(iEdge) + &
@@ -1328,7 +1328,7 @@ module ocn_time_integration_split
             call mpas_timer_start('btr se norm')
 
             !$omp parallel
-            !$omp do schedule(runtime) 
+            !$omp do schedule(runtime)
             do iEdge = 1, nEdgesOwned
                barotropicThicknessFlux(iEdge) = &
                barotropicThicknessFlux(iEdge) &
@@ -1371,7 +1371,7 @@ module ocn_time_integration_split
             !   normalVelocityCorrection = (Flux - Sum(h u*))/H
             ! or, for the full latex version:
             !{\bf u}^{corr} = \left( {\overline {\bf F}}
-            !  - \sum_{k=1}^{N^{edge}} h_{k,*}^{edge}  
+            !  - \sum_{k=1}^{N^{edge}} h_{k,*}^{edge}
             ! {\bf u}_k^{avg} \right)
             ! \left/ \sum_{k=1}^{N^{edge}} h_{k,*}^{edge}   \right.
 
@@ -1423,7 +1423,7 @@ module ocn_time_integration_split
                   ! and tracers in tendency calls in stage 3.
                   !mrp note: in QC version, there is an if
                   !    (config_use_GM) on adding normalGMBolusVelocity
-                  !    I think it is not needed because 
+                  !    I think it is not needed because
                   !    normalGMBolusVelocity=0 when GM not on.
                   normalTransportVelocity(k,iEdge) = edgeMask(k,iEdge) &
                            *(normalBarotropicVelocityNew(iEdge)   + &
@@ -1955,7 +1955,7 @@ module ocn_time_integration_split
       call mpas_timer_stop('se final mpas reconstruct')
 
       !$omp parallel
-      !$omp do schedule(runtime) 
+      !$omp do schedule(runtime)
       do iCell = 1, nCellsAll
          surfaceVelocity(indexSurfaceVelocityZonal,iCell) = &
                                    velocityZonal(1,iCell)
@@ -2107,7 +2107,7 @@ module ocn_time_integration_split
       case default
          call mpas_log_write('Incorrect choice config_time_integrator',&
                              MPAS_LOG_CRIT)
-      
+
       end select
 
       !*** set number of baroclinic iterations on each outer
@@ -2166,11 +2166,11 @@ module ocn_time_integration_split
                kmax  = maxLevelEdgeTop(iEdge)
 
                ! normalBarotropicVelocity = sum(h*u)/sum(h) on each edge
-               ! ocn_diagnostic_solve has not yet been called, so 
+               ! ocn_diagnostic_solve has not yet been called, so
                ! compute hEdge just for this edge.
 
                ! thicknessSum is initialized outside the loop because on
-               ! land boundaries maxLevelEdgeTop=0, but we want to 
+               ! land boundaries maxLevelEdgeTop=0, but we want to
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
                layerThicknessEdge1 = 0.5_RKIND* &
@@ -2195,7 +2195,7 @@ module ocn_time_integration_split
                normalBarotropicVelocity(iEdge) = &
                      normalThicknessFluxSum/layerThicknessSum
 
-               ! normalBaroclinicVelocity = normalVelocity - 
+               ! normalBaroclinicVelocity = normalVelocity -
                !     normalBarotropicVelocity
                do k = 1, kmax
                   normalBaroclinicVelocity(k,iEdge) = &
@@ -2203,7 +2203,7 @@ module ocn_time_integration_split
                     normalBarotropicVelocity(iEdge)
                enddo
 
-               ! normalBaroclinicVelocity=0, 
+               ! normalBaroclinicVelocity=0,
                ! normalVelocity=0 on land cells
                do k = kmax+1, nVertLevels
                   normalBaroclinicVelocity(k,iEdge) = 0.0_RKIND
