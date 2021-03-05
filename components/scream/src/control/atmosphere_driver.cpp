@@ -2,7 +2,6 @@
 
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
-#include "share/field/field_initializer.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_assert.hpp"
@@ -40,18 +39,6 @@ namespace control {
  *           could cheat, and cast away the const, but we can't prevent that. However, in debug builds,
  *           we store 2 copies of each field, and use the extra copy to check, at run time, that
  *           no process alters the values of any of its input fields.
- *     Note: when setting input fields in an atm proc, the atm proc is also allowed to specify how
- *           the field should be initialized. We only allow ONE process to attempt to do that,
- *           so atm procs should ALWAYS check that no initialization is already set for that field.
- *           Also, notice that the atm proc has no idea whether an initializer will be needed for
- *           this field or not. Checking whether there are providers already registered for it
- *           seems plausible, but it relies on atm procs being parsed in the correct order. Although
- *           this IS currently the case, we don't want to rely on it. Therefore, an atm proc should
- *           be aware that, even if it sets a certain type of initialization for a field, that
- *           initialization may not be needed. E.g., proc A needs field F, and sets it to be init-ed
- *           to 0. However, upon completion of the atm setup, proc B computes field F, and proc B
- *           is evaluated *before* proc A in the atm DAG. Therefore, no initialization is needed
- *           for field F.
  *  6) The atm procs group builds the remappers. Remappers are objects that map fields from one grid
  *     to another. Currently, we perform remappings only to/from a reference grid (set in the GM).
  *     Before calling each atm proc in the group, the AtmosphereProcessGroup (APG) class will
@@ -67,15 +54,12 @@ namespace control {
  *     since the atm proc does not yet know if the field needs to be inited or not (we haven't
  *     yet built/parsed the atm DAG).
  *  9) We build the atm DAG, and inspect its consistency. Each input of each atm proc must be
- *     computed by some other atm proc (possibly at the previous time step) or have a FieldInitializer
- *     set (could be the case for some geometry-related field, constant during the whole simulation).
- *     Additionally, every field that comes from the previous time step (i.e., an input of the
- *     atmosphere as a whole), MUST have an initializer structure set. If some dependency is not
- *     met, the AD will error out, and store the atm DAG in a file.
+ *     computed by some other atm proc (possibly at the previous time step) or imported by
+ *     the SurfaceCoupling (if present). If some dependency is not met, the AD will error out,
+ *     and store the atm DAG in a file.
  * 10) Finally, set the initial time stamp on all fields, and perform some debug structure setup.
  *
  */
-
 
 void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
                                    const ekat::ParameterList& params,
@@ -291,70 +275,20 @@ void AtmosphereDriver::register_groups () {
 void AtmosphereDriver::init_atm_inputs () {
   const auto& atm_inputs = m_atm_process_group->get_required_fields();
   for (const auto& input : atm_inputs) {
-    // We loop on all ids with the same name, cause it might be that some
-    // initializer is set to init this field on a non-ref grid. In that case,
-    // such non-ref field would *not* appear as an atm input (since it's the
-    // output of a remapper).
     EKAT_REQUIRE_MSG(m_field_repo->has_field(input.name()),
       "Error! Something went wrong while looking for field '" << input.name() << "' in the repo.\n");
-    auto begin = m_field_repo->cbegin(input.name());
-    auto end = m_field_repo->cend(input.name());
-    for (auto it=begin; it!=end; ++it) {
-      const auto& f = m_field_repo->get_field(*it);
-      const auto& hdr = f.get_header();
-      const auto& id = hdr.get_identifier();
-      auto init_type = hdr.get_tracking().get_init_type();
-      if (init_type!=InitType::None && init_type!=InitType::Inherited) {
-        auto initializer = hdr.get_tracking().get_initializer().lock();
-        EKAT_REQUIRE_MSG (static_cast<bool>(initializer),
-                            "Error! Field '" + id.name() + "' has initialization type '" + e2str(init_type) + "',\n" +
-                            "       but its initializer pointer is not valid.\n");
-
-        // If f is not on the ref grid, the initializer should init also the field
-        // on the ref grid.
-        const auto& ref_grid = m_grids_manager->get_reference_grid();
-        const auto&     grid = m_grids_manager->get_grid(id.get_grid_name());
-        if (grid->name()!=ref_grid->name()) {
-          auto& f_ref = m_field_repo->get_field(id.name(),ref_grid->name());
-          const auto& remapper = m_grids_manager->create_remapper(grid,ref_grid);
-          initializer->add_field(f,f_ref,remapper);
-        } else {
-          initializer->add_field(f);
-        }
-        m_field_initializers.insert(initializer);
-      }
-    }
-  }
-
-  // Now loop over all the initializers, and make them init their fields.
-  for (auto it : m_field_initializers) {
-    auto initializer = it.lock();
-    if (initializer->get_inited_fields().size()>0) {
-      initializer->initialize_fields();
-    }
   }
 }
 
 void AtmosphereDriver::inspect_atm_dag () const {
 
-  // Sanity checks
-  EKAT_REQUIRE_MSG (!(m_surface_coupling && (m_field_initializers.size()>0)),
-      "Error! You cannot have surface coupling *and* field initializers.\n"
-      "       In CIME runs, you only have the former, while in standalone runs you can only have the latter.\n");
-
   EKAT_REQUIRE_MSG ( !m_surface_coupling || m_surface_coupling->get_repo_state()==RepoState::Closed,
-      "Error! You cannot inspect the dag if the surface coupling has been fully initialized.\n");
+      "Error! You cannot inspect the dag until the surface coupling has been fully initialized.\n");
 
   AtmProcDAG dag;
 
   // First, add all atm processes
   dag.create_dag(*m_atm_process_group,m_field_repo);
-
-  // Then, add all field initializers (if any) and surface coupling (if any).
-  // Recall that at most one of these two steps can be non-trivial.
-  for (const auto& it : m_field_initializers) {
-    dag.add_field_initializer(*it.lock());
-  }
 
   // Then, add all surface coupling dependencies, if any
   if (m_surface_coupling) {

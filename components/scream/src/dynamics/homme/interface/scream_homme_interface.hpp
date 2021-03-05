@@ -39,7 +39,7 @@ void finalize_geometry_f90 ();
 void prim_init_data_structures_f90 ();
 void prim_set_test_initial_conditions_f90 ();
 void prim_copy_cxx_to_f90 ();
-void prim_init_model_f90 (const bool& standalone);
+void prim_init_model_f90 ();
 void prim_run_f90 (const double& dt);
 void prim_finalize_f90 ();
 

@@ -106,7 +106,7 @@ contains
                                  elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr)
   end subroutine prim_copy_cxx_to_f90
 
-  subroutine prim_init_model_f90 (standalone) bind(c)
+  subroutine prim_init_model_f90 () bind(c)
     use prim_driver_mod,   only: prim_init_grid_views, prim_init_ref_states_views, &
                                  prim_init_diags_views, prim_init_kokkos_functors, &
                                  prim_init_state_views
@@ -116,10 +116,6 @@ contains
     use dimensions_mod,    only: nelemd
     use homme_context_mod, only: is_model_inited, is_data_structures_inited, &
                                  elem, hybrid, hvcoord, deriv, tl
-    !
-    ! Input(s)
-    !
-    logical(kind=c_bool), intent(in) :: standalone
 
     if (.not. is_data_structures_inited) then
       call abortmp ("Error! 'prim_init_data_structures_f90' has not been called yet.\n")
@@ -137,12 +133,6 @@ contains
     call prim_init_grid_views (elem)
     call prim_init_ref_states_views (elem)
     call prim_init_diags_views (elem)
-
-    ! If this is a standalone run, we need to copy initial f90 states to C++
-    if (standalone) then
-      call prim_init_state_views(elem)
-      call prim_printstate(elem, tl, hybrid,hvcoord,1, nelemd)
-    endif
 
     is_model_inited = .true.
 

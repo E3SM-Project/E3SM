@@ -178,13 +178,6 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/dyn_grid_mod.F90
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/phys_grid_mod.F90
     )
-    if (NOT SCREAM_CIME_BUILD)
-      # We will also have unit tests, so add inputs initialization stuff
-      list (APPEND SCREAM_DYNAMICS_SOURCES
-        ${SCREAM_DYNAMICS_SRC_DIR}/homme_inputs_initializer.cpp
-        ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_inputs_mod.F90
-      )
-    endif ()
 
     # Create library
     set (dynLibName scream_${hommeLibName})

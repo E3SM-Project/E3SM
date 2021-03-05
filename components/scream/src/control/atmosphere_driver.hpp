@@ -89,7 +89,6 @@ protected:
 #ifdef SCREAM_DEBUG
   FieldRepository<Real>                    m_bkp_field_repo;
 #endif
-  ekat::WeakPtrSet<FieldInitializer>                  m_field_initializers;
 
   std::shared_ptr<AtmosphereProcessGroup>             m_atm_process_group;
 

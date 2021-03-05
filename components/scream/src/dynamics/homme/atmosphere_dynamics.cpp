@@ -16,10 +16,6 @@
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 
-#ifndef SCREAM_CIME_BUILD
-#include "dynamics/homme/homme_inputs_initializer.hpp"
-#endif
-
 #include "ekat/ekat_assert.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 
@@ -30,9 +26,7 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
  : m_params        (params)
  , m_dynamics_comm (comm)
 {
-#ifndef SCREAM_CIME_BUILD
-  m_initializer = create_field_initializer<HommeInputsInitializer>();
-#endif
+  // Nothing to do here
 }
 
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
@@ -262,35 +256,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
     }
   }
 
-  // Now that we set the correct pointers inside the Kokkos views, we can finish homme's initialization
-
-  auto standalone = m_params.get<bool>("Initialize Inputs", false);
-  if (standalone) {
-#ifdef SCREAM_CIME_BUILD
-    ekat::error::runtime_abort("Error! Homme should not initialize inputs in CIME builds.\n");
-#else
-    for (auto& f : m_dyn_fields_in) {
-      m_initializer->add_me_as_initializer(f.second);
-      std::cout << "Added " << m_initializer->name() << " as initializer for " << f.second.get_header().get_identifier().name() << "\n";
-    }
-    for (auto f : m_dyn_fields_out) {
-      if (!ekat::contains(m_required_fields,f.second.get_header().get_identifier())) {
-        m_initializer->add_me_as_initializer(f.second);
-      }
-    }
-    m_initializer->initialize_fields();
-#endif
-  } else {
-    // Some I/O routine must have loaded initial states. Homme needs those values
-    // to complete the model initialization. So, leverage Homme functions that
-    // copy stuff from cxx views to f90 arrays, to fwd the data I/O loaded to
-    // Homme's f90 model initialization routines
-    // NOTE: this is not needed in the if branch above, since homme inits fields
-    //       in fortran, so the initial states values are already available to model_init
-    prim_copy_cxx_to_f90 ();
-  }
-
-  prim_init_model_f90 (standalone);
+  prim_init_model_f90 ();
 
   ::Homme::Context::singleton().get<::Homme::SimulationParams>().print();
 }

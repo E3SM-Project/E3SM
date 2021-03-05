@@ -76,9 +76,6 @@ protected:
   std::map<std::string,const_field_type>  m_dyn_fields_in;
   std::map<std::string,field_type>        m_dyn_fields_out;
 
-  // For certain tests, dynamics needs to init states
-  std::shared_ptr<FieldInitializer>       m_initializer;
-
   // For standalong tests, we might need the grid info later
   std::shared_ptr<const AbstractGrid>  m_dyn_grid;
 
