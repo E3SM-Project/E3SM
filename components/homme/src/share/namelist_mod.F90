@@ -1119,7 +1119,6 @@ end if
        if (qsize>qsize_d) then
           call abortmp('user specified qsize > qsize_d parameter in dimensions_mod.F90')
        endif
-
        write(iulog,*)"readnl: NThreads      = ",NTHREADS
 #endif
 
