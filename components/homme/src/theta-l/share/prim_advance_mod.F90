@@ -1445,7 +1445,7 @@ contains
         mgrad(:,:,1,k) = (dpnh_dp_i(:,:,k)*gradphinh_i(:,:,1,k)+ &
               dpnh_dp_i(:,:,k+1)*gradphinh_i(:,:,1,k+1))/2
         mgrad(:,:,2,k) = (dpnh_dp_i(:,:,k)*gradphinh_i(:,:,2,k)+ &
-             dpnh_dp_i(:,:,k+1)*gradphinh_i(:,:,2,k+1))/2
+              dpnh_dp_i(:,:,k+1)*gradphinh_i(:,:,2,k+1))/2
 
         if (pgrad_correction==1) then
            T0 = TREF-tref_lapse_rate*TREF*Cp/g     ! = 97  
