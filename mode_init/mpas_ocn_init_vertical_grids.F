@@ -863,7 +863,7 @@ contains
 
      logical :: useZStar, useZLevel
 
-     real (kind=RKIND) :: depth
+     real (kind=RKIND) :: depth, layerStretch
 
    !--------------------------------------------------------------------
 
@@ -1024,8 +1024,15 @@ contains
              return
            end if
 
-           ! restingThickness is the same as layerThickness
-           restingThickness(:,iCell) = layerThickness(:,iCell)
+           ! cases with SSH > 0 require a resting thickness that is stretched to compensate for the SSH
+           restingThickness(:, iCell) = 0.0_RKIND
+
+           if (maxLevelCell(iCell)  > 0) then
+             layerStretch = (ssh(iCell) + bottomDepth(iCell))/bottomDepth(iCell)
+             do k = minLevelCell(iCell), maxLevelCell(iCell)
+               restingThickness(k, iCell) = layerThickness(k, iCell)/layerStretch
+             end do
+           end if
 
            ! compute zMid
            call ocn_compute_zMid_from_layerThickness(zMid(:,iCell), layerThickness(:,iCell), ssh(iCell),    &
