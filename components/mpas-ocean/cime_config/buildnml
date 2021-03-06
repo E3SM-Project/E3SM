@@ -29,6 +29,7 @@ def buildnml(case, caseroot, compname):
     casename          = case.get_value("CASE")
     srcroot           = case.get_value("SRCROOT")
     din_loc_root      = case.get_value("DIN_LOC_ROOT")
+    compset           = case.get_value("COMPSET")
     ocn_grid          = case.get_value("OCN_GRID")
     ocn_mask          = case.get_value("MASK_GRID")
     ocn_forcing       = case.get_value("MPASO_FORCING")
@@ -62,6 +63,13 @@ def buildnml(case, caseroot, compname):
            " ERROR mpas-o buildnml: ocn bgc cannot be run with more than 1 thread\n")
 
     #--------------------------------------------------------------------
+    # Determine if initial conditions are spunup, from compset
+    #--------------------------------------------------------------------
+    ocn_ic_mode = 'default'
+    if "SOI" in compset:
+        ocn_ic_mode = 'spunup'
+
+    #--------------------------------------------------------------------
     # Determine date stamp, from grid names
     #--------------------------------------------------------------------
 
@@ -74,184 +82,210 @@ def buildnml(case, caseroot, compname):
     eco_forcing_file = ''
 
     if ocn_grid == 'oEC60to30':
-        ic_date += '151031'
-        ic_prefix += 'oEC60to30'
-        decomp_date += '151031'
-        decomp_prefix += 'mpas-o.graph.info.'
-    elif ocn_grid == 'oEC60to30_ICG':
-        ic_date += '160827'
-        ic_prefix += 'oEC60to30.restartFrom_eos1b'
-        decomp_date += '151031'
-        decomp_prefix += 'mpas-o.graph.info.'
+        decomp_date = '151031'
+        decomp_prefix = 'mpas-o.graph.info.'
+        ic_date = '151031'
+        ic_prefix = 'oEC60to30'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '160827'
+            ic_prefix = 'oEC60to30.restartFrom_eos1b'
+
     elif ocn_grid == 'oEC60to30v3':
-        ic_date += '170905'
-        ic_prefix += 'oEC60to30v3_60layer'
+        decomp_date = '161222'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
+        analysis_mask_file = 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
+        ic_date = '170905'
+        ic_prefix = 'oEC60to30v3_60layer'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '200927'
+            ic_prefix = 'oEC60to30v3.restartFrom_anvilG'
         #  modify initial condition file if ocean BGC is turned on
         if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
             ic_date = '180418'
             ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
             eco_forcing_file = 'oEC60to30v3.monthlySurfaceForcingBGC.171120.nc'
-        decomp_date += '161222'
-        decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
-        analysis_mask_file += 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
-    elif ocn_grid == 'oEC60to30v3_ICG':
-        ic_date += '200927'
-        ic_prefix += 'oEC60to30v3.restartFrom_anvilG'
-        decomp_date += '161222'
-        decomp_prefix += 'mpas-o.graph.info.'
-        analysis_mask_file += 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
+
     elif ocn_grid == 'oEC60to30wLI':
-        ic_date += '160830'
-        ic_prefix += 'oEC60to30wLI'
-        decomp_date += '160830'
-        decomp_prefix += 'mpas-o.graph.info.'
+        decomp_date = '160830'
+        decomp_prefix = 'mpas-o.graph.info.'
+        ic_date = '160830'
+        ic_prefix = 'oEC60to30wLI'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'oEC60to30v3wLI':
-        ic_date += '171031'
-        ic_prefix += 'oEC60to30v3wLI60lev'
-        decomp_date += '170328'
-        decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3wLI.nc'
-        analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_EC60to30v3wLI_171116.nc'
+        decomp_date = '170328'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3wLI.nc'
+        analysis_mask_file = 'masks_SingleRegionAtlanticWTransportTransects_EC60to30v3wLI_171116.nc'
+        ic_date = '171031'
+        ic_prefix = 'oEC60to30v3wLI60lev'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '171116'
+            ic_prefix = 'oEC60to30v3wLI60lev.restart_theta_year26'
+
     elif ocn_grid == 'ECwISC30to60E1r2':
-        ic_date += '200408'
-        ic_prefix += 'ocean.ECwISC30to60E1r2'
-        decomp_date += '200408'
-        decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.PHC2_monthlyClimatology.ECwISC30to60E1r02.200408.nc'
-        analysis_mask_file += 'ECwISC30to60E1r02_transportTransects.nc'
-    elif ocn_grid == 'oEC60to30v3wLI_ICG':
-        ic_date += '171116'
-        ic_prefix += 'oEC60to30v3wLI60lev.restart_theta_year26'
-        decomp_date += '170328'
-        decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx.EC60to30v3wLI.170328.nc'
-        analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_EC60to30v3wLI_171116.nc'
+        decomp_date = '200408'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E1r02.200408.nc'
+        analysis_mask_file = 'ECwISC30to60E1r02_transportTransects.nc'
+        ic_date = '200408'
+        ic_prefix = 'ocean.ECwISC30to60E1r2'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'oQU480':
-        ic_date += '151209'
-        ic_prefix += 'ocean.QU.480km'
-        decomp_date += '151209'
-        decomp_prefix += 'mpas-o.graph.info.'
+        decomp_date = '151209'
+        decomp_prefix = 'mpas-o.graph.info.'
+        ic_date = '151209'
+        ic_prefix = 'ocean.QU.480km'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'oQU240':
-        ic_date += '151209'
-        ic_prefix += 'ocean.QU.240km'
-        decomp_date += '151209'
-        decomp_prefix += 'mpas-o.graph.info.'
+        decomp_date = '151209'
+        decomp_prefix = 'mpas-o.graph.info.'
+        ic_date = '151209'
+        ic_prefix = 'ocean.QU.240km'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'oQU240wLI':
-        ic_date += '160929'
-        ic_prefix += 'ocean.QU.240wLI'
-        decomp_date += '160929'
-        decomp_prefix += 'mpas-o.graph.info.'
+        decomp_date = '160929'
+        decomp_prefix = 'mpas-o.graph.info.'
+        ic_date = '160929'
+        ic_prefix = 'ocean.QU.240wLI'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'oQU120':
-        ic_date += '160318'
-        ic_prefix += 'ocean.QU.120km'
-        decomp_date += '160318'
-        decomp_prefix += 'mpas-o.graph.info.'
+        decomp_date = '160318'
+        decomp_prefix = 'mpas-o.graph.info.'
+        ic_date = '160318'
+        ic_prefix = 'ocean.QU.120km'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'mpas120':
-        ic_date += '151031'
-        ic_prefix += 'ocean120km'
-        decomp_date += '151031'
-        decomp_prefix += 'mpas-o.graph.info.'
+        decomp_date = '151031'
+        decomp_prefix = 'mpas-o.graph.info.'
+        ic_date = '151031'
+        ic_prefix = 'ocean120km'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'oRRS30to10':
-        ic_date += '151031'
-        ic_prefix += 'ocean.RRS.30-10km'
-        decomp_date += '151031'
-        decomp_prefix += 'mpas-o.graph.info.'
+        decomp_date = '151031'
+        decomp_prefix = 'mpas-o.graph.info.'
+        ic_date = '151031'
+        ic_prefix = 'ocean.RRS.30-10km'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'oRRS30to10v3':
-        ic_date += '171128'
-        ic_prefix += 'oRRS30to10v3'
-        decomp_date += '171128'
-        decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oRRS30to10v3.nc'
-        analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3.nc'
+        decomp_date = '171128'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oRRS30to10v3.nc'
+        analysis_mask_file = 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3.nc'
+        ic_date = '171128'
+        ic_prefix = 'oRRS30to10v3'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'oRRS30to10v3wLI':
-        ic_date += '171109'
-        ic_prefix += 'oRRS30to10v3wLI'
-        decomp_date += '171109'
-        decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.180503.nc'
-        analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3wLI.nc'
+        decomp_date = '171109'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.monthlyClimatology.PHC2_salx.2004_08_03.180503.nc'
+        analysis_mask_file = 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3wLI.nc'
+        ic_date = '171109'
+        ic_prefix = 'oRRS30to10v3wLI'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'oRRS18to6':
-        ic_date += '160830'
-        ic_prefix += 'ocean.RRS.18-6km'
-        decomp_date += '160830'
-        decomp_prefix += 'mpas-o.graph.info.'
+        decomp_date = '160830'
+        decomp_prefix = 'mpas-o.graph.info.'
+        ic_date = '160830'
+        ic_prefix = 'ocean.RRS.18-6km'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'oRRS18to6v3':
-        ic_date += '171116'
-        ic_prefix += 'oRRS18to6v3'
-        decomp_date += '170111'
-        decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc'
-        analysis_mask_file += 'oRRS18to6v3.170111.SingleRegionAtlanticWTransportTransects_masks.nc'
-    elif ocn_grid == 'oRRS18to6v3_ICG':
-        ic_date += '171031'
-        ic_prefix += 'oRRS18to6v3_80Layer.restartFromAnvil'
-        decomp_date += '170111'
-        decomp_prefix += 'mpas-o.graph.info.'
-        analysis_mask_file += 'oRRS18to6v3.170111.SingleRegionAtlanticWTransportTransects_masks.nc'
+        decomp_date = '170111'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc'
+        analysis_mask_file = 'oRRS18to6v3.170111.SingleRegionAtlanticWTransportTransects_masks.nc'
+        ic_date = '171116'
+        ic_prefix = 'oRRS18to6v3'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '171031'
+            ic_prefix = 'oRRS18to6v3_80Layer.restartFromAnvil'
+
     elif ocn_grid == 'oRRS15to5':
-        ic_date += '151209'
-        ic_prefix += 'ocean.RRS.15-5km'
-        decomp_date += '151209'
-        decomp_prefix += 'mpas-o.graph.info.'
+        decomp_date = '151209'
+        decomp_prefix = 'mpas-o.graph.info.'
+        ic_date = '151209'
+        ic_prefix = 'ocean.RRS.15-5km'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'oARRM60to10':
-        ic_date += '180715'
-        ic_prefix += 'ocean.ARRM60to10'
-        decomp_date += '180723'
-        decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to10.190129.nc'
-        analysis_mask_file += 'ARRM60to10_SingleRegionAtlanticWTransportTransects_masks.nc'
-    elif ocn_grid == 'oARRM60to10_ICG':
-        ic_date += '200422'
-        ic_prefix += 'ocean.ARRM60to10.restart_grizzly'
-        decomp_date += '180723'
-        decomp_prefix += 'mpas-o.graph.info.'
-        analysis_mask_file += 'ARRM60to10_SingleRegionAtlanticWTransportTransects_masks.nc'
+        decomp_date = '180723'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to10.190129.nc'
+        analysis_mask_file = 'ARRM60to10_SingleRegionAtlanticWTransportTransects_masks.nc'
+        ic_date = '180715'
+        ic_prefix = 'ocean.ARRM60to10'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '200422'
+            ic_prefix = 'ocean.ARRM60to10.restart_grizzly'
+
     elif ocn_grid == 'oARRM60to6':
-        ic_date += '180803'
-        ic_prefix += 'ocean.ARRM60to6'
-        decomp_date += '180820'
-        decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to6.190214.nc'
-        analysis_mask_file += 'ARRM60to6_SingleRegionAtlanticWTransportTransects_masks.nc'
+        decomp_date = '180820'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to6.190214.nc'
+        analysis_mask_file = 'ARRM60to6_SingleRegionAtlanticWTransportTransects_masks.nc'
+        ic_date = '180803'
+        ic_prefix = 'ocean.ARRM60to6'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
     elif ocn_grid == 'EC30to60E2r2':
-        ic_date += '210210'
-        ic_prefix += 'ocean.EC30to60E2r2'
-        decomp_date += '200904'
-        decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.PHC2_monthlyClimatology.EC30to60E2r2.200910.nc'
-        analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
-    elif ocn_grid == 'EC30to60E2r2_ICG':
-        ic_date += '210210'
-        ic_prefix += 'mpaso.EC30to60E2r2.rstFromG-anvil'
-        decomp_date += '200904'
-        decomp_prefix += 'mpas-o.graph.info.'
-        analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
-    elif ocn_grid == 'EC30to60E2r2-1900_ICG':
-        ic_date += '201001'
-        ic_prefix += 'mpaso.EC30to60E2r2-1900.rstFromG-anvil'
-        decomp_date += '200904'
-        decomp_prefix += 'mpas-o.graph.info.'
-        analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
+        decomp_date = '200904'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.EC30to60E2r2.200910.nc'
+        analysis_mask_file = 'EC30to60E2r2_moc_masks_and_transects.nc'
+        ic_date = '210210'
+        ic_prefix = 'ocean.EC30to60E2r2'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '201001'
+            ic_prefix = 'mpaso.EC30to60E2r2.rstFromG-anvil'
+
     elif ocn_grid == 'WC14to60E2r3':
-        ic_date += '210210'
-        ic_prefix += 'ocean.WC14to60E2r3'
-        decomp_date += '200714'
-        decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.PHC2_monthlyClimatology.WC14to60E2r3.200715.nc'
-        analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
-    elif ocn_grid == 'WC14to60E2r3_ICG':
-        ic_date += '210210'
-        ic_prefix += 'mpaso.WC14to60E2r3.rstFromG-anvil'
-        decomp_date += '200714'
-        decomp_prefix += 'mpas-o.graph.info.'
-        analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
-    elif ocn_grid == 'WC14to60E2r3-1900_ICG':
-        ic_date += '201002'
-        ic_prefix += 'mpaso.WC14to60E2r3-1900.rstFromG-anvil'
-        decomp_date += '200714'
-        decomp_prefix += 'mpas-o.graph.info.'
-        analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
+        decomp_date = '200714'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.WC14to60E2r3.200715.nc'
+        analysis_mask_file = 'WC14to60E2r3_moc_masks_and_transects.nc'
+        ic_date = '210210'
+        ic_prefix = 'ocean.WC14to60E2r3'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '210226'
+            ic_prefix = 'mpaso.WC14to60E2r3.rstFromG-anvil'
+
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
@@ -1048,6 +1082,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="rainFlux"/>')
         lines.append('    <var name="snowFlux"/>')
         lines.append('    <var name="vertNonLocalFlux"/>')
+        lines.append('    <var name="bottomLayerShortwaveTemperatureFlux"/>')
         lines.append('    <var_array name="activeTracersTend"/>')
         lines.append('    <var name="salinitySurfaceRestoringTendency"/>')
         lines.append('    <var_array name="activeTracerHorizontalAdvectionTendency"/>')

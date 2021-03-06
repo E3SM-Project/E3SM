@@ -51,7 +51,7 @@ command_yellow_rc "cd cime/scripts"
 command_yellow_rc "./create_newcase --case $case --compset $compset --res $res"
 command_yellow_rc "cd $case"
 command_yellow_rc "./case.setup"
-command_yellow "./case.build"
+command_yellow "./case.build -v"
 rc=$?
 if [ $rc -ne 0 ]; then
     print_bldlog "e3sm"
