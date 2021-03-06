@@ -161,4 +161,5 @@ protected:
 }; // Class AtmosphereInput
 
 } //namespace scream
+
 #endif // SCREAM_SCORPIO_INPUT_HPP
