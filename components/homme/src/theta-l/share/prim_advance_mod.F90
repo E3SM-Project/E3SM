@@ -27,7 +27,7 @@ module prim_advance_mod
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
   use element_state,      only: nu_scale_top, nlev_tom, max_itercnt, max_deltaerr,max_reserr
-  use element_ops,        only: state0, get_R_star
+  use element_ops,        only: state0, get_R_star, tref_lapse_rate
   use eos,                only: pnh_and_exner_from_eos,pnh_and_exner_from_eos2,phi_from_eos
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
@@ -1448,7 +1448,7 @@ contains
              dpnh_dp_i(:,:,k+1)*gradphinh_i(:,:,2,k+1))/2
 
         if (pgrad_correction==1) then
-           T0 = TREF-.0065*TREF*Cp/g     ! = 97  
+           T0 = TREF-tref_lapse_rate*TREF*Cp/g     ! = 97  
            vtemp(:,:,:,k)=gradient_sphere(log(exner(:,:,k)),deriv,elem(ie)%Dinv)
            mgrad(:,:,1,k)=mgrad(:,:,1,k) + Cp*T0*(vtemp(:,:,1,k)-gradexner(:,:,1,k)/exner(:,:,k))
            mgrad(:,:,2,k)=mgrad(:,:,2,k) + Cp*T0*(vtemp(:,:,2,k)-gradexner(:,:,2,k)/exner(:,:,k))

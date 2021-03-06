@@ -73,7 +73,8 @@ module element_ops
   public set_forcing_rayleigh_friction, set_theta_ref
   public copy_state, tests_finalize
   public state0
-  
+
+  real (kind=real_kind), public :: tref_lapse_rate=0.0065_real_kind
 contains
 
 
@@ -735,7 +736,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   ! reference T = 288K.  reference lapse rate = 6.5K/km   = .0065 K/m
   ! Tref = T0+T1*exner
   ! Thetaref = T0/exner + T1
-  T1 = .0065_real_kind*TREF*Cp/g ! = 191
+  T1 = tref_lapse_rate*TREF*Cp/g ! = 191
   T0 = TREF-T1           ! = 97
 
   p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
