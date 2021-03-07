@@ -74,7 +74,12 @@ module element_ops
   public copy_state, tests_finalize
   public state0
 
+#ifdef HOMMEXX_BFB_TESTING
   real (kind=real_kind), public :: tref_lapse_rate=0.0065_real_kind
+#else
+  ! needed for V2 BFB.  remove after V2 code freeze
+  real (kind=real_kind), public :: tref_lapse_rate=0.0065
+#endif
 contains
 
 
