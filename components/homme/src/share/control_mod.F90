@@ -11,6 +11,13 @@ module control_mod
 
   implicit none
 
+  integer, public, parameter :: Qind=1
+  integer, public, parameter :: CLDLIQind=1
+  integer, public, parameter :: CLDICEind=1
+  integer, public, parameter :: RAINind=1
+  integer, public, parameter :: SNOWind=1
+
+
   integer, public, parameter :: MAX_STRING_LEN=240
   integer, public, parameter :: MAX_FILE_LEN=240
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, or full imp)

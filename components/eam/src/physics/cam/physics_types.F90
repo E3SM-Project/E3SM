@@ -114,6 +114,7 @@ module physics_types
           te_ini,  &! vertically integrated total (kinetic + static) energy of initial state
           te_cur,  &! vertically integrated total (kinetic + static) energy of current state
           tw_ini,  &! vertically integrated total water of initial state
+          te_evap,  &! vertically integrated total water of initial state
           tw_cur    ! vertically integrated total water of new state
      integer :: count ! count of values with significant energy or water imbalances
      integer, dimension(:),allocatable           :: &
@@ -1335,6 +1336,7 @@ end subroutine physics_ptend_copy
        state_out%phis(i)   = state_in%phis(i)
        state_out%te_ini(i) = state_in%te_ini(i) 
        state_out%te_cur(i) = state_in%te_cur(i) 
+       state_out%te_evap(i) = state_in%te_evap(i) 
        state_out%tw_ini(i) = state_in%tw_ini(i) 
        state_out%tw_cur(i) = state_in%tw_cur(i) 
     end do
@@ -1681,6 +1683,9 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%te_ini(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_ini')
   
+  allocate(state%te_evap(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
+
   allocate(state%te_cur(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
   
@@ -1732,6 +1737,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
       
   state%te_ini(:) = inf
   state%te_cur(:) = inf
+  state%te_evap(:) = 0.0
   state%tw_ini(:) = inf
   state%tw_cur(:) = inf
 
@@ -1844,6 +1850,8 @@ subroutine physics_state_dealloc(state)
   deallocate(state%te_ini, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%te_ini')
   
+  deallocate(state%te_evap, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%te_cur')
   deallocate(state%te_cur, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%te_cur')
   

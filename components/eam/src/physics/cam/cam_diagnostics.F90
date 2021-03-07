@@ -199,6 +199,7 @@ subroutine diag_init()
    call addfld ('CPfluxe',horiz_only, 'A','w/m2' ,'cp e term'   )
    call addfld ('PWflux',horiz_only, 'A','w/m2' ,'pw term'   )
    call addfld ('PWmCPflu',horiz_only, 'A','w/m2' ,'pw m cp term'   )
+   call addfld ('dTEevap',horiz_only, 'A','w/m2' ,'evap dTE term'   )
 
  
    ! column burdens for all constituents except water vapor

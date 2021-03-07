@@ -1513,6 +1513,7 @@ contains
   !    write restart files      ps_v ok for restart
   !
   use control_mod,        only : use_moisture, dt_remap_factor
+  use control_mod,        only : Qind, CLDLIQind, CLDICEind, RAINind, SNOWind
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
   use control_mod,        only : theta_hydrostatic_mode
@@ -1551,7 +1552,8 @@ contains
   if (dt_remap_factor==0) then
      adjust_ps=.true.   ! stay on reference levels for Eulerian case
   else
-     adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
+     adjust_ps=.false.   ! Lagrangian case can support adjusting dp3d or ps
+     !adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
   endif
 #else
   adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
@@ -1594,8 +1596,14 @@ contains
                   !        dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) + fq 
                   elem%state%Qdp(i,j,k,q,np1_qdp) = &
                        dp(i,j,k)*elem%derived%FQ(i,j,k,q)
-                  
+
+#if 1          
                   if (q==1) then
+#else
+                  if (q==Qind .or. q==CLDLIQind .or. q==CLDICEind .or. &
+                      q==RAINind .or. q==SNOWind) then
+#endif
+                  
                      fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,q) -&
                           elem%state%Q(i,j,k,q))
                      ! force ps to conserve mass:  

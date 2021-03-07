@@ -46,6 +46,8 @@ module physpkg
                                     modal_aero_wateruptake_reg
   use cam_history,    only: outfld
 
+  use check_energy, only : add_surface_fluxes
+
   implicit none
   private
 
@@ -1783,13 +1785,18 @@ if (l_ac_energy_chk) then
     tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
     tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
 
+!!!!!!!!!!!!!!!!!!
+!this removes the need for pw to adjust evaporation
+!    state%te_cur = state%te_cur + state%te_evap
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!! this code is only to compare PW with cp term
 !save current TE
     state%tebefore(:ncol) = state%te_cur(:ncol)
 
 !adjust pressure
-#undef Q7
-!#define Q7
+!#undef Q7
+#define Q7
+
 #ifdef Q7
     call physics_dme_adjust_q7(state, tend, qini, ztodt)
 #else
@@ -1804,7 +1811,7 @@ if (l_ac_energy_chk) then
 
 !reverse TE to TE before pressure adjustment
 !comment this line when discarding pppw
-!    state%te_cur(:ncol) = state%tebefore(:ncol)
+    state%te_cur(:ncol) = state%tebefore(:ncol)
 
 !revert pressure to the previous
     state%ps = state%oldps
@@ -1827,6 +1834,7 @@ if (l_ac_energy_chk) then
     call outfld('PWflux', (state%tebefore - state%teafter ) /ztodt , pcols, lchnk )
     call outfld('PWmCPflu', (state%tebefore - state%teafter)/ztodt - (state%cptermp - state%cpterme) , pcols, lchnk )
 
+    call outfld('dTEevap', state%te_evap/ztodt , pcols, lchnk )
 
 
     call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/)) 
@@ -2477,6 +2485,10 @@ end if
        snow_sed_macmic = 0._r8
        prec_pcw_macmic = 0._r8
        snow_pcw_macmic = 0._r8
+
+
+       call add_surface_fluxes(state,cam_in, ztodt)
+
 
        do macmic_it = 1, cld_macmic_num_steps
 
