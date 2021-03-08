@@ -174,7 +174,7 @@ contains
 
       call ocn_vmix_coefs_cvmix_build(meshPool, statePool, forcingPool, err1, timeLevel)
       call ocn_vmix_coefs_redi_build(meshPool, statePool, err2, timeLevel)
-      call ocn_vmix_coefs_gotm_build(meshPool, statePool, forcingPool, err3, timeLevel)
+      call ocn_vmix_coefs_gotm_build(statePool, forcingPool, err3, timeLevel)
 
       err = ior(ior(err1, err2), err3)
 
