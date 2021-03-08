@@ -681,19 +681,19 @@ contains
 
    subroutine ocn_diagnostics_variables_destroy(err) !{{{
 
-      ! Input variables                                                                                      
-                                                                                                             
-      ! Output variables                                                                                     
-                                                                                                             
-      integer, intent(out) :: &                                                                              
-         err                   ! returned error flag                                                         
-                                                                                                             
-      ! Local variables                                                                                      
-                                                                                                             
-      !***                                                                                                   
-      !*** end of preamble, begin code                                                                       
-      !***                                                                                                   
-                                                                                                             
+      ! Input variables
+
+      ! Output variables
+
+      integer, intent(out) :: &
+         err                   ! returned error flag
+
+      ! Local variables
+
+      !***
+      !*** end of preamble, begin code
+      !***
+
       err = 0
 
       ! Remove data from the device
@@ -902,7 +902,191 @@ contains
       !$acc                   )
 
       ! Nullify pointers
-      ! debug, mdt :: still need to do this
+      if ( trim(config_land_ice_flux_mode) /= 'off' ) then
+         nullify(topDrag,                         &
+                 topDragMag,                      &
+                 indexBLT,                        &
+                 indexBLS,                        &
+                 indexHeatTrans,                  &
+                 indexSaltTrans,                  &
+                 landIceBoundaryLayerTracers,     &
+                 landIceTracerTransferVelocities, &
+                 landIceFrictionVelocity)
+      end if
+      if ( trim(config_ocean_run_mode) == 'init' ) then
+         nullify(rx1Edge,                  &
+                 rx1Cell,                  &
+                 rx1MaxEdge,               &
+                 modifySSHMask,            &
+                 smoothingMask,            &
+                 verticalStretch,          &
+                 globalVerticalStretchMax, &
+                 globalVerticalStretchMin)
+      end if
+      if ( trim(config_ocean_run_mode) == 'init' .or. &
+                config_AM_debugDiagnostics_enable ) then
+         nullify(rx1MaxCell,               &
+                 globalRx1Max)
+      end if
+      if ( trim(config_ocean_run_mode) == 'forward' .or. &
+           trim(config_ocean_run_mode) == 'analysis' ) then
+         nullify(k33,                             &
+                 gradSSH,                         &
+                 gradSSHX,                        &
+                 gradSSHY,                        &
+                 gradSSHZ,                        &
+                 viscosity,                       &
+                 velocityX,                       &
+                 velocityY,                       &
+                 velocityZ,                       &
+                 divergence,                      &
+                 RiTopOfCell,                     &
+                 RiTopOfEdge,                     &
+                 SSHGradient,                     &
+                 circulation,                     &
+                 slopeTriadUp,                    &
+                 gradSSHZonal,                    &
+                 cGMphaseSpeed,                   &
+                 velocityZonal,                   &
+                 GMStreamFuncX,                   &
+                 GMStreamFuncY,                   &
+                 GMStreamFuncZ,                   &
+                 layerThickEdge,                  &
+                 slopeTriadDown,                  &
+                 normRelVortEdge,                 &
+                 surfaceVelocity,                 &
+                 vertVelocityTop,                 &
+                 GMBolusVelocityX,                &
+                 GMBolusVelocityY,                &
+                 GMBolusVelocityZ,                &
+                 vertNonLocalFlux,                &
+                 vertViscTopOfEdge,               &
+                 gradSSHMeridional,               &
+                 barotropicForcing,               &
+                 vertViscTopOfCell,               &
+                 vertDiffTopOfCell,               &
+                 GMStreamFuncZonal,               &
+                 relativeVorticity,               &
+                 kineticEnergyCell,               &
+                 normPlanetVortEdge,              &
+                 velocityMeridional,              &
+                 transportVelocityX,              &
+                 transportVelocityY,              &
+                 transportVelocityZ,              &
+                 tangentialVelocity,              &
+                 montgomeryPotential,             &
+                 BruntVaisalaFreqTop,             &
+                 vertAleTransportTop,             &
+                 GMBolusVelocityZonal,            &
+                 bulkRichardsonNumber,            &
+                 gmStreamFuncTopOfCell,           &
+                 gmStreamFuncTopOfEdge,           &
+                 indexSSHGradientZonal,           &
+                 relativeVorticityCell,           &
+                 normalGMBolusVelocity,           &
+                 vertGMBolusVelocityTop,          &
+                 transportVelocityZonal,          &
+                 GMStreamFuncMeridional,          &
+                 indexSurfaceLayerDepth,          &
+                 surfaceBuoyancyForcing,          &
+                 surfaceFrictionVelocity,         &
+                 indexBoundaryLayerDepth,         &
+                 barotropicThicknessFlux,         &
+                 normalTransportVelocity,         &
+                 vertTransportVelocityTop,        &
+                 bulkRichardsonNumberBuoy,        &
+                 tracersSurfaceLayerValue,        &
+                 GMBolusVelocityMeridional,       &
+                 bulkRichardsonNumberShear,       &
+                 indexSurfaceVelocityZonal,       &
+                 normalVelocitySurfaceLayer,      &
+                 index_vertNonLocalFluxTemp,      &
+                 indexSSHGradientMeridional,      &
+                 transportVelocityMeridional,     &
+                 penetrativeTemperatureFluxOBL,   &
+                 indexSurfaceVelocityMeridional,  &
+                 normalizedRelativeVorticityCell)
+      end if
+      if ( trim(config_ocean_run_mode) == 'forward' ) then
+         nullify(wettingVelocity)
+      end if
+      if ( config_use_GM ) then
+         nullify(RediKappa,         &
+                 gmBolusKappa,      &
+                 gmKappaScaling,    &
+                 RediKappaScaling,  &
+                 rediLimiterCount,  &
+                 RediKappaSfcTaper, &
+                 gmResolutionTaper)
+      end if
+      if ( config_compute_active_tracer_budgets ) then
+         nullify(activeTracerHorMixTendency,              &
+                 activeTracerVertMixTendency,             &
+                 temperatureShortWaveTendency,            &
+                 activeTracerNonLocalTendency,            &
+                 activeTracerSurfaceFluxTendency,         &
+                 activeTracerVerticalAdvectionTopFlux,    &
+                 activeTracerVerticalAdvectionTendency,   &
+                 activeTracerHorizontalAdvectionTendency, &
+                 activeTracerHorizontalAdvectionEdgeFlux)
+      end if
+      if ( config_use_activeTracers_surface_restoring ) then
+         nullify(salinitySurfaceRestoringTendency)
+      end if
+      if ( trim(config_time_integrator) == 'semi_implicit' ) then
+         nullify(CGvec_r0,              &
+                 CGvec_r00,             &
+                 CGvec_r1,              &
+                 CGvec_rh0,             &
+                 CGvec_rh1,             &
+                 CGvec_ph0,             &
+                 CGvec_ph1,             &
+                 CGvec_v0,              &
+                 CGvec_v1,              &
+                 CGvec_s0,              &
+                 CGvec_s1,              &
+                 CGvec_sh0,             &
+                 CGvec_sh1,             &
+                 CGvec_t0,              &
+                 CGvec_t1,              &
+                 CGvec_q0,              &
+                 CGvec_q1,              &
+                 CGvec_qh0,             &
+                 CGvec_w0,              &
+                 CGvec_w1,              &
+                 CGvec_wh0,             &
+                 CGvec_wh1,             &
+                 CGvec_y0,              &
+                 CGvec_z0,              &
+                 CGvec_z1,              &
+                 CGvec_zh0,             &
+                 CGvec_zh1,             &
+                 barotropicCoriolisTerm)
+      end if
+
+      nullify(zMid,                                    &
+              zTop,                                    &
+              xtime,                                   &
+              indMLD,                                  &
+              density,                                 &
+              betaEdge,                                &
+              eddyTime,                                &
+              pressure,                                &
+              eddyLength,                              &
+              thermExpCoeff,                           &
+              sfcFlxAttCoeff,                          &
+              surfacePressure,                         &
+              potentialDensity,                        &
+              displacedDensity,                        &
+              boundaryLayerDepth,                      &
+              salineContractCoeff,                     &
+              pressureAdjustedSSH,                     &
+              tracersSurfaceValue,                     &
+              daysSinceStartOfSim,                     &
+              simulationStartTime,                     &
+              edgeAreaFractionOfCell,                  &
+              boundaryLayerDepthSmooth,                &
+              surfaceFluxAttenuationCoefficientRunoff)
 
     end subroutine ocn_diagnostics_variables_destroy!}}}
 

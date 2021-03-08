@@ -1302,7 +1302,7 @@ contains
       !$acc                  normalTransportVelocity, normalGMBolusVelocity, vertVelocityTop, &
       !$acc                  vertTransportVelocityTop, vertGMBolusVelocityTop, invAreaCell) &
       !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
-      !$acc                  dvEdge_temp, k, r_tmp) 
+      !$acc                  dvEdge_temp, k, r_tmp)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
@@ -1348,7 +1348,7 @@ contains
          end do
       end do
 #ifdef MPAS_OPENACC
-      !$acc exit data delete(div_hu, div_huTransport, div_huGMBolus) 
+      !$acc exit data delete(div_hu, div_huTransport, div_huGMBolus)
 #else
       !$omp end do
       !$omp end parallel
@@ -1361,7 +1361,7 @@ contains
       !$acc parallel loop gang vector &
       !$acc          present(tangentialVelocity, nEdgesOnEdge, edgesOnEdge, weightsOnEdge, &
       !$acc                  maxLevelEdgeTop, normalVelocity) &
-      !$acc          private(i, eoe, weightsOnEdge_temp, k) 
+      !$acc          private(i, eoe, weightsOnEdge_temp, k)
 #else
       !$omp parallel
       !$omp do schedule(runtime) private(i, eoe, weightsOnEdge_temp, k)
