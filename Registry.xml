@@ -209,7 +209,7 @@
 	                possible_values=".true. or .false."
 		/>
 		        <nml_option name="config_damage_gl_setting" type="character" default_value="nye" units="unitless"
-		                description="Selection of the method for damage setting near the grounding line"
+		                description="Selection of the method for initializing damage in the first floating grid cells past the grounding line.  'nye' uses Nye's zero stress criteria for defining the damage value.  'extrapolate' extrapolates values from the floating ice downstream back to the first floating cells."
 		            possible_values="'nye', 'extrapolate'"
 		/>
 		        <nml_option name="config_damage_calving_method" type="character" default_value="none" units="unitless"
