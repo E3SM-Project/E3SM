@@ -54,8 +54,8 @@ tests/unit_test_images
 tests/image_check_failures/
 tests/system/all_sets_results_test/
 tests/system/image_check_failures/
-tests/v2_3_0_all_sets/
-v2_3_0_all_sets/
+tests/v*_all_sets/
+v*_all_sets/
 
 # Translations
 *.mo
