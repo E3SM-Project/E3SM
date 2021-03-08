@@ -4,7 +4,7 @@
 #include <ekat/util/ekat_string_utils.hpp>
 #include <ekat/std_meta/ekat_std_utils.hpp>
 
-#include <set>
+#include <list>
 #include <map>
 
 namespace scream {
@@ -65,11 +65,13 @@ struct FieldGroupInfo
 
   int size() const { return m_fields_names.size(); }
 
+  bool empty() const { return size()==0; }
+
   // The name of the group
   ci_string m_group_name;
 
   // The names of the fields in this group
-  std::set<ci_string>   m_fields_names;
+  std::list<ci_string>   m_fields_names;
 
   // Whether the group was allocated as a bundle
   bool m_bundled;

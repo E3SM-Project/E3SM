@@ -31,12 +31,14 @@ void HommeInputsInitializer::initialize_fields () {
     // same pointer with the Scream fields!).
     prim_set_test_initial_conditions_f90 ();
 
-    if (m_remapper) {
-      // Copy inited fields to the ref grid, then dispose of the remapper.
-      m_remapper->registration_ends();
-      m_remapper->remap(true);
-      m_remapper = nullptr;
-    }
+    m_fields_inited = true;
+  }
+
+  if (m_remapper) {
+    // Copy inited fields to the ref grid, then dispose of the remapper.
+    m_remapper->registration_ends();
+    m_remapper->remap(true);
+    m_remapper = nullptr;
   }
 }
 

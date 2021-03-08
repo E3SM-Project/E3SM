@@ -167,7 +167,6 @@ public:
       for (int ipack=0;ipack<m_npack;ipack++) {
         // Update the atmospheric temperature and the previous temperature.
         const Spack oexner(exner(icol,ipack));
-        const Smask oexner_mask(!isnan(oexner) and oexner>0.0);
         const Spack oth_atm(th_atm(icol,ipack));
         const Smask oth_atm_mask(!isnan(oth_atm) and oth_atm>0.0);
         auto oT = physics_fun::th_to_T(oth_atm,oexner,oth_atm_mask);
