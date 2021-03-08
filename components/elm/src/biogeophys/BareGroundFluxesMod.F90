@@ -69,7 +69,7 @@ contains
     type(waterstate_type)  , intent(inout) :: waterstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer, parameter  :: niters = 3            ! maximum number of iterations for surface temperature
+    integer, parameter  :: niters = 30           ! maximum number of iterations for surface temperature
     integer  :: p,c,t,g,f,j,l                    ! indices
     integer  :: filterp(bounds%endp-bounds%begp+1) ! patch filter for vegetated patches
     integer  :: fn                               ! number of values in local pft filter
@@ -109,6 +109,8 @@ contains
     real(r8) :: qsat_ref2m             ! 2 m height surface saturated specific humidity [kg/kg]
     real(r8) :: dqsat2mdT              ! derivative of 2 m height surface saturated specific humidity on t_ref2m
     real(r8) :: www                    ! surface soil wetness [-]
+    real(r8) :: forc_u_adj(bounds%begp:bounds%endp) ! Adjusted forc_u for iteration
+    real(r8) :: forc_v_adj(bounds%begp:bounds%endp) ! Adjusted forc_v for iteration
     !------------------------------------------------------------------------------
 
     associate(                                                          &
@@ -117,6 +119,9 @@ contains
          zii              =>    col_pp%zii                            , & ! Input:  [real(r8) (:)   ]  convective boundary height [m]
          forc_u           =>    top_as%ubot                           , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)
          forc_v           =>    top_as%vbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)
+         wsresp           =>    top_as%wsresp                         , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
+         u_diff           =>    top_as%u_diff                         , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
+         v_diff           =>    top_as%v_diff                         , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to meridional wind (m/s)
          forc_th          =>    top_as%thbot                          , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)
          forc_pbot        =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
          forc_rho         =>    top_as%rhobot                         , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)
@@ -212,7 +217,11 @@ contains
          dlrad(p)  = 0._r8
          ulrad(p)  = 0._r8
 
-         ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         ! Initialize winds for iteration.
+         forc_u_adj(p) = forc_u(t) + u_diff(t)
+         forc_v_adj(p) = forc_v(t) + v_diff(t)
+         ur(p)    = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
+
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t) - qg(c)
          dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
@@ -247,6 +256,21 @@ contains
             c = veg_pp%column(p)
             t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
+
+            ram = 1._r8/(ustar(p)*ustar(p)/um(p))
+            ! Forbid removing more than 99% of wind speed in a time step.
+            ! This is mainly to avoid convergence issues since this is such a
+            ! basic form of iteration in this loop...
+            if ( forc_rho(t)*wsresp(t) / ram > 0.99 ) then
+               taux(p) = -0.99 * forc_u_adj(p) / wsresp(t)
+               tauy(p) = -0.99 * forc_v_adj(p) / wsresp(t)
+            else
+               taux(p) = -forc_rho(t)*forc_u_adj(p)/ram
+               tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram
+            end if
+            forc_u_adj(p) = forc_u(t) + u_diff(t) + taux(p)*wsresp(t)
+            forc_v_adj(p) = forc_v(t) + v_diff(t) + tauy(p)*wsresp(t)
+            ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
@@ -309,8 +333,8 @@ contains
 
          ! Surface fluxes of momentum, sensible and latent heat
          ! using ground temperatures from previous time step
-         taux(p)          = -forc_rho(t)*forc_u(t)/ram
-         tauy(p)          = -forc_rho(t)*forc_v(t)/ram
+         taux(p)          = -forc_rho(t)*forc_u_adj(p)/ram
+         tauy(p)          = -forc_rho(t)*forc_v_adj(p)/ram
          eflx_sh_grnd(p)  = -raih*dth(p)
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
 

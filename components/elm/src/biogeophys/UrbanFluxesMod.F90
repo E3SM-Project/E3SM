@@ -181,7 +181,9 @@ contains
     real(r8) :: dqsat2mdT                                            ! derivative of 2 m height surface saturated specific humidity on t_ref2m
     !
     real(r8), parameter :: lapse_rate = 0.0098_r8 ! Dry adiabatic lapse rate (K/m)
-    integer , parameter  :: niters = 3            ! maximum number of iterations for surface temperature
+    integer , parameter  :: niters = 30           ! maximum number of iterations for surface temperature
+    real(r8) :: forc_u_adj(bounds%begl:bounds%endl) ! Adjusted forc_u for iteration
+    real(r8) :: forc_v_adj(bounds%begl:bounds%endl) ! Adjusted forc_v for iteration
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
@@ -201,6 +203,9 @@ contains
          forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
          forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         wsresp              =>   top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
+         u_diff              =>   top_as%u_diff                             , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
+         v_diff              =>   top_as%v_diff                             , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to meridional wind (m/s)
 
          wind_hgt_canyon     =>   urbanparams_vars%wind_hgt_canyon          , & ! Input:  [real(r8) (:)   ]  height above road at which wind in canyon is to be computed (m)
          eflx_traffic_factor =>   urbanparams_vars%eflx_traffic_factor      , & ! Input:  [real(r8) (:)   ]  multiplicative urban traffic factor for sensible heat flux
@@ -311,29 +316,12 @@ contains
             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
 
+         ! Initialize winds for iteration.
+         forc_u_adj(l) = forc_u(t) + u_diff(t)
+         forc_v_adj(l) = forc_v(t) + v_diff(t)
+
          ! Magnitude of atmospheric wind
-
-         ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
-
-         ! Canyon top wind
-
-         canyontop_wind(l) = ur(l) * &
-              log( (ht_roof(l)-z_d_town(l)) / z_0_town(l) ) / &
-              log( (forc_hgt_u_patch(lun_pp%pfti(l))-z_d_town(l)) / z_0_town(l) )
-
-         ! U component of canyon wind 
-
-         if (canyon_hwr(l) < 0.5_r8) then  ! isolated roughness flow
-            canyon_u_wind(l) = canyontop_wind(l) * exp( -0.5_r8*canyon_hwr(l)* &
-                 (1._r8-(wind_hgt_canyon(l)/ht_roof(l))) )
-         else if (canyon_hwr(l) < 1.0_r8) then ! wake interference flow
-            canyon_u_wind(l) = canyontop_wind(l) * (1._r8+2._r8*(2._r8/rpi - 1._r8)* &
-                 (ht_roof(l)/(ht_roof(l)/canyon_hwr(l)) - 0.5_r8)) * &
-                 exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
-         else  ! skimming flow
-            canyon_u_wind(l) = canyontop_wind(l) * (2._r8/rpi) * &
-                 exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
-         end if
+         ur(l) = max(1.0_r8,sqrt(forc_u_adj(l)*forc_u_adj(l)+forc_v_adj(l)*forc_v_adj(l)))
 
       end do
 
@@ -406,6 +394,38 @@ contains
             ramu(l) = 1._r8/(ustar(l)*ustar(l)/um(l))
             rahu(l) = 1._r8/(temp1(l)*ustar(l))
             rawu(l) = 1._r8/(temp2(l)*ustar(l))
+
+            ! Forbid removing more than 99% of wind speed in a time step.
+            ! This is mainly to avoid convergence issues since this is such a
+            ! basic form of iteration in this loop...
+            if ( forc_rho(t)*wsresp(t) / ramu(l) > 0.99 ) then
+               forc_u_adj(l) = forc_u(t) + u_diff(t) - 0.99 * forc_u_adj(l)
+               forc_v_adj(l) = forc_v(t) + v_diff(t) - 0.99 * forc_v_adj(l)
+            else
+               forc_u_adj(l) = forc_u(t) + u_diff(t) + (-forc_rho(t)*forc_u_adj(l)/ramu(l))*wsresp(t)
+               forc_v_adj(l) = forc_v(t) + v_diff(t) + (-forc_rho(t)*forc_v_adj(l)/ramu(l))*wsresp(t)
+            end if
+            ur(l) = max(1.0_r8,sqrt(forc_u_adj(l)*forc_u_adj(l)+forc_v_adj(l)*forc_v_adj(l)))
+
+            ! Canyon top wind
+
+            canyontop_wind(l) = ur(l) * &
+                 log( (ht_roof(l)-z_d_town(l)) / z_0_town(l) ) / &
+                 log( (forc_hgt_u_patch(lun_pp%pfti(l))-z_d_town(l)) / z_0_town(l) )
+
+            ! U component of canyon wind 
+
+            if (canyon_hwr(l) < 0.5_r8) then  ! isolated roughness flow
+               canyon_u_wind(l) = canyontop_wind(l) * exp( -0.5_r8*canyon_hwr(l)* &
+                    (1._r8-(wind_hgt_canyon(l)/ht_roof(l))) )
+            else if (canyon_hwr(l) < 1.0_r8) then ! wake interference flow
+               canyon_u_wind(l) = canyontop_wind(l) * (1._r8+2._r8*(2._r8/rpi - 1._r8)* &
+                    (ht_roof(l)/(ht_roof(l)/canyon_hwr(l)) - 0.5_r8)) * &
+                    exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
+            else  ! skimming flow
+               canyon_u_wind(l) = canyontop_wind(l) * (2._r8/rpi) * &
+                    exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
+            end if
 
             ! Determine magnitude of canyon wind by using horizontal wind determined
             ! previously and vertical wind from friction velocity (Masson 2000)
@@ -727,8 +747,8 @@ contains
 
          ! Surface fluxes of momentum, sensible and latent heat
 
-         taux(p)          = -forc_rho(t)*forc_u(t)/ramu(l)
-         tauy(p)          = -forc_rho(t)*forc_v(t)/ramu(l)
+         taux(p)          = -forc_rho(t)*forc_u_adj(l)/ramu(l)
+         tauy(p)          = -forc_rho(t)*forc_v_adj(l)/ramu(l)
 
          ! Use new canopy air temperature
          dth(l) = taf(l) - t_grnd(c)

@@ -149,6 +149,10 @@ module clubb_intr
     vp2_idx, &          ! variance of north-south wind
     upwp_idx, &         ! east-west momentum flux
     vpwp_idx, &         ! north-south momentum flux
+    um_pert_idx, &      ! perturbed east-west momentum flux
+    vm_pert_idx, &      ! perturbed north-south momentum flux
+    upwp_pert_idx, &    ! perturbed east-west momentum flux
+    vpwp_pert_idx, &    ! perturbed north-south momentum flux
     thlm_idx, &         ! mean thetal
     rtm_idx, &          ! mean total water mixing ratio
     um_idx, &           ! mean of east-west wind
@@ -196,8 +200,13 @@ module clubb_intr
   integer :: &          !PMA adds pbuf fields for ZM gustiness
     prec_dp_idx, &
     snow_dp_idx, &
-    vmag_gust_idx
- 
+    vmag_gust_idx, &
+    wsresp_idx, &
+    u_old2surf_idx, &
+    v_old2surf_idx, &
+    u_diff2surf_idx, &
+    v_diff2surf_idx
+
   integer, public :: & 
     ixthlp2 = 0, &
     ixwpthlp = 0, &
@@ -309,6 +318,10 @@ module clubb_intr
 
     call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), upwp_idx)
     call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vpwp_idx)
+    call pbuf_add_field('UM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), um_pert_idx)
+    call pbuf_add_field('VM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), vm_pert_idx)
+    call pbuf_add_field('UPWP_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), upwp_pert_idx)
+    call pbuf_add_field('VPWP_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), vpwp_pert_idx)
     call pbuf_add_field('THLM',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), thlm_idx)
     call pbuf_add_field('RTM',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtm_idx)
     call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), um_idx)
@@ -328,6 +341,11 @@ module clubb_intr
     call pbuf_add_field('pdf_zm_mixt_frac',  'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), pdf_zm_mixt_frac_idx)
 
     call pbuf_add_field('vmag_gust',       'global', dtype_r8, (/pcols/),      vmag_gust_idx) !PMA total gustiness
+    call pbuf_add_field('wsresp',          'global', dtype_r8, (/pcols/),      wsresp_idx)
+    call pbuf_add_field('u_old2surf',          'global', dtype_r8, (/pcols/),      u_old2surf_idx)
+    call pbuf_add_field('v_old2surf',          'global', dtype_r8, (/pcols/),      v_old2surf_idx)
+    call pbuf_add_field('u_diff2surf',          'global', dtype_r8, (/pcols/),      u_diff2surf_idx)
+    call pbuf_add_field('v_diff2surf',          'global', dtype_r8, (/pcols/),      v_diff2surf_idx)
 #endif 
 
   end subroutine clubb_register_cam
@@ -731,6 +749,13 @@ end subroutine clubb_init_cnst
     snow_dp_idx = pbuf_get_index('SNOW_DP') !PMA ZM snow for gustiness
     vmag_gust_idx = pbuf_get_index('vmag_gust') !PMA ZM snow for gustiness
 
+    wsresp_idx = pbuf_get_index('wsresp') ! First order response of surface stress to winds
+
+    u_old2surf_idx = pbuf_get_index('u_old2surf') ! Old zonal wind
+    v_old2surf_idx = pbuf_get_index('v_old2surf') ! Old meridional wind
+    u_diff2surf_idx = pbuf_get_index('u_diff2surf') ! Diff in zonal wind from last time step
+    v_diff2surf_idx = pbuf_get_index('v_diff2surf') ! Diff in meridional wind from last time step
+
     iisclr_rt  = -1
     iisclr_thl = -1
     iisclr_CO2 = -1
@@ -988,6 +1013,10 @@ end subroutine clubb_init_cnst
       
        call pbuf_set_field(pbuf2d, upwp_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, vpwp_idx,    0.0_r8)
+       call pbuf_set_field(pbuf2d, um_pert_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, vm_pert_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, upwp_pert_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, vpwp_pert_idx, 0.0_r8)
        call pbuf_set_field(pbuf2d, tke_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
@@ -1008,6 +1037,13 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, pdf_zm_mixt_frac_idx, 0.0_r8)
 
        call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
+
+       call pbuf_set_field(pbuf2d, wsresp_idx,    0.0_r8)
+
+       call pbuf_set_field(pbuf2d, u_old2surf_idx,    1.0_r8)
+       call pbuf_set_field(pbuf2d, v_old2surf_idx,    1.0_r8)
+       call pbuf_set_field(pbuf2d, u_diff2surf_idx,    1.0_r8)
+       call pbuf_set_field(pbuf2d, v_diff2surf_idx,    1.0_r8)
 
     endif
    
@@ -1259,6 +1295,9 @@ end subroutine clubb_init_cnst
    real(r8) :: qmin
    real(r8) :: varmu(pcols)
    real(r8) :: varmu2
+
+   real(r8) :: upwp_sfc_pert                    ! u'w' at surface                               [m^2/s^2]
+   real(r8) :: vpwp_sfc_pert                    ! v'w' at surface                               [m^2/s^2]
    
    real(r8) :: invrs_hdtime                     ! Preculate 1/hdtime to reduce divide operations
    real(r8) :: invrs_gravit                     ! Preculate 1/gravit to reduce divide operations
@@ -1357,6 +1396,10 @@ end subroutine clubb_init_cnst
 
    real(r8), pointer, dimension(:,:) :: upwp     ! east-west momentum flux                      [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vpwp     ! north-south momentum flux                    [m^2/s^2]
+   real(r8), pointer, dimension(:,:) :: um_pert  ! perturbed meridional wind                    [m/s]
+   real(r8), pointer, dimension(:,:) :: vm_pert  ! perturbed zonal wind                         [m/s]
+   real(r8), pointer, dimension(:,:) :: upwp_pert! perturbed meridional wind flux               [m^2/s^2]
+   real(r8), pointer, dimension(:,:) :: vpwp_pert! perturbed zonal wind flux                    [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: thlm     ! mean temperature                             [K]
    real(r8), pointer, dimension(:,:) :: rtm      ! mean moisture mixing ratio                   [kg/kg]
    real(r8), pointer, dimension(:,:) :: um       ! mean east-west wind                          [m/s]
@@ -1404,6 +1447,11 @@ end subroutine clubb_init_cnst
    real(r8), pointer :: prec_dp(:)                 ! total precipitation from ZM convection
    real(r8), pointer :: snow_dp(:)                 ! snow precipitation from ZM convection
    real(r8), pointer :: vmag_gust(:)
+   real(r8), pointer :: wsresp(:)
+   real(r8), pointer :: u_old2surf(:)
+   real(r8), pointer :: v_old2surf(:)
+   real(r8), pointer :: u_diff2surf(:)
+   real(r8), pointer :: v_diff2surf(:)
    real(r8), pointer :: tpert(:)
 
    real(r8) :: ugust  ! function: gustiness as a function of convective rainfall
@@ -1417,6 +1465,9 @@ end subroutine clubb_init_cnst
    real(r8),parameter :: gust_facl = 1.2_r8 !gust fac for land
    real(r8),parameter :: gust_faco = 0.9_r8 !gust fac for ocean
    real(r8),parameter :: gust_facc = 1.5_r8 !gust fac for clubb
+
+   real(r8) :: sfc_stress_diff(pcols), sfc_v_diff(pcols)
+   real(r8), parameter :: pert_tau = 0.1_r8 ! Pa
 
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
@@ -1541,6 +1592,10 @@ end subroutine clubb_init_cnst
 
    call pbuf_get_field(pbuf, upwp_idx,    upwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, vpwp_idx,    vpwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, um_pert_idx, um_pert, start=(/1,1/),          kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, vm_pert_idx, vm_pert, start=(/1,1/),          kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, upwp_pert_idx,upwp_pert,start=(/1,1/),        kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, vpwp_pert_idx,vpwp_pert,start=(/1,1/),        kount=(/pcols,pverp/))
    call pbuf_get_field(pbuf, thlm_idx,    thlm,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
@@ -1588,6 +1643,13 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, prec_dp_idx, prec_dp)
    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp)
    call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
+
+   call pbuf_get_field(pbuf, wsresp_idx, wsresp)
+
+   call pbuf_get_field(pbuf, u_old2surf_idx, u_old2surf)
+   call pbuf_get_field(pbuf, v_old2surf_idx, v_old2surf)
+   call pbuf_get_field(pbuf, u_diff2surf_idx, u_diff2surf)
+   call pbuf_get_field(pbuf, v_diff2surf_idx, v_diff2surf)
 
    ! Intialize the apply_const variable (note special logic is due to eularian backstepping)
    if (clubb_do_adv .and. (is_first_step() .or. all(wpthlp(1:ncol,1:pver) .eq. 0._r8))) then
@@ -2009,7 +2071,27 @@ end subroutine clubb_init_cnst
          endif
 
       enddo
-     
+
+      if (macmic_it == 1) then
+         um_pert(i,:) = um_in
+         vm_pert(i,:) = vm_in
+         upwp_pert(i,:) = upwp_in
+         vpwp_pert(i,:) = vpwp_in
+      end if
+
+      ! Prefer to perturb stress in the direction of the existing stress.
+      ! However, if there's no existing surface stress, just perturb zonal
+      ! stress.
+      if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
+         upwp_sfc_pert = upwp_sfc + pert_tau / rho_ds_zm(1)
+         vpwp_sfc_pert = vpwp_sfc
+      else
+         upwp_sfc_pert = upwp_sfc + cam_in%wsx(i) * &
+              (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
+         vpwp_sfc_pert = vpwp_sfc + cam_in%wsy(i) * &
+              (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
+      end if
+
       pre_in(1) = pre_in(2)
       
       !  Initialize these to prevent crashing behavior
@@ -2150,7 +2232,9 @@ end subroutine clubb_init_cnst
               pdf_params, pdf_params_zm, &                                 ! intent(inout)
               khzm_out, khzt_out, qclvar_out, thlprcp_out, &               ! intent(out)
               wprcp_out, ice_supersat_frac, &                              ! intent(out)
-              rcm_in_layer_out, cloud_cover_out)                           ! intent(out)
+              rcm_in_layer_out, cloud_cover_out, &                         ! intent(out)
+              upwp_sfc_pert, vpwp_sfc_pert, &                              ! intent(in)
+              um_pert(i,:), vm_pert(i,:), upwp_pert(i,:), vpwp_pert(i,:))  ! intent(inout)
          call t_stopf('advance_clubb_core')
 
          pdf_zm_w_1_inout = pdf_params_zm%w_1
@@ -2221,6 +2305,15 @@ end subroutine clubb_init_cnst
             enddo
          endif
       endif
+
+      sfc_stress_diff(i) = pert_tau
+      if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
+         sfc_v_diff(i) = um_pert(i,1) - um_in(1)
+      else
+         sfc_v_diff(i) = ((um_pert(i,1) - um_in(1))*cam_in%wsx(i) &
+              + (vm_pert(i,1) - vm_in(1))*cam_in%wsy(i)) &
+              / hypot(cam_in%wsx(i), cam_in%wsy(i))
+      end if
 
       !  Arrays need to be "flipped" to CAM grid 
       do k=1,pverp
@@ -2782,7 +2875,20 @@ end subroutine clubb_init_cnst
                     /max(state1%exner(i,ktopi(i)),1.e-3_r8)) !proxy for tpert
        end do
     end if
-    
+
+   if (macmic_it == cld_macmic_num_steps) then
+      do i = 1, ncol
+         wsresp(i) = sfc_v_diff(i) / sfc_stress_diff(i)
+
+         ! Estimate of what atmosphere is doing to bottom level winds, with the
+         ! approximate effect of the surface fluxes subtracted out.
+         u_diff2surf(i) = state1%u(i,pver) - u_old2surf(i) - wsresp(i)*cam_in%wsx(i)
+         v_diff2surf(i) = state1%v(i,pver) - v_old2surf(i) - wsresp(i)*cam_in%wsy(i)
+         u_old2surf(i) = state1%u(i,pver)
+         v_old2surf(i) = state1%v(i,pver)
+      end do
+   end if
+
    call outfld('VMAGGUST', vmag_gust, pcols, lchnk)
    call outfld('VMAGDP', vmag_gust_dp, pcols, lchnk)
    call outfld('VMAGCL', vmag_gust_cl, pcols, lchnk)

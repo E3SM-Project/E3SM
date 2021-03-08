@@ -76,7 +76,7 @@ contains
     real(r8), pointer :: z0mg_col(:)               ! roughness length over ground, momentum [m]
     real(r8), pointer :: z0hg_col(:)               ! roughness length over ground, sensible heat [m]
     real(r8), pointer :: z0qg_col(:)               ! roughness length over ground, latent heat [m]
-    integer , parameter  :: niters = 4             ! maximum number of iterations for surface temperature
+    integer , parameter  :: niters = 30            ! maximum number of iterations for surface temperature
     real(r8), parameter :: beta1 = 1._r8           ! coefficient of convective velocity (in computing W_*) [-]
     real(r8), parameter :: zii = 1000._r8          ! convective boundary height [m]
     integer  :: i,fc,fp,g,t,c,p                    ! do loop or array index
@@ -146,6 +146,8 @@ contains
     real(r8) :: kva                                ! kinematic viscosity of air at ground temperature and forcing pressure
     real(r8), parameter :: prn = 0.713             ! Prandtl # for air at neutral stability
     real(r8), parameter :: sch = 0.66              ! Schmidt # for water in air at neutral stability
+    real(r8) :: forc_u_adj(bounds%begp:bounds%endp) ! Adjusted forc_u for iteration
+    real(r8) :: forc_v_adj(bounds%begp:bounds%endp) ! Adjusted forc_v for iteration
     !-----------------------------------------------------------------------
 
     associate(                                                           & 
@@ -164,6 +166,9 @@ contains
          forc_rain        =>    top_af%rain                            , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                  
          forc_u           =>    top_as%ubot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
          forc_v           =>    top_as%vbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         wsresp           =>    top_as%wsresp                          , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
+         u_diff           =>    top_as%u_diff                          , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
+         v_diff           =>    top_as%v_diff                          , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to meridional wind (m/s)
          
          fsds_nir_d       =>    solarabs_vars%fsds_nir_d_patch         , & ! Input:  [real(r8) (:)   ]  incident direct beam nir solar radiation (W/m**2) 
          fsds_nir_i       =>    solarabs_vars%fsds_nir_i_patch         , & ! Input:  [real(r8) (:)   ]  incident diffuse nir solar radiation (W/m**2)     
@@ -337,7 +342,11 @@ contains
 
          ! Initialize stability variables
 
-         ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         ! Initialize winds for iteration.
+         forc_u_adj(p) = forc_u(t) + u_diff(t)
+         forc_v_adj(p) = forc_v(t) + v_diff(t)
+         ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
+
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t)-qsatg(c)
          dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
@@ -346,7 +355,6 @@ contains
          ! Initialize Monin-Obukhov length and wind speed
 
          call MoninObukIni(ur(p), thv(c), dthv, zldis(p), z0mg(p), um(p), obu(p))
-
       end do
 
       iter = 1
@@ -400,6 +408,20 @@ contains
             end if
             ram1(p) = ram(p)       ! pass value to global variable
             ram1_lake(p) = ram1(p) ! for history
+
+            ! Forbid removing more than 99% of wind speed in a time step.
+            ! This is mainly to avoid convergence issues since this is such a
+            ! basic form of iteration in this loop...
+            if ( forc_rho(t)*wsresp(t) / ram(p) > 0.99 ) then
+               taux(p) = -0.99 * forc_u_adj(p) / wsresp(t)
+               tauy(p) = -0.99 * forc_v_adj(p) / wsresp(t)
+            else
+               taux(p) = -forc_rho(t)*forc_u_adj(p)/ram(p)
+               tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram(p)
+            end if
+            forc_u_adj(p) = forc_u(t) + u_diff(t) + taux(p)*wsresp(t)
+            forc_v_adj(p) = forc_v(t) + v_diff(t) + tauy(p)*wsresp(t)
+            ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
 
             ! Get derivative of fluxes with respect to ground temperature
 
@@ -576,8 +598,8 @@ contains
          ! The variable eflx_gnet will be used to pass the actual heat flux
          !from the ground interface into the lake.
 
-         taux(p) = -forc_rho(t)*forc_u(t)/ram(p)
-         tauy(p) = -forc_rho(t)*forc_v(t)/ram(p)
+         taux(p) = -forc_rho(t)*forc_u_adj(p)/ram(p)
+         tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram(p)
 
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_soi(p)

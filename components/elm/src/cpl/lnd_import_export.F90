@@ -1029,6 +1029,9 @@ contains
          top_as%qbot(topo)    = atm2lnd_vars%forc_q_not_downscaled_grc(g)      ! forc_qxy  Atm state kg/kg
          top_as%ubot(topo)    = atm2lnd_vars%forc_u_grc(g)                     ! forc_uxy  Atm state m/s
          top_as%vbot(topo)    = atm2lnd_vars%forc_v_grc(g)                     ! forc_vxy  Atm state m/s
+         top_as%wsresp(topo)  = 0._r8                                          !           Atm state m/s/Pa
+         top_as%u_diff(topo)  = 0._r8                                          !           Atm state m/s
+         top_as%v_diff(topo)  = 0._r8                                          !           Atm state m/s
          top_as%zbot(topo)    = atm2lnd_vars%forc_hgt_grc(g)                   ! zgcmxy    Atm state m
          ! assign the state forcing fields derived from other inputs
          ! Horizontal windspeed (m/s)
@@ -1107,6 +1110,9 @@ contains
          top_as%qbot(topo)    = x2l(index_x2l_Sa_shum,i)      ! forc_qxy  Atm state kg/kg
          top_as%ubot(topo)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
          top_as%vbot(topo)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
+         top_as%wsresp(topo)  = x2l(index_x2l_Sa_wsresp,i)    !           Atm state m/s/Pa
+         top_as%u_diff(topo)  = x2l(index_x2l_Sa_u_diff,i)    !           Atm state m/s
+         top_as%v_diff(topo)  = x2l(index_x2l_Sa_v_diff,i)    !           Atm state m/s
          top_as%zbot(topo)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
          ! assign the state forcing fields derived from other inputs
          ! Horizontal windspeed (m/s)

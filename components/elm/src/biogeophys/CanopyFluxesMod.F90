@@ -148,7 +148,7 @@ contains
     real(r8), parameter :: dlemin = 0.1_r8  ! max limit for energy flux convergence [w/m2]
     real(r8), parameter :: dtmin = 0.01_r8  ! max limit for temperature convergence [K]
     integer , parameter :: itmax = 40       ! maximum number of iteration [-]
-    integer , parameter :: itmin = 2        ! minimum number of iteration [-]
+    integer , parameter :: itmin = 30       ! minimum number of iteration [-]
     real(r8), parameter :: irrig_min_lai = 0.0_r8           ! Minimum LAI for irrigation
     real(r8), parameter :: irrig_btran_thresh = 0.999999_r8 ! Irrigate when btran falls below 0.999999 rather than 1 to allow for round-off error
     integer , parameter :: irrig_start_time = isecspday/4   ! (6AM) Time of day to check whether we need irrigation, seconds (0 = midnight). 
@@ -322,6 +322,8 @@ contains
     real(r8) :: temprootr                 
     real(r8) :: dt_veg_temp(bounds%begp:bounds%endp)
     integer  :: iv
+    real(r8) :: forc_u_adj(bounds%begp:bounds%endp) ! Adjusted forc_u for iteration
+    real(r8) :: forc_v_adj(bounds%begp:bounds%endp) ! Adjusted forc_v for iteration
     !------------------------------------------------------------------------------
 
     associate(                                                               & 
@@ -337,6 +339,9 @@ contains
          forc_t               => top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                                      
          forc_u               => top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
          forc_v               => top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
+         wsresp               => top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
+         u_diff               => top_as%u_diff                             , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
+         v_diff               => top_as%v_diff                             , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to meridional wind (m/s)
          forc_pco2            => top_as%pco2bot                            , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
          forc_pc13o2          => top_as%pc13o2bot                          , & ! Input:  [real(r8) (:)   ]  partial pressure c13o2 (Pa)                                           
          forc_po2             => top_as%po2bot                             , & ! Input:  [real(r8) (:)   ]  partial pressure o2 (Pa)                                              
@@ -714,7 +719,11 @@ contains
          taf(p) = (t_grnd(c) + thm(p))/2._r8
          qaf(p) = (forc_q(t)+qg(c))/2._r8
 
-         ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         ! Initialize winds for iteration.
+         forc_u_adj(p) = forc_u(t) + u_diff(t)
+         forc_v_adj(p) = forc_v(t) + v_diff(t)
+         ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
+
          dth(p) = thm(p)-taf(p)
          dqh(p) = forc_q(t)-qaf(p)
          delq(p) = qg(c) - qaf(p)
@@ -780,6 +789,20 @@ contains
             ram1(p)  = 1._r8/(ustar(p)*ustar(p)/um(p))
             rah(p,1) = 1._r8/(temp1(p)*ustar(p))
             raw(p,1) = 1._r8/(temp2(p)*ustar(p))
+
+            ! Forbid removing more than 99% of wind speed in a time step.
+            ! This is mainly to avoid convergence issues since this is such a
+            ! basic form of iteration in this loop...
+            if ( forc_rho(t)*wsresp(t) / ram1(p) > 0.99 ) then
+               taux(p) = -0.99 * forc_u_adj(p) / wsresp(t)
+               tauy(p) = -0.99 * forc_v_adj(p) / wsresp(t)
+            else
+               taux(p) = -forc_rho(t)*forc_u_adj(p)/ram1(p)
+               tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram1(p)
+            end if
+            forc_u_adj(p) = forc_u(t) + u_diff(t) + taux(p)*wsresp(t)
+            forc_v_adj(p) = forc_v(t) + v_diff(t) + tauy(p)*wsresp(t)
+            ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
 
             ! Bulk boundary layer resistance of leaves
 
@@ -1173,8 +1196,8 @@ contains
          ! Fluxes from ground to canopy space
 
          delt    = wtal(p)*t_grnd(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         taux(p) = -forc_rho(t)*forc_u(t)/ram1(p)
-         tauy(p) = -forc_rho(t)*forc_v(t)/ram1(p)
+         taux(p) = -forc_rho(t)*forc_u_adj(p)/ram1(p)
+         tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram1(p)
          eflx_sh_grnd(p) = cpair*forc_rho(t)*wtg(p)*delt
 
          ! compute individual sensible heat fluxes

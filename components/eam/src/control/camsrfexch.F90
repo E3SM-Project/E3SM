@@ -78,6 +78,9 @@ module camsrfexch
      real(r8), allocatable :: dstdry3(:)  ! dry deposition of dust (bin3)
      real(r8), allocatable :: dstwet4(:)  ! wet deposition of dust (bin4)
      real(r8), allocatable :: dstdry4(:)  ! dry deposition of dust (bin4)
+     real(r8), allocatable :: wsresp(:)   ! first-order response of low-level wind to surface fluxes
+     real(r8), allocatable :: u_diff(:)   ! Approximate atmosphere change to ubot
+     real(r8), allocatable :: v_diff(:)   ! Approximate atmosphere change to vbot
   end type cam_out_t 
 
 !---------------------------------------------------------------------------
@@ -478,6 +481,15 @@ CONTAINS
 
        allocate (cam_out(c)%dstdry4(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstdry4')
+
+       allocate (cam_out(c)%wsresp(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error wsresp')
+
+       allocate (cam_out(c)%u_diff(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error u_diff')
+
+       allocate (cam_out(c)%v_diff(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error v_diff')
     enddo  
 
     do c = begchunk,endchunk
@@ -518,6 +530,9 @@ CONTAINS
        cam_out(c)%dstwet3(:)  = 0._r8
        cam_out(c)%dstdry4(:)  = 0._r8
        cam_out(c)%dstwet4(:)  = 0._r8
+       cam_out(c)%wsresp(:)   = 0._r8
+       cam_out(c)%u_diff(:)   = 0._r8
+       cam_out(c)%v_diff(:)   = 0._r8
     end do
 
   end subroutine atm2hub_alloc
@@ -562,6 +577,9 @@ CONTAINS
           deallocate(cam_out(c)%dstdry3)
           deallocate(cam_out(c)%dstwet4)
           deallocate(cam_out(c)%dstdry4)
+          deallocate(cam_out(c)%wsresp)
+          deallocate(cam_out(c)%u_diff)
+          deallocate(cam_out(c)%v_diff)
        enddo  
 
        deallocate(cam_out)
@@ -678,7 +696,7 @@ subroutine cam_export(state,cam_out,pbuf)
    integer :: ncol
    integer :: prec_dp_idx, snow_dp_idx, prec_sh_idx, snow_sh_idx
    integer :: prec_sed_idx,snow_sed_idx,prec_pcw_idx,snow_pcw_idx
-   integer :: vmag_gust_idx
+   integer :: vmag_gust_idx, wsresp_idx, u_diff_idx, v_diff_idx
    real(r8) :: umb(pcols), vmb(pcols),vmag(pcols)
 
    real(r8), pointer :: prec_dp(:)                 ! total precipitation   from ZM convection
@@ -690,6 +708,9 @@ subroutine cam_export(state,cam_out,pbuf)
    real(r8), pointer :: prec_pcw(:)                ! total precipitation   from Hack convection
    real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
    real(r8), pointer :: vmag_gust(:)
+   real(r8), pointer :: wsresp(:)                  ! First-order response of wind to surface stress
+   real(r8), pointer :: u_diff(:)                  ! Approximate atmosphere change to ubot
+   real(r8), pointer :: v_diff(:)                  ! Approximate atmosphere change to vbot
 
    !-----------------------------------------------------------------------
 
@@ -705,6 +726,9 @@ subroutine cam_export(state,cam_out,pbuf)
    prec_pcw_idx = pbuf_get_index('PREC_PCW')
    snow_pcw_idx = pbuf_get_index('SNOW_PCW')
    vmag_gust_idx = pbuf_get_index('vmag_gust')
+   wsresp_idx = pbuf_get_index('wsresp')
+   u_diff_idx = pbuf_get_index('u_diff2surf')
+   v_diff_idx = pbuf_get_index('v_diff2surf')
 
    call pbuf_get_field(pbuf, prec_dp_idx, prec_dp)
    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp)
@@ -715,6 +739,9 @@ subroutine cam_export(state,cam_out,pbuf)
    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
    call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
+   call pbuf_get_field(pbuf, wsresp_idx, wsresp)
+   call pbuf_get_field(pbuf, u_diff_idx, u_diff)
+   call pbuf_get_field(pbuf, v_diff_idx, v_diff)
 
 !PMA adds gustiness to surface scheme c20181128
 
@@ -729,6 +756,9 @@ subroutine cam_export(state,cam_out,pbuf)
       cam_out%vbot(i)  = state%v(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
       cam_out%pbot(i)  = state%pmid(i,pver)
       cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
+      cam_out%wsresp(i)= max(wsresp(i), 0._r8)
+      cam_out%u_diff(i)= 0._r8 * u_diff(i)
+      cam_out%v_diff(i)= 0._r8 * v_diff(i)
       psm1(i,lchnk)    = state%ps(i)
       srfrpdel(i,lchnk)= state%rpdel(i,pver)
    end do

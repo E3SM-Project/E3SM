@@ -94,6 +94,7 @@ integer  ::      snow_sed_idx = 0
 integer  ::      prec_pcw_idx = 0
 integer  ::      snow_pcw_idx = 0
 
+integer  ::      wsresp_idx = 0
 
 integer :: tpert_idx=-1, qpert_idx=-1, pblh_idx=-1
 logical :: prog_modal_aero 
@@ -604,6 +605,8 @@ subroutine diag_init()
    call addfld ('PRECCav',horiz_only,    'A','m/s','Average large-scale precipitation (liq + ice)'                      )
    call addfld ('PRECLav',horiz_only,    'A','m/s','Average convective precipitation  (liq + ice)'                      )
 
+   call addfld ('wsresp',horiz_only,    'A','m/s/Pa','first order response of winds to stress')
+
    ! outfld calls in diag_surf
 
    call addfld ('SHFLX',horiz_only,    'A','W/m2','Surface sensible heat flux', &
@@ -833,6 +836,8 @@ subroutine diag_init()
   snow_sed_idx = pbuf_get_index('SNOW_SED')
   prec_pcw_idx = pbuf_get_index('PREC_PCW')
   snow_pcw_idx = pbuf_get_index('SNOW_PCW')
+
+  wsresp_idx  = pbuf_get_index('wsresp')
 
 end subroutine diag_init
 
@@ -1916,6 +1921,8 @@ subroutine diag_conv(state, ztodt, pbuf)
    real(r8), pointer :: prec_pcw(:)                ! total precipitation   from Hack convection
    real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
 
+   real(r8), pointer :: wsresp(:)                  ! first order response of winds to stress
+
 ! Local variables:
    
    integer :: i, k, m, lchnk, ncol
@@ -1942,6 +1949,7 @@ subroutine diag_conv(state, ztodt, pbuf)
    call pbuf_get_field(pbuf, snow_sed_idx, snow_sed)
    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
+   call pbuf_get_field(pbuf, wsresp_idx, wsresp)
 
 ! Precipitation rates (multi-process)
    precc(:ncol) = prec_dp(:ncol)  + prec_sh(:ncol)
@@ -1961,6 +1969,8 @@ subroutine diag_conv(state, ztodt, pbuf)
 
    call outfld('PRECLav ', precl, pcols, lchnk )
    call outfld('PRECCav ', precc, pcols, lchnk )
+
+   call outfld('wsresp', wsresp, pcols, lchnk)
 
 #if ( defined E3SM_SCM_REPLAY )
    call outfld('Prec   ' , prect, pcols, lchnk )
