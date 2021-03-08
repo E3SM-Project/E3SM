@@ -10,8 +10,7 @@ module ice_scam
   logical :: single_column       ! true => single column mode
   logical :: scm_multcols        ! true => use single column functionality
                                  ! but over multiple columns across the
-                                 ! entire domain (i.e. when you want surface
-                                 ! of domain to be homogeneous everywhere)
+                                 ! entire domain
   real (kind=dbl_kind) scmlat    ! single column latitude (degrees)
   real (kind=dbl_kind) scmlon    ! single column longitude (degrees)
 

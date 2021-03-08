@@ -1037,23 +1037,15 @@ contains
     area_d = 0.0_r8
     wght_d = 0.0_r8
 
-    if (single_column .and. .not. scm_multcols .and. dycore_is('SE')) then
-      area_d = 4.0_r8*pi
-      wght_d = 4.0_r8*pi
-    else if (scm_multcols .and. dycore_is('SE')) then
-      area_d(1:ngcols) = 4.0_r8*pi/ngcols
-      wght_d(1:ngcols) = 4.0_r8*pi/ngcols
-    else
-      call get_horiz_grid_d(ngcols, area_d_out=area_d, wght_d_out=wght_d)
-    endif
+    call get_horiz_grid_d(ngcols, area_d_out=area_d, wght_d_out=wght_d)
 
-    if ( abs(sum(area_d) - 4.0_r8*pi) > 1.e-10_r8 ) then
+    if ( abs(sum(area_d) - 4.0_r8*pi) > 1.e-10_r8 .and. .not. single_column) then
        write(iulog,*) ' ERROR: sum of areas on globe does not equal 4*pi'
        write(iulog,*) ' sum of areas = ', sum(area_d), sum(area_d)-4.0_r8*pi
        call endrun('phys_grid')
     end if
 
-    if ( abs(sum(wght_d) - 4.0_r8*pi) > 1.e-10_r8 ) then
+    if ( abs(sum(wght_d) - 4.0_r8*pi) > 1.e-10_r8 .and. .not. single_column) then
        write(iulog,*) ' ERROR: sum of integration weights on globe does not equal 4*pi'
        write(iulog,*) ' sum of weights = ', sum(wght_d), sum(wght_d)-4.0_r8*pi
        call endrun('phys_grid')

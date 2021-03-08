@@ -68,7 +68,7 @@ contains
     real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
     type(element_t), pointer :: elem(:)
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
-    real(r8), allocatable :: tmp_iop(:,:)  ! (npsp,nlev)
+    real(r8), allocatable :: tmp_point(:,:)! (npsp,nlev)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     real(r8) :: ps(np,np)     
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
@@ -118,9 +118,9 @@ contains
       call endrun(trim(subname)//': mismatch in local input array size')
     end if
     allocate(tmp(npsq,nlev,nelemd))
-    allocate(tmp_iop(1,nlev))
+    allocate(tmp_point(1,nlev)) ! To find input at a single location
     tmp = 0.0_r8
-    tmp_iop = 0.0_r8
+    tmp_point = 0.0_r8
     allocate(qtmp(npsq*nelemd,nlev))
 
     if (fv_nphys>0) then
@@ -188,12 +188,15 @@ contains
     tmp = 0.0_r8
     
     if (.not. scm_multcols) then
+      ! Standard Call
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
-      tmp_iop = 0.0_r8
+      ! Else find input just for the location of interest
+      ! This logic follows for the rest of the input fields
+      tmp_point = 0.0_r8
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, 1,          &
-           1, nlev, tmp_iop, found, gridname='GLL')
+           1, nlev, tmp_point, found, gridname='GLL')
     endif
       
     if(.not. found) then
@@ -206,8 +209,10 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
+             ! If in SCM mode, put data of our column of interest
+             ! in all dynamics columncs
              if (single_column .and. .not. scm_multcols) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
-             if (scm_multcols) elem(ie)%state%v(i,j,1,:,tl)=tmp_iop(indx_scm,:)
+             if (scm_multcols) elem(ie)%state%v(i,j,1,:,tl)=tmp_point(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -220,9 +225,9 @@ contains
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
-      tmp_iop = 0.0_r8
+      tmp_point = 0.0_r8
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, 1,          &
-           1, nlev, tmp_iop, found, gridname='GLL')
+           1, nlev, tmp_point, found, gridname='GLL')
     endif
 
     if(.not. found) then
@@ -235,22 +240,22 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
              if (single_column .and. .not. scm_multcols) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
-             if (scm_multcols) elem(ie)%state%v(i,j,2,:,tl)=tmp_iop(indx_scm,:)
+             if (scm_multcols) elem(ie)%state%v(i,j,2,:,tl)=tmp_point(indx_scm,:)
              indx = indx + 1
           end do
        end do
     end do
 
     fieldname = 'T'
-    tmp_iop = 0.0_r8
+    tmp_point = 0.0_r8
 
     if (.not. scm_multcols) then
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
-      tmp_iop = 0.0_r8
+      tmp_point = 0.0_r8
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, 1,          &
-           1, nlev, tmp_iop, found, gridname='GLL')
+           1, nlev, tmp_point, found, gridname='GLL')
     endif
 
     if(.not. found) then
@@ -269,13 +274,13 @@ contains
 #ifdef MODEL_THETA_L
              elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
 
-             if (scm_multcols) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
+             if (scm_multcols) elem(ie)%derived%FT(i,j,:) = tmp_point(indx_scm,:)
              if (single_column .and. .not. scm_multcols) elem(ie)%derived%FT(i,j,:) = tmp(indx_scm,:,ie_scm)
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
 
              if (single_column .and. .not. scm_multcols) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
-             if (scm_multcols) elem(ie)%state%T(i,j,:,tl) = tmp_iop(indx_scm,:)
+             if (scm_multcols) elem(ie)%state%T(i,j,:,tl) = tmp_point(indx_scm,:)
 #endif
              indx = indx + 1
           end do
@@ -314,9 +319,9 @@ contains
               call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
                    1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
             else
-              tmp_iop = 0.0_r8 
+              tmp_point = 0.0_r8
               call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev', 1, 1,          &
-                1, nlev, tmp_iop, found, gridname='GLL')
+                1, nlev, tmp_point, found, gridname='GLL')
             endif
     
           endif
@@ -394,7 +399,7 @@ contains
              do i = 1, np
                 elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx,:,ie)
                 if (single_column .and. .not. scm_multcols) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
-                if (scm_multcols) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_iop(indx_scm,:)
+                if (scm_multcols) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_point(indx_scm,:)
                 indx = indx + 1
              end do
           end do
@@ -426,6 +431,11 @@ contains
     if(minval(tmp(:,1,:), mask=tmpmask) < 10000._r8 .and. .not. scm_multcols) then
        call endrun('Problem reading ps field')
     end if
+
+    if (scm_multcols .and. tmp(1,1,1) < 10000._r8) then
+      call endrun('Problem reading ps field')
+    endif
+
     deallocate(tmpmask)
 
     do ie=1,nelemd
@@ -513,7 +523,8 @@ contains
       end if
 
       if (dp_crm) then
-        ! Restrict perturbations to lowest layers based on reference pressure
+        ! Define reference pressure, to potentially restrict initial perturbations
+        !  to a certain height if requested
         do k=1,nlev
           p_ref(k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*hvcoord%ps0
         enddo
@@ -542,7 +553,7 @@ contains
         endif
         do i=1,np
           do j=1,np
-            do k=62,nlev
+            do k=1,nlev
 
               if (new_random) then
                 pertval = ranx()
