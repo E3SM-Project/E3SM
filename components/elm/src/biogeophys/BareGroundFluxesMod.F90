@@ -134,6 +134,7 @@ contains
          forc_v           =>    top_as%vbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)
          wsresp           =>    top_as%wsresp                         , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
          tau_est          =>    top_as%tau_est                        , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
+         ugust            =>    top_as%ugust                          , & ! Input:  [real(r8) (:)   ]  gustiness from atmosphere (m/s)
          forc_th          =>    top_as%thbot                          , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)
          forc_pbot        =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
          forc_rho         =>    top_as%rhobot                         , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)
@@ -233,11 +234,11 @@ contains
          if (implicit_stress) then
             wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
             wind_speed_adj(p) = wind_speed0(p)
-            ur(p) = max(1.0_r8, wind_speed_adj(p))
+            ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
 
             prev_tau(p) = tau_est(t)
          else
-            ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+            ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
          end if
          tau_diff(p) = 1.e100_r8
 
@@ -292,7 +293,7 @@ contains
                call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
                     tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
                     wind_speed_adj(p))
-               ur(p) = max(1.0_r8, wind_speed_adj(p))
+               ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
             end if
 
             tstar = temp1(p)*dth(p)

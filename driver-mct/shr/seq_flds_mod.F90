@@ -153,6 +153,7 @@ module seq_flds_mod
 
   character(len=CS)  :: atm_flux_method     ! explicit => no extra fields needed
                                             ! implicit_stress => atm provides wsresp and tau_est
+  logical            :: atm_gustiness       ! .true. if the atmosphere model produces gustiness
 
   !----------------------------------------------------------------------------
   ! metadata
@@ -371,7 +372,7 @@ contains
     namelist /seq_cplflds_inparm/  &
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
          ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
-         nan_check_component_fields, rof_heat, atm_flux_method
+         nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -408,6 +409,7 @@ contains
        nan_check_component_fields = .false.
        rof_heat = .false.
        atm_flux_method = 'explicit'
+       atm_gustiness = .false.
 
        unitn = shr_file_getUnit()
        write(logunit,"(A)") subname//': read seq_cplflds_inparm namelist from: '&
@@ -436,6 +438,7 @@ contains
     call shr_mpi_bcast(nan_check_component_fields, mpicom)
     call shr_mpi_bcast(rof_heat    , mpicom)
     call shr_mpi_bcast(atm_flux_method, mpicom)
+    call shr_mpi_bcast(atm_gustiness, mpicom)
 
     call glc_elevclass_init(glc_nec)
 
@@ -649,7 +652,7 @@ contains
        call seq_flds_add(x2l_states,"Sa_wsresp")
        call seq_flds_add(x2i_states,"Sa_wsresp")
        longname = 'Response of wind to surface stress'
-       stdname  = 'wsresp'
+       stdname  = ''
        units    = 'm s-1 Pa-1'
        attname  = 'Sa_wsresp'
        call metadata_set(attname, longname, stdname, units)
@@ -658,10 +661,22 @@ contains
        call seq_flds_add(a2x_states,"Sa_tau_est")
        call seq_flds_add(x2l_states,"Sa_tau_est")
        call seq_flds_add(x2i_states,"Sa_tau_est")
-       longname = 'estimate of surface stress in equilibrium with boundary layer'
-       stdname  = 'tau_est'
+       longname = 'Estimate of surface stress in equilibrium with boundary layer'
+       stdname  = ''
        units    = 'Pa'
        attname  = 'Sa_tau_est'
+       call metadata_set(attname, longname, stdname, units)
+    end if
+
+    if (atm_gustiness) then
+       ! extra mean wind speed associated with gustiness (m/s)
+       call seq_flds_add(a2x_states,"Sa_ugust")
+       call seq_flds_add(x2l_states,"Sa_ugust")
+       call seq_flds_add(x2i_states,"Sa_ugust")
+       longname = 'Extra wind speed due to gustiness'
+       stdname  = ''
+       units    = 'm s-1'
+       attname  = 'Sa_ugust'
        call metadata_set(attname, longname, stdname, units)
     end if
 

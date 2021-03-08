@@ -311,6 +311,7 @@
                                         potT(:,:,iblk),                 &
                                         uatm(:,:,iblk), vatm(:,:,iblk), &
                                         wsresp(:,:,iblk),tau_est(:,:,iblk),&
+                                        ugust(:,:,iblk),                &
                                         uvel(:,:,iblk), vvel(:,:,iblk), &
                                         wind(:,:,iblk), zlvl(:,:,iblk), &
                                         Qa  (:,:,iblk), rhoa(:,:,iblk), &

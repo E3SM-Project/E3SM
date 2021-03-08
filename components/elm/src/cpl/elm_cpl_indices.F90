@@ -76,6 +76,7 @@ module elm_cpl_indices
   integer, public ::index_x2l_Sa_v            ! bottom atm level mer wind
   integer, public ::index_x2l_Sa_wsresp       ! first order response of wind to stress
   integer, public ::index_x2l_Sa_tau_est      ! estimate of stress in equilibrium with wind
+  integer, public ::index_x2l_Sa_ugust        ! gustiness from atm
   integer, public ::index_x2l_Sa_ptem         ! bottom atm level pot temp
   integer, public ::index_x2l_Sa_shum         ! bottom atm level spec hum
   integer, public ::index_x2l_Sa_pbot         ! bottom atm level pressure
@@ -230,6 +231,7 @@ contains
     index_x2l_Sa_v          = mct_avect_indexra(x2l,'Sa_v')
     index_x2l_Sa_wsresp     = mct_avect_indexra(x2l,'Sa_wsresp',perrwith='quiet')
     index_x2l_Sa_tau_est    = mct_avect_indexra(x2l,'Sa_tau_est',perrwith='quiet')
+    index_x2l_Sa_ugust      = mct_avect_indexra(x2l,'Sa_ugust',perrwith='quiet')
     index_x2l_Sa_ptem       = mct_avect_indexra(x2l,'Sa_ptem')
     index_x2l_Sa_pbot       = mct_avect_indexra(x2l,'Sa_pbot')
     index_x2l_Sa_tbot       = mct_avect_indexra(x2l,'Sa_tbot')

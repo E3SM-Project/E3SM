@@ -1003,6 +1003,9 @@
 <!-- Linearization of boundary layer winds -->
 <linearize_pbl_winds>.false.</linearize_pbl_winds>
 
+<!-- Export gustiness value -->
+<export_gustiness>.false.</export_gustiness>
+
 <!-- MMF CRM mean state acceleration -->
 <use_crm_accel    use_MMF="0">.false.</use_crm_accel>
 <crm_accel_uv     use_MMF="0">.false.</crm_accel_uv>

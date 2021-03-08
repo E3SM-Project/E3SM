@@ -150,12 +150,11 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            &               taux  ,tauy  ,tref  ,qref  ,   &
            &               ocn_surface_flux_scheme, &
            &               duu10n,  ustar_sv   ,re_sv ,ssq_sv,   &
-           &               missval, wsresp, tau_est )
+           &               missval, wsresp, tau_est, ugust)
 
 ! !USES:
 
    use water_isotopes, only: wiso_flxoce !subroutine used to calculate water isotope fluxes.
-
    implicit none
 
 ! !INPUT/OUTPUT PARAMETERS:
@@ -204,6 +203,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
    real(R8),intent(in) ,optional :: wsresp(nMax)   ! boundary layer wind response to stress (m/s/Pa)
    real(R8),intent(in) ,optional :: tau_est(nMax)  ! stress in equilibrium with boundary layer (Pa)
+   real(R8),intent(in) ,optional :: ugust(nMax)    ! extra wind speed from gustiness (m/s)
 
 ! !EOP
 
@@ -335,7 +335,11 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
         !--- compute some needed quantities ---
         wind0 = max(sqrt((ubot(n) - us(n))**2 + (vbot(n) - vs(n))**2), 0.01_r8)
-        vmag = max(seq_flux_atmocn_minwind, wind0)
+        vmag = wind0
+        if (present(ugust)) then
+           vmag = vmag + ugust(n)
+        end if
+        vmag = max(seq_flux_atmocn_minwind, vmag)
         if (use_coldair_outbreak_mod) then
             ! Cold Air Outbreak Modification:
             ! Increase windspeed for negative tbot-ts
@@ -376,7 +380,11 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            tau = rbot(n) * ustar * rdn * wind_adj
            call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
                 tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
-           vmag = max(seq_flux_atmocn_minwind, wind_adj)
+           vmag = wind_adj
+           if (present(ugust)) then
+              vmag = vmag + ugust(n)
+           end if
+           vmag = max(seq_flux_atmocn_minwind, vmag)
         else
            tau_diff = 0._R8
         end if
@@ -421,7 +429,11 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
               tau = rbot(n) * ustar * rd * wind_adj
               call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
                    tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
-              vmag = max(seq_flux_atmocn_minwind, wind_adj)
+              vmag = wind_adj
+              if (present(ugust)) then
+                 vmag = vmag + ugust(n)
+              end if
+              vmag = max(seq_flux_atmocn_minwind, vmag)
            end if
         enddo
         if (iter < 1) then
@@ -511,7 +523,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
         !--- compute some needed quantities ---
         wind0 = max(sqrt((ubot(n) - us(n))**2 + (vbot(n) - vs(n))**2), 0.01_r8)
-        vmag = max(seq_flux_atmocn_minwind, wind0 )
+        vmag = max(seq_flux_atmocn_minwind, wind0)
 
          if (use_coldair_outbreak_mod) then
             ! Cold Air Outbreak Modification:

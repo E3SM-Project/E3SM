@@ -85,6 +85,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- Use implicit method for stress sent to atmosphere -->
 <implicit_stress>.false.</implicit_stress>
+<!-- The atmosphere provides gustiness separate from mean wind. -->
+<atm_gustiness>.false.</atm_gustiness>
 
 <!-- ========================================================================================  -->
 <!-- VSFM default                                                                              -->

@@ -159,6 +159,16 @@
     </values>
   </entry>
 
+  <entry id="atm_gustiness" modify_via_xml="ATM_SUPPLIES_GUSTINESS">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>Set to .true. if the atmosphere produces a gustiness velocity. Set by the xml variable ATM_SUPPLIES_GUSTINESS in env_run.xml</desc>
+    <values>
+      <value>$ATM_SUPPLIES_GUSTINESS</value>
+    </values>
+  </entry>
+
   <entry  id="glc_nec" modify_via_xml="GLC_NEC">
     <type>integer</type>
     <category>seq_flds</category>

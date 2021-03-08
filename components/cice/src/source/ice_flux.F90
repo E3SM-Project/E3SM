@@ -127,7 +127,8 @@
          swidf   , & ! sw down, near IR, diffuse (W/m^2)
          flw     , & ! incoming longwave radiation (W/m^2)
          wsresp  , & ! response of atmospheric boundary layer to wind (m/s/Pa)
-         tau_est     ! estimated stress at equilibrium with wind (Pa)
+         tau_est , & ! estimated stress at equilibrium with wind (Pa)
+         ugust       ! gustiness from atmosphere (m/s)
 
        ! in from atmosphere (if .not. Tsfc_calc)
        ! required for coupling to HadGEM3
@@ -394,6 +395,7 @@
       vatm  (:,:,:) = c5
       wsresp(:,:,:) = c0              ! response of wind to stress (m/s/Pa)
       tau_est(:,:,:)= c0              ! stress in equilibrium with wind (Pa)
+      ugust (:,:,:) = c0              ! gustiness from atmosphere (m/s)
       strax (:,:,:) = 0.05_dbl_kind
       stray (:,:,:) = 0.05_dbl_kind
       if (l_winter) then

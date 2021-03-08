@@ -3736,6 +3736,9 @@ if ( $linearize_pbl_winds =~ /$TRUE/io ) {
     }
 }
 
+# Export gustiness to surface components.
+add_default($nl, 'export_gustiness');
+
 # Use Convective water in radiation
 add_default($nl, 'conv_water_in_rad');
 

@@ -199,6 +199,17 @@
     </desc>
   </entry>
 
+  <entry id="ATM_SUPPLIES_GUSTINESS">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>
+      Whether or not the atmosphere should supply an extra gustiness field.
+    </desc>
+  </entry>
+
   <!-- ===================================================================== -->
   <!-- component coupling options and frequencies -->
   <!-- ===================================================================== -->
