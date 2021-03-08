@@ -63,6 +63,7 @@ TEST_CASE("input_output_basic","io")
   Int max_steps = 10;
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii) {
+    time += dt;
     for (const auto& fname : out_fields->m_fields_names) {
       auto& f  = field_repo->get_field(fname,"Physics");
       auto f_host = f.get_view<Host>();
@@ -72,7 +73,6 @@ TEST_CASE("input_output_basic","io")
       }
       f.sync_to_dev();
     }
-    time += dt;
     m_output_manager.run(time);
   }
   m_output_manager.finalize();
@@ -260,6 +260,13 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
       f4_host(ii,ipack)[ivec] = (ii) + (jj+1)/10.0;
     }
   }
+  // Update timestamp
+  util::TimeStamp time (0,0,0,0);
+  f1.get_header().get_tracking().update_time_stamp(time);
+  f2.get_header().get_tracking().update_time_stamp(time);
+  f3.get_header().get_tracking().update_time_stamp(time);
+  f4.get_header().get_tracking().update_time_stamp(time);
+  // Sync back to device
   f1.sync_to_dev();
   f2.sync_to_dev();
   f3.sync_to_dev();

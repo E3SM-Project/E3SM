@@ -304,8 +304,10 @@ void AtmosphereOutput::register_views()
   for (auto const& name : m_fields)
   {
     auto field = m_field_repo->get_field(name, m_grid_name);
+    auto ts    = field.get_header().get_tracking().get_time_stamp();
+    EKAT_REQUIRE_MSG (ts.is_valid(), "Error in output, field " + name + " has not been set in the field manager yet");
     // If the "averaging type" is instant then just need a ptr to the view.
-    EKAT_REQUIRE_MSG (field.get_header().get_parent().expired(), "Error! Cannot  deal with subfield, for now.");
+    EKAT_REQUIRE_MSG (field.get_header().get_parent().expired(), "Error! Cannot deal with subfield, for now.");
     auto view_d = field.get_view();
     // Create a local copy of view to be stored by output stream.
     view_type_host view_copy("",view_d.extent(0));
