@@ -181,15 +181,15 @@
 	                possible_values=".true. or .false."
 		/>
 		<nml_option name="config_finalize_damage_after_advection" type="logical" default_value=".false." units="unitless"
-                        description="If true, then turn on the li_finalize_damage_after_advection function."
+                        description="If true, then turn on the 'li_finalize_damage_after_advection' function."
 		            possible_values=".true. or .false."
                 />
 		<nml_option name="config_preserve_damage" type="logical" default_value=".false." units="unitless"
-                        description="If true, then we preserve the damage before advection (no heal)"
+                        description="If true, then preserve the value of damage before advection (i.e., do not allow healing of damage to occur)."
 		            possible_values=".true. or .false."
                 />
 		<nml_option name="config_calculate_damage" type="logical" default_value=".false." units="unitless"
-                        description="If true, then turn on the calculate_damage function."
+                        description="If true, then turn on the 'calculate_damage' function."
 		            possible_values=".true. or .false."
                 />
                 <nml_option name="config_damage_preserve_threshold" type="real" default_value="0.0" units="unitless"
@@ -197,27 +197,27 @@
 	                possible_values="real value between 0 and 1"
 		/>
                 <nml_option name="config_damage_calving_threshold" type="real" default_value="1.0" units="unitless"
-                        description="It is a value above which the cell would be calved away."
+                        description="Value of damage above which the cell would be calved away."
 	                possible_values="real value between 0 and 1"
 		/>
                 <nml_option name="config_damage_stiffness_min" type="real" default_value="0.1" units="unitless"
-                        description="The minimum value the stiffnessFactor can take due to evolving damage when stiffnessFactor is calculated from damage (config_damage_rheology_coupling=.true.). Used to prevent unrealistic and/or numerically challenging stiffness values. For example, if damage = 0.9, then stiffnessFactor is 1 - damage = 0.1. But if we set config_damage_stiffness_min = 0.5, then stiffnessFactor can only be allowd as 0.5"
+                        description="The minimum value the 'stiffnessFactor' can take due to evolving damage when 'stiffnessFactor' is calculated from damage (i.e., when 'config_damage_rheology_coupling'=.true.). This is used to prevent unrealistic and/or numerically challenging stiffness values. For example, if damage = 0.9, then 'stiffnessFactor' becomes 1 - damage = 0.1 (a small value that could be challenging for the solver). But if we set 'config_damage_stiffness_min' = 0.5, then 'stiffnessFactor' can only fall as low as 0.5."
 	                possible_values="real value between 0 and 1"
 		/>
                 <nml_option name="config_damage_rheology_coupling" type="logical" default_value=".false." units="unitless"
-                        description="If true, then we change stiffnessFactor to 1-damage during the run."
+                        description="If true, then the value of 'stiffnessFactor' is coupled to damage evolution, i.e. 'stiffnessFactor' = 1-damage."
 	                possible_values=".true. or .false."
 		/>
 		        <nml_option name="config_damage_gl_setting" type="character" default_value="nye" units="unitless"
-		                description="Selection of the method for initializing damage in the first floating grid cells past the grounding line.  'nye' uses Nye's zero stress criteria for defining the damage value.  'extrapolate' extrapolates values from the floating ice downstream back to the first floating cells."
+		                description="Selection of the method for initializing damage in the first floating grid cells past the grounding line: 'nye' uses Nye's zero stress criteria (Nye, 1957, Proc. R. Soc. A, 239) for defining the damage value, 'extrapolate' extrapolates values from the floating ice downstream back to the first floating cells."
 		            possible_values="'nye', 'extrapolate'"
 		/>
-		        <nml_option name="config_damage_calving_method" type="character" default_value="none" units="unitless"
-		                description="Selection of the method for damage calving"
+		        <nml_option name="config_damage_calving_method" type="character" default_value="threshold" units="unitless"
+		                description="Selection of the method for damage calving. For 'threshold', ice with damage above the value specified by 'config_damage_calving_threshold' will be removed (currently, only if this ice is also AT a marine margin, but eventually this will be expanded to also include any ice at the threshold adjacent to cells at the marine margin). For 'calving_rate', a rate of calving is specified as proportional to the damage value above some threshold, with the constant of proportionality specified by 'config_damagecalvingParameter'."
 		            possible_values="'calving_rate', 'threshold'"
 		/>
     <nml_option name="config_damagecalvingParameter" type="real" default_value="1.0e-4" units="m/s"
-                        description="A scalar parameter that specifies a calving rate as proportional to the value of damage above some threshold value when using the calving_rate method for the config_damage_calving_method option (with the threshold damage value specified by config_damage_calving_threshold)"
+                        description="A scalar parameter that specifies a calving rate as proportional to the value of damage above some threshold value when using the 'calving_rate' method for the 'config_damage_calving_method' option (with the threshold damage value specified by 'config_damage_calving_threshold')."
 	                possible_values="any positive real value"
 		/>
 	</nml_record>
@@ -1063,7 +1063,7 @@ is the value of that variable from the *previous* time level!
                      description="damage change rate"
                 />
                 <var name="damage_nye" type="real" dimensions="nCells Time" units="none" time_levs="1"
-                     description="Nye zero-stress damage number"
+                     description="Nye zero-stress (Nye, 1957, Proc. R. Soc. A, 239) damage value"
                 />
                 <var name="damageMax" type="real" dimensions="nCells Time" units="none" time_levs="1"
                      description="maximum damage number kept constant"
