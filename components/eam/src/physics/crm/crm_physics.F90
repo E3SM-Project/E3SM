@@ -628,10 +628,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(crm_rknd), dimension(pcols) :: crm_angle
 
    ! surface flux variables for using adjusted fluxes from flux_avg_run
-   real(crm_rknd), pointer, dimension(pcols) :: shf_tmp
-   real(crm_rknd), pointer, dimension(pcols) :: lhf_tmp
-   real(crm_rknd), pointer, dimension(pcols) :: wsx_tmp
-   real(crm_rknd), pointer, dimension(pcols) :: wsy_tmp
+   real(crm_rknd), pointer, dimension(:) :: shf_tmp
+   real(crm_rknd), pointer, dimension(:) :: lhf_tmp
+   real(crm_rknd), pointer, dimension(:) :: wsx_tmp
+   real(crm_rknd), pointer, dimension(:) :: wsy_tmp
 
    ! CRM types
    type(crm_state_type)  :: crm_state
