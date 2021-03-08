@@ -691,8 +691,8 @@ end if
     call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(Lx,              1, MPIreal_t,    par%root,par%comm,ierr)
-    call MPI_bcast(Ly,              1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(Lx,              1, MPIreal_t,par%root,par%comm,ierr)
+    call MPI_bcast(Ly,              1, MPIreal_t,par%root,par%comm,ierr)
 
 #ifndef CAM
     if(test_case == "dcmip2012_test4") then

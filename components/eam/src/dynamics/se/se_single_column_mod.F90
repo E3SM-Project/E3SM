@@ -104,7 +104,10 @@ subroutine scm_setinitial(elem)
             enddo
 
             ! If DP-CRM mode then SHOC/CLUBB needs to know about
-            !   length size.  Note that planar dycore only supports uniform grids.
+            !   length size.  The calculations based on a sphere in the SHOC
+            !   and CLUBB interefaces are not valid for a planar grid, thus
+            !   save the grid length from the dycore. Note that planar dycore
+            !   only supports uniform grids, thus we only save one value.
             if (dp_crm) then
               ! convert from km to m
               dyn_dx_size = elem(ie)%dx_short * 1000.0_real_kind
@@ -340,8 +343,6 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
       call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
                                  nelemd_todo,np_todo,dt)
     endif
-   
-
 
 end subroutine apply_SC_forcing
 
