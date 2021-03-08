@@ -83,7 +83,7 @@ class AtmosphereInput
 {
 public:
   using dofs_list_type = AbstractGrid::dofs_list_type;
-  using view_type      = typename KokkosTypes<HostDevice>::view_1d<Real>;
+  using view_type_host = typename KokkosTypes<HostDevice>::view_1d<Real>;
 
   virtual ~AtmosphereInput () = default;
 
@@ -107,7 +107,7 @@ public:
 
   // Main Functions
   void pull_input();
-  view_type pull_input(const std::string& name);  // Used by scorpio_output when handling restart history files.
+  view_type_host pull_input(const std::string& name);  // Used by scorpio_output when handling restart history files.
   // var_dims is a list of tags for each of the physical dimensions of this variable.
   // dim_lens is a vector of the physical dimension lengths without any padding, in other words
   // dim_lens is a vector of integer for the physical length of each of the tags in var_dims.

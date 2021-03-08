@@ -85,7 +85,7 @@ class AtmosphereOutput
 {
 public:
   using dofs_list_type = AbstractGrid::dofs_list_type;
-  using view_type      = typename KokkosTypes<HostDevice>::view_1d<Real>;
+  using view_type_host = typename KokkosTypes<HostDevice>::view_1d<Real>;
   using input_type     = AtmosphereInput;
 
   virtual ~AtmosphereOutput () = default;
@@ -160,7 +160,7 @@ protected:
   std::map<std::string,Int>              m_dims;
   typename dofs_list_type::HostMirror    m_gids;
   // Local views of each field to be used for "averaging" output and writing to file.
-  std::map<std::string,view_type>        m_view_local;
+  std::map<std::string,view_type_host>   m_view_local;
 
   // Manage when files are open and closed, and what type of file I am writing.
   bool m_is_init = false;

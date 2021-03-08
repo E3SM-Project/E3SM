@@ -36,7 +36,7 @@ void AtmosphereInput::pull_input(const std::string& filename, const std::string&
   eam_pio_closefile(filename);  
 }
 /* ---------------------------------------------------------- */
-AtmosphereInput::view_type AtmosphereInput::pull_input(const std::string& name)
+AtmosphereInput::view_type_host AtmosphereInput::pull_input(const std::string& name)
 {
 /*  Run through the sequence of opening the file, reading input and then closing the file.  
  *  Overloaded case to deal with just one output and to not put output into field repo.
@@ -47,12 +47,12 @@ AtmosphereInput::view_type AtmosphereInput::pull_input(const std::string& name)
   using namespace scream;
   using namespace scream::scorpio;
   if (name=="avg_count") {
-    view_type l_view("",1);
+    view_type_host l_view("",1);
     grid_read_data_array(m_filename,name,m_dofs.at(name),l_view.data());
     return l_view;
   } else {
     auto field = m_field_repo->get_field(name, m_grid_name);
-    view_type l_view("",field.get_view().extent(0));
+    view_type_host l_view("",field.get_view().extent(0));
     grid_read_data_array(m_filename,name,m_dofs.at(name),l_view.data());
     return l_view;
   }
@@ -70,6 +70,7 @@ void AtmosphereInput::pull_input()
     // Get all the info for this field.
     auto l_dims = field.get_header().get_identifier().get_layout().dims();
     Int padding = field.get_header().get_alloc_properties().get_padding();
+    EKAT_REQUIRE_MSG (field.get_header().get_alloc_properties().contiguous(), "Error! Attempting to read in data that is strided for variable: " + name + "\n");
     grid_read_data_array(m_filename,name,l_dims,m_dofs.at(name),padding,field.get_view<Host>().data());
     field.sync_to_dev();
   }

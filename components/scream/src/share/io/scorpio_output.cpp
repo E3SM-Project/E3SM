@@ -86,7 +86,7 @@ void AtmosphereOutput::init()
     for (auto name : m_fields)
     {
       auto l_view = rhist_in.pull_input(name);
-      Kokkos::deep_copy(m_view_local.at(name),l_view);
+      m_view_local.at(name) = l_view;
     }
     auto avg_count = rhist_in.pull_input("avg_count");
     m_status["Avg Count"] = avg_count(0);
@@ -305,9 +305,10 @@ void AtmosphereOutput::register_views()
   {
     auto field = m_field_repo->get_field(name, m_grid_name);
     // If the "averaging type" is instant then just need a ptr to the view.
+    EKAT_REQUIRE_MSG (field.get_header().get_parent().expired(), "Error! Cannot  deal with subfield, for now.");
     auto view_d = field.get_view();
     // Create a local copy of view to be stored by output stream.
-    view_type view_copy("",view_d.extent(0));
+    view_type_host view_copy("",view_d.extent(0));
     Kokkos::deep_copy(view_copy, view_d);
     m_view_local.emplace(name,view_copy);
   }
