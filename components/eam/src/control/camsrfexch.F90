@@ -78,6 +78,8 @@ module camsrfexch
      real(r8), allocatable :: dstdry3(:)  ! dry deposition of dust (bin3)
      real(r8), allocatable :: dstwet4(:)  ! wet deposition of dust (bin4)
      real(r8), allocatable :: dstdry4(:)  ! dry deposition of dust (bin4)
+     real(r8), allocatable :: wsresp(:)   ! first-order response of low-level wind to surface fluxes
+     real(r8), allocatable :: tau_est(:)   ! stress estimated to be in equilibrium with ubot/vbot
   end type cam_out_t 
 
 !---------------------------------------------------------------------------
@@ -483,6 +485,12 @@ CONTAINS
 
        allocate (cam_out(c)%dstdry4(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstdry4')
+
+       allocate (cam_out(c)%wsresp(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error wsresp')
+
+       allocate (cam_out(c)%tau_est(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error tau_est')
     enddo  
 
     do c = begchunk,endchunk
@@ -523,6 +531,8 @@ CONTAINS
        cam_out(c)%dstwet3(:)  = 0._r8
        cam_out(c)%dstdry4(:)  = 0._r8
        cam_out(c)%dstwet4(:)  = 0._r8
+       cam_out(c)%wsresp(:)   = 0._r8
+       cam_out(c)%tau_est(:)  = 0._r8
     end do
 
   end subroutine atm2hub_alloc
@@ -567,6 +577,8 @@ CONTAINS
           deallocate(cam_out(c)%dstdry3)
           deallocate(cam_out(c)%dstwet4)
           deallocate(cam_out(c)%dstdry4)
+          deallocate(cam_out(c)%wsresp)
+          deallocate(cam_out(c)%tau_est)
        enddo  
 
        deallocate(cam_out)
@@ -665,6 +677,7 @@ subroutine cam_export(state,cam_out,pbuf)
    use constituents,     only: pcnst
    use cam_control_mod,  only: rair
    use physics_buffer,   only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
+   use phys_control,     only: phys_getopts
    implicit none
 
    !------------------------------Arguments--------------------------------
@@ -684,8 +697,9 @@ subroutine cam_export(state,cam_out,pbuf)
    integer :: ncol
    integer :: prec_dp_idx, snow_dp_idx, prec_sh_idx, snow_sh_idx
    integer :: prec_sed_idx,snow_sed_idx,prec_pcw_idx,snow_pcw_idx
-   integer :: vmag_gust_idx
+   integer :: vmag_gust_idx, wsresp_idx, tau_est_idx
    real(r8) :: umb(pcols), vmb(pcols),vmag(pcols)
+   logical :: linearize_pbl_winds ! Send wsresp and tau_est to coupler.
 
    real(r8), pointer :: prec_dp(:)                 ! total precipitation   from ZM convection
    real(r8), pointer :: snow_dp(:)                 ! snow from ZM   convection
@@ -696,11 +710,15 @@ subroutine cam_export(state,cam_out,pbuf)
    real(r8), pointer :: prec_pcw(:)                ! total precipitation   from Hack convection
    real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
    real(r8), pointer :: vmag_gust(:)
+   real(r8), pointer :: wsresp(:)                  ! First-order response of wind to surface stress
+   real(r8), pointer :: tau_est(:)                 ! Estimated stress in equilibrium with ubot/vbot
 
    !-----------------------------------------------------------------------
 
    lchnk = state%lchnk
    ncol  = state%ncol
+
+   call phys_getopts(linearize_pbl_winds_out=linearize_pbl_winds)
 
    prec_dp_idx = pbuf_get_index('PREC_DP')
    snow_dp_idx = pbuf_get_index('SNOW_DP')
@@ -722,6 +740,13 @@ subroutine cam_export(state,cam_out,pbuf)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
    call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
 
+   if (linearize_pbl_winds) then
+      wsresp_idx = pbuf_get_index('wsresp')
+      tau_est_idx = pbuf_get_index('tau_est')
+      call pbuf_get_field(pbuf, wsresp_idx, wsresp)
+      call pbuf_get_field(pbuf, tau_est_idx, tau_est)
+   end if
+
 !PMA adds gustiness to surface scheme c20181128
 
    do i=1,ncol
@@ -735,6 +760,10 @@ subroutine cam_export(state,cam_out,pbuf)
       cam_out%vbot(i)  = state%v(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
       cam_out%pbot(i)  = state%pmid(i,pver)
       cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
+      if (linearize_pbl_winds) then
+         cam_out%wsresp(i)= max(wsresp(i), 0._r8)
+         cam_out%tau_est(i)= tau_est(i)
+      end if
       psm1(i,lchnk)    = state%ps(i)
       srfrpdel(i,lchnk)= state%rpdel(i,pver)
    end do

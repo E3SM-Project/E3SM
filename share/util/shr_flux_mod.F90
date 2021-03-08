@@ -38,6 +38,8 @@ module shr_flux_mod
    public :: shr_flux_MOstability ! boundary layer stability scales/functions
    public :: shr_flux_adjust_constants ! adjust constant values used in flux calculations.
 
+   public :: shr_flux_update_stress ! Update of stress for iterations in implicit code.
+
 ! !PUBLIC DATA MEMBERS:
 
   integer(IN),parameter,public :: shr_flux_MOwScales   = 1 ! w scales  option
@@ -70,6 +72,7 @@ module shr_flux_mod
    ! (For Large and Pond scheme only; not UA or COARE).
    real(r8) :: flux_con_tol = 0.0_R8
    integer(IN) :: flux_con_max_iter = 2
+   real(r8), parameter :: dtaumin = 0.01_r8 ! limit for stress convergence [Pa]
 
    character(len=*), parameter :: sourcefile = &
      __FILE__
@@ -147,7 +150,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            &               taux  ,tauy  ,tref  ,qref  ,   &
            &               ocn_surface_flux_scheme, &
            &               duu10n,  ustar_sv   ,re_sv ,ssq_sv,   &
-           &               missval    )
+           &               missval, wsresp, tau_est )
 
 ! !USES:
 
@@ -199,6 +202,9 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
    real(R8),intent(in) ,optional :: missval        ! masked value
 
+   real(R8),intent(in) ,optional :: wsresp(nMax)   ! boundary layer wind response to stress (m/s/Pa)
+   real(R8),intent(in) ,optional :: tau_est(nMax)  ! stress in equilibrium with boundary layer (Pa)
+
 ! !EOP
 
    !--- local constants --------------------------------
@@ -243,6 +249,11 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8)    :: cp     ! specific heat of moist air
    real(R8)    :: fac    ! vertical interpolation factor
    real(R8)    :: spval  ! local missing value
+   real(R8)    :: wind0    ! wind speed from atmosphere (m/s)
+   real(R8)    :: prev_tau ! tau from previous iteration (Pa)
+   real(R8)    :: tau_diff ! difference in tau across iterations (Pa)
+   real(R8)    :: prev_tau_diff ! previous value of tau_diff (Pa)
+   real(R8)    :: wind_adj ! iteration-adjusted wind speed (m/s)
 !!++ COARE only
    real(R8)    :: zo,zot,zoq      ! roughness lengths
    real(R8)    :: hsb,hlb         ! sens & lat heat flxs at zbot
@@ -323,7 +334,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
      if (mask(n) /= 0) then
 
         !--- compute some needed quantities ---
-        vmag   = max(seq_flux_atmocn_minwind, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+        wind0 = max(sqrt((ubot(n) - us(n))**2 + (vbot(n) - vs(n))**2), 0.01_r8)
+        vmag = max(seq_flux_atmocn_minwind, wind0)
         if (use_coldair_outbreak_mod) then
             ! Cold Air Outbreak Modification:
             ! Increase windspeed for negative tbot-ts
@@ -355,8 +367,23 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         tstar = rhn * delt
         qstar = ren * delq
         ustar_prev = ustar*2.0_R8
+        if (present(wsresp) .and. present(tau_est)) prev_tau = tau_est(n)
+        tau_diff = 1.e100_R8
+        wind_adj = wind0
+        ! Since we already have an estimated u*, do one update before iteration loop.
+        if (present(wsresp) .and. present(tau_est)) then
+           ! Update stress and magnitude of mean wind.
+           tau = rbot(n) * ustar * rdn * wind_adj
+           call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
+                tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
+           vmag = max(seq_flux_atmocn_minwind, wind_adj)
+        else
+           tau_diff = 0._R8
+        end if
         iter = 0
-        do while( abs((ustar - ustar_prev)/ustar) > flux_con_tol .and. iter < flux_con_max_iter)
+        do while( (abs((ustar - ustar_prev)/ustar) > flux_con_tol .or. &
+             abs(tau_diff) > dtaumin) .and. &
+             iter < flux_con_max_iter)
            iter = iter + 1
            ustar_prev = ustar
            !--- compute stability & evaluate all stability functions ---
@@ -370,7 +397,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            psixh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psixhu(xqq)
 
            !--- shift wind speed using old coefficient ---
-           rd   = rdn / (1.0_R8 + rdn/loc_karman*(alz-psimh))
+           rd   = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
            u10n = vmag * rd / rdn
 
            !--- update transfer coeffs at 10m and neutral stability ---
@@ -380,7 +407,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
                  !(1.0_R8-stable) * chxcdu + stable * chxcds
 
            !--- shift all coeffs to measurement height and stability ---
-           rd = rdn / (1.0_R8 + rdn/loc_karman*(alz-psimh))
+           rd = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
            rh = rhn / (1.0_R8 + rhn/loc_karman*(alz-psixh))
            re = ren / (1.0_R8 + ren/loc_karman*(alz-psixh))
 
@@ -388,6 +415,14 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            ustar = rd * vmag
            tstar = rh * delt
            qstar = re * delq
+
+           if (present(wsresp) .and. present(tau_est)) then
+              ! Update stress and magnitude of mean wind.
+              tau = rbot(n) * ustar * rd * wind_adj
+              call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
+                   tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
+              vmag = max(seq_flux_atmocn_minwind, wind_adj)
+           end if
         enddo
         if (iter < 1) then
            write(s_logunit,*) ustar,ustar_prev,flux_con_tol,flux_con_max_iter
@@ -400,8 +435,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         tau = rbot(n) * ustar * ustar
 
         !--- momentum flux ---
-        taux(n) = tau * (ubot(n)-us(n)) / vmag
-        tauy(n) = tau * (vbot(n)-vs(n)) / vmag
+        taux(n) = tau * (ubot(n)-us(n)) / vmag * (wind_adj / wind0)
+        tauy(n) = tau * (vbot(n)-vs(n)) / vmag * (wind_adj / wind0)
 
         !--- heat flux ---
         sen (n) =          cp * tau * tstar / ustar
@@ -475,7 +510,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
      if (mask(n) /= 0) then
 
         !--- compute some needed quantities ---
-        vmag    = max(seq_flux_atmocn_minwind, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+        wind0 = max(sqrt((ubot(n) - us(n))**2 + (vbot(n) - vs(n))**2), 0.01_r8)
+        vmag = max(seq_flux_atmocn_minwind, wind0 )
 
          if (use_coldair_outbreak_mod) then
             ! Cold Air Outbreak Modification:
@@ -495,7 +531,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
                  & ,tau,hsb,hlb                             &  ! out: fluxes
                  & ,zo,zot,zoq,hol,ustar,tstar,qstar        &  ! out: ss scales
                  & ,rd,rh,re                                &  ! out: exch. coeffs
-                 & ,trf,qrf,urf,vrf) ! out: reference-height params
+                 & ,trf,qrf,urf,vrf                         &  ! out: reference-height params
+                 & ,wsresp(n),tau_est(n))                      ! in: optional stress params
 
 ! for the sake of maintaining same defs
         hol=zbot(n)/hol
@@ -504,8 +541,15 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         re=sqrt(re)
 
         !--- momentum flux ---
-        taux(n) = tau * (ubot(n)-us(n)) / vmag
-        tauy(n) = tau * (vbot(n)-vs(n)) / vmag
+        if (present(wsresp) .and. present(tau_est)) then
+           taux(n) = tau * (ubot(n)-us(n)) / wind0
+           tauy(n) = tau * (vbot(n)-vs(n)) / wind0
+        else
+           ! The above expression is arguably always more correct, but the
+           ! following preserves answers for the explicit code.
+           taux(n) = tau * (ubot(n)-us(n)) / vmag
+           tauy(n) = tau * (vbot(n)-vs(n)) / vmag
+        end if
 
         !--- heat flux ---
         sen (n) =  hsb
@@ -606,7 +650,7 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
            &               evap  ,evap_16O, evap_HDO, evap_18O, &
            &               taux  ,tauy  ,tref  ,qref  ,   &
            &               duu10n,  ustar_sv   ,re_sv ,ssq_sv,   &
-           &               missval    )
+           &               missval, wsresp, tau_est)
 
 
 ! !USES:
@@ -657,6 +701,9 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
 
    real(R8),intent(in) ,optional :: missval        ! masked value
 
+   real(R8),intent(in) ,optional :: wsresp(nMax)   ! boundary layer wind response to stress (m/s/Pa)
+   real(R8),intent(in) ,optional :: tau_est(nMax)  ! stress in equilibrium with boundary layer (Pa)
+
 ! !EOP
 
    !--- local constants --------------------------------
@@ -705,6 +752,11 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
                              ! with default algorithm.
    real(R8)    :: spval      ! local missing value
    real(R8)    :: loc_epsilon  ! Ratio of gas constants (-)
+   real(R8)    :: wind0    ! wind speed from atmosphere (m/s)
+   real(R8)    :: prev_tau ! tau from previous iteration (Pa)
+   real(R8)    :: tau_diff ! difference in tau across iterations (Pa)
+   real(R8)    :: prev_tau_diff ! previous value of tau_diff (Pa)
+   real(R8)    :: wind_adj ! iteration-adjusted wind speed (m/s)
 
    !--- for cold air outbreak calc --------------------------------
    real(R8)    :: tdiff(nMax)  ! tbot - ts
@@ -738,6 +790,7 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
      !-----Calculate some required near surface variables.---------
         vmag_abs = sqrt( ubot(n)**2 + vbot(n)**2 )
         vmag_rel = sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2 )
+        wind0 = max(vmag_rel, 0.01_R8)
 
         ! For Cold Air Outbreak Modification (based on Mahrt & Sun 1995,MWR):
         if (use_coldair_outbreak_mod) then
@@ -806,6 +859,10 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
         obu = sign(max(zbot(n)/10.0_R8, abs(obu)), obu)
 
      !-----Main iterations (2-10 iterations would be fine).-------
+        if (present(wsresp) .and. present(tau_est)) prev_tau = tau_est(n)
+        tau_diff = 1.e100_R8
+        wind_adj = wind0
+
         do i=1,10
 
             ! Update roughness lengths.
@@ -898,6 +955,14 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
             obu = ustar*ustar * thv / (loc_karman*loc_g*thvstar)
             obu = sign( max(zbot(n)/10.0_R8, abs(obu)) ,obu)
 
+            if (present(wsresp) .and. present(tau_est)) then
+               ! Update stress and magnitude of mean wind.
+               tau = rbot(n) * ustar * ustar * wind_adj / vmag
+               call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
+                    tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
+               vmag_rel = wind_adj * vscl
+            end if
+
             ! Update wind speed if in unstable regime.
             if (delthv.lt.0.0_R8) then
                 ! EQN (20)
@@ -918,9 +983,14 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
         ! This should ensure zero wind stress when (relative) wind speed is zero,
         ! components are consistent with total, and we don't ever divide by zero.
         ! EQN (21)
-        tau = rbot(n) * ustar * ustar
-        taux(n) = tau * (ubot(n)-us(n)) / max(umin, vmag_rel)
-        tauy(n) = tau * (vbot(n)-vs(n)) / max(umin, vmag_rel)
+        if (present(wsresp) .and. present(tau_est)) then
+           taux(n) = tau * (ubot(n)-us(n)) / wind0
+           tauy(n) = tau * (vbot(n)-vs(n)) / wind0
+        else
+           tau = rbot(n) * ustar * ustar
+           taux(n) = tau * (ubot(n)-us(n)) / max(umin, vmag_rel)
+           tauy(n) = tau * (vbot(n)-vs(n)) / max(umin, vmag_rel)
+        end if
 
         !--- heat flux ---
         ! EQNs (22) and (23)
@@ -1166,7 +1236,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                            tBulk, tSkin, tSkin_day, tSkin_night,           &
                            cSkin, cSkin_night, secs ,dt,                   &
                            duu10n,  ustar_sv   ,re_sv ,ssq_sv,             &
-                           missval, cold_start    )
+                           missval, cold_start, wsresp, tau_est )
 ! !USES:
 
    use water_isotopes, only: wiso_flxoce !subroutine used to calculate water isotope fluxes.
@@ -1235,6 +1305,9 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8),intent(in)    :: seq_flux_atmocn_minwind   ! minimum wind speed for atmocn      (m/s)
 
    real(R8),intent(in) ,optional :: missval     ! masked value
+
+   real(R8),intent(in) ,optional :: wsresp(nMax)   ! boundary layer wind response to stress (m/s/Pa)
+   real(R8),intent(in) ,optional :: tau_est(nMax)  ! stress in equilibrium with boundary layer (Pa)
 
    !--- output arguments -------------------------------
    real(R8),intent(out)  ::  sen  (nMax) ! heat flux: sensible    (W/m^2)
@@ -1355,6 +1428,12 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8)    :: phid
    real(R8)    :: spval
 
+   real(R8)    :: wind0    ! wind speed from atmosphere (m/s)
+   real(R8)    :: prev_tau ! tau from previous iteration (Pa)
+   real(R8)    :: tau_diff ! difference in tau across iterations (Pa)
+   real(R8)    :: prev_tau_diff ! previous value of tau_diff (Pa)
+   real(R8)    :: wind_adj ! iteration-adjusted wind speed (m/s)
+
 !!++ COARE only
    real(R8)    :: zo,zot,zoq      ! roughness lengths
    real(R8)    :: hsb,hlb         ! sens & lat heat flxs at zbot
@@ -1460,8 +1539,8 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
       if (mask(n) /= 0) then
 
          !--- compute some initial and useful flux quantities ---
-
-         vmag     = max(seq_flux_atmocn_minwind, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+         wind0 = max(sqrt((ubot(n) - us(n))**2 + (vbot(n) - vs(n))**2), 0.01_r8)
+         vmag = max(seq_flux_atmocn_minwind, wind0)
          if (use_coldair_outbreak_mod) then
             ! Cold Air Outbreak Modification:
             ! Increase windspeed for negative tbot-ts
@@ -1544,6 +1623,22 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             tstar = rhn * delt
             qstar = ren * delq
 
+            !--- Stress iteration variables
+            if (present(wsresp) .and. present(tau_est)) prev_tau = tau_est(n)
+            tau_diff = 1.e100_R8
+            wind_adj = wind0
+
+            ! Since we already have an estimated u*, do one update before iteration loop.
+            if (present(wsresp) .and. present(tau_est)) then
+               ! Update stress and magnitude of mean wind.
+               tau = rbot(n) * ustar * rdn * wind_adj
+               call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
+                    tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
+               vmag = max(seq_flux_atmocn_minwind, wind_adj) * vscl
+            else
+               tau_diff = 0._R8
+            end if
+
          else if (ocn_surface_flux_scheme .eq. 1) then! use COARE algorithm
 
               call cor30a(ubot(n),vbot(n),tbot(n),qbot(n),rbot(n) &  ! in atm params
@@ -1552,12 +1647,15 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                        & ,tau,hsb,hlb                             &  ! out: fluxes
                        & ,zo,zot,zoq,hol,ustar,tstar,qstar        &  ! out: ss scales
                        & ,rd,rh,re                                &  ! out: exch. coeffs
-                       & ,trf,qrf,urf,vrf)			       ! out: reference-height params
+                       & ,trf,qrf,urf,vrf                         &  ! out: reference-height params
+                       & ,wsresp(n),tau_est(n))                      ! in: optional stress params
              ! for the sake of maintaining same defs
               hol=zbot(n)/hol
               rd=sqrt(rd)
               rh=sqrt(rh)
               re=sqrt(re)
+
+              tau_diff = 0._r8
 
          ELSE  ! N.B.: *no* valid ocn_surface_flux_scheme=2 option if diurnal=.true.
 
@@ -1571,7 +1669,9 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
         ! Originally this code did three iterations while the non-diurnal version did two
         ! So in the new loop this is <= flux_con_max_iter instead of < so that the same defaults
         ! will give the same answers in both cases.
-        do while( abs((ustar - ustar_prev)/ustar) > flux_con_tol .and. iter <= flux_con_max_iter)
+        do while( (abs((ustar - ustar_prev)/ustar) > flux_con_tol .or. &
+             abs(tau_diff) > dtaumin) .and. &
+             iter <= flux_con_max_iter)
             iter = iter + 1
             ustar_prev = ustar
             !------------------------------------------------------------
@@ -1700,11 +1800,21 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             tstar = rh * delt
             qstar = re * delq
 
-            !--- heat flux ---
+            !--- momentum and heat fluxes ---
 
-            tau     = rbot(n) * ustar * ustar
-            sen (n) =                cp * tau * tstar / ustar
-            lat (n) = shr_const_latvap * tau * qstar / ustar
+            if (present(wsresp) .and. present(tau_est)) then
+               ! Update stress and magnitude of mean wind.
+               tau = rbot(n) * ustar * rd * wind_adj
+               call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
+                    tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
+               vmag = max(seq_flux_atmocn_minwind, wind_adj) * vscl
+               sen (n) =               cp * tstar * rbot(n) * ustar
+               lat (n) = shr_const_latvap * qstar * rbot(n) * ustar
+            else
+               tau = rbot(n) * ustar * ustar
+               sen (n) =               cp * tau * tstar / ustar
+               lat (n) = shr_const_latvap * tau * qstar / ustar
+            end if
 
          else if (ocn_surface_flux_scheme .eq. 1) then! use COARE algorithm
 
@@ -1714,7 +1824,8 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                      & ,tau,hsb,hlb                             &  ! out: fluxes
                      & ,zo,zot,zoq,hol,ustar,tstar,qstar        &  ! out: ss scales
                      & ,rd,rh,re                                &  ! out: exch. coeffs
-                     & ,trf,qrf,urf,vrf)			       ! out: reference-height params
+                     & ,trf,qrf,urf,vrf                         &  ! out: reference-height params
+                     & ,wsresp(n),tau_est(n))                      ! in: optional stress params
             ! for the sake of maintaining same defs
             hol=zbot(n)/hol
             rd=sqrt(rd)
@@ -1736,14 +1847,16 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
          end if
          !--- COMPUTE FLUXES TO ATMOSPHERE AND OCEAN ---
 
-         ! Now calculated further up in subroutine.
-         !tau = rbot(n) * ustar * ustar
-         !sen (n) =                cp * tau * tstar / ustar
-         !lat (n) =  shr_const_latvap * tau * qstar / ustar
-
          !--- momentum flux ---
-         taux(n) = tau * (ubot(n)-us(n)) / vmag
-         tauy(n) = tau * (vbot(n)-vs(n)) / vmag
+         ! Conditional must be repeated here to preserve bfb when adding
+         ! implicit stress code.
+         if (present(wsresp) .and. present(tau_est)) then
+            taux(n) = tau * (ubot(n)-us(n)) / wind0
+            tauy(n) = tau * (vbot(n)-vs(n)) / wind0
+         else
+            taux(n) = tau * (ubot(n)-us(n)) / vmag
+            tauy(n) = tau * (vbot(n)-vs(n)) / vmag
+         end if
 
          !--- LW radiation ---
          lwup(n) = -shr_const_stebol * Tskin(n)**4
@@ -2293,6 +2406,72 @@ end subroutine shr_flux_MOstability
 !===============================================================================
 !===============================================================================
 
+! After the stress has been recalculated in iteration loops, call this routine
+! to adjust the value used in the next iteration for improved convergence.
+!
+! We use the sign convention where all arguments are assumed to be positive,
+! except for tau_diff and prev_tau_diff, which can be of either sign.
+subroutine shr_flux_update_stress(wind0, wsresp, tau_est, tau, prev_tau, &
+     tau_diff, prev_tau_diff, wind_adj)
+  ! Wind speed from atmosphere (not updated by iteration) [m/s]
+  real(r8), intent(in) :: wind0
+  ! Response of boundary layer wind to stress changes in a time step [m/s/Pa]
+  real(r8), intent(in) :: wsresp
+  ! Estimated tau that would be in equilibrium with boundary layer wind [Pa]
+  real(r8), intent(in) :: tau_est
+  ! Stress that has just been calculated in this loop [Pa]
+  real(r8), intent(inout) :: tau
+  ! Stress assumed when calculating this tau (use tau_est for first iter.) [Pa]
+  real(r8), intent(inout) :: prev_tau
+  ! Difference between last two values of tau used for iterations [Pa]
+  ! (Use a very large value for first iteration)
+  real(r8), intent(inout) :: tau_diff
+  ! Copy of the input tau_diff (for diagnostic purposes) [Pa]
+  real(r8), intent(out) :: prev_tau_diff
+  ! Wind updated by iteration [m/s]
+  real(r8), intent(out) :: wind_adj
+
+  real(r8) :: wsresp_applied
+
+  ! maximum ratio between abs(tau_diff) and abs(prev_tau_diff)
+  real(r8) :: tau_diff_fac
+
+  ! Using wsresp_applied = 0.5 * wsresp improves accuracy somewhat, similar to
+  ! using the trapezoidal method rather than backward Euler.
+  wsresp_applied = 0.5 * wsresp
+
+  ! Forbid removing more than 99% of wind speed.
+  ! This is applied before anything else to ensure that the applied stress is
+  ! not so strong that it reverses the direction of the winds.
+  if ( (tau - tau_est) * wsresp_applied > 0.99_r8 * wind0 ) then
+     tau = tau_est + 0.99_r8 * wind0 / wsresp_applied
+  end if
+
+  prev_tau_diff = tau_diff
+  tau_diff = tau - prev_tau
+
+  ! damp large changes each iteration for convergence
+  if (tau_diff * prev_tau_diff < 0._r8) then
+     ! if oscillating about the solution, use stronger damping
+     ! this should not be set below 0.5
+     tau_diff_fac = 0.6_r8
+  else
+     tau_diff_fac = 0.95_r8
+  end if
+
+  if (abs(tau_diff) > abs(tau_diff_fac*prev_tau_diff)) then
+     tau_diff = sign(tau_diff_fac*prev_tau_diff, tau_diff)
+     tau = prev_tau + tau_diff
+  end if
+  prev_tau = tau
+
+  wind_adj = wind0 - (tau - tau_est) * wsresp_applied
+
+end subroutine shr_flux_update_stress
+
+!===============================================================================
+!===============================================================================
+
 !===============================================================================
 ! !DESCRIPTION:
 !
@@ -2316,7 +2495,8 @@ subroutine cor30a(ubt,vbt,tbt,qbt,rbt        &    ! in atm params
                & ,tau,hsb,hlb                &    ! out: fluxes
                & ,zo,zot,zoq,L,usr,tsr,qsr   &    ! out: ss scales
                & ,Cd,Ch,Ce                   &    ! out: exch. coeffs
-               & ,trf,qrf,urf,vrf)                ! out: reference-height params
+               & ,trf,qrf,urf,vrf            &    ! out: reference-height params
+               & ,wsresp,tau_est)                 ! in: optional stress params
 
 ! !USES:
 
@@ -2328,6 +2508,7 @@ real(R8),intent(in) :: ubt,vbt,tbt,qbt,rbt,uss,vss,tss,qss
 real(R8),intent(in) :: zbl,zbu,zbt,zrfu,zrfq,zrft
 real(R8),intent(out):: tau,hsb,hlb,zo,zot,zoq,L,usr,tsr,qsr,Cd,Ch,Ce &
                     & ,trf,qrf,urf,vrf
+real(R8),intent(in),optional:: wsresp,tau_est
 ! !EOP
 
 real(R8) ua,va,ta,q,rb,us,vs,ts,qs,zi,zu,zt,zq,zru,zrq,zrt ! internal vars
@@ -2344,6 +2525,9 @@ integer(IN):: i,nits ! iter loop counters
 
 integer(IN):: jcool                  ! aux. cool-skin vars
 real(R8):: dter,wetc,dqer
+
+! Stress iteration variables
+real(R8):: wind0, prev_tau, tau_diff, prev_tau_diff
 
 ua=ubt  !wind components (m/s) at height zu (m)
 va=vbt
@@ -2397,6 +2581,7 @@ zrt=zrft ! reference height for st.diagn.T,q
     ug=0.5_R8
 
     ut   = sqrt(du*du+ug*ug)
+    wind0 = du
     u10  = ut*log(10.0_R8/1.0e-4_R8)/log(zu/1.0e-4_R8)
     usr  = .035_R8*u10
     zo10 = 0.011_R8*usr*usr/grav+0.11_R8*visa/usr
@@ -2439,6 +2624,17 @@ zrt=zrft ! reference height for st.diagn.T,q
       charn=0.018_R8
     endif
 
+    if (present(wsresp) .and. present(tau_est)) prev_tau = tau_est
+    tau_diff = 1.e100_R8
+
+    ! Since we already have an estimated u*, do one update before iteration loop.
+    if (present(wsresp) .and. present(tau_est)) then
+       ! Update stress and magnitude of mean wind.
+       tau = rhoa * usr * usr * (du/ut)
+       call shr_flux_update_stress(wind0, wsresp, tau_est, &
+            tau, prev_tau, tau_diff, prev_tau_diff, du)
+    end if
+
 !***************  iteration loop ************
     do i=1, nits
 
@@ -2459,6 +2655,13 @@ zrt=zrft ! reference height for st.diagn.T,q
      usr =  ut            *von/(log(zu/zo )-psiuo(zu/L))
      tsr = (dt-dter*jcool)*von/(log(zt/zot)-psit_30(zt/L))
      qsr = (dq-dqer*jcool)*von/(log(zq/zoq)-psit_30(zq/L))
+
+     if (present(wsresp) .and. present(tau_est)) then
+        ! Update stress and magnitude of mean wind.
+        tau = rhoa * usr * usr * (du/ut)
+        call shr_flux_update_stress(wind0, wsresp, tau_est, &
+             tau, prev_tau, tau_diff, prev_tau_diff, du)
+     end if
 
      ! gustiness parametrisation
      Bf=-grav/ta*usr*(tsr+.61_R8*ta*qsr)

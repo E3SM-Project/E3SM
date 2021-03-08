@@ -54,12 +54,13 @@ contains
     ! shadewall, pervious and impervious road).
 
     ! !USES:
+    use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
     use elm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall
     use filterMod           , only : filter
-    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni
+    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, implicit_stress
     use QSatMod             , only : QSat
     use elm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
     use clm_time_manager    , only : get_curr_date, get_step_size, get_nstep
@@ -87,6 +88,13 @@ contains
     ! !LOCAL VARIABLES:
     character(len=*), parameter :: sub="UrbanFluxes"
     integer  :: fp,fc,fl,f,p,c,l,t,g,j,pi,i     ! indices
+
+    integer  :: filterl_copy(num_urbanl)                ! iteration copy of filter_urbanl
+    integer  :: filterc_copy(num_urbanc)                ! iteration copy of filter_urbanc
+    integer  :: fnl_iter                                ! iteration num_urbanl
+    integer  :: fnl_iter_old                            ! previous iteration fnl_iter
+    integer  :: fnc_iter                                ! iteration num_urbanc
+    integer  :: fnc_iter_old                            ! previous iteration fnc_iter
 
     real(r8) :: canyontop_wind(bounds%begl:bounds%endl)              ! wind at canyon top (m/s) 
     real(r8) :: canyon_u_wind(bounds%begl:bounds%endl)               ! u-component of wind speed inside canyon (m/s)
@@ -123,6 +131,7 @@ contains
     real(r8) :: wtus(bounds%begc:bounds%endc)                        ! sensible heat conductance for urban columns (scaled) (m/s)
     real(r8) :: wtuq(bounds%begc:bounds%endc)                        ! latent heat conductance for urban columns (scaled) (m/s)
     integer  :: iter                                                 ! iteration index
+    integer  :: iter_final                                           ! number of iterations used
     real(r8) :: dthv                                                 ! diff of vir. poten. temp. between ref. height and surface
     real(r8) :: tstar                                                ! temperature scaling parameter
     real(r8) :: qstar                                                ! moisture scaling parameter
@@ -181,7 +190,16 @@ contains
     real(r8) :: dqsat2mdT                                            ! derivative of 2 m height surface saturated specific humidity on t_ref2m
     !
     real(r8), parameter :: lapse_rate = 0.0098_r8 ! Dry adiabatic lapse rate (K/m)
-    integer , parameter  :: niters = 3            ! maximum number of iterations for surface temperature
+    real(r8), parameter :: dtaumin = 0.01_r8      ! max limit for stress convergence [Pa]
+    integer, parameter  :: itmin = 3              ! minimum number of iterations
+    integer, parameter  :: itmax = 30             ! maximum number of iterations
+    integer  :: loopmax                           ! bound for iteration loop
+    real(r8) :: wind_speed0(bounds%begl:bounds%endl) ! Wind speed from atmosphere at start of iteration
+    real(r8) :: wind_speed_adj(bounds%begl:bounds%endl) ! Adjusted wind speed for iteration
+    real(r8) :: tau(bounds%begl:bounds%endl)      ! Stress used in iteration
+    real(r8) :: tau_diff(bounds%begl:bounds%endl) ! Difference from previous iteration tau
+    real(r8) :: prev_tau(bounds%begl:bounds%endl) ! Previous iteration tau
+    real(r8) :: prev_tau_diff(bounds%begl:bounds%endl) ! Previous difference in iteration tau
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
@@ -201,6 +219,8 @@ contains
          forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
          forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         wsresp              =>   top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
+         tau_est             =>   top_as%tau_est                            , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
 
          wind_hgt_canyon     =>   urbanparams_vars%wind_hgt_canyon          , & ! Input:  [real(r8) (:)   ]  height above road at which wind in canyon is to be computed (m)
          eflx_traffic_factor =>   urbanparams_vars%eflx_traffic_factor      , & ! Input:  [real(r8) (:)   ]  multiplicative urban traffic factor for sensible heat flux
@@ -311,29 +331,17 @@ contains
             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
 
-         ! Magnitude of atmospheric wind
+         ! Initialize winds for iteration.
+         if (implicit_stress) then
+            wind_speed0(l) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+            wind_speed_adj(l) = wind_speed0(l)
+            ur(l) = max(1.0_r8, wind_speed_adj(l))
 
-         ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
-
-         ! Canyon top wind
-
-         canyontop_wind(l) = ur(l) * &
-              log( (ht_roof(l)-z_d_town(l)) / z_0_town(l) ) / &
-              log( (forc_hgt_u_patch(lun_pp%pfti(l))-z_d_town(l)) / z_0_town(l) )
-
-         ! U component of canyon wind 
-
-         if (canyon_hwr(l) < 0.5_r8) then  ! isolated roughness flow
-            canyon_u_wind(l) = canyontop_wind(l) * exp( -0.5_r8*canyon_hwr(l)* &
-                 (1._r8-(wind_hgt_canyon(l)/ht_roof(l))) )
-         else if (canyon_hwr(l) < 1.0_r8) then ! wake interference flow
-            canyon_u_wind(l) = canyontop_wind(l) * (1._r8+2._r8*(2._r8/rpi - 1._r8)* &
-                 (ht_roof(l)/(ht_roof(l)/canyon_hwr(l)) - 0.5_r8)) * &
-                 exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
-         else  ! skimming flow
-            canyon_u_wind(l) = canyontop_wind(l) * (2._r8/rpi) * &
-                 exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
+            prev_tau(l) = tau_est(t)
+         else
+            ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
          end if
+         tau_diff(l) = 1.100_r8
 
       end do
 
@@ -380,13 +388,23 @@ contains
       wtuq_shadewall_unscl(begl:endl)   = 0._r8
 
       ! Start stability iteration
+      fnl_iter = num_urbanl
+      fnc_iter = num_urbanc
+      filterl_copy(1:num_urbanl) = filter_urbanl(1:num_urbanl)
+      filterc_copy(1:num_urbanc) = filter_urbanc(1:num_urbanc)
 
-      do iter = 1,niters
+      if (implicit_stress) then
+         loopmax = itmax
+      else
+         loopmax = itmin
+      end if
+
+      ITERATION: do iter = 1, loopmax
 
          ! Get friction velocity, relation for potential
          ! temperature and humidity profiles of surface boundary layer.
 
-         if (num_urbanl > 0) then
+         if (fnl_iter > 0) then
             call FrictionVelocity(begl, endl, &
                  num_urbanl, filter_urbanl, &
                  z_d_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), &
@@ -395,8 +413,8 @@ contains
                  frictionvel_vars, landunit_index=.true.)
          end if
 
-         do fl = 1, num_urbanl
-            l = filter_urbanl(fl)
+         do fl = 1, fnl_iter
+            l = filterl_copy(fl)
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
 
@@ -406,6 +424,38 @@ contains
             ramu(l) = 1._r8/(ustar(l)*ustar(l)/um(l))
             rahu(l) = 1._r8/(temp1(l)*ustar(l))
             rawu(l) = 1._r8/(temp2(l)*ustar(l))
+
+            ! Calculate magnitude of stress and update wind speed.
+            if (implicit_stress) then
+               tau(l) = forc_rho(t)*wind_speed_adj(l)/ramu(l)
+               call shr_flux_update_stress(wind_speed0(l), wsresp(t), tau_est(t), &
+                    tau(l), prev_tau(l), tau_diff(l), prev_tau_diff(l), &
+                    wind_speed_adj(l))
+               ur(l) = max(1.0_r8, wind_speed_adj(l))
+            end if
+
+            ! Canyon top wind
+            ! If the wind does not change in this loop (explicit stress), then
+            ! we only need to calculate this on the first iteration.
+            if (implicit_stress .or. iter == 1) then
+               canyontop_wind(l) = ur(l) * &
+                    log( (ht_roof(l)-z_d_town(l)) / z_0_town(l) ) / &
+                    log( (forc_hgt_u_patch(lun_pp%pfti(l))-z_d_town(l)) / z_0_town(l) )
+
+               ! U component of canyon wind 
+
+               if (canyon_hwr(l) < 0.5_r8) then  ! isolated roughness flow
+                  canyon_u_wind(l) = canyontop_wind(l) * exp( -0.5_r8*canyon_hwr(l)* &
+                       (1._r8-(wind_hgt_canyon(l)/ht_roof(l))) )
+               else if (canyon_hwr(l) < 1.0_r8) then ! wake interference flow
+                  canyon_u_wind(l) = canyontop_wind(l) * (1._r8+2._r8*(2._r8/rpi - 1._r8)* &
+                       (ht_roof(l)/(ht_roof(l)/canyon_hwr(l)) - 0.5_r8)) * &
+                       exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
+               else  ! skimming flow
+                  canyon_u_wind(l) = canyontop_wind(l) * (2._r8/rpi) * &
+                       exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
+               end if
+            end if
 
             ! Determine magnitude of canyon wind by using horizontal wind determined
             ! previously and vertical wind from friction velocity (Masson 2000)
@@ -423,8 +473,8 @@ contains
 
          ! This is the first term in the equation solutions for urban canopy air temperature
          ! and specific humidity (numerator) and is a landunit quantity
-         do fl = 1, num_urbanl
-            l = filter_urbanl(fl)
+         do fl = 1, fnl_iter
+            l = filterl_copy(fl)
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
 
@@ -443,8 +493,8 @@ contains
          ! Gather other terms for other urban columns for numerator and denominator of
          ! equations for urban canopy air temperature and specific humidity
 
-         do fc = 1,num_urbanc
-            c = filter_urbanc(fc)
+         do fc = 1, fnc_iter
+            c = filterc_copy(fc)
             l = col_pp%landunit(c)
 
             if (ctype(c) == icol_roof) then
@@ -603,8 +653,8 @@ contains
 
          ! Calculate new urban canopy air temperature and specific humidity
 
-         do fl = 1, num_urbanl
-            l = filter_urbanl(fl)
+         do fl = 1, fnl_iter
+            l = filterl_copy(fl)
             g = lun_pp%gridcell(l)
 
             ! Total waste heat and heat from AC is sum of heat for walls and roofs
@@ -640,8 +690,8 @@ contains
          ! This section of code is not required if niters = 1
          ! Determine stability using new taf and qaf
          ! TODO: Some of these constants replicate what is in FrictionVelocity and BareGround fluxes should consildate. EBK
-         do fl = 1, num_urbanl
-            l = filter_urbanl(fl)
+         do fl = 1, fnl_iter
+            l = filterl_copy(fl)
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
 
@@ -664,7 +714,36 @@ contains
             obu(l) = zldis(l)/zeta
          end do
 
-      end do   ! end iteration
+         ! Test for convergence
+         iter_final = iter
+         if (iter >= itmin) then
+            fnl_iter_old = fnl_iter
+            fnl_iter = 0
+            do fl = 1, fnl_iter_old
+               l = filterl_copy(fl)
+               if (.not. (abs(tau_diff(l)) < dtaumin)) then
+                  fnl_iter = fnl_iter + 1
+                  filterl_copy(fnl_iter) = l
+               end if
+            end do
+            if (fnl_iter == 0) then
+               exit ITERATION
+            end if
+            ! After weeding out landunits that have converged, we also need to
+            ! filter out the associated columns.
+            fnc_iter_old = fnc_iter
+            fnc_iter = 0
+            do fc = 1, fnc_iter_old
+               c = filterc_copy(fc)
+               l = col_pp%landunit(c)
+               if (.not. (abs(tau_diff(l)) < dtaumin)) then
+                  fnc_iter = fnc_iter + 1
+                  filterc_copy(fnc_iter) = c
+               end if
+            end do
+         end if
+
+      end do ITERATION ! end iteration
 
       ! Determine fluxes from canyon surfaces
 
@@ -727,8 +806,12 @@ contains
 
          ! Surface fluxes of momentum, sensible and latent heat
 
-         taux(p)          = -forc_rho(t)*forc_u(t)/ramu(l)
-         tauy(p)          = -forc_rho(t)*forc_v(t)/ramu(l)
+         taux(p) = -forc_rho(t)*forc_u(t)/ramu(l)
+         tauy(p) = -forc_rho(t)*forc_v(t)/ramu(l)
+         if (implicit_stress) then
+            taux(p) = taux(p) * (wind_speed_adj(l) / wind_speed0(l))
+            tauy(p) = tauy(p) * (wind_speed_adj(l) / wind_speed0(l))
+         end if
 
          ! Use new canopy air temperature
          dth(l) = taf(l) - t_grnd(c)
@@ -850,6 +933,19 @@ contains
             call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
+
+      ! Check for convergence of stress.
+      do fl = 1, num_urbanl
+         l = filter_urbanl(fl)
+         if (implicit_stress .and. abs(tau_diff(l)) > dtaumin) then
+            if (nstep > 0) then ! Suppress common warnings on the first time step.
+               write(iulog,*)'WARNING: Stress did not converge for urban columns ',&
+                    ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(l),&
+                    ' tau_diff= ',tau_diff(l),' tau= ',tau(l),&
+                    ' wind_speed_adj= ',wind_speed_adj(l),' iter_final= ',iter_final
+            end if
+         end if
+      end do
 
       ! Gather terms required to determine internal building temperature
 

@@ -47,16 +47,17 @@ contains
     ! WARNING: This subroutine assumes lake columns have one and only one pft.
     !
     ! !USES:
+    use shr_flux_mod        , only : shr_flux_update_stress
     use elm_varpar          , only : nlevlak
     use elm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
     use elm_varcon          , only : sb, vkc, grav, denh2o, tfrz, spval, zsno
-    use elm_varctl          , only : use_lch4
-    use elm_varctl          , only : use_lch4, use_extrasnowlayers
+    use elm_varctl          , only : iulog, use_lch4, use_extrasnowlayers
     use LakeCon             , only : betavis, z0frzlake, tdmax, emg_lake
     use LakeCon             , only : lake_use_old_fcrit_minz0
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit
     use QSatMod             , only : QSat
-    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni
+    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, implicit_stress
+    use clm_time_manager    , only : get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds  
@@ -77,7 +78,9 @@ contains
     real(r8), pointer :: z0mg_col(:)               ! roughness length over ground, momentum [m]
     real(r8), pointer :: z0hg_col(:)               ! roughness length over ground, sensible heat [m]
     real(r8), pointer :: z0qg_col(:)               ! roughness length over ground, latent heat [m]
-    integer , parameter  :: niters = 4             ! maximum number of iterations for surface temperature
+    real(r8), parameter :: dtaumin = 0.01_r8       ! max limit for stress convergence [Pa]
+    integer, parameter  :: itmax_expl = 4          ! maximum number of iterations with no tau update
+    integer, parameter  :: itmax_impl = 30         ! maximum number of iterations with tau update
     real(r8), parameter :: beta1 = 1._r8           ! coefficient of convective velocity (in computing W_*) [-]
     real(r8), parameter :: zii = 1000._r8          ! convective boundary height [m]
     integer  :: i,fc,fp,g,t,c,p                    ! do loop or array index
@@ -85,6 +88,8 @@ contains
     integer  :: fnold                              ! previous number of pft filter values
     integer  :: fpcopy(num_lakep)                  ! patch filter copy for iteration loop
     integer  :: iter                               ! iteration index
+    integer  :: iter_final                         ! number of iterations used
+    integer  :: itmax                              ! maximum number of iterations
     integer  :: nmozsgn(bounds%begp:bounds%endp)   ! number of times moz changes sign
     integer  :: jtop(bounds%begc:bounds%endc)      ! top level for each column (no longer all 1)
     real(r8) :: ax                                 ! used in iteration loop for calculating t_grnd (numerator of NR solution)
@@ -147,6 +152,12 @@ contains
     real(r8) :: kva                                ! kinematic viscosity of air at ground temperature and forcing pressure
     real(r8), parameter :: prn = 0.713             ! Prandtl # for air at neutral stability
     real(r8), parameter :: sch = 0.66              ! Schmidt # for water in air at neutral stability
+    real(r8) :: wind_speed0(bounds%begp:bounds%endp) ! Wind speed from atmosphere at start of iteration
+    real(r8) :: wind_speed_adj(bounds%begp:bounds%endp) ! Adjusted wind speed for iteration
+    real(r8) :: tau(bounds%begp:bounds%endp)      ! Stress used in iteration
+    real(r8) :: tau_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tau
+    real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
+    real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     !-----------------------------------------------------------------------
 
     associate(                                                           & 
@@ -165,6 +176,8 @@ contains
          forc_rain        =>    top_af%rain                            , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                  
          forc_u           =>    top_as%ubot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
          forc_v           =>    top_as%vbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         wsresp           =>    top_as%wsresp                          , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
+         tau_est          =>    top_as%tau_est                         , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
          
          fsds_nir_d       =>    solarabs_vars%fsds_nir_d_patch         , & ! Input:  [real(r8) (:)   ]  incident direct beam nir solar radiation (W/m**2) 
          fsds_nir_i       =>    solarabs_vars%fsds_nir_i_patch         , & ! Input:  [real(r8) (:)   ]  incident diffuse nir solar radiation (W/m**2)     
@@ -338,7 +351,18 @@ contains
 
          ! Initialize stability variables
 
-         ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         ! Initialize winds for iteration.
+         if (implicit_stress) then
+            wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+            wind_speed_adj(p) = wind_speed0(p)
+            ur(p) = max(1.0_r8, wind_speed_adj(p))
+
+            prev_tau(p) = tau_est(t)
+         else
+            ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         end if
+         tau_diff(p) = 1.e100_r8
+
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t)-qsatg(c)
          dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
@@ -347,7 +371,6 @@ contains
          ! Initialize Monin-Obukhov length and wind speed
 
          call MoninObukIni(ur(p), thv(c), dthv, zldis(p), z0mg(p), um(p), obu(p))
-
       end do
 
       iter = 1
@@ -355,8 +378,13 @@ contains
       fpcopy(1:num_lakep) = filter_lakep(1:num_lakep)
 
       ! Begin stability iteration
+      if (implicit_stress) then
+         itmax = itmax_impl
+      else
+         itmax = itmax_expl
+      end if
 
-      ITERATION : do while (iter <= niters .and. fncopy > 0)
+      ITERATION : do while (iter <= itmax .and. fncopy > 0)
 
          ! Determine friction velocity, and potential temperature and humidity
          ! profiles of the surface boundary layer
@@ -401,6 +429,15 @@ contains
             end if
             ram1(p) = ram(p)       ! pass value to global variable
             ram1_lake(p) = ram1(p) ! for history
+
+            ! Calculate magnitude of stress and update wind speed.
+            if (implicit_stress) then
+               tau(p) = forc_rho(t)*wind_speed_adj(p)/ram(p)
+               call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
+                    tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
+                    wind_speed_adj(p))
+               ur(p) = max(1.0_r8, wind_speed_adj(p))
+            end if
 
             ! Get derivative of fluxes with respect to ground temperature
 
@@ -505,15 +542,16 @@ contains
 
          end do   ! end of filtered pft loop
 
+         iter_final = iter
          iter = iter + 1
-         if (iter <= niters ) then
+         if (iter <= itmax ) then
             ! Rebuild copy of pft filter for next pass through the ITERATION loop
 
             fnold = fncopy
             fncopy = 0
             do fp = 1, fnold
                p = fpcopy(fp)
-               if (nmozsgn(p) < 3) then
+               if (nmozsgn(p) < 3 .or. (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) then
                   fncopy = fncopy + 1
                   fpcopy(fncopy) = p
                end if
@@ -579,6 +617,10 @@ contains
 
          taux(p) = -forc_rho(t)*forc_u(t)/ram(p)
          tauy(p) = -forc_rho(t)*forc_v(t)/ram(p)
+         if (implicit_stress) then
+            taux(p) = taux(p) * (wind_speed_adj(p) / wind_speed0(p))
+            tauy(p) = tauy(p) * (wind_speed_adj(p) / wind_speed0(p))
+         end if
 
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_soi(p)
@@ -619,6 +661,16 @@ contains
          z0hg_col(c) = z0hg(p)
          z0qg_col(c) = z0qg(p)
          ust_lake(c) = ustar(p)
+
+         ! Check for convergence of stress.
+         if (implicit_stress .and. abs(tau_diff(p)) > dtaumin) then
+            if (get_nstep() > 0) then ! Suppress common warnings on the first time step.
+               write(iulog,*)'WARNING: Stress did not converge for lake ',&
+                    ' nstep = ',get_nstep(),' p= ',p,' prev_tau_diff= ',prev_tau_diff(p),&
+                    ' tau_diff= ',tau_diff(p),' tau= ',tau(p),&
+                    ' wind_speed_adj= ',wind_speed_adj(p),' iter_final= ',iter_final
+            end if
+         end if
 
       end do
 

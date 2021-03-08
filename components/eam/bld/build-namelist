@@ -3727,6 +3727,15 @@ if ( $do_tms =~ /$TRUE/io ) {
 # Implicit Turbulent Surface Stress
 add_default($nl, 'do_iss');
 
+# PBL linearization
+add_default($nl, 'linearize_pbl_winds');
+my $linearize_pbl_winds = $nl->get_value('linearize_pbl_winds');
+if ( $linearize_pbl_winds =~ /$TRUE/io ) {
+    if (!($eddy_scheme =~ /clubb_sgs/i)) {
+        die "$ProgName - ERROR: linearize_pbl_winds = .true. but linearization is not implemented for eddy_scheme=$eddy_scheme.\n";
+    }
+}
+
 # Use Convective water in radiation
 add_default($nl, 'conv_water_in_rad');
 

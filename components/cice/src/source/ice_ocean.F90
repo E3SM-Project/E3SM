@@ -156,6 +156,8 @@
                                       potT       (:,:,iblk), &
                                       uatm       (:,:,iblk), &   
                                       vatm       (:,:,iblk), &   
+                                      wsresp     (:,:,iblk), &
+                                      tau_est    (:,:,iblk), &
                                       uvel       (:,:,iblk), &   
                                       vvel       (:,:,iblk), &   
                                       wind       (:,:,iblk), &   

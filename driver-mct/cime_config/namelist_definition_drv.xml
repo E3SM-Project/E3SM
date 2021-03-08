@@ -149,6 +149,16 @@
     </values>
   </entry>
 
+  <entry id="atm_flux_method" modify_via_xml="ATM_FLUX_INTEGRATION_METHOD">
+    <type>char</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>Time integration method for atmospheric fluxes. Set by the xml variable ATM_FLUX_INTEGRATION_METHOD in env_run.xml</desc>
+    <values>
+      <value>$ATM_FLUX_INTEGRATION_METHOD</value>
+    </values>
+  </entry>
+
   <entry  id="glc_nec" modify_via_xml="GLC_NEC">
     <type>integer</type>
     <category>seq_flds</category>
@@ -763,11 +773,13 @@
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      Iterate atmocn flux calculation a max of this value
+      Maximum number of iterations in atmosphere-ocean flux calculation.
+      Setting this value to -1 will cause the model to use a default that
+      depends on the setting of atm_flux_method.
     </desc>
     <values>
       <value cime_model='cesm'>5</value>
-      <value cime_model='e3sm'>2</value>
+      <value cime_model='e3sm'>-1</value>
     </values>
   </entry>
 

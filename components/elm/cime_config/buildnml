@@ -25,6 +25,7 @@ def buildnml(case, caseroot, compname):
 
     srcroot             = case.get_value("SRCROOT")
     compset             = case.get_value("COMPSET")
+    atm_flux_method     = case.get_value("ATM_FLUX_INTEGRATION_METHOD")
     ccsm_co2_ppmv       = case.get_value("CCSM_CO2_PPMV")
     elm_co2_type        = case.get_value("ELM_CO2_TYPE")
     elm_usrdat_name     = case.get_value("ELM_USRDAT_NAME")
@@ -150,6 +151,13 @@ def buildnml(case, caseroot, compname):
 
         infile_text = ""
         if elmicfile: infile_text = "{} = '{}' \n".format(startfiletype, elm_startfile)
+
+        if atm_flux_method == 'implicit_stress':
+            implicit_stress = True
+        else:
+            implicit_stress = False
+
+        if implicit_stress: infile_text += " implicit_stress = .true. \n"
 
         create_namelist_infile(case,
                                "{}/user_nl_elm{}".format(caseroot, inst_string),

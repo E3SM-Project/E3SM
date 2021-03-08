@@ -103,6 +103,7 @@ contains
     !
     ! !USES:
     use shr_const_mod      , only : SHR_CONST_TKFRZ, SHR_CONST_RGAS
+    use shr_flux_mod       , only : shr_flux_update_stress
     use clm_time_manager   , only : get_step_size, get_prev_date, get_nstep
     use elm_varcon         , only : sb, cpair, hvap, vkc, grav, denice
     use elm_varcon         , only : denh2o, tfrz, csoilc, tlsai_crit, alpha_aero
@@ -112,7 +113,7 @@ contains
     use perf_mod           , only : t_startf, t_stopf
     use domainMod          , only : ldomain
     use QSatMod            , only : QSat
-    use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni
+    use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni, implicit_stress
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use SurfaceResistanceMod, only : getlblcef
     !
@@ -143,12 +144,13 @@ contains
     real(r8), pointer   :: bsha(:)          ! shaded canopy transpiration wetness factor (0 to 1)
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
     real(r8), parameter :: zii = 1000.0_r8  ! convective boundary layer height [m]
-    real(r8), parameter :: beta = 1.0_r8    ! coefficient of conective velocity [-]
+    real(r8), parameter :: beta = 1.0_r8    ! coefficient of convective velocity [-]
     real(r8), parameter :: delmax = 1.0_r8  ! maxchange in  leaf temperature [K]
     real(r8), parameter :: dlemin = 0.1_r8  ! max limit for energy flux convergence [w/m2]
     real(r8), parameter :: dtmin = 0.01_r8  ! max limit for temperature convergence [K]
-    integer , parameter :: itmax = 40       ! maximum number of iteration [-]
-    integer , parameter :: itmin = 2        ! minimum number of iteration [-]
+    real(r8), parameter :: dtaumin = 0.01_r8! max limit for stress convergence [Pa]
+    integer , parameter :: itmax = 41       ! maximum number of iteration [-]
+    integer , parameter :: itmin = 3        ! minimum number of iteration [-]
     real(r8), parameter :: irrig_min_lai = 0.0_r8           ! Minimum LAI for irrigation
     real(r8), parameter :: irrig_btran_thresh = 0.999999_r8 ! Irrigate when btran falls below 0.999999 rather than 1 to allow for round-off error
     integer , parameter :: irrig_start_time = isecspday/4   ! (6AM) Time of day to check whether we need irrigation, seconds (0 = midnight). 
@@ -259,6 +261,7 @@ contains
     real(r8) :: smp_node_lf                          ! F. Li and S. Levis
     real(r8) :: vol_liq                              ! partial volume of liquid water in layer
     integer  :: itlef                                ! counter for leaf temperature iteration [-]
+    integer  :: iter_final                           ! number of iterations used
     integer  :: nmozsgn(bounds%begp:bounds%endp)     ! number of times stability changes sign
     real(r8) :: w                                    ! exp(-LSAI)
     real(r8) :: csoilcn                              ! interpolated csoilc for less than dense canopies
@@ -322,6 +325,12 @@ contains
     real(r8) :: temprootr                 
     real(r8) :: dt_veg_temp(bounds%begp:bounds%endp)
     integer  :: iv
+    real(r8) :: wind_speed0(bounds%begp:bounds%endp) ! Wind speed from atmosphere at start of iteration
+    real(r8) :: wind_speed_adj(bounds%begp:bounds%endp) ! Adjusted wind speed for iteration
+    real(r8) :: tau(bounds%begp:bounds%endp)      ! Stress used in iteration
+    real(r8) :: tau_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tau
+    real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
+    real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     !------------------------------------------------------------------------------
 
     associate(                                                               & 
@@ -337,6 +346,8 @@ contains
          forc_t               => top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                                      
          forc_u               => top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
          forc_v               => top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
+         wsresp               => top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
+         tau_est              => top_as%tau_est                            , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
          forc_pco2            => top_as%pco2bot                            , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)                                             
          forc_pc13o2          => top_as%pc13o2bot                          , & ! Input:  [real(r8) (:)   ]  partial pressure c13o2 (Pa)                                           
          forc_po2             => top_as%po2bot                             , & ! Input:  [real(r8) (:)   ]  partial pressure o2 (Pa)                                              
@@ -714,7 +725,18 @@ contains
          taf(p) = (t_grnd(c) + thm(p))/2._r8
          qaf(p) = (forc_q(t)+qg(c))/2._r8
 
-         ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         ! Initialize winds for iteration.
+         if (implicit_stress) then
+            wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+            wind_speed_adj(p) = wind_speed0(p)
+            ur(p) = max(1.0_r8, wind_speed_adj(p))
+
+            prev_tau(p) = tau_est(t)
+         else
+            ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         end if
+         tau_diff(p) = 1.e100_r8
+
          dth(p) = thm(p)-taf(p)
          dqh(p) = forc_q(t)-qaf(p)
          delq(p) = qg(c) - qaf(p)
@@ -748,7 +770,7 @@ contains
 
       ! Set counter for leaf temperature iteration (itlef)
 
-      itlef = 0    
+      itlef = 1
       fnorig = fn
       fporig(1:fn) = filterp(1:fn)
 
@@ -762,7 +784,7 @@ contains
 
          call FrictionVelocity (begp, endp, fn, filterp, &
               displa(begp:endp), z0mv(begp:endp), z0hv(begp:endp), z0qv(begp:endp), &
-              obu(begp:endp), itlef+1, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
+              obu(begp:endp), itlef, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
               temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
               frictionvel_vars)
 
@@ -780,6 +802,17 @@ contains
             ram1(p)  = 1._r8/(ustar(p)*ustar(p)/um(p))
             rah(p,1) = 1._r8/(temp1(p)*ustar(p))
             raw(p,1) = 1._r8/(temp2(p)*ustar(p))
+
+            ! Forbid removing more than 99% of wind speed in a time step.
+            ! This is mainly to avoid convergence issues since this is such a
+            ! basic form of iteration in this loop...
+            if (implicit_stress) then
+               tau(p) = forc_rho(t)*wind_speed_adj(p)/ram1(p)
+               call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
+                    tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
+                    wind_speed_adj(p))
+               ur(p) = max(1.0_r8, wind_speed_adj(p))
+            end if
 
             ! Bulk boundary layer resistance of leaves
 
@@ -1128,7 +1161,7 @@ contains
          enddo
             
          ! Test for convergence
-
+         iter_final = itlef
          itlef = itlef+1
          if (itlef > itmin) then
             do f = 1, fn
@@ -1141,7 +1174,8 @@ contains
             fn = 0
             do f = 1, fnold
                p = filterp(f)
-               if (.not. (det(p) < dtmin .and. dele(p) < dlemin)) then
+               if (.not. (det(p) < dtmin .and. dele(p) < dlemin) .or. &
+                    (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) then
                   fn = fn + 1
                   filterp(fn) = p
                end if
@@ -1175,6 +1209,10 @@ contains
          delt    = wtal(p)*t_grnd(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
          taux(p) = -forc_rho(t)*forc_u(t)/ram1(p)
          tauy(p) = -forc_rho(t)*forc_v(t)/ram1(p)
+         if (implicit_stress) then
+            taux(p) = taux(p) * (wind_speed_adj(p) / wind_speed0(p))
+            tauy(p) = tauy(p) * (wind_speed_adj(p) / wind_speed0(p))
+         end if
          eflx_sh_grnd(p) = cpair*forc_rho(t)*wtg(p)*delt
 
          ! compute individual sensible heat fluxes
@@ -1233,6 +1271,16 @@ contains
          ! Update dew accumulation (kg/m2)
 
          h2ocan(p) = max(0._r8,h2ocan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime)
+
+         ! Check for convergence of stress.
+         if (implicit_stress .and. abs(tau_diff(p)) > dtaumin) then
+            if (get_nstep() > 0) then ! Suppress common warnings on the first time step.
+               write(iulog,*)'WARNING: Stress did not converge for canopy ',&
+                    ' nstep = ',get_nstep(),' p= ',p,' prev_tau_diff= ',prev_tau_diff(p),&
+                    ' tau_diff= ',tau_diff(p),' tau= ',tau(p),&
+                    ' wind_speed_adj= ',wind_speed_adj(p),' iter_final= ',iter_final
+            end if
+         end if
 
       end do
 
