@@ -518,7 +518,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use crm_module       , only: crm
 #endif
    use params_kind,          only: crm_rknd
-   use phys_control,    only: phys_getopts
+   use phys_control,    only: phys_getopts, phys_do_flux_avg
    use crm_history,     only: crm_history_out
    use wv_saturation,   only: qsat_water
 #if (defined  m2005 && defined MODAL_AERO)  
@@ -626,6 +626,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(crm_rknd), parameter        :: pi   = 3.14159265359
    real(crm_rknd), parameter        :: pix2 = 6.28318530718
    real(crm_rknd), dimension(pcols) :: crm_angle
+
+   ! surface flux variables for using adjusted fluxes from flux_avg_run
+   real(crm_rknd), pointer, dimension(pcols) :: shf_tmp
+   real(crm_rknd), pointer, dimension(pcols) :: lhf_tmp
+   real(crm_rknd), pointer, dimension(pcols) :: wsx_tmp
+   real(crm_rknd), pointer, dimension(pcols) :: wsy_tmp
 
    ! CRM types
    type(crm_state_type)  :: crm_state
@@ -983,15 +989,29 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       crm_input%ul_esmt(1:ncol,1:pver) = state%u(1:ncol,1:pver)
       crm_input%vl_esmt(1:ncol,1:pver) = state%v(1:ncol,1:pver)
 #endif /* MMF_ESMT */
+
+      ! Set surface flux variables
+      if (phys_do_flux_avg()) then
+         call pbuf_get_field(pbuf, pbuf_get_index('LHFLX'), shf_tmp)
+         call pbuf_get_field(pbuf, pbuf_get_index('SHFLX'), lhf_tmp)
+         call pbuf_get_field(pbuf, pbuf_get_index('TAUX'),  wsx_tmp)
+         call pbuf_get_field(pbuf, pbuf_get_index('TAUY'),  wsy_tmp)
+      else
+         shf_tmp = cam_in%shf
+         lhf_tmp = cam_in%lhf
+         wsx_tmp = cam_in%wsx
+         wsy_tmp = cam_in%wsy
+      end if
       do i = 1,ncol
-         crm_input%tau00(i) = sqrt(cam_in%wsx(i)**2 + cam_in%wsy(i)**2)
-         crm_input%bflxls(i) = cam_in%shf(i)/cpair + 0.61*state%t(i,pver)*cam_in%lhf(i)/latvap
-         crm_input%fluxu00(i) = cam_in%wsx(i)     !N/m2
-         crm_input%fluxv00(i) = cam_in%wsy(i)     !N/m2
-         crm_input%fluxt00(i) = cam_in%shf(i)/cpair  ! K Kg/ (m2 s)
-         crm_input%fluxq00(i) = cam_in%lhf(i)/latvap ! Kg/(m2 s)
-         crm_input%wndls(i) = sqrt(state%u(i,pver)**2 + state%v(i,pver)**2)
+         crm_input%tau00(i)   = sqrt(wsx_tmp(i)**2 + wsy_tmp(i)**2)
+         crm_input%bflxls(i)  = shf_tmp(i)/cpair + 0.61*state%t(i,pver)*lhf_tmp(i)/latvap
+         crm_input%fluxu00(i) = wsx_tmp(i)         ! N/m2
+         crm_input%fluxv00(i) = wsy_tmp(i)         ! N/m2
+         crm_input%fluxt00(i) = shf_tmp(i)/cpair   ! K Kg/ (m2 s)
+         crm_input%fluxq00(i) = lhf_tmp(i)/latvap  ! Kg/(m2 s)
+         crm_input%wndls(i)   = sqrt(state%u(i,pver)**2 + state%v(i,pver)**2)
       end do
+
 #if (defined m2005 && defined MODAL_AERO)
       ! Set aerosol
       phase = 1  ! interstital aerosols only
