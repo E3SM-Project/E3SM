@@ -181,7 +181,7 @@ TEST_CASE("input_output_basic","io")
   view_2d::HostMirror loc_field_3("field_3",num_lcols,num_levs);
   pview_2d::HostMirror loc_field_4("field_packed",num_lcols,num_packs);
   std::string filename = ins_params.get<std::string>("FILENAME");
-  std::vector<std::string> var_dims = {"VL","COL"};
+  std::vector<std::string> var_dims = {"LEV","COL"};
   bool has_columns = true;
   std::vector<int> dim_lens = {num_lcols,num_levs};
   input_type loc_input(io_comm,"Physics",grid_man);
