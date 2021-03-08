@@ -82,7 +82,7 @@ subroutine flux_avg_init(cam_in,  pbuf2d)
       call pbuf_set_field(pbuf2d_chunk, taux_idx,   cam_in(lchnk)%wsx(:ncol))
       call pbuf_set_field(pbuf2d_chunk, tauy_idx,   cam_in(lchnk)%wsy(:ncol))
 
-      call pbuf_set_field(pbuf2d,       shflx_res_idx, 0.0_r8)
+      call pbuf_set_field(pbuf2d_chunk, shflx_res_idx, 0.0_r8)
       call pbuf_set_field(pbuf2d_chunk, lhflx_res_idx, 0.0_r8)
       call pbuf_set_field(pbuf2d_chunk, qflx_res_idx,  0.0_r8)
       call pbuf_set_field(pbuf2d_chunk, taux_res_idx,  0.0_r8)

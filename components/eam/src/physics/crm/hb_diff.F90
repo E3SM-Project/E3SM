@@ -40,11 +40,7 @@ module hb_diff
   real(r8), parameter :: sffrac=  0.1_r8        ! Surface layer fraction of boundary layer
   real(r8), parameter :: binm  = betam*sffrac   ! betam * sffrac
   real(r8), parameter :: binh  = betah*sffrac   ! betah * sffrac
-#ifdef MMF_HBML
-  real(r8), parameter :: ml    = MMF_HBML        ! mixing length scale used for ml2
-#else
   real(r8), parameter :: ml    = 10.0_r8        ! mixing length scale used for ml2
-#endif
   
 
   ! PBL constants set using values from other parts of code
