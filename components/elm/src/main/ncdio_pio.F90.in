@@ -19,7 +19,7 @@ module ncdio_pio
   use spmdMod        , only : MPI_REAL8, MPI_INTEGER, MPI_LOGICAL
   use elm_varcon     , only : grlnd, nameg, namel, namec, namep
   use elm_varcon     , only : spval,ispval
-  use elm_varctl     , only : single_column, scm_domain, scm_nx, scm_ny, iulog
+  use elm_varctl     , only : single_column, scm_multcols, scm_nx, scm_ny, iulog
   use shr_sys_mod    , only : shr_sys_flush
   use decompMod      , only : get_elmlevel_gsize,get_elmlevel_gsmap
   use perf_mod       , only : t_startf, t_stopf
@@ -476,7 +476,7 @@ contains
        RETURN
     end if
 
-    if (scm_domain) then
+    if (scm_multcols) then
        ni = scm_nx
        nj = scm_ny
        ns = ni * nj
@@ -1314,12 +1314,12 @@ contains
        end if
 #else
        if (varpresent) then
-          if (scm_domain .or. single_column) then
+          if (scm_multcols .or. single_column) then
              call scam_field_offsets(ncid,'undefined', vardesc,&
                   start, count, found=found, posNOTonfile=posNOTonfile)
              if ( found )then
                 if (single_column) status = pio_get_var(ncid, varid, start, count, data)
-                if (scm_domain) then
+                if (scm_multcols) then
                   allocate(iop_data(1:count(1),1:count(2)))
                   status = pio_get_var(ncid, varid, start(1:2), count(1:2), iop_data)
 #if ({DIMS}==1)
@@ -1523,7 +1523,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (scm_domain .or. single_column) then
+          if (scm_multcols .or. single_column) then
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid,elmlevel,vardesc,start,count)
              if (present(nt)) then
@@ -1543,7 +1543,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 #else
              if (single_column) status=pio_get_var(ncid,varid,start,count,data)
 
-             if (scm_domain) then
+             if (scm_multcols) then
 
                if (count(2) .gt. 0) then
 
@@ -1567,7 +1567,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
                endif
 
-             endif ! scm_domain
+             endif ! scm_multcols
 #endif
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
@@ -1747,7 +1747,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (scm_domain .or. single_column) then
+          if (scm_multcols .or. single_column) then
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid, elmlevel, vardesc, start, count)
                 if (present(nt)) then
@@ -1765,7 +1765,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              else
                 if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
 
-                if (scm_domain) then
+                if (scm_multcols) then
 
                   if (start(3) .eq. 0) then
                     start_iop2d(1:2) = start(1:2)
@@ -1801,9 +1801,9 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                     deallocate(iop_data3d)
                   endif
 
-               endif ! if scm_domain
+               endif ! if scm_multcols
 
-             endif ! if scm_domain or single_column
+             endif ! if scm_multcols or single_column
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
              status = pio_inq_vardimid(ncid,vardesc, dids)
@@ -1986,7 +1986,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (scm_domain .or. single_column) then
+          if (scm_multcols .or. single_column) then
              start(:) = 1 
              count(:) = 1
              call scam_field_offsets(ncid, elmlevel, vardesc, start, count)
@@ -1998,7 +1998,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
              if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
 
-             if (scm_domain) then
+             if (scm_multcols) then
 
                if (start(4) .eq. 0) then
 
@@ -2036,7 +2036,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
                endif
 
-            endif ! scm_domain
+            endif ! scm_multcols
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
              status = pio_inq_vardimid(ncid,vardesc, dids)

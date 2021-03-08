@@ -20,7 +20,7 @@ module inidat
   use spmd_utils,   only: iam, masterproc
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
-  use scamMod, only: single_column, precip_off, scmlat, scmlon, scm_domain, dp_crm, iop_perturb_high
+  use scamMod, only: single_column, precip_off, scmlat, scmlon, scm_multcols, dp_crm, iop_perturb_high
   implicit none
   private
   public read_inidat
@@ -136,7 +136,7 @@ contains
     end if
 
 !   Determine column closest to SCM point
-    if (single_column .and. .not. scm_domain .and. par%dynproc) then
+    if (single_column .and. .not. scm_multcols .and. par%dynproc) then
       if (scmlon .lt. 0._r8) then
         scmposlon=scmlon+360._r8
       else
@@ -173,7 +173,7 @@ contains
 
     endif ! single_column
 
-    if (scm_domain) then
+    if (scm_multcols) then
       indx_scm = 1
     endif
 
@@ -187,7 +187,7 @@ contains
     fieldname = 'U'
     tmp = 0.0_r8
     
-    if (.not. scm_domain) then
+    if (.not. scm_multcols) then
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -206,8 +206,8 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
-             if (single_column .and. .not. scm_domain) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
-             if (scm_domain) elem(ie)%state%v(i,j,1,:,tl)=tmp_iop(indx_scm,:)
+             if (single_column .and. .not. scm_multcols) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
+             if (scm_multcols) elem(ie)%state%v(i,j,1,:,tl)=tmp_iop(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -216,7 +216,7 @@ contains
     fieldname = 'V'
     tmp = 0.0_r8
 
-    if (.not. scm_domain) then
+    if (.not. scm_multcols) then
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -234,8 +234,8 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
-             if (single_column .and. .not. scm_domain) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
-             if (scm_domain) elem(ie)%state%v(i,j,2,:,tl)=tmp_iop(indx_scm,:)
+             if (single_column .and. .not. scm_multcols) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
+             if (scm_multcols) elem(ie)%state%v(i,j,2,:,tl)=tmp_iop(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -244,7 +244,7 @@ contains
     fieldname = 'T'
     tmp_iop = 0.0_r8
 
-    if (.not. scm_domain) then
+    if (.not. scm_multcols) then
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -269,13 +269,13 @@ contains
 #ifdef MODEL_THETA_L
              elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
 
-             if (scm_domain) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
-             if (single_column .and. .not. scm_domain) elem(ie)%derived%FT(i,j,:) = tmp(indx_scm,:,ie_scm)
+             if (scm_multcols) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
+             if (single_column .and. .not. scm_multcols) elem(ie)%derived%FT(i,j,:) = tmp(indx_scm,:,ie_scm)
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
 
-             if (single_column .and. .not. scm_domain) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
-             if (scm_domain) elem(ie)%state%T(i,j,:,tl) = tmp_iop(indx_scm,:)
+             if (single_column .and. .not. scm_multcols) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
+             if (scm_multcols) elem(ie)%state%T(i,j,:,tl) = tmp_iop(indx_scm,:)
 #endif
              indx = indx + 1
           end do
@@ -309,7 +309,7 @@ contains
     
           else
     
-            if (.not. scm_domain) then
+            if (.not. scm_multcols) then
               tmp = 0.0_r8
               call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
                    1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
@@ -393,8 +393,8 @@ contains
           do j = 1, np
              do i = 1, np
                 elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx,:,ie)
-                if (single_column .and. .not. scm_domain) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
-                if (scm_domain) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_iop(indx_scm,:)
+                if (single_column .and. .not. scm_multcols) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
+                if (scm_multcols) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_iop(indx_scm,:)
                 indx = indx + 1
              end do
           end do
@@ -408,7 +408,7 @@ contains
 
     fieldname = 'PS'
     tmp(:,1,:) = 0.0_r8
-    if (.not. scm_domain) then
+    if (.not. scm_multcols) then
       call infld(fieldname, ncid_ini, ncol_name,      &
            1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
     else
@@ -423,7 +423,7 @@ contains
     allocate(tmpmask(npsq,nelemd))
     tmpmask = (reshape(ldof, (/npsq,nelemd/)) /= 0)
 
-    if(minval(tmp(:,1,:), mask=tmpmask) < 10000._r8 .and. .not. scm_domain) then
+    if(minval(tmp(:,1,:), mask=tmpmask) < 10000._r8 .and. .not. scm_multcols) then
        call endrun('Problem reading ps field')
     end if
     deallocate(tmpmask)
@@ -434,8 +434,8 @@ contains
           do j = 1, np
              do i = 1, np
                 elem(ie)%state%ps_v(i,j,tl) = tmp(indx,1,ie)
-                if (single_column .and. .not. scm_domain) elem(ie)%state%ps_v(i,j,tl) = tmp(indx_scm,1,ie_scm)
-                if (scm_domain) elem(ie)%state%ps_v(i,j,tl) = tmp(1,1,1)
+                if (single_column .and. .not. scm_multcols) elem(ie)%state%ps_v(i,j,tl) = tmp(indx_scm,1,ie_scm)
+                if (scm_multcols) elem(ie)%state%ps_v(i,j,tl) = tmp(1,1,1)
                 indx = indx + 1
              end do
           end do
@@ -449,7 +449,7 @@ contains
       fieldname = 'PHIS'
       tmp(:,1,:) = 0.0_r8
       if (fv_nphys == 0) then
-         if (.not. scm_domain) then
+         if (.not. scm_multcols) then
            call infld(fieldname, ncid_topo, ncol_name,      &
               1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
          else
@@ -490,8 +490,8 @@ contains
          do j = 1, np
             do i = 1, np
                elem(ie)%state%phis(i,j) = tmp(indx,1,ie)
-               if (single_column .and. .not. scm_domain) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
-               if (scm_domain) elem(ie)%state%phis(i,j) = tmp(1,1,1)
+               if (single_column .and. .not. scm_multcols) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
+               if (scm_multcols) elem(ie)%state%phis(i,j) = tmp(1,1,1)
                indx = indx + 1
             end do
          end do
@@ -502,7 +502,7 @@ contains
       iop_update_surface = .false.
       if (masterproc) call setiopupdate()
       if (masterproc) call readiopdata(iop_update_surface,hyam,hybm)
-      if (scm_domain) call scm_broadcast()
+      if (scm_multcols) call scm_broadcast()
       call scm_setinitial(elem)
     endif
 

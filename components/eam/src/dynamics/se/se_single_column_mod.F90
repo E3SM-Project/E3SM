@@ -240,7 +240,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     nelemd_todo = 1
     np_todo = 1
     
-    if (scm_domain) then
+    if (scm_multcols) then
       nelemd_todo = nelemd
       np_todo = np
     endif
@@ -324,7 +324,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
         enddo
       enddo
       
-      if (scm_domain) then
+      if (scm_multcols) then
         call outfld('TDIFF',tdiff_out,npsq,ie)
         call outfld('QDIFF',qdiff_out,npsq,ie)
       else

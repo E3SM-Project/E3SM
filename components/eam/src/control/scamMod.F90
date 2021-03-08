@@ -67,7 +67,7 @@ module scamMod
   logical, public ::  l_conv                ! use flux divergence terms for T and q?     
   logical, public ::  l_divtr               ! use flux divergence terms for constituents?
   logical, public ::  l_diag                ! do we want available diagnostics?
-  logical, public ::  scm_domain            ! use SCM infrastructure across multiple columns
+  logical, public ::  scm_multcols          ! use SCM infrastructure across multiple columns
   logical, public ::  dp_crm                ! do doubly periodic cloud resolving model
 
   integer, public ::  error_code            ! Error code from netCDF reads
@@ -216,7 +216,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
         iop_relaxation_tscale_out, &
         scm_diurnal_avg_out, scm_crm_mode_out, scm_observed_aero_out, &
         swrad_off_out, lwrad_off_out, precip_off_out, scm_clubb_iop_name_out,&
-        scm_domain_out, dp_crm_out, iop_perturb_high_out)
+        scm_multcols_out, dp_crm_out, iop_perturb_high_out)
 !-----------------------------------------------------------------------
    real(r8), intent(out), optional :: scmlat_out,scmlon_out
    character*(max_path_len), intent(out), optional ::  iopfile_out
@@ -229,7 +229,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    logical, intent(out), optional ::  swrad_off_out
    logical, intent(out), optional ::  lwrad_off_out
    logical, intent(out), optional ::  precip_off_out
-   logical, intent(out), optional ::  scm_domain_out
+   logical, intent(out), optional ::  scm_multcols_out
    logical, intent(out), optional ::  dp_crm_out
    real(r8), intent(out), optional ::  iop_relaxation_low_out
    real(r8), intent(out), optional ::  iop_relaxation_high_out
@@ -253,7 +253,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(swrad_off_out))         swrad_off_out = .false.
    if ( present(lwrad_off_out))         lwrad_off_out = .false.
    if ( present(precip_off_out))        precip_off_out = .false.
-   if ( present(scm_domain_out))        scm_domain_out = .false.
+   if ( present(scm_multcols_out))      scm_multcols_out = .false.
    if ( present(dp_crm_out))            dp_crm_out = .false.
    if ( present(scm_clubb_iop_name_out) ) scm_clubb_iop_name_out  = ' '
 
@@ -265,7 +265,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          iop_relaxation_tscale_in, &
                          scm_diurnal_avg_in, scm_crm_mode_in, scm_observed_aero_in, &
                          swrad_off_in, lwrad_off_in, precip_off_in, scm_clubb_iop_name_in,&
-                         scm_domain_in, dp_crm_in, iop_perturb_high_in)
+                         scm_multcols_in, dp_crm_in, iop_perturb_high_in)
 !-----------------------------------------------------------------------
   real(r8), intent(in), optional       :: scmlon_in, scmlat_in
   character*(max_path_len), intent(in), optional :: iopfile_in
@@ -278,7 +278,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   logical, intent(in), optional        :: swrad_off_in
   logical, intent(in), optional        :: lwrad_off_in
   logical, intent(in), optional        :: precip_off_in
-  logical, intent(in), optional        :: scm_domain_in
+  logical, intent(in), optional        :: scm_multcols_in
   logical, intent(in), optional        :: dp_crm_in
   character(len=*), intent(in), optional :: scm_clubb_iop_name_in
   real(r8), intent(in), optional       :: iop_relaxation_low_in
@@ -293,8 +293,8 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
      single_column=single_column_in
   endif
   
-  if (present (scm_domain_in ) ) then
-     scm_domain=scm_domain_in
+  if (present (scm_multcols_in ) ) then
+     scm_multcols=scm_multcols_in
   endif
 
   if (present (dp_crm_in ) ) then
@@ -376,7 +376,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   if( single_column) then
 
   if (masterproc) then     
-     if (plon /= 1 .and. plat /= 1 .and. .not. scm_domain ) then
+     if (plon /= 1 .and. plat /= 1 .and. .not. scm_multcols) then
         call endrun('SCAM_SETOPTS: must compile model for SCAM mode when namelist parameter single_column is .true.')
      endif
      
