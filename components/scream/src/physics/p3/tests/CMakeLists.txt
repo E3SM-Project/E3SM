@@ -54,10 +54,10 @@ if (NOT ${SCREAM_BASELINES_ONLY})
                  PROPERTIES FIXTURES_REQUIRED p3_tables)
 endif()
 
-# Set huge tolerance for release builds. This will effectively disable all baseline
+# Set inf tolerance for release builds. This will effectively disable all baseline
 # checking, but we still want to ensure things run without crashing
 if (CMAKE_BUILD_TYPE MATCHES ".*Rel.*")
-  set(TOL_FLAG "--tol 1e15")
+  set(TOL_FLAG "--tol inf")
 endif()
 
 CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}"

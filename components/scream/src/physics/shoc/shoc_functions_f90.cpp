@@ -18,9 +18,12 @@ using scream::Int;
 
 extern "C" {
 
-void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
-                 Real zvir, Real latvap, Real latice, Real karman,
-                 Real* pref_mid, int nbot_shoc, int ntop_shoc);
+// Special shoc_init function for shoc_main_bfb test
+void shoc_init_for_main_bfb_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
+                              Real zvir, Real latvap, Real latice, Real karman,
+                              Real* pref_mid, int nbot_shoc, int ntop_shoc);
+void shoc_use_cxx_c(bool use_cxx);
+
 
 void shoc_grid_c(int shcol, int nlev, int nlevi, Real *zt_grid, Real *zi_grid,
                  Real *pdel, Real *dz_zt, Real *dzi_zi, Real *rho_zt);
@@ -747,6 +750,25 @@ void shoc_main(ShocMainData& d)
   shoc_init(d.nlev, true, true);
   d.transpose<ekat::TransposeDirection::c2f>();
   shoc_main_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, d.host_dx, d.host_dy, d.thv, d.zt_grid, d.zi_grid, d.pres, d.presi, d.pdel, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.wtracer_sfc, d.num_qtracers, d.w_field, d.exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw, d.u_wind, d.v_wind, d.qtracers, d.wthv_sec, d.tkh, d.tk, d.shoc_ql, d.shoc_cldfrac, d.pblh, d.shoc_mix, d.isotropy, d.w_sec, d.thl_sec, d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.wtke_sec, d.uw_sec, d.vw_sec, d.w3, d.wqls_sec, d.brunt, d.shoc_ql2);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void shoc_main_with_init(ShocMainData& d)
+{
+  using C = scream::physics::Constants<Real>;
+
+  d.transpose<ekat::TransposeDirection::c2f>();
+  shoc_init_for_main_bfb_c(d.nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR, C::LatVap, C::LatIce, C::Karman,
+                           d.pref_mid, d.nbot_shoc, d.ntop_shoc+1);
+  shoc_use_cxx_c(false);
+
+
+  shoc_main_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, d.host_dx, d.host_dy, d.thv, d.zt_grid, d.zi_grid,
+              d.pres, d.presi, d.pdel, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.wtracer_sfc, d.num_qtracers,
+              d.w_field, d.exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw, d.u_wind, d.v_wind, d.qtracers,
+              d.wthv_sec, d.tkh, d.tk, d.shoc_ql, d.shoc_cldfrac, d.pblh, d.shoc_mix, d.isotropy, d.w_sec,
+              d.thl_sec, d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.wtke_sec, d.uw_sec, d.vw_sec, d.w3,
+              d.wqls_sec, d.brunt, d.shoc_ql2);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
@@ -2247,7 +2269,9 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
 
   view_3d
     tracer_d(temp_3d_d[0]);
-  Kokkos::resize(Kokkos::WithoutInitializing, tracer_d,
+
+  // update_prognostics_implicit() expects 3 extra tracer slots
+  Kokkos::resize(tracer_d,
                  shcol,nlev,ekat::npack<Spack>(num_tracer+3));
 
   // Local variables
@@ -2296,8 +2320,8 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
                                      thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s);
   });
 
-  // Remove extra slots in tracers view
-  Kokkos::resize(Kokkos::WithoutInitializing, tracer_d,
+  // Remove extra tracer slots
+  Kokkos::resize(tracer_d,
                  shcol,nlev,ekat::npack<Spack>(num_tracer));
 
   // Sync back to host
@@ -2762,7 +2786,21 @@ void dp_inverse_f(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt)
   ekat::device_to_host({rdp_zt}, shcol, nlev, inout_views, true);
 }
 
-void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid,
+int shoc_init_f(Int nlev, Real *pref_mid, Int nbot_shoc, Int ntop_shoc)
+{
+  using SHF  = Functions<Real, DefaultDevice>;
+  using Spack       = typename SHF::Spack;
+  using view_1d     = typename SHF::view_1d<Spack>;
+
+  // Sync to device
+  std::vector<view_1d> temp_d(1);
+  ekat::host_to_device({pref_mid}, nlev, temp_d);
+  view_1d pref_mid_d(temp_d[0]);
+
+  return SHF::shoc_init(nbot_shoc,ntop_shoc,pref_mid_d);
+}
+
+void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid,
                  Real* zi_grid, Real* pres, Real* presi, Real* pdel, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc,
                  Real* wtracer_sfc, Int num_qtracers, Real* w_field, Real* exner, Real* phis, Real* host_dse, Real* tke,
                  Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk,
@@ -2870,7 +2908,7 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* hos
     qtracers_d(temp_3d_d[0]);
 
   // Add temporary slots for solving
-  Kokkos::resize(Kokkos::WithoutInitializing, qtracers_d,
+  Kokkos::resize(qtracers_d,
                  shcol,nlev,ekat::npack<Spack>(num_qtracers+3));
 
   // Pack our data into structs and ship it off to shoc_main.
@@ -2887,14 +2925,14 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* hos
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
                                              brunt_d,     isotropy_d};
 
-  const Int npbl = nlev;
   const auto elapsed_microsec = SHF::shoc_main(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
                                                shoc_input, shoc_input_output, shoc_output, shoc_history_output);
   (void)elapsed_microsec;
 
   // Remove temporary slots
-  Kokkos::resize(Kokkos::WithoutInitializing, qtracers_d,
+  Kokkos::resize(qtracers_d,
                  shcol,nlev,ekat::npack<Spack>(num_qtracers));
+
 
   // Sync back to host
   // 1d

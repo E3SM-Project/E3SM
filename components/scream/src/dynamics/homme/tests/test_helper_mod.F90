@@ -1,9 +1,9 @@
-module geometry_interface_mod
+module test_helper_mod
 
   implicit none
 
   public :: set_test_params_f90
-  public :: cleanup_geometry_f90
+  public :: cleanup_test_f90
 
 contains
 
@@ -29,8 +29,10 @@ contains
     is_params_inited = .true.
   end subroutine set_test_params_f90
 
-  subroutine cleanup_geometry_f90 () bind(c)
+  subroutine cleanup_test_f90 () bind(c)
     use schedtype_mod,     only: schedule
+    use parallel_mod,      only: rrequest, srequest, global_shared_buf, status
+    use homme_context_mod, only: is_parallel_inited
 
     ! Cleanup the schedule structure
     deallocate(Schedule(1)%SendCycle)
@@ -40,6 +42,13 @@ contains
     deallocate(Schedule(1)%gIndx)
     deallocate(Schedule(1)%Local2Global)
     deallocate(Schedule)
-  end subroutine cleanup_geometry_f90
 
-end module geometry_interface_mod
+    deallocate(rrequest)
+    deallocate(srequest)
+    deallocate(status)
+    deallocate(global_shared_buf)
+
+    is_parallel_inited = .false.
+  end subroutine cleanup_test_f90
+
+end module test_helper_mod

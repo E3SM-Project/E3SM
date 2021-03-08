@@ -333,8 +333,8 @@ set_required_group (const FieldGroup<const Real>& group)
 
     if (atm_proc->requires_group(name,grid)) {
       atm_proc->set_required_group(group);
-      // Some groups might be optional, so don't error out if the size is 0
-      if (group.m_info->size()>0) {
+      // Some groups might be optional, so don't error out if they're empty
+      if (not group.m_info->empty()) {
         // If the group is 'bundled', we remap the bundled group,
         // otherwise remap each individual field.
         if (group.m_info->m_bundled) {
@@ -367,8 +367,8 @@ set_updated_group (const FieldGroup<Real>& group)
 
     if (atm_proc->updates_group(name,grid)) {
       atm_proc->set_updated_group(group);
-      // Some groups might be optional, so don't error out if the size is 0
-      if (group.m_info->size()>0) {
+      // Some groups might be optional, so don't error out if they're empty
+      if (not group.m_info->empty()) {
         // If the group is 'bundled', we remap the bundled group,
         // otherwise remap each individual field.
         if (group.m_info->m_bundled) {

@@ -4,7 +4,7 @@
 #include <ekat/util/ekat_string_utils.hpp>
 #include <ekat/std_meta/ekat_std_utils.hpp>
 
-#include <set>
+#include <list>
 #include <map>
 
 namespace scream {
@@ -42,7 +42,7 @@ namespace scream {
  *
  * E.g., say we have 3d scalar fields F1,F2,F3,F4 belonging to group MyGroup,
  * which is then allocated as a bundled field F. F will have layout
- * given by grid->get_3d_vector_layout(). Say this layout is (COL,CMP,VL).
+ * given by grid->get_3d_vector_layout(). Say this layout is (COL,CMP,LEV).
  * Each field is subviewed along m_subview_dim=1, at entry 0,1,2,3 respectively.
  * Note: as of 02/2021 m_subview_dim is *always* 1, but we store this bit
  *       of info nevertheless, in case things change later on.
@@ -65,11 +65,13 @@ struct FieldGroupInfo
 
   int size() const { return m_fields_names.size(); }
 
+  bool empty() const { return size()==0; }
+
   // The name of the group
   ci_string m_group_name;
 
   // The names of the fields in this group
-  std::set<ci_string>   m_fields_names;
+  std::list<ci_string>   m_fields_names;
 
   // Whether the group was allocated as a bundle
   bool m_bundled;

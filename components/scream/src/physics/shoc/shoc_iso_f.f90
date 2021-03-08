@@ -434,10 +434,10 @@ subroutine dp_inverse_f(nlev, shcol, rho_zt, dz_zt, rdp_zt) bind(C)
   real(kind=c_real), intent(out) :: rdp_zt(shcol,nlev)
 end subroutine dp_inverse_f
 
-  subroutine shoc_main_f(shcol, nlev, nlevi, dtime, nadv, host_dx, host_dy, thv, zt_grid, zi_grid, pres, presi, pdel, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, wtracer_sfc, num_qtracers, w_field, exner, phis, host_dse, tke, thetal, qw, u_wind, v_wind, qtracers, wthv_sec, tkh, tk, shoc_ql, shoc_cldfrac, pblh, shoc_mix, isotropy, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec, brunt, shoc_ql2) bind(C)
+  subroutine shoc_main_f(shcol, nlev, nlevi, dtime, nadv, npbl, host_dx, host_dy, thv, zt_grid, zi_grid, pres, presi, pdel, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, wtracer_sfc, num_qtracers, w_field, exner, phis, host_dse, tke, thetal, qw, u_wind, v_wind, qtracers, wthv_sec, tkh, tk, shoc_ql, shoc_cldfrac, pblh, shoc_mix, isotropy, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec, brunt, shoc_ql2) bind(C)
     use iso_c_binding
 
-    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, nadv, num_qtracers
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, nadv, num_qtracers, npbl
     real(kind=c_real) , value, intent(in) :: dtime
     real(kind=c_real) , intent(in), dimension(shcol) :: host_dx, host_dy, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, phis
     real(kind=c_real) , intent(in), dimension(shcol, nlev) :: thv, zt_grid, pres, pdel, w_field, exner

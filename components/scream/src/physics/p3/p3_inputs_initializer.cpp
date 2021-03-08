@@ -76,21 +76,29 @@ void P3InputsInitializer::initialize_fields ()
   fields_to_init.push_back("bm");
   fields_to_init.push_back("nccn_prescribed");
   fields_to_init.push_back("inv_qc_relvar");
-  int count = 0;
+  size_t count = 0;
   std::string list_of_fields = "";
-  for (auto name : fields_to_init)
+  for (const auto& name : fields_to_init)
   {
     list_of_fields += name;
     list_of_fields += ", ";
     count += m_fields.count(name);
   }
+  list_of_fields.erase(list_of_fields.size()-2); // Erase last ', '
+  std::string inited_fields ="";
+  for (const auto& it : m_fields) {
+    inited_fields += it.first;
+    inited_fields += ", ";
+  }
+  inited_fields.erase(inited_fields.size()-2); // Erase last ', '
  
   EKAT_REQUIRE_MSG(count!=0,"Error in p3_inputs_initializer: no fields have declared this initializer.  Check p3 interface."); 
 
-  EKAT_REQUIRE_MSG (count==(int)fields_to_init.size(),
-    "Error! P3InputsInitializer is expected to init " + std::to_string(fields_to_init.size()) + " fields:\n"
+  EKAT_REQUIRE_MSG (count==fields_to_init.size() || (count+1)==fields_to_init.size(),
+    "Error! P3InputsInitializer is expected to init the following fields:\n"
     "       " + list_of_fields + "\n"
-    "       Instead found " + std::to_string(count) + " fields.\n"
+    "       (possibly with the exception of dp). Instead, it is initializing these fields:\n"
+    "       " + inited_fields + "\n"
     "       Please, check the atmosphere processes you are using,\n"
     "       and make sure they agree on who's initializing each field.\n");
 
@@ -101,7 +109,6 @@ void P3InputsInitializer::initialize_fields ()
   auto h_ni_activated    = m_fields.at("ni_activated").get_reshaped_view<Pack**,Host>();
   auto h_nc_nuceat_tend  = m_fields.at("nc_nuceat_tend").get_reshaped_view<Pack**,Host>();
   auto h_pmid            = m_fields.at("pmid").get_reshaped_view<Pack**,Host>();
-  auto h_dp              = m_fields.at("dp").get_reshaped_view<Pack**,Host>();
   auto h_zi              = m_fields.at("zi").get_reshaped_view<Pack**,Host>();
   auto h_qv_prev         = m_fields.at("qv_prev").get_reshaped_view<Pack**,Host>();
   auto h_T_prev          = m_fields.at("T_prev").get_reshaped_view<Pack**,Host>();
@@ -116,6 +123,12 @@ void P3InputsInitializer::initialize_fields ()
   auto h_bm              = m_fields.at("bm").get_reshaped_view<Pack**,Host>();
   auto h_nccn_prescribed = m_fields.at("nccn_prescribed").get_reshaped_view<Pack**,Host>();
   auto h_inv_qc_relvar   = m_fields.at("inv_qc_relvar").get_reshaped_view<Pack**,Host>();
+
+  // dp might be inited by Homme.
+  decltype(h_pmid) h_dp;
+  if (m_fields.count("dp")==1) {
+    h_dp = m_fields.at("dp").get_reshaped_view<Pack**,Host>();
+  }
 
   // Set local views which are used in some of the initialization
   auto mdims = m_fields.at("qc").get_header().get_identifier().get_layout();
@@ -160,7 +173,11 @@ void P3InputsInitializer::initialize_fields ()
     s >> h_qm(icol,ipack)[ivec]             ;
     s >> h_bm(icol,ipack)[ivec]             ;
     for (int skp=0;skp<5;skp++) { s >> skip; }
-    s >> h_dp(icol,ipack)[ivec]   ;
+    if (h_dp.data()!=nullptr) {
+      s >> h_dp(icol,ipack)[ivec]   ;
+    } else {
+      s >> skip;
+    }
     s >> h_exner(icol,ipack)[ivec];
     for (int skp=0;skp<7;skp++) { s >> skip; }
     s >> h_ast(icol,ipack)[ivec];
@@ -197,7 +214,9 @@ void P3InputsInitializer::initialize_fields ()
       h_ni(icol_i,ipack)[ivec]              = h_ni(icol,ipack)[ivec]                              ;
       h_qm(icol_i,ipack)[ivec]              = h_qm(icol,ipack)[ivec]                              ;
       h_bm(icol_i,ipack)[ivec]              = h_bm(icol,ipack)[ivec]                              ;
-      h_dp(icol_i,ipack)[ivec]              = h_dp(icol,ipack)[ivec]                              ;
+      if (h_dp.data()!=nullptr) {
+        h_dp(icol_i,ipack)[ivec]              = h_dp(icol,ipack)[ivec]                              ;
+      }
       h_exner(icol_i,ipack)[ivec]           = h_exner(icol,ipack)[ivec]                           ;
       h_ast(icol_i,ipack)[ivec]             = h_ast(icol,ipack)[ivec]                             ;
       h_qv_prev(icol_i,ipack)[ivec]         = h_qv_prev(icol,ipack)[ivec]                         ;
@@ -214,7 +233,6 @@ void P3InputsInitializer::initialize_fields ()
   m_fields.at("ni_activated").sync_to_dev();
   m_fields.at("nc_nuceat_tend").sync_to_dev();
   m_fields.at("pmid").sync_to_dev();
-  m_fields.at("dp").sync_to_dev();
   m_fields.at("zi").sync_to_dev();
   m_fields.at("qv_prev").sync_to_dev();
   m_fields.at("T_prev").sync_to_dev();
@@ -229,6 +247,9 @@ void P3InputsInitializer::initialize_fields ()
   m_fields.at("bm").sync_to_dev();
   m_fields.at("nccn_prescribed").sync_to_dev();
   m_fields.at("inv_qc_relvar").sync_to_dev();
+  if (h_dp.data()!=nullptr) {
+    m_fields.at("dp").sync_to_dev();
+  }
 
   if (m_remapper) {
     m_remapper->registration_ends();

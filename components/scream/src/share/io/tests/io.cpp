@@ -205,12 +205,14 @@ TEST_CASE("input_output_basic","io")
 /*===================================================================================================================*/
 std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs)
 {
+  using namespace ShortFieldTagsNames;
+
   // Create a repo
   std::shared_ptr<FieldRepository<Real>>  repo = std::make_shared<FieldRepository<Real>>();
   // Create some fields for this repo
-  std::vector<FieldTag> tag_h  = {FieldTag::Column};
-  std::vector<FieldTag> tag_v  = {FieldTag::VerticalLevel};
-  std::vector<FieldTag> tag_2d = {FieldTag::Column,FieldTag::VerticalLevel};
+  std::vector<FieldTag> tag_h  = {COL};
+  std::vector<FieldTag> tag_v  = {LEV};
+  std::vector<FieldTag> tag_2d = {COL,LEV};
 
   std::vector<Int>     dims_h  = {num_lcols};
   std::vector<Int>     dims_v  = {num_levs};
@@ -224,7 +226,9 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
   FieldIdentifier fid4("field_packed",FL{tag_2d,dims_2d},kg/m,gn);
 
   // Register fields with repo
-  using Spack        = ekat::Pack<Int,SCREAM_SMALL_PACK_SIZE>;
+  // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
+  const int packsize = 2;
+  using Pack         = ekat::Pack<Real,packsize>;
   repo->registration_begins();
   repo->register_field(fid1,{"output"});
   repo->register_field(fid2,{"output","restart"});

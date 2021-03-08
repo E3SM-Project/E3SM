@@ -278,7 +278,6 @@ contains
     npart = par%nprocs
 
     use_moisture = ( moisture /= "dry") 
-    if (qsize<1) use_moisture = .false.  
 
     ! if user sets hypervis_subcycle=-1, then use automatic formula
     if (hypervis_subcycle==-1) then
@@ -513,7 +512,7 @@ contains
 
   subroutine set_homme_int_param_f90 (param_name_c, param_value) bind(c)
     use dimensions_mod,    only: qsize, nlev, np
-    use control_mod,       only: ftype
+    use control_mod,       only: ftype, use_moisture
     use time_mod,          only: nmax
     !
     ! Input(s)
@@ -533,6 +532,7 @@ contains
         ftype = param_value
       case("qsize")
         qsize = param_value
+        if (qsize<1) use_moisture = .false.
       case("nmax")
         nmax = param_value
       case default

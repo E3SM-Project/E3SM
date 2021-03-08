@@ -2,8 +2,6 @@
 
 #include "control/atmosphere_driver.hpp"
 
-#include "physics/p3/atmosphere_microphysics.hpp"
-#include "physics/p3/p3_functions_f90.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 
 #include "physics/share/physics_only_grids_manager.hpp"
@@ -15,7 +13,9 @@
 
 namespace scream {
 
-TEST_CASE("p3-shoc-coupled", "") {
+// === A dummy physics grids for this test === //
+
+TEST_CASE("shoc-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
 
@@ -32,8 +32,7 @@ TEST_CASE("p3-shoc-coupled", "") {
   // Need to register products in the factory *before* we create any atm process or grids manager.,
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
-  proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
-  proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
+  proc_factory.register_product("shoc",&create_atmosphere_process<SHOCMacrophysics>);
   gm_factory.register_product("Physics Only",&physics::create_physics_only_grids_manager);
 
   // Create the grids manager
@@ -51,11 +50,13 @@ TEST_CASE("p3-shoc-coupled", "") {
     ad.run(300.0);
   }
 
+  // TODO: get the field repo from the driver, and go get (one of)
+  //       the output(s) of SHOC, to check its numerical value (if possible)
+
   // Finalize 
   ad.finalize();
-  p3::P3GlobalForFortran::deinit();
 
-  // If we got here, we were able to run p3+shoc
+  // If we got here, we were able to run shoc
   REQUIRE(true);
 }
 

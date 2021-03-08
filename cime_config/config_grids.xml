@@ -3615,6 +3615,8 @@
       <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_oRRS18to6v3_nco.200212.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/ne1024pg2/map_oRRS18to6v3_to_ne1024pg2_nco.200212.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_oRRS18to6v3_to_ne1024pg2_nco.200212.nc</map>
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne1024pg2/map_ne1024pg2_to_r0125_mono.200212.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne1024np4.pg2" lnd_grid="r0125">

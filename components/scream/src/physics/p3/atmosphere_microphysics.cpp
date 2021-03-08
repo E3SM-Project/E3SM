@@ -52,8 +52,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   using namespace ShortFieldTagsNames;
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces 
-  FieldLayout scalar3d_layout_mid { {COL,VL}, {m_num_cols,m_num_levs} };
-  FieldLayout scalar3d_layout_int { {COL,VL}, {m_num_cols,m_num_levs+1} };
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
+  FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
 
   // Define fields needed in P3.
   // Note: p3_main is organized by a set of 5 structures, variables below are organized
@@ -219,38 +219,77 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   //    appears earlier in the atm dag might provide them).
 
 #ifndef SCREAM_CIME_BUILD
-  std::vector<std::string> p3_inputs = {"T_atm","ast","ni_activated","nc_nuceat_tend","pmid","dp","zi","qv_prev","T_prev",
-                                        "qv", "qc", "qr", "qi", "qm", "nc", "nr", "ni", "bm","nccn_prescribed","inv_qc_relvar"
-                                       };
   using strvec = std::vector<std::string>;
-  const strvec& allowed_to_init = m_p3_params.get<strvec>("Initializable Inputs",strvec(0));
-  const bool can_init_all = m_p3_params.get<bool>("Can Initialize All Inputs", false);
-  const bool init_all_or_none = m_p3_params.get<bool>("Must Init All Inputs Or None", true);
+  const strvec p3_inputs = {
+    "T_atm","ast","ni_activated","nc_nuceat_tend","pmid","dp","zi","qv_prev","T_prev",
+    "qv", "qc", "qr", "qi", "qm", "nc", "nr", "ni", "bm","nccn_prescribed","inv_qc_relvar"
+  };
 
-  const strvec& initable = can_init_all ? p3_inputs : allowed_to_init;
-  if (initable.size()>0) {
-    bool all_inited = true, all_uninited = true;
-    for (const auto& name : initable) {
-      const auto& f = m_p3_fields_in.at(name);
-      const auto& track = f.get_header().get_tracking();
-      if (track.get_init_type()==InitType::None) {
-        // Nobody claimed to init this field. P3InputsInitializer will take care of it
-        m_initializer->add_me_as_initializer(f);
-        all_uninited &= true;
-        all_inited &= false;
-      } else {
-        all_uninited &= false;
-        all_inited &= true;
-      }
+  auto& initializer_pl = m_p3_params.sublist("Inputs Initializer");
+
+  const bool has_allowed     = initializer_pl.isParameter("Initializable Inputs");
+  const bool has_not_allowed = initializer_pl.isParameter("Not Initializable Inputs");
+  const bool init_all        = initializer_pl.get<bool>("Initialize All Inputs", false);
+
+  EKAT_REQUIRE_MSG ( !(init_all && has_allowed),
+      "Error! If you set 'Initialize All Inputs' to true, do not specify a list of initializable inputs.\n");
+  EKAT_REQUIRE_MSG ( !(init_all && has_not_allowed),
+      "Error! If you set 'Initialize All Inputs' to true, do not specify a list of not initializable inputs.\n");
+  EKAT_REQUIRE_MSG ( !(has_allowed && has_not_allowed),
+      "Error! You cannot provide both a list of input to initialize and a list of inputs to not initialize.\n"
+      "       Providing one of the two automatically assumes every other P3 input is in 'the other' list.\n");
+
+  // Only proceed if the user specified one of the above options.
+  if (has_allowed || has_not_allowed || init_all) {
+    // Help P3 figure out which input it can init. User can:
+    //  - specify what P3 can init: only these will be inited
+    //  - specify what P3 cannot init: everything else will be inited
+    //  - tell P3 to init everything: everithing will be inited
+    const strvec&     allowed = initializer_pl.get<strvec>(    "Initializable Inputs",strvec(0));
+    const strvec& not_allowed = initializer_pl.get<strvec>("Not Initializable Inputs",strvec(0));
+
+    // Depending on the options above, we may init a given list of fields, all inputs, or none.
+    strvec initable = has_allowed ? allowed : p3_inputs;
+
+    // Make sure field that were asked to be inited are indeed P3 inputs
+    for (const auto& name : allowed) {
+      auto it = std::find(p3_inputs.begin(),p3_inputs.end(),name);
+      EKAT_REQUIRE_MSG (it!=p3_inputs.end(),
+          "Error! Initializable input '" + name + "' does not appear to be a P3 input.\n");
     }
 
-    // In order to gurantee some consistency between inputs, it is best if P3
-    // initializes either none or all of the inputs.
-    EKAT_REQUIRE_MSG (!init_all_or_none || all_inited || all_uninited,
-                      "Error! Some p3 inputs were marked to be inited by P3, while others weren't.\n"
-                      "       P3 was requested to init either all or none of the inputs.\n");
+    // Make sure field that were asked to not be inited are indeed P3 inputs
+    for (const auto& name : not_allowed) {
+      auto it = std::find(initable.begin(),initable.end(),name);
+      EKAT_REQUIRE_MSG (it!=initable.end(),
+          "Error! Not-initializable input '" + name + "' does not appear to be a P3 input.\n");
+      initable.erase(it);
+    }
+
+    if (initable.size()>0) {
+      bool all_inited = true, all_uninited = true;
+      for (const auto& name : initable) {
+        const auto& f = m_p3_fields_in.at(name);
+        const auto& track = f.get_header().get_tracking();
+        if (track.get_init_type()==InitType::None) {
+          // Nobody claimed to init this field. P3InputsInitializer will take care of it
+          m_initializer->add_me_as_initializer(f);
+          all_uninited = false; // We are initing 1+ fields
+        } else {
+          all_inited = false;   // We are skipping 1+ fields
+        }
+      }
+
+      // In order to gurantee some consistency between inputs, it is best if P3
+      // initializes either none or all of the inputs.
+      EKAT_REQUIRE_MSG (all_inited || all_uninited,
+          "Error! P3 is initializing some of the inputs it was requested to init, but not all.\n"
+          "       To avoid inconsitencies, this is not allowed. If you want P3 to init only subset\n"
+          "       of its inputs (knowing some other process will init the others), you can either\n"
+          "       specify the init-able inputs or a list of inputs to not init.\n");
+    }
   }
-#endif
+#endif // !defined(SCREAM_CIME_BUILD)
 }
 
 // =========================================================================================
@@ -325,12 +364,9 @@ void P3Microphysics::finalize_impl()
 // =========================================================================================
 void P3Microphysics::register_fields (FieldRepository<Real>& field_repo) const {
   std::set<ci_string> q_names =
-    { "qv","qc","qr","qi","qm","nc","nr","ni","bm",
-      "nccn_prescribed", "ni_activated",
-      "inv_qc_relvar","mu_c","lamc","nevapr",
-      "liq_ice_exchange","vap_liq_exchange","vap_ice_exchange"};
+    { "qv","qc","qr","qi","qm","nc","nr","ni","bm"};
 
-  for (auto& fid : m_required_fields) {
+  for (const auto& fid : m_required_fields) {
     const auto& name = fid.name();
     if (q_names.count(name)>0) {
       field_repo.register_field<Pack>(fid,"TRACERS");
@@ -338,7 +374,7 @@ void P3Microphysics::register_fields (FieldRepository<Real>& field_repo) const {
       field_repo.register_field<Pack>(fid);
     }
   }
-  for (auto& fid : m_computed_fields) {
+  for (const auto& fid : m_computed_fields) {
     const auto& name = fid.name();
     if (q_names.count(name)>0) {
       field_repo.register_field<Pack>(fid,"TRACERS");

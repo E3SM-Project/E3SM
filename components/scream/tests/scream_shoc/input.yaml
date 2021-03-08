@@ -7,15 +7,14 @@ Atmosphere Processes:
   Number of Entries: 1
 
   Process 0:
-    Process Name: P3
+    Process Name: SHOC
     Grid: Physics
-    Inputs Initializer:
-      Initialize All Inputs: true
+    Can Initialize All Inputs: true
 
 Grids Manager:
   Type: Physics Only
   Reference Grid: Physics
   Physics Only:
-    Number of global columns:   384
+    Number of global columns:   32
     Number of vertical levels:  72  # Will want to change to 128 when a valid unit test is available.
 ...

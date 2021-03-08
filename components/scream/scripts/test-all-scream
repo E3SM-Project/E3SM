@@ -77,7 +77,7 @@ OR
                         help="Whether to skip machine env setup, and preserve the current user env (useful to manually test new modules)")
 
     parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
-        help="Only run specific test configurations, choices='dbg' (debug), 'sp' (single-prec), 'fpe' (floating-point exceptions)")
+        help="Only run specific test configurations, choices='dbg' (debug), 'sp' (single-prec), 'fpe' (floating-point exceptions), 'opt' (release)")
 
     parser.add_argument("-i", "--integration-test", action="store_true", default="JENKINS_HOME" in os.environ,
                         help="Merge origin/master into this branch before testing.")
