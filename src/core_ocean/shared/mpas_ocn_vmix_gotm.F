@@ -22,6 +22,7 @@ module ocn_vmix_gotm
 
    use ocn_constants
    use ocn_config
+   use ocn_mesh
    use ocn_diagnostics_variables
 
    use mpas_io_units
@@ -82,16 +83,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_coefs_gotm_build(meshPool, statePool, forcingPool, err, timeLevelIn)!{{{
+   subroutine ocn_vmix_coefs_gotm_build(statePool, forcingPool, err, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
 
       integer, intent(in), optional ::     &
          timeLevelIn !< Input: time level for state pool
@@ -121,17 +119,6 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-
-      integer, pointer :: nVertLevels, nVertLevelsP1
-
-      integer, dimension(:), pointer :: &
-        maxLevelCell, nEdgesOnCell, nCellsArray
-
-      integer, dimension(:,:), pointer :: edgesOnCell
-
-      real (kind=RKIND), dimension(:), pointer :: &
-        bottomDepth, &
-        dcEdge, dvEdge, areaCell
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         normalVelocity, layerThickness, &
@@ -175,22 +162,7 @@ contains
       !
       ! set parameters
       !
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
-      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
-      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-
-      !
-      ! set pointers for fields related to vertical mesh
-      !
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
-
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
       !
@@ -212,7 +184,7 @@ contains
       call mpas_pool_get_array(statePool, 'gotmEpsbTopOfCell', gotmEpsbTopOfCellCur, 1)
       call mpas_pool_get_array(statePool, 'gotmEpsbTopOfCell', gotmEpsbTopOfCellNew, 2)
 
-      nCells = nCellsArray( size(nCellsArray) )
+      nCells = nCellsAll
 
       !$omp parallel
       !$omp do schedule(runtime)
@@ -223,7 +195,7 @@ contains
       !$omp end do
       !$omp end parallel
 
-      nCells = nCellsArray( 3 )
+      nCells = nCellsHalo( 2 )
 
       ! allocate squared shear and buoyancy frequencies
       allocate(shearSquaredTop(nVertLevelsP1))
@@ -232,12 +204,8 @@ contains
 
       call mpas_timer_start('gotm cell loop', .false.)
 
-      !$omp parallel
-      !$omp do schedule(runtime) &
-      !$omp private(i, k, ki, shearSquaredTop, NSquaredTop, hLayer, &
-      !$omp         invAreaCell, iEdge, factor, delU2, bottomFrictionVelocity, &
-      !$omp         gotm_vertVisc, gotm_vertDiffT, gotm_vertDiffS, gotm_TKE, gotm_eps, &
-      !$omp         gotm_L, gotm_kb, gotm_epsb)
+      ! MDT, Mar 2021: Removed OpenMP directives because the subroutine
+      !                do_turbulence is not thread safe
       do iCell = 1, nCells
 
          ! initialize arrays
@@ -333,8 +301,6 @@ contains
          end do
 
       end do
-      !$omp end do
-      !$omp end parallel
 
       call mpas_timer_stop('gotm cell loop')
 
@@ -371,11 +337,9 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
 
-      integer, pointer :: nVertLevels, nVertLevelsP1
-      integer, dimension(:), pointer :: nCellsArray
+      integer, pointer :: nVertLevels
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         gotmVertViscTopOfCellCur, gotmVertDiffTopOfCellCur, &
@@ -437,10 +401,7 @@ contains
       ! initialize GOTM arrays
       block => domain%blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)  !
-         call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
-         call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
          ! set pointers for GOTM viscosity/diffusivity, TKE, rate of dissipation and turbulent length scale
          ! (current and new state)
@@ -452,7 +413,7 @@ contains
          call mpas_pool_get_array(statePool, 'gotmKbTopOfCell', gotmKbTopOfCellCur, 1)
          call mpas_pool_get_array(statePool, 'gotmEpsbTopOfCell', gotmEpsbTopOfCellCur, 1)
 
-         nCells = nCellsArray( size(nCellsArray) )
+         nCells = nCellsAll
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp private(k, ki)
