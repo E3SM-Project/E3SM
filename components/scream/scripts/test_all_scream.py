@@ -73,10 +73,24 @@ class TestAllScream(object):
         else:
             expect (not self._local, "Specifying a machine while passing '-l,--local' is ambiguous.")
 
+        ##################################################
+        #   Deduce how many testing resources per test   #
+        ##################################################
+
+        if ctest_parallel_level > 0:
+            ctest_max_jobs = ctest_parallel_level
+            print("Note: honoring requested value for ctest parallel level: {}".format(ctest_max_jobs))
+        elif "CTEST_PARALLEL_LEVEL" in os.environ:
+            ctest_max_jobs = int(os.environ["CTEST_PARALLEL_LEVEL"])
+            print("Note: honoring environment value for ctest parallel level: {}".format(ctest_max_jobs))
+        else:
+            ctest_max_jobs = get_mach_testing_resources(self._machine)
+            print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
+
         # Unless the user claims to know what he/she is doing, we setup the env.
         if not self._preserve_env:
             # Setup the env on this machine
-            setup_mach_env(self._machine)
+            setup_mach_env(self._machine, ctest_j=ctest_max_jobs)
 
         # Compute root dir
         if not self._root_dir:
@@ -216,20 +230,6 @@ class TestAllScream(object):
 
         if self._must_generate_baselines:
             print("Using commit {} to generate baselines".format(self._baseline_ref))
-
-        ##################################################
-        #   Deduce how many testing resources per test   #
-        ##################################################
-
-        if ctest_parallel_level > 0:
-            ctest_max_jobs = ctest_parallel_level
-            print("Note: honoring requested value for ctest parallel level: {}".format(ctest_max_jobs))
-        elif "CTEST_PARALLEL_LEVEL" in os.environ:
-            ctest_max_jobs = int(os.environ["CTEST_PARALLEL_LEVEL"])
-            print("Note: honoring environment value for ctest parallel level: {}".format(ctest_max_jobs))
-        else:
-            ctest_max_jobs = get_mach_testing_resources(self._machine)
-            print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
 
         self._testing_res_count = {
             "dbg" : ctest_max_jobs,
