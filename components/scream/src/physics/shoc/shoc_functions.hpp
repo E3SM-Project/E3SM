@@ -573,7 +573,6 @@ struct Functions
     const uview_1d<const Spack>& dz_zt,
     const uview_1d<Spack>&       rdp_zt);
 
-  KOKKOS_FUNCTION
   static Int shoc_init(
     const Int&                  nbot_shoc,
     const Int&                  ntop_shoc,
