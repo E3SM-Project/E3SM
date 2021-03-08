@@ -17,7 +17,7 @@ If you are on a batch machine, it is expected that you are on a compute node.
 TODO: Add doctests to libs
 """
 
-from utils import run_cmd, check_minimum_python_version, expect
+from utils import run_cmd, check_minimum_python_version, expect, get_current_head
 check_minimum_python_version(3, 4)
 
 from machines_specs import is_machine_supported, is_cuda_machine, get_all_supported_machines
@@ -62,6 +62,8 @@ def run_cmd_store_output(test_obj, cmd, output_file):
 ###############################################################################
     output_file.parent.mkdir(parents=True, exist_ok=True)
     output = run_cmd_assert_result(test_obj, cmd, from_dir=TEST_DIR)
+    head = get_current_head()
+    output = output.replace(head, "CURRENT_HEAD_NORMALIZED")
     output_file.write_text(output)
 
 ###############################################################################
@@ -69,6 +71,8 @@ def run_cmd_check_baseline(test_obj, cmd, baseline_path):
 ###############################################################################
     test_obj.assertTrue(baseline_path.is_file(), msg="Missing baseline {}".format(baseline_path))
     output = run_cmd_assert_result(test_obj, cmd, from_dir=TEST_DIR)
+    head = get_current_head()
+    output = output.replace(head, "CURRENT_HEAD_NORMALIZED")
     diff = difflib.unified_diff(
         baseline_path.read_text().splitlines(),
         output.splitlines(),
