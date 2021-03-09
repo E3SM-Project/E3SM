@@ -81,6 +81,9 @@ public:
   // Get parent (if any)
   std::weak_ptr<FieldHeader> get_parent () const { return m_parent; }
 
+  // Get children list (if any)
+  std::list<std::weak_ptr<FieldHeader>> get_children () const { return m_children; }
+
   // Get the extra data
   const extra_data_type& get_extra_data () const { return m_extra_data; }
 
@@ -96,7 +99,9 @@ protected:
   FieldAllocProp                  m_alloc_prop;
 
   // If this field is a sub-view of another field, we keep a pointer to the parent
-  std::weak_ptr<FieldHeader>      m_parent;
+  // OTOH, if other fields are sub-view of this field, we keep a pointer to them
+  std::weak_ptr<FieldHeader>              m_parent;
+  std::list<std::weak_ptr<FieldHeader>>   m_children;
 
   // Extra data associated with this field
   extra_data_type                 m_extra_data;
