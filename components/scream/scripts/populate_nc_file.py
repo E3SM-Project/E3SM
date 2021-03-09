@@ -280,6 +280,11 @@ class PopulateNcFile(object):
             else:
                 self.import_variables_horiz_remap()
 
+            # To protect against the possiblity that the input file stored vars with
+            # a layout different from scream (e.g., T(time,lev,ncol) instead of
+            # T(time,ncol,lev)), we run ncpdq to rearrange (if need be) the dimensions
+            run_cmd_no_fail ("ncpdq -a ncol,lev -O {} {}".format(self._ofile,self._ofile))
+            run_cmd_no_fail ("ncpdq -a ncol,ilev -O {} {}".format(self._ofile,self._ofile))
 
     ###########################################################################
     def import_variables_no_remap(self,ifile):
