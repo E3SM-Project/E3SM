@@ -481,7 +481,8 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   field_type sf(sv_h,m_view_d);
   sf.m_view_h = m_view_h;
 
-  return sf;}
+  return sf;
+}
 
 template<typename RealType>
 Field<RealType> Field<RealType>::

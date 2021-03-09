@@ -17,6 +17,7 @@
 #include "share/field/field_identifier.hpp"
 
 #include "share/grid/grids_manager.hpp"
+
 /*  The AtmosphereInput class handles all input streams to SCREAM.
  *  It is important to note that there does not exist an InputManager,
  *  like in the case of output.  So all input streams have to be managed
@@ -72,53 +73,61 @@
  * --------------------------------------------------------------------------------
  *  (2020-10-21) Aaron S. Donahue (LLNL)
  */
+
 namespace scream
 {
-
-  using field_type      = Field<Real>;
-  using header_type     = typename field_type::header_type;
-  using identifier_type = typename header_type::identifier_type;
 
 class AtmosphereInput 
 {
 public:
   using dofs_list_type = AbstractGrid::dofs_list_type;
-  using view_type_host = typename KokkosTypes<HostDevice>::view_1d<Real>;
+  using view_type_host = typename KokkosTypes<DefaultDevice>::view_1d<Real>::HostMirror;
+
+  // --- Constructor(s) & Destructor --- //
+  AtmosphereInput (const ekat::Comm& comm, const ekat::ParameterList& params,
+                   const std::shared_ptr<const FieldRepository<Real>>& repo,
+                   const std::shared_ptr<const GridsManager>& gm)
+    : m_params     (params)
+    , m_comm       (comm)
+    , m_field_repo (repo)
+    , m_gm         (gm)
+  {
+    // Nothing to do here
+  }
+
+  AtmosphereInput (const ekat::Comm& comm, const std:: string grid_name,
+                   const std::shared_ptr<const GridsManager>& gm)
+    : m_comm      (comm)
+    , m_gm        (gm)
+    , m_grid_name (grid_name)
+  {
+    // Nothing to do here
+  }
 
   virtual ~AtmosphereInput () = default;
 
-  // Constructor
-  AtmosphereInput(const ekat::Comm& comm, const ekat::ParameterList& params,
-                  const std::shared_ptr<const FieldRepository<Real>>& repo,
-                  const std::shared_ptr<const GridsManager>& gm)
-  {
-    m_comm       = comm;
-    m_params     = params;
-    m_field_repo = repo;
-    m_gm         = gm;
-  }
-  AtmosphereInput(const ekat::Comm& comm, const std:: string grid_name,
-                  const std::shared_ptr<const GridsManager>& gm)
-  {
-    m_comm       = comm;
-    m_grid_name  = grid_name;
-    m_gm         = gm;
-  }
+  // --- Methods --- //
 
-  // Main Functions
-  void pull_input();
-  view_type_host pull_input(const std::string& name);  // Used by scorpio_output when handling restart history files.
+  void pull_input ();
+
+  // Used by scorpio_output when handling restart history files.
+  view_type_host pull_input (const std::string& name);
+
   // var_dims is a list of tags for each of the physical dimensions of this variable.
   // dim_lens is a vector of the physical dimension lengths without any padding, in other words
   // dim_lens is a vector of integer for the physical length of each of the tags in var_dims.
   // one last way to think of dim_lens would be the array dimensions lengths if ValueType=Real (no padding)
-  void pull_input(const std::string& filename, const std::string& var_name, const std::vector<std::string>& var_dims,
-                  const bool has_columns, const std::vector<int>& dim_lens, const int padding, Real* data);
+  void pull_input (const std::string& filename, const std::string& var_name,
+                   const std::vector<std::string>& var_dims,
+                   const bool has_columns, const std::vector<int>& dim_lens,
+                   const int padding, Real* data);
 
   // Determine padding from the type of the variable.
   template<typename ValueType>
-  void pull_input(const std::string& filename, const std::string& var_name, const std::vector<std::string>& var_dims,
-                  const bool has_columns, const std::vector<int>& dim_lens, ValueType* data)
+  void pull_input (const std::string& filename, const std::string& var_name,
+                   const std::vector<std::string>& var_dims,
+                   const bool has_columns, const std::vector<int>& dim_lens,
+                   ValueType* data)
   {
     // Determine the padding for this data
     constexpr int pack_size = sizeof(ValueType) / sizeof(Real);
@@ -127,22 +136,23 @@ public:
     auto data_real = reinterpret_cast<Real*>(data);
     pull_input(filename, var_name, var_dims, has_columns, dim_lens, padding, data_real);
   }
+
   void init();
   void finalize();
-
-  // Helper Functions
-  void check_status();
 
 protected:
   // Internal functions
   void register_variables();
   void set_degrees_of_freedom();
-  std::vector<std::string> get_vec_of_dims(const std::vector<FieldTag>& tags);
-  std::string get_io_decomp(const std::vector<std::string>& vec_of_dims);
-  std::vector<Int> get_var_dof(const int dof_len, const bool has_cols);
+
+  std::vector<std::string> get_vec_of_dims (const std::vector<FieldTag>& tags);
+  std::string get_io_decomp (const std::vector<std::string>& vec_of_dims);
+  std::vector<Int> get_var_dof (const int dof_len, const bool has_cols);
+
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
+
   std::shared_ptr<const FieldRepository<Real>> m_field_repo;
   std::shared_ptr<const GridsManager>          m_gm;
   
@@ -150,12 +160,10 @@ protected:
   std::string m_avg_type;
   std::string m_grid_name;
 
-  std::vector<std::string>               m_fields;
-  std::map<std::string,Int>              m_dofs;
-  std::map<std::string,Int>              m_dims;
+  std::vector<std::string>               m_fields_names;
+  std::map<std::string,Int>              m_dofs_sizes;
   typename dofs_list_type::HostMirror    m_gids_host;
 
-  bool m_is_init  = false;
   bool m_is_rhist = false;
 
 }; // Class AtmosphereInput

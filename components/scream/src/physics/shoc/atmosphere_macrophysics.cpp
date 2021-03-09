@@ -35,7 +35,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   // Layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
-  FieldLayout scalar2d_layout_lev{ {LEV},  {m_num_levs} };
+  FieldLayout scalar1d_layout_lev{ {LEV},  {m_num_levs} };
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
@@ -46,7 +46,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   //       using the same approach to make it easier to follow.
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
-  m_required_fields.emplace("pref_mid",scalar2d_layout_lev, Pa, grid_name);
+  m_required_fields.emplace("pref_mid",scalar1d_layout_lev, Pa, grid_name);
   m_required_fields.emplace("t",       scalar3d_layout_mid, nondim, grid_name);
   m_required_fields.emplace("alst",    scalar3d_layout_mid, Pa,     grid_name);
   m_required_fields.emplace("zi",      scalar3d_layout_int, m,      grid_name);
