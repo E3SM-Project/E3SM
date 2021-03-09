@@ -4023,27 +4023,33 @@ Set to TRUE to turn on doubly periodic cloud resolving model mode.
 Default: FALSE
 </entry>
 
-<entry id="iop_relaxation" type="logical" category="scam"
+<entry id="iop_nudge_tq" type="logical" category="scam"
        group="cam_inparm" valid_values="">
-Use relaxation.
+Use relaxation for temperature and moisture.
 Default: FALSE
 </entry>
 
-<entry id="iop_relaxation_low" type="real" category="scam"
+<entry id="iop_nudge_uv" type="logical" category="scam"
        group="cam_inparm" valid_values="">
-Lowest layer to apply relaxation.  Keep to default value to apply relaxation 
+Use relaxation for u and v winds.
+Default: FALSE
+</entry>
+
+<entry id="iop_nudge_tq_low" type="real" category="scam"
+       group="cam_inparm" valid_values="">
+Lowest layer to apply relaxation for t and q.  Keep to default value to apply relaxation
 at the surface.   
 Default: 1050.0 (hPa)
 </entry>
 
-<entry id="iop_relaxation_high" type="real" category="scam"
+<entry id="iop_nudge_tq_high" type="real" category="scam"
        group="cam_inparm" valid_values="">
-Highest layer to apply relaxation.  Keep to default value to apply relaxation 
+Highest layer to apply relaxation for t and q.  Keep to default value to apply relaxation
 at the model top.   
 Default: 0.e3 (hPa)
 </entry>
 
-<entry id="iop_relaxation_tscale" type="real" category="scam"
+<entry id="iop_nudge_tscale" type="real" category="scam"
        group="cam_inparm" valid_values="">
 Time scale to nudge to IOP forcing file.
 Default: 10800 (s)

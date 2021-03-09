@@ -337,7 +337,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     
     enddo
     
-    if (iop_relaxation .and. dp_crm) then
+    if ((iop_nudge_tq .or. iop_nudge_uv) .and. dp_crm) then
       ! If running in a doubly periodic CRM mode, then nudge the domain
       !   based on the domain mean and observed quantities of T, Q, u, and v
       call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
@@ -387,13 +387,13 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
     do ie=1,nelemd_todo
       ! Get absolute temperature
       call get_temperature(elem(ie),temperature,hvcoord,t1)
-      
+
       ! Initialize the global buffer
       global_shared_buf(ie,1) = 0.0_real_kind
       global_shared_buf(ie,2) = 0.0_real_kind
       global_shared_buf(ie,3) = 0.0_real_kind
       global_shared_buf(ie,4) = 0.0_real_kind
-      
+
       ! Sum each variable for each level
       global_shared_buf(ie,1) = global_shared_buf(ie,1) + SUM(elem(ie)%state%Q(:,:,k,1))
       global_shared_buf(ie,2) = global_shared_buf(ie,2) + SUM(temperature(:,:,k))
@@ -421,22 +421,24 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
   !   on the domain mean and observed quantity from IOP file.
   do k=1,nlev
 
-    ! Restrict nudging to certain levels if requested by user
-    ! pmidm1 variable is in unitis of [Pa], while iop_relaxation_low/high
-    !   is in units of [hPa], thus convert iop_relaxation_low/high
-    if (iop_pres(k) .le. iop_relaxation_low*100._real_kind .and. &
-      iop_pres(k) .ge. iop_relaxation_high*100._real_kind) then
+    ! Define nudging timescale
+    rtau(k) = iop_nudge_tscale
+    rtau(k) = max(dt,rtau(k))
 
-      ! Define nudging timescale
-      rtau(k) = iop_relaxation_tscale
-      rtau(k) = max(dt,rtau(k))
+    ! Compute relaxation for winds
+    relax_u(k) = -(domain_u(k) - uobs(k))/rtau(k)
+    relax_v(k) = -(domain_v(k) - vobs(k))/rtau(k)
+
+    ! Restrict nudging of T and Q to certain levels if requested by user
+    ! pmidm1 variable is in unitis of [Pa], while iop_nudge_tq_low/high
+    !   is in units of [hPa], thus convert iop_nudge_tq_low/high
+    if (iop_pres(k) .le. iop_nudge_tq_low*100._real_kind .and. &
+      iop_pres(k) .ge. iop_nudge_tq_high*100._real_kind) then
 
       ! compute relaxation for each variable
       !  units are [unit/s] (i.e. K/s for temperature)
       relax_q(k) = -(domain_q(k) - qobs(k))/rtau(k)
       relax_t(k) = -(domain_t(k) - tobs(k))/rtau(k)
-      relax_u(k) = -(domain_u(k) - uobs(k))/rtau(k)
-      relax_v(k) = -(domain_v(k) - vobs(k))/rtau(k)
     endif
 
   enddo
@@ -449,23 +451,28 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
       do i=1,np_todo
         do k=1,nlev
 
-          ! Apply vapor relaxation
-          elem(ie)%state%Q(i,j,k,1) = elem(ie)%state%Q(i,j,k,1) + relax_q(k) * dt
+          if (iop_nudge_tq) then
+            ! Apply vapor relaxation
+            elem(ie)%state%Q(i,j,k,1) = elem(ie)%state%Q(i,j,k,1) + relax_q(k) * dt
 
-          ! Apply u and v relaxation
-          elem(ie)%state%v(i,j,1,k,t1) = elem(ie)%state%v(i,j,1,k,t1) + relax_u(k) * dt
-          elem(ie)%state%v(i,j,2,k,t1) = elem(ie)%state%v(i,j,2,k,t1) + relax_v(k) * dt
+            ! Apply temperature relaxation
+            temperature(i,j,k) = temperature(i,j,k) + relax_t(k) * dt
 
-          ! Apply temperature relaxation
-          temperature(i,j,k) = temperature(i,j,k) + relax_t(k) * dt
-
-          ! Update temperature appropriately based on dycore used
+            ! Update temperature appropriately based on dycore used
 #ifdef MODEL_THETA_L
-          elem(ie)%state%vtheta_dp(i,j,k,t1) = (temperature(i,j,k)*Rstar(i,j,k)*dp(i,j,k))/&
-            (Rgas*exner(i,j,k))
+            elem(ie)%state%vtheta_dp(i,j,k,t1) = (temperature(i,j,k)*Rstar(i,j,k)*dp(i,j,k))/&
+              (Rgas*exner(i,j,k))
 #else
-          elem(ie)%state%T(i,j,k,t1) = temperature(i,j,k)
-#endif            
+            elem(ie)%state%T(i,j,k,t1) = temperature(i,j,k)
+#endif
+          endif
+
+          if (iop_nudge_uv) then
+            ! Apply u and v relaxation
+            elem(ie)%state%v(i,j,1,k,t1) = elem(ie)%state%v(i,j,1,k,t1) + relax_u(k) * dt
+            elem(ie)%state%v(i,j,2,k,t1) = elem(ie)%state%v(i,j,2,k,t1) + relax_v(k) * dt
+          endif
+
         enddo
       enddo
     enddo

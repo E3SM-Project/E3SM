@@ -166,15 +166,16 @@ logical            :: print_energy_errors ! switch for diagnostic output from ch
 ! SCM Options
 logical  :: single_column
 real(r8) :: scmlat,scmlon
-real(r8) :: iop_relaxation_low
-real(r8) :: iop_relaxation_high
-real(r8) :: iop_relaxation_tscale
+real(r8) :: iop_nudge_tq_low
+real(r8) :: iop_nudge_tq_high
+real(r8) :: iop_nudge_tscale
 real(r8) :: iop_perturb_high
 integer, parameter :: max_chars = 128
 character(len=max_chars) iopfile
 character(len=200) :: scm_clubb_iop_name
 logical  :: scm_iop_srf_prop
-logical  :: iop_relaxation
+logical  :: iop_nudge_tq
+logical  :: iop_nudge_uv
 logical  :: scm_diurnal_avg
 logical  :: scm_crm_mode
 logical  :: scm_observed_aero
@@ -335,9 +336,9 @@ contains
    namelist /cam_inparm/ print_energy_errors
 
    ! scam
-   namelist /cam_inparm/ iopfile,scm_iop_srf_prop,iop_relaxation, &
-                         iop_relaxation_low, iop_relaxation_high, &
-                         iop_relaxation_tscale, &
+   namelist /cam_inparm/ iopfile,scm_iop_srf_prop,iop_nudge_tq, &
+                         iop_nudge_uv, iop_nudge_tq_low, &
+                         iop_nudge_tq_high, iop_nudge_tscale, &
                          scm_diurnal_avg,scm_crm_mode,scm_clubb_iop_name, &
                          scm_observed_aero,swrad_off,lwrad_off, precip_off, &
                          iop_perturb_high, dp_crm
@@ -378,10 +379,11 @@ contains
       call scam_default_opts(scmlat_out=scmlat,scmlon_out=scmlon, &
         single_column_out=single_column, &
         scm_iop_srf_prop_out=scm_iop_srf_prop,&
-        iop_relaxation_out=iop_relaxation, &
-        iop_relaxation_low_out=iop_relaxation_low, &
-        iop_relaxation_high_out=iop_relaxation_high, &
-        iop_relaxation_tscale_out=iop_relaxation_tscale, &
+        iop_nudge_tq_out=iop_nudge_tq, &
+        iop_nudge_uv_out=iop_nudge_uv, &
+        iop_nudge_tq_low_out=iop_nudge_tq_low, &
+        iop_nudge_tq_high_out=iop_nudge_tq_high, &
+        iop_nudge_tscale_out=iop_nudge_tscale, &
         iop_perturb_high_out=iop_perturb_high, &
         scm_diurnal_avg_out=scm_diurnal_avg, &
         scm_crm_mode_out=scm_crm_mode, &
@@ -462,10 +464,11 @@ contains
          call scam_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
                             iopfile_in=iopfile,single_column_in=single_column,&
                             scm_iop_srf_prop_in=scm_iop_srf_prop,&
-                            iop_relaxation_in=iop_relaxation, &
-                            iop_relaxation_low_in=iop_relaxation_low, &
-                            iop_relaxation_high_in=iop_relaxation_high, &
-                            iop_relaxation_tscale_in=iop_relaxation_tscale, &
+                            iop_nudge_tq_in=iop_nudge_tq, &
+                            iop_nudge_uv_in=iop_nudge_uv, &
+                            iop_nudge_tq_low_in=iop_nudge_tq_low, &
+                            iop_nudge_tq_high_in=iop_nudge_tq_high, &
+                            iop_nudge_tscale_in=iop_nudge_tscale, &
                             iop_perturb_high_in=iop_perturb_high, &
                             scm_diurnal_avg_in=scm_diurnal_avg, &
                             scm_crm_mode_in=scm_crm_mode, &

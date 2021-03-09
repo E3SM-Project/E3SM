@@ -588,7 +588,7 @@ end if
    u3(:)=ufcst(:)
    v3(:)=vfcst(:)
 
-   if (iop_relaxation .and. .not. dp_crm) then
+   if (iop_nudge_tq .and. .not. dp_crm) then
 !
 !    THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED
 !    The relaxation can be thought of as a part of the "adjustment" physics
@@ -612,12 +612,12 @@ end if
 !
       do k=1,plev
 
-        ! pmidm1 variable is in unitis of [Pa], while iop_relaxation_low/high
-        !   is in units of [hPa], thus convert iop_relaxation_low/high
-        if (pmidm1(k) .le. iop_relaxation_low*100._r8 .and. &
-          pmidm1(k) .ge. iop_relaxation_high*100._r8) then
+        ! pmidm1 variable is in unitis of [Pa], while iop_nudge_tq_low/high
+        !   is in units of [hPa], thus convert iop_nudge_tq_low/high
+        if (pmidm1(k) .le. iop_nudge_tq_low*100._r8 .and. &
+          pmidm1(k) .ge. iop_nudge_tq_high*100._r8) then
 
-          rtau(k)   = iop_relaxation_tscale          ! 3-hr adj. time scale
+          rtau(k)   = iop_nudge_tscale          ! 3-hr adj. time scale
           rtau(k)   = max(ztodt,rtau(k))
           relaxt(k) = -(t3(k)   - tobs(k))/rtau(k)
           relaxq(k) = -(q3(k,1) - qobs(k))/rtau(k)
