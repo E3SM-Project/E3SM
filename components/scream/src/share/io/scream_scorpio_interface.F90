@@ -69,22 +69,24 @@ module scream_scorpio_interface
 #endif
                      
   public :: & 
-            eam_pio_closefile,      & ! Close a specfic pio file.
-            eam_pio_enddef,         & ! Register variables and dimensions with PIO files
-            eam_init_pio_subsystem, & ! Gather pio specific data from the component coupler
-            eam_pio_finalize,       & ! Run any final PIO commands
-            register_outfile,       & ! Create a pio output file
-            register_infile,        & ! Open a pio input file
-            register_variable,      & ! Register a variable with a particular pio output file  
-            get_variable,           & ! Register a variable with a particular pio output file  
-            register_dimension,     & ! Register a dimension with a particular pio output file
-            set_decomp,             & ! Set the pio decomposition for all variables in file.
-            set_dof,                & ! Set the pio dof decomposition for specific variable in file.
-            grid_write_data_array,  & ! Write gridded data to a pio managed netCDF file
-            grid_read_data_array,   & ! Read gridded data from a pio managed netCDF file
-            eam_sync_piofile,       & ! Syncronize the piofile, to be done after all output is written during a single timestep
-            eam_update_time,        & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
-            count_pio_atm_file        ! Diagnostic to count how many files are still open
+            eam_pio_closefile,           & ! Close a specfic pio file.
+            eam_pio_enddef,              & ! Register variables and dimensions with PIO files
+            eam_init_pio_subsystem,      & ! Gather pio specific data from the component coupler
+            is_eam_pio_subsystem_inited, & ! Query whether the pio subsystem is inited already
+            eam_pio_subsystem_comm,      & ! Return comm used for pio subsystem
+            eam_pio_finalize,            & ! Run any final PIO commands
+            register_outfile,            & ! Create a pio output file
+            register_infile,             & ! Open a pio input file
+            register_variable,           & ! Register a variable with a particular pio output file
+            get_variable,                & ! Register a variable with a particular pio output file
+            register_dimension,          & ! Register a dimension with a particular pio output file
+            set_decomp,                  & ! Set the pio decomposition for all variables in file.
+            set_dof,                     & ! Set the pio dof decomposition for specific variable in file.
+            grid_write_data_array,       & ! Write gridded data to a pio managed netCDF file
+            grid_read_data_array,        & ! Read gridded data from a pio managed netCDF file
+            eam_sync_piofile,            & ! Syncronize the piofile, to be done after all output is written during a single timestep
+            eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
+            count_pio_atm_file             ! Diagnostic to count how many files are still open
  
   private :: errorHandle
   ! Universal PIO variables for the module
@@ -598,6 +600,29 @@ contains
 #endif
 
   end subroutine eam_init_pio_subsystem
+!=====================================================================!
+  ! Query whether the pio subsystem is inited already
+  ! This can be useful to avoid double-init or double-finalize calls.
+  function is_eam_pio_subsystem_inited() result(is_it) bind(c)
+
+    logical(kind=c_bool) :: is_it
+
+    is_it = associated(pio_subsystem)
+  end function is_eam_pio_subsystem_inited
+!=====================================================================!
+  ! Returns the mpi comm used to init the pio subsystem (or MPI_COMM_NULL if not inited)
+  ! This can be useful to avoid double-init or double-finalize calls.
+  function eam_pio_subsystem_comm() result(fcomm) bind(c)
+#include <mpif.h>
+    
+    integer(kind=c_int) :: fcomm
+
+    if (is_eam_pio_subsystem_inited()) then
+      fcomm = pio_mpicom
+    else
+      fcomm = MPI_COMM_NULL
+    endif
+  end function eam_pio_subsystem_comm
 !=====================================================================!
   ! Create a pio netCDF file with the appropriate name.
   subroutine eam_pio_createfile(File,fname)
