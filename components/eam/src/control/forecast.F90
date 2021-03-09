@@ -269,7 +269,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !    dynamical core calculates the LS vertical advection thus this section
 !    can be skipped if single_column = .true. AND dp_crm = .false.
 
-   if (dp_crm) then
+   if (dp_crm .and. iop_dosubsidence) then
 
      do k=2,plev-1
        fac = ztodt/(2.0_r8*pdelm1(k))

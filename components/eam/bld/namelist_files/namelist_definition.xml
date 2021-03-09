@@ -4023,6 +4023,12 @@ Set to TRUE to turn on doubly periodic cloud resolving model mode.
 Default: FALSE
 </entry>
 
+<entry id="iop_dosubsidence" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Compute LS vertical transport from IOP file.
+Default: FALSE
+</entry>
+
 <entry id="iop_nudge_tq" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Use relaxation for temperature and moisture.

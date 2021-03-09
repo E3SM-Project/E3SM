@@ -190,6 +190,7 @@ module scamMod
   logical*4, public ::  have_asdir    ! dataset contains asdir
   logical*4, public ::  have_asdif    ! dataset contains asdif
   logical*4, public ::  scm_iop_srf_prop   ! use the specified surface properties
+  logical*4, public ::  iop_dosubsidence ! compute Eulerian LS vertical advection
   logical*4, public ::  iop_nudge_tq! use relaxation for t and q
   logical*4, public ::  iop_nudge_uv! use relaxation for u and v
   logical*4, public ::  scm_observed_aero ! use observed aerosols in SCM file
@@ -212,8 +213,8 @@ module scamMod
 
 
 subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
-        single_column_out,scm_iop_srf_prop_out, iop_nudge_tq_out, &
-        iop_nudge_uv_out, iop_nudge_tq_low_out, &
+        single_column_out,scm_iop_srf_prop_out, iop_dosubsidence_out,  &
+        iop_nudge_tq_out, iop_nudge_uv_out, iop_nudge_tq_low_out, &
         iop_nudge_tq_high_out, iop_nudge_tscale_out, &
         scm_diurnal_avg_out, scm_crm_mode_out, scm_observed_aero_out, &
         swrad_off_out, lwrad_off_out, precip_off_out, scm_clubb_iop_name_out,&
@@ -223,6 +224,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    character*(max_path_len), intent(out), optional ::  iopfile_out
    logical, intent(out), optional ::  single_column_out
    logical, intent(out), optional ::  scm_iop_srf_prop_out
+   logical, intent(out), optional ::  iop_dosubsidence_out
    logical, intent(out), optional ::  iop_nudge_tq_out
    logical, intent(out), optional ::  iop_nudge_uv_out
    logical, intent(out), optional ::  scm_diurnal_avg_out
@@ -244,6 +246,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(iopfile_out) )          iopfile_out    = ''
    if ( present(single_column_out) )    single_column_out  = .false.
    if ( present(scm_iop_srf_prop_out) )scm_iop_srf_prop_out  = .false.
+   if ( present(iop_dosubsidence_out) )iop_dosubsidence_out = .false.
    if ( present(iop_nudge_tq_out) )   iop_nudge_tq_out  = .false.
    if ( present(iop_nudge_uv_out) )   iop_nudge_uv_out  = .false.
    if ( present(iop_nudge_tq_low_out) ) iop_nudge_tq_low_out = 1050.0_r8
@@ -263,8 +266,8 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
 end subroutine scam_default_opts
 
 subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
-                         scm_iop_srf_prop_in, iop_nudge_tq_in, &
-                         iop_nudge_uv_in, iop_nudge_tq_low_in, &
+                         scm_iop_srf_prop_in, iop_dosubsidence_in, &
+                         iop_nudge_tq_in, iop_nudge_uv_in, iop_nudge_tq_low_in, &
                          iop_nudge_tq_high_in, iop_nudge_tscale_in, &
                          scm_diurnal_avg_in, scm_crm_mode_in, scm_observed_aero_in, &
                          swrad_off_in, lwrad_off_in, precip_off_in, scm_clubb_iop_name_in,&
@@ -274,6 +277,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   character*(max_path_len), intent(in), optional :: iopfile_in
   logical, intent(in), optional        :: single_column_in
   logical, intent(in), optional        :: scm_iop_srf_prop_in
+  logical, intent(in), optional        :: iop_dosubsidence_in
   logical, intent(in), optional        :: iop_nudge_tq_in
   logical, intent(in), optional        :: iop_nudge_uv_in
   logical, intent(in), optional        :: scm_diurnal_avg_in
@@ -308,7 +312,11 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   if (present (scm_iop_srf_prop_in)) then
      scm_iop_srf_prop=scm_iop_srf_prop_in
   endif
-  
+
+  if (present (iop_dosubsidence_in)) then
+     iop_dosubsidence=iop_dosubsidence_in
+  endif
+
   if (present (iop_nudge_tq_in)) then
      iop_nudge_tq=iop_nudge_tq_in
   endif
@@ -368,6 +376,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
 #ifdef SPMD
   call mpibcast(scm_iop_srf_prop,1,mpilog,0,mpicom)
   call mpibcast(dp_crm,1,mpilog,0,mpicom)
+  call mpibcast(iop_dosubsidence,1,mpilog,0,mpicom)
   call mpibcast(iop_nudge_tq,1,mpilog,0,mpicom)
   call mpibcast(iop_nudge_uv,1,mpilog,0,mpicom)
   call mpibcast(iop_nudge_tq_high,1,mpir8,0,mpicom)

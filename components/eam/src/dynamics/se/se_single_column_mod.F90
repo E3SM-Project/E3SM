@@ -103,9 +103,9 @@ subroutine scm_setinitial(elem)
               if (dp_crm) elem(ie)%derived%omega_p(i,j,k) = 0.0_real_kind
             enddo
 
-            ! If DP-CRM mode then SHOC/CLUBB needs to know about
-            !   length size.  The calculations based on a sphere in the SHOC
-            !   and CLUBB interefaces are not valid for a planar grid, thus
+            ! If DP-CRM mode then SHOC/CLUBB needs to know about grid
+            !   length size.  The calculations of this based on a sphere in the
+            !   SHOC and CLUBB interefaces are not valid for a planar grid, thus
             !   save the grid length from the dycore. Note that planar dycore
             !   only supports uniform grids, thus we only save one value.
             if (dp_crm) then
