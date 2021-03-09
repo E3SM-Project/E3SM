@@ -9,6 +9,7 @@
 
 #include "Tracers.hpp"
 #include "Context.hpp"
+#include "Elements.hpp"
 #include "SimulationParams.hpp"
 
 #include "utilities/SyncUtils.hpp"
@@ -17,23 +18,42 @@
 namespace Homme {
 
 Tracers::Tracers(const int num_elems, const int num_tracers)
-  : nt(num_tracers)
 {
-  Q = decltype(Q)("tracers concentration", num_elems);
+  init (num_elems, num_tracers);
+}
+
+void Tracers::init(const int num_elems, const int num_tracers)
+{
+  // Sanity check
+  assert(num_elems>0);
+  assert(num_tracers>=0);
+
+  ne = num_elems;
+  nt = num_tracers;
+
   qdp = decltype(qdp)("tracers mass", num_elems);
   qtens_biharmonic = decltype(qtens_biharmonic)("qtens(_biharmonic)", num_elems);
   qlim = decltype(qlim)("qlim", num_elems);
+
+  Q = decltype(Q)("tracers concentration", num_elems);
+  fq = decltype(fq)("fq",num_elems);
+
+  m_inited = true;
 }
 
-void Tracers::random_init() {
+void Tracers::randomize(const int seed) {
+  // Check tracers were inited
+  assert (m_inited);
+
   constexpr Real min_value = 0.015625;
-  std::random_device rd;
-  std::mt19937_64 engine(rd());
+  std::mt19937_64 engine(seed);
   std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
 
   genRandArray(qdp, engine, random_dist);
   genRandArray(qtens_biharmonic, engine, random_dist);
   genRandArray(qlim, engine, random_dist);
+  genRandArray(fq, engine, random_dist);
+  genRandArray(Q, engine, random_dist);
 }
 
 void Tracers::pull_qdp(CF90Ptr &state_qdp) {

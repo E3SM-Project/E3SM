@@ -110,6 +110,37 @@ Default: .false.
 If .true., heat model will be turned on.
 </entry>
 
+<entry id="rstraflag" 
+       type="logical" 
+       category="mosart"
+       group="mosart_inparm">
+Default: .false.
+If .true., reservoir stratification module will be turned on.
+</entry>
+
+<entry id="rinittemp" 
+       type="real" 
+       category="mosart"
+       group="mosart_inparm">
+Default: 283.15
+Initial reservoir temp taken above zero to avoid negative values at start.
+</entry>
+
+<entry id="ngeom" 
+       type="integer" 
+       category="mosart"
+       group="mosart_inparm">
+Default: 50
+Reservoir depth layers to calculate depth-area-storage relationship.
+</entry>
+
+<entry id="nlayers" 
+       type="integer" 
+       category="mosart"
+       group="mosart_inparm">
+Default: 30
+Maximum number of reservoir layers for stratification.
+</entry>
 <entry id="do_rtm" 
        type="logical" 
        category="mosart"
@@ -357,6 +388,14 @@ External Demand Flag, 0 = false
        group="wrm_inparm" 
        valid_values="" >
 Demand variable from external file
+</entry>
+
+<entry id="DamConstructionFlag" 
+       type="integer" 
+       category="wrm"
+       group="wrm_inparm" 
+       valid_values="" >
+Dam construction, 0 = false
 </entry>
 
 <!-- ========================================================================================  -->

@@ -2,7 +2,6 @@
 
 #include <limits>
 
-#include "Elements.hpp"
 #include "Dimensions.hpp"
 #include "KernelVariables.hpp"
 #include "SphereOperators.hpp"
@@ -132,7 +131,10 @@ class compute_sphere_operator_test_ml {
             Kokkos::create_mirror_view(vector_output_d))
   {
     std::random_device rd;
-    rngAlg engine(rd());
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+    rngAlg engine(seed);
 
     // Although scalar_output_d is an output, it can be used as input by divergence_sphere_update
     genRandArray(
@@ -197,7 +199,7 @@ class compute_sphere_operator_test_ml {
     Kokkos::deep_copy(spheremp_d, spheremp_host);
 
     // mp
-    ExecViewManaged<Real * [NP][NP]> mp_d("",num_elems);
+    ExecViewManaged<Real [NP][NP]> mp_d("");
     mp_host = Kokkos::create_mirror_view(mp_d);
     genRandArray(mp_host,
                  engine,
@@ -283,7 +285,7 @@ class compute_sphere_operator_test_ml {
       spheremp_host;
   const int spheremp_len = NP * NP;
 
-  ExecViewManaged<Real * [NP][NP]>::HostMirror mp_host;
+  ExecViewManaged<Real [NP][NP]>::HostMirror mp_host;
   const int mp_len = NP * NP;
 
   ExecViewManaged<Real[NP][NP]>::HostMirror dvv_host;
@@ -338,7 +340,7 @@ class compute_sphere_operator_test_ml {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagDefault &,
-                  const TeamMember& team) const {
+                  const TeamMember& /* team */) const {
       // do nothing or print a message
   };
 
@@ -347,7 +349,7 @@ class compute_sphere_operator_test_ml {
                   const TeamMember& team) const {
     KernelVariables kv(team);
 
-    sphere_ops.gradient_sphere(team,
+    sphere_ops.gradient_sphere(kv,
                     Homme::subview(scalar_input_d, kv.ie),
                     Homme::subview(vector_output_d,kv.ie));
 
@@ -358,7 +360,7 @@ class compute_sphere_operator_test_ml {
                   const TeamMember& team) const {
     KernelVariables kv(team);
 
-    sphere_ops.divergence_sphere_wk(team,
+    sphere_ops.divergence_sphere_wk(kv,
                          Homme::subview(vector_input_d, kv.ie),
                          Homme::subview(scalar_output_d,kv.ie));
   }  // end of op() for divergence_sphere_wk_ml
@@ -368,7 +370,7 @@ class compute_sphere_operator_test_ml {
                   const TeamMember& team) const {
     KernelVariables kv(team);
 
-    sphere_ops.divergence_sphere(team,
+    sphere_ops.divergence_sphere(kv,
                          Homme::subview(vector_input_d, kv.ie),
                          Homme::subview(scalar_output_d,kv.ie));
   }  // end of op() for divergence_sphere_update
@@ -378,7 +380,7 @@ class compute_sphere_operator_test_ml {
                   const TeamMember& team) const {
     KernelVariables kv(team);
 
-    sphere_ops.divergence_sphere_update(team,alpha,add_hyperviscosity!=0,
+    sphere_ops.divergence_sphere_update(kv,alpha,add_hyperviscosity!=0,
                          Homme::subview(vector_input_d, kv.ie),
                          Homme::subview(scalar_input_d, kv.ie),
                          Homme::subview(scalar_output_d,kv.ie));
@@ -389,7 +391,7 @@ class compute_sphere_operator_test_ml {
                   const TeamMember& team) const {
     KernelVariables kv(team);
 
-    sphere_ops.laplace_simple(team,
+    sphere_ops.laplace_simple(kv,
                    Homme::subview(scalar_input_d, kv.ie),
                    Homme::subview(scalar_output_d,kv.ie));
   }  // end of op() for laplace_wk_ml
@@ -399,7 +401,7 @@ class compute_sphere_operator_test_ml {
                   const TeamMember& team) const {
     KernelVariables kv(team);
 
-    sphere_ops.laplace_tensor(team,
+    sphere_ops.laplace_tensor(kv,
                    Homme::subview(tensor_d,kv.ie),
                    Homme::subview(scalar_input_d, kv.ie),
                    Homme::subview(scalar_output_d,kv.ie));
@@ -410,7 +412,7 @@ class compute_sphere_operator_test_ml {
                   const TeamMember& team) const {
     KernelVariables kv(team);
 
-    sphere_ops.curl_sphere_wk_testcov(team,
+    sphere_ops.curl_sphere_wk_testcov(kv,
                            Homme::subview(scalar_input_d, kv.ie),
                            Homme::subview(vector_output_d,kv.ie));
   }  // end of op() for curl_sphere_wk_testcov
@@ -420,7 +422,7 @@ class compute_sphere_operator_test_ml {
                   const TeamMember& team) const {
     KernelVariables kv(team);
 
-    sphere_ops.grad_sphere_wk_testcov(team,
+    sphere_ops.grad_sphere_wk_testcov(kv,
                            Homme::subview(scalar_input_d, kv.ie),
                            Homme::subview(vector_output_d,kv.ie));
   }  // end of op() for grad_sphere_wk_testcov
@@ -430,7 +432,7 @@ class compute_sphere_operator_test_ml {
                   const TeamMember& team) const {
     KernelVariables kv(team);
 
-    sphere_ops.vlaplace_sphere_wk_cartesian (team,
+    sphere_ops.vlaplace_sphere_wk_cartesian (kv,
                                   Homme::subview(tensor_d,kv.ie),
                                   Homme::subview(vec_sph2cart_d,kv.ie),
                                   Homme::subview(vector_input_d,kv.ie),
@@ -442,8 +444,7 @@ class compute_sphere_operator_test_ml {
                   const TeamMember& team) const {
     KernelVariables kv(team);
 
-    // don't forget to introduce nu_ratio
-    sphere_ops.vlaplace_sphere_wk_contra(team, nu_ratio,
+    sphere_ops.vlaplace_sphere_wk_contra(kv, nu_ratio,
                               Homme::subview(vector_input_d, kv.ie),
                               Homme::subview(vector_output_d,kv.ie));
   }  // end of op() for laplace_tensor multil
@@ -453,7 +454,7 @@ class compute_sphere_operator_test_ml {
   void operator()(const TagVorticityVectorML &,
                   const TeamMember& team) const {
     KernelVariables kv(team);
-    sphere_ops.vorticity_sphere (team,
+    sphere_ops.vorticity_sphere (kv,
                       Homme::subview(vector_input_d, kv.ie),
                       Homme::subview(scalar_output_d,kv.ie));
   }  // end of op() for vorticity_sphere_vector multilevel
@@ -465,7 +466,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagGradientSphereML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     // TO FROM
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
@@ -474,7 +475,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereWkML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 
@@ -482,7 +483,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 
@@ -490,7 +491,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereUpdateML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 
@@ -498,7 +499,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagSimpleLaplaceML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 
@@ -506,7 +507,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagTensorLaplaceML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 
@@ -514,7 +515,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagCurlSphereWkTestCovML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
 
@@ -522,7 +523,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagGradSphereWkTestCovML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
 
@@ -530,7 +531,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagVLaplaceCartesianML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
 
@@ -538,7 +539,7 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagVLaplaceContraML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
 
@@ -546,14 +547,14 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagVorticityVectorML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
 
 };  // end of class def compute_sphere_op_test_ml
 
 // SHMEM ????
-TEST_CASE("Testing_gradient_sphere", "gradient_sphere") {
+TEST_CASE("gradient_sphere", "gradient_sphere") {
   constexpr const int elements = 10;
 
   compute_sphere_operator_test_ml testing_grad_ml(elements);
@@ -614,7 +615,7 @@ TEST_CASE("Testing_gradient_sphere", "gradient_sphere") {
 
 }  // end fo test grad_sphere_ml
 
-TEST_CASE("Testing divergence_sphere_wk()",
+TEST_CASE("divergence_sphere_wk",
           "divergence_sphere_wk") {
   constexpr const int elements = 10;
 
@@ -672,7 +673,7 @@ TEST_CASE("Testing divergence_sphere_wk()",
 
 }  // end of test div_sphere_wk_ml
 
-TEST_CASE("Testing divergence_sphere()",
+TEST_CASE("divergence_sphere",
           "divergence_sphere") {
   constexpr const int elements = 10;
 
@@ -733,7 +734,7 @@ TEST_CASE("Testing divergence_sphere()",
 
 }  // end of test div_sphere_wk_ml
 
-TEST_CASE("Testing divergence_sphere_update()",
+TEST_CASE("divergence_sphere_update",
           "divergence_sphere_update") {
   constexpr const int elements = 10;
 
@@ -813,7 +814,7 @@ TEST_CASE("Testing divergence_sphere_update()",
 
 }  // end of test div_sphere_wk_ml
 
-TEST_CASE("Testing simple laplace_wk()", "laplace_wk") {
+TEST_CASE("simple laplace_wk", "laplace_wk") {
   constexpr const int elements = 10;
 
   compute_sphere_operator_test_ml testing_laplace_ml(
@@ -874,7 +875,7 @@ TEST_CASE("Testing simple laplace_wk()", "laplace_wk") {
 
 }  // end of test laplace_simple multilevel
 
-TEST_CASE("Testing laplace_tensor() multilevel",
+TEST_CASE("laplace_tensor",
           "laplace_tensor") {
   constexpr const int elements = 10;
 
@@ -948,7 +949,7 @@ TEST_CASE("Testing laplace_tensor() multilevel",
 
 }  // end of test laplace_tensor multilevel
 
-TEST_CASE("Testing curl_sphere_wk_testcov() multilevel",
+TEST_CASE("curl_sphere_wk_testcov",
           "curl_sphere_wk_testcov") {
   constexpr const int elements = 10;
 
@@ -969,7 +970,7 @@ TEST_CASE("Testing curl_sphere_wk_testcov() multilevel",
             sf[_i][_j] = testing_curl.scalar_input_host(
                 ie, _i, _j, level)[v];
             mpf[_i][_j] =
-                testing_curl.mp_host(ie, _i, _j);
+                testing_curl.mp_host(_i, _j);
             dvvf[_i][_j] = testing_curl.dvv_host(_i, _j);
 
             for(int _d1 = 0; _d1 < 2; _d1++)
@@ -1014,7 +1015,7 @@ TEST_CASE("Testing curl_sphere_wk_testcov() multilevel",
 
 }  // end of test laplace_tensor multilevel
 
-TEST_CASE("Testing grad_sphere_wk_testcov() multilevel",
+TEST_CASE("grad_sphere_wk_testcov",
           "grad_sphere_wk_testcov") {
   constexpr const int elements = 10;
 
@@ -1037,7 +1038,7 @@ TEST_CASE("Testing grad_sphere_wk_testcov() multilevel",
             sf[_i][_j] = testing_grad.scalar_input_host(
                 ie, _i, _j, level)[v];
             mpf[_i][_j] =
-                testing_grad.mp_host(ie, _i, _j);
+                testing_grad.mp_host(_i, _j);
             metdetf[_i][_j] =
                 testing_grad.metdet_host(ie, _i, _j);
             dvvf[_i][_j] = testing_grad.dvv_host(_i, _j);
@@ -1091,7 +1092,7 @@ TEST_CASE("Testing grad_sphere_wk_testcov() multilevel",
 }  // end of test laplace_tensor multilevel
 
 TEST_CASE(
-    "Testing vlaplace_sphere_wk_cartesian() multilevel",
+    "vlaplace_sphere_wk_cartesian",
     "vlaplace_sphere_wk_cartesian") {
   constexpr const int elements = 10;
 
@@ -1183,7 +1184,7 @@ TEST_CASE(
 
 }  // end of test laplace_sphere_wk_contra multilevel
 
-TEST_CASE("Testing vlaplace_sphere_wk_contra() multilevel",
+TEST_CASE("vlaplace_sphere_wk_contra",
           "vlaplace_sphere_wk_contra") {
   constexpr const int elements = 10;
 
@@ -1218,7 +1219,7 @@ TEST_CASE("Testing vlaplace_sphere_wk_contra() multilevel",
                     ie, 1, _i, _j, level)[v];
 
             mpf[_i][_j] =
-                testing_vlaplace.mp_host(ie, _i, _j);
+                testing_vlaplace.mp_host(_i, _j);
             sphf[_i][_j] = testing_vlaplace.spheremp_host(
                 ie, _i, _j);
             metdetf[_i][_j] = testing_vlaplace.metdet_host(
@@ -1282,7 +1283,7 @@ TEST_CASE("Testing vlaplace_sphere_wk_contra() multilevel",
 
 }  // end of test vlaplace_contra multilevel
 
-TEST_CASE("Testing vorticity_sphere_vector()",
+TEST_CASE("vorticity_sphere_vector",
           "vorticity_sphere_vector") {
   constexpr const int elements = 10;
 

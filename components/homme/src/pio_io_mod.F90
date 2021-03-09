@@ -329,9 +329,10 @@ contains
   end function decompdimsid
 
 
-  subroutine nf_init_decomp(ncdf_list, dims, ldof,iodof,start,count)
+  subroutine nf_init_decomp(ncdf_list, dims, ldof,start,count)
     type(nf_handle), intent(inout), target :: ncdf_list(:)
-    integer, intent(in) :: dims(:), ldof(:), iodof(:)
+    integer, intent(in) :: dims(:)
+    integer*8, intent(in) :: ldof(:)
     integer(kind=nfsizekind) :: start(:), count(:)
     
     type(nf_handle), pointer :: ncdf
@@ -342,6 +343,8 @@ contains
 
     ndims = size(dims)
     allocate(dimsize(ndims))
+
+    if (minval(ldof)<1) stop 'FATAL ERROR: nf_init_dcomp integer overflow in ldof'
 
     do ios=1,max_output_streams
        ncdf =>ncdf_list(ios)
@@ -598,7 +601,6 @@ contains
     ! Loop through output_streams, identify which will be used and open files for them
     !
     !$OMP SINGLE
-    call PIO_Init(rank,comm,num_io_procs,num_agg,io_stride,PIO_rearr_box,PIOFS)
     do ios=1,max_output_streams
        if((output_frequency(ios) .gt. 0) .and. (output_start_time(ios) .le. output_end_time(ios))) then 
           ncdf(ios)%iframe=1
@@ -764,10 +766,16 @@ contains
     if(runtype==0) then
        if(output_type.eq.'netcdf') then
           if(masterproc) print *, 'Opening file ',trim(filename), ' using netcdf'
-          ierr = PIO_CreateFile(PIOFS, FileID, iotype_netcdf  ,trim(filename), PIO_64BIT_OFFSET)
+          ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_netcdf  ,trim(filename), PIO_64BIT_OFFSET)
+       else if(output_type.eq.'netcdf4p') then
+          if(masterproc) print *, 'Opening file ',trim(filename), ' using netcdf4p'
+          ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_netcdf4p  ,trim(filename), PIO_64BIT_DATA)
+       else if(output_type.eq.'pnetcdf64') then
+          if(masterproc) print *, 'Opening file ',trim(filename), ' using pnetcdf64'
+          ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_pnetcdf ,trim(filename), PIO_64BIT_DATA)
        else
           if(masterproc) print *, 'Opening file ',trim(filename), ' using pnetcdf'
-          ierr = PIO_CreateFile(PIOFS, FileID, iotype_pnetcdf  ,trim(filename), PIO_64BIT_OFFSET)
+          ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_pnetcdf ,trim(filename), PIO_64BIT_OFFSET)
        end if
     else
        ! this code is broken, as our NETCDF code cannot append to existing files:

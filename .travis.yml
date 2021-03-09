@@ -1,0 +1,50 @@
+os: linux
+
+dist: bionic
+
+git:
+  submodules: false
+
+python:
+    - "3.7"
+
+addons:
+  apt:
+    packages:
+      - flawfinder
+      - squashfs-tools
+      - build-essential
+      - uuid-dev
+      - libuuid1
+      - libffi-dev
+      - libssl-dev
+      - libssl1.0.0
+      - libarchive-dev
+      - libgpgme11-dev
+      - libseccomp-dev
+      - pkg-config
+      - cryptsetup-bin
+  homebrew:
+    packages:
+      - squashfs
+    update: true
+
+sudo: required
+
+before_install:
+    # Replace all ssh URLs to submodules with HTTP URLs
+    - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+    - git submodule update --init
+    - cd components/mpas-source
+    - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+    - git submodule update --init --recursive
+    - cd ../..
+    # Download the E3SM Singularity container
+    - wget https://dabdceba-6d04-11e5-ba46-22000b92c6ec.e.globus.org/containers/public/e3sm.sif
+    # Install Singularity
+    - sudo chmod u+x .travis/*.sh
+    - .travis/setup.sh
+
+script:
+    # Build a case
+    - travis_wait 30 singularity exec --hostname singularity e3sm.sif .travis/run.sh

@@ -1,0 +1,5 @@
+#!/bin/bash
+./xmlchange CAM_TARGET=theta-l
+./xmlchange --append CAM_CONFIG_OPTS='-cosp'
+./xmlchange --id BUDGETS --val TRUE
+

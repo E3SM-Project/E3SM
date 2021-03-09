@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
-#include "mpi/MpiContext.hpp"
-#include "mpi/BuffersManager.hpp"
+#include "Context.hpp"
+#include "mpi/MpiBuffersManager.hpp"
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/Connectivity.hpp"
 #include "utilities/SubviewUtils.hpp"
@@ -18,12 +18,14 @@ extern "C" {
 
 void initmp_f90 ();
 void init_cube_geometry_f90 (const int& ne);
-void init_connectivity_f90 (const int& num_min_max_fields_1d, const int& num_scalar_fields_2d,
-                            const int& num_scalar_fields_3d,  const int& num_vector_fields_3d,
-                            const int& vector_dim);
+void init_connectivity_f90 ();
+void init_edges_structs_f90 (const int& num_min_max_fields_1d, const int& num_scalar_fields_2d,
+                             const int& num_scalar_fields_3d,  const int& num_scalar_fields_3d_int,
+                             const int& num_vector_fields_3d,  const int& vector_dim);
 void cleanup_f90 ();
 void boundary_exchange_test_f90 (F90Ptr& field_min_1d_ptr, F90Ptr& field_max_1d_ptr,
-                                 F90Ptr& field_2d_ptr, F90Ptr& field_3d_ptr, F90Ptr& field_4d_ptr,
+                                 F90Ptr& field_2d_ptr, F90Ptr& field_3d_ptr,
+                                 F90Ptr& field_3d_int_ptr, F90Ptr& field_4d_ptr,
                                  const int& inner_dim_4d, const int& num_time_levels,
                                  const int& idim_2d, const int& idim_3d, const int& idim_4d,
                                  const int& minmax_split);
@@ -37,7 +39,10 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   //std::random_device rd;
   std::random_device rd;
   using rngAlg = std::mt19937_64;
-  rngAlg engine(rd());
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  rngAlg engine(seed);
   std::uniform_real_distribution<Real> dreal(-1.0, 1.0);
   // neighbor_minmax imposes a hard positivity cutoff, so we can't test the bdy
   // exchange alone (for min) with numbers < 0.
@@ -51,6 +56,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   constexpr int num_min_max_fields_1d = 1; // Count min and max of a field as 1, does not count the x2 due to min and max
   constexpr int num_scalar_fields_2d  = 1;
   constexpr int num_scalar_fields_3d  = 1;
+  constexpr int num_scalar_interface_fields_3d  = 1;
   constexpr int num_vector_fields_3d  = 1;
   constexpr int field_2d_idim = 0;
   constexpr int field_3d_idim = 1;
@@ -63,8 +69,12 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   init_cube_geometry_f90(ne);
 
   // Create connectivity
-  init_connectivity_f90(num_min_max_fields_1d,num_scalar_fields_2d, num_scalar_fields_3d, num_vector_fields_3d, DIM);
-  std::shared_ptr<Connectivity> connectivity = MpiContext::singleton().get_connectivity();
+  init_connectivity_f90();
+  init_edges_structs_f90(num_min_max_fields_1d,num_scalar_fields_2d, num_scalar_fields_3d, num_scalar_interface_fields_3d, num_vector_fields_3d, DIM);
+
+  // Note: init_connectivity_f90 calls init_connectivity, which in turns creates
+  //       a Connectivity object in the Context, making the following call safe.
+  std::shared_ptr<Connectivity> connectivity = Context::singleton().get_ptr<Connectivity>();
 
   // Retrieve local number of elements
   int num_elements = connectivity->get_num_local_elements();
@@ -91,9 +101,15 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   ExecViewManaged<Scalar*[NUM_TIME_LEVELS][DIM][NP][NP][NUM_LEV]>::HostMirror field_4d_cxx_host;
   field_4d_cxx_host = Kokkos::create_mirror_view(field_4d_cxx);
 
+  HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_INTERFACE_LEV][NP][NP]> field_3d_int_f90("", num_elements);
+  ExecViewManaged<Scalar*[NUM_TIME_LEVELS][NP][NP][NUM_LEV_P]> field_3d_int_cxx ("", num_elements);
+  ExecViewManaged<Scalar*[NUM_TIME_LEVELS][NP][NP][NUM_LEV_P]>::HostMirror field_3d_int_cxx_host;
+  field_3d_int_cxx_host = Kokkos::create_mirror_view(field_3d_int_cxx);
+
   // Get the buffers manager
-  std::shared_ptr<BuffersManager> buffers_manager = MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE);
-  std::shared_ptr<BuffersManager> buffers_manager_min_max = MpiContext::singleton().get_buffers_manager(MPI_EXCHANGE_MIN_MAX);
+  Context::singleton().create<MpiBuffersManagerMap>()[MPI_EXCHANGE];
+  std::shared_ptr<MpiBuffersManager> buffers_manager = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
+  std::shared_ptr<MpiBuffersManager> buffers_manager_min_max = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE_MIN_MAX];
 
   // Create boundary exchanges
   std::shared_ptr<BoundaryExchange> be1 = std::make_shared<BoundaryExchange>(connectivity,buffers_manager);
@@ -106,8 +122,9 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   be1->register_field(field_4d_cxx,  field_4d_outer_idim,DIM,0);
   be1->registration_completed();
 
-  be2->set_num_fields(0,0,num_scalar_fields_3d);
+  be2->set_num_fields(0,0,num_scalar_fields_3d,num_scalar_interface_fields_3d);
   be2->register_field(field_3d_cxx,1,field_3d_idim);
+  be2->register_field(field_3d_int_cxx,1,field_3d_idim);
   be2->registration_completed();
 
   be3->set_num_fields(num_min_max_fields_1d,0,0);
@@ -156,6 +173,18 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
     }}}}}
     Kokkos::deep_copy(field_3d_cxx, field_3d_cxx_host);
 
+    genRandArray(field_3d_int_f90,engine,dreal);
+    for (int ie=0; ie<num_elements; ++ie) {
+      for (int itl=0; itl<NUM_TIME_LEVELS; ++itl) {
+        for (int level=0; level<NUM_INTERFACE_LEV; ++level) {
+          const int ilev = level / VECTOR_SIZE;
+          const int ivec = level % VECTOR_SIZE;
+          for (int igp=0; igp<NP; ++igp) {
+            for (int jgp=0; jgp<NP; ++jgp) {
+              field_3d_int_cxx_host(ie,itl,igp,jgp,ilev)[ivec] = field_3d_int_f90(ie,itl,level,igp,jgp);
+    }}}}}
+    Kokkos::deep_copy(field_3d_int_cxx, field_3d_int_cxx_host);
+
     genRandArray(field_4d_f90,engine,dreal);
     for (int ie=0; ie<num_elements; ++ie) {
       for (int itl=0; itl<NUM_TIME_LEVELS; ++itl) {
@@ -171,7 +200,8 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
 
     // Perform boundary exchange
     boundary_exchange_test_f90(field_min_1d_f90.data(), field_max_1d_f90.data(),
-                               field_2d_f90.data(), field_3d_f90.data(), field_4d_f90.data(),
+                               field_2d_f90.data(), field_3d_f90.data(),
+                               field_3d_int_f90.data(), field_4d_f90.data(),
                                DIM, NUM_TIME_LEVELS, field_2d_idim+1, field_3d_idim+1, field_4d_outer_idim+1, minmax_split);
     minmax_split = 1;
     if (minmax_split==0) {
@@ -186,9 +216,10 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
       be2->recv_and_unpack();
       be3->recv_and_unpack_min_max();
     }
-    Kokkos::deep_copy(field_1d_cxx_host, field_1d_cxx);
+    Kokkos::deep_copy(field_1d_cxx_host,     field_1d_cxx);
     Kokkos::deep_copy(field_2d_cxx_host,     field_2d_cxx);
     Kokkos::deep_copy(field_3d_cxx_host,     field_3d_cxx);
+    Kokkos::deep_copy(field_3d_int_cxx_host, field_3d_int_cxx);
     Kokkos::deep_copy(field_4d_cxx_host,     field_4d_cxx);
 
     // Compare answers
@@ -236,6 +267,21 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
                 std::cout << std::setprecision(17) << "cxx: " << field_3d_cxx_host(ie,itl,igp,jgp,ilev)[ivec] << "\n";
               }
               REQUIRE(compare_answers(field_3d_f90(ie,itl,level,igp,jgp),field_3d_cxx_host(ie,itl,igp,jgp,ilev)[ivec]) < test_tolerance);
+    }}}}}
+
+    for (int ie=0; ie<num_elements; ++ie) {
+      for (int itl=0; itl<NUM_TIME_LEVELS; ++itl) {
+        for (int level=0; level<NUM_INTERFACE_LEV; ++level) {
+          const int ilev = level / VECTOR_SIZE;
+          const int ivec = level % VECTOR_SIZE;
+          for (int igp=0; igp<NP; ++igp) {
+            for (int jgp=0; jgp<NP; ++jgp) {
+              if(compare_answers(field_3d_int_f90(ie,itl,level,igp,jgp),field_3d_int_cxx_host(ie,itl,igp,jgp,ilev)[ivec]) >= test_tolerance) {
+                std::cout << std::setprecision(17) << "rank,ie,itl,igp,jgp,ilev,iv: " << rank << ", " << ie << ", " << itl << ", " << igp << ", " << jgp << ", " << ilev << ", " << ivec << "\n";
+                std::cout << std::setprecision(17) << "f90: " << field_3d_int_f90(ie,itl,level,igp,jgp) << "\n";
+                std::cout << std::setprecision(17) << "cxx: " << field_3d_int_cxx_host(ie,itl,igp,jgp,ilev)[ivec] << "\n";
+              }
+              REQUIRE(compare_answers(field_3d_int_f90(ie,itl,level,igp,jgp),field_3d_int_cxx_host(ie,itl,igp,jgp,ilev)[ivec]) < test_tolerance);
     }}}}}
 
     for (int ie=0; ie<num_elements; ++ie) {

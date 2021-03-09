@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/bin/bash -x
+
+####!/bin/bash -x
 
 # CMake sets this variable
 HOMME_DIR=@Homme_Build_DIR@

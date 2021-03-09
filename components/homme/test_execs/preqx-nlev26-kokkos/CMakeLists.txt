@@ -1,8 +1,5 @@
 PREQX_KOKKOS_SETUP()
 
-# This will be used to determine that we need to link to kokkos
-SET(USE_KOKKOS_KERNELS ON)
-
 # Set the variables for this test executable
 #                          NP  NC PLEV USE_PIO WITH_ENERGY QSIZE_D
 createTestExec(preqx-nlev26-kokkos preqx_kokkos 4 4 26 FALSE FALSE 4)
@@ -14,6 +11,7 @@ createTestExec(preqx-nlev26-kokkos preqx_kokkos 4 4 26 FALSE FALSE 4)
 SET (HOMME_TEST_VCOORD_INT_FILE cami-26.ascii)
 SET (HOMME_TEST_VCOORD_MID_FILE camm-26.ascii)
 SET (HOMME_TEST_NE 2)
+SET (HOMME_TEST_TIME_STEP 300)
 SET (HOMME_TEST_NDAYS 1)
 SET (HOMME_TEST_QSIZE 4)
 SET (HOMME_TEST_RSPLIT 3)

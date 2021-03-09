@@ -100,9 +100,9 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_beta_use_effective_pressure" type="logical"
+<entry id="config_beta_thawed_only" type="logical"
 	category="velocity_solver" group="velocity_solver">
-If true, then multiply beta by effective pressure before passing to Albany.  This allows, e.g., a Weertman basal friction law with an effective pressure term.  Note that basal friction still needs to be selected in Albany xml file.
+If true, then beta is zeroed wherever the basal temperature is below the pressure-melting temperature
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -113,6 +113,14 @@ Default: Defined in namelist_defaults.xml
 Ice is removed at any locations with surface speed faster than this value and sent to the calving flux. The presence of icebergs can lead to unrealistically large velocities.  A simple method to remove icebergs is to remove ice where the velocity is faster than an arbitrarily large value.
 
 Valid values: Any positive, real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nonconvergence_error" type="logical"
+	category="velocity_solver" group="velocity_solver">
+If true, nonconvergence of the velocity solver results in a fatal error.  If false, it is a warning.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -142,7 +150,7 @@ Default: Defined in namelist_defaults.xml
 	category="calving" group="calving">
 Selection of the method for calving ice (as defined further below).
 
-Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving' 
+Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'mask'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -314,9 +322,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_basal_mass_bal_float" type="char*1024"
 	category="iceshelf_melt" group="iceshelf_melt">
-Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code applicable to Thwaites Glacier. 'temperature_profile' generates a depth-melt relation based on an ocean temperature profile and sill depth.
+Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code applicable to Thwaites Glacier. 'temperature_profile' generates a depth-melt relation based on an ocean temperature profile and sill depth. ISMIP6 is the method prescribed by ISMIP6.
 
-Valid values: 'none', 'file', 'constant', 'mismip', 'seroussi', 'temperature_profile'
+Valid values: 'none', 'file', 'constant', 'mismip', 'seroussi', 'temperature_profile', 'ismip6'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -912,6 +920,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_SGH_chnl_active" type="logical"
 	category="subglacial_hydro" group="subglacial_hydro">
 activate channels in subglacial hydrology model
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_chnl_include_DCFL" type="logical"
+	category="subglacial_hydro" group="subglacial_hydro">
+If true, diffusivity of the channel is included in the CFL calculation for determining the time step.  This can require very small time steps (subsecond).  It is unclear if it is necessary and many runs have been stable without it.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

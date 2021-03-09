@@ -13,22 +13,21 @@
 namespace Homme
 {
 
-void prim_advance_exp (const int nm1, const int n0, const int np1,
-                       const Real dt, const bool compute_diagnostics);
+void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnostics);
 void prim_advec_tracers_remap(const Real);
 
 void prim_step (const Real dt, const bool compute_diagnostics)
 {
   GPTLstart("tl-s prim_step");
   // Get control and simulation params
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
   assert(params.params_set);
 
   // Get the elements structure
-  Elements& elements = Context::singleton().get_elements();
+  Elements& elements = Context::singleton().get<Elements>();
 
   // Get the time level info
-  TimeLevel& tl = Context::singleton().get_time_level();
+  TimeLevel& tl = Context::singleton().get<TimeLevel>();
 
   if (params.use_semi_lagrangian_transport) {
     Errors::option_error("prim_step", "use_semi_lagrangian_transport",params.use_semi_lagrangian_transport);
@@ -41,13 +40,13 @@ void prim_step (const Real dt, const bool compute_diagnostics)
   // ===============
   GPTLstart("tl-s deep_copy+derived_dp");
   {
-    const auto eta_dot_dpdn = elements.m_eta_dot_dpdn;
-    const auto derived_vn0 = elements.m_derived_vn0;
-    const auto omega_p = elements.m_omega_p;
-    const auto derived_dpdiss_ave = elements.m_derived_dpdiss_ave;
-    const auto derived_dpdiss_biharmonic = elements.m_derived_dpdiss_biharmonic;
-    const auto derived_dp = elements.m_derived_dp;
-    const auto dp3d = elements.m_dp3d;
+    const auto eta_dot_dpdn = elements.m_derived.m_eta_dot_dpdn;
+    const auto derived_vn0 = elements.m_derived.m_vn0;
+    const auto omega_p = elements.m_derived.m_omega_p;
+    const auto derived_dpdiss_ave = elements.m_derived.m_dpdiss_ave;
+    const auto derived_dpdiss_biharmonic = elements.m_derived.m_dpdiss_biharmonic;
+    const auto derived_dp = elements.m_derived.m_dp;
+    const auto dp3d = elements.m_state.m_dp3d;
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace> (0,elements.num_elems()*NP*NP*NUM_LEV),
                          KOKKOS_LAMBDA(const int idx) {
       const int ie   = ((idx / NUM_LEV) / NP) / NP;
@@ -65,18 +64,18 @@ void prim_step (const Real dt, const bool compute_diagnostics)
       derived_dp(ie,igp,jgp,ilev) = dp3d(ie,tl.n0,igp,jgp,ilev);
     });
   }
-  ExecSpace::fence();
+  ExecSpace::impl_static_fence();
   GPTLstop("tl-s deep_copy+derived_dp");
 
   // ===============
   // Dynamical Step
   // ===============
   GPTLstart("tl-s prim_advance_exp-loop");
-  prim_advance_exp(tl.nm1,tl.n0,tl.np1,dt,compute_diagnostics);
+  prim_advance_exp(tl,dt,compute_diagnostics);
   tl.tevolve += dt;
   for (int n=1; n<params.qsplit; ++n) {
     tl.update_dynamics_levels(UpdateType::LEAPFROG);
-    prim_advance_exp(tl.nm1,tl.n0,tl.np1,dt,false);
+    prim_advance_exp(tl,dt,false);
     tl.tevolve += dt;
   }
   GPTLstop("tl-s prim_advance_exp-loop");

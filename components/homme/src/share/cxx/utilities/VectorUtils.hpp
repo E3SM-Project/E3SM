@@ -15,42 +15,6 @@ namespace KokkosKernels {
 namespace Batched {
 namespace Experimental {
 
-template <typename SpT>
-inline
-Vector<VectorTag<AVX<double, SpT>, 4> >
-max (const Vector<VectorTag<AVX<double, SpT>, 4> >& a,
-     const Vector<VectorTag<AVX<double, SpT>, 4> >& b)
-{
-  return _mm256_max_pd (a, b);
-}
-
-template <typename SpT>
-inline
-Vector<VectorTag<AVX<double, SpT>, 4> >
-min (const Vector<VectorTag<AVX<double, SpT>, 4> >& a,
-     const Vector<VectorTag<AVX<double, SpT>, 4> >& b)
-{
-  return _mm256_min_pd (a, b);
-}
-
-template <typename SpT>
-inline
-Vector<VectorTag<AVX<double, SpT>, 8> >
-max (const Vector<VectorTag<AVX<double, SpT>, 8> >& a,
-     const Vector<VectorTag<AVX<double, SpT>, 8> >& b)
-{
-  return _mm512_max_pd (a, b);
-}
-
-template <typename SpT>
-inline
-Vector<VectorTag<AVX<double, SpT>, 8> >
-min (const Vector<VectorTag<AVX<double, SpT>, 8> >& a,
-     const Vector<VectorTag<AVX<double, SpT>, 8> >& b)
-{
-  return _mm512_min_pd (a, b);
-}
-
 template <typename SpT, int l>
 KOKKOS_INLINE_FUNCTION
 Vector<VectorTag<SIMD<double, SpT>, l> >
@@ -79,6 +43,21 @@ VECTOR_SIMD_LOOP
   }
 
   return r_val;
+}
+
+template <typename SpT, int l, typename ExpType>
+KOKKOS_INLINE_FUNCTION
+Vector<VectorTag<SIMD<double, SpT>, l> >
+pow (const Vector<VectorTag<SIMD<double,SpT>,l>>& v, const ExpType p)
+{
+  using VectorType = Vector<VectorTag<SIMD<double,SpT>,l>>;
+  VectorType vp;
+VECTOR_SIMD_LOOP
+  for (int i = 0; i < VectorType::vector_length; ++i) {
+    vp[i] = std::pow(v[i],p);
+  }
+
+  return vp;
 }
 
 } // namespace KokkosKernels

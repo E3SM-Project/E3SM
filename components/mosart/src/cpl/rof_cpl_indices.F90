@@ -43,6 +43,8 @@ module rof_cpl_indices
   integer, public :: index_x2r_Faxa_swndf = 0   ! atm->rof shorwave near-ir diffus flux
   integer, public :: nflds_x2r = 0
 
+  integer, public :: index_x2r_coszen_str  = 0   ! lnd->rof Cosine of Zenith
+
   !TODO - nt_rtm and rtm_tracers need to be removed and set by access to the index array
   integer, parameter, public :: nt_rtm = 2    ! number of tracers
   character(len=3), parameter, public :: rtm_tracers(nt_rtm) =  (/'LIQ','ICE'/)
@@ -114,6 +116,8 @@ contains
       index_x2r_Faxa_swndr  = mct_avect_indexra(avtmp,'Faxa_swndr')
       index_x2r_Faxa_swndf  = mct_avect_indexra(avtmp,'Faxa_swndf')
     endif
+
+    index_x2r_coszen_str  = mct_avect_indexra(avtmp,'coszen_str')
 
     nflds_x2r = mct_avect_nRattr(avtmp)
 

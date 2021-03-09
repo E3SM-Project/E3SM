@@ -36,3 +36,6 @@ MPI_OPTIONS="@USE_MPI_OPTIONS@"
 
 # User provided header for submission
 HOMME_Submission_Header=@HOMME_SUBMISSION_HEADER@
+
+# Machine
+HOMME_MACHINE=@HOMME_MACHINE@

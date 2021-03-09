@@ -5,17 +5,35 @@ SET(SHARE_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
 
+# Place common CPP definitions here.
+# Note: need CUDA_BUILD and HOMMEXX_BFB_TESTING here, since the share
+#       unit tests do not include a config.h file
+SET (COMMON_DEFINITIONS NP=4 NC=4)
+IF (CUDA_BUILD)
+  SET(COMMON_DEFINITIONS ${COMMON_DEFINITIONS} CUDA_BUILD)
+ENDIF()
+IF (HOMMEXX_BFB_TESTING)
+  SET(COMMON_DEFINITIONS ${COMMON_DEFINITIONS} HOMMEXX_BFB_TESTING)
+ENDIF()
+
 ### Infrastructure unit stest
 
 SET (INFRASTRUCTURE_UT_CXX_SRCS
+  ${SRC_SHARE_DIR}/cxx/Context.cpp
+  ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
+  ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SHARE_UT_DIR}/infrastructure_ut.cpp
 )
-SET (INFRASTRUCTURE_UT_F90_SRCS)
+SET (INFRASTRUCTURE_UT_F90_SRCS
+  ${SRC_SHARE_DIR}/kinds.F90
+  ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
+  ${SHARE_UT_DIR}/infrastructure_ut_mod.F90
+)
 
-SET (CONFIG_DEFINES PIO_INTERP NP=4 QSIZE_D=1 PLEV=8 HOMMEXX_NO_MPI_CONTEXT HOMMEXX_NO_CONTEXT)
+SET (CONFIG_DEFINES PIO_INTERP QSIZE_D=1 PLEV=13 ${COMMON_DEFINITIONS})
 SET (INFRASTRUCTURE_UT_INCLUDE_DIRS
   ${SRC_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
@@ -27,32 +45,6 @@ SET (INFRASTRUCTURE_UT_INCLUDE_DIRS
 
 SET (NUM_CPUS 1)
 cxx_unit_test (infrastructure_ut "${INFRASTRUCTURE_UT_F90_SRCS}" "${INFRASTRUCTURE_UT_CXX_SRCS}" "${INFRASTRUCTURE_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
-
-### Random initialization unit stest
-
-SET (RANDOM_INIT_UT_CXX_SRCS
-  ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
-  ${SRC_SHARE_DIR}/cxx/Elements.cpp
-  ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
-  ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
-  ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
-  ${SHARE_UT_DIR}/random_init_ut.cpp
-)
-SET (RANDOM_INIT_UT_F90_SRCS)
-
-SET (CONFIG_DEFINES PIO_INTERP NP=4 PLEV=8 QSIZE_D=4 HOMMEXX_NO_CONTEXT HOMMEXX_NO_MPI_CONTEXT)
-SET (RANDOM_INIT_UT_INCLUDE_DIRS
-  ${SRC_SHARE_DIR}
-  ${SRC_SHARE_DIR}/cxx
-  ${SHARE_UT_DIR}
-  ${UTILS_TIMING_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/src/share/cxx
-)
-
-SET (NUM_CPUS 1)
-cxx_unit_test (random_init_ut "${RANDOM_INIT_UT_F90_SRCS}" "${RANDOM_INIT_UT_CXX_SRCS}" "${RANDOM_INIT_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 
 ### Boundary exchange unit test ###
 
@@ -86,26 +78,26 @@ SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${SRC_PREQX_DIR}/edge_mod.F90
   ${SRC_PREQX_DIR}/element_state.F90
   ${SHARE_UT_DIR}/boundary_exchange_ut.F90
+  ${SHARE_UT_DIR}/geometry_interface.F90
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
   ${UTILS_SHARE_DIR}/shr_sys_mod.F90
-  ${UTILS_TIMING_DIR}/perf_mod.F90
-  ${UTILS_TIMING_DIR}/perf_utils.F90
 )
 SET (BOUNDARY_EXCHANGE_UT_CXX_SRCS
+  ${SRC_SHARE_DIR}/cxx/Context.cpp
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/BoundaryExchange.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/BuffersManager.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/MpiContext.cpp
+  ${SRC_SHARE_DIR}/cxx/mpi/MpiBuffersManager.cpp
+  ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
   ${SHARE_UT_DIR}/boundary_exchange_ut.cpp
 )
 
-SET (CONFIG_DEFINES NP=4 NC=4 PLEV=16 QSIZE_D=4 _MPI=1 _PRIM HOMMEXX_NO_CONTEXT)
+SET (CONFIG_DEFINES PLEV=12 QSIZE_D=4 _MPI=1 _PRIM ${COMMON_DEFINITIONS})
 SET (BOUNDARY_EXCHANGE_UT_INCLUDE_DIRS
   ${SRC_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
@@ -141,6 +133,8 @@ SET (SPHERE_OP_UT_F90_SRCS
   ${SHARE_UT_DIR}/sphere_op_interface.F90
 )
 SET (SPHERE_OP_UT_CXX_SRCS
+  ${SRC_SHARE_DIR}/cxx/Context.cpp
+  ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
@@ -148,7 +142,7 @@ SET (SPHERE_OP_UT_CXX_SRCS
   ${SHARE_UT_DIR}/sphere_op_ml.cpp
 )
 
-SET (CONFIG_DEFINES NP=4 NC=4 PLEV=16 QSIZE_D=4 _MPI=1 _PRIM HOMMEXX_NO_CONTEXT HOMMEXX_NO_MPI_CONTEXT)
+SET (CONFIG_DEFINES PLEV=12 QSIZE_D=4 _MPI=1 _PRIM ${COMMON_DEFINITIONS})
 SET (SPHERE_OP_UT_INCLUDE_DIRS
   ${SRC_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
@@ -182,6 +176,8 @@ SET (LIMITERS_UT_F90_SRCS
   ${SHARE_UT_DIR}/limiters_interface.F90
 )
 SET (LIMITERS_UT_CXX_SRCS
+  ${SRC_SHARE_DIR}/cxx/Context.cpp
+  ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
   ${SRC_SHARE_DIR}/cxx/EulerStepFunctorImpl.hpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
@@ -189,7 +185,7 @@ SET (LIMITERS_UT_CXX_SRCS
   ${SHARE_UT_DIR}/limiters.cpp
 )
 
-SET (CONFIG_DEFINES NP=4 NC=4 PLEV=13 QSIZE_D=4 _MPI=1 _PRIM HOMMEXX_NO_CONTEXT HOMMEXX_NO_MPI_CONTEXT)
+SET (CONFIG_DEFINES PLEV=12 QSIZE_D=4 _MPI=1 _PRIM ${COMMON_DEFINITIONS})
 SET (LIMITERS_UT_INCLUDE_DIRS
   ${SRC_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
@@ -204,37 +200,61 @@ ELSE()
 ENDIF()
 cxx_unit_test (limiters_ut "${LIMITERS_UT_F90_SRCS}" "${LIMITERS_UT_CXX_SRCS}" "${LIMITERS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 
-### Remap unit test ###
+### ColumnOps unit tests
 
-SET (REMAP_UT_F90_SRCS
+SET (COL_OPS_UT_CXX_SRCS
+  ${SRC_SHARE_DIR}/cxx/Context.cpp
+  ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
+  ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
+  ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
+  ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
+  ${SHARE_UT_DIR}/col_ops_ut.cpp
+)
+
+SET (CONFIG_DEFINES PIO_INTERP PLEV=12 QSIZE_D=4 _MPI=1 ${COMMON_DEFINITIONS})
+SET (COL_OPS_UT_INCLUDE_DIRS
+  ${SRC_SHARE_DIR}
+  ${SRC_SHARE_DIR}/cxx
+  ${SHARE_UT_DIR}
+  ${UTILS_TIMING_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_BINARY_DIR}/src/share/cxx
+)
+
+IF (USE_NUM_PROCS)
+  SET (NUM_CPUS ${USE_NUM_PROCS})
+ELSE()
+  SET (NUM_CPUS 1)
+ENDIF()
+cxx_unit_test (col_ops_ut "${COL_OPS_UT_F90_SRCS}" "${COL_OPS_UT_CXX_SRCS}" "${COL_OPS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+
+### PpmRemap unit test ###
+
+SET (PPM_REMAP_UT_F90_SRCS
   ${SRC_SHARE_DIR}/control_mod.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
   ${SRC_SHARE_DIR}/hybvcoord_mod.F90
   ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/parallel_mod.F90
-  ${SRC_SHARE_DIR}/vertremap_base.F90
   ${SRC_SHARE_DIR}/physical_constants.F90
-  ${SHARE_UT_DIR}/remap_interface.F90
-  ${UTILS_TIMING_DIR}/perf_mod.F90
-  ${UTILS_TIMING_DIR}/perf_utils.F90
+  ${SRC_SHARE_DIR}/vertremap_base.F90
+  ${SHARE_UT_DIR}/ppm_remap_interface.F90
 )
 
-SET (REMAP_UT_CXX_SRCS
-  ${SRC_SHARE_DIR}/cxx/Elements.cpp
+SET (PPM_REMAP_UT_CXX_SRCS
+  ${SRC_SHARE_DIR}/cxx/Context.cpp
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
-  ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp
-  ${SRC_SHARE_DIR}/cxx/Tracers.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
-  ${SHARE_UT_DIR}/remap_ut.cpp
+  ${SHARE_UT_DIR}/ppm_remap_ut.cpp
 )
 
-SET (CONFIG_DEFINES NP=4 NC=4 PLEV=16 QSIZE_D=4 _MPI=1 _PRIM HOMMEXX_NO_CONTEXT HOMMEXX_NO_MPI_CONTEXT)
-SET (REMAP_UT_INCLUDE_DIRS
+SET (CONFIG_DEFINES PLEV=12 QSIZE_D=4 _MPI=1 _PRIM ${COMMON_DEFINITIONS})
+SET (PPM_REMAP_UT_INCLUDE_DIRS
+  ${SRC_PREQX_DIR}/cxx
   ${SRC_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
-  ${SHARE_UT_DIR}
   ${UTILS_TIMING_DIR}
   ${CMAKE_BINARY_DIR}/src/share/cxx
 )
@@ -244,4 +264,4 @@ IF (USE_NUM_PROCS)
 ELSE()
   SET (NUM_CPUS 1)
 ENDIF()
-cxx_unit_test (remap_ut "${REMAP_UT_F90_SRCS}" "${REMAP_UT_CXX_SRCS}" "${REMAP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+cxx_unit_test (ppm_remap_ut "${PPM_REMAP_UT_F90_SRCS}" "${PPM_REMAP_UT_CXX_SRCS}" "${PPM_REMAP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})

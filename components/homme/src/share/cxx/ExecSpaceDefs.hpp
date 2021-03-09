@@ -99,14 +99,13 @@ struct ThreadPreferences {
   int max_vectors_usable;
   // Prefer threads to vectors? Default: true.
   bool prefer_threads;
+  // Prefer larger teams even when league_size is large.
+  bool prefer_larger_team;
 
   ThreadPreferences();
 };
 
 namespace Parallel {
-// Previous (inclusive) power of 2. E.g., prevpow2(4) -> 4, prevpow2(5) -> 4.
-unsigned short prevpow2(unsigned short n);
-
 // Determine (#threads, #vectors) as a function of a pool of threads provided to
 // the process and the number of parallel iterations to perform.
 std::pair<int, int>
@@ -154,13 +153,14 @@ struct DefaultThreadsDistribution<Hommexx_Cuda> {
 // Return a TeamPolicy using defaults that, so far, have been good for all use
 // cases. Use of this function means you don't have to use
 // DefaultThreadsDistribution.
-template <typename ExecSpace, typename Tag=void>
-Kokkos::TeamPolicy<ExecSpace, Tag>
-get_default_team_policy(const int num_parallel_iterations) {
+template <typename ExecSpace, typename... Tags>
+Kokkos::TeamPolicy<ExecSpace, Tags...>
+get_default_team_policy(const int num_parallel_iterations,
+                        const ThreadPreferences tp = ThreadPreferences()) {
   const auto threads_vectors =
     DefaultThreadsDistribution<ExecSpace>::team_num_threads_vectors(
-      num_parallel_iterations);
-  auto policy = Kokkos::TeamPolicy<ExecSpace, Tag>(num_parallel_iterations,
+      num_parallel_iterations, tp);
+  auto policy = Kokkos::TeamPolicy<ExecSpace, Tags...>(num_parallel_iterations,
                                                    threads_vectors.first,
                                                    threads_vectors.second);
   policy.set_chunk_size(1);
@@ -258,7 +258,7 @@ struct Memory<Hommexx_Cuda> {
 // dispatches.
 template <typename ExeSpace=ExecSpace>
 struct Dispatch {
-  // Match the HOMMEXX_GPU_BFB_WITH_CPU function in the Cuda
+  // Match the HOMMEXX_BFB_TESTING function in the Cuda
   // specialization.
   template<typename LoopBdyType, class Lambda, typename ValueType>
   static KOKKOS_FORCEINLINE_FUNCTION
@@ -290,7 +290,7 @@ VECTOR_SIMD_LOOP
     const typename Kokkos::TeamPolicy<ExeSpace>::member_type& team,
     const Lambda& lambda, ValueType& result)
   {
-    result = ValueType();
+    result = Kokkos::reduction_identity<ValueType>::sum();
     for (int k = 0; k < NP*NP; ++k)
       lambda(k, result);
   }
@@ -318,21 +318,30 @@ struct Dispatch<Kokkos::Cuda> {
     const LoopBdyType& loop_boundaries,
     const Lambda& lambda, ValueType& result)
   {
-#if HOMMEXX_GPU_BFB_WITH_CPU
+#ifdef HOMMEXX_BFB_TESTING
     // We want to get C++ on GPU to match F90 on CPU. Thus, need to
     // serialize parallel reductions.
 
     // All threads init result.
-    result = ValueType();
+    // NOTE: we *need* an automatic temporary, since we do not know
+    //       where 'result' comes from. If result itself is an automatic
+    //       variable, using it would be fine (only one vector lane would
+    //       actually have a nonzero value after the single). But if
+    //       result is taken from a view, then all vector lanes would
+    //       see the updated value before the vector_reduce call,
+    //       which will cause the final answer to be multiplied by the
+    //       size of the warp.
+    auto local_tmp = Kokkos::reduction_identity<ValueType>::sum();
     // One thread sums.
     Kokkos::single(Kokkos::PerThread(team), [&] () {
         for (auto i = loop_boundaries.start; i < loop_boundaries.end; ++i)
-          lambda(i, result);
+          lambda(i, local_tmp);
       });
     // Broadcast result to all threads by doing sum of one thread's
     // non-0 value and the rest of the 0s.
     Kokkos::Impl::CudaTeamMember::vector_reduce(
-      Kokkos::Sum<ValueType>(result));
+      Kokkos::Sum<ValueType>(local_tmp));
+    result = local_tmp;
 #else
     Kokkos::parallel_reduce(loop_boundaries, lambda, result);
 #endif
@@ -365,7 +374,7 @@ struct Dispatch<Kokkos::Cuda> {
     const int num_iters,
     const Lambda& lambda)
   {
-#if HOMMEXX_GPU_BFB_WITH_CPU
+#ifdef HOMMEXX_BFB_TESTING
     // We want to get C++ on GPU to match F90 on CPU. Thus, need to
     // serialize parallel scans.
 
@@ -377,7 +386,7 @@ struct Dispatch<Kokkos::Cuda> {
         , Lambda >::value_type ;
 
     // All threads init result.
-    value_type accumulator = value_type();
+    value_type accumulator = Kokkos::reduction_identity<value_type>::sum();
     // Only one thread does the work, i.e., only one sweeps (so last arg to lambda is true)
     Kokkos::single(Kokkos::PerThread(team), [&] () {
       for (int i = 0; i < num_iters; ++i) {

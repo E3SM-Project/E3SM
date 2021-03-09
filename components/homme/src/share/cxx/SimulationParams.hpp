@@ -18,17 +18,19 @@ namespace Homme
  */
 struct SimulationParams
 {
-  SimulationParams() : params_set(false), ftype(ForcingAlg::FORCING_OFF) {}
+  SimulationParams() : ftype(ForcingAlg::FORCING_OFF), params_set(false) {}
 
-  int       time_step_type; // TODO: convert to enum
-  int       rsplit;
-  int       qsplit;
-  int       qsize;
+  TimeStepType  time_step_type;
+  MoistDry      moisture;
+  RemapAlg      remap_alg;
+  TestCase      test_case;
+  ForcingAlg    ftype;
+  AdvectionForm theta_adv_form; // Only for theta model
 
-  MoistDry  moisture;
-  RemapAlg  remap_alg;
-  TestCase  test_case;
-  ForcingAlg ftype;
+  int           rsplit;
+  int           qsplit;
+  int           qsize;
+
 
   int       limiter_option; // TODO: convert to enum
 
@@ -38,7 +40,9 @@ struct SimulationParams
   bool      disable_diagnostics;
   bool      use_semi_lagrangian_transport;
   bool      use_cpstar;
+  bool      theta_hydrostatic_mode;   // Only for theta model
 
+  double    dcmip16_mu;               // Only for theta model
   double    nu;
   double    nu_p;
   double    nu_q;

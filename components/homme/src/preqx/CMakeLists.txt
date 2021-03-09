@@ -53,6 +53,25 @@ SET (PREQX_SRCS_ZOLTAN   ${TRILINOS_ZOLTAN_DIR}/zoltan_interface.c  ${TRILINOS_Z
 SET_SOURCE_FILES_PROPERTIES( ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp PROPERTIES LANGUAGE CXX )
 ENDIF()
 
+IF (HOMMEXX_BFB_TESTING)
+  # We need a couple more files/includes to correctly hook-up C routines
+  SET(PREQX_SRCS_F90
+      ${PREQX_SRCS_F90}
+      ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
+  )
+
+  SET(PREQX_SRCS_C
+      ${PREQX_SRCS_C}
+      ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
+      ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
+  )
+
+  SET (EXEC_INCLUDE_DIRS
+      ${EXEC_INCLUDE_DIRS}
+      ${SRC_SHARE_DIR}/cxx
+      ${HOMME_BINARY_DIR}/src/share/cxx/
+  )
+ENDIF()
 
 # If the user specified a file for custom compiler options use those
 IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
@@ -60,7 +79,7 @@ IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_F90} ${PREQX_SRCS_ZOLTAN})
+SET(EXEC_SOURCES ${PREQX_SRCS_C} ${PREQX_SRCS_F90} ${PREQX_SRCS_ZOLTAN})
 
 # Set up defaults
 IF (NOT PREQX_NP)

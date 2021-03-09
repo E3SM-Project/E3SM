@@ -11,15 +11,16 @@
 <config_do_velocity_reconstruction_for_external_dycore>.false.</config_do_velocity_reconstruction_for_external_dycore>
 <config_simple_velocity_type>'uniform'</config_simple_velocity_type>
 <config_use_glp>.false.</config_use_glp>
-<config_beta_use_effective_pressure>.false.</config_beta_use_effective_pressure>
+<config_beta_thawed_only>.false.</config_beta_thawed_only>
 <config_unrealistic_velocity>0.01592356685</config_unrealistic_velocity>
+<config_nonconvergence_error>.true.</config_nonconvergence_error>
 
 <!-- advection -->
 <config_thickness_advection>'fo'</config_thickness_advection>
 <config_tracer_advection>'none'</config_tracer_advection>
 
 <!-- calving -->
-<config_calving>'thickness_threshold'</config_calving>
+<config_calving>'none'</config_calving>
 <config_calving_topography>-500.0</config_calving_topography>
 <config_calving_thickness>300.0</config_calving_thickness>
 <config_calving_eigencalving_parameter_source>'scalar'</config_calving_eigencalving_parameter_source>
@@ -132,6 +133,7 @@
 <config_SGH_englacial_porosity>0.01</config_SGH_englacial_porosity>
 <config_SGH_till_max>2.0</config_SGH_till_max>
 <config_SGH_chnl_active>.false.</config_SGH_chnl_active>
+<config_SGH_chnl_include_DCFL>.false.</config_SGH_chnl_include_DCFL>
 <config_SGH_chnl_alpha>1.25</config_SGH_chnl_alpha>
 <config_SGH_chnl_beta>1.5</config_SGH_chnl_beta>
 <config_SGH_chnl_conduc_coeff>0.1</config_SGH_chnl_conduc_coeff>

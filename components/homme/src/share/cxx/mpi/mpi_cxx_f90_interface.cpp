@@ -4,7 +4,7 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
-#include "MpiContext.hpp"
+#include "Context.hpp"
 #include "Comm.hpp"
 #include "Connectivity.hpp"
 #include "BoundaryExchange.hpp"
@@ -21,14 +21,17 @@ void reset_cxx_comm (const MPI_Fint& f_comm)
 {
   // f_comm must be a valid Fortran handle to a communicator
   MPI_Comm c_comm = MPI_Comm_f2c(f_comm);
-  MpiContext::singleton().get_comm().reset_mpi_comm(c_comm);
+  if (!Context::singleton().has<Comm>()) {
+    Context::singleton().create<Comm>();
+  }
+  Context::singleton().get<Comm>().reset_mpi_comm(c_comm);
 }
 
 void init_connectivity (const int& num_local_elems)
 {
-  Connectivity& connectivity = *MpiContext::singleton().get_connectivity();
+  Connectivity& connectivity = Context::singleton().create<Connectivity>();
   connectivity.set_num_elements(num_local_elems);
-  connectivity.set_comm(MpiContext::singleton().get_comm());
+  connectivity.set_comm(Context::singleton().get<Comm>());
 }
 
 void add_connection (const int& first_elem_lid,  const int& first_elem_gid,  const int& first_elem_pos,  const int& first_elem_pid,
@@ -49,14 +52,14 @@ void add_connection (const int& first_elem_lid,  const int& first_elem_gid,  con
   };
   const int fep = convert(first_elem_pos), sep = convert(second_elem_pos);
 
-  Connectivity& connectivity = *MpiContext::singleton().get_connectivity();
+  Connectivity& connectivity = Context::singleton().get<Connectivity>();
   connectivity.add_connection(first_elem_lid-1, first_elem_gid-1, fep, first_elem_pid-1,
                               second_elem_lid-1,second_elem_gid-1,sep,second_elem_pid-1);
 }
 
 void finalize_connectivity ()
 {
-  Connectivity& connectivity = *MpiContext::singleton().get_connectivity();
+  Connectivity& connectivity = Context::singleton().get<Connectivity>();
 
   connectivity.finalize();
 }

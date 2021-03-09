@@ -246,10 +246,9 @@ contains
 #endif
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     integer :: dimsize(maxdims)   
-    integer, pointer :: ldof2d(:),ldof3d(:),ldof3dp1(:), iodof2d(:), iodof3d(:), iodof3dp1(:)
-    integer, pointer :: latdof(:), londof(:), iodoflon(:), iodoflat(:)
+    integer*8, pointer :: ldof2d(:),ldof3d(:),ldof3dp1(:)
 
-    integer :: icnt, i, j, k, lcount, iorank, nlat, nlon, tdof(1), tiodof(1), ios, ie
+    integer :: icnt, i, j, k, lcount, iorank, nlat, nlon, ios, ie
 
     integer(kind=nfsizekind) :: start1d(1), count1d(1)
     real(kind=real_kind), allocatable :: lat(:), lon(:), gw(:)
@@ -326,20 +325,20 @@ contains
     end do
 #endif
 
-    call getiodof(2, (/nlon,nlat/),       iorank,   iodof2d,   start2d(1:2),   count2d(1:2))
-    call nf_init_decomp(ncdf, (/1,2/),    ldof2d,   iodof2d,   start2d(1:2),   count2d(1:2))
+    call getiodof(2, (/nlon,nlat/),       iorank,   start2d(1:2),   count2d(1:2))
+    call nf_init_decomp(ncdf, (/1,2/),    ldof2d,   start2d(1:2),   count2d(1:2))
 
-    call getiodof(3, (/nlon,nlat,nlev/),  iorank,   iodof3d,   start3d(1:3),   count3d(1:3))
-    call nf_init_decomp(ncdf, (/1,2,3/),  ldof3d,   iodof3d,   start3d(1:3),   count3d(1:3))
+    call getiodof(3, (/nlon,nlat,nlev/),  iorank,   start3d(1:3),   count3d(1:3))
+    call nf_init_decomp(ncdf, (/1,2,3/),  ldof3d,   start3d(1:3),   count3d(1:3))
 
 #if defined(_PRIM)
-    call getiodof(3, (/nlon,nlat,nlevp/), iorank,   iodof3dp1, start3dp1(1:3), count3dp1(1:3))
-    call nf_init_decomp(ncdf, (/1,2,4/),  ldof3dp1, iodof3dp1, start3dp1(1:3), count3dp1(1:3))
+    call getiodof(3, (/nlon,nlat,nlevp/), iorank,   start3dp1(1:3), count3dp1(1:3))
+    call nf_init_decomp(ncdf, (/1,2,4/),  ldof3dp1, start3dp1(1:3), count3dp1(1:3))
 #endif
 
-    deallocate(iodof2d, iodof3d, ldof2d, ldof3d)
+    deallocate(ldof2d, ldof3d)
 #if defined(_PRIM)
-    deallocate(iodof3dp1, ldof3dp1)
+    deallocate(ldof3dp1)
 #endif
 
     call nf_output_register_variables(ncdf,varcnt,varnames,vardims,vartype,varrequired)
@@ -1117,16 +1116,13 @@ contains
 
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
-  subroutine GetIODOF(ndims, gdims, iorank, iodof, start, count)
+  subroutine GetIODOF(ndims, gdims, iorank, start, count)
     integer, intent(in) :: ndims
     integer, intent(in) :: gdims(ndims)
     integer, intent(in) :: iorank
     integer(kind=nfsizekind), intent(out) :: start(ndims), count(ndims)
-    integer, pointer :: iodof(:) ! gcc4.2 didn't like intent(out)
 
     integer :: nzrank, nxrank, nx, k, i, j, icnt
-
-
 
 
     if(iorank>=0) then
@@ -1175,40 +1171,6 @@ contains
           nx=max(1,num_io_procs/gdims(i))
 
        end do
-
-       icnt=0
-       if(ndims.eq.1) then
-          allocate(iodof(count(1)))
-          do i=1,count(1)
-             iodof(i)=start(1)+i-1
-          end do
-       else if(ndims.eq.2) then
-          allocate(iodof(count(1)*count(2)))
-
-          do j=1,count(2)
-             do i=1,count(1)
-                icnt=icnt+1
-                iodof(icnt)=start(1)+gdims(1)*(start(2)-1)+icnt-1
-             end do
-          end do
-
-       else
-          allocate(iodof(count(1)*count(2)*count(3)))
-
-          do k=1,count(3)
-             do j=1,count(2)
-                do i=1,count(1)
-                   icnt=icnt+1
-                   iodof(icnt)=start(1)+gdims(1)*(start(2)-1)+ &
-                        gdims(1)*gdims(2)*(start(3)-1)+icnt-1
-                end do
-             end do
-          end do
-       end if
-
-    else	
-       allocate(iodof(1))
-       iodof=-1
     end if
 
   end subroutine GetIODOF

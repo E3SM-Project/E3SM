@@ -8,12 +8,14 @@
 #define HOMMEXX_SPHERE_OPERATORS_HPP
 
 #include "Types.hpp"
-#include "Elements.hpp"
-#include "Derivative.hpp"
+#include "ElementsGeometry.hpp"
+#include "CombineOps.hpp"
+#include "ReferenceElement.hpp"
 #include "Dimensions.hpp"
 #include "KernelVariables.hpp"
 #include "PhysicalConstants.hpp"
 #include "utilities/SubviewUtils.hpp"
+#include "utilities/ViewUtils.hpp"
 
 #include <Kokkos_Core.hpp>
 
@@ -21,44 +23,58 @@ namespace Homme {
 
 class SphereOperators
 {
+  static constexpr int MAX_NUM_LEV = NUM_LEV_P;
   static constexpr int NUM_2D_VECTOR_BUFFERS = 2;
   static constexpr int NUM_3D_SCALAR_BUFFERS = 3;
   static constexpr int NUM_3D_VECTOR_BUFFERS = 3;
 
+  // These two short names will be used to extract subviews from the 3d buffers,
+  // since we can no longer use the auto keyword. Before we used to do
+  //   const auto& gv = Homme::subview(vector_buf_ml,kv.team_idx,0);
+  // However, now vector_buf_ml has last timension NUM_LEV_P, but we may
+  // need gv to be smaller. Hence, we simply grab the pointer from the subview,
+  // but then we need to explicitly tell the compiler the type of the result,
+  // which can no longer be deduced. Like this:
+  //   vector_buf<NUM_LEV gv(Homme::subview(vector_buf_ml,kv.team_idx,0).data());
+
+  template<int NL>
+  using scalar_buf = ExecViewUnmanaged<Scalar[NP][NP][NL]>;
+
+  template<int NL>
+  using vector_buf = ExecViewUnmanaged<Scalar[2][NP][NP][NL]>;
+  
+  // std::min is constexpr only from c++14 on.
+  template<int M, int N>
+  struct Min {
+    static constexpr int value = M > N ? N : M;
+  };
+
+  template<int NUM_LEVELS>
+  using DefaultProvider = ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEVELS]>;
 public:
+
 
   SphereOperators () = default;
 
-  SphereOperators (const Elements& elements, const Derivative& derivative)
+  SphereOperators (const ElementsGeometry& geometry,
+                   const ReferenceElement& ref_FE)
   {
-    // Get dvv
-    dvv = derivative.get_dvv();
-
-    // Get all needed 2d fields from elements
-    m_d        = elements.m_d;
-    m_dinv     = elements.m_dinv;
-    m_metdet   = elements.m_metdet;
-    m_metinv   = elements.m_metinv;
-    m_spheremp = elements.m_spheremp;
-    m_mp       = elements.m_mp;
+    setup (geometry, ref_FE);
   }
 
-  // This one is used in the unit tests
-  void set_views (const ExecViewManaged<const Real         [NP][NP]>  dvv_in,
-                  const ExecViewManaged<const Real * [2][2][NP][NP]>  d,
-                  const ExecViewManaged<const Real * [2][2][NP][NP]>  dinv,
-                  const ExecViewManaged<const Real * [2][2][NP][NP]>  metinv,
-                  const ExecViewManaged<const Real *       [NP][NP]>  metdet,
-                  const ExecViewManaged<const Real *       [NP][NP]>  spheremp,
-                  const ExecViewManaged<const Real *       [NP][NP]>  mp)
-  {
-    dvv = dvv_in;
-    m_d = d;
-    m_dinv = dinv;
-    m_metinv = metinv;
-    m_metdet = metdet;
-    m_spheremp = spheremp;
-    m_mp = mp;
+
+  void setup (const ElementsGeometry& geometry,
+              const ReferenceElement& ref_FE) {
+    // Get reference element stuff
+    dvv = ref_FE.get_deriv();
+    m_mp = ref_FE.get_mass();
+
+    // Get all needed 2d fields from elements
+    m_d        = geometry.m_d;
+    m_dinv     = geometry.m_dinv;
+    m_metdet   = geometry.m_metdet;
+    m_metinv   = geometry.m_metinv;
+    m_spheremp = geometry.m_spheremp;
   }
 
   template<typename... Tags>
@@ -75,13 +91,45 @@ public:
     }
   }
 
-// ================ SINGLE-LEVEL IMPLEMENTATION =========================== //
+  void allocate_buffers (const TeamUtils<ExecSpace>& tu)
+  {
+    const int alloc_dim = tu.get_num_ws_slots();
+
+    if (vector_buf_ml.extent_int(0)<alloc_dim) {
+      vector_buf_sl = decltype(vector_buf_sl)("",alloc_dim);
+      scalar_buf_ml = decltype(scalar_buf_ml)("",alloc_dim);
+      vector_buf_ml = decltype(vector_buf_ml)("",alloc_dim);
+    }
+  }
+
+  // This one is used in the unit tests
+  void set_views (const ExecViewManaged<const Real         [NP][NP]>  dvv_in,
+                  const ExecViewManaged<const Real * [2][2][NP][NP]>  d,
+                  const ExecViewManaged<const Real * [2][2][NP][NP]>  dinv,
+                  const ExecViewManaged<const Real * [2][2][NP][NP]>  metinv,
+                  const ExecViewManaged<const Real *       [NP][NP]>  metdet,
+                  const ExecViewManaged<const Real *       [NP][NP]>  spheremp,
+                  const ExecViewManaged<const Real         [NP][NP]>  mp)
+  {
+    dvv = dvv_in;
+    m_d = d;
+    m_dinv = dinv;
+    m_metinv = metinv;
+    m_metdet = metdet;
+    m_spheremp = spheremp;
+    m_mp = mp;
+  }
+
+  // ================ SINGLE-LEVEL IMPLEMENTATION =========================== //
 
   KOKKOS_INLINE_FUNCTION void
   gradient_sphere_sl (const KernelVariables &kv,
-                      const ExecViewUnmanaged<const Real    [NP][NP]> scalar,
-                      const ExecViewUnmanaged<      Real [2][NP][NP]> grad_s) const
+                      const ExecViewUnmanaged<const Real    [NP][NP]>& scalar,
+                      const ExecViewUnmanaged<      Real [2][NP][NP]>& grad_s) const
   {
+    // Make sure the buffers have been created
+    assert (vector_buf_sl.size()>0);
+
     const auto& D_inv = Homme::subview(m_dinv,kv.ie);
     const auto& temp_v_buf = Homme::subview(vector_buf_sl,kv.team_idx,0);
     constexpr int np_squared = NP * NP;
@@ -114,9 +162,12 @@ public:
 
   KOKKOS_INLINE_FUNCTION void
   gradient_sphere_update_sl (const KernelVariables &kv,
-                             const ExecViewUnmanaged<const Real    [NP][NP]> scalar,
-                             const ExecViewUnmanaged<      Real [2][NP][NP]> grad_s) const
+                             const ExecViewUnmanaged<const Real    [NP][NP]>& scalar,
+                             const ExecViewUnmanaged<      Real [2][NP][NP]>& grad_s) const
   {
+    // Make sure the buffers have been created
+    assert (vector_buf_sl.size()>0);
+
     constexpr int np_squared = NP * NP;
     const auto& D_inv = Homme::subview(m_dinv,kv.ie);
     const auto& temp_v_buf = Homme::subview(vector_buf_sl,kv.team_idx,0);
@@ -149,9 +200,12 @@ public:
 
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_sl (const KernelVariables &kv,
-                        const ExecViewUnmanaged<const Real [2][NP][NP]> v,
-                        const ExecViewUnmanaged<      Real    [NP][NP]> div_v) const
+                        const ExecViewUnmanaged<const Real [2][NP][NP]>& v,
+                        const ExecViewUnmanaged<      Real    [NP][NP]>& div_v) const
   {
+    // Make sure the buffers have been created
+    assert (vector_buf_sl.size()>0);
+
     const auto& metdet = Homme::subview(m_metdet,kv.ie);
     const auto& D_inv = Homme::subview(m_dinv,kv.ie);
     const auto& gv_buf = Homme::subview(vector_buf_sl,kv.team_idx,0);
@@ -185,9 +239,12 @@ public:
 
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_wk_sl (const KernelVariables &kv,
-                           const ExecViewUnmanaged<const Real [2][NP][NP]> v,
-                           const ExecViewUnmanaged<      Real    [NP][NP]> div_v) const
+                           const ExecViewUnmanaged<const Real [2][NP][NP]>& v,
+                           const ExecViewUnmanaged<      Real    [NP][NP]>& div_v) const
   {
+    // Make sure the buffers have been created
+    assert (vector_buf_sl.size()>0);
+
     const auto& D_inv = Homme::subview(m_dinv,kv.ie);
     const auto& spheremp = Homme::subview(m_spheremp,kv.ie);
     const auto& gv_buf = Homme::subview(vector_buf_sl,kv.team_idx,0);
@@ -236,10 +293,13 @@ public:
   // This must be called from the device space
   KOKKOS_INLINE_FUNCTION void
   vorticity_sphere_sl (const KernelVariables &kv,
-                       const ExecViewUnmanaged<const Real [NP][NP]> u,
-                       const ExecViewUnmanaged<const Real [NP][NP]> v,
-                       const ExecViewUnmanaged<      Real [NP][NP]> vort) const
+                       const ExecViewUnmanaged<const Real [NP][NP]>& u,
+                       const ExecViewUnmanaged<const Real [NP][NP]>& v,
+                       const ExecViewUnmanaged<      Real [NP][NP]>& vort) const
   {
+    // Make sure the buffers have been created
+    assert (vector_buf_sl.size()>0);
+
     const auto& D = Homme::subview(m_d,kv.ie);
     const auto& metdet = Homme::subview(m_metdet,kv.ie);
     const auto& vcov_buf = Homme::subview(vector_buf_sl,kv.team_idx,0);
@@ -278,9 +338,12 @@ public:
   // Single level implementation
   KOKKOS_INLINE_FUNCTION void
   laplace_wk_sl (const KernelVariables &kv,
-                 const ExecViewUnmanaged<const Real [NP][NP]> field,
-                 const ExecViewUnmanaged<      Real [NP][NP]> laplace) const
+                 const ExecViewUnmanaged<const Real [NP][NP]>& field,
+                 const ExecViewUnmanaged<      Real [NP][NP]>& laplace) const
   {
+    // Make sure the buffers have been created
+    assert (vector_buf_sl.size()>0);
+
     const auto& grad_s = Homme::subview(vector_buf_sl, kv.team_idx, 1);
     gradient_sphere_sl(kv, field, grad_s);
     divergence_sphere_wk_sl(kv, grad_s, laplace);
@@ -288,13 +351,35 @@ public:
 
   // ================ MULTI-LEVEL IMPLEMENTATION =========================== //
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  // Note: if you are puzzled by the use/need of ViewConst, don't worry, you're not alone.
+  //       To be clear, using `const typename ExecViewUnmanaged<Scalar[...]>::const_type`
+  //       would also work. I prefer ViewConst cause it does not change the 'template
+  //       signature of the type', while Kokkos::View<...>::const_type has a pre-defined
+  //       templated signature (with data type, layout and memory space).
+  //       Anyhow, back to the point, the key fact is that (quoting cppreference),
+  //
+  //        "The nested-name-specifier (everything to the left of the scope resolution
+  //         operator ::) of a type that was specified using a qualified-id" [do not
+  //         participate in template argument deduction].
+  //
+  //       So, without the `typename Blah::type` trick, the type of scalar is used to deduce
+  //       the template arguments, but if the input view had data type non-const, this
+  //       makes the template deduction fail. On the other hand, *with* the `typename Blah::type`
+  //       trick, only the type of the output view is used to deduce the template args. This
+  //       succeeds, and then the copy constructor of View is used to produce a View<const T>
+  //       from a View<T>. Magic.
+
+  template<int NUM_LEV_OUT, typename InputProvider, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   gradient_sphere (const KernelVariables &kv,
-                   const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV]> scalar,
-                   const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV]> grad_s) const
+                   const InputProvider& scalar,
+                   const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_OUT]>& grad_s) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
+
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
 
     const auto& D_inv = Homme::subview(m_dinv, kv.ie);
 
@@ -318,13 +403,18 @@ public:
     kv.team_barrier();
   }
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   gradient_sphere_update (const KernelVariables &kv,
-                          const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV]> scalar,
-                          const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV]> grad_s) const
+                          const typename ViewConst<ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>>::type& scalar,
+                          const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_OUT]>& grad_s) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
+
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
 
     const auto& D_inv = Homme::subview(m_dinv, kv.ie);
     constexpr int np_squared = NP * NP;
@@ -347,17 +437,37 @@ public:
     kv.team_barrier();
   }
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, typename InputProvider, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere (const KernelVariables &kv,
-                     const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV]> v,
-                     const ExecViewUnmanaged<      Scalar    [NP][NP][NUM_LEV]> div_v) const
+                     const InputProvider& v,
+                     const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& div_v,
+                     const Real alpha = 1.0, const Real beta = 0.0) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    divergence_sphere_cm<CombineMode::Replace,
+                         InputProvider,
+                         NUM_LEV_OUT,
+                         NUM_LEV_REQUEST>(kv,v,div_v,alpha,beta);
+
+  }
+
+  template<CombineMode CM, typename InputProvider,
+           int NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
+  KOKKOS_INLINE_FUNCTION void
+  divergence_sphere_cm (const KernelVariables &kv,
+                        const InputProvider& v,
+                        const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& div_v,
+                        const Real alpha = 1.0, const Real beta = 0.0) const
+  {
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
+
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
 
     const auto& D_inv = Homme::subview(m_dinv, kv.ie);
     const auto& metdet = Homme::subview(m_metdet, kv.ie);
-    const auto& gv_buf = Homme::subview(vector_buf_ml,kv.team_idx, 0);
+    vector_buf<NUM_LEV_REQUEST> gv_buf(Homme::subview(vector_buf_ml,kv.team_idx, 0).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -384,30 +494,33 @@ public:
           dudx += dvv(jgp, kgp) * gv_buf(0, igp, kgp, ilev);
           dvdy += dvv(igp, kgp) * gv_buf(1, kgp, jgp, ilev);
         }
-        div_v(igp, jgp, ilev) =
-            (dudx + dvdy) * (1.0 / metdet(igp, jgp) * PhysicalConstants::rrearth);
+        combine<CM>((dudx + dvdy) * (1.0 / metdet(igp, jgp) * PhysicalConstants::rrearth),
+                     div_v(igp, jgp, ilev), alpha, beta);
       });
     });
     kv.team_barrier();
   }
 
-  // Note: this updates the field div_v as follows:
-  //     div_v = beta*div_v + alpha*div(v)
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_update (const KernelVariables &kv,
                             const Real alpha, const bool add_hyperviscosity,
-                            const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV]> vstar,
-                            const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV]> qdp,
+                            const typename ViewConst<ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>>::type& vstar,
+                            const typename ViewConst<ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV_IN]>>::type& qdp,
                             // On input, qtens_biharmonic if add_hyperviscosity, undefined
                             // if not; on output, qtens.
-                            const ExecViewUnmanaged<      Scalar    [NP][NP][NUM_LEV]> qtens) const
+                            const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& qtens) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
+
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
 
     const auto& D_inv = Homme::subview(m_dinv, kv.ie);
     const auto& metdet = Homme::subview(m_metdet, kv.ie);
-    const auto& gv = Homme::subview(vector_buf_ml,kv.team_idx,0);
+    vector_buf<NUM_LEV_REQUEST> gv(Homme::subview(vector_buf_ml,kv.team_idx,0).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -443,18 +556,23 @@ public:
     kv.team_barrier();
   }
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   vorticity_sphere (const KernelVariables &kv,
-                    const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]> u,
-                    const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]> v,
-                    const ExecViewUnmanaged<      Scalar [NP][NP][NUM_LEV]> vort) const
+                    const typename ViewConst<ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>>::type& u,
+                    const typename ViewConst<ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>>::type& v,
+                    const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& vort) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
+
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
 
     const auto& D = Homme::subview(m_d, kv.ie);
     const auto& metdet = Homme::subview(m_metdet, kv.ie);
-    const auto& vcov_buf = Homme::subview(vector_buf_ml,kv.team_idx,0);
+    vector_buf<NUM_LEV_REQUEST> vcov_buf(Homme::subview(vector_buf_ml,kv.team_idx,0).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -489,17 +607,22 @@ public:
 
   //Why does the prev version take u and v separately?
   //rewriting this to take vector as the input.
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   vorticity_sphere (const KernelVariables &kv,
-                    const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV]> v,
-                    const ExecViewUnmanaged<      Scalar    [NP][NP][NUM_LEV]> vort) const
+                    const typename ViewConst<ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>>::type& v,
+                    const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& vort) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
+
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
 
     const auto& D = Homme::subview(m_d, kv.ie);
     const auto& metdet = Homme::subview(m_metdet, kv.ie);
-    const auto& sphere_buf = Homme::subview(vector_buf_ml,kv.team_idx,0);
+    vector_buf<NUM_LEV_REQUEST> sphere_buf(Homme::subview(vector_buf_ml,kv.team_idx,0).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -532,16 +655,20 @@ public:
     kv.team_barrier();
   }
 
-
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere_wk (const KernelVariables &kv,
                         // On input, a field whose divergence is sought; on
                         // output, the view's data are invalid.
-                        const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV]> v,
-                        const ExecViewUnmanaged<Scalar    [NP][NP][NUM_LEV]> div_v) const
+                        const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>& v,
+                        const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& div_v) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
+
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
 
     const auto& D_inv = Homme::subview(m_dinv, kv.ie);
     const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
@@ -582,41 +709,45 @@ public:
 
   }//end of divergence_sphere_wk
 
-  //analog of laplace_simple_c_callable
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   laplace_simple (const KernelVariables &kv,
-                  const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]> field,
-                  const ExecViewUnmanaged<      Scalar [NP][NP][NUM_LEV]> laplace) const
+                  const typename ViewConst<ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>>::type& field,
+                  const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& laplace) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
 
-    const auto& grad_s = Homme::subview(vector_buf_ml, kv.team_idx, 0);
-    gradient_sphere<NUM_LEV_REQUEST>(kv, field, grad_s);
-    divergence_sphere_wk<NUM_LEV_REQUEST>(kv, grad_s, laplace);
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
+
+    vector_buf<NUM_LEV_REQUEST> grad_s(Homme::subview(vector_buf_ml, kv.team_idx, 0).data());
+    gradient_sphere<NUM_LEV_REQUEST,decltype(field),NUM_LEV_REQUEST>(kv, field, grad_s);
+    divergence_sphere_wk<NUM_LEV_OUT,NUM_LEV_REQUEST,NUM_LEV_REQUEST>(kv, grad_s, laplace);
   }//end of laplace_simple
 
-  //analog of laplace_wk_c_callable
-  //but without if-statements for hypervis_power, var_coef, and hypervis_scaling.
-  //for 2d fields, there should be either laplace_simple, or laplace_tensor for the whole run.
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   laplace_tensor(const KernelVariables &kv,
-                 const ExecViewUnmanaged<const Real   [2][2][NP][NP]>          tensorVisc,
-                 const ExecViewUnmanaged<const Scalar       [NP][NP][NUM_LEV]> field,         // input
-                 const ExecViewUnmanaged<      Scalar       [NP][NP][NUM_LEV]> laplace) const
+                 const ExecViewUnmanaged<const Real   [2][2][NP][NP]>&              tensorVisc,
+                 const typename ViewConst<ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>>::type&  field,         // input
+                 const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& laplace) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
 
-    const auto& grad_s     = Homme::subview(vector_buf_ml, kv.team_idx, 1);
-    const auto& sphere_buf = Homme::subview(vector_buf_ml, kv.team_idx, 2);
-    const auto& D_inv = Homme::subview(m_dinv, kv.ie);
-    const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
 
-    gradient_sphere<NUM_LEV_REQUEST>(kv, field, grad_s);
-  //now multiply tensorVisc(:,:,i,j)*grad_s(i,j) (matrix*vector, independent of i,j )
-  //but it requires a temp var to store a result. the result is then placed to grad_s,
-  //or should it be an extra temp var instead of an extra loop?
+    vector_buf<NUM_LEV_REQUEST> grad_s(Homme::subview(vector_buf_ml, kv.team_idx, 1).data());
+    vector_buf<NUM_LEV_REQUEST> sphere_buf(Homme::subview(vector_buf_ml, kv.team_idx, 2).data());
+
+    gradient_sphere<NUM_LEV_REQUEST,decltype(field),NUM_LEV_REQUEST>(kv, field, grad_s);
+    //now multiply tensorVisc(:,:,i,j)*grad_s(i,j) (matrix*vector, independent of i,j )
+    //but it requires a temp var to store a result. the result is then placed to grad_s,
+    //or should it be an extra temp var instead of an extra loop?
     constexpr int num_iters = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, num_iters),
                        [&](const int loop_idx) {
@@ -631,20 +762,24 @@ public:
     });
     kv.team_barrier();
 
-    divergence_sphere_wk<NUM_LEV_REQUEST>(kv, sphere_buf, laplace);
+    divergence_sphere_wk<NUM_LEV_OUT,NUM_LEV_REQUEST,NUM_LEV_REQUEST>(kv, sphere_buf, laplace);
   }//end of laplace_tensor
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   curl_sphere_wk_testcov (const KernelVariables &kv,
-                          const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV]> scalar,
-                          const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV]> curls) const
+                          const typename ViewConst<ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>>::type& scalar,
+                          const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_OUT]>& curls) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
+
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
 
     const auto& D = Homme::subview(m_d, kv.ie);
-    const auto& mp = Homme::subview(m_mp, kv.ie);
-    const auto& sphere_buf = Homme::subview(vector_buf_ml,kv.team_idx,0);
+    vector_buf<NUM_LEV_REQUEST> sphere_buf(Homme::subview(vector_buf_ml,kv.team_idx,0).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared), [&](const int loop_idx) {
       const int ngp = loop_idx / NP;
@@ -655,8 +790,8 @@ public:
         sb0 = 0;
         sb1 = 0;
         for (int jgp = 0; jgp < NP; ++jgp) {
-          sb0 -= mp(jgp,mgp)*scalar(jgp,mgp,ilev)*dvv(jgp,ngp);
-          sb1 += mp(ngp,jgp)*scalar(ngp,jgp,ilev)*dvv(jgp,mgp);
+          sb0 -= m_mp(jgp,mgp)*scalar(jgp,mgp,ilev)*dvv(jgp,ngp);
+          sb1 += m_mp(ngp,jgp)*scalar(ngp,jgp,ilev)*dvv(jgp,mgp);
         }
       });
     });
@@ -676,18 +811,20 @@ public:
     kv.team_barrier();
   }
 
-  // This computes curls = alpha*curl(scalar) + beta*curls, where scalar is the input view,
-  // and curls is the output view
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   curl_sphere_wk_testcov_update (const KernelVariables &kv, const Real alpha, const Real beta,
-                                 const ExecViewUnmanaged<const Scalar       [NP][NP][NUM_LEV]> scalar,
-                                 const ExecViewUnmanaged<      Scalar    [2][NP][NP][NUM_LEV]> curls) const
+                                 const typename ViewConst<ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>>::type& scalar,
+                                 const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_OUT]>& curls) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
+
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
 
     const auto& D = Homme::subview(m_d, kv.ie);
-    const auto& mp = Homme::subview(m_mp, kv.ie);
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared), [&](const int loop_idx) {
       const int ngp = loop_idx / NP;
@@ -695,8 +832,8 @@ public:
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
         Scalar sb0, sb1;
         for (int jgp = 0; jgp < NP; ++jgp) {
-          sb0 -= mp(jgp,mgp)*scalar(jgp,mgp,ilev)*dvv(jgp,ngp);
-          sb1 += mp(ngp,jgp)*scalar(ngp,jgp,ilev)*dvv(jgp,mgp);
+          sb0 -= m_mp(jgp,mgp)*scalar(jgp,mgp,ilev)*dvv(jgp,ngp);
+          sb1 += m_mp(ngp,jgp)*scalar(ngp,jgp,ilev)*dvv(jgp,mgp);
         }
         curls(0,ngp,mgp,ilev) = beta*curls(0,ngp,mgp,ilev) + alpha *
                                 ( D(0,0,ngp,mgp)*sb0 + D(1,0,ngp,mgp)*sb1 )
@@ -709,16 +846,20 @@ public:
     kv.team_barrier();
   }
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   grad_sphere_wk_testcov (const KernelVariables &kv,
-                          const ExecViewUnmanaged<const Scalar    [NP][NP][NUM_LEV]> scalar,
-                          const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV]> grads) const
+                          const typename ViewConst<ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_IN]>>::type& scalar,
+                          const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_OUT]>& grads) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
+
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
 
     const auto& D = Homme::subview(m_d, kv.ie);
-    const auto& mp = Homme::subview(m_mp, kv.ie);
     const auto& metinv = Homme::subview(m_metinv, kv.ie);
     const auto& metdet = Homme::subview(m_metdet, kv.ie);
     constexpr int np_squared = NP * NP;
@@ -728,8 +869,8 @@ public:
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
         Scalar b0, b1;
         for (int jgp = 0; jgp < NP; ++jgp) {
-          const auto& mpnj = mp(ngp,jgp);
-          const auto& mpjm = mp(jgp,mgp);
+          const auto& mpnj = m_mp(ngp,jgp);
+          const auto& mpjm = m_mp(jgp,mgp);
           const auto& md = metdet(ngp,mgp);
           const auto& snj = scalar(ngp,jgp,ilev);
           const auto& sjm = scalar(jgp,mgp,ilev);
@@ -747,21 +888,25 @@ public:
     kv.team_barrier();
   }
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   vlaplace_sphere_wk_cartesian (const KernelVariables &kv,
-                                const ExecViewUnmanaged<const Real   [2][2][NP][NP]>          tensorVisc,
-                                const ExecViewUnmanaged<const Real   [2][3][NP][NP]>          vec_sph2cart,
-                                const ExecViewUnmanaged<const Scalar    [2][NP][NP][NUM_LEV]> vector,
-                                const ExecViewUnmanaged<      Scalar    [2][NP][NP][NUM_LEV]> laplace) const
+                                const ExecViewUnmanaged<const Real [2][2][NP][NP]>&          tensorVisc,
+                                const ExecViewUnmanaged<const Real [2][3][NP][NP]>&          vec_sph2cart,
+                                const typename ViewConst<ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>>::type& vector,
+                                const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_OUT]>& laplace) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
 
-    const auto& D_inv = Homme::subview(m_dinv, kv.ie);
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
+
     const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
-    const auto& laplace0   = Homme::subview(scalar_buf_ml,kv.team_idx,0);
-    const auto& laplace1   = Homme::subview(scalar_buf_ml,kv.team_idx,1);
-    const auto& laplace2   = Homme::subview(scalar_buf_ml,kv.team_idx,2);
+    scalar_buf<NUM_LEV_REQUEST> laplace0(Homme::subview(scalar_buf_ml,kv.team_idx,0).data());
+    scalar_buf<NUM_LEV_REQUEST> laplace1(Homme::subview(scalar_buf_ml,kv.team_idx,1).data());
+    scalar_buf<NUM_LEV_REQUEST> laplace2(Homme::subview(scalar_buf_ml,kv.team_idx,2).data());
     constexpr int np_squared = NP * NP;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -778,9 +923,9 @@ public:
     kv.team_barrier();
 
     // Use laplace* as input, and then overwrite it with the output (saves temporaries)
-    laplace_tensor<NUM_LEV_REQUEST>(kv,tensorVisc,laplace0,laplace0);
-    laplace_tensor<NUM_LEV_REQUEST>(kv,tensorVisc,laplace1,laplace1);
-    laplace_tensor<NUM_LEV_REQUEST>(kv,tensorVisc,laplace2,laplace2);
+    laplace_tensor<NUM_LEV_REQUEST,NUM_LEV_REQUEST,NUM_LEV_REQUEST>(kv,tensorVisc,laplace0,laplace0);
+    laplace_tensor<NUM_LEV_REQUEST,NUM_LEV_REQUEST,NUM_LEV_REQUEST>(kv,tensorVisc,laplace1,laplace1);
+    laplace_tensor<NUM_LEV_REQUEST,NUM_LEV_REQUEST,NUM_LEV_REQUEST>(kv,tensorVisc,laplace2,laplace2);
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                          [&](const int loop_idx) {
@@ -813,19 +958,23 @@ public:
     kv.team_barrier();
   } // end of vlaplace_sphere_wk_cartesian
 
-  template<int NUM_LEV_REQUEST = NUM_LEV>
+  template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   vlaplace_sphere_wk_contra (const KernelVariables &kv, const Real nu_ratio,
-                             const ExecViewUnmanaged<const Scalar [2][NP][NP][NUM_LEV]> vector,
-                             const ExecViewUnmanaged<      Scalar [2][NP][NP][NUM_LEV]> laplace) const
+                             const typename ViewConst<ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>>::type& vector,
+                             const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_OUT]>& laplace) const
   {
-    static_assert(NUM_LEV_REQUEST>0, "Error! Template argument NUM_LEV_REQUEST must be positive.\n");
+    static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_IN, "Error! Input view does not have enough levels.\n");
+    static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
 
-    const auto& D = Homme::subview(m_d, kv.ie);
+    // Make sure the buffers have been created
+    assert (vector_buf_ml.size()>0);
+
     const auto& spheremp = Homme::subview(m_spheremp, kv.ie);
-    const auto& div           = Homme::subview(scalar_buf_ml,kv.team_idx,0);
-    const auto& vort          = Homme::subview(scalar_buf_ml,kv.team_idx,0);
-    const auto& grad_curl_cov = Homme::subview(vector_buf_ml,kv.team_idx,1);
+    scalar_buf<NUM_LEV_REQUEST> div (Homme::subview(scalar_buf_ml,kv.team_idx,0).data());
+    scalar_buf<NUM_LEV_REQUEST> vort(Homme::subview(scalar_buf_ml,kv.team_idx,0).data());
+    vector_buf<NUM_LEV_REQUEST> grad_curl_cov(Homme::subview(vector_buf_ml,kv.team_idx,1).data());
     constexpr int np_squared = NP * NP;
 
     // grad(div(v))
@@ -841,19 +990,19 @@ public:
       });
       kv.team_barrier();
     }
-    grad_sphere_wk_testcov<NUM_LEV_REQUEST>(kv,div,grad_curl_cov);
+    grad_sphere_wk_testcov<NUM_LEV_REQUEST,NUM_LEV_REQUEST,NUM_LEV_REQUEST>(kv,div,grad_curl_cov);
 
     // curl(curl(v))
-    vorticity_sphere<NUM_LEV_REQUEST>(kv,vector,vort);
-    curl_sphere_wk_testcov_update<NUM_LEV_REQUEST>(kv,-1.0,1.0,vort,grad_curl_cov);
+    vorticity_sphere<NUM_LEV_REQUEST,NUM_LEV_IN,NUM_LEV_REQUEST>(kv,vector,vort);
+    curl_sphere_wk_testcov_update<NUM_LEV_REQUEST,NUM_LEV_REQUEST,NUM_LEV_REQUEST>(kv,-1.0,1.0,vort,grad_curl_cov);
 
     const auto re2 = PhysicalConstants::rrearth*PhysicalConstants::rrearth;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, np_squared),
                         [&](const int loop_idx) {
       const int igp = loop_idx / NP; //slow
       const int jgp = loop_idx % NP; //fast
+      const auto f = 2.0*spheremp(igp,jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
-        const auto f = 2.0*spheremp(igp,jgp);
         laplace(0,igp,jgp,ilev) = f*vector(0,igp,jgp,ilev)*re2 + grad_curl_cov(0,igp,jgp,ilev);
         laplace(1,igp,jgp,ilev) = f*vector(1,igp,jgp,ilev)*re2 + grad_curl_cov(1,igp,jgp,ilev);
       });
@@ -861,20 +1010,21 @@ public:
      kv.team_barrier();
   }//end of vlaplace_sphere_wk_contra
 
-  // These buffers should be enough to handle any single call to any
+  // The buffers should be enough to handle any single call to any
   // single sphere operator.
-  //   One might prefer them to be private, but they are handy for
+  // One might prefer them to be private, but they are handy for
   // users of SphereOperators for other things, and using the same
   // memory buffers for multiple things gives performance in mem
   // b/w-limited computations.
-  ExecViewManaged<Real   * [NUM_2D_VECTOR_BUFFERS][2][NP][NP]>           vector_buf_sl;
-  ExecViewManaged<Scalar * [NUM_3D_SCALAR_BUFFERS][NP][NP][NUM_LEV]>     scalar_buf_ml;
-  ExecViewManaged<Scalar * [NUM_3D_VECTOR_BUFFERS][2][NP][NP][NUM_LEV]>  vector_buf_ml;
 
-private:
+  ExecViewManaged<Real   * [NUM_2D_VECTOR_BUFFERS][2][NP][NP]>                vector_buf_sl;
+  ExecViewManaged<Scalar * [NUM_3D_SCALAR_BUFFERS][NP][NP][MAX_NUM_LEV]>      scalar_buf_ml;
+  ExecViewManaged<Scalar * [NUM_3D_VECTOR_BUFFERS][2][NP][NP][MAX_NUM_LEV]>   vector_buf_ml;
+
+
   ExecViewManaged<const Real [NP][NP]>          dvv;
+  ExecViewManaged<const Real [NP][NP]>          m_mp;
 
-  ExecViewManaged<const Real * [NP][NP]>        m_mp;
   ExecViewManaged<const Real * [NP][NP]>        m_spheremp;
   ExecViewManaged<const Real * [NP][NP]>        m_rspheremp;
   ExecViewManaged<const Real * [2][2][NP][NP]>  m_metinv;

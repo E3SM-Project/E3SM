@@ -23,8 +23,10 @@ contains
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
          tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
          tc1_errors, tc2_errors, tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors, tc1_velocity,&
-         toy_chemistry_forcing
+         toy_chemistry_forcing , planar_dbl_vrtx_init_state, planar_dbl_vrtx_invariants
     !-----------------
+
+
 #ifdef PIO_INTERP
     use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
 #else
@@ -64,7 +66,7 @@ contains
 #endif
     !-----------------
     use control_mod, only : integration,  &
-         restartfreq, statefreq, runtype, topology,   &
+         restartfreq, statefreq, runtype,   &
          test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, g_sw_output, &
          tstep_type, toy_chemistry
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
@@ -189,7 +191,6 @@ contains
     call t_startf('sweq')
     hybrid = hybrid_create(par,ithr,hthreads)
     simday=0
-    if (topology == "cube") then
        call test_global_integral(elem,hybrid,nets,nete)
 
        dtnu = 2.0d0*tstep*max(nu,nu_s)/hypervis_subcycle
@@ -202,7 +203,6 @@ contains
           call test_ghost(hybrid,elem,nets,nete)
        endif
        call sort_neighbor_buffer_mapping(hybrid%par,elem,nets,nete)
-    end if
 
     if(Debug) print *,'homme: point #2'
     ! ==================================
@@ -217,7 +217,7 @@ contains
     gp =gausslobatto(np)
 
 !   some test code
-#if 1
+#if 0
     if (hybrid%masterthread) print *,'** running CG solver test **'
     call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
 #ifdef TRILINOS
@@ -297,7 +297,6 @@ contains
     ! Initialize geopotential and velocity for different test cases...
     ! =================================================================
 
-    if (topology == "cube") then
        if (runtype .eq. 1) then 
           if (hybrid%masterthread) then
              print *,'runtype: RESTART of Shallow Water equations'
@@ -341,6 +340,10 @@ contains
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
              simday=0
              call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
+          else if (test_case == "planar_dbl_vrtx") then
+             if (hybrid%masterthread) print *,"Restarting planar double vortex..."
+             call planar_dbl_vrtx_init_state(elem,nets,nete,pmean,deriv)
+             call planar_dbl_vrtx_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
           end if
           !============================
           ! Read in the restarted state 
@@ -389,6 +392,10 @@ contains
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
              simday=0
              call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
+           else if (test_case == "planar_dbl_vrtx") then
+              if (hybrid%masterthread) print *,"initializing planar double vortex..."
+              call planar_dbl_vrtx_init_state(elem,nets,nete,pmean,deriv)
+              call planar_dbl_vrtx_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
           end if  ! test case init calls
 
           ! ==============================================
@@ -444,7 +451,6 @@ contains
           endif  ! if time step taken
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        endif  ! if initial run 
-    end if ! if topology == "cube"
 
     ! reset timestep counter.  New more accurate leapfrog bootstrap routine takes
     ! one extra timestep to get started.  dont count that timestep, otherwise
@@ -566,7 +572,7 @@ contains
 
         do ie=nets,nete
 
-         if (topology == "cube" .and. test_case=="swtc1") then
+         if (test_case=="swtc1") then
              do k=1,nlev
                 elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherep,elem(ie)%Dinv)
                 elem(ie)%state%v(:,:,:,k,n0)=elem(ie)%state%v(:,:,:,k,np1)
@@ -741,6 +747,19 @@ contains
              call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
           end if
 
+        else if (test_case == "planar_dbl_vrtx") then
+
+           ! ===============================================================
+           ! Shallow Water Test Case planar double vortex:
+           ! L1,L2,Linf error norms every model day (compared to real soln)
+           !
+           ! detect day rollover
+           ! ===============================================================
+
+           if (MODULO(Time_at(tl%nstep),secpday) <= 0.5*tstep) then
+              simday=NINT(Time_at(tl%nstep)/secpday)
+              !call pdv_errors(elem,7,tl,pmean,"ref_pdv_imp",simday,hybrid,nets,nete,par)
+           end if
        end if
 
 #if (defined HORIZ_OPENMP)
@@ -816,7 +835,7 @@ contains
          tc6_init_state, tc5_invariants, tc8_init_state, vortex_init_state, &
          vortex_errors, sj1_init_state, tc6_errors, tc1_errors, tc2_errors, &
          tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors,&
-         kmass_swirl, toy_chemistry_forcing
+         kmass_swirl, toy_chemistry_forcing, planar_dbl_vrtx_init_state, planar_dbl_vrtx_invariants
     !-----------------
 #ifdef PIO_INTERP
     use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
@@ -845,7 +864,7 @@ contains
     use advance_mod, only : advance_nonstag_rk
     !-----------------
     use control_mod, only : integration, &
-         restartfreq, statefreq, runtype, topology, &
+         restartfreq, statefreq, runtype, &
          rk_stage_user, test_case, sub_case, kmass, qsplit, nu, nu_s, limiter_option, &
          hypervis_subcycle, g_sw_output, toy_chemistry
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
@@ -912,11 +931,9 @@ contains
 
     hybrid = hybrid_create(par,ithr,hthreads)
 
-    if (topology == "cube") then
        call test_global_integral(elem,hybrid,nets,nete,mindx)
        dtnu = (tstep/rk_stage_user)*max(nu,nu_s)/hypervis_subcycle
        call print_cfl(elem,hybrid,nets,nete,dtnu)
-    end if
 
     ! Find time-step to gravity wave speed
     ! 2012: broken because mindx=0.  also, should be updated to use true eigenvalue,
@@ -949,7 +966,6 @@ contains
     ! Initialize geopotential and velocity for different test cases...
     ! =================================================================
 
-    if (topology == "cube") then
        if (runtype .eq. 1) then 
           if (hybrid%masterthread) then
              print *,'runtype: RESTART of Shallow Water equations'
@@ -999,6 +1015,13 @@ contains
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
              simday=0
              call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
+          else if (test_case == "planar_dbl_vrtx") then
+             if (hybrid%masterthread) print *,"Restarting planar double vortex..."
+             !==================================================
+             ! Recover the initial state for diagnostic purposes
+             !==================================================
+             call planar_dbl_vrtx_init_state(elem, nets,nete,pmean,deriv)
+             call planar_dbl_vrtx_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
           end if
           !============================
           ! Read in the restarted state 
@@ -1047,6 +1070,10 @@ contains
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
              simday=0
              call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
+          else if (test_case == "planar_dbl_vrtx") then
+              if (hybrid%masterthread) print *,"initializing planar double vortex..."
+              call planar_dbl_vrtx_init_state(elem,nets,nete,pmean,deriv)
+              call planar_dbl_vrtx_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
           end if
 
           ! ==============================================
@@ -1089,7 +1116,6 @@ contains
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        endif  ! if initial run 
-    end if ! if topology == "cube"
 
     ! reset timestep counter.  New more accurate leapfrog bootstrap routine takes
     ! one extra timestep to get started.  dont count that timestep, otherwise

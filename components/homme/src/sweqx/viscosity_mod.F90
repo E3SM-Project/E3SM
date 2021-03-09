@@ -4,7 +4,7 @@
 
 module viscosity_mod
   use viscosity_base, only: compute_zeta_C0, compute_div_C0, &
-    compute_zeta_C0_contra, compute_div_C0_contra, make_c0, neighbor_minmax, &
+    compute_zeta_C0_contra, compute_eta_C0_contra, compute_div_C0_contra, make_c0, neighbor_minmax, &
     make_c0_vector
 
 use dimensions_mod, only : np, nlev,qsize,nelemd
@@ -13,12 +13,17 @@ use element_mod, only : element_t
 use kinds, only : real_kind, iulog
 use edgetype_mod, only : EdgeBuffer_t
 use edge_mod, only : edgevpack, edgevunpack
-use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
+use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit
 use bndry_mod, only : bndry_exchangev
 use control_mod, only : hypervis_scaling, nu, nu_div
+use parallel_mod, only : parallel_t
+use physical_constants, only : g
 
 
 implicit none
+
+public :: compute_pv_C0_contra
+
 contains
 
 
@@ -119,5 +124,45 @@ logical var_coef1
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 end subroutine
 
+
+subroutine compute_pv_C0_contra(pv,elem,phimean,par,nt)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! compute C0 potential vorticity for swe.  That is, solve:
+!     < PHI, pv > = <PHI, (curl(elem%state%v) + coriolis)/h >
+!
+!    input:  v (stored in elem()%, in contra-variant coordinates)
+!    output: pv(:,:,:,:)
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+type (parallel_t)      , intent(in) :: par
+type (element_t)     , intent(in), target :: elem(:)
+integer :: nt
+real (kind=real_kind) :: phimean
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: pv
+real (kind=real_kind), dimension(np,np,2) :: ulatlon
+real (kind=real_kind), dimension(np,np) :: v1,v2
+
+! local
+integer :: k,ie
+type (derivative_t)          :: deriv
+
+call derivinit(deriv)
+
+do k=1,nlev
+do ie=1,nelemd
+    v1 = elem(ie)%state%v(:,:,1,k,nt)
+    v2 = elem(ie)%state%v(:,:,2,k,nt)
+    ulatlon(:,:,1) = elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2
+    ulatlon(:,:,2) = elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2
+   pv(:,:,k,ie)=vorticity_sphere(ulatlon,deriv,elem(ie))
+   pv(:,:,k,ie)=pv(:,:,k,ie) + elem(ie)%fcor(:,:)
+   pv(:,:,k,ie)=pv(:,:,k,ie)/(elem(ie)%state%p(:,:,k,nt) + elem(ie)%state%ps(:,:) + phimean)*g
+enddo
+enddo
+
+call make_C0(pv,elem,par)
+
+end subroutine
 
 end module viscosity_mod

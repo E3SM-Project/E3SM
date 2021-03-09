@@ -109,8 +109,9 @@ module control_mod
                                                             ! Use (3) if zoltan2 is enabled.
 
   integer              , public :: partmethod     ! partition methods
-  character(len=MAX_STRING_LEN)    , public :: topology       ! options: "cube" is supported
-  character(len=MAX_STRING_LEN)    , public :: test_case      ! options: if cube: "swtc1","swtc2",or "swtc6"  
+  character(len=MAX_STRING_LEN)    , public :: topology = "cube"       ! options: "cube", "plane"
+  character(len=MAX_STRING_LEN)    , public :: geometry = "sphere"      ! options: "sphere", "plane"
+  character(len=MAX_STRING_LEN)    , public :: test_case      
   integer              , public :: tasknum
   integer              , public :: statefreq      ! output frequency of synopsis of system state (steps)
   integer              , public :: restartfreq
@@ -121,6 +122,9 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: restartfile 
   character(len=MAX_STRING_LEN)    , public :: restartdir
 
+  ! flag used for "slice" planar tests (no variation in y-dir)
+  logical, public :: planar_slice
+  
 ! namelist variable set to dry,notdry,moist
 ! internally the code should use logical "use_moisture"
   character(len=MAX_STRING_LEN)    , public :: moisture  
@@ -451,16 +455,19 @@ contains
           nstep_factor = dt_max_factor*nsplit
           if (abs(nsplit_real - nsplit) > divisible_tol*nsplit_real) then
              if (par%masterproc .and. .not. silent_in) then
-                write(iulog,'(a,es11.4,a,i7,a,es11.4,a)') &
+                write(iulog,'(a,es11.4,a,i7,a,es11.4,a,i2,a,i2,a,i2,a)') &
                      'nsplit was computed as ', nsplit_real, ' based on dtime ', dtime, &
-                     ' and tstep ', tstep, ', which is outside the divisibility tolerance. Set &
-                     &tstep so that it divides dtime.'
+                     ', tstep ', tstep, &
+                     ', and dt_max_factor = max(dt_remap_factor, dt_tracer_factor) = max(', &
+                     dt_remap_factor, ',', dt_tracer_factor, ') =', dt_max_factor, &
+                     ', which is outside the divisibility tolerance. &
+                     &Set tstep, dt_remap_factor, and dt_tracer_factor so that &
+                     &tstep and dt_max_factor*tstep divide dtime.'
              end if
              if (abort_in) call abortmp('timestep_make_parameters_consistent: divisibility error')
              return
           end if
        else
-          print *,'um>',par%rank,par%masterproc,silent_in,nsplit,dtime,tstep
           if (par%masterproc .and. .not. silent_in) then
              write(iulog,*) 'If dtime is set to >0, then either nsplit or tstep must be >0.'
           end if

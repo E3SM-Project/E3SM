@@ -32,12 +32,14 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 {
   GPTLstart("tl-sc prim_run_subcycle_c");
 
+  auto& context = Context::singleton();
+
   // Get simulation params
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = context.get<SimulationParams>();
   assert(params.params_set);
 
   // Get time info and compute dt for tracers and remap
-  TimeLevel& tl = Context::singleton().get_time_level();
+  TimeLevel& tl = context.get<TimeLevel>();
   const Real dt_q = dt*params.qsplit;
   Real dt_remap = dt_q;
   int nstep_end = tl.nstep + params.qsplit;
@@ -58,9 +60,8 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   }
 
   if (compute_diagnostics) {
-    Diagnostics& diags = Context::singleton().get_diagnostics();
-    diags.prim_diag_scalars(true,2);
-    diags.prim_energy_halftimes(true,2);
+    Diagnostics& diags = context.get<Diagnostics>();
+    diags.run_diagnostics(true,2);
   }
 
   tl.update_tracers_levels(params.qsplit);
@@ -68,7 +69,6 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 #ifndef CAM
   apply_test_forcing ();
 #endif
-
 
   // Apply forcing.
   // In standalone mode, params.ftype == ForcingAlg::FORCING_DEBUG
@@ -82,22 +82,21 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   }
 
   if (compute_diagnostics) {
-    Diagnostics& diags = Context::singleton().get_diagnostics();
-    diags.prim_energy_halftimes(true,0);
-    diags.prim_diag_scalars(true,0);
+    Diagnostics& diags = context.get<Diagnostics>();
+    diags.run_diagnostics(true,0);
   }
 
   // Initialize dp3d from ps
   GPTLstart("tl-sc dp3d-from-ps");
-  Elements& elements = Context::singleton().get_elements();
-  HybridVCoord& hvcoord = Context::singleton().get_hvcoord();
+  Elements& elements = context.get<Elements>();
+  HybridVCoord& hvcoord = context.get<HybridVCoord>();
   const auto hybrid_ai_delta = hvcoord.hybrid_ai_delta;
   const auto hybrid_bi_delta = hvcoord.hybrid_bi_delta;
   const auto ps0 = hvcoord.ps0;
-  const auto ps_v = elements.m_ps_v;
+  const auto ps_v = elements.m_state.m_ps_v;
   {
-    const auto dp3d = elements.m_dp3d;
-    const auto n0 = tl.n0;
+    const auto dp3d = elements.m_state.m_dp3d;
+    const auto tln0 = tl.n0;
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace> (0,elements.num_elems()*NP*NP*NUM_LEV),
                          KOKKOS_LAMBDA(const int idx) {
       const int ie   = ((idx / NUM_LEV) / NP) / NP;
@@ -105,11 +104,11 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
       const int jgp  =  (idx / NUM_LEV) % NP;
       const int ilev =   idx % NUM_LEV;
 
-      dp3d(ie,n0,igp,jgp,ilev) = hybrid_ai_delta[ilev]*ps0
-                               + hybrid_bi_delta[ilev]*ps_v(ie,n0,igp,jgp);
+      dp3d(ie,tln0,igp,jgp,ilev) = hybrid_ai_delta[ilev]*ps0
+                                 + hybrid_bi_delta[ilev]*ps_v(ie,tln0,igp,jgp);
     });
   }
-  ExecSpace::fence();
+  ExecSpace::impl_static_fence();
   GPTLstop("tl-sc dp3d-from-ps");
 
   // Loop over rsplit vertically lagrangian timesteps
@@ -121,12 +120,18 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   }
   GPTLstop("tl-sc prim_step-loop");
 
+  tl.update_tracers_levels(params.qsplit);
+
+  if (compute_diagnostics) {
+    Diagnostics& diags = context.get<Diagnostics>();
+    diags.run_diagnostics(false,3);
+  }
+
   ////////////////////////////////////////////////////////////////////////
   // apply vertical remap
   // always for tracers
   // if rsplit>0:  also remap dynamics and compute reference level ps_v
   ////////////////////////////////////////////////////////////////////////
-  tl.update_tracers_levels(params.qsplit);
   GPTLstart("tl-sc vertical_remap");
   vertical_remap(dt_remap);
   GPTLstop("tl-sc vertical_remap");
@@ -138,9 +143,8 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   update_q(tl.np1_qdp,tl.np1);
 
   if (compute_diagnostics) {
-    Diagnostics& diags = Context::singleton().get_diagnostics();
-    diags.prim_diag_scalars(false,1);
-    diags.prim_energy_halftimes(false,1);
+    Diagnostics& diags = context.get<Diagnostics>();
+    diags.run_diagnostics(false,1);
   }
 
   // Update dynamics time levels
@@ -159,33 +163,38 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 
 void apply_test_forcing () {
   // Get simulation params
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
 
-  if (params.test_case==TestCase::DCMIP2012_TEST2_1 ||
-      params.test_case==TestCase::DCMIP2012_TEST2_2) {
-    Errors::runtime_abort("Test case not yet available in C++ build.\n",
-                          Errors::err_not_implemented);
+  switch (params.test_case) {
+    case TestCase::JW_BAROCLINIC:
+      break;  // Do nothing
+    case TestCase::DCMIP2016_TEST2:
+    default:
+      Errors::runtime_abort("Test case not yet available in C++ build.\n",
+                            Errors::err_not_implemented);
   }
 }
 
 void update_q (const int np1_qdp, const int np1)
 {
+  auto& context = Context::singleton();
+
   // Get simulation params
-  SimulationParams& params = Context::singleton().get_simulation_params();
+  SimulationParams& params = context.get<SimulationParams>();
   assert(params.params_set);
 
   // Get hybrid vertical coordinate
-  HybridVCoord& hvcoord = Context::singleton().get_hvcoord();
+  HybridVCoord& hvcoord = context.get<HybridVCoord>();
   auto hyai_delta = hvcoord.hybrid_ai_delta;
   auto hybi_delta = hvcoord.hybrid_bi_delta;
   const Real ps0 = hvcoord.ps0;
 
   // Get ps_v from Elements
-  Elements& elements = Context::singleton().get_elements();
-  auto ps_v = elements.m_ps_v;
+  Elements& elements = context.get<Elements>();
+  auto ps_v = elements.m_state.m_ps_v;
 
   // Get the tracers concentration and mass from Tracers
-  Tracers& tracers = Context::singleton().get_tracers();
+  Tracers& tracers = context.get<Tracers>();
   auto qdp = tracers.qdp;
   auto Q = tracers.Q;
 

@@ -265,14 +265,9 @@
     </directives>
   </batch_system>
 
-    <batch_system MACH="blues" type="pbs" >
-      <directives>
-        <directive>-A {{ PROJECT }}</directive>
-        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      </directives>
+    <batch_system MACH="blues" type="slurm">
       <queues>
-	<queue walltimemax="01:00:00" nodemax="4" strict="true">shared</queue>
-	<queue walltimemax="03:00:00" default="true">batch</queue>
+        <queue walltimemax="01:00:00" nodemax="6" default="true" strict="true">biggpu</queue>
       </queues>
     </batch_system>
 
@@ -281,6 +276,12 @@
 	<queue walltimemax="48:00:00" nodemax="5" default="true" strict="true">acme-small</queue>
 	<queue walltimemax="24:00:00" nodemin="6" nodemax="60" strict="true">acme-medium</queue>
 	<queue walltimemax="12:00:00" nodemin="61" strict="true">acme-large</queue>
+      </queues>
+    </batch_system>
+
+    <batch_system MACH="chrysalis" type="slurm" >
+      <queues>
+	<queue walltimemax="03:00:00" nodemin="1" nodemax="512" default="true" strict="true">compute</queue>
       </queues>
     </batch_system>
 
@@ -339,18 +340,6 @@
       <queue walltimemax="01:00:00" nodemax="128" default="true">skx-normal</queue>
     </queues>
   </batch_system>
-
-    <batch_system MACH="mira" type="cobalt">
-      <queues>
-        <queue walltimemax="03:00:00" default="true">default</queue>
-      </queues>
-    </batch_system>
-
-    <batch_system MACH="cetus" type="cobalt">
-      <queues>
-        <queue walltimemax="01:00:00" default="true">default</queue>
-      </queues>
-    </batch_system>
 
     <batch_system MACH="theta" type="cobalt_theta">
       <queues>
@@ -508,6 +497,9 @@
      <directives compiler="pgigpu">
        <directive>-alloc_flags gpumps</directive>
      </directives>
+     <directives compiler="gnugpu">
+       <directive>-alloc_flags gpumps</directive>
+     </directives>
      <queues>
        <queue walltimemax="02:00" default="true">batch</queue>
      </queues>
@@ -557,5 +549,13 @@
       <queue walltimemax="06:00:00" default="true">batch</queue>
     </queues>
   </batch_system>
+
+   <batch_system MACH="tulip" type="slurm">
+    <queues>
+      <queue walltimemax="01:00:00" strict="true" nodemin="1" nodemax="2" default="true">v100</queue>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="5">amdMI60</queue>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="7">amdMI100</queue>
+    </queues>
+   </batch_system>
 
 </config_batch>

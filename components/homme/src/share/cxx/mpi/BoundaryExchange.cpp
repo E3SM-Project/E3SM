@@ -6,7 +6,7 @@
 
 #include "BoundaryExchange.hpp"
 
-#include "BuffersManager.hpp"
+#include "MpiBuffersManager.hpp"
 #include "KernelVariables.hpp"
 #include "profiling.hpp"
 
@@ -25,9 +25,10 @@ BoundaryExchange::BoundaryExchange()
   m_num_1d_fields = 0;
   m_num_2d_fields = 0;
   m_num_3d_fields = 0;
+  m_num_3d_int_fields = 0;
 
   m_connectivity    = std::shared_ptr<Connectivity>();
-  m_buffers_manager = std::shared_ptr<BuffersManager>();
+  m_buffers_manager = std::shared_ptr<MpiBuffersManager>();
 
   m_num_elems = -1;
 
@@ -44,7 +45,7 @@ BoundaryExchange::BoundaryExchange()
   m_recv_pending = false;
 }
 
-BoundaryExchange::BoundaryExchange(std::shared_ptr<Connectivity> connectivity, std::shared_ptr<BuffersManager> buffers_manager)
+BoundaryExchange::BoundaryExchange(std::shared_ptr<Connectivity> connectivity, std::shared_ptr<MpiBuffersManager> buffers_manager)
  : BoundaryExchange ()
 {
   // Set the connectivity
@@ -83,7 +84,7 @@ void BoundaryExchange::set_connectivity (std::shared_ptr<Connectivity> connectiv
   m_num_elems = connectivity->get_num_local_elements();
 }
 
-void BoundaryExchange::set_buffers_manager (std::shared_ptr<BuffersManager> buffers_manager)
+void BoundaryExchange::set_buffers_manager (std::shared_ptr<MpiBuffersManager> buffers_manager)
 {
   // Functionality available only before the registration is completed
   assert (!m_registration_completed);
@@ -113,12 +114,12 @@ void BoundaryExchange::set_buffers_manager (std::shared_ptr<BuffersManager> buff
   m_buffers_manager->add_customer(this);
 }
 
-void BoundaryExchange::set_num_fields (const int num_1d_fields, const int num_2d_fields, const int num_3d_fields)
+void BoundaryExchange::set_num_fields (const int num_1d_fields, const int num_2d_fields, const int num_3d_fields, const int num_3d_int_fields)
 {
   // We don't allow to call this method twice in a row. If you want to change the number of fields,
   // you need to call clean_up first, to get a fresh new BoundaryExchange.
   // Note: if you do call clean_up and then again set_num_field and the new number of fields
-  //       are smaller than the previous ones, BuffersManager will NOT shrink the buffers, so
+  //       are smaller than the previous ones, MpiBuffersManager will NOT shrink the buffers, so
   //       you may be left with buffers that are larger than what you need.
   assert (m_cleaned_up);
 
@@ -127,7 +128,7 @@ void BoundaryExchange::set_num_fields (const int num_1d_fields, const int num_2d
   assert (m_connectivity && m_connectivity->is_initialized());
 
   // We strongly advocate for not using the same BE object for both 'standard' exchange and min/max exchange
-  assert (!(num_1d_fields>0 && (num_2d_fields>0 || num_2d_fields>0)));
+  assert (!(num_1d_fields>0 && (num_2d_fields>0 || num_3d_fields>0 || num_3d_int_fields>0)));
 
   // Note: we do not set m_num_1d_fields, m_num_2d_fields and m_num_3d_fields, since we will use them as
   //       progressive indices while adding fields. Then, during registration_completed,
@@ -136,7 +137,14 @@ void BoundaryExchange::set_num_fields (const int num_1d_fields, const int num_2d
   // Create the fields views
   m_1d_fields = decltype(m_1d_fields)("1d fields", m_num_elems, num_1d_fields);
   m_2d_fields = decltype(m_2d_fields)("2d fields", m_num_elems, num_2d_fields);
-  m_3d_fields = decltype(m_3d_fields)("3d fields", m_num_elems, num_3d_fields);
+  if (NUM_LEV==NUM_LEV_P) {
+    // If NUM_LEV=NUM_LEVP, we can use the same 3d buffers for both midpoints and interface quantities
+    m_3d_fields = decltype(m_3d_fields)("3d fields", m_num_elems, num_3d_fields+num_3d_int_fields);
+    m_3d_int_fields = decltype(m_3d_int_fields)("3d interface fields", m_num_elems, 0);
+  } else {
+    m_3d_fields = decltype(m_3d_fields)("3d fields", m_num_elems, num_3d_fields);
+    m_3d_int_fields = decltype(m_3d_int_fields)("3d interface fields", m_num_elems, num_3d_int_fields);
+  }
 
   // Now we can start register fields
   m_registration_started   = true;
@@ -157,11 +165,15 @@ void BoundaryExchange::clean_up()
   assert (!m_send_pending && !m_recv_pending);
 
   // Clear stored fields
+  m_1d_fields = decltype(m_1d_fields)("m_1d_fields", 0, 0);
   m_2d_fields = decltype(m_2d_fields)("m_2d_fields", 0, 0);
   m_3d_fields = decltype(m_3d_fields)("m_3d_fields", 0, 0);
+  m_3d_int_fields = decltype(m_3d_int_fields)("m_3d_interface_fields", 0, 0);
 
+  m_num_1d_fields = 0;
   m_num_2d_fields = 0;
   m_num_3d_fields = 0;
+  m_num_3d_int_fields = 0;
 
   // If we clean up, we need to reset the number of fields
   m_registration_started   = false;
@@ -193,8 +205,10 @@ void BoundaryExchange::registration_completed()
   // Note: this is the size per element, per connection. It is the number of Real's to send/receive to/from the neighbor
   // Note: for 2d/3d fields, we have 1 Real per GP (per level, in 3d). For 1d fields,
   //       we have 2 Real per level (max and min over element).
-  m_elem_buf_size[etoi(ConnectionKind::CORNER)] = m_num_1d_fields*2*NUM_LEV*VECTOR_SIZE + (m_num_2d_fields + m_num_3d_fields*NUM_LEV*VECTOR_SIZE) * 1;
-  m_elem_buf_size[etoi(ConnectionKind::EDGE)]   = m_num_1d_fields*2*NUM_LEV*VECTOR_SIZE + (m_num_2d_fields + m_num_3d_fields*NUM_LEV*VECTOR_SIZE) * NP;
+
+  const int single_ptr_buf_size = m_num_2d_fields + m_num_3d_fields*NUM_LEV*VECTOR_SIZE + m_num_3d_int_fields*NUM_LEV_P*VECTOR_SIZE;
+  m_elem_buf_size[etoi(ConnectionKind::CORNER)] = m_num_1d_fields*2*NUM_LEV*VECTOR_SIZE + single_ptr_buf_size * 1;
+  m_elem_buf_size[etoi(ConnectionKind::EDGE)]   = m_num_1d_fields*2*NUM_LEV*VECTOR_SIZE + single_ptr_buf_size * NP;
 
   // Determine what kind of BE is this (exchange or exchange_min_max)
   m_exchange_type = m_num_1d_fields>0 ? MPI_EXCHANGE_MIN_MAX : MPI_EXCHANGE;
@@ -226,11 +240,11 @@ void BoundaryExchange::exchange (const ExecViewUnmanaged<const Real * [NP][NP]>*
   assert (m_exchange_type==MPI_EXCHANGE);
 
   // I am not sure why and if we could have this scenario, but just in case. I think MPI *may* go bananas in this case
-  if (m_num_2d_fields+m_num_3d_fields==0) {
+  if (m_num_2d_fields+m_num_3d_fields+m_num_3d_int_fields==0) {
     return;
   }
 
-  // If this is the first time we call the exchange method, or if the BuffersManager has performed a reallocation
+  // If this is the first time we call the exchange method, or if the MpiBuffersManager has performed a reallocation
   // since the last time this method was called, we need to rebuild all our internal buffer views
   if (!m_buffer_views_and_requests_built) {
     build_buffer_views_and_requests();
@@ -262,7 +276,7 @@ void BoundaryExchange::exchange_min_max ()
     return;
   }
 
-  // If this is the first time we call the exchange method, or if the BuffersManager has performed a reallocation
+  // If this is the first time we call the exchange method, or if the MpiBuffersManager has performed a reallocation
   // since the last time this method was called, we need to rebuild all our internal buffer views
   if (!m_buffer_views_and_requests_built) {
     build_buffer_views_and_requests();
@@ -292,7 +306,7 @@ void BoundaryExchange::pack_and_send ()
   assert (m_exchange_type==MPI_EXCHANGE);
 
   // I am not sure why and if we could have this scenario, but just in case. I think MPI *may* go bananas in this case
-  if (m_num_2d_fields+m_num_3d_fields==0) {
+  if (m_num_2d_fields+m_num_3d_fields+m_num_3d_int_fields==0) {
     return;
   }
 
@@ -300,7 +314,7 @@ void BoundaryExchange::pack_and_send ()
   assert (!m_buffers_manager->are_buffers_busy());
   m_buffers_manager->lock_buffers();
 
-  // If this is the first time we call this method, or if the BuffersManager has performed a reallocation
+  // If this is the first time we call this method, or if the MpiBuffersManager has performed a reallocation
   // since the last time this method was called, AND we are calling this method manually, without relying
   // on the exchange method to call it, then we need to rebuild all our internal buffer views
   if (!m_buffer_views_and_requests_built) {
@@ -332,7 +346,7 @@ void BoundaryExchange::pack_and_send ()
       }
     });
   }
-  // ...then pack 3d fields (if any).
+  // ...then pack 3d fields (if any)...
   if (m_num_3d_fields>0) {
     auto fields_3d = m_3d_fields;
     auto send_3d_buffers = m_send_3d_buffers;
@@ -405,7 +419,80 @@ void BoundaryExchange::pack_and_send ()
         });
     }
   }
-  ExecSpace::fence();
+  // ...then pack 3d interface fields (if any)
+  if (m_num_3d_int_fields>0) {
+    auto fields = m_3d_int_fields;
+    auto send_buffers = m_send_3d_int_buffers;
+    const auto num_fields = m_num_3d_int_fields;
+    if (OnGpu<ExecSpace>::value) {
+      const ConnectionHelpers helpers;
+      Kokkos::parallel_for(
+        Kokkos::RangePolicy<ExecSpace>(0, m_num_elems*num_fields*NUM_CONNECTIONS*NUM_LEV_P),
+        KOKKOS_LAMBDA(const int it) {
+          const int ie = it / (num_fields*NUM_CONNECTIONS*NUM_LEV_P);
+          const int ifield = (it / (NUM_CONNECTIONS*NUM_LEV_P)) % num_fields;
+          const int iconn = (it / NUM_LEV_P) % NUM_CONNECTIONS;
+          const int ilev = it % NUM_LEV_P;
+          const ConnectionInfo& info = connections(ie, iconn);
+          const LidGidPos& field_lidpos = info.local;
+          // For the buffer, in case of local connection, use remote info. In fact, while with shared connections the
+          // mpi call will take care of "copying" data to the remote recv buffer in the correct remote element lid,
+          // for local connections we need to manually copy on the remote element lid. We can do it here
+          const LidGidPos& buffer_lidpos = info.sharing==etoi(ConnectionSharing::LOCAL) ? info.remote : info.local;
+
+          // Note: if it is an edge and the remote edge is in the reverse order, we read the field_lidpos points backwards
+          const auto& pts = helpers.CONNECTION_PTS[info.direction][field_lidpos.pos];
+          const auto& sb = send_buffers(buffer_lidpos.lid, ifield, buffer_lidpos.pos);
+          const auto& f = fields(field_lidpos.lid, ifield);
+          for (int k=0; k<helpers.CONNECTION_SIZE[info.kind]; ++k) {
+            sb(k, ilev) = f(pts[k].ip, pts[k].jp, ilev);
+          }
+        });
+    } else {
+      const auto num_parallel_iterations = m_num_elems*num_fields;
+      ThreadPreferences tp;
+      tp.max_threads_usable = NUM_CONNECTIONS;
+      tp.max_vectors_usable = NUM_LEV_P;
+      const auto threads_vectors =
+        DefaultThreadsDistribution<ExecSpace>::team_num_threads_vectors(
+          num_parallel_iterations, tp);
+      const auto policy = Kokkos::TeamPolicy<ExecSpace>(
+        num_parallel_iterations, threads_vectors.first, threads_vectors.second);
+      HOMMEXX_STATIC const ConnectionHelpers helpers;
+      Kokkos::parallel_for(
+        policy,
+        KOKKOS_LAMBDA(const TeamMember& team) {
+          Homme::KernelVariables kv(team, num_fields);
+          const int ie = kv.ie;
+          const int ifield = kv.iq;
+          for (int iconn = 0; iconn < 8; ++iconn) {
+            const ConnectionInfo& info = connections(ie, iconn);
+            if (info.kind == etoi(ConnectionSharing::MISSING)) continue;
+            const LidGidPos& field_lidpos = info.local;
+            const LidGidPos& buffer_lidpos = (info.sharing == etoi(ConnectionSharing::LOCAL) ?
+                                              info.remote :
+                                              info.local);
+            const auto& pts = helpers.CONNECTION_PTS[info.direction][field_lidpos.pos];
+            const auto& sb = send_buffers(buffer_lidpos.lid, ifield, buffer_lidpos.pos);
+            const auto& f = fields(field_lidpos.lid, ifield);
+            Kokkos::parallel_for(
+              Kokkos::TeamThreadRange(kv.team, helpers.CONNECTION_SIZE[info.kind]),
+              [&] (const int& k) {
+                const auto& ip = pts[k].ip;
+                const auto& jp = pts[k].jp;
+                auto* const sbp = &sb(k, 0);
+                const auto* const fp = &f(ip, jp, 0);
+                Kokkos::parallel_for(
+                  Kokkos::ThreadVectorRange(kv.team, NUM_LEV_P),
+                  [&] (const int& ilev) {
+                    sbp[ilev] = fp[ilev];
+                  });
+              });
+          }
+        });
+    }
+  }
+  ExecSpace::impl_static_fence();
 
   // ---- Send ---- //
   tstart("be sync_send_buffer");
@@ -494,7 +581,7 @@ void BoundaryExchange::recv_and_unpack (const ExecViewUnmanaged<const Real * [NP
       }
     });
   }
-  // ...then unpack 3d fields.
+  // ...then unpack 3d fields (if any)...
   if (m_num_3d_fields>0) {
     auto fields_3d = m_3d_fields;
     auto recv_3d_buffers = m_recv_3d_buffers;
@@ -523,7 +610,7 @@ void BoundaryExchange::recv_and_unpack (const ExecViewUnmanaged<const Real * [NP
           }
         });
       if (rspheremp) {
-        const auto r = *rspheremp;
+        const auto rsmp = *rspheremp;
         Kokkos::parallel_for(
           Kokkos::RangePolicy<ExecSpace>(0, m_num_elems*m_num_3d_fields*NP*NP*NUM_LEV),
           KOKKOS_LAMBDA(const int it) {
@@ -532,7 +619,7 @@ void BoundaryExchange::recv_and_unpack (const ExecViewUnmanaged<const Real * [NP
             const int i = (it / (NP*NUM_LEV)) % NP;
             const int j = (it / NUM_LEV) % NP;
             const int ilev = it % NUM_LEV;
-            fields_3d(ie, ifield)(i, j, ilev) *= r(ie, i, j);
+            fields_3d(ie, ifield)(i, j, ilev) *= rsmp(ie, i, j);
           });
       }
     } else {
@@ -593,7 +680,107 @@ void BoundaryExchange::recv_and_unpack (const ExecViewUnmanaged<const Real * [NP
         });
     }
   }
-  ExecSpace::fence();
+  // ...then unpack 3d interface fields (if any).
+  if (m_num_3d_int_fields>0) {
+    auto fields = m_3d_int_fields;
+    auto recv_buffers = m_recv_3d_int_buffers;
+    const auto num_fields = m_num_3d_int_fields;
+    if (OnGpu<ExecSpace>::value) {
+      const ConnectionHelpers helpers;
+      Kokkos::parallel_for(
+        Kokkos::RangePolicy<ExecSpace>(0, m_num_elems*num_fields*NUM_LEV_P),
+        KOKKOS_LAMBDA(const int it) {
+          const int ie = it / (num_fields*NUM_LEV_P);
+          const int ifield = (it / NUM_LEV_P) % num_fields;
+          const int ilev = it % NUM_LEV_P;
+          const auto& f = fields(ie, ifield);
+          for (int k=0; k<NP; ++k) {
+            for (int iedge : helpers.UNPACK_EDGES_ORDER) {
+              f(helpers.CONNECTION_PTS_FWD[iedge][k].ip,
+                helpers.CONNECTION_PTS_FWD[iedge][k].jp, ilev)
+                += recv_buffers(ie, ifield, iedge)(k, ilev);
+            }
+          }
+          for (int icorner : helpers.UNPACK_CORNERS_ORDER) {
+            if (recv_buffers(ie, ifield, icorner).size() > 0)
+              f(helpers.CONNECTION_PTS_FWD[icorner][0].ip,
+                helpers.CONNECTION_PTS_FWD[icorner][0].jp, ilev)
+                += recv_buffers(ie, ifield, icorner)(0, ilev);
+          }
+        });
+      if (rspheremp) {
+        const auto rsmp = *rspheremp;
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<ExecSpace>(0, m_num_elems*num_fields*NP*NP*NUM_LEV_P),
+          KOKKOS_LAMBDA(const int it) {
+            const int ie = it / (num_fields*NUM_LEV_P*NP*NP);
+            const int ifield = (it / (NP*NP*NUM_LEV_P)) % num_fields;
+            const int i = (it / (NP*NUM_LEV_P)) % NP;
+            const int j = (it / NUM_LEV_P) % NP;
+            const int ilev = it % NUM_LEV_P;
+            fields(ie, ifield)(i, j, ilev) *= rsmp(ie, i, j);
+          });
+      }
+    } else {
+      const auto num_parallel_iterations = m_num_elems*num_fields;
+      Kokkos::parallel_for(
+        Kokkos::TeamPolicy<ExecSpace>(num_parallel_iterations, 1, NUM_LEV_P),
+        KOKKOS_LAMBDA(const TeamMember& team) {
+          Homme::KernelVariables kv(team, num_fields);
+          const int ie = kv.ie;
+          const int ifield = kv.iq;
+          const auto& f = fields(ie, ifield);
+          const auto ef = [&] (const int& iedge, const int& k, const int& ip, const int& jp) {
+            const auto& rb = recv_buffers(ie, ifield, iedge);
+            // Using pointers here is a little bit of speedup that
+            // can't be ignored in a kernel as important as un/pack.
+            auto* const fp = &f(ip, jp, 0);
+            const auto* const rp = &rb(k, 0);
+            Kokkos::parallel_for(
+              Kokkos::ThreadVectorRange(kv.team, NUM_LEV_P),
+              [&] (const int& ilev) {
+                fp[ilev] += rp[ilev];
+              });
+          };
+          for (int k=0; k<NP; ++k) {
+            ef(0, k, 0,    k);
+            ef(1, k, NP-1, k);
+            ef(2, k, k,    0);
+            ef(3, k, k,    NP-1);
+          }
+          const auto cf = [&] (const int& icorner, const int& ip, const int& jp) {
+            const auto& rb = recv_buffers(ie, ifield, icorner);
+            if (rb.size() == 0) {
+              return;
+            }
+            auto* const fp = &f(ip, jp, 0);
+            const auto* const rp = &rb(0, 0);
+            Kokkos::parallel_for(
+              Kokkos::ThreadVectorRange(kv.team, NUM_LEV_P),
+              [&] (const int& ilev) {
+                fp[ilev] += rp[ilev];
+              });
+          };
+          cf(4, 0,    0);
+          cf(5, 0,    NP-1);
+          cf(6, NP-1, 0);
+          cf(7, NP-1, NP-1);
+          if (rspheremp) {
+            for (int i = 0; i < NP; ++i)
+              for (int j = 0; j < NP; ++j) {
+                auto* const fp = &f(i, j, 0);
+                const auto& rsmp = (*rspheremp)(ie, i, j);
+                Kokkos::parallel_for(
+                  Kokkos::ThreadVectorRange(kv.team, NUM_LEV_P),
+                  [&] (const int& ilev) {
+                    fp[ilev] *= rsmp;
+                  });
+              }
+          }
+        });
+    }
+  }
+  ExecSpace::impl_static_fence();
 
   // If another BE structure starts an exchange, it has no way to check that
   // this object has finished its send requests, and may erroneously reuse the
@@ -638,7 +825,7 @@ void BoundaryExchange::pack_and_send_min_max ()
   // Check that this object is setup to perform exchange_min_max and not exchange
   assert (m_exchange_type==MPI_EXCHANGE_MIN_MAX);
 
-  // If this is the first time we call this method, or if the BuffersManager has performed a reallocation
+  // If this is the first time we call this method, or if the MpiBuffersManager has performed a reallocation
   // since the last time this method was called, AND we are calling this method manually, without relying
   // on the exchange_min_max method to call it, then we need to rebuild all our internal buffer views
   if (!m_buffer_views_and_requests_built) {
@@ -713,7 +900,7 @@ void BoundaryExchange::pack_and_send_min_max ()
         }
       });
   }
-  ExecSpace::fence();
+  ExecSpace::impl_static_fence();
 
   // ---- Send ---- //
   m_buffers_manager->sync_send_buffer(this);
@@ -831,7 +1018,7 @@ void BoundaryExchange::recv_and_unpack_min_max ()
         }
       });
   }
-  ExecSpace::fence();
+  ExecSpace::impl_static_fence();
 
   // If another BE structure starts an exchange, it has no way to check that
   // this object has finished its send requests, and may erroneously reuse the
@@ -854,7 +1041,7 @@ void BoundaryExchange::build_buffer_views_and_requests()
     return;
   }
 
-  // Check that the BuffersManager is present and was setup with enough storage
+  // Check that the MpiBuffersManager is present and was setup with enough storage
   assert (m_buffers_manager);
 
   // Ask the buffer manager to check for reallocation and then proceed with the allocation (if needed)
@@ -915,6 +1102,8 @@ void BoundaryExchange::build_buffer_views_and_requests()
   m_recv_2d_buffers = decltype(m_recv_2d_buffers)("2d recv buffer", m_num_elems, m_num_2d_fields);
   m_send_3d_buffers = decltype(m_send_3d_buffers)("3d send buffer", m_num_elems, m_num_3d_fields);
   m_recv_3d_buffers = decltype(m_recv_3d_buffers)("3d recv buffer", m_num_elems, m_num_3d_fields);
+  m_send_3d_int_buffers = decltype(m_send_3d_int_buffers)("3d interface send buffer", m_num_elems, m_num_3d_int_fields);
+  m_recv_3d_int_buffers = decltype(m_recv_3d_int_buffers)("3d interface recv buffer", m_num_elems, m_num_3d_int_fields);
 
   std::vector<int> slot_idx_to_elem_conn_pair, pids, pid_offsets;
   init_slot_idx_to_elem_conn_pair(slot_idx_to_elem_conn_pair, pids, pid_offsets);
@@ -933,6 +1122,8 @@ void BoundaryExchange::build_buffer_views_and_requests()
   auto h_recv_2d_buffers = Kokkos::create_mirror_view(m_recv_2d_buffers);
   auto h_send_3d_buffers = Kokkos::create_mirror_view(m_send_3d_buffers);
   auto h_recv_3d_buffers = Kokkos::create_mirror_view(m_recv_3d_buffers);
+  auto h_send_3d_int_buffers = Kokkos::create_mirror_view(m_send_3d_int_buffers);
+  auto h_recv_3d_int_buffers = Kokkos::create_mirror_view(m_recv_3d_int_buffers);
   auto h_connections = m_connectivity->get_connections<HostMemSpace>();
   for (int k = 0; k < m_num_elems*NUM_CONNECTIONS; ++k) {
     const int ie = slot_idx_to_elem_conn_pair[k] / NUM_CONNECTIONS;
@@ -968,14 +1159,25 @@ void BoundaryExchange::build_buffer_views_and_requests()
           helpers.CONNECTION_SIZE[info.kind]);
         h_buf_offset[info.sharing] += h_increment_3d[info.kind]*NUM_LEV*VECTOR_SIZE;
       }
+      for (int ifield=0; ifield<m_num_3d_int_fields; ++ifield) {
+        h_send_3d_int_buffers(local.lid, ifield, local.pos) = ExecViewUnmanaged<Scalar*[NUM_LEV_P]>(
+          reinterpret_cast<Scalar*>(send_buffer.get() + h_buf_offset[info.sharing]),
+          helpers.CONNECTION_SIZE[info.kind]);
+        h_recv_3d_int_buffers(local.lid, ifield, local.pos) = ExecViewUnmanaged<Scalar*[NUM_LEV_P]>(
+          reinterpret_cast<Scalar*>(recv_buffer.get() + h_buf_offset[info.sharing]),
+          helpers.CONNECTION_SIZE[info.kind]);
+        h_buf_offset[info.sharing] += h_increment_3d[info.kind]*NUM_LEV_P*VECTOR_SIZE;
+      }
     }
   }
   Kokkos::deep_copy(m_send_1d_buffers, h_send_1d_buffers);
-  Kokkos::deep_copy(m_send_2d_buffers, h_send_2d_buffers);
-  Kokkos::deep_copy(m_send_3d_buffers, h_send_3d_buffers);
   Kokkos::deep_copy(m_recv_1d_buffers, h_recv_1d_buffers);
+  Kokkos::deep_copy(m_send_2d_buffers, h_send_2d_buffers);
   Kokkos::deep_copy(m_recv_2d_buffers, h_recv_2d_buffers);
+  Kokkos::deep_copy(m_send_3d_buffers, h_send_3d_buffers);
   Kokkos::deep_copy(m_recv_3d_buffers, h_recv_3d_buffers);
+  Kokkos::deep_copy(m_send_3d_int_buffers, h_send_3d_int_buffers);
+  Kokkos::deep_copy(m_recv_3d_int_buffers, h_recv_3d_int_buffers);
 
 #ifndef NDEBUG
   // Sanity check: compute the buffers sizes for this boundary exchange, and checking that the final offsets match them
@@ -1110,7 +1312,7 @@ void BoundaryExchange
 
 void BoundaryExchange::clear_buffer_views_and_requests ()
 {
-  // BuffersManager calls this method upon (re)allocation of buffers, so that all its customers are forced to
+  // MpiBuffersManager calls this method upon (re)allocation of buffers, so that all its customers are forced to
   // recompute their internal buffers views. However, if the views were not yet built, we can skip this
   if (!m_buffer_views_and_requests_built) {
     return;
@@ -1129,6 +1331,8 @@ void BoundaryExchange::clear_buffer_views_and_requests ()
   m_recv_2d_buffers = decltype(m_recv_2d_buffers)("m_recv_2d_buffers", 0, 0);
   m_send_3d_buffers = decltype(m_send_3d_buffers)("m_send_3d_buffers", 0, 0);
   m_recv_3d_buffers = decltype(m_recv_3d_buffers)("m_recv_3d_buffers", 0, 0);
+  m_send_3d_int_buffers = decltype(m_send_3d_int_buffers)("m_send_3d_int_buffers", 0, 0);
+  m_recv_3d_int_buffers = decltype(m_recv_3d_int_buffers)("m_recv_3d_int_buffers", 0, 0);
 
   // Done
   m_buffer_views_and_requests_built = false;

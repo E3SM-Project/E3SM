@@ -1,18 +1,3 @@
-#
-PERFOBJS=\
-prim_advection_base.o \
-vertremap_base.o \
-edge_mod_base.o \
-derivative_mod_base.o \
-bndry_mod_base.o \
-prim_advance_mod.o \
-viscosity_preqx_base.o \
-viscosity_base.o \
-viscosity_theta.o \
-eos.o \
-hevi_mod.o \
-uwshcu.o
-
 # shr_wv_sat_mod does not need to have better than ~0.1% precision, and benefits
 # enormously from a lower precision in the vector functions.
 REDUCED_PRECISION_OBJS=\
@@ -33,8 +18,6 @@ kissvec.o
 # The -fp-model fast flags below will effectively override other -fp-model settings.
 
 ifeq ($(DEBUG),FALSE)
-  $(PERFOBJS): %.o: %.F90
-	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3 -fp-model fast -no-prec-div $<
   $(REDUCED_PRECISION_OBJS): %.o: %.F90
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -fimf-precision=low -fp-model fast $<
   $(SHR_RANDNUM_FORT_OBJS): %.o: %.F90

@@ -19,7 +19,7 @@ module prim_movie_mod
   use element_mod, only : element_t
 
   use cube_mod, only : cube_assemble
-  use control_mod, only : test_case, runtype, &
+  use control_mod, only : test_case, runtype, geometry, &
        restartfreq, &
        integration, hypervis_power, qsplit
   use common_io_mod, only : &
@@ -33,7 +33,8 @@ module prim_movie_mod
        nf_handle,           &
        get_current_varnames, &
        nfsizekind,             &
-       nf_selectedvar
+       nf_selectedvar,       &
+       PIOFS
        
   use surfaces_mod, only : cvlist, InitControlVolumesData, InitControlVolumes
 
@@ -98,7 +99,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use parallel_mod, only : abortmp
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
-    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, pio_subsystem, iodesc3dp1 
+    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, iodesc3dp1 
     use common_io_mod, only : num_io_procs, num_agg, io_stride
     use reduction_mod, only : parallelmax
     type (element_t), intent(in) :: elem(:)
@@ -129,7 +130,6 @@ contains
     integer :: ierr
 #endif
 
-    num_agg = 1
     call PIO_setDebugLevel(0)
 
 
@@ -149,21 +149,21 @@ contains
     allocate(compdof(nxyp*nlevp), latp(nxyp),lonp(nxyp))
     
     ! Create the DOF arrays for GLL points
-    iorank=pio_iotask_rank(pio_subsystem)
+    iorank=pio_iotask_rank(PIOFS)
 
     if (par%masterproc) print *,'compDOF for 2d'
     call getDOF(elem, GlobalUniqueCols, 1, compdof)
-    call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols/),&
+    call PIO_initDecomp(PIOFS, pio_double,(/GlobalUniqueCols/),&
          compDOF(1:nxyp),IOdesc2D)
 
     if (par%masterproc) print *,'compDOF for 3d nlev'
     call getDOF(elem, GlobalUniqueCols, nlev, compdof)
-    call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols,nlev/),&
+    call PIO_initDecomp(PIOFS, pio_double,(/GlobalUniqueCols,nlev/),&
          compDOF(1:nxyp*nlev),IOdesc3D)
 
     if (par%masterproc) print *,'compDOF for 3d nlevp'
     call getDOF(elem, GlobalUniqueCols, nlevp, compdof)
-    call PIO_initDecomp(pio_subsystem,pio_double,(/GlobalUniqueCols,nlevp/),&
+    call PIO_initDecomp(PIOFS,pio_double,(/GlobalUniqueCols,nlevp/),&
          compDOF,iodesc3dp1)
 
 ! trivial case for vertical variables
@@ -174,8 +174,8 @@ contains
     else
        compdof=0
     end if
-    call pio_initdecomp(pio_subsystem, pio_double, (/nlev/), compdof(1:nlev), iodescv)
-    call pio_initdecomp(pio_subsystem, pio_double, (/nlevp/), compdof(1:nlevp), iodescvp1)
+    call pio_initdecomp(PIOFS, pio_double, (/nlev/), compdof(1:nlev), iodescv)
+    call pio_initdecomp(PIOFS, pio_double, (/nlevp/), compdof(1:nlevp), iodescvp1)
     
 ! this is a trivial case for the time variable
     if(iorank==0) then
@@ -186,7 +186,7 @@ contains
     start=-1
     count=-1
 
-    call PIO_initDecomp(pio_subsystem,pio_double,(/1/),&
+    call PIO_initDecomp(PIOFS,pio_double,(/1/),&
          compDOF(1:1),IOdescT)
 
     deallocate(compdof)
@@ -210,7 +210,7 @@ contains
           end do
        end do
     end do
-    call pio_initdecomp(pio_subsystem, pio_int, (/global_nsub,nlev/), compdof, iodesc3d_subelem)
+    call pio_initdecomp(PIOFS, pio_int, (/global_nsub,nlev/), compdof, iodesc3d_subelem)
     deallocate(compdof)
 
 
@@ -219,10 +219,18 @@ contains
     call nf_global_attribute(ncdf, 'np', np)
     call nf_global_attribute(ncdf, 'ne', ne)
 
+  if (geometry=="sphere") then
     call nf_variable_attributes(ncdf, 'ps', 'surface pressure','Pa','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'area', 'area weights','radians^2','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
+  else if (geometry=="plane") then
+    call nf_variable_attributes(ncdf, 'ps', 'surface pressure','Pa','coordinates','x y')
+    call nf_variable_attributes(ncdf, 'area', 'area weights','m^2','coordinates','x y')
+    call nf_variable_attributes(ncdf, 'u', 'x-dir wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'v', 'y-dir wind component','meters/second')
+  end if
+
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'Th','potential temperature \theta','degrees kelvin')
     call nf_variable_attributes(ncdf, 'w', 'vertical wind component','meters/second')
@@ -232,10 +240,17 @@ contains
     call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
 #ifdef _PRIM
     call nf_variable_attributes(ncdf, 'geos', 'surface geopotential','m^2/s^2')
+    call nf_variable_attributes(ncdf, 'PHIS', 'surface geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
 #endif
+  if (geometry=="sphere") then
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
+  else if (geometry=="plane") then
+    call nf_variable_attributes(ncdf, 'lat', 'column y','m')
+    call nf_variable_attributes(ncdf, 'lon', 'column x','m')
+  end if
+
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
     call nf_variable_attributes(ncdf, 'lev' ,'hybrid level at midpoints' ,'level','positive','down') !,'formula_terms','a: hyam b: hybm p0: P0 ps: PS')
     call nf_variable_attributes(ncdf, 'ilev','hybrid level at interfaces','level','positive','down') !,'formula_terms','a: hyai b: hybi p0: P0 ps: PS')
@@ -285,8 +300,11 @@ contains
             end if
           enddo
 
+          ! only do conversion if we are on the sphere
+          if (geometry=="sphere") then
           latp=latp*180/dd_pi
           lonp=lonp*180/dd_pi
+          end if
           call nf_put_var(ncdf(ios),latp,start(1:1),count(1:1),name='lat', iodescin=iodesc2d)
           call nf_put_var(ncdf(ios),lonp,start(1:1),count(1:1),name='lon', iodescin=iodesc2d)
 
@@ -328,7 +346,12 @@ contains
                 en=st+elem(ie)%idxp%NumUniquePts-1
                 vartmp = 0
                 do k=1,kmax
+                  ! only do conversion if we are on the sphere
+                  if (geometry=="sphere") then
                    vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lon*180/dd_pi
+                 else if (geometry=="plane") then
+                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lon
+                  end if
                 enddo
                 call UniquePoints(elem(ie)%idxp, nlev, vartmp, var3d(st:en,:))
                 st=en+1
@@ -344,7 +367,12 @@ contains
                 en=st+elem(ie)%idxp%NumUniquePts-1
                 vartmp = 0
                 do k=1,kmax
+                  ! only do conversion if we are on the sphere
+                  if (geometry=="sphere") then
                    vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lat*180/dd_pi
+                  else if (geometry=="plane") then
+                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lat
+                  end if
                 enddo
                 call UniquePoints(elem(ie)%idxp,nlev,vartmp,var3d(st:en,:))
                 st=en+1
@@ -380,6 +408,18 @@ contains
                 st=en+1
              enddo
              call nf_put_var(ncdf(ios),var2d,start,count,name='geos')
+             deallocate(var2d)
+          endif
+          if(nf_selectedvar('PHIS', output_varnames)) then
+             allocate(var2d(nxyp))
+             if (par%masterproc) print *,'writing geos as PHIS...'
+             st=1
+             do ie=1,nelemd
+                en=st+elem(ie)%idxp%NumUniquePts-1
+                call UniquePoints(elem(ie)%idxP,elem(ie)%state%phis,var2d(st:en))
+                st=en+1
+             enddo
+             call nf_put_var(ncdf(ios),var2d,start,count,name='PHIS')
              deallocate(var2d)
           endif
 

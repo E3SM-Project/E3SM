@@ -75,7 +75,7 @@ module interpolate_driver_mod
   character*(pio_max_name) nsnames (maxdims)
   character*(pio_max_name) znames (maxdims)
   character*(pio_max_name) ncolnames (maxdims)
-
+  character(len=6) :: ncoldimname='ncol'   ! change to ncol_d if detected
   integer :: newnames, nnsnames, nznames, nncolnames
 
 
@@ -179,16 +179,13 @@ contains
     integer :: ret, i, ncid, n
     integer :: varid, ncols, lev
     integer :: ne_file, np_file, nlev_file
-
-    integer, pointer :: ldof(:)
+    
+    integer*8, pointer :: ldof(:)
     integer(kind=PIO_OFFSET_KIND) :: start(3), count(3)
     integer :: iorank, dimcnt
     character(len=80) :: name
 
     if (par%masterproc) print *,'initializing input file: ',trim(infilename)
-
-    call PIO_Init(par%rank, par%comm, num_io_procs, num_agg, &
-         io_stride, pio_rearr_box, PIOFS)
 
 !    call pio_setdebuglevel(1)
     if(output_type.eq.'netcdf') then
@@ -205,10 +202,20 @@ contains
     allocate(infile%dims(ndims))
 
     nlev_file=-1
+
+    ! is this an output file with "ncol", or "ncol_d"?
+    ! set ncoldimname before calling "is_ncolfile"
+    do i=1,ndims
+       ret = PIO_inq_dimname(Infile%fileid, i, infile%dims(i)%name)
+       if(infile%dims(i)%name.eq.'ncol_d') ncoldimname='ncol_d'
+    end do
+    if (par%masterproc) print *,'interpolating dimension = ',ncoldimname
+
+    ncols=0
     do i=1,ndims
        ret = PIO_inq_dimname(Infile%fileid, i, infile%dims(i)%name)
        ret = PIO_inq_dimlen(Infile%fileid, i, infile%dims(i)%len)
-       if(infile%dims(i)%name.eq.'ncol') ncols=infile%dims(i)%len
+       if(is_ncoldim(infile%dims(i)%name)) ncols=infile%dims(i)%len
        if(infile%dims(i)%name.eq.'lev') nlev_file = infile%dims(i)%len
     end do
     if(trim(varnames(1)) == 'all') then
@@ -317,8 +324,7 @@ contains
              lev=nlev+1
           endif
           if(infile%dims(infile%vars%dimids(n,i))%name.eq.'time') infile%vars%timedependent(i)=.true.
-          if(infile%dims(infile%vars%dimids(n,i))%name.eq.'ncol') infile%vars%decomposed(i)=.true.
-
+          if(is_ncoldim(infile%dims(infile%vars%dimids(n,i))%name)) infile%vars%decomposed(i)=.true.
        end do
     end do
     if (par%masterproc) print *,'input file: nlev,ne=',nlev,ne
@@ -353,7 +359,6 @@ contains
     integer :: ofdims, nvars, ierr
     character*(pio_max_name), allocatable :: dimnames(:)
     integer , allocatable :: vardims(:,:), dimsize(:), otype(:)
-    logical lonregistered, latregistered
     logical, allocatable :: varrequired(:)
 
     real(kind=real_kind), allocatable :: lon(:), lat(:), gw(:), lev(:), ilev(:)
@@ -407,31 +412,30 @@ contains
        end if
     end do
 
-    lonregistered=.false.
-    latregistered=.false.
+    if (hybrid%masterthread) print *,'Examining input variables:'
     vardims=0
     do i=1,nvars
        k=1
        otype(i)=infile%vars%vtype(i)
        do j=1,infile%vars%ndims(i)
-          if(infile%vars%dimids(j,i).eq.ncoldimid) then
-             if(infile%vars%name(i).eq.'lon') then
-                vardims(k,i) = londimid
-                lonregistered=.true.
-             else if(infile%vars%name(i).eq.'lat') then
-                vardims(k,i) = latdimid
-                latregistered=.true.
-             else
-                vardims(k,i) = londimid
-                vardims(k+1,i) = latdimid
-                k=k+1
-             end if
-             k=k+1
+         if(infile%vars%dimids(j,i).eq.ncoldimid) then
+            vardims(k,i) = londimid
+            vardims(k+1,i) = latdimid
+            k=k+2
           else
              vardims(k,i)=infile%vars%dimids(j,i)
              k=k+1
           end if
        end do
+       if (hybrid%masterthread) then
+          print *,'var=',trim(infile%vars%name(i)),' remap=',infile%vars%decomposed(i)
+       endif
+
+       ! if the file happens to have a variable 'lat','lon' or 'gw', rename so it doesnt conflict
+       ! with the interpolated output
+       if (trim(infile%vars%name(i))=='lat')  infile%vars%name(i)='lat_orig'
+       if (trim(infile%vars%name(i))=='lon')  infile%vars%name(i)='lon_orig'
+       if (trim(infile%vars%name(i))=='gw')  infile%vars%name(i)='gw_orig'
     end do
 
     ndnt = index(infilename,".nc")
@@ -440,6 +444,7 @@ contains
          hybrid%par%comm, infilename(1:ndnt)//'interp'   ,0)
     
     call nf_output_register_dims(ncdf, ofdims, dimnames, dimsize)
+    if (hybrid%par%masterproc) print *,'creating PIO decompositions'
     call create_output_decomps(ncdf, interpdata, nlon, nlat)
     if (hybrid%par%masterproc) then
       print *,'registering output variables -- '//&
@@ -452,15 +457,11 @@ contains
     call nf_output_register_variables(ncdf, 1, (/'gw'/), vardims(1:1,:), &
          (/pio_double/), (/.true./))
     ! if the user did not specify lat,lon, be sure to add them:
-    if (.not. latregistered) then
-       call nf_output_register_variables(ncdf, 1, (/'lat'/), vardims(1:1,:), &
-            (/pio_double/), (/.true./))
-    endif
-    if (.not. lonregistered) then
-       vardims(1,1)=londimid
-       call nf_output_register_variables(ncdf, 1, (/'lon'/), vardims(1:1,:), &
-            (/pio_double/), (/.true./))
-    endif
+    call nf_output_register_variables(ncdf, 1, (/'lat'/), vardims(1:1,:), &
+         (/pio_double/), (/.true./))
+    vardims(1,1)=londimid
+    call nf_output_register_variables(ncdf, 1, (/'lon'/), vardims(1:1,:), &
+         (/pio_double/), (/.true./))
 
 
     deallocate(dimnames, dimsize, varrequired, vardims, otype)
@@ -539,11 +540,14 @@ contains
     real(kind=real_kind), pointer :: zeta(:,:,:,:),div(:,:,:,:)
 
     integer(kind=nfsizekind) :: start(3), count(3)
-    integer :: starti(3), counti(3)
+    integer :: starti(3), counti(3), index(1)
     integer :: len, ii, iu, iv, k, it, nd, offset, iuvar
-    integer :: nvars, i, n, ncnt_out, ncnt_in, st, en, ncols, ierr, ie, lev, ntimes, ndims
+    integer :: nvars, i, j, n, ncnt_out, ncnt_in, st, en, ncols, ierr, ie, lev, ntimes, ndims
     character*(PIO_MAX_NAME) :: tmpname
     integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), count3d(4)
+
+                   
+
 
     if(outfile%state .ne. readystate) then
        print *,__FILE__,__LINE__,outfile%state
@@ -555,12 +559,12 @@ contains
     ncnt_in = sum(elem(1:nelemd)%idxp%numUniquePts)
     ncnt_out = sum(interpdata(1:nelemd)%n_interp)
 
-!    call initedgebuffer(par,edge,2*nlev)
-    call initedgebuffer(par,edge,elem,4*nlev)
+    call initedgebuffer(par,edge,elem,2*nlev)
 
 
     VARLOOP: do i=nvars,1,-1
-       if(trim(infile%vars%name(i)).eq.'lat' .or. trim(infile%vars%name(i)).eq.'lon') then
+       if(trim(infile%vars%name(i)).eq.'lat' .or. trim(infile%vars%name(i)).eq.'lon' .or. &
+            trim(infile%vars%name(i)).eq.'lat_d' .or. trim(infile%vars%name(i)).eq.'lon_d'    ) then
           ! do nothing
        else 
           lev=1
@@ -697,13 +701,9 @@ contains
                    
                    deallocate(varray)
                 end do
-! Ignore these
-!             else if(scan(infile%vars%name(i),'V').eq.1) then  ! ignores everything that starts with V
-!             else if(infile%vars%name(i).eq.'lon') then    ! already ignored above
-!             else if(infile%vars%name(i).eq.'lat') then    ! already ignored above
-! 
+
              else 
-                if(par%masterproc) print *,'Interpolating ',trim(infile%vars%name(i))
+                if(par%masterproc) print *,'Interpolating ',trim(infile%vars%name(i)),' nlev=',lev
                 if(par%masterproc) then
                    if (get_interp_parameter('itype')==0) print *,'using native spectral element interpolation'
                    if (get_interp_parameter('itype')==1) print *,'using bilinear interpolation'
@@ -731,8 +731,8 @@ contains
                       call pio_read_darray(infile%FileID, infile%vars%vardesc(i), iodesc3dp1, farray, ierr)
                    end if
                    offset=0
+                   allocate(ftmp(np*np, lev))
                    do ie=1,nelemd
-                      allocate(ftmp(elem(ie)%idxP%NumUniquePts, lev))
                       do k=1,lev
                          do ii=1,elem(ie)%idxP%NumUniquePts
                             !iv=(elem(ie)%idxp%UniquePtOffset+ii+(k-1)*ncnt_in)-1
@@ -743,9 +743,9 @@ contains
                       offset = offset+elem(ie)%idxP%NumUniquePts
                       elem(ie)%state%Q(:,:,:,1) = 0.0d0
                       call putUniquePoints(elem(ie)%idxP, lev, ftmp, elem(ie)%state%Q(:,:,1:lev,1))
-                      call edgevpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,ie)
-                      deallocate(ftmp)
+                      call edgevpack(edge, elem(ie)%state%Q(:,:,:,1),lev,0,ie)
                    end do
+                   deallocate(ftmp)
 
                    call bndry_exchangeV(par, edge)
                    st = 1
@@ -754,7 +754,7 @@ contains
                    array=0
                    do ie=1,nelemd
                       en=st+interpdata(ie)%n_interp-1
-                      call edgeVunpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,ie)
+                      call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,1),lev,0,ie)
                       
                       call interpolate_scalar(interpdata(ie), elem(ie)%state%Q(:,:,1:lev,1), &
                            np, lev, array(st:en,:))
@@ -793,14 +793,31 @@ contains
                    do n=1,infile%vars%ndims(i)
                       len = len*infile%dims(infile%vars%dimids(n,i))%len
                    end do
-                   call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
-                        outfile%varlist(i)%vardesc, len)
+                   if(infile%vars%timedependent(i)) then
+                      ! bug in copy_pio_var - it will not copy the unlim dimension
+                      ! workaround: (assumes variable can be read into a real*8)
+                      allocate(farray(len))
+                      ierr = pio_get_var(infile%FileID, infile%vars%vardesc(i), farray)
+                      do j=1,len
+                         index(1)=j
+                         ierr = pio_put_var(Outfile%fileid, outfile%varlist(i)%vardesc,index, farray(j))
+                      enddo
+                      deallocate(farray)
+                   else
+                      call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
+                           outfile%varlist(i)%vardesc, len)
+                   endif
                 else
                    do n=1,infile%vars%ndims(i)
                       counti(n) = infile%dims(infile%vars%dimids(n,i))%len
                    end do
-                   call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
-                        outfile%varlist(i)%vardesc, counti(1:infile%vars%ndims(i)))
+                   if (infile%vars%ndims(i) <= 2 ) then
+                      call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
+                           outfile%varlist(i)%vardesc, counti(1:infile%vars%ndims(i)))
+                   else
+                      ! PIO1's copy_pio_var only copies variables with up to 2 dimensions
+                      if(par%masterproc) print *,"SKIPPING copy. ndims>2.  ndims=",ndims
+                   endif
                 end if
              end if
           end if
@@ -899,14 +916,14 @@ contains
     type(nf_handle) :: ncdf(:)
     type(interpdata_t):: interpdata(:)
     integer, intent(in) :: nlon, nlat
-    integer, pointer :: ldof2d(:),ldof3d(:), iodof2d(:), iodof3d(:)
-    integer, pointer :: latdof(:), londof(:)
+    integer*8, pointer :: ldof2d(:),ldof3d(:)
 
-    integer :: icnt, ie, i, lcount, tdof(1), tiodof(1)
+    integer :: icnt, ie, i, lcount
     integer :: k, iorank
     integer(kind=nfsizekind) :: start1d(1), count1d(1)
     integer :: londim, latdim, timedim, levdim, ilevdim
     integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), count3d(4)
+    integer*8 :: nlon8,nlat8
 
     ! files might only have 2D data, or only lev data
     levdim=0
@@ -922,18 +939,21 @@ contains
     lcount = sum(interpdata(1:nelemd)%n_interp)
     iorank = pio_iotask_rank(piofs)
 
+    nlon8=nlon ! force all calculations involving these dims to i*8
+    nlat8=nlat 
+
     ! Create the DOF arrays
     allocate(ldof2d(lcount))
     icnt=0
     do ie=1,nelemd
        do i=1,interpdata(ie)%n_interp
           icnt=icnt+1
-          ldof2d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon
+          ldof2d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon8
        end do
     end do
-    call getiodof(2, (/nlon,nlat/), iorank, iodof2d, start2d(1:2), count2d(1:2))
-    call nf_init_decomp(ncdf, (/londim,latdim/), ldof2d, iodof2d,start2d(1:2),count2d(1:2))
-    deallocate(iodof2d, ldof2d)
+    call getiodof(2, (/nlon,nlat/), iorank, start2d(1:2), count2d(1:2))
+    call nf_init_decomp(ncdf, (/londim,latdim/), ldof2d, start2d(1:2),count2d(1:2))
+    deallocate(ldof2d)
 
     if (levdim>0) then
     allocate(ldof3d(lcount*nlev))
@@ -942,13 +962,13 @@ contains
        do ie=1,nelemd
           do i=1,interpdata(ie)%n_interp
              icnt=icnt+1
-             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon+(k-1)*nlat*nlon
+             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon8+(k-1)*nlat8*nlon8
           end do
        end do
     end do
-    call getiodof(3, (/nlon,nlat,nlev/), iorank, iodof3d, start3d(1:3), count3d(1:3))
-    call nf_init_decomp(ncdf, (/londim,latdim,levdim/), ldof3d, iodof3d,start3d(1:3),count3d(1:3))
-    deallocate(iodof3d, ldof3d)
+    call getiodof(3, (/nlon,nlat,nlev/), iorank, start3d(1:3), count3d(1:3))
+    call nf_init_decomp(ncdf, (/londim,latdim,levdim/), ldof3d, start3d(1:3),count3d(1:3))
+    deallocate(ldof3d)
     endif
 
     if (ilevdim>0) then
@@ -958,13 +978,13 @@ contains
        do ie=1,nelemd
           do i=1,interpdata(ie)%n_interp
              icnt=icnt+1
-             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon+(k-1)*nlat*nlon
+             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon8+(k-1)*nlat8*nlon8
           end do
        end do
     end do
-    call getiodof(3, (/nlon,nlat,nlev+1/), iorank, iodof3d, start3d(1:3), count3d(1:3))
-    call nf_init_decomp(ncdf, (/londim,latdim,ilevdim/), ldof3d(1:icnt), iodof3d,start3d(1:3),count3d(1:3))
-    deallocate(iodof3d, ldof3d)
+    call getiodof(3, (/nlon,nlat,nlev+1/), iorank, start3d(1:3), count3d(1:3))
+    call nf_init_decomp(ncdf, (/londim,latdim,ilevdim/), ldof3d(1:icnt), start3d(1:3),count3d(1:3))
+    deallocate(ldof3d)
     endif
 
   end subroutine create_output_decomps
@@ -1014,7 +1034,7 @@ contains
     nsnames(2) = 'slat'
     znames(1)  = 'lev'
     znames(2)  = 'ilev'
-    ncolnames(1) = 'ncol'
+    ncolnames(1) = ncoldimname
 
     do n=1,size (ewnames)
        if (ewnames(n) == ' ') exit
@@ -1161,7 +1181,7 @@ contains
     use element_mod, only : element_t
 
     type(element_t), intent(in) :: elem(:)
-    integer, pointer :: Compdof(:)
+    integer*8, pointer :: Compdof(:)
     integer, intent(in) :: lev
 
     integer :: nxyp, icnt, i, ie, k
@@ -1291,10 +1311,9 @@ contains
     type(var_desc_t) :: vardesc
     integer :: ndims, ncol, nvars, natts, nfield, fldi, iotype, nf2, ie
     character(len=pio_max_name) :: dimname
-    integer, pointer :: dof(:)
+    integer*8, pointer :: dof(:)
     real(real_kind), allocatable :: raw(:)
 
-    call pio_init(par%rank, par%comm, num_io_procs, num_agg, io_stride, pio_rearr_box, piofs)
     iotype = get_iotype()
     stat = pio_openfile(piofs, fileid, iotype, infilename)
     stat = pio_inquire(fileid, ndimensions=ndims, nvariables=nvars)
@@ -1539,7 +1558,7 @@ contains
 
     type(element_t), intent(in) :: elem(:)
     integer, intent(in) :: nphys
-    integer, intent(out), pointer :: dof(:)
+    integer*8, intent(out), pointer :: dof(:)
     
     integer :: nf2, ie, j
 
@@ -1599,9 +1618,10 @@ contains
     integer, intent(in) :: nphys
 
     character(len=varname_len) :: dimnames(ndim)
-    integer :: dimsizes(ndim), nf2, itmp(1)
+    integer :: dimsizes(ndim), nf2
+    integer*8 :: itmp(1)
     integer(kind=nfsizekind) :: unused(1)
-    integer, pointer :: dof(:)
+    integer*8, pointer :: dof(:)
 
     call nf_output_init_begin(ncdf, par%masterproc, par%nprocs, par%rank, par%comm, &
          outfilenameprefix, 0)
@@ -1619,11 +1639,11 @@ contains
     ! physgrid decomp
     call make_physgrid_dof(elem, nphys, dof)
     call nf_init_decomp(ncdf, (/1/), dof, &
-         itmp, unused, unused) ! these args are unused
+         unused, unused) ! these args are unused
     deallocate(dof)
     ! GLL decomp
     call getcompdof(dof, elem, 1)
-    call nf_init_decomp(ncdf, (/2/), dof, itmp, unused, unused)
+    call nf_init_decomp(ncdf, (/2/), dof, unused, unused)
     deallocate(dof)
   end subroutine physgrid_topo_begin_write
   

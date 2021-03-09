@@ -1,0 +1,89 @@
+HOMME contains an executable "homme_tool" which can be used
+to get access to a variety of HOMME features without running
+a simulation.
+
+scripts:
+test.job       runs all tools at NE4 (similar to hommetool regression test)
+template.job   create GLL SCRIP and subcell grid metadata files
+cori.job       perform parallel interpolation of EAM history file output
+
+
+Tools currently include:
+
+================================================================
+Topo converter  tool = 'topo_pgn_to_smoothed'
+
+Use a pure-physgrid non-smoothed topography file to create a smoothed
+GLL-physgrid topography file. This is part of the physgrid topography full
+tool chain.
+
+The input is an unsmoothed pg4 topography file output by
+cube_to_target. The output is a GLL-physgrid file with smoothed topography
+and GLL-physgrid consistent PHIS_d and PHIS fields, respectively. This
+file is then input for a second run of cube_to_target, this time to
+compute SGH, SGH30, LANDFRAC, and LANDM_COSLAT on physgrid.
+
+
+
+================================================================
+GLL topo smoother.  tool = 'topo_gll_to_smoothed'
+
+Apply HOMME's laplace operator to smooth a topography data set.
+
+Note: this tool can also be used to output (with no smoothing)
+the topography used by HOMME's various build in test cases.
+This is useful for generating topo files as par of tool
+regression testing.
+
+
+
+================================================================
+Topo converter  tool = 'topo_convert'
+
+Convert a pure-GLL topography file to GLL-physgrid topography file. This
+is useful if you have an existing v1 GLL topo file and want to run an
+equivalent physgrid-based simulation without having to run the topography
+tool chain from scratch.
+
+
+
+================================================================
+Interpolation.  tool = 'interpolate_tool'
+
+HOMME can read in an EAM native grid "ncol" or "ncol_d"
+file and interpolate this to a lat lon file, with either bilinear interpolation
+or native SE interpolation.  (no downscaling).
+
+
+================================================================
+Mapping files. tool = 'gll_mapping_file'
+
+Output a mapping file that will reproduce the HOMME bilinear or native SE
+interpolation algorithm.
+
+
+================================================================
+Template files.  tool = 'grid_template_tool'
+
+SCRIP files are for use with SCRIP/ESMF mapping
+utilities to generatye mapping weights.  The SCRIP files compute a control
+volume around each GLL node, and perform a crude iteration to get the
+control volume area to match the GLL weight. This iteration is exact for cubed-sphere
+meshes, but only approximate for RRM meshes.  For RRM meshes the control volumes
+can be star-like and are not recommended.  LATLON files give the connectivity
+of the GLL "subcell" grid: the grid of quads whose corners are the GLL nodes.
+This is useful for plotting native grid output.   This tool uses HOMME's
+native grid output, and then the user has to run an NCL script to post-process
+the output into the correct format.
+
+
+================================================================
+Template files: (alternative):  tool = "gll_subcell_grid"
+
+This is the old code from CAM that would produce the SEMapping.nc file
+for every run (since removed from EAM).  This is identical to the
+LATLON file from the tool above.  This tool has the advantage that the
+output does not have to be post-processed.  But it has the
+disadvantage that the entire grid is stored in memory on MPI task 0 so
+may not be scalable to ultra high resolution.
+

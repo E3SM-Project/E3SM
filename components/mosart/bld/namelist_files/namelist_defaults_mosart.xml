@@ -22,6 +22,10 @@ for the CLM data in the CESM distribution
 <inundflag>.false.</inundflag>
 <sediflag>.false.</sediflag>
 <heatflag>.false.</heatflag>
+<rstraflag>.false.</rstraflag>
+<rinittemp>283.15</rinittemp>
+<ngeom>50</ngeom>
+<nlayers>30</nlayers>
 <barrier_timers>.false.</barrier_timers>
 <RoutingMethod>1</RoutingMethod>
 <DLevelH2R>5</DLevelH2R>
@@ -38,7 +42,6 @@ for the CLM data in the CESM distribution
 <frivinp_rtm rof_grid="r0125" >rof/mosart/MOSART_global_8th_20180211c.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="r05" >rof/mosart/MOSART_global_half_20180721a.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="NLDAS" >rof/mosart/MOSART_NLDAS_8th_20160426.nc</frivinp_rtm>
-<frivinp_rtm rof_grid="CLM_USRDAT" >undefined</frivinp_rtm>
 
 <!-- WRM -->
 
@@ -52,6 +55,7 @@ for the CLM data in the CESM distribution
 <GroundWaterFlag>0</GroundWaterFlag>
 <ExternalDemandFlag>0</ExternalDemandFlag>
 <DemandVariableName>cons_total</DemandVariableName>
+<DamConstructionFlag>0</DamConstructionFlag>
 
 <!-- inund -->
 <OPT_inund>1</OPT_inund>

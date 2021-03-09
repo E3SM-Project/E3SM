@@ -12,14 +12,18 @@ namespace Homme
 
 struct Session {
   // Whether initialize_hommexx_session was called. If this is false,
-  // finalize_hommexx_session does nothing. This can be useful if
-  // Homme is handled externally by some other library/executable,
-  // in which case we should let such lib/exe handle finalization.
-  // This is because finalize_hommexx_session will also call
-  // Kokkos::finalize, which can be catastrophic if the host
-  // application still has allocated views and/or still needs
-  // to use Kokkos.
+  // initialize_hommexx_session does nothing.
+  // This can be useful if Homme is handled externally by some other
+  // library/executable, in which case we should let such lib/exe handle
+  // initialization, so that Kokkos is initialized only once.
   static bool m_inited;
+
+  // Whether this Session owns kokkos. If true, then initialize/finalize
+  // hommexx session will init/finalize kokkos as well, otherwise it won't.
+  // This can be useful if Homme is handled externally by some other
+  // library/executable, in which case we should let such lib/exe handle
+  // init/finalization of kokkos.
+  static bool m_handle_kokkos;
 
   // If this is true, error routines in the Error namespace will
   // not call finalize_hommexx_session (and then MPI_Abort).

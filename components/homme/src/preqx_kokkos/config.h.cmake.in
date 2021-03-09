@@ -42,33 +42,24 @@
 /* Quadruple-precision */
 #cmakedefine01 HOMME_QUAD_PREC
 
-/* Fortran or Kokkos kernels */
-#cmakedefine USE_KOKKOS_KERNELS
-
-/* Horizontal OpenMP (over elements) */
-#ifndef USE_KOKKOS_KERNELS
-#cmakedefine HORIZ_OPENMP
-#endif
-
 /* Vertical OpenMP (within elements) */
 #cmakedefine COLUMN_OPENMP
-
-/* Nested OpenMP (both horizontal and vertical) */
-#ifndef USE_KOKKOS_KERNELS
-#cmakedefine NESTED_OPENMP
-#endif
 
 /* Zoltan partitioning library */
 #cmakedefine01 HAVE_ZOLTAN
 
-/* Enable persistent MPI comm */
-#cmakedefine MPI_PERSISTENT
+/* Identifies whether this is a cuda build */
+#cmakedefine CUDA_BUILD
 
 /* TRILINOS  library */
 #cmakedefine01 HAVE_TRILINOS
 
 /* ZOLTAN2 SUBPACKAGE OF TRILINOS  library */
 #cmakedefine01 TRILINOS_HAVE_ZOLTAN2
+
+/* When doing BFB testing, we occasionally must use modified code. */
+/* Use this flag to protect such code. */
+#cmakedefine HOMMEXX_BFB_TESTING
 
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4

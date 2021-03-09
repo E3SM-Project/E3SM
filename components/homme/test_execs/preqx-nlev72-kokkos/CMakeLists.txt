@@ -1,7 +1,4 @@
-PREQX_KOKKOS_SETUP(${USE_KOKKOS_KERNELS})
-
-# This will be used to determine that we need to link to kokkos
-SET(USE_KOKKOS_KERNELS ON)
+PREQX_KOKKOS_SETUP()
 
 # Set the variables for this test executable
 #                          NP  NC PLEV USE_PIO WITH_ENERGY QSIZE_D
@@ -14,11 +11,17 @@ createTestExec(preqx-nlev72-kokkos preqx_kokkos 4 4 72 FALSE FALSE 35)
 SET (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 SET (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 SET (HOMME_TEST_NE 2)
+SET (HOMME_TEST_TIME_STEP 300)
 SET (HOMME_TEST_NDAYS 1)
 SET (HOMME_TEST_QSIZE 4)
 SET (HOMME_TEST_RSPLIT 3)
 SET (HOMME_TEST_MOISTURE notdry)
 SET (HOMME_TEST_TIME_STEP 600)
+SET (HOMME_TEST_HVSCALING 0)
+SET (HOMME_TEST_NU 7e15)
+SET (HOMME_TEST_NUDIV 1e15)
+SET (HOMME_TEST_NUTOP 0)
+SET (HOMME_TEST_LIM 8)
 
 # Copy the needed input files to the binary dir
 CONFIGURE_FILE (${CMAKE_SOURCE_DIR}/test/reg_test/namelists/preqx.nl

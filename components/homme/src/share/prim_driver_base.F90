@@ -27,8 +27,11 @@ module prim_driver_base
                               red_sum, red_sum_int, red_flops, initreductionbuffer, &
                               red_max_index, red_min_index
 #ifndef CAM
+#ifndef SCREAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : readrestart
+#endif
+! For SCREAM, we might do unit tests, so enable setting of initial conditions
   use test_mod,         only: set_test_initial_conditions, compute_test_forcing
 #endif
 
@@ -141,12 +144,17 @@ contains
 #ifndef CAM
   subroutine prim_init1_no_cam(par)
     use mesh_mod,       only : MeshUseMeshFile, MeshCubeElemCount
-    use cube_mod,       only : cubeelemcount
+    use cube_mod,       only : CubeElemCount
+    use planar_mod,     only : PlaneElemCount
     use parallel_mod,   only : parallel_t, abortmp
     use namelist_mod,   only : readnl
     use quadrature_mod, only : test_gauss, test_gausslobatto
     use repro_sum_mod,  only : repro_sum_defaultopts, repro_sum_setopts
     use time_mod,       only : nmax, time_at
+    use control_mod, only : topology
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use common_io_mod,  only : homme_pio_init
+#endif
     !
     ! Inputs
     !
@@ -167,8 +175,16 @@ contains
     if (MeshUseMeshFile) then
        total_nelem = MeshCubeElemCount()
     else
+      if (topology=="cube") then
        total_nelem = CubeElemCount()
+     else if (topology=="plane") then
+       total_nelem      = PlaneElemCount()
     end if
+    end if
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    call homme_pio_init(par%rank,par%comm)
+#endif
 
     approx_elements_per_task = dble(total_nelem)/dble(par%nprocs)
     if  (approx_elements_per_task < 1.0D0) then
@@ -212,18 +228,26 @@ contains
     ! --------------------------------
     use thread_mod, only : nthreads, hthreads, vthreads
     ! --------------------------------
-    use control_mod, only : topology, partmethod, z2_map_method, cubed_sphere_map
+    use control_mod, only : topology, geometry, partmethod, z2_map_method, cubed_sphere_map
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
     use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology, cube_init_atomic, &
-                          set_corner_coordinates, &
-                          set_area_correction_map0, set_area_correction_map2
+                          set_corner_coordinates
+    ! --------------------------------
+    use geometry_mod, only: set_area_correction_map0, set_area_correction_map2
     ! --------------------------------
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
                          MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
+    ! --------------------------------
+    use planar_mod,  only : PlaneEdgeCount , PlaneElemCount, PlaneTopology
+    ! --------------------------------
+    use planar_mesh_mod, only :   PlaneMeshSetCoordinates,      &
+                          MeshPlaneTopology, MeshPlaneTopologyCoords
+    ! --------------------------------
+    use planar_mod, only : plane_init_atomic, plane_set_corner_coordinates
     ! --------------------------------
     use metagraph_mod, only : localelemcount, initmetagraph, printmetavertex
     ! --------------------------------
@@ -288,9 +312,12 @@ contains
     if (MeshUseMeshFile) then
        nelem = MeshCubeElemCount()
        nelem_edge = MeshCubeEdgeCount()
-    else
+    else if (topology=="cube") then
        nelem      = CubeElemCount()
        nelem_edge = CubeEdgeCount()
+     else if (topology=="plane") then
+       nelem      = PlaneElemCount()
+       nelem_edge = PlaneEdgeCount()
     end if
 
     ! we want to exit elegantly when we are using too many processors.
@@ -308,10 +335,10 @@ contains
        call sgi_init_grid(par, GridVertex, GridEdge, MetaVertex)
     end if
 
-    if (topology=="cube" .and. .not. can_scalably_init_grid) then
+    if (.not. can_scalably_init_grid) then
 
        if (par%masterproc) then
-          write(iulog,*)"creating cube topology..."
+          write(iulog,*)"creating topology..."
        end if
 
        allocate(GridVertex(nelem))
@@ -325,15 +352,22 @@ contains
            if (par%masterproc) then
                write(iulog,*) "Set up grid vertex from mesh..."
            end if
+           if (topology=="cube") then
            call MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
            !MD:TODO: still need to do the coordinate transformation for this case.
-
+         else if  (topology=="plane") then
+           call MeshPlaneTopologyCoords(GridEdge,GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+         end if
 
        else
+         if (topology=="cube") then
            call CubeTopology(GridEdge,GridVertex)
            if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
               call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
            endif
+        else if (topology=="plane") then
+         call PlaneTopology(GridEdge,GridVertex)
+       end if
         end if
 
        if(par%masterproc)       write(iulog,*)"...done."
@@ -476,19 +510,36 @@ contains
 
     gp=gausslobatto(np)  ! GLL points
 
-    if (topology=="cube") then
-       if(par%masterproc) write(iulog,*) "initializing cube elements..."
-       if (MeshUseMeshFile) then
-           call MeshSetCoordinates(elem)
-       else
-           do ie=1,nelemd
+        if(par%masterproc) write(6,*)"initializing elements..."
+    
+         if (MeshUseMeshFile) then
+          if (geometry=="sphere") then
+            call MeshSetCoordinates(elem)
+          else if  (geometry=="plane") then
+            call PlaneMeshSetCoordinates(elem)
+          end if
+         else
+          if (geometry=="sphere") then
+            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))
-           end do
-       end if
-       do ie=1,nelemd
-          call cube_init_atomic(elem(ie),gp%points)
-       enddo
-    end if
+            enddo
+          else if (geometry=="plane") then
+           do ie=1,nelemd
+              call plane_set_corner_coordinates(elem(ie))
+           enddo
+          end if
+           !call assign_node_numbers_to_elem(elem, GridVertex)
+         endif
+    
+      if (geometry=="sphere") then
+         do ie=1,nelemd
+            call cube_init_atomic(elem(ie),gp%points)
+         enddo
+      else if (geometry=="plane") then
+        do ie=1,nelemd
+           call plane_init_atomic(elem(ie),gp%points)
+        enddo
+      end if
 
     ! =================================================================
     ! Initialize mass_matrix
@@ -542,7 +593,7 @@ contains
     use parallel_mod,   only : parallel_t
     use control_mod,    only : runtype, restartfreq, transport_alg
     use bndry_mod,      only : sort_neighbor_buffer_mapping
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     use restart_io_mod, only : RestFile,readrestart
 #endif
 
@@ -574,7 +625,7 @@ contains
     !  This routines initalizes a Restart file.  This involves:
     !      I)  Setting up the MPI datastructures
     ! ==========================================================
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     if(restartfreq > 0 .or. runtype>=1)  then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
@@ -775,7 +826,7 @@ contains
   end interface
 #endif
 
-    if (topology == "cube") then
+    if (topology == "cube" .OR. topology=='plane') then
        call test_global_integral(elem, hybrid,nets,nete)
     end if
 
@@ -839,11 +890,7 @@ contains
     !$OMP BARRIER
 #endif
 
-    if (topology /= "cube") then
-       call abortmp('Error: only cube topology supported for primaitve equations')
-    endif
-
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 
     ! =================================
     ! HOMME stand alone initialization
@@ -938,11 +985,6 @@ contains
     ! advective and viscious CFL estimates
     ! may also adjust tensor coefficients based on CFL
     call print_cfl(elem,hybrid,nets,nete,dtnu)
-
-    ! smooth elem%phis if requested.
-    if (smooth_phis_numcycle>0) &
-          call smooth_topo_datasets(elem,hybrid,nets,nete)
-
 
     if (hybrid%masterthread) then
        ! CAM has set tstep based on dtime before calling prim_init2(),
@@ -1474,6 +1516,7 @@ contains
     enddo
 #endif
   endif
+
   call t_stopf("ApplyCAMForcing_remap")
   end subroutine applyCAMforcing_remap
 
@@ -1514,6 +1557,9 @@ contains
   use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
+#ifdef HOMMEXX_BFB_TESTING
+  use bfb_mod,            only : bfb_pow
+#endif
 #endif
   implicit none
   type (element_t),       intent(inout) :: elem
@@ -1660,7 +1706,11 @@ contains
       endif
       do k=1,nlev
          pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
+#ifdef HOMMEXX_BFB_TESTING
+         exner(:,:,k)=bfb_pow(pnh(:,:,k)/p0,Rgas/Cp)
+#else
          exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
+#endif
       enddo
    endif
    
@@ -1686,8 +1736,6 @@ contains
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
    
 #endif
-     
-
 
   end subroutine applyCAMforcing_tracers
   
@@ -1733,8 +1781,6 @@ contains
     integer :: ie, t, q,k,i,j,n,qn0
     real (kind=real_kind)                          :: maxcflx, maxcfly
     real (kind=real_kind) :: dp_np1(np,np)
-
-    dt_q = dt*dt_tracer_factor
  
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
@@ -1773,7 +1819,7 @@ contains
       
     enddo
 
-  end subroutine prim_step_scm  
+  end subroutine prim_step_scm
 
 
 !=======================================================================================================!
@@ -1810,7 +1856,7 @@ contains
 
 
     subroutine smooth_topo_datasets(elem,hybrid,nets,nete)
-    use control_mod, only : smooth_phis_numcycle
+    use control_mod, only : smooth_phis_numcycle, smooth_phis_nudt
     use hybrid_mod, only : hybrid_t
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
@@ -1830,8 +1876,11 @@ contains
     enddo
     
     minf=-9e9
-    if (hybrid%masterthread) &
+    if (hybrid%masterthread) then
        write(iulog,*) "Applying hyperviscosity smoother to PHIS"
+       write(iulog,'(a,i10)')  " smooth_phis_numcycle =",smooth_phis_numcycle
+       write(iulog,'(a,e13.5)')" smooth_phis_nudt =",smooth_phis_nudt
+    endif
     call smooth_phis(phis,elem,hybrid,deriv1,nets,nete,minf,smooth_phis_numcycle)
 
 
@@ -1867,22 +1916,35 @@ contains
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
     
     do k=1,nlev
-      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)   
+      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)
     enddo  
-    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
+    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev)
     
     do k=1,nlev
       elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
-        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))    
-    enddo       
+        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
+    enddo
+
+    ! Update temperature variable for the theta-l or preqx implementation
+#ifdef MODEL_THETA_L
+    do k=1,nlev
+      elem(1)%state%vtheta_dp(:,:,k,np1) = (elem(1)%state%vtheta_dp(:,:,k,n0)/ &
+                elem(1)%state%dp3d(:,:,k,n0))*elem(1)%state%dp3d(:,:,k,np1)
+    enddo
+#else
+   do k=1,nlev
+     elem(1)%state%T(:,:,k,np1) = elem(1)%state%T(:,:,k,n0)
+   enddo
+#endif
 
     do p=1,qsize
       do k=1,nlev
-        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
+        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*&
+          elem(1)%state%dp3d(:,:,k,np1)
       enddo
     enddo
     
-  end subroutine set_prescribed_scm        
+  end subroutine set_prescribed_scm
     
 end module prim_driver_base
 

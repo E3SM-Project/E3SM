@@ -1,8 +1,8 @@
 # Files that cannot be compiled with -O2 without losing reproducibility
 set(O1MODELSRC
-  cam/src/chemistry/aerosol/dust_sediment_mod.F90
-  cam/src/chemistry/modal_aero/modal_aero_convproc.F90
-  cam/src/physics/cam/zm_conv.F90)
+  eam/src/chemistry/aerosol/dust_sediment_mod.F90
+  eam/src/chemistry/modal_aero/modal_aero_convproc.F90
+  eam/src/physics/cam/zm_conv.F90)
 
 if (NOT DEBUG)
   foreach(ITEM IN LISTS O1MODELSRC)

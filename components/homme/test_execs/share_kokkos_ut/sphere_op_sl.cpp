@@ -2,7 +2,6 @@
 
 #include <limits>
 
-#include "Elements.hpp"
 #include "Dimensions.hpp"
 #include "KernelVariables.hpp"
 #include "SphereOperators.hpp"
@@ -60,7 +59,10 @@ class compute_sphere_operator_test {
     // init randonly
 
     std::random_device rd;
-    rngAlg engine(rd());
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+    rngAlg engine(seed);
 
     // check singularities? divergence_wk uses both D and
     // Dinv, does it matter if they are not inverses of
@@ -116,7 +118,7 @@ class compute_sphere_operator_test {
     Kokkos::deep_copy(dvv_d, dvv_host);
 
     // Set device views in SphereOperators
-    ExecViewManaged<Real*      [NP][NP]> mp_d("",num_elems);  // Unused by this test, but needed by sphere_ops
+    ExecViewManaged<Real       [NP][NP]> mp_d("");  // Unused by this test, but needed by sphere_ops
     ExecViewManaged<Real*[2][2][NP][NP]> metinv_d("",num_elems);  // Unused by this test, but needed by sphere_ops
     sphere_ops.set_views(dvv_d,d_d,dinv_d,metinv_d,metdet_d,spheremp_d,mp_d);
   }
@@ -173,7 +175,7 @@ class compute_sphere_operator_test {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagDefault &,
-                  TeamMember team) const {
+                  TeamMember /* team */) const {
       // do nothing or print a message
   };
 
@@ -240,7 +242,7 @@ class compute_sphere_operator_test {
     auto policy = Homme::get_default_team_policy<ExecSpace,TagSimpleLaplace>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     // TO FROM
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
@@ -249,7 +251,7 @@ class compute_sphere_operator_test {
     auto policy = Homme::get_default_team_policy<ExecSpace,TagGradientSphere>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     // TO FROM
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
@@ -258,7 +260,7 @@ class compute_sphere_operator_test {
     auto policy = Homme::get_default_team_policy<ExecSpace,TagDivergenceSphereWk>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::fence();
+    ExecSpace::impl_static_fence();
     // TO FROM
     // remember to copy correct output
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
@@ -303,10 +305,6 @@ TEST_CASE("testing_laplace_simple_sl",
         REQUIRE(
             !std::isnan(testing_laplace.scalar_output_host(
                 ie, igp, jgp)));
-        Real rel_error = compare_answers(
-                    local_fortran_output(igp, jgp),
-                    testing_laplace.scalar_output_host(
-                        ie, igp, jgp));
         REQUIRE(local_fortran_output(igp, jgp) ==
                     testing_laplace.scalar_output_host(
                         ie, igp, jgp));

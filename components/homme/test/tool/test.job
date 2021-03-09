@@ -1,0 +1,102 @@
+#!/bin/tcsh 
+#
+#  script to show how to run various HOMME tools
+#  
+#  1. generate a NE4 GLL topo file from the baroclinic intial condition
+#  2. run the GLL topo smoother on the output from tool #1
+#  3. interpolate the smoothed GLL topo data from #2 to a lat/lon grid
+#  4. create a NE4 bilinear mapping file, interpolate GLL data from #2
+#     (output of #3 and #4 should agree to roundoff)  
+#  5. generate a ne4np4 "scrip" and "latlon" metadata files
+#
+# 
+set TOOLDIR = `pwd`
+set WDIR = ~/scratch1/regtest/homme
+set MACH = $TOOLDIR/../../cmake/machineFiles/darwin.cmake
+set exe = $WDIR/src/tool/homme_tool
+
+
+cd $WDIR
+if (!  -x $exe ) then
+  # configure                                                                                                                                         
+  set output = `$TOOLDIR/../../../../cime/scripts/Tools/get_case_env`
+  eval $output
+  cmake -C $MACH -DPREQX_PLEV=26 $TOOLDIR/../..
+  # compile the tool                                                                                                                                  
+  make -j4 homme_tool
+  if ( $status ) then
+     echo Error compiling homme_tool. Ensure cmake configured properly.
+     exit
+  endif
+endif
+if ( ${?SLURM_NNODES} ) then
+   set mpirun = "srun -K -c 1 -N $SLURM_NNODES"
+else
+   set mpirun = "mpirun -np 4"
+endif
+
+
+#
+echo "** GLL topo smoothing **"
+#
+# generate dummy PHIS field
+$mpirun $exe < $TOOLDIR/namelists/topooutput.nl
+# smooth goes field:
+$mpirun $exe < $TOOLDIR/namelists/toposmooth_gll.nl
+# remove vertical coord info
+ncks -O -v PHIS,lat,lon phis-smoothed1.nc phis-smoothed2.nc 
+
+
+#
+echo "** interpolation to lat/lon grid **"
+#
+# interpolate file created above to a lat/lon grid
+$mpirun $exe < $TOOLDIR/namelists/interpolate.nl
+
+
+
+#
+echo "** create NE30 mapping files **"
+#
+ncremap -G ttl="lat-lon-cap-grid"\#latlon=49,96\#lat_typ=fv\#lon_typ=grn_ctr -g 49x96_scrip.nc
+$mpirun $exe < $TOOLDIR/namelists/mappingfiles.nl
+# add missing variables to mapping file:
+ncrename -v area,area_a -v lon,xc_a -v lat,yc_a coords1.nc
+ncks -A -v area_a,xc_a,yc_a coords1.nc map_ne4np4_to_49x96_scrip_bilin.nc
+# NCO's ncremap cant apply these mapping files since they are missing some coordinate information
+#ncremap -m map_ne30np4_to_257x512_scrip_bilin.nc -i phis-smoothed1.nc -o phis-smoothed1.interp2.nc
+ncl 'wgtfile="map_ne4np4_to_49x96_scrip_bilin.nc"' 'srcfile="phis-smoothed1.nc"' $TOOLDIR/ncl/regridfile.ncl 
+
+
+
+#
+echo "** SCRIP file tool **"
+#
+$mpirun $exe < $TOOLDIR/namelists/template.nl
+
+set NE=4
+set NPTS=4
+set mesh = ne${NE}np${NPTS}
+# make the 'latlon' file
+ncks -O -v lat,lon,corners,area ${mesh}_tmp1.nc ${mesh}_tmp.nc
+ncl $TOOLDIR/ncl/HOMME2META.ncl  name=\"$mesh\"  ne=$NE  np=$NPTS
+
+# make the 'scrip' file
+ncks -O -v lat,lon,area,cv_lat,cv_lon ${mesh}_tmp1.nc ${mesh}_tmp.nc
+ncl $TOOLDIR/ncl/HOMME2SCRIP.ncl  name=\"$mesh\"  ne=$NE  np=$NPTS
+rm -f {$mesh}_tmp.nc {$mesh}_tmp1.nc
+
+# make some plots (ncl defaults to ne4np4 grid
+ncl $TOOLDIR/ncl/plotscrip.ncl
+ncl $TOOLDIR/ncl/plotlatlon.ncl
+
+
+
+
+#
+echo "** GLL subcell grid (alt-template) tool **"
+#
+$mpirun $exe < $TOOLDIR/namelists/template-alt.nl
+
+
+

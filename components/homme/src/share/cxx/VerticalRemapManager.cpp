@@ -19,34 +19,36 @@ namespace Homme {
 struct VerticalRemapManager::Impl {
   Impl(const SimulationParams &params, const Elements &e, const Tracers &t,
        const HybridVCoord &h) {
+    using namespace Remap;
+    using namespace Remap::Ppm;
     if (params.remap_alg == RemapAlg::PPM_FIXED_PARABOLA) {
       if (params.rsplit != 0) {
-        remapper = std::make_shared<Remap::RemapFunctor<
-            true, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmFixedParabola> >(
+        remapper = std::make_shared<RemapFunctor<
+            true, PpmVertRemap<PpmFixedParabola>> >(
             params.qsize, e, t, h);
       } else {
-        remapper = std::make_shared<Remap::RemapFunctor<
-            false, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmFixedParabola> >(
+        remapper = std::make_shared<RemapFunctor<
+            false, PpmVertRemap<PpmFixedParabola>> >(
             params.qsize, e, t, h);
       }
     } else if (params.remap_alg == RemapAlg::PPM_FIXED_MEANS) {
       if (params.rsplit != 0) {
-        remapper = std::make_shared<Remap::RemapFunctor<
-            true, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmFixedMeans> >(
+        remapper = std::make_shared<RemapFunctor<
+            true, PpmVertRemap<PpmFixedMeans>> >(
             params.qsize, e, t, h);
       } else {
-        remapper = std::make_shared<Remap::RemapFunctor<
-            false, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmFixedMeans> >(
+        remapper = std::make_shared<RemapFunctor<
+            false, PpmVertRemap<PpmFixedMeans>> >(
             params.qsize, e, t, h);
       }
     } else if (params.remap_alg == RemapAlg::PPM_MIRRORED) {
       if (params.rsplit != 0) {
-        remapper = std::make_shared<Remap::RemapFunctor<
-            true, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmMirrored> >(
+        remapper = std::make_shared<RemapFunctor<
+            true, PpmVertRemap<PpmMirrored>> >(
             params.qsize, e, t, h);
       } else {
-        remapper = std::make_shared<Remap::RemapFunctor<
-            false, Remap::Ppm::PpmVertRemap, Remap::Ppm::PpmMirrored> >(
+        remapper = std::make_shared<RemapFunctor<
+            false, PpmVertRemap<PpmMirrored>> >(
             params.qsize, e, t, h);
       }
     } else {
@@ -60,10 +62,10 @@ struct VerticalRemapManager::Impl {
 };
 
 VerticalRemapManager::VerticalRemapManager() {
-  const auto &h = Context::singleton().get_hvcoord();
-  const auto &p = Context::singleton().get_simulation_params();
-  const auto &e = Context::singleton().get_elements();
-  const auto &t = Context::singleton().get_tracers();
+  const auto &h = Context::singleton().get<HybridVCoord>();
+  const auto &p = Context::singleton().get<SimulationParams>();
+  const auto &e = Context::singleton().get<Elements>();
+  const auto &t = Context::singleton().get<Tracers>();
   assert(p.params_set);
   p_.reset(new Impl(p, e, t, h));
 }
@@ -73,4 +75,19 @@ void VerticalRemapManager::run_remap(int np1, int np1_qdp, double dt) const {
   assert(p_->remapper);
   p_->remapper->run_remap(np1, np1_qdp, dt);
 }
+
+int VerticalRemapManager::requested_buffer_size () const {
+  assert (p_);
+  assert (p_->remapper);
+
+  return p_->remapper->requested_buffer_size();
 }
+
+void VerticalRemapManager::init_buffers(const FunctorsBuffersManager& fbm) {
+  assert (p_);
+  assert (p_->remapper);
+
+  p_->remapper->init_buffers(fbm);
+}
+
+} // namespace Homme

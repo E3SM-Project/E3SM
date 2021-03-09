@@ -30,8 +30,8 @@
 #elif defined(CUDA_PROFILE) // VTUNE_PROFILE
 #include <cuda_profiler_api.h>
 
-#define profiling_resume cuProfilerStart
-#define profiling_pause cuProfilerStop
+#define profiling_resume cudaProfilerStart
+#define profiling_pause cudaProfilerStop
 
 #elif defined(GPROF_PROFILE) // CUDA_PROFILE
 

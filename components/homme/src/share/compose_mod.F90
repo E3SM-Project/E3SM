@@ -269,10 +269,12 @@ contains
        rank2sfc => null_target
     end if
     if (use_sgi) then
+       if (.not. allocated(owned_ids)) allocate(owned_ids(1))
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
             use_sgi, owned_ids, rank2sfc, nelem, nelemd, nlev, &
             independent_time_steps, hard_zero, size(owned_ids), size(rank2sfc))
     else
+       if (.not. allocated(sc2gci)) allocate(sc2gci(1), sc2rank(1))
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
             use_sgi, sc2gci, sc2rank, nelem, nelemd, nlev, &
             independent_time_steps, hard_zero, size(sc2gci), size(sc2rank))

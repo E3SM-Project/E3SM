@@ -39,6 +39,16 @@ program prim_main
 
   implicit none
 
+#if defined(HOMMEXX_BFB_TESTING) && !KOKKOS_TARGET
+  interface
+    subroutine initialize_kokkos_f90() bind(c)
+    end subroutine initialize_kokkos_f90
+
+    subroutine finalize_kokkos_f90() bind(c)
+    end subroutine finalize_kokkos_f90
+  end interface
+#endif
+
   type (element_t),  pointer  :: elem(:)
   type (hybrid_t)             :: hybrid         ! parallel structure for shared memory/distributed memory
   type (parallel_t)           :: par            ! parallel structure for distributed memory programming
@@ -61,6 +71,10 @@ program prim_main
   ! Begin executable code set distributed memory world...
   ! =====================================================
   par=initmp()
+
+#if defined(HOMMEXX_BFB_TESTING) && !KOKKOS_TARGET
+  call initialize_kokkos_f90();
+#endif
 
   ! =====================================
   ! Set number of threads...
@@ -129,13 +143,6 @@ program prim_main
 
 
 
-#ifdef PIO_INTERP
-  if(runtype<0) then
-     ! Interpolate a netcdf file from one grid to another
-     call interpolate_driver(elem, hybrid)
-     call haltmp('interpolation complete')
-  end if
-#endif
   ! this should really be called from test_mod.F90, but it has be be called outside
   ! the threaded region
   if (infilenames(1)/='') call pio_read_phis(elem,hybrid%par)
@@ -263,6 +270,11 @@ program prim_main
     call finalize_nonlinear_stats(par%comm, par%rank, par%root, par%nprocs)
   endif
 #endif
+
+#if defined(HOMMEXX_BFB_TESTING) && !KOKKOS_TARGET
+  call finalize_kokkos_f90();
+#endif
+
 
   call t_stopf('Total')
   if(par%masterproc) print *,"writing timing data"

@@ -1,0 +1,5 @@
+se_ftype=0
+cubed_sphere_map=0
+theta_hydrostatic_mode=.true.
+
+theta_advect_form=0

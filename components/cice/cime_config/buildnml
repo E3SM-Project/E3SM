@@ -84,8 +84,10 @@ def buildnml(case, caseroot, compname):
     #--------------------------------------------------------------
 
     # determine the actual CPP definitions (these have been determined by the call to configure)
-
-    cppdefs = open(os.path.join(ciceconf_dir, "CCSM_cppdefs"), "r").read().strip()
+    if os.path.isfile(os.path.join(ciceconf_dir, "CIME_cppdefs")):
+        cppdefs = open(os.path.join(ciceconf_dir, "CIME_cppdefs"), "r").read().strip()
+    elif os.path.isfile(os.path.join(ciceconf_dir, "CCSM_cppdefs")):
+        cppdefs = open(os.path.join(ciceconf_dir, "CCSM_cppdefs"), "r").read().strip()
     cppdefs += " -DBLCKX={} -DBLCKY={} -DMXBLCKS={}".format(cice_blckx, cice_blcky, cice_mxblcks)
 
     # write out cppdefs to env_build.xml
@@ -99,7 +101,7 @@ def buildnml(case, caseroot, compname):
     # this will force gmake to rebuild when $CASE.buildexe is called
 
     if testcase != "SBN":
-        with open(os.path.join(objroot, "ice/obj/CCSM_cppdefs.new"), "w") as fd:
+        with open(os.path.join(objroot, "ice/obj/CIME_cppdefs.new"), "w") as fd:
             fd.write(cppdefs + "\n")
 
     #--------------------------------------------------------------------

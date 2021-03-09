@@ -15,6 +15,6 @@
 !
 ! Users cannot use this file to configure albany_input.xml (if using Albany with MALI).
 ! In order to configure that file, write a copy of it, and place it in
-! SourceMods/src.mali/albany_input.xml
+! SourceMods/src.mali/albany_input.yaml
 !----------------------------------------------------------------------------------
 

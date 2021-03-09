@@ -20,6 +20,10 @@ cmake_policy(SET CMP0057 NEW)
 # we can still access ${CASEROOT}/Macros.cmake
 set (CASEROOT "" CACHE STRING "The case root directory.")
 
+# Turn on wrapper
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
+set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
+
 # We need to set the compilers *before* calling `project`.
 # The only way to get the compiler name, is to load Macros.cmake
 # However, we do *not* want to pollut the environment with other
@@ -42,10 +46,19 @@ function(set_compilers_e3sm)
   set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "The CXX compiler")
   set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "The C   compiler")
   set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "The Fortran compiler")
+  if (USE_CUDA)
+    set(USE_CUDA TRUE PARENT_SCOPE)
+  else()
+    set(USE_CUDA FALSE PARENT_SCOPE)
+  endif()
 endfunction()
 set_compilers_e3sm()
 
 project(E3SM C CXX Fortran)
+
+if(USE_CUDA)
+  enable_language(CUDA)
+endif()
 
 # Include function definitions
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)

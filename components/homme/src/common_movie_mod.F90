@@ -27,12 +27,13 @@ module common_movie_mod
 #ifndef HOMME_WITHOUT_PIOLIBRARY
 
 #ifdef _PRIM
-  integer, parameter :: varcnt =  37
+  integer, parameter :: varcnt =  38
 
   integer, parameter :: maxdims =  6
 
   character*(*), parameter :: varnames(varcnt)=(/'ps         ', &
                                                  'geos       ', &
+                                                 'PHIS       ', &
                                                  'precl      ', &
                                                  'area       ', &
                                                  'cv_lat     ', &
@@ -72,6 +73,7 @@ module common_movie_mod
 
   integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,5,0,0,0,0, & ! ps
                                                                1,0,0,0,0,0, & ! geos
+                                                               1,0,0,0,0,0, & ! PHIS=geos
                                                                1,5,0,0,0,0, & ! precl
                                                                1,0,0,0,0,0, & ! area
                                                                1,2,0,0,0,0, & ! cv_lat
@@ -98,8 +100,8 @@ module common_movie_mod
                                                                1,2,5,0,0,0, & ! geo
                                                                1,2,5,0,0,0, & !omega
                                                                1,2,5,0,0,0, & !dp3d
-                                                               1,0,0,0,0,0, &  ! lat
-                                                               1,0,0,0,0,0, &  ! lon
+                                                               1,0,0,0,0,0, &  ! lat (y for planar)
+                                                               1,0,0,0,0,0, &  ! lon (x for planar)
                                                                2,0,0,0,0,0, &  ! lev
                                                                3,0,0,0,0,0, &  ! ilev
                                                                2,0,0,0,0,0, &  !hyam
@@ -109,14 +111,14 @@ module common_movie_mod
                                                                5,0,0,0,0,0 /),&  ! time
                                                                shape=(/maxdims,varcnt/))
 
-  integer, parameter :: vartype(varcnt)=(/nf_double, nf_double,nf_double, nf_double,nf_double,nf_double,& !ps:cv_lon
+  integer, parameter :: vartype(varcnt)=(/nf_double, nf_double, nf_double,nf_double, nf_double,nf_double,nf_double,& !ps:cv_lon
                                           nf_int,    nf_double,nf_double,nf_double,nf_double,& !corners:T
                                           nf_double, nf_double,nf_double,nf_double,nf_double,nf_double,& !Th:w
                                           nf_double, nf_double, nf_double,nf_double,& 
                                           nf_double, nf_double,nf_double,nf_double,nf_double,& !Q:geo
                                           nf_double, nf_double,nf_double,nf_double,nf_double,nf_double,& !omega:ilev
                                           nf_double, nf_double,nf_double,nf_double,nf_double/)
-  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,.false.,&
+  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,&
@@ -133,28 +135,30 @@ module common_movie_mod
                                                  'time        ',&
                                                  'nsubelements'/)  
 #else
-  integer, parameter :: varcnt = 10
+  integer, parameter :: varcnt = 12
   integer, parameter :: maxdims=4
   character*(*),parameter::dimnames(maxdims)=(/'ncol ','nlev ','nelem','time '/)  
   integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,4,0,0,  &  !ps
                                                                1,2,4,0,  &  !geop
                                                                1,2,4,0,  &  !u
                                                                1,2,4,0,  &  !v
-                                                               1,0,0,0,  &  !lon
-                                                               1,0,0,0,  &  !lat
+                                                               1,0,0,0,  &  !lon (x for planar)
+                                                               1,0,0,0,  &  !lat (y for planar)
                                                                4,0,0,0,  &  ! time
                                                                1,2,4,0,  &  ! zeta
                                                                1,2,4,0,  &  ! div
+                                                               1,2,4,0,  &  ! eta = absolute vorticity = zeta + coriolis
+                                                               1,2,4,0,  &  ! pv
                                                                1,0,0,0/),&  ! area
                                                                shape=(/maxdims,varcnt/))
   character*(*),parameter::varnames(varcnt)=(/'ps       ','geop     ','u        ','v        ',&
                                               'lon      ','lat      ','time     ',&
-                                              'zeta     ','div      ','area     '/)
+                                              'zeta     ','div      ','eta      ','pv       ','area     '/)
   integer, parameter :: vartype(varcnt)=(/nf_double,nf_double,nf_double,nf_double,nf_double,&
-       nf_double,nf_double,nf_double,nf_double,nf_double/)
+         nf_double,nf_double,nf_double,nf_double,nf_double,nf_double,nf_double/)
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,&
                                               .true.,.true.,.true.,&
-                                              .false.,.false.,.true./)
+                                              .false.,.false.,.false.,.false.,.true./)
 #endif
 
   ! end of analysis_nl namelist variables
