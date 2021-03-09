@@ -360,6 +360,14 @@ def update_submodules(repo=None):
     run_cmd_no_fail("git submodule update --init --recursive", from_dir=repo)
 
 ###############################################################################
+def git_fetch_remote(remote, repo=None):
+###############################################################################
+    """
+    Fetch metadata from remote repo
+    """
+    run_cmd_no_fail("git fetch {}".format(remote), from_dir=repo)
+
+###############################################################################
 def merge_git_ref(git_ref, repo=None, verbose=False, dry_run=False):
 ###############################################################################
     """
