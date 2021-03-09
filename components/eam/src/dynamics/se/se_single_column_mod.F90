@@ -224,7 +224,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(nlev) :: dummy1, dummy2, forecast_t, forecast_u, forecast_v
     real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn, temp_tend
     real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
-    real (kind=real_kind) :: forecast_ps, Rstar1d
+    real (kind=real_kind) :: forecast_ps
     real (kind=real_kind) :: temperature(np,np,nlev)
     logical :: wet
 
