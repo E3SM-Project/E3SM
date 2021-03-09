@@ -21,6 +21,9 @@ namespace {
 using namespace scream;
 using namespace ekat::units;
 using input_type = AtmosphereInput;
+// Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
+const int packsize = 2;
+using Pack         = ekat::Pack<Real,packsize>;
 
 std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs);
 std::shared_ptr<UserProvidedGridsManager>            get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
@@ -60,6 +63,7 @@ TEST_CASE("input_output_basic","io")
   Int max_steps = 10;
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii) {
+    time += dt;
     for (const auto& fname : out_fields->m_fields_names) {
       auto& f  = field_repo->get_field(fname,"Physics");
       auto f_host = f.get_view<Host>();
@@ -69,7 +73,6 @@ TEST_CASE("input_output_basic","io")
       }
       f.sync_to_dev();
     }
-    time += dt;
     m_output_manager.run(time);
   }
   m_output_manager.finalize();
@@ -107,11 +110,9 @@ TEST_CASE("input_output_basic","io")
   f3.sync_to_host();
   f4.sync_to_host();
 
-  int view_cnt = 0;
   for (int ii=0;ii<num_lcols;++ii) {
     REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
     for (int jj=0;jj<num_levs;++jj) {
-      view_cnt += 1;
       REQUIRE(std::abs(f3_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
       REQUIRE(std::abs(f4_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
     }
@@ -172,7 +173,30 @@ TEST_CASE("input_output_basic","io")
   for (int jj=0;jj<num_levs;++jj) {
     REQUIRE(std::abs(f2_host(jj)-((jj+1)/10.))<tol);
   }
-   
+  
+  // Test pulling input without the field manager:
+  using view_2d  = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
+  using pview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Pack>;
+  int num_packs = ekat::npack<Pack>(num_levs);
+  view_2d::HostMirror loc_field_3("field_3",num_lcols,num_levs);
+  pview_2d::HostMirror loc_field_4("field_packed",num_lcols,num_packs);
+  std::string filename = ins_params.get<std::string>("FILENAME");
+  std::vector<std::string> var_dims = {"LEV","COL"};
+  bool has_columns = true;
+  std::vector<int> dim_lens = {num_lcols,num_levs};
+  input_type loc_input(io_comm,"Physics",grid_man);
+  loc_input.pull_input<Real>(filename, loc_field_3.label(), var_dims, has_columns, dim_lens, loc_field_3.data());
+  loc_input.pull_input<Pack>(filename, loc_field_4.label(), var_dims, has_columns, dim_lens, loc_field_4.data());
+  for (int ii=0;ii<num_lcols;++ii) {
+    for (int jj=0;jj<num_levs;++jj) {
+      int ipack = jj / packsize;
+      int ivec  = jj % packsize;
+      REQUIRE(std::abs(loc_field_3(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(loc_field_4(ii,ipack)[ivec]-(ii+max_steps*dt + (jj+1)/10.))<tol);
+    }
+  }
+
+  // All Done 
   scorpio::eam_pio_finalize();
   (*grid_man).clean_up();
 } // TEST_CASE output_instance
@@ -240,6 +264,10 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
       f4_host(ii,ipack)[ivec] = (ii) + (jj+1)/10.0;
     }
   }
+  // Update timestamp
+  util::TimeStamp time (0,0,0,0);
+  repo->init_fields_time_stamp(time);
+  // Sync back to device
   f1.sync_to_dev();
   f2.sync_to_dev();
   f3.sync_to_dev();

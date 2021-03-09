@@ -1,6 +1,5 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/p3/p3_inputs_initializer.hpp"
-//#include "physics/p3/p3_main_impl.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_f90.hpp"
 

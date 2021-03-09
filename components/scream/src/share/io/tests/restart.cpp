@@ -189,6 +189,12 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
 
   // Initialize these fields
   Initialize_field_repo(*repo,num_lcols,num_levs);
+  // Update timestamp
+  auto f1 = repo->get_field(fid1);
+  auto f2 = repo->get_field(fid2);
+  auto f3 = repo->get_field(fid3);
+  util::TimeStamp time (0,0,0,0);
+  repo->init_fields_time_stamp(time);
 
   return repo;
 }
