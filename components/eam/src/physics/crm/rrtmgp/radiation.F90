@@ -3095,7 +3095,6 @@ contains
       ! Check values
       call assert_valid(tau(1:state%ncol,1:pver,1:nswbands), &
                         trim(subname) // ': optics%optical_depth')
-      !! Jungmin
       call assert_valid(ssa(1:state%ncol,1:pver,1:nswbands), &
                         trim(subname) // ': optics%single_scattering_albedo')
       call assert_valid(asm(1:state%ncol,1:pver,1:nswbands), &

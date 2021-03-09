@@ -1565,7 +1565,14 @@ subroutine tphysac (ztodt,   cam_in,  &
                       ,l_gw_drag_out          = l_gw_drag          &
                       ,l_ac_energy_chk_out    = l_ac_energy_chk    &
                      )
-
+#if defined( MAML )
+       ! For MAML, fluxes are averaged across all instances before CAM Physics use them.
+       cam_in%lhf(1:ncol)    = SUM(cam_in%lhf_mi(1:ncol,:),2)/real(num_inst_atm,r8)
+       cam_in%shf(1:ncol)    = SUM(cam_in%shf_mi(1:ncol,:),2)/real(num_inst_atm,r8)
+       cam_in%cflx(1:ncol,1) = SUM(cam_in%cflx1_mi(1:ncol,:),2)/real(num_inst_atm,r8)
+       cam_in%wsx(1:ncol)    = SUM(cam_in%wsx_mi(1:ncol,:),2)/real(num_inst_atm,r8)                                                                                                       
+       cam_in%wsy(1:ncol)    = SUM(cam_in%wsy_mi(1:ncol,:),2)/real(num_inst_atm,r8)
+#endif
     ! Adjust the surface fluxes to reduce instabilities in near sfc layer
     if (phys_do_flux_avg()) then 
        call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
@@ -1620,7 +1627,7 @@ end if ! l_tracer_aero
 
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
-#ifndef MMF_FLUX_BYPASS
+#if !defined( MMF_FLUX_BYPASS ) && !defined( MMF_CRM_SFC_FLUX ) && !defined( MAML )
     if(.not.use_qqflx_fixer) then 
 
        ! Check if latent heat flux exceeds the total moisture content of the
@@ -1687,6 +1694,7 @@ end if ! l_tracer_aero
     if (l_vdiff) then
 
        call t_startf('vertical_diffusion_tend')
+       
        call vertical_diffusion_tend (ztodt ,state ,cam_in%wsx, cam_in%wsy,   &
             cam_in%shf     ,cam_in%cflx     ,surfric  ,obklen   ,ptend    ,ast    ,&
             cam_in%ocnfrac  , cam_in%landfrac ,        &
@@ -2270,12 +2278,12 @@ subroutine tphysbc (ztodt,               &
     call check_water(state, tend, "PHYBC01", nstep, ztodt)
 
     if(.not.use_qqflx_fixer) then 
-#if defined(MMF_FLUX_BYPASS)
+#if defined(MMF_FLUX_BYPASS) || defined(MMF_CRM_SFC_FLUX) || defined( MAML )
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
        ! check the lowest moisture imbalance at CRM grid level 
        do ii = 1, num_inst_atm
-         call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
+         call qneg4('TPHYSBC '       ,lchnk               ,ncol  ,ztodt ,               &
                state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf_mi(:,ii) ,         &
                cam_in%lhf_mi(:,ii) , cam_in%cflx1_mi(:,ii) )
        end do! ii
@@ -2283,6 +2291,8 @@ subroutine tphysbc (ztodt,               &
        cam_in%lhf(1:ncol)    = SUM(cam_in%lhf_mi(1:ncol,:),2)/real(num_inst_atm,r8)
        cam_in%shf(1:ncol)    = SUM(cam_in%shf_mi(1:ncol,:),2)/real(num_inst_atm,r8)
        cam_in%cflx(1:ncol,1) = SUM(cam_in%cflx1_mi(1:ncol,:),2)/real(num_inst_atm,r8)
+       cam_in%wsx(1:ncol)    = SUM(cam_in%wsx_mi(1:ncol,:),2)/real(num_inst_atm,r8)
+       cam_in%wsy(1:ncol)    = SUM(cam_in%wsy_mi(1:ncol,:),2)/real(num_inst_atm,r8)
 #else
        call qneg4('TPHYSBC '       ,lchnk               ,ncol  ,ztodt ,               &
             state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
