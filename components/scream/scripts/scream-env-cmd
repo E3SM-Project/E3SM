@@ -46,7 +46,9 @@ OR
 ###############################################################################
 def dump_scream_env(mach):
 ###############################################################################
-    print(" && ".join(get_mach_env_setup_command(mach)))
+    commands = get_mach_env_setup_command(mach)
+    print(" && ".join(commands))
+    print("\n".join(commands), file=sys.stderr)
 
 ###############################################################################
 def _main_func(description):

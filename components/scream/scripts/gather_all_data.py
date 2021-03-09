@@ -2,8 +2,8 @@ from utils import run_cmd_no_fail
 
 import os, pathlib
 import concurrent.futures as threading3
-from machines_specs import get_mach_env_setup_command, get_mach_batch_command, get_mach_testing_resources, \
-                           get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler, is_cuda_machine
+from machines_specs import get_mach_env_setup_command, get_mach_batch_command, \
+                           get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler
 
 ###############################################################################
 class GatherAllData(object):
@@ -30,7 +30,6 @@ class GatherAllData(object):
         c_compiler   = get_mach_c_compiler(machine)
         batch        = get_mach_batch_command(machine)
 
-        env_setup.append("CTEST_PARALLEL_LEVEL={}".format(get_mach_testing_resources(machine)))
         env_setup_str = " && ".join(env_setup)
 
         root_dir = pathlib.Path(str(self._root_dir).replace("$machine", machine))
@@ -79,13 +78,10 @@ class GatherAllData(object):
             setup = "cd {} && git fetch && git reset --hard origin/master && git submodule update --init --recursive && "\
                 .format(scream_repo)
 
-        extra_env = ""
-        if not is_cuda_machine(machine):
-            extra_env = "OMP_PROC_BIND=spread "
-
         repo_setup = "true" if (self._local) else "git fetch && git checkout {} && git submodule update --init --recursive".format(self._commit)
 
-        cmd = "{}cd {} && {} && {} && {}{} {}".format(setup, repo, env_setup_str, repo_setup, extra_env, batch, local_cmd)
+        cmd = "{setup}cd {repo} && {env_setup} && {repo_setup} && {batch} {local_cmd}".\
+              format(setup=setup, repo=repo, env_setup=env_setup_str, repo_setup=repo_setup, batch=batch, local_cmd=local_cmd)
 
         return cmd
 
