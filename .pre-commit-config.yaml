@@ -22,7 +22,9 @@ repos:
     hooks:
       - id: isort
 
-  - repo: https://gitlab.com/pycqa/flake8
+  # Need to use flake8 GitHub mirror due to CentOS git issue with GitLab
+  # https://github.com/pre-commit/pre-commit/issues/1206
+  - repo: https://github.com/pycqa/flake8
     rev: 3.8.4
     hooks:
       - id: flake8
