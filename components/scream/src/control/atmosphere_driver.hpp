@@ -8,6 +8,7 @@
 #include "share/util/scream_time_stamp.hpp"
 #include "share/scream_types.hpp"
 #include "share/io/output_manager.hpp"
+#include "share/io/scorpio_input.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
@@ -39,20 +40,52 @@ class AtmosphereDriver
 {
 public:
 
+  AtmosphereDriver () = default;
+  AtmosphereDriver (const ekat::Comm& atm_comm,
+                    const ekat::ParameterList& params);
+
   // The default dtor is fine.
   ~AtmosphereDriver () = default;
 
-  // The initialization method should:
-  //   1) create all the subcomponents needed, given the current simulation parameters
-  //   2) initialize all the subcomponents
-  //   3) initialize the field manager(s)
-  // The subcomponents are stored in the order requested by the user, so that when
-  // going through the list, and calling their run method, they will be called in the
-  // correct order. There should ALWAYS be a component that handles the dynamics. We should
-  // make sure of that.
+  // ---- Begin initialization methods ---- //
+
+  // Set comm for the whole atmosphere
+  void set_comm (const ekat::Comm& atm_comm);
+
+  // Set AD params
+  void set_params (const ekat::ParameterList& params);
+
+  // Create atm processes, without initializing them
+  void create_atm_processes ();
+
+  // Create needed grids, based on processes needs.
+  void create_grids ();
+
+  // Create fields as requested by all processes
+  void create_fields ();
+
+  // Sets a pre-built SurfaceCoupling object in the driver (for CIME runs only)
+  void set_surface_coupling (const std::shared_ptr<SurfaceCoupling>& sc);
+
+  // Load initial conditions for atm inputs
+  void initialize_fields (const util::TimeStamp& t0);
+
+  // Initialie I/O structures for output
+  void initialize_output_manager ();
+
+  // Call 'initialize' on all atm procs
+  void initialize_atm_procs ();
+
+  // Complete any leftover initialization task (e.g., some debug stuff)
+  void finish_setup ();
+
+  // ---- End of initialization methods ---- //
+
+  // A wrapper of all of the above (except setting SurfaceCoupling),
+  // which is handy for scream standalone tests.
   void initialize (const ekat::Comm& atm_comm,
                    const ekat::ParameterList& params,
-                   const util::TimeStamp& t0 /*, inputs? */ );
+                   const util::TimeStamp& t0);
 
   // The run method is responsible for advancing the atmosphere component by one atm time step
   // Inside here you should find calls to the run method of each subcomponent, including parameterizations
@@ -74,13 +107,14 @@ public:
 
   const std::shared_ptr<GridsManager>& get_grids_manager () const { return m_grids_manager; }
 
+  void init_atm_inputs ();
+
   // Inspect the atm dag, ensuring all dependencies are met
   void inspect_atm_dag () const;
 
 protected:
 
   void register_groups ();
-  void init_atm_inputs ();
 #ifdef SCREAM_DEBUG
   void create_bkp_field_repo ();
 #endif
@@ -98,15 +132,41 @@ protected:
 
   OutputManager                                       m_output_manager;
 
+  // TODO: this is a shared_ptr cause AtmosphereInput
+  // does not have a default ctor, which would implicitly
+  // delete AtmosphereDriver's default consturctor.
+  std::shared_ptr<AtmosphereInput>                    m_initial_condition_mgr;
+
   // Surface coupling stuff
   std::shared_ptr<SurfaceCoupling>            m_surface_coupling;
 
   // This are the time stamps of the start and end of the time step.
-  util::TimeStamp                       m_old_ts;
   util::TimeStamp                       m_current_ts;
 
   // This is the comm containing all (and only) the processes assigned to the atmosphere
   ekat::Comm   m_atm_comm;
+
+  // Some status flags, used to make sure we call the init functions in the right order
+  static constexpr int s_comm_set       =   1;
+  static constexpr int s_params_set     =   2;
+  static constexpr int s_procs_created  =   4;
+  static constexpr int s_grids_created  =   8;
+  static constexpr int s_fields_created =  16;
+  static constexpr int s_sc_set         =  32;
+  static constexpr int s_output_inited  =  64;
+  static constexpr int s_fields_inited  = 128;
+  static constexpr int s_procs_inited   = 256;
+
+  // Lazy version to ensure s_atm_inited & flag is true for every flag,
+  // even if someone adds new flags later on
+  static constexpr int s_atm_inited     =  ~0;
+
+  // Utility function to check the ad status
+  void check_ad_status (const int flag, const bool must_be_set = true);
+
+
+  // Current ad initialization status
+  int m_ad_status = 0;
 };
 
 }  // namespace control
