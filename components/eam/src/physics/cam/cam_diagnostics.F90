@@ -94,6 +94,8 @@ integer  ::      snow_sed_idx = 0
 integer  ::      prec_pcw_idx = 0
 integer  ::      snow_pcw_idx = 0
 
+integer  ::      tresp_idx = 0
+integer  ::      qresp_idx = 0
 integer  ::      wsresp_idx = 0
 
 integer :: tpert_idx=-1, qpert_idx=-1, pblh_idx=-1
@@ -605,6 +607,8 @@ subroutine diag_init()
    call addfld ('PRECCav',horiz_only,    'A','m/s','Average large-scale precipitation (liq + ice)'                      )
    call addfld ('PRECLav',horiz_only,    'A','m/s','Average convective precipitation  (liq + ice)'                      )
 
+   call addfld ('tresp',horiz_only,    'A','K m^2 / W','first order response of temperature to sfc flux')
+   call addfld ('qresp',horiz_only,    'A','m^2 s / kg','first order response of specific humidity to sfc flux')
    call addfld ('wsresp',horiz_only,    'A','m/s/Pa','first order response of winds to stress')
 
    ! outfld calls in diag_surf
@@ -837,6 +841,8 @@ subroutine diag_init()
   prec_pcw_idx = pbuf_get_index('PREC_PCW')
   snow_pcw_idx = pbuf_get_index('SNOW_PCW')
 
+  tresp_idx  = pbuf_get_index('tresp')
+  qresp_idx  = pbuf_get_index('qresp')
   wsresp_idx  = pbuf_get_index('wsresp')
 
 end subroutine diag_init
@@ -1921,6 +1927,8 @@ subroutine diag_conv(state, ztodt, pbuf)
    real(r8), pointer :: prec_pcw(:)                ! total precipitation   from Hack convection
    real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
 
+   real(r8), pointer :: tresp(:)                   ! first order response of temperature to sfc flux
+   real(r8), pointer :: qresp(:)                   ! first order response of spec hum to sfc flux
    real(r8), pointer :: wsresp(:)                  ! first order response of winds to stress
 
 ! Local variables:
@@ -1949,6 +1957,8 @@ subroutine diag_conv(state, ztodt, pbuf)
    call pbuf_get_field(pbuf, snow_sed_idx, snow_sed)
    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
+   call pbuf_get_field(pbuf, tresp_idx, tresp)
+   call pbuf_get_field(pbuf, qresp_idx, qresp)
    call pbuf_get_field(pbuf, wsresp_idx, wsresp)
 
 ! Precipitation rates (multi-process)
@@ -1970,6 +1980,8 @@ subroutine diag_conv(state, ztodt, pbuf)
    call outfld('PRECLav ', precl, pcols, lchnk )
    call outfld('PRECCav ', precc, pcols, lchnk )
 
+   call outfld('tresp', tresp, pcols, lchnk)
+   call outfld('qresp', qresp, pcols, lchnk)
    call outfld('wsresp', wsresp, pcols, lchnk)
 
 #if ( defined E3SM_SCM_REPLAY )

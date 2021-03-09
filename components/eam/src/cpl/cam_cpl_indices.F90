@@ -13,6 +13,8 @@ module cam_cpl_indices
   integer :: index_a2x_Sa_z            ! bottom atm level height
   integer :: index_a2x_Sa_u            ! bottom atm level zon wind
   integer :: index_a2x_Sa_v            ! bottom atm level mer wind
+  integer :: index_a2x_Sa_tresp        ! first order response of tbot to sfc flux
+  integer :: index_a2x_Sa_qresp        ! first order response of qbot to sfc flux
   integer :: index_a2x_Sa_wsresp       ! first order response of wind to stress
   integer :: index_a2x_Sa_u_diff       ! Approximate atmosphere change to ubot
   integer :: index_a2x_Sa_v_diff       ! Approximate atmosphere change to vbot
@@ -154,6 +156,8 @@ contains
     index_a2x_Sa_z          = mct_avect_indexra(a2x,'Sa_z')
     index_a2x_Sa_u          = mct_avect_indexra(a2x,'Sa_u')
     index_a2x_Sa_v          = mct_avect_indexra(a2x,'Sa_v')
+    index_a2x_Sa_tresp      = mct_avect_indexra(a2x,'Sa_tresp')
+    index_a2x_Sa_qresp      = mct_avect_indexra(a2x,'Sa_qresp')
     index_a2x_Sa_wsresp     = mct_avect_indexra(a2x,'Sa_wsresp')
     index_a2x_Sa_u_diff     = mct_avect_indexra(a2x,'Sa_u_diff')
     index_a2x_Sa_v_diff     = mct_avect_indexra(a2x,'Sa_v_diff')

@@ -34,7 +34,9 @@ module TopounitDataType
     real(r8), pointer :: rhbot      (:) => null() ! relative humidity at atmospheric forcing height (%)
     real(r8), pointer :: ubot       (:) => null() ! wind speed in U (east) direction at atmospheric forcing height (m/s)
     real(r8), pointer :: vbot       (:) => null() ! wind speed in V (north) direction at atmospheric forcing height (m/s)
-    real(r8), pointer :: wsresp     (:) => null() ! first-order response of wind to surface stress (m/s/Pa)
+    real(r8), pointer :: tresp      (:) => null() ! response of tbot to surface flux (K m^2 / W)
+    real(r8), pointer :: qresp      (:) => null() ! response of qbot to surface flux (m^2 s/kg)
+    real(r8), pointer :: wsresp     (:) => null() ! response of wind to surface stress (m/s/Pa)
     real(r8), pointer :: u_diff     (:) => null() ! approximate atmosphere change to ubot (m/s)
     real(r8), pointer :: v_diff     (:) => null() ! approximate atmosphere change to vbot (m/s)
     real(r8), pointer :: windbot    (:) => null() ! horizontal component of wind at atmospheric forcing height (m/s)
@@ -112,6 +114,8 @@ module TopounitDataType
     allocate(this%rhbot    (begt:endt)) ; this%rhbot     (:) = spval
     allocate(this%ubot     (begt:endt)) ; this%ubot      (:) = spval
     allocate(this%vbot     (begt:endt)) ; this%vbot      (:) = spval
+    allocate(this%tresp    (begt:endt)) ; this%tresp     (:) = spval
+    allocate(this%qresp    (begt:endt)) ; this%qresp     (:) = spval
     allocate(this%wsresp   (begt:endt)) ; this%wsresp    (:) = spval
     allocate(this%u_diff   (begt:endt)) ; this%u_diff    (:) = spval
     allocate(this%v_diff   (begt:endt)) ; this%v_diff    (:) = spval
@@ -191,6 +195,8 @@ module TopounitDataType
     deallocate(this%rhbot)
     deallocate(this%ubot)
     deallocate(this%vbot)
+    deallocate(this%tresp)
+    deallocate(this%qresp)
     deallocate(this%wsresp)
     deallocate(this%u_diff)
     deallocate(this%v_diff)

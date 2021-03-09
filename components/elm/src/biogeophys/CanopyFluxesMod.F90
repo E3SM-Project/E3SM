@@ -322,6 +322,8 @@ contains
     real(r8) :: temprootr                 
     real(r8) :: dt_veg_temp(bounds%begp:bounds%endp)
     integer  :: iv
+    real(r8) :: thm_adj(bounds%begp:bounds%endp) ! Adjusted thm for iteration
+    real(r8) :: forc_q_adj(bounds%begp:bounds%endp) ! Adjusted forc_q for iteration
     real(r8) :: forc_u_adj(bounds%begp:bounds%endp) ! Adjusted forc_u for iteration
     real(r8) :: forc_v_adj(bounds%begp:bounds%endp) ! Adjusted forc_v for iteration
     !------------------------------------------------------------------------------
@@ -339,6 +341,8 @@ contains
          forc_t               => top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)                                      
          forc_u               => top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)                        
          forc_v               => top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)                       
+         tresp                => top_as%tresp                              , & ! Input:  [real(r8) (:)   ]  response of temperature to surface flux (K m^2/W)
+         qresp                => top_as%qresp                              , & ! Input:  [real(r8) (:)   ]  response of spec. humidity to surface flux (m^2 s/kg)
          wsresp               => top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
          u_diff               => top_as%u_diff                             , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
          v_diff               => top_as%v_diff                             , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to meridional wind (m/s)
@@ -716,18 +720,20 @@ contains
 
          nmozsgn(p) = 0
 
-         taf(p) = (t_grnd(c) + thm(p))/2._r8
-         qaf(p) = (forc_q(t)+qg(c))/2._r8
+         thm_adj(p) = thm(p)
+         forc_q_adj(p) = forc_q(t)
+         taf(p) = (t_grnd(c) + thm_adj(p))/2._r8
+         qaf(p) = (forc_q_adj(p)+qg(c))/2._r8
 
          ! Initialize winds for iteration.
          forc_u_adj(p) = forc_u(t) + u_diff(t)
          forc_v_adj(p) = forc_v(t) + v_diff(t)
          ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
 
-         dth(p) = thm(p)-taf(p)
-         dqh(p) = forc_q(t)-qaf(p)
+         dth(p) = thm_adj(p)-taf(p)
+         dqh(p) = forc_q_adj(p)-qaf(p)
          delq(p) = qg(c) - qaf(p)
-         dthv(p) = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
+         dthv(p) = dth(p)*(1._r8+0.61_r8*forc_q_adj(p))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p) - displa(p)
 
          ! Check to see if the forcing height is below the canopy height
@@ -1037,8 +1043,8 @@ contains
             dc1 = forc_rho(t)*cpair*wtl
             dc2 = hvap*forc_rho(t)*wtlq
 
-            efsh   = dc1*(wtga*t_veg(p)-wtg0*t_grnd(c)-wta0(p)*thm(p))
-            efe(p) = dc2*(wtgaq*qsatl(p)-wtgq0*qg(c)-wtaq0(p)*forc_q(t))
+            efsh   = dc1*(wtga*t_veg(p)-wtg0*t_grnd(c)-wta0(p)*thm_adj(p))
+            efe(p) = dc2*(wtgaq*qsatl(p)-wtgq0*qg(c)-wtaq0(p)*forc_q_adj(p))
 
             ! Evaporation flux from foliage
 
@@ -1075,7 +1081,7 @@ contains
             ! "efe + dc2*wtgaq*qsatdt_veg"
 
             efpot = forc_rho(t)*wtl*(wtgaq*(qsatl(p)+qsatldT(p)*dt_veg(p)) &
-                 -wtgq0*qg(c)-wtaq0(p)*forc_q(t))
+                 -wtgq0*qg(c)-wtaq0(p)*forc_q_adj(p))
             qflx_evap_veg(p) = rpp*efpot
 
             ! Calculation of evaporative potentials (efpot) and
@@ -1103,6 +1109,26 @@ contains
 
             eflx_sh_veg(p) = efsh + dc1*wtga*dt_veg(p) + err(p) + erre + hvap*ecidif
 
+            ! Update atmospheric temperature outside canopy.
+            delt    = wtal(p)*t_grnd(c)-wtl0(p)*t_veg(p)-wta0(p)*thm_adj(p)
+            eflx_sh_grnd(p) = cpair*forc_rho(t)*wtg(p)*delt
+            ! Forbid flux from reducing the difference from taf/qaf by more than
+            ! 99%, which is necessary for stability when tresp/qresp are large.
+            if (abs((eflx_sh_veg(p) + eflx_sh_grnd(p)) * tresp(t)) > abs(0.99*dth(p))) then
+               thm_adj(p) = thm(p) - 0.99*dth(p)
+            else
+               thm_adj(p) = thm(p) + (eflx_sh_veg(p) + eflx_sh_grnd(p)) * tresp(t)
+            end if
+
+            ! Update humidity outside canopy.
+            qflx_evap_soi(p) = forc_rho(t)*wtgq(p)*delq(p)
+            ! Limited as thm_adj above.
+            if (abs((qflx_evap_veg(p) + qflx_evap_soi(p)) * qresp(t)) > abs(0.99*dqh(p))) then
+               forc_q_adj(p) = forc_q(t) - 0.99*dqh(p)
+            else
+               forc_q_adj(p) = forc_q(t) + (qflx_evap_veg(p) + qflx_evap_soi(p)) * qresp(t)
+            end if
+
             ! Re-calculate saturated vapor pressure, specific humidity, and their
             ! derivatives at the leaf surface
 
@@ -1112,20 +1138,20 @@ contains
             ! temperature, canopy vapor pressure, aerodynamic temperature, and
             ! Monin-Obukhov stability parameter for next iteration.
 
-            taf(p) = wtg0*t_grnd(c) + wta0(p)*thm(p) + wtl0(p)*t_veg(p)
-            qaf(p) = wtlq0(p)*qsatl(p) + wtgq0*qg(c) + forc_q(t)*wtaq0(p)
+            taf(p) = wtg0*t_grnd(c) + wta0(p)*thm_adj(p) + wtl0(p)*t_veg(p)
+            qaf(p) = wtlq0(p)*qsatl(p) + wtgq0*qg(c) + forc_q_adj(p)*wtaq0(p)
 
             ! Update Monin-Obukhov length and wind speed including the
             ! stability effect
 
-            dth(p) = thm(p)-taf(p)
-            dqh(p) = forc_q(t)-qaf(p)
-            delq(p) = wtalq(p)*qg(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
+            dth(p) = thm_adj(p)-taf(p)
+            dqh(p) = forc_q_adj(p)-qaf(p)
+            delq(p) = wtalq(p)*qg(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q_adj(p)
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
 
-            thvstar = tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
+            thvstar = tstar*(1._r8+0.61_r8*forc_q_adj(p)) + 0.61_r8*(forc_th(t) + thm_adj(p) - thm(p))*qstar
             zeta = zldis(p)*vkc*grav*thvstar/(ustar(p)**2*thv(c))
 
             if (zeta >= 0._r8) then     !stable
@@ -1195,40 +1221,40 @@ contains
 
          ! Fluxes from ground to canopy space
 
-         delt    = wtal(p)*t_grnd(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
+         delt    = wtal(p)*t_grnd(c)-wtl0(p)*t_veg(p)-wta0(p)*thm_adj(p)
          taux(p) = -forc_rho(t)*forc_u_adj(p)/ram1(p)
          tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram1(p)
          eflx_sh_grnd(p) = cpair*forc_rho(t)*wtg(p)*delt
 
          ! compute individual sensible heat fluxes
-         delt_snow = wtal(p)*t_soisno(c,snl(c)+1)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
+         delt_snow = wtal(p)*t_soisno(c,snl(c)+1)-wtl0(p)*t_veg(p)-wta0(p)*thm_adj(p)
          eflx_sh_snow(p) = cpair*forc_rho(t)*wtg(p)*delt_snow
 
-         delt_soil  = wtal(p)*t_soisno(c,1)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
+         delt_soil  = wtal(p)*t_soisno(c,1)-wtl0(p)*t_veg(p)-wta0(p)*thm_adj(p)
          eflx_sh_soil(p) = cpair*forc_rho(t)*wtg(p)*delt_soil
 
-         delt_h2osfc  = wtal(p)*t_h2osfc(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
+         delt_h2osfc  = wtal(p)*t_h2osfc(c)-wtl0(p)*t_veg(p)-wta0(p)*thm_adj(p)
          eflx_sh_h2osfc(p) = cpair*forc_rho(t)*wtg(p)*delt_h2osfc
          qflx_evap_soi(p) = forc_rho(t)*wtgq(p)*delq(p)
 
          ! compute individual latent heat fluxes
-         delq_snow = wtalq(p)*qg_snow(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
+         delq_snow = wtalq(p)*qg_snow(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q_adj(p)
          qflx_ev_snow(p) = forc_rho(t)*wtgq(p)*delq_snow
 
-         delq_soil = wtalq(p)*qg_soil(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
+         delq_soil = wtalq(p)*qg_soil(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q_adj(p)
          qflx_ev_soil(p) = forc_rho(t)*wtgq(p)*delq_soil
 
-         delq_h2osfc = wtalq(p)*qg_h2osfc(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
+         delq_h2osfc = wtalq(p)*qg_h2osfc(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q_adj(p)
          qflx_ev_h2osfc(p) = forc_rho(t)*wtgq(p)*delq_h2osfc
 
          ! 2 m height air temperature
 
-         t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
+         t_ref2m(p) = thm_adj(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
          t_ref2m_r(p) = t_ref2m(p)
 
          ! 2 m height specific humidity
 
-         q_ref2m(p) = forc_q(t) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
+         q_ref2m(p) = forc_q_adj(p) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
 
          ! 2 m height relative humidity
 

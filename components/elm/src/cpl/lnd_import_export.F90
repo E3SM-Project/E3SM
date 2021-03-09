@@ -1029,6 +1029,8 @@ contains
          top_as%qbot(topo)    = atm2lnd_vars%forc_q_not_downscaled_grc(g)      ! forc_qxy  Atm state kg/kg
          top_as%ubot(topo)    = atm2lnd_vars%forc_u_grc(g)                     ! forc_uxy  Atm state m/s
          top_as%vbot(topo)    = atm2lnd_vars%forc_v_grc(g)                     ! forc_vxy  Atm state m/s
+         top_as%tresp(topo)   = 0._r8                                          !           Atm state K m^2/W
+         top_as%qresp(topo)   = 0._r8                                          !           Atm state m^2 s/kg
          top_as%wsresp(topo)  = 0._r8                                          !           Atm state m/s/Pa
          top_as%u_diff(topo)  = 0._r8                                          !           Atm state m/s
          top_as%v_diff(topo)  = 0._r8                                          !           Atm state m/s
@@ -1110,6 +1112,8 @@ contains
          top_as%qbot(topo)    = x2l(index_x2l_Sa_shum,i)      ! forc_qxy  Atm state kg/kg
          top_as%ubot(topo)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
          top_as%vbot(topo)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
+         top_as%tresp(topo)   = x2l(index_x2l_Sa_tresp,i)     !           Atm state K m^2/W
+         top_as%qresp(topo)   = x2l(index_x2l_Sa_qresp,i)     !           Atm state m^2 s/kg
          top_as%wsresp(topo)  = x2l(index_x2l_Sa_wsresp,i)    !           Atm state m/s/Pa
          top_as%u_diff(topo)  = x2l(index_x2l_Sa_u_diff,i)    !           Atm state m/s
          top_as%v_diff(topo)  = x2l(index_x2l_Sa_v_diff,i)    !           Atm state m/s

@@ -146,6 +146,8 @@ contains
     real(r8) :: kva                                ! kinematic viscosity of air at ground temperature and forcing pressure
     real(r8), parameter :: prn = 0.713             ! Prandtl # for air at neutral stability
     real(r8), parameter :: sch = 0.66              ! Schmidt # for water in air at neutral stability
+    real(r8) :: thm_adj(bounds%begp:bounds%endp)   ! Adjusted thm for iteration
+    real(r8) :: forc_q_adj(bounds%begp:bounds%endp) ! Adjusted forc_q for iteration
     real(r8) :: forc_u_adj(bounds%begp:bounds%endp) ! Adjusted forc_u for iteration
     real(r8) :: forc_v_adj(bounds%begp:bounds%endp) ! Adjusted forc_v for iteration
     !-----------------------------------------------------------------------
@@ -166,6 +168,8 @@ contains
          forc_rain        =>    top_af%rain                            , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                  
          forc_u           =>    top_as%ubot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
          forc_v           =>    top_as%vbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         tresp            =>    top_as%tresp                           , & ! Input:  [real(r8) (:)   ]  response of temperature to surface flux (K m^2/W)
+         qresp            =>    top_as%qresp                           , & ! Input:  [real(r8) (:)   ]  response of spec. humidity to surface flux (m^2 s/kg)
          wsresp           =>    top_as%wsresp                          , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
          u_diff           =>    top_as%u_diff                          , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
          v_diff           =>    top_as%v_diff                          , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to meridional wind (m/s)
@@ -347,9 +351,11 @@ contains
          forc_v_adj(p) = forc_v(t) + v_diff(t)
          ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
 
-         dth(p)   = thm(p)-t_grnd(c)
-         dqh(p)   = forc_q(t)-qsatg(c)
-         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
+         thm_adj(p) = thm(p)
+         dth(p)   = thm_adj(p)-t_grnd(c)
+         forc_q_adj(p) = forc_q(t)
+         dqh(p)   = forc_q_adj(p) - qsatg(c)
+         dthv     = dth(p)*(1._r8+0.61_r8*forc_q_adj(p))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p) - 0._r8
 
          ! Initialize Monin-Obukhov length and wind speed
@@ -409,6 +415,7 @@ contains
             ram1(p) = ram(p)       ! pass value to global variable
             ram1_lake(p) = ram1(p) ! for history
 
+            ! Update winds.
             ! Forbid removing more than 99% of wind speed in a time step.
             ! This is mainly to avoid convergence issues since this is such a
             ! basic form of iteration in this loop...
@@ -423,6 +430,37 @@ contains
             forc_v_adj(p) = forc_v(t) + v_diff(t) + tauy(p)*wsresp(t)
             ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
 
+            ! Update air temperature.
+            ! Modify ground temperature used if snow on the ground or lake is
+            ! frozen (as below iteration loop), or make different modification
+            ! for convection.
+            if ( (snl(c) < 0 .or. t_lake(c,1) <= tfrz) .and. t_grnd(c) > tfrz) then
+               t_grnd_temp = tfrz
+            else if ( (t_lake(c,1) > t_grnd(c) .and. t_grnd(c) > tdmax) .or. &
+                 (t_lake(c,1) < t_grnd(c) .and. t_lake(c,1) > tfrz .and. t_grnd(c) < tdmax) ) then
+               t_grnd_temp = t_lake(c,1)
+            else
+               t_grnd_temp = t_grnd(c)
+            end if
+            dth(p) = thm_adj(p)-t_grnd_temp
+            ! Limit as with wind speed.
+            if ( forc_rho(t)*cpair*tresp(t)/rah(p) > 0.99 ) then
+               eflx_sh_grnd(p) = -0.99 * dth(p) / tresp(t)
+            else
+               eflx_sh_grnd(p)  = - forc_rho(t)*cpair*dth(p)/rah(p)
+            end if
+            thm_adj(p) = thm(p) + eflx_sh_grnd(p) * tresp(t)
+
+            ! Update humidity.
+            dqh(p) = forc_q_adj(p) - qsatg(c) - qsatgdT(c)*(t_grnd_temp-tgbef(c))
+            ! Limit as with wind speed.
+            if ( forc_rho(t)*qresp(t)/raw(p) > 0.99 ) then
+               qflx_evap_soi(p) = -0.99 * dqh(p) / qresp(t)
+            else
+               qflx_evap_soi(p) = -forc_rho(t)*dqh(p)/raw(p)
+            end if
+            forc_q_adj(p) = forc_q(t) + qflx_evap_soi(p) * qresp(t)
+
             ! Get derivative of fluxes with respect to ground temperature
 
             stftg3(p) = emg_lake*sb*tgbef(c)*tgbef(c)*tgbef(c)
@@ -431,8 +469,8 @@ contains
             ! Also adjusted so that if there are snow layers present, the top layer absorption
             ! from SNICAR is assigned to the surface skin.
             ax  = betaprime(c)*sabg(p) + emg_lake*forc_lwrad(t) + 3._r8*stftg3(p)*tgbef(c) &
-                 + forc_rho(t)*cpair/rah(p)*thm(p) &
-                 - htvp(c)*forc_rho(t)/raw(p)*(qsatg(c)-qsatgdT(c)*tgbef(c) - forc_q(t)) &
+                 + forc_rho(t)*cpair/rah(p)*thm_adj(p) &
+                 - htvp(c)*forc_rho(t)/raw(p)*(qsatg(c)-qsatgdT(c)*tgbef(c) - forc_q_adj(p)) &
                  + tksur(c)*tsur(c)/dzsur(c)
             !Changed sabg(p) to betaprime(c)*sabg(p).
             bx  = 4._r8*stftg3(p) + forc_rho(t)*cpair/rah(p) &
@@ -455,21 +493,21 @@ contains
             ! Surface fluxes of momentum, sensible and latent heat
             ! using ground temperatures from previous time step
 
-            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p)
+            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm_adj(p))/rah(p)
+            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q_adj(p))/raw(p)
 
             ! Re-calculate saturated vapor pressure, specific humidity and their
             ! derivatives at lake surface
 
             call QSat(t_grnd(c), forc_pbot(t), eg, degdT, qsatg(c), qsatgdT(c))
 
-            dth(p)=thm(p)-t_grnd(c)
-            dqh(p)=forc_q(t)-qsatg(c)
+            dth(p)=thm_adj(p)-t_grnd(c)
+            dqh(p)=forc_q_adj(p)-qsatg(c)
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
 
-            thvstar=tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
+            thvstar=tstar*(1._r8+0.61_r8*forc_q_adj(p)) + 0.61_r8*(forc_th(t) + thm_adj(p) - thm(p))*qstar
             zeta=zldis(p)*vkc * grav*thvstar/(ustar(p)**2*thv(c))
 
             if (zeta >= 0._r8) then     !stable
@@ -563,15 +601,15 @@ contains
          if ( (snl(c) < 0 .or. t_lake(c,1) <= tfrz) .and. t_grnd(c) > tfrz) then
             t_grnd_temp = t_grnd(c)
             t_grnd(c) = tfrz
-            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(t))/raw(p)
+            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm_adj(p))/rah(p)
+            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q_adj(p))/raw(p)
          else if ( (t_lake(c,1) > t_grnd(c) .and. t_grnd(c) > tdmax) .or. &
               (t_lake(c,1) < t_grnd(c) .and. t_lake(c,1) > tfrz .and. t_grnd(c) < tdmax) ) then
             ! Convective mixing will occur at surface
             t_grnd_temp = t_grnd(c)
             t_grnd(c) = t_lake(c,1)
-            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(t))/raw(p)
+            eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm_adj(p))/rah(p)
+            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q_adj(p))/raw(p)
          end if
 
          ! Update htvp
@@ -607,10 +645,10 @@ contains
          eflx_lh_grnd(p)  = htvp(c)*qflx_evap_soi(p)
 
          ! 2 m height air temperature
-         t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
+         t_ref2m(p) = thm_adj(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
 
          ! 2 m height specific humidity
-         q_ref2m(p) = forc_q(t) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
+         q_ref2m(p) = forc_q_adj(p) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
 
          ! 2 m height relative humidity
 

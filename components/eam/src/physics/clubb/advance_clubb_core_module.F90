@@ -163,8 +163,10 @@ module advance_clubb_core_module
 #endif
                wprcp, ice_supersat_frac, &                          ! intent(out)
                rcm_in_layer, cloud_cover, &                         ! intent(out)
+               wpthlp_sfc_pert, wprtp_sfc_pert, &                   ! intent(in)
                upwp_sfc_pert, vpwp_sfc_pert, &                      ! intent(in)
-               um_pert, vm_pert, upwp_pert, vpwp_pert )             ! intent(inout)
+               thlm_pert, rtm_pert, um_pert, vm_pert, &             ! intent(inout)
+               wpthlp_pert, wprtp_pert, upwp_pert, vpwp_pert)       ! intent(inout)
 
     ! Description:
     !   Subroutine to advance CLUBB one timestep
@@ -637,13 +639,19 @@ module advance_clubb_core_module
 #endif
 
     real( kind = core_rknd ), intent(in), optional ::  &
-      upwp_sfc_pert,     & ! pertubed u'w' at surface          [m^2/s^2]
-      vpwp_sfc_pert        ! pertubed v'w' at surface          [m^2/s^2]
+      wpthlp_sfc_pert,   & ! perturbed w'theta_l' at surface      [(m K)/s]
+      wprtp_sfc_pert,    & ! perturbed w'r_t' at surface          [(kg m)/( kg s)]
+      upwp_sfc_pert,     & ! perturbed u'w' at surface            [m^2/s^2]
+      vpwp_sfc_pert        ! perturbed v'w' at surface            [m^2/s^2]
     real( kind = core_rknd ), intent(inout), dimension(gr%nz), optional ::  &
-      um_pert,      & ! pertubed eastward grid-mean wind component (thermodynamic levels)   [m/s]
-      vm_pert,      & ! pertubed northward grid-mean wind component (thermodynamic levels)   [m/s]
-      upwp_pert,    & ! pertubed u'w' (momentum levels)                         [m^2/s^2]
-      vpwp_pert       ! pertubed v'w' (momentum levels)                         [m^2/s^2]
+      thlm_pert,    & ! perturbed liq. water pot. temp., th_l (thermo. levels)   [K]
+      rtm_pert,     & ! perturbed total water mixing ratio, r_t (thermo. levels) [kg/kg]
+      um_pert,      & ! perturbed eastward grid-mean wind component (thermodynamic levels)   [m/s]
+      vm_pert,      & ! perturbed northward grid-mean wind component (thermodynamic levels)   [m/s]
+      wpthlp_pert,  & ! perturbed w' th_l' (momentum levels)      [(m/s) K]
+      wprtp_pert,   & ! perturbed w' r_t' (momentum levels)       [(kg/kg) m/s]
+      upwp_pert,    & ! perturbed u'w' (momentum levels)          [m^2/s^2]
+      vpwp_pert       ! perturbed v'w' (momentum levels)          [m^2/s^2]
 
     ! Local Variables
     integer :: i, k
@@ -902,6 +910,8 @@ module advance_clubb_core_module
       wprtp(1)  = wprtp_sfc
       upwp(1)   = upwp_sfc
       vpwp(1)   = vpwp_sfc
+      wpthlp_pert(1) = wpthlp_sfc_pert
+      wprtp_pert(1)  = wprtp_sfc_pert
       upwp_pert(1) = upwp_sfc_pert
       vpwp_pert(1) = vpwp_sfc_pert
 
@@ -920,6 +930,8 @@ module advance_clubb_core_module
       wprtp(1)  = 0.0_core_rknd
       upwp(1)   = 0.0_core_rknd
       vpwp(1)   = 0.0_core_rknd
+      wpthlp_pert(1) = 0.0_core_rknd
+      wprtp_pert(1)  = 0.0_core_rknd
       upwp_pert(1) = 0.0_core_rknd
       vpwp_pert(1) = 0.0_core_rknd
 
@@ -1536,7 +1548,8 @@ module advance_clubb_core_module
                             uprcp, vprcp, rc_coef,                           & ! intent(in)
                             rtm, wprtp, thlm, wpthlp,                        & ! intent(inout)
                             sclrm, wpsclrp, um, upwp, vm, vpwp,              & ! intent(inout)
-                            um_pert, vm_pert, upwp_pert, vpwp_pert)            ! intent(inout)
+                            thlm_pert, rtm_pert, um_pert, vm_pert,           & ! intent(inout)
+                            wpthlp_pert, wprtp_pert, upwp_pert, vpwp_pert)     ! intent(inout)
 
       if ( clubb_at_least_debug_level( 0 ) ) then
           if ( err_code == clubb_fatal_error ) then
@@ -1616,7 +1629,8 @@ module advance_clubb_core_module
                               sclrp2, wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
                               wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
                               wprtp, wpthlp, upwp, vpwp, wpsclrp,       & ! intent(inout)
-                              upwp_pert, vpwp_pert )                      ! intent(inout)
+                              wprtp_pert, wpthlp_pert, upwp_pert,       & ! intent(inout)
+                              vpwp_pert )                                 ! intent(inout)
 
 
       !----------------------------------------------------------------
@@ -1666,7 +1680,8 @@ module advance_clubb_core_module
                               sclrp2, wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
                               wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
                               wprtp, wpthlp, upwp, vpwp, wpsclrp,       & ! intent(inout)
-                              upwp_pert, vpwp_pert )                      ! intent(inout)
+                              wprtp_pert, wpthlp_pert, upwp_pert,       & ! intent(inout)
+                              vpwp_pert )                                 ! intent(inout)
 
       !----------------------------------------------------------------
       ! Advance or otherwise calculate <thl'^3>, <rt'^3>, and
@@ -1746,6 +1761,12 @@ module advance_clubb_core_module
       Kmh_zm = Kh_zm * c_K10h ! Coefficient for thermo
 
       if ( l_do_expldiff_rtm_thlm ) then
+        if ( present(thlm_pert) ) then
+           edsclrm(:,edsclr_dim-3)=thlm_pert(:)
+        end if
+        if ( present(rtm_pert) ) then
+           edsclrm(:,edsclr_dim-2)=rtm_pert(:)
+        end if
         edsclrm(:,edsclr_dim-1)=thlm(:)
         edsclrm(:,edsclr_dim)=rtm(:)
       endif
@@ -1763,6 +1784,12 @@ module advance_clubb_core_module
         call pvertinterp(gr%nz, p_in_Pa, 70000.0_core_rknd, thlm, thlm700)
         call pvertinterp(gr%nz, p_in_Pa, 100000.0_core_rknd, thlm, thlm1000)
         if ( thlm700 - thlm1000 < 20.0_core_rknd ) then
+          if ( present(thlm_pert) ) then
+             thlm_pert(:) = edsclrm(:,edsclr_dim-3)
+          end if
+          if ( present(rtm_pert) ) then
+             rtm_pert(:) = edsclrm(:,edsclr_dim-2)
+          end if
           thlm(:) = edsclrm(:,edsclr_dim-1)
           rtm(:) = edsclrm(:,edsclr_dim)
         end if

@@ -41,7 +41,7 @@ module clip_explicit
                                 sclrp2, wprtp_cl_num, wpthlp_cl_num, &
                                 wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, &
                                 wprtp, wpthlp, upwp, vpwp, wpsclrp, &
-                                upwp_pert, vpwp_pert)
+                                wprtp_pert, wpthlp_pert, upwp_pert, vpwp_pert)
 
     ! Description:
     ! Some of the covariances found in the CLUBB model code need to be clipped
@@ -108,6 +108,8 @@ module clip_explicit
       wpsclrp ! w'sclr'         [units m/s]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(inout), optional :: &
+      wprtp_pert,  & ! w'r_t'        [(kg/kg) m/s]
+      wpthlp_pert, & ! w'theta_l'    [K m/s]
       upwp_pert,   & ! u'w'          [m^2/s^2]
       vpwp_pert      ! v'w'          [m^2/s^2]
 
@@ -165,6 +167,12 @@ module clip_explicit
                      l_last_clip_ts, dt, wp2, rtp2, & ! intent(in)
                      wprtp, wprtp_chnge )             ! intent(inout)
 
+    if ( present(wprtp_pert) ) then
+       call clip_covar( clip_wprtp, l_first_clip_ts,   & ! intent(in) 
+                        l_last_clip_ts, dt, wp2, rtp2, & ! intent(in)
+                        wprtp_pert, wprtp_chnge )        ! intent(inout)
+    end if
+
 
     !!! Clipping for w'th_l'
     !
@@ -201,6 +209,12 @@ module clip_explicit
     call clip_covar( clip_wpthlp, l_first_clip_ts,   & ! intent(in)
                      l_last_clip_ts, dt, wp2, thlp2, & ! intent(in)
                      wpthlp, wpthlp_chnge )            ! intent(inout)
+
+    if ( present(wpthlp_pert) ) then
+       call clip_covar( clip_wpthlp, l_first_clip_ts,   & ! intent(in)
+                        l_last_clip_ts, dt, wp2, thlp2, & ! intent(in)
+                        wpthlp_pert, wpthlp_chnge )            ! intent(inout)
+    end if
 
 
     !!! Clipping for w'sclr'

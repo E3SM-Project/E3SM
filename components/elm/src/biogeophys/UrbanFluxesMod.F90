@@ -182,6 +182,10 @@ contains
     !
     real(r8), parameter :: lapse_rate = 0.0098_r8 ! Dry adiabatic lapse rate (K/m)
     integer , parameter  :: niters = 30           ! maximum number of iterations for surface temperature
+    real(r8) :: eflx_temp(bounds%begl:bounds%endl) ! Iteration heat flux
+    real(r8) :: qflx_temp(bounds%begl:bounds%endl) ! Iteration vapor flux
+    real(r8) :: thm_adj(bounds%begl:bounds%endl) ! Adjusted thm for iteration
+    real(r8) :: forc_q_adj(bounds%begl:bounds%endl) ! Adjusted forc_q for iteration
     real(r8) :: forc_u_adj(bounds%begl:bounds%endl) ! Adjusted forc_u for iteration
     real(r8) :: forc_v_adj(bounds%begl:bounds%endl) ! Adjusted forc_v for iteration
     !-----------------------------------------------------------------------
@@ -203,6 +207,8 @@ contains
          forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
          forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
          forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         tresp               =>   top_as%tresp                              , & ! Input:  [real(r8) (:)   ]  response of temperature to surface flux (K m^2/W)
+         qresp               =>   top_as%qresp                              , & ! Input:  [real(r8) (:)   ]  response of spec. humidity to surface flux (m^2 s/kg)
          wsresp              =>   top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
          u_diff              =>   top_as%u_diff                             , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
          v_diff              =>   top_as%v_diff                             , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to meridional wind (m/s)
@@ -334,9 +340,11 @@ contains
 
          thm_g(l) = forc_t(t) + lapse_rate*forc_hgt_t_patch(lun_pp%pfti(l))
          thv_g(l) = forc_th(t)*(1._r8+0.61_r8*forc_q(t))
-         dth(l)   = thm_g(l)-taf(l)
-         dqh(l)   = forc_q(t)-qaf(l)
-         dthv     = dth(l)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(l)
+         thm_adj(l) = thm_g(l)
+         forc_q_adj(l) = forc_q(t)
+         dth(l)   = thm_adj(l)-taf(l)
+         dqh(l)   = forc_q_adj(l)-qaf(l)
+         dthv     = dth(l)*(1._r8+0.61_r8*forc_q_adj(l))+0.61_r8*forc_th(t)*dqh(l)
          zldis(l) = forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l)
 
          ! Initialize Monin-Obukhov length and wind speed including convective velocity
@@ -448,17 +456,20 @@ contains
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
 
-            taf_numer(l) = thm_g(l)/rahu(l)
-            taf_denom(l) = 1._r8/rahu(l)
-            qaf_numer(l) = forc_q(t)/rawu(l)
-            qaf_denom(l) = 1._r8/rawu(l)
+            taf_numer(l) = 0._r8
+            taf_denom(l) = 0._r8
+            qaf_numer(l) = 0._r8
+            qaf_denom(l) = 0._r8
+
+            ! Temporary flux variables
+            eflx_temp(l) = 0._r8
+            qflx_temp(l) = 0._r8
 
             ! First term needed for derivative of heat fluxes
             wtas(l) = 1._r8/rahu(l)
             wtaq(l) = 1._r8/rawu(l)
 
          end do
-
 
          ! Gather other terms for other urban columns for numerator and denominator of
          ! equations for urban canopy air temperature and specific humidity
@@ -505,6 +516,10 @@ contains
                   eflx_heat_from_ac_roof(l) = 0._r8
                end if
 
+               ! For updating thm/forc_q.
+               eflx_temp(l) = -cpair*wtus_roof_unscl(l)*(taf(l) - t_grnd(c))
+               qflx_temp(l) = -wtuq_roof_unscl(l)*(qaf(l) - qg(c))
+
             else if (ctype(c) == icol_road_perv) then
 
                ! scaled sensible heat conductance
@@ -527,6 +542,10 @@ contains
                      endif
                   endif
                endif
+
+               ! For updating thm/forc_q.
+               eflx_temp(l) = -cpair*wtus_road_perv_unscl(l)*(taf(l) - t_grnd(c))
+               qflx_temp(l) = -wtuq_road_perv_unscl(l)*(qaf(l) - qg(c))
             else if (ctype(c) == icol_road_imperv) then
 
                ! scaled sensible heat conductance
@@ -549,6 +568,10 @@ contains
                wtuq_road_imperv(l) = wtuq(c)
                ! unscaled latent heat conductance
                wtuq_road_imperv_unscl(l) = fwet_road_imperv*(1._r8/canyon_resistance(l))
+
+               ! For updating thm/forc_q.
+               eflx_temp(l) = -cpair*wtus_road_imperv_unscl(l)*(taf(l) - t_grnd(c))
+               qflx_temp(l) = -wtuq_road_imperv_unscl(l)*(qaf(l) - qg(c))
 
             else if (ctype(c) == icol_sunwall) then
 
@@ -579,6 +602,9 @@ contains
                   eflx_heat_from_ac_sunwall(l) = 0._r8
                end if
 
+               ! For updating thm/forc_q.
+               eflx_temp(l) = -cpair*wtus_sunwall_unscl(l)*(taf(l) - t_grnd(c))
+
             else if (ctype(c) == icol_shadewall) then
 
                ! scaled sensible heat conductance
@@ -607,6 +633,9 @@ contains
                else
                   eflx_heat_from_ac_shadewall(l) = 0._r8
                end if
+
+               ! For updating thm/forc_q.
+               eflx_temp(l) = -cpair*wtus_shadewall_unscl(l)*(taf(l) - t_grnd(c))
             else
                write(iulog,*) 'c, ctype, pi = ', c, ctype(c), pi
                write(iulog,*) 'Column indices for: shadewall, sunwall, road_imperv, road_perv, roof: '
@@ -625,7 +654,22 @@ contains
 
          do fl = 1, num_urbanl
             l = filter_urbanl(fl)
+            t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
+
+            ! Update thm/forc_q.
+            ! Forbid flux from reducing the difference from taf/qaf by more than
+            ! 99%, which is necessary for stability when tresp/qresp are large.
+            if (abs(eflx_temp(l) * forc_rho(t) * tresp(t)) > abs(0.99*dth(l))) then
+               thm_adj(l) = thm_g(l) - 0.99*dth(l)
+            else
+               thm_adj(l) = thm_g(l) + eflx_temp(l) * forc_rho(t) * tresp(t)
+            end if
+            if (abs(qflx_temp(l) * forc_rho(t) * qresp(t)) > abs(0.99*dqh(l))) then
+               forc_q_adj(l) = forc_q(t) - 0.99*dqh(l)
+            else
+               forc_q_adj(l) = forc_q(t) + qflx_temp(l) * forc_rho(t) * qresp(t)
+            end if
 
             ! Total waste heat and heat from AC is sum of heat for walls and roofs
             ! accounting for different surface areas
@@ -646,6 +690,11 @@ contains
             eflx_traffic(l) = (1._r8-wtlunit_roof(l))*(1._r8-wtroad_perv(l))* &
                  eflx_traffic_factor(l)
 
+            taf_numer(l) = taf_numer(l) + thm_adj(l)/rahu(l)
+            taf_denom(l) = taf_denom(l) + 1._r8/rahu(l)
+            qaf_numer(l) = qaf_numer(l) + forc_q_adj(l)/rawu(l)
+            qaf_denom(l) = qaf_denom(l) + 1._r8/rawu(l)
+
             taf(l) = taf_numer(l)/taf_denom(l)
             qaf(l) = qaf_numer(l)/qaf_denom(l)
 
@@ -665,11 +714,11 @@ contains
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
 
-            dth(l) = thm_g(l)-taf(l)
-            dqh(l) = forc_q(t)-qaf(l)
+            dth(l) = thm_adj(l)-taf(l)
+            dqh(l) = forc_q_adj(l)-qaf(l)
             tstar = temp1(l)*dth(l)
             qstar = temp2(l)*dqh(l)
-            thvstar = tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
+            thvstar = tstar*(1._r8+0.61_r8*forc_q_adj(l)) + 0.61_r8*(forc_th(t) + thm_adj(l) - thm_g(l))*qstar
             zeta = zldis(l)*vkc*grav*thvstar/(ustar(l)**2*thv_g(l))
 
             if (zeta >= 0._r8) then                   !stable
@@ -819,8 +868,8 @@ contains
          l = filter_urbanl(fl)
          t = lun_pp%topounit(l)
          g = lun_pp%gridcell(l)
-         eflx(l)       = -(forc_rho(t)*cpair/rahu(l))*(thm_g(l) - taf(l))
-         qflx(l)       = -(forc_rho(t)/rawu(l))*(forc_q(t) - qaf(l))
+         eflx(l)       = -(forc_rho(t)*cpair/rahu(l))*(thm_adj(l) - taf(l))
+         qflx(l)       = -(forc_rho(t)/rawu(l))*(forc_q_adj(l) - qaf(l))
          eflx_scale(l) = sum(eflx_sh_grnd_scale(lun_pp%pfti(l):lun_pp%pftf(l)))
          qflx_scale(l) = sum(qflx_evap_soi_scale(lun_pp%pfti(l):lun_pp%pftf(l)))
          eflx_err(l)   = eflx_scale(l) - eflx(l)

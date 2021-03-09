@@ -149,14 +149,18 @@ module clubb_intr
     vp2_idx, &          ! variance of north-south wind
     upwp_idx, &         ! east-west momentum flux
     vpwp_idx, &         ! north-south momentum flux
-    um_pert_idx, &      ! perturbed east-west momentum flux
-    vm_pert_idx, &      ! perturbed north-south momentum flux
-    upwp_pert_idx, &    ! perturbed east-west momentum flux
-    vpwp_pert_idx, &    ! perturbed north-south momentum flux
     thlm_idx, &         ! mean thetal
     rtm_idx, &          ! mean total water mixing ratio
     um_idx, &           ! mean of east-west wind
     vm_idx, &           ! mean of north-south wind
+    thlm_pert_idx, &    ! pertubed mean thetal
+    rtm_pert_idx, &     ! perturbed mean total water mixing ratio
+    um_pert_idx, &      ! perturbed mean of east-west wind
+    vm_pert_idx, &      ! perturbed mean of north-south wind
+    wpthlp_pert_idx, &  ! perturbed turbulent flux of thetal
+    wprtp_pert_idx, &   ! turbulent flux of total water
+    upwp_pert_idx, &    ! perturbed east-west momentum flux
+    vpwp_pert_idx, &    ! perturbed north-south momentum flux
     cld_idx, &          ! Cloud fraction
     concld_idx, &       ! Convective cloud fraction
     ast_idx, &          ! Stratiform cloud fraction
@@ -201,6 +205,8 @@ module clubb_intr
     prec_dp_idx, &
     snow_dp_idx, &
     vmag_gust_idx, &
+    tresp_idx, &
+    qresp_idx, &
     wsresp_idx, &
     u_old2surf_idx, &
     v_old2surf_idx, &
@@ -318,14 +324,18 @@ module clubb_intr
 
     call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), upwp_idx)
     call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vpwp_idx)
-    call pbuf_add_field('UM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), um_pert_idx)
-    call pbuf_add_field('VM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), vm_pert_idx)
-    call pbuf_add_field('UPWP_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), upwp_pert_idx)
-    call pbuf_add_field('VPWP_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), vpwp_pert_idx)
     call pbuf_add_field('THLM',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), thlm_idx)
     call pbuf_add_field('RTM',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtm_idx)
     call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), um_idx)
     call pbuf_add_field('VM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vm_idx)
+    call pbuf_add_field('THLM_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), thlm_pert_idx)
+    call pbuf_add_field('RTM_PERT',   'physpkg', dtype_r8, (/pcols,pverp/), rtm_pert_idx)
+    call pbuf_add_field('UM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), um_pert_idx)
+    call pbuf_add_field('VM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), vm_pert_idx)
+    call pbuf_add_field('WPTHLP_PERT','physpkg', dtype_r8, (/pcols,pverp/), wpthlp_pert_idx)
+    call pbuf_add_field('WPRTP_PERT', 'physpkg', dtype_r8, (/pcols,pverp/), wprtp_pert_idx)
+    call pbuf_add_field('UPWP_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), upwp_pert_idx)
+    call pbuf_add_field('VPWP_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), vpwp_pert_idx)
 
     call pbuf_add_field('WPTHVP',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wpthvp_idx)
     call pbuf_add_field('WP2THVP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp2thvp_idx)
@@ -341,11 +351,13 @@ module clubb_intr
     call pbuf_add_field('pdf_zm_mixt_frac',  'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), pdf_zm_mixt_frac_idx)
 
     call pbuf_add_field('vmag_gust',       'global', dtype_r8, (/pcols/),      vmag_gust_idx) !PMA total gustiness
+    call pbuf_add_field('tresp',           'global', dtype_r8, (/pcols/),      tresp_idx)
+    call pbuf_add_field('qresp',           'global', dtype_r8, (/pcols/),      qresp_idx)
     call pbuf_add_field('wsresp',          'global', dtype_r8, (/pcols/),      wsresp_idx)
-    call pbuf_add_field('u_old2surf',          'global', dtype_r8, (/pcols/),      u_old2surf_idx)
-    call pbuf_add_field('v_old2surf',          'global', dtype_r8, (/pcols/),      v_old2surf_idx)
-    call pbuf_add_field('u_diff2surf',          'global', dtype_r8, (/pcols/),      u_diff2surf_idx)
-    call pbuf_add_field('v_diff2surf',          'global', dtype_r8, (/pcols/),      v_diff2surf_idx)
+    call pbuf_add_field('u_old2surf',      'global', dtype_r8, (/pcols/),      u_old2surf_idx)
+    call pbuf_add_field('v_old2surf',      'global', dtype_r8, (/pcols/),      v_old2surf_idx)
+    call pbuf_add_field('u_diff2surf',     'global', dtype_r8, (/pcols/),      u_diff2surf_idx)
+    call pbuf_add_field('v_diff2surf',     'global', dtype_r8, (/pcols/),      v_diff2surf_idx)
 #endif 
 
   end subroutine clubb_register_cam
@@ -749,13 +761,6 @@ end subroutine clubb_init_cnst
     snow_dp_idx = pbuf_get_index('SNOW_DP') !PMA ZM snow for gustiness
     vmag_gust_idx = pbuf_get_index('vmag_gust') !PMA ZM snow for gustiness
 
-    wsresp_idx = pbuf_get_index('wsresp') ! First order response of surface stress to winds
-
-    u_old2surf_idx = pbuf_get_index('u_old2surf') ! Old zonal wind
-    v_old2surf_idx = pbuf_get_index('v_old2surf') ! Old meridional wind
-    u_diff2surf_idx = pbuf_get_index('u_diff2surf') ! Diff in zonal wind from last time step
-    v_diff2surf_idx = pbuf_get_index('v_diff2surf') ! Diff in meridional wind from last time step
-
     iisclr_rt  = -1
     iisclr_thl = -1
     iisclr_CO2 = -1
@@ -769,7 +774,7 @@ end subroutine clubb_init_cnst
     ! ----------------------------------------------------------------- !    
     
     if (do_expldiff) then
-       offset = 2 ! diffuse temperature and moisture explicitly
+       offset = 4 ! diffuse temperature and moisture and perturbed versions explicitly
        edsclr_dim = edsclr_dim + offset 
     endif
     
@@ -1013,10 +1018,15 @@ end subroutine clubb_init_cnst
       
        call pbuf_set_field(pbuf2d, upwp_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, vpwp_idx,    0.0_r8)
-       call pbuf_set_field(pbuf2d, um_pert_idx, 0.0_r8)
-       call pbuf_set_field(pbuf2d, vm_pert_idx, 0.0_r8)
-       call pbuf_set_field(pbuf2d, upwp_pert_idx, 0.0_r8)
-       call pbuf_set_field(pbuf2d, vpwp_pert_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, thlm_pert_idx,   0.0_r8)
+       call pbuf_set_field(pbuf2d, rtm_pert_idx,    0.0_r8)
+       call pbuf_set_field(pbuf2d, um_pert_idx,     0.0_r8)
+       call pbuf_set_field(pbuf2d, vm_pert_idx,     0.0_r8)
+       call pbuf_set_field(pbuf2d, wpthlp_pert_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, wprtp_pert_idx,  0.0_r8)
+       call pbuf_set_field(pbuf2d, upwp_pert_idx,   0.0_r8)
+       call pbuf_set_field(pbuf2d, vpwp_pert_idx,   0.0_r8)
+
        call pbuf_set_field(pbuf2d, tke_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
@@ -1038,12 +1048,14 @@ end subroutine clubb_init_cnst
 
        call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
 
-       call pbuf_set_field(pbuf2d, wsresp_idx,    0.0_r8)
+       call pbuf_set_field(pbuf2d, tresp_idx,      0.0_r8)
+       call pbuf_set_field(pbuf2d, qresp_idx,      0.0_r8)
+       call pbuf_set_field(pbuf2d, wsresp_idx,     0.0_r8)
 
-       call pbuf_set_field(pbuf2d, u_old2surf_idx,    1.0_r8)
-       call pbuf_set_field(pbuf2d, v_old2surf_idx,    1.0_r8)
-       call pbuf_set_field(pbuf2d, u_diff2surf_idx,    1.0_r8)
-       call pbuf_set_field(pbuf2d, v_diff2surf_idx,    1.0_r8)
+       call pbuf_set_field(pbuf2d, u_old2surf_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, v_old2surf_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, u_diff2surf_idx,0.0_r8)
+       call pbuf_set_field(pbuf2d, v_diff2surf_idx,0.0_r8)
 
     endif
    
@@ -1296,8 +1308,10 @@ end subroutine clubb_init_cnst
    real(r8) :: varmu(pcols)
    real(r8) :: varmu2
 
-   real(r8) :: upwp_sfc_pert                    ! u'w' at surface                               [m^2/s^2]
-   real(r8) :: vpwp_sfc_pert                    ! v'w' at surface                               [m^2/s^2]
+   real(r8) :: wpthlp_sfc_pert                  ! w' theta_l' at surface                        [(m K)/s]
+   real(r8) :: wprtp_sfc_pert                   ! w' r_t' at surface                            [(kg m)/( kg s)]
+   real(r8) :: upwp_sfc_pert                    ! Perturbed u'w' at surface                     [m^2/s^2]
+   real(r8) :: vpwp_sfc_pert                    ! Perturbed v'w' at surface                     [m^2/s^2]
    
    real(r8) :: invrs_hdtime                     ! Preculate 1/hdtime to reduce divide operations
    real(r8) :: invrs_gravit                     ! Preculate 1/gravit to reduce divide operations
@@ -1307,7 +1321,7 @@ end subroutine clubb_init_cnst
    real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols)
    real(r8) :: se_dis, se_a(pcols), se_b(pcols), clubb_s(pver), enthalpy
 
-   real(r8) :: exner_clubb(pcols,pverp)         ! Exner function consistent with CLUBB          [-]
+   real(r8) :: exner_clubb(pcols,pver)          ! Exner function consistent with CLUBB          [-]
    real(r8) :: wpthlp_output(pcols,pverp)       ! Heat flux output variable                     [W/m2]
    real(r8) :: wprtp_output(pcols,pverp)        ! Total water flux output variable              [W/m2]
    real(r8) :: wp3_output(pcols,pverp)          ! wp3 output                                    [m^3/s^3]
@@ -1396,14 +1410,18 @@ end subroutine clubb_init_cnst
 
    real(r8), pointer, dimension(:,:) :: upwp     ! east-west momentum flux                      [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vpwp     ! north-south momentum flux                    [m^2/s^2]
-   real(r8), pointer, dimension(:,:) :: um_pert  ! perturbed meridional wind                    [m/s]
-   real(r8), pointer, dimension(:,:) :: vm_pert  ! perturbed zonal wind                         [m/s]
-   real(r8), pointer, dimension(:,:) :: upwp_pert! perturbed meridional wind flux               [m^2/s^2]
-   real(r8), pointer, dimension(:,:) :: vpwp_pert! perturbed zonal wind flux                    [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: thlm     ! mean temperature                             [K]
    real(r8), pointer, dimension(:,:) :: rtm      ! mean moisture mixing ratio                   [kg/kg]
    real(r8), pointer, dimension(:,:) :: um       ! mean east-west wind                          [m/s]
    real(r8), pointer, dimension(:,:) :: vm       ! mean north-south wind                        [m/s]
+   real(r8), pointer, dimension(:,:) :: thlm_pert! perturbed mean temperature                   [K]
+   real(r8), pointer, dimension(:,:) :: rtm_pert ! perturbed mean moisture mixing ratio         [kg/kg]
+   real(r8), pointer, dimension(:,:) :: um_pert  ! perturbed meridional wind                    [m/s]
+   real(r8), pointer, dimension(:,:) :: vm_pert  ! perturbed zonal wind                         [m/s]
+   real(r8), pointer, dimension(:,:) :: wpthlp_pert! perturbed turbulent flux of thetal         [m/s K]
+   real(r8), pointer, dimension(:,:) :: wprtp_pert! perturbed turbulent flux of moisture        [m/s kg/kg]
+   real(r8), pointer, dimension(:,:) :: upwp_pert! perturbed meridional wind flux               [m^2/s^2]
+   real(r8), pointer, dimension(:,:) :: vpwp_pert! perturbed zonal wind flux                    [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: ast      ! stratiform cloud fraction                    [fraction]
@@ -1447,6 +1465,8 @@ end subroutine clubb_init_cnst
    real(r8), pointer :: prec_dp(:)                 ! total precipitation from ZM convection
    real(r8), pointer :: snow_dp(:)                 ! snow precipitation from ZM convection
    real(r8), pointer :: vmag_gust(:)
+   real(r8), pointer :: tresp(:)
+   real(r8), pointer :: qresp(:)
    real(r8), pointer :: wsresp(:)
    real(r8), pointer :: u_old2surf(:)
    real(r8), pointer :: v_old2surf(:)
@@ -1466,7 +1486,11 @@ end subroutine clubb_init_cnst
    real(r8),parameter :: gust_faco = 0.9_r8 !gust fac for ocean
    real(r8),parameter :: gust_facc = 1.5_r8 !gust fac for clubb
 
+   real(r8) :: sfc_shf_diff(pcols), sfc_t_diff(pcols)
+   real(r8) :: sfc_qf_diff(pcols), sfc_q_diff(pcols)
    real(r8) :: sfc_stress_diff(pcols), sfc_v_diff(pcols)
+   real(r8), parameter :: pert_shf = 10._r8 ! W/m^2
+   real(r8), parameter :: pert_qf = 5.e-6_r8 ! kg/kg/m^2/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! Pa
 
 ! ZM gustiness equation below from Redelsperger et al. (2000)
@@ -1592,14 +1616,18 @@ end subroutine clubb_init_cnst
 
    call pbuf_get_field(pbuf, upwp_idx,    upwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, vpwp_idx,    vpwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, um_pert_idx, um_pert, start=(/1,1/),          kount=(/pcols,pverp/))
-   call pbuf_get_field(pbuf, vm_pert_idx, vm_pert, start=(/1,1/),          kount=(/pcols,pverp/))
-   call pbuf_get_field(pbuf, upwp_pert_idx,upwp_pert,start=(/1,1/),        kount=(/pcols,pverp/))
-   call pbuf_get_field(pbuf, vpwp_pert_idx,vpwp_pert,start=(/1,1/),        kount=(/pcols,pverp/))
    call pbuf_get_field(pbuf, thlm_idx,    thlm,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, vm_idx,      vm,      start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+   call pbuf_get_field(pbuf, thlm_pert_idx,thlm_pert,start=(/1,1/),        kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, rtm_pert_idx,rtm_pert,start=(/1,1/),          kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, um_pert_idx, um_pert, start=(/1,1/),          kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, vm_pert_idx, vm_pert, start=(/1,1/),          kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, wpthlp_pert_idx,wpthlp_pert,start=(/1,1/),    kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, wprtp_pert_idx,wprtp_pert,start=(/1,1/),      kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, upwp_pert_idx,upwp_pert,start=(/1,1/),        kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, vpwp_pert_idx,vpwp_pert,start=(/1,1/),        kount=(/pcols,pverp/))
 
    call pbuf_get_field(pbuf, wpthvp_idx,     wpthvp,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, wp2thvp_idx,    wp2thvp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
@@ -1644,6 +1672,8 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp)
    call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
 
+   call pbuf_get_field(pbuf, tresp_idx, tresp)
+   call pbuf_get_field(pbuf, qresp_idx, qresp)
    call pbuf_get_field(pbuf, wsresp_idx, wsresp)
 
    call pbuf_get_field(pbuf, u_old2surf_idx, u_old2surf)
@@ -2013,6 +2043,22 @@ end subroutine clubb_init_cnst
       wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
       upwp_sfc   = cam_in%wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
       vpwp_sfc   = cam_in%wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
+
+      ! Perturbed surface fluxes
+      wpthlp_sfc_pert = wpthlp_sfc + pert_shf/(cpair*rho_ds_zm(1))
+      wprtp_sfc_pert  = wprtp_sfc + pert_qf/rho_ds_zm(1)
+      ! Prefer to perturb stress in the direction of the existing stress.
+      ! However, if there's no existing surface stress, just perturb zonal
+      ! stress.
+      if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
+         upwp_sfc_pert = upwp_sfc + pert_tau / rho_ds_zm(1)
+         vpwp_sfc_pert = vpwp_sfc
+      else
+         upwp_sfc_pert = upwp_sfc + cam_in%wsx(i) * &
+              (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
+         vpwp_sfc_pert = vpwp_sfc + cam_in%wsy(i) * &
+              (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
+      end if
       
       ! ------------------------------------------------- !
       ! Apply TMS                                         !
@@ -2072,26 +2118,6 @@ end subroutine clubb_init_cnst
 
       enddo
 
-      if (macmic_it == 1) then
-         um_pert(i,:) = um_in
-         vm_pert(i,:) = vm_in
-         upwp_pert(i,:) = upwp_in
-         vpwp_pert(i,:) = vpwp_in
-      end if
-
-      ! Prefer to perturb stress in the direction of the existing stress.
-      ! However, if there's no existing surface stress, just perturb zonal
-      ! stress.
-      if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
-         upwp_sfc_pert = upwp_sfc + pert_tau / rho_ds_zm(1)
-         vpwp_sfc_pert = vpwp_sfc
-      else
-         upwp_sfc_pert = upwp_sfc + cam_in%wsx(i) * &
-              (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
-         vpwp_sfc_pert = vpwp_sfc + cam_in%wsy(i) * &
-              (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
-      end if
-
       pre_in(1) = pre_in(2)
       
       !  Initialize these to prevent crashing behavior
@@ -2143,7 +2169,29 @@ end subroutine clubb_init_cnst
       endif    
 
       rho_in(:) = rho(i,:)
-     
+
+      if (macmic_it == 1) then
+         ! Initialized perturbed variables from scratch.
+         thlm_pert(i,:) = thlm_in
+         rtm_pert(i,:) = rtm_in
+         um_pert(i,:) = um_in
+         vm_pert(i,:) = vm_in
+         wpthlp_pert(i,:) = wpthlp_in
+         wprtp_pert(i,:) = wprtp_in
+         upwp_pert(i,:) = upwp_in
+         vpwp_pert(i,:) = vpwp_in
+      else
+         ! Add effect of perturbation to current values.
+         thlm_pert(i,:) = thlm_pert(i,:) + thlm_in
+         rtm_pert(i,:) = rtm_pert(i,:) + rtm_in
+         um_pert(i,:) = um_pert(i,:) + um_in
+         vm_pert(i,:) = vm_pert(i,:) + vm_in
+         wpthlp_pert(i,:) = wpthlp_pert(i,:) + wpthlp_in
+         wprtp_pert(i,:) = wprtp_pert(i,:) + wprtp_in
+         upwp_pert(i,:) = upwp_pert(i,:) + upwp_in
+         vpwp_pert(i,:) = vpwp_pert(i,:) + vpwp_in
+      end if
+
       ! --------------------------------------------------------- !
       ! Compute cloud-top radiative cooling contribution to CLUBB !
       ! --------------------------------------------------------- !       
@@ -2233,8 +2281,11 @@ end subroutine clubb_init_cnst
               khzm_out, khzt_out, qclvar_out, thlprcp_out, &               ! intent(out)
               wprcp_out, ice_supersat_frac, &                              ! intent(out)
               rcm_in_layer_out, cloud_cover_out, &                         ! intent(out)
+              wpthlp_sfc_pert, wprtp_sfc_pert, &                           ! intent(in)
               upwp_sfc_pert, vpwp_sfc_pert, &                              ! intent(in)
-              um_pert(i,:), vm_pert(i,:), upwp_pert(i,:), vpwp_pert(i,:))  ! intent(inout)
+              thlm_pert(i,:), rtm_pert(i,:), um_pert(i,:), vm_pert(i,:), & ! intent(inout)
+              wpthlp_pert(i,:), wprtp_pert(i,:), &                         ! intent(inout)
+              upwp_pert(i,:), vpwp_pert(i,:))  ! intent(inout)
          call t_stopf('advance_clubb_core')
 
          pdf_zm_w_1_inout = pdf_params_zm%w_1
@@ -2263,6 +2314,8 @@ end subroutine clubb_init_cnst
             if (.not. clubb_do_deep) then
                wprtp_in = wprtp_in + clubb_rnevap_effic * dum1 * wprtp_mc_out * dtime
                wpthlp_in = wpthlp_in + clubb_rnevap_effic * dum1 * wpthlp_mc_out * dtime
+               wprtp_pert(i,:) = wprtp_pert(i,:) + clubb_rnevap_effic * dum1 * wprtp_mc_out * dtime
+               wpthlp_pert(i,:) = wpthlp_pert(i,:) + clubb_rnevap_effic * dum1 * wpthlp_mc_out * dtime
             endif
 !                     rtpthlp_in = rtpthlp_in + rtpthlp_mc_out * dtime
          endif     
@@ -2284,7 +2337,17 @@ end subroutine clubb_init_cnst
 
       enddo  ! end time loop
       call t_stopf('adv_clubb_core_ts_loop')
-     
+
+      ! Convert perturbed quantities to just the effect of the perturbation.
+      thlm_pert(i,:) = thlm_pert(i,:) - thlm_in
+      rtm_pert(i,:) = rtm_pert(i,:) - rtm_in
+      um_pert(i,:) = um_pert(i,:) - um_in
+      vm_pert(i,:) = vm_pert(i,:) - vm_in
+      wpthlp_pert(i,:) = wpthlp_pert(i,:) - wpthlp_in
+      wprtp_pert(i,:) = wprtp_pert(i,:) - wprtp_in
+      upwp_pert(i,:) = upwp_pert(i,:) - upwp_in
+      vpwp_pert(i,:) = vpwp_pert(i,:) - vpwp_in
+
       if (clubb_do_adv) then
          if (macmic_it .eq. cld_macmic_num_steps) then 
             wp2_in=zm2zt_api(wp2_in)   
@@ -2306,12 +2369,20 @@ end subroutine clubb_init_cnst
          endif
       endif
 
+      ! Rather than flip these arrays, grab the only values we need right here.
+      sfc_shf_diff(i) = pert_shf
+      sfc_qf_diff(i) = pert_qf
       sfc_stress_diff(i) = pert_tau
+      ! Note that this does not include the effect of perturbations on
+      ! condensation. Fixing this would require adding at least two perturbed
+      ! versions of rcm for the sensible and latent heat flux perturbations (and
+      ! possibly many more perturbed state variables to do this accurately).
+      sfc_t_diff(i) = thlm_pert(i,1) / exner_clubb(i,pver)
+      sfc_q_diff(i) = rtm_pert(i,1)
       if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
-         sfc_v_diff(i) = um_pert(i,1) - um_in(1)
+         sfc_v_diff(i) = um_pert(i,1)
       else
-         sfc_v_diff(i) = ((um_pert(i,1) - um_in(1))*cam_in%wsx(i) &
-              + (vm_pert(i,1) - vm_in(1))*cam_in%wsy(i)) &
+         sfc_v_diff(i) = (um_pert(i,1)*cam_in%wsx(i) + vm_pert(i,1)*cam_in%wsy(i)) &
               / hypot(cam_in%wsx(i), cam_in%wsy(i))
       end if
 
@@ -2878,12 +2949,14 @@ end subroutine clubb_init_cnst
 
    if (macmic_it == cld_macmic_num_steps) then
       do i = 1, ncol
+         tresp(i) = sfc_t_diff(i) / sfc_shf_diff(i)
+         qresp(i) = sfc_q_diff(i) / sfc_qf_diff(i)
          wsresp(i) = sfc_v_diff(i) / sfc_stress_diff(i)
 
          ! Estimate of what atmosphere is doing to bottom level winds, with the
          ! approximate effect of the surface fluxes subtracted out.
-         u_diff2surf(i) = state1%u(i,pver) - u_old2surf(i) - wsresp(i)*cam_in%wsx(i)
-         v_diff2surf(i) = state1%v(i,pver) - v_old2surf(i) - wsresp(i)*cam_in%wsy(i)
+         u_diff2surf(i) = state1%u(i,pver) - u_old2surf(i) - max(wsresp(i), 0._r8)*cam_in%wsx(i)
+         v_diff2surf(i) = state1%v(i,pver) - v_old2surf(i) - max(wsresp(i), 0._r8)*cam_in%wsy(i)
          u_old2surf(i) = state1%u(i,pver)
          v_old2surf(i) = state1%v(i,pver)
       end do

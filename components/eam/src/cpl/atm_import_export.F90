@@ -249,6 +249,8 @@ contains
           a2x(index_a2x_Sa_z      ,ig) = cam_out(c)%zbot(i)   
           a2x(index_a2x_Sa_u      ,ig) = cam_out(c)%ubot(i)   
           a2x(index_a2x_Sa_v      ,ig) = cam_out(c)%vbot(i)   
+          a2x(index_a2x_Sa_tresp  ,ig) = cam_out(c)%tresp(i)
+          a2x(index_a2x_Sa_qresp  ,ig) = cam_out(c)%qresp(i)
           a2x(index_a2x_Sa_wsresp ,ig) = cam_out(c)%wsresp(i)
           a2x(index_a2x_Sa_u_diff ,ig) = cam_out(c)%u_diff(i)
           a2x(index_a2x_Sa_v_diff ,ig) = cam_out(c)%v_diff(i)

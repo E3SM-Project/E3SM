@@ -109,6 +109,8 @@ contains
     real(r8) :: qsat_ref2m             ! 2 m height surface saturated specific humidity [kg/kg]
     real(r8) :: dqsat2mdT              ! derivative of 2 m height surface saturated specific humidity on t_ref2m
     real(r8) :: www                    ! surface soil wetness [-]
+    real(r8) :: thm_adj(bounds%begp:bounds%endp) ! Adjusted thm for iteration
+    real(r8) :: forc_q_adj(bounds%begp:bounds%endp) ! Adjusted forc_q for iteration
     real(r8) :: forc_u_adj(bounds%begp:bounds%endp) ! Adjusted forc_u for iteration
     real(r8) :: forc_v_adj(bounds%begp:bounds%endp) ! Adjusted forc_v for iteration
     !------------------------------------------------------------------------------
@@ -119,6 +121,8 @@ contains
          zii              =>    col_pp%zii                            , & ! Input:  [real(r8) (:)   ]  convective boundary height [m]
          forc_u           =>    top_as%ubot                           , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)
          forc_v           =>    top_as%vbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)
+         tresp            =>    top_as%tresp                          , & ! Input:  [real(r8) (:)   ]  response of temperature to surface flux (K m^2/W)
+         qresp            =>    top_as%qresp                          , & ! Input:  [real(r8) (:)   ]  response of spec. humidity to surface flux (m^2 s/kg)
          wsresp           =>    top_as%wsresp                         , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
          u_diff           =>    top_as%u_diff                         , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
          v_diff           =>    top_as%v_diff                         , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to meridional wind (m/s)
@@ -222,9 +226,11 @@ contains
          forc_v_adj(p) = forc_v(t) + v_diff(t)
          ur(p)    = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
 
-         dth(p)   = thm(p)-t_grnd(c)
-         dqh(p)   = forc_q(t) - qg(c)
-         dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
+         thm_adj(p) = thm(p)
+         dth(p)   = thm_adj(p)-t_grnd(c)
+         forc_q_adj(p) = forc_q(t)
+         dqh(p)   = forc_q_adj(p) - qg(c)
+         dthv     = dth(p)*(1._r8+0.61_r8*forc_q_adj(p))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p)
 
          ! Copy column roughness to local pft-level arrays
@@ -257,6 +263,7 @@ contains
             t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
 
+            ! Update winds.
             ram = 1._r8/(ustar(p)*ustar(p)/um(p))
             ! Forbid removing more than 99% of wind speed in a time step.
             ! This is mainly to avoid convergence issues since this is such a
@@ -272,11 +279,45 @@ contains
             forc_v_adj(p) = forc_v(t) + v_diff(t) + tauy(p)*wsresp(t)
             ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
 
+            ! Update air temperature.
+            rah  = 1._r8/(temp1(p)*ustar(p))
+            raih = forc_rho(t)*cpair/rah
+            ! Limit as with wind speed.
+            if ( raih*tresp(t) > 0.99 ) then
+               eflx_sh_grnd(p) = -0.99 * dth(p) / tresp(t)
+            else
+               eflx_sh_grnd(p)  = -raih*dth(p)
+            end if
+            thm_adj(p) = thm(p) + eflx_sh_grnd(p) * tresp(t)
+            dth(p) = thm_adj(p)-t_grnd(c)
+
+            ! Update humidity.
+            raw  = 1._r8/(temp2(p)*ustar(p))
+            !changed by K.Sakaguchi. Soilbeta is used for evaporation
+            if (dqh(p) > 0._r8) then  !dew  (beta is not applied, just like rsoil used to be)
+               raiw = forc_rho(t)/(raw)
+            else
+               if(do_soilevap_beta())then
+                  ! Lee and Pielke 1992 beta is applied
+                  raiw    = soilbeta(c)*forc_rho(t)/(raw)
+               endif
+            end if
+            ! Limit as with wind speed.
+            if ( raiw*qresp(t) > 0.99 ) then
+               qflx_evap_soi(p) = -0.99 * dqh(p) / qresp(t)
+            else
+               qflx_evap_soi(p) = -raiw*dqh(p)
+            end if
+            forc_q_adj(p) = forc_q(t) + qflx_evap_soi(p) * qresp(t)
+            dqh(p) = forc_q_adj(p) - qg(c)
+
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
             z0hg_patch(p) = z0mg_patch(p)/exp(0.13_r8 * (ustar(p)*z0mg_patch(p)/1.5e-5_r8)**0.45_r8)
             z0qg_patch(p) = z0hg_patch(p)
-            thvstar = tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
+            ! Adjustment to potential temperature assumes exner function is ~1,
+            ! which should be true for a relatively fine atmospheric grid...
+            thvstar = tstar*(1._r8+0.61_r8*forc_q_adj(p)) + 0.61_r8*(forc_th(t) + thm_adj(p) - thm(p))*qstar
             zeta = zldis(p)*vkc*grav*thvstar/(ustar(p)**2*thv(c))
 
             if (zeta >= 0._r8) then                   !stable
@@ -339,24 +380,24 @@ contains
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
 
          ! compute sensible heat fluxes individually
-         eflx_sh_snow(p)   = -raih*(thm(p)-t_soisno(c,snl(c)+1))
-         eflx_sh_soil(p)   = -raih*(thm(p)-t_soisno(c,1))
-         eflx_sh_h2osfc(p) = -raih*(thm(p)-t_h2osfc(c))
+         eflx_sh_snow(p)   = -raih*(thm_adj(p)-t_soisno(c,snl(c)+1))
+         eflx_sh_soil(p)   = -raih*(thm_adj(p)-t_soisno(c,1))
+         eflx_sh_h2osfc(p) = -raih*(thm_adj(p)-t_h2osfc(c))
 
          ! water fluxes from soil
          qflx_evap_soi(p)  = -raiw*dqh(p)
          qflx_evap_tot(p)  = qflx_evap_soi(p)
 
          ! compute latent heat fluxes individually
-         qflx_ev_snow(p)   = -raiw*(forc_q(t) - qg_snow(c))
-         qflx_ev_soil(p)   = -raiw*(forc_q(t) - qg_soil(c))
-         qflx_ev_h2osfc(p) = -raiw*(forc_q(t) - qg_h2osfc(c))
+         qflx_ev_snow(p)   = -raiw*(forc_q_adj(p) - qg_snow(c))
+         qflx_ev_soil(p)   = -raiw*(forc_q_adj(p) - qg_soil(c))
+         qflx_ev_h2osfc(p) = -raiw*(forc_q_adj(p) - qg_h2osfc(c))
 
          ! 2 m height air temperature
-         t_ref2m(p) = thm(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
+         t_ref2m(p) = thm_adj(p) + temp1(p)*dth(p)*(1._r8/temp12m(p) - 1._r8/temp1(p))
 
          ! 2 m height specific humidity
-         q_ref2m(p) = forc_q(t) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
+         q_ref2m(p) = forc_q_adj(p) + temp2(p)*dqh(p)*(1._r8/temp22m(p) - 1._r8/temp2(p))
 
          ! 2 m height relative humidity
          call QSat(t_ref2m(p), forc_pbot(t), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)

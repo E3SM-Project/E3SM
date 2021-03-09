@@ -544,8 +544,10 @@ contains
 #endif
     wprcp, ice_supersat_frac, &                             ! intent(out)
     rcm_in_layer, cloud_cover, &                            ! intent(out)
+    wpthlp_sfc_pert, wprtp_sfc_pert, &                      ! intent(in)
     upwp_sfc_pert, vpwp_sfc_pert, &                         ! intent(in)
-    um_pert, vm_pert, upwp_pert, vpwp_pert )                ! intent(inout)
+    thlm_pert, rtm_pert, um_pert, vm_pert, &                ! intent(inout)
+    wpthlp_pert, wprtp_pert, upwp_pert, vpwp_pert)          ! intent(inout)
 
     use advance_clubb_core_module, only : advance_clubb_core
 
@@ -719,13 +721,19 @@ contains
     logical, intent(in)                 ::  do_liquid_only_in_clubb
 #endif
     real( kind = core_rknd ), intent(in), optional ::  &
-      upwp_sfc_pert,     & ! pertubed u'w' at surface          [m^2/s^2]
-      vpwp_sfc_pert        ! pertubed v'w' at surface          [m^2/s^2]
+      wpthlp_sfc_pert,   & ! perturbed w'theta_l' at surface      [(m K)/s]
+      wprtp_sfc_pert,    & ! perturbed w'r_t' at surface          [(kg m)/( kg s)]
+      upwp_sfc_pert,     & ! perturbed u'w' at surface            [m^2/s^2]
+      vpwp_sfc_pert        ! perturbed v'w' at surface            [m^2/s^2]
     real( kind = core_rknd ), intent(inout), dimension(gr%nz), optional ::  &
-      um_pert,      & ! pertubed eastward grid-mean wind component (thermodynamic levels)   [m/s]
-      vm_pert,      & ! pertubed northward grid-mean wind component (thermodynamic levels)   [m/s]
-      upwp_pert,    & ! pertubed u'w' (momentum levels)                         [m^2/s^2]
-      vpwp_pert       ! pertubed v'w' (momentum levels)                         [m^2/s^2]
+      thlm_pert,    & ! perturbed liq. water pot. temp., th_l (thermo. levels)   [K]
+      rtm_pert,     & ! perturbed total water mixing ratio, r_t (thermo. levels) [kg/kg]
+      um_pert,      & ! perturbed eastward grid-mean wind component (thermodynamic levels)   [m/s]
+      vm_pert,      & ! perturbed northward grid-mean wind component (thermodynamic levels)   [m/s]
+      wpthlp_pert,  & ! perturbed w' th_l' (momentum levels)      [(m/s) K]
+      wprtp_pert,   & ! perturbed w' r_t' (momentum levels)       [(kg/kg) m/s]
+      upwp_pert,    & ! perturbed u'w' (momentum levels)          [m^2/s^2]
+      vpwp_pert       ! perturbed v'w' (momentum levels)          [m^2/s^2]
     call advance_clubb_core( &
       l_implemented, dt, fcor, sfc_elevation, hydromet_dim, & ! intent(in)
       thlm_forcing, rtm_forcing, um_forcing, vm_forcing, &    ! intent(in)
@@ -768,8 +776,10 @@ contains
 #endif
       wprcp, ice_supersat_frac, &                             ! intent(out)
       rcm_in_layer, cloud_cover, &                            ! intent(out)
+      wpthlp_sfc_pert, wprtp_sfc_pert, &                      ! intent(in)
       upwp_sfc_pert, vpwp_sfc_pert, &                         ! intent(in)
-      um_pert, vm_pert, upwp_pert, vpwp_pert )                ! intent(inout)
+      thlm_pert, rtm_pert, um_pert, vm_pert, &                ! intent(inout)
+      wpthlp_pert, wprtp_pert, upwp_pert, vpwp_pert)          ! intent(inout)
 
     err_code_api = err_code
 

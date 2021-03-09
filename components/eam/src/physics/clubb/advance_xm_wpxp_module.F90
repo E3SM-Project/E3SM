@@ -65,7 +65,8 @@ module advance_xm_wpxp_module
                               uprcp, vprcp, rc_coef, & 
                               rtm, wprtp, thlm, wpthlp, &
                               sclrm, wpsclrp, um, upwp, vm, vpwp, &
-                              um_pert, vm_pert, upwp_pert, vpwp_pert)
+                              thlm_pert, rtm_pert, um_pert, vm_pert, &
+                              wpthlp_pert, wprtp_pert, upwp_pert, vpwp_pert)
 
     ! Description:
     ! Advance the mean and flux terms by one timestep.
@@ -324,12 +325,16 @@ module advance_xm_wpxp_module
       vm,   & ! <v>:  mean south-north horiz. velocity (thermo. levs.) [m/s]
       vpwp    ! <v'w'>:  momentum flux (momentum levels)               [m^2/s^2]
 
-    ! Variables used to track perturbed version of winds.
-    real( kind = core_rknd ), intent(inout), dimension(gr%nz), optional ::  & 
-      um_pert,   & ! perturbed <u>    [m/s]
-      vm_pert,   & ! perturbed <v>    [m/s]
-      upwp_pert, & ! perturbed <u'w'> [m^2/s^2]
-      vpwp_pert    ! perturbed <v'w'> [m^2/s^2]
+    ! Variables used to track perturbed quantities
+    real( kind = core_rknd ), intent(inout), dimension(gr%nz), optional ::  &
+      thlm_pert,    & ! perturbed liq. water pot. temp., th_l (thermo. levels)   [K]
+      rtm_pert,     & ! perturbed total water mixing ratio, r_t (thermo. levels) [kg/kg]
+      um_pert,      & ! perturbed eastward grid-mean wind component (thermodynamic levels)   [m/s]
+      vm_pert,      & ! perturbed northward grid-mean wind component (thermodynamic levels)   [m/s]
+      wpthlp_pert,  & ! perturbed w' th_l' (momentum levels)      [(m/s) K]
+      wprtp_pert,   & ! perturbed w' r_t' (momentum levels)       [(kg/kg) m/s]
+      upwp_pert,    & ! perturbed u'w' (momentum levels)          [m^2/s^2]
+      vpwp_pert       ! perturbed v'w' (momentum levels)          [m^2/s^2]
 
     ! Local variables
     real( kind = core_rknd ), dimension(nsup+nsub+1,2*gr%nz) :: & 
@@ -458,7 +463,8 @@ module advance_xm_wpxp_module
     ! Constant parameters as a function of Skw.
 
     integer :: &
-      nrhs         ! Number of RHS vectors
+      nrhs, &     ! Number of RHS vectors
+      rhs_offset  ! Current offset of rhs for optional variables
 
     real( kind = core_rknd ) :: rcond
 
@@ -491,6 +497,9 @@ module advance_xm_wpxp_module
 
     ! ----- Begin Code -----
 
+    ! If the perturbed code ever goes into CLUBB proper, should probably verify
+    ! that incompatible or untested options like l_clip_semi_implicit and
+    ! l_upwind_wpxp_ta are off.
     l_perturbed_wind = l_predict_upwp_vpwp .and. present(um_pert)
 
     if ( l_clip_semi_implicit &
@@ -499,6 +508,12 @@ module advance_xm_wpxp_module
        nrhs = 1
     else
        nrhs = 2 + sclr_dim
+       if ( present(thlm_pert) ) then
+          nrhs = nrhs + 1
+       end if
+       if ( present(rtm_pert) ) then
+          nrhs = nrhs + 1
+       end if
        if ( l_predict_upwp_vpwp ) then
           nrhs = nrhs + 2
           if ( l_perturbed_wind ) then
@@ -1307,6 +1322,10 @@ module advance_xm_wpxp_module
                         rtm, rcm, p_in_Pa, thvm, & ! In
                         lhs ) ! Out
 
+      ! Offset for optional variables. Must do xm_wpxp_clipping_and_stats calls
+      ! in the same order as the xm_wpxp_rhs calls for this to work.
+      rhs_offset = 3+sclr_dim
+
       ! Compute the explicit portion of the r_t and w'r_t' equations.
       ! Build the right-hand side vector.
       call xm_wpxp_rhs( xm_wpxp_rtm, l_iter, dt, rtm, wprtp, & ! In
@@ -1319,6 +1338,21 @@ module advance_xm_wpxp_module
                         wpxp_upper_lim, wpxp_lower_lim, & ! In
                         rhs(:,1) ) ! Out
 
+      if ( present( rtm_pert ) ) then
+         ! Compute the explicit portion of the r_t and w'r_t' equations.
+         ! Build the right-hand side vector.
+         call xm_wpxp_rhs( xm_wpxp_rtm, l_iter, dt, rtm_pert, wprtp_pert, & ! In
+                           rtm_forcing, wprtp_forcing, C7_Skw_fnc, & ! In
+                           rtpthvp, C6rt_Skw_fnc, tau_C6_zm, & ! In
+                           coef_wp2rtp_implicit, coef_wp2rtp_implicit_zm, & ! In
+                           term_wp2rtp_explicit, term_wp2rtp_explicit_zm, & ! In
+                           sgn_t_vel_wprtp, rho_ds_zt, & ! In
+                           rho_ds_zm, invrs_rho_ds_zm, thv_ds_zm, & ! In
+                           wpxp_upper_lim, wpxp_lower_lim, & ! In
+                           rhs(:,rhs_offset) ) ! Out
+         rhs_offset = rhs_offset + 1
+      end if
+
       ! Compute the explicit portion of the th_l and w'th_l' equations.
       ! Build the right-hand side vector.
       call xm_wpxp_rhs( xm_wpxp_thlm, l_iter, dt, thlm, wpthlp, & ! In
@@ -1330,6 +1364,21 @@ module advance_xm_wpxp_module
                         rho_ds_zm, invrs_rho_ds_zm, thv_ds_zm, & ! In
                         wpxp_upper_lim, wpxp_lower_lim, & ! In
                         rhs(:,2) ) ! Out
+
+      if ( present( thlm_pert ) ) then
+         ! Compute the explicit portion of the th_l and w'th_l' equations.
+         ! Build the right-hand side vector.
+         call xm_wpxp_rhs( xm_wpxp_thlm, l_iter, dt, thlm_pert, wpthlp_pert, & ! In
+                           thlm_forcing, wpthlp_forcing, C7_Skw_fnc, & ! In
+                           thlpthvp, C6thl_Skw_fnc, tau_C6_zm, & ! In
+                           coef_wp2thlp_implicit, coef_wp2thlp_implicit_zm, & ! In
+                           term_wp2thlp_explicit, term_wp2thlp_explicit_zm, & ! In
+                           sgn_t_vel_wpthlp, rho_ds_zt, & ! In
+                           rho_ds_zm, invrs_rho_ds_zm, thv_ds_zm, & ! In
+                           wpxp_upper_lim, wpxp_lower_lim, & ! In
+                           rhs(:,rhs_offset) ) ! Out
+         rhs_offset = rhs_offset + 1
+      end if
 
 ! ---> h1g, 2010-06-15
 ! scalar transport, e.g, droplet and ice number concentration
@@ -1529,7 +1578,8 @@ module advance_xm_wpxp_module
                            sgn_t_vel_upwp, rho_ds_zt, & ! In
                            rho_ds_zm, invrs_rho_ds_zm, thv_ds_zm, & ! In
                            wpxp_upper_lim, wpxp_lower_lim, & ! In
-                           rhs(:,3+sclr_dim) ) ! Out
+                           rhs(:,rhs_offset) ) ! Out
+         rhs_offset = rhs_offset + 1
 
          call xm_wpxp_rhs( xm_wpxp_vm, l_iter, dt, vm, vpwp, & ! In
                            vm_tndcy, vpwp_forcing, C7_Skw_fnc, & ! In
@@ -1539,7 +1589,8 @@ module advance_xm_wpxp_module
                            sgn_t_vel_vpwp, rho_ds_zt, & ! In
                            rho_ds_zm, invrs_rho_ds_zm, thv_ds_zm, & ! In
                            wpxp_upper_lim, wpxp_lower_lim, & ! In
-                           rhs(:,4+sclr_dim) ) ! Out
+                           rhs(:,rhs_offset) ) ! Out
+         rhs_offset = rhs_offset + 1
 
          if ( l_perturbed_wind ) then
             call xm_wpxp_rhs( xm_wpxp_um, l_iter, dt, um_pert, upwp_pert, & ! In
@@ -1550,7 +1601,8 @@ module advance_xm_wpxp_module
                               sgn_t_vel_upwp, rho_ds_zt, & ! In
                               rho_ds_zm, invrs_rho_ds_zm, thv_ds_zm, & ! In
                               wpxp_upper_lim, wpxp_lower_lim, & ! In
-                              rhs(:,5+sclr_dim) ) ! Out
+                              rhs(:,rhs_offset) ) ! Out
+            rhs_offset = rhs_offset + 1
 
             call xm_wpxp_rhs( xm_wpxp_vm, l_iter, dt, vm_pert, vpwp_pert, & ! In
                               vm_tndcy, vpwp_forcing_pert, C7_Skw_fnc, & ! In
@@ -1560,7 +1612,8 @@ module advance_xm_wpxp_module
                               sgn_t_vel_vpwp, rho_ds_zt, & ! In
                               rho_ds_zm, invrs_rho_ds_zm, thv_ds_zm, & ! In
                               wpxp_upper_lim, wpxp_lower_lim, & ! In
-                              rhs(:,6+sclr_dim) ) ! Out
+                              rhs(:,rhs_offset) ) ! Out
+            rhs_offset = rhs_offset + 1
          end if
 
       endif ! l_predict_upwp_vpwp
@@ -1645,6 +1698,8 @@ module advance_xm_wpxp_module
          endif
       endif
 
+      rhs_offset = 3+sclr_dim
+
       call xm_wpxp_clipping_and_stats &
            ( xm_wpxp_rtm, dt, wp2, rtp2, wm_zt,  &  ! Intent(in)
              rtm_forcing, rho_ds_zm, rho_ds_zt, &   ! Intent(in)
@@ -1683,6 +1738,18 @@ module advance_xm_wpxp_module
          endif
       endif
 
+      if ( present(rtm_pert) ) then
+         call xm_wpxp_clipping_and_stats &
+              ( xm_wpxp_rtm, dt, wp2, rtp2, wm_zt,  &  ! Intent(in)
+                rtm_forcing, rho_ds_zm, rho_ds_zt, &   ! Intent(in)
+                invrs_rho_ds_zm, invrs_rho_ds_zt, &    ! Intent(in)
+                rt_tol**2, rt_tol, rcond, &            ! Intent(in)
+                low_lev_effect, high_lev_effect, &     ! Intent(in)
+                l_implemented, solution(:,rhs_offset),&! Intent(in)
+                rtm_pert, rt_tol_mfl, wprtp_pert )     ! Intent(inout)
+         rhs_offset = rhs_offset + 1
+      end if
+
       call xm_wpxp_clipping_and_stats &
            ( xm_wpxp_thlm, dt, wp2, thlp2, wm_zt, & ! Intent(in)
              thlm_forcing, rho_ds_zm, rho_ds_zt, &  ! Intent(in)
@@ -1720,6 +1787,18 @@ module advance_xm_wpxp_module
             return
          endif
       endif
+
+      if ( present(thlm_pert) ) then
+         call xm_wpxp_clipping_and_stats &
+              ( xm_wpxp_thlm, dt, wp2, thlp2, wm_zt, & ! Intent(in)
+                thlm_forcing, rho_ds_zm, rho_ds_zt, &  ! Intent(in)
+                invrs_rho_ds_zm, invrs_rho_ds_zt, &    ! Intent(in)
+                thl_tol**2, thl_tol, rcond, &          ! Intent(in)
+                low_lev_effect, high_lev_effect, &     ! Intent(in)
+                l_implemented, solution(:,rhs_offset),&! Intent(in)
+                thlm_pert, thl_tol_mfl, wpthlp_pert )  ! Intent(inout)
+         rhs_offset = rhs_offset + 1
+      end if
 
 ! ---> h1g, 2010-06-15
 ! scalar transport, e.g, droplet and ice number concentration
@@ -1783,8 +1862,9 @@ module advance_xm_wpxp_module
                 invrs_rho_ds_zm, invrs_rho_ds_zt,      & ! Intent(in)
                 w_tol_sqd, w_tol, rcond,               & ! Intent(in)
                 low_lev_effect, high_lev_effect,       & ! Intent(in)
-                l_implemented, solution(:,3+sclr_dim), & ! Intent(in)
+                l_implemented, solution(:,rhs_offset), & ! Intent(in)
                 um, w_tol, upwp                        ) ! Intent(inout)
+         rhs_offset = rhs_offset + 1
 
          if ( clubb_at_least_debug_level( 0 ) ) then
             if ( err_code == clubb_fatal_error ) then
@@ -1823,8 +1903,9 @@ module advance_xm_wpxp_module
                 invrs_rho_ds_zm, invrs_rho_ds_zt,      & ! Intent(in)
                 w_tol_sqd, w_tol, rcond,               & ! Intent(in)
                 low_lev_effect, high_lev_effect,       & ! Intent(in)
-                l_implemented, solution(:,4+sclr_dim), & ! Intent(in)
+                l_implemented, solution(:,rhs_offset), & ! Intent(in)
                 vm, w_tol, vpwp                        ) ! Intent(inout)
+         rhs_offset = rhs_offset + 1
 
          if ( clubb_at_least_debug_level( 0 ) ) then
             if ( err_code == clubb_fatal_error ) then
@@ -1865,8 +1946,9 @@ module advance_xm_wpxp_module
                    invrs_rho_ds_zm, invrs_rho_ds_zt,      & ! Intent(in)
                    w_tol_sqd, w_tol, rcond,               & ! Intent(in)
                    low_lev_effect, high_lev_effect,       & ! Intent(in)
-                   l_implemented, solution(:,5+sclr_dim), & ! Intent(in)
+                   l_implemented, solution(:,rhs_offset), & ! Intent(in)
                    um_pert, w_tol, upwp_pert              ) ! Intent(inout)
+            rhs_offset = rhs_offset + 1
 
             call xm_wpxp_clipping_and_stats &
                  ( xm_wpxp_vm, dt, wp2, vp2, wm_zt,       & ! Intent(in)
@@ -1874,8 +1956,9 @@ module advance_xm_wpxp_module
                    invrs_rho_ds_zm, invrs_rho_ds_zt,      & ! Intent(in)
                    w_tol_sqd, w_tol, rcond,               & ! Intent(in)
                    low_lev_effect, high_lev_effect,       & ! Intent(in)
-                   l_implemented, solution(:,6+sclr_dim), & ! Intent(in)
+                   l_implemented, solution(:,rhs_offset), & ! Intent(in)
                    vm_pert, w_tol, vpwp_pert              ) ! Intent(inout)
+            rhs_offset = rhs_offset + 1
          end if
 
       endif ! l_predict_upwp_vpwp
