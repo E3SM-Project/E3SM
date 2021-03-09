@@ -266,10 +266,7 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
   }
   // Update timestamp
   util::TimeStamp time (0,0,0,0);
-  f1.get_header().get_tracking().update_time_stamp(time);
-  f2.get_header().get_tracking().update_time_stamp(time);
-  f3.get_header().get_tracking().update_time_stamp(time);
-  f4.get_header().get_tracking().update_time_stamp(time);
+  repo->init_fields_time_stamp(time);
   // Sync back to device
   f1.sync_to_dev();
   f2.sync_to_dev();

@@ -194,9 +194,7 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
   auto f2 = repo->get_field(fid2);
   auto f3 = repo->get_field(fid3);
   util::TimeStamp time (0,0,0,0);
-  f1.get_header().get_tracking().update_time_stamp(time);
-  f2.get_header().get_tracking().update_time_stamp(time);
-  f3.get_header().get_tracking().update_time_stamp(time);
+  repo->init_fields_time_stamp(time);
 
   return repo;
 }
