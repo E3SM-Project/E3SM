@@ -14,7 +14,7 @@ def nc_file_init(output_file,ne=0,np=0,ncol=0,nlev=0,phys_grid="gll",overwrite=F
     expect ( (not ofile.exists()) or overwrite,
             "Error! Output file '{}' already exists. Use -o to overwrite.".format(ofile))
 
-    ds = Dataset(ofile,"w",format="NETCDF4",persist=True)
+    ds = Dataset(ofile,"w",format="NETCDF3_64BIT_OFFSET",persist=True)
 
     expect (ncol >= 1 or (ne>1 and np>1),
             "Error! In order to create a dataset, do one of the following:\n"
