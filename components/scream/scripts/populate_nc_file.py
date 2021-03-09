@@ -133,7 +133,7 @@ class PopulateNcFile(object):
     ###########################################################################
     def is_vector_layout(self,dims):
     ###########################################################################
-        valid = ["ncol", "lev", "ilev"]
+        valid = ["time", "ncol", "lev", "ilev"]
         for dim in dims:
             if dim not in valid:
                 expect (dim.isdigit(), "Error! Unexpected dimension '{}'".format(dim))
@@ -212,7 +212,6 @@ class PopulateNcFile(object):
             dims = self.get_dims(name_dims)
 
             is_vector = self.is_vector_layout(dims)
-
 
             if is_vector:
                 # From the list (dim1,...,dimN), check if it is a vector field,
