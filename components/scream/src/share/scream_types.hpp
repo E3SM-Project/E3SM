@@ -20,6 +20,7 @@ using Real = float;
 using ekat::KokkosTypes;
 using ekat::DefaultDevice;
 using ekat::HostDevice;
+using ekat::Unmanaged;
 
 // Miscellanea
 
