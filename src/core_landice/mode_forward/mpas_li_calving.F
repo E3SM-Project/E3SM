@@ -1185,7 +1185,7 @@ module li_calving
          err = ior(err, err_tmp)
 
          calvingVelocity(:) = 0.0_RKIND
-         ! First calculate the front retreat rate (Levermann eq. 1)
+         ! First calculate the front retreat rate
          !calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) & ! m/s
          !      * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
                   ! calculate only for floating ice - map of "potential" calving rate
@@ -1751,27 +1751,9 @@ module li_calving
              config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*tauMax*config_ocean_density)
          endwhere
 
-         !alpha(:) = tauMin(:) / (tauMax(:))
-         !epsmax(:) = tauMax(:) / (2.0d0*effectiveViscosity(:))
-         !s0(:) =
-         !config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness(:)/(2.0d0*tauMax(:)*config_ocean_density)
-          ! Compute the hydrostatic to tensile stress ratio
-          ! These commented lines are doing the same thing as the above where loop. Which is better?
-
          nstar(:) = &
          12.0_RKIND*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND)/(4.0_RKIND*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND)+6.0_RKIND*alpha(:)**2.0_RKIND) 
-          ! Compute the effective flow law exponent
-
-         !s0(:) =
-         !config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness(:)/(2.0d0*tauMax(:)*config_ocean_density)
-          ! Compute the hydrostatic to tensile stress ratio
-
-         !do iCell = 1, nCells
-         !    if (li_mask_is_floating_ice(cellMask(iCell))) then
-         !        floatingBasalMassBal(iCell) = 0.2/31536000.0*tanh((lowerSurface(iCell)-bedTopography(iCell))/75.0) * max(-100-lowerSurface(iCell),0.0)
-         !    end if
-         !end do
-         ! Temporary change of BMB for the MISMIP+ Ice1r experiment
+         ! Compute the effective flow law exponent
 
          do iCell = 1, nCells
          if (thickness(iCell) == 0.0_RKIND) then
@@ -1781,9 +1763,7 @@ module li_calving
          endif
          enddo
 
-         !seconds = daysSinceStart*24.0*3600.0
-
-         ! below is the cases for the manufacured experiments
+         !! Commented out lines immediately below here are for use with manufacured experiments
          !ddamagedt(:) = damageSource(:)*damage(:) - 0.44/2.0 * (uReconstructX(1,:)/1000.0*(1+epsmax(:)*seconds)*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
          !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
          !ddamagedt(:) = damageSource(:)*damage(:) - 0.44/2.0 * (uReconstructX(1,:)/1000.0*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
@@ -1793,9 +1773,6 @@ module li_calving
 
          damage(:) = damage(:) + ddamagedt(:) * deltat
 
-         !damage(:) =  0.5
-         ! temporarily set damage to a constant value
-
          do iCell = 1, nCells
              if (thickness(iCell) == 0.0_RKIND) then
                  damage_nye(iCell) = 0.0_RKIND
@@ -1803,15 +1780,13 @@ module li_calving
                  damage_nye(iCell) = (2.0+alpha(iCell)) * tauMax(iCell) / (gravity*(config_ocean_density-config_ice_density)*thickness(iCell))
              endif
          enddo
-         !damage_nye(:) = 0.5
-         ! temporarily set damage_nye to a constant value, 0.8
 
          do iCell = 1, nCells
             if (damage(iCell) > config_damage_preserve_threshold) then
                 damageMax(iCell) = damage(iCell)
             end if
          end do
-         ! save the damageMax value for restoring (no heal) later if we want
+         ! save the damageMax value for restoring later if that option is chosen (i.e., do NOT allowing for healing to occur)
 
          do iCell = 1, nCells
             if (damage(iCell) < 0.0_RKIND) then
@@ -1826,47 +1801,39 @@ module li_calving
          end do
          ! damage is always larger than the Nye value for initialization of damage evolution.
 
-
-         !do iCell = 1, nCells
-         !   if ((li_mask_is_grounded_ice(cellMask(iCell))) .or. (.not.(li_mask_is_dynamic_ice(cellMask(iCell))))) then
-         !       damage(iCell) = 0.0_RKIND
-         !   end if
-         !end do
-
          do iCell = 1, nCells
             if ((li_mask_is_grounded_ice(cellMask(iCell))) .or. (thickness(iCell) .eq. 0.0_RKIND)) then
                 damage(iCell) = 0.0_RKIND
             end if
          end do
-         ! the damage of grouned ice is kept as 0, 
-         ! as the strain rate calculation is only valid for ice shelf
+         ! the damage of grouneded ice is kept as 0, as the strain rate calculation is only valid for ice shelf
 
-         if (trim(config_damage_gl_setting) == 'extrapolate') then
-             do iCell = 1, nCells
-                if (li_mask_is_grounding_line(cellMask(iCell))) then
-                    
-                    damage_downstream = 0.0_RKIND
-                    n_damage_downstream = 0
-                    do iNeighbor = 1, nEdgesOnCell(iCell)
-                        jCell = cellsOnCell(iNeighbor, iCell)
-                        if (li_mask_is_floating_ice(cellMask(jCell))) then
-                           
-                            damage_downstream = damage_downstream + damage(jCell)
-                            n_damage_downstream =  n_damage_downstream + 1
-                        end if
-                    end do
+        if (trim(config_damage_gl_setting) == 'extrapolate') then
+           do iCell = 1, nCells
+              if (li_mask_is_grounding_line(cellMask(iCell))) then
+                  
+                  damage_downstream = 0.0_RKIND
+                  n_damage_downstream = 0
+                  do iNeighbor = 1, nEdgesOnCell(iCell)
+                      jCell = cellsOnCell(iNeighbor, iCell)
+                      if (li_mask_is_floating_ice(cellMask(jCell))) then
+                         
+                          damage_downstream = damage_downstream + damage(jCell)
+                          n_damage_downstream =  n_damage_downstream + 1
+                      end if
+                  end do
 
-                    damage(iCell) = damage_downstream
+                  damage(iCell) = damage_downstream
 
-                    if (n_damage_downstream == 0) then
-                        damage(iCell) = 0.0_RKIND
-                    else
-                        damage(iCell) = damage_downstream / n_damage_downstream
-                    end if
+                  if (n_damage_downstream == 0) then
+                      damage(iCell) = 0.0_RKIND
+                  else
+                      damage(iCell) = damage_downstream / n_damage_downstream
+                  end if
 
-                end if
-            end do
-            ! set the damage for a cell at the GL to the average damage value for its neighbor cells downstream on the ice shelf 
+              end if
+           end do
+           ! set the damage for a cell at the GL to the average damage value for its neighbor cells downstream on the ice shelf 
 
         elseif (trim(config_damage_gl_setting) == "nye") then
                         
@@ -2078,7 +2045,7 @@ module li_calving
         end if
 
 
-         block => block % next
+        block => block % next
              
       enddo
 
