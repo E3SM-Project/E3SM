@@ -189,7 +189,7 @@
 		            possible_values=".true. or .false."
                 />
 		<nml_option name="config_calculate_damage" type="logical" default_value=".false." units="unitless"
-                        description="If true, then turn on the 'calculate_damage' function."
+                        description="If .true., then turn on the 'calculate_damage' subroutine. Note that setting this to .true. will evolve damage even if damage-based calving is not being used, which is why it is .false. by default (and thus it should explicitly be set to .true. to use damage based calving)."
 		            possible_values=".true. or .false."
                 />
                 <nml_option name="config_damage_preserve_threshold" type="real" default_value="0.0" units="unitless"
