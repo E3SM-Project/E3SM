@@ -1156,19 +1156,19 @@ contains
           call CH4 (bounds_clump,                                                                  &
                filter(nc)%num_soilc, filter(nc)%soilc,                                             &
                filter(nc)%num_soilp, filter(nc)%soilp,                                             &
-               atm2lnd_vars, lakestate_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
+               atm2lnd_vars, canopystate_vars, soilstate_vars, soilhydrology_vars,                 &
                energyflux_vars, ch4_vars, lnd2atm_vars, alm_fates)
           call t_stopf('ch4')
        end if
 
-         if (use_lake_bgc) then
-            call t_startf('lakech4')
-            call LakeBGCDynamics (bounds_clump,                                             &
-                 filter(nc)%num_lakec, filter(nc)%lakec,                                   &
-                 filter(nc)%num_lakep, filter(nc)%lakep,                                   &
-                 soilstate_vars, lakestate_vars, lakebgc_vars, lnd2atm_vars)
-            call t_stopf('lakech4')
-         end if
+       if (use_lake_bgc) then
+          call t_startf('lakech4')
+          call LakeBGCDynamics (bounds_clump,                                            &
+               filter(nc)%num_lakec, filter(nc)%lakec,                                   &
+               filter(nc)%num_lakep, filter(nc)%lakep,                                   &
+               soilstate_vars, lakestate_vars, lakebgc_vars, lnd2atm_vars)
+          call t_stopf('lakech4')
+       end if
 
        ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
        call t_startf('depvel')
@@ -1372,7 +1372,8 @@ contains
     call lnd2atm(bounds_proc,       &
          atm2lnd_vars, surfalb_vars, frictionvel_vars,    &
          energyflux_vars, solarabs_vars, drydepvel_vars,  &
-         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars)
+         vocemis_vars, dust_vars, ch4_vars, lakebgc_vars, &
+         soilhydrology_vars, lnd2atm_vars)
     call t_stopf('lnd2atm')
 
     ! ============================================================================

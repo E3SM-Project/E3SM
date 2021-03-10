@@ -1103,7 +1103,7 @@ contains
        write(iulog,*) ' anoxia_wtsat (weight anoxia by inundated fraction) = ',anoxia_wtsat
     end if
     if (use_erosion) then
-       write(iulog,*) ' erosion_ccycle = ', erosion_ccycle
+       write(iulog,*) ' ero_ccycle = ', ero_ccycle
     end if
     ! Lakes
     write(iulog,*)

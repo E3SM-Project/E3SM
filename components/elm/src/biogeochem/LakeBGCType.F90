@@ -144,7 +144,7 @@ contains
     ! !USES:
     use elm_varpar     , only : nlevlak, nlevgrnd
     use elm_varpar     , only : ngaslak, nphytolak, nsoilclak
-    use histFileMod    , only : hist_addfld1d
+    use histFileMod    , only : hist_addfld1d, hist_addfld2d
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     !
     ! !ARGUMENTS:
@@ -250,7 +250,7 @@ contains
 
     this%biomas_phyto_col(begc:endc,1:nlevlak,1:nphytolak) = spval
     do k = 1, nphytolak
-       data2dptr => this%lake_bphyto_col(:,:,k)
+       data2dptr => this%biomas_phyto_col(:,:,k)
        write(fieldname, "(A,I0)") 'LAKE_PHYTO', k
        write(longname, "(A,I0)") 'biomass of lake phytoplankton group', k
        call hist_addfld2d (fname=fieldname,  units='gC/m^3', type2d='levlak', &
@@ -277,8 +277,10 @@ contains
     use elm_varpar     , only : nlevlak, nlevgrnd, nlevsoi, nlevsoifl
     use elm_varpar     , only : ngaslak, nphytolak, nsoilclak
     use elm_varpar     , only : more_vertlayers
+    use landunit_varcon, only : istdlak
     use fileutils      , only : getfil
     use ncdio_pio      , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
+    use ncdio_pio      , only : ncd_inqdlen
     !
     ! !ARGUMENTS:
     class(lakebgc_type)         :: this
@@ -287,6 +289,7 @@ contains
     ! !LOCAL VARIABLES:
     integer            :: c, g, l
     integer            :: j, lev
+    integer            :: dimid                         ! dimension id
     logical            :: readvar
     type(file_desc_t)  :: ncid
     character(len=256) :: locfn
@@ -295,6 +298,7 @@ contains
     real(r8) ,pointer  :: dzsoifl    (:)      ! Output: [real(r8) (:)]  original soil thickness 
     real(r8) ,pointer  :: tp2d       (:)      ! read in - TP 
     real(r8) ,pointer  :: ph2d       (:)      ! read in - pH
+    real(r8) ,pointer  :: sdep2d     (:)      ! read in - sediment deposition
     real(r8) ,pointer  :: soilc3d    (:,:)    ! read in - sediment OC
     !-----------------------------------------------------------------------
 
@@ -316,13 +320,13 @@ contains
        ! read in layers, interpolate to high resolution grid later
     end if
 
-    call ncd_io(ncid=ncid, varname='TPlak', flag='read', data=tp2d, dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='LAKE_TP', flag='read', data=tp2d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) tp2d(:) = 0._r8
-    call ncd_io(ncid=ncid, varname='pHlak', flag='read', data=ph2d, dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='LAKE_PH', flag='read', data=ph2d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) ph2d(:) = 7._r8
-    call ncd_io(ncid=ncid, varname='sdeplak', flag='read', data=sdep2d, dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='LAKE_SDEP', flag='read', data=sdep2d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) sdep2d(:) = 0._r8
-    call ncd_io(ncid=ncid, varname='sedClak', flag='read', data=soilc3d, dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='LAKE_SOILC', flag='read', data=soilc3d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) soilc3d(:,:) = 0._r8
  
     call ncd_pio_closefile(ncid)
@@ -454,7 +458,8 @@ contains
     ! Read/Write module information to/from restart file.
     !
     ! !USES:
-    use ncdio_pio       , only : file_desc_t
+    use ncdio_pio       , only : file_desc_t, ncd_double
+    use restUtilMod 
     !
     ! !ARGUMENTS:
     class(lakebgc_type) :: this
@@ -463,6 +468,7 @@ contains
     character(len=*) , intent(in)    :: flag
     !
     ! !LOCAL VARIABLES:
+    logical           :: readvar
     real(r8), pointer :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
     !-----------------------------------------------------------------------
 

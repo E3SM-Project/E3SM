@@ -5,8 +5,12 @@ module LakeBGCDynMod
    ! biogeochemical processes in the lake system (Tan et al., 2015, 2017).
    ! ==============================================================================================
    use shr_kind_mod      , only : r8 => shr_kind_r8
+   use shr_log_mod       , only : errMsg => shr_log_errMsg
+   use decompMod         , only : bounds_type
+   use abortutils        , only : endrun
    use LakeStateType     , only : lakestate_type
    use SoilStateType     , only : soilstate_type
+   use GridcellType      , only : grc_pp
    use TopounitDataType  , only : top_as, top_af
    use LakeBGCType       , only : lakebgc_type
    use lnd2atmType       , only : lnd2atm_type
@@ -31,7 +35,7 @@ module LakeBGCDynMod
    private :: SedimentEbullition 
 
    type, private :: LakeBGCParamsType
-      ! Chla-specific light saturated growth rate (gC g Chl-1 d-1)
+      ! Chla-specific light saturated growth rate (gC (g Chl)-1 d-1)
       real(r8) :: Vchs
       real(r8) :: Vchl
       ! initial slope of P-E curve ((mol photons m-2 s-1)-1 d-1)
@@ -43,10 +47,10 @@ module LakeBGCDynMod
       ! half-saturation for phosphorus limitation (mol/m3)
       real(r8) :: Ktps
       real(r8) :: Ktpl
-      ! surface phytoplankton C:Chla ratio (gC g chl-1)
+      ! surface phytoplankton C:Chla ratio (gC (g chl)-1)
       real(r8) :: C2Chl0s
       real(r8) :: C2Chl0l
-      ! metabolic loss rate coefficient (d-1)
+      ! metabolic loss rate (d-1)
       real(r8) :: Klrs
       real(r8) :: Klrl
       ! phytoplankton resuspension fraction
@@ -57,7 +61,7 @@ module LakeBGCDynMod
       real(r8) :: BOD
       ! ebullition rate (s-1) 
       real(r8) :: Re 
-      ! ice bubble flux and loss rate (s-1)
+      ! ice bubble flux and dissolution rate (s-1)
       real(r8) :: icebflux
       real(r8) :: icebloss
       ! sediment OC decomposition rate through aerobic respiration (s-1) 
@@ -97,8 +101,11 @@ contains
       use elm_varpar         , only : nlevlak, nlevgrnd, nlevsoi
       use elm_varpar         , only : ngaslak, nphytolak, nsoilclak
       use elm_varcon         , only : vkc, grav, denh2o, tfrz, cnfac
+      use elm_varcon         , only : catomw
       use elm_varctl         , only : iulog
       use LakeBGCType        , only : gn2lak, go2lak, gco2lak, gch4lak
+      use LakeBGCType        , only : small_phyto, large_phyto
+      use LakeBGCType        , only : actC, pasC
       use TridiagonalMod     , only : Tridiagonal
       !
       ! !ARGUMENTS:
@@ -119,6 +126,7 @@ contains
       ! !LOCAL VARIABLES:
       integer  :: c, t, g, fc                         ! indices
       integer  :: j, k, r, j0                         ! indices
+      integer  :: dtime                               ! timestep size [seconds]
       real(r8) :: temp, por, depth                    ! auxiliary variables
       real(r8) :: cgas_avg, zsum                      ! auxiliary variables
       real(r8) :: cdep, zsoi_inc                      ! auxiliary variables
@@ -127,6 +135,7 @@ contains
       real(r8) :: Prn2, Prch4, Prtot, Prnet           ! partial pressure (Pa)
       real(r8) :: Psat, Pgas                          ! partial pressure (Pa)
       real(r8) :: dzm, dzp
+      real(r8) :: deficit
       real(r8) :: Hcline, Hsum1, Hsum2
       integer  :: jtop(bounds%begc:bounds%endc)                      ! top level for each column
       integer  :: jwat(bounds%begc:bounds%endc)                      ! top water layer index
@@ -160,6 +169,7 @@ contains
       real(r8) :: vbc(bounds%begc:bounds%endc,1:nlevlak)             ! "c" vector for tridiagonal matrix
       real(r8) :: vbr(bounds%begc:bounds%endc,1:nlevlak)             ! "r" vector for tridiagonal solution
       real(r8) :: vpx(bounds%begc:bounds%endc,1:nlevlak,1:nphytolak)             ! phytoplankton settling velocity (m/s)
+      real(r8) :: sbx(bounds%begc:bounds%endc,1:nlevlak,1:nphytolak)             ! source for whole column (gC/m^3/s)
       real(r8) :: biomas_old(bounds%begc:bounds%endc,1:nlevlak,1:nphytolak)      ! phytoplankton biomass at the last time step (gC/m3)
       real(r8) :: biomas_new(bounds%begc:bounds%endc,1:nlevlak,1:nphytolak)      ! updated phytoplankton biomass (gC/m3)
       real(r8) :: gpp_vr(bounds%begc:bounds%endc,1:nlevlak,1:nphytolak)          ! vertically-resolved primary production (gC/m3/s)
@@ -178,7 +188,7 @@ contains
             t_soisno             => col_es%t_soisno                     , & ! Input: [real(r8) (:,:)] soil (or snow) temperature (Kelvin)
 
             forc_pbot            => top_as%pbot                         , & ! Input: [real(r8) (:)] atmospheric pressure (Pa)
-            forc_wind            => top_as%forc_windbot                 , & ! Input: [real(r8) (:)] horizontal component of wind at atmospheric forcing height (m/s)
+            forc_wind            => top_as%windbot                      , & ! Input: [real(r8) (:)] horizontal component of wind at atmospheric forcing height (m/s)
             forc_po2             => top_as%po2bot                       , & ! Input: [real(r8) (:)] O2 partial pressure (Pa)
             forc_pco2            => top_as%pco2bot                      , & ! Input: [real(r8) (:)] CO2 partial pressure (Pa)      
             forc_pch4            => top_as%pch4bot                      , & ! Input: [real(r8) (:)] CH4 partial pressure (Pa)
@@ -202,7 +212,7 @@ contains
             conc_gas_sed         => lakebgc_vars%conc_sed_col           , & ! Output: [real(r8) (:,:,:)] sediment dissolved gas [mol/m3]
             conc_bubl            => lakebgc_vars%conc_bubl_col          , & ! Output: [real(r8) (:,:,:)] lake bubble gas [mol/m3]
             conc_iceb            => lakebgc_vars%conc_iceb_col          , & ! Output: [real(r8) (:,:)] lake bubble trapped in ice [mol/m2]
-            biomas_bphyto        => lakebgc_vars%biomas_phyto_col       , & ! Output: [real(r8) (:,:,:)] lake phytoplankton biomass [gC/m3]
+            biomas_phyto         => lakebgc_vars%biomas_phyto_col       , & ! Output: [real(r8) (:,:,:)] lake phytoplankton biomass [gC/m3]
             lake_chla            => lakebgc_vars%chla_col               , & ! Output: [real(r8) (:,:)] lake chlorophyll-a [g/m3]
             ch4_sed_diff         => lakebgc_vars%ch4_sed_diff_col       , & ! Output: [real(r8) (:)] lake ch4 diffusion at water-sediment interface [mol/m2/s]
             ch4_surf_diff        => lakebgc_vars%ch4_surf_diff_col      , & ! Output: [real(r8) (:)] lake ch4 diffusion at air-water interface [mol/m2/s]
@@ -241,7 +251,7 @@ contains
          zsum = 0._r8
          jmix(c) = 1
          do j = 1, nlevlak
-            if (zsum>=hmix) then
+            if (zsum>=hmix(c)) then
                exit
             end if
             zsum = zsum + dz_lake(c,j)
@@ -287,7 +297,7 @@ contains
 
          ! record phytoplankton biomass at the last time step
          do j = 1, nlevlak
-            biomass_old(c,j,:) = biomas_phyto(c,j,:)
+            biomas_old(c,j,:) = biomas_phyto(c,j,:)
          end do
 
          ! gas tranfer velocity
@@ -438,7 +448,7 @@ contains
                      (dx(c,j)*(conc_old(c,j+1,k)/qx(c,j+1)-conc_old(c,j,k)/qx(c,j))/dzp - &
                      dx(c,j-1)*(conc_old(c,j,k)/qx(c,j)-conc_old(c,j-1,k)/qx(c,j-1))/dzm)
                else  ! bottom layer
-                  dzm      = zx(c,j) - ax(c,j-1)
+                  dzm      = zx(c,j) - zx(c,j-1)
                   va(c,j)  = -(1._r8-cnfac)/qx(c,j-1)*dtime*dx(c,j-1)/dzm/dzx(c,j)
                   vb(c,j)  = 1._r8 + (1._r8-cnfac)/qx(c,j)*dtime*dx(c,j-1)/dzm/dzx(c,j)
                   vc(c,j)  = 0._r8
@@ -449,21 +459,21 @@ contains
          end do
 
          call Tridiagonal(bounds, 1, nlevlak + nlevsoi, &
-               jtop(bounds%begc:bounds%endc),
+               jtop(bounds%begc:bounds%endc), &
                num_lakec, filter_lakec, &
                va(bounds%begc:bounds%endc, :), &
                vb(bounds%begc:bounds%endc, :), &
                vc(bounds%begc:bounds%endc, :), &
                vr(bounds%begc:bounds%endc, :), &
-               conc_new(bounds%begc:bounds%endc, :, :))
+               conc_new(bounds%begc:bounds%endc, :, k))
 
          ! mixing
          do fc = 1, num_lakec
             c = filter_lakec(fc)
             j0 = jwat(c) 
-            cgas_avg = sum(conc_new(c,j0:jmix,k)*dz_lake(c,j0:jmix)) / &
-               sum(dz_lake(c,j0:jmix))
-            conc_new(c,j0:jmix,k) = cgas_avg
+            cgas_avg = sum(conc_new(c,j0:jmix(c),k)*dz_lake(c,j0:jmix(c))) / &
+               sum(dz_lake(c,j0:jmix(c)))
+            conc_new(c,j0:jmix(c),k) = cgas_avg
          end do
       end do
 
@@ -560,8 +570,8 @@ contains
          if (abs(errch4(c)) < 1.e-8_r8) then
             ch4_surf_diff(c) = ch4_surf_diff(c) - errch4(c)/dtime
          else ! errch4 > 1e-8 mol / m^2 / timestep
-            write(iulog,*)'CH4 Conservation Error in LakeBGCDynamics during nstep, c, errch4 (mol /m^2.timestep)', &
-                 nstep,c,errch4(c)
+            write(iulog,*)'CH4 Conservation Error in LakeBGCDynamics during c, errch4 (mol /m^2.timestep)', &
+                 c,errch4(c)
             g = col_pp%gridcell(c)
             write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
             call endrun(msg=' ERROR: CH4 Conservation Error in CH4Mod during diffusion'//&
@@ -571,7 +581,7 @@ contains
 
       ! Now average up to gridcell for fluxes
       call c2g( bounds, &
-           nem_col(begc:endc), nem_lake_grc(begg:endg),               &
+           nem_col(bounds%begc:bounds%endc), nem_lake_grc(bounds%begg:bounds%endg), &
            c2l_scale_type= 'unity', l2g_scale_type='unity' )
 
       ! solve phytoplankton equations
@@ -589,32 +599,32 @@ contains
                vbb(c,j) = 1._r8
                if (j==1) then ! top layer
                   vba(c,j)  = 0._r8
-                  vbc(c,j)  = 0.5_r8*(1._r8-cnfac)*dtime*vpx(c,j+1)/dzx(c,j)
+                  vbc(c,j)  = 0.5_r8*(1._r8-cnfac)*dtime*vpx(c,j+1,k)/dzx(c,j)
                   vbr(c,j)  = biomas_old(c,j,k) + dtime*sbx(c,j,k) - 0.5_r8*dtime* &
-                     cnfac*vpx(c,j+1)*biomas_old(c,j+1,k)/dzx(c,j)
+                     cnfac*vpx(c,j+1,k)*biomas_old(c,j+1,k)/dzx(c,j)
                else if (j<nlevlak) then
-                  vba(c,j)  = -0.5_r8*(1._r8-cnfac)*dtime*vpx(c,j-1)/dzx(c,j)
-                  vbc(c,j)  = 0.5_r8*(1._r8-cnfac)*dtime*vpx(c,j+1)/dzx(c,j)
+                  vba(c,j)  = -0.5_r8*(1._r8-cnfac)*dtime*vpx(c,j-1,k)/dzx(c,j)
+                  vbc(c,j)  = 0.5_r8*(1._r8-cnfac)*dtime*vpx(c,j+1,k)/dzx(c,j)
                   vbr(c,j)  = biomas_old(c,j,k) + dtime*sbx(c,j,k) - 0.5_r8*dtime* &
-                     cnfac*vpx(c,j+1)*biomas_old(c,j+1,k)/dzx(c,j) + 0.5_r8*dtime* &
-                     cnfac*vpx(c,j-1)*biomas_old(c,j-1,k)/dzx(c,j)
+                     cnfac*vpx(c,j+1,k)*biomas_old(c,j+1,k)/dzx(c,j) + 0.5_r8*dtime* &
+                     cnfac*vpx(c,j-1,k)*biomas_old(c,j-1,k)/dzx(c,j)
                else  ! bottom layer
-                  vba(c,j)  = -0.5_r8*(1._r8-cnfac)*dtime*vpx(c,j-1)/dzx(c,j) 
+                  vba(c,j)  = -0.5_r8*(1._r8-cnfac)*dtime*vpx(c,j-1,k)/dzx(c,j) 
                   vbc(c,j)  = 0._r8
                   vbr(c,j)  = biomas_old(c,j,k) + dtime*sbx(c,j,k) + 0.5_r8*dtime* &
-                     cnfac*vpx(c,j-1)*biomas_old(c,j-1,k)/dzx(c,j)
+                     cnfac*vpx(c,j-1,k)*biomas_old(c,j-1,k)/dzx(c,j)
                end if
             end do
          end do
 
          call Tridiagonal(bounds, 1, nlevlak, &
-               jtop(bounds%begc:bounds%endc),
+               jtop(bounds%begc:bounds%endc), &
                num_lakec, filter_lakec, &
                vba(bounds%begc:bounds%endc, :), &
                vbb(bounds%begc:bounds%endc, :), &
                vbc(bounds%begc:bounds%endc, :), &
                vbr(bounds%begc:bounds%endc, :), &
-               biomas_new(bounds%begc:bounds%endc, :, :))
+               biomas_new(bounds%begc:bounds%endc, :, k))
       end do
 
       ! check negative values and balance
@@ -670,8 +680,8 @@ contains
          if (abs(errbiomas(c)) < 1.e-8_r8) then
             bphyto_dep_tot(c) = bphyto_dep_tot(c) - errbiomas(c)/dtime
          else ! errbiomass > 1e-8 mol / m^2 / timestep
-            write(iulog,*)'Biomass Conservation Error in LakeBGCDynamics during nstep, c, errbiomas (gC/m^2.timestep)', &
-                 nstep,c,errbiomas(c)
+            write(iulog,*)'Biomass Conservation Error in LakeBGCDynamics during c, errbiomas (gC/m^2.timestep)', &
+                 c,errbiomas(c)
             g = col_pp%gridcell(c)
             write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
             call endrun(msg=' ERROR: Biomass Conservation Error in LakeBGCDynamics during deposition'//&
@@ -1009,6 +1019,7 @@ contains
       real(r8) :: temp, por, depth
       real(r8) :: c_n2, c_ch4
       real(r8) :: Hn2, Hch4
+      real(r8) :: Pn2, Pch4
       real(r8) :: Prn2, Prch4, Prtot, Prnet, Psat 
       integer  :: j, t, k
       real(r8) :: eb(1:nlevsoi,1:ngaslak)
@@ -1096,13 +1107,14 @@ contains
                               6.25, 7.0, 7.75, 8.5, 9.25, 10.0/)  ! mm
       !
       ! !LOCAL VARIABLES:
+      integer  :: rindx, locindx
+      integer  :: j, k, t, jtop
+      integer  :: dtime                                           ! timestep size [seconds]
       real(r8) :: pos, pr, vb, temp
       real(r8) :: rr, rmin, rmax
       real(r8) :: drr, dr_tmp1, dr_tmp2
       real(r8) :: dt, tcur, tini
       real(r8) :: numb, pr_tmp
-      integer  :: rindx, locindx
-      integer  :: j, k, t, jtop
       real(r8) :: vsc(1:nlevlak)                                  ! viscosity
       real(r8) :: gama(1:nlevlak)                                 ! bubble tension
       real(r8) :: peclet(1:ngaslak)                               ! Peclet number
@@ -1176,14 +1188,14 @@ contains
 
       do rindx = 1, nrlev
          locindx = nlevlak
-         pos = -lakedpeth(c) 
+         pos = -lakedepth(c) 
          rr = 1e-3_r8 * Rb0(rindx)
          vbg = bgas_rr(nlevlak,:,rindx)
          vbg_init = vbg
          tini = 0._r8
          tcur = 0._r8
          do while (pos<-icethick(c) .and. rr>1e-8_r8 .and. &
-               sum(vbg(:,rindx))>1e-8_r8)
+               sum(vbg)>1e-8_r8)
             if (pos>=-z_lake(c,locindx)+0.5_r8*dz_lake(c,locindx)) then
                bgas_rr(locindx,:,rindx) = 0.5_r8 * (vbg + vbg_init) 
                ex_rr(locindx,:,rindx) = (vbg_init - vbg) / (tcur - tini)
@@ -1195,7 +1207,7 @@ contains
             vb = BuoyantVelocity(rr, vsc(locindx))
             pr = forc_pbot(t) - denh2o*grav*pos + 2*gama(locindx)/rr
             ! bubble number
-            numb = 0.75e-3_r8*rgas*temp/(rpi*pr*rr**3.0)*sum(vbg(:,rindx))
+            numb = 0.75e-3_r8*rgas*temp/(rpi*pr*rr**3.0)*sum(vbg)
             ! gas exchange rate
             peclet = rr * vb / gdiff(locindx,:)
             reynold = peclet / schmidt(locindx,:) 
@@ -1206,7 +1218,7 @@ contains
             end where
             ndm_tmp1 = -4._r8*rpi*rr*gdiff(locindx,:)*nusselt*gsolu(locindx,:)*pr 
             ndm_tmp2 = 4._r8*rpi*rr*gdiff(locindx,:)*nusselt*conc_gas_wat(c,locindx,:)
-            ndm = ndm_tmp1*vbg(:,rindx)/sum(vbg(:,rindx)) + ndm_tmp2
+            ndm = ndm_tmp1*vbg/sum(vbg) + ndm_tmp2
             ! new bubble gas
             vbg = vbg + numb * ndm * dt
             where (vbg<0._r8) vbg = 0._r8    ! remove small negatives
@@ -1246,7 +1258,7 @@ contains
          do j = 1, nlevlak
             conc_bubl(c,j,:) = conc_bubl(c,j,:) + &
                bgas_rr(j,:,rindx) * drr 
-            ex(j,:) = ex(j,:) + ex_rr(j,rindx) * drr
+            ex(j,:) = ex(j,:) + ex_rr(j,:,rindx) * drr
          end do
 
          ! CH4 ebullition at the lake surface
@@ -1268,7 +1280,7 @@ contains
       if (icethick(c)<1.e-8_r8) then
          ch4_surf_ebul(c) = ch4_surf_ebul(c) + conc_iceb(c,gch4lak) * &
             LakeBGCParamsInst%icebflux
-         do k = 1, ngaslake
+         do k = 1, ngaslak
             conc_iceb(c,k) = conc_iceb(c,k) * max(0._r8, &
                (1._r8 - LakeBGCParamsInst%icebflux*dtime))
          end do
@@ -1317,10 +1329,11 @@ contains
       real(r8), parameter :: C2Chlmax(nphytolak) = (/4.8e2_r8, 3.6e2_r8/)     ! maximum carbon to chlorophill ratio (gC g chl-1)
       !
       ! !LOCAL VARIABLES:
-      real(r8) :: tw, c2chl, ipar0
+      real(r8) :: tw, c2chl, chla, ipar0
       real(r8) :: fpar, ftemp, fco2, ftp
       real(r8) :: Vch, phAlpha, phBeta, Ktp
       real(r8) :: C2Chl0
+      real(r8) :: gpp_phyto
       integer  :: j, k
       !-------------------------------------------------------------------- 
 
@@ -1349,7 +1362,7 @@ contains
       do j = 1, nlevlak
 
          lake_chla(c,j) = 0._r8
-         gpp_vr(c,j,:)  = 0._r8
+         gpp_vr(j,:)  = 0._r8
 
          tw = t_lake(c,j) - tfrz
 
@@ -1389,8 +1402,8 @@ contains
             lake_chla(c,j) = lake_chla(c,j) + chla
 
             ! radiation factor
-            fpar = (1.0 - exp(-phAlpha*fsds_vis(c,j)/Vm0)) * &
-               exp(-phBeta*fsds_vis(c,j)/Vm0)
+            fpar = (1.0 - exp(-phAlpha*fsds_vis(c,j)/Vm0(k))) * &
+               exp(-phBeta*fsds_vis(c,j)/Vm0(k))
             
             ! temperature factor
             ftemp = max( 0._r8, ThetaG**(tw-20._r8) - &
@@ -1404,7 +1417,7 @@ contains
 
             gpp_phyto = Vch * fpar * ftemp * fco2 * ftp * chla
 
-            gpp_vr(c,j,k)  = catomw * gpp_phyto
+            gpp_vr(j,k)  = catomw * gpp_phyto
             lake_gpp(c)    = lake_gpp(c) + catomw * gpp_phyto * dz_lake(c,j) 
 
             gsrc(j,go2lak)    = gsrc(j,go2lak)  + gpp_phyto
@@ -1444,6 +1457,7 @@ contains
       !
       ! !LOCAL VARIABLES:
       real(r8) :: tw, phyto_ar 
+      real(r8) :: Klr
       integer  :: j, k
       !-------------------------------------------------------------------- 
 
@@ -1458,7 +1472,7 @@ contains
             icefrac        => lakestate_vars%lake_icefrac_col  , & ! Input: [real(r8) (:,:)] mass fraction of lake layer that is frozen
 
             lake_gpp       => lakebgc_vars%gpp_col             , & ! Input: [real(r8) (:)] depth-integrated gross primary production (gC/m2/s)
-            biomas_bphyto  => lakebgc_vars%biomas_phyto_col    , & ! Input: [real(r8) (:,:,:)] phytoplankton biomass (gC/m3)
+            biomas_phyto  => lakebgc_vars%biomas_phyto_col    , & ! Input: [real(r8) (:,:,:)] phytoplankton biomass (gC/m3)
 
             lake_npp       => lakebgc_vars%npp_col             & ! Output: [real(r8) (:)] depth-integrated net primary production (gC/m2/s)
             )
@@ -1468,7 +1482,7 @@ contains
       
       do j = 1, nlevlak
          
-         bloss_vr(c,j,:) = 0._r8
+         bloss_vr(j,:) = 0._r8
 
          tw = t_lake(c,j) - tfrz
 
@@ -1488,9 +1502,9 @@ contains
             gsnk(j,go2lak)    = gsnk(j,go2lak)  + phyto_ar
             gsrc(j,gco2lak)   = gsrc(j,gco2lak) + phyto_ar
 
-            bloss_vr(c,j,k)   = catomw * phyto_ar / frres(k)
+            bloss_vr(j,k)     = catomw * phyto_ar / frres(k)
             lake_npp(c)       = lake_npp(c) - catomw * phyto_ar * dz_lake(c,j)
-            bphyto_dead(k)    = bphyto_dead(k) + bloss_vr(c,j,k) * (1._r8-frres(k)) * dz_lake(c,j)
+            bphyto_dead(k)    = bphyto_dead(k) + bloss_vr(j,k) * (1._r8-frres(k)) * dz_lake(c,j)
          end do 
       
       end do
@@ -1524,7 +1538,7 @@ contains
       !
       ! !LOCAL VARIABLES:
       real(r8) :: tw, ts, c_o2
-      real(r8) :: ThetaCM, Ko2CM, BOD, Rca 
+      real(r8) :: ThetaCM, BOD, Rca 
       real(r8) :: pco2_soilc, pco2_BOD
       integer  :: j, k
       !-------------------------------------------------------------------- 
@@ -1574,7 +1588,7 @@ contains
          do k = 1, nsoilclak
             if (k==pasC) then
                Rca = LakeBGCParamsInst%Rcapas
-            else if (k=actC) then
+            else if (k==actC) then
                Rca = LakeBGCParamsInst%Rcaact
             end if
             pco2_soilc = Rca * (ThetaCM**(ts-20._r8)) * (c_o2/(Ko2CM+c_o2)) * &
@@ -1656,7 +1670,7 @@ contains
       else
          gsrc(1:nlevlak,gch4lak) = 0._r8
          ch4_prod_wat(c,:) = 0._r8
-      end do
+      end if
 
       ! pH factor (borrowed from wetland CH4 model)
       if (lake_ph(c)>pHmin .and. lake_ph(c)<pHmax) then

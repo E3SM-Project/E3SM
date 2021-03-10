@@ -247,6 +247,7 @@ contains
          lake_icefrac    =>   lakestate_vars%lake_icefrac_col      , & ! Output: [real(r8) (:,:) ]  col mass fraction of lake layer that is frozen
          lake_icethick   =>   lakestate_vars%lake_icethick_col     , & ! Output: [real(r8) (:)   ]  col ice thickness (m) (integrated if lakepuddling)
          savedtke1       =>   lakestate_vars%savedtke1_col         , & ! Output: [real(r8) (:)   ]  col top level eddy conductivity (W/mK)      
+         lake_hmix       =>   lakestate_vars%lake_hmix_col         , & ! Output: [real(r8) (:)   ]  col mixing depth (m) 
          lake_kme        =>   lakestate_vars%lake_kme_col          , & ! Output: [real(r8) (:,:) ]  col molecular + eddy diffusion coefficient (m**2/s) 
          lake_fsds_vis   =>   lakestate_vars%lake_fsds_vis_col     , & ! Output: [real(r8) (:,:) ]  col incident vis radiation (W/m^2)
 
@@ -287,6 +288,7 @@ contains
        esum2(c) = 0._r8
        hc_soisno(c) = 0._r8
        hc_soi(c)    = 0._r8
+       lake_hmix(c) = 0._r8
        jconvect(c) = 0
        jconvectbot(c) = nlevlak+1
        bottomconvect(bounds%begc:bounds%endc) = .false.
@@ -784,6 +786,7 @@ contains
                 iceav(c) = iceav(c) + lake_icefrac(c,i)*dz_lake(c,i)
                 nav(c) = nav(c) + dz_lake(c,i)
                 jconvect(c) = j+1
+                lake_hmix(c) = z_lake(c,jconvect(c)) + 0.5_r8*dz_lake(c,jconvect(c))
              end if
           end do
        end do

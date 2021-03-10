@@ -1972,4 +1972,13 @@ Toggle to turn on the soil erosion model.
 Toggle to turn on the soil erosion and OM pools feedback.
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- Namelist options for lake biogeochemical model                                            -->
+<!-- ========================================================================================  -->
+
+<entry id="use_lake_bgc" type="logical" category="bgc"
+       group="elm_inparm" valid_values="" value=".false.">
+Toggle to turn on the lake biogeochemical model.
+</entry>
+
 </namelist_definition>
