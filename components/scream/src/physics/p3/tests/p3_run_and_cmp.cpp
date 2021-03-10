@@ -125,7 +125,6 @@ struct Baseline {
     EKAT_REQUIRE_MSG( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
 
-    // These times are thrown out, I just wanted to be able to use auto
     Int total_duration_microsec = 0;
 
     for (auto ps : params_) {
@@ -137,7 +136,7 @@ struct Baseline {
 
         if (m_repeat > 0 && r == -1) {
           std::cout << "Running P3 with ni=" << d->ncol << ", nk=" << d->nlev
-                    << ", dt=" << d->dt << ", ts=" << d->it << " predict_nc=" << d->do_predict_nc;
+                    << ", dt=" << d->dt << ", ts=" << d->it << ", predict_nc=" << d->do_predict_nc;
 
           if (!use_fortran) {
             std::cout << ", small_packn=" << SCREAM_SMALL_PACK_SIZE;

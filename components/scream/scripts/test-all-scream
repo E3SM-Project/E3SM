@@ -3,8 +3,8 @@
 """
 Drive ctest testing of scream for a complete set of tests. This will be our
 gold standard to determine if the code is working or not on the current platform.
-
-Run from $scream-repo/components/scream
+For batch machines, this script expects to already be on a compute node; it does not
+do batch submissions.
 
 IMPORTANT: the default behavior of this script *changes your environment*,
            by loading machine-specific modules and setting machine-specific
@@ -26,18 +26,30 @@ def parse_command_line(args, description):
 OR
 {0} --help
 
-\033[1mEXAMPLES:\033[0m
-    \033[1;32m# Run all tests on current machine \033[0m
+\033[1mEXAMPLES (assumes user is on machine melvin):\033[0m
+    \033[1;32m# Run all tests on current machine using the SCREAM-approved env for this machine (this is the default env behavior) and your origin/master common ancestor for baseline generation (the default baseline behavior) \033[0m
     > cd $scream_repo/components/scream
-    > ./scripts/{0} --cxx-compiler $(which mpicxx) --f90-compiler $(which mpifort) -m melvin
+    > ./scripts/{0} -m melvin
 
-    \033[1;32m# Run all tests on current machine with custom flags *using machine's default environment* \033[0m
+    \033[1;32m# Run all tests on current machine with defaut behavior except using your current shell env \033[0m
     > cd $scream_repo/components/scream
-    > ./scripts/{0} --cxx-compiler $(which mpicxx) --f90-compiler $(which mpifort) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
+    > ./scripts/{0} --preserve-env -m melvin
 
-    \033[1;32m# Run all tests on current machine with custom flags *but preserving user environment* \033[0m
+    \033[1;32m# Run all tests on current machine with default behavior except using a custom ref for baseline generation\033[0m
     > cd $scream_repo/components/scream
-    > ./scripts/{0} --cxx-compiler $(which mpicxx) --f90-compiler --preserve-env $(which mpifort) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
+    > ./scripts/{0} -m melvin -b BASELINE_REF
+
+    \033[1;32m# Run all tests on current machine with default behavior except using pre-existing baselines (skips baseline generation) \033[0m
+    > cd $scream_repo/components/scream
+    > ./scripts/{0} -m melvin --baseline-dir=PATH_TO_BASELINES
+
+    \033[1;32m# Run only the dbg test on current machine with default behavior otherwise\033[0m
+    > cd $scream_repo/components/scream
+    > ./scripts/{0} -m melvin -t dbg
+
+    \033[1;32m# Run all tests on current machine with default behavior on a repo with uncommitted changes\033[0m
+    > cd $scream_repo/components/scream
+    > ./scripts/{0} -m melvin -k -b HEAD
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter

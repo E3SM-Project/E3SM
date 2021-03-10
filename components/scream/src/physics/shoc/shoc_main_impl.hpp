@@ -308,14 +308,14 @@ Int Functions<S,D>::shoc_main(
   view_3d<Spack>
     X1_d("X1",shcol,nlev,ekat::npack<Spack>(2));
 
-  // Start timer
-  auto start = std::chrono::steady_clock::now();
-
-  // SHOC main loop
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
   ekat::WorkspaceManager<Spack, Device> workspace_mgr(nlevi_packs, 12, policy);
 
+  // Start timer
+  auto start = std::chrono::steady_clock::now();
+
+  // SHOC main loop
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 

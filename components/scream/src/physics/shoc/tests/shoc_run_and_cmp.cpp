@@ -93,26 +93,59 @@ static Int compare (const std::string& label, const Scalar* a,
 
 struct Baseline {
 
-  // Number of iterations (nadv steps of size dtime per iteration).
-  const int num_iters = 10;
-
-  Baseline () {
-    //                 ic, shcol, nlev, num_qtracers, nadv, dtime
-    params_.push_back({ic::Factory::standard, 8, 72, 3, 15, 150});
+  Baseline (const Int num_iters, const Int shcol, const Int repeat) :
+    m_num_iters(num_iters), // Number of iterations (nadv steps of size dtime per iteration).
+    m_repeat(repeat)
+  {
+    //                 ic,                    shcol, nlev, num_qtracers, nadv, dtime
+    params_.push_back({ic::Factory::standard, shcol, 72,   3,            15,   150});
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
     auto fid = ekat::FILEPtr(fopen(filename.c_str(), "w"));
     EKAT_REQUIRE_MSG( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
+
+    // These times are thrown out, I just wanted to be able to use auto
+    auto start = std::chrono::steady_clock::now(), finish = start;
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+
     for (auto ps : params_) {
-      // Run reference shoc on this set of parameters.
-      const auto d = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
-      set_params(ps, *d);
-      shoc_init(ps.nlev, use_fortran);
-      for (int it = 0; it < num_iters; ++it) {
-        shoc_main(*d);
-        write(fid, d);
+      for (Int r = -1; r < m_repeat; ++r) {
+        // Run reference shoc on this set of parameters.
+        const auto d = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
+        set_params(ps, *d);
+        shoc_init(ps.nlev, use_fortran);
+
+        if (m_repeat > 0 && r == -1) {
+          std::cout << "Running SHOC with ni=" << d->shcol << ", nk=" << d->nlev
+                    << ", dt=" << d->dtime << ", ts=" << m_num_iters;
+
+          if (!use_fortran) {
+            std::cout << ", small_packn=" << SCREAM_SMALL_PACK_SIZE;
+          }
+          std::cout << std::endl;
+        }
+
+        for (int it = 0; it < m_num_iters; ++it) {
+          start  = std::chrono::steady_clock::now();
+
+          shoc_main(*d);
+
+          if (r != -1 && m_repeat > 0) { // do not count the "cold" run
+            finish = std::chrono::steady_clock::now();
+            duration += std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+          }
+
+          if (m_repeat == 0) {
+            write(fid, d);
+          }
+        }
+      }
+      if (m_repeat > 0) {
+        const double report_time = (1e-6*duration.count()) / m_repeat;
+
+        printf("Time = %1.3e seconds\n", report_time);
       }
     }
     return nerr;
@@ -134,7 +167,7 @@ struct Baseline {
         const auto d = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
         shoc_init(ps.nlev, use_fortran);
-        for (int it = 0; it < num_iters; it++) {
+        for (int it = 0; it < m_num_iters; it++) {
           std::cout << "--- checking case # " << case_num << ", timestep # = " << (it+1)*ps.nadv
                      << " ---\n" << std::flush;
           read(fid, d_ref);
@@ -149,6 +182,7 @@ struct Baseline {
   }
 
 private:
+  Int m_num_iters, m_repeat;
 
   struct ParamSet {
     ic::Factory::IC ic;
@@ -207,14 +241,21 @@ int main (int argc, char** argv) {
     std::cout <<
       argv[0] << " [options] baseline-filename\n"
       "Options:\n"
-      "  -g        Generate baseline file.\n"
-      "  -f        Use fortran impls instead of c++.\n"
-      "  -t <tol>  Tolerance for relative error.\n";
+      "  -g          Generate baseline file.\n"
+      "  -f          Use fortran impls instead of c++.\n"
+      "  -t <tol>    Tolerance for relative error.\n"
+      "  -s <steps>  Number of timesteps. Default=10.\n"
+      "  -i <cols>   Number of columns(shcol). Default=8.\n"
+      "  -r <repeat> Number of repetitions, implies timing run (generate + no I/O). Default=0.\n";
+
     return 1;
   }
 
   bool generate = false, use_fortran = false;
   scream::Real tol = 0;
+  Int num_iters = 10;
+  Int shcol = 8;
+  Int repeat = 0;
   for (int i = 1; i < argc-1; ++i) {
     if (ekat::argv_matches(argv[i], "-g", "--generate")) generate = true;
     if (ekat::argv_matches(argv[i], "-f", "--fortran")) use_fortran = true;
@@ -223,6 +264,24 @@ int main (int argc, char** argv) {
       ++i;
       tol = std::atof(argv[i]);
     }
+    if (ekat::argv_matches(argv[i], "-s", "--steps")) {
+      expect_another_arg(i, argc);
+      ++i;
+      num_iters = std::atoi(argv[i]);
+    }
+    if (ekat::argv_matches(argv[i], "-i", "--shcol")) {
+      expect_another_arg(i, argc);
+      ++i;
+      shcol = std::atoi(argv[i]);
+    }
+    if (ekat::argv_matches(argv[i], "-r", "--repeat")) {
+      expect_another_arg(i, argc);
+      ++i;
+      repeat = std::atoi(argv[i]);
+      if (repeat > 0) {
+        generate = true;
+      }
+    }
   }
 
   // Decorate baseline name with precision.
@@ -230,7 +289,7 @@ int main (int argc, char** argv) {
   baseline_fn += std::to_string(sizeof(scream::Real));
 
   scream::initialize_scream_session(argc, argv); {
-    Baseline bln;
+    Baseline bln(num_iters, shcol, repeat);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
       nerr += bln.generate_baseline(baseline_fn, use_fortran);

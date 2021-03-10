@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 """
 Given an XML file containing the CF conventions for standardized field names
@@ -8,10 +8,36 @@ file with the same information.
 Usage: cf-xml-to-yaml <cf-xml-file>
 """
 
-import sys, os
+import sys, os, argparse
 from math import *
 
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <xmlfile>
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Convert FILE to YAML \033[0m
+    > {0} FILE
+""".format(os.path.basename(args[0])),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("xmlfile",
+                        help="The path to the xml file. Expects a .xml extension. "
+                        "The YAML output file will be the same except using a .yaml extension")
+
+    args = parser.parse_args(args[1:])
+
+    return args
+
+###############################################################################
 class Entry:
+###############################################################################
     def __init__(self, id=None, units="", description=""):
         self.id = id
         self.units = units
@@ -66,18 +92,23 @@ def write_cf_yaml(entries, yaml_file):
             f.write('\n\n')
 
 ###############################################################################
-def main(description):
+def cf_xml_to_yaml(xmlfile):
 ###############################################################################
-    if len(sys.argv) < 2:
-        print(description)
-        exit(1)
-
     xml_file = sys.argv[1]
     yaml_file = xml_file.replace('.xml', '.yaml')
     entries = parse_cf_xml(xml_file)
     write_cf_yaml(entries, yaml_file)
 
+    return True
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    success = cf_xml_to_yaml(**vars(parse_command_line(sys.argv, description)))
+
+    sys.exit(0 if success else 1)
+
 ###############################################################################
 
 if (__name__ == "__main__"):
-    main(__doc__)
+    _main_func(__doc__)
