@@ -149,7 +149,7 @@ OPTIONS
      -pbl <name>        Specify the PBL option [uw | hb | hbr].
      -pcols <n>         Set maximum number of columns in a chunk to <n>.
      -pergro            Switch enables building EAM for perturbation growth tests.
-     -phys <name>       Physics option [cam3 | cam4 | cam5 | cam5.4 | ideal | adiabatic | default]
+     -phys <name>       Physics option [ideal | adiabatic | default]
      -prog_species <list>Comma-separate list of prognostic mozart species packages.
                         Currently available: DST,SSLT,SO4,GHG,OC,BC,CARBON16
      -psubcols <n>      Maximum number of sub-columns in a run - set to 1 if not using sub-columns (default)
@@ -452,31 +452,20 @@ EOF
 # defaults, it must be decided which chemistry package is used before
 # initializing the configuration object.  But the default chemistry depends
 # on the physics package.  So we start by setting the physics package.
-
-# The default physics package is cam5.4.  Physics packages >=cam5 use chemistry packages
-# that include modal aerosols, i.e., the -chem value matches /_mam/.  If the chem_pkg
-# name doesn't match /_mam/ then set the default physics package to cam4.
 my $phys_pkg = 'default';
-if (defined $opts{'chem'} and $opts{'chem'} !~ /_mam/) {$phys_pkg = 'cam4';}
-
 if (defined $opts{'phys'}) {
     $phys_pkg = lc($opts{'phys'});
 }
-
 if ($print>=2) { print "Physics package: $phys_pkg$eol"; }
 
 # Next set the default chemistry package.
-my $chem_pkg = 'trop_mam4';
-if (defined $opts{'prog_species'}) {
-    $chem_pkg = 'none';
-}
+my $chem_pkg = 'trop_mam3';
 
 # Change the default if user has specified a non-default physics package.
-if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
+if ($phys_pkg =~ m/^ideal$|^adiabatic$/) {
     $chem_pkg = 'none';
-}
-elsif ($phys_pkg eq 'default') {
-    $chem_pkg = 'trop_mam3';
+} elsif (defined $opts{'prog_species'}) {
+    $chem_pkg = 'none';
 }
 
 # Allow the user to override the default chemistry via the commandline.
@@ -487,19 +476,11 @@ if (defined $opts{'chem'}) {
 
     # If the user has specified adiabatic or ideal physics...
     if ($phys_pkg eq 'ideal' or $phys_pkg eq 'adiabatic') {
-
-	# the only valid chemistry option is 'none'
-	if ($chem_pkg ne 'none') {
-	    die "configure ERROR: -phys is set to $opts{'phys'}.\n".
-		"                 -chem can only be set to 'none'.\n";
-	}
-    }
-    elsif ($phys_pkg eq 'cam3' or $phys_pkg eq 'cam4') {
-        # The modal aerosols are not valid with cam3 or cam4 physics
-	if ($chem_pkg =~ /_mam/) {
-            die "configure ERROR: -phys is set for cam3 or cam4 physics.\n".
-		"                 -chem cannot be set to a modal aerosol option.\n";
-	}
+        # the only valid chemistry option is 'none'
+        if ($chem_pkg ne 'none') {
+            die "configure ERROR: -phys is set to $opts{'phys'}.\n".
+                "                 -chem can only be set to 'none'.\n";
+        }
     }
 }
 
@@ -512,10 +493,7 @@ if ($print>=2) { print "Chemistry package: $chem_pkg$eol"; }
 my $config_defaults_file;
 if    ($opts{'defaults'})                    {$config_defaults_file = $opts{'defaults'}}
 elsif ($opts{'waccmx'})                      {$config_defaults_file = 'config_files/defaults_waccmx.xml'}
-elsif ($chem_pkg =~ /waccm_/) {
-    if ($phys_pkg eq 'cam4')                 {$config_defaults_file = 'config_files/defaults_waccm.xml'}
-    else                                     {$config_defaults_file = 'config_files/defaults_waccm5.xml'}
-}
+elsif ($chem_pkg =~ /waccm_/)                {$config_defaults_file = 'config_files/defaults_waccm5.xml'}
 elsif ($opts{'dyn'}  eq 'eul')               {$config_defaults_file = 'config_files/defaults_eul.xml'}
 elsif ($opts{'dyn'}  eq 'sld')               {$config_defaults_file = 'config_files/defaults_sld.xml'}
 elsif ($opts{'dyn'}  eq 'se')                {$config_defaults_file = 'config_files/defaults_se.xml'}
@@ -954,11 +932,10 @@ if (defined $opts{'clubb_sgs'}) {
     $microphys_pkg = 'mg2';
 }
 
-# But if the physics package is adiabatic, ideal, cam3, cam4, change the default
-if ($phys_pkg =~ m/^ideal$|^adiabatic$|^cam[34]$/) {
+# But if the physics package is adiabatic, ideal, change the default
+if ($phys_pkg =~ m/^ideal$|^adiabatic$/) {
     $microphys_pkg = 'rk';
-}
-elsif ($phys_pkg eq 'default' and !defined $opts{'clubb_sgs'}) {
+} elsif ($phys_pkg eq 'default' and !defined $opts{'clubb_sgs'}) {
     $microphys_pkg = 'mg1';
 }
 
@@ -1011,35 +988,26 @@ if ($print>=2) { print "clubb_do_adv=',$clubb_do_adv,$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Macro-physics package
 
-# Set default
 my $macrophys_pkg = 'park';
-if ($phys_pkg =~ /cam[34]/) {$macrophys_pkg = 'rk';}
-elsif ($phys_pkg =~ /ideal|adiabatic/) {$macrophys_pkg = 'none';}
-if ($clubb_sgs == 1) {
-  $macrophys_pkg = 'clubb_sgs';
-}
-
+if ($phys_pkg =~ /ideal|adiabatic/) { $macrophys_pkg = 'none'; }
+if ($clubb_sgs == 1) { $macrophys_pkg = 'clubb_sgs'; }
 $cfg_ref->set('macrophys', $macrophys_pkg);
-
 if ($print>=2) { print "Macrophysics package: $macrophys_pkg$eol"; }
-
 
 #-----------------------------------------------------------------------------------------------
 # PBL package
 
 # Set default:
 my $pbl_pkg = 'uw';
-if ($phys_pkg =~ m/ideal|adiabatic|cam3|cam4/) {
+if ($phys_pkg =~ m/ideal|adiabatic/) {
     $pbl_pkg = 'hb';
 }
-if ($clubb_sgs == 1) {
-  $pbl_pkg = 'clubb_sgs';
-}
+
+# Override if using CLUBB
+if ($clubb_sgs == 1) { $pbl_pkg = 'clubb_sgs'; }
 
 # Allow the user to override the default via the commandline.
-if (defined $opts{'pbl'}) {
-    $pbl_pkg = lc($opts{'pbl'});
-}
+if (defined $opts{'pbl'}) { $pbl_pkg = lc($opts{'pbl'}); }
 
 # consistency checks...
 
@@ -1060,24 +1028,11 @@ if ($print>=2) { print "Using $pbl_pkg PBL scheme.$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Radiation package
 
-# Set default
-my $rad_pkg = 'rrtmg';
-
 # Allow the user to override the default via the commandline.
+my $rad_pkg = 'rrtmg';
 if (defined $opts{'rad'}) {
     $rad_pkg = lc($opts{'rad'});
 }
-
-# consistency checks...
-if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
-
-    # The rrtmg package doesn't work with the CAM3 prescribed aerosols
-    if ($phys_pkg eq 'cam3') {
-        die "configure ERROR: radiation package: $rad_pkg is not compatible\n".
-            "                 with physics package $phys_pkg\n";
-    }
-}
-
 $cfg_ref->set('rad', $rad_pkg);
 
 if ($print>=2) { print "Radiation package: $rad_pkg$eol"; }
@@ -1168,11 +1123,10 @@ if ($print>=2) { print "Land package: $lnd_pkg$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Sea ice model
 my $ice_pkg = 'cice';
-# If the physics package is adiabatic, ideal, or cam3, change the default
+# If the physics package is adiabatic or ideal, change the default
 if ($phys_pkg =~ m/ideal|adiabatic/) {
     $ice_pkg = 'sice';
-}
-elsif ($ocn_pkg eq 'aquaplanet') {
+} elsif ($ocn_pkg eq 'aquaplanet') {
     $ice_pkg = 'sice';
 }
 
@@ -1348,26 +1302,6 @@ if ($print>=2) { print "Maximum number of sub-columns per column: $psubcols$eol"
 # Number of vertical levels
 if (defined $opts{'nlev'}) {
     $cfg_ref->set('nlev', $opts{'nlev'});
-}
-else {
-
-    # The default nlev value for waccm comes from the defaults_waccm*.xml files.
-    # Otherwise set it here:
-    if ($chem_pkg !~ m/waccm/i) {
-
-        # Set the default value nlev=30.  This will be used for ideal and
-        # adiabatic physics as well as cam5.  We may change this to 32 once
-        # IC files are available.
-        $cfg_ref->set('nlev', 30);
-
-	if ($phys_pkg eq 'cam3' or $phys_pkg eq 'cam4') {
-	    $cfg_ref->set('nlev', 26);
-	}
-        elsif ($phys_pkg eq 'cam5.4') {
-	    $cfg_ref->set('nlev', 32);
-        }
-    }
-
 }
 my $nlev = $cfg_ref->get('nlev');
 
