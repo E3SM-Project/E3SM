@@ -1194,6 +1194,7 @@ contains
             end do
          end do
          ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
+         vertVelocityTop(1:minLevelCell(iCell)-1, iCell) = 0.0_RKIND
          vertVelocityTop(maxLevelCell(iCell)+1, iCell) = 0.0_RKIND
          do k = maxLevelCell(iCell), 1, -1
             vertVelocityTop(k,iCell) = vertVelocityTop(k+1,iCell) - div_hu(k)
