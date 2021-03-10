@@ -10,7 +10,7 @@ module EcosystemBalanceCheckMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
-  use elm_varctl          , only : iulog, use_nitrif_denitrif, use_fates
+  use elm_varctl          , only : iulog, use_fates
   use clm_time_manager    , only : get_step_size,get_nstep
   use elm_varpar          , only : crop_prog
   use CNCarbonFluxType    , only : carbonflux_type
@@ -447,21 +447,17 @@ contains
             
             col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
          else
-            if (.not. use_nitrif_denitrif) then
+
+            col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
+            
+            if(use_pflotran .and. pf_cmode) then
+               ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
                col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
             else
-               col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
-               
-               if(use_pflotran .and. pf_cmode) then
-                  ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
-                  col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
-               else
-                  
-                  col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
-                  
-               endif
-               
-            end if
+               col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
+            endif
+            
+
          endif
 
          col_noutputs(c) = col_noutputs(c) + &

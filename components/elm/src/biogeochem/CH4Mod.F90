@@ -17,7 +17,7 @@ module CH4Mod
   use elm_varcon         , only : catomw, s_con, d_con_w, d_con_g, c_h_inv, kh_theta, kh_tbase
   use landunit_varcon    , only : istdlak
   use clm_time_manager   , only : get_step_size, get_nstep
-  use elm_varctl         , only : iulog, use_cn, use_nitrif_denitrif, use_lch4
+  use elm_varctl         , only : iulog, use_cn, use_lch4
   use abortutils         , only : endrun
   use decompMod          , only : bounds_type
   use SharedParamsMod  , only : ParamsShareInst
@@ -2196,11 +2196,9 @@ contains
             end if
 
             ! Add oxygen demand for nitrification
-            if (use_nitrif_denitrif) then
-               if (.not. lake .and. j<= nlevdecomp_full ) then
-                  o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + pot_f_nit_vr(c,j) * 2.0_r8/14.0_r8
-                  ! g N/m^3/s           mol O2 / g N
-               end if
+            if (.not. lake .and. j<= nlevdecomp_full ) then
+               o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + pot_f_nit_vr(c,j) * 2.0_r8/14.0_r8
+               ! g N/m^3/s           mol O2 / g N
             end if
 
             if (j  >  jwt(c)) then ! Below the water table so anaerobic CH4 production can occur

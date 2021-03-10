@@ -263,7 +263,7 @@ contains
     namelist /elm_inparm/ maxpatch_pft
 
     namelist /elm_inparm/ &
-         use_nofire, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_extralakelayers, &
+         use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
          use_snicar_ad, use_vancouver, use_mexicocity, use_noio
 
@@ -482,9 +482,6 @@ contains
 
             if (use_pflotran) then
                 use_elm_bgc = .false.
-                ! enable 'use_nitrif_denitrif' to initilize Nh4 & NO3 pools,
-                ! but NOT to implement 'nitrif_denitrif'
-                use_nitrif_denitrif = .true.
             end if
        end if
 
@@ -633,7 +630,6 @@ contains
 
     call mpi_bcast (use_nofire, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_lch4, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (use_nitrif_denitrif, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_vertsoilc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_extralakelayers, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_vichydro, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -744,7 +740,7 @@ contains
        call mpi_bcast (pftspecific_rootingprofile,        1, MPI_LOGICAL,  0, mpicom, ier)
     end if
 
-    if ((use_cn .or. use_fates).and. use_nitrif_denitrif) then 
+    if ((use_cn .or. use_fates)) then 
        call mpi_bcast (no_frozen_nitrif_denitrif,  1, MPI_LOGICAL, 0, mpicom, ier)
     end if
 
@@ -897,7 +893,6 @@ contains
     write(iulog,*) 'process control parameters:'
     write(iulog,*) '    use_nofire = ', use_nofire
     write(iulog,*) '    use_lch4 = ', use_lch4
-    write(iulog,*) '    use_nitrif_denitrif = ', use_nitrif_denitrif
     write(iulog,*) '    use_vertsoilc = ', use_vertsoilc
     write(iulog,*) '    use_var_soil_thick = ', use_var_soil_thick
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
@@ -978,10 +973,6 @@ contains
        write(iulog, *) '   dynamic roots                                         : ', use_dynroot
     end if
        
-    if (use_cn .and. .not. use_nitrif_denitrif) then
-       write(iulog, *) '   no_frozen_nitrif_denitrif                             : ', no_frozen_nitrif_denitrif
-    end if
-
     if (use_cn) then
        write(iulog, *) '  use_c13                                                : ', use_c13
        write(iulog, *) '  use_c14                                                : ', use_c14
