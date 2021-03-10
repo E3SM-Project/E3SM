@@ -45,16 +45,18 @@ void Functions<S,D>::shoc_grid(
     auto range_pack_m1 = range_pack;
     // index for _km1 should never go below 0
     range_pack_m1.set(range_pack < 1, 1);
+    // and index for kp1 should never go above nlevi-1
+    range_pack.set(range_pack>=(nlevi-1),nlevi-2);
 
-    ekat::index_and_shift<1>(s_zi_grid, range_pack, zi_grid_k, zi_grid_kp1);
+    ekat::index_and_shift< 1>(s_zi_grid, range_pack,    zi_grid_k, zi_grid_kp1);
     ekat::index_and_shift<-1>(s_zt_grid, range_pack_m1, zt_grid_k, zt_grid_km1);
 
     // Define thickness of the thermodynamic gridpoints
     dz_zt(k) = zi_grid_k - zi_grid_kp1;
 
     // Define thickness of the interface grid points
+    dz_zi(k) = zt_grid_km1 - zt_grid_k;
     dz_zi(k).set(range_pack == 0, 0);
-    dz_zi(k).set(range_pack > 0, zt_grid_km1 - zt_grid_k);
 
     // Define the air density on the thermo grid
     rho_zt(k) = (1/ggr)*(pdel(k)/dz_zt(k));
