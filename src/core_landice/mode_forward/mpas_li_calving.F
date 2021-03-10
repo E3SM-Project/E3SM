@@ -1763,7 +1763,10 @@ module li_calving
          if (thickness(iCell) == 0.0_RKIND) then
              damageSource(iCell) = 0.0_RKIND
          else
-             damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*eMax(iCell)-floatingBasalMassBal(iCell)/config_ice_density/(thickness(iCell))
+             damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*eMax(iCell)-floatingBasalMassBal(iCell)/config_ice_density/thickness(iCell)
+             ! RHS of equation 26 from Bassis and Ma (2015, EPSL, 409, C). Note that the last set of terms after the minus sign, 
+             ! mdot / rho_i / H, differs from the mdot/H in the paper because our mdot has units of kg/m^2/s and to convert that back
+             ! to the right units (1/sec) you need to multiply by a factor of m^2/kg (1/rho_i * 1/H gives that factor). 
          endif
          enddo
 
