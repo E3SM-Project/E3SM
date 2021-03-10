@@ -572,6 +572,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(r8), pointer :: snow_sed(:)         ! snow from cloud ice sedimentation         [m/s]
    real(r8), pointer :: snow_str(:)         ! snow from stratiform cloud                [m/s]
 
+   real(r8), pointer :: ttend_dp(:,:)       ! Convective heating for gravity wave drag
+
    integer lchnk                                   ! chunk identifier
    integer ncol                                    ! number of atmospheric columns
    integer nstep                                   ! time steps
@@ -1160,6 +1162,19 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
          call cnst_get_ind( 'VT_Q', idx_vt_q )
          ptend%q(1:ncol,1:pver,idx_vt_t) = crm_output%t_vt_tend(1:ncol,1:pver)
          ptend%q(1:ncol,1:pver,idx_vt_q) = crm_output%q_vt_tend(1:ncol,1:pver)
+      end if
+
+      !---------------------------------------------------------------------------------------------
+      ! set convective heating tendency for gravity wave drag
+      !---------------------------------------------------------------------------------------------
+      ttend_dp_idx = pbuf_get_index('TTEND_DP')
+      if (ttend_dp_idx > 0) then
+         call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
+         if ( allocated(ptend%s) ) then
+            ttend_dp(:state%ncol,:pver) = ptend%s(:state%ncol,:pver)/cpair
+         else
+            ttend_dp(:state%ncol,:pver) = 0.0_r8
+         endif
       end if
 
       !---------------------------------------------------------------------------------------------
