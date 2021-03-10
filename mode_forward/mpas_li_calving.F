@@ -1643,6 +1643,7 @@ module li_calving
       real(kind=RKIND), pointer :: config_damage_preserve_threshold, config_damage_calving_threshold
       character (len=StrKIND), pointer :: config_damage_gl_setting
       real(kind=RKIND), pointer :: config_default_flowParamA   
+      real(kind=RKIND), pointer :: config_flowLawExponent
       character (len=StrKIND), pointer :: config_calving_eigencalving_parameter_source
       logical, pointer :: config_print_calving_info
       real (kind=RKIND), pointer :: config_sea_level
@@ -1683,6 +1684,7 @@ module li_calving
 
       err = 0
 
+      call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
       call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
       call mpas_pool_get_config(liConfigs, 'config_calving_eigencalving_parameter_scalar_value', &
                config_calving_eigencalving_parameter_scalar_value)
@@ -1750,10 +1752,12 @@ module li_calving
              s0 = &
              config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*tauMax*config_ocean_density)
          endwhere
+         ! Compute the hydrostatic to tensile stress ratio (equation 24 from Bassis and Ma, 2015, EPSL, 409, C)
 
          nstar(:) = &
-         12.0_RKIND*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND)/(4.0_RKIND*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND)+6.0_RKIND*alpha(:)**2.0_RKIND) 
-         ! Compute the effective flow law exponent
+         4.0_RKIND*config_flowLawExponent*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND)/(4.0_RKIND*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND) &
+         +3.0_RKIND*(config_flowLawExponent-1.0_RKIND)*alpha(:)**2.0_RKIND) 
+         ! Compute the effective flow law exponent (equation 11 from Bassis and Ma, 2015, EPSL, 409, C)
 
          do iCell = 1, nCells
          if (thickness(iCell) == 0.0_RKIND) then
