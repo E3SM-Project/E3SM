@@ -2430,10 +2430,10 @@ contains
 105 format( A, i10.8, i8, A, f10.2, A, f10.2, A, A, i5, A, A)
 108 format( A, f10.2, A, i8.8)
 109 format( A, 2f10.3)
-110 format( A, 999999999(A8, i0, A8, i0) )
-111 format( A, 9(A12, i0, A12, i0) )
-112 format( A14, A, 999999999(f13.3, :, ",") )
-113 format( A14, A, 9(f13.3, :, ",") )
+110 format( A,   999999999(:, A8,  i0, A8,  i0) )
+111 format( A,   999999999(:, A12, i0, A12, i0) )
+112 format( A14, 999999999(:, ',', f13.3) )
+113 format( A14, 999999999(:, ',', f13.3) )
 
     call t_startf ('CPL:cime_run_init')
     hashint = 0
@@ -2561,10 +2561,10 @@ contains
           write(c_ymdtod,'(f14.5)') ymd+tod/86400.
           if (info_mprof == 2) then        ! log each task
              !---YMMDD.HHMMSS,--1234.567,--1234.567, msize,mrss (in MB) for each task
-             write(mlog,112) c_ymdtod, ",", &
+             write(mlog,112) c_ymdtod, &
                 (msizeOnTask(i),mrssOnTask(i),i=0,npes_GLOID-1)
           else if (info_mprof == 1) then  ! log ROOTPE tasks only
-             write(mlog,113) c_ymdtod,",", &
+             write(mlog,113) c_ymdtod, &
                 (/msizeOnTask(iam_GLOID), mrssOnTask(iam_GLOID),  &
                 & msizeOnTask(atm_rootpe),mrssOnTask(atm_rootpe), &
                 & msizeOnTask(lnd_rootpe),mrssOnTask(lnd_rootpe), &
@@ -2575,10 +2575,10 @@ contains
                 & msizeOnTask(wav_rootpe),mrssOnTask(wav_rootpe), &
                 & msizeOnTask(iac_rootpe),mrssOnTask(iac_rootpe)/)
           else if (info_mprof == 4) then  ! log each node
-             write(mlog,112) c_ymdtod, ",", &
+             write(mlog,112) c_ymdtod, &
                 (msizeOnNode(i),mrssOnNode(i),i=0,driver_nnodes-1)
           else if (info_mprof == 3) then  ! log ROOTPE nodes
-             write(mlog,113) c_ymdtod, ",", &
+             write(mlog,113) c_ymdtod, &
                 (/msizeOnNode(driver_task_node_map(iam_GLOID)),  &
                 &  mrssOnNode(driver_task_node_map(iam_GLOID)),  &
                 & msizeOnNode(driver_task_node_map(atm_rootpe)), &
@@ -3524,10 +3524,10 @@ contains
                 write(c_ymdtod,'(f14.5)') ymd+tod/86400.
                 if (info_mprof == 2) then      ! log each task
                    !---YMMDD.HHMMSS,--1234.567,--1234.567, msize,mrss (in MB) for each task
-                   write(mlog,112) c_ymdtod, ",", &
+                   write(mlog,112) c_ymdtod, &
                       (msizeOnTask(i),mrssOnTask(i),i=0,npes_GLOID-1)
                 else if (info_mprof == 1) then ! ROOTPEs only
-                   write(mlog,113) c_ymdtod, ",", &
+                   write(mlog,113) c_ymdtod, &
                       (/msizeOnTask(iam_GLOID), mrssOnTask(iam_GLOID),  &
                       & msizeOnTask(atm_rootpe),mrssOnTask(atm_rootpe), &
                       & msizeOnTask(lnd_rootpe),mrssOnTask(lnd_rootpe), &
@@ -3538,10 +3538,10 @@ contains
                       & msizeOnTask(wav_rootpe),mrssOnTask(wav_rootpe), &
                       & msizeOnTask(iac_rootpe),mrssOnTask(iac_rootpe)/)
                 else if (info_mprof == 4) then  ! log each node
-                   write(mlog,112) c_ymdtod, ",", &
+                   write(mlog,112) c_ymdtod, &
                       (msizeOnNode(i),mrssOnNode(i),i=0,driver_nnodes-1)
                 else if (info_mprof == 3) then  ! log ROOTPE nodes
-                   write(mlog,113) c_ymdtod, ",", &
+                   write(mlog,113) c_ymdtod, &
                       (/msizeOnNode(driver_task_node_map(iam_GLOID)),  &
                       &  mrssOnNode(driver_task_node_map(iam_GLOID)),  &
                       & msizeOnNode(driver_task_node_map(atm_rootpe)), &
