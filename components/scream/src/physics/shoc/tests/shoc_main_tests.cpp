@@ -324,8 +324,6 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       ShocMainData(2,   7,  8,  2, 1,  5, 7, 4)
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocMainData);
-
     // Generate random input data
     int count = 0;
     for (auto& d : f90_data) {
@@ -414,6 +412,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
 
     // Verify BFB results, all data should be in C layout
 #ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocMainData);
+
     for (Int i = 0; i < num_runs; ++i) {
       ShocMainData& d_f90 = f90_data[i];
       ShocMainData& d_cxx = cxx_data[i];

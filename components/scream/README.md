@@ -21,3 +21,5 @@ For information about building SCREAM and running its tests, see
 
 You can also take a brief [tour of SCREAM's source tree](docs/source-tree.md).
 
+SCREAM comes with a python-based set of tools that compliments the CIME tool
+suite and also works with standalone SCREAM. See scripts/README.md for more.
