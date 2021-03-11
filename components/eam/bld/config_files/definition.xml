@@ -46,9 +46,11 @@ Physics package: cam3, cam4, cam5, ideal (Held-Suarez forcings), adiabatic, defa
 </entry>
 <entry id="microphys" valid_values="rk,mg1,mg1.5,mg2,none" value="">
 Microphysics package: rk (Rasch and Kristjansson), mg1 (Morrison and Gettelman two moment scheme CAM5.1), mg1.5 (Morrison and Gettelman second version development), mg2 ((Morrison and Gettelman second version).
+A value of "none" indicates no microphysics parameterization is used.
 </entry>
 <entry id="macrophys" valid_values="rk,park,clubb_sgs,none" value="">
 Macrophysics package: RK, Park, CLUBB_SGS.
+A value of "none" indicates no microphysics parameterization is used.
 </entry>
 <entry id="clubb_sgs" valid_values="0,1" value="0">
 Switch to turn on/off CLUBB_SGS package: 0 => no, 1 => yes
@@ -62,6 +64,7 @@ Switch to turn on/off advecting CLUBB moments: 0 => no, 1 => yes
 <entry id="pbl" valid_values="uw,hb,hbr,clubb_sgs,none" value="">
 PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
  (Holtslag, Boville, and Rasch), clubb_sgs.
+ A value of "none" indicates no PBL parameterization is used.
 </entry>
 <entry id="rad" valid_values="rrtmg,rrtmgp,camrt" value="">
 Radiative transfer calculation: 
