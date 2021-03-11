@@ -8,7 +8,7 @@ FREQUENCY:
   OUT_OPTION: Steps
   OUT_MAX_STEPS: 1
 FIELDS:
-  Number of Fields: 11
+  Number of Fields: 13
   field 1: T_atm
   field 2: T_prev
   field 3: qv_prev
@@ -22,13 +22,13 @@ FIELDS:
   field 11: diag_eff_radius_qc
   field 12: diag_eff_radius_qi
   field 13: precip_total_tend
-#  field : bm
-#  field : nc
-#  field : ni
-#  field : nr
-#  field : qc
-#  field : qi
-#  field : qm
-#  field : qr
-#  field : qv
+  field 14: bm
+  field 15: nc
+  field 16: ni
+  field 17: nr
+  field 18: qc
+  field 19: qi
+  field 20: qm
+  field 21: qr
+  field 22: qv
 ...

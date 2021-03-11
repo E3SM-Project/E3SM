@@ -111,16 +111,18 @@ void AtmosphereInput::pull_input()
           {
             using dev_view_2d_type = typename field_type::view_type<RT**>;
             using host_view_2d_type = typename field_type::HM<dev_view_2d_type>;
-            Kokkos::deep_copy(field.get_reshaped_view<RT**>(),
+            Kokkos::deep_copy(field.get_reshaped_view<RT**,Host>(),
                               host_view_2d_type(temp_view.data(),fl.dim(0),fl.dim(1)+padding));
+            field.sync_to_dev();
             break;
           }
         case 3:
           {
             using dev_view_3d_type = typename field_type::view_type<RT***>;
             using host_view_3d_type = typename field_type::HM<dev_view_3d_type>;
-            Kokkos::deep_copy(field.get_reshaped_view<RT***>(),
+            Kokkos::deep_copy(field.get_reshaped_view<RT***,Host>(),
                               host_view_3d_type(temp_view.data(),fl.dim(0),fl.dim(1),fl.dim(2)+padding));
+            field.sync_to_dev();
             break;
           }
           break;
