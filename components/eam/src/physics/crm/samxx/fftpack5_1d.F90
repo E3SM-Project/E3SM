@@ -83,10 +83,10 @@ subroutine rfft1i ( n, wsave, lensav, ier ) bind(C,name="rfft1i")
 !
   implicit none
 
-  integer ( kind = 4 ) lensav
+  integer ( kind = 4 ), value :: lensav
 
-  integer ( kind = 4 ) ier
-  integer ( kind = 4 ) n
+  integer ( kind = 4 ), value :: ier
+  integer ( kind = 4 ), value :: n
   real ( kind = crm_rknd ) wsave(lensav)
 
   ier = 0
@@ -342,13 +342,13 @@ subroutine rfft1f ( n, inc, r, lenr, wsave, lensav, work, lenwrk, ier ) bind(C,n
 !
   implicit none
 
-  integer ( kind = 4 ) lenr
-  integer ( kind = 4 ) lensav
-  integer ( kind = 4 ) lenwrk
+  integer ( kind = 4 ), value :: lenr
+  integer ( kind = 4 ), value :: lensav
+  integer ( kind = 4 ), value :: lenwrk
 
-  integer ( kind = 4 ) ier
-  integer ( kind = 4 ) inc
-  integer ( kind = 4 ) n
+  integer ( kind = 4 ), value :: ier
+  integer ( kind = 4 ), value :: inc
+  integer ( kind = 4 ), value :: n
   real ( kind = crm_rknd ) work(lenwrk)
   real ( kind = crm_rknd ) wsave(lensav)
   real ( kind = crm_rknd ) r(lenr)
@@ -641,13 +641,13 @@ subroutine rfft1b ( n, inc, r, lenr, wsave, lensav, work, lenwrk, ier ) bind(C,n
 !
   implicit none
 
-  integer ( kind = 4 ) lenr
-  integer ( kind = 4 ) lensav
-  integer ( kind = 4 ) lenwrk
+  integer ( kind = 4 ), value :: lenr
+  integer ( kind = 4 ), value :: lensav
+  integer ( kind = 4 ), value :: lenwrk
 
-  integer ( kind = 4 ) ier
-  integer ( kind = 4 ) inc
-  integer ( kind = 4 ) n
+  integer ( kind = 4 ), value :: ier
+  integer ( kind = 4 ), value :: inc
+  integer ( kind = 4 ), value :: n
   real ( kind = crm_rknd ) r(lenr)
   real ( kind = crm_rknd ) work(lenwrk)
   real ( kind = crm_rknd ) wsave(lensav)

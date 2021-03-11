@@ -646,11 +646,11 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('V_TEND_ESMT',crm_output%v_tend_esmt, pcols, lchnk )
 #endif /* MMF_ESMT */
 
-#if defined( MMF_MOMENTUM_FEEDBACK ) || defined( MMF_USE_ESMT )
+#if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_ESMT)
    ! Make sure these tendencies are set (and rotated) in crm_physics_tend()
    call outfld('MMF_DU',ptend%u, pcols, lchnk )
    call outfld('MMF_DV',ptend%v, pcols, lchnk )
-#endif /* MMF_MOMENTUM_FEEDBACK */
+#endif /* MMF_MOMENTUM_FEEDBACK or MMF_ESMT */
 
    if (use_MMF_VT) then
       call cnst_get_ind( 'VT_T', idx_vt_t )
