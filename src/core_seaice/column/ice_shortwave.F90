@@ -2543,15 +2543,12 @@
                g(k)   = gs
             enddo       ! k
 
-
             ! aerosol in snow
-             if (tr_zaero .and. dEdd_algae) then 
+             if (tr_zaero .and. dEdd_algae) then
                do k = 0,nslyr
-                  gzaer(ns,k) = gzaer(ns,k)/(wzaer(ns,k)+puny)
-                  wzaer(ns,k) = wzaer(ns,k)/(tzaer(ns,k)+puny)
-                  g(k)   = (g(k)*w0(k)*tau(k) + gzaer(ns,k)*wzaer(ns,k)*tzaer(ns,k)) / &
-                                  (w0(k)*tau(k) + wzaer(ns,k)*tzaer(ns,k))
-                  w0(k)  = (w0(k)*tau(k) + wzaer(ns,k)*tzaer(ns,k)) / &
+                  g(k)   = (g(k)*w0(k)*tau(k) + gzaer(ns,k)) / &
+                                  (w0(k)*tau(k) + wzaer(ns,k))
+                  w0(k)  = (w0(k)*tau(k) + wzaer(ns,k)) / &
                                    (tau(k) + tzaer(ns,k))
                   tau(k) = tau(k) + tzaer(ns,k)
                enddo
@@ -2564,7 +2561,7 @@
                do na=1,4*n_aero,4
 ! mgf++
                if (modal_aero) then
-                  if (na == 1) then  
+                  if (na == 1) then
                   !interstitial BC
                      taer = taer + &
                           aero_mp(na)*kaer_bc_tab(ns,k_bcexs(k))
@@ -2574,7 +2571,7 @@
                      gaer = gaer + &
                           aero_mp(na)*kaer_bc_tab(ns,k_bcexs(k))* &
                            waer_bc_tab(ns,k_bcexs(k))*gaer_bc_tab(ns,k_bcexs(k))
-                  elseif (na == 5)then  
+                  elseif (na == 5)then
                   !within-ice BC
                       taer = taer + &
                            aero_mp(na)*kaer_bc_tab(ns,k_bcins(k))* &
@@ -2639,7 +2636,7 @@
                       gaer = gaer + &
                            (aero_mp(na+1)/rnslyr)*kaer_bc_tab(ns,k_bcins(k))* &
                            waer_bc_tab(ns,k_bcins(k))*gaer_bc_tab(ns,k_bcins(k))
-                      
+
                     else
                       ! other species (dust)
                       taer = taer + &
@@ -2685,9 +2682,9 @@
                ! no aerosol in pond
             enddo       ! k
          endif        ! srftyp
-         
+
          ! set optical properties of sea ice
-         
+
          ! bare or snow-covered sea ice layers
          if( srftyp <= 1 ) then
             ! ssl
@@ -2717,7 +2714,7 @@
             if( ns == 1 ) then
                ! total layer absorption optical depth fixed at value
                ! of kalg*0.50m, independent of actual layer thickness
-               kabs = kabs + kabs_chl(ns,k) 
+               kabs = kabs + kabs_chl(ns,k)
             endif
             sig        = ki_int(ns)*wi_int(ns)
             tau(k) = (kabs+sig)*dzk(k)
@@ -2725,16 +2722,14 @@
             g(k)   = gi_int(ns)
             ! aerosol in sea ice
             if (tr_zaero .and. dEdd_algae) then
-               do k = kii, klev                  
-                  gzaer(ns,k) = gzaer(ns,k)/(wzaer(ns,k)+puny)
-                  wzaer(ns,k) = wzaer(ns,k)/(tzaer(ns,k)+puny)
-                  g(k)   = (g(k)*w0(k)*tau(k) + gzaer(ns,k)*wzaer(ns,k)*tzaer(ns,k)) / &
-                                  (w0(k)*tau(k) + wzaer(ns,k)*tzaer(ns,k))
-                  w0(k)  = (w0(k)*tau(k) + wzaer(ns,k)*tzaer(ns,k)) / &
+               do k = kii, klev
+                  g(k)   = (g(k)*w0(k)*tau(k) + gzaer(ns,k))/ &
+                                  (w0(k)*tau(k) + wzaer(ns,k))
+                  w0(k)  = (w0(k)*tau(k) + wzaer(ns,k)) / &
                                    (tau(k) + tzaer(ns,k))
                   tau(k) = tau(k) + tzaer(ns,k)
                enddo
-            elseif (tr_aero) then 
+            elseif (tr_aero) then
                k = kii   ! sea ice SSL
                taer = c0
                waer = c0
@@ -2762,7 +2757,7 @@
                           waer_bc_tab(ns,k_bcins(k))
                      gaer = gaer + &
                           aero_mp(na+2)*kaer_bc_tab(ns,k_bcins(k))* &
-                          waer_bc_tab(ns,k_bcins(k))*gaer_bc_tab(ns,k_bcins(k))    
+                          waer_bc_tab(ns,k_bcins(k))*gaer_bc_tab(ns,k_bcins(k))
                   else
                   ! other species (dust)
                      taer = taer + &
@@ -3772,7 +3767,7 @@
                                     nbtrcr_sw,    n_zaero,   &
                                     skl_bgc,      z_tracers, &
                                     l_stop,       stop_label)
-      
+
       use ice_constants_colpkg, only: c0, c1, c2, p5, sk_l
       use ice_colpkg_tracers, only: nt_bgc_N, nt_zaero, tr_bgc_N, &
           tr_zaero, nlt_chl_sw, nlt_zaero_sw
@@ -3782,13 +3777,13 @@
 
       integer (kind=int_kind), intent(in) :: &
          nslyr, & ! number of snow layers
-         n_zaero    , & ! number of cells with aicen > puny 
+         n_zaero    , & ! number of cells with aicen > puny
          nbtrcr_sw, n_algae, & ! nilyr+nslyr+2 for chlorophyll
          ntrcr
 
       integer (kind=int_kind), intent(in) :: &
          nblyr      , & ! number of bio layers
-         nilyr          ! number of ice layers 
+         nilyr          ! number of ice layers
 
       real (kind=dbl_kind), dimension (ntrcr), intent(in) ::       &
          trcrn          ! aerosol or chlorophyll
@@ -3798,20 +3793,20 @@
          trcrn_sw       ! ice on shortwave grid tracers
 
       real (kind=dbl_kind), dimension (:), intent(in) :: &
-         sw_grid     , & ! 
-         i_grid          ! CICE bio grid 
-         
+         sw_grid     , & !
+         i_grid          ! CICE bio grid
+
       real(kind=dbl_kind), intent(in) :: &
          hin          , & ! CICE ice thickness
-         hbri             ! brine height 
+         hbri             ! brine height
 
       logical (kind=log_kind), intent(in) :: &
-         skl_bgc, & ! skeletal layer bgc  
-         z_tracers  ! zbgc   
+         skl_bgc, & ! skeletal layer bgc
+         z_tracers  ! zbgc
 
       logical (kind=log_kind), intent(inout) :: &
          l_stop            ! if true, print diagnostics and abort on return
-        
+
       character (char_len), intent(inout) :: stop_label
 
       !  local variables
@@ -3826,7 +3821,7 @@
          icegrid        ! correct for large ice surface layers
 
       real (kind=dbl_kind):: &
-         top_conc       ! 1% (min_bgc) of surface concentration 
+         top_conc       ! 1% (min_bgc) of surface concentration
                         ! when hin > hbri:  just used in sw calculation
 
       !-----------------------------------------------------------------
@@ -3839,11 +3834,11 @@
 
       do k = 1,nilyr+1
          icegrid(k) = sw_grid(k)
-      enddo    
-      if (sw_grid(1)*hin*c2 > hi_ssl) then
+      enddo
+      if (sw_grid(1)*hin*c2 > hi_ssl .and. hin > puny) then
          icegrid(1) = hi_ssl/c2/hin
       endif
-
+      icegrid(2) = c2*sw_grid(1) + (sw_grid(2) - sw_grid(1))
       if (z_tracers) then
       if (tr_bgc_N)  then
          do k = 1, nblyr+1
@@ -3852,7 +3847,7 @@
                                 R_chl2N(n)*F_abs_chl(n)*trcrn(nt_bgc_N(n)+k-1)
             enddo ! n
          enddo    ! k
- 
+
          top_conc = trtmp0(nt_bgc_N(1))*min_bgc
          call remap_zbgc (ntrcr,             nilyr+1, &
                           nt_bgc_N(1),                &
@@ -3861,8 +3856,8 @@
                           1,                 nblyr+1, &
                           hin,               hbri,    &
                           icegrid(1:nilyr+1),         &
-                          i_grid(1:nblyr+1), top_conc, & 
-                          l_stop,            stop_label) 
+                          i_grid(1:nblyr+1), top_conc, &
+                          l_stop,            stop_label)
 
          if (l_stop) return
 
@@ -3872,11 +3867,11 @@
 
          do n = 1, n_algae   ! snow contribution
             trcrn_sw(nlt_chl_sw)= trcrn_sw(nlt_chl_sw) &
-                     + R_chl2N(n)*F_abs_chl(n)*trcrn(nt_bgc_N(n)+nblyr+1) 
+                     + R_chl2N(n)*F_abs_chl(n)*trcrn(nt_bgc_N(n)+nblyr+1)
                               ! snow surface layer
             trcrn_sw(nlt_chl_sw+1:nlt_chl_sw+nslyr) = &
                      trcrn_sw(nlt_chl_sw+1:nlt_chl_sw+nslyr) &
-                     + R_chl2N(n)*F_abs_chl(n)*trcrn(nt_bgc_N(n)+nblyr+2) 
+                     + R_chl2N(n)*F_abs_chl(n)*trcrn(nt_bgc_N(n)+nblyr+2)
                               ! only 1 snow layer in zaero
          enddo ! n
       endif    ! tr_bgc_N
@@ -4850,11 +4845,9 @@
          !aerosol in snow
           if (tr_zaero .and. dEdd_algae) then
             do k = 0,nslyr
-               gzaer_5bd(ns,k) = gzaer_5bd(ns,k)/(wzaer_5bd(ns,k)+puny)
-               wzaer_5bd(ns,k) = wzaer_5bd(ns,k)/(tzaer_5bd(ns,k)+puny)
-               g(k)   = (g(k)*w0(k)*tau(k) + gzaer_5bd(ns,k)*wzaer_5bd(ns,k)*tzaer_5bd(ns,k)) / &
-                               (w0(k)*tau(k) + wzaer_5bd(ns,k)*tzaer_5bd(ns,k))
-               w0(k)  = (w0(k)*tau(k) + wzaer_5bd(ns,k)*tzaer_5bd(ns,k)) / &
+               g(k)   = (g(k)*w0(k)*tau(k) + gzaer_5bd(ns,k)) / &
+                               (w0(k)*tau(k) + wzaer_5bd(ns,k))
+               w0(k)  = (w0(k)*tau(k) + wzaer_5bd(ns,k)) / &
                                 (tau(k) + tzaer_5bd(ns,k))
                tau(k) = tau(k) + tzaer_5bd(ns,k)
             enddo
@@ -5017,11 +5010,9 @@
                ! aerosol in sea ice
                if (tr_zaero .and. dEdd_algae) then
                   do k = kii, klev
-                     gzaer_5bd(ns,k) = gzaer_5bd(ns,k)/(wzaer_5bd(ns,k)+puny)
-                     wzaer_5bd(ns,k) = wzaer_5bd(ns,k)/(tzaer_5bd(ns,k)+puny)
-                     g(k)   = (g(k)*w0(k)*tau(k) + gzaer_5bd(ns,k)*wzaer_5bd(ns,k)*tzaer_5bd(ns,k)) / &
-                                     (w0(k)*tau(k) + wzaer_5bd(ns,k)*tzaer_5bd(ns,k))
-                     w0(k)  = (w0(k)*tau(k) + wzaer_5bd(ns,k)*tzaer_5bd(ns,k)) / &
+                     g(k)   = (g(k)*w0(k)*tau(k) + gzaer_5bd(ns,k)) / &
+                                     (w0(k)*tau(k) + wzaer_5bd(ns,k))
+                     w0(k)  = (w0(k)*tau(k) + wzaer_5bd(ns,k)) / &
                                       (tau(k) + tzaer_5bd(ns,k))
                      tau(k) = tau(k) + tzaer_5bd(ns,k)
                   enddo

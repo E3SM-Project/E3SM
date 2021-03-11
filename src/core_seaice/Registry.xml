@@ -2649,12 +2649,12 @@
 			packages="pkgTracerVerticalIron"
 		/>
 		<var name="verticalAerosolsSnowCell"		type="real"	dimensions="nzAerosolsSnowLayers nCells Time"	name_in_code="verticalAerosolsSnowCell"
-			units="mg/m^3"
+			units="kg/m^3"
 			description="Cell average aerosol for each type and snow bio-grid layer"
 			packages="pkgTracerZAerosols"
 		/>
 		<var name="verticalAerosolsIceCell"		type="real"	dimensions="nzAerosolsIceLayers nCells Time"	name_in_code="verticalAerosolsIceCell"
-			units="mg/m^3"
+			units="kg/m^3"
 			description="Cell average aerosol for each type and ice bio-grid layer"
 			packages="pkgTracerZAerosols"
 		/>
