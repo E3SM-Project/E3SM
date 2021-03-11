@@ -1640,6 +1640,9 @@ flags should be captured within MPAS CMake files.
     <append MPILIB="mpi-serial">-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
   </SLIBS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
   <MPIFC> mpif90 </MPIFC>
@@ -1669,6 +1672,9 @@ flags should be captured within MPAS CMake files.
     <append MPILIB="mpi-serial">-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
   </SLIBS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
   <MPICXX> mpiCC </MPICXX>
   <!-- These are the same as the parent
   <MPICC> mpicc </MPICC>
@@ -1707,6 +1713,9 @@ flags should be captured within MPAS CMake files.
     <append MPILIB="mpi-serial">-lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack </append>
   </SLIBS>
+  <CXX_LIBS>
+    <base>-lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
+  </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
   <MPIFC> mpif90 </MPIFC>
@@ -1766,6 +1775,9 @@ flags should be captured within MPAS CMake files.
     <append MPILIB="mpi-serial">-lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack </append>
   </SLIBS>
+  <CXX_LIBS>
+    <base>-lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
+  </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
   <MPIFC> mpif90 </MPIFC>
@@ -1795,12 +1807,9 @@ flags should be captured within MPAS CMake files.
     <append> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
   </SLIBS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <!--
-  Summit (backup in case defaults are not picking up):
   <CXX_LIBS>
-    <base>/sw/summit/gcc/6.4.0/lib/gcc/powerpc64le-none-linux-gnu/6.4.0/crtbegin.o -L/sw/summit/gcc/6.4.0/lib64 -lstdc++ -latomic</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
-  -->
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
   <MPIFC> mpif90 </MPIFC>
@@ -1837,6 +1846,9 @@ flags should be captured within MPAS CMake files.
     <append> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
   </SLIBS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
   <KOKKOS_OPTIONS> --arch=Power9,Volta70 --with-cuda=$ENV{CUDA_DIR} --with-cuda-options=enable_lambda</KOKKOS_OPTIONS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
