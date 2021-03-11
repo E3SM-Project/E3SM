@@ -197,7 +197,7 @@ _TESTS = {
         "time" : "02:00:00",
         "tests" : (
             # MMF tests
-            "SMS_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF1",
+            "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF1",
             "SMS_Ln3_P96x1.ne4pg2_ne4pg2.F-MMFXX-AQP1",
             "SMS_Ln3_P96x1.ne4pg2_ne4pg2.F-MMFXX-RCEMIP",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
