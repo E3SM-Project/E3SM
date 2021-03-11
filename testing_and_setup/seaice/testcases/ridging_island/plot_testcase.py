@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 #-------------------------------------------------------------------------------
 
@@ -91,26 +92,50 @@ def plot_testcase():
     fig, axes = plt.subplots(2,2)
 
     axes[0,0].add_collection(pcIceAreaCell)
+    divider = make_axes_locatable(axes[0,0])
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(pcIceAreaCell, cax=cax)
     axes[0,0].set_xlim((xmin,xmax))
     axes[0,0].set_ylim((ymin,ymax))
     axes[0,0].set_aspect('equal')
+    axes[0,0].ticklabel_format(style='plain')
+    axes[0,0].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    axes[0,0].tick_params(axis='y', which='both', left=False, right=False, labelleft=False)
 
     axes[0,1].add_collection(pcIceVolumeCell)
+    divider = make_axes_locatable(axes[0,1])
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(pcIceVolumeCell, cax=cax)
     axes[0,1].set_xlim((xmin,xmax))
     axes[0,1].set_ylim((ymin,ymax))
     axes[0,1].set_aspect('equal')
+    axes[0,1].ticklabel_format(style='plain')
+    axes[0,1].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    axes[0,1].tick_params(axis='y', which='both', left=False, right=False, labelleft=False)
 
     axes[1,0].add_collection(pcUVelocity)
+    divider = make_axes_locatable(axes[1,0])
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(pcUVelocity, cax=cax)
     axes[1,0].set_xlim((xmin,xmax))
     axes[1,0].set_ylim((ymin,ymax))
     axes[1,0].set_aspect('equal')
+    axes[1,0].ticklabel_format(style='plain')
+    axes[1,0].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    axes[1,0].tick_params(axis='y', which='both', left=False, right=False, labelleft=False)
 
     axes[1,1].add_collection(pcVVelocity)
+    divider = make_axes_locatable(axes[1,1])
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(pcVVelocity, cax=cax)
     axes[1,1].set_xlim((xmin,xmax))
     axes[1,1].set_ylim((ymin,ymax))
     axes[1,1].set_aspect('equal')
+    axes[1,1].ticklabel_format(style='plain')
+    axes[1,1].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    axes[1,1].tick_params(axis='y', which='both', left=False, right=False, labelleft=False)
 
-    plt.savefig("plot.png",dpi=300)
+    plt.savefig("ridging_island.png",dpi=300)
 
 #-------------------------------------------------------------------------------
 

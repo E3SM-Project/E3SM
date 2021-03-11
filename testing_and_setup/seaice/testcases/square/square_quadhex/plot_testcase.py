@@ -13,7 +13,7 @@ def plot_testcase():
     iTime = -1
 
     # read in file
-    filein = Dataset("./output_quad_pwl_0080x0080_120/output.2000.nc","r")
+    filein = Dataset("./output_hex_pwl_0082x0094_120/output.2000.nc","r")
 
     nCells = len(filein.dimensions["nCells"])
     nVertices = len(filein.dimensions["nVertices"])
@@ -55,9 +55,9 @@ def plot_testcase():
     except:
         principalStress2 = filein.variables["principalStress2Weak"][iTime,:]
 
-    strain11var = filein.variables["strain11varDiff"][iTime,:]
-    strain22var = filein.variables["strain22varDiff"][iTime,:]
-    strain12var = filein.variables["strain12varDiff"][iTime,:]
+    strain11var = filein.variables["strain11var"][iTime,:]
+    strain22var = filein.variables["strain22var"][iTime,:]
+    strain12var = filein.variables["strain12var"][iTime,:]
 
     filein.close()
 

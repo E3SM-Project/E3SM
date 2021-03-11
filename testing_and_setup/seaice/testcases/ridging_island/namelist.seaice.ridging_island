@@ -80,7 +80,7 @@
     config_include_metric_terms = false
     config_elastic_subcycle_number = 120
     config_strain_scheme = 'variational'
-    config_constitutive_relation_type = 'linear'
+    config_constitutive_relation_type = 'evp'
     config_stress_divergence_scheme = 'variational'
     config_variational_basis = 'wachspress'
     config_variational_denominator_type = 'original'

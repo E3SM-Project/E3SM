@@ -106,9 +106,9 @@ def create_grid(gridfileOut, icfileOut, specialBoundariedFileOut, island=True):
 
     fileGrid.close()
 
-    os.system("%s/mesh_tools/mesh_conversion_tools/MpasMeshConverter.x grid_in.nc grid.nc" %(mpas_tools_dir))
+    os.system("%s/mesh_tools/mesh_conversion_tools/MpasMeshConverter.x grid_in.nc grid_conv.nc" %(mpas_tools_dir))
 
-    filein = Dataset("grid.nc","a")
+    filein = Dataset("grid_conv.nc","a")
 
     nCells = len(filein.dimensions["nCells"])
 
@@ -130,7 +130,7 @@ def create_grid(gridfileOut, icfileOut, specialBoundariedFileOut, island=True):
 
     filein.close()
 
-    os.system("%s/mesh_tools/mesh_conversion_tools/MpasCellCuller.x grid.nc grid_culled_island.nc" %(mpas_tools_dir))
+    os.system("%s/mesh_tools/mesh_conversion_tools/MpasCellCuller.x grid_conv.nc grid_culled_island.nc" %(mpas_tools_dir))
 
     cmd = "mv grid_culled_island.nc %s" %(gridfileOut)
     os.system(cmd)
@@ -140,6 +140,8 @@ def create_grid(gridfileOut, icfileOut, specialBoundariedFileOut, island=True):
 
     nCells = len(filein.dimensions["nCells"])
     nVertices = len(filein.dimensions["nVertices"])
+
+    print("%s: nCells: %i" %(gridfileOut,nCells))
 
     xCell = filein.variables["xCell"][:]
     yCell = filein.variables["yCell"][:]
