@@ -100,7 +100,7 @@ module scream_scorpio_interface
   ! TYPES to handle history coordinates and files
   integer,parameter :: max_hcoordname_len = 16
   integer,parameter :: max_chars = 256
-  integer,parameter :: max_hvarname_len = 16
+  integer,parameter :: max_hvarname_len = 64
   integer,parameter :: max_hvar_dimlen  = 5
 
 !----------------------------------------------------------------------
@@ -364,6 +364,7 @@ contains
     pio_atm_file%varcounter = pio_atm_file%varcounter + 1
 
     ! Get a new variable pointer in var_list
+    if (len_trim(shortname)>max_hvarname_len) call errorHandle("PIO Error: variable shortname "//trim(shortname)//" is too long, consider increasing max_hvarname_len or changing the variable shortname",-999)
     curr => pio_atm_file%var_list_top
     do while (associated(curr))
       if (associated(curr%var)) then
@@ -449,6 +450,7 @@ contains
     pio_atm_file%varcounter = pio_atm_file%varcounter + 1
 
     ! Get a new variable pointer in var_list
+    if (len_trim(shortname)>max_hvarname_len) call errorHandle("PIO Error: variable shortname "//trim(shortname)//" is too long, consider increasing max_hvarname_len or changing the variable shortname",-999)
     curr => pio_atm_file%var_list_top
     do while (associated(curr))
       if (associated(curr%var)) then

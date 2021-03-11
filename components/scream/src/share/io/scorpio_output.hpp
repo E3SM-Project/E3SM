@@ -144,6 +144,7 @@ protected:
   std::string m_casename;
   std::string m_avg_type;
   std::string m_grid_name;
+  std::string m_filename;
   // Frequency of output control
   Int m_out_max_steps;
   Int m_out_frequency;

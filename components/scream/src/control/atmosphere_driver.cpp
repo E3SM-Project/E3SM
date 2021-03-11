@@ -224,7 +224,7 @@ initialize_fields (const util::TimeStamp& t0)
   for (auto& fid : fields_in) {
     const auto& name = fid.name();
     auto  f  = m_field_repo->get_field(fid);
-    auto& fh = *f.get_header_ptr();;
+    auto& fh = *f.get_header_ptr();
     // auto& fl = fh.get_identifier().get_layout();
 
     // std::cout << name << ":";

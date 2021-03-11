@@ -181,6 +181,8 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
         grid_write_data_array(filename,"avg_count",avg_cnt.size(),avg_cnt.data());
       }
     }
+    // Now the filename that is being stored in this object should be the appropriate file to be writing too.
+    filename = m_filename;
     if( !m_is_init and is_typical ) { m_is_init=true; }
 
     pio_update_time(filename,time); // Universal scorpio command to set the timelevel for this snap.
@@ -197,9 +199,14 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
     Kokkos::deep_copy(g_view, view_d);
     Int  f_len  = field.get_header().get_identifier().get_layout().size();
     auto l_view = m_view_local.at(name);
-    // The next two operations do not need to happen if the frequency of output is instantaneous.
-    if (m_avg_type == "Instant")
+    // It is not necessary to do any operations between local and global views if the frequency of output is instantaneous,
+    // or if the Average Counter is 1 (meaning the beginning of a new record).
+    // TODO: Question to address - This current approach will *not* include the initial conditions in the calculation of any of the
+    // output metrics.  Do we want this to be the case? 
+    if (m_avg_type == "Instant" || m_status["Avg Count"] == 1)
     {
+      // Make sure that the global view is in fact valid before copying to local view.
+      EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(), "Error in output, field " + name + " has not been initialized yet");
       Kokkos::deep_copy(l_view, g_view);
     }
     else // output type uses multiple steps.
@@ -263,6 +270,7 @@ void AtmosphereOutput::finalize()
 
   m_status["Finalize"] += 1;
 } // finalize
+/* ---------------------------------------------------------- */
 void AtmosphereOutput::register_dimensions(const std::string& name)
 {
 /* 
@@ -271,13 +279,15 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
  *   field_repo: is a pointer to the field_repository for this simulation.
  *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
  */
+  using namespace scream;
+  using namespace scream::scorpio;
   auto fid = m_field_repo->get_field(name, m_grid_name).get_header().get_identifier();
   // check to see if all the dims for this field are already set to be registered.
   for (int ii=0; ii<fid.get_layout().rank(); ++ii)
   {
     // check tag against m_dims map.  If not in there, then add it.
     auto& tag = fid.get_layout().tags()[ii];
-    auto tag_loc = m_dims.find(e2str(tag));
+    auto tag_loc = m_dims.find(get_nc_tag_name(tag));
     if (tag_loc == m_dims.end()) 
     { 
       Int tag_len = 0;
@@ -287,10 +297,10 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
       } else {
         tag_len = fid.get_layout().dim(ii);
       }
-      m_dims.emplace(std::make_pair(e2str(tag),tag_len));
+      m_dims.emplace(std::make_pair(get_nc_tag_name(tag),tag_len));
     } else {  
-      EKAT_REQUIRE_MSG(m_dims.at(e2str(tag))==fid.get_layout().dim(ii) or e2str(tag)=="COL",
-        "Error! Dimension " + e2str(tag) + " on field " + name + " has conflicting lengths");
+      EKAT_REQUIRE_MSG(m_dims.at(get_nc_tag_name(tag))==fid.get_layout().dim(ii) or get_nc_tag_name(tag)=="COL",
+        "Error! Dimension " + get_nc_tag_name(tag) + " on field " + name + " has conflicting lengths");
     }
   }
 } // register_dimensions
@@ -304,14 +314,11 @@ void AtmosphereOutput::register_views()
   for (auto const& name : m_fields)
   {
     auto field = m_field_repo->get_field(name, m_grid_name);
-    auto ts    = field.get_header().get_tracking().get_time_stamp();
-    EKAT_REQUIRE_MSG (ts.is_valid(), "Error in output, field " + name + " has not been initialized yet");
     // If the "averaging type" is instant then just need a ptr to the view.
     EKAT_REQUIRE_MSG (field.get_header().get_parent().expired(), "Error! Cannot deal with subfield, for now.");
     auto view_d = field.get_view();
     // Create a local copy of view to be stored by output stream.
     view_type_host view_copy("",view_d.extent(0));
-    Kokkos::deep_copy(view_copy, view_d);
     m_view_local.emplace(name,view_copy);
   }
 }
@@ -330,8 +337,8 @@ void AtmosphereOutput::register_variables(const std::string& filename)
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
     std::vector<std::string> vec_of_dims;
     for (auto& tag_ii : fid.get_layout().tags()) {
-      io_decomp_tag += "-" + e2str(tag_ii); // Concatenate the dimension string to the io-decomp string
-      vec_of_dims.push_back(e2str(tag_ii)); // Add dimensions string to vector of dims.
+      io_decomp_tag += "-" + get_nc_tag_name(tag_ii); // Concatenate the dimension string to the io-decomp string
+      vec_of_dims.push_back(get_nc_tag_name(tag_ii)); // Add dimensions string to vector of dims.
     }
     io_decomp_tag += "-time";  // TODO: Do we expect all vars to have a time dimension?  If not then how to trigger?  Should we register dimension variables (such as ncol and lat/lon) elsewhere in the dimension registration?  These won't have time.
     std::reverse(vec_of_dims.begin(),vec_of_dims.end()); // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO, may need to delete this line when switching to fully C++/C implementation.
@@ -404,6 +411,7 @@ void AtmosphereOutput::new_file(const std::string& filename)
 
   // Register new netCDF file for output.
   register_outfile(filename);
+  m_filename = filename;
 
   // Register dimensions with netCDF file.
   for (auto it : m_dims)

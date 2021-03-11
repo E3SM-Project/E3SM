@@ -165,13 +165,13 @@ TEST_CASE("input_output_basic","io")
   f2.sync_to_host();
   f3.sync_to_host();
   for (int ii=0;ii<num_lcols;++ii) {
-    REQUIRE(std::abs(f1_host(ii)-ii)<tol);
+    REQUIRE(std::abs(f1_host(ii)-(dt+ii))<tol);
     for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f3_host(ii,jj)-(ii + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(f3_host(ii,jj)-(dt+ii + (jj+1)/10.))<tol);
     }
   }
   for (int jj=0;jj<num_levs;++jj) {
-    REQUIRE(std::abs(f2_host(jj)-((jj+1)/10.))<tol);
+    REQUIRE(std::abs(f2_host(jj)-(dt+(jj+1)/10.))<tol);
   }
   
   // Test pulling input without the field manager:
@@ -181,7 +181,7 @@ TEST_CASE("input_output_basic","io")
   view_2d::HostMirror loc_field_3("field_3",num_lcols,num_levs);
   pview_2d::HostMirror loc_field_4("field_packed",num_lcols,num_packs);
   std::string filename = ins_params.get<std::string>("FILENAME");
-  std::vector<std::string> var_dims = {"LEV","COL"};
+  std::vector<std::string> var_dims = {"lev","ncol"};
   bool has_columns = true;
   std::vector<int> dim_lens = {num_lcols,num_levs};
   input_type loc_input(io_comm,"Physics",grid_man);
