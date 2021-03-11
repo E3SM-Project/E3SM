@@ -140,9 +140,9 @@ module scamMod
                                                ! mo_drydep algorithm
   real(r8), public ::      dyn_dx_size         ! for use in doubly periodic CRM mode
        
-  real(r8), public ::  iop_nudge_tq_low      ! lowest level to apply relaxation
-  real(r8), public ::  iop_nudge_tq_high     ! highest level to apply relaxation
-  real(r8), public ::  iop_nudge_tscale   ! timescale for relaxation
+  real(r8), public ::  iop_nudge_tq_low      ! lowest level to apply relaxation (hPa)
+  real(r8), public ::  iop_nudge_tq_high     ! highest level to apply relaxation (hPa)
+  real(r8), public ::  iop_nudge_tscale      ! timescale for relaxation
 
   real(r8), public :: iop_perturb_high         ! higest level to apply perturbations
                                                ! to temperature profile (doubly periodic mode)
