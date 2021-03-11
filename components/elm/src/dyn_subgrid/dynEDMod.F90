@@ -30,7 +30,7 @@ contains
     
     do p = bounds%begp,bounds%endp
        c = veg_pp%column(p)
-       if (col_pp%itype(c) == istsoil .and. (  ) ) then 
+       if (col_pp%itype(c) == istsoil) then 
           if ( veg_pp%is_veg(p) .or. veg_pp%is_bareground(p)) then
              veg_pp%wtcol(p) = veg_pp%wt_ed(p)
           else
