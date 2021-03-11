@@ -1478,7 +1478,7 @@ else {
     # If neither adiabatic nor ideal physics are used, then accumulate advected constituents
     # from the moist physics and chemistry processes.
 
-    unless ($phys_pkg eq 'ideal' or $phys_pkg eq 'adiabatic' or defined $opts{'use_MMF'}) {
+    unless ($phys_pkg eq 'ideal' or $phys_pkg eq 'adiabatic') {
 
         # Microphysics parameterization
         if ($microphys_pkg eq 'rk') {
@@ -1509,21 +1509,26 @@ else {
         $nadv += $chem_nadv;
         if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
 
-    }
+        # Advected tracers for MMF - same for 1-mom and 2-mom (1-mom ignores number concentration)
+        # - cloud liquid amount
+        # - cloud ice amount
+        # - cloud liquid number
+        # - cloud ice number
+        # - precipitating rain amount
+        # - precipitating snow amount
+        # - precipitating rain number
+        # - precipitating snow number
+        if (defined $opts{'use_MMF'}) {
+            $nadv += 8;
+            if ($print>=2) { print "Advected constituents added for MMF physics package: 8$eol"; }
+        }
 
-    ### advected tracers for MMF
-    if (defined $opts{'use_MMF'}) {
-        $nadv += 8;
-        if ($print>=2) { print "Advected constituents added for MMF physics package: 8$eol"; }
-
-        # Chemistry package
-        $nadv += $chem_nadv;
-        if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
-
+        # MMF variance transport tracers
         if (defined $opts{'use_MMF_VT'}) {
             $nadv += 2; # add tracers for CRM t and q variance transport
             if ($print>=2) { print "Advected variance constituent added for MMF: 2$eol"; }
         }
+
     }
 
     # Add in specified test tracers.  These may be present with adiabatic or ideal physics.
