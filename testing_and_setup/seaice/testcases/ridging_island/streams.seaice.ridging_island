@@ -50,6 +50,12 @@
 	<var name="iceVolumeCategory"/>
 	<var name="uVelocity"/>
 	<var name="vVelocity"/>
+	<var name="solveVelocity"/>
+	<var name="solveStress"/>
+	<var name="uAirVelocity"/>
+	<var name="vAirVelocity"/>
+	<var name="uAirStress"/>
+	<var name="vAirStress"/>
 </stream>
 
 <immutable_stream name="LYqSixHourlyForcing"

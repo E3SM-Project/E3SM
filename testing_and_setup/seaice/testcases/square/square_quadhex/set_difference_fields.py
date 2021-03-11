@@ -14,9 +14,9 @@ def set_difference_fields():
     #files = {"./output_hex_wachspress_0082x0094_120/output.2000.nc":
     #         ["./output/output.2000.nc"]}
 
-    #fieldnames = ["uVelocity","vVelocity","stressDivergenceU","stressDivergenceV"]
+    fieldnames = ["uVelocity","vVelocity","stressDivergenceU","stressDivergenceV"]
     #fieldnames = ["stressDivergenceU"]
-    fieldnames = ["uVelocity","vVelocity","stressDivergenceU","stressDivergenceV","strain11var","strain22var","strain12var"]
+    #fieldnames = ["uVelocity","vVelocity","stressDivergenceU","stressDivergenceV","strain11var","strain22var","strain12var"]
 
 
     for filenameBase in files:
