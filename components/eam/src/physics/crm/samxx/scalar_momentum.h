@@ -6,7 +6,7 @@
 
 extern "C" void rfft1i(int n, real* wsave, int lensav, int ier);
 extern "C" void rfft1f(int n, int inc, real* r, int lenr, real* wsave, int lensav, real* work, int lenwrk, int ier );
-extern "C" void rfft1f(int n, int inc, real* r, int lenr, real* wsave, int lensav, real* work, int lenwrk, int ier );
+extern "C" void rfft1b(int n, int inc, real* r, int lenr, real* wsave, int lensav, real* work, int lenwrk, int ier );
 
 void esmt_fft_forward(real2d& arr_in, real1d& k_out, real2d& arr_out);
 
