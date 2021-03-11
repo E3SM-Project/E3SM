@@ -328,7 +328,6 @@ module elm_varctl
 
   logical, public :: use_nofire          = .false.
   logical, public :: use_lch4            = .false.
-  logical, public :: use_nitrif_denitrif = .true.
   logical, public :: use_vertsoilc       = .false.
   logical, public :: use_extralakelayers = .false.
   logical, public :: use_vichydro        = .false.
