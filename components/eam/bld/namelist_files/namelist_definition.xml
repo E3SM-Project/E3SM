@@ -4025,7 +4025,7 @@ Default: FALSE
 
 <entry id="iop_dosubsidence" type="logical" category="scam"
        group="cam_inparm" valid_values="">
-Compute LS vertical transport from IOP file.
+Compute LS vertical transport using omega prescribed from IOP file.
 Default: FALSE
 </entry>
 
