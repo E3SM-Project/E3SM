@@ -5394,10 +5394,10 @@
 
       use ice_algae, only: zbio, sklbio
       use ice_brine, only: preflushing_changes, compute_microS_mushy, &
-                           update_hbrine, compute_microS 
+                           update_hbrine, compute_microS
       use ice_colpkg_shared, only: solve_zsal, z_tracers, phi_snow
       use ice_colpkg_tracers, only: nt_fbri, tr_brine, &
-          nt_bgc_S, nt_qice, nt_sice, nt_zbgc_frac, bio_index 
+          nt_bgc_S, nt_qice, nt_sice, nt_zbgc_frac, bio_index, bio_index_o
       use ice_constants_colpkg, only: c0, c1, puny, p5
       use ice_zsalinity, only: zsalinity
       use ice_zbgc_shared, only:  zbgc_frac_init
@@ -5419,7 +5419,7 @@
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          bgrid         , &  ! biology nondimensional vertical grid points
          igrid         , &  ! biology vertical interface points
-         cgrid         , &  ! CICE vertical coordinate   
+         cgrid         , &  ! CICE vertical coordinate
          icgrid        , &  ! interface grid for CICE (shortwave variable)
          ocean_bio     , &  ! contains all the ocean bgc tracer concentrations
          fbio_snoice   , &  ! fluxes from snow to ice
@@ -5428,9 +5428,9 @@
          dhbr_bot      , &  ! brine bottom change
          darcy_V       , &  ! darcy velocity positive up (m/s)
          hin_old       , &  ! old ice thickness
-         sice_rho      , &  ! avg sea ice density  (kg/m^3) 
-         ice_bio_net   , &  ! depth integrated tracer (mmol/m^2) 
-         snow_bio_net  , &  ! depth integrated snow tracer (mmol/m^2) 
+         sice_rho      , &  ! avg sea ice density  (kg/m^3)
+         ice_bio_net   , &  ! depth integrated tracer (mmol/m^2)
+         snow_bio_net  , &  ! depth integrated snow tracer (mmol/m^2)
          flux_bio           ! all bio fluxes to ocean
 
       logical (kind=log_kind), dimension (:), intent(inout) :: &
@@ -5445,18 +5445,18 @@
       real (kind=dbl_kind), dimension (:,:), intent(inout) :: &
          Zoo            , & ! N losses accumulated in timestep (ie. zooplankton/bacteria)
                             ! mmol/m^3
-         bphi           , & ! porosity of layers    
+         bphi           , & ! porosity of layers
          bTiz           , & ! layer temperatures interpolated on bio grid (C)
          zfswin         , & ! Shortwave flux into layers interpolated on bio grid  (W/m^2)
-         iDi            , & ! igrid Diffusivity (m^2/s)    
-         iki            , & ! Ice permeability (m^2)  
-         trcrn     ! tracers   
+         iDi            , & ! igrid Diffusivity (m^2/s)
+         iki            , & ! Ice permeability (m^2)
+         trcrn     ! tracers
 
       real (kind=dbl_kind), intent(inout) :: &
          grow_net       , & ! Specific growth rate (/s) per grid cell
          PP_net         , & ! Total production (mg C/m^2/s) per grid cell
          hbri           , & ! brine height, area-averaged for comparison with hi (m)
-         zsal_tot       , & ! Total ice salinity in per grid cell (g/m^2) 
+         zsal_tot       , & ! Total ice salinity in per grid cell (g/m^2)
          fzsal          , & ! Total flux  of salt to ocean at time step for conservation
          fzsal_g        , & ! Total gravity drainage flux
          upNO           , & ! nitrate uptake rate (mmol/m^2/d) times aice
@@ -5464,7 +5464,7 @@
          totalChla          ! ice integrated chla and summed over all algal groups (mg/m^2)
 
       logical (kind=log_kind), intent(inout) :: &
-         Rayleigh_criteria    ! .true. means Ra_c was reached  
+         Rayleigh_criteria    ! .true. means Ra_c was reached
 
       real (kind=dbl_kind), dimension (:,:), intent(in) :: &
          fswpenln        ! visible SW entering ice layers (W m-2)
@@ -5476,11 +5476,11 @@
          meltbn      , & ! bottom melt in category n (m)
          congeln     , & ! congelation ice formation in category n (m)
          snoicen     , & ! snow-ice formation in category n (m)
-         salinz      , & ! initial salinity  profile (ppt) 
-         flux_bio_atm, & ! all bio fluxes to ice from atmosphere  
+         salinz      , & ! initial salinity  profile (ppt)
+         flux_bio_atm, & ! all bio fluxes to ice from atmosphere
          aicen_init  , & ! initial ice concentration, for linear ITD
          vicen_init  , & ! initial ice volume (m), for linear ITD
-         vsnon_init  , & ! initial snow volume (m), for aerosol 
+         vsnon_init  , & ! initial snow volume (m), for aerosol
          aicen , & ! concentration of ice
          vicen , & ! volume per unit area of ice          (m)
          vsnon     ! volume per unit area of snow         (m)
@@ -5496,7 +5496,7 @@
       logical (kind=log_kind), intent(in) :: &
          skl_bgc       ! if true, solve skeletal biochemistry
 
-      logical (kind=log_kind), intent(inout) :: &  
+      logical (kind=log_kind), intent(inout) :: &
          l_stop          ! if true, abort the model
 
       character (len=*), intent(inout) :: stop_label
@@ -5513,7 +5513,7 @@
          hbr_old     , & ! old brine thickness before growh/melt
          dhice       , & ! change due to sublimation/condensation (m)
          kavg        , & ! average ice permeability (m^2)
-         bphi_o      , & ! surface ice porosity 
+         bphi_o      , & ! surface ice porosity
          hbrin       , & ! brine height
          dh_direct       ! surface flooding or runoff
 
@@ -5525,20 +5525,20 @@
 
       real (kind=dbl_kind), dimension (nblyr+1) :: &
       ! Defined on Bio Grid interfaces
-         iphin       , & ! porosity 
+         iphin       , & ! porosity
          ibrine_sal  , & ! brine salinity  (ppt)
          ibrine_rho  , & ! brine_density (kg/m^3)
          iTin            ! Temperature on the interface grid (oC)
 
-      real (kind=dbl_kind) :: & 
+      real (kind=dbl_kind) :: &
          sloss            ! brine flux contribution from surface runoff (g/m^2)
 
       real (kind=dbl_kind), dimension (ncat) :: &
          hbrnInitial, & ! inital brine height
-         hbrnFinal      ! category initial and final brine heights 
+         hbrnFinal      ! category initial and final brine heights
 
       ! for bgc sk
-      real (kind=dbl_kind) :: & 
+      real (kind=dbl_kind) :: &
          dh_bot_chl  , & ! Chlorophyll may or may not flush
          dh_top_chl  , & ! Chlorophyll may or may not flush
          darcy_V_chl
@@ -5712,7 +5712,8 @@
                           congeln(n),            snoicen(n),             &
                           nbtrcr,                fsnow,                  &
                           ntrcr,                 trcrn(1:ntrcr,n),       &
-                          bio_index(1:nbtrcr),   aicen_init(n),          &
+                          bio_index(1:nbtrcr),   bio_index_o(:),         &
+                          aicen_init(n),                                 &
                           vicen_init(n),         vsnon_init(n),          &
                           vicen(n),              vsnon(n),               &
                           aicen(n),              flux_bio_atm(:), &
@@ -5791,8 +5792,8 @@
       subroutine colpkg_init_hbrine(bgrid, igrid, cgrid, &
           icgrid, swgrid, nblyr, nilyr, phi_snow)
 
-      use ice_constants_colpkg, only: c1, c1p5, c2, p5, c0, rhoi, rhos
- 
+      use ice_constants_colpkg, only: c1, c1p5, c2, p5, c0, rhoi, rhos, p25
+
       integer (kind=int_kind), intent(in) :: &
          nilyr, & ! number of ice layers
          nblyr    ! number of bio layers
@@ -5805,9 +5806,9 @@
 
       real (kind=dbl_kind), dimension (nblyr+1), intent(out) :: &
          igrid              ! biology vertical interface points
- 
+
       real (kind=dbl_kind), dimension (nilyr+1), intent(out) :: &
-         cgrid            , &  ! CICE vertical coordinate   
+         cgrid            , &  ! CICE vertical coordinate
          icgrid           , &  ! interface grid for CICE (shortwave variable)
          swgrid                ! grid for ice tracers used in dEdd scheme
 
@@ -5815,65 +5816,65 @@
          k           , & ! vertical index
          n               ! thickness category index
 
-      real (kind=dbl_kind) :: & 
+      real (kind=dbl_kind) :: &
          zspace            ! grid spacing for CICE vertical grid
 
 
       if (phi_snow .le. c0) phi_snow = c1-rhos/rhoi
 
       !-----------------------------------------------------------------
-      ! Calculate bio gridn: 0 to 1 corresponds to ice top to bottom 
+      ! Calculate bio gridn: 0 to 1 corresponds to ice top to bottom
       !-----------------------------------------------------------------
 
-      bgrid(:)       = c0 ! zsalinity grid points         
+      bgrid(:)       = c0 ! zsalinity grid points
       bgrid(nblyr+2) = c1 ! bottom value
-      igrid(:)       = c0 ! bgc interface grid points   
+      igrid(:)       = c0 ! bgc interface grid points
       igrid(1)       = c0 ! ice top
       igrid(nblyr+1) = c1 ! ice bottom
-      
+
       zspace = c1/max(c1,(real(nblyr,kind=dbl_kind)))
       do k = 2, nblyr+1
          bgrid(k) = zspace*(real(k,kind=dbl_kind) - c1p5)
       enddo
-      
+
       do k = 2, nblyr
          igrid(k) = p5*(bgrid(k+1)+bgrid(k))
       enddo
 
       !-----------------------------------------------------------------
-      ! Calculate CICE cgrid for interpolation ice top (0) to bottom (1) 
+      ! Calculate CICE cgrid for interpolation ice top (0) to bottom (1)
       !-----------------------------------------------------------------
-       
+
       cgrid(1) = c0                           ! CICE vertical grid top point
       zspace = c1/(real(nilyr,kind=dbl_kind)) ! CICE grid spacing
-    
+
       do k = 2, nilyr+1
-         cgrid(k) = zspace * (real(k,kind=dbl_kind) - c1p5) 
-      enddo 
+         cgrid(k) = zspace * (real(k,kind=dbl_kind) - c1p5)
+      enddo
 
       !-----------------------------------------------------------------
       ! Calculate CICE icgrid for ishortwave interpolation top(0) , bottom (1)
       !-----------------------------------------------------------------
-       
-      icgrid(1) = c0                        
+
+      icgrid(1) = c0
       zspace = c1/(real(nilyr,kind=dbl_kind)) ! CICE grid spacing
-    
+
       do k = 2, nilyr+1
          icgrid(k) = zspace * (real(k,kind=dbl_kind)-c1)
-      enddo 
+      enddo
 
       !------------------------------------------------------------------------
       ! Calculate CICE swgrid for dEdd ice: top of ice (0) , bottom of ice (1)
       ! Does not include snow
       ! see ice_shortwave.F90
       ! swgrid represents the layer index of the delta-eddington ice layer index
-      !------------------------------------------------------------------------ 
+      !------------------------------------------------------------------------
       zspace = c1/(real(nilyr,kind=dbl_kind)) ! CICE grid spacing
-      swgrid(1) = min(c1/60.0_dbl_kind, zspace/c2)      
+      swgrid(1) = min(c1/60.0_dbl_kind, zspace*p25)
       swgrid(2) = zspace/c2                   !+ swgrid(1)
       do k = 3, nilyr+1
          swgrid(k) = zspace * (real(k,kind=dbl_kind)-c1p5)
-      enddo 
+      enddo
 
       end subroutine colpkg_init_hbrine
 

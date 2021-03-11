@@ -977,10 +977,10 @@
 
       !-----------------------------------------------------------------
       ! Biogeochemistry
-      !-----------------------------------------------------------------     
+      !-----------------------------------------------------------------
 
             if (z_tracers) then   ! snow tracers
-               dvssl  = min(p5*vsnon(n), hs_ssl*aicen(n))       !snow surface layer
+               dvssl  = min(p5*vsnon(n)/real(nslyr,kind=dbl_kind), hs_ssl*aicen(n))       !snow surface layer
                dvint  = vsnon(n)- dvssl                         !snow interior
                do k = 1, nbtrcr
                   flux_bio(k) = flux_bio(k) &
