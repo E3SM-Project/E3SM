@@ -1272,9 +1272,11 @@ if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 # Multiscale Modelling Framework mode (MMF)
 if (defined $opts{'use_MMF'}) {
     # disable other scheme options
-    $cfg_ref->set('pbl', 'none');
+    $pbl_pkg = 'none';
+    $microphys_pkg = 'none';
+    $cfg_ref->set('pbl', $pbl_pkg);
+    $cfg_ref->set('microphys', $microphys_pkg);
     $cfg_ref->set('macrophys', 'none');
-    $cfg_ref->set('microphys', 'none');
     if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
     if (defined $opts{'use_MMF_VT'})          { $cfg_ref->set('use_MMF_VT', 1); }
     $cfg_ref->set('use_MMF', 1);
