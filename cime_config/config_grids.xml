@@ -2820,8 +2820,8 @@
       <file grid="lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS18to6v3.200212.nc</file>
       <file grid="atm" mask="WC14to60E2r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_WC14to60E2r3.200929.nc</file>
       <file grid="lnd" mask="WC14to60E2r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_WC14to60E2r3.200929.nc</file>
-      <file grid="atm" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_EC30to60E2r2.21XXXX.nc</file>
-      <file grid="lnd" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_EC30to60E2r2.21XXXX.nc</file>
+      <file grid="atm" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120pg2_EC30to60E2r2.210312.nc</file>
+      <file grid="lnd" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120pg2_EC30to60E2r2.210312.nc</file>
       <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_gx1v6.191017.nc</file>
       <desc>r0125 is 1/8 degree river routing grid:</desc>
     </domain>
