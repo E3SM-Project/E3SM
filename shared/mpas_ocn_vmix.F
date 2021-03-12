@@ -983,7 +983,7 @@ contains
          endif
 
          call tridiagonal_solve_mult(A(Nsurf+1:N), B(Nsurf:N), C(Nsurf:N-1), rhs(:,Nsurf:N), &
-              tracersTemp(:,Nsurf:N), N, nVertLevels, num_tracers) !mlc-arguments need to be changed
+              tracersTemp(:,Nsurf:N), N-Nsurf+1, num_tracers)
 
          tracers(:,Nsurf:N,iCell) = tracersTemp(:,Nsurf:N)
          tracers(:,N+1:nVertLevels,iCell) = -1e34
@@ -1324,12 +1324,12 @@ contains
 !>  c sup-diagonal, filled from 1:n-1  (c(1) apears on row 1)
 !
 !-----------------------------------------------------------------------
-subroutine tridiagonal_solve_mult(a,b,c,r,x,n,nDim,nSystems)!{{{
+subroutine tridiagonal_solve_mult(a,b,c,r,x,n,nSystems)!{{{
 
-   integer,intent(in) :: n, nDim, nSystems
+   integer,intent(in) :: n, nSystems
    real (KIND=RKIND), dimension(n), intent(in) :: a,b,c
-   real (KIND=RKIND), dimension(nSystems,nDim), intent(in) :: r
-   real (KIND=RKIND), dimension(nSystems,nDim), intent(out) :: x
+   real (KIND=RKIND), dimension(nSystems,n), intent(in) :: r
+   real (KIND=RKIND), dimension(nSystems,n), intent(out) :: x
    real (KIND=RKIND), dimension(n) :: bTemp
    real (KIND=RKIND), dimension(nSystems,n) :: rTemp
    real (KIND=RKIND) :: m
