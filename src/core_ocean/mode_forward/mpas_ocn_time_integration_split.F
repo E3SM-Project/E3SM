@@ -1387,11 +1387,9 @@ module ocn_time_integration_split
                ! velocity for normalVelocityCorrectionection is
                ! normalBarotropicVelocity +
                ! normalBaroclinicVelocity + uBolus
-               do k=1,nVertLevels
-                  uTemp(k) = normalBarotropicVelocityNew(iEdge) + &
-                            (normalBaroclinicVelocityNew(k,iEdge) + &
-                             normalGMBolusVelocity(k,iEdge))
-               end do
+               uTemp(:) = normalBarotropicVelocityNew(iEdge) &
+                      + normalBaroclinicVelocityNew(:,iEdge) &
+                      +       normalGMBolusVelocity(:,iEdge)
 
                ! thicknessSum is initialized outside the loop because
                ! on land boundaries maxLevelEdgeTop=0, but I want to
