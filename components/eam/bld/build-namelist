@@ -3619,6 +3619,17 @@ else {
   add_default($nl, 'microp_uniform',   'val'=>'.false.');
 }
 
+# P3
+add_default($nl, 'micro_p3_lookup_dir');
+add_default($nl, 'micro_p3_tableversion');
+add_default($nl, 'micro_aerosolactivation');
+add_default($nl, 'micro_subgrid_cloud');
+add_default($nl, 'micro_tend_output');
+add_default($nl, 'p3_qc_autoCon_Expon');
+add_default($nl, 'p3_qc_accret_Expon');
+add_default($nl, 'do_prescribed_CCN');
+add_default($nl, 'do_Cooper_inP3');
+
 # CLUBB_SGS
 add_default($nl, 'do_clubb_sgs');
 my $clubb_sgs = $nl->get_value('do_clubb_sgs');
