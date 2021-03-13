@@ -63,7 +63,6 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_tidal_forcing.o \
 	   mpas_ocn_forcing_restoring.o \
 	   mpas_ocn_time_average_coupled.o \
-	   mpas_ocn_sea_ice.o \
 	   mpas_ocn_framework_forcing.o \
 	   mpas_ocn_time_varying_forcing.o \
 	   mpas_ocn_wetting_drying.o \
@@ -170,8 +169,6 @@ mpas_ocn_tidal_forcing.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_equati
 mpas_ocn_effective_density_in_land_ice.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_forcing_restoring.o: mpas_ocn_constants.o mpas_ocn_config.o
-
-mpas_ocn_sea_ice.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_equation_of_state.o
 
 mpas_ocn_tracer_surface_restoring.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_framework_forcing.o mpas_ocn_diagnostics_variables.o
 
