@@ -1252,11 +1252,8 @@ end subroutine clubb_init_cnst
 
    real(core_rknd) :: dum_core_rknd                    ! dummy variable  [units vary]
    real(core_rknd) :: hdtime_core_rknd                  ! host model time step in core_rknd
-
-
    !===========================================================================================================================
-   ! End of defining the variables for the change of precision in the CLUBB
-   ! calculation
+   ! End of defining the variables for the change of precision in the CLUBB calculation
    !===========================================================================================================================
 
    real(r8) :: apply_const
@@ -2009,6 +2006,16 @@ end subroutine clubb_init_cnst
          thlpthvp_inout(k)   = real(thlpthvp(i,pverp-k+1), kind = core_rknd)
          rcm_inout(k)        = real(rcm(i,pverp-k+1), kind = core_rknd)
          cloud_frac_inout(k) = real(cloud_frac(i,pverp-k+1), kind = core_rknd)
+
+         ! also flip the arrays for the pdf_params_zm variables to have
+         ! consistent vertical orientation for all variables in restart file
+         ! also need to flip back after calling advance_clubb_core
+
+         pdf_zm_w_1_inout(k) = pdf_zm_w_1(i,pverp-k+1)
+         pdf_zm_w_2_inout(k) = pdf_zm_w_2(i,pverp-k+1)
+         pdf_zm_varnce_w_1_inout(k) = pdf_zm_varnce_w_1(i,pverp-k+1)
+         pdf_zm_varnce_w_2_inout(k) = pdf_zm_varnce_w_2(i,pverp-k+1)
+         pdf_zm_mixt_frac_inout(k) =  pdf_zm_mixt_frac(i,pverp-k+1)
 
          !  Higher order scalar inouts, set to zero
          sclrpthvp_inout(k,:)= 0._core_rknd
