@@ -55,7 +55,10 @@ module advance_xp2_xpyp_module
                                wpsclrp2, wpsclrprtp, wpsclrpthlp,      & ! In
                                wp2_splat,                              & ! In
                                rtp2, thlp2, rtpthlp, up2, vp2,         & ! Inout
-                               sclrp2, sclrprtp, sclrpthlp)              ! Inout
+                               sclrp2, sclrprtp, sclrpthlp,            & ! Inout
+                               um_pert, vm_pert, wp2_pert, wp2_zt_pert,& ! In
+                               Kh_zt_pert, upwp_pert, vpwp_pert,       & ! In
+                               up2_pert, vp2_pert)                       ! Inout
 
     ! Description:
     ! Prognose scalar variances, scalar covariances, and horizontal turbulence components.
@@ -260,6 +263,20 @@ module advance_xp2_xpyp_module
     real( kind = core_rknd ), intent(inout), dimension(gr%nz, sclr_dim) ::  & 
       sclrp2, sclrprtp, sclrpthlp
 
+    ! Perturbed variables
+    real( kind = core_rknd ), intent(in), dimension(gr%nz), optional ::  &
+      um_pert,              & ! u wind (thermodynamic levels)         [m/s]
+      vm_pert,              & ! v wind (thermodynamic levels)         [m/s]
+      wp2_pert,             & ! <w'^2> (momentum levels)              [m^2/s^2]
+      wp2_zt_pert,          & ! <w'^2> (thermodynamic levels)         [m^2/s^2]
+      Kh_zt_pert,           & ! eddy diffusivity (thermo. levels)     [m^2/s]
+      upwp_pert,            & ! <u'w'> (momentum levels)              [m^2/s^2]
+      vpwp_pert               ! <v'w'> (momentum levels)              [m^2/s^2]
+
+    real( kind = core_rknd ), intent(inout), dimension(gr%nz), optional ::  &
+      up2_pert,             & ! <u'^2>                        [m^2/s^2]
+      vp2_pert                ! <v'^2>                        [m^2/s^2]
+
     ! Local Variables
     real( kind = core_rknd ), dimension(gr%nz) :: & 
       C2sclr_1d, C2rt_1d, C2thl_1d, C2rtthl_1d, &
@@ -365,7 +382,8 @@ module advance_xp2_xpyp_module
     ! Eddy Diffusion for Variances and Covariances.
     real( kind = core_rknd ), dimension(gr%nz) ::  & 
       Kw2, & ! For rtp2, thlp2, rtpthlp, and passive scalars  [m^2/s]
-      Kw9    ! For up2 and vp2                                [m^2/s]
+      Kw9, & ! For up2 and vp2                                [m^2/s]
+      Kw9_pert ! For up2_pert and vp2_pert                    [m^2/s]
 
     real( kind = core_rknd ), dimension(gr%nz) :: & 
       a1_zt,     & ! a_1 interpolated to thermodynamic levels      [-]
@@ -803,6 +821,10 @@ module advance_xp2_xpyp_module
       ! Kw9 = c_K9 * Kh_zt
       Kw9(k) = c_K9 * Kh_zt(k)
 
+      if ( present(wp2_pert) ) then
+         Kw9_pert(k) = c_K9 * Kh_zt_pert(k)
+      end if
+
     enddo
 
     !!!!!***** r_t'^2 *****!!!!!
@@ -954,7 +976,61 @@ module advance_xp2_xpyp_module
       call pos_definite_variances( xp2_xpyp_vp2, dt, w_tol_sqd, & ! Intent(in)
                                    rho_ds_zm, rho_ds_zt, &        ! Intent(in)
                                    vp2 )                          ! Intent(inout)
-    endif
+   endif
+
+   if ( present(wp2_pert) ) then
+
+      ! Implicit contributions to term up2/vp2
+      call xp2_xpyp_lhs( dt, l_iter, & ! In
+                         coef_wpup2_wpvp2_implicit, & ! In
+                         coef_wpup2_wpvp2_implicit_zm, & ! In
+                         sgn_t_vel_up2_vp2, tau_zm, wm_zm, Kw9_pert, & ! In
+                         rho_ds_zt, rho_ds_zm, invrs_rho_ds_zm, & ! In
+                         C4_C14_1d, nu9_vert_res_dep, & ! In
+                         lhs ) ! Out
+
+      ! Explicit contributions to up2
+      call xp2_xpyp_uv_rhs( xp2_xpyp_up2, dt, l_iter, & ! In
+                            coef_wpup2_wpvp2_implicit, & ! In
+                            coef_wpup2_wpvp2_implicit_zm, & ! In
+                            term_wpup2_explicit, term_wpup2_explicit_zm, & ! In
+                            sgn_t_vel_up2_vp2, wp2_pert, wp2_zt_pert, wpthvp, & ! In
+                            Lscale, C4_C14_1d, tau_zm,  & ! In
+                            um_pert, vm_pert, upwp_pert, vpwp_pert, up2_pert, vp2_pert, & ! In
+                            rho_ds_zt, rho_ds_zm, invrs_rho_ds_zm, & ! In
+                            thv_ds_zm, C4, C5, C14, wp2_splat, & ! In
+                            uv_rhs(:,1) ) ! Out
+
+      ! Explicit contributions to vp2
+      call xp2_xpyp_uv_rhs( xp2_xpyp_vp2, dt, l_iter, & ! In
+                            coef_wpup2_wpvp2_implicit, & ! In
+                            coef_wpup2_wpvp2_implicit_zm, & ! In
+                            term_wpvp2_explicit, term_wpvp2_explicit_zm, & ! In
+                            sgn_t_vel_up2_vp2, wp2_pert, wp2_zt_pert, wpthvp, & ! In
+                            Lscale, C4_C14_1d, tau_zm,  & ! In
+                            vm_pert, um_pert, vpwp_pert, upwp_pert, vp2_pert, up2_pert, & ! In
+                            rho_ds_zt, rho_ds_zm, invrs_rho_ds_zm, & ! In
+                            thv_ds_zm, C4, C5, C14, wp2_splat, & ! In
+                            uv_rhs(:,2) ) ! Out
+
+      ! Solve the tridiagonal system
+      call xp2_xpyp_solve( xp2_xpyp_up2_vp2, 2, & ! Intent(in)
+                           uv_rhs, lhs,         & ! Intent(inout)
+                           uv_solution )          ! Intent(out)
+
+      up2_pert(1:gr%nz) = uv_solution(1:gr%nz,1)
+      vp2_pert(1:gr%nz) = uv_solution(1:gr%nz,2)
+
+      ! Apply the positive definite scheme to variances
+      if ( l_hole_fill ) then
+         call pos_definite_variances( xp2_xpyp_up2, dt, w_tol_sqd, & ! Intent(in)
+                                      rho_ds_zm, rho_ds_zt, &        ! Intent(in)
+                                      up2_pert )                     ! Intent(inout)
+         call pos_definite_variances( xp2_xpyp_vp2, dt, w_tol_sqd, & ! Intent(in)
+                                      rho_ds_zm, rho_ds_zt, &        ! Intent(in)
+                                      vp2_pert )                     ! Intent(inout)
+      endif
+   end if
 
 
     ! Clipping for r_t'^2
@@ -1104,6 +1180,10 @@ module advance_xp2_xpyp_module
                               stats_zm )             ! Intent(inout)
     endif
 
+    if ( present( wp2_pert ) ) then
+       up2_pert = min(max(up2_pert, w_tol_sqd), 1000._core_rknd)
+    end if
+
     ! Clipping for v'^2
 
     ! Clip negative values of vp2
@@ -1126,6 +1206,10 @@ module advance_xp2_xpyp_module
       call stat_modify( ivp2_cl, vp2 / dt, &   ! Intent(in)
                               stats_zm )             ! Intent(inout)
     endif
+
+    if ( present( wp2_pert ) ) then
+       vp2_pert = min(max(vp2_pert, w_tol_sqd), 1000._core_rknd)
+    end if
 
     ! When selected, apply sponge damping after up2 and vp2 have been advanced.
     if ( up2_vp2_sponge_damp_settings%l_sponge_damping ) then

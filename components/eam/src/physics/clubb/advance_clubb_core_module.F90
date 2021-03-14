@@ -166,6 +166,7 @@ module advance_clubb_core_module
                wpthlp_sfc_pert, wprtp_sfc_pert, &                   ! intent(in)
                upwp_sfc_pert, vpwp_sfc_pert, &                      ! intent(in)
                thlm_pert, rtm_pert, um_pert, vm_pert, &             ! intent(inout)
+               wp2_pert, up2_pert, vp2_pert, &                      ! intent(inout)
                wpthlp_pert, wprtp_pert, upwp_pert, vpwp_pert)       ! intent(inout)
 
     ! Description:
@@ -648,6 +649,9 @@ module advance_clubb_core_module
       rtm_pert,     & ! perturbed total water mixing ratio, r_t (thermo. levels) [kg/kg]
       um_pert,      & ! perturbed eastward grid-mean wind component (thermodynamic levels)   [m/s]
       vm_pert,      & ! perturbed northward grid-mean wind component (thermodynamic levels)   [m/s]
+      wp2_pert,     & ! perturbed w'^2 (momentum levels)          [m^2/s^2]
+      up2_pert,     & ! perturbed u'^2 (momentum levels)          [m^2/s^2]
+      vp2_pert,     & ! perturbed v'^2 (momentum levels)          [m^2/s^2]
       wpthlp_pert,  & ! perturbed w' th_l' (momentum levels)      [(m/s) K]
       wprtp_pert,   & ! perturbed w' r_t' (momentum levels)       [(kg/kg) m/s]
       upwp_pert,    & ! perturbed u'w' (momentum levels)          [m^2/s^2]
@@ -782,6 +786,15 @@ module advance_clubb_core_module
    real( kind = core_rknd ), dimension(gr%nz) :: &
      wp2_splat, &   ! Tendency of <w'2> due to eddies compressing  [m^2/s^3]
      wp3_splat      ! Tendency of <w'3> due to eddies compressing  [m^3/s^4]
+
+    ! Variables used for perturbed code.
+    real( kind = core_rknd ), dimension(gr%nz) :: &
+         wp2_zt_pert, & ! <w'^2> on thermo. levels [m^2/s^2]
+         em_pert, & ! TKE [m^2/s^2]
+         sqrt_em_zt_pert, & ! sqrt(TKE) [m^2/s^2]
+         Kh_zt_pert, & ! Thermodynamic eddy diffusivity on zt [m^2/s]
+         Kh_zm_pert, & ! Thermodynamic eddy diffusivity of zm [m^2/s]
+         Km_zm_pert ! Eddy diffusivity for momentum on zm grid levels [m^2/s]
 
     ! Variables associated with upgradient momentum contributions due to cumuli
     !real( kind = core_rknd ), dimension(gr%nz) :: &
@@ -1017,6 +1030,10 @@ module advance_clubb_core_module
     wp2_zt = max( zm2zt( wp2 ), w_tol_sqd ) ! Positive definite quantity
     wp3_zm = zt2zm( wp3 )
 
+    if ( present(wp2_pert) ) then
+       wp2_zt_pert = max( zm2zt( wp2_pert ), w_tol_sqd )
+    end if
+
     Skw_zt(1:gr%nz) = Skx_func( wp2_zt(1:gr%nz), wp3(1:gr%nz), w_tol )
     Skw_zm(1:gr%nz) = Skx_func( wp2(1:gr%nz), wp3_zm(1:gr%nz), w_tol )
 
@@ -1101,11 +1118,20 @@ module advance_clubb_core_module
       if ( .not. l_tke_aniso ) then
         ! tke is assumed to be 3/2 of wp2
         em = three_halves * wp2
+        if ( present(wp2_pert) ) then
+           em_pert = three_halves * wp2_pert
+        end if
       else
         em = 0.5_core_rknd * ( wp2 + vp2 + up2 )
+        if ( present(wp2_pert) ) then
+           em_pert = 0.5_core_rknd * (wp2_pert + vp2_pert + up2_pert)
+        end if
       end if
 
       sqrt_em_zt = SQRT( MAX( em_min, zm2zt( em ) ) )
+      if ( present(wp2_pert) ) then
+         sqrt_em_zt_pert = SQRT( MAX( em_min, zm2zt( em_pert ) ) )
+      end if
 
       !----------------------------------------------------------------
       ! Compute mixing length
@@ -1348,6 +1374,12 @@ module advance_clubb_core_module
       Kh_zm = c_K * max( zt2zm( Lscale ), zero_threshold )  &
                   * sqrt( max( em, em_min ) )
 
+      if (present(wp2_pert)) then
+         Kh_zt_pert = c_K * Lscale * sqrt_em_zt_pert
+         Kh_zm_pert = c_K * max( zt2zm( Lscale ), zero_threshold )  &
+              * sqrt( max( em_pert, em_min ) )
+      end if
+
 #if defined(CLUBB_CAM) || defined(GFDL)
       khzt(:) = Kh_zt(:)
       khzm(:) = Kh_zm(:)
@@ -1393,6 +1425,19 @@ module advance_clubb_core_module
         end if
 
         ! Diagnose surface variances based on surface fluxes.
+        if ( present(wp2_pert) ) then
+           ! Hacky way of doing this with wind perturbations: call once with
+           ! perturbed winds, then again with the "real" values.
+           call calc_surface_varnce( upwp_sfc_pert, vpwp_sfc_pert, wpthlp_sfc, wprtp_sfc, &      ! intent(in)
+                                um_pert(2), vm_pert(2), Lscale_up(2), wpsclrp_sfc,        &      ! intent(in)
+                                wp2_splat(1), tau_zm(1),                        &      ! intent(in)
+                                wp2_pert(1), up2_pert(1), vp2_pert(1),          &      ! intent(out)
+                                thlp2(1), rtp2(1), rtpthlp(1),                  &      ! intent(out)
+                                sclrp2(1,1:sclr_dim),                           &      ! intent(out)
+                                sclrprtp(1,1:sclr_dim),                         &      ! intent(out)
+                                sclrpthlp(1,1:sclr_dim) )                              ! intent(out)
+        end if
+
         call calc_surface_varnce( upwp_sfc, vpwp_sfc, wpthlp_sfc, wprtp_sfc, &      ! intent(in)
                              um(2), vm(2), Lscale_up(2), wpsclrp_sfc,        &      ! intent(in)
                              wp2_splat(1), tau_zm(1),                        &      ! intent(in)
@@ -1600,7 +1645,10 @@ module advance_clubb_core_module
                              wpsclrp2, wpsclrprtp, wpsclrpthlp,      & ! intent(in)
                              wp2_splat,                              & ! intent(in)
                              rtp2, thlp2, rtpthlp, up2, vp2,         & ! intent(inout)
-                             sclrp2, sclrprtp, sclrpthlp)              ! intent(inout)
+                             sclrp2, sclrprtp, sclrpthlp,            & ! intent(inout)
+                             um_pert, vm_pert, wp2_pert, wp2_zt_pert,& ! intent(in)
+                             Kh_zt_pert, upwp_pert, vpwp_pert,       & ! intent(in)
+                             up2_pert, vp2_pert)                       ! intent(inout)
 
       if ( clubb_at_least_debug_level( 0 ) ) then
           if ( err_code == clubb_fatal_error ) then
@@ -1625,6 +1673,7 @@ module advance_clubb_core_module
          vpwp_cl_num = 1 ! First instance of v'w' clipping.
       endif ! l_predict_upwp_vpwp
 
+      ! SPS: clip perturbed values by up2/vp2/wp2, or up2_pert/vp2_pert/wp2_pert?
       call clip_covars_denom( dt, rtp2, thlp2, up2, vp2, wp2,           & ! intent(in)
                               sclrp2, wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
                               wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
@@ -1651,7 +1700,10 @@ module advance_clubb_core_module
              wp2_splat, wp3_splat,                               & ! intent(in)
              pdf_implicit_coefs_terms,                           & ! intent(in)
              wprtp, wpthlp, rtp2, thlp2,                         & ! intent(in)
-             wp2, wp3, wp3_zm, wp2_zt )                            ! intent(inout)
+             wp2, wp3, wp3_zm, wp2_zt,                           & ! intent(inout)
+             um_pert, vm_pert, up2_pert, vp2_pert,               & ! In
+             Kh_zm_pert, Kh_zt_pert, upwp_pert, vpwp_pert,       & ! In
+             wp2_pert, wp2_zt_pert)                                ! Inout
 
       if ( clubb_at_least_debug_level( 0 ) ) then
           if ( err_code == clubb_fatal_error ) then
@@ -1756,6 +1808,9 @@ module advance_clubb_core_module
 
         Km_zm = Kh_zm * c_K10   ! Coefficient for momentum
 
+        if ( present(wp2_pert) ) then
+           Km_zm_pert = Kh_zm_pert * c_K10
+        end if
       end if
 
       Kmh_zm = Kh_zm * c_K10h ! Coefficient for thermo
@@ -1777,7 +1832,8 @@ module advance_clubb_core_module
                                   rho_ds_zm, invrs_rho_ds_zt,                   & ! intent(in)
                                   fcor, l_implemented,                          & ! intent(in)
                                   um, vm, edsclrm,                              & ! intent(inout)
-                                  upwp, vpwp, wpedsclrp, &                        ! intent(inout)
+                                  upwp, vpwp, wpedsclrp,                        & ! intent(inout)
+                                  Km_zm_pert,                                   & ! intent(in)
                                   um_pert, vm_pert, upwp_pert, vpwp_pert)         ! intent(inout)
 
       if ( l_do_expldiff_rtm_thlm ) then

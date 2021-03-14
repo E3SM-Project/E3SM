@@ -67,7 +67,10 @@ module advance_wp2_wp3_module
                               wp2_splat, wp3_splat,                    & ! intent(in)
                               pdf_implicit_coefs_terms,                & ! In
                               wprtp, wpthlp, rtp2, thlp2,              & ! In
-                              wp2, wp3, wp3_zm, wp2_zt )                 ! Inout
+                              wp2, wp3, wp3_zm, wp2_zt,                & ! Inout
+                              um_pert, vm_pert, up2_pert, vp2_pert,    & ! In
+                              Kh_zm_pert, Kh_zt_pert, upwp_pert, vpwp_pert, & ! In
+                              wp2_pert, wp2_zt_pert)                     ! Inout
 
     ! Description:
     ! Advance w'^2 and w'^3 one timestep.
@@ -207,6 +210,25 @@ module advance_wp2_wp3_module
     real( kind = core_rknd ), dimension(gr%nz), intent(inout) ::  &
       wp2_zt  ! w'^2 interpolated to thermodyamic levels  [m^2/s^2]
 
+    ! Perturbed variables
+    real( kind = core_rknd ), intent(in), dimension(gr%nz), optional ::  &
+      um_pert,              & ! u wind (thermodynamic levels)         [m/s]
+      vm_pert,              & ! v wind (thermodynamic levels)         [m/s]
+      up2_pert,             & ! <u'^2>                                [m^2/s^2]
+      vp2_pert,             & ! <v'^2>                                [m^2/s^2]
+      Kh_zm_pert,           & ! eddy diffusivity (mom. levels)         [m^2/s]
+      Kh_zt_pert,           & ! eddy diffusivity (thermo. levels)     [m^2/s]
+      upwp_pert,            & ! <u'w'> (momentum levels)              [m^2/s^2]
+      vpwp_pert               ! <v'w'> (momentum levels)              [m^2/s^2]
+
+    real( kind = core_rknd ), intent(inout), dimension(gr%nz), optional ::  &
+      wp2_pert,             & ! <w'^2> (momentum levels)              [m^2/s^2]
+      wp2_zt_pert             ! <w'^2> (thermodynamic levels)         [m^2/s^2]
+
+    real( kind = core_rknd ), dimension(gr%nz) ::  &
+      wp3_copy,             & ! <w'^3> (thermodynamic levels)         [m^3/s^3]
+      wp3_zm_copy             ! <w'^3> (momentum levels)              [m^3/s^3]
+
     ! Local Variables
     real( kind = core_rknd ), dimension(gr%nz) ::  & 
       tauw3t  ! Currently just tau_zt                           [s]
@@ -214,6 +236,8 @@ module advance_wp2_wp3_module
     ! Eddy Diffusion for w'^2 and w'^3.
     real( kind = core_rknd ), dimension(gr%nz) :: Kw1    ! w'^2 coef. eddy diff.  [m^2/s]
     real( kind = core_rknd ), dimension(gr%nz) :: Kw8    ! w'^3 coef. eddy diff.  [m^2/s]
+    real( kind = core_rknd ), dimension(gr%nz) :: Kw1_pert ! w'^2 coef. eddy diff.  [m^2/s]
+    real( kind = core_rknd ), dimension(gr%nz) :: Kw8_pert ! w'^3 coef. eddy diff.  [m^2/s]
 
     ! Internal variables for C11 function, Vince Larson 13 Mar 2005
     ! Brian added C1 function.
@@ -326,6 +350,44 @@ module advance_wp2_wp3_module
       Kw8(k) = c_K8 * Kh_zm(k)
 
     enddo
+
+    if (present(wp2_pert)) then
+
+       ! Define the Coefficent of Eddy Diffusivity for the wp2 and wp3.
+       do k = 1, gr%nz, 1
+
+          ! Kw1 is used for wp2, which is located on momentum levels.
+          ! Kw1 is located on thermodynamic levels.
+          ! Kw1 = c_K1 * Kh_zt
+          Kw1_pert(k) = c_K1 * Kh_zt_pert(k)
+
+          ! Kw8 is used for wp3, which is located on thermodynamic levels.
+          ! Kw8 is located on momentum levels.
+          ! Note: Kw8 is usually defined to be 1/2 of Kh_zm.
+          ! Kw8 = c_K8 * Kh_zm
+          Kw8_pert(k) = c_K8 * Kh_zm_pert(k)
+
+       enddo
+
+       wp3_copy = wp3
+       wp3_zm_copy = wp3_zm
+
+       ! Solve semi-implicitly
+       call wp23_solve( dt, sfc_elevation, sigma_sqd_w, wm_zm, & ! Intent(in)
+                        wm_zt, a3, a3_zt, wp3_on_wp2, wp4,     & ! Intent(in)
+                        wpthvp, wp2thvp, um_pert, vm_pert, upwp_pert, vpwp_pert,   & ! Intent(in)
+                        up2_pert, vp2_pert, Kw1_pert, Kw8_pert, Kh_zt_pert, Skw_zt,     & ! Intent(in)
+                        tau_zm, tauw3t, tau_C1_zm, C1_Skw_fnc, & ! Intent(in)
+                        C11_Skw_fnc, C16_fnc, rho_ds_zm,       & ! Intent(in)
+                        rho_ds_zt, invrs_rho_ds_zm,            & ! Intent(in)
+                        invrs_rho_ds_zt, radf,                 & ! Intent(in)
+                        thv_ds_zm, thv_ds_zt,                  & ! Intent(in)
+                        wp2_splat, wp3_splat,                  & ! Intent(in)
+                        pdf_implicit_coefs_terms,              & ! Intent(in)
+                        wprtp, wpthlp, rtp2, thlp2,            & ! Intent(in)
+                        wp2_pert, wp3_copy, wp3_zm_copy, wp2_zt_pert )               ! Intent(inout)
+
+    end if
 
     ! Solve semi-implicitly
     call wp23_solve( dt, sfc_elevation, sigma_sqd_w, wm_zm, & ! Intent(in)

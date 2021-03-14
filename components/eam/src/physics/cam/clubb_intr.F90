@@ -157,6 +157,9 @@ module clubb_intr
     rtm_pert_idx, &     ! perturbed mean total water mixing ratio
     um_pert_idx, &      ! perturbed mean of east-west wind
     vm_pert_idx, &      ! perturbed mean of north-south wind
+    wp2_pert_idx, &     ! perturbed vertical velocity variances
+    up2_pert_idx, &     ! perturbed variance of east-west wind
+    vp2_pert_idx, &     ! perturbed variance of north-south wind
     wpthlp_pert_idx, &  ! perturbed turbulent flux of thetal
     wprtp_pert_idx, &   ! turbulent flux of total water
     upwp_pert_idx, &    ! perturbed east-west momentum flux
@@ -332,6 +335,9 @@ module clubb_intr
     call pbuf_add_field('RTM_PERT',   'physpkg', dtype_r8, (/pcols,pverp/), rtm_pert_idx)
     call pbuf_add_field('UM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), um_pert_idx)
     call pbuf_add_field('VM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), vm_pert_idx)
+    call pbuf_add_field('WP2_PERT',   'physpkg', dtype_r8, (/pcols,pverp/), wp2_pert_idx)
+    call pbuf_add_field('UP2_PERT',   'physpkg', dtype_r8, (/pcols,pverp/), up2_pert_idx)
+    call pbuf_add_field('VP2_PERT',   'physpkg', dtype_r8, (/pcols,pverp/), vp2_pert_idx)
     call pbuf_add_field('WPTHLP_PERT','physpkg', dtype_r8, (/pcols,pverp/), wpthlp_pert_idx)
     call pbuf_add_field('WPRTP_PERT', 'physpkg', dtype_r8, (/pcols,pverp/), wprtp_pert_idx)
     call pbuf_add_field('UPWP_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), upwp_pert_idx)
@@ -1022,6 +1028,9 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, rtm_pert_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, um_pert_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, vm_pert_idx,     0.0_r8)
+       call pbuf_set_field(pbuf2d, wp2_pert_idx,    0.0_r8)
+       call pbuf_set_field(pbuf2d, up2_pert_idx,    0.0_r8)
+       call pbuf_set_field(pbuf2d, vp2_pert_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, wpthlp_pert_idx, 0.0_r8)
        call pbuf_set_field(pbuf2d, wprtp_pert_idx,  0.0_r8)
        call pbuf_set_field(pbuf2d, upwp_pert_idx,   0.0_r8)
@@ -1418,6 +1427,9 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: rtm_pert ! perturbed mean moisture mixing ratio         [kg/kg]
    real(r8), pointer, dimension(:,:) :: um_pert  ! perturbed meridional wind                    [m/s]
    real(r8), pointer, dimension(:,:) :: vm_pert  ! perturbed zonal wind                         [m/s]
+   real(r8), pointer, dimension(:,:) :: wp2_pert ! perturbed vertical velocity variance         [m^2/s^2]
+   real(r8), pointer, dimension(:,:) :: up2_pert ! perturbed east-west wind variance            [m^2/s^2]
+   real(r8), pointer, dimension(:,:) :: vp2_pert ! perturbed north-south wind variance          [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: wpthlp_pert! perturbed turbulent flux of thetal         [m/s K]
    real(r8), pointer, dimension(:,:) :: wprtp_pert! perturbed turbulent flux of moisture        [m/s kg/kg]
    real(r8), pointer, dimension(:,:) :: upwp_pert! perturbed meridional wind flux               [m^2/s^2]
@@ -1624,6 +1636,9 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, rtm_pert_idx,rtm_pert,start=(/1,1/),          kount=(/pcols,pverp/))
    call pbuf_get_field(pbuf, um_pert_idx, um_pert, start=(/1,1/),          kount=(/pcols,pverp/))
    call pbuf_get_field(pbuf, vm_pert_idx, vm_pert, start=(/1,1/),          kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, wp2_pert_idx,wp2_pert,start=(/1,1/),          kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, up2_pert_idx,up2_pert,start=(/1,1/),          kount=(/pcols,pverp/))
+   call pbuf_get_field(pbuf, vp2_pert_idx,vp2_pert,start=(/1,1/),          kount=(/pcols,pverp/))
    call pbuf_get_field(pbuf, wpthlp_pert_idx,wpthlp_pert,start=(/1,1/),    kount=(/pcols,pverp/))
    call pbuf_get_field(pbuf, wprtp_pert_idx,wprtp_pert,start=(/1,1/),      kount=(/pcols,pverp/))
    call pbuf_get_field(pbuf, upwp_pert_idx,upwp_pert,start=(/1,1/),        kount=(/pcols,pverp/))
@@ -2176,6 +2191,9 @@ end subroutine clubb_init_cnst
          rtm_pert(i,:) = rtm_in
          um_pert(i,:) = um_in
          vm_pert(i,:) = vm_in
+         wp2_pert(i,:) = wp2_in
+         up2_pert(i,:) = up2_in
+         vp2_pert(i,:) = vp2_in
          wpthlp_pert(i,:) = wpthlp_in
          wprtp_pert(i,:) = wprtp_in
          upwp_pert(i,:) = upwp_in
@@ -2186,6 +2204,9 @@ end subroutine clubb_init_cnst
          rtm_pert(i,:) = rtm_pert(i,:) + rtm_in
          um_pert(i,:) = um_pert(i,:) + um_in
          vm_pert(i,:) = vm_pert(i,:) + vm_in
+         wp2_pert(i,:) = wp2_pert(i,:) + wp2_in
+         up2_pert(i,:) = up2_pert(i,:) + up2_in
+         vp2_pert(i,:) = vp2_pert(i,:) + vp2_in
          wpthlp_pert(i,:) = wpthlp_pert(i,:) + wpthlp_in
          wprtp_pert(i,:) = wprtp_pert(i,:) + wprtp_in
          upwp_pert(i,:) = upwp_pert(i,:) + upwp_in
@@ -2284,6 +2305,7 @@ end subroutine clubb_init_cnst
               wpthlp_sfc_pert, wprtp_sfc_pert, &                           ! intent(in)
               upwp_sfc_pert, vpwp_sfc_pert, &                              ! intent(in)
               thlm_pert(i,:), rtm_pert(i,:), um_pert(i,:), vm_pert(i,:), & ! intent(inout)
+              wp2_pert(i,:), up2_pert(i,:), vp2_pert(i,:), &               ! intent(inout)
               wpthlp_pert(i,:), wprtp_pert(i,:), &                         ! intent(inout)
               upwp_pert(i,:), vpwp_pert(i,:))  ! intent(inout)
          call t_stopf('advance_clubb_core')
@@ -2343,6 +2365,9 @@ end subroutine clubb_init_cnst
       rtm_pert(i,:) = rtm_pert(i,:) - rtm_in
       um_pert(i,:) = um_pert(i,:) - um_in
       vm_pert(i,:) = vm_pert(i,:) - vm_in
+      wp2_pert(i,:) = wp2_pert(i,:) - wp2_in
+      up2_pert(i,:) = up2_pert(i,:) - up2_in
+      vp2_pert(i,:) = vp2_pert(i,:) - vp2_in
       wpthlp_pert(i,:) = wpthlp_pert(i,:) - wpthlp_in
       wprtp_pert(i,:) = wprtp_pert(i,:) - wprtp_in
       upwp_pert(i,:) = upwp_pert(i,:) - upwp_in

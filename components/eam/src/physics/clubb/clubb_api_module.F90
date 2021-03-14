@@ -547,6 +547,7 @@ contains
     wpthlp_sfc_pert, wprtp_sfc_pert, &                      ! intent(in)
     upwp_sfc_pert, vpwp_sfc_pert, &                         ! intent(in)
     thlm_pert, rtm_pert, um_pert, vm_pert, &                ! intent(inout)
+    wp2_pert, up2_pert, vp2_pert, &                         ! intent(inout)
     wpthlp_pert, wprtp_pert, upwp_pert, vpwp_pert)          ! intent(inout)
 
     use advance_clubb_core_module, only : advance_clubb_core
@@ -730,6 +731,9 @@ contains
       rtm_pert,     & ! perturbed total water mixing ratio, r_t (thermo. levels) [kg/kg]
       um_pert,      & ! perturbed eastward grid-mean wind component (thermodynamic levels)   [m/s]
       vm_pert,      & ! perturbed northward grid-mean wind component (thermodynamic levels)   [m/s]
+      wp2_pert,     & ! perturbed w'^2 (momentum levels)          [m^2/s^2]
+      up2_pert,     & ! perturbed u'^2 (momentum levels)          [m^2/s^2]
+      vp2_pert,     & ! perturbed v'^2 (momentum levels)          [m^2/s^2]
       wpthlp_pert,  & ! perturbed w' th_l' (momentum levels)      [(m/s) K]
       wprtp_pert,   & ! perturbed w' r_t' (momentum levels)       [(kg/kg) m/s]
       upwp_pert,    & ! perturbed u'w' (momentum levels)          [m^2/s^2]
@@ -779,6 +783,7 @@ contains
       wpthlp_sfc_pert, wprtp_sfc_pert, &                      ! intent(in)
       upwp_sfc_pert, vpwp_sfc_pert, &                         ! intent(in)
       thlm_pert, rtm_pert, um_pert, vm_pert, &                ! intent(inout)
+      wp2_pert, up2_pert, vp2_pert, &                         ! intent(inout)
       wpthlp_pert, wprtp_pert, upwp_pert, vpwp_pert)          ! intent(inout)
 
     err_code_api = err_code
