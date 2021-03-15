@@ -3,6 +3,12 @@
 Debug:
   Atmosphere DAG Verbosity Level: 5
 
+Initial Conditions:
+  Initial Conditions File: should_not_be_neeeded_and_code_will_throw_if_it_tries_to_open_this_nonexistent_file.nc
+  A: 1.0
+  B: 2.0
+  C: 3.0
+
 Atmosphere Processes:
   Number of Entries: 3
   Schedule Type: Sequential

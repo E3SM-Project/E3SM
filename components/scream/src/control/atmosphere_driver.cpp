@@ -242,7 +242,7 @@ initialize_fields (const util::TimeStamp& t0)
 
   if (ifield>0) {
     // There are fields to read from the nc file. We must have a valid nc file then.
-    ic_reader_params.set("FILENAME",m_atm_params.get<std::string>("Initial Conditions File"));
+    ic_reader_params.set("FILENAME",ic_pl.get<std::string>("Initial Conditions File"));
 
     MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
     if (!scorpio::is_eam_pio_subsystem_inited()) {
