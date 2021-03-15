@@ -1761,6 +1761,8 @@ module li_calving
                ablationVelSum = 0.0_RKIND
                thkCount = 0
                nOneCellBack = 0
+               oneCellBackList(:) = 0
+               twoCellsBackList(:) = 0
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   jCell = cellsOnCell(iNeighbor, iCell)
                   if ( li_mask_is_ice(cellMask(jCell)) ) then
@@ -1794,7 +1796,7 @@ module li_calving
                      thkSum = thkSum + thicknessForAblation(twoCellsBackList(kCell))
                      uvelSum = uvelSum + uvelForAblation(twoCellsBackList(kCell))
                      vvelSum = vvelSum + vvelforAblation(twoCellsBackList(kCell))
-                     ablationVelSum = ablationVelSum + ablationVelocity(kCell)
+                     ablationVelSum = ablationVelSum + ablationVelocity(twoCellsBackList(kCell))
                      thkCount = thkCount + 1
                   enddo
                endif
