@@ -192,81 +192,69 @@ initialize_fields (const util::TimeStamp& t0)
   // Figure out the list of inputs for the atmosphere.
   auto fields_in = m_atm_process_group->get_required_fields();
 
+  const auto& ic_pl = m_atm_params.sublist("Initial Conditions");
+
   // Create parameter list for AtmosphereInput
-  ekat::ParameterList ic_params;
-  ic_params.set("FILENAME",m_atm_params.get<std::string>("Initial Conditions File"));
-  ic_params.set("GRID",std::string("Physics"));
-  auto& ic_fields = ic_params.sublist("FIELDS");
+  ekat::ParameterList ic_reader_params;
+  ic_reader_params.set("GRID",std::string("Physics"));
+  auto& ic_fields = ic_reader_params.sublist("FIELDS");
   ic_fields.set("Number of Fields",static_cast<Int>(fields_in.size()));
-  int i=0;
+  int ifield=0;
   for (auto& fid : fields_in) {
     const auto& name = fid.name();
-    auto& fh = *m_field_repo->get_field(fid).get_header_ptr();;
-    ic_fields.set(ekat::strint("field",i+1),name); 
-    ++i;
+    auto f = m_field_repo->get_field(fid);
+    // First, check if the input file contains constant values for some of the fields
+    if (ic_pl.isParameter(name)) {
+      // The user provided a constant value for this field. Simply use that.
+      const auto& layout = f.get_header().get_identifier().get_layout();
 
-    // While at it, set the time stamp of the loaded fields to t0
-    fh.get_tracking().update_time_stamp(t0);
+      // For vector fields, we expect something like "fname: [val0,...,valN],
+      // where the field dim is N+1. For scalars, "fname: val". So check the
+      // field layout first, so we know what to get from the parameter list.
+      if (layout.is_vector_layout()) {
+        const auto idim = layout.get_vector_dim();
+        const auto vec_dim = layout.dim(idim);
+        const auto& values = ic_pl.get<std::vector<Real>>(name);
+        EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
+            "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
+            "       Field dimension: " + std::to_string(vec_dim) + "\n"
+            "       Array dimenions: " + std::to_string(values.size()) + "\n");
+
+        // Extract a subfield for each component. This is not "too" expensive, expecially
+        // considering that this code is executed during initialization only.
+        for (int comp=0; comp<vec_dim; ++comp) {
+          auto f_i = f.get_component(comp);
+          f_i.set_value(values[comp]);
+        }
+      } else {
+        const auto& value = ic_pl.get<Real>(name);
+        f.set_value(value);
+      }
+    } else {
+      // The field does not have a constant value, so we expect to find it in the nc file
+      ic_fields.set(ekat::strint("field",ifield+1),name); 
+      ++ifield;
+
+      // While at it, set the time stamp of the loaded fields to t0
+    }
+    f.get_header().get_tracking().update_time_stamp(t0);
   }
 
-  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-  if (!scorpio::is_eam_pio_subsystem_inited()) {
-    scorpio::eam_init_pio_subsystem(fcomm);
-  } else {
-    EKAT_REQUIRE_MSG (fcomm==scorpio::eam_pio_subsystem_comm(),
-        "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
-  }
+  if (ifield>0) {
+    // There are fields to read from the nc file. We must have a valid nc file then.
+    ic_reader_params.set("FILENAME",m_atm_params.get<std::string>("Initial Conditions File"));
 
-  AtmosphereInput ic_reader(m_atm_comm,ic_params,m_field_repo,m_grids_manager);
+    MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
+    if (!scorpio::is_eam_pio_subsystem_inited()) {
+      scorpio::eam_init_pio_subsystem(fcomm);
+    } else {
+      EKAT_REQUIRE_MSG (fcomm==scorpio::eam_pio_subsystem_comm(),
+          "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
+    }
 
-  ic_reader.pull_input();
+    AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,m_field_repo,m_grids_manager);
 
-  for (auto& fid : fields_in) {
-    const auto& name = fid.name();
-    auto  f  = m_field_repo->get_field(fid);
-    auto& fh = *f.get_header_ptr();
-    // auto& fl = fh.get_identifier().get_layout();
-
-    // std::cout << name << ":";
-    // switch (fl.rank()) {
-    //   case 1:
-    //     {
-    //       auto v = f.get_reshaped_view<Real*,Host>();
-    //       for (int ii=0; ii<fl.dim(0); ++ii) {
-    //         std::cout << " " << v(ii);
-    //       }
-    //       break;
-    //     }
-    //   case 2:
-    //     {
-    //       auto v = f.get_reshaped_view<Real**,Host>();
-    //       for (int ii=0; ii<fl.dim(0); ++ii) {
-    //         for (int jj=0; jj<fl.dim(0); ++jj) {
-    //           std::cout << " " << v(ii,jj);
-    //         }
-    //       }
-    //       break;
-    //     }
-    //   case 3:
-    //     {
-    //       auto v = f.get_reshaped_view<Real***,Host>();
-    //       for (int ii=0; ii<fl.dim(0); ++ii) {
-    //         for (int jj=0; jj<fl.dim(0); ++jj) {
-    //           for (int kk=0; kk<fl.dim(0); ++kk) {
-    //             std::cout << " " << v(ii,jj,kk);
-    //           }
-    //         }
-    //       }
-    //       break;
-    //     }
-    // }
-    // std::cout << "\n";
-
-    ic_fields.set(ekat::strint("field",i+1),name); 
-    ++i;
-
-    // While at it, set the time stamp of the loaded fields to t0
-    fh.get_tracking().update_time_stamp(t0);
+    ic_reader.pull_input();
   }
 
   m_current_ts = t0;
@@ -470,7 +458,7 @@ void AtmosphereDriver::register_groups () {
         // field in the group later subviewing the bundle.
         // We need to ensure the bundle also exists on $grid
         const auto& name = *fnames.begin();
-        const auto& f = m_field_repo->get_field(name,grid);
+        const auto  f = m_field_repo->get_field(name,grid);
         const auto& bundle_name = f.get_header().get_parent().lock()->get_identifier().name();
         register_if_not_there(bundle_name);
       }
@@ -480,38 +468,6 @@ void AtmosphereDriver::register_groups () {
   // Call the above lambda on both required and updated groups.
   has_group_fields_on_grid( m_atm_process_group->get_required_groups() );
   has_group_fields_on_grid( m_atm_process_group->get_updated_groups() );
-}
-
-void AtmosphereDriver::init_atm_inputs () {
-  // Crete the scorpio reader
-  const auto& ic_params = m_atm_params.sublist("Initial Conditions");
-  m_initial_condition_mgr = std::make_shared<AtmosphereInput>(m_atm_comm,ic_params,m_field_repo,m_grids_manager);
-
-  auto ref_grid = m_grids_manager->get_reference_grid();
-
-  const auto& atm_inputs = m_atm_process_group->get_required_fields();
-  for (const auto& input : atm_inputs) {
-    EKAT_REQUIRE_MSG(m_field_repo->has_field(input.name()),
-      "Error! Something went wrong while looking for field '" << input.name() << "' in the repo.\n");
-    auto& f = m_field_repo->get_field(input.name(),ref_grid->name());
-
-    auto& fh = f.get_header();
-    if (fh.get_parent().lock()!=nullptr) {
-      // We cannot init subfield individually. But if this field's parent is also
-      // an input, then it's all good.
-      auto pid = fh.get_parent().lock()->get_identifier();
-      EKAT_REQUIRE_MSG (ekat::contains(atm_inputs,pid),
-          "Error! We cannot read a subfield. The only way to load '" + input.name() + "' from file\n"
-          "       is to load its parent field '" + pid.name() + "'.\n");
-    }
-  }
-}
-
-void AtmosphereDriver::inspect_atm_dag () const {
-
-  EKAT_REQUIRE_MSG ( !m_surface_coupling || m_surface_coupling->get_repo_state()==RepoState::Closed,
-      "Error! You cannot inspect the dag until the surface coupling has been fully initialized.\n");
-
 }
 
 #ifdef SCREAM_DEBUG

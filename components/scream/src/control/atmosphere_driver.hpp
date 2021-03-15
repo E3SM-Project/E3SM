@@ -107,11 +107,6 @@ public:
 
   const std::shared_ptr<GridsManager>& get_grids_manager () const { return m_grids_manager; }
 
-  void init_atm_inputs ();
-
-  // Inspect the atm dag, ensuring all dependencies are met
-  void inspect_atm_dag () const;
-
 protected:
 
   void register_groups ();
@@ -131,11 +126,6 @@ protected:
   ekat::ParameterList                                 m_atm_params;
 
   OutputManager                                       m_output_manager;
-
-  // TODO: this is a shared_ptr cause AtmosphereInput
-  // does not have a default ctor, which would implicitly
-  // delete AtmosphereDriver's default consturctor.
-  std::shared_ptr<AtmosphereInput>                    m_initial_condition_mgr;
 
   // Surface coupling stuff
   std::shared_ptr<SurfaceCoupling>            m_surface_coupling;
