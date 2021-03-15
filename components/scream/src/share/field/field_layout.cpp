@@ -26,6 +26,29 @@ FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,
   set_dimensions(dims);
 }
 
+bool FieldLayout::is_vector_layout () const {
+  const auto lt = get_layout_type (m_tags);
+  return lt==LayoutType::Vector2D || lt==LayoutType::Vector3D;
+}
+
+int FieldLayout::get_vector_dim () const {
+  EKAT_REQUIRE_MSG (is_vector_layout(),
+      "Error! 'get_vector_dim' available only for vector layouts.\n"
+      "       Current layout: " + e2str(get_layout_type(m_tags)) + "\n");
+
+  using namespace ShortFieldTagsNames;
+  int idim = -1;
+  if (has_tag(CMP)) {
+    idim = std::distance(m_tags.begin(),ekat::find(m_tags,CMP));
+  } else if (has_tag(VAR)) {
+    idim = std::distance(m_tags.begin(),ekat::find(m_tags,VAR));
+  } else {
+    EKAT_ERROR_MSG ("Error! Unrecognized layout for a '" + e2str(get_layout_type(m_tags)) + "' quantity.\n");
+  }
+
+  return idim;
+}
+
 void FieldLayout::set_dimension (const int idim, const int dimension) {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
   EKAT_REQUIRE_MSG(dimension>0, "Error! Dimensions must be positive.");
