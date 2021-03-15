@@ -1,5 +1,4 @@
 set(SCREAM_SCORPIO_SRCS
-  scorpio_input.cpp
   scream_scorpio_interface.F90
   scream_scorpio_interface.cpp
   scream_scorpio_interface_iso_c2f.F90

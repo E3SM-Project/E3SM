@@ -9,12 +9,9 @@ Atmosphere Processes:
   Process 0:
     Process Name: Dynamics
     Grid: Dynamics
-    Initialize Inputs: true
   Process 1:
     Process Name: P3
     Grid: Physics GLL
-    Inputs Initializer:
-      Not Initializable Inputs: [dp]
 
 Grids Manager:
   Type: Dynamics Driven

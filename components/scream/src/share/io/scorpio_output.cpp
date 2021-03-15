@@ -299,7 +299,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
       }
       m_dims.emplace(std::make_pair(get_nc_tag_name(tag),tag_len));
     } else {  
-      EKAT_REQUIRE_MSG(m_dims.at(get_nc_tag_name(tag))==fid.get_layout().dim(ii) or get_nc_tag_name(tag)=="COL",
+      EKAT_REQUIRE_MSG(m_dims.at(get_nc_tag_name(tag))==fid.get_layout().dim(ii) or e2str(tag)=="COL",
         "Error! Dimension " + get_nc_tag_name(tag) + " on field " + name + " has conflicting lengths");
     }
   }

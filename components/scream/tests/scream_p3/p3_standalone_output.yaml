@@ -22,13 +22,13 @@ FIELDS:
   field 11: diag_eff_radius_qc
   field 12: diag_eff_radius_qi
   field 13: precip_total_tend
-  field 14: bm
-  field 15: nc
-  field 16: ni
-  field 17: nr
-  field 18: qc
-  field 19: qi
-  field 20: qm
-  field 21: qr
-  field 22: qv
+#  field 14: bm
+#  field 15: nc
+#  field 16: ni
+#  field 17: nr
+#  field 18: qc
+#  field 19: qi
+#  field 20: qm
+#  field 21: qr
+#  field 22: qv
 ...
