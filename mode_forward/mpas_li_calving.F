@@ -1763,7 +1763,7 @@ module li_calving
                nOneCellBack = 0
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   jCell = cellsOnCell(iNeighbor, iCell)
-                  if ( li_mask_is_dynamic_ice(cellMask(jCell)) ) then
+                  if ( li_mask_is_ice(cellMask(jCell)) ) then
                         nOneCellBack = nOneCellBack + 1
                         oneCellBackList(nOneCellBack) = jCell
                   endif
