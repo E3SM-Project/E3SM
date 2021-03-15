@@ -144,6 +144,10 @@ public:
   void sync_to_host () const;
   void sync_to_dev () const;
 
+  // Set the field to a constant value (on host or device)
+  template<HostOrDevice HD = Device>
+  void set_value (const RT value);
+
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
   //   - the output field stores *the same* 1d view as this field. In order
@@ -163,6 +167,10 @@ public:
                        const int idim, const int k) const;
   field_type subfield (const std::string& sf_name, const int idim, const int k) const;
   field_type subfield (const int idim, const int k) const;
+
+  // If this field is a vector field, get a subfield for the ith component.
+  // Note: throws if this is not a vector field.
+  field_type get_component (const int i);
 
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_view_d.data()!=nullptr; }
@@ -453,6 +461,54 @@ sync_to_dev () const {
 }
 
 template<typename RealType>
+template<HostOrDevice HD>
+void Field<RealType>::
+set_value (const RT value) {
+  // Note: we can't just do a deep copy on get_view<HD>(), since this
+  //       field might be a subfield of another. So check the header
+  //       first, to see if we have a parent. If not, deep copy is fine.
+  //       If we do, we need to get the reshaped view first.
+  const auto parent = get_header().get_parent();
+  if (parent.lock()==nullptr) {
+    // No parent. Deep copying to get_view<HD>() is safe.
+    Kokkos::deep_copy (get_view<HD>(),value);
+  } else {
+    // We have a parent. We only want to set *this* field to value,
+    // not the rest of the parent field. We need the reshaped view
+    const auto& layout = get_header().get_identifier().get_layout();
+    const auto  rank   = layout.rank();
+    switch (rank) {
+      case 1:
+        {
+          auto v = get_reshaped_view<RT*,HD>();
+          Kokkos::deep_copy(v,value);
+        }
+        break;
+      case 2:
+        {
+          auto v = get_reshaped_view<RT**,HD>();
+          Kokkos::deep_copy(v,value);
+        }
+        break;
+      case 3:
+        {
+          auto v = get_reshaped_view<RT***,HD>();
+          Kokkos::deep_copy(v,value);
+        }
+        break;
+      case 4:
+        {
+          auto v = get_reshaped_view<RT****,HD>();
+          Kokkos::deep_copy(v,value);
+        }
+        break;
+      default:
+        EKAT_ERROR_MSG ("Error! Unsupported field rank in 'set_value'.\n");
+    }
+  }
+}
+
+template<typename RealType>
 Field<RealType> Field<RealType>::
 subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
           const int idim, const int k) const {
@@ -495,6 +551,22 @@ template<typename RealType>
 Field<RealType> Field<RealType>::
 subfield (const int idim, const int k) const {
   return subfield(m_header->get_identifier().name(),idim,k);
+}
+
+template<typename RealType>
+Field<RealType> Field<RealType>::
+get_component (const int i) {
+  const auto& layout = get_header().get_identifier().get_layout();
+  const auto& fname = get_header().get_identifier().name();
+  EKAT_REQUIRE_MSG (layout.is_vector_layout(),
+      "Error! 'get_component' available only for vector fields.\n"
+      "       Layout of '" + fname + "': " + e2str(get_layout_type(layout.tags())) + "\n");
+
+  const int idim = layout.get_vector_dim();
+  EKAT_REQUIRE_MSG (i>=0 && i<layout.dim(idim),
+      "Error! Component index out of bounds [0," + std::to_string(layout.dim(idim)) + ").\n");
+
+  return subfield (idim,i);
 }
 
 template<typename RealType>
