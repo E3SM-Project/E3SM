@@ -15,6 +15,7 @@ env:
 jobs:
   pre-commit-hooks:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
       - name: Checkout Code Repository
         uses: actions/checkout@v2
@@ -40,6 +41,7 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v2
 
@@ -61,7 +63,8 @@ jobs:
           channel-priority: strict
           python-version: 3.7
           auto-update-conda: true
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+          # IMPORTANT: This needs to be set for caching to work properly!
+          use-only-tar-bz2: true
 
       - name: Show Conda Environment Info
         run: |
@@ -76,10 +79,84 @@ jobs:
         run: |
           bash tests/test.sh
 
-  publish:
-    if: ${{ github.ref == 'master' && github.event.action != 'pull_request'}}
-    needs: build
+  publish-docs:
+    if: github.event_name == 'push'
+    needs: [pre-commit-hooks, build]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          # This path is specific to Ubuntu
+          path: ~/.cache/pip
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-pip-publish-docs
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+
+      # Using pip for Sphinx dependencies because it takes too long to reproduce a conda environment (~10 secs vs. 3-4 mins)
+      # Low risk trade-off with mismatching dependencies in `e3sm_diags_env_dev.yml`
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install sphinx==3.5.1 sphinx_rtd_theme==0.5.1 sphinx-multiversion==0.2.4
+
+      - name: Build Sphinx Docs
+        run: |
+          cd docs
+          sphinx-multiversion source _build/html
+
+      - name: Copy Docs and Commit
+        run: |
+          # gh-pages branch must already exist
+          git clone https://github.com/E3SM-Project/e3sm_diags.git --branch gh-pages --single-branch gh-pages
+
+          cd gh-pages
+          rm -r *
+
+          touch .nojekyll
+          # Add index.html to point to `master` branch automatically
+          printf '<meta http-equiv="refresh" content="0; url=./_build/html/master/index.html" />' >> index.html
+
+          cp -r ../docs/_build .
+          # Old builds must be siblings to current build to correctly load static content such as images and custom fonts
+          cp -r ../docs/_build_old .
+
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # The below command will fail if no changes were present, so we ignore it
+          git add .
+          git commit -m "Update documentation" -a || true
+
+      - name: Push Changes
+        uses: ad-m/github-push-action@master
+        with:
+          branch: gh-pages
+          directory: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force: true
+
+  publish-to-anaconda:
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    needs: [pre-commit-hooks, build, publish-docs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         shell: bash -l {0}
@@ -89,7 +166,7 @@ jobs:
       - name: Cache Conda
         uses: actions/cache@v2
         env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          # Increase this value to reset cache if conda/e3sm_diags_env_dev.yml has not changed in the workflow
           CACHE_NUMBER: 0
         with:
           path: ~/conda_pkgs_dir
@@ -98,11 +175,12 @@ jobs:
       - name: Set up Conda Environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          activate-environment: "e3sm_diags"
+          activate-environment: "e3sm_diags_publishing"
           channel-priority: strict
           python-version: 3.7
           auto-update-conda: true
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+          # IMPORTANT: This needs to be set for caching to work properly!
+          use-only-tar-bz2: true
 
       - name: Additional Conda Config
         run: |

@@ -1,0 +1,396 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Contributing to E3SM Diags &mdash; E3SM Diags  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Creating a New Environment from Scratch" href="dev_guide/create-new-env.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> E3SM Diags
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">E3SM Diagnostics Package v2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input-data-requirement.html">Input Data Requirement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickguides/index.html">Quick Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config-run.html">Configuration and Running</a></li>
+<li class="toctree-l1"><a class="reference internal" href="defining-parameters.html">Defining Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="available-parameters.html">Available Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="colormaps.html">Colormaps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="add-new-diagnostics.html">How to Add New Diagnostics Runs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev_guide/index.html">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing to E3SM Diags</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#code">Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-a-conda-environment">Create a conda environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#checkout-and-edit-documentation">Checkout and edit documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#converting-jupyter-notebooks">Converting Jupyter notebooks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#initial-setup-for-reference-only">Initial setup (for reference only)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">E3SM Diags</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Contributing to E3SM Diags</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/contributing.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="contributing-to-e3sm-diags">
+<h1>Contributing to E3SM Diags<a class="headerlink" href="#contributing-to-e3sm-diags" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<p>We would welcome you feedback and suggestions on how to improve E3SM Diags.
+Drop a line to Jill (zhang40 .at. llnl.gov) or Ryan (forsyth2 .at. llnl.gov).</p>
+<p>Or would you like to directly modify E3SM Diags? We tried to build the code in such a way
+to make it easy to modify and add new backends, diagnostics, plots, variables, etc.
+We would welcome your contributions. Create a <a class="reference internal" href="install.html#dev-env"><span class="std std-ref">development environment</span></a>
+and start coding away. Then submit your suggested modifications via a pull request.</p>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>Something incorrect? Something missing? Want to add some cool examples?
+We would welcome your help updating and maintaining this documentation.
+Here is a quick guide on how to get started doing just that.</p>
+<div class="section" id="create-a-conda-environment">
+<h3>Create a conda environment<a class="headerlink" href="#create-a-conda-environment" title="Permalink to this headline">¶</a></h3>
+<p>This documentation is created using
+<a class="reference external" href="http://www.sphinx-doc.org/en/stable">Sphinx</a>. Sphinx is an open-source tool
+that makes it easy to create intelligent and beautiful documentation, written
+by Georg Brandl and licensed under the BSD license.</p>
+<p>Create a new conda environment, install Sphinx as well as the
+Sphinx <a class="reference external" href="https://github.com/rtfd/sphinx_rtd_theme">readthedocs theme</a>.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ conda create -n sphinx
+$ conda activate sphinx
+$ conda install -c anaconda sphinx
+$ pip install sphinx_rtd_theme
+</pre></div>
+</div>
+<p>Optionally, if you need to convert Jupyter notebooks to import in Sphinx,
+you’ll also need to install <a class="reference external" href="https://nbconvert.readthedocs.io/en/latest/#">nbconvert</a>
+and <a class="reference external" href="https://pandoc.org/">pandoc</a>:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ conda install -c conda-forge nbconvert pandoc
+</pre></div>
+</div>
+</div>
+<div class="section" id="checkout-and-edit-documentation">
+<h3>Checkout and edit documentation<a class="headerlink" href="#checkout-and-edit-documentation" title="Permalink to this headline">¶</a></h3>
+<p>The documentation is maintained in the Github repository under a separate
+branch named ‘gh-pages’. This special branch is used by Github.com to directly
+serve static web pages (see <a class="reference external" href="https://pages.github.com/">GitHub Pages</a>).</p>
+<p>Clone the repository and checkout the ‘gh-pages’ branch:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ cd &lt;myDir&gt;
+$ git clone git@github.com:E3SM-Project/e3sm_diags.git e3sm_diags
+$ cd e3sm_diags
+$ git fetch origin gh-pages
+$ git checkout -b &lt;branch-name&gt; origin/gh-pages
+</pre></div>
+</div>
+<p>You should now see two sub-directories: <cite>source</cite> contains the documentation
+source files, and <cite>docs</cite> the html web pages created by Sphinx.</p>
+<p>To modify the documentation, simply edit the files under <cite>source</cite>.
+Sphinx uses <a class="reference external" href="http://docutils.sourceforge.net/rst.html">reStructuredText</a>
+as its markup language. For more information on how to write documentation
+using Sphinx, you can refer to</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.sphinx-doc.org/en/stable/tutorial.html">First Steps with Sphinx</a></p></li>
+<li><p><a class="reference external" href="http://www.sphinx-doc.org/en/stable/rest.html#external-links">reStructuredText Primer</a></p></li>
+</ul>
+<p>To see the changes you made to the documentation, rebuild the web pages</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ cd &lt;myDir&gt;/e3sm_diags
+$ python source/quickguides/generate_quick_guides.py # Run if quick-guide files were updated
+$ make html # Make sure you have run `conda activate sphinx` first
+</pre></div>
+</div>
+<p>and view them locally in a web browser at <cite>file:///&lt;myDir&gt;/e3sm_diags/index.html</cite>.</p>
+<p>Sphinx may occasionally not build the new files properly. If that is the case,
+try removing the <cite>docs</cite> sub-directory (be careful not to remove <cite>source</cite>)
+and rebuild entirely:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ cd &lt;myDir&gt;/e3sm_diags
+$ rm -r docs
+$ python source/quickguides/generate_quick_guides.py # Run if quick-guide files were updated
+$ make html # Make sure you have run `conda activate sphinx` first
+</pre></div>
+</div>
+<p>Once you are satisfied with your modifications, commit and push them back to
+the repository:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ cd &lt;myDir&gt;/e3sm_diags
+$ git add .
+$ git commit
+$ git push &lt;your-fork-remote-name&gt; &lt;branch-name&gt; # If not using a fork, use `origin`
+</pre></div>
+</div>
+<p>Then, create a pull request from <code class="docutils literal notranslate"><span class="pre">your-fork/e3sm_diags/branch-name</span></code> to <code class="docutils literal notranslate"><span class="pre">E3SM-Project/e3sm_diags/gh-pages</span></code>.</p>
+<p>Once this pull request is merged, changes will immediately be available on the
+<a class="reference external" href="https://e3sm-project.github.io/e3sm_diags/">e3sm_diags documentation page</a>.</p>
+</div>
+<div class="section" id="converting-jupyter-notebooks">
+<h3>Converting Jupyter notebooks<a class="headerlink" href="#converting-jupyter-notebooks" title="Permalink to this headline">¶</a></h3>
+<p>If you have Jupyter notebooks that you’d like to import into the documentation,
+they can easily be converted to rst format:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ jupyter nbconvert mygreatnotebook.ipynb --to rst
+</pre></div>
+</div>
+</div>
+<div class="section" id="initial-setup-for-reference-only">
+<h3>Initial setup (for reference only)<a class="headerlink" href="#initial-setup-for-reference-only" title="Permalink to this headline">¶</a></h3>
+<p>The instructions below only apply for the initial configuration of the
+Sphinx documentation on the Github repository. They are documented here
+for reference only. Do not follow them unless you are setting up documentation
+for a new repository. (Adapted from <a class="reference external" href="http://datadesk.latimes.com/posts/2012/01/sphinx-on-github">Sphinx documentation on GitHub</a>.)</p>
+<p>Create Sphinx conda environment (see above).</p>
+<p>Create a new git branch (gh-pages):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ git branch gh-pages
+$ git checkout gh-pages
+</pre></div>
+</div>
+<p>Clear out any­thing from the master branch and start fresh</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ git symbolic-ref HEAD refs/heads/gh-pages
+$ rm .git/index
+$ git clean -fdx
+</pre></div>
+</div>
+<p>Create documentation</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ sphinx-quickstart
+</pre></div>
+</div>
+<p>accept suggested default options, except</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Separate source and build directories (y/N) [n]: y
+</pre></div>
+</div>
+<p>Edit Makefile and change BUILDIR</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>BUILDDIR = docs
+</pre></div>
+</div>
+<p>Remove old build directory</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ rmdir build
+</pre></div>
+</div>
+<p>Change the Sphinx theme to ‘ReadTheDocs’. Edit ‘source/conf.py and change</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>html_theme = &#39;alabaster&#39;
+</pre></div>
+</div>
+<p>to</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>import sphinx_rtd_theme
+html_theme = &quot;sphinx_rtd_theme&quot;
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+</pre></div>
+</div>
+<p>Try building documentation</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ make html
+</pre></div>
+</div>
+<p>Create an empty .nojekyll file to indicate to Github.com that this
+is not a Jekyll static website:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ touch .nojekyll
+</pre></div>
+</div>
+<p>Create a top-level re-direction file:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ vi index.html
+</pre></div>
+</div>
+<p>with the following:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;meta http-equiv=&quot;refresh&quot; content=&quot;0; url=./docs/html/index.html&quot; /&gt;
+</pre></div>
+</div>
+<p>Commit and push back to Github:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ git add .
+$ git commit
+$ git push origin gh-pages
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="dev_guide/create-new-env.html" class="btn btn-neutral float-left" title="Creating a New Environment from Scratch" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, E3SM
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

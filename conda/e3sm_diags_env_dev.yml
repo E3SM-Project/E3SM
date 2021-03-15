@@ -26,4 +26,12 @@ dependencies:
   # Testing
   - dask
   - scipy
+  # Documentation
+  - sphinx=3.5.1
+  - sphinx_rtd_theme=0.5.1
+  ## Used when converting Jupyter notebooks to import to Sphinx
+  - nbconvert=6.0.7
+  - pandoc=2.11.4
+  - pip:
+      - sphinx-multiversion==0.2.4
 prefix: /opt/miniconda3/envs/e3sm_diags_env_dev
