@@ -1215,6 +1215,9 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
 </compiler>
 
 <compiler MACH="cori-knl" COMPILER="intel">
@@ -1262,6 +1265,9 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
 </compiler>
 
 <compiler MACH="ghost" COMPILER="intel">
