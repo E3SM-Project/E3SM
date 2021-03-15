@@ -184,6 +184,22 @@ TEST_CASE("field", "") {
     REQUIRE(views_are_equal(f1,f2));
   }
 
+  SECTION ("set_value") {
+    std::vector<FieldTag> t1 = {COL,VAR,LEV};
+    std::vector<int> d1 = {3,2,24};
+
+    FieldIdentifier fid1("vec_3d",{t1,d1},m/s,"some_grid");
+
+    Field<Real> f1(fid1);
+    f1.allocate_view();
+    f1.set_value(1.0);
+    f1.sync_to_host();
+    auto v = f1.get_view<Host>();
+    for (int i=0; i<fid1.get_layout().size(); ++i) {
+      REQUIRE (v(i)==1.0);
+    }
+  }
+
   // Subfields
   SECTION ("subfield") {
     std::vector<FieldTag> t1 = {COL,VAR,CMP,LEV};
@@ -219,6 +235,39 @@ TEST_CASE("field", "") {
           REQUIRE (v4d_h(i,ivar,j,k)==v3d_h(i,j,k));
         }
   }
+
+  SECTION ("vector_component") {
+    std::vector<FieldTag> tags_2 = {COL,VAR,LEV};
+    std::vector<int> dims_2 = {3,2,24};
+
+    FieldIdentifier fid_2("vec_3d",{tags_2,dims_2},m/s,"some_grid");
+
+    Field<Real> f_vec(fid_2);
+    f_vec.allocate_view();
+
+    auto f0 = f_vec.get_component(0);
+    auto f1 = f_vec.get_component(1);
+
+    // No 3rd component
+    REQUIRE_THROWS(f_vec.get_component(2));
+
+    // f0 is scalar, no vector dimension
+    REQUIRE_THROWS(f0.get_component(0));
+
+    f0.set_value(1.0);
+    f1.set_value(2.0);
+
+    f_vec.sync_to_host();
+
+    auto v = f_vec.get_reshaped_view<Real***,Host>();
+    for (int col=0; col<3; ++col) {
+      for (int lev=0; lev<24; ++lev) {
+        REQUIRE (v(col,0,lev)==1.0);
+        REQUIRE (v(col,1,lev)==2.0);
+      }
+    }
+  }
+
 
   SECTION ("host_view") {
     Field<Real> f(fid);
