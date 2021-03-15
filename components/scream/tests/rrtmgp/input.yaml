@@ -16,4 +16,8 @@ Grids Manager:
   Physics Only:
     Number of global columns:   10
     Number of vertical levels: 128
+
+# The name of the file containing the initial conditions for this test.
+# TODO: Actually create an input file for rrtmgp.  Note that currently, rrtmgp is initialized using YAKL and not by reading input.
+Initial Conditions File: dummy.nc
 ...
