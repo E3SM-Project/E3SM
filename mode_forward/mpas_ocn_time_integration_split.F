@@ -1745,7 +1745,7 @@ module ocn_time_integration_split
                         do iCell = 1, nCellsAll
 
                            ! Reset tracer1 to 2 in top n layers
-                           do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers
+                           do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers-1
                                 tracersGroupNew(1,k,iCell) = 2.0_RKIND
                            end do
 
@@ -1757,11 +1757,11 @@ module ocn_time_integration_split
                                 .or.lat>- 2.5.and.lat<  2.5 &
                                 .or.lat> 35.0.and.lat< 40.0 &
                                 .or.lat> 55.0.and.lat< 60.0 ) then
-                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers
+                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers-1
                                  tracersGroupNew(2,k,iCell) = 2.0_RKIND
                               end do
                            else
-                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers
+                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers-1
                                  tracersGroupNew(2,k,iCell) = 1.0_RKIND
                               end do
                            end if
@@ -1775,11 +1775,11 @@ module ocn_time_integration_split
                                 .or.lat> 10.0.and.lat< 15.0 &
                                 .or.lat> 30.0.and.lat< 35.0 &
                                 .or.lat> 50.0.and.lat< 55.0 ) then
-                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers
+                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers-1
                                  tracersGroupNew(3,k,iCell) = 2.0_RKIND
                               end do
                            else
-                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers
+                              do k = minLevelCell(iCell), minLevelCell(iCell)+config_reset_debugTracers_top_nLayers-1
                                  tracersGroupNew(3,k,iCell) = 1.0_RKIND
                               end do
                            end if
@@ -2186,8 +2186,8 @@ module ocn_time_integration_split
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
                layerThicknessEdge1 = 0.5_RKIND* &
-                                     (layerThickness(minLevelCell(iCell),cell1) + &
-                                      layerThickness(minLevelCell(iCell),cell2) )
+                                     (layerThickness(minLevelCell(cell1),cell1) + &
+                                      layerThickness(minLevelCell(cell2),cell2) )
                normalThicknessFluxSum = layerThicknessEdge1* &
                                         normalVelocity(minLevelEdgeBot(iEdge),iEdge)
                layerThicknessSum = layerThicknessEdge1
