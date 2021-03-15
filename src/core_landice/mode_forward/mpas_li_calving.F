@@ -1538,7 +1538,7 @@ module li_calving
          !call calculate_calving_front_mask(meshPool, geometryPool, calvingFrontMask)
 
          calvingVelocity(:) = 0.0_RKIND
-         ! First calculate the front retreat rate (Levermann eq. 1)
+         ! First calculate the front retreat rate
          calvingVelocity(:) = config_damagecalvingParameter * damage(:) & ! m/s
                * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
                   ! calculate only for floating ice - map of "potential" calving rate
@@ -1632,9 +1632,9 @@ module li_calving
       ! local variables
       !-----------------------------------------------------------------
 
-      type (block_type), pointer :: block           
+      type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
-      type (mpas_pool_type), pointer :: thermalPool 
+      type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: velocityPool
       type (mpas_pool_type), pointer :: scratchPool
@@ -1642,20 +1642,20 @@ module li_calving
       real(kind=RKIND), pointer :: config_calving_eigencalving_parameter_scalar_value
       real(kind=RKIND), pointer :: config_damage_preserve_threshold, config_damage_calving_threshold
       character (len=StrKIND), pointer :: config_damage_gl_setting
-      real(kind=RKIND), pointer :: config_default_flowParamA   
+      real(kind=RKIND), pointer :: config_default_flowParamA
       real(kind=RKIND), pointer :: config_flowLawExponent
       character (len=StrKIND), pointer :: config_calving_eigencalving_parameter_source
       logical, pointer :: config_print_calving_info
       real (kind=RKIND), pointer :: config_sea_level
 
-      real (kind=RKIND), dimension(:), pointer :: thickness 
+      real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: eigencalvingParameter
       real (kind=RKIND), dimension(:), pointer :: calvingThickness
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: eMax
-      real (kind=RKIND), dimension(:), pointer :: tauMax, tauMin, tauxx, tauxy, tauyx, tauyy 
+      real (kind=RKIND), dimension(:), pointer :: tauMax, tauMin, tauxx, tauxy, tauyx, tauyy
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer :: damage
       real (kind=RKIND), dimension(:), pointer :: ddamagedt
@@ -1676,7 +1676,7 @@ module li_calving
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:,:), pointer :: edgesOnCell
       real (kind=RKIND), dimension(:), pointer :: xCell, dvEdge
-      integer, pointer :: nCells    
+      integer, pointer :: nCells
       integer :: iCell, jCell, iNeighbor, n_damage_downstream
       real(kind=RKIND) :: damage_downstream, damage_tmp, cellCalvingFrontLength, cellCalvingFrontHeight, seconds, R, A01, A02, Q1, Q2
       real(kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
@@ -1718,7 +1718,7 @@ module li_calving
          call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-         call mpas_pool_get_array(geometryPool, 'thickness', thickness) 
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
          call mpas_pool_get_array(geometryPool, 'eigencalvingParameter', eigencalvingParameter)
@@ -1736,7 +1736,7 @@ module li_calving
          call mpas_allocate_scratch_field(alphaVar, .true.)
          alpha => alphaVar % array
 
-         call mpas_pool_get_array(velocityPool, 'eMax', eMax) 
+         call mpas_pool_get_array(velocityPool, 'eMax', eMax)
          call mpas_pool_get_array(velocityPool, 'tauxx', tauxx)
          call mpas_pool_get_array(velocityPool, 'tauyy', tauyy)
          call mpas_pool_get_array(velocityPool, 'tauxy', tauxy)
@@ -1747,26 +1747,29 @@ module li_calving
          where (thickness == 0.0_RKIND)
              alpha = 0.0_RKIND
              s0 = 0.0_RKIND
+             nstar = 0.0_RKIND
          elsewhere
-             alpha = tauMin / tauMax 
+             ! Compute the hydrostatic to tensile stress ratio (equation 24 from Bassis and Ma, 2015, EPSL, 409, C)
+             alpha = tauMin / tauMax
+
              s0 = &
              config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*tauMax*config_ocean_density)
-         endwhere
-         ! Compute the hydrostatic to tensile stress ratio (equation 24 from Bassis and Ma, 2015, EPSL, 409, C)
 
-         nstar(:) = &
-         4.0_RKIND*config_flowLawExponent*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND)/(4.0_RKIND*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND) &
-         +3.0_RKIND*(config_flowLawExponent-1.0_RKIND)*alpha(:)**2.0_RKIND) 
-         ! Compute the effective flow law exponent (equation 11 from Bassis and Ma, 2015, EPSL, 409, C)
+             ! Compute the effective flow law exponent (equation 11 from Bassis and Ma, 2015, EPSL, 409, C)
+             nstar(:) = 4.0_RKIND * config_flowLawExponent * (1.0_RKIND + alpha(:) + alpha(:)**2) / &
+                     (4.0_RKIND * (1.0_RKIND + alpha(:) + alpha(:)**2) + &
+                      3.0_RKIND * (config_flowLawExponent - 1.0_RKIND )* alpha(:)**2)
+         endwhere
+
 
          do iCell = 1, nCells
          if (thickness(iCell) == 0.0_RKIND) then
              damageSource(iCell) = 0.0_RKIND
          else
              damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*eMax(iCell)-floatingBasalMassBal(iCell)/config_ice_density/thickness(iCell)
-             ! RHS of equation 26 from Bassis and Ma (2015, EPSL, 409, C). Note that the last set of terms after the minus sign, 
+             ! RHS of equation 26 from Bassis and Ma (2015, EPSL, 409, C). Note that the last set of terms after the minus sign,
              ! mdot / rho_i / H, differs from the mdot/H in the paper because our mdot has units of kg/m^2/s and to convert that back
-             ! to the right units (1/sec) you need to multiply by a factor of m^2/kg (1/rho_i * 1/H gives that factor). 
+             ! to the right units (1/sec) you need to multiply by a factor of m^2/kg (1/rho_i * 1/H gives that factor).
          endif
          enddo
 
