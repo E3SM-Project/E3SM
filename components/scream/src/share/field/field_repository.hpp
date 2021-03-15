@@ -96,8 +96,8 @@ public:
   // Query for a particular field or group of fields
   bool has_field (const std::string& name) const;
   bool has_field (const identifier_type& identifier) const;
-  const field_type& get_field (const identifier_type& identifier) const;
-  const field_type& get_field(const std::string& name,const std::string& grid) const;
+  field_type get_field (const identifier_type& identifier) const;
+  field_type get_field(const std::string& name,const std::string& grid) const;
 
   // Get iterators to the keys (i.e., identifier_type) of all fields with a given name
   map_key_const_iterator<alias_map_type> cbegin (const std::string& name) const;
@@ -275,7 +275,7 @@ has_field (const identifier_type& identifier) const {
 }
 
 template<typename RealType>
-const typename FieldRepository<RealType>::field_type&
+typename FieldRepository<RealType>::field_type
 FieldRepository<RealType>::get_field (const identifier_type& id) const {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
       "Error! Cannot get fields from the repo while registration has not yet completed.\n");
@@ -285,7 +285,7 @@ FieldRepository<RealType>::get_field (const identifier_type& id) const {
 }
 
 template<typename RealType>
-const typename FieldRepository<RealType>::field_type&
+typename FieldRepository<RealType>::field_type
 FieldRepository<RealType>::get_field (const std::string& name, const std::string& grid) const {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
       "Error! Cannot get fields from the repo while registration has not yet completed.\n");

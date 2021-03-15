@@ -321,8 +321,8 @@ TEST_CASE("field_repo", "") {
   // Check that get_field with a field name and grid name as arguments returns the appropriate field
   // Using grid_1 should return fid2 field, using grid_2 should return fid3 field, using grid_3 should throw an error.
   // Retrieving field 5 on grid 3 should return an error since it has been defined on grid 3 with two different layouts.
-  auto& f7 = repo.get_field("field_2","grid_1");
-  auto& f8 = repo.get_field("field_2","grid_2");
+  auto f7 = repo.get_field("field_2","grid_1");
+  auto f8 = repo.get_field("field_2","grid_2");
   REQUIRE_THROWS( repo.get_field("field_5","grid_3") );
   REQUIRE_THROWS( repo.get_field("field_2","grid_3") );
   REQUIRE(f7.get_header().get_identifier()==fid2);
@@ -368,7 +368,7 @@ TEST_CASE("field_repo", "") {
   REQUIRE (ekat::contains(repo.get_groups_info().at("group_6")->m_fields_names,"Field_4"));
 
   // Check that get_padding returns the appropriate value
-  auto& f9 = repo.get_field("field_packed","grid_3");
+  auto f9 = repo.get_field("field_packed","grid_3");
   REQUIRE (f9.get_header().get_alloc_properties().get_padding()==2);
 }
 

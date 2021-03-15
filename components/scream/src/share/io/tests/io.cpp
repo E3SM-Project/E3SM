@@ -65,7 +65,7 @@ TEST_CASE("input_output_basic","io")
   for (Int ii=0;ii<max_steps;++ii) {
     time += dt;
     for (const auto& fname : out_fields->m_fields_names) {
-      auto& f  = field_repo->get_field(fname,"Physics");
+      auto f  = field_repo->get_field(fname,"Physics");
       auto f_host = f.get_view<Host>();
       f.sync_to_host();
       for (size_t jj=0;jj<f_host.size();++jj) {
@@ -227,8 +227,6 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
 
   // Register fields with repo
   // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
-  const int packsize = 2;
-  using Pack         = ekat::Pack<Real,packsize>;
   repo->registration_begins();
   repo->register_field(fid1,{"output"});
   repo->register_field(fid2,{"output","restart"});
