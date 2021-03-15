@@ -1747,7 +1747,7 @@ module li_calving
                   vvelSum = vvelSum + vvelforAblation(jCell)
                   ablationVelSum = ablationVelSum + ablationVelocity(jCell)
                   thkCount = thkCount + 1
-               else if ( li_mask_is_dynamic_ice(cellMask(jCell)) .and. li_mask_is_grounded_ice(cellMask(jCell)) ) then
+               else if ( li_mask_is_grounding_line(cellMask(jCell)) .or. li_mask_is_grounded_ice(cellMask(jCell)) ) then
                   nGroundedNeighbors = nGroundedNeighbors + 1
                endif
             enddo
@@ -1782,8 +1782,7 @@ module li_calving
                         kCell = cellsOnCell(jNeighbor, jCell)
                         if ( li_mask_is_dynamic_ice(cellMask(kCell)) .and. &
                            (.not. any(oneCellBackList==kCell) ) .and. &
-                           (.not. any(twoCellsBackList==kCell) ) ) then ! .and. &
-                           !(.not. li_mask_is_grounding_line(cellMask(kCell))) ) then
+                           (.not. any(twoCellsBackList==kCell) ) ) then
                              counter = counter+1
                              twoCellsBackList(counter) = kCell
                         endif
