@@ -22,15 +22,6 @@ Full pathname of input gcam grid file
 Gcam case name
 </entry>
 
-<entry id="case_name"
-	type="char*256"
-	category="gcam"
-	input_pathname="abs"
-	group="gcam_inparm"
-	valid_values="">
-Gcam case name
-</entry>
-
 <entry id="gcam_config"
 	type="char*256"
 	category="gcam"
@@ -101,6 +92,33 @@ Mapping file for woodharvest
 	group="gcam_inparm"
 	valid_values="">
 Mapping file between land model and gcam types
+</entry>
+
+<entry id="gcam2glm_baselu"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Glm base luc file
+</entry>
+
+<entry id="gcam2glm_basebiomass"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Glm base biomass file
+</entry>
+
+<entry id="gcam2glm_glumap"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Glm GLU mapping file
 </entry>
 
 <entry id="read_scalars"
