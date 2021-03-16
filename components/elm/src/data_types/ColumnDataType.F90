@@ -12,6 +12,7 @@ module ColumnDataType
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use shr_sys_mod     , only : shr_sys_flush
   use abortutils      , only : endrun
+  use MathfuncMod     , only : dot_sum
   use elm_varpar      , only : nlevsoi, nlevsno, nlevgrnd, nlevlak, nlevurb
   use elm_varpar      , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
   use elm_varpar      , only : nlevdecomp_full, crop_prog, nlevdecomp
@@ -92,7 +93,7 @@ module ColumnDataType
 
   contains
     procedure, public :: Init    => col_es_init
-     procedure, public :: Restart => col_es_restart
+    procedure, public :: Restart => col_es_restart
     procedure, public :: Clean   => col_es_clean
   end type column_energy_state
 
@@ -162,7 +163,7 @@ module ColumnDataType
 
   contains
     procedure, public :: Init    => col_ws_init
-     procedure, public :: Restart => col_ws_restart
+    procedure, public :: Restart => col_ws_restart
     procedure, public :: Clean   => col_ws_clean
   end type column_water_state
 
@@ -216,7 +217,7 @@ module ColumnDataType
 
   contains
     procedure, public :: Init    => col_cs_init
-     procedure, public :: Restart => col_cs_restart
+    procedure, public :: Restart => col_cs_restart
     procedure, public :: Summary => col_cs_summary
     procedure, public :: Clean   => col_cs_clean
     procedure, public :: ZeroForFates => col_cs_zero_forfates_veg
@@ -284,7 +285,7 @@ module ColumnDataType
     real(r8), pointer :: errnb                    (:)     => null() ! colnitrogen balance error for the timestep (gN/m**2)
   contains
     procedure, public :: Init       => col_ns_init
-     procedure, public :: Restart    => col_ns_restart
+    procedure, public :: Restart    => col_ns_restart
     procedure, public :: SetValues  => col_ns_setvalues
     procedure, public :: Summary    => col_ns_summary
     procedure, public :: Clean      => col_ns_clean
@@ -357,7 +358,7 @@ module ColumnDataType
     real(r8), pointer :: cropseedp_deficit        (:)      => null() ! (gP/m2) negative pool tracking seed P for DWT
   contains
     procedure, public :: Init      => col_ps_init
-     procedure, public :: Restart   => col_ps_restart
+    procedure, public :: Restart   => col_ps_restart
     procedure, public :: SetValues => col_ps_setvalues
     procedure, public :: Summary   => col_ps_summary
     procedure, public :: Clean     => col_ps_clean
@@ -403,7 +404,7 @@ module ColumnDataType
 
   contains
     procedure, public :: Init    => col_ef_init
-     procedure, public :: Restart => col_ef_restart
+    procedure, public :: Restart => col_ef_restart
     procedure, public :: Clean   => col_ef_clean
   end type column_energy_flux
 
@@ -493,7 +494,7 @@ module ColumnDataType
 
   contains
     procedure, public :: Init    => col_wf_init
-     procedure, public :: Restart => col_wf_restart
+    procedure, public :: Restart => col_wf_restart
     procedure, public :: Reset   => col_wf_reset
     procedure, public :: Clean   => col_wf_clean
   end type column_water_flux
@@ -4986,7 +4987,7 @@ contains
            this%cwdp(c) + &
            this%totlitp(c) + &
            this%totsomp(c) + &
-           this%prod1p(c) + &
+           this%totprodp(c) + &
            this%solutionp(c) + &
            this%labilep(c) + &
            this%secondp(c) + &
@@ -5764,8 +5765,6 @@ contains
 
        this%m_decomp_cpools_to_fire(begc:endc,:)      = spval
        this%m_decomp_cpools_to_fire_vr(begc:endc,:,:) = spval
-       print *, "vr_suffix",trim(vr_suffix)
-       print *, "ndecomp_pools:", ndecomp_pools, "nlevdecomp_full", nlevdecomp_full
        do k = 1, ndecomp_pools
           if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
              data1dptr => this%m_decomp_cpools_to_fire(:,k)
@@ -6766,7 +6765,7 @@ contains
 
        do fc = 1, num_soilc
           c = filter_soilc(fc)
-          this%hr(c) = dot_product(this%hr_vr(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp))
+          this%hr(c) = dot_sum(this%hr_vr(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp))
        enddo
     endif
 
