@@ -1,4 +1,4 @@
-export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-blake/bin:$PATH
+module load python/3.7.3
 
 source ./scream/components/scream/scripts/jenkins/sandia_son_proxy
 
