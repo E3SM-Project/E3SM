@@ -133,8 +133,8 @@
 
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
-		            description="Selection of the method for calving ice (as defined further below)."
-		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'von_Mises_stress', 'mask'"
+		            description="Selection of the method for calving ice (as defined below)."
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'mask', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving'"
 		/>
                 <nml_option name="config_use_Albany_flowA_eqn_for_vM" type="logical" default_value=".false." units="unitless"
 			    description="Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving"
@@ -155,6 +155,14 @@
                 <nml_option name="config_calving_eigencalving_parameter_scalar_value" type="real" default_value="3.14e16" units="m s"
 		            description="Value of eigencalving parameter if taken as a scalar by option config_calving_eigencalving_parameter_source. (Default value is 1.0e9 m a converted to units used here.)"
 		            possible_values="any positive real number"
+		/>
+		<nml_option name="config_calving_specified_source" type="character" default_value="const" units="none"
+		            description="method of specified calving velocity"
+		            possible_values="'const' (constant calving velocity), 'data' (calving velocity given by data input)"
+		/>
+                    <nml_option name="config_calving_velocity_const" type="real" default_value="0.0" units="m s^{-1}"
+		            description="constant calving velocity specified in the namelist"
+		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_data_calving" type="logical" default_value=".false." units="unitless"
 		            description="Select whether or not to configure calving in a 'data' model mode (calc. calving flux but do not update ice geometry)"
@@ -184,6 +192,46 @@
                             description="Threshold von Mises stress value required for calving velocity to exceed ice velocity on floating ice. Generally seems to need to be low (1e5 to 2e5 for Humboldt Glacier) to allow floating ice to retreat. If set to 0.0, floating ice will be removed from dynamic cells each timestep; calvingThickness will be correct, but calvingVelocity will not be correct for those cells. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier."
                             possible_values="Any positive real value"
                 />
+		<nml_option name="config_finalize_damage_after_advection" type="logical" default_value=".true." units="unitless"
+                        description="If true, then the 'li_finalize_damage_after_advection' subroutine is applied, doing the following: 1) set the value of damage at the grounding line based on the choice of 'config_damage_gl_setting', 2) reset the value of damage to its initial value (to avoid healing), based on choice of 'config_preserve_damage', 3) couple the updated damage value to the rheology if 'config_damage_rheology_coupling' is true."
+		            possible_values=".true. or .false."
+                />
+		<nml_option name="config_preserve_damage" type="logical" default_value=".false." units="unitless"
+                        description="If true, then preserve the value of damage before advection (i.e., do not allow healing of damage to occur)."
+		            possible_values=".true. or .false."
+                />
+		<nml_option name="config_calculate_damage" type="logical" default_value=".false." units="unitless"
+                        description="If .true., then turn on the 'calculate_damage' subroutine. Note that setting this to .true. will evolve damage even if damage-based calving is not being used, which is why it is .false. by default (and thus it should explicitly be set to .true. to use damage based calving)."
+		            possible_values=".true. or .false."
+                />
+                <nml_option name="config_damage_preserve_threshold" type="real" default_value="0.0" units="unitless"
+                        description="It is a value above which the old damage number would be kept from the impact of advection (the damage would not heal). For example, if the damage at some location is 0.83, and we set config_damage_preserve_threshold to 0.8, then the damage number there will not fall below 0.83. Otherwise, if the damage is 0.7, then it could be decreased to a smaller number if non-damaged ice is transported from upstream. If we set config_damage_preserve_threshold to 0 (default), then it will just not play a role in pratical."
+	                possible_values="real value between 0 and 1"
+		/>
+                <nml_option name="config_damage_calving_threshold" type="real" default_value="1.0" units="unitless"
+                        description="When config_damage_calving_method==threshold, this is the value of damage above which the cell would be calved away.  When config_damage_calving_method==calving_rate, this is the value above which calving becomes proportional to damage."
+	                possible_values="real value between 0 and 1"
+		/>
+                <nml_option name="config_damage_stiffness_min" type="real" default_value="0.1" units="unitless"
+                        description="The minimum value the 'stiffnessFactor' can take due to evolving damage when 'stiffnessFactor' is calculated from damage (i.e., when 'config_damage_rheology_coupling'=.true.). This is used to prevent unrealistic and/or numerically challenging stiffness values. For example, if damage = 0.9, then 'stiffnessFactor' becomes 1 - damage = 0.1 (a small value that could be challenging for the solver). But if we set 'config_damage_stiffness_min' = 0.5, then 'stiffnessFactor' can only fall as low as 0.5."
+	                possible_values="real value between 0 and 1"
+		/>
+                <nml_option name="config_damage_rheology_coupling" type="logical" default_value=".false." units="unitless"
+                        description="If true, then the value of 'stiffnessFactor' is coupled to damage evolution, i.e. 'stiffnessFactor' = 1-damage."
+	                possible_values=".true. or .false."
+		/>
+		        <nml_option name="config_damage_gl_setting" type="character" default_value="nye" units="unitless"
+		                description="Selection of the method for initializing damage in the first floating grid cells past the grounding line: 'nye' uses Nye's zero stress criteria (Nye, 1957, Proc. R. Soc. A, 239) for defining the damage value, 'extrapolate' extrapolates values from the floating ice downstream back to the first floating cells."
+		            possible_values="'nye', 'extrapolate'"
+		/>
+		        <nml_option name="config_damage_calving_method" type="character" default_value="threshold" units="unitless"
+		                description="Selection of the method for damage calving. For 'threshold', ice with damage above the value specified by 'config_damage_calving_threshold' will be removed (currently, only if this ice is also AT a marine margin, but eventually this will be expanded to also include any ice at the threshold adjacent to cells at the marine margin). For 'calving_rate', a rate of calving is specified as proportional to the damage value above some threshold, with the constant of proportionality specified by 'config_damagecalvingParameter' and the threshold defined by config_damage_calving_threshold."
+		            possible_values="'calving_rate', 'threshold'"
+		/>
+    <nml_option name="config_damagecalvingParameter" type="real" default_value="1.0e-4" units="m/s"
+                        description="A scalar parameter that specifies a calving rate as proportional to the value of damage above some threshold value when using the 'calving_rate' method for the 'config_damage_calving_method' option (with the threshold damage value specified by 'config_damage_calving_threshold')."
+	                possible_values="any positive real value"
+		/>
 	</nml_record>
 
 	<nml_record name="thermal_solver" in_defaults="true">
@@ -618,6 +666,8 @@
                         <var name="uReconstructX" packages="higherOrderVelocity"/>
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
                         <var name="basalFrictionFlux"/>
+			<var name="damage"/>
+			<var name="calvingVelocityData"/>
 			<var name="basalMeltInput" packages="hydro"/>
 			<var name="externalWaterInput" packages="hydro"/>
 			<var name="waterThickness" packages="hydro"/>
@@ -716,6 +766,9 @@
 			<var name="waterPressure" packages="hydro"/>
                         <var name="channelArea" packages="hydro"/>  <!-- this is only needed if running with channels - could be package-controlled -->
 			<var name="waterFluxMask" packages="hydro"/>
+			<var name="damage"/>
+			<var name="calvingVelocityData"/>
+			<var name="damageMax"/>
                         <!-- these variables just for ISMIP6 forcing -->
                         <var name="ismip6shelfMelt_basin" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_gamma0" packages="ismip6ShelfMelt"/>
@@ -1075,6 +1128,38 @@ is the value of that variable from the *previous* time level!
                 <var name="requiredAblationVolumeDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
                      description="bookkeeping field for how much volume should be removed from a dynamic edge"
                 />
+                <var name="calvingVelocityData" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+                     description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane), given by the input netCDF file."
+                />
+                <var name="damage" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="Damage is parameterized as the local ice thickness divided by the fracture depth, such that unfractured ice has damage=0 and ice fractured through its full thickness has damage=1"
+                />
+                <var name="ddamagedt" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
+                     description="damage change rate"
+                />
+                <var name="damageNye" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="Nye zero-stress (Nye, 1957, Proc. R. Soc. A, 239) damage value"
+                />
+                <var name="damageMax" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="maximum damage number kept constant"
+                />
+                <var name="s0" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="a ratio between hydrostatic pressure and the largest principal tensile stress within ice shelf, rho_i * (rho_w - rho_i) * g * h / ( 2 * Tau_xx * rho_w ), where "h" is the ice thickness."
+                />
+                <var name="nstar" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="n∗ denotes the usual parameter n from Glen’s flow law, adjusted by including the ratio of the principal horizontal strain rates:  epsilon Dot_yy / epsilon Dot_xx"
+                />
+            <var name="effectiveViscosity" type="real" dimensions="nCells Time" units="Pa s" time_levs="1"
+                     description="effective viscosity"
+                     persistence="persistent"
+                />
+                <var name="epsmax" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
+                     description="strain rate along the direction of maximum deviatoric principal stress"
+                />
+                <var name="damageSource" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
+                     description="damage source term"
+                />
+                />
                 <var name="basalWaterThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                      description="thickness of basal water"
                 />
@@ -1253,6 +1338,24 @@ is the value of that variable from the *previous* time level!
                 <var name="eMin" type="real" dimensions="nCells Time" units="s^{-1}"
                      description="magnitude of second principal depth-integrated strain rate"
                 />
+                <var name="tauxx" type="real" dimensions="nCells Time" units="Pa"
+                     description="deviatoric stress xx"
+                />
+                <var name="tauyy" type="real" dimensions="nCells Time" units="Pa"
+                     description="deviatoric stress yy"
+                />
+                <var name="tauxy" type="real" dimensions="nCells Time" units="Pa"
+                     description="deviatoric stress xy=yx"
+                />
+                <var name="tauMax" type="real" dimensions="nCells Time" units="Pa"
+                     description="maximum deviatoric principal stress"
+                />
+                <var name="tauMin" type="real" dimensions="nCells Time" units="Pa"
+                     description="minimum deviatoric principal stress"
+                />
+	        <var name="principalStrainRateRatio" type="real" dimensions="nCells" units="none"
+	             description="the ratio of the minimum and maximum principal horizontal strain rates"
+	        />
                 <var name="fluxAcrossGroundingLine" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
                      description="flux across grounding line per unit width.  Positive means flux goes from grounded to floating ice."
                 />
@@ -1385,6 +1488,10 @@ is the value of that variable from the *previous* time level!
 	       />
 	  <var name="workCell3" type="real" dimensions="nCells" units="none"
 	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+      <var name="meanFlowParamA" type="real" dimensions="nCells" units="Pa^{-3} s^{-1}"
+	       description="depth averaged flow parameter A"
 	       persistence="scratch"
 	       />
 	  <var name="workTracerCell" type="real" dimensions="maxTracersAdvect nCells" units="none"

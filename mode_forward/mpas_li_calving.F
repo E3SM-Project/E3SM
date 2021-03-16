@@ -44,7 +44,8 @@ module li_calving
    !
    !--------------------------------------------------------------------
 
-   public :: li_calve_ice, li_restore_calving_front, li_apply_front_ablation_velocity
+   public :: li_calve_ice, li_restore_calving_front, li_apply_front_ablation_velocity, &
+             li_calculate_damage, li_finalize_damage_after_advection
 
    !--------------------------------------------------------------------
    !
@@ -209,6 +210,11 @@ module li_calving
       elseif (trim(config_calving) == 'eigencalving') then
 
          call eigencalving(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+      elseif (trim(config_calving) == 'damagecalving') then
+
+         call damage_calving(domain, err_tmp)
          err = ior(err, err_tmp)
 
       elseif (trim(config_calving) == 'mask') then
@@ -1266,6 +1272,185 @@ module li_calving
 
    end subroutine eigencalving
 
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine specified_calving_velocity
+!
+!> \brief use a specified calving velocity given by input data
+!> \author Matthew Hoffman
+!> \date   Feb. 2018
+!> \details we can specify the calving velocity by i) a constant value
+!> given by config_calving_velocity_const in namelist and ii) source data
+!> specified by calvingVelocityData
+!-----------------------------------------------------------------------
+   subroutine specified_calving_velocity(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: scratchPool
+      logical, pointer :: config_print_calving_info
+      real(kind=RKIND), pointer :: config_calving_thickness
+      real(kind=RKIND), pointer :: config_calving_velocity_const
+      character (len=StrKIND), pointer :: config_calving_specified_source
+      real (kind=RKIND), dimension(:), pointer :: calvingVelocity
+      real (kind=RKIND), dimension(:), pointer :: calvingVelocityData
+      real (kind=RKIND), dimension(:), pointer :: angleEdge
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
+      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: calvingFrontMask
+      real (kind=RKIND), pointer :: deltat  !< time step (s)
+      real (kind=RKIND), dimension(:), pointer :: dvEdge
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      integer, pointer :: nCells
+      integer :: iCell, jCell, iNeighbor
+      logical :: dynamicNeighbor
+      real(kind=RKIND) :: calvingSubtotal
+      integer :: err_tmp
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
+      call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_calving_velocity_const', config_calving_velocity_const)
+      call mpas_pool_get_config(liConfigs, 'config_calving_specified_source', config_calving_specified_source)
+
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! get pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+
+         ! get dimensions
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+         ! get fields
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'calvingFrontMask', calvingFrontMask)
+         call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
+         call mpas_pool_get_array(geometryPool, 'calvingVelocityData', calvingVelocityData)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+
+
+         ! get parameter value
+         if (trim(config_calving_specified_source) == 'const') then
+             calvingVelocity = config_calving_velocity_const
+         elseif (trim(config_calving_specified_source) == 'data') then
+             calvingVelocity = calvingVelocityData
+         else
+            err = ior(err, 1)
+            call mpas_log_write("Invalid value specified for option config_calving_specified_source" // &
+                  config_calving_specified_source, MPAS_LOG_ERR)
+         endif
+
+         if (config_print_calving_info) then
+            call mpas_log_write("calvingVelocity(m s) value range on this processor: Min=$r, Max=$r", &
+                    realArgs=(/minval(calvingVelocity), maxval(calvingVelocity)/))
+         endif
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! Convert calvingVelocity to calvingThickness
+         call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, calvingThickness, calvingVelocity, &
+                                              applyToGrounded=.true., applyToFloating=.true., applyToGroundingLine=.false., &
+                                              domain=domain, err=err_tmp)
+         err = ior(err, err_tmp)
+
+         ! === apply calving ===
+         thickness(:) = thickness(:) - calvingThickness(:)
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! Now also remove thin floating, dynamic ice (based on chosen thickness threshold) after mask is updated.
+
+         !where ((li_mask_is_floating_ice(cellMask) .and. li_mask_is_dynamic_ice(cellMask) .and. &
+         ! thickness<config_calving_thickness))
+         ! The above commented version removed thin ice anywhere on the shelf.  In theory this seemed preferable,
+         ! but in practice it has the tendency to create 'holes' in relatively stagnant areas of ice shelves along
+         ! the grounding line.  Once these holes developed they would grow and eventually collapse the shelf from behind.
+
+         ! This criteria below only remove too-thin ice at the new calving front,
+         ! meaning just one 'row' of cells per timestep.  This could be expanded to continue
+         ! removing ice backward until all connected too-thin ice has been removed.
+         ! Tests of the current implementation show reasonable behavior.
+         do iCell = 1, nCells
+            if (calvingFrontMask(iCell) == 1 .and. thickness(iCell) < config_calving_thickness) then
+               calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+               thickness(iCell) = 0.0_RKIND
+            endif
+         enddo
+         ! TODO: global reduce & reporting on amount of calving generated in this step
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! remove abandoned floating ice (i.e. icebergs) and add it to the calving flux
+         ! Defined as: floating ice (dynamic or non-dynamic) that is not adjacent to dynamic ice (floating or grounded)
+         ! This won't necessarily find all abandoned ice, but in practice it does a pretty good job at general cleanup
+         calvingSubtotal = 0.0_RKIND
+         do iCell = 1, nCells
+           if (li_mask_is_floating_ice(cellMask(iCell))) then
+              ! check neighbors for dynamic ice (floating or grounded)
+              dynamicNeighbor = .false.
+              do iNeighbor = 1, nEdgesOnCell(iCell)
+                 jCell = cellsOnCell(iNeighbor, iCell)
+                 if (li_mask_is_dynamic_ice(cellMask(jCell))) dynamicNeighbor = .true.
+              enddo
+              if (.not. dynamicNeighbor) then  ! calve this ice
+                 calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+                 thickness(iCell) = 0.0_RKIND
+                 calvingSubtotal = calvingSubtotal + calvingThickness(iCell) * areaCell(iCell)
+              endif
+           endif
+         enddo
+         ! TODO: global reduce & reporting on amount of calving generated in this step
+
+         call remove_small_islands(meshPool, geometryPool)
+
+         block => block % next
+      enddo
+
+   end subroutine specified_calving_velocity
+
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !    routine von_Mises_calving
@@ -2109,6 +2294,767 @@ module li_calving
     end function scale_edge_length
 
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine damagecalving
+!
+!> \brief Calve ice from the calving front based on the Bassis-Ma (2015) damage theory. 
+!> We can use two options: "calving_rate" or "threshold".
+!> If we use "calving_rate", the calving front retreats by removing ice at a speed of k * damage,
+!> where k is a calving parameter. If we use "threshold", the ice at the calving front will be completely
+!> gone if the damage is above the threshold.
+!> \author Tong Zhang
+!> \date   May. 2019
+!> \details Connect calving with the damage model
+!> Bassis, Jeremy N., and Y. Ma. "Evolution of basal crevasses links ice shelf stability to ocean forcing." 
+!> Earth and Planetary Science Letters 409 (2015): 203-211.
+
+!-----------------------------------------------------------------------
+   subroutine damage_calving(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: scratchPool
+      logical, pointer :: config_print_calving_info
+      real (kind=RKIND), pointer :: config_sea_level
+      real(kind=RKIND), pointer :: config_calving_thickness
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness
+      real (kind=RKIND), dimension(:), pointer :: calvingVelocity
+      real (kind=RKIND), dimension(:), pointer :: eMax, eMin
+      real (kind=RKIND), dimension(:), pointer :: damage
+      integer, dimension(:), pointer :: calvingFrontMask
+      integer, dimension(:), pointer :: cellMask
+      real (kind=RKIND), pointer :: deltat  !< time step (s)
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, dimension(:,:), pointer :: edgesOnCell
+      real (kind=RKIND), dimension(:), pointer :: dvEdge
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      integer, pointer :: nCells
+      integer :: iCell, jCell, iNeighbor
+      real(kind=RKIND) :: cellCalvingFrontLength, cellCalvingFrontHeight
+      integer :: err_tmp
+      logical :: dynamicNeighbor
+      real(kind=RKIND), pointer :: config_damagecalvingParameter
+      real(kind=RKIND) :: calvingSubtotal
+      character (len=StrKIND), pointer :: config_damage_calving_method
+      real(kind=RKIND), pointer :: config_damage_calving_threshold
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_damagecalvingParameter', config_damagecalvingParameter)
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_method', config_damage_calving_method)
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
+
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! get pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+
+         ! get fields
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(geometryPool, 'damage', damage)
+         call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
+         call mpas_pool_get_array(geometryPool, 'calvingFrontMask', calvingFrontMask)
+
+
+         call calculate_calving_front_mask(meshPool, geometryPool, calvingFrontMask)
+
+         if (trim(config_damage_calving_method) == 'calving_rate') then
+             if (config_damage_calving_threshold >= 1.0_RKIND .or. config_damage_calving_threshold < 0.0_RKIND) then
+                call mpas_log_write("Invalid value of config_damage_calving_threshold specified for 'calving_rate' option.  " // &
+                        "Valid values are in the range [0,1).", MPAS_LOG_ERR)
+                err = ior(err, err_tmp)
+             endif
+             ! First calculate the front retreat rate (m/s)
+             calvingVelocity(:) = config_damagecalvingParameter * &
+                max(0.0_RKIND, (damage(:) - config_damage_calving_threshold) / (1.0_RKIND - config_damage_calving_threshold)) &
+                * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND) ! calculate only for floating ice
+             call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, calvingThickness, calvingVelocity, &
+                                              applyToGrounded=.false., applyToFloating=.true., applyToGroundingLine=.false., &
+                                              domain=domain, err=err_tmp)
+             err = ior(err, err_tmp)
+         elseif (trim(config_damage_calving_method) == 'threshold') then
+             call apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, err_tmp)
+             err = ior(err, err_tmp)
+         else
+             call mpas_log_write("Unknown value for config_damage_calving_method was specified!", MPAS_LOG_ERR)
+         endif
+
+         ! === apply calving ===
+         thickness(:) = thickness(:) - calvingThickness(:)
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! Now also remove thin floating, dynamic ice (based on chosen thickness threshold) after mask is updated.
+         ! This criteria below only remove too-thin ice at the new calving front,
+         ! meaning just one 'row' of cells per timestep.  This could be expanded to continue
+         ! removing ice backward until all connected too-thin ice has been removed.
+         ! Tests of the current implementation show reasonable behavior.
+         do iCell = 1, nCells
+            if (calvingFrontMask(iCell) == 1 .and. thickness(iCell) < config_calving_thickness) then
+               calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+               thickness(iCell) = 0.0_RKIND
+            endif
+         enddo
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! remove abandoned floating ice (i.e. icebergs) and add it to the calving flux
+         ! Defined as: floating ice (dynamic or non-dynamic) that is not adjacent to dynamic ice (floating or grounded)
+         ! This won't necessarily find all abandoned ice, but in practice it does a pretty good job at general cleanup
+         calvingSubtotal = 0.0_RKIND
+         do iCell = 1, nCells
+           if (li_mask_is_floating_ice(cellMask(iCell))) then
+              ! check neighbors for dynamic ice (floating or grounded)
+              dynamicNeighbor = .false.
+              do iNeighbor = 1, nEdgesOnCell(iCell)
+                 jCell = cellsOnCell(iNeighbor, iCell)
+                 if (li_mask_is_dynamic_ice(cellMask(jCell))) dynamicNeighbor = .true.
+              enddo
+              if (.not. dynamicNeighbor) then  ! calve this ice
+                 calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+                 thickness(iCell) = 0.0_RKIND
+                 calvingSubtotal = calvingSubtotal + calvingThickness(iCell) * areaCell(iCell)
+              endif
+           endif
+         enddo
+         ! TODO: global reduce & reporting on amount of calving generated in this step
+
+         call remove_small_islands(meshPool, geometryPool)
+
+         block => block % next
+
+      enddo
+
+   end subroutine damage_calving
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine li_calculate_damage
+!
+!> \author Tong Zhang
+!> \date   May. 2019
+!> \details calulate the damage tracer for floating ice shelves (damage at grounded ice is constrained as 0)
+!> Bassis, Jeremy N., and Y. Ma. "Evolution of basal crevasses links ice shelf stability to ocean forcing."
+!> Earth and Planetary Science Letters 409 (2015): 203-211.
+
+!-----------------------------------------------------------------------
+
+   subroutine li_calculate_damage(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: thermalPool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: scratchPool
+
+      real(kind=RKIND), pointer :: config_damage_preserve_threshold
+      character (len=StrKIND), pointer :: config_damage_gl_setting
+      real(kind=RKIND), pointer :: config_default_flowParamA
+      real(kind=RKIND), pointer :: config_flowLawExponent
+      logical, pointer :: config_print_calving_info
+
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: eMax
+      real (kind=RKIND), dimension(:), pointer :: tauMax, tauMin
+      real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
+      real (kind=RKIND), dimension(:), pointer :: damage
+      real (kind=RKIND), dimension(:), pointer :: ddamagedt
+      real (kind=RKIND), dimension(:), pointer :: s0, nstar
+      real (kind=RKIND), dimension(:), pointer :: damageSource
+      real (kind=RKIND), dimension(:), pointer :: damageNye
+      real (kind=RKIND), dimension(:), pointer :: damageMax
+      real (kind=RKIND), pointer ::  &
+           config_ice_density,            & ! ice density
+           config_ocean_density             ! ocean density
+
+      real, dimension(:), pointer :: principalStrainRateRatio
+
+      integer, dimension(:), pointer :: cellMask
+      real (kind=RKIND), pointer :: deltat !< time step (s)
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, pointer :: nCells
+      integer :: iCell, jCell, iNeighbor, n_damage_downstream
+      real(kind=RKIND) :: damage_downstream
+      real(kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
+      real(kind=RKIND), dimension(6) :: localMinInfo, localMaxInfo, globalMinInfo, globalMaxInfo
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
+      call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
+      call mpas_pool_get_config(liConfigs, 'config_damage_preserve_threshold', config_damage_preserve_threshold)
+      call mpas_pool_get_config(liConfigs, 'config_damage_gl_setting', config_damage_gl_setting)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! get pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+
+         ! get fields
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'damage', damage)
+         call mpas_pool_get_array(geometryPool, 'ddamagedt', ddamagedt)
+         call mpas_pool_get_array(geometryPool, 's0', s0)
+         call mpas_pool_get_array(geometryPool, 'nstar', nstar)
+         call mpas_pool_get_array(geometryPool, 'damageSource', damageSource)
+         call mpas_pool_get_array(geometryPool, 'damageNye', damageNye)
+         call mpas_pool_get_array(geometryPool, 'damageMax', damageMax)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+
+         call mpas_pool_get_array(velocityPool, 'eMax', eMax)
+         call mpas_pool_get_array(velocityPool, 'tauMax', tauMax)
+         call mpas_pool_get_array(velocityPool, 'tauMin', tauMin)
+         call mpas_pool_get_array(velocityPool, 'principalStrainRateRatio', principalStrainRateRatio)
+
+         where (thickness == 0.0_RKIND)
+             principalStrainRateRatio = 0.0_RKIND
+             s0 = 0.0_RKIND
+             nstar = 0.0_RKIND
+         elsewhere
+             ! Compute the hydrostatic to tensile stress ratio (equation 24 from Bassis and Ma, 2015, EPSL, 409, C)
+             ! In Bassis & Ma this is beta, defined as ratio of principal strain rates.  Here we calculate as ratio of
+             ! deviatoric stresses, which is equivalent.
+             principalStrainRateRatio = tauMin / tauMax
+
+             s0 = &
+             config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*tauMax*config_ocean_density)
+
+             ! Compute the effective flow law exponent (equation 11 from Bassis and Ma, 2015, EPSL, 409, C)
+             nstar(:) = 4.0_RKIND * config_flowLawExponent * &
+                     (1.0_RKIND + principalStrainRateRatio(:) + principalStrainRateRatio(:)**2) / &
+                     (4.0_RKIND * (1.0_RKIND + principalStrainRateRatio(:) + principalStrainRateRatio(:)**2) + &
+                      3.0_RKIND * (config_flowLawExponent - 1.0_RKIND )* principalStrainRateRatio(:)**2)
+         endwhere
+
+
+         do iCell = 1, nCells
+         if (thickness(iCell) == 0.0_RKIND) then
+             damageSource(iCell) = 0.0_RKIND
+         else
+             damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*eMax(iCell)-floatingBasalMassBal(iCell)/config_ice_density/thickness(iCell)
+             ! RHS of equation 26 from Bassis and Ma (2015, EPSL, 409, C). Note that the last set of terms after the minus sign,
+             ! mdot / rho_i / H, differs from the mdot/H in the paper because our mdot has units of kg/m^2/s and to convert that back
+             ! to the right units (1/sec) you need to multiply by a factor of m^2/kg (1/rho_i * 1/H gives that factor).
+         endif
+         enddo
+
+         !! Commented out lines immediately below here are for use with manufacured experiments
+         !ddamagedt(:) = damageSource(:)*damage(:) - 0.44/2.0 * (uReconstructX(1,:)/1000.0*(1+epsmax(:)*seconds)*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
+         !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
+         !ddamagedt(:) = damageSource(:)*damage(:) - 0.44/2.0 * (uReconstructX(1,:)/1000.0*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
+         !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
+
+         ddamagedt(:) = damageSource(:) * damage(:)
+
+         damage(:) = damage(:) + ddamagedt(:) * deltat
+
+         do iCell = 1, nCells
+             if (thickness(iCell) == 0.0_RKIND) then
+                 damageNye(iCell) = 0.0_RKIND
+             else
+                 damageNye(iCell) = (2.0+principalStrainRateRatio(iCell)) * tauMax(iCell) / &
+                         (gravity*(config_ocean_density-config_ice_density)*thickness(iCell))
+             endif
+         enddo
+
+         do iCell = 1, nCells
+            if (damage(iCell) > config_damage_preserve_threshold) then
+                damageMax(iCell) = damage(iCell)
+            end if
+         end do
+         ! save the damageMax value for restoring later if that option is chosen (i.e., do NOT allowing for healing to occur)
+
+         do iCell = 1, nCells
+            if (damage(iCell) < 0.0_RKIND) then
+                damage(iCell) = 0.0_RKIND
+            end if
+            if (damage(iCell) < damageNye(iCell)) then
+                damage(iCell) = damageNye(iCell)
+            end if
+            if (damage(iCell) > 1.0_RKIND) then
+                damage(iCell) = 1.0_RKIND
+            end if
+         end do
+         ! damage is always larger than the Nye value for initialization of damage evolution.
+
+         do iCell = 1, nCells
+            if ((li_mask_is_grounded_ice(cellMask(iCell))) .or. (thickness(iCell) .eq. 0.0_RKIND)) then
+                damage(iCell) = 0.0_RKIND
+            end if
+         end do
+         ! the damage of grounded ice is kept as 0, as the strain rate calculation is only valid for ice shelf
+
+        ! Options for initializing damage where ice goes afloat:
+        if (trim(config_damage_gl_setting) == 'extrapolate') then
+           ! set the damage for a cell at the GL to the average damage value for its neighbor cells downstream on the ice shelf
+           do iCell = 1, nCells
+              if (li_mask_is_grounding_line(cellMask(iCell))) then
+
+                  damage_downstream = 0.0_RKIND
+                  n_damage_downstream = 0
+                  do iNeighbor = 1, nEdgesOnCell(iCell)
+                      jCell = cellsOnCell(iNeighbor, iCell)
+                      if (li_mask_is_floating_ice(cellMask(jCell))) then
+
+                          damage_downstream = damage_downstream + damage(jCell)
+                          n_damage_downstream =  n_damage_downstream + 1
+                      end if
+                  end do
+
+                  if (n_damage_downstream == 0) then
+                      damage(iCell) = 0.0_RKIND
+                  else
+                      damage(iCell) = damage_downstream / n_damage_downstream
+                  end if
+
+              end if
+           end do
+        elseif (trim(config_damage_gl_setting) == "nye") then
+            ! set the damage at the first floating cells to the Nye value
+            do iCell = 1, nCells
+                if (li_mask_is_grounding_line(cellMask(iCell))) then
+                    do iNeighbor = 1, nEdgesOnCell(iCell)
+                        jCell = cellsOnCell(iNeighbor, iCell)
+                        if (li_mask_is_floating_ice(cellMask(jCell))) then
+                            damage(jCell) = damageNye(jCell)
+                        end if
+                    end do
+                end if
+            end do
+        else
+            call mpas_log_write("Unknown value specified for config_damage_gl_setting!", MPAS_LOG_ERR)
+            err = ior(err, 1)
+        endif
+
+        if (config_print_calving_info) then
+           ! End of routine accounting/reporting
+           localMinInfo(1) = minval(damageSource)
+           localMaxInfo(1) = maxval(damageSource)
+           localMinInfo(2) = minval(s0)
+           localMaxInfo(2) = maxval(s0)
+           localMinInfo(3) = minval(nstar)
+           localMaxInfo(3) = maxval(nstar)
+           localMinInfo(4) = minval(principalStrainRateRatio)
+           localMaxInfo(4) = maxval(principalStrainRateRatio)
+           localMinInfo(5) = minval(tauMax)
+           localMaxInfo(5) = maxval(tauMax)
+           localMinInfo(6) = minval(damage)
+           localMaxInfo(6) = maxval(damage)
+           ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
+           call mpas_dmpar_min_real_array(domain % dminfo, 6, localMinInfo, globalMinInfo)
+           call mpas_dmpar_max_real_array(domain % dminfo, 6, localMaxInfo, globalMaxInfo)
+
+           call mpas_log_write("damageSource value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(1), globalMaxInfo(1)/))
+           call mpas_log_write("s0 value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(2), globalMaxInfo(2)/))
+           call mpas_log_write("nstar value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(3), globalMaxInfo(3)/))
+           call mpas_log_write("principalStrainRateRatio value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(4), globalMaxInfo(4)/))
+           call mpas_log_write("tauMax value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(5), globalMaxInfo(5)/))
+           call mpas_log_write("damage value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(6), globalMaxInfo(6)/))
+        end if
+        ! temporary message output in the log file
+
+
+         block => block % next
+
+      enddo
+
+   end subroutine li_calculate_damage
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine li_finalize_damage_after_advection
+!
+!> \author Tong Zhang
+!> \date   Oct. 2019
+!> \details This routine finalizes the damage calculation after advection by several ways: 1) set the damage at grounding line using
+!>          an extrapolation method or an Nye method.
+!>          2) preserve the damage to the original value before advection if it exceeds some large number
+!>          (config_damage_preserve_threshold). For example, if config_damage_preserve_threshold = 0.5,
+!>          then the localtions with damage > 0.5 on the ice shelf will not heal.
+!>          Thus, if we turn on this function, we do not allow the damage to heal if damage > config_damage_preserve_threshold.
+!>           3) coupling rheology to damage if the option config_damage_rheology_coupling is set to True in namelist
+!-----------------------------------------------------------------------
+
+   subroutine li_finalize_damage_after_advection(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: scratchPool
+      real(kind=RKIND), pointer :: config_damage_stiffness_min
+      logical, pointer :: config_damage_rheology_coupling
+      logical, pointer :: config_preserve_damage
+      logical, pointer :: config_print_calving_info
+      character (len=StrKIND), pointer :: config_damage_gl_setting
+      real (kind=RKIND), dimension(:), pointer :: damage
+      real (kind=RKIND), dimension(:), pointer :: damageMax
+      real (kind=RKIND), dimension(:), pointer :: damageNye
+      real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
+
+
+      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, pointer :: nCells
+      integer :: iCell, jCell, iNeighbor, n_damage_downstream
+      real(kind=RKIND) :: damage_downstream
+      integer :: err_tmp
+
+      err = 0
+
+
+      call mpas_pool_get_config(liConfigs, 'config_damage_stiffness_min', config_damage_stiffness_min)
+      call mpas_pool_get_config(liConfigs, 'config_damage_rheology_coupling', config_damage_rheology_coupling)
+      call mpas_pool_get_config(liConfigs, 'config_damage_gl_setting', config_damage_gl_setting)
+      call mpas_pool_get_config(liConfigs, 'config_preserve_damage', config_preserve_damage)
+
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! get pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+         ! get fields
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'damage', damage)
+         call mpas_pool_get_array(geometryPool, 'damageMax', damageMax)
+         call mpas_pool_get_array(geometryPool, 'damageNye', damageNye)
+         call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
+
+         ! make sure masks are up to date.  May not be necessary, but safer to do anyway.
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         if (config_preserve_damage) then
+             do iCell = 1, nCells
+                if (damage(iCell) < damageMax(iCell)) then
+                    damage(iCell) = damageMax(iCell)
+                end if
+             end do
+         endif
+         ! put the damageMax value back to preserve the damage value (no heal)
+
+         where (damage < 0.0_RKIND)
+             damage = 0.0_RKIND
+         end where
+
+         where (damage > 1.0_RKIND)
+             damage = 1.0_RKIND
+         end where
+
+
+         do iCell = 1, nCells
+            if (li_mask_is_grounded_ice(cellMask(iCell)) .or. .not. li_mask_is_ice(cellMask(iCell))) then
+                damage(iCell) = 0.0_RKIND
+            end if
+         end do
+
+         if (trim(config_damage_gl_setting) == 'extrapolate') then
+             do iCell = 1, nCells
+                if (li_mask_is_grounding_line(cellMask(iCell))) then
+                    damage_downstream = 0.0_RKIND
+                    n_damage_downstream = 0
+                    do iNeighbor = 1, nEdgesOnCell(iCell)
+                        jCell = cellsOnCell(iNeighbor, iCell)
+                        if (li_mask_is_floating_ice(cellMask(jCell))) then
+
+                            damage_downstream = damage_downstream + damage(jCell)
+                            n_damage_downstream =  n_damage_downstream + 1
+                        end if
+                    end do
+
+                    damage(iCell) = damage_downstream
+
+                    if (n_damage_downstream == 0) then
+                        damage(iCell) = 0.0_RKIND
+                    else
+                        damage(iCell) = damage_downstream / n_damage_downstream
+                    end if
+
+                end if
+            end do
+            !set the damage at GL to the mean damage value for its neighboring floating cells
+
+        elseif (trim(config_damage_gl_setting) == 'nye') then
+             do iCell = 1, nCells
+                if (li_mask_is_grounding_line(cellMask(iCell))) then
+                    do iNeighbor = 1, nEdgesOnCell(iCell)
+                        jCell = cellsOnCell(iNeighbor, iCell)
+                        if (li_mask_is_floating_ice(cellMask(jCell))) then
+                            damage(jCell) = damageNye(jCell)
+                        end if
+                    end do
+                end if
+            end do
+            ! always set the damage at the first floating cells to the Nye value
+        endif
+
+        if (config_damage_rheology_coupling) then
+            do iCell = 1, nCells
+                if (li_mask_is_floating_ice(cellMask(iCell))) then
+                    stiffnessFactor(iCell) = 1.0_RKIND - damage(iCell)
+                    if (stiffnessFactor(iCell) < config_damage_stiffness_min) then
+                        stiffnessFactor(iCell) = config_damage_stiffness_min
+                    end if
+                end if
+            end do
+        end if
+
+
+        block => block % next
+
+      enddo
+
+   end subroutine li_finalize_damage_after_advection
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine apply_calving_damage_threshold
+!
+!> \brief Calve any ice that is damaged beyond a specified threshold
+!> \author Tong Zhang, Matt Hoffman
+!> \date   Nov. 2020, March 2021
+!> \details This routine specified floating ice to be calved wherever the damage
+!> value exceeds a specified threshold, assuming the ice is connected to the calving
+!> front.
+!-----------------------------------------------------------------------
+   subroutine apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh pool
+      type (mpas_pool_type), pointer, intent(in) :: scratchPool !< Input: scratch pool
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), pointer, intent(inout) :: geometryPool !< Input: geometry pool
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness !< Output: the applied calving rate as a thickness
+      real (kind=RKIND), dimension(:), pointer :: thickness, damage, bedTopography
+      integer, dimension(:), pointer :: groundedMarineMarginMask
+      real(kind=RKIND), pointer :: config_damage_calving_threshold
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, dimension(:), pointer :: cellMask
+      integer, pointer :: nCells
+      integer :: iCell, iNeighbor, jCell, iEdge
+      integer :: nEmptyNeighbors
+      real (kind=RKIND), pointer :: config_sea_level
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
+
+      ! get fields
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+      call mpas_pool_get_array(geometryPool, 'damage', damage)
+      call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+
+      calvingThickness(:) = 0.0_RKIND
+
+      groundedMarineMarginMask(:) = 0
+      do iCell = 1, nCells
+         ! Define marine marginal cells as those that are (1) at the ice
+         ! margin, (2) have at least one neighboring cell without ice, (3) contain
+         ! grounded ice, and (4) have bed topography below sea level.
+         ! OR is adjacent to an inactive floating margin cell
+
+         ! Check if neighboring cells contain ice and have bed topo below sea level
+         nEmptyNeighbors = 0
+         do iEdge = 1, nEdgesOnCell(iCell)
+           iNeighbor = cellsOnCell(iEdge, iCell)
+           if ( (((thickness(iNeighbor) == 0.0_RKIND) &
+              .and. bedTopography(iNeighbor) < config_sea_level)) &
+              .or. ((li_mask_is_floating_ice(cellMask(iNeighbor)) &
+              .and. li_mask_is_margin(cellMask(iNeighbor)) &
+              .and. (.not. li_mask_is_dynamic_ice(cellMask(iNeighbor)))))) then
+               nEmptyNeighbors = nEmptyNeighbors + 1
+           endif
+         enddo
+
+         if ( nEmptyNeighbors > 0 &
+           .and. li_mask_is_grounded_ice(cellMask(iCell)) &
+           .and. bedTopography(iCell) < config_sea_level &
+           .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
+
+            groundedMarineMarginMask(iCell) = 1
+         else
+            groundedMarineMarginMask(iCell) = 0
+         endif
+      enddo
+
+      ! The calving volume needs to be distributed in three ways:
+      ! 1. We need to first remove any "thin" ice in front of this cell
+      ! 2. Then we remove ice from this cell if damage > threshold
+      do iCell = 1, nCells
+         if ( (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) & ! floating dynamic
+              .and. li_mask_is_margin(cellMask(iCell)) &
+              .and. (damage(iCell) .ge. config_damage_calving_threshold)) then
+
+            ! First remove ice from "thin" neighbors
+            do iNeighbor = 1, nEdgesOnCell(iCell)
+               jCell = cellsOnCell(iNeighbor, iCell)
+               if (li_mask_is_floating_ice(cellMask(jCell)) .and. .not. li_mask_is_dynamic_ice(cellMask(jCell))) then
+                  ! this is a thin neighbor - remove the whole cell volume
+                  calvingThickness(jCell) = thickness(jCell)
+               endif
+            enddo
+
+            calvingThickness(iCell) = thickness(iCell)
+            ! < apply to the field that will be used in thickness units
+
+            ! Now calved away the neighboring cells if the damage is also > the threshold value
+            ! I choose to disable this section (i.e., no recursive calving) -- TZ
+            !TODO: a flood fill algorithm might be needed for this threshold method in the future 
+            !do iNeighbor = 1, nEdgesOnCell(iCell)
+            !   jCell = cellsOnCell(iNeighbor, iCell)
+            !   if (li_mask_is_floating_ice(cellMask(jCell)) .and. li_mask_is_dynamic_ice(cellMask(jCell)) &
+            !           .and. (.not. li_mask_is_dynamic_margin(jCell)) .and. (damage(jCell) .gt. config_damage_calving_threshold)) then
+            !      removeVolumeHere = cellVolume(jCell)
+                     ! < how much we want to remove here
+            !      calvingThickness(jCell) = removeVolumeHere / areaCell(jCell)
+                     ! < apply to the field that will be used in thickness units
+            !      cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere 
+                     ! update accounting on cell volume
+            !   endif
+            !enddo
+
+         endif ! if cell is calving margin
+
+      enddo ! cell loop
+
+   end subroutine apply_calving_damage_threshold
+
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2187,7 +3133,6 @@ module li_calving
       enddo
 
    end subroutine mask_calving
-
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
