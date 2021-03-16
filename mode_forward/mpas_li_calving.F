@@ -1190,7 +1190,7 @@ module li_calving
          !      * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
                   ! calculate only for floating ice - map of "potential" calving rate
          calvingVelocity(:) = config_calving_eigencalving_parameter_scalar_value
-        
+
 
          ! Convert calvingVelocity to calvingThickness
          call apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
@@ -1823,13 +1823,13 @@ module li_calving
         if (trim(config_damage_gl_setting) == 'extrapolate') then
            do iCell = 1, nCells
               if (li_mask_is_grounding_line(cellMask(iCell))) then
-                  
+
                   damage_downstream = 0.0_RKIND
                   n_damage_downstream = 0
                   do iNeighbor = 1, nEdgesOnCell(iCell)
                       jCell = cellsOnCell(iNeighbor, iCell)
                       if (li_mask_is_floating_ice(cellMask(jCell))) then
-                         
+
                           damage_downstream = damage_downstream + damage(jCell)
                           n_damage_downstream =  n_damage_downstream + 1
                       end if
@@ -1846,7 +1846,7 @@ module li_calving
            ! set the damage for a cell at the GL to the average damage value for its neighbor cells downstream on the ice shelf 
 
         elseif (trim(config_damage_gl_setting) == "nye") then
-                        
+
              do iCell = 1, nCells
                 if (li_mask_is_grounding_line(cellMask(iCell))) then
                     do iNeighbor = 1, nEdgesOnCell(iCell)
@@ -1896,10 +1896,10 @@ module li_calving
          call mpas_deallocate_scratch_field(alphaVar, .true.)
 
          block => block % next
-             
+
       enddo
 
-   end subroutine li_calculate_damage 
+   end subroutine li_calculate_damage
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1955,7 +1955,7 @@ module li_calving
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
-      integer, pointer :: nCells 
+      integer, pointer :: nCells
       integer :: iCell, jCell, iNeighbor, n_damage_downstream
       real(kind=RKIND) :: damage_downstream
 
@@ -2025,7 +2025,7 @@ module li_calving
                     do iNeighbor = 1, nEdgesOnCell(iCell)
                         jCell = cellsOnCell(iNeighbor, iCell)
                         if (li_mask_is_floating_ice(cellMask(jCell))) then
-                            
+
                             damage_downstream = damage_downstream + damage(jCell)
                             n_damage_downstream =  n_damage_downstream + 1
                         end if
@@ -2070,7 +2070,7 @@ module li_calving
 
 
         block => block % next
-             
+
       enddo
 
    end subroutine li_finalize_damage_after_advection
