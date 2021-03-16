@@ -583,6 +583,8 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
          ! ---
          ! --- Calculate reconstructed velocities
@@ -656,7 +658,7 @@ contains
          ! ---
          ! --- Calculate strain rates on cell centers
          ! ---
-         call calculate_strain_rates(meshPool, velocityPool, err_tmp)
+         call calculate_strain_rates_and_stresses(meshPool, geometryPool, thermalPool, scratchPool, velocityPool, err)
          err = ior(err, err_tmp)
 
          block => block % next
@@ -852,25 +854,33 @@ contains
 
 !***********************************************************************
 !
-!  routine calculate_strain_rates
+!  routine calculate_strain_rates_and_stresses
 !
-!> \brief  Calulates strain rates on cell centers
+!> \brief  Calulates strain rates and stresses on cell centers
 !> \author Matt Hoffman
 !> \date   Feb. 2018
 !> \details
-!>  This routine calculates strain rates on cell centers.
+!>  This routine calculates strain rates and stresses on cell centers.
 !
 !-----------------------------------------------------------------------
 
-   subroutine calculate_strain_rates(meshPool, velocityPool, err)
+   subroutine calculate_strain_rates_and_stresses(meshPool, geometryPool, thermalPool, scratchPool, velocityPool, err)
 
       use li_setup
+      use li_diagnostic_vars 
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(in) :: &
          meshPool                                     !< Input: mesh object
+
+      type (mpas_pool_type), intent(in) :: &
+         geometryPool                                 !< Input: geometry object
+      type (mpas_pool_type), intent(in) :: &
+         thermalPool                                  !< Input: thermal object
+      type (mpas_pool_type), intent(in) :: &
+         scratchPool                                  !< Input: scratch object
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -888,12 +898,37 @@ contains
       !-----------------------------------------------------------------
       real(kind=RKIND), dimension(:), pointer :: exx, eyy, exy, eTheta, eMax, eMin, dudy, dvdx
       real(kind=RKIND), dimension(:), pointer :: xvelmean, yvelmean
+      real(kind=RKIND), dimension(:), pointer :: tauxx, tauyy, tauxy, tauMax, tauMin
       integer :: err_tmp
+
+      real(kind=RKIND), pointer :: config_flowLawExponent
+
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:,:), pointer :: temperature
+      real (kind=RKIND), dimension(:,:), pointer :: flowParamA
+      real (kind=RKIND), dimension(:), pointer :: effectiveViscosity
+      real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
+
+      type (field1dReal), pointer :: meanFlowParamAVar
+      real, dimension(:), pointer :: meanFlowParamA
+
+      integer, pointer :: nVertLevels
+      integer, pointer :: nCells
+
+      integer :: iCell
+
+      real(kind=RKIND) :: eEff
 
       err = 0
 
       call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
       call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
+
+      call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
+
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
       call mpas_pool_get_array(velocityPool, 'exx', exx)
       call mpas_pool_get_array(velocityPool, 'eyy', eyy)
       call mpas_pool_get_array(velocityPool, 'dudy', dudy)
@@ -902,6 +937,23 @@ contains
       call mpas_pool_get_array(velocityPool, 'eTheta', eTheta)
       call mpas_pool_get_array(velocityPool, 'eMax', eMax)
       call mpas_pool_get_array(velocityPool, 'eMin', eMin)
+
+      call mpas_pool_get_array(velocityPool, 'tauxx', tauxx)
+      call mpas_pool_get_array(velocityPool, 'tauyy', tauyy)
+      call mpas_pool_get_array(velocityPool, 'tauxy', tauxy)
+      call mpas_pool_get_array(velocityPool, 'tauMax', tauMax)
+      call mpas_pool_get_array(velocityPool, 'tauMin', tauMin)
+
+      call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+      call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
+      call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
+
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'effectiveViscosity', effectiveViscosity)
+
+      call mpas_pool_get_field(scratchPool, 'meanFlowParamA', meanFlowParamAVar)
+      call mpas_allocate_scratch_field(meanFlowParamAVar, .true.)
+      meanFlowParamA => meanFlowParamAVar % array
 
       ! Calculate strain rates
       call li_compute_gradient_2d(meshPool, xvelmean, exx, dudy, err_tmp)
@@ -919,8 +971,37 @@ contains
       eMax = 0.5_RKIND * (exx + eyy) + sqrt( (0.5_RKIND * (exx - eyy))**2 + exy**2)
       eMin = 0.5_RKIND * (exx + eyy) - sqrt( (0.5_RKIND * (exx - eyy))**2 + exy**2)
 
+      call li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err_tmp)
+      err = ior(err, err_tmp)
+
+      ! calculate the depth-averaged flow parameter A
+      meanFlowParamA(:) = sum(flowParamA(:,:), dim=1)/REAL(nVertLevels, kind=RKIND)
+
+      ! calculate effective viscosity from strain rate and flow param.
+      do iCell = 1, nCells
+         eEff = sqrt(exx(iCell)**2 + eyy(iCell)**2 + exx(iCell)*eyy(iCell) + exy(iCell)**2) ! effective strain rate
+         if (eEff == 0.0_RKIND) then
+            effectiveViscosity(iCell) = 0.0_RKIND
+         else
+            effectiveViscosity(iCell) = &
+            0.5_RKIND*stiffnessFactor(iCell)*meanFlowParamA(iCell)**(-1.0_RKIND/config_flowLawExponent)* &
+            eEff**((1.0_RKIND-config_flowLawExponent)/config_flowLawExponent)
+         endif
+      enddo
+
+      ! calculate deviatoric stresses
+      tauxx(:) = 2.0_RKIND*effectiveViscosity(:)*exx(:)
+      tauyy(:) = 2.0_RKIND*effectiveViscosity(:)*eyy(:)
+      tauxy(:) = 2.0_RKIND*effectiveViscosity(:)*exy(:)
+
+      ! calculate principal stresses
+      tauMin(:) = (tauxx(:)+tauyy(:))/2.0_RKIND - sqrt(((tauxx(:)-tauyy(:))/2.0_RKIND)**2 + tauxy(:)**2)
+      tauMax(:) = (tauxx(:)+tauyy(:))/2.0_RKIND + sqrt(((tauxx(:)-tauyy(:))/2.0_RKIND)**2 + tauxy(:)**2)
+
+      call mpas_deallocate_scratch_field(meanFlowParamAVar, .true.)
+
    !--------------------------------------------------------------------
-   end subroutine calculate_strain_rates
+   end subroutine calculate_strain_rates_and_stresses
 
 !***********************************************************************
 !
