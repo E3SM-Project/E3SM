@@ -46,6 +46,9 @@ set (CMAKE_C_FLAGS)
 set (CMAKE_CXX_FLAGS)
 set (CMAKE_Fortran_FLAGS)
 
+# Make Homme use the same pack size that scream does
+set (HOMMEXX_VECTOR_SIZE ${SCREAM_PACK_SIZE} CACHE STRING "")
+
 # configure Homme folder
 add_subdirectory(${HOMME_SOURCE_DIR} ${HOMME_BINARY_DIR})
 
