@@ -422,7 +422,11 @@ auto Field<RealType>::get_reshaped_view () const
     // Let's check that they are correct
     for (int i=DstRankDynamic; i<DstRank; ++i) {
       EKAT_REQUIRE_MSG(view_ND.extent(i)==dims_type::static_extent(i),
-          "Error! The template DataType contains some invalid compile-time dimensions.\n");
+          "Error! The template DataType contains an invalid compile-time dimensions:\n"
+          "    - field name: " + m_header->get_identifier().name() + "\n"
+          "    - dim index: " + std::to_string(i) + "\n"
+          "    - input compile time dimension: " + std::to_string(dims_type::static_extent(i)) + "\n"
+          "    - field internal dimension: " + std::to_string(view_ND.extent(i)) + "\n");
     }
   }
 

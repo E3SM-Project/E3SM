@@ -285,6 +285,9 @@ void HommeDynamics::register_fields (FieldRepository<Real>& field_repo) const
   for (const auto& fid : m_required_fields) {
     if (fid.name()=="qv") {
       field_repo.register_field<Scalar>(fid,"TRACERS");
+    } else if (fid.name()=="ps") {
+      // Can't use packs for ps
+      field_repo.register_field(fid);
     } else {
       field_repo.register_field<Scalar>(fid);
     }
