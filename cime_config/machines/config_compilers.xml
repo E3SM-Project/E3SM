@@ -622,7 +622,7 @@ flags should be captured within MPAS CMake files.
 
 <compiler OS="CNL">
   <CMAKE_OPTS>
-    <base> -DCMAKE_SYSTEM_NAME=Catamount</base>
+    <append MPILIB="!impi"> -DCMAKE_SYSTEM_NAME=Catamount </append>
   </CMAKE_OPTS>
   <CPPDEFS>
     <append> -DLINUX </append>
