@@ -134,6 +134,10 @@ interface
   subroutine init_boundary_exchanges_c () bind(c)
   end subroutine init_boundary_exchanges_c
 
+  ! Initialize dp3d from ps_v and hybrid v coord
+  subroutine initialize_dp3d_from_ps_c () bind(c)
+  end subroutine initialize_dp3d_from_ps_c
+
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !               Run-time routines               !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
