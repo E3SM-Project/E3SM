@@ -1275,14 +1275,14 @@ is the value of that variable from the *previous* time level!
                 <var name="tauxy" type="real" dimensions="nCells Time" units="Pa"
                      description="deviatoric stress xy"
                 />
-                <var name="tauyx" type="real" dimensions="nCells Time" units="Pa"     
+                <var name="tauyx" type="real" dimensions="nCells Time" units="Pa"
                      description="deviatoric stress yx"
                 />
-                <var name="tauMax" type="real" dimensions="nCells Time" units="Pa"    
-                     description="maximum principal stress"
+                <var name="tauMax" type="real" dimensions="nCells Time" units="Pa"
+                     description="maximum deviatoric principal stress"
                 />
-                <var name="tauMin" type="real" dimensions="nCells Time" units="Pa"    
-                     description="minimum principal stress"
+                <var name="tauMin" type="real" dimensions="nCells Time" units="Pa"
+                     description="minimum deviatoric principal stress"
                 />
                 <var name="fluxAcrossGroundingLine" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
                      description="flux across grounding line per unit width.  Positive means flux goes from grounded to floating ice."
