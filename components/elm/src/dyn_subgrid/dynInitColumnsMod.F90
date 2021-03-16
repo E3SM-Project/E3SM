@@ -6,11 +6,11 @@ module dynInitColumnsMod
   ! Handle initialization of columns that just switched from inactive to active
   !
   ! !USES:
-#include "shr_assert.h"
+!#py #include "shr_assert.h"
   use shr_kind_mod      , only : r8 => shr_kind_r8
-  use shr_log_mod       , only : errMsg => shr_log_errMsg
+  !#py !#py use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use abortutils        , only : endrun
+  !#py use abortutils        , only : endrun
   use elm_varctl        , only : iulog
   use elm_varcon        , only : ispval, namec
   use SoilHydrologyType , only : soilhydrology_type

@@ -1,5 +1,5 @@
 module subgridAveMod
- 
+
 #include "shr_assert.h"
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
