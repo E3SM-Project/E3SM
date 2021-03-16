@@ -28,6 +28,9 @@ module phys_grid_mod
 
   logical :: is_phys_grid_inited = .false.
 
+! To get MPI_IN_PLACE and MPI_DATATYPE_NULL
+#include <mpif.h>
+
 contains
 
   subroutine check_phys_grid_inited ()
@@ -230,7 +233,10 @@ contains
       enddo
 
       ! Gather all the other dofs
-      call MPI_Allgatherv( dofs_l, ncols, MPIinteger_t, &
+      ! Note: using MPI_IN_PLACE,0,MPI_DATATYPE_NULL for the src array
+      !       informs MPI that src array is aliasing the dst one, so
+      !       MPI will grab the src part from dst, using the offsets info
+      call MPI_Allgatherv( MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, &
                            dofs_g, g_ncols, g_offsets, MPIinteger_t, par%comm, ierr)
     endif
 
@@ -272,7 +278,10 @@ contains
       enddo
 
       ncols = get_num_local_columns()
-      call MPI_Allgatherv(area_l, ncols, MPIreal_t, &
+      ! Note: using MPI_IN_PLACE,0,MPI_DATATYPE_NULL for the src array
+      !       informs MPI that src array is aliasing the dst one, so
+      !       MPI will grab the src part from dst, using the offsets info
+      call MPI_Allgatherv(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, &
                           area_g, g_ncols, g_offsets, MPIreal_t, &
                           par%comm, ierr)
     endif
@@ -321,10 +330,13 @@ contains
 
       ncols = get_num_local_columns()
 
-      call MPI_Allgatherv(lat_l, ncols,   MPIreal_t, &
+      ! Note: using MPI_IN_PLACE,0,MPI_DATATYPE_NULL for the src array
+      !       informs MPI that src array is aliasing the dst one, so
+      !       MPI will grab the src part from dst, using the offsets info
+      call MPI_Allgatherv(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, &
                           lat_g, g_ncols, g_offsets, MPIreal_t, &
                           par%comm, ierr)
-      call MPI_Allgatherv(lon_l, ncols, MPIreal_t, &
+      call MPI_Allgatherv(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, &
                           lon_g, g_ncols, g_offsets, MPIreal_t, &
                           par%comm, ierr)
     end if

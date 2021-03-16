@@ -61,7 +61,7 @@ void Functions<S,D>::pblintd(
   // Define temporary variables
   uview_1d<Spack> rino, thv;
   workspace.template take_many_contiguous_unsafe<2>(
-    {"rino", "rino"},
+    {"rino", "thv"},
     {&rino, &thv});
 
   const auto nlev_v = (nlev-1)/Spack::n;

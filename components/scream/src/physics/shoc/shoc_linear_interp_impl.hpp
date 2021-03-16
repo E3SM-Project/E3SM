@@ -31,8 +31,13 @@ void Functions<S,D>::linear_interp(
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, km2_pack), [&] (const Int& k2) {
       Spack x1, x1s, y1, y1s; // s->-1 shift
       auto indx_pack = ekat::range<IntSmallPack>(k2*Spack::n + 1);
+
+      // Avoid reading out of bounds for x1/y1
+      indx_pack.set(indx_pack>=km1, km1-1);
+
       ekat::index_and_shift<-1>(sx1, indx_pack, x1, x1s);
       ekat::index_and_shift<-1>(sy1, indx_pack, y1, y1s);
+
       y2(k2) = y1s + (y1-y1s)*(x2(k2)-x1s)/(x1-x1s);
     });
   }
@@ -47,7 +52,7 @@ void Functions<S,D>::linear_interp(
       Spack x1, x1s, y1, y1s; // s->-1 shift
       auto indx_pack = ekat::range<IntSmallPack>(k2*Spack::n);
       indx_pack.set(indx_pack < 1, 1); // special shift for 0 boundary case
-      indx_pack.set(indx_pack == km2-1, km1-1); // special shift for top boundary case
+      indx_pack.set(indx_pack >= km2-1, km1-1); // special shift for top boundary case
       ekat::index_and_shift<-1>(sx1, indx_pack, x1, x1s);
       ekat::index_and_shift<-1>(sy1, indx_pack, y1, y1s);
 
