@@ -196,9 +196,8 @@ initialize_fields (const util::TimeStamp& t0)
 
   // Create parameter list for AtmosphereInput
   ekat::ParameterList ic_reader_params;
-  ic_reader_params.set("GRID",std::string("Physics"));
+  ic_reader_params.set("GRID",m_grids_manager->get_reference_grid()->name());
   auto& ic_fields = ic_reader_params.sublist("FIELDS");
-  ic_fields.set("Number of Fields",static_cast<Int>(fields_in.size()));
   int ifield=0;
   for (auto& fid : fields_in) {
     const auto& name = fid.name();
@@ -243,6 +242,7 @@ initialize_fields (const util::TimeStamp& t0)
   if (ifield>0) {
     // There are fields to read from the nc file. We must have a valid nc file then.
     ic_reader_params.set("FILENAME",ic_pl.get<std::string>("Initial Conditions File"));
+    ic_fields.set("Number of Fields",ifield);
 
     MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
     if (!scorpio::is_eam_pio_subsystem_inited()) {
