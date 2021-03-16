@@ -1495,6 +1495,7 @@ module li_calving
       real(kind=RKIND), pointer :: config_damagecalvingParameter
       real(kind=RKIND) :: calvingSubtotal
       character (len=StrKIND), pointer :: config_damage_calving_method
+      real(kind=RKIND), pointer :: config_damage_calving_threshold
 
       err = 0
 
@@ -1503,6 +1504,7 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
       call mpas_pool_get_config(liConfigs, 'config_damagecalvingParameter', config_damagecalvingParameter)
       call mpas_pool_get_config(liConfigs, 'config_damage_calving_method', config_damage_calving_method)
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
 
       ! block loop
       block => domain % blocklist
@@ -1534,13 +1536,20 @@ module li_calving
          call calculate_calving_front_mask(meshPool, geometryPool, calvingFrontMask)
 
          if (trim(config_damage_calving_method) == 'calving_rate') then
-             ! First calculate the front retreat rate
-             calvingVelocity(:) = config_damagecalvingParameter * damage(:) & ! m/s
-               * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
-                  ! calculate only for floating ice
-             call apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
+             if (config_damage_calving_threshold >= 1.0_RKIND .or. config_damage_calving_threshold < 0.0_RKIND) then
+                call mpas_log_write("Invalid value of config_damage_calving_threshold specified for 'calving_rate' option.  " // &
+                        "Valid values are in the range [0,1).", MPAS_LOG_ERR)
+                err = ior(err, err_tmp)
+             endif
+             ! First calculate the front retreat rate (m/s)
+             calvingVelocity(:) = config_damagecalvingParameter * &
+                max(0.0_RKIND, (damage(:) - config_damage_calving_threshold) / (1.0_RKIND - config_damage_calving_threshold)) &
+                * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND) ! calculate only for floating ice
+             call apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err_tmp)
+             err = ior(err, err_tmp)
          elseif (trim(config_damage_calving_method) == 'threshold') then
-             call apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, err)
+             call apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, err_tmp)
+             err = ior(err, err_tmp)
          else
              call mpas_log_write("Unknown value for config_damage_calving_method was specified!", MPAS_LOG_ERR)
          endif
