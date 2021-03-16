@@ -1833,8 +1833,6 @@ module li_calving
                       end if
                   end do
 
-                  damage(iCell) = damage_downstream
-
                   if (n_damage_downstream == 0) then
                       damage(iCell) = 0.0_RKIND
                   else
