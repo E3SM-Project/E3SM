@@ -77,16 +77,21 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   m_required_fields.emplace("FT", scalar_layout, K/s,        dyn_grid_name);
   m_required_fields.emplace("qv", scalar_layout, Q,          dyn_grid_name);
 
-  // Outputs
+  // Inputs-Outputs
   FieldLayout dyn_scalar_3d_mid_layout { {EL,TL,GP,GP,LEV},      {ne, NTL,    NGP,NGP,NVL} };
   FieldLayout dyn_scalar_3d_int_layout { {EL,TL,GP,GP,ILEV},     {ne, NTL,    NGP,NGP,NVL+1} };
   FieldLayout dyn_vector_3d_mid_layout { {EL,TL,CMP,GP,GP,LEV},  {ne, NTL,  2,NGP,NGP,NVL} };
 
-  m_computed_fields.emplace("u",       dyn_vector_3d_mid_layout, m/s,            dyn_grid_name);
-  m_computed_fields.emplace("vtheta",  dyn_scalar_3d_mid_layout, K,              dyn_grid_name);
-  m_computed_fields.emplace("phi",     dyn_scalar_3d_int_layout, Pa*pow(m,3)/kg, dyn_grid_name);
-  m_computed_fields.emplace("w",       dyn_scalar_3d_int_layout, m/s,            dyn_grid_name);
-  m_computed_fields.emplace("dp",      dyn_scalar_3d_mid_layout, Pa,             dyn_grid_name);
+  m_required_fields.emplace("v",          dyn_vector_3d_mid_layout, m/s,            dyn_grid_name);
+  m_required_fields.emplace("vtheta_dp",  dyn_scalar_3d_mid_layout, K,              dyn_grid_name);
+  m_required_fields.emplace("phi_i",      dyn_scalar_3d_int_layout, Pa*pow(m,3)/kg, dyn_grid_name);
+  m_required_fields.emplace("w_i",        dyn_scalar_3d_int_layout, m/s,            dyn_grid_name);
+  m_required_fields.emplace("dp",         dyn_scalar_3d_mid_layout, Pa,             dyn_grid_name);
+  m_computed_fields.emplace("v",          dyn_vector_3d_mid_layout, m/s,            dyn_grid_name);
+  m_computed_fields.emplace("vtheta_dp",  dyn_scalar_3d_mid_layout, K,              dyn_grid_name);
+  m_computed_fields.emplace("phi_i",      dyn_scalar_3d_int_layout, Pa*pow(m,3)/kg, dyn_grid_name);
+  m_computed_fields.emplace("w_i",        dyn_scalar_3d_int_layout, m/s,            dyn_grid_name);
+  m_computed_fields.emplace("dp",         dyn_scalar_3d_mid_layout, Pa,             dyn_grid_name);
 
   const int ftype = get_homme_param<int>("ftype");
   EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,
@@ -176,28 +181,28 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   constexpr int NVLI = HOMMEXX_NUM_LEV_P;
 
   // Computed fields
-  for (ci_string name : {"u", "vtheta", "phi", "w", "dp", "Q"} ) {
+  for (ci_string name : {"v", "vtheta_dp", "phi_i", "w_i", "dp", "Q"} ) {
     const auto& f = m_dyn_fields_out.at(name);
 
-    if (name=="u") {
+    if (name=="v") {
       // Velocity
       auto& v = state.m_v;
       auto v_in = f.get_reshaped_view<Scalar*[NTL][2][NP][NP][NVL]>();
       using v_type = std::remove_reference<decltype(v)>::type;
       v = v_type (v_in.data(),num_elems);
-    } else if (name=="vtheta") {
+    } else if (name=="vtheta_dp") {
       // Virtual potential temperature
       auto& vtheta = state.m_vtheta_dp;
       auto vtheta_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
       using vtheta_type = std::remove_reference<decltype(vtheta)>::type;
       vtheta = vtheta_type(vtheta_in.data(),num_elems);
-    } else if (name=="phi") {
+    } else if (name=="phi_i") {
       // Geopotential
       auto& phi = state.m_phinh_i;
       auto phi_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVLI]>();
       using phi_type = std::remove_reference<decltype(phi)>::type;
       phi = phi_type(phi_in.data(),num_elems);
-    } else if (name=="w") {
+    } else if (name=="w_i") {
       // Geopotential
       auto& w = state.m_w_i;
       auto w_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVLI]>();
