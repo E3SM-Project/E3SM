@@ -49,6 +49,7 @@ module ocn_comp_mct
    use ocn_time_integration
    use ocn_time_average_coupled
    use ocn_frazil_forcing
+   use ocn_equation_of_state
    use ocn_surface_land_ice_fluxes
    use ocn_diagnostics
    use ocn_diagnostics_variables
@@ -2305,7 +2306,7 @@ contains
 
    integer, dimension(:), pointer :: landIceMask
 
-   real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
+   real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, freezingTemp, accumulatedFrazilIceMass, frazilSurfacePressure, &
                                                filteredSSHGradientZonal, filteredSSHGradientMeridional, &
                                                avgCO2_gas_flux, DMSFlux, surfaceUpwardCO2Flux, &
                                                avgOceanSurfaceDIC, &
@@ -2435,7 +2436,11 @@ contains
           end if
 
           if ( keepFrazil ) then
-             seaIceEnergy(i) = min( rho_sw * cp_sw * layerThickness(1, i) * ( -1.8_RKIND + T0_Kelvin &
+
+             SurfacefreezingTemp(i) = ocn_freezing_temperature(index_salinitySurfaceValue, 1, i), &
+                               pressure=0.0_RKIND,  inLandIceCavity=.false.) 
+
+             seaIceEnergy(i) = min( rho_sw * cp_sw * layerThickness(1, i) * ( SurfacefreezingTemp(i) + T0_Kelvin &
                              - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
              if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) seaIceEnergy(i) = 0.0_RKIND
 
