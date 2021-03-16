@@ -1480,9 +1480,8 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: eMax, eMin
       real (kind=RKIND), dimension(:), pointer :: damage
-      integer, dimension(:), pointer :: cellMask
-      type (field1dInteger), pointer :: calvingFrontMaskField
       integer, dimension(:), pointer :: calvingFrontMask
+      integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: deltat  !< time step (s)
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
@@ -1530,12 +1529,9 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'damage', damage)
          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
+         call mpas_pool_get_array(geometryPool, 'calvingFrontMask', calvingFrontMask)
 
-         call mpas_pool_get_field(scratchPool, 'iceCellMask2',  calvingFrontMaskField)
-         call mpas_allocate_scratch_field(calvingFrontMaskField, .true.)
-         calvingFrontMask => calvingFrontMaskField % array
-
-         !call calculate_calving_front_mask(meshPool, geometryPool, calvingFrontMask)
+         call calculate_calving_front_mask(meshPool, geometryPool, calvingFrontMask)
 
          calvingVelocity(:) = 0.0_RKIND
          ! First calculate the front retreat rate
@@ -1559,6 +1555,11 @@ module li_calving
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
 
+         ! Now also remove thin floating, dynamic ice (based on chosen thickness threshold) after mask is updated.
+         ! This criteria below only remove too-thin ice at the new calving front,
+         ! meaning just one 'row' of cells per timestep.  This could be expanded to continue
+         ! removing ice backward until all connected too-thin ice has been removed.
+         ! Tests of the current implementation show reasonable behavior.
          do iCell = 1, nCells
             if (calvingFrontMask(iCell) == 1 .and. thickness(iCell) < config_calving_thickness) then
                calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
