@@ -1542,10 +1542,10 @@ module li_calving
 
          if (trim(config_damage_calving_method) == 'calving_rate') then
              call apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
-         endif
-
-         if (trim(config_damage_calving_method) == 'threshold') then
-             call apply_calving_velocity_damage_threshold(meshPool, geometryPool, scratchPool, err)
+         elseif (trim(config_damage_calving_method) == 'threshold') then
+             call apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, err)
+         else
+             call mpas_log_write("Unknown value for config_damage_calving_method was specified!", MPAS_LOG_ERR)
          endif
 
          ! === apply calving ===
@@ -1641,7 +1641,7 @@ module li_calving
       type (mpas_pool_type), pointer :: scratchPool
 
       real(kind=RKIND), pointer :: config_calving_eigencalving_parameter_scalar_value
-      real(kind=RKIND), pointer :: config_damage_preserve_threshold, config_damage_calving_threshold
+      real(kind=RKIND), pointer :: config_damage_preserve_threshold
       character (len=StrKIND), pointer :: config_damage_gl_setting
       real(kind=RKIND), pointer :: config_default_flowParamA
       real(kind=RKIND), pointer :: config_flowLawExponent
@@ -1693,7 +1693,6 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_calving_eigencalving_parameter_source', config_calving_eigencalving_parameter_source)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_damage_preserve_threshold', config_damage_preserve_threshold)
-      call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
       call mpas_pool_get_config(liConfigs, 'config_damage_gl_setting', config_damage_gl_setting)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
@@ -2496,17 +2495,16 @@ module li_calving
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!    routine apply_calving_velocity_damage_threshold
+!    routine apply_calving_damage_threshold
 !
-!> \brief Apply a specified calving flux along the calving front
-!> \author Tong Zhang 
-!> \date   Nov. 2020
-!> \details Applies a specified calving flux along the calving front.
-!> The calving volume needs to be distributed in three ways:
-!> 1. We need to first remove any "thin" ice in front of this cell
-!> 2. Then we remove ice from this cell if the damage is above a threshold value
+!> \brief Calve any ice that is damaged beyond a specified threshold
+!> \author Tong Zhang, Matt Hoffman
+!> \date   Nov. 2020, March 2021
+!> \details This routine specified floating ice to be calved wherever the damage
+!> value exceeds a specified threshold, assuming the ice is connected to the calving
+!> front.
 !-----------------------------------------------------------------------
-   subroutine apply_calving_velocity_damage_threshold(meshPool, geometryPool, scratchPool, err)
+   subroutine apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -2550,12 +2548,10 @@ module li_calving
       real(kind=RKIND) :: uncalvedTotal
       integer :: nEmptyNeighbors
       real (kind=RKIND), pointer :: config_sea_level
-      !logical, pointer :: config_damage_if_calving_rate
 
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
-      !call mpas_pool_get_config(liConfigs, 'config_damage_if_calving_rate', config_damage_if_calving_rate)
 
       ! get fields
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
@@ -2582,7 +2578,7 @@ module li_calving
 
       groundedMarineMarginMask(:) = 0
       do iCell = 1, nCells
-         ! Define marine m      arginal cells as those that are (1) at the ice
+         ! Define marine marginal cells as those that are (1) at the ice
          ! margin, (2) have at least one neighboring cell without ice, (3) contain
          ! grounded ice, and (4) have bed topography below sea level.
          ! OR is adjacent to an inactive floating margin cell
@@ -2656,7 +2652,7 @@ module li_calving
 
       call mpas_deallocate_scratch_field(cellVolumeField, .true.)
 
-   end subroutine apply_calving_velocity_damage_threshold
+   end subroutine apply_calving_damage_threshold
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
