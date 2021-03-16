@@ -19,5 +19,6 @@ Grids Manager:
     Number of vertical levels:  72  # Will want to change to 128 when a valid unit test is available.
 
 # The name of the file containing the initial conditions for this test.
-Initial Conditions File: shoc_standalone_ne4_np4.nc
+Initial Conditions:
+  Initial Conditions File: shoc_standalone_ne4_np4.nc
 ...
