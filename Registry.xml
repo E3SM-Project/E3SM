@@ -1062,7 +1062,7 @@ is the value of that variable from the *previous* time level!
                 <var name="ddamagedt" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
                      description="damage change rate"
                 />
-                <var name="damage_nye" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                <var name="damageNye" type="real" dimensions="nCells Time" units="none" time_levs="1"
                      description="Nye zero-stress (Nye, 1957, Proc. R. Soc. A, 239) damage value"
                 />
                 <var name="damageMax" type="real" dimensions="nCells Time" units="none" time_levs="1"
