@@ -1681,6 +1681,7 @@ module li_calving
       integer :: iCell, jCell, iNeighbor, n_damage_downstream
       real(kind=RKIND) :: damage_downstream, damage_tmp, cellCalvingFrontLength, cellCalvingFrontHeight, seconds, R, A01, A02, Q1, Q2
       real(kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
+      real(kind=RKIND), dimension(6) :: localMinInfo, localMaxInfo, globalMinInfo, globalMaxInfo
       integer :: err_tmp, loc
 
       err = 0
@@ -1860,21 +1861,35 @@ module li_calving
         ! always set the damage at the first floating cells to the Nye value
 
         if (.true.) then
+           ! End of routine accounting/reporting
+           localMinInfo(1) = minval(damageSource)
+           localMaxInfo(1) = maxval(damageSource)
+           localMinInfo(2) = minval(s0)
+           localMaxInfo(2) = maxval(s0)
+           localMinInfo(3) = minval(nstar)
+           localMaxInfo(3) = maxval(nstar)
+           localMinInfo(4) = minval(alpha)
+           localMaxInfo(4) = maxval(alpha)
+           localMinInfo(5) = minval(tauMax)
+           localMaxInfo(5) = maxval(tauMax)
+           localMinInfo(6) = minval(damage)
+           localMaxInfo(6) = maxval(damage)
+           ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
+           call mpas_dmpar_min_real_array(domain % dminfo, 6, localMinInfo, globalMinInfo)
+           call mpas_dmpar_max_real_array(domain % dminfo, 6, localMaxInfo, globalMaxInfo)
 
-             call mpas_log_write("damageSource value range: Min=$r, Max=$r", &
-                        realArgs=(/minval(damageSource), maxval(damageSource)/))
-             call mpas_log_write("s0 value range: Min=$r, Max=$r", &
-                        realArgs=(/minval(s0), maxval(s0)/))
-             call mpas_log_write("nstar value range: Min=$r, Max=$r", &
-                        realArgs=(/minval(nstar), maxval(nstar)/))
-             call mpas_log_write("deltat value range: Min=$r, Max=$r", &
-                        realArgs=(/deltat, deltat/))
-             call mpas_log_write("tauMax value range: Min=$r, Max=$r", &
-                        realArgs=(/minval(tauMax), maxval(tauMax)/))
-             call mpas_log_write("damage value range: Min=$r, Max=$r", &
-                        realArgs=(/minval(damage), maxval(damage)/))
-             call mpas_log_write("alpha value range: Min=$r, Max=$r", &
-                        realArgs=(/minval(alpha), maxval(alpha)/))
+           call mpas_log_write("damageSource value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(1), globalMaxInfo(1)/))
+           call mpas_log_write("s0 value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(2), globalMaxInfo(2)/))
+           call mpas_log_write("nstar value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(3), globalMaxInfo(3)/))
+           call mpas_log_write("alpha value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(4), globalMaxInfo(4)/))
+           call mpas_log_write("tauMax value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(5), globalMaxInfo(5)/))
+           call mpas_log_write("damage value range: Min=$r, Max=$r", &
+                        realArgs=(/globalMinInfo(6), globalMaxInfo(6)/))
         end if
         ! temporary message output in the log file
 
