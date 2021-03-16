@@ -226,7 +226,7 @@ initialize_fields (const util::TimeStamp& t0)
           f_i.set_value(values[comp]);
         }
       } else {
-        const auto& value = ic_pl.get<Real>(name);
+        const auto& value = ic_pl.get<double>(name);
         f.set_value(value);
       }
     } else {
