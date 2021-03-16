@@ -1752,8 +1752,17 @@ module li_calving
                endif
             enddo
 
-            ! if floating non-dynamic cell has any grounded neighbors, use ice
-            ! thickness and velocity from two cells back
+            ! if floating non-dynamic cell has *any* grounded neighbors, use ice thickness and
+            ! velocity from two cells back instead of the one-cell-back (neighboring) locations above
+            ! Note the two-cell back averaging is independent of whether those locations
+            ! are floating are grounded.
+            ! The method implemented here gives good results for Humboldt Glacier (realistic grounded margin),
+            ! but as of 3/16/21 it has not been tested at a realistic case that contains both grounded and floating
+            ! margins (e.g. an ice shelf in an embayment with grounded ice along the lateral margins).  If unexpected
+            ! behavior occurs in such a case in the future, an alternative implementation here might work better:
+            ! Use 2-back values to populate 1-back locations that are grounded, and then use 1-back values to calculate
+            ! the value at each primary cell location.  This would be a mix of true-1-back values for dynamic floating cells
+            ! and the corresponding 2-back values at grounded cells.
             if ( nGroundedNeighbors > 0 ) then
                thkSum = 0.0_RKIND
                uvelSum = 0.0_RKIND
