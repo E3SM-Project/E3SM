@@ -1657,8 +1657,7 @@ module li_calving
            config_ice_density,            & ! ice density
            config_ocean_density             ! ocean density
 
-      type (field1dReal), pointer :: alphaVar
-      real, dimension(:), pointer :: alpha
+      real, dimension(:), pointer :: principalStrainRateRatio
 
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: deltat !< time step (s)
@@ -1706,29 +1705,29 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'damageMax', damageMax)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
 
-         call mpas_pool_get_field(scratchPool, 'alpha', alphaVar )
-         call mpas_allocate_scratch_field(alphaVar, .true.)
-         alpha => alphaVar % array
-
          call mpas_pool_get_array(velocityPool, 'eMax', eMax)
          call mpas_pool_get_array(velocityPool, 'tauMax', tauMax)
          call mpas_pool_get_array(velocityPool, 'tauMin', tauMin)
+         call mpas_pool_get_array(velocityPool, 'principalStrainRateRatio', principalStrainRateRatio)
 
          where (thickness == 0.0_RKIND)
-             alpha = 0.0_RKIND
+             principalStrainRateRatio = 0.0_RKIND
              s0 = 0.0_RKIND
              nstar = 0.0_RKIND
          elsewhere
              ! Compute the hydrostatic to tensile stress ratio (equation 24 from Bassis and Ma, 2015, EPSL, 409, C)
-             alpha = tauMin / tauMax
+             ! In Bassis & Ma this is beta, defined as ratio of principal strain rates.  Here we calculate as ratio of
+             ! deviatoric stresses, which is equivalent.
+             principalStrainRateRatio = tauMin / tauMax
 
              s0 = &
              config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*tauMax*config_ocean_density)
 
              ! Compute the effective flow law exponent (equation 11 from Bassis and Ma, 2015, EPSL, 409, C)
-             nstar(:) = 4.0_RKIND * config_flowLawExponent * (1.0_RKIND + alpha(:) + alpha(:)**2) / &
-                     (4.0_RKIND * (1.0_RKIND + alpha(:) + alpha(:)**2) + &
-                      3.0_RKIND * (config_flowLawExponent - 1.0_RKIND )* alpha(:)**2)
+             nstar(:) = 4.0_RKIND * config_flowLawExponent * &
+                     (1.0_RKIND + principalStrainRateRatio(:) + principalStrainRateRatio(:)**2) / &
+                     (4.0_RKIND * (1.0_RKIND + principalStrainRateRatio(:) + principalStrainRateRatio(:)**2) + &
+                      3.0_RKIND * (config_flowLawExponent - 1.0_RKIND )* principalStrainRateRatio(:)**2)
          endwhere
 
 
@@ -1757,7 +1756,8 @@ module li_calving
              if (thickness(iCell) == 0.0_RKIND) then
                  damageNye(iCell) = 0.0_RKIND
              else
-                 damageNye(iCell) = (2.0+alpha(iCell)) * tauMax(iCell) / (gravity*(config_ocean_density-config_ice_density)*thickness(iCell))
+                 damageNye(iCell) = (2.0+principalStrainRateRatio(iCell)) * tauMax(iCell) / &
+                         (gravity*(config_ocean_density-config_ice_density)*thickness(iCell))
              endif
          enddo
 
@@ -1838,8 +1838,8 @@ module li_calving
            localMaxInfo(2) = maxval(s0)
            localMinInfo(3) = minval(nstar)
            localMaxInfo(3) = maxval(nstar)
-           localMinInfo(4) = minval(alpha)
-           localMaxInfo(4) = maxval(alpha)
+           localMinInfo(4) = minval(principalStrainRateRatio)
+           localMaxInfo(4) = maxval(principalStrainRateRatio)
            localMinInfo(5) = minval(tauMax)
            localMaxInfo(5) = maxval(tauMax)
            localMinInfo(6) = minval(damage)
@@ -1854,7 +1854,7 @@ module li_calving
                         realArgs=(/globalMinInfo(2), globalMaxInfo(2)/))
            call mpas_log_write("nstar value range: Min=$r, Max=$r", &
                         realArgs=(/globalMinInfo(3), globalMaxInfo(3)/))
-           call mpas_log_write("alpha value range: Min=$r, Max=$r", &
+           call mpas_log_write("principalStrainRateRatio value range: Min=$r, Max=$r", &
                         realArgs=(/globalMinInfo(4), globalMaxInfo(4)/))
            call mpas_log_write("tauMax value range: Min=$r, Max=$r", &
                         realArgs=(/globalMinInfo(5), globalMaxInfo(5)/))
@@ -1863,7 +1863,6 @@ module li_calving
         end if
         ! temporary message output in the log file
 
-         call mpas_deallocate_scratch_field(alphaVar, .true.)
 
          block => block % next
 

@@ -1284,6 +1284,9 @@ is the value of that variable from the *previous* time level!
                 <var name="tauMin" type="real" dimensions="nCells Time" units="Pa"
                      description="minimum deviatoric principal stress"
                 />
+	        <var name="principalStrainRateRatio" type="real" dimensions="nCells" units="none"
+	             description="the ratio of the minimum and maximum principal horizontal strain rates"
+	        />
                 <var name="fluxAcrossGroundingLine" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
                      description="flux across grounding line per unit width.  Positive means flux goes from grounded to floating ice."
                 />
@@ -1417,10 +1420,6 @@ is the value of that variable from the *previous* time level!
 	       />
       <var name="meanFlowParamA" type="real" dimensions="nCells" units="Pa^{-3} s^{-1}"
 	       description="depth averaged flow parameter A"
-	       persistence="scratch"
-	       />
-	  <var name="alpha" type="real" dimensions="nCells" units="none"
-	       description="the ratio of the principal horizontal strain rate"
 	       persistence="scratch"
 	       />
 	  <var name="workTracerCell" type="real" dimensions="maxTracersAdvect nCells" units="none"
