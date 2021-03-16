@@ -150,7 +150,8 @@ void AtmosphereInput::init()
  * and set the degrees-of-freedom for reading.
  * Organize local structures responsible for writing over field repo data.
  */
-  using namespace scream::scorpio;
+  using namespace scorpio;
+  using namespace ShortFieldTagsNames;
 
   m_filename = m_params.get<std::string>("FILENAME");
 
@@ -163,10 +164,11 @@ void AtmosphereInput::init()
   }
 
   // Check setup against information from grid manager:
-  EKAT_REQUIRE_MSG(m_grid_name=="Physics",
+  auto grid = m_gm->get_grid(m_grid_name);
+  EKAT_REQUIRE_MSG(grid->get_2d_scalar_layout().tags().front()==COL,
       "Error with input grid! scorpio_input.hpp class only supports input on a Physics grid for now.\n");
 
-  auto gids_dev = m_gm->get_grid(m_grid_name)->get_dofs_gids();
+  auto gids_dev = grid->get_dofs_gids();
   m_gids_host = Kokkos::create_mirror_view( gids_dev );
   Kokkos::deep_copy(m_gids_host,gids_dev); 
 
@@ -209,7 +211,7 @@ void AtmosphereInput::register_variables()
  * This is necessary for the SCORPIO routines to be able to lookup variables in the io file with the appropriate
  * degrees of freedom assigned to each core and the correct io decomposition.
  */
-  using namespace scream::scorpio;
+  using namespace scorpio;
 
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
@@ -217,7 +219,7 @@ void AtmosphereInput::register_variables()
     auto& fid  = field.get_header().get_identifier();
 
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
-    std::vector<std::string> vec_of_dims = get_vec_of_dims(fid.get_layout().tags());
+    std::vector<std::string> vec_of_dims = get_vec_of_dims(fid.get_layout());
     std::string io_decomp_tag           = get_io_decomp(vec_of_dims);
     get_variable(m_filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);
     // TODO  Need to change dtype to allow for other variables. 
@@ -232,14 +234,14 @@ void AtmosphereInput::register_variables()
 
 /* ---------------------------------------------------------- */
 std::vector<std::string>
-AtmosphereInput::get_vec_of_dims(const std::vector<FieldTag>& tags)
+AtmosphereInput::get_vec_of_dims(const FieldLayout& layout)
 {
   // Given a set of dimensions in field tags, extract a vector of strings
   // for those dimensions to be used with IO
   std::vector<std::string> dims_names;
-  dims_names.reserve(tags.size());
-  for (const auto& tag : tags) {
-    dims_names.push_back(scorpio::get_nc_tag_name(tag));
+  dims_names.reserve(layout.tags().size());
+  for (int i=0; i<layout.rank(); ++i) {
+    dims_names.push_back(scorpio::get_nc_tag_name(layout.tag(i),layout.dim(i)));
   }
 
   // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
@@ -270,7 +272,7 @@ void AtmosphereInput::set_degrees_of_freedom()
  * Use information from the grids manager to determine which indices for each field are associated
  * with this computational core.
  */
-  using namespace scream::scorpio;
+  using namespace scorpio;
   using namespace ShortFieldTagsNames;
 
   // Cycle through all fields and set dof.

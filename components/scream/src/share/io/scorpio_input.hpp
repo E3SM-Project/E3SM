@@ -145,7 +145,7 @@ protected:
   void register_variables();
   void set_degrees_of_freedom();
 
-  std::vector<std::string> get_vec_of_dims (const std::vector<FieldTag>& tags);
+  std::vector<std::string> get_vec_of_dims (const FieldLayout& layout);
   std::string get_io_decomp (const std::vector<std::string>& vec_of_dims);
   std::vector<Int> get_var_dof (const int dof_len, const bool has_cols);
 

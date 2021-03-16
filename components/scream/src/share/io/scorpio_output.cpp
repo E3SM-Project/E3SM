@@ -286,21 +286,23 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
   for (int ii=0; ii<fid.get_layout().rank(); ++ii)
   {
     // check tag against m_dims map.  If not in there, then add it.
-    auto& tag = fid.get_layout().tags()[ii];
-    auto tag_loc = m_dims.find(get_nc_tag_name(tag));
+    const auto& tags = fid.get_layout().tags();
+    const auto& dims = fid.get_layout().dims();
+    const auto tag_name = get_nc_tag_name(tags[ii],dims[ii]);
+    auto tag_loc = m_dims.find(tag_name);
     if (tag_loc == m_dims.end()) 
     { 
       Int tag_len = 0;
-      if(e2str(tag) == "COL")
+      if(e2str(tags[ii]) == "COL")
       {
         tag_len = m_total_dofs;  // Note: This is because only cols are decomposed over mpi ranks.  In this case still need max number of cols.
       } else {
         tag_len = fid.get_layout().dim(ii);
       }
-      m_dims.emplace(std::make_pair(get_nc_tag_name(tag),tag_len));
+      m_dims.emplace(std::make_pair(get_nc_tag_name(tags[ii],dims[ii]),tag_len));
     } else {  
-      EKAT_REQUIRE_MSG(m_dims.at(get_nc_tag_name(tag))==fid.get_layout().dim(ii) or e2str(tag)=="COL",
-        "Error! Dimension " + get_nc_tag_name(tag) + " on field " + name + " has conflicting lengths");
+      EKAT_REQUIRE_MSG(m_dims.at(tag_name)==fid.get_layout().dim(ii) or e2str(tags[ii])=="COL",
+        "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths");
     }
   }
 } // register_dimensions
@@ -325,8 +327,7 @@ void AtmosphereOutput::register_views()
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::register_variables(const std::string& filename)
 {
-  using namespace scream;
-  using namespace scream::scorpio;
+  using namespace scorpio;
 
   // Cycle through all fields and register.
   for (auto const& name : m_fields)
@@ -336,9 +337,11 @@ void AtmosphereOutput::register_variables(const std::string& filename)
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
     std::vector<std::string> vec_of_dims;
-    for (auto& tag_ii : fid.get_layout().tags()) {
-      io_decomp_tag += "-" + get_nc_tag_name(tag_ii); // Concatenate the dimension string to the io-decomp string
-      vec_of_dims.push_back(get_nc_tag_name(tag_ii)); // Add dimensions string to vector of dims.
+    const auto& layout = fid.get_layout();
+    for (int i=0; i<fid.get_layout().rank(); ++i) {
+      const auto tag_name = get_nc_tag_name(layout.tag(i), layout.dim(i));
+      io_decomp_tag += "-" + tag_name; // Concatenate the dimension string to the io-decomp string
+      vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
     }
     io_decomp_tag += "-time";  // TODO: Do we expect all vars to have a time dimension?  If not then how to trigger?  Should we register dimension variables (such as ncol and lat/lon) elsewhere in the dimension registration?  These won't have time.
     std::reverse(vec_of_dims.begin(),vec_of_dims.end()); // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO, may need to delete this line when switching to fully C++/C implementation.

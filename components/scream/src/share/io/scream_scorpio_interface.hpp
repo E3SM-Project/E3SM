@@ -78,7 +78,7 @@ extern "C" {
 // field-dependent extent, such as vector dimensions. Those have to
 // be "unpacked", storing a separate variable for each slice.
 
-inline std::string get_nc_tag_name (const FieldTag& t) {
+inline std::string get_nc_tag_name (const FieldTag& t, const int extent) {
   using namespace ShortFieldTagsNames;
 
   std::string name = "";
@@ -100,6 +100,10 @@ inline std::string get_nc_tag_name (const FieldTag& t) {
       break;
     case GP:
       name = "gp";
+      break;
+    case CMP:
+    case VAR:
+      name = "dim" + std::to_string(extent);
       break;
     default:
       EKAT_ERROR_MSG("Error! Field tag not supported in netcdf files.");
