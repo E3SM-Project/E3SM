@@ -1387,11 +1387,9 @@ module ocn_time_integration_split
                ! velocity for normalVelocityCorrectionection is
                ! normalBarotropicVelocity +
                ! normalBaroclinicVelocity + uBolus
-               do k=1,nVertLevels
-                  uTemp(k) = normalBarotropicVelocityNew(iEdge) + &
-                             normalBaroclinicVelocityNew(k,iEdge) + &
-                             normalGMBolusVelocity(k,iEdge)
-               end do
+               uTemp(:) = normalBarotropicVelocityNew(iEdge) &
+                      + normalBaroclinicVelocityNew(:,iEdge) &
+                      +       normalGMBolusVelocity(:,iEdge)
 
                ! thicknessSum is initialized outside the loop because
                ! on land boundaries maxLevelEdgeTop=0, but I want to
@@ -2019,6 +2017,7 @@ module ocn_time_integration_split
 
       type (mpas_pool_type), pointer :: &
          statePool,      &! structure containing model state
+         meshPool,       &! structure containing mesh fields
          tracersPool      ! structure containing tracer fields
 
       integer ::         &
@@ -2026,6 +2025,9 @@ module ocn_time_integration_split
          kmax,           &! index of deepest active edge
          ierr,           &! local error flag
          cell1, cell2     ! neighbor cell indices across edge
+
+      integer, dimension(:), pointer :: maxLevelEdgeTop
+      integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND) ::       &
          normalThicknessFluxSum, &! vertical sum of thick flux
@@ -2049,6 +2051,8 @@ module ocn_time_integration_split
          barotropicTimeStep, &! barotropic time step
          remainder,          &! remaining time after interval division
          zeroInterval         ! zero timestep for comparing remainder
+
+      integer, pointer :: nVertLevels, nCells, nEdges
 
       integer (kind=I8KIND) :: nBtrSubcyclesI8
 
@@ -2130,8 +2134,12 @@ module ocn_time_integration_split
 
          block => domain % blocklist
          call mpas_pool_get_subpool(block%structs, 'state', statePool)
-
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+         call mpas_pool_get_subpool(block%structs, 'mesh', meshPool)
+
+         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
+         call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+         call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
          call mpas_pool_get_array(statePool, 'layerThickness', &
                                               layerThickness, 1)
@@ -2141,6 +2149,10 @@ module ocn_time_integration_split
                                               normalBarotropicVelocity, 1)
          call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', &
                                               normalBaroclinicVelocity, 1)
+
+         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
          !*** Compute barotropic velocity at first timestep
          !*** This is only done upon start-up.
@@ -2155,12 +2167,12 @@ module ocn_time_integration_split
          else ! split explicit
 
             if (config_filter_btr_mode) then
-               do iCell = 1, nCellsAll
+               do iCell = 1, nCells
                   layerThickness(1,iCell) = refBottomDepth(1)
                enddo
             endif
 
-            do iEdge = 1, nEdgesAll
+            do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                kmax  = maxLevelEdgeTop(iEdge)
