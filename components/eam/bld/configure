@@ -126,7 +126,8 @@ OPTIONS
 			  none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
-                        options are: clubb_do_adv(Advect CLUBB moments), clubb_do_deep(CLUBB does the deep convection)
+                        options are: clubb_do_adv(Advect CLUBB moments), clubb_do_deep(CLUBB does the deep convection),
+                        clubb_single_prec (Run CLUBB in single precision)
      -co2_cycle         This option is meant to be used with the -ccsm_seq option.  It modifies the
                         EAM configuration by increasing the number of advected constituents by 4.
      -comp_intf         Specify the component interfaces [mct | esmf] (default: mct).
@@ -1005,8 +1006,10 @@ if (defined $opts{'clubb_opts'}) {
 }
 my $clubb_do_deep = $cfg_ref->get('clubb_do_deep');
 my $clubb_do_adv = $cfg_ref->get('clubb_do_adv');
+my $clubb_single_prec = $cfg_ref->get('clubb_single_prec');
 if ($print>=2) { print "clubb_do_deep=',$clubb_do_deep,$eol"; }
 if ($print>=2) { print "clubb_do_adv=',$clubb_do_adv,$eol"; }
+if ($print>=2) { print "clubb_single_prec=',$clubb_single_prec,$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Macro-physics package
@@ -1903,7 +1906,13 @@ if ($clubb_sgs == 1) {
     $cfg_cppdefs .= ' -DCLUBB_SGS';
     $cfg_cppdefs .= ' -DCLUBB_CAM';
     $cfg_cppdefs .= ' -DNO_LAPACK_ISNAN';
-    $cfg_cppdefs .= " -DCLUBB_REAL_TYPE=dp";
+    if ($clubb_single_prec == 1 ){
+        $cfg_cppdefs .= " -DCLUBB_REAL_TYPE=sp";
+        if($print>=2) { print "CLUBB parameterization will be run in Single Precision $eol";}
+    }
+    else{
+        $cfg_cppdefs .= " -DCLUBB_REAL_TYPE=dp";
+    }
 }
 
 # GPTL Timing library
