@@ -1530,9 +1530,9 @@ module li_calving
       !-----------------------------------------------------------------
       integer, intent(out) :: err !< Output: error flag
 
-      integer, pointer :: nEdges, nCells, nCellsSolve
-      integer :: iEdge, iCell, jCell, iNeighbor
-      integer :: nEmptyNeighbors
+      integer, pointer :: nEdges, nCells, nCellsSolve, maxEdges
+      integer :: iEdge, iCell, jCell, kCell, iNeighbor, jNeighbor
+      integer :: nEmptyNeighbors, nGroundedNeighbors, counter, nTwoCellsBack, nOneCellBack
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
@@ -1552,6 +1552,7 @@ module li_calving
       real (kind=RKIND), pointer :: deltat  !< time step (s)
       real (kind=RKIND), dimension(:), allocatable :: thicknessForAblation
       real (kind=RKIND), dimension(:), allocatable :: uvelForAblation, vvelForAblation
+      integer, dimension(:), allocatable :: oneCellBackList, twoCellsBackList
       real (kind=RKIND), dimension(:), pointer :: requiredAblationVolumeNonDynEdge, requiredAblationVolumeNonDynCell
       real (kind=RKIND), dimension(:), pointer :: requiredAblationVolumeDynEdge, requiredAblationVolumeDynCell
       real (kind=RKIND), dimension(:), pointer :: ablatedVolumeNonDynCell, ablatedVolumeDynCell
@@ -1581,6 +1582,7 @@ module li_calving
       call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
       call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
@@ -1702,7 +1704,6 @@ module li_calving
          endif
       enddo
 
-
       ! Init fields for accounting
       ablationThickness(:) = 0.0_RKIND
       ablatedVolumeNonDynCell(:) = 0.0_RKIND
@@ -1721,6 +1722,10 @@ module li_calving
       uvelForAblation(:) = uReconstructX(1,:)
       allocate(vvelForAblation(nCells+1))
       vvelForAblation(:) = uReconstructY(1,:)
+      allocate(oneCellBackList(maxEdges+1))
+      oneCellBackList(:) = 0
+      allocate(twoCellsBackList((maxEdges+1)**2))
+      twoCellsBackList(:) = 0
 
       ! 1. Calculate ablation rate for all non-dynamic cells by working with their ocean-going edges
       ablationSubtotal1 = 0.0_RKIND
@@ -1733,18 +1738,80 @@ module li_calving
             uvelSum = 0.0_RKIND
             vvelSum = 0.0_RKIND
             thkCount = 0
+            nGroundedNeighbors = 0
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
-               if (li_mask_is_dynamic_ice(cellMask(jCell))) then
+               if ( li_mask_is_dynamic_ice(cellMask(jCell)) .and. li_mask_is_floating_ice(cellMask(jCell)) ) then
                   thkSum = thkSum + thicknessForAblation(jCell)
                   uvelSum = uvelSum + uvelForAblation(jCell)
                   vvelSum = vvelSum + vvelforAblation(jCell)
                   ablationVelSum = ablationVelSum + ablationVelocity(jCell)
                   thkCount = thkCount + 1
+               else if ( li_mask_is_grounding_line(cellMask(jCell)) .or. li_mask_is_grounded_ice(cellMask(jCell)) ) then
+                  nGroundedNeighbors = nGroundedNeighbors + 1
                endif
             enddo
+
+            ! if floating non-dynamic cell has *any* grounded neighbors, use ice thickness and
+            ! velocity from two cells back instead of the one-cell-back (neighboring) locations above
+            ! Note the two-cell back averaging is independent of whether those locations
+            ! are floating are grounded.
+            ! The method implemented here gives good results for Humboldt Glacier (realistic grounded margin),
+            ! but as of 3/16/21 it has not been tested at a realistic case that contains both grounded and floating
+            ! margins (e.g. an ice shelf in an embayment with grounded ice along the lateral margins).  If unexpected
+            ! behavior occurs in such a case in the future, an alternative implementation here might work better:
+            ! Use 2-back values to populate 1-back locations that are grounded, and then use 1-back values to calculate
+            ! the value at each primary cell location.  This would be a mix of true-1-back values for dynamic floating cells
+            ! and the corresponding 2-back values at grounded cells.
+            if ( nGroundedNeighbors > 0 ) then
+               thkSum = 0.0_RKIND
+               uvelSum = 0.0_RKIND
+               vvelSum = 0.0_RKIND
+               ablationVelSum = 0.0_RKIND
+               thkCount = 0
+               nOneCellBack = 0
+               oneCellBackList(:) = 0
+               twoCellsBackList(:) = 0
+               do iNeighbor = 1, nEdgesOnCell(iCell)
+                  jCell = cellsOnCell(iNeighbor, iCell)
+                  if ( li_mask_is_ice(cellMask(jCell)) ) then
+                        nOneCellBack = nOneCellBack + 1
+                        oneCellBackList(nOneCellBack) = jCell
+                  endif
+               enddo
+               if ( nOneCellBack > 0 ) then
+               ! loop over oneCellBackList and add neighbors
+                  counter = 0
+                  do iNeighbor = 1, nOneCellBack
+                     jCell = oneCellBackList(iNeighbor)
+                     ! create twoCellsBackList so we don't add one cell multiple
+                     ! times
+                     nTwoCellsBack = 0
+                     do jNeighbor = 1, nEdgesOnCell(jCell)
+                        kCell = cellsOnCell(jNeighbor, jCell)
+                        if ( li_mask_is_dynamic_ice(cellMask(kCell)) .and. &
+                           (.not. any(oneCellBackList==kCell) ) .and. &
+                           (.not. any(twoCellsBackList==kCell) ) ) then
+                             counter = counter+1
+                             twoCellsBackList(counter) = kCell
+                        endif
+                     enddo
+                     nTwoCellsBack = nTwoCellsBack + counter
+                  enddo
+                  ! loop through twoCellsBackList and average thickness and
+                  ! velocities
+                  do kCell = 1, nTwoCellsBack
+                     thkSum = thkSum + thicknessForAblation(twoCellsBackList(kCell))
+                     uvelSum = uvelSum + uvelForAblation(twoCellsBackList(kCell))
+                     vvelSum = vvelSum + vvelforAblation(twoCellsBackList(kCell))
+                     ablationVelSum = ablationVelSum + ablationVelocity(twoCellsBackList(kCell))
+                     thkCount = thkCount + 1
+                  enddo
+               endif
+            endif
             if (thkCount == 0) then
-               !call mpas_log_write("Found a stranded non-dynamic floating cell: cell $i with thickness=$r m.", MPAS_LOG_WARN, &
+               !call mpas_log_write("Found a stranded non-dynamic floating
+               !cell: cell $i with thickness=$r m.", MPAS_LOG_WARN, &
                !   intArgs=(/iCell/), realArgs=(/thickness(iCell)/))
             else
                thicknessForAblation(iCell) = thkSum / real(thkCount, kind=RKIND)
@@ -2014,11 +2081,12 @@ module li_calving
          err = ior(err, err_tmp)
       endif
 
-
       deallocate(cellVolume)
       deallocate(thicknessForAblation)
       deallocate(uvelForAblation)
       deallocate(vvelForAblation)
+      deallocate(oneCellBackList)
+      deallocate(twoCellsBackList)
       call mpas_log_write("Finished with li_apply_front_ablation_velocity")
 
     end subroutine li_apply_front_ablation_velocity
