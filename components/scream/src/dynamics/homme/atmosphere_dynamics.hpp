@@ -81,6 +81,8 @@ protected:
 
   ekat::ParameterList     m_params;
   ekat::Comm              m_dynamics_comm;
+
+  bool m_first_step = true;
 };
 
 } // namespace scream

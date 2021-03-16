@@ -30,6 +30,7 @@ module homme_params_mod
                       smooth ! Unused in SCREAM
   use thread_mod,   only: nthreads, vthreads      ! Unused in SCREAM
   use parallel_mod, only: mpireal_t, mpilogical_t, mpiinteger_t, mpichar_t
+  use physical_constants, only : scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor, DD_PI
 
   use control_mod, only:    &
     MAX_STRING_LEN,         &
@@ -41,6 +42,7 @@ module homme_params_mod
     theta_advect_form,      &
     theta_hydrostatic_mode, &   
     topology,               &    ! Mesh topology
+    geometry,               &         ! Mesh geometry
     tstep_type,             &
     ftype,                  & ! Unused in SCREAM
     dt_tracer_factor,       &
@@ -125,6 +127,7 @@ contains
       nmax,                     &
       rotate_grid,              &
       topology,                 &         ! Mesh topology
+      geometry,                 &         ! Mesh geometry
       tstep_type,               &
       tstep,                    &
       qsplit,                   &
@@ -178,6 +181,7 @@ contains
     transport_alg = 0
     runtype = 0
     statefreq = 99999
+    geometry = "sphere"
 
     !-----------------------------!
     !     Parse namelist file     !
@@ -212,7 +216,9 @@ contains
     call MPI_bcast(partmethod,      1, MPIinteger_t, par%root, par%comm, ierr)
     call MPI_bcast(ne,              1, MPIinteger_t, par%root, par%comm, ierr)
     call MPI_bcast(cubed_sphere_map,1, MPIinteger_t ,par%root, par%comm, ierr)
+
     call MPI_bcast(topology, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
+    call MPI_bcast(geometry, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
 
     ! Time-stepping params
     call MPI_bcast(nmax,       1, MPIinteger_t, par%root, par%comm, ierr)
@@ -271,7 +277,6 @@ contains
     !   Check/deduce parameters   !
     !-----------------------------!
 
-
     ierr = timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, dt_remap_factor, dt_tracer_factor)
 
     ftype = 0
@@ -303,6 +308,15 @@ contains
     ! set map
     if (cubed_sphere_map<0) then
        cubed_sphere_map=2  ! theta model default = element local
+    endif
+
+    if (geometry=="sphere") then
+      scale_factor           = rearth
+      scale_factor_inv       = rrearth
+      domain_size            = 4.0D0*DD_PI
+      laplacian_rigid_factor = rrearth
+    else
+      call abortmp("Error: scream only supports 'sphere' geometry, for now.")
     endif
 
     !logic around different hyperviscosity options

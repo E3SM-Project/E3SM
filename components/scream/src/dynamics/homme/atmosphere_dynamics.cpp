@@ -6,8 +6,11 @@
 #include "Dimensions.hpp"
 #include "Elements.hpp"
 #include "EulerStepFunctor.hpp"
+#include "ExecSpaceDefs.hpp"
 #include "Hommexx_Session.hpp"
 #include "HyperviscosityFunctor.hpp"
+#include "utilities/MathUtils.hpp"
+#include "utilities/SubviewUtils.hpp"
 #include "TimeLevel.hpp"
 #include "Tracers.hpp"
 #include "Types.hpp"
@@ -70,12 +73,14 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // Create the identifiers of input and output fields
 
   // Inputs
-  FieldLayout vector_layout  { {EL,CMP,GP,GP,LEV}, {ne,nmf,NGP,NGP,NVL} };
-  FieldLayout scalar_layout  { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
+  FieldLayout vector_3d_layout  { {EL,CMP,GP,GP,LEV}, {ne,nmf,NGP,NGP,NVL} };
+  FieldLayout scalar_3d_layout  { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
+  FieldLayout scalar_2d_layout  { {EL,TL, GP,GP    }, {ne,NTL,NGP,NGP    } };
 
-  m_required_fields.emplace("FM", vector_layout, m/pow(s,2), dyn_grid_name);
-  m_required_fields.emplace("FT", scalar_layout, K/s,        dyn_grid_name);
-  m_required_fields.emplace("qv", scalar_layout, Q,          dyn_grid_name);
+  m_required_fields.emplace("FM", vector_3d_layout, m/pow(s,2), dyn_grid_name);
+  m_required_fields.emplace("FT", scalar_3d_layout, K/s,        dyn_grid_name);
+  m_required_fields.emplace("qv", scalar_3d_layout, Q,          dyn_grid_name);
+  m_required_fields.emplace("ps", scalar_2d_layout, Pa,         dyn_grid_name);
 
   // Inputs-Outputs
   FieldLayout dyn_scalar_3d_mid_layout { {EL,TL,GP,GP,LEV},      {ne, NTL,    NGP,NGP,NVL} };
@@ -231,7 +236,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   //       Therefore, we need to cast away the const from the scream input fields.
   // TODO: make Hommexx Elements structure store const views for stuff that is indeed (logically) const.
   auto& forcing = Homme::Context::singleton().get<Homme::ElementsForcing>();
-  for (ci_string name : {"FQ", "FM", "FT"}) {
+  for (ci_string name : {"FQ", "FM", "FT", "ps"}) {
     const auto& f = m_dyn_fields_in.at(name);
 
     if (name=="FQ") {
@@ -256,12 +261,17 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
       using ft_type = std::remove_reference<decltype(ft)>::type;
       auto non_const_ptr = const_cast<Scalar*>(ft_in.data());
       ft = ft_type(non_const_ptr,num_elems);
+    } else if (name=="ps") {
+      // Surface pressure (use to init dp3d)
+      auto& ps = state.m_ps_v;
+      auto ps_in = f.template get_reshaped_view<const Real*[NTL][NP][NP]>();
+      using ps_type = std::remove_reference<decltype(ps)>::type;
+      auto non_const_ptr = const_cast<Real*>(ps_in.data());
+      ps = ps_type(non_const_ptr,num_elems);
     } else {
       ekat::error::runtime_abort("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
     }
   }
-
-  prim_init_model_f90 ();
 
   ::Homme::Context::singleton().get<::Homme::SimulationParams>().print();
 }
@@ -284,6 +294,13 @@ void HommeDynamics::register_fields (FieldRepository<Real>& field_repo) const
 void HommeDynamics::run_impl (const Real dt)
 {
   try {
+    if (m_first_step) {
+      Homme::initialize_dp3d_from_ps_c();
+
+      prim_init_model_f90 ();
+
+      m_first_step = false;
+    }
     prim_run_f90 (dt);
 
     // Get a copy of the current timestamp (at the beginning of the step) and

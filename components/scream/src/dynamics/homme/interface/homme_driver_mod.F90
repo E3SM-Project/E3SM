@@ -76,12 +76,19 @@ contains
     is_data_structures_inited = .true.
   end subroutine prim_init_data_structures_f90
 
-  subroutine prim_copy_cxx_to_f90 () bind (c)
-    use iso_c_binding, only: c_ptr, c_loc
-    use theta_f2c_mod, only: cxx_push_results_to_f90
-    use element_state, only: elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
-                             elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
-                             elem_state_Qdp, elem_state_Q, elem_derived_omega_p
+  subroutine prim_copy_cxx_to_f90 (copy_phis) bind (c)
+    use iso_c_binding,     only: c_ptr, c_loc
+    use homme_context_mod, only: tl
+    use dimensions_mod,    only: nlevp
+    use theta_f2c_mod,     only: cxx_push_results_to_f90
+    use element_state,     only: elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
+                              elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
+                              elem_state_Qdp, elem_state_Q, elem_derived_omega_p,     &
+                              elem_state_phis
+    !
+    ! Inputs
+    !
+    logical, intent(in) :: copy_phis
     !
     ! Locals
     !
@@ -104,13 +111,16 @@ contains
     call cxx_push_results_to_f90(elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr,   &
                                  elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
                                  elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr)
+    if (copy_phis) then
+      ! Set phis=phi(bottom)
+      elem_state_phis(:,:,:) = elem_state_phinh_i(:,:,nlevp,tl%n0,:)
+    endif
   end subroutine prim_copy_cxx_to_f90
 
   subroutine prim_init_model_f90 () bind(c)
     use prim_driver_mod,   only: prim_init_grid_views, prim_init_ref_states_views, &
                                  prim_init_diags_views, prim_init_kokkos_functors, &
                                  prim_init_state_views
-  
     use prim_state_mod,    only: prim_printstate
     use model_init_mod,    only: model_init2
     use dimensions_mod,    only: nelemd
@@ -123,6 +133,8 @@ contains
       call abortmp ("Error! 'prim_init_model_f90' has already been called.\n")
     endif
 
+    call prim_copy_cxx_to_f90 (.true.)
+
     ! Notably, this inits the ref states
     call model_init2(elem,hybrid,deriv,hvcoord,tl,1,nelemd)
 
@@ -134,6 +146,8 @@ contains
     call prim_init_ref_states_views (elem)
     call prim_init_diags_views (elem)
 
+    call prim_printstate(elem, tl, hybrid,hvcoord,1, nelemd)
+
     is_model_inited = .true.
 
   end subroutine prim_init_model_f90 
@@ -141,6 +155,7 @@ contains
   subroutine prim_run_f90 (dt) bind(c)
     use dimensions_mod,    only: nelemd
     use prim_driver_mod,   only: prim_run_subcycle
+
     use time_mod,          only: tstep
     use homme_context_mod, only: is_model_inited, elem, hybrid, tl, hvcoord, par
     !

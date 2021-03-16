@@ -13,6 +13,12 @@
 #include <mpi.h>
 #include <string>
 
+namespace Homme {
+extern "C" {
+  void initialize_dp3d_from_ps_c ();
+} // extern "C"
+}
+
 namespace scream {
 
 extern "C"
@@ -135,7 +141,6 @@ void set_homme_param<bool> (const std::string& name, const bool& value) {
   const char* c_name = name.c_str();
   set_homme_bool_param_f90(&c_name,value);
 }
-
 
 } // namespace scream
 
