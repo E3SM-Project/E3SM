@@ -421,8 +421,8 @@ initialize_device_variables()
 
     // Time levels
     h_is_state_field_dev(i) = m_is_state_field[i];
-    h_time_levels(0).first     = tl.n0;
-    h_time_levels(0).second    = tl.np1;
+    h_time_levels(0).first  = tl.n0;
+    h_time_levels(0).second = tl.np1;
   }
 
   Kokkos::deep_copy(phys_ptrs,   h_phys_ptrs);
@@ -433,6 +433,7 @@ initialize_device_variables()
   Kokkos::deep_copy(dyn_layout, h_dyn_layout);
   Kokkos::deep_copy(dyn_dims,   h_dyn_dims);
 
+  Kokkos::deep_copy(time_levels,         h_time_levels);
   Kokkos::deep_copy(pack_alloc_property, h_pack_alloc_property);
   Kokkos::deep_copy(is_state_field_dev,  h_is_state_field_dev);
 }
@@ -637,13 +638,11 @@ do_remap_fwd() const
           team.team_barrier();
 
           local_remap_fwd_2d<small_pack_type>(team, num_cols, lid2elgp, p2d);
-        } else if (pack_alloc_property(i) == AllocPropType::RealAlloc) {
+        } else {
           set_dyn_to_zero<Real>(team);
           team.team_barrier();
 
           local_remap_fwd_2d<Real>(team, num_cols, lid2elgp, p2d);
-        } else {
-
         }
         break;
       }
@@ -660,13 +659,11 @@ do_remap_fwd() const
           team.team_barrier();
 
           local_remap_fwd_3d<small_pack_type>(team, num_cols, lid2elgp, p2d);
-        } else if (pack_alloc_property(i) == AllocPropType::RealAlloc) {
+        } else {
           set_dyn_to_zero<Real>(team);
           team.team_barrier();
 
           local_remap_fwd_3d<Real>(team, num_cols, lid2elgp, p2d);
-        } else {
-
         }
         break;
       }
@@ -703,10 +700,8 @@ do_remap_bwd() const {
           local_remap_bwd_2d<pack_type>(team, num_cols, lid2elgp, p2d);
         } else if (pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
           local_remap_bwd_2d<small_pack_type>(team, num_cols, lid2elgp, p2d);
-        } else if (pack_alloc_property(i) == AllocPropType::RealAlloc) {
-          local_remap_bwd_2d<Real>(team, num_cols, lid2elgp, p2d);
         } else {
-
+          local_remap_bwd_2d<Real>(team, num_cols, lid2elgp, p2d);
         }
         break;
       }
@@ -717,10 +712,8 @@ do_remap_bwd() const {
           local_remap_bwd_3d<pack_type>(team, num_cols, lid2elgp, p2d);
         } else if (pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
           local_remap_bwd_3d<small_pack_type>(team, num_cols, lid2elgp, p2d);
-        } else if (pack_alloc_property(i) == AllocPropType::RealAlloc) {
-          local_remap_bwd_3d<Real>(team, num_cols, lid2elgp, p2d);
         } else {
-
+          local_remap_bwd_3d<Real>(team, num_cols, lid2elgp, p2d);
         }
         break;
       }
