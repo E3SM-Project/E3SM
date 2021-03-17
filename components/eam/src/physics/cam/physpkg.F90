@@ -1789,6 +1789,14 @@ if (l_ac_energy_chk) then
 !this removes the need for pw to adjust evaporation
 !    state%te_cur = state%te_cur + state%te_evap
 
+
+#ifdef ADDCP
+!take CP term out of te_cur
+    state%te_cur(:ncol) = state%te_cur(:ncol) - state%cptermp(:ncol)*ztodt &
+                                              + state%cpterme(:ncol)*ztodt
+#endif
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!! this code is only to compare PW with cp term
 !save current TE
     state%tebefore(:ncol) = state%te_cur(:ncol)
@@ -1821,12 +1829,6 @@ if (l_ac_energy_chk) then
 #endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-#ifdef ADDCP
-!take CP term out of te_cur
-    state%te_cur(:ncol) = state%te_cur(:ncol) - state%cptermp(:ncol)*ztodt &
-                                              + state%cpterme(:ncol)*ztodt 
-#endif
 
     call outfld('CPflux', (state%cptermp - state%cpterme) , pcols, lchnk )
     call outfld('CPfluxe', state%cpterme , pcols, lchnk )
