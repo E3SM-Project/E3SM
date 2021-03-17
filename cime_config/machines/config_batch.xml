@@ -281,7 +281,8 @@
 
     <batch_system MACH="chrysalis" type="slurm" >
       <queues>
-	<queue walltimemax="03:00:00" nodemin="1" nodemax="512" default="true" strict="true">compute</queue>
+	<queue walltimemax="48:00:00" strict="true" nodemin="1" nodemax="492">compute</queue>
+	<queue walltimemax="04:00:00" strict="true" nodemin="1" nodemax="20" default="true">debug</queue>
       </queues>
     </batch_system>
 
