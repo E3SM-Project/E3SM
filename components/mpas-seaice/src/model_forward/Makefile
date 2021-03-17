@@ -18,12 +18,14 @@ else
 FFLAGS_noSMP := $(FFLAGS)
 endif
 
+FW = ../../../mpas-framework/src
+
 .F.o:
 	$(RM) $@ $*.mod
 ifeq "$(GEN_F90)" "true"
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
 
-	$(FC) $(FFLAGS_noSMP) -c $*.f90 $(FCINCLUDES) -I../../framework -I../../operators -I../../external/esmf_time_f90 -I../column -I../shared
+	$(FC) $(FFLAGS_noSMP) -c $*.f90 $(FCINCLUDES) -I$(FW)/framework -I$(FW)/operators -I$(FW)/external/esmf_time_f90 -I../column -I../shared
 else
-	$(FC) $(CPPFLAGS) $(FFLAGS_noSMP) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../../framework -I../../operators -I../../external/esmf_time_f90 -I../column -I../shared
+	$(FC) $(CPPFLAGS) $(FFLAGS_noSMP) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I$(FW)/framework -I$(FW)/operators -I$(FW)/external/esmf_time_f90 -I../column -I../shared
 endif

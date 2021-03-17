@@ -8,7 +8,7 @@ FCINCLUDES += -I$(ROOT_DIR)/core_ocean/mode_forward -I$(ROOT_DIR)/core_ocean/mod
 FCINCLUDES += -I$(ROOT_DIR)/core_ocean/shared -I$(ROOT_DIR)/core_ocean/analysis_members
 FCINCLUDES += -I$(ROOT_DIR)/core_ocean/cvmix/src/shared
 FCINCLUDES += -I$(ROOT_DIR)/core_ocean/BGC
-FCINCLUDES += -I$(ROOT_DIR)/core_ocean/gotm/include
+FCINCLUDES += -I$(ROOT_DIR)/core_ocean/gotm/build/modules
 override CPPFLAGS += -DCORE_OCEAN
 
 report_builds:

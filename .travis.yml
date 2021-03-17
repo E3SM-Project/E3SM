@@ -35,10 +35,6 @@ before_install:
     # Replace all ssh URLs to submodules with HTTP URLs
     - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
     - git submodule update --init
-    - cd components/mpas-source
-    - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
-    - git submodule update --init --recursive
-    - cd ../..
     # Download the E3SM Singularity container
     - wget https://dabdceba-6d04-11e5-ba46-22000b92c6ec.e.globus.org/containers/public/e3sm.sif
     # Install Singularity

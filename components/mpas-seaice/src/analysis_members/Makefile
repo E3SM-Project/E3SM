@@ -15,14 +15,16 @@ mpas_seaice_analysis_driver.o: $(MEMBERS)
 clean:
 	$(RM) *.o *.i *.mod *.f90
 
+FW = ../../../mpas-framework/src
+
 .F.o:
 	$(RM) $@ $*.mod
 ifeq "$(GEN_F90)" "true"
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 -I../../external/esmf_time_f90 -I../../framework -I../../operators -I../column -I../shared -I../model_forward $(FCINCLUDES) 
+	$(FC) $(FFLAGS) -c $*.f90 -I$(FW)/external/esmf_time_f90 -I$(FW)/framework -I$(FW)/operators -I../column -I../shared -I../model_forward $(FCINCLUDES)
 else
-	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F -I../../external/esmf_time_f90 -I../../framework -I../../operators -I../column -I../shared -I../model_forward $(CPPINCLUDES) $(FCINCLUDES) 
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F -I$(FW)/external/esmf_time_f90 -I$(FW)/framework -I$(FW)/operators -I../column -I../shared -I../model_forward $(CPPINCLUDES) $(FCINCLUDES)
 endif
 
 .c.o:
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(CINCLUDES) -I../../external/esmf_time_f90 -I../../framework -I../../operators -I../column -I../shared -I../model_forward -c $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(CINCLUDES) -I$(FW)/external/esmf_time_f90 -I$(FW)/framework -I$(FW)/operators -I../column -I../shared -I../model_forward -c $<
