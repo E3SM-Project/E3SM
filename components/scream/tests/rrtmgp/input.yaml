@@ -18,7 +18,6 @@ Grids Manager:
     Number of vertical levels: 72
 
 # The name of the file containing the initial conditions for this test.
-# TODO: Actually create an input file for rrtmgp.  Note that currently, rrtmgp is initialized using YAKL and not by reading input.
 Initial Conditions:
   Initial Conditions File: rad_standalone_ne4_pg2.nc
 ...

@@ -279,8 +279,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
  *   field_repo: is a pointer to the field_repository for this simulation.
  *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
  */
-  using namespace scream;
-  using namespace scream::scorpio;
+  using namespace scorpio;
   auto fid = m_field_repo->get_field(name, m_grid_name).get_header().get_identifier();
   // check to see if all the dims for this field are already set to be registered.
   for (int ii=0; ii<fid.get_layout().rank(); ++ii)
