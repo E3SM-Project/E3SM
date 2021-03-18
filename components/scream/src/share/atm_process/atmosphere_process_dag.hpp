@@ -2,7 +2,6 @@
 #define SCREAM_ATMOSPHERE_PROCESS_DAG_HPP
 
 #include "share/atm_process/atmosphere_process_group.hpp"
-#include "share/field/field_initializer.hpp"
 #include "share/field/field_group.hpp"
 
 namespace scream {
@@ -15,8 +14,6 @@ public:
 
   void create_dag (const group_type& atm_procs,
                    const std::shared_ptr<FieldRepository<Real>> field_repo);
-
-  void add_field_initializer (const FieldInitializer& initializer);
 
   void add_surface_coupling (const std::set<FieldIdentifier>& imports,
                              const std::set<FieldIdentifier>& exports);

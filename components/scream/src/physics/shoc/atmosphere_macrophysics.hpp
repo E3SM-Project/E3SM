@@ -283,9 +283,6 @@ protected:
   std::map<std::string,const_field_type>  m_shoc_fields_in;
   std::map<std::string,field_type>        m_shoc_fields_out;
 
-  // Used to init some fields. For now, only needed for stand-alone shoc runs
-  std::shared_ptr<FieldInitializer>  m_initializer;
-
   util::TimeStamp     m_current_ts;
   ekat::Comm          m_shoc_comm;
   ekat::ParameterList m_shoc_params;

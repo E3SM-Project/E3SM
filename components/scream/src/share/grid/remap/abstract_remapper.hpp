@@ -2,7 +2,6 @@
 #define SCREAM_ABSTRACT_REMAPPER_HPP
 
 #include "share/field/field.hpp"
-#include "share/field/field_utils.hpp"
 #include "share/grid/abstract_grid.hpp"
 
 #include "ekat/util/ekat_factory.hpp"

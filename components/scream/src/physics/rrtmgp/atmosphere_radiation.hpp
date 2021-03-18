@@ -61,8 +61,6 @@ namespace scream {
             std::map<std::string,const_field_type> m_rrtmgp_fields_in;
             std::map<std::string,field_type>       m_rrtmgp_fields_out;
 
-            std::shared_ptr<FieldInitializer> m_initializer;
-
             util::TimeStamp m_current_ts;
             ekat::Comm            m_rrtmgp_comm;
             ekat::ParameterList   m_rrtmgp_params;

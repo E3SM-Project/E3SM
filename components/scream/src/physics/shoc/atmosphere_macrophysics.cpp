@@ -1,6 +1,5 @@
 #include "ekat/ekat_assert.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
-#include "physics/shoc/shoc_inputs_initializer.hpp"
 
 namespace scream
 {
@@ -13,10 +12,6 @@ SHOCMacrophysics::SHOCMacrophysics (const ekat::Comm& comm,const ekat::Parameter
 /* Anything that can be initialized without grid information can be initialized here.
  * Like universal constants, shoc options.
 */
-
-#ifndef SCREAM_CIME_BUILD
-  m_initializer = create_field_initializer<SHOCInputsInitializer>();
-#endif
 }
 
 // =========================================================================================
@@ -40,7 +35,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   // Layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
-  FieldLayout scalar2d_layout_lev{ {LEV},  {m_num_levs} };
+  FieldLayout scalar1d_layout_lev{ {LEV},  {m_num_levs} };
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
@@ -51,7 +46,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   //       using the same approach to make it easier to follow.
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
-  m_required_fields.emplace("pref_mid",scalar2d_layout_lev, Pa, grid_name);
+  m_required_fields.emplace("pref_mid",scalar1d_layout_lev, Pa, grid_name);
   m_required_fields.emplace("t",       scalar3d_layout_mid, nondim, grid_name);
   m_required_fields.emplace("alst",    scalar3d_layout_mid, Pa,     grid_name);
   m_required_fields.emplace("zi",      scalar3d_layout_int, m,      grid_name);
@@ -120,10 +115,6 @@ set_updated_group (const FieldGroup<Real>& group)
 
   // Calculate number of advected tracers
   m_num_tracers = m_shoc_fields_in["Q"].get_header().get_identifier().get_layout().dim(1);
-
-#ifndef SCREAM_CIME_BUILD
-  m_initializer->add_field(*group.m_bundle);
-#endif
 }
 
 // =========================================================================================
@@ -256,54 +247,6 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   history_output.w3        = w3;
   history_output.wqls_sec  = wqls_sec;
   history_output.brunt     = brunt;
-
-  // We may have to init some fields from within SHOC. This can be the case in a SHOC standalone run.
-  // Some options:
-  //  - we can tell SHOC it can init all inputs or specify which ones it can init. We call the
-  //    resulting list of inputs the 'initializaable' (or initable) inputs. The default is
-  //    that no inputs can be inited.
-  //  - we can request that SHOC either inits no inputs or all of the initable ones (as specified
-  //    at the previous point). The default is that SHOC must be in charge of init ing ALL or NONE
-  //    of its initable inputs.
-  // Recall that:
-  //  - initable fields may not need initialization (e.g., some other atm proc that
-  //    appears earlier in the atm dag might provide them).
-
-#ifndef SCREAM_CIME_BUILD
-  std::vector<std::string> shoc_inputs = {"pref_mid", "t", "alst", "zi", "zm", "omega", "shf", "cflx_k0", "wsx","wsy",
-                                          "shoc_qv", "host_dx", "host_dy", "pmid", "pint", "pdel", "phis",
-                                          "s", "tke", "u", "v", "wthv_sec", "tkh", "tk", "shoc_ql"
-                                          };
-
-  using strvec = std::vector<std::string>;
-  const strvec& allowed_to_init = m_shoc_params.get<strvec>("Initializable Inputs",strvec(0));
-  const bool can_init_all = m_shoc_params.get<bool>("Can Initialize All Inputs", false);
-  const bool init_all_or_none = m_shoc_params.get<bool>("Must Init All Inputs Or None", true);
-
-  const strvec& initable = can_init_all ? shoc_inputs : allowed_to_init;
-  if (initable.size()>0) {
-    bool all_inited = true, all_uninited = true;
-    for (const auto& name : initable) {
-      const auto& f = m_shoc_fields_in.at(name);
-      const auto& track = f.get_header().get_tracking();
-      if (track.get_init_type()==InitType::None) {
-        // Nobody claimed to init this field. SHOCInputsInitializer will take care of it
-        m_initializer->add_me_as_initializer(f);
-        all_uninited &= true;
-        all_inited &= false;
-      } else {
-        all_uninited &= false;
-        all_inited &= true;
-      }
-    }
-
-    // In order to gurantee some consistency between inputs, it is best if SHOC
-    // initializes either none or all of the inputs.
-    EKAT_REQUIRE_MSG (!init_all_or_none || all_inited || all_uninited,
-                      "Error! Some SHOC inputs were marked to be inited by SHOC, while others weren't.\n"
-                      "       SHOC was requested to init either all or none of the inputs.\n");
-  }
-#endif
 }
 
 // =========================================================================================

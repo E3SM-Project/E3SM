@@ -9,13 +9,19 @@ Atmosphere Processes:
   Process 0:
     Process Name: P3
     Grid: Physics
-    Inputs Initializer:
-      Initialize All Inputs: true
 
 Grids Manager:
   Type: Physics Only
   Reference Grid: Physics
   Physics Only:
-    Number of global columns:   384
+    Number of global columns:   866
     Number of vertical levels:  72  # Will want to change to 128 when a valid unit test is available.
+
+# The name of the file containing the initial conditions for this test.
+Initial Conditions:
+  Initial Conditions File: p3_standalone_ne4_np4.nc
+
+# The name of the output control file for this test.
+Output Manager:
+ Output YAML Files: ["p3_standalone_output.yaml"] 
 ...

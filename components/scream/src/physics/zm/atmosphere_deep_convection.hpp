@@ -87,9 +87,6 @@ protected:
   std::map<std::string,const Real*>  m_raw_ptrs_in;
   std::map<std::string,Real*>        m_raw_ptrs_out;
 
-  // Used to init some fields. For now, only needed for stand-alone zm runs
-  std::shared_ptr<FieldInitializer>  m_initializer;
-
   ekat::ParameterList     m_zm_params;
 
 }; // class ZMDeepConvection

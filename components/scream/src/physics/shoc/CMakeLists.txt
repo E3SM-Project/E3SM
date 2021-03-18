@@ -20,7 +20,6 @@ set(SHOC_SRCS
   shoc_pblintd_init_pot.cpp
   shoc_pblintd_cldcheck.cpp
   shoc_check_tke.cpp
-  shoc_inputs_initializer.cpp
 )
 
 set(SHOC_HEADERS

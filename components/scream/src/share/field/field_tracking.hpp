@@ -17,34 +17,8 @@
 
 namespace scream {
 
-// How a field has to be init-ed
-// Note: internally, Value still creates a FieldInitializer object, but can be done
-//       behind the scenes by the infrastructure
-enum class InitType {
-  // NotNeeded,    // No initialization is needed for this field
-  Value,        // Should be inited to a specific value
-  Initializer,  // A FieldInitializer object should take care of this
-  Inherited,    // For subviews: an init type has been set for the 'parent' field
-  None          // No initialization is needed/expected
-};
-
-inline std::string e2str (const InitType e) {
-  std::string s;
-  switch (e) {
-    // case InitType::NotNeeded:   s = "NotNeeded";    break;
-    case InitType::None:        s = "None";         break;
-    case InitType::Value:       s = "Value";        break;
-    case InitType::Initializer: s = "Initializer";  break;
-    case InitType::Inherited:   s = "Inherited";    break;
-    default: s = "INVALID";
-  }
-
-  return s;
-}
-
 // Forward declarations
 class AtmosphereProcess;
-class FieldInitializer;
 class FieldHeader;
 
 class FieldTracking : public ekat::enable_shared_from_this<FieldTracking> {
@@ -73,8 +47,6 @@ public:
   // List of providers/customers for this field
   const atm_proc_set_type& get_providers () const { return m_providers; }
   const atm_proc_set_type& get_customers () const { return m_customers; }
-  const std::weak_ptr<FieldInitializer>& get_initializer () const { return m_initializer; }
-  InitType get_init_type () const { return m_init_type; }
 
   // Get parent/children (if any)
   // std::shared_ptr<const FieldHeader> get_parent () const { return m_parent.lock(); }
@@ -88,8 +60,6 @@ public:
   // Add to the list of providers/customers
   void add_provider (const std::weak_ptr<AtmosphereProcess>& provider);
   void add_customer (const std::weak_ptr<AtmosphereProcess>& customer);
-  void set_initializer (const std::weak_ptr<FieldInitializer>& initializer);
-  void set_value_initializer (const Real value);
 
   // Add the field to a given group
   void add_to_group (const std::shared_ptr<const FieldGroupInfo>& group);
@@ -104,8 +74,6 @@ public:
   void register_as_children_in_parent ();
 
 protected:
-
-  void set_init_type (const InitType init_type);
 
   // We keep the field name just to make debugging messages more helpful
   std::string m_name;
@@ -124,13 +92,6 @@ protected:
   // NOTE: do NOT use shared_ptr, since you would create circular references.
   atm_proc_set_type       m_providers;
   atm_proc_set_type       m_customers;
-
-  // How this field will be initialized (if at all needed)
-  InitType                m_init_type;
-
-  // The initializer is a class that claims the responsibility of initializing the field
-  // at the beginning of the simulation. There can be ONLY one initializer.
-  std::weak_ptr<FieldInitializer>     m_initializer;
 
   // If this field is a sub-view of another field, we keep a pointer to the parent
   // On the other hand, if there are sub-views of this field, we keep a list of them

@@ -62,47 +62,11 @@ create_dag(const group_type& atm_procs,
   update_unmet_deps ();
 }
 
-void AtmProcDAG::add_field_initializer (const FieldInitializer& initializer)
-{
-  EKAT_REQUIRE_MSG (m_nodes.size()>0,
-    "Error! You need to create the dag before adding field initializers.\n");
-
-  const auto& inited_fields = initializer.get_inited_fields();
-
-  // Add a node
-  m_nodes.push_back(Node());
-  auto& n = m_nodes.back();
-  n.id = m_nodes.size()-1;
-  n.name = initializer.name() + " (init only)";
-  m_unmet_deps[n.id].clear();
-
-  for (const auto& f : inited_fields) {
-    auto fid = add_fid(f);
-
-    // Add the fid to the list of 'computed' fields
-    n.computed.insert(fid);
-
-    // Now, remove the unmet dependency (if any)
-    for (auto& it : m_unmet_deps) {
-      // Erase the unmet dependency (if any)
-      int erased = it.second.erase(fid);
-
-      if (erased==1) {
-        // Establish parent-child relationship
-        n.children.push_back(it.first);
-      }
-    }
-  }
-
-  // We need to re-check whether there are unmet deps
-  update_unmet_deps();
-}
-
 void AtmProcDAG::add_surface_coupling (const std::set<FieldIdentifier>& imports,
                                        const std::set<FieldIdentifier>& exports)
 {
   EKAT_REQUIRE_MSG (m_nodes.size()>0,
-    "Error! You need to create the dag before adding field initializers.\n");
+    "Error! You need to create the dag before adding surface coupling.\n");
 
   // Process all imports
   m_nodes.push_back(Node());

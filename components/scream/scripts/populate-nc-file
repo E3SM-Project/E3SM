@@ -80,6 +80,9 @@ OR
                         help="Remove variables from output file (can be used to purge 'temporarily' imported"
                              "vars from another file, used just to compute some quantity)")
 
+    parser.add_argument("-vvars","--vector-variables",nargs='+', default=[],
+                        help="Add vector variables, whose components are specified as other existing variables")
+
     return parser.parse_args(args[1:])
 
 ###############################################################################

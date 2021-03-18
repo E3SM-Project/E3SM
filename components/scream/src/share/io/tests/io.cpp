@@ -65,7 +65,7 @@ TEST_CASE("input_output_basic","io")
   for (Int ii=0;ii<max_steps;++ii) {
     time += dt;
     for (const auto& fname : out_fields->m_fields_names) {
-      auto& f  = field_repo->get_field(fname,"Physics");
+      auto f  = field_repo->get_field(fname,"Physics");
       auto f_host = f.get_view<Host>();
       f.sync_to_host();
       for (size_t jj=0;jj<f_host.size();++jj) {
@@ -165,13 +165,13 @@ TEST_CASE("input_output_basic","io")
   f2.sync_to_host();
   f3.sync_to_host();
   for (int ii=0;ii<num_lcols;++ii) {
-    REQUIRE(std::abs(f1_host(ii)-ii)<tol);
+    REQUIRE(std::abs(f1_host(ii)-(dt+ii))<tol);
     for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f3_host(ii,jj)-(ii + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(f3_host(ii,jj)-(dt+ii + (jj+1)/10.))<tol);
     }
   }
   for (int jj=0;jj<num_levs;++jj) {
-    REQUIRE(std::abs(f2_host(jj)-((jj+1)/10.))<tol);
+    REQUIRE(std::abs(f2_host(jj)-(dt+(jj+1)/10.))<tol);
   }
   
   // Test pulling input without the field manager:
@@ -181,7 +181,7 @@ TEST_CASE("input_output_basic","io")
   view_2d::HostMirror loc_field_3("field_3",num_lcols,num_levs);
   pview_2d::HostMirror loc_field_4("field_packed",num_lcols,num_packs);
   std::string filename = ins_params.get<std::string>("FILENAME");
-  std::vector<std::string> var_dims = {"LEV","COL"};
+  std::vector<std::string> var_dims = {"lev","ncol"};
   bool has_columns = true;
   std::vector<int> dim_lens = {num_lcols,num_levs};
   input_type loc_input(io_comm,"Physics",grid_man);
@@ -227,8 +227,6 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
 
   // Register fields with repo
   // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
-  const int packsize = 2;
-  using Pack         = ekat::Pack<Real,packsize>;
   repo->registration_begins();
   repo->register_field(fid1,{"output"});
   repo->register_field(fid2,{"output","restart"});

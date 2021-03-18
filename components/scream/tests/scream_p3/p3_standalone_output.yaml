@@ -1,0 +1,34 @@
+%YAML 1.1
+---
+FILENAME: p3_stand_alone_output
+AVERAGING TYPE: Instant
+GRID: Physics
+FREQUENCY:
+  OUT_N: 10
+  OUT_OPTION: Steps
+  OUT_MAX_STEPS: 1
+FIELDS:
+  Number of Fields: 13
+  field 1: T_atm
+  field 2: T_prev
+  field 3: qv_prev
+  field 4: lamc
+  field 5: liq_ice_exchange
+  field 6: mu_c
+  field 7: nevapr
+  field 8: qr_evap_tend
+  field 9: vap_liq_exchange
+  field 10: vap_ice_exchange
+  field 11: diag_eff_radius_qc
+  field 12: diag_eff_radius_qi
+  field 13: precip_total_tend
+#  field 14: bm
+#  field 15: nc
+#  field 16: ni
+#  field 17: nr
+#  field 18: qc
+#  field 19: qi
+#  field 20: qm
+#  field 21: qr
+#  field 22: qv
+...

@@ -69,6 +69,9 @@ endif()
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 
+# Note: experimental code might cause compilation errors and/or tests failures.
+option (SCREAM_ENABLE_EXPERIMENTAL "Whether to enable experimental code in scream." OFF)
+
 # Set the scream base and src directory, to be used across subfolders
 set(SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)

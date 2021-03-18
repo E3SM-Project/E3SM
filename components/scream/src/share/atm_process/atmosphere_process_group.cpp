@@ -175,8 +175,8 @@ setup_remappers (const FieldRepository<Real>& field_repo) {
         const auto& src_id = remapper->get_src_field_id(ifield);
         const auto& tgt_id = remapper->get_tgt_field_id(ifield);
 
-        auto& src = field_repo.get_field(src_id);
-        auto& tgt = field_repo.get_field(tgt_id);
+        const auto& src = field_repo.get_field(src_id);
+        const auto& tgt = field_repo.get_field(tgt_id);
 
         remapper->bind_field(src,tgt);
       }
@@ -192,8 +192,8 @@ setup_remappers (const FieldRepository<Real>& field_repo) {
         const auto& src_id = remapper->get_src_field_id(ifield);
         const auto& tgt_id = remapper->get_tgt_field_id(ifield);
 
-        auto& src = field_repo.get_field(src_id);
-        auto& tgt = field_repo.get_field(tgt_id);
+        const auto& src = field_repo.get_field(src_id);
+        const auto& tgt = field_repo.get_field(tgt_id);
 
         remapper->bind_field(src,tgt);
       }

@@ -1,5 +1,4 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
-#include "physics/p3/p3_inputs_initializer.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_f90.hpp"
 
@@ -25,10 +24,7 @@ P3Microphysics::P3Microphysics (const ekat::Comm& comm, const ekat::ParameterLis
  : m_p3_comm (comm)
  , m_p3_params (params)
 {
-/* Anything that can be initialized without grid information can be initialized here.
- * Like universal constants, table lookups, p3 options.
-*/
-  m_initializer = create_field_initializer<P3InputsInitializer>();
+  // Nothing to do here
 }
 
 // =========================================================================================
@@ -205,91 +201,6 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   history_only.vap_ice_exchange = m_p3_fields_out["vap_ice_exchange"].get_reshaped_view<Pack**>();
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev);
-
-  // We may have to init some fields from within P3. This can be the case in a P3 standalone run.
-  // Some options:
-  //  - we can tell P3 it can init all inputs or specify which ones it can init. We call the
-  //    resulting list of inputs the 'initializaable' (or initable) inputs. The default is
-  //    that no inputs can be inited.
-  //  - we can request that P3 either inits no inputs or all of the initable ones (as specified
-  //    at the previous point). The default is that P3 must be in charge of init ing ALL or NONE
-  //    of its initable inputs.
-  // Recall that:
-  //  - initable fields may not need initialization (e.g., some other atm proc that
-  //    appears earlier in the atm dag might provide them).
-
-#ifndef SCREAM_CIME_BUILD
-  using strvec = std::vector<std::string>;
-  const strvec p3_inputs = {
-    "T_atm","ast","ni_activated","nc_nuceat_tend","pmid","dp","zi","qv_prev","T_prev",
-    "qv", "qc", "qr", "qi", "qm", "nc", "nr", "ni", "bm","nccn_prescribed","inv_qc_relvar"
-  };
-
-  auto& initializer_pl = m_p3_params.sublist("Inputs Initializer");
-
-  const bool has_allowed     = initializer_pl.isParameter("Initializable Inputs");
-  const bool has_not_allowed = initializer_pl.isParameter("Not Initializable Inputs");
-  const bool init_all        = initializer_pl.get<bool>("Initialize All Inputs", false);
-
-  EKAT_REQUIRE_MSG ( !(init_all && has_allowed),
-      "Error! If you set 'Initialize All Inputs' to true, do not specify a list of initializable inputs.\n");
-  EKAT_REQUIRE_MSG ( !(init_all && has_not_allowed),
-      "Error! If you set 'Initialize All Inputs' to true, do not specify a list of not initializable inputs.\n");
-  EKAT_REQUIRE_MSG ( !(has_allowed && has_not_allowed),
-      "Error! You cannot provide both a list of input to initialize and a list of inputs to not initialize.\n"
-      "       Providing one of the two automatically assumes every other P3 input is in 'the other' list.\n");
-
-  // Only proceed if the user specified one of the above options.
-  if (has_allowed || has_not_allowed || init_all) {
-    // Help P3 figure out which input it can init. User can:
-    //  - specify what P3 can init: only these will be inited
-    //  - specify what P3 cannot init: everything else will be inited
-    //  - tell P3 to init everything: everithing will be inited
-    const strvec&     allowed = initializer_pl.get<strvec>(    "Initializable Inputs",strvec(0));
-    const strvec& not_allowed = initializer_pl.get<strvec>("Not Initializable Inputs",strvec(0));
-
-    // Depending on the options above, we may init a given list of fields, all inputs, or none.
-    strvec initable = has_allowed ? allowed : p3_inputs;
-
-    // Make sure field that were asked to be inited are indeed P3 inputs
-    for (const auto& name : allowed) {
-      auto it = std::find(p3_inputs.begin(),p3_inputs.end(),name);
-      EKAT_REQUIRE_MSG (it!=p3_inputs.end(),
-          "Error! Initializable input '" + name + "' does not appear to be a P3 input.\n");
-    }
-
-    // Make sure field that were asked to not be inited are indeed P3 inputs
-    for (const auto& name : not_allowed) {
-      auto it = std::find(initable.begin(),initable.end(),name);
-      EKAT_REQUIRE_MSG (it!=initable.end(),
-          "Error! Not-initializable input '" + name + "' does not appear to be a P3 input.\n");
-      initable.erase(it);
-    }
-
-    if (initable.size()>0) {
-      bool all_inited = true, all_uninited = true;
-      for (const auto& name : initable) {
-        const auto& f = m_p3_fields_in.at(name);
-        const auto& track = f.get_header().get_tracking();
-        if (track.get_init_type()==InitType::None) {
-          // Nobody claimed to init this field. P3InputsInitializer will take care of it
-          m_initializer->add_me_as_initializer(f);
-          all_uninited = false; // We are initing 1+ fields
-        } else {
-          all_inited = false;   // We are skipping 1+ fields
-        }
-      }
-
-      // In order to gurantee some consistency between inputs, it is best if P3
-      // initializes either none or all of the inputs.
-      EKAT_REQUIRE_MSG (all_inited || all_uninited,
-          "Error! P3 is initializing some of the inputs it was requested to init, but not all.\n"
-          "       To avoid inconsitencies, this is not allowed. If you want P3 to init only subset\n"
-          "       of its inputs (knowing some other process will init the others), you can either\n"
-          "       specify the init-able inputs or a list of inputs to not init.\n");
-    }
-  }
-#endif // !defined(SCREAM_CIME_BUILD)
 }
 
 // =========================================================================================

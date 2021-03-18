@@ -6,8 +6,11 @@
 #include "Dimensions.hpp"
 #include "Elements.hpp"
 #include "EulerStepFunctor.hpp"
+#include "ExecSpaceDefs.hpp"
 #include "Hommexx_Session.hpp"
 #include "HyperviscosityFunctor.hpp"
+#include "utilities/MathUtils.hpp"
+#include "utilities/SubviewUtils.hpp"
 #include "TimeLevel.hpp"
 #include "Tracers.hpp"
 #include "Types.hpp"
@@ -15,10 +18,6 @@
 // Scream includes
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
-
-#ifndef SCREAM_CIME_BUILD
-#include "dynamics/homme/homme_inputs_initializer.hpp"
-#endif
 
 #include "ekat/ekat_assert.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
@@ -30,9 +29,7 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
  : m_params        (params)
  , m_dynamics_comm (comm)
 {
-#ifndef SCREAM_CIME_BUILD
-  m_initializer = create_field_initializer<HommeInputsInitializer>();
-#endif
+  // Nothing to do here
 }
 
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
@@ -76,23 +73,30 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // Create the identifiers of input and output fields
 
   // Inputs
-  FieldLayout vector_layout  { {EL,CMP,GP,GP,LEV}, {ne,nmf,NGP,NGP,NVL} };
-  FieldLayout scalar_layout  { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
+  FieldLayout vector_3d_layout  { {EL,CMP,GP,GP,LEV}, {ne,nmf,NGP,NGP,NVL} };
+  FieldLayout scalar_3d_layout  { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
+  FieldLayout scalar_2d_layout  { {EL,TL, GP,GP    }, {ne,NTL,NGP,NGP    } };
 
-  m_required_fields.emplace("FM", vector_layout, m/pow(s,2), dyn_grid_name);
-  m_required_fields.emplace("FT", scalar_layout, K/s,        dyn_grid_name);
-  m_required_fields.emplace("qv", scalar_layout, Q,          dyn_grid_name);
+  m_required_fields.emplace("FM", vector_3d_layout, m/pow(s,2), dyn_grid_name);
+  m_required_fields.emplace("FT", scalar_3d_layout, K/s,        dyn_grid_name);
+  m_required_fields.emplace("qv", scalar_3d_layout, Q,          dyn_grid_name);
+  m_required_fields.emplace("ps", scalar_2d_layout, Pa,         dyn_grid_name);
 
-  // Outputs
+  // Inputs-Outputs
   FieldLayout dyn_scalar_3d_mid_layout { {EL,TL,GP,GP,LEV},      {ne, NTL,    NGP,NGP,NVL} };
   FieldLayout dyn_scalar_3d_int_layout { {EL,TL,GP,GP,ILEV},     {ne, NTL,    NGP,NGP,NVL+1} };
   FieldLayout dyn_vector_3d_mid_layout { {EL,TL,CMP,GP,GP,LEV},  {ne, NTL,  2,NGP,NGP,NVL} };
 
-  m_computed_fields.emplace("u",       dyn_vector_3d_mid_layout, m/s,            dyn_grid_name);
-  m_computed_fields.emplace("vtheta",  dyn_scalar_3d_mid_layout, K,              dyn_grid_name);
-  m_computed_fields.emplace("phi",     dyn_scalar_3d_int_layout, Pa*pow(m,3)/kg, dyn_grid_name);
-  m_computed_fields.emplace("w",       dyn_scalar_3d_int_layout, m/s,            dyn_grid_name);
-  m_computed_fields.emplace("dp",      dyn_scalar_3d_mid_layout, Pa,             dyn_grid_name);
+  m_required_fields.emplace("v",          dyn_vector_3d_mid_layout, m/s,            dyn_grid_name);
+  m_required_fields.emplace("vtheta_dp",  dyn_scalar_3d_mid_layout, K,              dyn_grid_name);
+  m_required_fields.emplace("phi_i",      dyn_scalar_3d_int_layout, Pa*pow(m,3)/kg, dyn_grid_name);
+  m_required_fields.emplace("w_i",        dyn_scalar_3d_int_layout, m/s,            dyn_grid_name);
+  m_required_fields.emplace("dp",         dyn_scalar_3d_mid_layout, Pa,             dyn_grid_name);
+  m_computed_fields.emplace("v",          dyn_vector_3d_mid_layout, m/s,            dyn_grid_name);
+  m_computed_fields.emplace("vtheta_dp",  dyn_scalar_3d_mid_layout, K,              dyn_grid_name);
+  m_computed_fields.emplace("phi_i",      dyn_scalar_3d_int_layout, Pa*pow(m,3)/kg, dyn_grid_name);
+  m_computed_fields.emplace("w_i",        dyn_scalar_3d_int_layout, m/s,            dyn_grid_name);
+  m_computed_fields.emplace("dp",         dyn_scalar_3d_mid_layout, Pa,             dyn_grid_name);
 
   const int ftype = get_homme_param<int>("ftype");
   EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,
@@ -182,28 +186,28 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   constexpr int NVLI = HOMMEXX_NUM_LEV_P;
 
   // Computed fields
-  for (ci_string name : {"u", "vtheta", "phi", "w", "dp", "Q"} ) {
+  for (ci_string name : {"v", "vtheta_dp", "phi_i", "w_i", "dp", "Q"} ) {
     const auto& f = m_dyn_fields_out.at(name);
 
-    if (name=="u") {
+    if (name=="v") {
       // Velocity
       auto& v = state.m_v;
       auto v_in = f.get_reshaped_view<Scalar*[NTL][2][NP][NP][NVL]>();
       using v_type = std::remove_reference<decltype(v)>::type;
       v = v_type (v_in.data(),num_elems);
-    } else if (name=="vtheta") {
+    } else if (name=="vtheta_dp") {
       // Virtual potential temperature
       auto& vtheta = state.m_vtheta_dp;
       auto vtheta_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
       using vtheta_type = std::remove_reference<decltype(vtheta)>::type;
       vtheta = vtheta_type(vtheta_in.data(),num_elems);
-    } else if (name=="phi") {
+    } else if (name=="phi_i") {
       // Geopotential
       auto& phi = state.m_phinh_i;
       auto phi_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVLI]>();
       using phi_type = std::remove_reference<decltype(phi)>::type;
       phi = phi_type(phi_in.data(),num_elems);
-    } else if (name=="w") {
+    } else if (name=="w_i") {
       // Geopotential
       auto& w = state.m_w_i;
       auto w_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVLI]>();
@@ -232,7 +236,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   //       Therefore, we need to cast away the const from the scream input fields.
   // TODO: make Hommexx Elements structure store const views for stuff that is indeed (logically) const.
   auto& forcing = Homme::Context::singleton().get<Homme::ElementsForcing>();
-  for (ci_string name : {"FQ", "FM", "FT"}) {
+  for (ci_string name : {"FQ", "FM", "FT", "ps"}) {
     const auto& f = m_dyn_fields_in.at(name);
 
     if (name=="FQ") {
@@ -257,40 +261,17 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
       using ft_type = std::remove_reference<decltype(ft)>::type;
       auto non_const_ptr = const_cast<Scalar*>(ft_in.data());
       ft = ft_type(non_const_ptr,num_elems);
+    } else if (name=="ps") {
+      // Surface pressure (use to init dp3d)
+      auto& ps = state.m_ps_v;
+      auto ps_in = f.template get_reshaped_view<const Real*[NTL][NP][NP]>();
+      using ps_type = std::remove_reference<decltype(ps)>::type;
+      auto non_const_ptr = const_cast<Real*>(ps_in.data());
+      ps = ps_type(non_const_ptr,num_elems);
     } else {
       ekat::error::runtime_abort("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
     }
   }
-
-  // Now that we set the correct pointers inside the Kokkos views, we can finish homme's initialization
-
-  auto standalone = m_params.get<bool>("Initialize Inputs", false);
-  if (standalone) {
-#ifdef SCREAM_CIME_BUILD
-    ekat::error::runtime_abort("Error! Homme should not initialize inputs in CIME builds.\n");
-#else
-    for (auto& f : m_dyn_fields_in) {
-      m_initializer->add_me_as_initializer(f.second);
-      std::cout << "Added " << m_initializer->name() << " as initializer for " << f.second.get_header().get_identifier().name() << "\n";
-    }
-    for (auto f : m_dyn_fields_out) {
-      if (!ekat::contains(m_required_fields,f.second.get_header().get_identifier())) {
-        m_initializer->add_me_as_initializer(f.second);
-      }
-    }
-    m_initializer->initialize_fields();
-#endif
-  } else {
-    // Some I/O routine must have loaded initial states. Homme needs those values
-    // to complete the model initialization. So, leverage Homme functions that
-    // copy stuff from cxx views to f90 arrays, to fwd the data I/O loaded to
-    // Homme's f90 model initialization routines
-    // NOTE: this is not needed in the if branch above, since homme inits fields
-    //       in fortran, so the initial states values are already available to model_init
-    prim_copy_cxx_to_f90 ();
-  }
-
-  prim_init_model_f90 (standalone);
 
   ::Homme::Context::singleton().get<::Homme::SimulationParams>().print();
 }
@@ -304,6 +285,9 @@ void HommeDynamics::register_fields (FieldRepository<Real>& field_repo) const
   for (const auto& fid : m_required_fields) {
     if (fid.name()=="qv") {
       field_repo.register_field<Scalar>(fid,"TRACERS");
+    } else if (fid.name()=="ps") {
+      // Can't use packs for ps
+      field_repo.register_field(fid);
     } else {
       field_repo.register_field<Scalar>(fid);
     }
@@ -313,6 +297,13 @@ void HommeDynamics::register_fields (FieldRepository<Real>& field_repo) const
 void HommeDynamics::run_impl (const Real dt)
 {
   try {
+    if (m_first_step) {
+      Homme::initialize_dp3d_from_ps_c();
+
+      prim_init_model_f90 ();
+
+      m_first_step = false;
+    }
     prim_run_f90 (dt);
 
     // Get a copy of the current timestamp (at the beginning of the step) and

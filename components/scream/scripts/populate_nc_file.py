@@ -12,7 +12,7 @@ class PopulateNcFile(object):
     ###########################################################################
     def __init__(self,nc_file,import_file=None,map_file=None,overwrite=False,
                  add_variables=None,import_variables=None,
-                 compute_variables=None,remove_variables=None):
+                 compute_variables=None,remove_variables=None,vector_variables=None):
     ###########################################################################
 
         self._overwrite = overwrite
@@ -25,6 +25,7 @@ class PopulateNcFile(object):
         self._ivars     = import_variables
         self._cvars     = compute_variables
         self._rvars     = remove_variables
+        self._vvars     = vector_variables
 
         expect (self._ofile.exists(), "Error! File '{}' does not exist.".format(self._ofile))
 
@@ -133,7 +134,7 @@ class PopulateNcFile(object):
     ###########################################################################
     def is_vector_layout(self,dims):
     ###########################################################################
-        valid = ["ncol", "lev", "ilev"]
+        valid = ["time", "ncol", "lev", "ilev"]
         for dim in dims:
             if dim not in valid:
                 expect (dim.isdigit(), "Error! Unexpected dimension '{}'".format(dim))
@@ -160,6 +161,19 @@ class PopulateNcFile(object):
         return vec_dim_id, s_dims
 
     ###########################################################################
+    def split_braket_list(self,string):
+    ###########################################################################
+        # Parse a string of the form "[a0,...,aN]", and return the list 'a0,...,aN'
+        import re
+
+        valid_re = re.compile(r'[[][a-zA-Z_,]+[]]')
+        expect (valid_re.match(string),
+                "Error! Braket list should be of the form '[a0,...,aN]'\n"
+                "       Input string: {}".format(string))
+
+        return string[1:-1].split(',')
+
+    ###########################################################################
     def get_values(self,vals_str,vec_dim):
     ###########################################################################
         if vals_str=="":
@@ -173,13 +187,7 @@ class PopulateNcFile(object):
                 return [value]*vec_dim
             except ValueError:
                 # Didn't work. Then we must have a [v1,...,vN] format
-                opn = vals_str.find('[')
-                cls = vals_str.find(']')
-                expect (opn!=-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
-                expect (cls!=-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
-                expect (cls>opn,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
-                expect (cls==len(vals_str)-1,"Error! Var values specification should be '..=val' or '..=[val1,...,valN]'.")
-                vals = vals_str[opn+1:cls].split(',')
+                vals = self.split_braket_list(vals_str)
                 expect (len(vals)==vec_dim,
                         "Error! Var values specification has the wrong length: {} instead of {}."
                         .format(len(vals),vec_dim))
@@ -194,7 +202,6 @@ class PopulateNcFile(object):
     def add_variables(self):
     ###########################################################################
 
-        # Sync to file and close
         ds = self.get_database(self._ofile,'a')
         for item in self._avars:
             if '=' in item:
@@ -212,7 +219,6 @@ class PopulateNcFile(object):
             dims = self.get_dims(name_dims)
 
             is_vector = self.is_vector_layout(dims)
-
 
             if is_vector:
                 # From the list (dim1,...,dimN), check if it is a vector field,
@@ -281,6 +287,11 @@ class PopulateNcFile(object):
             else:
                 self.import_variables_horiz_remap()
 
+            # To protect against the possiblity that the input file stored vars with
+            # a layout different from scream (e.g., T(time,lev,ncol) instead of
+            # T(time,ncol,lev)), we run ncpdq to rearrange (if need be) the dimensions
+            run_cmd_no_fail ("ncpdq -a ncol,lev -O {} {}".format(self._ofile,self._ofile))
+            run_cmd_no_fail ("ncpdq -a ncol,ilev -O {} {}".format(self._ofile,self._ofile))
 
     ###########################################################################
     def import_variables_no_remap(self,ifile):
@@ -355,6 +366,79 @@ class PopulateNcFile(object):
             Nco().ncks(str(self._ofile),output=str(self._ofile),exclude=True,force=True,variable=",".join(self._rvars))
 
     ###########################################################################
+    def vector_variables(self):
+    ###########################################################################
+
+        import copy
+
+        ds = self.get_database(self._ofile,'a')
+        for item in self._vvars:
+            expect('=' in item,
+                    "Error! Define vector variables with 'var=[var1,...,varN]'")
+
+            name_and_components = item.split('=')
+            expect (len(name_and_components)==2, "Error! Invalid variable declaration: {}".format(item))
+
+            name = name_and_components[0]
+            components = self.split_braket_list(name_and_components[1])
+
+            vec_len = len(components)
+            dim_tag = "dim{}".format(vec_len)
+
+            if not dim_tag in ds.dimensions.keys():
+                ds.createDimension(dim_tag,vec_len)
+            vec_dim = ds.dimensions[dim_tag]
+
+            dims = []
+            vars = []
+            for n in components:
+                expect (n in ds.variables.keys(),
+                        "Error! Vector variables must be declared in terms of existing variables.\n"
+                        "       Variable '{}' not found in the database".format(n))
+                var = ds.variables[n]
+                if dims == []:
+                    dims = list(var.dimensions)
+                else:
+                    expect (dims==list(var.dimensions),
+                            "Error! Vector variables must be declared in terms of variables *of the same dimensions*")
+                vars.append(var)
+
+            scalar_dims = copy.deepcopy(dims)
+            num_scalar_dims = len(dims)
+
+            col_dim = ds.dimensions["ncol"]
+
+            if col_dim.name in dims:
+                # Insert right after the 'ncol' dim
+                dims.insert(dims.index(col_dim.name)+1,dim_tag)
+                vec_dim_id = dims.index(dim_tag)
+            else:
+                # Insert right after 'time'
+                dims.insert(1,dim_tag)
+
+            vec_var = ds.createVariable(name,"f8",dims)
+
+            for i in range(0,vec_len):
+                if num_scalar_dims==2:
+                    if scalar_dims[1]=="ncol":
+                        vec_var[:,:,i] = vars[i][:,:]
+                    elif scalar_dims[1]in ["lev","ilev"]:
+                        vec_var[:,i,:] = vars[i][:,:]
+                    else:
+                        raise NotImplementedError("Scalar variables dimensions not supported.")
+
+                elif num_scalar_dims==3:
+                    expect (scalar_dims[1]=="ncol",
+                            "Error! Scalar variable dimensions {} not supported.".format(scalar_dims))
+                    vec_var[:,:,i,:] = vars[i][:,:,:]
+                else:
+                    raise NotImplementedError("Scalar variable dimensions not supported.")
+
+        ds.sync()
+        ds.close()
+
+
+    ###########################################################################
     def run(self):
     ###########################################################################
 
@@ -363,6 +447,9 @@ class PopulateNcFile(object):
 
         # Import vars from another file
         self.import_variables()
+
+        # Create vector variables
+        self.vector_variables()
 
         # Compute variables from math expressions (possibly involving other stored vars)
         self.compute_variables()

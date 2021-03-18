@@ -29,6 +29,10 @@ FieldHeader::FieldHeader (const identifier_type& id,
   m_alloc_prop.commit(id.get_layout_ptr());
 
   m_tracking->register_as_children_in_parent();
+
+  // Add me to the list of children of my parent
+  auto me = shared_from_this();
+  parent->m_children.push_back(me);
 }
 
 void FieldHeader::

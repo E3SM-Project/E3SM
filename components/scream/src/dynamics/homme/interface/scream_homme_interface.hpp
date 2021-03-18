@@ -13,6 +13,12 @@
 #include <mpi.h>
 #include <string>
 
+namespace Homme {
+extern "C" {
+  void initialize_dp3d_from_ps_c ();
+} // extern "C"
+}
+
 namespace scream {
 
 extern "C"
@@ -39,7 +45,7 @@ void finalize_geometry_f90 ();
 void prim_init_data_structures_f90 ();
 void prim_set_test_initial_conditions_f90 ();
 void prim_copy_cxx_to_f90 ();
-void prim_init_model_f90 (const bool& standalone);
+void prim_init_model_f90 ();
 void prim_run_f90 (const double& dt);
 void prim_finalize_f90 ();
 
@@ -135,7 +141,6 @@ void set_homme_param<bool> (const std::string& name, const bool& value) {
   const char* c_name = name.c_str();
   set_homme_bool_param_f90(&c_name,value);
 }
-
 
 } // namespace scream
 

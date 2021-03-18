@@ -3,6 +3,12 @@
 Debug:
   Atmosphere DAG Verbosity Level: 5
 
+Initial Conditions:
+  Initial Conditions File: initial_conditions_dry.nc
+  FM: [0.0, 0.0, 0.0]
+  FT: 0.0
+  FQ: 0.0
+
 Atmosphere Processes:
   Number of Entries: 1
   Process 0:

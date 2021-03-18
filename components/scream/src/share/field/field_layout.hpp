@@ -11,6 +11,33 @@
 namespace scream
 {
 
+// The type of the layout, that is, the kind of field it represent.
+enum class LayoutType {
+  Invalid,
+  Scalar2D,
+  Vector2D,
+  Tensor2D,
+  Scalar3D,
+  Vector3D,
+  Tensor3D
+};
+
+inline std::string e2str (const LayoutType lt) {
+  std::string name;
+  switch (lt) {
+    case LayoutType::Scalar2D: name = "Scalar2D"; break;
+    case LayoutType::Vector2D: name = "Vector2D"; break;
+    case LayoutType::Tensor2D: name = "Tensor2D"; break;
+    case LayoutType::Scalar3D: name = "Scalar3D"; break;
+    case LayoutType::Vector3D: name = "Vector3D"; break;
+    case LayoutType::Tensor3D: name = "Tensor3D"; break;
+    case LayoutType::Invalid:  name = "INVALID" ; break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unrecognized LayoutType.\n");
+  }
+  return name;
+}
+
 /*
  *  A small class to hold basic info about a field layout
  *
@@ -49,6 +76,13 @@ public:
   bool is_dimension_set  (const int idim) const;
   bool are_dimensions_set () const;
 
+  // Check if this layout is that of a vector fielt
+  bool is_vector_layout () const;
+
+  // If this is the layout of a vector field, get the idx of the vector dimension
+  // Note: throws if is_vector_layout()==false.
+  int get_vector_dim () const;
+
   // ----- Setters ----- //
 
   // Note: as soon as a dimension is set, it cannot be changed.
@@ -63,6 +97,7 @@ protected:
 };
 
 bool operator== (const FieldLayout& fl1, const FieldLayout& fl2);
+LayoutType get_layout_type (const std::vector<FieldTag>& field_tags);
 
 // ========================== IMPLEMENTATION ======================= //
 

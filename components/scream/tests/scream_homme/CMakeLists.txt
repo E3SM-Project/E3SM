@@ -46,6 +46,12 @@ set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 configure_file(${HOMME_SOURCE_DIR}/test/reg_test/namelists/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
+# Copy initial conditions files (both wet and dry, for ease of testing)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/initial_conditions_dry.nc
+               ${CMAKE_CURRENT_BINARY_DIR}/initial_conditions_dry.nc COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/initial_conditions_moist.nc
+               ${CMAKE_CURRENT_BINARY_DIR}/initial_conditions_moist.nc COPYONLY)
+
 # Create vcoord directory
 file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
 

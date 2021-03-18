@@ -65,7 +65,7 @@ TEST_CASE("restart","io")
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii) {
     for (const auto& fname : out_fields->m_fields_names) {
-      auto& f = field_repo->get_field(fname,"Physics");
+      auto f = field_repo->get_field(fname,"Physics");
       f.sync_to_host();
       auto f_host = f.get_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
@@ -117,7 +117,7 @@ TEST_CASE("restart","io")
   // Finish the last 5 steps
   for (Int ii=0;ii<5;++ii) {
     for (const auto& fname : out_fields->m_fields_names) {
-      auto& f = field_repo->get_field(fname,"Physics");
+      auto f = field_repo->get_field(fname,"Physics");
       f.sync_to_host();
       auto f_host = f.get_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)

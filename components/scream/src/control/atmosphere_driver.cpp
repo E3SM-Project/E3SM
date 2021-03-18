@@ -2,7 +2,6 @@
 
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
-#include "share/field/field_initializer.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_assert.hpp"
@@ -40,18 +39,6 @@ namespace control {
  *           could cheat, and cast away the const, but we can't prevent that. However, in debug builds,
  *           we store 2 copies of each field, and use the extra copy to check, at run time, that
  *           no process alters the values of any of its input fields.
- *     Note: when setting input fields in an atm proc, the atm proc is also allowed to specify how
- *           the field should be initialized. We only allow ONE process to attempt to do that,
- *           so atm procs should ALWAYS check that no initialization is already set for that field.
- *           Also, notice that the atm proc has no idea whether an initializer will be needed for
- *           this field or not. Checking whether there are providers already registered for it
- *           seems plausible, but it relies on atm procs being parsed in the correct order. Although
- *           this IS currently the case, we don't want to rely on it. Therefore, an atm proc should
- *           be aware that, even if it sets a certain type of initialization for a field, that
- *           initialization may not be needed. E.g., proc A needs field F, and sets it to be init-ed
- *           to 0. However, upon completion of the atm setup, proc B computes field F, and proc B
- *           is evaluated *before* proc A in the atm DAG. Therefore, no initialization is needed
- *           for field F.
  *  6) The atm procs group builds the remappers. Remappers are objects that map fields from one grid
  *     to another. Currently, we perform remappings only to/from a reference grid (set in the GM).
  *     Before calling each atm proc in the group, the AtmosphereProcessGroup (APG) class will
@@ -67,28 +54,62 @@ namespace control {
  *     since the atm proc does not yet know if the field needs to be inited or not (we haven't
  *     yet built/parsed the atm DAG).
  *  9) We build the atm DAG, and inspect its consistency. Each input of each atm proc must be
- *     computed by some other atm proc (possibly at the previous time step) or have a FieldInitializer
- *     set (could be the case for some geometry-related field, constant during the whole simulation).
- *     Additionally, every field that comes from the previous time step (i.e., an input of the
- *     atmosphere as a whole), MUST have an initializer structure set. If some dependency is not
- *     met, the AD will error out, and store the atm DAG in a file.
+ *     computed by some other atm proc (possibly at the previous time step) or imported by
+ *     the SurfaceCoupling (if present). If some dependency is not met, the AD will error out,
+ *     and store the atm DAG in a file.
  * 10) Finally, set the initial time stamp on all fields, and perform some debug structure setup.
  *
  */
 
-
-void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
-                                   const ekat::ParameterList& params,
-                                   const util::TimeStamp& t0)
+AtmosphereDriver::
+AtmosphereDriver(const ekat::Comm& atm_comm,
+                 const ekat::ParameterList& params)
 {
+  set_comm(atm_comm);
+  set_params(params);
+}
+
+void AtmosphereDriver::
+set_comm(const ekat::Comm& atm_comm)
+{
+  // I can't think of a scenario where changing the comm is a good idea,
+  // so let's forbid it, for now.
+  check_ad_status (s_comm_set, false);
+
   m_atm_comm = atm_comm;
-  m_atm_params = params;
-  m_current_ts = t0;
+
+  m_ad_status |= s_comm_set;
+}
+
+void AtmosphereDriver::
+set_params(const ekat::ParameterList& atm_params)
+{
+  // I can't think of a scenario where changing the params is useful,
+  // so let's forbid it, for now.
+  check_ad_status (~s_params_set);
+
+  m_atm_params = atm_params;
+
+  m_ad_status |= s_params_set;
+}
+
+void AtmosphereDriver::create_atm_processes()
+{
+  // At this point, must have comm and params set.
+  check_ad_status(s_comm_set | s_params_set);
 
   // Create the group of processes. This will recursively create the processes
   // tree, storing also the information regarding parallel execution (if needed).
   // See AtmosphereProcessGroup class documentation for more details.
   m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,m_atm_params.sublist("Atmosphere Processes"));
+
+  m_ad_status |= s_procs_created;
+}
+
+void AtmosphereDriver::create_grids()
+{
+  // Must have procs created by now (and comm/params set)
+  check_ad_status (s_procs_created | s_comm_set | s_params_set);
 
   // Create the grids manager
   auto& gm_params = m_atm_params.sublist("Grids Manager");
@@ -104,6 +125,14 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
 
+  m_ad_status |= s_procs_created;
+}
+
+void AtmosphereDriver::create_fields()
+{
+  // Must have grids and procs at this point
+  check_ad_status (s_procs_created | s_grids_created);
+
   // By now, the processes should have fully built the ids of their
   // required/computed fields. Let them register them in the repo
   m_field_repo = std::make_shared<FieldRepository<Real> >();
@@ -112,6 +141,129 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   register_groups();
   m_field_repo->registration_ends(m_grids_manager);
 
+  m_ad_status |= s_fields_created;
+}
+
+void AtmosphereDriver::initialize_output_manager () {
+  check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
+
+  // Create Initial conditions
+
+  // Create Output manager
+  if (m_atm_params.isSublist("Output Manager")) {
+    auto& out_params = m_atm_params.sublist("Output Manager");
+    m_output_manager.set_params(out_params);
+    m_output_manager.set_comm(m_atm_comm);
+    m_output_manager.set_grids(m_grids_manager);
+    m_output_manager.set_repo(m_field_repo);
+  }
+  m_output_manager.init();
+
+  m_ad_status |= s_output_inited;
+}
+
+void AtmosphereDriver::
+initialize_fields (const util::TimeStamp& t0)
+{
+  // See if we need to print a DAG. We do this first, cause if any input
+  // field is missing from the initial condition file, an error will be thrown.
+  // By printing the DAG first, we give the user the possibility of seeing
+  // what fields are inputs to the atm time step, so he/she can fix the i.c. file.
+
+  auto& deb_pl = m_atm_params.sublist("Debug");
+  const int verb_lvl = deb_pl.get<int>("Atmosphere DAG Verbosity Level",-1);
+  if (verb_lvl>0) {
+    // Check the atm DAG for missing stuff
+    AtmProcDAG dag;
+
+    // First, add all atm processes
+    dag.create_dag(*m_atm_process_group,m_field_repo);
+
+    // Then, add all surface coupling dependencies, if any
+    if (m_surface_coupling) {
+      dag.add_surface_coupling(m_surface_coupling->get_import_fids(),
+                               m_surface_coupling->get_export_fids());
+    }
+
+    // Write a dot file for visualization
+    dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
+  }
+
+  // Figure out the list of inputs for the atmosphere.
+  auto fields_in = m_atm_process_group->get_required_fields();
+
+  const auto& ic_pl = m_atm_params.sublist("Initial Conditions");
+
+  // Create parameter list for AtmosphereInput
+  ekat::ParameterList ic_reader_params;
+  ic_reader_params.set("GRID",m_grids_manager->get_reference_grid()->name());
+  auto& ic_fields = ic_reader_params.sublist("FIELDS");
+  int ifield=0;
+  for (auto& fid : fields_in) {
+    const auto& name = fid.name();
+    auto f = m_field_repo->get_field(fid);
+    // First, check if the input file contains constant values for some of the fields
+    if (ic_pl.isParameter(name)) {
+      // The user provided a constant value for this field. Simply use that.
+      const auto& layout = f.get_header().get_identifier().get_layout();
+
+      // For vector fields, we expect something like "fname: [val0,...,valN],
+      // where the field dim is N+1. For scalars, "fname: val". So check the
+      // field layout first, so we know what to get from the parameter list.
+      if (layout.is_vector_layout()) {
+        const auto idim = layout.get_vector_dim();
+        const auto vec_dim = layout.dim(idim);
+        const auto& values = ic_pl.get<std::vector<Real>>(name);
+        EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
+            "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
+            "       Field dimension: " + std::to_string(vec_dim) + "\n"
+            "       Array dimenions: " + std::to_string(values.size()) + "\n");
+
+        // Extract a subfield for each component. This is not "too" expensive, expecially
+        // considering that this code is executed during initialization only.
+        for (int comp=0; comp<vec_dim; ++comp) {
+          auto f_i = f.get_component(comp);
+          f_i.set_value(values[comp]);
+        }
+      } else {
+        const auto& value = ic_pl.get<double>(name);
+        f.set_value(value);
+      }
+    } else {
+      // The field does not have a constant value, so we expect to find it in the nc file
+      ic_fields.set(ekat::strint("field",ifield+1),name); 
+      ++ifield;
+
+      // While at it, set the time stamp of the loaded fields to t0
+    }
+    f.get_header().get_tracking().update_time_stamp(t0);
+  }
+
+  if (ifield>0) {
+    // There are fields to read from the nc file. We must have a valid nc file then.
+    ic_reader_params.set("FILENAME",ic_pl.get<std::string>("Initial Conditions File"));
+    ic_fields.set("Number of Fields",ifield);
+
+    MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
+    if (!scorpio::is_eam_pio_subsystem_inited()) {
+      scorpio::eam_init_pio_subsystem(fcomm);
+    } else {
+      EKAT_REQUIRE_MSG (fcomm==scorpio::eam_pio_subsystem_comm(),
+          "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
+    }
+
+    AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,m_field_repo,m_grids_manager);
+
+    ic_reader.pull_input();
+  }
+
+  m_current_ts = t0;
+
+  m_ad_status |= s_fields_inited;
+}
+
+void AtmosphereDriver::initialize_atm_procs ()
+{
   // Set all the fields in the processes needing them (before, they only had ids)
   // Input fields will be handed to the processes as const
   const auto& inputs  = m_atm_process_group->get_required_fields();
@@ -134,8 +286,13 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   }
 
   // Initialize the processes
-  m_atm_process_group->initialize(t0);
+  m_atm_process_group->initialize(m_current_ts);
 
+  m_ad_status |= s_procs_inited;
+}
+
+void AtmosphereDriver::finish_setup ()
+{
   // Note 1: remappers should be setup *after* fields have been set in the atm processes,
   //       just in case some atm proc sets some extra data in the field header,
   //       that some remappers may actually need.
@@ -144,41 +301,62 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   //         phys-dyn remapper (which uses homme's mpi infrastructure).
   m_atm_process_group->setup_remappers(*m_field_repo);
 
-  // Set time steamp t0 to all fields
-  m_field_repo->init_fields_time_stamp(t0);
-
-  // Now that all fields have been set and checked we can establish an output manager
-  // for all output streams.
-  if (m_atm_params.isSublist("Output Manager"))
-  {
-    auto& out_params = m_atm_params.sublist("Output Manager");
-    m_output_manager.set_params(out_params);
-    m_output_manager.set_comm(atm_comm);
-    m_output_manager.set_grids(m_grids_manager);
-    m_output_manager.set_repo(m_field_repo);
-    // If not true then m_output_manager.init() won't do anything, leaving no_output flag as true and skipping output throughout simulation.
-  }
-  m_output_manager.init();
-
-#if defined(SCREAM_CIME_BUILD)
-  // If this is a CIME build, we need to prepare the surface coupling
-  m_surface_coupling = std::make_shared<SurfaceCoupling>(m_grids_manager->get_reference_grid(),*m_field_repo);
-#endif
-
-  if (!m_surface_coupling) {
-    // Standalone runs *may* require initialization of atm inputs.
-    init_atm_inputs ();
-
-    // In standalone runs, we already have everything we need for the dag,
-    // so we can proceed to do its inspection. Any unmet dependency in
-    // the dag at this point has to be treated as an error.
-    inspect_atm_dag ();
-  }
-
 #ifdef SCREAM_DEBUG
-  create_bkp_field_repo();
+  // In debug mode, we create a bkp field repo. We'll use it for a
+  // very scrupolous check, to ensure atm procs don't update fields
+  // that they were not entitled to update.
+  m_bkp_field_repo.registration_begins();
+  for (const auto& it : *m_field_repo) {
+    for (const auto& id_field : it.second) {
+      const auto& id = id_field.first;
+      const auto& f = id_field.second;
+      const auto& groups = f.get_header().get_tracking().get_groups_names();
+      // Unfortunately, set<string> and set<CaseInsensitiveString>
+      // are unrelated types for the compiler
+      std::set<std::string> grps;
+      for (const auto& group : groups) {
+        grps.insert(group);
+      }
+      m_bkp_field_repo.register_field(id,grps);
+    }
+  }
+  m_bkp_field_repo.registration_ends();
+
+  // Deep copy the fields
+  for (const auto& it : *m_field_repo) {
+    for (const auto& id_field : it.second) {
+      const auto& id = id_field.first;
+      const auto& f  = id_field.second;
+      auto src = f.get_view();
+      auto tgt = m_bkp_field_repo.get_field(id).get_view();
+
+      Kokkos::deep_copy(tgt,src);
+    }
+  }
   m_atm_process_group->set_field_repos(*m_field_repo,m_bkp_field_repo);
 #endif
+}
+
+void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
+                                   const ekat::ParameterList& params,
+                                   const util::TimeStamp& t0)
+{
+  set_comm(atm_comm);
+  set_params(params);
+
+  create_atm_processes ();
+
+  create_grids ();
+
+  create_fields ();
+
+  initialize_fields (t0);
+
+  initialize_output_manager ();
+
+  initialize_atm_procs ();
+
+  finish_setup ();
 }
 
 void AtmosphereDriver::run (const Real dt) {
@@ -216,6 +394,10 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 #ifdef SCREAM_DEBUG
   m_bkp_field_repo.clean_up();
 #endif
+
+  if (scorpio::is_eam_pio_subsystem_inited()) {
+    scorpio::eam_pio_finalize();
+  }
 }
 
 void AtmosphereDriver::register_groups () {
@@ -276,7 +458,7 @@ void AtmosphereDriver::register_groups () {
         // field in the group later subviewing the bundle.
         // We need to ensure the bundle also exists on $grid
         const auto& name = *fnames.begin();
-        const auto& f = m_field_repo->get_field(name,grid);
+        const auto  f = m_field_repo->get_field(name,grid);
         const auto& bundle_name = f.get_header().get_parent().lock()->get_identifier().name();
         register_if_not_there(bundle_name);
       }
@@ -286,101 +468,6 @@ void AtmosphereDriver::register_groups () {
   // Call the above lambda on both required and updated groups.
   has_group_fields_on_grid( m_atm_process_group->get_required_groups() );
   has_group_fields_on_grid( m_atm_process_group->get_updated_groups() );
-}
-
-void AtmosphereDriver::init_atm_inputs () {
-  const auto& atm_inputs = m_atm_process_group->get_required_fields();
-  for (const auto& input : atm_inputs) {
-    // We loop on all ids with the same name, cause it might be that some
-    // initializer is set to init this field on a non-ref grid. In that case,
-    // such non-ref field would *not* appear as an atm input (since it's the
-    // output of a remapper).
-    EKAT_REQUIRE_MSG(m_field_repo->has_field(input.name()),
-      "Error! Something went wrong while looking for field '" << input.name() << "' in the repo.\n");
-    auto begin = m_field_repo->cbegin(input.name());
-    auto end = m_field_repo->cend(input.name());
-    for (auto it=begin; it!=end; ++it) {
-      const auto& f = m_field_repo->get_field(*it);
-      const auto& hdr = f.get_header();
-      const auto& id = hdr.get_identifier();
-      auto init_type = hdr.get_tracking().get_init_type();
-      if (init_type!=InitType::None && init_type!=InitType::Inherited) {
-        auto initializer = hdr.get_tracking().get_initializer().lock();
-        EKAT_REQUIRE_MSG (static_cast<bool>(initializer),
-                            "Error! Field '" + id.name() + "' has initialization type '" + e2str(init_type) + "',\n" +
-                            "       but its initializer pointer is not valid.\n");
-
-        // If f is not on the ref grid, the initializer should init also the field
-        // on the ref grid.
-        const auto& ref_grid = m_grids_manager->get_reference_grid();
-        const auto&     grid = m_grids_manager->get_grid(id.get_grid_name());
-        if (grid->name()!=ref_grid->name()) {
-          auto& f_ref = m_field_repo->get_field(id.name(),ref_grid->name());
-          const auto& remapper = m_grids_manager->create_remapper(grid,ref_grid);
-          initializer->add_field(f,f_ref,remapper);
-        } else {
-          initializer->add_field(f);
-        }
-        m_field_initializers.insert(initializer);
-      }
-    }
-  }
-
-  // Now loop over all the initializers, and make them init their fields.
-  for (auto it : m_field_initializers) {
-    auto initializer = it.lock();
-    if (initializer->get_inited_fields().size()>0) {
-      initializer->initialize_fields();
-    }
-  }
-}
-
-void AtmosphereDriver::inspect_atm_dag () const {
-
-  // Sanity checks
-  EKAT_REQUIRE_MSG (!(m_surface_coupling && (m_field_initializers.size()>0)),
-      "Error! You cannot have surface coupling *and* field initializers.\n"
-      "       In CIME runs, you only have the former, while in standalone runs you can only have the latter.\n");
-
-  EKAT_REQUIRE_MSG ( !m_surface_coupling || m_surface_coupling->get_repo_state()==RepoState::Closed,
-      "Error! You cannot inspect the dag if the surface coupling has been fully initialized.\n");
-
-  AtmProcDAG dag;
-
-  // First, add all atm processes
-  dag.create_dag(*m_atm_process_group,m_field_repo);
-
-  // Then, add all field initializers (if any) and surface coupling (if any).
-  // Recall that at most one of these two steps can be non-trivial.
-  for (const auto& it : m_field_initializers) {
-    dag.add_field_initializer(*it.lock());
-  }
-
-  // Then, add all surface coupling dependencies, if any
-  if (m_surface_coupling) {
-    dag.add_surface_coupling(m_surface_coupling->get_import_fids(),
-                             m_surface_coupling->get_export_fids());
-  }
-
-  // Finally, we can proceed with checking the dag
-  auto& deb_pl = m_atm_params.sublist("Debug");
-  int verb_lvl = -1;
-  if (deb_pl.isParameter("Atmosphere DAG Verbosity Level")) {
-    verb_lvl = deb_pl.get<int>("Atmosphere DAG Verbosity Level");
-  }
-
-  if (dag.has_unmet_dependencies()) {
-    const int err_verb_lev = verb_lvl >=0 ? verb_lvl : int(AtmProcDAG::VERB_MAX);
-    dag.write_dag("error_atm_dag.dot",err_verb_lev);
-    EKAT_ERROR_MSG("Error! There are unmet dependencies in the atmosphere internal dag.\n"
-                   "       Use the graphviz package to inspect the dependency graph:\n"
-                   "    \n"
-                   "    $ dot -Tjpg -o error_atm_dag.jpg error_atm_dag.dot\n"
-                   "    $ eog error_atm_dag.dot\n");
-  }
-
-  // If requested, write a dot file for visualization
-  dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
 }
 
 #ifdef SCREAM_DEBUG
@@ -402,19 +489,24 @@ void AtmosphereDriver::create_bkp_field_repo () {
   }
   m_bkp_field_repo.registration_ends();
 
-  // Deep copy the fields
-  for (const auto& it : *m_field_repo) {
-    for (const auto& id_field : it.second) {
-      const auto& id = id_field.first;
-      const auto& f  = id_field.second;
-      auto src = f.get_view();
-      auto tgt = m_bkp_field_repo.get_field(id).get_view();
-
-      Kokkos::deep_copy(tgt,src);
-    }
-  }
 }
 #endif
+
+void AtmosphereDriver::
+check_ad_status (const int flag, const bool must_be_set)
+{
+  if (must_be_set) {
+    EKAT_REQUIRE_MSG (m_ad_status & flag,
+        "Error! Failed AD status check:\n"
+        "        expected flag:  " + std::to_string(flag) + "\n"
+        "        ad status flag: " + std::to_string(m_ad_status) + "\n");
+  } else {
+    EKAT_REQUIRE_MSG (~m_ad_status & flag,
+        "Error! Failed AD status check:\n"
+        "        not expected flag:  " + std::to_string(flag) + "\n"
+        "        ad status flag: " + std::to_string(m_ad_status) + "\n");
+  }
+}
 
 }  // namespace control
 }  // namespace scream
