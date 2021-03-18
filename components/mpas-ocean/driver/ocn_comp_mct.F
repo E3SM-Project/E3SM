@@ -2306,7 +2306,7 @@ contains
 
    integer, dimension(:), pointer :: landIceMask
 
-   real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, freezingTemp, accumulatedFrazilIceMass, frazilSurfacePressure, &
+   real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
                                                filteredSSHGradientZonal, filteredSSHGradientMeridional, &
                                                avgCO2_gas_flux, DMSFlux, surfaceUpwardCO2Flux, &
                                                avgOceanSurfaceDIC, &
@@ -2323,6 +2323,8 @@ contains
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
+
+   real (kind=RKIND) :: SurfacefreezingTemp
 
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
@@ -2437,10 +2439,13 @@ contains
 
           if ( keepFrazil ) then
 
-             SurfacefreezingTemp(i) = ocn_freezing_temperature(index_salinitySurfaceValue, 1, i), &
-                               pressure=0.0_RKIND,  inLandIceCavity=.false.) 
+             ! We assume here that avgTracersSurfaceValue represents only the
+             ! top layer of the ocean.
 
-             seaIceEnergy(i) = min( rho_sw * cp_sw * layerThickness(1, i) * ( SurfacefreezingTemp(i) + T0_Kelvin &
+             SurfacefreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
+                 pressure=0.0_RKIND,  inLandIceCavity=.false.) 
+
+             seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( SurfacefreezingTemp + T0_Kelvin &
                              - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
              if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) seaIceEnergy(i) = 0.0_RKIND
 
