@@ -91,7 +91,7 @@ contains
 
    subroutine ocn_tracer_MacroMolecules_compute(MacroMoleculesTracers, nTracersMacroMolecules,   &
       ecosysTracers, nTracersEcosys, forcingPool, &
-      nCellsSolve, maxLevelCell, nVertLevels, layerThickness, MacroMoleculesTracersTend, err)!{{{
+      nCellsSolve, minLevelCell, maxLevelCell, nVertLevels, layerThickness, MacroMoleculesTracersTend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -101,7 +101,7 @@ contains
 
       ! one dimensional arrays
       integer, dimension(:), intent(in) :: &
-         maxLevelCell
+         minLevelCell, maxLevelCell
 
       ! two dimensional arrays
       real (kind=RKIND), dimension(:,:), intent(in) :: &
@@ -158,9 +158,9 @@ contains
       column = 1
       !DWJ 08/05/2016: This loop needs OpenMP added to it
       do iCell=1,nCellsSolve
-         MacroMolecules_input%number_of_active_levels(column) = maxLevelCell(iCell)
-         do iLevel=1,maxLevelCell(iCell)
-            MacroMolecules_input%cell_thickness(iLevel,column)    = layerThickness(iLevel,iCell)*convertLengthScale
+         MacroMolecules_input%number_of_active_levels(column) = maxLevelCell(iCell) - minLevelCell(iCell) + 1
+         do iLevel=1,MacroMolecules_input%number_of_active_levels(column)
+            MacroMolecules_input%cell_thickness(iLevel,column)    = layerThickness(iLevel + minLevelCell(iCell) - 1,iCell)*convertLengthScale
 
             MacroMolecules_input%MACROS_tracers(iLevel,column,MacroMolecules_indices%prot_ind)  =   &
                MacroMoleculesTracers(macrosIndices%prot_ind,iLevel,iCell)
@@ -186,7 +186,7 @@ contains
                              MacroMolecules_output, MacroMolecules_diagnostic_fields, nVertLevels,   &
                              numColumnsMax, numColumns)
 
-         do iLevel=1,maxLevelCell(iCell)
+         do iLevel=1,MacroMolecules_input%number_of_active_levels(column)
 
             MacroMoleculesTracersTend(macrosIndices%prot_ind,iLevel,iCell) = &
                MacroMoleculesTracersTend(macrosIndices%prot_ind,iLevel,iCell)   &
