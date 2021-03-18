@@ -563,9 +563,6 @@ contains
          else
             this%h2osfc_thresh_col(c) = 0._r8     !changed from 0 to 1 TAO 29/8/2018
          endif
-#if (defined HUM_HOL)
-            this%h2osfc_thresh_col(c) = 2.e3_r8    ! set to zero for no h2osfc (w/frac_infclust =large) changed from 0 to 1 TAO 29/8/2018
-#endif
 
 #if (defined MARSH)
             this%h2osfc_thresh_col(c) = 2.e3_r8    ! set to zero for no h2osfc (w/frac_infclust =large) changed from 0 to 1 TAO 29/8/2018
