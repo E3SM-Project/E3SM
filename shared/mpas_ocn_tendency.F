@@ -769,7 +769,7 @@ contains
                      modifiedGroupName = trim(groupItr % memberName) // "InteriorRestoringValue"
                      call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, trim(modifiedGroupName), &
                                               tracerGroupInteriorRestoringValue)
-                     call ocn_tracer_interior_restoring_compute(nTracerGroup, nCells, maxLevelCell, layerThickness, &
+                     call ocn_tracer_interior_restoring_compute(nTracerGroup, nCells, minLevelCell, maxLevelCell, layerThickness, &
                         tracerGroup, tracerGroupInteriorRestoringRate, tracerGroupInteriorRestoringValue, tracerGroupTend, err)
                      call mpas_timer_stop("interior_restoring_" // trim(groupItr % memberName))
                 endif
