@@ -123,7 +123,7 @@ contains
       integer :: iCell, k, iTracer, nTracers, nCells
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 
       real (kind=RKIND) :: remainingFlux
 
@@ -137,6 +137,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tend, dim=1)
 
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       nCells = nCellsArray( 1 )
@@ -145,7 +146,7 @@ contains
       !$omp do schedule(runtime) private(remainingFlux, k, iTracer)
       do iCell = 1, nCells
         remainingFlux = 1.0_RKIND
-        do k = 1, maxLevelCell(iCell)
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
           remainingFlux = remainingFlux - fractionAbsorbed(k, iCell)
 
           do iTracer = 1, nTracers
@@ -174,7 +175,7 @@ contains
         !$omp do schedule(runtime) private(remainingFlux, k, iTracer)
         do iCell = 1, nCells
           remainingFlux = 1.0_RKIND
-          do k = 1, maxLevelCell(iCell)
+          do k = minLevelCell(iCell), maxLevelCell(iCell)
             remainingFlux = remainingFlux - fractionAbsorbedRunoff(k, iCell)
 
             do iTracer = 1, nTracers
