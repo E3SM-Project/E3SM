@@ -87,7 +87,6 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_frazil_forcing.F
   core_ocean/shared/mpas_ocn_tidal_forcing.F
   core_ocean/shared/mpas_ocn_time_average_coupled.F
-  core_ocean/shared/mpas_ocn_sea_ice.F
   core_ocean/shared/mpas_ocn_framework_forcing.F
   core_ocean/shared/mpas_ocn_time_varying_forcing.F
   core_ocean/shared/mpas_ocn_wetting_drying.F
