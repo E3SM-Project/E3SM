@@ -975,9 +975,9 @@ contains
          enddo
 
          if ( config_cvmix_kpp_nonlocal_with_implicit_mix ) then
-            call ocn_compute_kpp_rhs(tracers(:,:,iCell), rhs(:,:), dt, N, num_tracers, &
+            call ocn_compute_kpp_rhs(tracers(:,:,iCell), rhs(:,:), dt, Nsurf, N, num_tracers, &
                              layerThickness(:,iCell), vertNonLocalFlux(:,:,iCell), &
-                             tracerGroupSurfaceFlux(:,iCell)) !mlc-arguments may need to be changed
+                             tracerGroupSurfaceFlux(:,iCell))
          else
             rhs(:,:) = tracers(:,:,iCell)
          endif
@@ -1376,24 +1376,26 @@ end subroutine tridiagonal_solve_mult!}}}
 !
 !-----------------------------------------------------------------------
 
-subroutine ocn_compute_kpp_rhs(tracers, rhs, dt, maxLevelCell, nTracers, &
+subroutine ocn_compute_kpp_rhs(tracers, rhs, dt, minLevelCell, maxLevelCell, nTracers, &
                          layerThickness, vertNonLocalFlux, tracerGroupSurfaceFlux)!{{{
 
   real (kind=RKIND), intent(in) :: dt
   real (kind=RKIND), dimension(:,:), intent(in) :: vertNonLocalFlux, tracers
   real (kind=RKIND), dimension(:), intent(in) :: layerThickness, tracerGroupSurfaceFlux
   real (kind=RKIND), dimension(:,:), intent(out) :: rhs
-  integer, intent(in) :: maxLevelCell, nTracers
+  integer, intent(in) :: minLevelCell, maxLevelCell, nTracers
   integer :: iTracer, k
 
-  do k=2,maxLevelCell-1
+  rhs(:,1:minLevelCell-1) = 0.0_RKIND
+  
+  do k=minLevelCell+1,maxLevelCell-1
      do iTracer=1,nTracers
         rhs(iTracer, k) = tracers(iTracer,k) + dt * tracerGroupSurfaceFlux(iTracer) *   &
                      (vertNonLocalFlux(1,k) - vertNonLocalFlux(1,k+1)) / layerThickness(k)
      enddo
   enddo
 
-  k=1
+  k=minLevelCell
   do iTracer=1,nTracers
      rhs(iTracer, k) = tracers(iTracer,k) + dt * tracerGroupSurfaceFlux(iTracer) *  &
                               (-vertNonLocalFlux(1,k+1) )/ layerThickness(k)
