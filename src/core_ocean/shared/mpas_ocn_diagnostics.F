@@ -1855,16 +1855,17 @@ contains
         ! thicknessSum is initialized outside the loop because on land boundaries
         ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a
         ! nonzero value to avoid a NaN.
-        normalThicknessFluxSum = layerThickEdge(1,iEdge) * tend_normalVelocity(1,iEdge)
-        thicknessSum  = layerThickEdge(1,iEdge)
+        normalThicknessFluxSum = layerThickEdge(maxLevelEdgeBot(iEdge),iEdge) * &
+                                 tend_normalVelocity(maxLevelEdgeBot(iEdge),iEdge)
+        thicknessSum  = layerThickEdge(maxLevelEdgeBot(iEdge),iEdge)
 
-        do k = 2, maxLevelEdgeTop(iEdge)
+        do k = maxLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
           normalThicknessFluxSum = normalThicknessFluxSum + layerThickEdge(k,iEdge) * tend_normalVelocity(k,iEdge)
           thicknessSum  =  thicknessSum + layerThickEdge(k,iEdge)
         enddo
 
         vertSum = normalThicknessFluxSum / thicknessSum
-        do k = 1, maxLevelEdgeTop(iEdge)
+        do k = maxLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
           tend_normalVelocity(k,iEdge) = tend_normalVelocity(k,iEdge) - vertSum
         enddo
       enddo ! iEdge
