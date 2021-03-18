@@ -127,7 +127,7 @@ contains
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
 
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 
       real (kind=RKIND) :: depth
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
@@ -141,12 +141,13 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
       allocate(weights(nVertLevels+1))
       weights = 0.0_RKIND
-      weights(1) = 1.0_RKIND
+      weights(minLevelCell(iCell)) = 1.0_RKIND
       Avals(:)=0.0_RKIND
       Kvals(:)=0.0_RKIND
 
@@ -168,7 +169,7 @@ contains
 
         call ocn_get_os00_coeffs(chlorophyllA(iCell),zenithAngle(iCell),cloudRatio,Avals, Kvals)
 
-        do k = 1, maxLevelCell(iCell)
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
           depth = depth + layerThickness(k, iCell)
 
           call ocn_get_variable_sw_fraction(depth, weights(k+1), Avals, Kvals)
@@ -186,13 +187,13 @@ contains
         end if
 
         depth = 0.0_RKIND
-        do k=1,maxLevelCell(iCell)
+        do k=minLevelCell(iCell),maxLevelCell(iCell)
            depth = depth + layerThickness(k,iCell)
            if(depth > abs(config_surface_buoyancy_depth)) exit
         enddo
 
-        if(k == maxLevelCell(iCell) .or. k == 1) then
-           depLev=2
+        if(k == maxLevelCell(iCell) .or. k == minLevelCell(iCell)) then
+           depLev=minLevelCell(iCell)+1
         else
            depLev=k
         endif
