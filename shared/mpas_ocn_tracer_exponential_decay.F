@@ -65,8 +65,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_exponential_decay_compute(nTracers, nCellsSolve, maxLevelCell, layerThickness, tracers, & !{{{
-                                                   tracersExponentialDecayRate, tracer_tend, err)
+   subroutine ocn_tracer_exponential_decay_compute(nTracers, nCellsSolve, minLevelCell, maxLevelCell, & !{{{
+                                                   layerThickness, tracers, tracersExponentialDecayRate, tracer_tend, err)
 
       !-----------------------------------------------------------------
       !
@@ -76,7 +76,7 @@ contains
 
       ! one dimensional arrays
       integer, dimension(:), intent(in) :: &
-         maxLevelCell
+         minLevelCell, maxLevelCell
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          tracersExponentialDecayRate
@@ -122,7 +122,7 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) private(iLevel, iTracer)
       do iCell=1,nCellsSolve
-         do iLevel=1,maxLevelCell(iCell)
+         do iLevel=minLevelCell(iCell),maxLevelCell(iCell)
             do iTracer=1,nTracers
                tracer_tend(iTracer,iLevel,iCell) =   tracer_tend(iTracer,iLevel,iCell)   &
                                                     - (   layerThickness(iLevel,iCell)    &
