@@ -687,11 +687,11 @@ contains
                if ( trim(groupItr % memberName) == 'ecosysTracers' ) then
                   call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
                   call ocn_tracer_ecosys_compute(activeTracers, tracerGroup, forcingPool, nTracerGroup, &
-                     nCellsSolve, latCell, maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature, &
+                     nCellsSolve, latCell, minLevelCell, maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature, &
                      indexSalinity, tracerGroupTend, err)
 
                   call ocn_tracer_ecosys_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
-                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
+                     nTracerGroup, nCellsSolve, zMid, minLevelCell, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
                endif
 
                !
