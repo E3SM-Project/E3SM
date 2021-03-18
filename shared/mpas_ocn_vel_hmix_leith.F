@@ -139,7 +139,7 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(cellsOnEdge, verticesOnEdge, maxLevelEdgeTop, &
+      !$acc    present(cellsOnEdge, verticesOnEdge, minLevelEdgeBot, maxLevelEdgeTop, &
       !$acc            dcEdge, dvEdge, meshScalingDel2, div, relVort, &
       !$acc            tend, edgeMask) &
       !$acc    private(k, cell1, cell2, vertex1, vertex2, dcEdgeInv, &
@@ -161,7 +161,7 @@ contains
 
          visc2tmp = (leithParam*dxLeith*meshScalingDel2(iEdge)/pii)**3
 
-         do k = 1, maxLevelEdgeTop(iEdge)
+         do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
             ! Here -( relativeVorticity(k,vertex2) - 
             !         relativeVorticity(k,vertex1) ) / dvEdge(iEdge)
