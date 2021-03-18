@@ -128,7 +128,7 @@ contains
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
 
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 
       real (kind=RKIND) :: depth, fluxRemaining
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
@@ -139,6 +139,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
@@ -154,9 +155,9 @@ contains
       !$omp firstprivate(weights)
 #endif
       do iCell = 1, nCells
-         depth = 0.0_RKIND
+         depth = 0.0_RKIND ! depth relative to minLevelCell(iCell)
          fluxRemaining = 1.0_RKIND
-         do k = 1, maxLevelCell(iCell)
+         do k = minLevelCell(iCell), maxLevelCell(iCell)
             depth = depth + layerThickness(k, iCell)
 
             call ocn_get_jerlov_fraction(depth, weights(k+1))
@@ -174,13 +175,13 @@ contains
          end if
 
          depth = 0.0_RKIND
-         do k=1,maxLevelCell(iCell)
+         do k=minLevelCell(iCell),maxLevelCell(iCell)
            depth = depth + layerThickness(k,iCell)
            if(depth > abs(config_surface_buoyancy_depth)) exit
          enddo
 
-         if(k == maxLevelCell(iCell) .or. k == 1) then
-           depLev=2
+         if(k == maxLevelCell(iCell) .or. k == minLevelCell(iCell)) then
+           depLev=minLevelCell(iCell)+1
          else
            depLev=k
          endif
