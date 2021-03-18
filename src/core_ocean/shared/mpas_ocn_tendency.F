@@ -571,6 +571,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
@@ -785,7 +786,7 @@ contains
                      modifiedGroupName = trim(groupItr % memberName) // "ExponentialDecayRate"
                      call mpas_pool_get_array(tracersExponentialDecayFieldsPool, trim(modifiedGroupName), &
                                               tracerGroupExponentialDecayRate)
-                     call ocn_tracer_exponential_decay_compute(nTracerGroup, nCells, maxLevelCell, layerThickness, &
+                     call ocn_tracer_exponential_decay_compute(nTracerGroup, nCells, minLevelCell, maxLevelCell, layerThickness, &
                         tracerGroup, tracerGroupExponentialDecayRate, tracerGroupTend, err)
 
                      call mpas_timer_stop("exponential decay " // trim(groupItr % memberName))
