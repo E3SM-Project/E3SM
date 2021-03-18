@@ -31,10 +31,13 @@ module rrtmgp_interface
    ! interfaces.
    integer, public :: nswbands, nlwbands, nswgpts, nlwgpts
 
+   character(len=8), dimension(:), allocatable :: active_gases
+
    public :: &
-      rrtmgp_initialize, rrtmgp_run_sw, rrtmgp_run_lw, &
+      rrtmgp_initialize, rrtmgp_finalize, &
+      rrtmgp_run_sw, rrtmgp_run_lw, &
       get_nbnds_sw, get_nbnds_lw, &
-      get_ngpts_sw, get_ngpts_lw, &
+      get_ngpt_sw, get_ngpt_lw, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
       get_min_temperature, get_max_temperature
 
@@ -48,13 +51,13 @@ contains
       get_nbnds_lw = k_dist_lw%get_nband()
    end function get_nbnds_lw
 
-   integer function get_ngpts_sw()
-      get_ngpts_sw = k_dist_sw%get_ngpt()
-   end function get_ngpts_sw
+   integer function get_ngpt_sw()
+      get_ngpt_sw = k_dist_sw%get_ngpt()
+   end function get_ngpt_sw
 
-   integer function get_ngpts_lw()
-      get_ngpts_lw = k_dist_lw%get_ngpt()
-   end function get_ngpts_lw
+   integer function get_ngpt_lw()
+      get_ngpt_lw = k_dist_lw%get_ngpt()
+   end function get_ngpt_lw
 
    subroutine get_gpoint_bands_sw(gpoint_bands)
       integer, intent(out), dimension(nswgpts) :: gpoint_bands
@@ -66,10 +69,12 @@ contains
       gpoint_bands = k_dist_lw%get_gpoint_bands()
    end subroutine get_gpoint_bands_lw
 
-   subroutine rrtmgp_initialize(active_gases, coefficients_file_sw, coefficients_file_lw)
-      character(len=*), intent(in) :: active_gases(:)
+   subroutine rrtmgp_initialize(ngas, gas_names, coefficients_file_sw, coefficients_file_lw)
+      integer, intent(in)          :: ngas
+      character(len=*), intent(in) :: gas_names(:)
       character(len=*), intent(in) :: coefficients_file_sw, coefficients_file_lw
       type(ty_gas_concs) :: available_gases
+      integer :: igas
       ! Read gas optics coefficients from file
       ! Need to initialize available_gases here! The only field of the
       ! available_gases type that is used int he kdist initialize is
@@ -80,7 +85,7 @@ contains
       ! rad_cnst objects are setup yet.
       ! the other tasks!
       ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast
-      call set_available_gases(active_gases, available_gases)
+      call set_available_gases(gas_names, available_gases)
       call load_and_init(k_dist_sw, coefficients_file_sw, available_gases)
       call load_and_init(k_dist_lw, coefficients_file_lw, available_gases)
       ! Set number of bands based on what we read in from input data
@@ -89,11 +94,20 @@ contains
       ! Number of gpoints depend on inputdata, so initialize here
       nswgpts = k_dist_sw%get_ngpt()
       nlwgpts = k_dist_lw%get_ngpt()
+      ! Set up list of active gases
+      allocate(active_gases(ngas))
+      do igas = 1,ngas
+         active_gases(igas) = trim(gas_names(igas))
+      end do
    end subroutine rrtmgp_initialize
+
+   subroutine rrtmgp_finalize()
+      deallocate(active_gases)
+   end subroutine rrtmgp_finalize
 
    subroutine rrtmgp_run_sw( &
          ngas, ncol, nlev, &
-         gas_names, gas_vmr, &
+         gas_vmr, &
          pmid, tmid, pint, coszrs, &
          albedo_dir, albedo_dif, &
          cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
@@ -105,7 +119,6 @@ contains
          tsi_scaling &
          )
       integer, intent(in) :: ngas, ncol, nlev
-      character(len=*), dimension(:) :: gas_names
       real(wp), intent(in), dimension(:,:,:) :: gas_vmr
       real(wp), intent(in), dimension(:,:) :: &
          pmid, tmid, pint
@@ -182,7 +195,7 @@ contains
 
       ! Set gas concentrations
       call t_startf('rad_set_gases_sw')
-      call set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
+      call set_gas_concentrations(ncol, active_gases, gas_vmr, gas_concentrations)
       call t_stopf('rad_set_gases_sw')
 
       call handle_error(rte_sw( &
@@ -208,9 +221,9 @@ contains
 
    subroutine rrtmgp_run_lw( &
          ngas, ncol, nlev, &
-         gas_names, gas_vmr, &
-         surface_emissivity, &
+         gas_vmr, &
          pmid, tmid, pint, tint, &
+         surface_emissivity, &
          cld_tau_gpt, aer_tau_bnd, &
          allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
          allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, &
@@ -219,7 +232,6 @@ contains
          )
 
       integer, intent(in) :: ngas, ncol, nlev
-      character(len=*), intent(in), dimension(:) :: gas_names
       real(wp), intent(in), dimension(:,:,:) :: gas_vmr
       real(wp), intent(in), dimension(:,:) :: surface_emissivity
       real(wp), intent(in), dimension(:,:) :: pmid, tmid, pint, tint
@@ -253,7 +265,7 @@ contains
 
       ! Setup gas concentrations object
       call t_startf('rad_gas_concentrations_lw')
-      call set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
+      call set_gas_concentrations(ncol, active_gases, gas_vmr, gas_concentrations)
       call t_stopf('rad_gas_concentrations_lw')
 
       ! Populate RRTMGP optics

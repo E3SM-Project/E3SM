@@ -19,10 +19,10 @@ extern "C" double get_min_temperature();
 extern "C" double get_max_temperature();
 extern "C" void get_gpoint_bands_sw(int *gpoint_bands);
 extern "C" void get_gpoint_bands_lw(int *gpoint_bands);
-extern "C" void rrtmgpxx_finalize();
-extern "C" void rrtmgpxx_run_sw (
+extern "C" void rrtmgp_finalize();
+extern "C" void rrtmgp_run_sw (
         int ngas, int ncol, int nlay,
-        char *gas_names_p[], double *gas_vmr_p, double *pmid_p      , double *tmid_p      , double *pint_p,
+        double *gas_vmr_p, double *pmid_p      , double *tmid_p      , double *pint_p,
         double *coszrs_p , double *albedo_dir_p, double *albedo_dif_p,
         double *cld_tau_gpt_p, double *cld_ssa_gpt_p, double *cld_asm_gpt_p,
         double *aer_tau_bnd_p, double *aer_ssa_bnd_p, double *aer_asm_bnd_p,
@@ -32,9 +32,9 @@ extern "C" void rrtmgpxx_run_sw (
         double *clrsky_bnd_flux_up_p, double *clrsky_bnd_flux_dn_p, double *clrsky_bnd_flux_net_p, double *clrsky_bnd_flux_dn_dir_p,
         double tsi_scaling
         );
-extern "C" void rrtmgpxx_run_lw (
+extern "C" void rrtmgp_run_lw (
         int ngas, int ncol, int nlay,
-        char *gas_names_p[], double *gas_vmr_p           , 
+        double *gas_vmr_p           , 
         double *pmid_p              , double *tmid_p              , double *pint_p               , double *tint_p,
         double *emis_sfc_p          ,
         double *cld_tau_gpt_p       , double *aer_tau_bnd_p       ,
@@ -49,9 +49,9 @@ GasOpticsRRTMGP k_dist_sw;
 GasOpticsRRTMGP k_dist_lw;
 
 // Vector of strings to hold active gas names. 
-//string1d gas_names1d;
+string1d active_gases;
 
-extern "C" void rrtmgpxx_initialize(int ngas, char *gas_names[], char const *coefficients_file_sw, char const *coefficients_file_lw) {
+extern "C" void rrtmgp_initialize_cxx(int ngas, char *gas_names[], char const *coefficients_file_sw, char const *coefficients_file_lw) {
     // First, make sure yakl has been initialized
     if (!yakl::isInitialized()) {
         yakl::init();
@@ -66,17 +66,17 @@ extern "C" void rrtmgpxx_initialize(int ngas, char *gas_names[], char const *coe
     // impossible from this initialization routine because I do not thing the
     // rad_cnst objects are setup yet.
     // the other tasks!
-    string1d gas_names1d("gas_names1d", ngas);
+    active_gases = string1d("active_gases", ngas);
     for (int igas=0; igas<ngas; igas++) {
-        gas_names1d(igas+1) = gas_names[igas];
+        active_gases(igas+1) = gas_names[igas];
     }
     GasConcs available_gases;
-    available_gases.init(gas_names1d, 1, 1);
+    available_gases.init(active_gases, 1, 1);
     load_and_init(k_dist_sw, coefficients_file_sw, available_gases);
     load_and_init(k_dist_lw, coefficients_file_lw, available_gases);
 }
 
-extern "C" void rrtmgpxx_finalize() {
+extern "C" void rrtmgp_finalize() {
     k_dist_sw.finalize();
     k_dist_lw.finalize();
     yakl::finalize();
@@ -118,9 +118,9 @@ extern "C" void get_gpoint_bands_lw(int *gpoint_bands_p) {
     tmp.deep_copy_to(gpoint_bands_lw);
 }
 
-extern "C" void rrtmgpxx_run_sw (
+extern "C" void rrtmgp_run_sw (
         int ngas, int ncol, int nlay,
-        char *gas_names_p[], double *gas_vmr_p, double *pmid_p      , double *tmid_p      , double *pint_p,
+        double *gas_vmr_p, double *pmid_p      , double *tmid_p      , double *pint_p,
         double *coszrs_p , double *albedo_dir_p, double *albedo_dif_p,
         double *cld_tau_gpt_p, double *cld_ssa_gpt_p, double *cld_asm_gpt_p,
         double *aer_tau_bnd_p, double *aer_ssa_bnd_p, double *aer_asm_bnd_p,
@@ -164,25 +164,15 @@ extern "C" void rrtmgpxx_run_sw (
     auto clrsky_bnd_flux_net = real3d("clrsky_bnd_flux_net", clrsky_bnd_flux_net_p, ncol, nlay+1, nswbands);
 
     // Populate gas concentrations object
-    // TODO: clean this up. We could keep gas_concs in file scope, and then
-    // also maybe update the gas concs directly from gas_vmr via a parallel_for
-    // rather than going through the set_vmr method, since we are not passing
-    // the gas names through this interface anyways.
-    string1d gas_names("gas_names", ngas);
-    for (int igas = 1; igas<=ngas; igas++) {
-        gas_names(igas) = gas_names_p[igas-1];
-    }
     GasConcs gas_concs;
-    gas_concs.init(gas_names, ncol, nlay);
+    gas_concs.init(active_gases, ncol, nlay);
     real2d tmp2d;
     tmp2d = real2d("tmp", ncol, nlay);
     for (int igas = 1; igas <= ngas; igas++) {
-        for (int icol = 1; icol <= ncol; icol++) {
-            for (int ilay = 1; ilay <= nlay; ilay++) {
-                tmp2d(icol,ilay) = gas_vmr(igas,icol,ilay);
-            }
-        }
-        gas_concs.set_vmr(gas_names(igas), tmp2d);
+        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            tmp2d(icol,ilay) = gas_vmr(igas,icol,ilay);
+        });
+        gas_concs.set_vmr(active_gases(igas), tmp2d);
     }
 
     // Do gas optics
@@ -258,9 +248,9 @@ extern "C" void rrtmgpxx_run_sw (
     rte_sw(combined_optics, top_at_1, coszrs, toa_flux, albedo_dir, albedo_dif, fluxes_allsky);
 } 
 
-extern "C" void rrtmgpxx_run_lw (
+extern "C" void rrtmgp_run_lw (
         int ngas, int ncol, int nlay,
-        char *gas_names_p[]         , double *gas_vmr_p           , 
+        double *gas_vmr_p           , 
         double *pmid_p              , double *tmid_p              , double *pint_p               , double *tint_p,
         double *emis_sfc_p          ,
         double *cld_tau_gpt_p       , double *aer_tau_bnd_p       ,
@@ -294,12 +284,8 @@ extern "C" void rrtmgpxx_run_lw (
     auto clrsky_bnd_flux_net = real3d("clrsky_bnd_flux_net", clrsky_bnd_flux_net_p, ncol, nlay+1, nlwbands);
 
     // Populate gas concentrations
-    string1d gas_names("gas_names", ngas);
-    for (int igas = 1; igas<=ngas; igas++) {
-        gas_names(igas) = gas_names_p[igas-1];
-    }
     GasConcs gas_concs;
-    gas_concs.init(gas_names, ncol, nlay);
+    gas_concs.init(active_gases, ncol, nlay);
     real2d tmp2d;
     tmp2d = real2d("tmp", ncol, nlay);
     for (int igas = 1; igas <= ngas; igas++) {
@@ -308,7 +294,7 @@ extern "C" void rrtmgpxx_run_lw (
                 tmp2d(icol,ilay) = gas_vmr(igas,icol,ilay);
             }
         }
-        gas_concs.set_vmr(gas_names(igas), tmp2d);
+        gas_concs.set_vmr(active_gases(igas), tmp2d);
     }
 
     //  Boundary conditions

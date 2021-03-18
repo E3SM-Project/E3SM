@@ -2617,6 +2617,9 @@ sub write_filepath
         print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/extensions\n";
         print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/extensions/rng\n";
         print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/examples\n";
+        if (not defined $opts{'rrtmgpxx'} ) {
+            print $fh "$camsrcdir/eam/src/physics/rrtmgp/f90\n";
+        }
     }
 
     print $fh "$camsrcdir/eam/src/physics/cam\n";

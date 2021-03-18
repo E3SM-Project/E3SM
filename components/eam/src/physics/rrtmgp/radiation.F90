@@ -28,20 +28,12 @@ module radiation
    ! RRTMGP interface to separate E3SM-specific data types from RRTMGP-specific
    ! data types, that may be in Fortran or C++
    use rrtmgp_interface, only: &
-      rrtmgp_initialize, rrtmgp_run_sw, rrtmgp_run_lw, &
-      rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
-      rrtmgp_get_min_temperature => get_min_temperature, &
-      rrtmgp_get_max_temperature => get_max_temperature, &
+      rrtmgp_initialize, rrtmgp_finalize, &
+      rrtmgp_run_sw, rrtmgp_run_lw, &
+      get_min_temperature, &
+      get_max_temperature, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
-      nswgpts, nlwgpts
-   use rrtmgpxx_interface, only: &
-      rrtmgpxx_initialize, rrtmgpxx_finalize, &
-      rrtmgpxx_run_sw, rrtmgpxx_run_lw, &
-      rrtmgpxx_get_min_temperature => get_min_temperature, &
-      rrtmgpxx_get_max_temperature => get_max_temperature, &
-      rrtmgpxx_get_gpoint_bands_sw => get_gpoint_bands_sw, &
-      rrtmgpxx_get_gpoint_bands_lw => get_gpoint_bands_lw, &
-      c_strarr
+      get_ngpt_sw, get_ngpt_lw
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
@@ -175,9 +167,6 @@ module radiation
       'H2O', 'CO2', 'O3 ', 'N2O', &
       'CO ', 'CH4', 'O2 ', 'N2 ' &
    /)
-   ! Null-terminated C-compatible version of active gases for use with C++
-   ! routines.
-   character(len=len(active_gases)+1), dimension(size(active_gases)), target :: active_gases_c
 
    ! Stuff to generate random numbers for perturbation growth tests. This needs to
    ! be public module data because restart_physics needs to read it to write it to
@@ -197,6 +186,9 @@ module radiation
 
    ! Indices to pbuf fields
    integer :: cldfsnow_idx = 0
+
+   ! These come from RRTMGP input data
+   integer :: nswgpts, nlwgpts
 
    !============================================================================
 
@@ -493,12 +485,11 @@ contains
       call perturbation_growth_init()
 
       ! Setup the RRTMGP interface
-      call rrtmgp_initialize(active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
-      call rrtmgpxx_initialize( &
-         size(active_gases), c_strarr(active_gases, active_gases_c), &
-         trim(rrtmgp_coefficients_file_sw)//C_NULL_CHAR, &
-         trim(rrtmgp_coefficients_file_lw)//C_NULL_CHAR &
-      )
+      call rrtmgp_initialize(size(active_gases), active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
+
+      ! Set number of gpoints in sw and lw based on input data read above
+      nswgpts = get_ngpt_sw()
+      nlwgpts = get_ngpt_lw()
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
@@ -887,7 +878,7 @@ contains
    end subroutine radiation_init
 
    subroutine radiation_final()
-      call rrtmgpxx_finalize()
+      call rrtmgp_finalize()
    end subroutine radiation_final
 
    subroutine perturbation_growth_init()
@@ -1227,11 +1218,11 @@ contains
          ! values to min/max specified
          call t_startf('rrtmgp_check_temperatures')
          call handle_error(clip_values( &
-            tmid(1:ncol,1:nlev_rad), rrtmgp_get_min_temperature(), rrtmgp_get_max_temperature(), &
+            tmid(1:ncol,1:nlev_rad), get_min_temperature(), get_max_temperature(), &
             trim(subname) // ' tmid' &
          ), fatal=.false., warn=rrtmgp_enable_temperature_warnings)
          call handle_error(clip_values( &
-            tint(1:ncol,1:nlev_rad+1), rrtmgp_get_min_temperature(), rrtmgp_get_max_temperature(), &
+            tint(1:ncol,1:nlev_rad+1), get_min_temperature(), get_max_temperature(), &
             trim(subname) // ' tint' &
          ), fatal=.false., warn=rrtmgp_enable_temperature_warnings)
          call t_stopf('rrtmgp_check_temperatures')
@@ -1284,7 +1275,7 @@ contains
          end do
          ! And now do the MCICA sampling to get cloud optical properties by
          ! gpoint/cloud state
-         call rrtmgpxx_get_gpoint_bands_sw(gpoint_bands_sw)
+         call get_gpoint_bands_sw(gpoint_bands_sw)
          call sample_cloud_optics_sw( &
             ncol, pver, nswgpts, gpoint_bands_sw, &
             state%pmid, cld, cldfsnow, &
@@ -1345,7 +1336,7 @@ contains
 
                ! Call the shortwave radiation driver
                call radiation_driver_sw( &
-                  ncol, active_gases, gas_vmr, &
+                  ncol, gas_vmr, &
                   pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
                   cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw, &
                   aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw, &
@@ -1393,7 +1384,7 @@ contains
             lambdac, mu, dei, des, rei, &
             cld_tau_bnd_lw, liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw &
          )
-         call rrtmgpxx_get_gpoint_bands_lw(gpoint_bands_lw)
+         call get_gpoint_bands_lw(gpoint_bands_lw)
          call sample_cloud_optics_lw( &
             ncol, pver, nlwgpts, gpoint_bands_lw, &
             state%pmid, cld, cldfsnow, &
@@ -1425,7 +1416,7 @@ contains
 
                ! Call the longwave radiation driver to calculate fluxes and heating rates
                call radiation_driver_lw( &
-                  ncol, active_gases, gas_vmr, &
+                  ncol, gas_vmr, &
                   pmid, pint, tmid, tint, &
                   cld_tau_gpt_lw, aer_tau_bnd_lw, &
                   fluxes_allsky, fluxes_clrsky, qrl, qrlc &
@@ -1517,7 +1508,7 @@ contains
    !----------------------------------------------------------------------------
 
    subroutine radiation_driver_sw(ncol, &
-                                  gas_names, gas_vmr, &
+                                  gas_vmr, &
                                   pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
                                   cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
                                   aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd, &
@@ -1531,7 +1522,6 @@ contains
       integer, intent(in) :: ncol
       type(fluxes_t), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(inout) :: qrs(:,:), qrsc(:,:)
-      character(len=*), intent(in), dimension(:) :: gas_names
       real(r8), intent(in), dimension(:,:,:) :: gas_vmr
       real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid
       real(r8), intent(in), dimension(:,:) :: albedo_dir, albedo_dif
@@ -1553,8 +1543,8 @@ contains
       real(r8), dimension(nswbands,ncol) :: albedo_dir_day, albedo_dif_day
       real(r8), dimension(ncol,nlev_rad) :: pmid_day, tmid_day
       real(r8), dimension(ncol,nlev_rad+1) :: pint_day
-      real(r8), dimension(size(gas_names),ncol,pver) :: gas_vmr_day
-      real(r8), dimension(size(gas_names),ncol,nlev_rad) :: gas_vmr_rad
+      real(r8), dimension(size(gas_vmr, 1),ncol,pver) :: gas_vmr_day
+      real(r8), dimension(size(gas_vmr, 1),ncol,nlev_rad) :: gas_vmr_rad
       real(r8), dimension(ncol,nlev_rad-1,nswgpts) :: cld_tau_gpt_day, cld_ssa_gpt_day, cld_asm_gpt_day
       real(r8), dimension(ncol,nlev_rad-1,nswbands) :: aer_tau_bnd_day, aer_ssa_bnd_day, aer_asm_bnd_day
       type(fluxes_t) :: fluxes_allsky_day, fluxes_clrsky_day
@@ -1646,9 +1636,9 @@ contains
 
       ! Do shortwave radiative transfer calculations
       call t_startf('rad_rrtmgp_run_sw')
-      call rrtmgpxx_run_sw( &
+      call rrtmgp_run_sw( &
          size(active_gases), nday, nlev_rad, &
-         c_strarr(active_gases, active_gases_c), gas_vmr_rad(:,1:nday,1:nlev_rad), &
+         gas_vmr_rad(:,1:nday,1:nlev_rad), &
          pmid_day(1:nday,1:nlev_rad), &
          tmid_day(1:nday,1:nlev_rad), &
          pint_day(1:nday,1:nlev_rad+1), &
@@ -1780,7 +1770,7 @@ contains
    !----------------------------------------------------------------------------
 
    subroutine radiation_driver_lw(ncol, &
-                                  gas_names, gas_vmr, &
+                                  gas_vmr, &
                                   pmid, pint, tmid, tint, &
                                   cld_tau_gpt, aer_tau_bnd, &
                                   fluxes_allsky, fluxes_clrsky, qrl, qrlc)
@@ -1792,7 +1782,6 @@ contains
       integer, intent(in) :: ncol
       type(fluxes_t), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(inout) :: qrl(:,:), qrlc(:,:)
-      character(len=*), intent(in), dimension(:) :: gas_names
       real(r8), intent(in), dimension(:,:,:) :: gas_vmr
       real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid, tint
       real(r8), intent(in), dimension(:,:,:) :: cld_tau_gpt, aer_tau_bnd
@@ -1828,11 +1817,10 @@ contains
       gas_vmr_rad(:,1:ncol,ktop:kbot) = gas_vmr(:,1:ncol,:)
 
       ! Do longwave radiative transfer calculations
-      call t_startf('rrtmgpxx_run_lw')
-      ! Try calling C++ version
-      call rrtmgpxx_run_lw( &
+      call t_startf('rrtmgp_run_lw')
+      call rrtmgp_run_lw( &
          size(active_gases), ncol, nlev_rad, &
-         c_strarr(active_gases, active_gases_c), gas_vmr_rad(:,1:ncol,:), &
+         gas_vmr_rad(:,1:ncol,:), &
          pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), pint(1:ncol,1:nlev_rad+1), tint(1:ncol,1:nlev_rad+1), &
          surface_emissivity(1:nlwbands,1:ncol), &
          cld_tau_gpt_rad(1:ncol,:,:)  , aer_tau_bnd_rad(1:ncol,:,:)  , &
@@ -1841,7 +1829,7 @@ contains
          fluxes_clrsky%flux_up    , fluxes_clrsky%flux_dn    , fluxes_clrsky%flux_net    , &
          fluxes_clrsky%bnd_flux_up, fluxes_clrsky%bnd_flux_dn, fluxes_clrsky%bnd_flux_net  &
          )
-      call t_stopf('rrtmgpxx_run_lw')
+      call t_stopf('rrtmgp_run_lw')
 
       ! Calculate heating rates
       call calculate_heating_rate(  &
