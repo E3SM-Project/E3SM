@@ -108,7 +108,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), pointer :: statePool, meshPool, tendPool
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
       real (kind=RKIND), dimension(:), pointer :: sshSubcycleNew
       real (kind=RKIND), dimension(:), pointer :: bottomDepth
       integer, pointer :: nCellsSolve
@@ -134,6 +134,7 @@ contains
       call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, timeLevel=1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, timeLevel=2)
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(tendPool, 'layerThickness', layerThicknessTend)
       call mpas_pool_get_array(statePool, 'sshSubcycle', sshSubcycleNew, 2)
@@ -148,7 +149,7 @@ contains
       ! check to make sure that there is no layer that is too dry
       minThickness = +1.0E34
       do iCell = 1, nCellsSolve
-        do k = 1, maxLevelCell(iCell)
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
           ! use ssh as a proxy too for baroclinic mode
           if (trim(config_time_integrator) == 'split_explicit' .or. trim(config_time_integrator) == 'semi_implicit') then
             layerThick = min(layerThicknessNew(k, iCell), (sshSubcycleNew(iCell)+bottomDepth(iCell))/maxLevelCell(iCell))
@@ -243,6 +244,7 @@ contains
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessProvis
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
 
+      integer, dimension(:), pointer :: minLevelEdgeTop
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:), pointer :: maxLevelEdgeBot
       integer, pointer :: nEdges
@@ -261,6 +263,7 @@ contains
      call mpas_pool_get_array(provisStatePool, 'layerThickness', layerThicknessProvis, 1)
 
      call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
+     call mpas_pool_get_array(meshPool, 'minLevelEdgeTop', minLevelEdgeTop)
      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
 
@@ -281,7 +284,7 @@ contains
      !$omp parallel
      !$omp do schedule(runtime) private(k)
      do iEdge = 1, nEdges
-       do k = 1, maxLevelEdgeBot(iEdge)
+       do k = minLevelEdgeTop(iEdge), maxLevelEdgeBot(iEdge)
          if (abs(normalTransportVelocity(k,iEdge) + wettingVelocity(k,iEdge)) < eps)  then
            ! prevent spurious flux for close to zero values
            normalTransportVelocity(k, iEdge) = 0.0_RKIND
@@ -370,8 +373,8 @@ contains
       integer :: iEdge, iCell, k, i
       integer, pointer :: nVertLevels, nCells
       integer, dimension(:), pointer :: nEdgesOnCell
-      integer, dimension(:), pointer :: maxLevelCell
-      integer, dimension(:), pointer :: maxLevelEdgeBot
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
+      integer, dimension(:), pointer :: minLevelEdgeTop, maxLevelEdgeBot
       integer, dimension(:,:), pointer :: edgesOnCell
       integer, dimension(:,:), pointer :: edgeSignOnCell
 
@@ -387,7 +390,9 @@ contains
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeTop', minLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -399,12 +404,12 @@ contains
       do iCell = 1, nCells
         invAreaCell = 1.0_RKIND / areaCell(iCell)
         ! can switch with maxLevelEdgeBot(iEdge)
-        do k = 1, maxLevelCell(iCell)
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
           divOutFlux = 0.0_RKIND
           layerThickness = min(layerThicknessProvis(k, iCell), layerThicknessCur(k, iCell))
           do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            if (k <= maxLevelEdgeBot(iEdge)) then
+            if (k <= maxLevelEdgeBot(iEdge) .or. k >= minLevelEdgeTop(iEdge)) then
               ! only consider divergence flux leaving the cell
               if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) < 0.0_RKIND ) then
                 divOutFlux = divOutFlux + normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) &
@@ -421,7 +426,7 @@ contains
 
             do i = 1, nEdgesOnCell(iCell)
               iEdge = edgesOnCell(i, iCell)
-              if (k <= maxLevelEdgeBot(iEdge)) then
+              if (k <= maxLevelEdgeBot(iEdge) .or. k >= minLevelEdgeTop(iEdge)) then
                 if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND ) then
                   ! each outgoing velocity is penalized (but not the incoming, wetting velocities)
                   ! square the fractional term to make values near zero go to zero much quicker (to prevent threshold from being hit)
