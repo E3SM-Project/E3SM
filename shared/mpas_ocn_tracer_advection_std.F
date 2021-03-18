@@ -65,7 +65,7 @@ module ocn_tracer_advection_std
 !-----------------------------------------------------------------------
    subroutine ocn_tracer_advection_std_tend(tracers, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, &!{{{
                                              normalThicknessFlux, w, layerThickness, verticalCellSize, dt, meshPool, &
-                                             tend, maxLevelCell, maxLevelEdgeTop, &
+                                             tend, minLevelCell, maxLevelCell, minLevelEdgeBot, maxLevelEdgeTop, &
                                              highOrderAdvectionMask, edgeSignOnCell)
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
@@ -80,8 +80,8 @@ module ocn_tracer_advection_std
       real (kind=RKIND), intent(in) :: dt !< Input: Timestep
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: Tracer tendency
-      integer, dimension(:), pointer :: maxLevelCell !< Input: Index to max level at cell center
-      integer, dimension(:), pointer :: maxLevelEdgeTop !< Input: Index to max level at edge with non-land cells on both sides
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell !< Input: Index to min,max level at cell center
+      integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop !< Input: Index to min,max level at edge with non-land cells on both sides
       integer, dimension(:,:), pointer :: highOrderAdvectionMask !< Input: Mask for high order advection
       integer, dimension(:, :), pointer :: edgeSignOnCell !< Input: Sign for flux from edge on each cell.
 
@@ -145,12 +145,12 @@ module ocn_tracer_advection_std
         !  Compute the high order vertical flux. Also determine bounds on tracer_cur.
         !$omp do schedule(runtime) private(k, verticalWeightK, verticalWeightKm1)
         do iCell = 1, nCells
-          k = max(1, min(maxLevelCell(iCell), 2))
+          k = max(minLevelCell(iCell), min(maxLevelCell(iCell), minLevelCell(iCell)+1))
           verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1*tracer_cur(k-1,iCell))
 
-          do k=3,maxLevelCell(iCell)-1
+          do k=minLevelCell(iCell)+2,maxLevelCell(iCell)-1
              select case (vertOrder)
              case (vertOrder4)
                high_order_vert_flux(k, iCell) = mpas_tracer_advection_vflux4( tracer_cur(k-2,iCell),tracer_cur(k-1,iCell),  &
@@ -166,7 +166,7 @@ module ocn_tracer_advection_std
              end select ! vertOrder
           end do
 
-          k = max(1, maxLevelCell(iCell))
+          k = max(minLevelCell(iCell), maxLevelCell(iCell))
           verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1*tracer_cur(k-1,iCell))
@@ -180,7 +180,7 @@ module ocn_tracer_advection_std
           cell2 = cellsOnEdge(2, iEdge)
 
           ! Compute 2nd order fluxes where needed.
-          do k = 1, maxLevelEdgeTop(iEdge)
+          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             tracer_weight = iand(highOrderAdvectionMask(k, iEdge)+1, 1) * (dvEdge(iEdge) * 0.5_RKIND) &
                            * normalThicknessFlux(k, iEdge)
 
@@ -191,7 +191,7 @@ module ocn_tracer_advection_std
           ! Compute 3rd or 4th fluxes where requested.
           do i = 1, nAdvCellsForEdge(iEdge)
             iCell = advCellsForEdge(i,iEdge)
-            do k = 1, maxLevelCell(iCell)
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
               tracer_weight = highOrderAdvectionMask(k, iEdge) * (adv_coefs(i,iEdge) + coef3rdOrder &
                             * sign(1.0_RKIND,normalThicknessFlux(k,iEdge))*adv_coefs_3rd(i,iEdge))
 
@@ -208,7 +208,7 @@ module ocn_tracer_advection_std
           invAreaCell1 = 1.0_RKIND / areaCell(iCell)
           do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            do k = 1, maxLevelEdgeTop(iEdge)
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
               tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + edgeSignOnCell(i, iCell) * high_order_horiz_flux(k, iEdge) &
                                       * invAreaCell1
             end do
@@ -219,7 +219,7 @@ module ocn_tracer_advection_std
         ! Accumulate the scaled high order vertical tendencies.
         !$omp do schedule(runtime) private(k)
         do iCell = 1, nCellsSolve
-          do k = 1,maxLevelCell(iCell)
+          do k = minLevelCell(iCell),maxLevelCell(iCell)
             tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + verticalDivergenceFactor(k) * (high_order_vert_flux(k+1, iCell) &
                                     - high_order_vert_flux(k, iCell))
           end do ! k loop
