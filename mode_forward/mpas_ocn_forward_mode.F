@@ -80,7 +80,6 @@ module ocn_forward_mode
    use ocn_vmix
 
    use ocn_forcing
-   use ocn_sea_ice
    use ocn_time_varying_forcing
 
    use ocn_constants
@@ -117,7 +116,6 @@ module ocn_forward_mode
       type (block_type), pointer :: block
 
       integer :: err_tmp
-      integer, pointer :: nVertLevels
       real (kind=RKIND) :: maxDensity, maxDensity_global
       real (kind=RKIND), dimension(:), pointer :: meshDensity
       type (mpas_pool_type), pointer :: meshPool
@@ -246,10 +244,6 @@ module ocn_forward_mode
 
       call ocn_forcing_init(err_tmp)
       ierr = ior(ierr,err_tmp)
-
-      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
-      call ocn_sea_ice_init(nVertLevels, err_tmp)
-      ierr = ior(ierr, err_tmp)
 
       if(ierr.eq.1) then
           call mpas_log_write('An error was encountered while initializing the MPAS-Ocean forward mode', MPAS_LOG_CRIT)
