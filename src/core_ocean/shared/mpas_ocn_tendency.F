@@ -1035,7 +1035,9 @@ contains
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', maxLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
 
@@ -1070,15 +1072,15 @@ contains
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
 
-          do k = 1, maxLevelEdgeTop(iEdge)
+          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             flux = layerThickEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) * invAreaCell
             div_hu(k) = div_hu(k) - flux
             div_hu_btr = div_hu_btr - flux
           end do
         end do
 
-        totalThickness = sum(layerThickness(1:maxLevelCell(iCell),iCell))
-        do k = 1, maxLevelCell(iCell)
+        totalThickness = sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell))
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
 
            tend_lowFreqDivergence(k,iCell) = &
               -2.0 * pii / thickness_filter_timescale_sec &
