@@ -702,11 +702,11 @@ contains
                   call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)
                   nTracersEcosys = size(ecosysTracers, dim=1)
                   call ocn_tracer_DMS_compute(activeTracers, tracerGroup, nTracerGroup, ecosysTracers,   &
-                     nTracersEcosys, forcingPool, nCellsSolve, maxLevelCell,  &
+                     nTracersEcosys, forcingPool, nCellsSolve, minLevelCell, maxLevelCell,  &
                      nVertLevels, layerThickness, indexTemperature, indexSalinity, tracerGroupTend, err)
 
                   call ocn_tracer_DMS_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
-                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux,  &
+                     nTracerGroup, nCellsSolve, zMid, minLevelCell, indexTemperature, indexSalinity, tracerGroupSurfaceFlux,  &
                      tracerGroupSurfaceFluxRemoved, err)
                endif
 
