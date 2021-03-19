@@ -9538,9 +9538,9 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%T62.+_oi%EC30to60E2r2|oi%oEC60to30v3.*">
+  <grid name="oi%EC30to60E2r2|oi%oEC60to30v3">
     <mach name="compy">
-      <pes compset=".*MPASSI.+MPASO.+" pesize="S">
+      <pes compset="DATM.+MPASO" pesize="S">
         <comment>compy, lowres (60to30v3) G case on 12 nodes 40 ppn pure-MPI, sypd=10</comment>
         <ntasks>
           <ntasks_atm>160</ntasks_atm>
@@ -9567,7 +9567,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*MPASSI.+MPASO.+" pesize="any">
+      <pes compset="DATM.+MPASO" pesize="any">
         <comment>compy, lowres (60to30v3) G case on 24 nodes 40 ppn pure-MPI, sypd=18</comment>
         <ntasks>
           <ntasks_atm>320</ntasks_atm>
@@ -9594,7 +9594,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*MPASSI.+MPASO.+" pesize="L">
+      <pes compset="DATM.+MPASO" pesize="L">
         <comment>compy, lowres (60to30v3) G case on 37 nodes 40 ppn pure-MPI, sypd=28</comment>
         <ntasks>
           <ntasks_atm>480</ntasks_atm>
