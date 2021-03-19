@@ -148,6 +148,8 @@ contains
     real(r8), parameter :: sch = 0.66              ! Schmidt # for water in air at neutral stability
     real(r8) :: forc_u_adj(bounds%begp:bounds%endp) ! Adjusted forc_u for iteration
     real(r8) :: forc_v_adj(bounds%begp:bounds%endp) ! Adjusted forc_v for iteration
+    real(r8) :: taux_est(bounds%begp:bounds%endp) ! Estimated equilibrium taux from atm
+    real(r8) :: tauy_est(bounds%begp:bounds%endp) ! Estimated equilibrium tauy from atm
     !-----------------------------------------------------------------------
 
     associate(                                                           & 
@@ -168,7 +170,6 @@ contains
          forc_v           =>    top_as%vbot                            , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
          wsresp           =>    top_as%wsresp                          , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
          u_diff           =>    top_as%u_diff                          , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
-         v_diff           =>    top_as%v_diff                          , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to meridional wind (m/s)
          
          fsds_nir_d       =>    solarabs_vars%fsds_nir_d_patch         , & ! Input:  [real(r8) (:)   ]  incident direct beam nir solar radiation (W/m**2) 
          fsds_nir_i       =>    solarabs_vars%fsds_nir_i_patch         , & ! Input:  [real(r8) (:)   ]  incident diffuse nir solar radiation (W/m**2)     
@@ -343,9 +344,12 @@ contains
          ! Initialize stability variables
 
          ! Initialize winds for iteration.
-         forc_u_adj(p) = forc_u(t) + u_diff(t)
-         forc_v_adj(p) = forc_v(t) + v_diff(t)
+         forc_u_adj(p) = forc_u(t)
+         forc_v_adj(p) = forc_v(t)
          ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
+
+         taux_est(p) = u_diff(t) * forc_u(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+         tauy_est(p) = u_diff(t) * forc_v(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
 
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t)-qsatg(c)
@@ -412,15 +416,16 @@ contains
             ! Forbid removing more than 99% of wind speed in a time step.
             ! This is mainly to avoid convergence issues since this is such a
             ! basic form of iteration in this loop...
-            if ( forc_rho(t)*wsresp(t) / ram(p) > 0.99 ) then
-               taux(p) = -0.99 * forc_u_adj(p) / wsresp(t)
-               tauy(p) = -0.99 * forc_v_adj(p) / wsresp(t)
-            else
-               taux(p) = -forc_rho(t)*forc_u_adj(p)/ram(p)
-               tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram(p)
+            taux(p) = -forc_rho(t)*forc_u_adj(p)/ram(p)
+            tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram(p)
+            if ( (taux(p)-taux_est(p))*wsresp(t)*sign(1._r8,-forc_u(t)) > 0.99_r8*abs(forc_u(t)) ) then
+               taux(p) = taux_est(p) - 0.99_r8 * forc_u(t) / wsresp(t)
             end if
-            forc_u_adj(p) = forc_u(t) + u_diff(t) + taux(p)*wsresp(t)
-            forc_v_adj(p) = forc_v(t) + v_diff(t) + tauy(p)*wsresp(t)
+            if ( (tauy(p)-tauy_est(p))*wsresp(t)*sign(1._r8,-forc_v(t)) > 0.99_r8*abs(forc_v(t)) ) then
+               tauy(p) = tauy_est(p) - 0.99_r8 * forc_v(t) / wsresp(t)
+            end if
+            forc_u_adj(p) = forc_u(t) + (taux(p)-taux_est(p))*wsresp(t)
+            forc_v_adj(p) = forc_v(t) + (tauy(p)-tauy_est(p))*wsresp(t)
             ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
 
             ! Get derivative of fluxes with respect to ground temperature
