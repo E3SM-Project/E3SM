@@ -2152,6 +2152,8 @@ module ocn_time_integration_split
 
          call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+         call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
+         call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
          !*** Compute barotropic velocity at first timestep
