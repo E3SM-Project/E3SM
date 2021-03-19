@@ -2579,7 +2579,7 @@ module ocn_time_integration_si
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
             call mpas_pool_get_subpool(block % structs, 'shortwave', swForcingPool)
-            call ocn_tend_tracer(tendPool, statePool, forcingPool, meshPool, swForcingPool, scratchPool, &
+            call ocn_tend_tracer(tendPool, statePool, forcingPool, meshPool, swForcingPool, &
                     dt, activeTracersOnly, 2)
 
             block => block % next
