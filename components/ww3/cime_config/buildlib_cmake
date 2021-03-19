@@ -16,7 +16,8 @@ sys.path.append(_LIBDIR)
 from standard_script_setup import *
 from CIME.buildlib         import parse_input
 from CIME.case             import Case
-from CIME.utils            import expect, run_bld_cmd_ensure_logging, safe_copy
+from CIME.build            import get_standard_makefile_args
+from CIME.utils            import expect, run_bld_cmd_ensure_logging, safe_copy, run_cmd_no_fail
 
 logger = logging.getLogger(__name__)
 
@@ -54,20 +55,25 @@ def buildlib(bldroot, installpath, case):
     comp = compiler.capitalize()
     safe_copy(os.path.join(repodir, "switch_E3SM"), bindir)
 
+    # Get serial fortran and C compilers from Macros
+    make_args = get_standard_makefile_args(case, shared_lib=True)
+    sf90 = run_cmd_no_fail("make -f {}/Macros.make {} -p | grep 'SFC :='".format(caseroot, make_args)).split(":=")[-1].strip()
+    scc  = run_cmd_no_fail("make -f {}/Macros.make {} -p | grep 'SCC :='".format(caseroot, make_args)).split(":=")[-1].strip()
+
     inp_file = os.path.join(bindir, "w3_setup.inp")
     with open(inp_file, "w") as fd:
         fd.write(
 """y
 
-ifort
-icc
+{}
+{}
 {}
 
 
 y
-""".format(tmpdir))
+""".format(sf90, scc, tmpdir))
 
-    run_bld_cmd_ensure_logging("./w3_setup {} -c {} -s E3SM < w3_setup.inp".format(modeldir, comp), logger, fromdir=bindir)
+    run_bld_cmd_ensure_logging("./w3_setup {} -c {} -s E3SM < w3_setup.inp".format(modeldir, comp), logger, from_dir=bindir)
     os.remove(inp_file)
     os.remove(os.path.join(bindir, "switch_E3SM"))
 
@@ -77,7 +83,7 @@ y
     shutil.move(tarfile, tmpdir)
     run_bld_cmd_ensure_logging("tar -xzvf ww3_shel.tar.gz", logger, from_dir=tmpdir)
 
-    with open(os.path.join(casebuild, "wavconf", "Filepath"), "w") as fd:
+    with open(os.path.join(casebuild, "ww3conf", "Filepath"), "w") as fd:
         fd.write(
 """{}/SourceMods/src.ww3
 {}
@@ -92,18 +98,23 @@ y
         ncconfig = find_executable("nc-config")
         os.environ["NETCDF_CONFIG"] = ncconfig
 
-        with open(inp_file, "w") as fd:
+        make_inp_file = os.path.join(bindir, "w3_make.inp")
+        with open(make_inp_file, "w") as fd:
             fd.write("k\n")
 
         run_bld_cmd_ensure_logging("./w3_make ww3_grid < w3_make.inp > out.txt", logger, from_dir=bindir)
-        os.remove(inp_file)
-        shutil.move(os.path.join(bindir, "ww3_grid"), rundir)
+        os.remove(make_inp_file)
+
+        if os.path.exists(os.path.join(rundir, "ww3_grid")):
+            os.remove(os.path.join(rundir, "ww3_grid"))
+
+        shutil.move(os.path.join(exedir, "ww3_grid"), rundir)
 
         # Run ww3_grid
-        run_bld_cmd_ensure_logging("./ww3_grid", from_dir=rundir)
+        run_bld_cmd_ensure_logging("./ww3_grid", logger, from_dir=rundir)
     finally:
         os.environ.clear()
-        os.environ.update(_environ)
+        os.environ.update(orig_env)
 
     # Cleanup untracked file
     os.remove(os.path.join(modeldir, "makefile"))
