@@ -444,6 +444,10 @@
 		/>
 	</nml_record>
 	<nml_record name="initialize" in_defaults="true">
+		<nml_option name="config_earth_radius" type="real" default_value="1.0" units="m"
+			description="Earth radius in m"
+			possible_values="Any positive real number."
+		/>
 		<nml_option name="config_initial_condition_type" type="character" default_value="cice_default" units="unitless"
 			description="Initial condition type for sea ice state."
 			possible_values="'restart', 'uniform', 'circle', 'square' or 'uniform_interior'"
@@ -549,19 +553,7 @@
 			possible_values="true or false"
 		/>
 	</nml_record>
-	<nml_record name="unit_test" in_defaults="true">
-		<nml_option name="config_perform_unit_test" type="logical" default_value="false" units="unitless"
-			description="If true perform a unit test."
-			possible_values="true or false"
-		/>
-		<nml_option name="config_unit_test_type" type="character" default_value="" units="unitless"
-			description="Unit test type."
-			possible_values="'strain rate operator', 'stress divergence operator', or 'constitutive relationship'"
-		/>
-		<nml_option name="config_unit_test_subtype" type="character" default_value="" units="unitless"
-			description="Unit test subtype."
-			possible_values="('strain rate operator'): 'all', 'zero', 'zonal', 'meridonal', 'solid_body', 'sinusoidal1', or 'sinusoidal2', (stress divergence operator): 'all', 'zero', 'const11', 'const22', 'const12', 'test1', 'test2', 'test3', or 'test4'"
-		/>
+	<nml_record name="testing" in_defaults="true">
 		<nml_option name="config_use_test_ice_shelf" type="logical" default_value="false" units="unitless"
 			description="If true test add a test ice shelf to the ice shelf mask."
 			possible_values="true or false"
@@ -588,13 +580,25 @@
 			description="The number of elastic EVP subcycles to perform per dynamics time step."
 			possible_values="Any positive integer."
 		/>
+		<nml_option name="config_strain_scheme" type="character" default_value="variational" units="unitless"
+			description="Choice of stress divergence scheme to use in the velocity solver."
+			possible_values="'weak', or 'variational'"
+		/>
+		<nml_option name="config_constitutive_relation_type" type="character" default_value="evp" units="unitless"
+			description="Choice of constitutive relation to use in the velocity solver."
+			possible_values="'evp', 'evp_revised', 'linear', or 'none'"
+		/>
 		<nml_option name="config_stress_divergence_scheme" type="character" default_value="variational" units="unitless"
 			description="Choice of stress divergence scheme to use in the velocity solver."
-			possible_values="'weak' or 'variational'"
+			possible_values="'weak', or 'variational'"
 		/>
 		<nml_option name="config_variational_basis" type="character" default_value="wachspress" units="unitless"
 			description="Type of basis functions to use with the variational stress divergence scheme."
 			possible_values="'wachspress' or 'pwl'"
+		/>
+		<nml_option name="config_variational_denominator_type" type="character" default_value="original" units="unitless"
+			description="Type of denominator in variational calculation."
+			possible_values="'original' or 'alternate'"
 		/>
 		<nml_option name="config_wachspress_integration_type" type="character" default_value="dunavant" units="unitless"
 			description="Type of integration to perform with the Wachspress variational stress divergence scheme."
@@ -604,9 +608,13 @@
 			description="Order of integration for Wachspress basis integrations."
 			possible_values="'trapezoidal': any positive integer, 'dunavant':1-10,12, 'fekete':1-6,8,9"
 		/>
-		<nml_option name="config_revised_evp" type="logical" default_value="false" units="unitless"
-			description="If true use the revised EVP rheology (Bouillon et al., Ocean Modelling)"
-			possible_values="true or. false."
+		<nml_option name="config_calc_velocity_masks" type="logical" default_value="true" units="unitless"
+			description="Calculate velocity masks."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_average_variational_strain" type="logical" default_value="false" units="unitless"
+			description="Average variational strains over vertex."
+			possible_values="true or false"
 		/>
 		<nml_option name="config_use_air_stress" type="logical" default_value="true" units="unitless"
 			description="If true include the air stress term in the velocity solver calculations."
@@ -623,6 +631,18 @@
 		<nml_option name="config_geostrophic_surface_tilt" type="logical" default_value="true" units="unitless"
 			description="If true calculate the sea surface tilt stress assuming currents are geostrophic."
 			possible_values="true or. false."
+		/>
+		<nml_option name="config_ocean_stress_type" type="character" default_value="quadratic" units="unitless"
+			description="Method for calculating ocean stress."
+			possible_values="'linear', or 'quadratic'"
+		/>
+		<nml_option name="config_use_special_boundaries_velocity" type="logical" default_value="false" units="unitless"
+			description="Use the special boundaries velocities option."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_use_special_boundaries_velocity_masks" type="logical" default_value="false" units="unitless"
+			description="Use the special boundaries velocity mask option."
+			possible_values="true or false"
 		/>
 	</nml_record>
 
@@ -722,6 +742,10 @@
 			description="Use prognosed snow grain radius aging"
 			possible_values="true or false"
 			icepack_name="tr_rsnw"
+		/>
+		<nml_option name="config_use_special_boundaries_zero_tracers" type="logical" default_value="false" units="unitless"
+			description="Zero out tracers in given boundary cells."
+			possible_values="true or false"
 		/>
 	</nml_record>
 
@@ -2339,8 +2363,7 @@
 		<!-- dynamics packages -->
 		<package name="pkgWeak" description=""/>
 		<package name="pkgVariational" description=""/>
-		<package name="pkgWachspress" description=""/>
-		<package name="pkgPieceWiseLinear" description=""/>
+		<package name="pkgWeakVariational" description=""/>
 
 		<!-- column package packages -->
 		<package name="pkgColumnPackage" description=""/>
@@ -2400,6 +2423,9 @@
 
 		<!-- prescribed -->
 		<package name="pkgPrescribed" description=""/>
+
+		<!-- Special boundaries -->
+		<package name="pkgSpecialBoundaries" description="Include variables for special boundaries such as periodicity"/>
 
 	</packages>
 
@@ -3729,6 +3755,14 @@
 		<var name="principalStress1Var"		type="real"	dimensions="maxEdges nCells Time"		name_in_code="principalStress1"/>
 		<var name="principalStress2Var"		type="real"	dimensions="maxEdges nCells Time"		name_in_code="principalStress2"/>
 		<var name="replacementPressureVar"		type="real"	dimensions="maxEdges nCells Time"		name_in_code="replacementPressure"/>
+		<var name="variationalDenominator"	type="real"	dimensions="nVertices"				name_in_code="variationalDenominator"/>
+	</var_struct>
+
+	<!-- weak strain / variational stress divergence -->
+	<var_struct name="velocity_weak_variational" time_levs="1" packages="pkgWeakVariational">
+		<var name="strain11Vertex"			type="real"	dimensions="nVertices Time"		name_in_code="strain11Vertex"/>
+		<var name="strain22Vertex"			type="real"	dimensions="nVertices Time"		name_in_code="strain22Vertex"/>
+		<var name="strain12Vertex"			type="real"	dimensions="nVertices Time"		name_in_code="strain12Vertex"/>
 	</var_struct>
 
 	<!-- column physics -->
@@ -4175,6 +4209,16 @@
 		<var name="strain11Analytical" type="real" dimensions="nVertices Time"/>
 		<var name="strain22Analytical" type="real" dimensions="nVertices Time"/>
 		<var name="strain12Analytical" type="real" dimensions="nVertices Time"/>
+	</var_struct>
+
+	<!-- Special boundaries -->
+	<var_struct name="special_boundaries" time_levs="1" packages="pkgSpecialBoundaries">
+	        <var name="vertexBoundaryType" type="integer" dimensions="nVertices"/>
+	        <var name="vertexBoundarySource" type="integer" dimensions="nVertices"/>
+	        <var name="vertexBoundarySourceLocal" type="integer" dimensions="nVertices"/>
+		<var name="solveVelocitySpecialBoundaries" type="integer" dimensions="nVertices"/>
+		<var name="solveStressSpecialBoundaries" type="integer" dimensions="nCells"/>
+		<var name="tracerBoundaryType" type="integer" dimensions="nCells"/>
 	</var_struct>
 
 #include "analysis_members/Registry_seaice_analysis_members.xml"

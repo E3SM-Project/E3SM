@@ -53,9 +53,6 @@ module seaice_constants
        seaiceGravity = gravit, &    ! gravitational acceleration (m/s^2)
        omega         = 7.29212e-5_RKIND   ! angular rotation rate of the Earth [s-1]
 
-  real (kind=RKIND), public :: &
-       earthRadius = 6371229.0_RKIND ! radius of Earth in [m]
-
   character (len=*), public, parameter :: &
        coupleAlarmID = 'coupling'
 

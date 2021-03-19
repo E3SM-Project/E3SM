@@ -134,69 +134,52 @@ module seaice_core_interface
           config_use_velocity_solver
 
      character(len=strKIND), pointer :: &
-          config_stress_divergence_scheme, &
-          config_variational_basis
+          config_strain_scheme, &
+          config_stress_divergence_scheme
 
      logical, pointer :: &
           pkgWeakActive, &
           pkgVariationalActive, &
-          pkgWachspressActive, &
-          pkgPieceWiseLinearActive
+          pkgWeakVariationalActive
 
      !pkgWeak
      !pkgVariational
-     !pkgWachspress
-     !pkgPieceWiseLinear
 
      call MPAS_pool_get_config(configPool, "config_use_velocity_solver", config_use_velocity_solver)
+     call MPAS_pool_get_config(configPool, "config_strain_scheme", config_strain_scheme)
      call MPAS_pool_get_config(configPool, "config_stress_divergence_scheme", config_stress_divergence_scheme)
-     call MPAS_pool_get_config(configPool, "config_variational_basis", config_variational_basis)
 
      call MPAS_pool_get_package(packagePool, "pkgWeakActive", pkgWeakActive)
      call MPAS_pool_get_package(packagePool, "pkgVariationalActive", pkgVariationalActive)
-     call MPAS_pool_get_package(packagePool, "pkgWachspressActive", pkgWachspressActive)
-     call MPAS_pool_get_package(packagePool, "pkgPieceWiseLinearActive", pkgPieceWiseLinearActive)
+     call MPAS_pool_get_package(packagePool, "pkgWeakVariationalActive", pkgWeakVariationalActive)
 
      ! is the velocity solver on
      if (config_use_velocity_solver) then
 
         ! stress divergence scheme
-        if (trim(config_stress_divergence_scheme) == "weak") then
+        if (trim(config_strain_scheme)            == "weak" .or. &
+            trim(config_stress_divergence_scheme) == "weak") then
 
            ! weak stress divergence scheme
            pkgWeakActive = .true.
 
-        else if (trim(config_stress_divergence_scheme) == "variational") then
+        endif
+
+        if (trim(config_strain_scheme)            == "variational" .or. &
+            trim(config_stress_divergence_scheme) == "variational") then
 
            ! variational stress divergence scheme
            pkgVariationalActive = .true.
 
-           ! variational basis function scheme
-           if (trim(config_variational_basis) == "wachspress") then
+        endif
 
-              ! wachspress basis functions
-              pkgWachspressActive = .true.
+        if (trim(config_strain_scheme)            == "weak" .and. &
+            trim(config_stress_divergence_scheme) == "variational") then
 
-           else if (trim(config_variational_basis) == "pwl") then
+           ! weak strain / variational stress divergence
+           pkgWeakVariationalActive = .true.
 
-              ! piecewise linear basis functions
-              pkgPieceWiseLinearActive = .true.
-
-           else
-
-              ! unknown value of config_variational_basis
-              call mpas_log_write("Unknown variational scheme: "//trim(config_variational_basis))
-              ierr = 1
-
-           endif ! config_variational_basis
-
-        else
-
-           ! unknown value of config_stress_divergence_scheme
-           call mpas_log_write("Unknown stress divergence scheme: "//trim(config_stress_divergence_scheme))
-           ierr = 1
-
-        endif ! config_stress_divergence_scheme
+        endif
 
      endif ! config_use_velocity_solver
 
@@ -601,14 +584,16 @@ module seaice_core_interface
           config_testing_system_test, &
           config_use_snicar_ad, &
           config_perform_unit_test, &
-          config_use_prescribed_ice
+          config_use_prescribed_ice, &
+          config_use_periodic_velocities
 
      logical, pointer :: &
           pkgForcingActive, &
           pkgTestingSystemTestActive, &
           pkgSnicarActive, &
           pkgUnitTestsActive, &
-          pkgPrescribedActive
+          pkgPrescribedActive, &
+          pkgSpecialBoundariesActive
 
      ierr = 0
 
@@ -653,9 +638,15 @@ module seaice_core_interface
      ! pkgPrescribed
      call MPAS_pool_get_config(configPool, "config_use_prescribed_ice", config_use_prescribed_ice)
      call MPAS_pool_get_package(packagePool, "pkgPrescribedActive", pkgPrescribedActive)
-     ! see if we are testing the testing system
      if (config_use_prescribed_ice) then
         pkgPrescribedActive = .true.
+     endif
+
+     ! pkgSpecialBoundaries
+     call MPAS_pool_get_config(configPool, "config_use_periodic_velocities", config_use_periodic_velocities)
+     call MPAS_pool_get_package(packagePool, "pkgSpecialBoundariesActive", pkgSpecialBoundariesActive)
+     if (config_use_periodic_velocities) then
+        pkgSpecialBoundariesActive = .true.
      endif
 
    end subroutine setup_packages_other!}}}
