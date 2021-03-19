@@ -306,6 +306,7 @@ contains
      use elm_varcon       , only : denh2o, denice, roverg, wimp, pc, mu, tfrz
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
      use landunit_varcon  , only : istsoil, istcrop
+     use abortutils       , only : endrun
 #if (defined HUM_HOL || defined MARSH)
      use pftvarcon        , only : humhol_ht, humhol_dist, hum_frac, qflx_h2osfc_surfrate
 #endif
@@ -620,6 +621,7 @@ contains
              endif
 
 #if (defined HUM_HOL || defined MARSH)
+             if(num_hydrologyc .ne. 2) call endrun(msg="Error: Must have 2 columns if HUM_HOL or MARSH is defined")
              !compute lateral flux in aquifer
              if (jwt(c) .lt. nlevsoi) then
                 do j=nlevsoi,jwt(c)+1,-1
@@ -1173,7 +1175,7 @@ contains
      use elm_varctl       , only : use_vsfm, use_var_soil_thick
      use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      use pftvarcon        , only : rsub_top_globalmax
-#if (defined HUM_HOL)
+#if (defined HUM_HOL || defined MARSH)
      use pftvarcon        , only : humhol_ht
 #endif
      !
@@ -1543,7 +1545,7 @@ contains
              endif
 
 ! bsulman: Does MARSH need this deep_seep stuff?
-#if (defined HUM_HOL)
+#if (defined HUM_HOL || defined MARSH )
           deep_seep = 0._r8 !100.0_r8 / 365._r8 / 86400._r8  !rate per second
           !changes for hummock hollow topography
           if (c .eq. 1) then !hummock
