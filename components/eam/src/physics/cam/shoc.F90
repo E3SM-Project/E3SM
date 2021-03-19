@@ -3049,6 +3049,9 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
   integer :: i, k, km1
   real(rtype) :: grid_dz, u_grad, v_grad
 
+  ! Turbulent coefficient
+  real(rtype), parameter :: Ck_sh = 0.1_rtype
+
 #ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
      call compute_shr_prod_f(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
@@ -3065,7 +3068,7 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
         ! calculate vertical gradient of u&v wind
         u_grad = grid_dz*(u_wind(i,km1)-u_wind(i,k))
         v_grad = grid_dz*(v_wind(i,km1)-v_wind(i,k))
-        sterm(i,k) = bfb_square(u_grad)+bfb_square(v_grad)
+        sterm(i,k) = Ck_sh*(bfb_square(u_grad)+bfb_square(v_grad))
      enddo
   enddo
 
