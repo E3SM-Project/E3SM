@@ -184,6 +184,16 @@ contains
     integer , parameter  :: niters = 30           ! maximum number of iterations for surface temperature
     real(r8) :: forc_u_adj(bounds%begl:bounds%endl) ! Adjusted forc_u for iteration
     real(r8) :: forc_v_adj(bounds%begl:bounds%endl) ! Adjusted forc_v for iteration
+    real(r8) :: taux_scratch(bounds%begl:bounds%endl) ! Temporary taux variable
+    real(r8) :: taux_est(bounds%begl:bounds%endl) ! Estimated equilibrium taux from atm
+    real(r8) :: taux_diff(bounds%begl:bounds%endl) ! Difference from previous iteration taux
+    real(r8) :: prev_taux(bounds%begl:bounds%endl) ! Previous iteration taux
+    real(r8) :: prev_taux_diff(bounds%begl:bounds%endl) ! Previous difference in iteration taux
+    real(r8) :: tauy_scratch(bounds%begl:bounds%endl) ! Temporary tauy variable
+    real(r8) :: tauy_est(bounds%begl:bounds%endl) ! Estimated equilibrium tauy from atm
+    real(r8) :: tauy_diff(bounds%begl:bounds%endl) ! Difference from previous iteration tauy
+    real(r8) :: prev_tauy(bounds%begl:bounds%endl) ! Previous iteration tauy
+    real(r8) :: prev_tauy_diff(bounds%begl:bounds%endl) ! Previous difference in iteration tauy
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
@@ -204,8 +214,7 @@ contains
          forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
          forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
          wsresp              =>   top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
-         u_diff              =>   top_as%u_diff                             , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
-         v_diff              =>   top_as%v_diff                             , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to meridional wind (m/s)
+         tau_est             =>   top_as%tau_est                            , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
 
          wind_hgt_canyon     =>   urbanparams_vars%wind_hgt_canyon          , & ! Input:  [real(r8) (:)   ]  height above road at which wind in canyon is to be computed (m)
          eflx_traffic_factor =>   urbanparams_vars%eflx_traffic_factor      , & ! Input:  [real(r8) (:)   ]  multiplicative urban traffic factor for sensible heat flux
@@ -317,11 +326,16 @@ contains
          end if
 
          ! Initialize winds for iteration.
-         forc_u_adj(l) = forc_u(t) + u_diff(t)
-         forc_v_adj(l) = forc_v(t) + v_diff(t)
+         forc_u_adj(l) = forc_u(t)
+         forc_v_adj(l) = forc_v(t)
 
          ! Magnitude of atmospheric wind
          ur(l) = max(1.0_r8,sqrt(forc_u_adj(l)*forc_u_adj(l)+forc_v_adj(l)*forc_v_adj(l)))
+ 
+         taux_est(l) = -tau_est(t) * forc_u(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+         tauy_est(l) = -tau_est(t) * forc_v(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+         prev_taux(l) = taux_est(l)
+         prev_tauy(l) = tauy_est(l)
 
       end do
 
@@ -398,13 +412,36 @@ contains
             ! Forbid removing more than 99% of wind speed in a time step.
             ! This is mainly to avoid convergence issues since this is such a
             ! basic form of iteration in this loop...
-            if ( forc_rho(t)*wsresp(t) / ramu(l) > 0.99 ) then
-               forc_u_adj(l) = forc_u(t) + u_diff(t) - 0.99 * forc_u_adj(l)
-               forc_v_adj(l) = forc_v(t) + v_diff(t) - 0.99 * forc_v_adj(l)
-            else
-               forc_u_adj(l) = forc_u(t) + u_diff(t) + (-forc_rho(t)*forc_u_adj(l)/ramu(l))*wsresp(t)
-               forc_v_adj(l) = forc_v(t) + v_diff(t) + (-forc_rho(t)*forc_v_adj(l)/ramu(l))*wsresp(t)
+            ! Adjust u with temp taux.
+            taux_scratch(l) = -forc_rho(t)*forc_u_adj(l)/ramu(l)
+            if ( (taux_scratch(l)-taux_est(l))*wsresp(t)*sign(1._r8,-forc_u(t)) > 0.99_r8*abs(forc_u(t)) ) then
+               taux_scratch(l) = taux_est(l) - 0.99_r8 * forc_u(t) / wsresp(t)
             end if
+            ! Adjust v with temp tauy.
+            tauy_scratch(l) = -forc_rho(t)*forc_v_adj(l)/ramu(l)
+            if ( (tauy_scratch(l)-tauy_est(l))*wsresp(t)*sign(1._r8,-forc_v(t)) > 0.99_r8*abs(forc_v(t)) ) then
+               tauy_scratch(l) = tauy_est(l) - 0.99_r8 * forc_v(t) / wsresp(t)
+            end if
+            taux_diff(l) = taux_scratch(l) - prev_taux(l)
+            tauy_diff(l) = tauy_scratch(l) - prev_tauy(l)
+            if (iter /= 1) then
+               ! damp possible swings in each iteration for convergence
+               ! Probably too much damping here.
+               if (abs(taux_diff(l)) > abs(0.95*prev_taux_diff(l))) then
+                  taux_diff(l) = sign(0.95*prev_taux_diff(l), taux_diff(l))
+                  taux_scratch(l) = prev_taux(l) + taux_diff(l)
+               end if
+               if (abs(tauy_diff(l)) > abs(0.95*prev_tauy_diff(l))) then
+                  tauy_diff(l) = sign(0.95*prev_tauy_diff(l), tauy_diff(l))
+                  tauy_scratch(l) = prev_tauy(l) + tauy_diff(l)
+               end if
+            end if
+            prev_taux(l) = taux_scratch(l)
+            prev_tauy(l) = tauy_scratch(l)
+            prev_taux_diff(l) = taux_diff(l)
+            prev_tauy_diff(l) = tauy_diff(l)
+            forc_u_adj(l) = forc_u(t) + (taux_scratch(l)-taux_est(l))*wsresp(t)
+            forc_v_adj(l) = forc_v(t) + (tauy_scratch(l)-tauy_est(l))*wsresp(t)
             ur(l) = max(1.0_r8,sqrt(forc_u_adj(l)*forc_u_adj(l)+forc_v_adj(l)*forc_v_adj(l)))
 
             ! Canyon top wind

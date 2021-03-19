@@ -202,10 +202,7 @@ module clubb_intr
     snow_dp_idx, &
     vmag_gust_idx, &
     wsresp_idx, &
-    u_old2surf_idx, &
-    v_old2surf_idx, &
-    u_diff2surf_idx, &
-    v_diff2surf_idx
+    tau_est_idx
 
   integer, public :: & 
     ixthlp2 = 0, &
@@ -341,11 +338,9 @@ module clubb_intr
     call pbuf_add_field('pdf_zm_mixt_frac',  'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), pdf_zm_mixt_frac_idx)
 
     call pbuf_add_field('vmag_gust',       'global', dtype_r8, (/pcols/),      vmag_gust_idx) !PMA total gustiness
+
     call pbuf_add_field('wsresp',          'global', dtype_r8, (/pcols/),      wsresp_idx)
-    call pbuf_add_field('u_old2surf',          'global', dtype_r8, (/pcols/),      u_old2surf_idx)
-    call pbuf_add_field('v_old2surf',          'global', dtype_r8, (/pcols/),      v_old2surf_idx)
-    call pbuf_add_field('u_diff2surf',          'global', dtype_r8, (/pcols/),      u_diff2surf_idx)
-    call pbuf_add_field('v_diff2surf',          'global', dtype_r8, (/pcols/),      v_diff2surf_idx)
+    call pbuf_add_field('tau_est',         'global', dtype_r8, (/pcols/),      tau_est_idx)
 #endif 
 
   end subroutine clubb_register_cam
@@ -750,11 +745,7 @@ end subroutine clubb_init_cnst
     vmag_gust_idx = pbuf_get_index('vmag_gust') !PMA ZM snow for gustiness
 
     wsresp_idx = pbuf_get_index('wsresp') ! First order response of surface stress to winds
-
-    u_old2surf_idx = pbuf_get_index('u_old2surf') ! Old zonal wind
-    v_old2surf_idx = pbuf_get_index('v_old2surf') ! Old meridional wind
-    u_diff2surf_idx = pbuf_get_index('u_diff2surf') ! Diff in zonal wind from last time step
-    v_diff2surf_idx = pbuf_get_index('v_diff2surf') ! Diff in meridional wind from last time step
+    tau_est_idx = pbuf_get_index('tau_est') ! Estimate of stress in balance with winds
 
     iisclr_rt  = -1
     iisclr_thl = -1
@@ -1039,12 +1030,7 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
 
        call pbuf_set_field(pbuf2d, wsresp_idx,    0.0_r8)
-
-       call pbuf_set_field(pbuf2d, u_old2surf_idx,    1.0_r8)
-       call pbuf_set_field(pbuf2d, v_old2surf_idx,    1.0_r8)
-       call pbuf_set_field(pbuf2d, u_diff2surf_idx,    1.0_r8)
-       call pbuf_set_field(pbuf2d, v_diff2surf_idx,    1.0_r8)
-
+       call pbuf_set_field(pbuf2d, tau_est_idx,   0.0_r8)
     endif
    
     ! --------------- !
@@ -1448,10 +1434,7 @@ end subroutine clubb_init_cnst
    real(r8), pointer :: snow_dp(:)                 ! snow precipitation from ZM convection
    real(r8), pointer :: vmag_gust(:)
    real(r8), pointer :: wsresp(:)
-   real(r8), pointer :: u_old2surf(:)
-   real(r8), pointer :: v_old2surf(:)
-   real(r8), pointer :: u_diff2surf(:)
-   real(r8), pointer :: v_diff2surf(:)
+   real(r8), pointer :: tau_est(:)
    real(r8), pointer :: tpert(:)
 
    real(r8) :: ugust  ! function: gustiness as a function of convective rainfall
@@ -1466,8 +1449,8 @@ end subroutine clubb_init_cnst
    real(r8),parameter :: gust_faco = 0.9_r8 !gust fac for ocean
    real(r8),parameter :: gust_facc = 1.5_r8 !gust fac for clubb
 
-   real(r8) :: sfc_stress_diff(pcols), sfc_v_diff(pcols)
-   real(r8), parameter :: pert_tau = 0.1_r8 ! Pa
+   real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
+   real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
 
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
@@ -1645,11 +1628,7 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
 
    call pbuf_get_field(pbuf, wsresp_idx, wsresp)
-
-   call pbuf_get_field(pbuf, u_old2surf_idx, u_old2surf)
-   call pbuf_get_field(pbuf, v_old2surf_idx, v_old2surf)
-   call pbuf_get_field(pbuf, u_diff2surf_idx, u_diff2surf)
-   call pbuf_get_field(pbuf, v_diff2surf_idx, v_diff2surf)
+   call pbuf_get_field(pbuf, tau_est_idx, tau_est)
 
    ! Intialize the apply_const variable (note special logic is due to eularian backstepping)
    if (clubb_do_adv .and. (is_first_step() .or. all(wpthlp(1:ncol,1:pver) .eq. 0._r8))) then
@@ -2072,6 +2051,8 @@ end subroutine clubb_init_cnst
 
       enddo
 
+      ! Each host model time step, reset the perturbed variables to be equal to
+      ! the unperturbed values.
       if (macmic_it == 1) then
          um_pert(i,:) = um_in
          vm_pert(i,:) = vm_in
@@ -2079,9 +2060,9 @@ end subroutine clubb_init_cnst
          vpwp_pert(i,:) = vpwp_in
       end if
 
-      ! Prefer to perturb stress in the direction of the existing stress.
+      ! Prefer to perturb wind/stress in the direction of the existing stress.
       ! However, if there's no existing surface stress, just perturb zonal
-      ! stress.
+      ! wind/stress.
       if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
          upwp_sfc_pert = upwp_sfc + pert_tau / rho_ds_zm(1)
          vpwp_sfc_pert = vpwp_sfc
@@ -2306,12 +2287,11 @@ end subroutine clubb_init_cnst
          endif
       endif
 
-      sfc_stress_diff(i) = pert_tau
       if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
-         sfc_v_diff(i) = um_pert(i,1) - um_in(1)
+         sfc_v_diff_tau(i) = um_pert(i,2) - um_in(2)
       else
-         sfc_v_diff(i) = ((um_pert(i,1) - um_in(1))*cam_in%wsx(i) &
-              + (vm_pert(i,1) - vm_in(1))*cam_in%wsy(i)) &
+         sfc_v_diff_tau(i) = ((um_pert(i,2) - um_in(2))*cam_in%wsx(i) &
+              + (vm_pert(i,2) - vm_in(2))*cam_in%wsy(i)) &
               / hypot(cam_in%wsx(i), cam_in%wsy(i))
       end if
 
@@ -2878,14 +2858,9 @@ end subroutine clubb_init_cnst
 
    if (macmic_it == cld_macmic_num_steps) then
       do i = 1, ncol
-         wsresp(i) = sfc_v_diff(i) / sfc_stress_diff(i)
-
-         ! Estimate of what atmosphere is doing to bottom level winds, with the
-         ! approximate effect of the surface fluxes subtracted out.
-         u_diff2surf(i) = state1%u(i,pver) - u_old2surf(i) - wsresp(i)*cam_in%wsx(i)
-         v_diff2surf(i) = state1%v(i,pver) - v_old2surf(i) - wsresp(i)*cam_in%wsy(i)
-         u_old2surf(i) = state1%u(i,pver)
-         v_old2surf(i) = state1%v(i,pver)
+         wsresp(i) = sfc_v_diff_tau(i) / pert_tau
+         ! Estimated tau in balance with wind is the tau we just used.
+         tau_est(i) = max(hypot(cam_in%wsx(i), cam_in%wsy(i)), 1.e-10)
       end do
    end if
 

@@ -902,8 +902,10 @@ module advance_clubb_core_module
       wprtp(1)  = wprtp_sfc
       upwp(1)   = upwp_sfc
       vpwp(1)   = vpwp_sfc
-      upwp_pert(1) = upwp_sfc_pert
-      vpwp_pert(1) = vpwp_sfc_pert
+      if (present(upwp_pert)) then
+         upwp_pert(1) = upwp_sfc_pert
+         vpwp_pert(1) = vpwp_sfc_pert
+      end if
 
       ! Set fluxes for passive scalars (if enabled)
       if ( sclr_dim > 0 ) then
@@ -920,8 +922,6 @@ module advance_clubb_core_module
       wprtp(1)  = 0.0_core_rknd
       upwp(1)   = 0.0_core_rknd
       vpwp(1)   = 0.0_core_rknd
-      upwp_pert(1) = 0.0_core_rknd
-      vpwp_pert(1) = 0.0_core_rknd
 
       ! Set fluxes for passive scalars (if enabled)
       if ( sclr_dim > 0 ) then
