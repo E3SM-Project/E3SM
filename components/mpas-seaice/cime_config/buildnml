@@ -279,6 +279,15 @@ def buildnml(case, caseroot, compname):
             grid_date = '210226'
             grid_prefix = 'mpassi.WC14to60E2r3.rstFromG-anvil'
 
+    elif ice_grid == 'WCAtl12to45E2r4':
+        decomp_date = '210318'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        grid_date = '210318'
+        grid_prefix = 'seaice.WCAtl12to45E2r4'
+        if ice_ic_mode == 'spunup':
+            grid_date = '210318'
+            grid_prefix = 'mpassi.WCAtl12to45E2r4.rstFromG-anvil'
+
 
     #--------------------------------------------------------------------
     # Set the initial file, changing to a restart file for branch and hybrid runs

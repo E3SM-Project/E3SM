@@ -286,6 +286,17 @@ def buildnml(case, caseroot, compname):
             ic_date = '210226'
             ic_prefix = 'mpaso.WC14to60E2r3.rstFromG-anvil'
 
+    elif ocn_grid == 'WCAtl12to45E2r4':
+        decomp_date = '210318'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.WCAtl12to45E2r4.21XXXX.nc'
+        analysis_mask_file = 'WCAtl12to45E2r4_moc_masks_and_transects.nc'
+        ic_date = '210318'
+        ic_prefix = 'ocean.WCAtl12to45E2r4'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '210318'
+            ic_prefix = 'mpaso.WCAtl12to45E2r4.rstFromG-anvil'
+
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
