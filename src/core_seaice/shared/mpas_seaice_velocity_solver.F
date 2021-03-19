@@ -2940,10 +2940,12 @@ contains
 
           iCell = cellsOnVertex(iCellOnVertex,iVertex)
 
-          strain11Vertex(iVertex) = strain11Vertex(iVertex) + areaCell(iCell) * strain11weak(iCell)
-          strain22Vertex(iVertex) = strain22Vertex(iVertex) + areaCell(iCell) * strain22weak(iCell)
-          strain12Vertex(iVertex) = strain12Vertex(iVertex) + areaCell(iCell) * strain12weak(iCell)
-          denom = denom + areaCell(iCell)
+          if (iCell >= 1 .and. iCell <= nCells) then
+             strain11Vertex(iVertex) = strain11Vertex(iVertex) + areaCell(iCell) * strain11weak(iCell)
+             strain22Vertex(iVertex) = strain22Vertex(iVertex) + areaCell(iCell) * strain22weak(iCell)
+             strain12Vertex(iVertex) = strain12Vertex(iVertex) + areaCell(iCell) * strain12weak(iCell)
+             denom = denom + areaCell(iCell)
+          endif
 
        enddo ! iCellOnVertex
 

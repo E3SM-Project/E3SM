@@ -884,7 +884,11 @@ contains
 
     real(kind=RKIND), dimension(:), pointer :: &
          xVertex, &
-         yVertex
+         yVertex, &
+         xCell, &
+         yCell, &
+         xEdge, &
+         yEdge
 
     integer :: &
          iCell, &
@@ -896,7 +900,9 @@ contains
     real(kind=RKIND) :: &
          tx, &
          ty, &
-         tmag
+         tmag, &
+         nx, &
+         ny
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
@@ -906,6 +912,10 @@ contains
     call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
     call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "xEdge", xEdge)
+    call MPAS_pool_get_array(mesh, "yEdge", yEdge)
 
     do iCell = 1, nCells
 
@@ -921,6 +931,14 @@ contains
           tmag = sqrt(tx**2 + ty**2)
           tx = tx / tmag
           ty = ty / tmag
+
+          nx = xEdge(iEdge) - xCell(iCell)
+          ny = yEdge(iEdge) - yCell(iCell)
+
+          if ((nx * ty - ny * tx) < 0.0_RKIND) then
+             tx = -tx
+             ty = -ty
+          endif
 
           normalVectorPolygon(1,iEdgeOnCell,iCell) =  ty
           normalVectorPolygon(2,iEdgeOnCell,iCell) = -tx

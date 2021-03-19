@@ -65,6 +65,9 @@
 	<var name="strain11var"/>
 	<var name="strain22var"/>
 	<var name="strain12var"/>
+	<var name="strain11weak"/>
+	<var name="strain22weak"/>
+	<var name="strain12weak"/>
 </stream>
 
 <immutable_stream name="LYqSixHourlyForcing"

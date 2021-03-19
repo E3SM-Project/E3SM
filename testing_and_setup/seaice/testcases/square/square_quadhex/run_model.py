@@ -9,7 +9,7 @@ except ImportError:
 
 def run_model():
 
-    operatorMethods = ["wachspress","pwl","weak"]
+    operatorMethods = ["wachspress","pwl","weak","wachsavg","pwlavg","weakwachs","weakpwl"]
 
     gridTypes = ["hex","quad"]
     #gridTypes = ["quad"]
@@ -65,6 +65,29 @@ def run_model():
                         nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
                                                         "config_stress_divergence_scheme":"weak",
                                                         "config_elastic_subcycle_number":subcycleNumber}}
+                    elif (operatorMethod == "wachsavg"):
+                        nmlPatch = {"velocity_solver": {"config_strain_scheme":"variational",
+                                                        "config_stress_divergence_scheme":"variational",
+                                                        "config_variational_basis":"wachspress",
+                                                        "config_elastic_subcycle_number":subcycleNumber,
+                                                        "config_average_variational_strain":True}}
+                    elif (operatorMethod == "pwlavg"):
+                        nmlPatch = {"velocity_solver": {"config_strain_scheme":"variational",
+                                                        "config_stress_divergence_scheme":"variational",
+                                                        "config_variational_basis":"pwl",
+                                                        "config_elastic_subcycle_number":subcycleNumber,
+                                                        "config_average_variational_strain":True}}
+                    elif (operatorMethod == "weakwachs"):
+                        nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
+                                                        "config_stress_divergence_scheme":"variational",
+                                                        "config_variational_basis":"wachspress",
+                                                        "config_elastic_subcycle_number":subcycleNumber}}
+                    elif (operatorMethod == "weakpwl"):
+                        nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
+                                                        "config_stress_divergence_scheme":"variational",
+                                                        "config_variational_basis":"pwl",
+                                                        "config_elastic_subcycle_number":subcycleNumber}}
+
 
                     f90nml.patch("namelist.seaice.square", nmlPatch, "namelist.seaice.%s.%i" %(operatorMethod, subcycleNumber))
 

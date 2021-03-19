@@ -2,11 +2,6 @@ from netCDF4 import Dataset
 import numpy as np
 from math import sin, cos, pi, pow
 
-A = 2.56#np.random.uniform(2,4)#2.56#
-B = 2.56#np.random.uniform(2,4)
-C = 2.56#np.random.uniform(2,4)
-D = 2.56#np.random.uniform(2,4)
-
 #-------------------------------------------------------------
 
 def velocities_linear(x,y):
@@ -62,6 +57,11 @@ def velocities_quadratic(x,y):
 #-------------------------------------------------------------
 
 def velocities_sinusoid(x,y):
+
+    A = 2.56#np.random.uniform(2,4)#2.56#
+    B = 2.56#np.random.uniform(2,4)
+    C = 2.56#np.random.uniform(2,4)
+    D = 2.56#np.random.uniform(2,4)
 
     Lx = 1.0
     Ly = 1.0

@@ -138,6 +138,23 @@ def get_resolution(filename, latitudeLimit):
 
 #--------------------------------------------------------
 
+def scaling_lines(axis, xMin, xMax, yMin):
+
+    # linear scaling
+    scale = yMin / math.pow(xMin,1)
+    scaleMinLin = math.pow(xMin,1) * scale
+    scaleMaxLin = math.pow(xMax,1) * scale
+
+    # quadratic scaling
+    scale = yMin / math.pow(xMin,2)
+    scaleMinQuad = math.pow(xMin,2) * scale
+    scaleMaxQuad = math.pow(xMax,2) * scale
+
+    axis.loglog([xMin, xMax], [scaleMinLin,  scaleMaxLin],  linestyle=':', color='k')
+    axis.loglog([xMin, xMax], [scaleMinQuad, scaleMaxQuad], linestyle=':', color='k')
+
+#--------------------------------------------------------
+
 def strain_scaling():
 
     mpl.rc('font', family='Times New Roman', size=8)

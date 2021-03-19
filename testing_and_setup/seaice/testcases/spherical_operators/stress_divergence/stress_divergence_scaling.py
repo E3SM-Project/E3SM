@@ -82,39 +82,70 @@ def get_resolution(filename, latitudeLimit):
 
 #--------------------------------------------------------
 
-def stress_divergence_scaling():
+def scaling_lines(axis, xMin, xMax, yMin):
 
-    mpl.rc('font', family='Times New Roman', size=8)
-    mpl.rc('text', usetex=True)
-    mpl.rcParams['axes.linewidth'] = 0.5
+    # linear scaling
+    scale = yMin / math.pow(xMin,1)
+    scaleMinLin = math.pow(xMin,1) * scale
+    scaleMaxLin = math.pow(xMax,1) * scale
+
+    # quadratic scaling
+    scale = yMin / math.pow(xMin,2)
+    scaleMinQuad = math.pow(xMin,2) * scale
+    scaleMaxQuad = math.pow(xMax,2) * scale
+
+    axis.loglog([xMin, xMax], [scaleMinLin,  scaleMaxLin],  linestyle=':', color='k')
+    axis.loglog([xMin, xMax], [scaleMinQuad, scaleMaxQuad], linestyle=':', color='k')
+
+#--------------------------------------------------------
+
+def stress_divergence_scaling():
 
     resolutions = [2562,10242,40962,163842]
 
     methods = ["wachspress", "pwl", "weak", "wachspress_alt", "pwl_alt"]
 
 
-    lineColours = ["black","black","grey","red","red"]
-    lineStyles  = ["-","--","-","-","--"]
-
     latitudeLimit = 20.0
 
-    xMin = 6e-3
-    xMax = 1e-1
+    # plot options
+    legendLabels = {"wachspress":"Wachs.",
+                    "pwl":"PWL",
+                    "weak":"Weak",
+                    "wachspress_alt":"Wachs. alt",
+                    "pwl_alt":"PWL alt."}
 
-    # quadratic scaling
-    #scale = 3e-5 / math.pow(xMin,2)
-    #scaleMin = math.pow(xMin,2) * scale
-    #scaleMax = math.pow(xMax,2) * scale
+    lineColors = {"wachspress":"black",
+                  "pwl":"grey",
+                  "weak":"red",
+                  "wachspress_alt":"black",
+                  "pwl_alt":"grey"}
 
-    # linear scaling
-    scale = 2.5e-3 / math.pow(xMin,1)
-    scaleMin = math.pow(xMin,1) * scale
-    scaleMax = math.pow(xMax,1) * scale
+    lineStyles = {"wachspress":"solid",
+                  "pwl":"solid",
+                  "weak":"solid",
+                  "wachspress_alt":"dashed",
+                  "pwl_alt":"dashed"}
 
+    markers = {"wachspress":"+",
+               "pwl":"x",
+               "weak":"^",
+               "wachspress_alt":"+",
+               "pwl_alt":"x"}
 
-    plt.figure(figsize=(4,3))
+    # plot
+    mpl.rc('font', family='Times New Roman', size=8)
+    mpl.rc('text', usetex=True)
+    mpl.rcParams['axes.linewidth'] = 0.5
 
-    plt.loglog([xMin, xMax],[scaleMin,scaleMax],linestyle=':', color='k')
+    # scaling lines
+    xMin = 2.5e-2
+    xMax = 5e-2
+    yMin = 2.5e-3
+
+    fig, axes = plt.subplots(figsize=(4,3))
+
+    scaling_lines(axes, xMin, xMax, yMin)
 
     iPlot = 0
     for method in methods:
@@ -134,19 +165,20 @@ def stress_divergence_scaling():
             x.append(get_resolution(filename, latitudeLimit))
             y.append(normU)
 
-        plt.loglog(x,y, marker='o', color=lineColours[iPlot], ls=lineStyles[iPlot], markersize=5.0)
+        axes.loglog(x,y, marker=markers[method], color=lineColors[method], ls=lineStyles[method], markersize=5.0, label=legendLabels[method])
 
         iPlot = iPlot + 1
 
-    #legendLabels = ["Quadratic scaling","Wachspress", "PWL", "Weak"]
-    legendLabels = ["Linear scaling","Wachspress", "PWL", "Weak", "Wachs. alt", "PWL alt."]
+    axes.legend(frameon=False, loc=2, fontsize=8, handlelength=4)
 
-    plt.legend(legendLabels, frameon=False, loc=2, fontsize=8, handlelength=4)
-
-    ax = plt.gca()
-    ax.set_xlabel("Grid resolution")
-    ax.set_ylabel(r"$L_2$ error norm")
-    ax.set_xlim([xMin, xMax])
+    axes.set_xlabel("Grid resolution")
+    axes.set_ylabel(r"$L_2$ error norm")
+    #axes.set_xlim([6e-3, 1e-1])
+    axes.set_title(r'(b) $(\nabla \cdot \sigma)_u$')
+    axes.set_xticks(ticks=[9e-3,2e-2,3e-2,4e-2,6e-2,7e-2,8e-2],minor=True)
+    axes.set_xticklabels(labels=[None,None,None,None,None,None,None],minor=True)
+    axes.set_xticks(ticks=[1e-2,5e-2],minor=False)
+    axes.set_xticklabels(labels=[r'$10^{-2}$',r'$5\times10^{-2}$'],minor=False)
 
     plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
     plt.savefig("stress_divergence_scaling.png",dpi=400)
