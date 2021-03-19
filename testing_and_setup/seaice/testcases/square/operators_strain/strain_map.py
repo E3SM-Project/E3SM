@@ -259,27 +259,27 @@ def strain_map():
                    False, False, r'$\epsilon_{12}$ Analytical', r'(c)', True)
 
     # Wachspress
-    plot_subfigure(axes[1,0], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain11varAvgWachsDiff, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
+    plot_subfigure(axes[1,0], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain11varAvgWachs, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
                    False, False, r'$\epsilon_{11}$ Wachs.', r'(d)', True)
-    plot_subfigure(axes[1,1], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain22varAvgWachsDiff, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
+    plot_subfigure(axes[1,1], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain22varAvgWachs, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
                    False, False, r'$\epsilon_{22}$ Wachs.', r'(e)', True)
-    plot_subfigure(axes[1,2], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain12varAvgWachsDiff, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
+    plot_subfigure(axes[1,2], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain12varAvgWachs, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
                    False, False, r'$\epsilon_{12}$ Wachs.', r'(f)', True)
 
     # PWL
-    plot_subfigure(axes[2,0], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain11varAvgPWLDiff, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
+    plot_subfigure(axes[2,0], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain11varAvgPWL, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
                    False, False, r'$\epsilon_{11}$ PWL', r'(g)', True)
-    plot_subfigure(axes[2,1], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain22varAvgPWLDiff, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
+    plot_subfigure(axes[2,1], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain22varAvgPWL, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
                    False, False, r'$\epsilon_{22}$ PWL', r'(h)', True)
-    plot_subfigure(axes[2,2], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain12varAvgPWLDiff, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
+    plot_subfigure(axes[2,2], fig, nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, useVertex, strain12varAvgPWL, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
                    False, False, r'$\epsilon_{12}$ PWL', r'(i)', True)
 
     # Weak
-    plot_subfigure(axes[3,0], fig, nCells, nEdgesOnCell, verticesOnCell, xVertex, yVertex, zVertex, useCell, strain11weakWeakDiff, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
+    plot_subfigure(axes[3,0], fig, nCells, nEdgesOnCell, verticesOnCell, xVertex, yVertex, zVertex, useCell, strain11weakWeak, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
                    False, False, r'$\epsilon_{11}$ Weak', r'(j)', True)
-    plot_subfigure(axes[3,1], fig, nCells, nEdgesOnCell, verticesOnCell, xVertex, yVertex, zVertex, useCell, strain22weakWeakDiff, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
+    plot_subfigure(axes[3,1], fig, nCells, nEdgesOnCell, verticesOnCell, xVertex, yVertex, zVertex, useCell, strain22weakWeak, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
                    False, False, r'$\epsilon_{22}$ Weak', r'(k)', True)
-    plot_subfigure(axes[3,2], fig, nCells, nEdgesOnCell, verticesOnCell, xVertex, yVertex, zVertex, useCell, strain12weakWeakDiff, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
+    plot_subfigure(axes[3,2], fig, nCells, nEdgesOnCell, verticesOnCell, xVertex, yVertex, zVertex, useCell, strain12weakWeak, minStrainDiff, maxStrainDiff, xMin, xMax, yMin, yMax, \
                    False, False, r'$\epsilon_{12}$ Weak', r'(l)', True)
 
     #plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)

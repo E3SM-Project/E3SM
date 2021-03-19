@@ -583,9 +583,9 @@ def stress_divergence_scaling():
                     "pwl":"PWL",
                     "weak":"Weak"}
 
-    markers = {"wachspress":"s",
-               "pwl":"o",
-               "weak":"o"}
+    markers = {"wachspress":"+",
+               "pwl":"x",
+               "weak":"^"}
 
     stressDivergenceLabels = {"U":r"(a) $(\nabla \cdot \sigma)_u$",
                               "V":r"(b) $(\nabla \cdot \sigma)_v$"}
@@ -594,14 +594,14 @@ def stress_divergence_scaling():
     # scaling lines
     xMin = 2e-3
     xMax = 3.5e-3
-    yMin = 2e-3
+    yMin = 1.5e-3
 
     # plot
     mpl.rc('font', family='Times New Roman', size=8)
     mpl.rc('text', usetex=True)
     mpl.rcParams['axes.linewidth'] = 0.5
 
-    fig, axes = plt.subplots(2, 1, figsize=(5,7))
+    fig, axes = plt.subplots(1, 2, figsize=(7.2,3))
 
     j = 0
     for stressDivergence in stressDivergences:
@@ -651,16 +651,22 @@ def stress_divergence_scaling():
 
                 iPlot = iPlot + 1
 
-        axes[j].legend(frameon=False, loc=2, fontsize=8, handlelength=4)
+        axes[j].legend(frameon=False, loc=2, fontsize=8, handlelength=2)
 
+        axes[j].set_ylim((3.8e-5,5e-2))
         axes[j].set_xlabel("Grid resolution")
         axes[j].set_ylabel(r"$L_2$ error norm")
         axes[j].set_title(stressDivergenceLabels[stressDivergence])
+        axes[j].set_xticks(ticks=[3e-3,4e-3,5e-3,6e-3,7e-3,8e-3,9e-3],minor=True)
+        axes[j].set_xticklabels(labels=[None,None,None,None,None,None,None],minor=True)
+        axes[j].set_xticks(ticks=[2e-3,1e-2],minor=False)
+        axes[j].set_xticklabels(labels=[r'$2\times 10^{-3}$',r'$10^{-2}$'],minor=False)
 
         j += 1
 
     plt.tight_layout()
     plt.savefig("stress_divergence_scaling.png",dpi=400)
+    plt.savefig("stress_divergence_scaling.eps")
 
 #-------------------------------------------------------------------------------
 

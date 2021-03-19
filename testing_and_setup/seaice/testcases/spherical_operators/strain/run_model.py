@@ -10,8 +10,10 @@ except ImportError:
 def run_model():
 
     gridSizes = [2562, 10242, 40962, 163842]
+    #gridSizes = [10242]
 
     operatorMethods = ["wachspress","pwl","weak","weakwachs"]
+    #operatorMethods = ["pwl"]
 
     for operatorMethod in operatorMethods:
 
