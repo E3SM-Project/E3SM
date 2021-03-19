@@ -31,11 +31,10 @@ that makes it easy to create intelligent and beautiful documentation, written
 by Georg Brandl and licensed under the BSD license.
 
 The documentation is maintained in the ``master`` branch of the GitHub repository.
-You can include code and its corresponding documentation updates in a single pull-request (PR).
+You can include code and its corresponding documentation updates in a single pull request (PR).
 
 After merging a PR, GitHub Actions automates the documentation building process.
 It pushes the HTML build to the ``gh-pages`` branch, which is hosted on GitHub Pages.
-
 
 Edit Documentation
 -------------------------------
@@ -69,7 +68,7 @@ To begin editing:
     # `docs/_build` is ignored by git since it does not need to be pushed
     git add .
     git commit "..."
-    git push <your-fork-remote-name> <branch-name>
+    git push origin <branch-name>
 
 6. <`OPTIONAL`> If you want to generate and view versioned docs: ::
 
@@ -84,9 +83,9 @@ To begin editing:
 
       Docs version selector dropdown in the bottom left-hand corner
 
-7. Create a pull-request from ``your-fork/e3sm_diags/branch-name`` to ``E3SM-Project/e3sm_diags/master``.
+7. Create a pull request from ``your-fork/e3sm_diags/branch-name`` to ``E3SM-Project/e3sm_diags/master``.
 
-Once this pull-request is merged and GitHub Actions finishes building the docs, changes will be available on the
+Once this pull request is merged and GitHub Actions finishes building the docs, changes will be available on the
 `e3sm_diags documentation page <https://e3sm-project.github.io/e3sm_diags/>`_.
 
 How Documentation is Versioned
