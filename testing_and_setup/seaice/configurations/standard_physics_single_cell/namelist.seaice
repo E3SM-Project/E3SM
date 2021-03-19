@@ -35,6 +35,7 @@
     config_nSnowLayers = 1
 /
 &initialize
+    config_earth_radius = 6371229.0
     config_initial_condition_type = 'cice_default'
     config_initial_ice_area = 1.0
     config_initial_ice_volume = 1.0
@@ -65,10 +66,7 @@
     config_update_ocean_fluxes = false
     config_include_pond_freshwater_feedback = false
 /
-&unit_test
-    config_perform_unit_test = false
-    config_unit_test_type = ''
-    config_unit_test_subtype = ''
+&testing
     config_use_test_ice_shelf = false
     config_testing_system_test = false
 /
@@ -77,15 +75,22 @@
     config_rotate_cartesian_grid = true
     config_include_metric_terms = true
     config_elastic_subcycle_number = 120
+    config_strain_scheme = 'variational'
+    config_constitutive_relation_type = 'evp'
     config_stress_divergence_scheme = 'variational'
     config_variational_basis = 'wachspress'
+    config_variational_denominator_type = 'original'
     config_wachspress_integration_type = 'dunavant'
     config_wachspress_integration_order = 8
-    config_revised_evp = false
+    config_average_variational_strain = false
+    config_calc_velocity_masks = true
     config_use_air_stress = true
     config_use_ocean_stress = true
     config_use_surface_tilt = true
     config_geostrophic_surface_tilt = true
+    config_ocean_stress_type = 'quadratic'
+    config_use_special_boundaries_velocity = false
+    config_use_special_boundaries_velocity_masks = false
 /
 &advection
     config_advection_type = 'incremental_remap'
@@ -112,6 +117,7 @@
     config_use_aerosols = false
     config_use_effective_snow_density = false
     config_use_snow_grain_radius = false
+    config_use_special_boundaries_zero_tracers = false
 /
 &biogeochemistry
     config_use_brine = false

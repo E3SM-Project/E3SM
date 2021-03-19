@@ -84,9 +84,6 @@ contains
 
     use mpas_stream_manager
 
-    use seaice_constants, only: &
-         earthRadius
-
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
 
@@ -96,7 +93,8 @@ contains
 
     real(kind=RKIND), pointer :: &
          oldRadius, &
-         sphere_radius
+         sphere_radius, &
+         earthRadius
 
     real(kind=RKIND) :: &
          newRadius
@@ -154,6 +152,7 @@ contains
          directionProperty
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_do_restart", config_do_restart)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_earth_radius", earthRadius)
 
     if (.not. config_do_restart) then
 
@@ -880,31 +879,43 @@ contains
          nEdgesOnCell
 
     integer, dimension(:,:), pointer :: &
-         edgesOnCell
+         edgesOnCell, &
+         verticesOnEdge
 
     real(kind=RKIND), dimension(:), pointer :: &
-         xEdge, &
-         yEdge, &
+         xVertex, &
+         yVertex, &
          xCell, &
-         yCell
+         yCell, &
+         xEdge, &
+         yEdge
 
     integer :: &
          iCell, &
          iEdgeOnCell, &
-         iEdge
+         iEdge, &
+         iVertex1, &
+         iVertex2
 
     real(kind=RKIND) :: &
-         dx, dy
+         tx, &
+         ty, &
+         tmag, &
+         nx, &
+         ny
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
-    call MPAS_pool_get_array(mesh, "xEdge", xEdge)
-    call MPAS_pool_get_array(mesh, "yEdge", yEdge)
+    call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "xEdge", xEdge)
+    call MPAS_pool_get_array(mesh, "yEdge", yEdge)
 
     do iCell = 1, nCells
 
@@ -912,11 +923,25 @@ contains
 
           iEdge = edgesOnCell(iEdgeOnCell,iCell)
 
-          dx = xEdge(iEdge) - xCell(iCell)
-          dy = yEdge(iEdge) - yCell(iCell)
+          iVertex1 = verticesOnEdge(1,iEdge)
+          iVertex2 = verticesOnEdge(2,iEdge)
 
-          normalVectorPolygon(1,iEdgeOnCell,iCell) = dx / sqrt(dx**2 + dy**2)
-          normalVectorPolygon(2,iEdgeOnCell,iCell) = dy / sqrt(dx**2 + dy**2)
+          tx = xVertex(iVertex2) - xVertex(iVertex1)
+          ty = yVertex(iVertex2) - yVertex(iVertex1)
+          tmag = sqrt(tx**2 + ty**2)
+          tx = tx / tmag
+          ty = ty / tmag
+
+          nx = xEdge(iEdge) - xCell(iCell)
+          ny = yEdge(iEdge) - yCell(iCell)
+
+          if ((nx * ty - ny * tx) < 0.0_RKIND) then
+             tx = -tx
+             ty = -ty
+          endif
+
+          normalVectorPolygon(1,iEdgeOnCell,iCell) =  ty
+          normalVectorPolygon(2,iEdgeOnCell,iCell) = -tx
 
        enddo ! iEdgeOnCell
 
