@@ -1450,7 +1450,7 @@
           <nthrds_lnd>2</nthrds_lnd>
           <nthrds_rof>2</nthrds_rof>
           <nthrds_ice>2</nthrds_ice>
-          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_ocn>1</nthrds_ocn>
           <nthrds_glc>2</nthrds_glc>
           <nthrds_wav>2</nthrds_wav>
           <nthrds_cpl>2</nthrds_cpl>
