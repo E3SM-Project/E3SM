@@ -1145,7 +1145,6 @@
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks">--mpi=pmi2 -l -n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
-        <arg name="binding">--cpu_bind=cores</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
         <arg name="placement">-m plane={{ tasks_per_node }}</arg>
       </arguments>
@@ -1213,12 +1212,20 @@
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
+    <environment_variables MAX_MPITASKS_PER_NODE="!128">
+      <env name="SLURM_CPU_BIND">cores</env>
+    </environment_variables>
+    <environment_variables MAX_MPITASKS_PER_NODE="128">
+      <env name="SLURM_CPU_BIND">threads</env>
+    </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="intel">
-      <env name="KMP_AFFINITY">granularity=core,scatter</env>
-      <env name="KMP_HOT_TEAMS_MODE">1</env>
+    <environment_variables SMP_PRESENT="TRUE" compiler="intel" MAX_TASKS_PER_NODE="!128">
+      <env name="KMP_AFFINITY">granularity=core,balanced</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="intel" MAX_TASKS_PER_NODE="128">
+      <env name="KMP_AFFINITY">granularity=thread,balanced</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
