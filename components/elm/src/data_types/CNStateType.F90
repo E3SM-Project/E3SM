@@ -784,7 +784,7 @@ contains
     ! --------------------------------------------------------------------
 
     ! Changes: RGK-2020
-    ! Before March 2021, soil order was only read when ECA and RD were active, and crop's were
+    ! Before March 2021, soil order was only read when ECA and RD were active, and crops were
     ! not active.  This was simplified so that it does not matter what modules are active,
     ! if the soil-order data is available, the model will use it. If it is not, it will
     ! use a default.
