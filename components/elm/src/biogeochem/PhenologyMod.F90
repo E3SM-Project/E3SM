@@ -54,19 +54,20 @@ module PhenologyMod
   !
   ! !PRIVATE DATA MEMBERS:
   type, private :: PnenolParamsType
-     real(r8) :: crit_dayl       ! critical day length for senescence
+     real(r8) :: crit_dayl        ! critical day length for senescence
+                                  ! from Biome-BGC, v4.1.2
      real(r8) :: crit_dayl_stress ! critical day length for senescence (stress)
-     real(r8) :: cumprec_onset   ! 10-day cumulative precipitation threshold for onset
-     real(r8) :: ndays_on        ! number of days to complete leaf onset
-     real(r8) :: ndays_off       ! number of days to complete leaf offset
-     real(r8) :: fstor2tran      ! fraction of storage to move to transfer for each onset
-     real(r8) :: crit_onset_fdd  ! critical number of freezing days to set gdd counter
-     real(r8) :: crit_onset_swi  ! critical number of days > soilpsi_on for onset
-     real(r8) :: soilpsi_on      ! critical soil water potential for leaf onset
-     real(r8) :: crit_offset_fdd ! critical number of freezing days to initiate offset
-     real(r8) :: crit_offset_swi ! critical number of water stress days to initiate offset
-     real(r8) :: soilpsi_off     ! critical soil water potential for leaf offset
-     real(r8) :: lwtop           ! live wood turnover proportion (annual fraction)
+     real(r8) :: cumprec_onset    ! 10-day cumulative precipitation threshold for onset
+     real(r8) :: ndays_on         ! number of days to complete leaf onset
+     real(r8) :: ndays_off        ! number of days to complete leaf offset
+     real(r8) :: fstor2tran       ! fraction of storage to move to transfer for each onset
+     real(r8) :: crit_onset_fdd   ! critical number of freezing days to set gdd counter
+     real(r8) :: crit_onset_swi   ! critical number of days > soilpsi_on for onset
+     real(r8) :: soilpsi_on       ! critical soil water potential for leaf onset
+     real(r8) :: crit_offset_fdd  ! critical number of freezing days to initiate offset
+     real(r8) :: crit_offset_swi  ! critical number of water stress days to initiate offset
+     real(r8) :: soilpsi_off      ! critical soil water potential for leaf offset
+     real(r8) :: lwtop            ! live wood turnover proportion (annual fraction)
   end type PnenolParamsType
 
   ! PhenolParamsInst is populated in readPhenolParams 
@@ -74,12 +75,6 @@ module PhenologyMod
 
   real(r8) :: dt                            ! radiation time step delta t (seconds)
   real(r8) :: fracday                       ! dtime as a fraction of day
-  !real(r8) :: crit_dayl                     ! critical daylength for offset (seconds)
-  !real(r8) :: crit_dayl_stress              ! critical day length for senescence (stress)
-  !real(r8) :: cumprec_onset                 ! 10-day cumulative precipitation threshold for onset
-  !real(r8) :: ndays_on                      ! number of days to complete onset
-  !real(r8) :: ndays_off                     ! number of days to complete offset
-  !real(r8) :: fstor2tran                    ! fraction of storage to move to transfer on each onset
   real(r8) :: crit_onset_fdd                ! critical number of freezing days
   real(r8) :: crit_onset_swi                ! water stress days for offset trigger
   real(r8) :: soilpsi_on                    ! water potential for onset trigger (MPa)
@@ -330,25 +325,10 @@ contains
     dt      = real( get_step_size(), r8 )
     fracday = dt/secspday
 
-    ! set constants for CNSeasonDecidPhenology 
-    ! (critical daylength from Biome-BGC, v4.1.2)
-    !crit_dayl=PhenolParamsInst%crit_dayl
-
-    ! Set constants for CNSeasonDecidPhenology and CNStressDecidPhenology
-    !ndays_on=PhenolParamsInst%ndays_on
-    !ndays_off=PhenolParamsInst%ndays_off
-    
-    ! set transfer parameters
-    !fstor2tran=PhenolParamsInst%fstor2tran
-
     ! -----------------------------------------
     ! Constants for CNStressDecidPhenology
     ! -----------------------------------------
 
-    ! onset parameters
-    !cumprec_onset=PhenolParamsInst%cumprec_onset
-    !crit_dayl_stress=PhenolParamsInst%crit_dayl_stress
-    !crit_onset_fdd=PhenolParamsInst%crit_onset_fdd
     ! critical onset gdd now being calculated as a function of annual
     ! average 2m temp.
     ! crit_onset_gdd = 150.0 ! c3 grass value
