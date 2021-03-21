@@ -26,6 +26,8 @@ module LakeBGCType
   ! sediment C pool identifier
   integer, parameter, public :: pasC = 1
   integer, parameter, public :: actC = 2
+  ! sub-cycle time step
+  integer, parameter, public :: nsubstep = 1
   !
   ! !PUBLIC TYPES:
   type, public :: lakebgc_type
