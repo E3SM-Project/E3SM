@@ -43,6 +43,11 @@ def buildlib(bldroot, installpath, case):
     # Define WW3 repository directories
     repodir  = "{}/components/ww3/src/source".format(srcroot)
     modeldir = "{}/WW3/model".format(repodir)
+
+    # TODO: these work dirs will have to be changed to live in the binary/build area.
+    # Achieving this will probably require a significant refactor of the ww3 infrastructure.
+    # Doing this stuff in-source not only clutters the repo, but also introduces potential race
+    # conditions if we were to try to build multiple ww3 cases simultaneously.
     bindir   = "{}/bin".format(modeldir)
     exedir   = "{}/exe".format(modeldir)
     tmpdir   = "{}/tmp".format(modeldir)
@@ -110,9 +115,10 @@ y
 
         shutil.move(os.path.join(exedir, "ww3_grid"), rundir)
 
-        # Run ww3_grid. Note, the mesh.msh file will need to be downloaded here once it is
-        # in the E3SM input file system.
-        # safe_copy(os.path.join(os.environ["HOME"],"mesh.msh"), rundir)
+        # Run ww3_grid.
+        #  TODO: the mesh.msh file will need to be downloaded here once it is
+        #  in the E3SM input file system.
+        #  safe_copy(os.path.join(os.environ["HOME"],"mesh.msh"), rundir)
         run_bld_cmd_ensure_logging("./ww3_grid", logger, from_dir=rundir)
     finally:
         os.environ.clear()
