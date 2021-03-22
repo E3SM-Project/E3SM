@@ -210,16 +210,16 @@ module histFileMod
   end type history_tape
 
   type elmpoint_rs                             ! Pointer to real scalar data (1D)
-     real(r8), pointer :: ptr(:)
+     real(r8), pointer :: ptr(:) => null()
   end type elmpoint_rs
   type elmpoint_ra                             ! Pointer to real array data (2D)
-     real(r8), pointer :: ptr(:,:)
+     real(r8), pointer :: ptr(:,:) => null()
   end type elmpoint_ra
 
   ! Pointers into datatype  arrays
   integer, parameter :: max_mapflds = 2500     ! Maximum number of fields to track
-  type (elmpoint_rs) :: elmptr_rs(max_mapflds) ! Real scalar data (1D)
-  type (elmpoint_ra) :: elmptr_ra(max_mapflds) ! Real array data (2D)
+  type (elmpoint_rs), public :: elmptr_rs(max_mapflds) ! Real scalar data (1D)
+  type (elmpoint_ra), public :: elmptr_ra(max_mapflds) ! Real array data (2D)
   !
   ! Master list: an array of master_entry entities
   !
@@ -227,7 +227,7 @@ module histFileMod
   !
   ! History tape: an array of history_tape entities (only active fields)
   !
-  type (history_tape) :: tape(max_tapes)       ! array history tapes
+  type (history_tape), public :: tape(max_tapes)       ! array history tapes
   !
   ! Namelist input
   !

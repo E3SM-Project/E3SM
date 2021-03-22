@@ -34,7 +34,7 @@ module elm_instMod
   use SoilStateType              , only : soilstate_type
   use SolarAbsorbedType          , only : solarabs_type
   use SurfaceRadiationMod        , only : surfrad_type
-  use SurfaceAlbedoMod           , only : SurfaceAlbedoInitTimeConst !TODO - can this be merged into the type?
+  use SurfaceAlbedoType          , only : SurfaceAlbedoInitTimeConst !TODO - can this be merged into the type?
   use SurfaceAlbedoType          , only : surfalb_type
   use TemperatureType            , only : temperature_type, temperature_vars
   use WaterfluxType              , only : waterflux_type,   waterflux_vars

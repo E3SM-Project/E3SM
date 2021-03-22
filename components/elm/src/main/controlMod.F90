@@ -36,7 +36,7 @@ module controlMod
   use SharedParamsMod       , only: anoxia_wtsat
   use CanopyStateType       , only: perchroot, perchroot_alt
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
-  use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
+  use SurfaceAlbedoType        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use elm_varcon              , only: h2osno_max
   use elm_varctl              , only: use_dynroot

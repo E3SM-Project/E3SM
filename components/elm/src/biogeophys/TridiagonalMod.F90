@@ -10,6 +10,7 @@ module TridiagonalMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: Tridiagonal
+  public :: Tridiagonal_SoilLittVertTransp
   public :: trisim
   interface Tridiagonal
     module procedure Tridiagonal_sr
@@ -23,7 +24,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine Tridiagonal_sr (bounds, lbj, ubj, jtop, numf, filter, a, b, c, r, u, is_col_active)
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
     ! A x = r
@@ -54,7 +55,6 @@ contains
 
     character(len=255)                :: subname ='Tridiagonal_sr'
     !-----------------------------------------------------------------------
-
 
     ! Solve the matrix
     if(present(is_col_active))then
@@ -100,9 +100,138 @@ contains
 
 
   end subroutine Tridiagonal_sr
+
+  subroutine Tridiagonal_SoilLittVertTransp (lbj, ubj, jtop, numf, filter, a, b, c, r, u,is_col_active)
+    !$acc routine seq
+    ! !DESCRIPTION:
+    ! Tridiagonal matrix solution
+    ! A x = r
+    ! where x and r are vectors
+    ! !USES:
+    use shr_kind_mod   , only: r8 => shr_kind_r8
+    use decompMod      , only : bounds_type
+    !
+    ! !ARGUMENTS:
+    implicit none
+    integer           , intent(in)    :: lbj, ubj              ! lbinning and ubing level indices
+    integer           , intent(in)    :: jtop(numf)            ! top level for each column [col]
+    integer           , intent(in)    :: numf                  ! filter dimension
+    integer           , intent(in)    :: filter(:)             ! filter
+    real(r8)          , intent(in)    :: a( 1:numf , lbj:ubj)    ! "a" left off diagonal of tridiagonal matrix [col , j]
+    real(r8)          , intent(in)    :: b( 1:numf , lbj:ubj)    ! "b" diagonal column for tridiagonal matrix [col  , j]
+    real(r8)          , intent(in)    :: c( 1:numf , lbj:ubj)    ! "c" right off diagonal tridiagonal matrix [col   , j]
+    real(r8)          , intent(in)    :: r( 1:numf , lbj:ubj)    ! "r" forcing term of tridiagonal matrix [col      , j]
+    real(r8)          , intent(inout) :: u( 1:numf , lbj:ubj)    ! solution [col                                    , j]
+    logical, optional, intent(in)     :: is_col_active(:)   !
+    logical                           :: l_is_col_active(1:numf) !!
+    integer                           :: j,ci               ! indices
+    real(r8)                          :: gam(numf,lbj:ubj)     ! temporary
+    real(r8)                          :: bet(numf)             ! temporary
+    !-----------------------------------------------------------------------
+
+    ! Solve the matrix
+    if(present(is_col_active))then
+       l_is_col_active(:) = is_col_active(:)
+    else
+       l_is_col_active(:) = .true.
+    endif
+
+    do ci = 1,numf
+        if(l_is_col_active(ci))then
+            bet(ci) = b(ci,jtop(ci))
+        endif
+    end do
+
+    do j = lbj, ubj
+       do ci = 1,numf
+           if(l_is_col_active(ci))then
+             if (j >= jtop(ci)) then
+               if (j == jtop(ci)) then
+                 u(ci,j) = r(ci,j) / bet(ci)
+               else
+                 gam(ci,j) = c(ci,j-1) / bet(ci)
+                 bet(ci) = b(ci,j) - a(ci,j) * gam(ci,j)
+                 u(ci,j) = (r(ci,j) - a(ci,j)*u(ci,j-1)) / bet(ci)
+               end if
+             end if
+           endif
+        end do
+    end do
+
+    do j = ubj-1,lbj,-1
+        do ci = 1,numf
+           if(l_is_col_active(ci))then
+             if (j >= jtop(ci)) then
+               u(ci,j) = u(ci,j) - gam(ci,j+1) * u(ci,j+1)
+             end if
+           endif
+        end do
+    end do
+
+
+  end subroutine Tridiagonal_SoilLittVertTransp
+
+  ! subroutine Tridiagonal_SoilLittVertTransp (bounds, lbj, ubj, numf, filter, a, b, c, r, u)
+  !   !$acc routine seq
+  !   ! !DESCRIPTION:
+  !   ! Tridiagonal matrix solution
+  !   ! A x = r
+  !   ! where x and r are vectors
+  !   ! !USES:
+  !   use shr_kind_mod   , only: r8 => shr_kind_r8
+  !   use decompMod      , only : bounds_type
+  !   !
+  !   ! !ARGUMENTS:
+  !   implicit none
+  !   type(bounds_type) , intent(in)    :: bounds                ! bounds
+  !   integer           , intent(in)    :: lbj, ubj              ! lbinning and ubing level indices
+  !   integer           , intent(in)    :: numf                  ! filter dimension
+  !   integer           , intent(in)    :: filter(:)             ! filter
+  !   real(r8)          , intent(in)    :: a( numf , lbj:ubj)    ! "a" left off diagonal of tridiagonal matrix [col , j]
+  !   real(r8)          , intent(in)    :: b( numf , lbj:ubj)    ! "b" diagonal column for tridiagonal matrix [col  , j]
+  !   real(r8)          , intent(in)    :: c( numf , lbj:ubj)    ! "c" right off diagonal tridiagonal matrix [col   , j]
+  !   real(r8)          , intent(in)    :: r( numf , lbj:ubj)    ! "r" forcing term of tridiagonal matrix [col      , j]
+  !   real(r8)          , intent(inout) :: u( numf , lbj:ubj)    ! solution [col                                    , j]
+  !                                                                                 !
+  !   integer                           :: j,ci,fc                                  ! indices
+  !   real(r8)                          :: gam(numf,lbj:ubj)     ! temporary
+  !   real(r8)                          :: bet(numf)             ! temporary
+  !   !-----------------------------------------------------------------------
+  !
+  !   ! Solve the matrix
+  !   !j = lbj = 0:
+  !   do fc = 1, numf
+  !     !ci = filter(fc)
+  !     bet(fc) = b(fc,0)
+  !     !u(ci,0) = r(fc,0) / bet(fc)
+  !   end do
+  !
+  !   do j = lbj, ubj
+  !      do fc = 1,numf
+  !          !ci = filter(fc)
+  !          if(j==0) then
+  !            u(fc,j) = r(fc,j) / bet(fc)
+  !          else
+  !            gam(fc,j) = c(fc,j-1) / bet(fc)
+  !            bet(fc) = b(fc,j) - a(fc,j) * gam(fc,j)
+  !            u(fc,j) = (r(fc,j) - a(fc,j)*u(fc,j-1)) / bet(fc)
+  !          end if
+  !       end do
+  !   end do
+  !
+  !   do j = ubj-1,lbj,-1
+  !       do fc = 1,numf
+  !          !ci = filter(fc)
+  !          if (j >= 0) then
+  !           u(fc,j) = u(fc,j) - gam(fc,j+1) * u(fc,j+1)
+  !          end if
+  !       end do
+  !   end do
+  !
+  ! end subroutine Tridiagonal_SoilLittVertTransp
   !-----------------------------------------------------------------------
   subroutine Tridiagonal_mr (bounds, lbj, ubj, jtop, numf, filter, ntrcs, a, b, c, r, u, is_col_active)
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
     ! A X = R
@@ -189,7 +318,7 @@ contains
 
 !----------------
   subroutine Trisim(bounds, lbj, ubj, numf, filter, a1,b1,c1,d1,e1,a2,b2,c2,d2,e2,w1, w2)
-     !
+     !$acc routine seq
      !DESCRIPTIONS
      ! This subroutine solves two coupled tridiagonal equations
      ! A1*W1(J-1)+B1*W1(j)+C1*W1(J+1) = D1*W2(j) + E1 AND
@@ -325,7 +454,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine Tridiagonal_sr_with_var_bottom (bounds, lbj, ubj, jtop, jbot, numf, filter, a, b, c, r, u, is_col_active)
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
     ! A x = r
