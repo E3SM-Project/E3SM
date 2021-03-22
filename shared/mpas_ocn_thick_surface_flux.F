@@ -118,7 +118,7 @@ contains
       integer :: iCell, k, nCells
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 
       real (kind=RKIND) :: remainingFlux, remainingFluxRunoff
 
@@ -128,6 +128,7 @@ contains
 
       call mpas_timer_start("thick surface flux")
 
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
@@ -139,7 +140,7 @@ contains
       do iCell = 1, nCells
         remainingFlux = 1.0_RKIND
         remainingFluxRunoff = 1.0_RKIND
-        do k = 1, maxLevelCell(iCell)
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
           remainingFlux = remainingFlux - transmissionCoefficients(k, iCell)
           remainingFluxRunoff = remainingFluxRunoff - transmissionCoefficientsRunoff(k, iCell)
 

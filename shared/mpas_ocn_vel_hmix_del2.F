@@ -129,9 +129,9 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(cellsOnEdge, maxLevelEdgeTop, verticesOnEdge, &
-      !$acc            edgeMask, dcEdge, dvEdge, meshScalingDel2, &
-      !$acc            div, relVort, tend) &
+      !$acc    present(cellsOnEdge, maxLevelEdgeTop, minLevelEdgeBot, &
+      !$acc            verticesOnEdge, edgeMask, dcEdge, dvEdge, &
+      !$acc            meshScalingDel2, div, relVort, tend) &
       !$acc    private(k, cell1, cell2, uDiff, vertex1, vertex2, &
       !$acc            dcEdgeInv, dvEdgeInv, visc2)
 #else
@@ -151,7 +151,7 @@ contains
 
          visc2 =  viscDel2*meshScalingDel2(iEdge)
 
-         do k = 1, maxLevelEdgeTop(iEdge)
+         do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
             ! Here -( relativeVorticity(k,vertex2) - 
             !         relativeVorticity(k,vertex1) ) / dvEdge(iEdge)

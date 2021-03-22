@@ -152,10 +152,14 @@ contains
             refBottomDepth(k) = refBottomDepth(k-1) + columnThicknessFraction(k)*abs(config_isomip_plus_max_bottom_depth)
         end do
 
-        ! Compute refLayerThickness and refZMid
-        call ocn_compute_layerThickness_zMid_from_bottomDepth(refLayerThickness,refZMid, &
-             refBottomDepth,refBottomDepth(nVertLevels), &
-             nVertLevels,nVertLevels,iErr)
+        ! Compute refLayerThickness
+        call ocn_compute_z_level_layerThickness(refLayerThickness, refBottomDepth, 0.0_RKIND, &
+                                                refBottomDepth(nVertLevels), 1,               &
+                                                nVertLevels, nVertLevels, iErr)
+
+        ! Compute refZMid
+        call ocn_compute_zMid_from_layerThickness(refZMid, refLayerThickness, 0.0_RKIND, 1, &
+                                                  nVertLevels, nVertLevels, iErr)
 
         block_ptr => block_ptr % next
       end do
@@ -482,7 +486,7 @@ contains
 
        integer, pointer :: nCells, nVertLevels
 
-       integer, dimension(:), pointer :: maxLevelCell
+       integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 
        integer :: iCell, k, maxLevel
 
@@ -507,6 +511,7 @@ contains
           call mpas_pool_get_array(meshPool, 'xCell', xCell)
           call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
           call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+          call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
           call mpas_pool_get_array(meshPool, 'bottomDepthObserved', bottomDepthObserved)
           call mpas_pool_get_array(meshPool, 'oceanFracObserved', oceanFracObserved)
@@ -570,6 +575,8 @@ contains
               else
                  landIceMask(iCell) = 1
               end if
+
+              minLevelCell(iCell) = 1
 
               maxLevelCell(iCell) = -1
               do k = 1, nVertLevels
