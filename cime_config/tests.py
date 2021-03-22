@@ -129,7 +129,7 @@ _TESTS = {
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
             "SMS_B.ne4_ne4.F-EAM-AQP1.eam-hommexx",
             )
         },
