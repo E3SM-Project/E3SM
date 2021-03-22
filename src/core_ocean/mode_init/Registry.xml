@@ -23,16 +23,16 @@
 	<!--**********************************-->
 	<!-- Namelists for init run mode only -->
 	<!--**********************************-->
-	<nml_record name="partial_bottom_cells" mode="init">
-		<nml_option name="config_alter_ICs_for_pbcs" type="logical" default_value=".false." units="unitless"
-					description="If true, initial conditions are altered according to the config_pbc_alteration_type flag."
+	<nml_record name="partial_cells" mode="init">
+		<nml_option name="config_alter_ICs_for_pcs" type="logical" default_value=".false." units="unitless"
+					description="If true, initial conditions are altered according to the config_pc_alteration_type flag."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_pbc_alteration_type" type="character" default_value="full_cell" units="unitless"
-					description="Determines the method of initial condition alteration for partial bottom cells. 'partial_cell' alters layerThickness, interpolates all tracers in the bottom cell based on the bottomDepth variable, and alters bottomDepth to enforce the minimum pbc fraction. 'full_cell' alters bottomDepth to have full cells everywhere, based on the refBottomDepth variable."
+		<nml_option name="config_pc_alteration_type" type="character" default_value="full_cell" units="unitless"
+					description="Determines the method of initial condition alteration for partial bottom (and possibly top) cells. 'partial_cell' alters layerThickness, interpolates all tracers in the bottom (and top) cell based on the bottomDepth (or ssh) variable, and alters bottomDepth (or ssh) to enforce the minimum pc fraction. 'full_cell' alters bottomDepth (or ssh) to have full cells everywhere, based on the refBottomDepth variable."
 					possible_values="'full_cell' or 'partial_cell'"
 		/>
-		<nml_option name="config_min_pbc_fraction" type="real" default_value="0.10" units="unitless"
+		<nml_option name="config_min_pc_fraction" type="real" default_value="0.10" units="unitless"
 					description="Determines the minimum fraction of a cell altering the initial conditions can create."
 					possible_values="Any real between 0 and 1."
 		/>
@@ -73,11 +73,13 @@
 					possible_values="Any positive non-zero integer."
 		/>
 	</nml_record>
-	<nml_record name="constrain_Haney_number" mode="init">
-		<nml_option name="config_use_rx1_constraint" type="logical" default_value=".false." units="unitless"
-					description="Initialize using Haney number constraint under ice shelves"
-					possible_values=".true. or .false."
+	<nml_record name="init_vertical_grid" mode="init">
+		<nml_option name="config_init_vertical_grid_type" type="character" default_value="z-star" units="unitless"
+					description="Which vertical grid to initialize with.  Without ice-shelf cavities (i.e. ssh=0 everywhere), 'z-star' and 'z-level' are the same."
+					possible_values="'z-star', 'z-level', or 'haney-number'"
 		/>
+	</nml_record>
+	<nml_record name="constrain_Haney_number" mode="init">
 		<nml_option name="config_rx1_outer_iter_count" type="integer" default_value="20" units="unitless"
 					description="The number of outer iterations (first smoothing then rx1 constraint) during initialization of the vertical grid."
 					possible_values="any positive integer"

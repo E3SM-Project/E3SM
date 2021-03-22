@@ -134,7 +134,7 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(cellsOnEdge, maxLevelEdgeTop, edgeMask, &
+      !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
       !$acc            sfcFlxAttCoeff, sfcStress, layerThickEdge, &
       !$acc            tend) &
       !$acc    private(k, kmax, cell1, cell2, zBot, zTop, &
@@ -157,7 +157,7 @@ contains
         transCoeffTop = 1.0_RKIND
         remainingStress = 1.0_RKIND
         kmax = maxLevelEdgeTop(iEdge)
-        do k = 1, kmax
+        do k = minLevelEdgeBot(iEdge), kmax
            zBot = zTop - layerThickEdge(k,iEdge)
            attDepth = max(zBot/attCoeff, maxAttDepth)
 

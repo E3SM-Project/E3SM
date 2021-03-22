@@ -109,10 +109,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, i, kMax
+      integer :: iCell, k, i, kMax, kMin
       integer, pointer :: nVertLevels
       integer :: nCells
       integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell
       integer, dimension(:), pointer :: nCellsArray
 
       real (kind=RKIND) :: weightSum, thicknessSum, remainder, newThickness, thicknessWithRemainder
@@ -131,6 +132,7 @@ contains
       call mpas_pool_get_package(ocnPackages, 'thicknessFilterActive', thicknessFilterActive)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
 
       call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
@@ -152,15 +154,16 @@ contains
          !$omp do schedule(runtime) private(kMax, thicknessSum, k)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
+            kMin = minLevelCell(iCell)
    
             thicknessSum = 1e-14_RKIND
-            do k = 1, kMax
+            do k = kMin, kMax
                thicknessSum = thicknessSum + vertCoordMovementWeights(k) * restingThickness(k, iCell)
             end do
    
             ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
             ! This is equation 4 and 6 in Petersen et al 2015, but with eqn 6
-            do k = 1, kMax
+            do k = kMin, kMax
                ALE_thickness(k, iCell) = restingThickness(k, iCell) &
                   + ( SSH(iCell) * vertCoordMovementWeights(k) * restingThickness(k, iCell) ) &
                     / thicknessSum
@@ -174,13 +177,14 @@ contains
          !$omp do schedule(runtime) private(kMax, weightSum, k)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
+            kMin = minLevelCell(iCell)
    
             weightSum = 1e-14_RKIND
-            do k = 1, kMax
+            do k = kMin, kMax
                weightSum = weightSum + vertCoordMovementWeights(k) 
             end do
    
-            do k = 1, kMax
+            do k = kMin, kMax
                ! Using this, we must require that sum(restingThickness(k, iCell))
                ! summed over k is equal to bottomDepth.
                ! This is equation 4 and 6 in Petersen et al 2015, but with eqn 6
@@ -199,10 +203,11 @@ contains
          !$omp do schedule(runtime) private(kMax)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
+            kMin = minLevelCell(iCell)
 
-            ALE_thickness(1:kMax, iCell) = &
-                ALE_thickness(1:kMax, iCell) &
-              + newHighFreqThickness(1:kMax,iCell)
+            ALE_thickness(kMin:kMax, iCell) = &
+                ALE_thickness(kMin:kMax, iCell) &
+              + newHighFreqThickness(kMin:kMax,iCell)
          enddo
          !$omp end do
          !$omp end parallel
@@ -219,11 +224,12 @@ contains
          !$omp         min_ALE_thickness_down, min_ALE_thickness_up)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
+            kMin = minLevelCell(iCell)
 
             ! go down the column:
-            prelim_ALE_thickness(1:kMax) = ALE_thickness(1:kMax, iCell)
+            prelim_ALE_thickness(kMin:kMax) = ALE_thickness(kMin:kMax, iCell)
             remainder = 0.0_RKIND
-            do k = 1, kMax
+            do k = kMin, kMax
                newThickness = max( min(prelim_ALE_thickness(k) + remainder, &
                                       config_max_thickness_factor * restingThickness(k,iCell) ), &
                                   config_min_thickness)
@@ -233,18 +239,18 @@ contains
 
             ! go back up the column:
             min_ALE_thickness_up(kMax) = 0.0_RKIND
-            prelim_ALE_thickness(1:kMax) = prelim_ALE_thickness(1:kMax) + min_ALE_thickness_down(1:kMax)
-            do k = kMax-1, 1, -1
+            prelim_ALE_thickness(kMin:kMax) = prelim_ALE_thickness(kMin:kMax) + min_ALE_thickness_down(kMin:kMax)
+            do k = kMax-1, kMin, -1
                newThickness = max( min(prelim_ALE_thickness(k) + remainder, &
                                       config_max_thickness_factor * restingThickness(k,iCell) ), &
                                   config_min_thickness)
                min_ALE_thickness_up(k) = newThickness - prelim_ALE_thickness(k)
                remainder = remainder - min_ALE_thickness_up(k)
             end do
-            min_ALE_thickness_up(1) = min_ALE_thickness_up(1) + remainder
+            min_ALE_thickness_up(kMin) = min_ALE_thickness_up(kMin) + remainder
 
-            ALE_thickness(1:kMax, iCell) = ALE_thickness(1:kMax, iCell) + min_ALE_thickness_down(1:kMax) &
-                                         + min_ALE_thickness_up(1:kMax)
+            ALE_thickness(kMin:kMax, iCell) = ALE_thickness(kMin:kMax, iCell) + min_ALE_thickness_down(kMin:kMax) &
+                                         + min_ALE_thickness_up(kMin:kMax)
 
          enddo
          !$omp end do

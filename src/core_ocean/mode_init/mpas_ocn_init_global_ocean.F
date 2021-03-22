@@ -775,7 +775,7 @@ contains
 
        type (field1DInteger), pointer :: maxLevelCellField
        type (field1DReal), pointer :: bottomDepthField
-       integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
+       integer, dimension(:), pointer :: minLevelCell, maxLevelCell, nEdgesOnCell
        integer, dimension(:, :), pointer :: cellsOnCell
 
        integer :: iCell, coc, j, k, maxLevelNeighbors
@@ -859,7 +859,10 @@ contains
           call mpas_pool_get_array(meshPool, 'bottomDepthObserved', bottomDepthObserved)
           call mpas_pool_get_array(meshPool, 'oceanFracObserved', oceanFracObserved)
           call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+          call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+          minLevelCell(:) = 1
 
           do iCell = 1, nCells
              ! Record depth of the bottom of the ocean, before any alterations for modeling purposes.
@@ -951,10 +954,14 @@ contains
           call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
           call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
 
-          ! Compute refLayerThickness and refZMid
-          call ocn_compute_layerThickness_zMid_from_bottomDepth(refLayerThickness,refZMid, &
-               refBottomDepth,refBottomDepth(nVertLevels), &
-               nVertLevels,nVertLevels,iErr)
+          ! Compute refLayerThickness
+          call ocn_compute_z_level_layerThickness(refLayerThickness, refBottomDepth, 0.0_RKIND, &
+                                                  refBottomDepth(nVertLevels), 1,               &
+                                                  nVertLevels, nVertLevels, iErr)
+
+          ! Compute refZMid
+          call ocn_compute_zMid_from_layerThickness(refZMid, refLayerThickness, 0.0_RKIND, 1, &
+                                                    nVertLevels, nVertLevels, iErr)
 
           block_ptr => block_ptr % next
        end do

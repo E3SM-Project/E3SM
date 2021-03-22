@@ -112,7 +112,7 @@ module ocn_analysis_mode
 
       call ocn_init_routines_vert_coord(domain)
 
-      call ocn_init_routines_compute_max_level(domain)
+      call ocn_init_routines_compute_min_max_level(domain)
 
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)
       call mpas_get_timeInterval(timeStep, dt=dt)
