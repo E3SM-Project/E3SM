@@ -110,7 +110,9 @@ y
 
         shutil.move(os.path.join(exedir, "ww3_grid"), rundir)
 
-        # Run ww3_grid
+        # Run ww3_grid. Note, the mesh.msh file will need to be downloaded here once it is
+        # in the E3SM input file system.
+        # safe_copy(os.path.join(os.environ["HOME"],"mesh.msh"), rundir)
         run_bld_cmd_ensure_logging("./ww3_grid", logger, from_dir=rundir)
     finally:
         os.environ.clear()
