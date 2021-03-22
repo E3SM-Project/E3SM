@@ -131,6 +131,7 @@ public:
   KokkosTypes<DefaultDevice>::view_1d<Dims>    dyn_dims;
   KokkosTypes<DefaultDevice>::view_1d<Int>     dyn_layout;
 
+  KokkosTypes<DefaultDevice>::view_1d<bool>                   has_parent;
   KokkosTypes<DefaultDevice>::view_1d<Int>                    pack_alloc_property;
   KokkosTypes<DefaultDevice>::view_1d<bool>                   is_state_field_dev;
   KokkosTypes<DefaultDevice>::view_1d<Kokkos::pair<int,int>>  time_levels;
@@ -290,14 +291,17 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
     EKAT_REQUIRE_MSG (valid_tl_dim,
         "Error! Field has the TimeLevel tag, but it does not appear to be 'state'.");
   }
+
   m_is_state_field.push_back(has_time_level);
   m_phys[ifield] = src;
   m_dyn[ifield] = tgt;
 
-  // If this was the last field to be bound, we can setup the BE
+  // If this was the last field to be bound, we can setup the BE and
+  // precompute fields needed on device during remapper
   if (this->m_state==RepoState::Closed &&
       (this->m_num_bound_fields+1)==this->m_num_registered_fields) {
     setup_boundary_exchange ();
+    initialize_device_variables();
   }
 }
 
@@ -309,10 +313,12 @@ do_unregister_field (const int ifield)
   m_dyn.erase(m_dyn.begin()+ifield);
   m_is_state_field.erase(m_is_state_field.begin()+ifield);
 
-  // If unregistering this field makes all fields bound, we can setup the BE
+  // If unregistering this field makes all fields bound, we can setup the BE and
+  // precompute fields needed on device during remapper
   if (this->m_state==RepoState::Closed &&
       (this->m_num_bound_fields==(this->m_num_registered_fields+1))) {
     setup_boundary_exchange ();
+    initialize_device_variables();
   }
 }
 
@@ -320,13 +326,12 @@ template<typename RealType>
 void PhysicsDynamicsRemapper<RealType>::
 do_registration_ends ()
 {
-  // If we have all fields allocated, we can setup the BE
+  // If we have all fields allocated, we can setup the BE and
+  // precompute fields needed on device during remapper
   if (this->m_num_bound_fields==this->m_num_registered_fields) {
     setup_boundary_exchange ();
+    initialize_device_variables();
   }
-
-  // Precompute fields needed on device during remapper
-  initialize_device_variables();
 }
 
 template<typename RealType>
@@ -343,6 +348,7 @@ initialize_device_variables()
   dyn_dims   = decltype(dyn_dims)   ("dyn_dims",   num_fields);
   dyn_layout = decltype(dyn_layout) ("dyn_layout", num_fields);
 
+  has_parent          = decltype(has_parent) ("has_parent", num_fields);
   pack_alloc_property = decltype(pack_alloc_property) ("phys_pack_alloc_property", num_fields);
   is_state_field_dev  = decltype(is_state_field_dev)  ("is_state_field_dev",       num_fields);
   time_levels         = decltype(time_levels)         ("time_levels",              1);
@@ -355,6 +361,7 @@ initialize_device_variables()
   auto h_dyn_layout = Kokkos::create_mirror_view(dyn_layout);
   auto h_dyn_dims   = Kokkos::create_mirror_view(dyn_dims);
 
+  auto h_has_parent          = Kokkos::create_mirror_view(has_parent);
   auto h_pack_alloc_property = Kokkos::create_mirror_view(pack_alloc_property);
   auto h_is_state_field_dev  = Kokkos::create_mirror_view(is_state_field_dev);
   auto h_time_levels         = Kokkos::create_mirror_view(time_levels);
@@ -371,15 +378,21 @@ initialize_device_variables()
     const auto& phys_dim = ph.get_identifier().get_layout().dims();
     const auto& dyn_dim  = dh.get_identifier().get_layout().dims();
 
+    // If field has a parent, then its view has been subviewed. We
+    // do not want to remmap subviews, only the view of the parent,
+    // so we store this and no other info for these subfields, then
+    // skip these fields during the remap.
+    if (ph.get_parent().lock() != nullptr) {
+      EKAT_REQUIRE_MSG(dh.get_parent().lock() != nullptr,
+                       "Error! Is physics field has parent,"
+                       "dynamics field must also have parent.");
+      h_has_parent(i) = true;
+      continue;
+    }
+
     // Set view pointers
-    EKAT_REQUIRE_MSG(ph.get_parent().expired(),
-                     "Error! Remapped views must not be subviews as "
-                     "get_view() is no longer a safe operation.");
-    EKAT_REQUIRE_MSG(dh.get_parent().expired(),
-                     "Error! Remapped views must not be subviews as "
-                     "get_view() is no longer a safe operation.");
-    h_phys_ptrs(i).ptr = phys.template get_view().data();
-    h_dyn_ptrs(i).ptr  = dyn.template get_view().data();
+    h_phys_ptrs(i).ptr = phys.get_view().data();
+    h_dyn_ptrs(i).ptr  = dyn.get_view().data();
 
     // Dimensions
     int phys_size = phys_dim.size();
@@ -433,6 +446,7 @@ initialize_device_variables()
   Kokkos::deep_copy(dyn_layout, h_dyn_layout);
   Kokkos::deep_copy(dyn_dims,   h_dyn_dims);
 
+  Kokkos::deep_copy(has_parent,          h_has_parent);
   Kokkos::deep_copy(time_levels,         h_time_levels);
   Kokkos::deep_copy(pack_alloc_property, h_pack_alloc_property);
   Kokkos::deep_copy(is_state_field_dev,  h_is_state_field_dev);
@@ -445,6 +459,7 @@ void PhysicsDynamicsRemapper<RealType>::
 set_dyn_to_zero(const MT& team) const
 {
   const int i = team.league_rank();
+
   const int itl = time_levels(0).first;
   const auto& dim_d = dyn_dims(i).dims;
 
@@ -624,6 +639,8 @@ do_remap_fwd() const
   const auto field_loop = KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
 
+      if (has_parent(i)) return;
+
     switch (phys_layout(i)) {
       case etoi(LayoutType::Scalar2D):
       case etoi(LayoutType::Vector2D):
@@ -681,7 +698,8 @@ do_remap_fwd() const
 
 template<typename RealType>
 void PhysicsDynamicsRemapper<RealType>::
-do_remap_bwd() const {
+do_remap_bwd() const
+{
   using KT = KokkosTypes<DefaultDevice>;
 
   const int num_fields = m_phys.size();
@@ -691,6 +709,8 @@ do_remap_bwd() const {
 
   const auto field_loop = KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
+
+      if (has_parent(i)) return;
 
     switch (phys_layout(i)) {
       case etoi(LayoutType::Scalar2D):
