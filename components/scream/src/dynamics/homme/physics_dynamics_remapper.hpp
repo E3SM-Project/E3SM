@@ -459,7 +459,6 @@ void PhysicsDynamicsRemapper<RealType>::
 set_dyn_to_zero(const MT& team) const
 {
   const int i = team.league_rank();
-
   const int itl = time_levels(0).first;
   const auto& dim_d = dyn_dims(i).dims;
 
@@ -639,7 +638,7 @@ do_remap_fwd() const
   const auto field_loop = KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
 
-      if (has_parent(i)) return;
+    if (has_parent(i)) return;
 
     switch (phys_layout(i)) {
       case etoi(LayoutType::Scalar2D):
@@ -710,7 +709,7 @@ do_remap_bwd() const
   const auto field_loop = KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
 
-      if (has_parent(i)) return;
+    if (has_parent(i)) return;
 
     switch (phys_layout(i)) {
       case etoi(LayoutType::Scalar2D):
