@@ -31,6 +31,8 @@ module clubb_intr
 #ifdef CLUBB_SGS
   use clubb_api_module, only: pdf_parameter
   use clubb_precision,  only: core_rknd
+#else
+  use shr_kind_mod,     only: core_rknd=>shr_kind_r8
 #endif
 
   implicit none
