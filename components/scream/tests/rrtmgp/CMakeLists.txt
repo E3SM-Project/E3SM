@@ -52,4 +52,6 @@ if (NOT ${SCREAM_BASELINES_ONLY})
                    ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
     CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
                    ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+    CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/rad_standalone_ne4_pg2.nc
+                   ${CMAKE_CURRENT_BINARY_DIR}/rad_standalone_ne4_pg2.nc COPYONLY)
 endif()

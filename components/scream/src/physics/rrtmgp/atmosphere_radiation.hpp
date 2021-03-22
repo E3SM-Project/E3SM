@@ -78,8 +78,6 @@ namespace scream {
             std::map<std::string,const Real*>  m_raw_ptrs_in;
             std::map<std::string,Real*>        m_raw_ptrs_out;
 
-            std::shared_ptr<FieldInitializer> m_initializer;
-
             util::TimeStamp m_current_ts;
             ekat::Comm            m_rrtmgp_comm;
             ekat::ParameterList   m_rrtmgp_params;

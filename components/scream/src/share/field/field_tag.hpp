@@ -36,7 +36,11 @@ enum class FieldTag {
   Component2,
   Component3,
   TimeLevel,
-  Variable
+  Variable,
+  // Added for RRTMGP, TODO: Revisit this approach, is there a better way than adding more field tags?
+  Gases,
+  ShortWaveBand,
+  LongWaveBand
 };
 
 inline std::string e2str (const FieldTag ft) {
@@ -78,6 +82,16 @@ inline std::string e2str (const FieldTag ft) {
     case FieldTag::Variable:
       name = "VAR";
       break;
+    // Added for rrtmgp - see TODO item above
+    case FieldTag::Gases:
+      name = "NGAS";
+      break;
+    case FieldTag::ShortWaveBand:
+      name = "SWBND";
+      break;
+    case FieldTag::LongWaveBand:
+      name = "LWBND";
+      break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized field tag.");
   }
@@ -99,6 +113,10 @@ namespace ShortFieldTagsNames {
   constexpr auto CMP1 = FieldTag::Component1;
   constexpr auto CMP2 = FieldTag::Component2;
   constexpr auto CMP3 = FieldTag::Component3;
+  // Added for rrtmgp - see TODO item above
+  constexpr auto NGAS = FieldTag::Gases;
+  constexpr auto SWBND = FieldTag::ShortWaveBand;
+  constexpr auto LWBND = FieldTag::LongWaveBand;
 }
 
 } // namespace scream

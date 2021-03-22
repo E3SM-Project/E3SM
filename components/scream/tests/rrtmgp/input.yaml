@@ -9,16 +9,27 @@ Atmosphere Processes:
   Process 0:
     Process Name: RRTMGP
     Grid: Physics
-    Can Initialize All Inputs: true
 
 Grids Manager:
   Type: Physics Only
   Reference Grid: Physics
   Physics Only:
-    Number of global columns:  128
+    Number of global columns: 128
     Number of vertical levels: 42
 
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
-  Initial Conditions File: rad_standalone_ne4_pg2.nc
+  pmid: 0.0
+  pint: 0.0
+  tmid: 0.0
+  tint: 0.0
+  gas_vmr: 0.0
+  sfc_alb_dir: 0.0
+  sfc_alb_dif: 0.0
+  mu0: 0.0
+  lwp: 0.0
+  iwp: 0.0
+  rel: 0.0
+  rei: 0.0
+#  Initial Conditions File: rad_standalone_ne4_pg2.nc  #TODO, put this into a separate stand_alone test in a future PR
 ...

@@ -47,13 +47,12 @@ int main (int argc, char** argv) {
     // this will copy the first column of the input data (the first profile) ncol
     // times. We will then fill some fraction of these columns with clouds for
     // the test problem.
-    real2d p_lay;
-    real2d t_lay;
-    real2d p_lev;
-    real2d t_lev;
-    real2d col_dry;
+    real2d p_lay ("p_lay", ncol, nlay);
+    real2d t_lay ("t_lay", ncol, nlay);
+    real2d p_lev ("p_lev", ncol, nlay+1);
+    real2d t_lev ("t_lev", ncol, nlay+1);
     GasConcs gas_concs;
-    read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, ncol);
+    read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, ncol);
 
     // Initialize the RRTMGP interface; this will read in the k-distribution
     // data that contains information about absorption coefficients for gases
@@ -61,13 +60,14 @@ int main (int argc, char** argv) {
     rrtmgp::rrtmgp_initialize(gas_concs);
 
     // Setup dummy all-sky problem
-    real2d sfc_alb_dir;
-    real2d sfc_alb_dif;
-    real1d mu0;
-    real2d lwp;
-    real2d iwp;
-    real2d rel;
-    real2d rei;
+    int nswbands = 16;
+    real2d sfc_alb_dir ("sfc_alb_dir", nswbands, ncol);
+    real2d sfc_alb_dif ("sfc_alb_dif", nswbands, ncol);
+    real1d mu0 ("mu0", ncol);
+    real2d lwp ("lwp", ncol, nlay);
+    real2d iwp ("iwp", ncol, nlay);
+    real2d rel ("rel", ncol, nlay);
+    real2d rei ("rei", ncol, nlay);
     rrtmgpTest::dummy_atmos(
         inputfile, ncol, p_lay, t_lay,
         sfc_alb_dir, sfc_alb_dif, mu0,
@@ -89,7 +89,7 @@ int main (int argc, char** argv) {
     // NOTE: these will get replaced with AD stuff that handles these
     std::cout << "rrtmgp_main..." << std::endl;
     rrtmgp::rrtmgp_main(
-        p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry,
+        p_lay, t_lay, p_lev, t_lev, gas_concs,
         sfc_alb_dir, sfc_alb_dif, mu0,
         lwp, iwp, rel, rei,
         sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
@@ -111,7 +111,6 @@ int main (int argc, char** argv) {
     t_lay.deallocate();
     p_lev.deallocate();
     t_lev.deallocate();
-    col_dry.deallocate();
     sfc_alb_dir.deallocate();
     sfc_alb_dif.deallocate();
     mu0.deallocate();

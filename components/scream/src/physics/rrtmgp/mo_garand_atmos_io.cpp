@@ -5,17 +5,17 @@
 // Read in the data, then use only the first column, and copy it to all of the model columns
 // In the end, all model columns will be identical
 void read_atmos(std::string input_file, real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
-                GasConcs &gas_concs, real2d &col_dry, int ncol) {
+                GasConcs &gas_concs, int ncol) {
   simple_netcdf::SimpleNetCDF io;
   io.open(input_file , NC_NOWRITE);
 
   int nlay = io.getDimSize("lay");
   int nlev = io.getDimSize("lev");
 
-  p_lay = real2d("p_lay",ncol,nlay);
-  t_lay = real2d("t_lay",ncol,nlay);
-  p_lev = real2d("p_lev",ncol,nlev);
-  t_lev = real2d("t_lev",ncol,nlev);
+  //p_lay = real2d("p_lay",ncol,nlay);
+  //t_lay = real2d("t_lay",ncol,nlay);
+  //p_lev = real2d("p_lev",ncol,nlev);
+  //t_lev = real2d("t_lev",ncol,nlev);
 
   real2d tmp2d;
   // p_lay
@@ -76,17 +76,6 @@ void read_atmos(std::string input_file, real2d &p_lay, real2d &t_lay, real2d &p_
     });
     // Call set_vmr with only the first column from the data file copied among all of the model columns
     gas_concs.set_vmr( gas_names(igas) , tmp1d );
-  }
-
-  if ( io.varExists("col_dry") ) {
-    col_dry = real2d("col_dry",ncol,nlay);
-    tmp2d = real2d();     // Reset the tmp2d variable
-    io.read(tmp2d,"col_dry");
-    // for (int ilay=1 ; ilay <= nlay ; ilay++) {
-    //   for (int icol=1 ; icol <= ncol ; icol++) {
-    parallel_for( Bounds<2>(nlay,ncol) , YAKL_LAMBDA( int ilay, int icol) {
-      col_dry(icol,ilay) = tmp2d(1,ilay);
-    });
   }
 
   io.close();

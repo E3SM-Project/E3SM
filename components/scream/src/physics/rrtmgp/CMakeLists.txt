@@ -40,7 +40,6 @@ target_include_directories(rrtmgp PUBLIC
 set(INTERFACE_SRC
   atmosphere_radiation.cpp
   scream_rrtmgp_interface.cpp
-  rrtmgp_inputs_initializer.cpp
   mo_garand_atmos_io.cpp
   mo_load_coefficients.cpp
   mo_load_cloud_coefficients.cpp

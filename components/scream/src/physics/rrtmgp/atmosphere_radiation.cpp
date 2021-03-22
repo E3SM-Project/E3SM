@@ -1,18 +1,12 @@
 #include "ekat/ekat_assert.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
-#include "physics/rrtmgp/rrtmgp_inputs_initializer.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL/YAKL.h"
 
 namespace scream {
     RRTMGPRadiation::RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params) 
         : AtmosphereProcess::AtmosphereProcess(), m_rrtmgp_comm (comm), m_rrtmgp_params (params) {
-        /*
-         * Anything that can be initialized without grid information can be initialized here.
-         * I.e., universal constants, options, etc.
-         */
-        m_initializer = create_field_initializer<RRTMGPInputsInitializer>();
     }  // RRTMGPRadiation::RRTMGPRadiation
 
     void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -27,10 +21,7 @@ namespace scream {
         auto nondim = m/m;  // dummy unit for non-dimensional fields
         auto micron = m / 1000000;
 
-        auto VL  = FieldTag::VerticalLevel;
-        auto COL = FieldTag::Column;
-        auto VAR = FieldTag::Variable;
-        auto CMP = FieldTag::Component;
+        using namespace ShortFieldTagsNames;
 
         auto grid = grids_manager->get_grid("Physics");
         m_ncol = grid->get_num_local_dofs();
@@ -38,18 +29,17 @@ namespace scream {
 
         // Set up dimension layouts
         FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };
-        FieldLayout scalar3d_layout_mid { {COL,VL}, {m_ncol,m_nlay} };
-        FieldLayout scalar3d_layout_int { {COL,VL}, {m_ncol,m_nlay+1} };
+        FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_ncol,m_nlay} };
+        FieldLayout scalar3d_layout_int { {COL,LEV}, {m_ncol,m_nlay+1} };
         // Use VAR field tag for gases for now; consider adding a tag?
-        FieldLayout gas_layout          { {VAR,COL,VL}, {m_ngas,m_ncol,m_nlay} };
-        FieldLayout scalar2d_swband_layout { {CMP,COL}, {m_nswbands,m_ncol} };
+        FieldLayout gas_layout          { {COL,LEV,NGAS}, {m_ncol,m_nlay,m_ngas} };
+        FieldLayout scalar2d_swband_layout { {COL,SWBND}, {m_ncol,m_nswbands} };
 
         // Set required (input) fields here
         m_required_fields.emplace("pmid" , scalar3d_layout_mid, Pa, grid->name());
         m_required_fields.emplace("pint", scalar3d_layout_int, Pa, grid->name());
         m_required_fields.emplace("tmid" , scalar3d_layout_mid, K , grid->name());
         m_required_fields.emplace("tint" , scalar3d_layout_int, K , grid->name());
-        m_required_fields.emplace("col_dry", scalar3d_layout_mid, kgkg, grid->name());
         m_required_fields.emplace("gas_vmr", gas_layout, kgkg, grid->name());
         m_required_fields.emplace("sfc_alb_dir", scalar2d_swband_layout, nondim, grid->name());
         m_required_fields.emplace("sfc_alb_dif", scalar2d_swband_layout, nondim, grid->name());
@@ -84,52 +74,6 @@ namespace scream {
         GasConcs gas_concs;
         gas_concs.init(gas_names_1d,1,1);
         rrtmgp::rrtmgp_initialize(gas_concs);
-
-        // We may have to init some fields from within RRTMGP. This can be the case in a RRTMGP standalone run.
-        // Some options:
-        //  - we can tell RRTMGP it can init all inputs or specify which ones it can init. We call the
-        //    resulting list of inputs the 'initializable' (or initable) inputs. The default is
-        //    that no inputs can be inited.
-        //  - we can request that RRTMGP either inits no inputs or all of the initable ones (as specified
-        //    at the previous point). The default is that RRTMGP must be in charge of init ing ALL or NONE
-        //    of its initable inputs.
-        // Recall that:
-        //  - initable fields may not need initialization (e.g., some other atm proc that
-        //    appears earlier in the atm dag might provide them).
-        std::vector<std::string> rrtmgp_inputs = {
-            "pmid","pint","tmid","tint","col_dry","gas_vmr","sfc_alb_dir","sfc_alb_dif",
-            "mu0","lwp","iwp","rel","rei"
-        };
-        using strvec = std::vector<std::string>;
-        const strvec& allowed_to_init = m_rrtmgp_params.get<strvec>("Initializable Inputs",strvec(0));
-        const bool can_init_all = m_rrtmgp_params.get<bool>("Can Initialize All Inputs", false);
-        const bool init_all_or_none = m_rrtmgp_params.get<bool>("Must Init All Inputs Or None", true);
-        const strvec& initable = can_init_all ? rrtmgp_inputs : allowed_to_init;
-        //const strvec& initable = rrtmgp_inputs;
-        if (initable.size()>0) {
-            bool all_inited = true, all_uninited = true;
-            for (const auto& name : initable) {
-                const auto& f = m_rrtmgp_fields_in.at(name);
-                const auto& track = f.get_header().get_tracking();
-                if (track.get_init_type()==InitType::None) {
-                    // Nobody claimed to init this field. RRTMGPInputsInitializer will take care of it
-                    m_initializer->add_me_as_initializer(f);
-                    all_uninited &= true;
-                    all_inited &= false;
-                } else {
-                    all_uninited &= false;
-                    all_inited &= true;
-                }
-            }
-    
-            // In order to gurantee some consistency between inputs, it is best if RRTMGP
-            // initializes either none or all of the inputs.
-            EKAT_REQUIRE_MSG (
-                !init_all_or_none || all_inited || all_uninited,
-                "Error! Some rrtmgp inputs were marked to be inited by RRTMGP, while others weren't.\n"
-                "       RRTMGP was requested to init either all or none of the inputs.\n"
-            );
-        }
     }
 
     void RRTMGPRadiation::run_impl      (const Real dt) {
@@ -141,7 +85,6 @@ namespace scream {
         auto d_pint = m_rrtmgp_fields_in.at("pint").get_view();
         auto d_tmid = m_rrtmgp_fields_in.at("tmid").get_view();
         auto d_tint = m_rrtmgp_fields_in.at("tint").get_view();
-        auto d_col_dry = m_rrtmgp_fields_in.at("col_dry").get_view();
         auto d_gas_vmr = m_rrtmgp_fields_in.at("gas_vmr").get_view();
         auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("sfc_alb_dir").get_view();
         auto d_sfc_alb_dif = m_rrtmgp_fields_in.at("sfc_alb_dif").get_view();
@@ -161,10 +104,9 @@ namespace scream {
         yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay  ("t_lay", const_cast<Real*>(d_tmid.data()), m_ncol, m_nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev  ("p_lev",const_cast<Real*>(d_pint.data()), m_ncol, m_nlay+1);
         yakl::Array<double,2,memDevice,yakl::styleFortran> t_lev  ("t_lev",const_cast<Real*>(d_tint.data()), m_ncol, m_nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> col_dry("col_dry",const_cast<Real*>(d_col_dry.data()), m_ncol, m_nlay);
         yakl::Array<double,3,memDevice,yakl::styleFortran> gas_vmr("gas_vmr",const_cast<Real*>(d_gas_vmr.data()), m_ncol, m_nlay, m_ngas);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dir("sfc_alb_dir",const_cast<Real*>(d_sfc_alb_dir.data()), m_nswbands, m_ncol);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dif("sfc_alb_dif",const_cast<Real*>(d_sfc_alb_dif.data()), m_nswbands, m_ncol);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dir("sfc_alb_dir",const_cast<Real*>(d_sfc_alb_dir.data()), m_ncol, m_nswbands);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dif("sfc_alb_dif",const_cast<Real*>(d_sfc_alb_dif.data()), m_ncol, m_nswbands);
         yakl::Array<double,1,memDevice,yakl::styleFortran> mu0("mu0",const_cast<Real*>(d_mu0.data()), m_ncol);
         yakl::Array<double,2,memDevice,yakl::styleFortran> lwp("lwp",const_cast<Real*>(d_lwp.data()), m_ncol, m_nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> iwp("iwp",const_cast<Real*>(d_iwp.data()), m_ncol, m_nlay);
@@ -199,7 +141,7 @@ namespace scream {
         // Run RRTMGP driver
         rrtmgp::rrtmgp_main( 
           p_lay, t_lay, p_lev, t_lev,
-          gas_concs, col_dry,
+          gas_concs,
           sfc_alb_dir, sfc_alb_dif, mu0,
           lwp, iwp, rel, rei,
           sw_flux_up, sw_flux_dn, sw_flux_dn_dir,

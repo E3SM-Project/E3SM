@@ -88,7 +88,7 @@ namespace scream {
 
         void rrtmgp_main(
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev, 
-                GasConcs &gas_concs, real2d &col_dry,
+                GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, 
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
@@ -111,13 +111,13 @@ namespace scream {
 
             // Do shortwave
             rrtmgp_sw(
-                k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, 
+                k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, 
                 sfc_alb_dir, sfc_alb_dif, mu0, clouds_sw, fluxes_sw
             );
 
             // Do longwave
             rrtmgp_lw(
-                k_dist_lw, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry,
+                k_dist_lw, p_lay, t_lay, p_lev, t_lev, gas_concs,
                 clouds_lw, fluxes_lw
             );
             
@@ -175,7 +175,7 @@ namespace scream {
         void rrtmgp_sw(
                 GasOpticsRRTMGP &k_dist, 
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev, 
-                GasConcs &gas_concs, real2d &col_dry,
+                GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, OpticalProps2str &clouds,
                 FluxesBroadband &fluxes) {
 
@@ -200,14 +200,23 @@ namespace scream {
             clouds.delta_scale();
             clouds.increment(optics);
 
+            // RRTMGP assumes surface albedos have a screwy dimension ordering
+            // for some strange reason, so we need to transpose these
+            real2d sfc_alb_dir_T("sfc_alb_dir", nbnd, ncol);
+            real2d sfc_alb_dif_T("sfc_alb_dif", nbnd, ncol);
+            parallel_for(Bounds<2>(nbnd,ncol), YAKL_LAMBDA(int ibnd, int icol) {
+                sfc_alb_dir_T(ibnd,icol) = sfc_alb_dir(icol,ibnd);
+                sfc_alb_dif_T(ibnd,icol) = sfc_alb_dif(icol,ibnd);
+            });
+
             // Compute fluxes
-            rte_sw(optics, top_at_1, mu0, toa_flux, sfc_alb_dir, sfc_alb_dif, fluxes);
+            rte_sw(optics, top_at_1, mu0, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes);
         }
 
         void rrtmgp_lw(
                 GasOpticsRRTMGP &k_dist,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
-                GasConcs &gas_concs, real2d &col_dry,
+                GasConcs &gas_concs,
                 OpticalProps1scl &clouds,
                 FluxesBroadband &fluxes) {
 

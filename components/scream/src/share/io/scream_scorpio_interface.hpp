@@ -105,6 +105,16 @@ inline std::string get_nc_tag_name (const FieldTag& t, const int extent) {
     case VAR:
       name = "dim" + std::to_string(extent);
       break;
+    // Added for rrtmgp - TODO revisit this paradigm, see comment in field_tag.hpp
+    case NGAS:
+      name = "ngas";
+      break;
+    case SWBND:
+      name = "swband";
+      break;
+    case LWBND:
+      name = "lwband";
+      break;
     default:
       EKAT_ERROR_MSG("Error! Field tag not supported in netcdf files.");
   }
