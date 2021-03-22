@@ -398,11 +398,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, k, cell1, cell2, N, nEdges
+      integer :: iEdge, k, cell1, cell2, N, Nsurf, nEdges
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nEdgesArray
 
-      integer, dimension(:), pointer :: maxLevelEdgeTop
+      integer, dimension(:), pointer :: maxLevelEdgeTop, minLevelEdgeBot
 
       integer, dimension(:,:), pointer :: cellsOnEdge
 
@@ -416,17 +416,18 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       nEdges = nEdgesArray( 1 )
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels))
-      A(1)=0.0_RKIND
 
       !$omp parallel
       !$omp do schedule(runtime) private(N, cell1, cell2, A, B, C, velTemp, k)
       do iEdge = 1, nEdges
         N = maxLevelEdgeTop(iEdge)
+        Nsurf = minLevelEdgeBot(iEdge)
         if (N .gt. 0) then
 
          ! Compute A(k), B(k), C(k)
@@ -434,27 +435,30 @@ contains
          ! so recompute layerThicknessEdge here.
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-         do k = 1, N
+         do k = Nsurf, N
             layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
          end do
 
          ! A is lower diagonal term
-         do k = 2, N
+         A(1:Nsurf)=0.0_RKIND
+         do k = Nsurf+1, N
             A(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
                / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)) &
                / layerThicknessEdge(k,iEdge)
          enddo
 
          ! C is upper diagonal term
-         do k = 1, N-1
+         C(1:Nsurf-1)=0.0_RKIND
+         do k = Nsurf, N-1
             C(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
                / (layerThicknessEdge(k,iEdge) + layerThicknessEdge(k+1,iEdge)) &
                / layerThicknessEdge(k,iEdge)
          enddo
 
          ! B is diagonal term
-         B(1) = 1.0_RKIND - C(1)
-         do k = 2, N-1
+         B(1:Nsurf-1)=0.0_RKIND
+         B(Nsurf) = 1.0_RKIND - C(Nsurf)
+         do k = Nsurf+1, N-1
             B(k) = 1.0_RKIND - A(k) - C(k)
          enddo
 
@@ -463,9 +467,10 @@ contains
          B(N) = 1.0_RKIND - A(N) + dt*implicitBottomDragCoef &
               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThicknessEdge(N,iEdge)
 
-         call tridiagonal_solve(A(2:N),B,C(1:N-1),normalVelocity(:,iEdge),velTemp,N)
+         call tridiagonal_solve(A(Nsurf+1:N),B(Nsurf:N),C(Nsurf:N-1),normalVelocity(Nsurf:N,iEdge),velTemp(Nsurf:N),N-Nsurf+1)
 
-         normalVelocity(1:N,iEdge) = velTemp(1:N)
+         normalVelocity(1:Nsurf-1,iEdge) = 0.0_RKIND
+         normalVelocity(Nsurf:N,iEdge) = velTemp(Nsurf:N)
          normalVelocity(N+1:nVertLevels,iEdge) = 0.0_RKIND
 
         end if
@@ -917,11 +922,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, num_tracers, N, nCells
+      integer :: iCell, k, num_tracers, N, Nsurf, nCells
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
 
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: maxLevelCell, minLevelCell
 
       real (kind=RKIND), dimension(:), allocatable :: A,B,C
       real (kind=RKIND), dimension(:,:), allocatable :: tracersTemp, rhs
@@ -935,6 +940,7 @@ contains
       num_tracers = size(tracers, dim=1)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),tracersTemp(num_tracers,nVertLevels))
       allocate(rhs(num_tracers,nVertLevels))
@@ -946,40 +952,42 @@ contains
       !$omp do schedule(runtime) private(N, A, B, C, rhs, tracersTemp, k)
       do iCell = 1, nCells
          ! Compute A(k), B(k), C(k) for tracers
+         Nsurf = minLevelCell(iCell)
          N = maxLevelCell(iCell)
 
          ! A is lower diagonal term
-         A(1)=0.0_RKIND
-         do k = 2, N
+         A(Nsurf)=0.0_RKIND
+         do k = Nsurf+1, N
             A(k) = -2.0_RKIND*dt*vertDiffTopOfCell(k,iCell) &
                  / (layerThickness(k-1,iCell) + layerThickness(k,iCell)) / layerThickness(k,iCell)
          enddo
 
          ! C is upper diagonal term
-         do k = 1, N-1
+         do k = Nsurf, N-1
             C(k) = -2.0_RKIND*dt*vertDiffTopOfCell(k+1,iCell) &
                  / (layerThickness(k,iCell) + layerThickness(k+1,iCell)) / layerThickness(k,iCell)
          enddo
          C(N) = 0.0_RKIND
 
          ! B is diagonal term
-         do k = 1, N
+         do k = Nsurf, N
             B(k) = 1.0_RKIND - A(k) - C(k)
          enddo
 
          if ( config_cvmix_kpp_nonlocal_with_implicit_mix ) then
             call ocn_compute_kpp_rhs(tracers(:,:,iCell), rhs(:,:), dt, N, num_tracers, &
                              layerThickness(:,iCell), vertNonLocalFlux(:,:,iCell), &
-                             tracerGroupSurfaceFlux(:,iCell))
+                             tracerGroupSurfaceFlux(:,iCell)) !mlc-arguments may need to be changed
          else
             rhs(:,:) = tracers(:,:,iCell)
          endif
 
-         call tridiagonal_solve_mult(A(2:N), B, C(1:N-1), rhs(:,:), &
-              tracersTemp, N, nVertLevels, num_tracers)
+         call tridiagonal_solve_mult(A(Nsurf+1:N), B(Nsurf:N), C(Nsurf:N-1), rhs(:,Nsurf:N), &
+              tracersTemp(:,Nsurf:N), N-Nsurf+1, num_tracers)
 
-         tracers(:,1:N,iCell) = tracersTemp(:,1:N)
+         tracers(:,Nsurf:N,iCell) = tracersTemp(:,Nsurf:N)
          tracers(:,N+1:nVertLevels,iCell) = -1e34
+         tracers(:,1:Nsurf-1,iCell) = -1e34
       end do
       !$omp end do
       !$omp end parallel
@@ -1023,7 +1031,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: nonLocalSurfaceTracerFlux, tracerGroupSurfaceFlux
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
       real (kind=RKIND), dimension(:,:,:), allocatable :: nonLocalFluxTend
-      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
+      integer, dimension(:), pointer :: maxLevelCell, minLevelCell, maxLevelEdgeTop, minLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       type (mpas_pool_iterator_type) :: groupItr
@@ -1048,7 +1056,9 @@ contains
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeTop', minLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
 
@@ -1074,7 +1084,7 @@ contains
             vertViscTopOfEdge(:, iEdge) = 0.0_RKIND
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            do k=1,maxLevelEdgeTop(iEdge)
+            do k=minLevelEdgeTop(iEdge),maxLevelEdgeTop(iEdge)
                vertViscTopOfEdge(k,iEdge) = 0.5_RKIND*(vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k,cell1))
             end do
          end do
@@ -1314,12 +1324,12 @@ contains
 !>  c sup-diagonal, filled from 1:n-1  (c(1) apears on row 1)
 !
 !-----------------------------------------------------------------------
-subroutine tridiagonal_solve_mult(a,b,c,r,x,n,nDim,nSystems)!{{{
+subroutine tridiagonal_solve_mult(a,b,c,r,x,n,nSystems)!{{{
 
-   integer,intent(in) :: n, nDim, nSystems
+   integer,intent(in) :: n, nSystems
    real (KIND=RKIND), dimension(n), intent(in) :: a,b,c
-   real (KIND=RKIND), dimension(nSystems,nDim), intent(in) :: r
-   real (KIND=RKIND), dimension(nSystems,nDim), intent(out) :: x
+   real (KIND=RKIND), dimension(nSystems,n), intent(in) :: r
+   real (KIND=RKIND), dimension(nSystems,n), intent(out) :: x
    real (KIND=RKIND), dimension(n) :: bTemp
    real (KIND=RKIND), dimension(nSystems,n) :: rTemp
    real (KIND=RKIND) :: m
