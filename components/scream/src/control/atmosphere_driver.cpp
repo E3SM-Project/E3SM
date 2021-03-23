@@ -28,6 +28,8 @@ namespace control {
  *     get the information needed to complete the setup of the FieldIdentifiers of their fields
  *     (both required and computed). Their field identifiers MUST be completed upon return from
  *     the 'set_grids' method.
+ *     Note: at this stage, atm procs that act on non-ref grid(s) should be able to create their
+ *           remappers. The AD will *not* take care of remapping inputs/outputs of the process.
  *  4) Register all fields from all atm procs inside the field manager (or field repo, whatever you
  *     want to call it).
  *  5) Set all the fields into the atm procs. Before this point, all the atm procs had were the
@@ -39,25 +41,14 @@ namespace control {
  *           could cheat, and cast away the const, but we can't prevent that. However, in debug builds,
  *           we store 2 copies of each field, and use the extra copy to check, at run time, that
  *           no process alters the values of any of its input fields.
- *  6) The atm procs group builds the remappers. Remappers are objects that map fields from one grid
- *     to another. Currently, we perform remappings only to/from a reference grid (set in the GM).
- *     Before calling each atm proc in the group, the AtmosphereProcessGroup (APG) class will
- *     remap all its inputs from the ref grid to the grid(s) needed by the atm proc. Similarly,
- *     upon completion of the atm proc run call, all the outputs will be remapped back to the
- *     ref grid.
+ *  6) All the atm inputs (that the AD can deduce by asking the atm proc group for the required fiedls)
+ *     are initialized, by reading values from an initial conditions netcdf file.
+ *     If an atm input is not found in the IC file, we'll error out, saving a DAG of the
+ *     atm processes, which the user can inspect (to see what's missing in the IC file).
  *  7) All the atm process are initialized. During this call, atm process are able to set up
- *     all the internal structures that they were not able to init previously.
- *  8) All the atm inputs are initialized, according to the initialization type that was
- *     specified during step 5. This MUST happen AFTER step 7, since it MIGHT depend on
- *     an atm proc being fully init-ed. On the other hand, we cannot make this happen
- *     inside step 7 (assuming a field is marked as to be init-ed by a specific atm proc),
- *     since the atm proc does not yet know if the field needs to be inited or not (we haven't
- *     yet built/parsed the atm DAG).
- *  9) We build the atm DAG, and inspect its consistency. Each input of each atm proc must be
- *     computed by some other atm proc (possibly at the previous time step) or imported by
- *     the SurfaceCoupling (if present). If some dependency is not met, the AD will error out,
- *     and store the atm DAG in a file.
- * 10) Finally, set the initial time stamp on all fields, and perform some debug structure setup.
+ *     all the internal structures that they were not able to init previously. They can also
+ *     utilize their input fields to perform initialization of some internal data structure.
+ *  8) Finally, set the initial time stamp on all fields, and perform some debug structure setup.
  *
  */
 
@@ -293,14 +284,6 @@ void AtmosphereDriver::initialize_atm_procs ()
 
 void AtmosphereDriver::finish_setup ()
 {
-  // Note 1: remappers should be setup *after* fields have been set in the atm processes,
-  //       just in case some atm proc sets some extra data in the field header,
-  //       that some remappers may actually need.
-  // Note 2: setup the remapper *after* atm procs are fully init-ed. This allows
-  //         dynamics to complete its initialization, which is needed by the
-  //         phys-dyn remapper (which uses homme's mpi infrastructure).
-  m_atm_process_group->setup_remappers(*m_field_repo);
-
 #ifdef SCREAM_DEBUG
   // In debug mode, we create a bkp field repo. We'll use it for a
   // very scrupolous check, to ensure atm procs don't update fields

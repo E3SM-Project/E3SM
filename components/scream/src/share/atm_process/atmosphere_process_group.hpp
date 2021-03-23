@@ -1,7 +1,6 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 
-#include "share/grid/remap/abstract_remapper.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
@@ -26,8 +25,6 @@ class AtmosphereProcessGroup : public AtmosphereProcess
 {
 public:
   using atm_proc_type     = AtmosphereProcess;
-  using remapper_type     = AbstractRemapper<Real>;
-  using remapper_ptr_type = std::shared_ptr<remapper_type>;
 
   // Constructor(s)
   explicit AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -72,14 +69,6 @@ public:
     return m_atm_processes.at(i);
   }
 
-  void setup_remappers (const FieldRepository<Real>& field_repo);
-
-  const std::vector<std::map<std::string,remapper_ptr_type>>&
-  get_inputs_remappers () const { return m_inputs_remappers; }
-
-  const std::vector<std::map<std::string,remapper_ptr_type>>&
-  get_outputs_remappers () const { return m_outputs_remappers; }
-
   ScheduleType get_schedule_type () const { return m_group_schedule_type; }
 
 #ifdef SCREAM_DEBUG
@@ -89,12 +78,8 @@ public:
 
 protected:
 
-  // Adds fid to the list of required/computed fields of the group (as a whole),
-  // and sets up remapper in/out of the process.
-  void process_required_field (const FieldIdentifier& fid,
-                               const remapper_ptr_type& remap_in);
-  void process_computed_field (const FieldIdentifier& fid,
-                               const remapper_ptr_type& remap_out);
+  // Adds fid to the list of required/computed fields of the group (as a whole).
+  void process_required_field (const FieldIdentifier& fid);
 
   // The initialization, run, and finalization methods
   void initialize_impl (const TimeStamp& t0);
@@ -107,11 +92,6 @@ protected:
   // The methods to set the fields in the process
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
-
-  // Method to build the identifier of a field on the reference grid given
-  // an identifier on a different grid
-  FieldIdentifier create_ref_fid (const FieldIdentifier& fid,
-                                  const remapper_ptr_type& remapper);
 
   // The communicator that each process in this group uses
   ekat::Comm        m_comm;
@@ -135,26 +115,6 @@ protected:
   // The cumulative set of required/computed fields of the atm processes in the group
   std::set<FieldIdentifier>      m_required_fields;
   std::set<FieldIdentifier>      m_computed_fields;
-
-  // The remappers are to map output/input fields to/from the reference grid
-  // Note: the i-th entry of the vector is a map of remappers needed by the i-th process.
-  //       the map's key is the name of the non-reference grid.
-  //       Notice that, as of today (07/2019), only AtmosphereProcessGroup (APG)
-  //       can have more than one grid associated with it (the union of the
-  //       grids of all the stored processes), while 'normal' atm processes
-  //       should act on *only one grid*. Furthermore, we don't need to perform
-  //       remapping for a stored APG, since the APG will already do it itself,
-  //       so we only need remappers for 'normal' processes.
-  //       It would then be tempting to replace std::map<std::string,remapper_ptr_type>
-  //       with simply a remapper_ptr_type. This would be probably fine.
-  //       However, if this assumption (only one grid per atm proc) becomes
-  //       wrong, it may be hard for someone to jump in and adapt the code.
-  //       At the very least, it would be harder than it is for me to write
-  //       the code in a more general fashion right from the beginning.
-  //       There's no real performance issue in coding for a more general
-  //       scenario, and may prevent headaches in the future.
-  std::vector<std::map<std::string,remapper_ptr_type>> m_inputs_remappers;
-  std::vector<std::map<std::string,remapper_ptr_type>> m_outputs_remappers;
 
 #ifdef SCREAM_DEBUG
   using field_type = Field<Real>;
