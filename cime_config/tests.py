@@ -129,6 +129,7 @@ _TESTS = {
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
             "SMS_B.ne4_ne4.F-EAM-AQP1.eam-hommexx",
             )
         },
@@ -160,7 +161,6 @@ _TESTS = {
             "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-genmmf",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP.eam-genmmf",
             )
