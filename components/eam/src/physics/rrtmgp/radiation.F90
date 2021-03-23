@@ -30,10 +30,9 @@ module radiation
    use rrtmgp_interface, only: &
       rrtmgp_initialize, rrtmgp_finalize, &
       rrtmgp_run_sw, rrtmgp_run_lw, &
-      get_min_temperature, &
-      get_max_temperature, &
+      get_min_temperature, get_max_temperature, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
-      get_ngpt_sw, get_ngpt_lw
+      nswgpts, nlwgpts
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
@@ -186,9 +185,6 @@ module radiation
 
    ! Indices to pbuf fields
    integer :: cldfsnow_idx = 0
-
-   ! These come from RRTMGP input data
-   integer :: nswgpts, nlwgpts
 
    !============================================================================
 
@@ -486,10 +482,6 @@ contains
 
       ! Setup the RRTMGP interface
       call rrtmgp_initialize(size(active_gases), active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
-
-      ! Set number of gpoints in sw and lw based on input data read above
-      nswgpts = get_ngpt_sw()
-      nlwgpts = get_ngpt_lw()
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL

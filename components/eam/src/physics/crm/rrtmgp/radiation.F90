@@ -30,22 +30,11 @@ module radiation
    ! here so that we can make the k_dist objects module data and only load them
    ! once.
    use rrtmgp_interface, only: &
-      rrtmgp_initialize, rrtmgp_run_sw, rrtmgp_run_lw, &
-      rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
-      rrtmgp_get_min_temperature => get_min_temperature, &
-      rrtmgp_get_max_temperature => get_max_temperature, &
+      rrtmgp_initialize, rrtmgp_finalize, &
+      rrtmgp_run_sw, rrtmgp_run_lw, &
+      get_min_temperature, get_max_temperature, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
       nswgpts, nlwgpts
-   use rrtmgpxx_interface, only: &
-      rrtmgpxx_initialize, rrtmgpxx_finalize, &
-      rrtmgpxx_run_sw, rrtmgpxx_run_lw, &
-      rrtmgpxx_get_min_temperature => get_min_temperature, &
-      rrtmgpxx_get_max_temperature => get_max_temperature, &
-      rrtmgpxx_get_gpoint_bands_sw => get_gpoint_bands_sw, &
-      rrtmgpxx_get_gpoint_bands_lw => get_gpoint_bands_lw, &
-      c_strarr, &
-      get_nband_sw, get_nband_lw, &
-      get_ngpt_sw, get_ngpt_lw
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
@@ -502,30 +491,7 @@ contains
       call perturbation_growth_init()
 
       ! Setup the RRTMGP interface
-      call rrtmgp_initialize(active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
-      call rrtmgpxx_initialize( &
-         size(active_gases), c_strarr(active_gases, active_gases_c), &
-         trim(rrtmgp_coefficients_file_sw)//C_NULL_CHAR, &
-         trim(rrtmgp_coefficients_file_lw)//C_NULL_CHAR &
-      )
-
-      ! Make sure number of bands in absorption coefficient files matches what we expect
-      call assert(nswbands == rrtmgp_nswbands, 'nswbands does not match absorption coefficient data')
-      call assert(nlwbands == rrtmgp_nlwbands, 'nlwbands does not match absorption coefficient data')
-
-      ! Make sure number of bands in absorption coefficient files matches what we expect
-      !call assert(nswbands == rrtmgp_nswbands, 'nswbands does not match absorption coefficient data')
-      !call assert(nlwbands == rrtmgp_nlwbands, 'nlwbands does not match absorption coefficient data')
-      call assert(nswbands == get_nband_sw(), 'nswbands does not match RRTMGPXX absorption coefficient data')
-      call assert(nlwbands == get_nband_lw(), 'nlwbands does not match RRTMGPXX absorption coefficient data')
-
-      ! Check that gpoints are consistent after initialization
-      call assert(nswgpts == get_ngpt_sw(), 'nswgpts does not match RRTMGPXX absorption coefficient data')
-      call assert(nlwgpts == get_ngpt_lw(), 'nlwgpts does not match RRTMGPXX absorption coefficient data')
-
-      ! Check that min and max temperatures are consistent
-      call assert(rrtmgp_get_min_temperature() == rrtmgpxx_get_min_temperature(), 'RRTMGP and RRTMGPXX min temperatures do not match.')
-      call assert(rrtmgp_get_max_temperature() == rrtmgpxx_get_max_temperature(), 'RRTMGP and RRTMGPXX max temperatures do not match.')
+      call rrtmgp_initialize(size(active_gases), active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
@@ -947,7 +913,7 @@ contains
    end subroutine radiation_init
 
    subroutine radiation_final()
-      call rrtmgpxx_finalize()
+      call rrtmgp_finalize()
    end subroutine radiation_final
 
    subroutine perturbation_growth_init()
@@ -1554,11 +1520,11 @@ contains
                      ! values to min/max specified
                      call t_startf('rad_check_temperatures')
                      call handle_error(clip_values( &
-                        tmid_col(1:ncol,1:nlev_rad), rrtmgp_get_min_temperature(), rrtmgp_get_max_temperature(), &
+                        tmid_col(1:ncol,1:nlev_rad), get_min_temperature(), get_max_temperature(), &
                         trim(subname) // ' tmid' &
                      ), fatal=.false., warn=rrtmgp_enable_temperature_warnings)
                      call handle_error(clip_values( &
-                        tint_col(1:ncol,1:nlev_rad+1), rrtmgp_get_min_temperature(), rrtmgp_get_max_temperature(), &
+                        tint_col(1:ncol,1:nlev_rad+1), get_min_temperature(), get_max_temperature(), &
                         trim(subname) // ' tint' &
                      ), fatal=.false., warn=rrtmgp_enable_temperature_warnings)
                      call t_stopf('rad_check_temperatures')
@@ -1599,7 +1565,7 @@ contains
                         end do
                         ! And now do the MCICA sampling to get cloud optical properties by
                         ! gpoint/cloud state
-                        call rrtmgpxx_get_gpoint_bands_sw(gpoint_bands_sw)
+                        call get_gpoint_bands_sw(gpoint_bands_sw)
                         call sample_cloud_optics_sw( &
                            ncol, pver, nswgpts, gpoint_bands_sw, &
                            state%pmid, cld, cldfsnow, &
@@ -1625,7 +1591,7 @@ contains
                            lambdac, mu, dei, des, rei, &
                            cld_tau_bnd_lw, liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw &
                         )
-                        call rrtmgpxx_get_gpoint_bands_lw(gpoint_bands_lw)
+                        call get_gpoint_bands_lw(gpoint_bands_lw)
                         call sample_cloud_optics_lw( &
                            ncol, pver, nlwgpts, gpoint_bands_lw, &
                            state%pmid, cld, cldfsnow, &
@@ -1687,7 +1653,7 @@ contains
                ! Calculate shortwave fluxes
                call t_startf('rad_radiation_driver_sw')
                if (.true.) call radiation_driver_sw(ncol_tot, &
-                                  active_gases, vmr_all, &
+                                  vmr_all, &
                                   pmid, pint, tmid, albedo_dir_all, albedo_dif_all, coszrs_all, &
                                   cld_tau_gpt_sw_all, cld_ssa_gpt_sw_all, cld_asm_gpt_sw_all, &
                                   aer_tau_bnd_sw_all, aer_ssa_bnd_sw_all, aer_asm_bnd_sw_all, &
@@ -1790,7 +1756,7 @@ contains
                ! Calculate longwave fluxes
                call t_startf('rad_fluxes_lw')
                call radiation_driver_lw(                                        &
-                  active_gases, vmr_all(:,1:ncol_tot,1:pver),               &
+                  vmr_all(:,1:ncol_tot,1:pver),               &
                   surface_emissivity(1:nlwbands,1:ncol_tot),                    &
                   pmid(1:ncol_tot,1:nlev_rad  ), tmid(1:ncol_tot,1:nlev_rad  ), &
                   pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,1:nlev_rad+1), &
@@ -1929,7 +1895,7 @@ contains
    end subroutine radiation_tend
 
    subroutine radiation_driver_sw(ncol, &
-                                  gas_names, gas_vmr, &
+                                  gas_vmr, &
                                   pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
                                   cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
                                   aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd, &
@@ -1942,7 +1908,6 @@ contains
       integer, intent(in) :: ncol
       type(fluxes_t), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(inout) :: qrs(:,:), qrsc(:,:)
-      character(len=*), intent(in), dimension(:) :: gas_names
       real(r8), intent(in), dimension(:,:,:) :: gas_vmr
       real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid
       real(r8), intent(in), dimension(:,:) :: albedo_dir, albedo_dif
@@ -1955,8 +1920,8 @@ contains
       real(r8), dimension(nswbands,ncol) :: albedo_dir_day, albedo_dif_day
       real(r8), dimension(ncol,nlev_rad) :: pmid_day, tmid_day
       real(r8), dimension(ncol,nlev_rad+1) :: pint_day
-      real(r8), dimension(size(gas_names),ncol,pver) :: gas_vmr_day
-      real(r8), dimension(size(gas_names),ncol,nlev_rad) :: gas_vmr_rad
+      real(r8), dimension(size(gas_vmr, 1),ncol,pver) :: gas_vmr_day
+      real(r8), dimension(size(gas_vmr, 1),ncol,nlev_rad) :: gas_vmr_rad
       real(r8), dimension(ncol,pver,nswgpts) :: cld_tau_gpt_day, cld_ssa_gpt_day, cld_asm_gpt_day
       real(r8), dimension(ncol,pver,nswbands) :: aer_tau_bnd_day, aer_ssa_bnd_day, aer_asm_bnd_day
       type(fluxes_t) :: fluxes_allsky_day, fluxes_clrsky_day
@@ -2060,10 +2025,10 @@ contains
       gas_vmr_rad(:,1:nday,ktop:kbot) = gas_vmr_day(:,1:nday,1:pver)
 
       ! Do shortwave radiative transfer calculations
-      call t_startf('rad_rrtmgpxx_run_sw')
-      call rrtmgpxx_run_sw( &
+      call t_startf('rad_rrtmgp_run_sw')
+      call rrtmgp_run_sw( &
          size(active_gases), nday, nlev_rad, &
-         c_strarr(active_gases, active_gases_c), gas_vmr_rad(:,1:nday,1:nlev_rad), &
+         gas_vmr_rad(:,1:nday,1:nlev_rad), &
          pmid_day(1:nday,1:nlev_rad), &
          tmid_day(1:nday,1:nlev_rad), &
          pint_day(1:nday,1:nlev_rad+1), &
@@ -2078,7 +2043,7 @@ contains
          fluxes_clrsky_day%bnd_flux_up, fluxes_clrsky_day%bnd_flux_dn, fluxes_clrsky_day%bnd_flux_net, fluxes_clrsky_day%bnd_flux_dn_dir, &
          tsi_scaling &
       )
-      call t_stopf('rad_rrtmgpxx_run_sw')
+      call t_stopf('rad_rrtmgp_run_sw')
 
       ! Expand fluxes from daytime-only arrays to full chunk arrays
       call t_startf('rad_expand_fluxes_sw')
@@ -2111,14 +2076,13 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine radiation_driver_lw(gas_names, gas_vmr, surface_emissivity, &
+   subroutine radiation_driver_lw(gas_vmr, surface_emissivity, &
                                 pmid, tmid, pint, tint, &
                                 cld_tau_gpt, aer_tau_bnd, &
                                 fluxes_allsky, fluxes_clrsky)
 
       use perf_mod, only: t_startf, t_stopf
 
-      character(len=*), intent(in) :: gas_names(:)
       real(r8), intent(in) :: gas_vmr(:,:,:)
       real(r8), intent(in) :: surface_emissivity(:,:)
       real(r8), intent(in) :: pmid(:,:), tmid(:,:), pint(:,:), tint(:,:)
@@ -2144,10 +2108,10 @@ contains
       gas_vmr_rad(:,1:ncol,ktop:kbot) = gas_vmr(:,1:ncol,:)
 
       ! Compute fluxes
-      call t_startf('rrtmgpxx_run_lw')
-      call rrtmgpxx_run_lw( &
+      call t_startf('rrtmgp_run_lw')
+      call rrtmgp_run_lw( &
          size(active_gases), ncol, nlev_rad, &
-         c_strarr(active_gases, active_gases_c), gas_vmr_rad(:,1:ncol,:), &
+         gas_vmr_rad(:,1:ncol,:), &
          pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), pint(1:ncol,1:nlev_rad+1), tint(1:ncol,1:nlev_rad+1), &
          surface_emissivity(1:nlwbands,1:ncol), &
          cld_tau_gpt_rad(1:ncol,:,:)  , aer_tau_bnd_rad(1:ncol,:,:)  , &
@@ -2156,7 +2120,7 @@ contains
          fluxes_clrsky%flux_up    , fluxes_clrsky%flux_dn    , fluxes_clrsky%flux_net    , &
          fluxes_clrsky%bnd_flux_up, fluxes_clrsky%bnd_flux_dn, fluxes_clrsky%bnd_flux_net  &
          )
-      call t_stopf('rrtmgpxx_run_lw')
+      call t_stopf('rrtmgp_run_lw')
    end subroutine radiation_driver_lw
 
    !----------------------------------------------------------------------------

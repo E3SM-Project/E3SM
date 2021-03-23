@@ -156,6 +156,9 @@ contains
          trim(coefficients_file_sw)//C_NULL_CHAR, &
          trim(coefficients_file_lw)//C_NULL_CHAR &
       )
+      ! Set number of gpoints
+      nswgpts = get_ngpt_sw()
+      nlwgpts = get_ngpt_lw()
    end subroutine rrtmgp_initialize
 
    ! Utility function to convert F90 string arrays to C-compatible string
