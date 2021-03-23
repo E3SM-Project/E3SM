@@ -206,7 +206,6 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
 // =========================================================================================
 void P3Microphysics::run_impl (const Real dt)
 {
-  // std::array<const char*, num_views> view_names = {"q", "FQ", "T", "zi", "pmid", "dpres", "ast", "ni_activated", "nc_nuceat_tend"};
 
   std::vector<const Real*> in;
   std::vector<Real*> out;

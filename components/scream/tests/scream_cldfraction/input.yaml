@@ -1,0 +1,27 @@
+%YAML 1.1
+---
+Debug:
+  Atmosphere DAG Verbosity Level: 5
+
+Atmosphere Processes:
+  Number of Entries: 1
+
+  Process 0:
+    Process Name: CldFrac
+    Grid: Physics
+
+Grids Manager:
+  Type: Physics Only
+  Reference Grid: Physics
+  Physics Only:
+    Number of global columns:   866
+    Number of vertical levels:  72  # Will want to change to 128 when a valid unit test is available.
+
+# The name of the file containing the initial conditions for this test.
+Initial Conditions:
+  Initial Conditions File: cldfrac_standalone_ne4_ne4.nc
+
+## The name of the output control file for this test.
+#Output Manager:
+# Output YAML Files: ["p3_standalone_output.yaml"] 
+...
