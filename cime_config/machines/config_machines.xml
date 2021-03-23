@@ -2791,9 +2791,6 @@
     <SAVE_TIMING_DIR>/gpfs/alpine/proj-shared/$PROJECT</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>cli115,cli127</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
-    <!-- In case you wish to try HOME for building to check for filesystem issues, uncomment following -->
-    <!-- You may have to change RUNDIR below to use scratch file sustem.  -->
-    <!-- <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch/$PROJECT</CIME_OUTPUT_ROOT> -->
     <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/archive/$CASE</DOUT_S_ROOT>
@@ -2811,45 +2808,30 @@
     <MAX_MPITASKS_PER_NODE compiler="pgigpu">18</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnugpu">42</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="spectrum-mpi" compiler="ibmgpu">
-      <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
-      <arguments>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }} -gpu</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="spectrum-mpi" compiler="pgigpu">
-      <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
-      <arguments>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }} -gpu</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="spectrum-mpi" compiler="gnugpu">
-      <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
-      <arguments>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }} -gpu</arg>
-      </arguments>
-    </mpirun>
     <mpirun mpilib="spectrum-mpi">
-      <!-- Use a helper script to tweak jsrun options -->
-      <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
-      <!-- <executable>jsrun</executable> -->
+      <executable>jsrun</executable>
       <arguments>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }}</arg>
+        <arg name="nthreads">-X 1 -E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
+        <arg name="num_rs">--nrs $ENV{NUM_RS}</arg>
+        <arg name="rs_per_node">--rs_per_host $ENV{RS_PER_NODE}</arg>
+        <arg name="tasks_per_rs">--tasks_per_rs $SHELL{echo "{{ tasks_per_node }}/$RS_PER_NODE"|bc}</arg>
+        <arg name="distribute">-d plane:$SHELL{echo "{{ tasks_per_node }}/$RS_PER_NODE"|bc}</arg>
+        <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
+        <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
+        <arg name="bind">--bind packed:smt:$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</arg>
+        <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
+        <arg name="stdio_mode">--stdio_mode prepended</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <!-- list of init_path elements, one per supported language e.g. sh, perl, python-->
       <init_path lang="sh">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/sh</init_path>
       <init_path lang="csh">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/csh</init_path>
       <init_path lang="python">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/env_modules_python.py</init_path>
       <init_path lang="perl">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/lmod/init/perl</init_path>
-      <!-- list of cmd_path elements, one for every supported language, e.g. sh, perl, python -->
       <cmd_path lang="perl">module</cmd_path>
       <cmd_path lang="python">/sw/summit/lmod/7.7.10/rhel7.3_gnu4.8.5/lmod/7.7.10/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
-
-      <!-- Always execute -->
       <modules>
         <command name="purge"/>
         <command name="ls"/>
@@ -2861,7 +2843,6 @@
         <command name="load">essl/6.1.0-2</command>
         <command name="load">netlib-lapack/3.8.0</command>
       </modules>
-      <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi.*">
         <command name="load">pgi/19.9</command>
         <command name="load">pgi-cxx14/default</command>
@@ -2888,8 +2869,6 @@
         <command name="load">netcdf/4.6.1</command>
         <command name="load">netcdf-fortran/4.4.4</command>
       </modules>
-      <!-- mpi lib settings -->
-      <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
         <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
@@ -2902,50 +2881,55 @@
       <modules compiler="gnugpu" mpilib="!mpi-serial">
         <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
-
       <modules>
         <command name="load">parallel-netcdf/1.8.1</command>
         <command name="load">hdf5/1.10.4</command>
       </modules>
-
     </module_system>
-    <!-- <RUNDIR>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch/$CASE/run</RUNDIR> -->
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <!-- Ref: https://www.olcf.ornl.gov/for-users/system-user-guides/summit/ -->
-    <!-- 1 core/socket not available for application, so 168 = 42cores*4 in smt4 mode  -->
-
-    <!-- Useful jsrun options:
-     -n	(hyphen-hyphen)nrs	Number of resource sets
-     -a	(hyphen-hyphen)tasks_per_rs	Number of tasks per resource set
-     -c	(hyphen-hyphen)cpu_per_rs	Number of CPUs per resource set. Threads per rs.
-     -g	(hyphen-hyphen)gpu_per_rs	Number of GPUs per resource set
-     -r	(hyphen-hyphen)rs_per_host	Number of resource sets per host
-     -->
-
-    <!-- Default -->
     <environment_variables>
-      <env name="COMPILER">$COMPILER</env>
-      <env name="MPILIB">$MPILIB</env>
       <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_ROOT}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
-      <env name="NETCDF_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
-      <env name="NETCDFF">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
-      <env name="NETLIB_LAPACK_PATH">$ENV{OLCF_NETLIB_LAPACK_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
-      <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
     </environment_variables>
-    <!-- <environment_variables mpilib="!mpi-serial" compiler="pgigpu"> -->
-      <!-- <env name="OMPI_CXX">$SRCROOT/externals/kokkos/bin/nvcc_wrapper</env> -->
-    <!-- </environment_variables> -->
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="RS_PER_NODE">2</env>
+      <env name="CPU_PER_RS">21</env>
+      <env name="GPU_PER_RS">0</env>
+      <env name="LTC_PRT">cpu-cpu</env>
+      <env name="NUM_RS">$SHELL{echo "2*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+    </environment_variables>
+    <environment_variables compiler="ibmgpu">
+      <env name="RS_PER_NODE">6</env>
+      <env name="CPU_PER_RS">7</env>
+      <env name="GPU_PER_RS">1</env>
+      <env name="LTC_PRT">gpu-cpu</env>
+      <env name="NUM_RS">$SHELL{echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+    </environment_variables>
+    <environment_variables compiler="pgigpu">
+      <env name="RS_PER_NODE">6</env>
+      <env name="CPU_PER_RS">3</env>
+      <env name="GPU_PER_RS">1</env>
+      <env name="LTC_PRT">gpu-cpu</env>
+      <env name="NUM_RS">$SHELL{echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+    </environment_variables>
+    <environment_variables compiler="gnugpu">
+      <env name="RS_PER_NODE">6</env>
+      <env name="CPU_PER_RS">7</env>
+      <env name="GPU_PER_RS">1</env>
+      <env name="LTC_PRT">gpu-cpu</env>
+      <env name="NUM_RS">$SHELL{echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="modex">
