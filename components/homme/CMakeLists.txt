@@ -23,6 +23,11 @@ ELSE ()
   SET (HOMME_BUILD_EXECS FALSE)
 ENDIF ()
 
+
+message ("ADD_Fortran_FLAGS = ${ADD_Fortran_FLAGS}")
+#set (ADD_C_FLAGS "-g ${extra_flags}" CACHE STRING "")
+#set (ADD_CXX_FLAGS "-g ${extra_flags}" CACHE STRING "")
+
 INCLUDE(FortranCInterface)
 
 IF (${HOMME_BUILD_EXECS})
