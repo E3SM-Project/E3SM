@@ -10,29 +10,22 @@ module SoilLittDecompMod
   use shr_const_mod          , only : SHR_CONST_TKFRZ
   use decompMod              , only : bounds_type
   use perf_mod               , only : t_startf, t_stopf
+  use perfMod_GPU
   use elm_varctl             , only : iulog, use_lch4, use_century_decomp
   use elm_varcon             , only : dzsoi_decomp
   use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
-  use DecompCascadeCNMod   , only : decomp_rate_constants_cn
-  use DecompCascadeBGCMod  , only : decomp_rate_constants_bgc
-  use CNNitrifDenitrifMod    , only : nitrif_denitrif
-  use VerticalProfileMod   , only : decomp_vertprofiles
+  use DecompCascadeCNMod     , only : decomp_rate_constants_cn
+  use DecompCascadeBGCMod    , only : decomp_rate_constants_bgc
+  use NitrifDenitrifMod    , only : nitrif_denitrif
+  use VerticalProfileMod     , only : decomp_vertprofiles
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
-  use CNNitrogenStateType    , only : nitrogenstate_type
-  use CNNitrogenFluxType     , only : nitrogenflux_type
   !!  add phosphorus  -X. YANG
-  use PhosphorusStateType    , only : phosphorusstate_type
-  use PhosphorusFluxType     , only : phosphorusflux_type
   use elm_varctl             , only : nu_com
 
-  use CNCarbonStateType      , only : carbonstate_type
-  use CNCarbonFluxType       , only : carbonflux_type
   use PhotosynthesisType     , only : photosyns_type
   use CanopyStateType        , only : canopystate_type
   use SoilStateType          , only : soilstate_type
-  use TemperatureType        , only : temperature_type
-  use WaterStateType         , only : waterstate_type
   use CH4Mod                 , only : ch4_type
   use cropType               , only : crop_type
   use ColumnDataType         , only : col_cs, col_cf
@@ -50,60 +43,56 @@ module SoilLittDecompMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
 
-  public :: readSoilLittDecompParams
+   public :: readSoilLittDecompParams
   public :: SoilLittDecompAlloc
   ! pflotran
   public :: SoilLittDecompAlloc2
   !
-  type, private :: CNDecompParamsType
-     real(r8) :: dnp         !denitrification proportion
+  type, public :: CNDecompParamsType
+     real(r8), pointer :: dnp => null()         !denitrification proportion
   end type CNDecompParamsType
 
-  type(CNDecompParamsType),private ::  CNDecompParamsInst
+  type(CNDecompParamsType)  , public ::  CNDecompParamsInst
+  !$acc declare create(CNDecompParamsInst)
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine readSoilLittDecompParams ( ncid )
-    !
-    ! !DESCRIPTION:
-    ! Read parameters
-    !
-    ! !USES:
-    use ncdio_pio    , only: file_desc_t,ncd_io
-    use abortutils   , only: endrun
-    use shr_log_mod  , only: errMsg => shr_log_errMsg
+   subroutine readSoilLittDecompParams ( ncid )
+     !
+     ! !DESCRIPTION:
+     ! Read parameters
+     !
+     ! !USES:
+     use ncdio_pio    , only: file_desc_t,ncd_io
+     use abortutils   , only: endrun
+     use shr_log_mod  , only: errMsg => shr_log_errMsg
 
-    ! !ARGUMENTS:
-    implicit none
-    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
-    !
-    ! !LOCAL VARIABLES:
-    character(len=32)  :: subname = 'CNDecompParamsType'
-    character(len=100) :: errCode = '-Error reading in parameters file:'
-    logical            :: readv ! has variable been read in or not
-    real(r8)           :: tempr ! temporary to read in constant
-    character(len=100) :: tString ! temp. var for reading
-    !-----------------------------------------------------------------------
+     ! !ARGUMENTS:
+     implicit none
+     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+     !
+     ! !LOCAL VARIABLES:
+     character(len=32)  :: subname = 'CNDecompParamsType'
+     character(len=100) :: errCode = '-Error reading in parameters file:'
+     logical            :: readv ! has variable been read in or not
+     real(r8)           :: tempr ! temporary to read in constant
+     character(len=100) :: tString ! temp. var for reading
+     !-----------------------------------------------------------------------
+     allocate(CNDecompParamsInst%dnp)
+     tString='dnp'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     CNDecompParamsInst%dnp=tempr
 
-    tString='dnp'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompParamsInst%dnp=tempr 
-
-  end subroutine readSoilLittDecompParams
+   end subroutine readSoilLittDecompParams
 
 !-------------------------------------------------------------------------------------------------
   subroutine SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
                 num_soilp, filter_soilp,                        &
                 canopystate_vars, soilstate_vars,               &
-                temperature_vars, waterstate_vars,              &
-                cnstate_vars, ch4_vars,                         &
-                carbonstate_vars, carbonflux_vars,              &
-                nitrogenstate_vars, nitrogenflux_vars,          &
-                phosphorusstate_vars,phosphorusflux_vars,       &
-                elm_fates)
+                cnstate_vars, ch4_vars, dtime)
 
     !-----------------------------------------------------------------------------
     ! DESCRIPTION:
@@ -118,44 +107,31 @@ contains
 
     ! !USES:
 !    use AllocationMod , only: CNAllocation
+      !$acc routine seq
     use AllocationMod , only: Allocation2_ResolveNPLimit ! Phase-2 of CNAllocation
     !
     ! !ARGUMENT:
-    type(bounds_type)        , intent(in)    :: bounds   
+    type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc          ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)    ! filter for soil columns
     integer                  , intent(in)    :: num_soilp          ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)    ! filter for soil patches
-!    type(photosyns_type)     , intent(in)    :: photosyns_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(temperature_type)   , intent(in)    :: temperature_vars
-    type(waterstate_type)    , intent(in)    :: waterstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-!    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-!    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     ! add phosphorus --
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-    type(hlm_fates_interface_type), intent(inout), optional :: elm_fates
-    
 !    type(crop_type)          , intent(in)    :: crop_vars
+    real(r8),   intent(in)    :: dtime
     !
     ! !LOCAL VARIABLES:
     integer :: c,j,k,l,m                                                                               !indices
     integer :: fc                                                                                      !lake filter column index
     real(r8):: p_decomp_cpool_loss(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential C loss from one pool to another
-    !real(r8):: pmnf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential mineral N flux, from one pool to another
-    !real(r8):: pmpf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential mineral P flux, from one pool to another
     real(r8):: immob(bounds%begc:bounds%endc,1:nlevdecomp)                                             !potential N immobilization
     real(r8):: immob_p(bounds%begc:bounds%endc,1:nlevdecomp)                                             !potential P immobilization
     real(r8):: ratio                                                                                   !temporary variable
-    real(r8):: dnp                                                                                     !denitrification proportion
+    real(r8):: dnp                                                                        !denitrification proportion
     real(r8):: cn_decomp_pools(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)
     real(r8):: cp_decomp_pools(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)
     real(r8):: cp_decomp_pools_new(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)               !C:P ratio of new SOM
@@ -163,20 +139,22 @@ contains
     ! For methane code
     real(r8):: phr_vr(bounds%begc:bounds%endc,1:nlevdecomp)                                            !potential HR (gC/m3/s)
     real(r8):: hrsum(bounds%begc:bounds%endc,1:nlevdecomp)                                             !sum of HR (gC/m2/s)
+
+    character(len=256) :: event
     !-----------------------------------------------------------------------
-   
+
     associate(                                                                                           &
          cascade_donor_pool               =>    decomp_cascade_con%cascade_donor_pool                  , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool            =>    decomp_cascade_con%cascade_receiver_pool               , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
-         floating_cn_ratio_decomp_pools   =>    decomp_cascade_con%floating_cn_ratio_decomp_pools      , & ! Input:  [logical  (:)     ]  TRUE => pool has fixed C:N ratio                   
-         floating_cp_ratio_decomp_pools   =>    decomp_cascade_con%floating_cp_ratio_decomp_pools      , & ! Input:  [logical  (:)     ]  TRUE => pool has fixed C:P ratio                   
-         initial_cn_ratio                 =>    decomp_cascade_con%initial_cn_ratio                    , & ! Input:  [real(r8) (:)     ]  c:n ratio for initialization of pools             
-         initial_cp_ratio                 =>    decomp_cascade_con%initial_cp_ratio                    , & ! Input:  [real(r8) (:)     ]  c:p ratio for initialization of pools             
-  
+         floating_cn_ratio_decomp_pools   =>    decomp_cascade_con%floating_cn_ratio_decomp_pools      , & ! Input:  [logical  (:)     ]  TRUE => pool has fixed C:N ratio
+         floating_cp_ratio_decomp_pools   =>    decomp_cascade_con%floating_cp_ratio_decomp_pools      , & ! Input:  [logical  (:)     ]  TRUE => pool has fixed C:P ratio
+         initial_cn_ratio                 =>    decomp_cascade_con%initial_cn_ratio                    , & ! Input:  [real(r8) (:)     ]  c:n ratio for initialization of pools
+         initial_cp_ratio                 =>    decomp_cascade_con%initial_cp_ratio                    , & ! Input:  [real(r8) (:)     ]  c:p ratio for initialization of pools
+
          is_cwd                           =>    decomp_cascade_con%is_cwd                              , &
 !
-         fpi_vr                           =>    cnstate_vars%fpi_vr_col                                , & ! Input:  [real(r8) (:,:)   ]  fraction of potential immobilization for N(no units) 
-         fpi_p_vr                         =>    cnstate_vars%fpi_p_vr_col                              , & ! Input:  [real(r8) (:,:)   ]  fraction of potential immobilization for P (no units) 
+         fpi_vr                           =>    cnstate_vars%fpi_vr_col                                , & ! Input:  [real(r8) (:,:)   ]  fraction of potential immobilization for N(no units)
+         fpi_p_vr                         =>    cnstate_vars%fpi_p_vr_col                              , & ! Input:  [real(r8) (:,:)   ]  fraction of potential immobilization for P (no units)
          rf_decomp_cascade                =>    cnstate_vars%rf_decomp_cascade_col                     , & ! Input:  [real(r8) (:,:,:) ]  respired fraction in decomposition step (frac)
          pathfrac_decomp_cascade          =>    cnstate_vars%pathfrac_decomp_cascade_col               , & ! Input:  [real(r8) (:,:,:) ]  what fraction of C leaving a given pool passes through a given transition (frac)
 
@@ -186,16 +164,16 @@ contains
          decomp_cpools_vr                 =>    col_cs%decomp_cpools_vr                  , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
 
          w_scalar                         =>    col_cf%w_scalar                           , & ! Input:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
-         
+
          decomp_cascade_ntransfer_vr      =>    col_nf%decomp_cascade_ntransfer_vr      , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
          decomp_cascade_sminn_flux_vr     =>    col_nf%decomp_cascade_sminn_flux_vr     , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
-         potential_immob_vr               =>    col_nf%potential_immob_vr               , & ! Output: [real(r8) (:,:)   ]                                                  
-         sminn_to_denit_decomp_cascade_vr =>    col_nf%sminn_to_denit_decomp_cascade_vr , & ! Output: [real(r8) (:,:,:) ] 
-         gross_nmin_vr                    =>    col_nf%gross_nmin_vr                    , & ! Output: [real(r8) (:,:)   ]                                                  
-         net_nmin_vr                      =>    col_nf%net_nmin_vr                      , & ! Output: [real(r8) (:,:)   ]                                                  
-         gross_nmin                       =>    col_nf%gross_nmin                       , & ! Output: [real(r8) (:)     ]  gross rate of N mineralization (gN/m2/s)          
-         net_nmin                         =>    col_nf%net_nmin                         , & ! Output: [real(r8) (:)     ]  net rate of N mineralization (gN/m2/s)            
-         ! add phosphorus  
+         potential_immob_vr               =>    col_nf%potential_immob_vr               , & ! Output: [real(r8) (:,:)   ]
+         sminn_to_denit_decomp_cascade_vr =>    col_nf%sminn_to_denit_decomp_cascade_vr , & ! Output: [real(r8) (:,:,:) ]
+         gross_nmin_vr                    =>    col_nf%gross_nmin_vr                    , & ! Output: [real(r8) (:,:)   ]
+         net_nmin_vr                      =>    col_nf%net_nmin_vr                      , & ! Output: [real(r8) (:,:)   ]
+         gross_nmin                       =>    col_nf%gross_nmin                       , & ! Output: [real(r8) (:)     ]  gross rate of N mineralization (gN/m2/s)
+         net_nmin                         =>    col_nf%net_nmin                         , & ! Output: [real(r8) (:)     ]  net rate of N mineralization (gN/m2/s)
+         ! add phosphorus
          decomp_cascade_ptransfer_vr      =>    col_pf%decomp_cascade_ptransfer_vr    , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
          decomp_cascade_sminp_flux_vr     =>    col_pf%decomp_cascade_sminp_flux_vr   , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
          potential_immob_p_vr             =>    col_pf%potential_immob_p_vr           , & ! Output: [real(r8) (:,:)   ]
@@ -206,11 +184,11 @@ contains
 
          decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          decomp_cascade_ctransfer_vr      =>    col_cf%decomp_cascade_ctransfer_vr        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         decomp_k                         =>    col_cf%decomp_k                           , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)      
-         phr_vr                           =>    col_cf%phr_vr                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)                           
+         decomp_k                         =>    col_cf%decomp_k                           , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)
+         phr_vr                           =>    col_cf%phr_vr                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
          fphr                             =>    col_cf%fphr                               , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
          pmnf_decomp_cascade              =>    col_nf%pmnf_decomp_cascade                  , &
-         pmpf_decomp_cascade              =>    col_pf%pmpf_decomp_cascade                , & 
+         pmpf_decomp_cascade              =>    col_pf%pmpf_decomp_cascade                , &
          soil_n_immob_flux                =>    col_nf%soil_n_immob_flux                    , &
          soil_n_immob_flux_vr             =>    col_nf%soil_n_immob_flux_vr                 , &
          soil_n_grossmin_flux             =>    col_nf%soil_n_grossmin_flux                 , &
@@ -224,7 +202,6 @@ contains
       !-------------------------------------------------------------------------------------------------
       ! call decomp_rate_constants_bgc() or decomp_rate_constants_cn(): now called in EcosystemDynNoLeaching1
       !-------------------------------------------------------------------------------------------------
-
       ! set initial values for potential C and N fluxes
       p_decomp_cpool_loss(bounds%begc : bounds%endc, :, :) = 0._r8
       pmnf_decomp_cascade(bounds%begc : bounds%endc, :, :) = 0._r8
@@ -293,7 +270,8 @@ contains
 
                if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8 .and. &
                     decomp_k(c,j,cascade_donor_pool(k)) > 0._r8 ) then
-                  p_decomp_cpool_loss(c,j,k) = decomp_cpools_vr(c,j,cascade_donor_pool(k)) &
+
+                 p_decomp_cpool_loss(c,j,k) = decomp_cpools_vr(c,j,cascade_donor_pool(k)) &
                        * decomp_k(c,j,cascade_donor_pool(k))  * pathfrac_decomp_cascade(c,j,k)
                   if ( .not. floating_cn_ratio_decomp_pools(cascade_receiver_pool(k)) ) then  !! not transition of cwd to litter
 
@@ -303,7 +281,6 @@ contains
                         if (decomp_npools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
                            ratio = cn_decomp_pools(c,j,cascade_receiver_pool(k))/cn_decomp_pools(c,j,cascade_donor_pool(k))
                         endif
-
                         pmnf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(c,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
                              / cn_decomp_pools(c,j,cascade_receiver_pool(k)) )
 
@@ -399,42 +376,37 @@ contains
 ! 'call decomp_vertprofiles()' (calc nfixation_prof) is moved to EcosystemDynNoLeaching1
 ! 'nfixation_prof' is used in 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in Allocation1,2,3
 !-------------------------------------------------------------------------------------------------
-      
       call nitrif_denitrif(bounds, &
            num_soilc, filter_soilc, &
-           soilstate_vars, waterstate_vars, temperature_vars, ch4_vars, &
-           carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+           soilstate_vars,  ch4_vars )
 
       ! now that potential N immobilization is known, call allocation
       ! to resolve the competition between plants and soil heterotrophs
       ! for available soil mineral N resource.
       ! in addition, calculate fpi_vr, fpi_p_vr, & fgp
-      call t_startf('CNAllocation - phase-2')
+      event = 'CNAllocation - phase-2'
+      call t_startGPU(event)
       call Allocation2_ResolveNPLimit(bounds,                     &
                num_soilc, filter_soilc, num_soilp, filter_soilp,    &
                cnstate_vars,                                        &
-               carbonstate_vars, carbonflux_vars,                   &
-               nitrogenstate_vars, nitrogenflux_vars,               &
-               phosphorusstate_vars,phosphorusflux_vars,            &
-               soilstate_vars,waterstate_vars,                      &
-               elm_fates)
-      call t_stopf('CNAllocation - phase-2')
+               soilstate_vars, dtime)
+      call t_stopGPU(event)
 
-      
+
       ! column loop to calculate actual immobilization and decomp rates, following
       ! resolution of plant/heterotroph  competition for mineral N
 
 
-	  !-------------------------------------------------------------------------------------------------
-	  ! delete c:n,c:p ratios calculation, they have been calculated at the beginning of this subroutine
-	  !-------------------------------------------------------------------------------------------------      
+          !-------------------------------------------------------------------------------------------------
+          ! delete c:n,c:p ratios calculation, they have been calculated at the beginning of this subroutine
+          !-------------------------------------------------------------------------------------------------
 
-	  ! upon return from CNAllocation, the fraction of potential immobilization
+          ! upon return from CNAllocation, the fraction of potential immobilization
       ! has been set (cnstate_vars%fpi_vr_col). now finish the decomp calculations.
       ! Only the immobilization steps are limited by fpi_vr (pmnf > 0)
       ! Also calculate denitrification losses as a simple proportion
       ! of mineralization flux.
-       
+
       do k = 1, ndecomp_cascade_transitions
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
@@ -443,7 +415,7 @@ contains
                if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
                   if ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) > 0._r8 ) then    ! N and P co-limitation
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
-                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) ) 
+                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )   !!! immobilization step
                   elseif ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) <= 0._r8 ) then  ! N limitation 
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_vr(c,j)
@@ -499,17 +471,17 @@ contains
             do j = 1,nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-             	  if (pmnf_decomp_cascade(c,j,k) <= 0._r8) then 
+                  if (pmnf_decomp_cascade(c,j,k) <= 0._r8) then
                       gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
                   end if
-                  if (pmpf_decomp_cascade(c,j,k) <= 0._r8) then 
+                  if (pmpf_decomp_cascade(c,j,k) <= 0._r8) then
                       gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
                   end if
                 end do
              end do
           end do
       end if
-     
+
       if (nu_com .ne. 'RD') then
       do fc = 1,num_soilc
           c = filter_soilc(fc)
@@ -528,14 +500,14 @@ contains
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-          	   if (pmnf_decomp_cascade(c,j,k) > 0._r8) then 
+                   if (pmnf_decomp_cascade(c,j,k) > 0._r8) then
                    soil_n_immob_flux(c) = soil_n_immob_flux(c) + pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
                    soil_n_immob_flux_vr(c,j) = soil_n_immob_flux_vr(c,j) + pmnf_decomp_cascade(c,j,k)
                else
                    soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) -1.0_r8*pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
                    gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
                end if
-               if (pmpf_decomp_cascade(c,j,k) > 0._r8) then 
+               if (pmpf_decomp_cascade(c,j,k) > 0._r8) then
                    soil_p_immob_flux(c) = soil_p_immob_flux(c) + pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
                    soil_p_immob_flux_vr(c,j) = soil_p_immob_flux_vr(c,j) + pmpf_decomp_cascade(c,j,k)
                else
@@ -597,11 +569,8 @@ contains
 !-------------------------------------------------------------------------------------------------
 
   subroutine SoilLittDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
-       photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,               &
-       waterstate_vars, cnstate_vars, ch4_vars,                                          &
-       carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,      &
-       nitrogenstate_vars, nitrogenflux_vars, crop_vars, atm2lnd_vars,                   &
-       phosphorusstate_vars,phosphorusflux_vars)
+       photosyns_vars, canopystate_vars, soilstate_vars,          &
+       cnstate_vars, ch4_vars, crop_vars, atm2lnd_vars, dt)
     !-----------------------------------------------------------------------------
     ! DESCRIPTION:
     ! bgc interface & pflotran:
@@ -611,10 +580,9 @@ contains
     !-----------------------------------------------------------------------------
 
     ! !USES:
+      !$acc routine seq
     use AllocationMod , only: Allocation3_PlantCNPAlloc ! Phase-3 of CNAllocation
     use atm2lndType     , only: atm2lnd_type
-    use clm_time_manager, only: get_step_size
-!    use elm_varpar      , only: nlevdecomp, ndecomp_pools
 
     !
     ! !ARGUMENT:
@@ -626,33 +594,23 @@ contains
     type(photosyns_type)     , intent(in)    :: photosyns_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(temperature_type)   , intent(in)    :: temperature_vars
-    type(waterstate_type)    , intent(in)    :: waterstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     type(crop_type)          , intent(inout) :: crop_vars
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
-    !! add phosphorus --
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-
+    real(r8), intent(in) :: dt                                           ! time step (seconds)
 
     !
     ! !LOCAL VARIABLES:
     integer :: fc, c, j                                     ! indices
 !    real(r8):: col_plant_ndemand(bounds%begc:bounds%endc)   ! column-level vertically-integrated plant N demand (gN/m2/s)
-    real(r8) :: dt                                           ! time step (seconds)
     real(r8) :: smin_nh4_to_plant_vr_loc(bounds%begc:bounds%endc,1:nlevdecomp)
     real(r8) :: smin_no3_to_plant_vr_loc(bounds%begc:bounds%endc,1:nlevdecomp)
 
     ! For methane code
     real(r8):: hrsum(bounds%begc:bounds%endc,1:nlevdecomp)                                             !sum of HR (gC/m2/s)
+
+    character(len=256) :: event
     !-----------------------------------------------------------------------
 
     associate(                                                                                      &
@@ -684,7 +642,6 @@ contains
          col_plant_ndemand_vr             =>    col_nf%plant_ndemand_vr                 , & ! Input:  [real(r8) (:)     ]  col N uptake (gN/m2/s)
 
          plant_ndemand_col                =>    col_nf%plant_ndemand                    , & ! Output:  [real(r8) (:,:) ]
-         plant_pdemand_col                =>    col_pf%plant_pdemand                  , & ! Output:  [real(r8) (:,:) ]
 
          w_scalar                         =>    col_cf%w_scalar                           , & ! Input:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
          decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
@@ -699,12 +656,11 @@ contains
          )
 
       ! set time steps
-      dt = real( get_step_size(), r8 )
-	    !------------------------------------------------------------------
-	    ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
-	    !------------------------------------------------------------------
-	    smin_nh4_to_plant_vr_loc(:,:) = 0._r8
-	    smin_no3_to_plant_vr_loc(:,:) = 0._r8
+            !------------------------------------------------------------------
+            ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
+            !------------------------------------------------------------------
+            smin_nh4_to_plant_vr_loc(:,:) = 0._r8
+            smin_no3_to_plant_vr_loc(:,:) = 0._r8
 
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
@@ -791,9 +747,7 @@ contains
 
          ! needs to zero CLM-CNP variables NOT available from pflotran bgc coupling
          call CNvariables_nan4pf(bounds, num_soilc, filter_soilc, &
-                        num_soilp, filter_soilp,                  &
-                        carbonflux_vars, nitrogenflux_vars,       &
-                        phosphorusstate_vars, phosphorusflux_vars)
+                        num_soilp, filter_soilp)
 
          ! save variables before updating
          do fc = 1,num_soilc
@@ -809,18 +763,16 @@ contains
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants
       if(.not.use_fates)then
-          call t_startf('CNAllocation - phase-3')
-          call Allocation3_PlantCNPAlloc (bounds                      , &
-                num_soilc, filter_soilc, num_soilp, filter_soilp    , &
-                canopystate_vars                                    , &
-                cnstate_vars, carbonstate_vars, carbonflux_vars     , &
-                c13_carbonflux_vars, c14_carbonflux_vars            , &
-                nitrogenstate_vars, nitrogenflux_vars               , &
-                phosphorusstate_vars, phosphorusflux_vars, crop_vars)
-          call t_stopf('CNAllocation - phase-3')
+        event = 'CNAllocation - phase-3'
+        call t_startGPU(event)
+        call Allocation3_PlantCNPAlloc (bounds                      , &
+                  num_soilc, filter_soilc, num_soilp, filter_soilp    , &
+                  canopystate_vars                                    , &
+                  cnstate_vars, crop_vars, dt)
+        call t_stopGPU(event)
       end if
       !------------------------------------------------------------------
-      
+
     if(use_pflotran.and.pf_cmode) then
     ! in Allocation3_PlantCNPAlloc():
     ! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
@@ -856,19 +808,22 @@ contains
       end do
     end associate
   end subroutine SoilLittDecompAlloc2
- 
+
   !-------------------------------------------------------------------------------------------------
   !
-  subroutine CNvariables_nan4pf (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            carbonflux_vars, nitrogenflux_vars, phosphorusstate_vars,phosphorusflux_vars)
+  subroutine CNvariables_nan4pf (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
   !
   !DESCRIPTION:
   !  CN variables not available from PFLOTRAN, some of which may be output and may cause issues,
   !  if not properly set.
   !
   !USES:
-
-    use elm_varctl   , only: cnallocate_carbon_only, cnallocate_carbonnitrogen_only
+    !$acc routine seq
+    use Method_procs_acc, only : vegps_SetValues_acc
+    use Method_procs_acc, only : colps_setvalues_acc
+    use Method_procs_acc, only : vegpf_setvalues_acc
+    use Method_procs_acc, only : colpf_setvalues_acc
+    use elm_varctl   , only: carbon_only, carbonnitrogen_only
     use elm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
    !
    !ARGUMENTS:
@@ -877,11 +832,6 @@ contains
     integer                  , intent(in)    :: filter_soilc(:)    ! filter for soil columns
     integer                  , intent(in)    :: num_soilp          ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)    ! filter for soil patches
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    !! add phosphorus --
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
    !
    !CALLED FROM:
    !
@@ -910,12 +860,12 @@ contains
    end do
 
    ! pflotran not yet support phosphous cycle
-   if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only() ) then
-      call veg_ps%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call col_ps%SetValues(num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)      
+   if ( carbon_only .or.  carbonnitrogen_only  ) then
+      call vegps_setvalues_acc(vegps=veg_ps,num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
+      call colps_setvalues_acc(colps=col_ps,num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
 
-      call veg_pf%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call col_pf%SetValues(num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
+      call vegpf_setvalues_acc(vegpf=veg_pf, num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
+      call colpf_setvalues_acc(colpf=col_pf, num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
    end if
 
   end associate

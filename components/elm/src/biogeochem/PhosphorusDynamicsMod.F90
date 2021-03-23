@@ -12,18 +12,12 @@ module PhosphorusDynamicsMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use elm_varcon          , only : dzsoi_decomp, zisoi
-  use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
-  use CNCarbonFluxType    , only : carbonflux_type  
+  use CNCarbonFluxType    , only : carbonflux_type
   use elm_varpar          , only : nlevdecomp
   use elm_varctl          , only : use_vertsoilc
-  use PhosphorusFluxType  , only : phosphorusflux_type
-  use PhosphorusStateType , only : phosphorusstate_type
-  use CNNitrogenStateType , only : nitrogenstate_type 
 
   use CNStateType         , only : cnstate_type
-  use WaterStateType      , only : waterstate_type
-  use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_ws, col_wf, nfix_timeconst, col_ps, col_pf
@@ -54,7 +48,7 @@ module PhosphorusDynamicsMod
 contains
   !-----------------------------------------------------------------------
   subroutine PhosphorusDeposition( bounds, &
-       atm2lnd_vars, phosphorusflux_vars )
+       atm2lnd_vars )
     ! BY X. SHI
     ! !DESCRIPTION:
     ! On the radiation time step, update the phosphorus deposition rate
@@ -64,17 +58,17 @@ contains
     ! directly into the canopy and mineral P entering the soil pool.
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
-    type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
     integer :: g,c                    ! indices
     !-----------------------------------------------------------------------
 
     associate(&
-         forc_pdep     =>  atm2lnd_vars%forc_pdep_grc           , & ! Input:  [real(r8) (:)]  Phosphorus deposition rate (gP/m2/s)                
-         pdep_to_sminp =>  col_pf%pdep_to_sminp   & ! Output: [real(r8) (:)]                                                    
+         forc_pdep     =>  atm2lnd_vars%forc_pdep_grc           , & ! Input:  [real(r8) (:)]  Phosphorus deposition rate (gP/m2/s)
+         pdep_to_sminp =>  col_pf%pdep_to_sminp   & ! Output: [real(r8) (:)]
          )
 
       ! Loop through columns
@@ -89,12 +83,11 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine PhosphorusWeathering(num_soilc, filter_soilc, &
-       cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       cnstate_vars, dt)
     !
     !
     ! !USES:
-    use clm_time_manager , only : get_days_per_year, get_step_size
-    use shr_sys_mod      , only : shr_sys_flush
+      !$acc routine seq
     use elm_varcon       , only : secspday, spval
     use soilorder_varcon, only: r_weather
     !
@@ -102,18 +95,16 @@ contains
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(phosphorusstate_type), intent(in) ::  phosphorusstate_vars
-    type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
+    real(r8), intent(in):: dt           !decomp timestep (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer  :: c,fc                  ! indices
     real(r8) :: t                     ! temporary
-    real(r8) :: dayspyr               ! days per year
 
 !   !OTHER LOCAL VARIABLES
     real(r8)     :: r_weather_c
     real(r8)     :: rr
-    real(r8):: dt           !decomp timestep (seconds)
     real(r8):: dtd          !decomp timestep (days)
     integer :: j
 
@@ -122,29 +113,21 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder                 ,&
-         primp          => col_ps%primp_vr       ,& 
-         primp_to_labilep => col_pf%primp_to_labilep_vr  &         
-
+         primp          => col_ps%primp_vr       ,&
+         primp_to_labilep => col_pf%primp_to_labilep_vr  &
          )
 
-      dayspyr = get_days_per_year()
-
       ! set time steps
-      dt = real( get_step_size(), r8 )
       dtd = dt/(30._r8*secspday)
-   
+
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-      
             !! read in monthly rate is converted to that in half hour
             r_weather_c = r_weather( isoilorder(c) )
             rr=-log(1._r8-r_weather_c)
             r_weather_c=1._r8-exp(-rr*dtd)
-      
             primp_to_labilep(c,j) = primp(c,j)*r_weather_c/dt
-      !     primp_to_labilep(c,j) = 0.005_r8/(365._r8*24._r8*3600._r8)
-      !     primp_to_labilep(c,j) = 0._r8       
          end do
       enddo
     end associate
@@ -156,12 +139,11 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine PhosphorusAdsportion(num_soilc, filter_soilc, &
-       cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       cnstate_vars ,dt)
     !
     !
     ! !USES:
-    use clm_time_manager , only : get_days_per_year, get_step_size
-    use shr_sys_mod      , only : shr_sys_flush
+      !$acc routine seq
     use elm_varcon       , only : secspday, spval
     use soilorder_varcon , only : r_adsorp
     !
@@ -169,18 +151,16 @@ contains
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(phosphorusstate_type), intent(in) ::  phosphorusstate_vars
-    type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
+    real(r8), intent(in)    :: dt           !decomp timestep (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer  :: c,fc                  ! indices
     real(r8) :: t                     ! temporary
-    real(r8) :: dayspyr               ! days per year
 
 !   !OTHER LOCAL VARIABLES
     real(r8)     :: r_adsorp_c
     real(r8)     :: rr
-    real(r8):: dt           !decomp timestep (seconds)
     real(r8):: dtd          !decomp timestep (days)
     integer :: j
 
@@ -195,16 +175,14 @@ contains
 
          )
 
-      dayspyr = get_days_per_year()
 
       ! set time steps
-      dt = real( get_step_size(), r8 )
       dtd = dt/(30._r8*secspday)
-   
+
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-   
+
             ! calculate rate at half-hour time step
             r_adsorp_c = r_adsorp( isoilorder(c) )
             rr=-log(1._r8-r_adsorp_c)
@@ -225,12 +203,11 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine PhosphorusDesoprtion(num_soilc, filter_soilc, &
-       cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       cnstate_vars, dt)
     !
     !
     ! !USES:
-    use clm_time_manager , only : get_days_per_year, get_step_size
-    use shr_sys_mod      , only : shr_sys_flush
+      !$acc routine seq
     use elm_varcon       , only : secspday, spval
     use soilorder_varcon , only : r_desorp
     !
@@ -238,18 +215,16 @@ contains
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(phosphorusstate_type), intent(in) ::  phosphorusstate_vars
-    type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
+    real(r8)                 ,  intent(in)   :: dt           !decomp timestep (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer  :: c,fc                  ! indices
     real(r8) :: t                     ! temporary
-    real(r8) :: dayspyr               ! days per year
 
 !   !OTHER LOCAL VARIABLES
     real(r8)     :: r_desorp_c
     real(r8)     :: rr
-    real(r8):: dt           !decomp timestep (seconds)
     real(r8):: dtd          !decomp timestep (days)
     integer :: j
 
@@ -263,27 +238,25 @@ contains
 
          )
 
-      dayspyr = get_days_per_year()
 
       ! set time steps
-      dt = real( get_step_size(), r8 )
       dtd = dt/(30._r8*secspday)
-   
+
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-   
+
             ! calculate rate at half-hour time step
             r_desorp_c = r_desorp( isoilorder(c) )
             rr=-log(1._r8-r_desorp_c)
             r_desorp_c = 1._r8-exp(-rr*dtd)
-    
+
             if(secondp(c,j) > 0._r8)then
               secondp_to_labilep(c,j) = secondp(c,j)*r_desorp_c/dt
             else
               secondp_to_labilep(c,j) = 0._r8
             endif
-            
+
          end do
        end do
     end associate
@@ -294,12 +267,11 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine PhosphorusOcclusion(num_soilc, filter_soilc, &
-       cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+       cnstate_vars, dt)
     !
     !
     ! !USES:
-    use clm_time_manager , only : get_days_per_year, get_step_size
-    use shr_sys_mod      , only : shr_sys_flush
+      !$acc routine seq
     use elm_varcon       , only : secspday, spval
     use soilorder_varcon , only : r_occlude
     !
@@ -307,21 +279,19 @@ contains
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(phosphorusstate_type), intent(in) ::  phosphorusstate_vars
-    type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
+    real(r8)                , intent(in)   :: dt      !decomp timestep (seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer  :: c,fc                  ! indices
     real(r8) :: t                     ! temporary
-    real(r8) :: dayspyr               ! days per year
 
 !   !OTHER LOCAL VARIABLES
     real(r8)     :: r_occlude_c
     real(r8)     :: rr
-    real(r8):: dt           !decomp timestep (seconds)
     real(r8):: dtd          !decomp timestep (days)
     integer :: j
- 
+
     !-----------------------------------------------------------------------
 
     associate(&
@@ -332,28 +302,25 @@ contains
 
          )
 
-      dayspyr = get_days_per_year()
-
       ! set time steps
-      dt = real( get_step_size(), r8 )
       dtd = dt/(30._r8*secspday)
-   
+
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-   
+
 
             ! calculate rate at half-hour time step
             r_occlude_c = r_occlude( isoilorder(c) )
             rr=-log(1._r8-r_occlude_c)
             r_occlude_c = 1._r8-exp(-rr*dtd)
-    
+
             if(secondp(c,j) > 0._r8)then
                secondp_to_occlp(c,j) = secondp(c,j)*r_occlude_c/dt
             else
                secondp_to_occlp(c,j) =0._r8
             endif
-            
+
          end do
        end do
     end associate
@@ -364,29 +331,25 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
-       waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
+  subroutine PhosphorusLeaching(bounds, num_soilc, filter_soilc, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the phosphorus leaching rate
     ! as a function of solution P and total soil water outflow.
     !
     ! !USES:
+      !$acc routine seq
     use elm_varpar       , only : nlevsoi
-    use clm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(waterstate_type)    , intent(in)    :: waterstate_vars
-    type(waterflux_type)     , intent(in)    :: waterflux_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    real(r8) ,intent(in)    :: dt                                     ! radiation time step(seconds)
+
     !
     ! !LOCAL VARIABLES:
     integer  :: j,c,fc                                 ! indices
-    real(r8) :: dt                                     ! radiation time step(seconds)
     real(r8) :: disp_conc                              ! dissolved mineral N concentration (gP/kg water)
     real(r8) :: tot_water(bounds%begc:bounds%endc)     ! total column liquid water (kg water/m2)
     real(r8) :: surface_water(bounds%begc:bounds%endc) ! liquid water to shallow surface depth (kg water/m2)
@@ -397,15 +360,13 @@ contains
     associate(&
          h2osoi_liq          => col_ws%h2osoi_liq            , & !Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
 
-         qflx_drain          => col_wf%qflx_drain             , & !Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
-         qflx_surf           => col_wf%qflx_surf              , & !Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
+         qflx_drain          => col_wf%qflx_drain             , & !Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
+         qflx_surf           => col_wf%qflx_surf              , & !Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)
 
-         solutionp_vr            => col_ps%solutionp_vr           , & !Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral N                          
-         sminp_leached_vr    => col_pf%sminp_leached_vr     & !Output: [real(r8) (:,:) ]  rate of mineral N leaching (gP/m3/s)            
+         solutionp_vr            => col_ps%solutionp_vr           , & !Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral N
+         sminp_leached_vr    => col_pf%sminp_leached_vr     & !Output: [real(r8) (:,:) ]  rate of mineral N leaching (gP/m3/s)
          )
 
-      ! set time steps
-      dt = real( get_step_size(), r8 )
 
       ! calculate the total soil water
       tot_water(bounds%begc:bounds%endc) = 0._r8
@@ -484,16 +445,16 @@ contains
 
 
   subroutine PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
-       cnstate_vars, phosphorusstate_vars, phosphorusflux_vars)
+       cnstate_vars, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the phosphorus leaching rate
     ! as a function of solution P and total soil water outflow.
     !
     ! !USES:
+      !$acc routine seq
     use elm_varpar       , only : nlevsoi
     use elm_varpar       , only : ndecomp_pools
-    use clm_time_manager , only : get_step_size
     use soilorder_varcon , only:k_s1_biochem,k_s2_biochem,k_s3_biochem,k_s4_biochem
     use elm_varcon       , only : secspday, spval
 
@@ -503,12 +464,11 @@ contains
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)         , intent(in)    :: cnstate_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    real(r8) , intent(in)  :: dt           !decomp timestep (seconds)
+
     !
     integer  :: c,fc,j,l
     real(r8) :: rr
-    real(r8):: dt           !decomp timestep (seconds)
     real(r8):: dtd          !decomp timestep (days)
     real(r8):: k_s1_biochem_c         !specfic biochemical rate constant SOM 1
     real(r8):: k_s2_biochem_c         !specfic biochemical rate constant SOM 1
@@ -523,15 +483,14 @@ contains
 
          isoilorder     => cnstate_vars%isoilorder                            ,&
          decomp_ppools_vr_col => col_ps%decomp_ppools_vr    ,&
-  
+
          biochem_pmin_ppools_vr_col  => col_pf%biochem_pmin_ppools_vr  ,&
          biochem_pmin_vr_col  => col_pf%biochem_pmin_vr      ,&
-         biochem_pmin_col     => col_pf%biochem_pmin         , & 
+         biochem_pmin_col     => col_pf%biochem_pmin         , &
          fpi_vr_col           => cnstate_vars%fpi_vr_col                      ,&
          fpi_p_vr_col           => cnstate_vars%fpi_p_vr_col                   &
          )
 
-      dt = real( get_step_size(), r8 )
       dtd = dt/(30._r8*secspday)
       r_bc = -5._r8
 
@@ -547,16 +506,16 @@ contains
                k_s2_biochem_c = k_s2_biochem( isoilorder(c) )
                k_s3_biochem_c = k_s3_biochem( isoilorder(c) )
                k_s4_biochem_c = k_s4_biochem( isoilorder(c) )
-         
+
                rr=-log(1._r8-k_s1_biochem_c)
                k_s1_biochem_c = 1-exp(-rr*dtd)
-         
+
                rr=-log(1-k_s2_biochem_c)
                k_s2_biochem_c = 1-exp(-rr*dtd)
-         
+
                rr=-log(1-k_s3_biochem_c)
                k_s3_biochem_c = 1-exp(-rr*dtd)
-         
+
                rr=-log(1-k_s4_biochem_c)
                k_s4_biochem_c = 1-exp(-rr*dtd)
 
@@ -567,14 +526,14 @@ contains
                                      (1._r8-exp(r_bc*(1._r8-fpi_p_vr_col(c,j)) ))/dt
 
 
-               endif 
-              
+               endif
+
 
             end do
          end do
       end do
 
-      
+
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -584,10 +543,10 @@ contains
                                           biochem_pmin_ppools_vr_col(c,j,l)
             enddo
          enddo
-      enddo 
+      enddo
 
 
-      
+
     end associate
 
   end subroutine PhosphorusBiochemMin
@@ -595,33 +554,32 @@ contains
   !-----------------------------------------------------------------------
 
   !-----------------------------------------------------------------------
-  
+
   subroutine PhosphorusBiochemMin_balance(bounds,num_soilc, filter_soilc, &
-       cnstate_vars,nitrogenstate_vars, phosphorusstate_vars, phosphorusflux_vars)
+       cnstate_vars,dt)
     !
     ! !DESCRIPTION:
     ! created, Aug 2015 by Q. Zhu
     ! update the phosphatase activity induced P release based on Wang 2007
     !
     ! !USES:
+      !$acc routine seq
     use pftvarcon              , only : noveg
     use elm_varpar             , only : ndecomp_pools
-    use clm_time_manager       , only : get_step_size
     use CNDecompCascadeConType , only : decomp_cascade_con
- 
+
     !
     ! !ARGUMENTS:
     type(bounds_type)          , intent(in)    :: bounds
     integer                    , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                    , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)         , intent(in)    :: cnstate_vars
-    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    real(r8), intent(in)  :: dt
+
     !
     integer  :: c,fc,p,j,l,s
     integer  :: ci             ! clump index of the bounds
-    integer  :: pft  
+    integer  :: pft
     integer  :: j_f            ! fates uptake index mapped from decomp index
     real(r8) :: lamda_up       ! nitrogen cost of phosphorus uptake
     real(r8) :: sop_profile(1:ndecomp_pools)
@@ -629,41 +587,42 @@ contains
     real(r8), allocatable :: biochem_pmin_to_plant_vr_patch(:,:)
     real(r8) :: sop_tot
     real(r8) :: fr_frac        ! fine-root fraction of mass in current layer
-    integer  :: dt
     real(r8) :: ptase_tmp
     integer  :: max_comps
     !-----------------------------------------------------------------------
 
     associate(                                                              &
          ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
-         froot_prof           => cnstate_vars%froot_prof_patch            , & 
+         froot_prof           => cnstate_vars%froot_prof_patch            , &
          biochem_pmin_vr      => col_pf%biochem_pmin_vr  , &
          biochem_pmin_ppools_vr_col  => col_pf%biochem_pmin_ppools_vr ,&
          biochem_pmin_to_ecosysp_vr_col => col_pf%biochem_pmin_to_ecosysp_vr , &
          biochem_pmin_to_plant_patch    => veg_pf%biochem_pmin_to_plant , &
-         biochem_pmin_to_plant => col_pf%biochem_pmin_to_plant, & 
+         biochem_pmin_to_plant => col_pf%biochem_pmin_to_plant, &
          npimbalance          => veg_ns%npimbalance     , &
          vmax_ptase           => veg_vp%vmax_ptase                    , &
          km_ptase             => veg_vp%km_ptase                      , &
          alpha_ptase          => veg_vp%alpha_ptase                   , &
          decomp_ppools_vr_col => col_ps%decomp_ppools_vr, &
          ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
-         lamda_ptase          => veg_vp%lamda_ptase                   ,  & 
+         lamda_ptase          => veg_vp%lamda_ptase                   ,  &
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &
          is_soil               => decomp_cascade_con%is_soil             &
          )
 
-    dt = real( get_step_size(), r8 )
 
     ! set initial values for potential C and N fluxes
     biochem_pmin_ppools_vr_col(bounds%begc : bounds%endc, :, :) = 0._r8
-    
+
     if(use_fates) then
         ci = bounds%clump_index
+#ifndef _OPENACC
         max_comps = size(alm_fates%fates(ci)%bc_out(1)%cp_scalar,dim=1)
         allocate(biochem_pmin_to_plant_vr_patch(max_comps,nlevdecomp))
+#endif
     else
+      !!TODO:  Try to get rid of the allocate statement
        allocate(biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp))
        biochem_pmin_to_plant_patch(bounds%begp:bounds%endp) = 0._r8
     end if
@@ -682,24 +641,24 @@ contains
            do j = 1,nlevdecomp
               j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
               do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
-                 
-                 lamda_up = alm_fates%fates(ci)%bc_out(s)%cp_scalar(p)/ & 
+
+                 lamda_up = alm_fates%fates(ci)%bc_out(s)%cp_scalar(p)/ &
                       max(alm_fates%fates(ci)%bc_out(s)%cn_scalar(p),1e-20_r8)
                  lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
-                 
-                 fr_frac = alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,j) / & 
+
+                 fr_frac = alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,j) / &
                       sum(alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,:))
-                 
+
                  pft = alm_fates%fates(ci)%bc_out(s)%ft_index(p)
                  ptase_tmp = alm_fates%fates(ci)%bc_pconst%eca_vmax_ptase(pft) *  &
                       fr_frac * max(lamda_up - lamda_ptase, 0.0_r8) / &
                       ( alm_fates%fates(ci)%bc_pconst%eca_km_ptase(pft) + &
-                      max(lamda_up - alm_fates%fates(ci)%bc_pconst%eca_lambda_ptase(pft), 0.0_r8)) 
-                 
+                      max(lamda_up - alm_fates%fates(ci)%bc_pconst%eca_lambda_ptase(pft), 0.0_r8))
+
                  biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft)
                  biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp*(1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))
                  biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp
-                    
+
               end do
            end  do
         else
@@ -710,9 +669,9 @@ contains
                     lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
                     ptase_tmp = vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                         (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) 
+                         (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8))
                     if (NFIX_PTASE_plant) then
-                       biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alpha_ptase(veg_pp%itype(p)) 
+                       biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alpha_ptase(veg_pp%itype(p))
                        biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p) * &
                             (1._r8 - alpha_ptase(veg_pp%itype(p)))
                        biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp  * veg_pp%wtcol(p)
@@ -726,7 +685,7 @@ contains
               enddo
            enddo
         end if
-    
+
         do j = 1,nlevdecomp
             ! sum total
             sop_tot = 0._r8
@@ -738,7 +697,7 @@ contains
             ! get profile
             do l = 1,ndecomp_pools
                 if (is_soil(l)) then
-                    if (sop_tot > 1e-12) then 
+                    if (sop_tot > 1e-12) then
                         sop_profile(l) = decomp_ppools_vr_col(c,j,l)/sop_tot
                     else
                         sop_profile(l) = 0._r8
@@ -748,7 +707,7 @@ contains
             ! cauculation actual biochem_pmin_ppool
             do l = 1,ndecomp_pools
                 if (is_soil(l)) then
-                    biochem_pmin_ppools_vr_col(c,j,l) = & 
+                    biochem_pmin_ppools_vr_col(c,j,l) = &
                           max(min(biochem_pmin_to_ecosysp_vr_col_pot(c,j) * sop_profile(l)&
                           , decomp_ppools_vr_col(c,j,l)/dt),0._r8)
                 end if
@@ -768,6 +727,7 @@ contains
 
         ! rescale biochem_pmin_vr, biochem_pmin_to_plant_vr if necessary
         if(use_fates)then
+#ifndef _OPENACC
             do j = 1,nlevdecomp
                 if ( (biochem_pmin_to_ecosysp_vr_col_pot(c,j) > biochem_pmin_to_ecosysp_vr_col(c,j)) ) then
                     if ( biochem_pmin_to_ecosysp_vr_col_pot(c,j) > 0.0_r8 ) then
@@ -788,8 +748,8 @@ contains
                 ! units:  [g/m2] = [g/m3/s] * [s] [m]
                 j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
                 do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
-                    alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) = & 
-                          alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) + & 
+                    alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) = &
+                          alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) + &
                           biochem_pmin_to_plant_vr_patch(p,j)*dt*dzsoi_decomp(j)
 
                     biochem_pmin_to_plant(c) =  biochem_pmin_to_plant(c) + &
@@ -797,10 +757,10 @@ contains
                 end do
 
             end do
-
+#endif
          else
-            
-            if (NFIX_PTASE_plant) then   
+
+            if (NFIX_PTASE_plant) then
                 do j = 1,nlevdecomp
                     if ( (biochem_pmin_to_ecosysp_vr_col_pot(c,j) > biochem_pmin_to_ecosysp_vr_col(c,j)) ) then
                         if ( biochem_pmin_to_ecosysp_vr_col_pot(c,j) > 0.0_r8 ) then
@@ -818,7 +778,7 @@ contains
                         end if
                     end if
                 end do
-        
+
                 ! sum up biochem_pmin_to_plant
                 do p = col_pp%pfti(c), col_pp%pftf(c)
                     if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
@@ -847,7 +807,7 @@ contains
           end do
        end do
     end do
-    
+
     deallocate(biochem_pmin_to_plant_vr_patch)
 
    end associate
