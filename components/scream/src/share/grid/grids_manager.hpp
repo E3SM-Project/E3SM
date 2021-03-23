@@ -81,6 +81,16 @@ public:
     return create_remapper(get_grid(from_grid),get_grid(to_grid));
   }
 
+  remapper_ptr_type
+  create_remapper_from_ref_grid(const grid_ptr_type& grid) const {
+    return create_remapper(get_reference_grid(),grid);
+  }
+
+  remapper_ptr_type
+  create_remapper_to_ref_grid(const grid_ptr_type& grid) const {
+    return create_remapper(grid,get_reference_grid());
+  }
+
 protected:
 
   virtual remapper_ptr_type
