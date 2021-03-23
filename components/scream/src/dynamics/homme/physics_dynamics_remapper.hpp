@@ -138,6 +138,9 @@ public:
 
   void initialize_device_variables();
 
+  template<typename ScalarT, typename AllocType>
+  void compute_view_dims(const AllocType &alloc_prop, const std::vector<int> &field_dims, Dims &view_dims);
+
   // Remap methods
   void do_remap_fwd () const override;
   void do_remap_bwd () const override;
@@ -334,6 +337,24 @@ do_registration_ends ()
   }
 }
 
+// Helper function to compute the dimensions of
+// field views.
+template<typename RealType>
+template<typename ScalarT, typename AllocType>
+void PhysicsDynamicsRemapper<RealType>::
+compute_view_dims (const AllocType& alloc_prop, const std::vector<int>& field_dims, Dims& view_dims)
+{
+  int num_values = alloc_prop.get_alloc_size()/sizeof(ScalarT);
+  int N = field_dims.size();
+
+  view_dims.size = N;
+  for (int i=0; i<N-1; ++i) {
+    view_dims.dims[i] = field_dims[i];
+    num_values /= field_dims[i];
+  }
+  view_dims.dims[N-1] = num_values;
+}
+
 template<typename RealType>
 void PhysicsDynamicsRemapper<RealType>::
 initialize_device_variables()
@@ -348,7 +369,7 @@ initialize_device_variables()
   dyn_dims   = decltype(dyn_dims)   ("dyn_dims",   num_fields);
   dyn_layout = decltype(dyn_layout) ("dyn_layout", num_fields);
 
-  has_parent          = decltype(has_parent) ("has_parent", num_fields);
+  has_parent          = decltype(has_parent)          ("has_parent",               num_fields);
   pack_alloc_property = decltype(pack_alloc_property) ("phys_pack_alloc_property", num_fields);
   is_state_field_dev  = decltype(is_state_field_dev)  ("is_state_field_dev",       num_fields);
   time_levels         = decltype(time_levels)         ("time_levels",              1);
@@ -380,59 +401,53 @@ initialize_device_variables()
 
     // If field has a parent, then its view has been subviewed. We
     // do not want to remmap subviews, only the view of the parent,
-    // so we store this and no other info for these subfields, then
+    // so we store this and no other info for these fields, then
     // skip these fields during the remap.
     if (ph.get_parent().lock() != nullptr) {
       EKAT_REQUIRE_MSG(dh.get_parent().lock() != nullptr,
-                       "Error! Is physics field has parent,"
+                       "Error! If physics field has parent,"
                        "dynamics field must also have parent.");
       h_has_parent(i) = true;
       continue;
     }
+    else {
+      h_has_parent(i) = false;
+    }
 
-    // Set view pointers
+    // Store view pointers
     h_phys_ptrs(i).ptr = phys.get_view().data();
     h_dyn_ptrs(i).ptr  = dyn.get_view().data();
 
-    // Dimensions
-    int phys_size = phys_dim.size();
-    h_phys_dims(i).size = phys_size;
-    for (int n=0; n<phys_size; ++n) {
-      h_phys_dims(i).dims[n] = phys_dim[n];
-    }
-
-    int dyn_size = dyn_dim.size();
-    h_dyn_dims(i).size = dyn_size;
-    for (int n=0; n<dyn_size; ++n) {
-      h_dyn_dims(i).dims[n] = dyn_dim[n];
-    }
-
-    // Layout
+    // Store phys layout
     const auto phys_lt = get_layout_type(ph.get_identifier().get_layout().tags());
     h_phys_layout(i) = etoi(phys_lt);
 
-    // Allocation properties
+    // Store allocation properties
     const auto& phys_alloc_prop = ph.get_alloc_properties();
     const auto& dyn_alloc_prop  = dh.get_alloc_properties();
     if (phys_alloc_prop.template is_compatible<pack_type>() &&
         dyn_alloc_prop.template  is_compatible<pack_type>()) {
       h_pack_alloc_property(i) = AllocPropType::PackAlloc;
 
-      // Adjust last dim to be number of packs
-      h_phys_dims(i).dims[phys_size-1] = ekat::npack<pack_type>(phys_dim[phys_size-1]);
-      h_dyn_dims(i).dims[dyn_size-1]   = ekat::npack<pack_type>(dyn_dim[dyn_size-1]);
+      // Store dimensions of phys/dyn view
+      compute_view_dims<pack_type>(phys_alloc_prop, phys_dim, h_phys_dims(i));
+      compute_view_dims<pack_type>(dyn_alloc_prop,  dyn_dim,  h_dyn_dims(i));
     } else if (phys_alloc_prop.template is_compatible<small_pack_type>() &&
                dyn_alloc_prop.template  is_compatible<small_pack_type>()) {
       h_pack_alloc_property(i) = AllocPropType::SmallPackAlloc;
 
-      // Adjust last dim to be number of packs
-      h_phys_dims(i).dims[phys_size-1] = ekat::npack<small_pack_type>(phys_dim[phys_size-1]);
-      h_dyn_dims(i).dims[dyn_size-1]   = ekat::npack<small_pack_type>(dyn_dim[dyn_size-1]);
+      // Store dimensions of phys/dyn view
+      compute_view_dims<small_pack_type>(phys_alloc_prop, phys_dim, h_phys_dims(i));
+      compute_view_dims<small_pack_type>(dyn_alloc_prop,  dyn_dim,  h_dyn_dims(i));
     } else {
       h_pack_alloc_property(i) = AllocPropType::RealAlloc;
+
+      // Store dimensions of phys/dyn view
+      compute_view_dims<Real>(phys_alloc_prop, phys_dim, h_phys_dims(i));
+      compute_view_dims<Real>(dyn_alloc_prop,  dyn_dim,  h_dyn_dims(i));
     }
 
-    // Time levels
+    // Store time levels
     h_is_state_field_dev(i) = m_is_state_field[i];
     h_time_levels(0).first  = tl.n0;
     h_time_levels(0).second = tl.np1;
@@ -1057,7 +1072,6 @@ local_remap_fwd_3d (const MT& team, const int num_cols, const VT1 lid2elgp, cons
                                                                              dim_d[2],
                                                                              dim_d[3]);
 
-
         const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_d[3]);
         const auto f = [&] (const int idx) {
           const int icol = idx/dim_d[3];
@@ -1228,10 +1242,10 @@ local_remap_bwd_3d (const MT& team, const int num_cols, const VT1 lid2elgp, cons
                                                                               dim_d[3],
                                                                               dim_d[4]);
 
-        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_d[4]);
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]);
         const auto f = [&] (const int idx) {
-          const int icol = idx/dim_d[4];
-          const int ilev = idx%dim_d[4];
+          const int icol = idx/dim_p[1];
+          const int ilev = idx%dim_p[1];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           phys(icol,ilev) = dyn(elgp[0],time_levels(0).second,elgp[1],elgp[2],ilev);
@@ -1244,10 +1258,10 @@ local_remap_bwd_3d (const MT& team, const int num_cols, const VT1 lid2elgp, cons
                                                                              dim_d[2],
                                                                              dim_d[3]);
 
-        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_d[3]);
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]);
         const auto f = [&] (const int idx) {
-          const int icol = idx/dim_d[3];
-          const int ilev = idx%dim_d[3];
+          const int icol = idx/dim_p[1];
+          const int ilev = idx%dim_p[1];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           phys(icol,ilev) = dyn(elgp[0],elgp[1],elgp[2],ilev);
@@ -1272,11 +1286,11 @@ local_remap_bwd_3d (const MT& team, const int num_cols, const VT1 lid2elgp, cons
                                                                                dim_d[4],
                                                                                dim_d[5]);
 
-        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]*dim_d[3]);
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]*dim_p[2]);
         const auto f = [&] (const int idx) {
-          const int icol =  idx/(dim_p[1]*dim_d[3]);
-          const int idim = (idx/dim_d[3])%dim_p[1];
-          const int ilev =  idx%dim_d[3];
+          const int icol =  idx/(dim_p[1]*dim_p[2]);
+          const int idim = (idx/dim_p[2])%dim_p[1];
+          const int ilev =  idx%dim_p[2];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           phys(icol,idim,ilev) = dyn(elgp[0],time_levels(0).second,idim,elgp[1],elgp[2],ilev);
@@ -1290,11 +1304,11 @@ local_remap_bwd_3d (const MT& team, const int num_cols, const VT1 lid2elgp, cons
                                                                               dim_d[3],
                                                                               dim_d[4]);
 
-        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]*dim_d[4]);
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]*dim_p[2]);
         const auto f = [&] (const int idx) {
-          const int icol =  idx/(dim_p[1]*dim_d[4]);
-          const int idim = (idx/dim_d[4])%dim_p[1];
-          const int ilev =  idx%dim_d[4];
+          const int icol =  idx/(dim_p[1]*dim_p[2]);
+          const int idim = (idx/dim_p[2])%dim_p[1];
+          const int ilev =  idx%dim_p[2];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           phys(icol,idim,ilev) = dyn(elgp[0],idim,elgp[1],elgp[2],ilev);
