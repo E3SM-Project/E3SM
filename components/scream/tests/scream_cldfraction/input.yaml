@@ -21,7 +21,7 @@ Grids Manager:
 Initial Conditions:
   Initial Conditions File: cldfrac_standalone_ne4_ne4.nc
 
-## The name of the output control file for this test.
-#Output Manager:
-# Output YAML Files: ["p3_standalone_output.yaml"] 
+# The name of the output control file for this test.
+Output Manager:
+ Output YAML Files: ["cldfrac_standalone_output.yaml"] 
 ...

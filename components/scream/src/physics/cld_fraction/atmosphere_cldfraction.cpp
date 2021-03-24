@@ -55,15 +55,12 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 void CldFraction::initialize_impl (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
-  
-  printf("ASD - Cloud Fraction Init\n");
 }
 
 // =========================================================================================
 void CldFraction::run_impl (const Real dt)
 {
-
-  printf("ASD - Cloud Fraction Run\n");
+/* Luca, do we need any of the following code?
   // Copy inputs to host. Copy also outputs, cause we might "update" them, rather than overwrite them.
   for (auto& it : m_cldfraction_fields_in) {
     it.second.sync_to_host();
@@ -77,6 +74,7 @@ void CldFraction::run_impl (const Real dt)
   for (auto& it : m_cldfraction_fields_out) {
     it.second.sync_to_dev();
   }
+*/
 
   
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
@@ -86,19 +84,6 @@ void CldFraction::run_impl (const Real dt)
   auto aist = m_cldfraction_fields_out["aist"].get_reshaped_view<Pack**>();
   auto ast  = m_cldfraction_fields_out["ast"].get_reshaped_view<Pack**>();
 
-  for (int icol=0;icol<m_num_cols;++icol)
-  {
-    for (int ipack=0;ipack<m_nk_pack;++ipack)
-    {
-      for (int ivec=0;ivec<Spack::n;++ivec)
-      {
-        aist(icol,ipack)[ivec] = qi(icol,ipack)[ivec] > 1e-5 ?
-                                 1.0 : 0.0;
-        ast(icol,ipack)[ivec]  = aist(icol,ipack)[ivec] > alst(icol,ipack)[ivec] ?
-                                 aist(icol,ipack)[ivec] : alst(icol,ipack)[ivec];
-      }
-    }
-  }
   cldfracF::cldfraction_main(m_num_cols,m_num_levs,qi,alst,aist,ast);
 
   // Get a copy of the current timestamp (at the beginning of the step) and
@@ -114,7 +99,6 @@ void CldFraction::run_impl (const Real dt)
 // =========================================================================================
 void CldFraction::finalize_impl()
 {
-  printf("ASD - Cloud Fraction Final\n");
   // Do nothing
 }
 

@@ -18,7 +18,6 @@ void Functions<S,D>
   const view_2d<Spack>& aist,
   const view_2d<Spack>& ast)
 {
-  printf("ASD - %d, %d\n",nj,nk);
   using ExeSpace = typename KT::ExeSpace;
   const Int nk_pack = ekat::npack<Spack>(nk);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
