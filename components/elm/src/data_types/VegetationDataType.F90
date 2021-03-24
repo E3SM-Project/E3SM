@@ -24,7 +24,7 @@ module VegetationDataType
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio       , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
   use decompMod       , only : bounds_type, get_proc_global
-  use subgridAveMod   , only : p2c
+  use subgridAveMod   , only : p2c, p2c_1d_filter
   use restUtilMod
   use CNStateType     , only: cnstate_type
   use SpeciesMod              , only : species_from_string
@@ -3522,6 +3522,16 @@ module VegetationDataType
     integer  :: fp              ! filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
     !-----------------------------------------------------------------------
+    associate(&
+      totpftc_patch  => this%totpftc         , &
+      totpftc_col    => col_cs%totpftc, &
+      totvegc_patch  => this%totvegc , &
+      totvegc_col    => col_cs%totvegc, &
+      totvegc_abg_patch  => this%totvegc_abg , &
+      totvegc_abg_col    => col_cs%totvegc_abg, &
+      cropseedc_deficit_patch  => this%cropseedc_deficit ,&
+      cropseedc_deficit_col    => col_cs%cropseedc_deficit &
+      )
 
     if (use_fates) return
 
@@ -3597,20 +3607,21 @@ module VegetationDataType
 
     ! a few vegetation-to-column summaries
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%totpftc(bounds%begp:bounds%endp), &
-         col_cs%totpftc(bounds%begc:bounds%endc))
+         totpftc_patch(bounds%begp:bounds%endp) , &
+         totpftc_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%totvegc(bounds%begp:bounds%endp), &
-         col_cs%totvegc(bounds%begc:bounds%endc))
+         totvegc_patch(bounds%begp:bounds%endp) , &
+         totvegc_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%totvegc_abg(bounds%begp:bounds%endp), &
-         col_cs%totvegc_abg(bounds%begc:bounds%endc))
+         totvegc_abg_patch(bounds%begp:bounds%endp), &
+         totvegc_abg_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%cropseedc_deficit(bounds%begp:bounds%endp), &
-         col_cs%cropseedc_deficit(bounds%begc:bounds%endc))
+         cropseedc_deficit_patch(bounds%begp:bounds%endp), &
+         cropseedc_deficit_col(bounds%begc:bounds%endc))
+    end associate
 
   end subroutine veg_cs_summary
 
@@ -4186,6 +4197,17 @@ module VegetationDataType
     integer  :: c,p             ! indices
     integer  :: fp              ! filter indices
     !-----------------------------------------------------------------------
+    associate( &
+     plant_n_buffer_patch  => this%plant_n_buffer  , &
+     plant_n_buffer_col    => col_ns%plant_n_buffer , &
+     totvegn_patch  => this%totvegn   , &
+     totvegn_col    => col_ns%totvegn, &
+     totpftn_patch  => this%totpftn   , &
+     totpftn_col    => col_ns%totpftn, &
+     cropseedn_deficit_patch  => this%cropseedn_deficit , &
+     cropseedn_deficit_col    => col_ns%cropseedn_deficit &
+      )
+
     do fp = 1,num_soilp
        p = filter_soilp(fp)
 
@@ -4238,20 +4260,22 @@ module VegetationDataType
    end do ! filtered veg loop
 
    call p2c(bounds, num_soilc, filter_soilc, &
-        this%plant_n_buffer(bounds%begp:bounds%endp), &
-        col_ns%plant_n_buffer(bounds%begc:bounds%endc))
+        plant_n_buffer_patch(bounds%begp:bounds%endp)  , &
+        plant_n_buffer_col(bounds%begc:bounds%endc))
 
    call p2c(bounds, num_soilc, filter_soilc, &
-        this%totvegn(bounds%begp:bounds%endp), &
-        col_ns%totvegn(bounds%begc:bounds%endc))
+        totvegn_patch(bounds%begp:bounds%endp) , &
+        totvegn_col(bounds%begc:bounds%endc))
 
    call p2c(bounds, num_soilc, filter_soilc, &
-        this%totpftn(bounds%begp:bounds%endp), &
-        col_ns%totpftn(bounds%begc:bounds%endc))
+        totpftn_patch(bounds%begp:bounds%endp) , &
+        totpftn_col(bounds%begc:bounds%endc))
 
    call p2c(bounds, num_soilc, filter_soilc, &
-        this%cropseedn_deficit(bounds%begp:bounds%endp), &
-        col_ns%cropseedn_deficit(bounds%begc:bounds%endc))
+        cropseedn_deficit_patch(bounds%begp:bounds%endp) , &
+        cropseedn_deficit_col(bounds%begc:bounds%endc))
+
+   end associate
 
   end subroutine veg_ns_summary
 
@@ -4920,6 +4944,14 @@ module VegetationDataType
     integer  :: p        ! indices
     integer  :: fp       ! lake filter indices
     !-----------------------------------------------------------------------
+    associate( &
+     totvegp_patch  => this%totvegp   , &
+     totvegp_col    => col_ps%totvegp, &
+     totpftp_patch  => this%totpftp   , &
+     totpftp_col    => col_ps%totpftp, &
+     cropseedp_deficit_patch  => this%cropseedp_deficit , &
+     cropseedp_deficit_col    => col_ps%cropseedp_deficit &
+      )
     do fp = 1,num_soilp
        p = filter_soilp(fp)
 
@@ -4973,16 +5005,17 @@ module VegetationDataType
    end do
 
    call p2c(bounds, num_soilc, filter_soilc, &
-        this%totvegp(bounds%begp:bounds%endp), &
-        col_ps%totvegp(bounds%begc:bounds%endc))
+        totvegp_patch(bounds%begp:bounds%endp)  , &
+        totvegp_col(bounds%begc:bounds%endc) )
 
    call p2c(bounds, num_soilc, filter_soilc, &
-        this%totpftp(bounds%begp:bounds%endp), &
-        col_ps%totpftp(bounds%begc:bounds%endc))
+        totpftp_patch(bounds%begp:bounds%endp) , &
+        totpftp_col(bounds%begc:bounds%endc) )
 
    call p2c(bounds, num_soilc, filter_soilc, &
-        this%cropseedp_deficit(bounds%begp:bounds%endp), &
-        col_ps%cropseedp_deficit(bounds%begc:bounds%endc))
+        cropseedp_deficit_patch(bounds%begp:bounds%endp) , &
+        cropseedp_deficit_col(bounds%begc:bounds%endc) )
+   end associate
 
   end subroutine veg_ps_summary
 
@@ -8069,6 +8102,24 @@ module VegetationDataType
     integer  :: p,j,k,l       ! indices
     integer  :: fp            ! lake filter indices
     !-----------------------------------------------------------------------
+    associate( &
+      gpp_patch => this%gpp , &
+      gpp_col   => col_cf_input%gpp , &
+      ar_patch  => this%ar , &
+      ar_col    => col_cf_input%ar , &
+      npp_patch => this%npp , &
+      npp_col   => col_cf_input%npp , &
+      vegfire_patch => this%vegfire , &
+      vegfire_col   => col_cf_input%vegfire , &
+      wood_harvestc_patch => this%wood_harvestc , &
+      wood_harvestc_col   => col_cf_input%wood_harvestc , &
+      fire_closs_patch => this%fire_closs , &
+      fire_closs_col   => col_cf_input%fire_closs_p2c , &
+      litfall_patch => this%litfall , &
+      litfall_col   => col_cf_input%litfall , &
+      hrv_xsmrpool_to_atm_patch => this%hrv_xsmrpool_to_atm , &
+      hrv_xsmrpool_to_atm_col   => col_cf_input%hrv_xsmrpool_to_atm  &
+      )
 
     if (use_fates) return
 
@@ -8373,36 +8424,38 @@ module VegetationDataType
 
     ! use p2c routine to get selected column-average patch-level fluxes and states
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%gpp(bounds%begp:bounds%endp), &
-         col_cf_input%gpp(bounds%begc:bounds%endc))
+            gpp_patch(bounds%begp:bounds%endp), &
+            gpp_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%ar(bounds%begp:bounds%endp), &
-         col_cf_input%ar(bounds%begc:bounds%endc))
+            ar_patch(bounds%begp:bounds%endp), &
+            ar_col  (bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%npp(bounds%begp:bounds%endp), &
-         col_cf_input%npp(bounds%begc:bounds%endc))
+            npp_patch(bounds%begp:bounds%endp), &
+            npp_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%vegfire(bounds%begp:bounds%endp), &
-         col_cf_input%vegfire(bounds%begc:bounds%endc))
+            vegfire_patch(bounds%begp:bounds%endp), &
+            vegfire_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%wood_harvestc(bounds%begp:bounds%endp), &
-         col_cf_input%wood_harvestc(bounds%begc:bounds%endc))
+         wood_harvestc_patch(bounds%begp:bounds%endp), &
+         wood_harvestc_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%fire_closs(bounds%begp:bounds%endp), &
-         col_cf_input%fire_closs_p2c(bounds%begc:bounds%endc))
+         fire_closs_patch(bounds%begp:bounds%endp), &
+         fire_closs_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%litfall(bounds%begp:bounds%endp), &
-         col_cf_input%litfall(bounds%begc:bounds%endc))
+         litfall_patch(bounds%begp:bounds%endp), &
+         litfall_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%hrv_xsmrpool_to_atm(bounds%begp:bounds%endp), &
-         col_cf_input%hrv_xsmrpool_to_atm(bounds%begc:bounds%endc))
+         hrv_xsmrpool_to_atm_patch(bounds%begp:bounds%endp), &
+         hrv_xsmrpool_to_atm_col(bounds%begc:bounds%endc))
+
+    end associate
 
   end subroutine veg_cf_summary
 
@@ -8426,7 +8479,10 @@ module VegetationDataType
     ! !LOCAL VARIABLES
     integer :: fp, p
     !------------------------------------------------------------
-
+    associate( &
+      rr_patch => this%rr, &
+      rr_col   => col_cf_input%rr &
+      )
     do fp = 1,num_soilp
       p = filter_soilp(fp)
       ! root respiration (RR)
@@ -8442,9 +8498,10 @@ module VegetationDataType
       this%cpool_livecroot_storage_gr(p) + &
       this%cpool_deadcroot_storage_gr(p)
     enddo
-      call p2c(bounds, num_soilc, filter_soilc, &
-           this%rr(bounds%begp:bounds%endp), &
-           col_cf_input%rr(bounds%begc:bounds%endc))
+    call p2c_1d_filter(bounds, num_soilc, filter_soilc, &
+            rr_patch(bounds%begp:bounds%endp), &
+            rr_col(bounds%begc:bounds%endc))
+  end associate
 
   end subroutine veg_cf_summary_rr
 
@@ -9733,6 +9790,13 @@ module VegetationDataType
     integer  :: c,p             ! indices
     integer  :: fp              ! filter indices
     !-----------------------------------------------------------------------
+    associate(&
+      fire_nloss_patch => this%fire_nloss ,&
+      fire_nloss_col   => col_nf%fire_nloss_p2c ,&
+      wood_harvestn_patch =>  this%wood_harvestn, &
+      wood_harvestn_col   => col_nf%wood_harvestn &
+      )
+
     do fp = 1,num_soilp
        p = filter_soilp(fp)
 
@@ -9852,12 +9916,14 @@ module VegetationDataType
     end do
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%fire_nloss(bounds%begp:bounds%endp), &
-         col_nf%fire_nloss_p2c(bounds%begc:bounds%endc))
+         fire_nloss_patch(bounds%begp:bounds%endp)    , &
+         fire_nloss_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%wood_harvestn(bounds%begp:bounds%endp), &
-         col_nf%wood_harvestn(bounds%begc:bounds%endc))
+         wood_harvestn_patch(bounds%begp:bounds%endp) , &
+         wood_harvestn_col(bounds%begc:bounds%endc))
+
+   end associate
 
   end subroutine veg_nf_summary
 
@@ -10844,6 +10910,12 @@ module VegetationDataType
     ! !LOCAL VARIABLES:
     integer  :: p, fp   ! indices
     !-----------------------------------------------------------------------
+    associate( &
+      fire_ploss_patch => this%fire_ploss      ,&
+      fire_ploss_col   => col_pf%fire_ploss_p2c ,&
+      wood_harvestp_patch  => this%wood_harvestp ,&
+      wood_harvestp_col => col_pf%wood_harvestp &
+      )
     do fp = 1,num_soilp
        p = filter_soilp(fp)
 
@@ -10964,12 +11036,14 @@ module VegetationDataType
     end do
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%fire_ploss(bounds%begp:bounds%endp), &
-         col_pf%fire_ploss_p2c(bounds%begc:bounds%endc))
+         fire_ploss_patch(bounds%begp:bounds%endp)     , &
+         fire_ploss_col(bounds%begc:bounds%endc) )
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%wood_harvestp(bounds%begp:bounds%endp), &
-         col_pf%wood_harvestp(bounds%begc:bounds%endc))
+         wood_harvestp_patch(bounds%begp:bounds%endp) , &
+         wood_harvestp_col(bounds%begc:bounds%endc))
+
+    end associate
 
   end subroutine veg_pf_summary
 

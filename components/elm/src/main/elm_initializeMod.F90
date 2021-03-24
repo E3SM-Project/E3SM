@@ -870,8 +870,7 @@ contains
 
     if (nsrest == nsrStartup) then
        call t_startf('init_map2gc')
-       call lnd2atm_minimal(bounds_proc, &
-            waterstate_vars, surfalb_vars, energyflux_vars, lnd2atm_vars)
+       call lnd2atm_minimal(bounds_proc, surfalb_vars, energyflux_vars, lnd2atm_vars)
        call t_stopf('init_map2gc')
     end if
 
