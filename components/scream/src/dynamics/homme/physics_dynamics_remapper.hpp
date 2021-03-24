@@ -77,7 +77,6 @@ protected:
   void do_registration_begins () override {}
   void do_register_field (const identifier_type& src, const identifier_type& tgt) override;
   void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
-  void do_unregister_field (const int ifield) override;
   void do_registration_ends () override;
 
   void setup_boundary_exchange ();
@@ -303,23 +302,6 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
   // precompute fields needed on device during remapper
   if (this->m_state==RepoState::Closed &&
       (this->m_num_bound_fields+1)==this->m_num_registered_fields) {
-    setup_boundary_exchange ();
-    initialize_device_variables();
-  }
-}
-
-template<typename RealType>
-void PhysicsDynamicsRemapper<RealType>::
-do_unregister_field (const int ifield)
-{
-  m_phys.erase(m_phys.begin()+ifield);
-  m_dyn.erase(m_dyn.begin()+ifield);
-  m_is_state_field.erase(m_is_state_field.begin()+ifield);
-
-  // If unregistering this field makes all fields bound, we can setup the BE and
-  // precompute fields needed on device during remapper
-  if (this->m_state==RepoState::Closed &&
-      (this->m_num_bound_fields==(this->m_num_registered_fields+1))) {
     setup_boundary_exchange ();
     initialize_device_variables();
   }

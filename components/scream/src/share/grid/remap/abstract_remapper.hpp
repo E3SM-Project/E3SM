@@ -58,10 +58,6 @@ public:
     register_field(create_src_fid(tgt),tgt);
   }
 
-  // This method unregisters source and target fields associated with the given
-  // identifiers, indicating that they are no longer to be remapped.
-  void unregister_field (const identifier_type& src, const identifier_type& tgt);
-
   // Call this to indicate that field registration is complete.
   void registration_ends ();
 
@@ -216,9 +212,6 @@ protected:
   // fields are bound to an index within the remapper.
   virtual void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) = 0;
 
-  // Override this method to insert logic executed when a field is unregistered.
-  virtual void do_unregister_field (const int ifield) = 0;
-
   // Override this method to insert logic executed when the field registration
   // process ends.
   virtual void do_registration_ends () = 0;
@@ -332,29 +325,6 @@ register_field (const field_type& src, const field_type& tgt) {
   register_field(src.get_header().get_identifier(),
                  tgt.get_header().get_identifier());
   bind_field(src,tgt);
-}
-
-template<typename RealType>
-void AbstractRemapper<RealType>::
-unregister_field (const identifier_type& src, const identifier_type& tgt) {
-  EKAT_REQUIRE_MSG(m_state==RepoState::Open,
-                     "Error! You can only un-register fields during the registration phase.\n");
-
-  const int ifield = find_field(src,tgt);
-  EKAT_REQUIRE_MSG(ifield>=0,
-                     "Error! The src/tgt pair of fields \n"
-                     "         " + src.get_id_string() + "\n"
-                     "         " + tgt.get_id_string() + "\n"
-                     "       was not registered.\n");
-
-  const bool was_bound = m_fields_are_bound[ifield];
-  do_unregister_field(ifield);
-
-  --m_num_registered_fields;
-  if (was_bound) {
-    --m_num_bound_fields;
-  }
-  m_fields_are_bound.erase(m_fields_are_bound.begin()+ifield);
 }
 
 template<typename RealType>
