@@ -107,7 +107,7 @@ class TestAllScream(object):
                    "Error! Work directory '{}' does not exist.".format(self._work_dir))
         else:
             self._work_dir = self._root_dir.absolute().joinpath("ctest-build")
-            self._work_dir.mkdir()
+            self._work_dir.mkdir(exist_ok=True)
 
         os.chdir(str(self._root_dir)) # needed, or else every git command will need repo=root_dir
         expect(get_current_commit(), "Root dir: {}, does not appear to be a git repo".format(self._root_dir))
@@ -664,17 +664,7 @@ class TestAllScream(object):
         print("###############################################################################")
 
         # First, create build directories (one per test). If existing, nuke the content
-        self.create_tests_dirs(self._work_dir, True)
-        for test in self._tests:
-            test_dir = self.get_test_dir(self._work_dir,test)
-
-            # Create this test's build dir
-            if test_dir.exists():
-                if not self._quick_rerun:
-                    shutil.rmtree(str(test_dir))
-                    test_dir.mkdir(parents=True)
-            else:
-                test_dir.mkdir(parents=True)
+        self.create_tests_dirs(self._work_dir, not self._quick_rerun)
 
         success = True
         tests_success = {
