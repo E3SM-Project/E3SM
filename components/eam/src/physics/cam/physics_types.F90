@@ -325,14 +325,14 @@ contains
     end if
 
    ! Update constituents, all schemes use time split q: no tendency kept
-    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+    call cnst_get_ind('CLDICE', ixcldice, abrtf=.false.)
+    call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
     ! Check for number concentration of cloud liquid and cloud ice (if not present
     ! the indices will be set to -1)
-    call cnst_get_ind('NUMICE', ixnumice, abort=.false.)
-    call cnst_get_ind('NUMLIQ', ixnumliq, abort=.false.)
-    call cnst_get_ind('NUMRAI', ixnumrain, abort=.false.)
-    call cnst_get_ind('NUMSNO', ixnumsnow, abort=.false.)
+    call cnst_get_ind('NUMICE', ixnumice, abrtf=.false.)
+    call cnst_get_ind('NUMLIQ', ixnumliq, abrtf=.false.)
+    call cnst_get_ind('NUMRAI', ixnumrain, abrtf=.false.)
+    call cnst_get_ind('NUMSNO', ixnumsnow, abrtf=.false.)
   
     do m = 1, pcnst
        if(ptend%lq(m)) then

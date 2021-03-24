@@ -35,13 +35,13 @@ contains
     call prefetch( fv )
     call prefetch( fw )
 
-    rdx2=1./dx/dx
-    rdx25=0.25*rdx2
+    rdx2=1.D0/dx/dx
+    rdx25=0.25D0*rdx2
 
     j=1
 
     !For working around PGI bugs where PGI did not allocate enough gangs
-    numgangs = ceiling( ncrms*nzm*nx/128. )
+    numgangs = ceiling( ncrms*nzm*nx/128.D0 )
     !$acc parallel loop gang vector collapse(3) vector_length(128) num_gangs(numgangs) async(asyncid)
     do k=1,nzm
       do i=0,nx
@@ -61,7 +61,7 @@ contains
       end do
     end do
     !For working around PGI bugs where PGI did not allocate enough gangs
-    numgangs = ceiling( ncrms*nzm*nx/128. )
+    numgangs = ceiling( ncrms*nzm*nx/128.D0 )
     !$acc parallel loop gang vector collapse(3) vector_length(128) num_gangs(numgangs) async(asyncid)
     do k=1,nzm
       do i=1,nx
@@ -86,7 +86,7 @@ contains
     enddo
 
     !For working around PGI bugs where PGI did not allocate enough gangs
-    numgangs = ceiling( ncrms*(nzm-1)*nx/128. )
+    numgangs = ceiling( ncrms*(nzm-1)*nx/128.D0 )
     !$acc parallel loop gang vector collapse(3) vector_length(128) num_gangs(numgangs) async(asyncid)
     do k=1,nzm-1
       do i=1,nx
@@ -94,7 +94,7 @@ contains
           kc=k+1
           rdz=1./dz(icrm)
           rdz2=rdz*rdz *grdf_z(icrm,k)
-          rdz25=0.25*rdz2
+          rdz25=0.25D0*rdz2
           dzx=dz(icrm)/dx
           iadz = 1./adz(icrm,k)
           iadzw= 1./adzw(icrm,kc)
@@ -135,7 +135,7 @@ contains
       do i=1,nx
         do icrm = 1 , ncrms
           kc=k+1
-          rhoi = 1./(rho(icrm,k)*adz(icrm,k))
+          rhoi = 1.D0/(rho(icrm,k)*adz(icrm,k))
           dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fu(icrm,i,j,kc)-fu(icrm,i,j,k))*rhoi
           dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fv(icrm,i,j,kc)-fv(icrm,i,j,k))*rhoi
         end do
@@ -146,7 +146,7 @@ contains
     do k=2,nzm
       do i=1,nx
         do icrm = 1 , ncrms
-          rhoi = 1./(rhow(icrm,k)*adzw(icrm,k))
+          rhoi = 1.D0/(rhow(icrm,k)*adzw(icrm,k))
           dwdt(icrm,i,j,k,na)=dwdt(icrm,i,j,k,na)-(fw(icrm,i,j,k+1)-fw(icrm,i,j,k))*rhoi
         end do
       end do ! k

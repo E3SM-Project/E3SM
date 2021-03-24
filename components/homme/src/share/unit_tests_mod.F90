@@ -48,7 +48,7 @@ contains
     ! ---------------------
     use kinds, only : real_kind, iulog
     ! ---------------------
-    use physical_constants, only : rearth 
+    use physical_constants, only : scale_factor
     ! ---------------------
     use dimensions_mod, only : np, nlev
     ! ---------------------
@@ -132,15 +132,15 @@ contains
        grade=curl_sphere(E(:,:,ie),deriv,elem(ie))
        div=divergence_sphere(grade,deriv,elem(ie))
        vor=vorticity_sphere(grade,deriv,elem(ie))
-       if (maxval(abs(div))*rearth**2 > .2e-11) then
-          write(iulog,'(a,i4,2e20.10)') 'maxval: div(curl),  vor(curl)=',ie,maxval(abs(div))*rearth**2,maxval(abs(vor))*rearth**2
+       if (maxval(abs(div))*scale_factor**2 > .2e-11) then
+          write(iulog,'(a,i4,2e20.10)') 'maxval: div(curl),  vor(curl)=',ie,maxval(abs(div))*scale_factor**2,maxval(abs(vor))*scale_factor**2
        endif
 
        grade=gradient_sphere(E(:,:,ie),deriv,elem(ie)%Dinv)
        vor=vorticity_sphere(grade,deriv,elem(ie))
        div=divergence_sphere(grade,deriv,elem(ie))
-       if (maxval(abs(vor))*rearth**2 > .2e-11) then
-          write(iulog,'(a,i4,2e20.10)') 'maxval: curl(grad), div(grad)=',ie,maxval(abs(vor))*rearth**2,maxval(abs(div))*rearth**2
+       if (maxval(abs(vor))*scale_factor**2 > .2e-11) then
+          write(iulog,'(a,i4,2e20.10)') 'maxval: curl(grad), div(grad)=',ie,maxval(abs(vor))*scale_factor**2,maxval(abs(div))*scale_factor**2
        endif
        endif
     enddo
@@ -155,8 +155,8 @@ contains
     enddo
     call make_C0(divbig,elem,hybrid,nets,nete)
     do ie=nets,nete
-       if (maxval(abs(divbig(:,:,ie)))*rearth**2 > .8e-12) then
-          write(iulog,'(a,i4,2e20.10)') 'maxval: [div([curl])]=',ie,maxval(abs(divbig(:,:,ie)))*rearth**2
+       if (maxval(abs(divbig(:,:,ie)))*scale_factor**2 > .8e-12) then
+          write(iulog,'(a,i4,2e20.10)') 'maxval: [div([curl])]=',ie,maxval(abs(divbig(:,:,ie)))*scale_factor**2
        endif
     enddo
 
@@ -172,8 +172,8 @@ contains
     call make_C0(divbig,elem,hybrid,nets,nete)
     
     do ie=nets,nete
-       if (maxval(abs(divbig(:,:,ie)))*rearth**2 > .8e-12) then
-          write(iulog,'(a,i4,2e20.10)') 'maxval: [curl([gradl])]=',ie,maxval(abs(divbig(:,:,ie)))*rearth**2
+       if (maxval(abs(divbig(:,:,ie)))*scale_factor**2 > .8e-12) then
+          write(iulog,'(a,i4,2e20.10)') 'maxval: [curl([gradl])]=',ie,maxval(abs(divbig(:,:,ie)))*scale_factor**2
        endif
     enddo
 #endif
@@ -240,7 +240,7 @@ contains
 #endif
     ! test function is O(1). gradient is O(1/rearth).  lets require agreement to
     ! 1e-11/rearth
-    mx = rearth*maxval(abs(divbig(:,:,:)-wdivbig(:,:,:)))
+    mx = scale_factor*maxval(abs(divbig(:,:,:)-wdivbig(:,:,:)))
     if (hybrid%masterthread) then   
        write(iulog,'(a,2e20.10)') 'div vs. weak div, max error on masterthread: ',mx
     endif
@@ -412,7 +412,6 @@ contains
 
 
   subroutine test_subcell_div_fluxes_again(elem,hybrid,deriv,nets,nete)
-    use physical_constants, only : rearth
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_div_fluxes
     use element_mod,    only : element_t
@@ -420,6 +419,7 @@ contains
     use kinds,          only : real_kind
     use quadrature_mod, only : gausslobatto, quadrature_t
     use hybrid_mod, only : hybrid_t
+    use physical_constants, only : scale_factor
 
     implicit none
 
@@ -466,7 +466,7 @@ contains
       end if
 
       fluxes = subcell_div_fluxes(v, np, intervals, metdet) 
-      fluxes = rearth*fluxes
+      fluxes = scale_factor*fluxes
 
       if (ie <= np*np) then
         t = 4./(intervals*intervals)
@@ -572,7 +572,6 @@ contains
   end subroutine test_subcell_div_fluxes_again
 
   subroutine test_subcell_dss_fluxes_again(elem,hybrid,deriv,nets,nete)
-    use physical_constants, only : rearth
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_dss_fluxes
     use element_mod,    only : element_t
@@ -684,7 +683,6 @@ contains
 
 
   subroutine test_subcell_Laplace_fluxes_again(elem,hybrid,deriv,nets,nete)
-    use physical_constants, only : rearth
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_Laplace_fluxes
     use element_mod,    only : element_t
@@ -763,7 +761,7 @@ contains
   end subroutine test_subcell_Laplace_fluxes_again
 
   subroutine test_subcell_Laplace_fluxes(elem,hybrid,deriv,nets,nete)
-    use physical_constants, only : rearth
+    use physical_constants, only : scale_factor
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_Laplace_fluxes
     use derivative_mod, only : subcell_integration
@@ -818,8 +816,8 @@ contains
 
       laplace_test = SUM(laplace_fluxes,3)
 
-      laplace_test   = rearth*rearth*laplace_test
-      laplace_values = rearth*rearth*laplace_values
+      laplace_test   = scale_factor*scale_factor*laplace_test
+      laplace_values = scale_factor*scale_factor*laplace_values
       do i=1,intervals
       do j=1,intervals
         t = ABS(laplace_test(i,j)-laplace_values(i,j))/ &
@@ -980,7 +978,6 @@ contains
                              element_boundary_integral, gradient_sphere, &
                              gradient_sphere_wk_testcontra,gradient_sphere_wk_testcov, &
                              curl_sphere, curl_sphere_wk_testcov
-  use physical_constants, only : rrearth
   use kinds,          only : real_kind
   use hybrid_mod, only : hybrid_t
 

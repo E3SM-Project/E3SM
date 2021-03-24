@@ -12,78 +12,8 @@
   </compset>
 
   <compset>
-    <alias>FC5ATMMOD</alias>
-    <lname>2000_EAM%ATMMOD_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C</alias>
-    <lname>2000_EAM%AV1C_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-00</alias>
-    <lname>2000_EAM%AV1C-00_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850C5AV1C-01</alias>
-    <lname>1850_EAM%AV1C-01_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850C5AV1C-02</alias>
-    <lname>1850_EAM%AV1C-02_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850C5AV1C-03</alias>
-    <lname>1850_EAM%AV1C-03_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850C5AV1C-04</alias>
-    <lname>1850_EAM%AV1C-04_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850C5AV1C-04P</alias>
-    <lname>1850_EAM%AV1C-04P_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850C5AV1C-04P2</alias>
-    <lname>1850_EAM%AV1C-04P2_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850C5AV1C-L</alias>
-    <lname>1850_EAM%AV1C-L_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850C5AV1C-H01A</alias>
-    <lname>1850_EAM%AV1C-H01A_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850C5AV1C-H01B</alias>
-    <lname>1850_EAM%AV1C-H01B_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850C5AV1C-H01C</alias>
-    <lname>1850_EAM%AV1C-H01C_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850C5-CMIP6</alias>
+    <alias>F1850</alias>
     <lname>1850_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850SC5-CMIP6</alias>
-    <lname>1850S_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -97,48 +27,8 @@
   </compset>
 
   <compset>
-    <alias>F1950C5-CMIP6-LR</alias>
-    <lname>1950_EAM%CMIP6-LR_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1950C5-CMIP6-HR</alias>
-    <lname>1950_EAM%CMIP6-HR_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1950C5-CMIP6-LRtunedHR</alias>
-    <lname>1950_EAM%CMIP6-LRtunedHR_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-01</alias>
-    <lname>2000_EAM%AV1C-01_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-02</alias>
-    <lname>2000_EAM%AV1C-02_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-03</alias>
-    <lname>2000_EAM%AV1C-03_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-04</alias>
-    <lname>2000_EAM%AV1C-04_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-04P</alias>
-    <lname>2000_EAM%AV1C-04P_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-04P2</alias>
-    <lname>2000_EAM%AV1C-04P2_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>F1950</alias>
+    <lname>1950_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -152,72 +42,17 @@
   </compset>
 
   <compset>
-    <alias>FC5AV1C-H01B</alias>
-    <lname>2000_EAM%AV1C-H01B_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-H01C</alias>
-    <lname>2000_EAM%AV1C-H01C_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1F</alias>
-    <lname>2000_EAM%AV1F_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1F-00</alias>
-    <lname>2000_EAM%AV1F-00_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1F-01</alias>
-    <lname>2000_EAM%AV1F-01_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-   <alias>F20TRC5AV1C-03</alias>
-   <lname>20TR_EAM%AV1C-03_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-   <alias>F20TRC5AV1C-04</alias>
-   <lname>20TR_EAM%AV1C-04_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-   <alias>F20TRC5AV1C-04P</alias>
-   <lname>20TR_EAM%AV1C-04P_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-   <alias>F20TRC5AV1C-04P2</alias>
-   <lname>20TR_EAM%AV1C-04P2_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
    <alias>F20TRC5AV1C-L</alias>
    <lname>20TR_EAM%AV1C-L_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-   <alias>F20TRC5AV1C-H01A</alias>
-   <lname>20TR_EAM%AV1C-H01A_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-   <alias>F20TRC5AV1C-H01B</alias>
-   <lname>20TR_EAM%AV1C-H01B_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-   <alias>F20TRC5AV1C-H01C</alias>
-   <lname>20TR_EAM%AV1C-H01C_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
     <alias>F20TRC5-CMIP6</alias>
+    <lname>20TR_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F20TR</alias>
     <lname>20TR_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
@@ -227,63 +62,8 @@
   </compset>
 
   <compset>
-    <alias>F2010C5-CMIP6-LR</alias>
-    <lname>2010_EAM%CMIP6-LR_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F2010C5-CMIP6-HR</alias>
-    <lname>2010_EAM%CMIP6-HR_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5ATMMODCOSP</alias>
-    <lname>2000_EAM%ATMMODCOSP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F1850PDC5L45BGC</alias>
-    <lname>20TR_EAM_ELM%BGC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5L45BGC</alias>
-    <lname>2000_EAM_ELM%BGC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5CLBMG2BCL72</alias>
-    <lname>2000_EAM%CLBMG2L72_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5CLBMG2LINMAM4RESUSBC</alias>
-    <lname>2000_EAM%CLBMG2LINMAM4RESUS_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5CLBMG2MAM4RESUSBC</alias>
-    <lname>2000_EAM%CLBMG2MAM4RESUS_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5CLBMG2MAM4RESUSMOMBC</alias>
-    <lname>2000_EAM%CLBMG2MAM4RESUSMOM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5CLBMG2MAM4RESUSCOSPBC</alias>
-    <lname>2000_EAM%CLBMG2MAM4RESUSCOSP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5CLBMG2MAM4RESUSMOMCOSPBC</alias>
-    <lname>2000_EAM%CLBMG2MAM4RESUSMOMCOSP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5CLBMG2LINMAM4RESUSMOMCOSPBC</alias>
-    <lname>2000_EAM%CLBMG2MAM4RESUSMOMCOSP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>F2010</alias>
+    <lname>2010_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -319,47 +99,47 @@
   <!-- AQPFILE = SST file set by 'aquapfile' in namelist -->
 
   <compset>
-    <alias>F-EAMv1-AQP1</alias>
+    <alias>F-EAM-AQP1</alias>
     <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-EAMv1-AQP2</alias>
+    <alias>F-EAM-AQP2</alias>
     <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP2_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-EAMv1-AQP3</alias>
+    <alias>F-EAM-AQP3</alias>
     <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-EAMv1-AQP4</alias>
+    <alias>F-EAM-AQP4</alias>
     <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP4_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-EAMv1-AQP5</alias>
+    <alias>F-EAM-AQP5</alias>
     <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP5_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-EAMv1-AQP6</alias>
+    <alias>F-EAM-AQP6</alias>
     <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP6_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-EAMv1-AQP7</alias>
+    <alias>F-EAM-AQP7</alias>
     <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP7_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-EAMv1-AQP8</alias>
+    <alias>F-EAM-AQP8</alias>
     <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP8_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-EAMv1-AQP9</alias>
+    <alias>F-EAM-AQP9</alias>
     <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP9_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-EAMv1-AQP10</alias>
+    <alias>F-EAM-AQP10</alias>
     <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP10_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-EAMv1-AQPFILE</alias>
+    <alias>F-EAM-AQPFILE</alias>
     <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
   </compset>
 
@@ -409,11 +189,16 @@
     <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>F-MMFXX-AQP1</alias>
+    <lname>2000_EAM%MMFXX-AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <!-- *********************************** -->
   <!-- Radiative-Convective Equilibrium (RCE) -->
   <!-- *********************************** -->
   <compset>
-    <alias>F-EAMv1-RCEMIP</alias>
+    <alias>F-EAM-RCEMIP</alias>
     <lname>2000_EAM%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 

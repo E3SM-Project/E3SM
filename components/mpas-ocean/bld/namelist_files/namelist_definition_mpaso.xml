@@ -196,7 +196,7 @@ Default: Defined in namelist_defaults.xml
 	category="time_integration" group="time_integration">
 Time integration method.
 
-Valid values: 'split_explicit', 'RK4', 'unsplit_explicit'
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'semi_implicit'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1044,6 +1044,14 @@ Valid values: Real Values greater than zero less than bottomDepth
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_enable_shortwave_energy_fixer" type="logical"
+	category="shortwaveRadiation" group="shortwaveRadiation">
+Flag to enable the shortwave energy fixer for shallow ocean cells
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- tidal_potential_forcing -->
 
@@ -1480,7 +1488,7 @@ Default: Defined in namelist_defaults.xml
 	category="eos" group="eos">
 Character string to choose EOS formulation
 
-Valid values: Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'
+Valid values: Jackett McDougall EOS = 'jm', Wright = 'wright', and Linear EOS = 'linear'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1600,10 +1608,21 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- split_explicit_ts -->
+<!-- eos_wright -->
+
+<entry id="config_eos_wright_ref_pressure" type="real"
+	category="eos_wright" group="eos_wright">
+Reference pressure for potential density
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- split_timestep_share -->
 
 <entry id="config_n_ts_iter" type="integer"
-	category="split_explicit_ts" group="split_explicit_ts">
+	category="split_timestep_share" group="split_timestep_share">
 number of large iterations over stages 1-3
 
 Valid values: any positive integer, but typically 1, 2, or 3
@@ -1611,28 +1630,31 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_n_bcl_iter_beg" type="integer"
-	category="split_explicit_ts" group="split_explicit_ts">
-number of iterations of stage 1 (baroclinic solve) on the first split-explicit iteration
+	category="split_timestep_share" group="split_timestep_share">
+number of iterations of stage 1 (baroclinic solve) on the first split timestepping iteration
 
 Valid values: any positive integer, but typically 1, 2, or 3
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_n_bcl_iter_mid" type="integer"
-	category="split_explicit_ts" group="split_explicit_ts">
-number of iterations of stage 1 (baroclinic solve) on any split-explicit iterations between first and last
+	category="split_timestep_share" group="split_timestep_share">
+number of iterations of stage 1 (baroclinic solve) on any split timestepping iterations between first and last
 
 Valid values: any positive integer, but typically 1, 2, or 3
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_n_bcl_iter_end" type="integer"
-	category="split_explicit_ts" group="split_explicit_ts">
-number of iterations of stage 1 (baroclinic solve) on the last split-explicit iteration
+	category="split_timestep_share" group="split_timestep_share">
+number of iterations of stage 1 (baroclinic solve) on the last split timestepping iteration
 
 Valid values: any positive integer, but typically 1, 2, or 3
 Default: Defined in namelist_defaults.xml
 </entry>
+
+
+<!-- split_explicit_ts -->
 
 <entry id="config_btr_dt" type="char*1024"
 	category="split_explicit_ts" group="split_explicit_ts">
@@ -1693,6 +1715,41 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_btr_solve_SSH2" type="logical"
 	category="split_explicit_ts" group="split_explicit_ts">
 If true, execute the SSH corrector step in stage 2
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- semi_implicit_ts -->
+
+<entry id="config_btr_si_preconditioner" type="char*1024"
+	category="semi_implicit_ts" group="semi_implicit_ts">
+Type of preconditioner for the barotropic mode solver
+
+Valid values: ras, block_jacobi, jacobi, none
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_btr_si_tolerance" type="real"
+	category="semi_implicit_ts" group="semi_implicit_ts">
+Tolerance for the barotropic mode solver
+
+Valid values: any positive real, but typically less than 1.0e-9
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_n_btr_si_outer_iter" type="integer"
+	category="semi_implicit_ts" group="semi_implicit_ts">
+number of outer iterations
+
+Valid values: any positive integer, but typically 2
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_btr_si_partition_match_mode" type="logical"
+	category="semi_implicit_ts" group="semi_implicit_ts">
+If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2067,6 +2124,17 @@ Default: Defined in namelist_defaults.xml
 Character string to choose tensor test fuction
 
 Valid values: 'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- init_mode_vert_levels -->
+
+<entry id="config_vert_levels" type="integer"
+	category="init_mode_vert_levels" group="init_mode_vert_levels">
+Number of vertical levels to create within the configuration.
+
+Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition.
 Default: Defined in namelist_defaults.xml
 </entry>
 

@@ -119,6 +119,11 @@ cd ../cpp2d    ; ln -s ../$1 ./input.nc
 cd ../cpp3d    ; ln -s ../$2 ./input.nc
 cd ..
 
+### link non-standard data file
+# rm *3d/input.nc
+# ln -s /gpfs/alpine/cli115/proj-shared/hannah6/crm_standalone_data/crmdata_3d_bug_combined.nc /ccs/home/hannah6/E3SM/E3SM_SRC1/components/eam/src/physics/crm/samxx/test/build/fortran3d/input.nc
+# ln -s /gpfs/alpine/cli115/proj-shared/hannah6/crm_standalone_data/crmdata_3d_bug_combined.nc /ccs/home/hannah6/E3SM/E3SM_SRC1/components/eam/src/physics/crm/samxx/test/build/cpp3d/input.nc
+
 
 ############################################################################
 ## GET THE NETCDF LINKING FLAGS

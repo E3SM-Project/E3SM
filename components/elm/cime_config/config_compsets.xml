@@ -651,23 +651,23 @@
   </compset>
 
   <compset>
-    <alias>IELMED</alias>
-    <lname>2000_DATM%QIA_ELM%BGC-ED_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <alias>IELMFATES</alias>
+    <lname>2000_DATM%QIA_ELM%BGC-FATES_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>ICBELMED</alias>
-    <lname>2000_SATM_ELM%BGC-ED_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <alias>ICBELMFATES</alias>
+    <lname>2000_SATM_ELM%BGC-FATES_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
   
   <compset>
-    <alias>I1850ELMED</alias>
-    <lname>1850_DATM%QIA_ELM%BGC-ED_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <alias>I1850ELMFATES</alias>
+    <lname>1850_DATM%QIA_ELM%BGC-FATES_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
   
   <compset>
-    <alias>ICB1850ELMED</alias>
-    <lname>1850_SATM_ELM%BGC-ED_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <alias>ICB1850ELMFATES</alias>
+    <lname>1850_SATM_ELM%BGC-FATES_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>

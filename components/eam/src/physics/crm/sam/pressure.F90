@@ -191,12 +191,12 @@ contains
           factx = 2.d0
         endif
         xi=id
-        eign(i,j)=(2._8*cos(factx*xnx*xi)-2._8)*ddx2+(2._8*cos(facty*xny*xj)-2._8)*ddy2
+        eign(i,j)=(2.D0*cos(factx*xnx*xi)-2.D0)*ddx2+(2.D0*cos(facty*xny*xj)-2.D0)*ddy2
       enddo
     enddo
 
     !For working aroung PGI OpenACC bug where it didn't create enough gangs
-    numgangs = ceiling(ncrms*(nyp22-jwall)*(nxp2-iwall)/128.)
+    numgangs = ceiling(ncrms*(nyp22-jwall)*(nxp2-iwall)/128.D0)
     !$acc parallel loop gang vector collapse(3) vector_length(128) num_gangs(numgangs) private(alfa,beta) async(asyncid)
     do j=1,nyp22-jwall
       do i=1,nxp1-iwall
@@ -205,12 +205,12 @@ contains
           if(dowally) then
             jd=j+jt-1
           else
-            jd=(j+jt-0.1)/2.
+            jd=(j+jt-0.1D0)/2.D0
           endif
           if(dowallx) then
             id=i+it-1
           else
-            id=(i+it-0.1)/2.
+            id=(i+it-0.1D0)/2.D0
           endif
           if(id+jd.eq.0) then
             b=1._8/(eign(i,j)*rho(icrm,1)-a(icrm,1)-c(icrm,1))

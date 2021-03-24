@@ -40,7 +40,7 @@ void diagnose() {
   auto &qv0            = ::qv0;
   auto &ncrms          = ::ncrms;
 
-  real coef = 1.0/(nx*ny);
+  real coef = 1.0/( (real) nx * (real) ny );
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {

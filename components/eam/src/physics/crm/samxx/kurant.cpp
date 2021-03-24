@@ -57,8 +57,9 @@ void kurant () {
   real cfl_loc = pmax(tmpMax.data());
   cfl = max(cfl,cfl_loc);
 
+
   if(cfl != cfl) {
-    std::cout << "kurant() - cfl is NaN.";
+    std::cout << "\nkurant() - cfl is NaN." << std::endl;
     finalize();
     exit(-1);
   }
@@ -68,7 +69,7 @@ void kurant () {
   ncycle = max(ncycle,max(1,static_cast<int>(ceil(cfl/0.7))));
 
   if(ncycle > max_ncycle) {
-    std::cout << "kurant() - the number of cycles exceeded 4.";
+    std::cout << "\nkurant() - the number of cycles exceeded max_ncycle = "<< max_ncycle << std::endl;
     exit(-1);
   }
 }

@@ -463,7 +463,12 @@ end if
 !
 
    do k=1,plev
-     tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+     tfcst(k) = tfcst(k) &
+#ifndef MODEL_THETA_L
+         ! this term is already taken into account through
+         !  LS vertical advection in theta-l dycore
+         + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+#endif
          + ztodt*(t2(k) + divt(k))
      do m=1,pcnst
        qfcst(1,k,m) = qfcst(1,k,m) + ztodt*divq(k,m)

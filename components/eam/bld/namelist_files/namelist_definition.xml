@@ -62,6 +62,19 @@
        Toggle Model Nudging ON/OFF.
        Default: FALSE
        </entry>
+       
+<entry id="Nudge_Allow_Missing_File" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       User-defined flag to inform Nudging if all nudged data files exist.
+       1. If .false.: all nudged data files must show up during the
+           whole nudging period. Otherwise, the model will exit if a
+           nudged data file is not found.
+       2. If .true.: user allows the model to continue to run even if a
+          nudged data file is not found. The model will continue to run with the
+          nudging turned off, and only a warning message will be added to the
+          simulation log file.
+       Default: FALSE
+       </entry>
 
 <entry id="Nudge_Path" type="char*256" input_pathname="abs" category="nudging"
        group="nudging_nl" valid_values="" >
@@ -367,7 +380,7 @@ If phys_chnk_fdim is less than 1 (so runtime pcols is calculated)
 and phys_chnk_fdim_max is greater than 0, then phys_chnk_fdim_max
 is an upper bound on the size of the runtime pcols parameter.
 Otherwise it is ignored.
-Default: 16 when no overriding rules. See namelist_defaults_cam.xml
+Default: 16 when no overriding rules. See namelist_defaults_eam.xml
 </entry>
 
 <entry id="phys_chnk_fdim_mult" type="integer"  category="perf_dp_coup"
@@ -378,7 +391,7 @@ less than 1 (so ignored) or phys_chnk_fdim_mult is less than or equal to
 phys_chnk_fdim_max, then the runtime pcols is required to be an integer
 multiple of phys_chnk_fdim_mult. This can be useful for memory alignment
 of local variables. 
-Default: 1 when no overriding rules. See namelist_defaults_cam.xml
+Default: 1 when no overriding rules. See namelist_defaults_eam.xml
 </entry>
 
 <entry id="phys_alltoall" type="integer"  category="perf_dp_coup"
@@ -1275,6 +1288,13 @@ Default: FALSE
 If TRUE read co2 flux from ocn.
 Default: FALSE
 </entry>
+
+<entry id="co2_readflux_aircraft" type="logical"  category="co2_cycle"
+       group="co2_cycle_nl" valid_values="" >
+If TRUE read co2 aircraft flux from file.
+Default: set by build-namelist
+</entry>
+
 
 <entry id="co2flux_ocn_file" type="char*256" input_pathname="abs" category="co2_cycle"
        group="co2_cycle_nl" valid_values="" >
@@ -2494,12 +2514,6 @@ Maximum downdraft mass flux fraction
 Default: set by build-namelist
 </entry>
 
-<entry id="zmconv_trigmem" type="logical" category="conv"
-       group="zmconv_nl" valid_values="" >
-Trigger and memory option in ZM deep convection scheme.
-Default: FALSE
-</entry>
-
 <entry id="zmconv_trigdcape_ull" type="logical" category="conv"
        group="zmconv_nl" valid_values="" >
 DCAPE trigger along with unrestricted launching level for ZM deep convection scheme.
@@ -2718,10 +2732,10 @@ Default: 10
 <!-- Moist Convection and Microphysics -->
 
 <entry id="deep_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="ZM,UNICON,CLUBB_SGS,off" >
+       group="phys_ctl_nl" valid_values="ZM,CLUBB_SGS,off" >
 Type of deep convection scheme employed.  'ZM' for Zhang-McFarlane;
 'off' for none.
-Default: 'ZM' unless using 'UNICON'
+Default: 'ZM'
 </entry>
 
 <entry id="microp_scheme" type="char*16" category="conv"
@@ -2752,10 +2766,9 @@ Default: FALSE
 </entry>
 
 <entry id="shallow_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="off,Hack,UW,CLUBB_SGS,UNICON" >
+       group="phys_ctl_nl" valid_values="off,Hack,UW,CLUBB_SGS" >
 Type of shallow convection scheme employed.  'Hack' for Hack shallow convection;
-'UW' for original McCaa UW pbl scheme, modified by Sungsu Park; 'CLUBB_SGS'
-for CLUBB_SGS; or UNICON which doesn't distinquish shallow and deep.
+'UW' for original McCaa UW pbl scheme, modified by Sungsu Park; 'CLUBB_SGS' for CLUBB_SGS
 Default: set by build-namelist (depends on <varname>eddy_scheme</varname>).
 </entry>
 
@@ -3386,7 +3399,7 @@ Default: TRUE
 <!-- Physics control -->
 
 <entry id="cam_physpkg" type="char*16" category="build"
-       group="phys_ctl_nl" valid_values="cam3,cam4,cam5,ideal,adiabatic" >
+       group="phys_ctl_nl" valid_values="cam3,cam4,cam5,ideal,adiabatic,default" >
 Name of the CAM physics package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
 cache file to be consistent with how CAM was built.
@@ -4031,7 +4044,13 @@ Default: false
 <!-- MMF -->
 <entry id="use_MMF" type="logical"  category="conv"
        group="phys_ctl_nl" valid_values="" >
-Turn on super parameterized CAM
+Turn on multiscale modelling framework
+Default: false
+</entry>
+
+<entry id="use_MMF_VT" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on MMF variance transport
 Default: false
 </entry>
 
@@ -4049,14 +4068,22 @@ Default: false
 
 <entry id="MMF_microphysics_scheme" type="char*16" category="conv"
        group="phys_ctl_nl" valid_values="m2005, sam1mom" >
-Type of SPCAM microphysics scheme employed.
+Type of E3SM-MMF microphysics scheme employed.
 Default: sam1mom
+</entry>
+
+<entry id="MMF_VT_wn_max" type="real" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Wavenumber cutoff for filtered MMF variance transport. 
+A value of 0 disables filtering so that the total
+variance is transported
+Default: 0
 </entry>
 
 <!-- MMF Mean State Acceleration(MSA) definitions -->
 <entry id="use_crm_accel" type="logical" category="conv"
        group="phys_ctl_nl" valid_values="">
-Enables CRM mean-state acceleration when using SPCAM.
+Enables CRM mean-state acceleration when using E3SM-MMF.
 Default: true
 </entry>
 
@@ -4483,8 +4510,16 @@ Full pathname of the aircraft input file list
 Default: none
 </entry>
 
+<entry id="aircraft_datapath" type="char*256" category="cam_chem"
+       group="aircraft_emit_nl" valid_values="" >
+Full pathname of the directory that contains the files specified in
+{{ hilight }}aircraft_specifier{{ closehilight }}.
+Default: none
+</entry>
+
+
 <entry id="aircraft_type" type="char*32" category="cam_chem"
-       group="aircraft_emit_nl" valid_values="CYCLICAL_LIST" >
+       group="aircraft_emit_nl" valid_values="CYCLICAL_LIST,SERIAL" >
 Type of time interpolation for data in aircraft aerosol files.
 Default: 'CYCLICAL_LIST'
 </entry>
@@ -5582,12 +5617,19 @@ Indicates form of eqn. for vtheta in theta model.
 0 is conservation form, 1 is expanded div form.
 Default: 1.
 </entry>
-	
+
+<entry id="vtheta_thresh" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Minimum threshold for virtual potential temperature in the theta dycore.
+Values below this will trigger a warning and be clipped.
+Default: (set by dycore).
+</entry>
+
 <entry id="cubed_sphere_map" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Defines which map is used for referene element in homme.
+Defines which map is used for reference element in homme.
 Must be 2 for compsets using TempestRemap mapping files.          
-Default: 0
+Default: 2
 </entry>
 
 
@@ -5624,16 +5666,20 @@ Dynamics timestep.  Replaces se_nsplit.
 
 <entry id="dt_tracer_factor" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Tracer advection is done every dt_tracer_factor dynamics timesteps.
+The tracer advection timestep is dt_tracer_factor*se_tstep, where se_tstep is
+the dynamics timesteps. dt_tracer_factor*se_tstep must divide dtime, and one of
+dt_remap_factor and dt_tracer_factor must divide the other.
 Replaces qsplit, rsplit.
 Default: Set by build-namelist.
 </entry>
 
 <entry id="dt_remap_factor" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Vertically lagrangian code updates every dt_remap_factor dynamics timesteps.
+The vertically Lagrangian remap timestep is dt_remap_factor*se_tstep, where
+se_tstep is the dynamics timesteps. dt_remap_factor*se_tstep must divide dtime,
+and one of dt_remap_factor and dt_tracer_factor must divide the other.
 Replaces qsplit, rsplit.
-If dt_remap_factor=0, vertically lagrangian code is off.
+If dt_remap_factor=0, vertically Lagrangian code is off.
 </entry>
 
 <entry id="tstep_type" type="integer" category="se"

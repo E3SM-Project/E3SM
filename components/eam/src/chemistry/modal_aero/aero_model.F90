@@ -239,7 +239,7 @@ contains
        !    but for now they are conditional on convproc_do_aer
        if ( convproc_do_aer ) then 
           do m = 1,gas_pcnst
-             call cnst_get_ind( solsym(m), l, abort=.false. )
+             call cnst_get_ind( solsym(m), l, abrtf=.false. )
              if ( ( history_aerosol ) .and. (l > 0) ) then
                 if  ( species_class(l) == spec_class_gas ) then !RCE - only output WD_xxx and DF_xxx for gases
                    wetdep_name = 'WD_'//trim(solsym(m))
@@ -395,7 +395,7 @@ contains
          allocate(drydep_indices(ndrydep))
 
     do m = 1,ndrydep
-       call cnst_get_ind ( drydep_list(m), id, abort=.false. )
+       call cnst_get_ind ( drydep_list(m), id, abrtf=.false. )
        if (id>0) then
           drydep_indices(m) = id
        else
@@ -407,7 +407,7 @@ contains
        endif
     enddo
     do m = 1,nwetdep
-       call cnst_get_ind ( wetdep_list(m), id, abort=.false. )
+       call cnst_get_ind ( wetdep_list(m), id, abrtf=.false. )
        if (id>0) then
           wetdep_indices(m) = id
        else
@@ -454,7 +454,7 @@ contains
        endif
 
        dummy = 'LND_MBL'
-       call addfld (dummy,horiz_only, 'A','frac','Soil erodibility factor')
+       call addfld (dummy,horiz_only, 'A','1','Soil erodibility factor')
        if (history_aerosol) then
           call add_default (dummy, 1, ' ')
        endif
@@ -633,7 +633,7 @@ contains
           end if
        endif
        
-       call cnst_get_ind(trim(solsym(m)), nspc, abort=.false. ) ! REASTER 08/04/2015
+       call cnst_get_ind(trim(solsym(m)), nspc, abrtf=.false. ) ! REASTER 08/04/2015
 !      if(nspc > 0 .and. .not.cnst_name_cw(nspc) == ' ') then   ! REASTER 08/04/2015
        if( nspc > 0 ) then                                      ! REASTER 08/04/2015
         if ( .not. cnst_name_cw(nspc) == ' ') then              ! REASTER 08/04/2015
@@ -1682,19 +1682,6 @@ lphase_loop_aa: &
 
              sol_factic = 0.4_r8 ! xl 2010/05/20
 
-#ifdef USE_UNICON
-! UNICON version has these two sol_factb_interstitial/sol_factic_interstitial
-! Later it needs to be solidified.
-             sol_factb = sol_factb_interstitial ! all below-cloud scav ON (0.1 "tuning factor")
-!            sol_factb = 0.1_r8 ! all below-cloud scav ON (0.1 "tuning factor")
-             ! sol_factb = 0.03_r8 ! all below-cloud scav ON (0.1 "tuning factor") ! tuned 1/6
-
-             sol_facti = 0.0_r8 ! strat in-cloud scav totally OFF for institial
-
-             sol_factic = sol_factic_interstitial
-!            sol_factic = 0.4_r8 ! xl 2010/05/20
-! UNICON
-#endif
 
              if (m == modeptr_pcarbon) then
                 ! sol_factic = 0.0_r8 ! conv in-cloud scav OFF (0.0 activation fraction)

@@ -934,7 +934,7 @@ end function chem_is_active
 !-----------------------------------------------------------------------
     call cnst_get_ind( 'CLDLIQ', ixcldliq )
     call cnst_get_ind( 'CLDICE', ixcldice )
-    call cnst_get_ind( 'NUMLIQ', ixndrop, abort=.false.  )
+    call cnst_get_ind( 'NUMLIQ', ixndrop, abrtf=.false.  )
 
 !-----------------------------------------------------------------------
 ! get pbuf indicies
@@ -958,7 +958,7 @@ end function chem_is_active
 
        call addfld( srcnam(m), (/ 'lev' /), 'A', 'kg/kg/s', trim(spc_name)//' source/sink' )
        !call add_default (srcnam(m),     1, ' ')
-       call cnst_get_ind(solsym(m), n, abort=.false. ) 
+       call cnst_get_ind(solsym(m), n, abrtf=.false. ) 
        if ( n > 0 ) then
 
           if (sflxnam(n)(3:5) == 'num') then  ! name is in the form of "SF****"
@@ -1042,7 +1042,7 @@ end function chem_is_active
         megan_wght_factors(:) = nan
 
         do n=1,shr_megan_mechcomps_n
-           call cnst_get_ind (shr_megan_mechcomps(n)%name,  megan_indices_map(n), abort=.false.)
+           call cnst_get_ind (shr_megan_mechcomps(n)%name,  megan_indices_map(n), abrtf=.false.)
            ii = get_spc_ndx(shr_megan_mechcomps(n)%name)
            if (ii>0) then
               megan_wght_factors(n) = adv_mass(ii)*1.e-3_r8 ! kg/moles (to convert moles/m2/sec to kg/m2/sec)

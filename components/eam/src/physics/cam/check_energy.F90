@@ -274,10 +274,10 @@ end subroutine check_energy_get_integrals
 
     lchnk = state%lchnk
     ncol  = state%ncol
-    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+    call cnst_get_ind('CLDICE', ixcldice, abrtf=.false.)
+    call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
+    call cnst_get_ind('RAINQM', ixrain, abrtf=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow, abrtf=.false.)
 
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
@@ -423,10 +423,10 @@ end subroutine check_energy_get_integrals
 
     lchnk = state%lchnk
     ncol  = state%ncol
-    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+    call cnst_get_ind('CLDICE', ixcldice, abrtf=.false.)
+    call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
+    call cnst_get_ind('RAINQM', ixrain, abrtf=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow, abrtf=.false.)
 
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
@@ -913,10 +913,10 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     allocate (tracerint%tracer_tnd(pcols,pcnst), stat=ierror)
     if ( ierror /= 0 ) call endrun('CHECK_TRACERS_INIT error: allocation error tracer_tnd')
 
-    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-    call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow,   abort=.false.)
+    call cnst_get_ind('CLDICE', ixcldice, abrtf=.false.)
+    call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
+    call cnst_get_ind('RAINQM', ixrain,   abrtf=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow,   abrtf=.false.)
 
     do m = 1,pcnst
 
@@ -1015,10 +1015,10 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     lchnk = state%lchnk
     ncol  = state%ncol
-    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-    call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow,   abort=.false.)
+    call cnst_get_ind('CLDICE', ixcldice, abrtf=.false.)
+    call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
+    call cnst_get_ind('RAINQM', ixrain,   abrtf=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow,   abrtf=.false.)
 
     do m = 1,pcnst
 
@@ -1148,10 +1148,10 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     lchnk = state%lchnk
     ncol  = state%ncol
-    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+    call cnst_get_ind('CLDICE', ixcldice, abrtf=.false.)
+    call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
+    call cnst_get_ind('RAINQM', ixrain, abrtf=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow, abrtf=.false.)
 
 
 !! Compute vertical integrals of all water species (vapor, liquid, ice, rain, snow)

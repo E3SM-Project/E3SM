@@ -16,6 +16,7 @@ export FC=mpif90
 export FFLAGS="-O3 -ffree-line-length-none"
 export CXXFLAGS="-O3 -DUSE_ORIG_FFT"
 export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
-export YAKL_CUB_HOME="/ccs/home/$USER/cub"
+export YAKL_CUB_HOME="`pwd`/../../../../../../../../externals/cub"
+# export YAKL_CUB_HOME="/ccs/home/$USER/cub"
 
 

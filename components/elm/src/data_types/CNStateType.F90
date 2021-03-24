@@ -520,7 +520,7 @@ contains
          ptr_patch=this%tempavg_t2m_patch, default='inactive')
 
     this%dormant_flag_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DORMANT_FLAG', units='none', &
+    call hist_addfld1d (fname='DORMANT_FLAG', units='1', &
          avgflag='A', long_name='dormancy flag', &
          ptr_patch=this%dormant_flag_patch, default='inactive')
 
@@ -530,7 +530,7 @@ contains
          ptr_patch=this%days_active_patch, default='inactive')
 
     this%onset_flag_patch(begp:endp) = spval
-    call hist_addfld1d (fname='ONSET_FLAG', units='none', &
+    call hist_addfld1d (fname='ONSET_FLAG', units='1', &
          avgflag='A', long_name='onset flag', &
          ptr_patch=this%onset_flag_patch, default='inactive')
 
@@ -540,7 +540,7 @@ contains
          ptr_patch=this%onset_counter_patch, default='inactive')
 
     this%onset_gddflag_patch(begp:endp) = spval
-    call hist_addfld1d (fname='ONSET_GDDFLAG', units='none', &
+    call hist_addfld1d (fname='ONSET_GDDFLAG', units='1', &
          avgflag='A', long_name='onset flag for growing degree day sum', &
          ptr_patch=this%onset_gddflag_patch, default='inactive')
 
@@ -555,12 +555,12 @@ contains
          ptr_patch=this%onset_gdd_patch, default='inactive')
 
     this%onset_swi_patch(begp:endp) = spval
-    call hist_addfld1d (fname='ONSET_SWI', units='none', &
+    call hist_addfld1d (fname='ONSET_SWI', units='1', &
          avgflag='A', long_name='onset soil water index', &
          ptr_patch=this%onset_swi_patch, default='inactive')
 
     this%offset_flag_patch(begp:endp) = spval
-    call hist_addfld1d (fname='OFFSET_FLAG', units='none', &
+    call hist_addfld1d (fname='OFFSET_FLAG', units='1', &
          avgflag='A', long_name='offset flag', &
          ptr_patch=this%offset_flag_patch, default='inactive')
 
@@ -575,7 +575,7 @@ contains
          ptr_patch=this%offset_fdd_patch, default='inactive')
 
     this%offset_swi_patch(begp:endp) = spval
-    call hist_addfld1d (fname='OFFSET_SWI', units='none', &
+    call hist_addfld1d (fname='OFFSET_SWI', units='1', &
          avgflag='A', long_name='offset soil water index', &
          ptr_patch=this%offset_swi_patch, default='inactive')
 
@@ -605,12 +605,12 @@ contains
          ptr_patch=this%alloc_pnow_patch, default='inactive')
 
     this%c_allometry_patch(begp:endp) = spval
-    call hist_addfld1d (fname='C_ALLOMETRY', units='none', &
+    call hist_addfld1d (fname='C_ALLOMETRY', units='1', &
          avgflag='A', long_name='C allocation index', &
          ptr_patch=this%c_allometry_patch, default='inactive')
 
     this%n_allometry_patch(begp:endp) = spval
-    call hist_addfld1d (fname='N_ALLOMETRY', units='none', &
+    call hist_addfld1d (fname='N_ALLOMETRY', units='1', &
          avgflag='A', long_name='N allocation index', &
          ptr_patch=this%n_allometry_patch, default='inactive')
 
@@ -642,7 +642,7 @@ contains
 
     !! add phosphorus -X.YANG
     this%p_allometry_patch(begp:endp) = spval
-    call hist_addfld1d (fname='P_ALLOMETRY', units='none', &
+    call hist_addfld1d (fname='P_ALLOMETRY', units='1', &
          avgflag='A', long_name='P allocation index', &
          ptr_patch=this%p_allometry_patch, default='inactive')
 
@@ -677,7 +677,7 @@ contains
        ptr_patch=this%cp_scalar_runmean, default='active')
 
     this%r_mort_cal_patch(begp:endp) = spval
-    call hist_addfld1d (fname='R_MORT_CAL', units='none', &
+    call hist_addfld1d (fname='R_MORT_CAL', units='1', &
          avgflag='A', long_name='calcualted annual mortality rate', &
          ptr_patch=this%r_mort_cal_patch, default='inactive')
 
@@ -783,7 +783,10 @@ contains
     ! Read in soilorder data 
     ! --------------------------------------------------------------------
 
-    if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. (use_cn .and. .not. use_fates .and. .not. use_crop) )  then 
+    ! (RGK-2020, fates should use SOIL ORDER too, but this dataset is not available at 4x5 and coarse grids
+    !! if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. ((use_cn .or. use_fates) .and. .not. use_crop) )  then
+
+    if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. (use_cn .and. .not. use_crop) )  then
        allocate(soilorder_rdin(bounds%begg:bounds%endg))
        call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
@@ -1134,7 +1137,7 @@ contains
   
     call restartvar(ncid=ncid, flag=flag, varname='dormant_flag', xtype=ncd_double,  &
          dim1name='pft', &
-         long_name='dormancy flag', units='unitless', &
+         long_name='dormancy flag', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%dormant_flag_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='days_active', xtype=ncd_double,  &
@@ -1144,7 +1147,7 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='onset_flag', xtype=ncd_double,  &
          dim1name='pft', &
-         long_name='flag if critical growing degree-day sum is exceeded', units='unitless' , &
+         long_name='flag if critical growing degree-day sum is exceeded', units='1' , &
          interpinic_flag='interp', readvar=readvar, data=this%onset_flag_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='onset_counter', xtype=ncd_double,  &
@@ -1174,7 +1177,7 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='offset_flag', xtype=ncd_double,  &
          dim1name='pft', &
-         long_name='offset flag', units='unitless' , &
+         long_name='offset flag', units='1' , &
          interpinic_flag='interp', readvar=readvar, data=this%offset_flag_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='offset_counter', xtype=ncd_double,  &
@@ -1287,23 +1290,23 @@ contains
        ptr2d => this%fpi_vr_col
        call restartvar(ncid=ncid, flag=flag, varname='fpi_vr', xtype=ncd_double,  &
             dim1name='column',dim2name='levgrnd', switchdim=.true., &
-            long_name='fraction of potential immobilization of nitrogen',  units='unitless', &
+            long_name='fraction of potential immobilization of nitrogen',  units='1', &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
        ptr2d => this%fpi_p_vr_col
        call restartvar(ncid=ncid, flag=flag, varname='fpi_p_vr', xtype=ncd_double,  &
             dim1name='column',dim2name='levgrnd', switchdim=.true., &
-            long_name='fraction of potential immobilization of phosphorus',  units='unitless', &
+            long_name='fraction of potential immobilization of phosphorus',  units='1', &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
     else
        ptr1d => this%fpi_vr_col(:,1) ! nlevdecomp = 1; so treat as 1D variable
        call restartvar(ncid=ncid, flag=flag, varname='fpi', xtype=ncd_double,  &
             dim1name='column', &
-            long_name='fraction of potential immobilization of nitrogen',  units='unitless', &
+            long_name='fraction of potential immobilization of nitrogen',  units='1', &
             interpinic_flag='interp' , readvar=readvar, data=ptr1d)
        ptr1d => this%fpi_p_vr_col(:,1) ! nlevdecomp = 1; so treat as 1D variable
        call restartvar(ncid=ncid, flag=flag, varname='fpi_p', xtype=ncd_double,  &
             dim1name='column', &
-            long_name='fraction of potential immobilization of phosphorus',  units='unitless', &
+            long_name='fraction of potential immobilization of phosphorus',  units='1', &
             interpinic_flag='interp' , readvar=readvar, data=ptr1d)
     end if
 
@@ -1356,7 +1359,7 @@ contains
     ptr2d => this%scalaravg_col
     call restartvar(ncid=ncid, flag=flag, varname='scalaravg_col', xtype=ncd_double,  &
             dim1name='column',dim2name='levgrnd', switchdim=.true., &
-            long_name='fraction of potential immobilization of phosphorus', units='unitless', &
+            long_name='fraction of potential immobilization of phosphorus', units='1', &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
 
     if (crop_prog) then

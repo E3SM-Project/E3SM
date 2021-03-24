@@ -50,7 +50,6 @@ contains
     use microp_driver,           only: microp_driver_implements_cnst, microp_driver_init_cnst
     use phys_control,            only: phys_getopts
     use co2_cycle,               only: co2_implements_cnst, co2_init_cnst
-    use unicon_cam,              only: unicon_implements_cnst, unicon_init_cnst
     use cam_history_support,     only: max_fieldname_len
     use cam_grid_support,        only: cam_grid_get_local_size, cam_grid_get_gcid
     use cam_map_utils,           only: iMap
@@ -101,14 +100,6 @@ contains
     logical :: iop_update_surface
 
     tl = 1
-
-#ifdef MODEL_THETA_L
-    ! not going to wrap each scm call in ifdef for now,
-    ! but some calls have to be wrapped
-    if (single_column) then
-       call endrun("read_inidat: SCM does not work with cam target theta-l.")
-    endif
-#endif
 
     if(par%dynproc) then
        elem=> dyn_in%elem
@@ -240,7 +231,7 @@ contains
           do i = 1, np
 #ifdef MODEL_THETA_L
              elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
-             !no scm in theta-l yet
+             if (single_column) elem(ie)%derived%FT(i,j,:) = tmp(indx_scm,:,ie_scm)
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
@@ -363,10 +354,6 @@ contains
              call co2_init_cnst(cnst_name(m_cnst), qtmp, gcid)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "co2_init_cnst"'
-          else if (unicon_implements_cnst(cnst_name(m_cnst))) then
-             call unicon_init_cnst(cnst_name(m_cnst), qtmp, gcid)
-              if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
-                   ' initialized by "unicon_init_cnst"'
           else
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' set to 0.'
               qtmp = 0.0_r8

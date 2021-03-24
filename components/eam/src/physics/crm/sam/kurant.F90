@@ -17,7 +17,7 @@ module kurant_mod
       real(crm_rknd), allocatable :: wm (:,:)  ! maximum vertical wind velocity
       real(crm_rknd), allocatable :: uhm(:,:) ! maximum horizontal wind velocity
       real(crm_rknd) cfl, cfl_sgs, tmp
-      integer, parameter :: max_ncycle = 16
+      integer, parameter :: max_ncycle = 4
 
       allocate(wm (ncrms,nz))
       allocate(uhm(ncrms,nz))
@@ -54,17 +54,17 @@ module kurant_mod
       !$acc parallel loop collapse(2) reduction(max:cfl) async(asyncid)
       do k=1,nzm
         do icrm = 1 , ncrms
-          tmp = max( uhm(icrm,k)*dt*sqrt((1./dx)**2+YES3D*(1./dy)**2) , max(wm(icrm,k),wm(icrm,k+1))*dt/(dz(icrm)*adzw(icrm,k)) )
+          tmp = max( uhm(icrm,k)*dt*sqrt((1.D0/dx)**2+YES3D*(1.D0/dy)**2) , max(wm(icrm,k),wm(icrm,k+1))*dt/(dz(icrm)*adzw(icrm,k)) )
           cfl = max( cfl , tmp )
         end do
       end do
 
       call kurant_sgs(ncrms,cfl)
       !$acc wait(asyncid)
-      ncycle = max(ncycle,max(1,ceiling(cfl/0.7)))
+      ncycle = max(ncycle,max(1,ceiling(cfl/0.7D0)))
 
       if(ncycle.gt.max_ncycle) then
-        if(masterproc) print *,'kurant() - the number of cycles exceeded 4.'
+        if(masterproc) print *,'kurant() - the number of cycles exceeded max_ncycle = ',max_ncycle
         do icrm = 1 , ncrms
           write(0, 5550) cfl, cfl_sgs, latitude(icrm,1,1), longitude(icrm,1,1)
           do k=1, nzm

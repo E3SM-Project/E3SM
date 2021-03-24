@@ -34,10 +34,10 @@ contains
     call prefetch( fv )
     call prefetch( fw )
 
-    rdx2=1./(dx*dx)
-    rdy2=1./(dy*dy)
-    rdx25=0.25*rdx2
-    rdy25=0.25*rdy2
+    rdx2=1.D0/(dx*dx)
+    rdy2=1.D0/(dy*dy)
+    rdx25=0.25D0*rdx2
+    rdy25=0.25D0*rdy2
     dxy=dx/dy
     dyx=dy/dx
 
@@ -134,7 +134,7 @@ contains
             ib=i-1
             rdz=1./dz(icrm)
             rdz2 = rdz*rdz * grdf_z(icrm,k)
-            rdz25 = 0.25*rdz2
+            rdz25 = 0.25D0*rdz2
             iadz = 1./adz(icrm,k)
             iadzw= 1./adzw(icrm,kc)
             dzx=dz(icrm)/dx
@@ -180,7 +180,7 @@ contains
         do i=1,nx
           do icrm = 1 , ncrms
             kc=k+1
-            rhoi = 1./(rho(icrm,k)*adz(icrm,k))
+            rhoi = 1.D0/(rho(icrm,k)*adz(icrm,k))
             dudt(icrm,i,j,k,na)=dudt(icrm,i,j,k,na)-(fu(icrm,i,j,kc)-fu(icrm,i,j,k))*rhoi
             dvdt(icrm,i,j,k,na)=dvdt(icrm,i,j,k,na)-(fv(icrm,i,j,kc)-fv(icrm,i,j,k))*rhoi
           enddo
@@ -193,7 +193,7 @@ contains
       do j=1,ny
         do i=1,nx
           do icrm = 1 , ncrms
-            rhoi = 1./(rhow(icrm,k)*adzw(icrm,k))
+            rhoi = 1.D0/(rhow(icrm,k)*adzw(icrm,k))
             dwdt(icrm,i,j,k,na)=dwdt(icrm,i,j,k,na)-(fw(icrm,i,j,k+1)-fw(icrm,i,j,k))*rhoi
           enddo
         enddo

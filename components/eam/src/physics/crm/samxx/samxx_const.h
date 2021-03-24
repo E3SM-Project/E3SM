@@ -14,6 +14,19 @@ using yakl::c::parallel_for;
 using yakl::SArray;
 using yakl::ScalarLiveOut;
 
+template <class T>
+void DEBUG(T var) {
+  std::cout << var.myname << ": " << std::setprecision(16) << std::scientific << yakl::intrinsics::sum(var) << std::endl;
+}
+template <class T>
+void DEBUG_LOG(T var) {
+  std::cout << var.myname << ": " << std::setprecision(16) << std::scientific << yakl::intrinsics::count(var) << std::endl;
+}
+template <class T>
+void DEBUG_SCALAR(T var) {
+  std::cout << std::setprecision(16) << std::scientific << var << std::endl;
+}
+
 typedef double real;
 
 int  constexpr crm_nx     = CRM_NX;
@@ -112,19 +125,78 @@ int  constexpr offy_sstxy = 1 - (1-YES3D);
 int  constexpr offy_fcory = 1 - 0        ;
 
 
-real constexpr cp    = 1004.          ;  // Specific heat of air, J/kg/K
-real constexpr ggr   = 9.81           ;  // Gravity acceleration, m/s2
-real constexpr lcond = 2.5104e+06     ;  // Latent heat of condensation, J/kg
-real constexpr lfus  = 0.3336e+06     ;  // Latent heat of fusion, J/kg
-real constexpr lsub  = 2.8440e+06     ;  // Latent heat of sublimation, J/kg
-real constexpr rv    = 461.           ;  // Gas constant for water vapor, J/kg/K
-real constexpr rgas  = 287.           ;  // Gas constant for dry air, J/kg/K
-real constexpr diffelq = 2.21e-05     ;  // Diffusivity of water vapor, m2/s
-real constexpr therco = 2.40e-02      ;  // Thermal conductivity of air, J/m/s/K
-real constexpr muelq = 1.717e-05      ;  // Dynamic viscosity of air
-real constexpr fac_cond = lcond/cp    ;
-real constexpr fac_fus  = lfus/cp     ;
-real constexpr fac_sub  = lsub/cp     ;
+
+real constexpr SHR_CONST_PI      = 3.14159265358979323846;  // pi
+real constexpr SHR_CONST_CDAY    = 86400.0;      // sec in calendar day ~ sec
+real constexpr SHR_CONST_SDAY    = 86164.0;      // sec in siderial day ~ sec
+real constexpr SHR_CONST_OMEGA   = 2.0*SHR_CONST_PI/SHR_CONST_SDAY; // earth rot ~ rad/sec
+real constexpr SHR_CONST_REARTH  = 6.37122e6  ;  // radius of earth ~ m
+real constexpr SHR_CONST_G       = 9.80616    ;  // acceleration of gravity ~ m/s^2
+real constexpr SHR_CONST_STEBOL  = 5.67e-8    ;  // Stefan-Boltzmann constant ~ W/m^2/K^4
+real constexpr SHR_CONST_BOLTZ   = 1.38065e-23;  // Boltzmann's constant ~ J/K/molecule
+real constexpr SHR_CONST_AVOGAD  = 6.02214e26 ;  // Avogadro's number ~ molecules/kmole
+real constexpr SHR_CONST_RGAS    = SHR_CONST_AVOGAD*SHR_CONST_BOLTZ;       // Universal gas constant ~ J/K/kmole
+real constexpr SHR_CONST_MWDAIR  = 28.966;                       // molecular weight dry air ~ kg/kmole
+real constexpr SHR_CONST_MWWV    = 18.016;                       // molecular weight water vapor
+real constexpr SHR_CONST_RDAIR   = SHR_CONST_RGAS/SHR_CONST_MWDAIR       ; // Dry air gas constant     ~ J/K/kg
+real constexpr SHR_CONST_RWV     = SHR_CONST_RGAS/SHR_CONST_MWWV         ; // Water vapor gas constant ~ J/K/kg
+real constexpr SHR_CONST_ZVIR    = (SHR_CONST_RWV/SHR_CONST_RDAIR)-1.0; // RWV/RDAIR - 1.0
+real constexpr SHR_CONST_KARMAN  = 0.4                  ;       // Von Karman constant
+real constexpr SHR_CONST_PSTD    = 101325.0             ;       // standard pressure ~ pascals
+real constexpr SHR_CONST_PDB     = 0.0112372            ;       // ratio of 13C/12C in Pee Dee Belemnite (C isotope standard)
+real constexpr SHR_CONST_TKTRIP  = 273.16               ;       // triple point of fresh water        ~ K
+real constexpr SHR_CONST_TKFRZ   = 273.15               ;       // freezing T of fresh water          ~ K
+real constexpr SHR_CONST_TKFRZSW = SHR_CONST_TKFRZ - 1.8;       // freezing T of salt water  ~ K
+real constexpr SHR_CONST_ZSRFLYR = 3.0                  ;       // ocn surf layer depth for diurnal SST cal ~ m
+real constexpr SHR_CONST_RHODAIR = SHR_CONST_PSTD/(SHR_CONST_RDAIR*SHR_CONST_TKFRZ);
+real constexpr SHR_CONST_RHOFW   = 1.000e3  ;                   // density of fresh water     ~ kg/m^3
+real constexpr SHR_CONST_RHOSW   = 1.026e3  ;                   // density of sea water       ~ kg/m^3
+real constexpr SHR_CONST_RHOICE  = 0.917e3  ;                   // density of ice             ~ kg/m^3
+real constexpr SHR_CONST_CPDAIR  = 1.00464e3;                   // specific heat of dry air   ~ J/kg/K
+real constexpr SHR_CONST_CPWV    = 1.810e3  ;                   // specific heat of water vap ~ J/kg/K
+real constexpr SHR_CONST_CPVIR   = (SHR_CONST_CPWV/SHR_CONST_CPDAIR)-1.0; // CPWV/CPDAIR - 1.0
+real constexpr SHR_CONST_CPFW    = 4.188e3  ;                   // specific heat of fresh h2o ~ J/kg/K
+real constexpr SHR_CONST_CPSW    = 3.996e3  ;                   // specific heat of sea h2o   ~ J/kg/K
+real constexpr SHR_CONST_CPICE   = 2.11727e3;                   // specific heat of fresh ice ~ J/kg/K
+real constexpr SHR_CONST_LATICE  = 3.337e5  ;                   // latent heat of fusion      ~ J/kg
+real constexpr SHR_CONST_LATVAP  = 2.501e6  ;                   // latent heat of evaporation ~ J/kg
+real constexpr SHR_CONST_LATSUB  = SHR_CONST_LATICE + SHR_CONST_LATVAP;
+real constexpr SHR_CONST_CONDICE = 2.1;                         // thermal conductivity of ice ~ W/m/K
+real constexpr SHR_CONST_KAPPA_LAND_ICE = SHR_CONST_CONDICE / (SHR_CONST_RHOICE*SHR_CONST_CPICE);
+real constexpr SHR_CONST_TF0    = 6.22e-2                     ; // The freezing temperature at zero pressure in
+real constexpr SHR_CONST_DTF_DP = -7.43e-8                    ; // The coefficient for the term proportional to the (limited)
+real constexpr SHR_CONST_DTF_DS = -5.63e-2                    ; //The coefficient for the term proportional to salinity in
+real constexpr SHR_CONST_DTF_DPDS = -1.74e-10                 ; // The coefficient for the term proportional to salinity times
+real constexpr SHR_CONST_OCN_REF_SAL = 34.7                   ; // ocn ref salinity (psu)
+real constexpr SHR_CONST_ICE_REF_SAL =  4.0                   ; // ice ref salinity (psu)
+real constexpr SHR_CONST_SPVAL        = 1.0e30                ; // special missing value
+real constexpr SHR_CONST_SPVAL_TOLMIN = 0.99 * SHR_CONST_SPVAL; // min spval tolerance
+real constexpr SHR_CONST_SPVAL_TOLMAX = 1.01 * SHR_CONST_SPVAL; // max spval tolerance
+real constexpr SHR_CONST_SPVAL_AERODEP= 1.e29                 ; // special aerosol deposition
+real constexpr SHR_CONST_VSMOW_18O   = 2005.2e-6              ; // 18O/16O in VMSOW
+real constexpr SHR_CONST_VSMOW_17O   = 379.e-6                ; // 18O/16O in VMSOW
+real constexpr SHR_CONST_VSMOW_16O   = 0.997628               ; // 16O/Tot in VMSOW
+real constexpr SHR_CONST_VSMOW_D   = 155.76e-6                ; // 2H/1H in VMSOW
+real constexpr SHR_CONST_VSMOW_T   = 1.85e-6                  ; // 3H/1H in VMSOW
+real constexpr SHR_CONST_VSMOW_H   = 0.99984426               ; // 1H/Tot in VMSOW
+real constexpr SHR_CONST_RSTD_H2ODEV   = 1.0                  ; // Rstd Dev Use
+
+real constexpr cp    = SHR_CONST_CPDAIR ;
+real constexpr ggr   = SHR_CONST_G      ;
+real constexpr lcond = SHR_CONST_LATVAP ;
+real constexpr lfus  = SHR_CONST_LATICE ;
+real constexpr lsub  = lcond + lfus     ;
+real constexpr rgas  = SHR_CONST_RDAIR  ;
+real constexpr rv    = SHR_CONST_RGAS/SHR_CONST_MWWV ;
+
+
+real constexpr diffelq = 2.21e-05 ;    // Diffusivity of water vapor, m2/s
+real constexpr therco  = 2.40e-02 ;    // Thermal conductivity of air, J/m/s/K
+real constexpr muelq   = 1.717e-05;    // Dynamic viscosity of air
+real constexpr fac_cond = lcond/cp;
+real constexpr fac_fus  = lfus/cp ; 
+real constexpr fac_sub  = lsub/cp ; 
+real constexpr epsv = 0.61e0;     // = (1-eps)/eps, where eps= Rv/Ra
 real constexpr pi = 3.141592653589793 ;  // sine, cosine, cosine, sine, 3.14159 !
 
 
@@ -165,7 +237,7 @@ real constexpr qci0 = 1.e-4;
 real constexpr alphaelq = 1.e-3;
 real constexpr betaelq = 1.e-3;
 
-real constexpr crm_accel_coef = 1.0/(nx*ny);
+real constexpr crm_accel_coef = 1.0/( (real) nx * (real) ny );
 
 int constexpr plev = PLEV;
 

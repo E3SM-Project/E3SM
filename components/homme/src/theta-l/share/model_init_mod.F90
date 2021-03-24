@@ -39,7 +39,7 @@ contains
     type(derivative_t), intent(in)    :: deriv
     type (hvcoord_t)  , intent(in)    :: hvcoord
     type (TimeLevel_t), intent(in)    :: tl
-    integer                           :: nets,nete
+    integer,            intent(in)    :: nets,nete
 
     ! local variables
     integer :: ie,t,k
@@ -111,11 +111,12 @@ contains
          call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
 #endif
 
+    !$omp master
     ! 
     ! compute scaling of sponge layer damping 
     !
-    if (hybrid%masterthread) write(iulog,*) "sponge layer nu_top viscosity scaling factor"
     nlev_tom=0
+    if (hybrid%masterthread) write(iulog,*) "sponge layer nu_top viscosity scaling factor"
     do k=1,nlev
        !press = (hvcoord%hyam(k)+hvcoord%hybm(k))*hvcoord%ps0
        !ptop  = hvcoord%hyai(1)*hvcoord%ps0
@@ -156,6 +157,8 @@ contains
     if (hybrid%masterthread) then
        write(iulog,*) "  nlev_tom ",nlev_tom
     end if
+    !$omp end master
+    !$omp barrier
 
   end subroutine 
 

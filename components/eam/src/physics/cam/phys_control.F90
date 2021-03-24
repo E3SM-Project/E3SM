@@ -35,7 +35,7 @@ integer,           parameter :: unset_int = huge(1)
 
 ! Namelist variables:
 character(len=16) :: cam_physpkg          = unset_str  ! CAM physics package [cam3 | cam4 | cam5 |
-                                                       !   ideal | adiabatic].
+                                                       !   ideal | adiabatic | default].
 character(len=32) :: cam_chempkg          = unset_str  ! CAM chemistry package [waccm_mozart | 
                                                        !  waccm_ghg | trop_mozart | trop_ghg | 
                                                        !  trop_bam | trop_mam3 | trop_mam4 | 
@@ -61,9 +61,11 @@ integer           :: conv_water_in_rad    = unset_int  ! 0==> No; 1==> Yes-Arith
                                                        ! 2==> Yes-Average in emissivity.
 
 character(len=16) :: MMF_microphysics_scheme  = unset_str  ! MMF microphysics package
-logical           :: use_MMF            = .false.    ! true => use MMF / super-parameterization
+logical           :: use_MMF              = .false.    ! true => use MMF / super-parameterization
 logical           :: use_ECPP             = .false.    ! true => use explicit-cloud parameterized-pollutants
 logical           :: use_MAML             = .false.    ! true => use Multiple Atmosphere and Multiple Land
+logical           :: use_MMF_VT           = .false.    ! true => use MMF variance transport
+integer           :: MMF_VT_wn_max        = 0          ! if >0 then use filtered MMF variance transport
 logical           :: use_crm_accel        = .false.    ! true => use MMF CRM mean-state acceleration (MSA)
 real(r8)          :: crm_accel_factor     = 2.D0       ! CRM acceleration factor
 logical           :: crm_accel_uv         = .true.     ! true => apply MMF CRM MSA to momentum fields
@@ -186,6 +188,7 @@ subroutine phys_ctl_readnl(nlfile)
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
       MMF_microphysics_scheme, use_MMF, use_ECPP, use_MAML, &
+      use_MMF_VT, MMF_VT_wn_max, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       history_aerosol, history_aero_optics, &
@@ -233,9 +236,11 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(macrop_scheme,    len(macrop_scheme)    , mpichar, 0, mpicom)
    call mpibcast(srf_flux_avg,                    1 , mpiint,  0, mpicom)
    call mpibcast(MMF_microphysics_scheme, len(MMF_microphysics_scheme) , mpichar, 0, mpicom)
-   call mpibcast(use_MMF,                       1 , mpilog,  0, mpicom)
+   call mpibcast(use_MMF,                         1 , mpilog,  0, mpicom)
    call mpibcast(use_ECPP,                        1 , mpilog,  0, mpicom)
    call mpibcast(use_MAML,                        1 , mpilog,  0, mpicom)
+   call mpibcast(use_MMF_VT,                      1 , mpilog,  0, mpicom)
+   call mpibcast(MMF_VT_wn_max,                   1 , mpiint,  0, mpicom)
    call mpibcast(use_crm_accel,                   1 , mpilog,  0, mpicom)
    call mpibcast(crm_accel_factor,                1 , mpir8,   0, mpicom)
    call mpibcast(crm_accel_uv,                    1 , mpilog,  0, mpicom)
@@ -312,8 +317,7 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('waccm: illegal value of waccmx_opt')
    endif
    if (.not. (shallow_scheme .eq. 'Hack' .or. shallow_scheme .eq. 'UW' .or. &
-              shallow_scheme .eq. 'CLUBB_SGS' .or. shallow_scheme == 'UNICON' &
-       .or. shallow_scheme.eq.'off')) then
+              shallow_scheme .eq. 'CLUBB_SGS' .or. shallow_scheme.eq.'off')) then
       write(iulog,*)'phys_setopts: illegal value of shallow_scheme:', shallow_scheme
       call endrun('phys_setopts: illegal value of shallow_scheme')
    endif
@@ -441,6 +445,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
                         prog_modal_aero_out, macrop_scheme_out, &
                         use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, use_MAML_out, &
+                        use_MMF_VT_out, MMF_VT_wn_max_out, &
                         use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
                         do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
                         do_aerocom_ind3_out,  &
@@ -474,6 +479,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: use_MMF_out
    logical,           intent(out), optional :: use_ECPP_out
    logical,           intent(out), optional :: use_MAML_out
+   logical,           intent(out), optional :: use_MMF_VT_out
+   integer,           intent(out), optional :: MMF_VT_wn_max_out
    logical,           intent(out), optional :: use_crm_accel_out
    real(r8),          intent(out), optional :: crm_accel_factor_out
    logical,           intent(out), optional :: crm_accel_uv_out
@@ -542,9 +549,12 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(radiation_scheme_out    ) ) radiation_scheme_out     = radiation_scheme
 
    if ( present(MMF_microphysics_scheme_out ) ) MMF_microphysics_scheme_out  = MMF_microphysics_scheme
-   if ( present(use_MMF_out           ) ) use_MMF_out            = use_MMF
+   if ( present(use_MMF_out             ) ) use_MMF_out              = use_MMF
    if ( present(use_ECPP_out            ) ) use_ECPP_out             = use_ECPP
    if ( present(use_MAML_out            ) ) use_MAML_out             = use_MAML
+   if ( present(use_MMF_VT_out          ) ) use_MMF_VT_out           = use_MMF_VT
+   if ( present(MMF_VT_wn_max_out       ) ) MMF_VT_wn_max_out        = MMF_VT_wn_max
+   
    if ( present(use_crm_accel_out       ) ) use_crm_accel_out        = use_crm_accel
    if ( present(crm_accel_factor_out    ) ) crm_accel_factor_out     = crm_accel_factor
    if ( present(crm_accel_uv_out        ) ) crm_accel_uv_out         = crm_accel_uv

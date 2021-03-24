@@ -97,7 +97,7 @@ void diffuse_scalar3D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
         real tmp=1.0/adzw(nz-1,icrm);
         real rdz=1.0/dz(icrm);
         flx_z(0,j+offy_flx,i+offx_flx,icrm)=fluxb(j,i,icrm)*rdz*rhow(0,icrm);
-        flx_z(nzm-1,j+offy_flx,i+offx_flx,icrm)=fluxt(j,i,icrm)*rdz*tmp*rhow(nz-1,icrm);
+        flx_z(nzm-1+offz_flx,j+offy_flx,i+offx_flx,icrm)=fluxt(j,i,icrm)*rdz*tmp*rhow(nz-1,icrm);
         yakl::atomicAdd(flux(0,icrm),flx_z(0,j+offy_flx,i+offx_flx,icrm));
       }
     });
@@ -214,7 +214,7 @@ void diffuse_scalar3D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
         real tmp=1.0/adzw(nz-1,icrm);
         real rdz=1.0/dz(icrm);
         flx_z(0,j+offy_flx,i+offx_flx,icrm)=fluxb(j,i,icrm)*rdz*rhow(0,icrm);
-        flx_z(nzm-1,j+offy_flx,i+offx_flx,icrm)=fluxt(j,i,icrm)*rdz*tmp*rhow(nz-1,icrm);
+        flx_z(nzm-1+offz_flx,j+offy_flx,i+offx_flx,icrm)=fluxt(j,i,icrm)*rdz*tmp*rhow(nz-1,icrm);
         yakl::atomicAdd(flux(0,icrm),flx_z(0,j+offy_flx,i+offx_flx,icrm));
       }
     });
@@ -332,7 +332,7 @@ void diffuse_scalar3D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
         real tmp=1.0/adzw(nz-1,icrm);
         real rdz=1.0/dz(icrm);
         flx_z(0,j+offy_flx,i+offx_flx,icrm)=fluxb(ind_fluxb,j,i,icrm)*rdz*rhow(0,icrm);
-        flx_z(nzm-1,j+offy_flx,i+offx_flx,icrm)=fluxt(ind_fluxt,j,i,icrm)*rdz*tmp*rhow(nz-1,icrm);
+        flx_z(nzm-1+offz_flx,j+offy_flx,i+offx_flx,icrm)=fluxt(ind_fluxt,j,i,icrm)*rdz*tmp*rhow(nz-1,icrm);
         yakl::atomicAdd(flux(ind_flux,0,icrm),flx_z(0,j+offy_flx,i+offx_flx,icrm));
       }
     });

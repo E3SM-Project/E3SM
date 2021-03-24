@@ -74,6 +74,12 @@ void pre_timeloop() {
   auto &sgs_field                = :: sgs_field;
   auto &uln                      = :: uln;
   auto &vln                      = :: vln;
+#ifdef MMF_ESMT
+  auto &u_esmt                   = :: u_esmt;
+  auto &v_esmt                   = :: v_esmt;
+  auto &uln_esmt                 = :: uln_esmt;
+  auto &vln_esmt                 = :: vln_esmt;
+#endif
   auto &ttend                    = :: ttend;
   auto &qtend                    = :: qtend;
   auto &crm_input_qccl           = :: crm_input_qccl;
@@ -97,6 +103,10 @@ void pre_timeloop() {
   auto &crm_output_precstend     = :: crm_output_precstend;
   auto &crm_input_ul             = :: crm_input_ul;
   auto &crm_input_vl             = :: crm_input_vl;
+#ifdef MMF_ESMT
+  auto &crm_input_ul_esmt        = :: crm_input_ul_esmt;
+  auto &crm_input_vl_esmt        = :: crm_input_vl_esmt;
+#endif
   auto &crm_output_cld           = :: crm_output_cld; 
   auto &crm_output_cldtop        = :: crm_output_cldtop; 
   auto &crm_output_gicewp        = :: crm_output_gicewp; 
@@ -139,6 +149,14 @@ void pre_timeloop() {
   auto &crm_output_jt_crm        = :: crm_output_jt_crm;
   auto &crm_output_mx_crm        = :: crm_output_mx_crm;
   auto &ncrms                    = :: ncrms;
+  auto &crm_input_t_vt          = :: crm_input_t_vt;
+  auto &crm_input_q_vt          = :: crm_input_q_vt;
+  auto &t_vt_tend               = :: t_vt_tend;
+  auto &q_vt_tend               = :: q_vt_tend;
+  auto &t_vt                    = :: t_vt;
+  auto &q_vt                    = :: q_vt;
+  auto &use_VT                  = :: use_VT;
+  
 
   crm_accel_ceaseflag = false;
 
@@ -156,7 +174,7 @@ void pre_timeloop() {
   dostatis  = false;    // no statistics are collected.
   idt_gl    = 1.0/dt_glob;
   ptop      = plev-nzm+1;
-  factor_xy = 1.0/(nx*ny);
+  factor_xy = 1.0/( (real) nx * (real) ny );
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<crm_ny_rad; j++) {
@@ -190,7 +208,7 @@ void pre_timeloop() {
   });
   // for (int j=0; j<ny+1; j++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(ny*YES3D +1,ncrms) , YAKL_LAMBDA (int j, int icrm) {
+  parallel_for( SimpleBounds<2>(ny+1,ncrms) , YAKL_LAMBDA (int j, int icrm) {
     fcory(j,icrm) = fcor(icrm);
   });
   // for (int j=0; j<ny; j++) {
@@ -275,6 +293,10 @@ void pre_timeloop() {
     v(k,j+offy_v,i+offx_v,icrm) = crm_state_v_wind(k,j,i,icrm)*YES3D;
     w(k,j+offy_w,i+offx_w,icrm) = crm_state_w_wind(k,j,i,icrm);
     tabs(k,j,i,icrm) = crm_state_temperature(k,j,i,icrm);
+#if defined(MMF_ESMT)
+    u_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_ul_esmt(plev-k-1,icrm);
+    v_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_vl_esmt(plev-k-1,icrm);
+#endif /* MMF_ESMT */
   });
 
   // limit the velocity at the very first step:
@@ -356,6 +378,8 @@ void pre_timeloop() {
     yakl::atomicAdd(tke0(k,icrm) , sgs_field(0,k,j+offy_s,i+offx_s,icrm));
   });
 
+  if (use_VT) { VT_diagnose(); }
+
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
@@ -381,6 +405,11 @@ void pre_timeloop() {
     vg0  (k,icrm) = vln(l,icrm);
     tg0  (k,icrm) = crm_input_tl(l,icrm)+gamaz(k,icrm)-fac_cond*crm_input_qccl(l,icrm)-fac_sub*crm_input_qiil(l,icrm);
     qg0  (k,icrm) = crm_input_ql(l,icrm)+crm_input_qccl(l,icrm)+crm_input_qiil(l,icrm);
+    if (use_VT) { 
+      // variance transport input forcing
+      t_vt_tend(k,icrm) = ( crm_input_t_vt(l,icrm) - t_vt(k,icrm) )*idt_gl ;
+      q_vt_tend(k,icrm) = ( crm_input_q_vt(l,icrm) - q_vt(k,icrm) )*idt_gl ;
+    }
   });
 
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
@@ -464,7 +493,7 @@ void pre_timeloop() {
   //perturb_arrays()
 
   nstop = dt_glob/dt;
-  dt = dt_glob/nstop;
+  dt = dt_glob/((real) nstop);
 
   crm_run_time  = dt_glob;
   icrm_run_time = 1.0/crm_run_time;

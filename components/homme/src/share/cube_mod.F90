@@ -84,7 +84,6 @@ module cube_mod
   public  :: CubeSetupEdgeIndex
   public  :: ref2sphere
 
-  public  :: set_area_correction_map0, set_area_correction_map2
 
   ! public interface to REFERECE element map
 #if HOMME_QUAD_PREC
@@ -105,7 +104,7 @@ module cube_mod
   ! ===============================
   private :: coordinates_atomic
   private :: metric_atomic
-  private :: coreolis_init_atomic
+  private :: coriolis_init_atomic
 
 contains
 
@@ -129,7 +128,7 @@ contains
 
     call metric_atomic(elem,gll_points,alpha)
 
-    call coreolis_init_atomic(elem)
+    call coriolis_init_atomic(elem)
 
 
   end subroutine cube_init_atomic
@@ -766,13 +765,13 @@ contains
 
 
   ! ========================================
-  ! coreolis_init_atomic:
+  ! coriolis_init_atomic:
   !
-  ! Initialize coreolis term ...
+  ! Initialize coriolis term ...
   !
   ! ========================================
 
-  subroutine coreolis_init_atomic(elem)
+  subroutine coriolis_init_atomic(elem)
     use element_mod, only : element_t
     use physical_constants, only : omega
 
@@ -797,7 +796,7 @@ contains
        end do
     end do
 
-  end subroutine coreolis_init_atomic
+  end subroutine coriolis_init_atomic
 
 
   subroutine set_corner_coordinates(elem)
@@ -2093,148 +2092,6 @@ contains
 
     if (present(cart_out)) cart_out = cart
   end function 
-
-
-  subroutine set_area_correction_map0(elem, nelemd, par, gp)
-! Numerical area of the domain (sphere) is sum of integration weights. The sum
-! is not exactly equal geometric area (4\pi R). It is required that 
-! numerical area = geometric area.  
-! This correction 'butters' 
-! the difference between numerical and geometrical areas evenly among DOFs. Then
-! geometric areas of individual elements still do not equal their numerical areas,
-! only whole domain's areas coinside.
-
-
-#ifndef CAM
-    use repro_sum_mod,      only: repro_sum
-#else
-    use shr_reprosum_mod,   only: repro_sum => shr_reprosum_calc
-#endif
-
-    use quadrature_mod,   only: quadrature_t
-    use element_mod, only: element_t
-    use parallel_mod, only: parallel_t
-    use kinds, only: iulog
-    use control_mod, only: topology
-
-    implicit none
-
-    type (element_t),   pointer, intent(inout)     :: elem(:)
-    type (parallel_t),  intent(in)  :: par
-    integer, intent(in) :: nelemd
-    type (quadrature_t), intent(in)   :: gp
-
-    real(kind=real_kind) :: aratio(nelemd,1)
-    real(kind=real_kind) :: area(1)
-    integer :: ie, i, j
-
-    if ( topology == "cube" ) then
-       area = 0.0d0
-       do ie=1,nelemd
-          aratio(ie,1) = sum(elem(ie)%mp(:,:)*elem(ie)%metdet(:,:))
-       enddo
-
-       call repro_sum(aratio, area, nelemd, nelemd, 1, commid=par%comm)
-       area(1) = 4*dd_pi/area(1)  ! ratio correction
-
-       if (par%masterproc) &
-          write(iulog,'(a,f20.17)') " re-initializing cube elements: alpha area correction=",&
-          area(1)
-
-       do ie=1,nelemd
-          call cube_init_atomic(elem(ie),gp%points,area(1))
-       enddo
-    endif ! end of topology == 'cube'
-
-  end subroutine set_area_correction_map0
-
-
-  subroutine set_area_correction_map2(elem, nelemd, par, gp)
-! Numerical area of the domain (sphere) is sum of integration weights. The sum
-! is not exactly equal geometric area (4\pi R). It is required that 
-! numerical area = geometric area.  
-! The 'epsilon bubble' approach modifies inner weights in each element so that
-! geometic and numerical areas of each element match.
-#ifndef CAM
-    use repro_sum_mod,      only: repro_sum
-#else
-    use shr_reprosum_mod,   only: repro_sum => shr_reprosum_calc
-#endif
-
-    use quadrature_mod,   only: quadrature_t
-    use element_mod, only: element_t
-    use parallel_mod, only: parallel_t
-    use kinds, only: iulog
-    use control_mod, only: topology
-
-    implicit none
-
-    type (element_t),   pointer, intent(inout)     :: elem(:)
-    type (parallel_t),  intent(in)  :: par
-    integer, intent(in) :: nelemd
-    type (quadrature_t), intent(in)   :: gp
-
-    real(kind=real_kind) :: aratio(nelemd,1)
-    real(kind=real_kind) :: area(1), area_sphere, area_num, area_dummy,sum_w, delta
-    integer :: ie, i, j
-    real(kind=real_kind) :: tol_local = 1e-15
-
-    if ( topology == "cube" ) then
-       do ie=1,nelemd
-          ! Obtain area of element = sum of areas of 2 triangles.
-          call sphere_tri_area(elem(ie)%corners3D(1), elem(ie)%corners3D(2),&
-                               elem(ie)%corners3D(3), area_sphere)
-          call sphere_tri_area(elem(ie)%corners3D(1), elem(ie)%corners3D(3),&
-                               elem(ie)%corners3D(4), area_dummy)
-          ! Store element's area in area_sphere.
-          area_sphere = area_sphere + area_dummy
-
-          ! Compute 'numerical area' of the element as sum of integration
-          ! weights.
-          area_num = 0.0d0
-          do j = 1,np
-             do i = 1,np
-                area_num = area_num + gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
-             enddo
-          enddo
-
-          ! Compute sum of inner integration weights for correction.
-          sum_w = 0.0d0 ! or sum_w = sum(elem(ie)%mp(2:np-1,2:np-1)*elem(ie)%metdet(2:np-1,2:np-1))
-          do j = 2, np-1
-             do i = 2, np-1
-                sum_w = sum_w + gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
-             enddo
-          enddo
-          ! Which tol is to use here?
-          if ( sum_w > tol_local ) then
-             delta = (area_sphere - area_num)/sum_w
-             call cube_init_atomic(elem(ie),gp%points,1.0d0 + delta)
-             else
-                ! Abort since the denominator in correction is too small.
-                call abortmp('Cube_mod,set_area_correction_map2(): sum_w is too small.')
-             endif
-          enddo ! loop over elements
-          ! code for verification.
-          area = 0.0d0
-          do ie = 1,nelemd
-             aratio(ie,1) = 0.0
-             do j = 1,np
-                do i = 1,np
-                   aratio(ie,1) = aratio(ie,1) + gp%weights(i)*gp%weights(j)*elem(ie)%metdet(i,j)
-                enddo
-             enddo
-          enddo
-
-          call repro_sum(aratio, area, nelemd, nelemd, 1, commid=par%comm)
-          if (par%masterproc) &
-             write(iulog,'(a,f20.17)') "Epsilon bubble correction: Corrected area - 4\pi ",area(1) - 4.0d0*dd_pi
-
-       endif ! end of topology == 'cube'
-
-  end subroutine set_area_correction_map2
-
-
-
 
 end module cube_mod
 

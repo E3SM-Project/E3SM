@@ -375,7 +375,7 @@ subroutine micro_mg_tend ( &
      icecldf, rate1ord_cw2pr_st, naai, npccnin,       &
      rndst, nacon, tlat, qvlat, qctend,               &
      qitend, nctend, nitend, effc, effc_fn,           &
-     effi, prect, preci, nevapr, evapsnow, am_evp_st, &
+     effi, prect, preci, nevapr, evapsnow,            &
      prain, prodsnow, cmeout, deffi, pgamrad,         &
      lamcrad, qsout, dsout, rflx, sflx,               &
      qrout, reff_rain, reff_snow, qcsevap, qisevap,   &
@@ -442,7 +442,6 @@ real(r8), intent(out) :: prect(pcols)        ! surface precip rate (m/s)
 real(r8), intent(out) :: preci(pcols)        ! cloud ice/snow precip rate (m/s)
 real(r8), intent(out) :: nevapr(pcols,pver)  ! evaporation rate of rain + snow
 real(r8), intent(out) :: evapsnow(pcols,pver)! sublimation rate of snow
-real(r8), intent(out) :: am_evp_st(pcols,pver)! stratiform evaporation area
 real(r8), intent(out) :: prain(pcols,pver)   ! production of rain + snow
 real(r8), intent(out) :: prodsnow(pcols,pver)! production of snow
 real(r8), intent(out) :: cmeout(pcols,pver)  ! evap/sub of cloud
@@ -849,7 +848,7 @@ real(r8) :: frztmp
 
 logical  :: do_clubb_sgs
 
-#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
+#if defined(MODIFY_ACTIVATE)
 ! Move droplet activation
 real(r8) :: ncold(pcols,pver)
 #endif
@@ -934,7 +933,7 @@ mincld=0.0001_r8
 q(1:ncol,1:pver)=qn(1:ncol,1:pver)
 t(1:ncol,1:pver)=tn(1:ncol,1:pver)
 
-#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
+#if defined(MODIFY_ACTIVATE)
 !++ag/hm 8/17/12
 !initialize aerosol number
 dum2l(1:ncol,1:pver) = 0._r8
@@ -972,7 +971,7 @@ do k=1,pver
 
       dz(i,k)= pdel(i,k)/(rho(i,k)*g)
 
-#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
+#if defined(MODIFY_ACTIVATE)
       ! droplet activation
       ! hm, modify 5/12/11 
       ! get provisional droplet number after activation. This is used for
@@ -1046,15 +1045,13 @@ prain(1:ncol,1:pver) = 0._r8
 prodsnow(1:ncol,1:pver) = 0._r8
 cmeout(1:ncol,1:pver) = 0._r8
 
-am_evp_st(1:ncol,1:pver) = 0._r8
-
 ! for refl calc
 rainrt1(1:ncol,1:pver) = 0._r8
 
 ! initialize precip fraction and output tendencies
 cldmax(1:ncol,1:pver)=mincld
 
-#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
+#if defined(MODIFY_ACTIVATE)
 !++ag/hm 8/17/12: Activation moved above
 #else
 !initialize aerosol number
@@ -1649,7 +1646,7 @@ do i=1,ncol
 
          cmeout(i,k) = cmeout(i,k)+cmei(i,k)
 
-#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
+#if defined(MODIFY_ACTIVATE)
          !--ag/hm 8/12/2012  Activation moved above.
 #else
          !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -2347,7 +2344,6 @@ do i=1,ncol
                ! and distribute across cldmax
                pre(k)=min(pre(k)*(cldmax(i,k)-dum),0._r8)
                pre(k)=pre(k)/cldmax(i,k)
-               am_evp_st(i,k) = max(cldmax(i,k)-dum, 0._r8)
             end if
 
             ! sublimation of snow
@@ -2365,7 +2361,6 @@ do i=1,ncol
                ! only sublimate in out-of-cloud region and distribute over cldmax
                prds(k)=min(prds(k)*(cldmax(i,k)-dum),0._r8)
                prds(k)=prds(k)/cldmax(i,k)
-               am_evp_st(i,k) = max(cldmax(i,k)-dum, 0._r8)
             end if
 
             ! make sure RH not pushed above 100% due to rain evaporation/snow sublimation
@@ -2438,7 +2433,7 @@ do i=1,ncol
          ! include mixing timescale  (mtime)
 
          qce=(qc(i,k) - berg(i,k)*deltat)
-#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
+#if defined(MODIFY_ACTIVATE)
          !++ag/hm 8/17/12, modify for moving activation before microphysics
          nce=nc(i,k)
 #else
@@ -2664,7 +2659,7 @@ do i=1,ncol
 
          ! multiply activation/nucleation by mtime to account for fast timescale
 
-#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
+#if defined(MODIFY_ACTIVATE)
          !++ag/hm 8/17/12, don't include activation tendency (already included earlier)
          nctend(i,k) = nctend(i,k)+ &
 #else
@@ -2693,7 +2688,7 @@ do i=1,ncol
          ! maximum (existing N + source terms*dt), which is possible due to
          ! fast nucleation timescale
 
-#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
+#if defined(MODIFY_ACTIVATE)
          !++ag/hm 8/17/12, don't include timescale for droplet activation - not needed with
          ! Ghan formulation based on mixing 
 #else
@@ -3331,7 +3326,7 @@ do i=1,ncol
 
    do k=top_lev,pver
 
-#if defined(MODIFY_ACTIVATE) || defined(USE_UNICON)
+#if defined(MODIFY_ACTIVATE)
       !++ag/hm 8/17/12, modify for activation tendency
       ! *note: this still includes conditional on npccnin that should be removed
       nctend(i,k)=nctend(i,k)+max(0._r8,npccnin(i,k))

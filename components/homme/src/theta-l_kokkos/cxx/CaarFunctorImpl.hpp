@@ -452,7 +452,7 @@ struct CaarFunctorImpl {
 
     // TODO: make this less hard-coded maybe?
     constexpr Real dp3d_thresh = 0.125;
-    constexpr Real vtheta_thresh = 10; // Kelvin
+    constexpr Real vtheta_thresh = 100; // Kelvin
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {

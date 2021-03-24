@@ -16,8 +16,8 @@ contains
     real(crm_rknd) dx25, dy25, irho, fu1, fu2, fv1, fv2, fw1, fw2
     integer i, j, k, kc, kcu, ic, jb, ib, jc,icrm
 
-    dx25 = 0.25 / dx
-    dy25 = 0.25 / dy
+    dx25 = 0.25D0 / dx
+    dy25 = 0.25D0 / dy
 
     if(RUN3D) then
 

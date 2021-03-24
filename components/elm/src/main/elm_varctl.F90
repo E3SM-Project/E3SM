@@ -69,7 +69,7 @@ module elm_varctl
   character(len=256), public :: version  = " "                           
 
   ! dataset conventions
-  character(len=256), public :: conventions = "CF-1.0"                   
+  character(len=256), public :: conventions = "CF-1.7"
 
   !----------------------------------------------------------
   ! Unit Numbers

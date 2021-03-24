@@ -41,8 +41,8 @@ Switch to turn on FV offline driver: 0 => no, 1 => yes.
 <entry id="waccmx" valid_values="0,1" value="0">
 Option to turn on waccmx thermosphere/ionosphere extension: 0 => no, 1 => yes
 </entry>
-<entry id="phys" valid_values="cam3,cam3_5_1,cam4,cam5,ideal,adiabatic" value="">
-Physics package: cam3, cam4, cam5, ideal (Held-Suarez forcings), adiabatic.
+<entry id="phys" valid_values="cam3,cam3_5_1,cam4,cam5,ideal,adiabatic,default" value="">
+Physics package: cam3, cam4, cam5, ideal (Held-Suarez forcings), adiabatic, default (eam).
 </entry>
 <entry id="microphys" valid_values="rk,mg1,mg1.5,mg2" value="">
 Microphysics package: rk (Rasch and Kristjansson), mg1 (Morrison and Gettelman two moment scheme CAM5.1), mg1.5 (Morrison and Gettelman second version development), mg2 ((Morrison and Gettelman second version).
@@ -53,14 +53,14 @@ Macrophysics package: RK, Park, CLUBB_SGS.
 <entry id="clubb_sgs" valid_values="0,1" value="0">
 Switch to turn on/off CLUBB_SGS package: 0 => no, 1 => yes
 </entry>
-<entry id="unicon" valid_values="0,1" value="0">
-Switch to turn on UNICON package: 0 => off, 1 => on
-</entry>
 <entry id="clubb_do_deep" valid_values="0,1" value="0">
 Switch to turn on/off CLUBB_SGS using clubb to calculate deep: 0 => no, 1 => yes
 </entry>
 <entry id="clubb_do_adv" valid_values="0,1" value="0">
 Switch to turn on/off advecting CLUBB moments: 0 => no, 1 => yes
+</entry>
+<entry id="clubb_single_prec" valid_values="0,1" value="0">
+Switch to turn on/off CLUBB single : 0 => double precision, 1 => single precision
 </entry>
 <entry id="pbl" valid_values="uw,hb,hbr,clubb_sgs" value="">
 PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
@@ -112,7 +112,7 @@ be set to DOCN.
 <entry id="rce" valid_value="0,1" value="0">
 Switch for radiative-convective equilibrium mode. This switch sets the 
 initial condition file to a spun up case with homogenous SST.
-(see cam/bld/namelist_files/namelist_defaults_cam.xml)
+(see eam/bld/namelist_files/namelist_defaults_eam.xml)
 </entry>
 <entry id="ice" valid_values="cice,sice,none" value="">
 Use cice, stub ice model or no ice model in cam build: cice, sice, none
@@ -319,6 +319,9 @@ desired name.
 </entry>
 <entry id="use_MMF" valid_values="0,1" value="0">
 Switch to enable or disable MMF/super-parameterization: 0=off, 1=on.
+</entry>
+<entry id="use_MMF_VT" valid_values="0,1" value="0">
+Switch to enable or disable MMF variance transport: 0=off, 1=on.
 </entry>
 <entry id="use_ECPP" valid_values="0,1" value="0">
 Switch to enable or disable ECPP in CAM: 0=off, 1=on.

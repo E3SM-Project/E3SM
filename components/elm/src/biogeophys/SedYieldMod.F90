@@ -165,8 +165,8 @@ contains
                   end if
                end do
             end if
-            Es_P = 1e-7_r8 / 8.64_r8 * Es_P        ! kg/m2/s
-            Es_Pcrp = 1e-7_r8 / 8.64_r8 * Es_Pcrp  ! kg/m2/s
+            Es_P = 1e-3_r8 / dtime * Es_P        ! kg/m2/s
+            Es_Pcrp = 1e-3_r8 / dtime * Es_Pcrp  ! kg/m2/s
 
             ! soil detachment by runoff
             gndbare = 0._r8

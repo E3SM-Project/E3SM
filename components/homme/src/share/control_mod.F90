@@ -83,6 +83,7 @@ module control_mod
 ! advect theta 0: conservation form 
 !              1: expanded divergence form (less noisy, non-conservative)
  integer, public :: theta_advect_form = 0
+ real (kind=real_kind), public :: vtheta_thresh = 100  ! threshold for virtual potential temperature minimum limiter
 
  integer, public :: cubed_sphere_map = -1  ! -1 = chosen at run time
                                            !  0 = equi-angle Gnomonic (default)
@@ -109,8 +110,9 @@ module control_mod
                                                             ! Use (3) if zoltan2 is enabled.
 
   integer              , public :: partmethod     ! partition methods
-  character(len=MAX_STRING_LEN)    , public :: topology       ! options: "cube" is supported
-  character(len=MAX_STRING_LEN)    , public :: test_case      ! options: if cube: "swtc1","swtc2",or "swtc6"  
+  character(len=MAX_STRING_LEN)    , public :: topology = "cube"       ! options: "cube", "plane"
+  character(len=MAX_STRING_LEN)    , public :: geometry = "sphere"      ! options: "sphere", "plane"
+  character(len=MAX_STRING_LEN)    , public :: test_case      
   integer              , public :: tasknum
   integer              , public :: statefreq      ! output frequency of synopsis of system state (steps)
   integer              , public :: restartfreq
@@ -121,6 +123,9 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: restartfile 
   character(len=MAX_STRING_LEN)    , public :: restartdir
 
+  ! flag used for "slice" planar tests (no variation in y-dir)
+  logical, public :: planar_slice
+  
 ! namelist variable set to dry,notdry,moist
 ! internally the code should use logical "use_moisture"
   character(len=MAX_STRING_LEN)    , public :: moisture  
@@ -180,7 +185,8 @@ module control_mod
   !
 
   ! hyperviscosity parameters used for smoothing topography
-  integer, public :: smooth_phis_numcycle = 0   ! 0 = disable
+  integer, public :: smooth_phis_numcycle = -1   ! -1 = disable
+  integer, public :: smooth_phis_p2filt = -1     ! -1 = disable
   real (kind=real_kind), public :: smooth_phis_nudt = 0
 
   integer, public :: prescribed_wind=0    ! fix the velocities?
@@ -251,7 +257,7 @@ contains
 
   function timestep_make_parameters_consistent(par, rsplit, qsplit, &
        dt_remap_factor, dt_tracer_factor, tstep, dtime, nsplit, nstep_factor, &
-       abort, silent) result(status)
+       abrtf, silent) result(status)
 
     ! Current and future development require a more flexibility in
     ! specifying time steps. This routine analyzes the settings and
@@ -283,7 +289,7 @@ contains
     integer, intent(inout) :: &
          ! Physics-dynamics coupling time step.
          dtime
-    logical, intent(in), optional :: abort, silent
+    logical, intent(in), optional :: abrtf, silent
     integer :: status
 
     real(kind=real_kind), parameter :: &
@@ -294,7 +300,7 @@ contains
     logical :: abort_in, silent_in
 
     abort_in = .true.
-    if (present(abort)) abort_in = abort
+    if (present(abrtf)) abort_in = abrtf
     silent_in = .false.
     if (present(silent)) silent_in = silent
 
@@ -308,21 +314,21 @@ contains
   end function timestep_make_parameters_consistent
 
   function timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, &
-       dt_remap_factor, dt_tracer_factor, abort, silent) result(status)
+       dt_remap_factor, dt_tracer_factor, abrtf, silent) result(status)
 
     use parallel_mod, only: abortmp, parallel_t
     use kinds, only: iulog
 
     type (parallel_t), intent(in) :: par
     integer, intent(inout) :: rsplit, qsplit, dt_remap_factor, dt_tracer_factor
-    logical, intent(in), optional :: abort, silent
+    logical, intent(in), optional :: abrtf, silent
     integer :: status
 
     integer :: qsplit_prev, rsplit_prev
     logical :: split_specified, factor_specified, split_is_master, abort_in, silent_in
 
     abort_in = .true.
-    if (present(abort)) abort_in = abort
+    if (present(abrtf)) abort_in = abrtf
     silent_in = .false.
     if (present(silent)) silent_in = silent
 
@@ -395,7 +401,7 @@ contains
   end function timestep_make_subcycle_parameters_consistent
 
   function timestep_make_eam_parameters_consistent(par, dt_remap_factor, dt_tracer_factor, &
-       nsplit, nstep_factor, tstep, dtime, abort, silent) result(status)
+       nsplit, nstep_factor, tstep, dtime, abrtf, silent) result(status)
 
     use parallel_mod, only: abortmp, parallel_t
     use kinds, only: iulog
@@ -406,7 +412,7 @@ contains
     integer, intent(out) :: nstep_factor
     real(kind=real_kind), intent(inout) :: tstep
     integer, intent(inout) :: dtime
-    logical, intent(in), optional :: abort, silent
+    logical, intent(in), optional :: abrtf, silent
     integer :: status
 
     real(kind=real_kind), parameter :: &
@@ -419,7 +425,7 @@ contains
     logical :: abort_in, silent_in
 
     abort_in = .true.
-    if (present(abort)) abort_in = abort
+    if (present(abrtf)) abort_in = abrtf
     silent_in = .false.
     if (present(silent)) silent_in = silent
 
@@ -451,16 +457,19 @@ contains
           nstep_factor = dt_max_factor*nsplit
           if (abs(nsplit_real - nsplit) > divisible_tol*nsplit_real) then
              if (par%masterproc .and. .not. silent_in) then
-                write(iulog,'(a,es11.4,a,i7,a,es11.4,a)') &
+                write(iulog,'(a,es11.4,a,i7,a,es11.4,a,i2,a,i2,a,i2,a)') &
                      'nsplit was computed as ', nsplit_real, ' based on dtime ', dtime, &
-                     ' and tstep ', tstep, ', which is outside the divisibility tolerance. Set &
-                     &tstep so that it divides dtime.'
+                     ', tstep ', tstep, &
+                     ', and dt_max_factor = max(dt_remap_factor, dt_tracer_factor) = max(', &
+                     dt_remap_factor, ',', dt_tracer_factor, ') =', dt_max_factor, &
+                     ', which is outside the divisibility tolerance. &
+                     &Set tstep, dt_remap_factor, and dt_tracer_factor so that &
+                     &tstep and dt_max_factor*tstep divide dtime.'
              end if
              if (abort_in) call abortmp('timestep_make_parameters_consistent: divisibility error')
              return
           end if
        else
-          print *,'um>',par%rank,par%masterproc,silent_in,nsplit,dtime,tstep
           if (par%masterproc .and. .not. silent_in) then
              write(iulog,*) 'If dtime is set to >0, then either nsplit or tstep must be >0.'
           end if

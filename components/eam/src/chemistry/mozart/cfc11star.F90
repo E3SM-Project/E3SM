@@ -72,13 +72,13 @@ contains
     cf2clbr_ndx => indices(6)
     cf3br_ndx   => indices(7)
     
-    call cnst_get_ind('CFC11',  cfc11_ndx,   abort=.false.)
-    call cnst_get_ind('CFC113', cfc113_ndx,  abort=.false.)
-    call cnst_get_ind('CCL4',   ccl4_ndx,    abort=.false.)
-    call cnst_get_ind('CH3CCL3',ch3ccl3_ndx, abort=.false.)
-    call cnst_get_ind('HCFC22', hcfc22_ndx,  abort=.false.)
-    call cnst_get_ind('CF2CLBR',cf2clbr_ndx, abort=.false.)
-    call cnst_get_ind('CF3BR',  cf3br_ndx,   abort=.false.)
+    call cnst_get_ind('CFC11',  cfc11_ndx,   abrtf=.false.)
+    call cnst_get_ind('CFC113', cfc113_ndx,  abrtf=.false.)
+    call cnst_get_ind('CCL4',   ccl4_ndx,    abrtf=.false.)
+    call cnst_get_ind('CH3CCL3',ch3ccl3_ndx, abrtf=.false.)
+    call cnst_get_ind('HCFC22', hcfc22_ndx,  abrtf=.false.)
+    call cnst_get_ind('CF2CLBR',cf2clbr_ndx, abrtf=.false.)
+    call cnst_get_ind('CF3BR',  cf3br_ndx,   abrtf=.false.)
 
     do_cfc11star = all(indices(:)>0)
 

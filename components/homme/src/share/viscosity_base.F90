@@ -15,7 +15,7 @@ use thread_mod, only : omp_get_num_threads
 use kinds, only : real_kind, iulog
 use dimensions_mod, only : np, nlev,qsize,nelemd
 use hybrid_mod, only : hybrid_t, hybrid_create
-use parallel_mod, only : parallel_t
+use parallel_mod, only : parallel_t, abortmp
 use element_mod, only : element_t
 use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit, divergence_sphere
 use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
@@ -62,6 +62,7 @@ public :: make_c0
 public :: make_c0_vector
 public :: compute_zeta_C0_contra    ! for older versions of sweq which carry
 public :: compute_div_C0_contra     ! velocity around in contra-coordinates
+public :: compute_eta_C0_contra
 
 type (EdgeBuffer_t)          :: edge1
 
@@ -260,7 +261,42 @@ call make_C0(zeta,elem,par)
 
 end subroutine
 
+subroutine compute_eta_C0_contra(eta,elem,par,nt)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! compute C0 absolute vorticity.  That is, solve:
+!     < PHI, eta > = <PHI, curl(elem%state%v) + coriolis >
+!
+!    input:  v (stored in elem()%, in contra-variant coordinates)
+!    output: zeta(:,:,:,:)   
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+type (parallel_t)      , intent(in) :: par
+type (element_t)     , intent(in), target :: elem(:)
+integer :: nt
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: eta
+real (kind=real_kind), dimension(np,np,2) :: ulatlon
+real (kind=real_kind), dimension(np,np) :: v1,v2
+
+! local
+integer :: k,ie
+type (derivative_t)          :: deriv
+
+call derivinit(deriv)
+
+do k=1,nlev
+do ie=1,nelemd
+    v1 = elem(ie)%state%v(:,:,1,k,nt)
+    v2 = elem(ie)%state%v(:,:,2,k,nt)
+    ulatlon(:,:,1) = elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2
+    ulatlon(:,:,2) = elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2
+   eta(:,:,k,ie)=vorticity_sphere(ulatlon,deriv,elem(ie)) + elem(ie)%fcor(:,:)
+enddo
+enddo
+
+call make_C0(eta,elem,par)
+
+end subroutine
 
 subroutine compute_div_C0_contra(zeta,elem,par,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -526,7 +562,7 @@ subroutine neighbor_minmax_finish(hybrid,edgeMinMax,nets,nete,min_neigh,max_neig
 
 end subroutine neighbor_minmax_finish
 
-subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle)
+subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle,p2filt,xgll)
   use control_mod, only : smooth_phis_nudt, hypervis_scaling
   implicit none
 
@@ -536,16 +572,20 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle)
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
   real (kind=real_kind), intent(in)   :: minf
-  integer,               intent(in) :: numcycle
+  integer,               intent(in) :: numcycle ! number of Laplace smoothing steps
+  integer,               intent(in) :: p2filt   ! apply p2 filter 1=before  2=before and after each iteration
+  real (kind=real_kind)             :: xgll(np)
 
   ! local
   type (EdgeBuffer_t)          :: edgebuf
   real (kind=real_kind), dimension(np,np,nets:nete) :: pstens
   real (kind=real_kind), dimension(nets:nete) :: pmin,pmax
-  real (kind=real_kind) :: mx,mn
-  integer :: nt,ie,ic,i,j,order,order_max, iuse
-  logical :: use_var_coef
+  real (kind=real_kind) :: phis4(np)
+  integer :: nt,ie,ic,i,j
 
+  if (p2filt>=1 .and. np/=4) then
+     call abortmp('ERROR: topo smoothing p2 filter option only supported with np==4')
+  endif
 
   ! create edge buffer for 1 field
   call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
@@ -579,47 +619,28 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle)
      pmax(ie)=maxval(pstens(:,:,ie))
   enddo
 
-  ! order = 1   grad^2 laplacian
-  ! order = 2   grad^4 (need to add a negative sign)
-  ! order = 3   grad^6
-  ! order = 4   grad^8 (need to add a negative sign)
-  order_max = 1
-
-
-  use_var_coef=.true.
-  if (hypervis_scaling/=0) then
-     ! for tensorHV option, we turn off the tensor except for *last* laplace operator
-     use_var_coef=.false.
-     if (hypervis_scaling>=3) then
-        ! with a 3.2 or 4 scaling, assume hyperviscosity
-        order_max = 2
-     endif
-  endif
-
-
   do ic=1,numcycle
-     pstens=phis
 
-     do order=1,order_max-1
-
+     if (p2filt>=1) then
+        ! apply p2 filter before laplace
         do ie=nets,nete
-           pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=use_var_coef)
-           call edgeVpack(edgebuf,pstens(:,:,ie),1,0,ie)
-        enddo
+           do i=1,np
+              phis4=phis(i,:,ie)
+              phis(i,2,ie)=(xgll(3)*phis4(1)+phis4(2)+phis4(3)+xgll(2)*phis4(4))/2
+              phis(i,3,ie)=(xgll(2)*phis4(1)+phis4(2)+phis4(3)+xgll(3)*phis4(4))/2
+           enddo
+           do j=1,np
+              phis4=phis(:,j,ie)
+              phis(2,j,ie)=(xgll(3)*phis4(1)+phis4(2)+phis4(3)+xgll(2)*phis4(4))/2
+              phis(3,j,ie)=(xgll(2)*phis4(1)+phis4(2)+phis4(3)+xgll(3)*phis4(4))/2
+           enddo
+        end do
+     endif
 
-        call t_startf('smooth_phis_bexchV3')
-        call bndry_exchangeV(hybrid,edgebuf)
-        call t_stopf('smooth_phis_bexchV3')
 
-        do ie=nets,nete
-           call edgeVunpack(edgebuf, pstens(:,:,ie), 1, 0, ie)
-           pstens(:,:,ie)=pstens(:,:,ie)*elem(ie)%rspheremp(:,:)
-        enddo
-     enddo
      do ie=nets,nete
-        pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=.true.)
+        pstens(:,:,ie)=laplace_sphere_wk(phis(:,:,ie),deriv,elem(ie),var_coef=.true.)
      enddo
-     if (mod(order_max,2)==0) pstens=-pstens
 
      do ie=nets,nete
         !  ps(t+1) = ps(t) + Minv * DSS * M * RHS
@@ -627,26 +648,20 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle)
         ! but output of biharminc_wk is of the form M*RHS.  rewrite as:
         !  ps(t+1) = Minv * DSS * M [ ps(t) +  M*RHS/M ]
         ! so we can apply limiter to ps(t) +  (M*RHS)/M
-#if 1
-        mn=pmin(ie)
-        mx=pmax(ie)
-        iuse = numcycle+1  ! always apply min/max limiter
-#endif
         phis(:,:,ie)=phis(:,:,ie) + &
            smooth_phis_nudt*pstens(:,:,ie)/elem(ie)%spheremp(:,:)
 
 
+#if 0
         ! remove new extrema.  could use conservative reconstruction from advection
         ! but no reason to conserve mean PHI.
-        if (ic < iuse) then
         do i=1,np
         do j=1,np
-           if (phis(i,j,ie)>mx) phis(i,j,ie)=mx
-           if (phis(i,j,ie)<mn) phis(i,j,ie)=mn
+           if (phis(i,j,ie)>mx) phis(i,j,ie)=pmax(ie)
+           if (phis(i,j,ie)<mn) phis(i,j,ie)=pmin(ie)
         enddo
         enddo
-        endif
-
+#endif
 
         ! user specified minimum
         do i=1,np
@@ -668,7 +683,27 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle)
         call edgeVunpack(edgebuf, phis(:,:,ie), 1, 0, ie)
         phis(:,:,ie)=phis(:,:,ie)*elem(ie)%rspheremp(:,:)
      enddo
+
   enddo
+
+  if (p2filt==2) then
+     ! apply final p2 filter 
+     do ie=nets,nete
+        do i=1,np
+           phis4=phis(i,:,ie)
+           phis(i,2,ie)=(xgll(3)*phis4(1)+phis4(2)+phis4(3)+xgll(2)*phis4(4))/2
+           phis(i,3,ie)=(xgll(2)*phis4(1)+phis4(2)+phis4(3)+xgll(3)*phis4(4))/2
+        enddo
+        do j=1,np
+           phis4=phis(:,j,ie)
+           phis(2,j,ie)=(xgll(3)*phis4(1)+phis4(2)+phis4(3)+xgll(2)*phis4(4))/2
+           phis(3,j,ie)=(xgll(2)*phis4(1)+phis4(2)+phis4(3)+xgll(3)*phis4(4))/2
+        enddo
+     end do
+  endif
+  
+
+
 
   call FreeEdgeBuffer(edgebuf) 
 

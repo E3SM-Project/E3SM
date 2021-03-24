@@ -160,9 +160,9 @@ CONTAINS
     integer, intent(in) :: ncrms
     integer k, n,icrm, i, j, l
 
-    a_bg = 1./(tbgmax-tbgmin)
-    a_pr = 1./(tprmax-tprmin)
-    a_gr = 1./(tgrmax-tgrmin)
+    a_bg = 1.D0/(tbgmax-tbgmin)
+    a_pr = 1.D0/(tprmax-tprmin)
+    a_gr = 1.D0/(tgrmax-tgrmin)
 
     if(nrestart.eq.0) then
 
@@ -205,12 +205,12 @@ CONTAINS
     mkname(1) = 'QT'
     mklongname(1) = 'TOTAL WATER (VAPOR + CONDENSATE)'
     mkunits(1) = 'g/kg'
-    mkoutputscale(1) = 1.e3
+    mkoutputscale(1) = 1.D3
 
     mkname(2) = 'QP'
     mklongname(2) = 'PRECIPITATING WATER'
     mkunits(2) = 'g/kg'
-    mkoutputscale(2) = 1.e3
+    mkoutputscale(2) = 1.D3
 
   end subroutine micro_init
 
@@ -347,12 +347,12 @@ CONTAINS
     allocate(omega(ncrms,nx,ny,nzm))
     call prefetch( omega )
 
-    crain = b_rain / 4.
-    csnow = b_snow / 4.
-    cgrau = b_grau / 4.
-    vrain = a_rain * gamr3 / 6. / (pi * rhor * nzeror) ** crain
-    vsnow = a_snow * gams3 / 6. / (pi * rhos * nzeros) ** csnow
-    vgrau = a_grau * gamg3 / 6. / (pi * rhog * nzerog) ** cgrau
+    crain = b_rain / 4.D0
+    csnow = b_snow / 4.D0
+    cgrau = b_grau / 4.D0
+    vrain = a_rain * gamr3 / 6.D0 / (pi * rhor * nzeror) ** crain
+    vsnow = a_snow * gams3 / 6.D0 / (pi * rhos * nzeros) ** csnow
+    vgrau = a_grau * gamg3 / 6.D0 / (pi * rhog * nzerog) ** cgrau
 
     !$acc parallel loop collapse(4) async(asyncid)
     do k=1,nzm
@@ -408,7 +408,7 @@ CONTAINS
     pp(y)= max(real(0.,crm_rknd),y)
     pn(y)=-min(real(0.,crm_rknd),y)
 
-    eps = 1.e-10
+    eps = 1.D-10
     nonos = .true.
 
     allocate( mx     (ncrms,nx,ny,nzm) )
@@ -436,16 +436,16 @@ CONTAINS
     !$acc parallel loop gang vector collapse(2) async(asyncid)
     do k = 1,nzm
       do icrm = 1 , ncrms
-        rhofac(icrm,k) = sqrt(1.29/rho(icrm,k))
-        irhoadz(icrm,k) = 1./(rho(icrm,k)*adz(icrm,k)) ! Useful factor
+        rhofac(icrm,k) = sqrt(1.29D0/rho(icrm,k))
+        irhoadz(icrm,k) = 1.D0/(rho(icrm,k)*adz(icrm,k)) ! Useful factor
         kb = max(1,k-1)
         wmax       = dz(icrm)*adz(icrm,kb)/dtn   ! Velocity equivalent to a cfl of 1.0.
-        iwmax(icrm,k)   = 1./wmax
+        iwmax(icrm,k)   = 1.D0/wmax
       enddo
     enddo
 
-    ! 	Add sedimentation of precipitation field to the vert. vel.
-    prec_cfl = 0.
+    !   Add sedimentation of precipitation field to the vert. vel.
+    prec_cfl = 0.D0
     !$acc parallel loop gang vector collapse(4) reduction(max:prec_cfl) async(asyncid)
     do k=1,nzm
       do j=1,ny
@@ -454,16 +454,16 @@ CONTAINS
             select case (hydro_type)
             case(0)
               lfac(icrm,i,j,k) = fac_cond
-              flagstat = 1.
+              flagstat = 1.D0
             case(1)
               lfac(icrm,i,j,k) = fac_sub
-              flagstat = 1.
+              flagstat = 1.D0
             case(2)
               lfac(icrm,i,j,k) = fac_cond + (1-omega(icrm,i,j,k))*fac_fus
-              flagstat = 1.
+              flagstat = 1.D0
             case(3)
-              lfac(icrm,i,j,k) = 0.
-              flagstat = 0.
+              lfac(icrm,i,j,k) = 0.D0
+              flagstat = 0.D0
             case default
               if(masterproc) then
                 !print*, 'unknown hydro_type in precip_fall. exitting ...'
@@ -478,9 +478,9 @@ CONTAINS
             prec_cfl = max(prec_cfl,tmp) ! Keep column maximum CFL
             wp(icrm,i,j,k) = -wp(icrm,i,j,k)*rhow(icrm,k)*dtn/dz(icrm)
             if (k == 1) then
-              fz(icrm,i,j,nz)=0.
-              www(icrm,i,j,nz)=0.
-              lfac(icrm,i,j,nz)=0
+              fz(icrm,i,j,nz)=0.D0
+              www(icrm,i,j,nz)=0.D0
+              lfac(icrm,i,j,nz)=0D0
             endif
           enddo  ! k
         enddo
@@ -489,8 +489,8 @@ CONTAINS
 
     ! If maximum CFL due to precipitation velocity is greater than 0.9,
     ! take more than one advection step to maintain stability.
-    if (prec_cfl.gt.0.9) then
-      nprec = CEILING(prec_cfl/0.9)
+    if (prec_cfl.gt.0.9D0) then
+      nprec = CEILING(prec_cfl/0.9D0)
       !$acc parallel loop gang vector collapse(4) async(asyncid)
       do k = 1,nzm
         do j=1,ny
@@ -563,7 +563,7 @@ CONTAINS
               ! precipitation mass fraction.  Therefore, a reformulated
               ! anti-diffusive flux is used here which accounts for
               ! this and results in reduced numerical diffusion.
-              www(icrm,i,j,k) = 0.5*(1.+wp(icrm,i,j,k)*irhoadz(icrm,k))*(tmp_qp(icrm,i,j,kb)*wp(icrm,i,j,kb) - &
+              www(icrm,i,j,k) = 0.5D0*(1.+wp(icrm,i,j,k)*irhoadz(icrm,k))*(tmp_qp(icrm,i,j,kb)*wp(icrm,i,j,kb) - &
                                      tmp_qp(icrm,i,j,k)*wp(icrm,i,j,k)) ! works for wp(k)<0
             enddo
           enddo
@@ -653,9 +653,9 @@ CONTAINS
                 ! increase very much between substeps when using
                 ! monotonic advection schemes.
                 if (k == 1) then
-                  fz(icrm,i,j,nz)=0.
-                  www(icrm,i,j,nz)=0.
-                  lfac(icrm,i,j,nz)=0.
+                  fz(icrm,i,j,nz)=0.D0
+                  www(icrm,i,j,nz)=0.D0
+                  lfac(icrm,i,j,nz)=0.D0
                 endif
               enddo
             enddo

@@ -9,9 +9,11 @@
 extern "C" {
 #endif
 
-float gammafff(float *x) {return (float)exp(lgamma(*x));}
+//float gammafff(float *x) {return (float)exp(lgamma(*x));}
+double gammafff(double *x) {return (double)exp(lgamma(*x));}
 
-float gammafff_(float *x) {return (float)exp(lgamma(*x));}
+//float gammafff_(float *x) {return (float)exp(lgamma(*x));}
+double gammafff_(double *x) {return (double)exp(lgamma(*x));}
 
 #ifdef __cplusplus
 }
