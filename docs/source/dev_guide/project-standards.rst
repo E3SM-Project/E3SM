@@ -75,7 +75,7 @@ Squash and Rebase Commits
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Before you merge a support branch back into ``master``, the branch is typically
-squashed down to a single* buildable commit, and then rebased on top of the upstream ``master`` branch.
+squashed down to a single* buildable commit, and then rebased on top of the main repo's ``master`` branch.
 
 \* *In some cases, it might be logical to have multiple squashed commits, as long as each commit passes the CI/CD build*
 
@@ -93,17 +93,17 @@ How to squash and rebase commits
 
 Assuming that you followed :ref:`"(b) Development Environment" <dev-env>`:
 
-1. Sync ``master`` with upstream ``master`` ::
+1. Sync ``master`` with the main repo's ``master`` ::
 
     git checkout master
-    git rebase upstream/master
-    git push -f origin master
+    git rebase <upstream-origin>/master
+    git push -f <fork-origin> master
 
 2. Rebase branch onto ``master`` ::
 
-    git checkout branchName
-    git rebase master
-    git push -f origin branchName
+    git checkout <branch-name>
+    git rebase master # If you have merge conflicts, it may be easier to `git rebase --abort` and first do step 4 with SHA of the last commit before your work
+    git push -f <fork-origin> <branch-name>
 
 3. Get the SHA of the commit OR number of commits to rebase to ::
 
@@ -117,13 +117,11 @@ Assuming that you followed :ref:`"(b) Development Environment" <dev-env>`:
 
     git rebase -i HEAD~[NUMBER OF COMMITS]
 
-5. Resolve merge conflicts if they exist
+5. Make sure your squashed commit messages are refined
 
-6. Make sure your squashed commit messages are refined
+6. Force push to remote branch ::
 
-7. Force push to remote branch ::
-
-    git push -f origin branchName
+    git push -f <fork-origin> <branch-name>
 
 Source:
 https://blog.carbonfive.com/always-squash-and-rebase-your-git-commits/
@@ -153,7 +151,7 @@ Run a tool
 Continuous Integration / Continuous Delivery (CI/CD)
 ----------------------------------------------------
 
-This project uses `GitHub Actions <https://github.com/E3SM-Project/e3sm_diags/actions>`_ to run the CI/CD build. The build is triggered by Git ``pull_request`` and ``push`` (merging PRs) events to the upstream ``master``.
+This project uses `GitHub Actions <https://github.com/E3SM-Project/e3sm_diags/actions>`_ to run the CI/CD build. The build is triggered by Git ``pull_request`` and ``push`` (merging PRs) events to the the main repo's ``master``.
 
 The CI/CD workflow has three jobs:
 
