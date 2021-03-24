@@ -956,13 +956,14 @@ contains
          N = maxLevelCell(iCell)
 
          ! A is lower diagonal term
-         A(Nsurf)=0.0_RKIND
+         A(1:Nsurf)=0.0_RKIND
          do k = Nsurf+1, N
             A(k) = -2.0_RKIND*dt*vertDiffTopOfCell(k,iCell) &
                  / (layerThickness(k-1,iCell) + layerThickness(k,iCell)) / layerThickness(k,iCell)
          enddo
 
          ! C is upper diagonal term
+         C(1:Nsurf-1)=0.0_RKIND
          do k = Nsurf, N-1
             C(k) = -2.0_RKIND*dt*vertDiffTopOfCell(k+1,iCell) &
                  / (layerThickness(k,iCell) + layerThickness(k+1,iCell)) / layerThickness(k,iCell)
@@ -970,6 +971,7 @@ contains
          C(N) = 0.0_RKIND
 
          ! B is diagonal term
+         B(1:Nsurf-1)=0.0_RKIND
          do k = Nsurf, N
             B(k) = 1.0_RKIND - A(k) - C(k)
          enddo
