@@ -316,7 +316,9 @@ class TestAllScream(object):
             test_dir = self.get_test_dir(root, test)
 
             if test_dir.exists() and clean:
-                shutil.rmtree(test_dir)
+                # LB: without '._str', I was getting the error
+                # TypeError: lstat: illegal type for path parameter
+                shutil.rmtree(test_dir._str)
 
             # Create this baseline's build dir
             if not test_dir.exists():
