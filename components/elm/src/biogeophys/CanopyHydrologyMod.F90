@@ -21,9 +21,6 @@ module CanopyHydrologyMod
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
   use CanopyStateType   , only : canopystate_type
-  use TemperatureType   , only : temperature_type
-  use WaterfluxType     , only : waterflux_type
-  use WaterstateType    , only : waterstate_type
   use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
   use ColumnType        , only : col_pp 
   use ColumnDataType    , only : col_es, col_ws, col_wf  
@@ -32,6 +29,7 @@ module CanopyHydrologyMod
   use elm_varcon        , only : snw_rds_min
   use pftvarcon         , only : irrigated
   use GridcellType      , only : grc_pp
+  use timeinfoMod, only : dtime
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -101,8 +99,8 @@ contains
    !-----------------------------------------------------------------------
    subroutine CanopyHydrology(bounds, &
         num_nolakec, filter_nolakec, num_nolakep, filter_nolakep, &
-        atm2lnd_vars, canopystate_vars, temperature_vars, &
-        aerosol_vars, waterstate_vars, waterflux_vars)
+        atm2lnd_vars, canopystate_vars, &
+        aerosol_vars )
      !
      ! !DESCRIPTION:
      ! Calculation of
@@ -135,10 +133,7 @@ contains
      integer                , intent(in)    :: filter_nolakep(:)    ! patch filter for non-lake points
      type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
      type(canopystate_type) , intent(in)    :: canopystate_vars
-     type(temperature_type) , intent(inout) :: temperature_vars
      type(aerosol_type)     , intent(inout) :: aerosol_vars
-     type(waterstate_type)  , intent(inout) :: waterstate_vars
-     type(waterflux_type)   , intent(inout) :: waterflux_vars
      !
      ! !LOCAL VARIABLES:
      integer  :: f                                            ! filter index
@@ -446,7 +441,7 @@ contains
        ! fraction of foliage that is dry and transpiring.
 
        call FracWet(num_nolakep, filter_nolakep, &
-            canopystate_vars, waterstate_vars)
+            canopystate_vars )
 
        ! Update column level state variables for snow.
 
@@ -674,14 +669,14 @@ contains
 
        ! update surface water fraction (this may modify frac_sno)
        call FracH2oSfc(bounds, num_nolakec, filter_nolakec, &
-            waterstate_vars, col_wf%qflx_h2osfc2topsoi)
+             col_wf%qflx_h2osfc2topsoi, dtime)
 
      end associate 
 
    end subroutine CanopyHydrology
 
    !-----------------------------------------------------------------------
-   subroutine FracWet(numf, filter, canopystate_vars, waterstate_vars)
+   subroutine FracWet(numf, filter, canopystate_vars )
      !
      ! !DESCRIPTION:
      ! Determine fraction of vegetated surfaces which are wet and
@@ -695,7 +690,6 @@ contains
      integer                , intent(in)    :: numf                  ! number of filter non-lake points
      integer                , intent(in)    :: filter(numf)          ! patch filter for non-lake points
      type(canopystate_type) , intent(in)    :: canopystate_vars
-     type(waterstate_type)  , intent(inout) :: waterstate_vars
      !
      ! !LOCAL VARIABLES:
      integer  :: fp,p             ! indices
@@ -738,7 +732,7 @@ contains
 
    !-----------------------------------------------------------------------
    subroutine FracH2OSfc(bounds, num_h2osfc, filter_h2osfc, &
-        waterstate_vars, qflx_h2osfc2topsoi, no_update)
+         qflx_h2osfc2topsoi,dtime, no_update)
      !
      ! !DESCRIPTION:
      ! Determine fraction of land surfaces which are submerged  
@@ -748,14 +742,13 @@ contains
      use shr_const_mod   , only : shr_const_pi
      use shr_spfn_mod    , only : erf => shr_spfn_erf
      use landunit_varcon , only : istsoil, istcrop
-     use clm_time_manager   , only : get_step_size       
      !
      ! !ARGUMENTS:
      type(bounds_type)     , intent(in)           :: bounds           
      integer               , intent(in)           :: num_h2osfc       ! number of column points in column filter
      integer               , intent(in)           :: filter_h2osfc(:) ! column filter 
-     type(waterstate_type) , intent(inout)        :: waterstate_vars
      real(r8)              , intent(inout)        :: qflx_h2osfc2topsoi(bounds%begc:bounds%endc)     
+     real(r8)              , intent(in)           :: dtime     
      integer               , intent(in), optional :: no_update        ! flag to make calculation w/o updating variables
      !
      ! !LOCAL VARIABLES:
@@ -763,7 +756,6 @@ contains
      real(r8):: d,fd,dfdd      ! temporary variable for frac_h2oscs iteration
      real(r8):: sigma          ! microtopography pdf sigma in mm
      real(r8):: min_h2osfc
-     real(r8):: dtime     
      !-----------------------------------------------------------------------
 
      associate(                                              & 
@@ -778,7 +770,6 @@ contains
           frac_h2osfc  => col_ws%frac_h2osfc    & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero 
           )
 
-       dtime=get_step_size()           
        ! arbitrary lower limit on h2osfc for safer numerics...
        min_h2osfc=1.e-8_r8
 
