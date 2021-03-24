@@ -48,6 +48,7 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   m_computed_fields.emplace("aist",  scalar3d_layout_mid, nondim, grid_name);
 
   // Set of fields used as input and output
+  // - There are no fields used as both input and output.
 
 }
 
