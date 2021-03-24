@@ -1,6 +1,7 @@
-from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_current_head,     \
-    get_current_commit, get_current_branch, expect, is_repo_clean, cleanup_repo,  \
-    get_common_ancestor, merge_git_ref, checkout_git_ref, git_fetch_remote, print_last_commit
+from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version
+from git_utils import get_current_head, get_current_commit, get_current_branch, \
+    is_repo_clean, cleanup_repo, get_common_ancestor, merge_git_ref, checkout_git_ref, \
+    git_fetch_remote, print_last_commit
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
     get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
