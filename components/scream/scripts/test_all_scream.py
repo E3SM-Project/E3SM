@@ -299,14 +299,28 @@ class TestAllScream(object):
                    "you can pass `--keep-tree` to allow non-clean repo.")
 
     ###############################################################################
-    def get_baseline_dir(self, test):
+    def create_tests_dirs(self, root, clean):
     ###############################################################################
-        return pathlib.Path(self._baseline_dir, self._test_full_names[test])
+
+        # Make sure the baseline root directory exists
+        expect(root.is_dir(), "{} is not a valid directory".format(root))
+
+        # Create build directories (one per test)
+        for test in self._tests:
+
+            test_dir = self.get_test_dir(root, test)
+
+            if test_dir.exists() and clean:
+                shutil.rmtree(test_dir)
+
+            # Create this baseline's build dir
+            if not test_dir.exists():
+                test_dir.mkdir(parents=True)
 
     ###############################################################################
-    def get_test_dir(self, test):
+    def get_test_dir(self, root, test):
     ###############################################################################
-        return pathlib.Path(self._work_dir, self._test_full_names[test])
+        return pathlib.Path(root, self._test_full_names[test])
 
     ###############################################################################
     def get_preexisting_baseline(self, test):
@@ -324,8 +338,9 @@ class TestAllScream(object):
 
         # Even if a single baseline is missing, we consider all the baselines not present
         for test in self._tests:
-            test_baseline_dir = pathlib.Path(self._baseline_dir, self._test_full_names[test], "data")
-            if not test_baseline_dir.is_dir():
+            test_baseline_dir = self.get_test_dir(self._baseline_dir, test)
+            data_dir = pathlib.Path(test_baseline_dir, "data")
+            if not data_dir.is_dir():
                 return False
 
         # Note: inside this script we don't know what kind of file should be in the baseline dirs.
@@ -476,7 +491,7 @@ class TestAllScream(object):
         if self._submit:
             result += "CIME_MACHINE={} ".format(self._machine)
 
-        test_dir = self.get_test_dir(test)
+        test_dir = self.get_test_dir(self._work_dir,test)
         self.create_ctest_resource_file(test,test_dir)
 
         result += "SCREAM_BUILD_PARALLEL_LEVEL={} CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._compile_res_count[test], self._testing_res_count[test])
@@ -507,7 +522,7 @@ class TestAllScream(object):
     ###############################################################################
     def generate_baselines(self, test):
     ###############################################################################
-        test_dir = self.get_baseline_dir(test)
+        test_dir = self.get_test_dir(self._baseline_dir, test)
 
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
         cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
@@ -550,15 +565,8 @@ class TestAllScream(object):
         print("Generating baselines for ref {}".format(self._baseline_ref))
         print("###############################################################################")
 
-        # First, create build directories (one per test)
-        for test in self._tests:
-            test_dir = self.get_baseline_dir(test)
-
-            # Create this test's build dir
-            if test_dir.exists():
-                shutil.rmtree(str(test_dir))
-
-            test_dir.mkdir(parents=True)
+        # First, create build directories (one per test). If existing, nuke the content
+        self.create_tests_dirs(self._baseline_dir, True)
 
         checkout_git_ref(self._baseline_ref, verbose=True, dry_run=self._dry_run)
 
@@ -600,7 +608,7 @@ class TestAllScream(object):
         print("Testing '{}' for test '{}'".format(git_head, self._test_full_names[test]))
         print("===============================================================================")
 
-        test_dir = self.get_test_dir(test)
+        test_dir = self.get_test_dir(self._work_dir,test)
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
@@ -627,9 +635,10 @@ class TestAllScream(object):
         print("Running tests!")
         print("###############################################################################")
 
-        # First, create build directories (one per test)
+        # First, create build directories (one per test). If existing, nuke the content
+        self.create_tests_dirs(self._work_dir, True)
         for test in self._tests:
-            test_dir = self.get_test_dir(test)
+            test_dir = self.get_test_dir(self._work_dir,test)
 
             # Create this test's build dir
             if test_dir.exists():
@@ -662,7 +671,7 @@ class TestAllScream(object):
         for t,s in tests_success.items():
             if not s:
                 print("Build type {} failed. Here's a list of failed tests:".format(self._test_full_names[t]))
-                test_dir = self.get_test_dir(t)
+                test_dir = self.get_test_dir(self._work_dir,t)
                 test_results_dir = pathlib.Path(test_dir, "Testing", "Temporary")
                 for result in test_results_dir.glob("LastTestsFailed*"):
                     print(result.read_text())
