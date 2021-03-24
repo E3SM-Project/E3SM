@@ -107,6 +107,7 @@ class TestAllScream(object):
                    "Error! Work directory '{}' does not exist.".format(self._work_dir))
         else:
             self._work_dir = self._root_dir.absolute().joinpath("ctest-build")
+            self._work_dir.mkdir()
 
         os.chdir(str(self._root_dir)) # needed, or else every git command will need repo=root_dir
         expect(get_current_commit(), "Root dir: {}, does not appear to be a git repo".format(self._root_dir))
