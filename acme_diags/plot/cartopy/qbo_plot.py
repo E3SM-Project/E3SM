@@ -91,7 +91,7 @@ def plot(period_new, parameter, test, ref):
 
     fig = plt.figure(figsize=(14, 14))
 
-    months = min(ref["qbo"].shape[0], test["qbo"].shape[0])
+    months = np.minimum(ref["qbo"].shape[0], test["qbo"].shape[0])
     x_test, y_test = np.meshgrid(np.arange(0, months), test["level"])
     x_ref, y_ref = np.meshgrid(np.arange(0, months), ref["level"])
     cmap2 = plt.cm.RdBu_r
@@ -100,7 +100,7 @@ def plot(period_new, parameter, test, ref):
     # Panel 0 (Top Left)
     x = dict(axis_range=[0, months], axis_scale="linear", data=x_test, label=" ")
     y = dict(axis_range=[100, 1], axis_scale="log", data=y_test, label="hPa")
-    z = dict(data=test["qbo"].T)
+    z = dict(data=test["qbo"].T[:, :months])
     title = "{} U 5S-5N ({})".format(test["name"], parameter.test_yrs)
     ax0 = plot_panel(  # noqa
         0,
@@ -119,7 +119,7 @@ def plot(period_new, parameter, test, ref):
     # Panel 1 (Middle Left)
     x = dict(axis_range=[0, months], axis_scale="linear", data=x_ref, label="month")
     y = dict(axis_range=[100, 1], axis_scale="log", data=y_ref, label="hPa")
-    z = dict(data=ref["qbo"].T)
+    z = dict(data=ref["qbo"].T[:, :months])
     title = "{} U 5S-5N ({})".format(ref["name"], parameter.ref_yrs)
     # FIXME: F841 - assigned but unused
     ax1 = plot_panel(  # noqa
