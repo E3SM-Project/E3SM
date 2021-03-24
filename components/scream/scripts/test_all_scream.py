@@ -68,18 +68,6 @@ class TestAllScream(object):
         #  Sanity checks and helper structs setup  #
         ############################################
 
-        if not self._tests:
-            # default to all test types except do not do fpe on CUDA
-            self._tests = list(self._test_full_names.keys())
-            self._tests.remove("valg") # don't want this on by default
-            if is_cuda_machine(self._machine):
-                self._tests.remove("fpe")
-        else:
-            for t in self._tests:
-                expect(t in self._test_full_names,
-                       "Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
-                           format(t, ", ".join(self._test_full_names.keys())))
-
         # Probe machine if none was specified
         if self._machine is None:
             # We could potentially integrate more with CIME here to do actual
@@ -93,6 +81,18 @@ class TestAllScream(object):
                 self._machine = "local"
         else:
             expect (not self._local, "Specifying a machine while passing '-l,--local' is ambiguous.")
+
+        if not self._tests:
+            # default to all test types except do not do fpe on CUDA
+            self._tests = list(self._test_full_names.keys())
+            self._tests.remove("valg") # don't want this on by default
+            if is_cuda_machine(self._machine):
+                self._tests.remove("fpe")
+        else:
+            for t in self._tests:
+                expect(t in self._test_full_names,
+                       "Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
+                           format(t, ", ".join(self._test_full_names.keys())))
 
         # Compute root dir (where repo is) and work dir (where build/test will happen)
         if not self._root_dir:
