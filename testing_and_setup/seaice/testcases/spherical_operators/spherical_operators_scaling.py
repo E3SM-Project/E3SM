@@ -599,7 +599,7 @@ def stress_divergence_scaling(axes):
 
 #-------------------------------------------------------------------------------
 
-def scaling_figure():
+def spherical_operators_scaling():
 
     mpl.rc('font', family='Times New Roman', size=8)
     mpl.rc('text', usetex=True)
@@ -612,11 +612,11 @@ def scaling_figure():
     stress_divergence_scaling(axes[1])
 
     plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
-    plt.savefig("spherical_scaling.png",dpi=400)
-    plt.savefig("spherical_scaling.eps")
+    plt.savefig("spherical_operators_scaling.png",dpi=400)
+    plt.savefig("spherical_operators_scaling.eps")
 
 #-------------------------------------------------------------------------------
 
 if __name__ == "__main__":
 
-    scaling_figure()
+    spherical_operators_scaling()
