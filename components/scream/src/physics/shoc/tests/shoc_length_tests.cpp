@@ -40,8 +40,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     // scale for these columns should be gradually larger, given all other
     // inputs are equal.
 
-    // PBL height [m]
-    static constexpr Real pblh = 1000;
     // Define the host grid box size x-direction [m]
     static constexpr Real host_dx = 3000;
     // Defin the host grid box size y-direction [m]
@@ -50,8 +48,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     static constexpr Real zi_grid[nlevi] = {9000, 5000, 1500, 900, 500, 0};
     // Virtual potential temperature on thermo grid [K]
     static constexpr Real thv[nlev] = {315, 310, 305, 300, 295};
-    // Buoyancy flux [K m/s]
-    static constexpr Real wthv_sec[nlev] = {0.02, 0.01, 0.04, 0.02, 0.05};
     // Turbulent kinetc energy [m2/s2]
     static constexpr Real tke[nlev] = {0.1, 0.15, 0.2, 0.25, 0.3};
 
@@ -61,20 +57,11 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     // Grid stuff to compute based on zi_grid
     Real zt_grid[nlev];
     Real dz_zt[nlev];
-    Real dz_zi[nlevi];
     // Compute heights on midpoint grid
     for(Int n = 0; n < nlev; ++n) {
       zt_grid[n] = 0.5*(zi_grid[n]+zi_grid[n+1]);
       dz_zt[n] = zi_grid[n] - zi_grid[n+1];
-      if (n == 0){
-        dz_zi[n] = 0;
-      }
-      else{
-        dz_zi[n] = zt_grid[n-1] - zt_grid[n];
-      }
     }
-    // set upper condition for dz_zi
-    dz_zi[nlevi-1] = zt_grid[nlev-1];
 
     // Initialize data structure for bridging to F90
     ShocLengthData SDS(shcol, nlev, nlevi);
@@ -83,7 +70,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     for(Int s = 0; s < shcol; ++s) {
       SDS.host_dx[s] = host_dx;
       SDS.host_dy[s] = host_dy;
-      SDS.pblh[s] = pblh;
       // Fill in test data on zt_grid.
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
@@ -93,7 +79,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
 
         SDS.zt_grid[offset] = zt_grid[n];
         SDS.thv[offset] = thv[n];
-        SDS.wthv_sec[offset] = wthv_sec[n];
         SDS.dz_zt[offset] = dz_zt[n];
       }
 
@@ -102,7 +87,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
         const auto offset = n + s * nlevi;
 
         SDS.zi_grid[offset] = zi_grid[n];
-        SDS.dz_zi[offset] = dz_zi[n];
       }
     }
 
@@ -132,7 +116,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
         const auto offset = n + s * nlev;
 
         REQUIRE(SDS.zi_grid[offset] >= 0);
-        REQUIRE(SDS.dz_zi[offset] >= 0);
       }
     }
 
@@ -238,9 +221,9 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      shoc_length_f(d.shcol,d.nlev,d.nlevi,d.host_dx,d.host_dy,d.pblh,
-                    d.tke,d.zt_grid,d.zi_grid,d.dz_zt,d.dz_zi,d.wthv_sec,d.thetal,
-                    d.thv,d.brunt,d.shoc_mix);
+      shoc_length_f(d.shcol,d.nlev,d.nlevi,d.host_dx,d.host_dy,
+                    d.zt_grid,d.zi_grid,d.dz_zt,d.tke,
+                    d.thetal,d.thv,d.brunt,d.shoc_mix);
       d.transpose<ekat::TransposeDirection::f2c>();
     }
 

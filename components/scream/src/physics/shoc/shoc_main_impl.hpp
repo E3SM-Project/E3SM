@@ -181,8 +181,8 @@ void Functions<S,D>::shoc_main_internal(
 
     // Update the turbulent length scale
     shoc_length(team,nlev,nlevi,host_dx,host_dy, // Input
-                pblh,tke,zt_grid,zi_grid,dz_zt,  // Input
-                wthv_sec,thv,                    // Input
+                zt_grid,zi_grid,dz_zt,           // Input
+                tke,thv,                         // Input
                 workspace,                       // Workspace
                 brunt,shoc_mix);                 // Output
 

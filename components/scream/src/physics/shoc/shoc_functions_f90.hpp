@@ -342,13 +342,13 @@ struct EddyDiffusivitiesData : public PhysicsTestData {
 struct ShocLengthData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev, nlevi;
-  Real *host_dx, *host_dy, *pblh, *tke, *zt_grid, *zi_grid, *dz_zt, *dz_zi, *thetal, *wthv_sec, *thv;
+  Real *host_dx, *host_dy, *tke, *zt_grid, *zi_grid, *dz_zt, *thetal, *thv;
 
   // Outputs
   Real *brunt, *shoc_mix;
 
   ShocLengthData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy, &pblh }, { &tke, &zt_grid, &dz_zt, &thetal, &wthv_sec, &thv, &brunt, &shoc_mix }, { &zi_grid, &dz_zi }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy }, { &tke, &zt_grid, &dz_zt, &thetal, &thv, &brunt, &shoc_mix }, { &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
   PTD_STD_DEF(ShocLengthData, 3, shcol, nlev, nlevi);
 };
@@ -988,7 +988,7 @@ void compute_diag_third_shoc_moment_f(Int shcol, Int nlev, Int nlevi, Real* w_se
                                       Real* w3);
 void shoc_pblintd_init_pot_f(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
 void compute_shoc_mix_shoc_length_f(Int nlev, Int shcol, Real* tke, Real* brunt,
-                                    Real* tscale, Real* zt_grid, Real* l_inf, Real* shoc_mix);
+                                    Real* zt_grid, Real* l_inf, Real* shoc_mix);
 void check_tke_f(Int shcol, Int nlev, Real* tke);
 void linear_interp_f(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, Int ncol, Real minthresh);
 void clipping_diag_third_shoc_moments_f(Int nlevi, Int shcol, Real *w_sec_zi,
@@ -1021,8 +1021,8 @@ void shoc_pblintd_cldcheck_f(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cld
 void compute_conv_time_shoc_length_f(Int shcol, Real *pblh, Real *conv_vel,
                                      Real *tscale);
 void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_wind, Real* v_wind, Real* sterm);
-void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy, Real* pblh, Real* tke,
-                   Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* dz_zi, Real* wthv_sec, Real*thetal,
+void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
+                   Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* tke, Real*thetal,
                    Real* thv, Real*brunt, Real* shoc_mix);
 void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* zt_grid,
                          Real* zi_grid, Real* se_b, Real* ke_b, Real* wv_b, Real* wl_b,

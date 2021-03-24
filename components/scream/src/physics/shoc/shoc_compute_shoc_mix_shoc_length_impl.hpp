@@ -14,7 +14,6 @@ void Functions<S,D>
   const Int&                   nlev,
   const uview_1d<const Spack>& tke,
   const uview_1d<const Spack>& brunt,
-  const Scalar&                tscale,
   const uview_1d<const Spack>& zt_grid,
   const Scalar&                l_inf,
   const uview_1d<Spack>&       shoc_mix)
@@ -23,6 +22,9 @@ void Functions<S,D>
   const auto maxlen = scream::shoc::Constants<Scalar>::maxlen;
   const auto length_fac = scream::shoc::Constants<Scalar>::length_fac;
   const auto vk = C::Karman;
+  
+  // Eddy turnover timescale
+  const Scalar tscale = 300;
 
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
     const Spack tkes = ekat::sqrt(tke(k));
