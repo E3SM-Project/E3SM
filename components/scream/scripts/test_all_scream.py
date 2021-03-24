@@ -1,7 +1,7 @@
 from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version
 from git_utils import get_current_head, get_current_commit, get_current_branch, \
     is_repo_clean, cleanup_repo, get_common_ancestor, merge_git_ref, checkout_git_ref, \
-    git_fetch_remote, print_last_commit
+    git_refs_difference, print_last_commit
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
     get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
@@ -162,9 +162,8 @@ class TestAllScream(object):
             expect (self._baseline_ref is None or self._baseline_ref=="origin/master",
                     "Error! Integration tests cannot be done against an arbitrary baseline ref.")
 
-            # Set baseline ref, fetch the latest version, and merge it
+            # Set baseline ref and merge it
             self._baseline_ref = "origin/master"
-            git_fetch_remote("origin")
             merge_git_ref(git_ref=self._baseline_ref, verbose=True, dry_run=self._dry_run)
 
         # By now, we should have at least one between baseline_dir and baseline_ref set (possibly both)
@@ -188,11 +187,13 @@ class TestAllScream(object):
         self._baseline_names_file = pathlib.Path(self._baseline_dir, "baseline_names")
 
         baseline_ref_sha = get_current_commit(commit=self._baseline_ref)
+
         print ("Checking baselines directory: {}".format(self._baseline_dir))
         if not self.baselines_are_present():
             print ("Some baselines were not found. Rebuilding them.")
             self._must_generate_baselines = True
         elif self.baselines_are_expired(expected_baseline_sha=baseline_ref_sha):
+
             print ("Baselines expired. Rebuilding them.")
             self._must_generate_baselines = True
         else:
@@ -386,7 +387,23 @@ class TestAllScream(object):
 
         # Different sha => baselines expired
         baseline_sha = run_cmd_no_fail("cat {}".format(self._baseline_sha_file))
-        return expected_baseline_sha != baseline_sha
+
+        ahead_behind = git_refs_difference(expected_baseline_sha,baseline_sha)
+
+        # If the copy in our repo is behind, then we need to update the repo
+        expect (int(ahead_behind[1])==0 or not self._integration_test,
+            "Error! Your repo seems stale, since the baseline sha in your repo is behind\n"
+            "       the one last used to generated them. We do *not* allow an integration\n"
+            "       test to replace baselines with older ones, for security reasons.\n"
+            "       If this is a legitimate case where baselines need to be 'rewound',\n"
+            "       e.g. b/c of a (hopefully VERY RARE) force push to master, then\n"
+            "       remove existing baselines first. Otherwise, please run 'git fetch $remote'.\n"
+            "   - baseline_ref: {}\n"
+            "   - repo baseline sha: {}\n"
+            "   - last used baseline sha: {}\n".format(self._baseline_ref,expected_baseline_sha,baseline_sha))
+
+        # If the copy in our repo is not ahead, then baselines are not expired
+        return int(ahead_behind[0]==0)
 
     ###############################################################################
     def get_machine_file(self):

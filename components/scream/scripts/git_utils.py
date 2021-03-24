@@ -50,6 +50,25 @@ def get_current_head(repo=None):
         return branch
 
 ###############################################################################
+def git_refs_difference (src_ref, tgt_ref, repo=None):
+###############################################################################
+    """
+    Return the difference in commits between src and tgg refs.
+    In particular, it returns two numbers: the number of commits
+    in src that are not in tgt, and the number of commits in tgt
+    that are not in src. The former is how much src is "ahead" of tgt,
+    while the latter is how much src is "behind" tgt.
+    """
+
+    cmd = "git rev-list --left-right --count {}...{}".format(src_ref,tgt_ref)
+    out = run_cmd_no_fail("{}".format(cmd), from_dir=repo)
+
+    ahead_behind = out.split()
+    expect(len(ahead_behind)==2, "Error! Something went wrong when running {}".format(cmd))
+
+    return ahead_behind
+
+###############################################################################
 def is_repo_clean(repo=None, silent=False):
 ###############################################################################
     rc, output, _ = run_cmd("git status --porcelain --untracked-files=no", combine_output=True, from_dir=repo)
@@ -74,14 +93,6 @@ def update_submodules(repo=None):
     Updates submodules
     """
     run_cmd_no_fail("git submodule update --init --recursive", from_dir=repo)
-
-###############################################################################
-def git_fetch_remote(remote, repo=None):
-###############################################################################
-    """
-    Fetch metadata from remote repo
-    """
-    run_cmd_no_fail("git fetch {}".format(remote), from_dir=repo)
 
 ###############################################################################
 def merge_git_ref(git_ref, repo=None, verbose=False, dry_run=False):
