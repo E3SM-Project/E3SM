@@ -44,15 +44,15 @@ if [ $skip_testing -eq 0 ]; then
   if [ $test_scripts -eq 1 ]; then
       cd scream/components/scream/scripts
       ./scripts-tests -g
-      if [ $? -ne 0 ];
+      if [ $? -ne 0 ]; then
         exit 1
       fi
       ./scripts-tests -c
-      if [ $? -ne 0 ];
+      if [ $? -ne 0 ]; then
         exit 1
       fi
       ./scripts-tests -f -m $SCREAM_MACHINE
-      if [ $? -ne 0 ];
+      if [ $? -ne 0 ]; then
         exit 1
       fi
   fi
