@@ -30,7 +30,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   // Need to register products in the factory *before* we create any atm process or grids manager.,
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
-  proc_factory.register_product("CldFrac",&create_atmosphere_process<CldFraction>);
+  proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
   gm_factory.register_product("Physics Only",&physics::create_physics_only_grids_manager);
 
   // Create the grids manager

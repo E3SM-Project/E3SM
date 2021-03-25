@@ -7,7 +7,7 @@
 
 namespace scream
 {
-  using namespace cldfrac;
+  using namespace cld_fraction;
 // =========================================================================================
 CldFraction::CldFraction (const ekat::Comm& comm, const ekat::ParameterList& params)
  : m_cldfraction_comm (comm)
@@ -63,11 +63,11 @@ void CldFraction::run_impl (const Real dt)
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 
   auto qi   = m_cld_fraction_fields_in["qi"].get_reshaped_view<const Pack**>();
-  auto alst = m_cld_fraction_fields_in["alst"].get_reshaped_view<const Pack**>();
-  auto aist = m_cld_fraction_fields_out["aist"].get_reshaped_view<Pack**>();
-  auto ast  = m_cld_fraction_fields_out["ast"].get_reshaped_view<Pack**>();
+  auto liq_cld_frac = m_cld_fraction_fields_in["alst"].get_reshaped_view<const Pack**>();
+  auto ice_cld_frac = m_cld_fraction_fields_out["aist"].get_reshaped_view<Pack**>();
+  auto tot_cld_frac  = m_cld_fraction_fields_out["ast"].get_reshaped_view<Pack**>();
 
-  CldFractionFunc::main(m_num_cols,m_num_levs,qi,alst,aist,ast);
+  CldFractionFunc::main(m_num_cols,m_num_levs,qi,liq_cld_frac,ice_cld_frac,tot_cld_frac);
 
   // Get a copy of the current timestamp (at the beginning of the step) and
   // advance it,

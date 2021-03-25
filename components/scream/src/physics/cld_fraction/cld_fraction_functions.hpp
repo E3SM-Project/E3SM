@@ -7,7 +7,7 @@
 #include "ekat/ekat_workspace.hpp"
 
 namespace scream {
-namespace cldfrac {
+namespace cld_fraction {
 
 template <typename ScalarT, typename DeviceT>
 struct CldFractionFunctions
@@ -45,28 +45,28 @@ struct CldFractionFunctions
     const Int nj, 
     const Int nk,
     const view_2d<const Pack>& qi, 
-    const view_2d<const Pack>& alst, 
-    const view_2d<Pack>& aist, 
-    const view_2d<Pack>& ast);
+    const view_2d<const Pack>& liq_cld_frac, 
+    const view_2d<Pack>& ice_cld_frac, 
+    const view_2d<Pack>& tot_cld_frac);
 
   KOKKOS_FUNCTION
   static void calc_icefrac( 
     const MemberType& team,
     const Int& nk,
     const uview_1d<const Spack>& qi,
-    const uview_1d<Spack>&       aist);
+    const uview_1d<Spack>&       ice_cld_frac);
 
   KOKKOS_FUNCTION
   static void calc_totalfrac( 
     const MemberType& team,
     const Int& nk,
-    const uview_1d<const Spack>& alst,
-    const uview_1d<const Spack>& aist,
-    const uview_1d<Spack>&       ast);
+    const uview_1d<const Spack>& liq_cld_frac,
+    const uview_1d<const Spack>& ice_cld_frac,
+    const uview_1d<Spack>&       tot_cld_frac);
 
 }; // struct Functions
 
-} // namespace cldfrac
+} // namespace cld_fraction
 } // namespace scream
 
 #endif // CLD_FRAC_FUNCTIONS_HPP

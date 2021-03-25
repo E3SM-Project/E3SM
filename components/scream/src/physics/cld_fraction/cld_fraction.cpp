@@ -2,7 +2,7 @@
 #include "share/scream_types.hpp"
 
 namespace scream {
-namespace cldfrac {
+namespace cld_fraction {
 
 /*
  * Explicit instantiation for doing main on Reals using the
@@ -11,5 +11,5 @@ namespace cldfrac {
 
 template struct CldFractionFunctions<Real,DefaultDevice>;
 
-} // namespace cldfrac
+} // namespace cld_fraction
 } // namespace scream

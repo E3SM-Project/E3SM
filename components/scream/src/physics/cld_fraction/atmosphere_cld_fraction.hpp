@@ -17,7 +17,7 @@ namespace scream
  * in its list of subcomponents (the AD should make sure of this).
 */
 
-  using namespace cldfrac;
+  using namespace cld_fraction;
   using CldFractionFunc = CldFractionFunctions<Real, DefaultDevice>;
   using Spack           = CldFractionFunc::Spack;
   using Smask           = CldFractionFunc::Smask;

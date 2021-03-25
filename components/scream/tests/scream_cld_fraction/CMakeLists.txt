@@ -1,10 +1,10 @@
 INCLUDE (ScreamUtils)
 
-SET (cldfracLib cldfrac)
-SET (NEED_LIBS ${cldfracLib} scream_control scream_share)
+SET (cld_fractionLib cld_fraction)
+SET (NEED_LIBS ${cld_fractionLib} scream_control scream_share)
 
 # Test atmosphere processes
-CreateUnitTest(cldfrac_stand_alone "cld_fraction_stand_alone.cpp" "${NEED_LIBS}" LABELS "cldfrac;physics")
+CreateUnitTest(cld_fraction_stand_alone "cld_fraction_stand_alone.cpp" "${NEED_LIBS}" LABELS "cld_fraction;physics")
 
 # Copy yaml input file to run directory
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
