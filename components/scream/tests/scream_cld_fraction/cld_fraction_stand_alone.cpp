@@ -49,10 +49,10 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   // Because this is a relatively simple test based on two variables, we initialize them here
   // rather than use the netCDF input structure.
   auto& field_repo = ad.get_field_repo();
-//  auto& grid       = ad.get_grids_manager()->get_grid("Physics");
+  const auto& grid = ad.get_grids_manager()->get_grid("Physics");
   
-  int num_cols = 866; //grid->get_num_local_dofs(); // Number of columns on this rank
-  int num_levs = 72; //grid->get_num_vertical_levels();  // Number of levels per column
+  int num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
+  int num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   const auto& qi = field_repo.get_field("qi","Physics").get_reshaped_view<Real**,Host>();
   const auto& liq_cld_frac = field_repo.get_field("alst","Physics").get_reshaped_view<Real**,Host>();  //TODO: This FM name will probably change soon.
