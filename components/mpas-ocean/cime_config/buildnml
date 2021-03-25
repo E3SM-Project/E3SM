@@ -289,7 +289,7 @@ def buildnml(case, caseroot, compname):
     elif ocn_grid == 'WCAtl12to45E2r4':
         decomp_date = '210318'
         decomp_prefix = 'mpas-o.graph.info.'
-        restoring_file = 'sss.PHC2_monthlyClimatology.WCAtl12to45E2r4.21XXXX.nc'
+        restoring_file = 'sss.PHC2_monthlyClimatology.WCAtl12to45E2r4.210325.nc'
         analysis_mask_file = 'WCAtl12to45E2r4_moc_masks_and_transects.nc'
         ic_date = '210318'
         ic_prefix = 'ocean.WCAtl12to45E2r4'
