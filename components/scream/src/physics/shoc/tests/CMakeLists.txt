@@ -21,9 +21,7 @@ set(SHOC_TESTS_SRCS
     shoc_length_tests.cpp
     shoc_brunt_length_tests.cpp
     shoc_l_inf_length_tests.cpp
-    shoc_conv_vel_length_tests.cpp
     shoc_check_length_tests.cpp
-    shoc_conv_time_length_tests.cpp
     shoc_mix_length_tests.cpp
     shoc_fterm_input_third_moms_tests.cpp
     shoc_fterm_diag_third_moms_tests.cpp

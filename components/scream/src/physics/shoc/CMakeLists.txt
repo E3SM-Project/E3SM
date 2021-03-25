@@ -44,11 +44,9 @@ if (NOT CUDA_BUILD)
     shoc_diag_second_shoc_moments.cpp
     shoc_compute_brunt_shoc_length.cpp
     shoc_check_length_scale_shoc_length.cpp
-    shoc_compute_conv_vel_shoc_length.cpp
     shoc_compute_l_inf_shoc_length.cpp
     shoc_diag_obklen.cpp
     shoc_compute_shr_prod.cpp
-    shoc_compute_conv_time_shoc_length.cpp
     shoc_length.cpp
     shoc_energy_fixer.cpp
     shoc_compute_shoc_vapor.cpp

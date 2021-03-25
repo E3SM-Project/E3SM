@@ -357,17 +357,6 @@ struct Functions
     const uview_1d<Spack>& shoc_mix);
 
   KOKKOS_FUNCTION
-  static void compute_conv_vel_shoc_length(
-    const MemberType&            team,
-    const Int&                   nlev,
-    const Scalar&                pblh,
-    const uview_1d<const Spack>& zt_grid,
-    const uview_1d<const Spack>& dz_zt,
-    const uview_1d<const Spack>& thv,
-    const uview_1d<const Spack>& wthv_sec,
-    Scalar&                      conv_vel);
-
-  KOKKOS_FUNCTION
   static void shoc_diag_obklen(
     const Scalar& uw_sfc,
     const Scalar& vw_sfc,
@@ -793,7 +782,6 @@ struct Functions
 # include "shoc_compute_brunt_shoc_length_impl.hpp"
 # include "shoc_compute_l_inf_shoc_length_impl.hpp"
 # include "shoc_check_length_scale_shoc_length_impl.hpp"
-# include "shoc_compute_conv_vel_shoc_length_impl.hpp"
 # include "shoc_diag_obklen_impl.hpp"
 # include "shoc_pblintd_cldcheck_impl.hpp"
 # include "shoc_compute_conv_time_shoc_length_impl.hpp"

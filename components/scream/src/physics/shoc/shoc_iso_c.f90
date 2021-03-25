@@ -648,36 +648,6 @@ contains
 
   end subroutine compute_l_inf_shoc_length_c
 
-  subroutine compute_conv_vel_shoc_length_c(nlev,shcol,pblh,zt_grid,dz_zt,&
-                                            thv,wthv_sec,conv_vel) bind (C)
-    use shoc, only: compute_conv_vel_shoc_length
-
-    integer(kind=c_int), intent(in), value :: nlev
-    integer(kind=c_int), intent(in), value :: shcol
-    real(kind=c_real), intent(in) :: pblh(shcol)
-    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
-    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
-    real(kind=c_real), intent(in) :: thv(shcol,nlev)
-    real(kind=c_real), intent(in) :: wthv_sec(shcol,nlev)
-
-    real(kind=c_real), intent(out) :: conv_vel(shcol)
-
-    call compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
-
-  end subroutine compute_conv_vel_shoc_length_c
-
-  subroutine compute_conv_time_shoc_length_c(shcol,pblh,conv_vel,tscale) bind (C)
-    use shoc, only: compute_conv_time_shoc_length
-
-    integer(kind=c_int), intent(in), value :: shcol
-    real(kind=c_real), intent(in) :: pblh(shcol)
-    real(kind=c_real), intent(inout) :: conv_vel(shcol)
-    real(kind=c_real), intent(out) :: tscale(shcol)
-
-    call compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
-
-  end subroutine compute_conv_time_shoc_length_c
-
   subroutine compute_shoc_mix_shoc_length_c(nlev,shcol,tke,brunt,&
                                          zt_grid,l_inf,shoc_mix) bind (C)
     use shoc, only: compute_shoc_mix_shoc_length

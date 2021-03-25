@@ -381,20 +381,6 @@ struct ComputeLInfShocLengthData : public PhysicsTestData {
   PTD_STD_DEF(ComputeLInfShocLengthData, 2, shcol, nlev);
 };
 
-struct ComputeConvVelShocLengthData : public PhysicsTestData {
-  // Inputs
-  Int shcol, nlev;
-  Real *pblh, *zt_grid, *dz_zt, *thv, *wthv_sec;
-
-  // Inputs/Outputs
-  Real *conv_vel;
-
-  ComputeConvVelShocLengthData(Int shcol_, Int nlev_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh, &conv_vel }, { &zt_grid, &dz_zt, &thv, &wthv_sec }}), shcol(shcol_), nlev(nlev_) {}
-
-  PTD_STD_DEF(ComputeConvVelShocLengthData, 2, shcol, nlev);
-};
-
 struct ComputeConvTimeShocLengthData : public PhysicsTestData {
   // Inputs
   Int shcol;
@@ -925,8 +911,6 @@ void eddy_diffusivities                             (EddyDiffusivitiesData& d);
 void shoc_length                                    (ShocLengthData& d);
 void compute_brunt_shoc_length                      (ComputeBruntShocLengthData& d);
 void compute_l_inf_shoc_length                      (ComputeLInfShocLengthData& d);
-void compute_conv_vel_shoc_length                   (ComputeConvVelShocLengthData& d);
-void compute_conv_time_shoc_length                  (ComputeConvTimeShocLengthData& d);
 void compute_shoc_mix_shoc_length                   (ComputeShocMixShocLengthData& d);
 void check_length_scale_shoc_length                 (CheckLengthScaleShocLengthData& d);
 void fterms_input_for_diag_third_shoc_moment        (FtermsInputForDiagThirdShocMomentData& d);
@@ -1018,8 +1002,6 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
 void shoc_diag_obklen_f(Int shcol, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, Real* wqw_sfc,
                         Real* thl_sfc, Real* cldliq_sfc, Real* qv_sfc, Real* ustar, Real* kbfs, Real* obklen);
 void shoc_pblintd_cldcheck_f(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cldn, Real* pblh);
-void compute_conv_time_shoc_length_f(Int shcol, Real *pblh, Real *conv_vel,
-                                     Real *tscale);
 void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_wind, Real* v_wind, Real* sterm);
 void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
                    Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* tke,

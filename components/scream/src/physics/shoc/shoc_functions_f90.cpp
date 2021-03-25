@@ -120,13 +120,6 @@ void compute_brunt_shoc_length_c(Int nlev, Int nlevi, Int shcol ,Real *dz_zt,
 void compute_l_inf_shoc_length_c(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt,
                                  Real *tke, Real *l_inf);
 
-void compute_conv_vel_shoc_length_c(Int nlev, Int shcol, Real *pblh, Real *zt_grid,
-                                    Real *dz_zt, Real *thv, Real *wthv_sec,
-                                    Real *conv_vel);
-
-void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel,
-                                     Real *tscale);
-
 void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
                                     Real *zt_grid, Real *l_inf, Real *shoc_mix);
 
@@ -491,20 +484,6 @@ void compute_l_inf_shoc_length(ComputeLInfShocLengthData& d)
   d.transpose<ekat::TransposeDirection::c2f>();
   compute_l_inf_shoc_length_c(d.nlev, d.shcol, d.zt_grid, d.dz_zt, d.tke, d.l_inf);
   d.transpose<ekat::TransposeDirection::f2c>();
-}
-
-void compute_conv_vel_shoc_length(ComputeConvVelShocLengthData& d)
-{
-  shoc_init(d.nlev, true);
-  d.transpose<ekat::TransposeDirection::c2f>();
-  compute_conv_vel_shoc_length_c(d.nlev, d.shcol, d.pblh, d.zt_grid, d.dz_zt, d.thv, d.wthv_sec, d.conv_vel);
-  d.transpose<ekat::TransposeDirection::f2c>();
-}
-
-void compute_conv_time_shoc_length(ComputeConvTimeShocLengthData& d)
-{
-  shoc_init(1, true); // single level function
-  compute_conv_time_shoc_length_c(d.shcol, d.pblh, d.conv_vel, d.tscale);
 }
 
 void compute_shoc_mix_shoc_length(ComputeShocMixShocLengthData& d)
@@ -1810,67 +1789,6 @@ void check_length_scale_shoc_length_f(Int nlev, Int shcol, Real* host_dx, Real* 
   ekat::device_to_host({shoc_mix}, shcol, nlev, inout_views, true);
 }
 
-void compute_conv_vel_shoc_length_f(Int nlev, Int shcol, Real *pblh, Real *zt_grid,
-                                    Real *dz_zt, Real *thv, Real *wthv_sec,
-                                    Real *conv_vel)
-{
-  using SHF = Functions<Real, DefaultDevice>;
-
-  using Scalar     = typename SHF::Scalar;
-  using Spack      = typename SHF::Spack;
-  using Pack1d     = typename ekat::Pack<Real,1>;
-  using view_1d    = typename SHF::view_1d<Pack1d>;
-  using view_2d    = typename SHF::view_2d<Spack>;
-  using KT         = typename SHF::KT;
-  using ExeSpace   = typename KT::ExeSpace;
-  using MemberType = typename SHF::MemberType;
-
-  // Sync to device
-  std::vector<view_1d> temp_1d_d(1);
-  std::vector<view_2d> temp_2d_d(4);
-  ekat::host_to_device({pblh}, shcol, temp_1d_d);
-  ekat::host_to_device({zt_grid, dz_zt, thv, wthv_sec}, shcol, nlev, temp_2d_d, true);
-
-  // inputs
-  view_1d
-    pblh_d (temp_1d_d[0]);
-
-  view_2d
-    zt_grid_d (temp_2d_d[0]),
-    dz_zt_d   (temp_2d_d[1]),
-    thv_d     (temp_2d_d[2]),
-    wthv_sec_d(temp_2d_d[3]);
-
-  // outputs
-  view_1d
-    conv_vel_d("conv_vel", shcol);
-
-  const Int nk_pack = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const Int i = team.league_rank();
-
-    // Inputs
-    const Scalar pblh_s{pblh_d(i)[0]};
-    const auto zt_grid_s  = ekat::subview(zt_grid_d, i);
-    const auto dz_zt_s    = ekat::subview(dz_zt_d, i);
-    const auto thv_s      = ekat::subview(thv_d, i);
-    const auto wthv_sec_s = ekat::subview(wthv_sec_d, i);
-
-    // Output
-    Scalar conv_vel_s{0};
-
-    SHF::compute_conv_vel_shoc_length(team, nlev, pblh_s, zt_grid_s, dz_zt_s, thv_s, wthv_sec_s,
-                                      conv_vel_s);
-
-    conv_vel_d(i)[0] = conv_vel_s;
-  });
-
-  // Sync back to host
-  std::vector<view_1d> inout_views = {conv_vel_d};
-  ekat::device_to_host({conv_vel}, shcol, inout_views);
-}
-
 void shoc_diag_obklen_f(Int shcol, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, Real* wqw_sfc, Real* thl_sfc,
                         Real* cldliq_sfc, Real* qv_sfc, Real* ustar, Real* kbfs, Real* obklen)
 {
@@ -1964,37 +1882,6 @@ void shoc_pblintd_cldcheck_f(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cld
 
   std::vector<view_1d> inout_views = {pblh_1d};
   ekat::device_to_host({pblh}, shcol, inout_views);
-}
-
-void compute_conv_time_shoc_length_f(Int shcol, Real *pblh, Real *conv_vel, Real *tscale)
-{
-  using SHF       = Functions<Real, DefaultDevice>;
-  using Scalar     = typename SHF::Scalar;
-  using Pack1      = typename ekat::Pack<Real, 1>;
-  using view_1d    = typename SHF::view_1d<Pack1>;
-
-  std::vector<view_1d> temp_d(3);
-  ekat::host_to_device({pblh, conv_vel, tscale}, shcol, temp_d);
-
-  view_1d
-    pblh_d(temp_d[0]),
-    conv_vel_d(temp_d[1]),
-    tscale_d(temp_d[2]);
-
-  Kokkos::parallel_for("compute_conv_time_shoc_length", shcol, KOKKOS_LAMBDA (const int& i) {
-
-     Scalar pblh_s{pblh_d(i)[0]};
-     Scalar conv_vel_s{conv_vel_d(i)[0]};
-     Scalar tscale_s{tscale_d(i)[0]};
-
-     SHF::compute_conv_time_shoc_length(pblh_s, conv_vel_s, tscale_s);
-
-     conv_vel_d(i)[0] = conv_vel_s;
-     tscale_d(i)[0]  = tscale_s;
-   });
-
-  std::vector<view_1d> inout_views = {conv_vel_d, tscale_d};
-  ekat::device_to_host({conv_vel, tscale}, shcol, inout_views);
 }
 
 void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,

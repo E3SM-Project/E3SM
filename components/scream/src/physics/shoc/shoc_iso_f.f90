@@ -287,16 +287,6 @@ subroutine shoc_pblintd_cldcheck_f(shcol, nlev, nlevi, zi, cldn, pblh) bind(C)
   real(kind=c_real), intent(inout) :: pblh(shcol)
 end subroutine shoc_pblintd_cldcheck_f
 
-subroutine compute_conv_time_shoc_length_f(shcol,pblh,conv_vel,tscale) bind (C)
-  use iso_c_binding
-
-  integer(kind=c_int), intent(in), value :: shcol
-  real(kind=c_real), intent(in) :: pblh(shcol)
-  real(kind=c_real), intent(inout) :: conv_vel(shcol)
-  real(kind=c_real), intent(out) :: tscale(shcol)
-
-end subroutine compute_conv_time_shoc_length_f
-
 subroutine shoc_length_f(shcol, nlev, nlevi, host_dx, host_dy, &
                          zt_grid, zi_grid, dz_zt, tke, &
                          thv, brunt, shoc_mix) bind (C)
