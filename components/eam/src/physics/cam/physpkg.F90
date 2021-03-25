@@ -15,7 +15,7 @@ module physpkg
 
   use shr_kind_mod,     only: i8 => shr_kind_i8, r8 => shr_kind_r8
   use spmd_utils,       only: masterproc
-  use physconst,        only: latvap, latice, rh2o
+  use physconst,        only: latvap, latice, rh2o, cpair
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
        physics_ptend, physics_tend_init,    &
        physics_type_alloc, physics_ptend_dealloc,&
@@ -50,6 +50,9 @@ module physpkg
 
   implicit none
   private
+
+!!!!! AAAAAAAAAAAAA copied from check_energy
+  real(r8), parameter :: cpsw = 3.996e3  !! cp of sea water used in MPAS [J/kg/K]
 
   !  Physics buffer index
   integer ::  teout_idx          = 0  
@@ -102,6 +105,18 @@ module physpkg
 
 !#define ADDCP
 #undef ADDCP
+
+#ifdef ADDCP
+
+#define USE_CPSW
+#define USE_TS
+
+#else
+
+#undef USE_CPSW
+#undef USE_TS
+
+#endif
 
 
   !======================================================================= 
@@ -2807,7 +2822,14 @@ end if ! l_rad
 
 !use cam_out to compute cpterm
     state%cptermp(:ncol) = 1000.0 * cpair * state%t(:ncol,pver) * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
-    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver) * cam_in%cflx(:ncol,1)
+
+#if defined(USE_CPSW) && defined(USE_TS)
+    state%cpterme(:ncol) =          cpsw  * cam_in%ts(:ncol)        * cam_in%cflx(:ncol,1)
+#elif defined(USE_CPSW) && !defined(USE_TS)
+    state%cpterme(:ncol) =          cpsw  * state%t(:ncol,pver)     * cam_in%cflx(:ncol,1)
+#else
+    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     * cam_in%cflx(:ncol,1)
+#endif
 
     call check_tracers_fini(tracerint)
 
