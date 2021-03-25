@@ -81,23 +81,23 @@ namespace scream {
         // TODO: how can I just keep these around without having to create every time?
         // They are just pointers, so should be able to keep them somewhere else and just associate them once?
         // Get device views
-        auto d_pmid = m_rrtmgp_fields_in.at("pmid").get_view();
-        auto d_pint = m_rrtmgp_fields_in.at("pint").get_view();
-        auto d_tmid = m_rrtmgp_fields_in.at("tmid").get_view();
-        auto d_tint = m_rrtmgp_fields_in.at("tint").get_view();
-        auto d_gas_vmr = m_rrtmgp_fields_in.at("gas_vmr").get_view();
-        auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("sfc_alb_dir").get_view();
-        auto d_sfc_alb_dif = m_rrtmgp_fields_in.at("sfc_alb_dif").get_view();
-        auto d_mu0 = m_rrtmgp_fields_in.at("mu0").get_view();
-        auto d_lwp = m_rrtmgp_fields_in.at("lwp").get_view();
-        auto d_iwp = m_rrtmgp_fields_in.at("iwp").get_view();
-        auto d_rel = m_rrtmgp_fields_in.at("rel").get_view();
-        auto d_rei = m_rrtmgp_fields_in.at("rei").get_view();
-        auto d_sw_flux_up = m_rrtmgp_fields_out.at("sw_flux_up").get_view();
-        auto d_sw_flux_dn = m_rrtmgp_fields_out.at("sw_flux_dn").get_view();
-        auto d_sw_flux_dn_dir = m_rrtmgp_fields_out.at("sw_flux_dn_dir").get_view();
-        auto d_lw_flux_up = m_rrtmgp_fields_out.at("lw_flux_up").get_view();
-        auto d_lw_flux_dn = m_rrtmgp_fields_out.at("lw_flux_dn").get_view();
+        auto d_pmid = m_rrtmgp_fields_in.at("pmid").get_reshaped_view<const Real**>();
+        auto d_pint = m_rrtmgp_fields_in.at("pint").get_reshaped_view<const Real**>();
+        auto d_tmid = m_rrtmgp_fields_in.at("tmid").get_reshaped_view<const Real**>();
+        auto d_tint = m_rrtmgp_fields_in.at("tint").get_reshaped_view<const Real**>();
+        auto d_gas_vmr = m_rrtmgp_fields_in.at("gas_vmr").get_reshaped_view<const Real***>();
+        auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("sfc_alb_dir").get_reshaped_view<const Real**>();
+        auto d_sfc_alb_dif = m_rrtmgp_fields_in.at("sfc_alb_dif").get_reshaped_view<const Real**>();
+        auto d_mu0 = m_rrtmgp_fields_in.at("mu0").get_reshaped_view<const Real*>();
+        auto d_lwp = m_rrtmgp_fields_in.at("lwp").get_reshaped_view<const Real**>();
+        auto d_iwp = m_rrtmgp_fields_in.at("iwp").get_reshaped_view<const Real**>();
+        auto d_rel = m_rrtmgp_fields_in.at("rel").get_reshaped_view<const Real**>();
+        auto d_rei = m_rrtmgp_fields_in.at("rei").get_reshaped_view<const Real**>();
+        auto d_sw_flux_up = m_rrtmgp_fields_out.at("sw_flux_up").get_reshaped_view<Real**>();
+        auto d_sw_flux_dn = m_rrtmgp_fields_out.at("sw_flux_dn").get_reshaped_view<Real**>();
+        auto d_sw_flux_dn_dir = m_rrtmgp_fields_out.at("sw_flux_dn_dir").get_reshaped_view<Real**>();
+        auto d_lw_flux_up = m_rrtmgp_fields_out.at("lw_flux_up").get_reshaped_view<Real**>();
+        auto d_lw_flux_dn = m_rrtmgp_fields_out.at("lw_flux_dn").get_reshaped_view<Real**>();
  
         // Map to YAKL
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay  ("p_lay", const_cast<Real*>(d_pmid.data()), m_ncol, m_nlay);
@@ -147,6 +147,7 @@ namespace scream {
           sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
           lw_flux_up, lw_flux_dn
         );
+
     }
 
     void RRTMGPRadiation::finalize_impl  () {

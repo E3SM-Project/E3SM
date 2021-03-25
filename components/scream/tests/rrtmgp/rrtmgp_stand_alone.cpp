@@ -93,18 +93,18 @@ namespace scream {
         REQUIRE(nlay == sw_flux_up_ref.dimension[1]-1);
 
         // Grab reshaped views from the field manager and wrap pointers in yakl arrays
-        auto& d_pmid= field_repo.get_field("pmid", "Physics").get_view();
-        auto& d_tmid= field_repo.get_field("tmid", "Physics").get_view();
-        auto& d_pint= field_repo.get_field("pint", "Physics").get_view();
-        auto& d_tint= field_repo.get_field("tint", "Physics").get_view();
-        auto& d_sfc_alb_dir= field_repo.get_field("sfc_alb_dir", "Physics").get_view();
-        auto& d_sfc_alb_dif= field_repo.get_field("sfc_alb_dif", "Physics").get_view();
-        auto& d_lwp= field_repo.get_field("lwp", "Physics").get_view();
-        auto& d_iwp= field_repo.get_field("iwp", "Physics").get_view();
-        auto& d_rel= field_repo.get_field("rel", "Physics").get_view();
-        auto& d_rei= field_repo.get_field("rei", "Physics").get_view();
-        auto& d_mu0= field_repo.get_field("mu0", "Physics").get_view();
-        auto& d_gas_vmr = field_repo.get_field("gas_vmr", "Physics").get_view();
+        auto d_pmid = field_repo.get_field("pmid", "Physics").get_reshaped_view<Real**>();
+        auto d_tmid = field_repo.get_field("tmid", "Physics").get_reshaped_view<Real**>();
+        auto d_pint = field_repo.get_field("pint", "Physics").get_reshaped_view<Real**>();
+        auto d_tint = field_repo.get_field("tint", "Physics").get_reshaped_view<Real**>();
+        auto d_sfc_alb_dir = field_repo.get_field("sfc_alb_dir", "Physics").get_reshaped_view<Real**>();
+        auto d_sfc_alb_dif = field_repo.get_field("sfc_alb_dif", "Physics").get_reshaped_view<Real**>();
+        auto d_lwp = field_repo.get_field("lwp", "Physics").get_reshaped_view<Real**>();
+        auto d_iwp = field_repo.get_field("iwp", "Physics").get_reshaped_view<Real**>();
+        auto d_rel = field_repo.get_field("rel", "Physics").get_reshaped_view<Real**>();
+        auto d_rei = field_repo.get_field("rei", "Physics").get_reshaped_view<Real**>();
+        auto d_mu0 = field_repo.get_field("mu0", "Physics").get_reshaped_view<Real*>();
+        auto d_gas_vmr = field_repo.get_field("gas_vmr", "Physics").get_reshaped_view<Real***>();
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay("p_lay", d_pmid.data(), ncol, nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay("t_lay", d_tmid.data(), ncol, nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev("p_lev", d_pint.data(), ncol, nlay+1);
@@ -146,11 +146,11 @@ namespace scream {
 
         // Check values; need to get fluxes from field manager first
         // The AD should have called RRTMGP to calculate these values in the ad.run() call
-        auto& d_sw_flux_up = field_repo.get_field("sw_flux_up", "Physics").get_view();
-        auto& d_sw_flux_dn = field_repo.get_field("sw_flux_dn", "Physics").get_view();
-        auto& d_sw_flux_dn_dir = field_repo.get_field("sw_flux_dn_dir", "Physics").get_view();
-        auto& d_lw_flux_up = field_repo.get_field("lw_flux_up", "Physics").get_view();
-        auto& d_lw_flux_dn = field_repo.get_field("lw_flux_dn", "Physics").get_view();
+        auto d_sw_flux_up = field_repo.get_field("sw_flux_up", "Physics").get_reshaped_view<Real**>();
+        auto d_sw_flux_dn = field_repo.get_field("sw_flux_dn", "Physics").get_reshaped_view<Real**>();
+        auto d_sw_flux_dn_dir = field_repo.get_field("sw_flux_dn_dir", "Physics").get_reshaped_view<Real**>();
+        auto d_lw_flux_up = field_repo.get_field("lw_flux_up", "Physics").get_reshaped_view<Real**>();
+        auto d_lw_flux_dn = field_repo.get_field("lw_flux_dn", "Physics").get_reshaped_view<Real**>();
         yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_up_test("sw_flux_up_test", d_sw_flux_up.data(), ncol, nlay+1);
         yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn_test("sw_flux_dn_test", d_sw_flux_dn.data(), ncol, nlay+1);
         yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn_dir_test("sw_flux_dn_dir_test", d_sw_flux_dn_dir.data(), ncol, nlay+1);
