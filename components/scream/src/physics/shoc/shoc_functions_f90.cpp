@@ -110,8 +110,8 @@ void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
 
 void shoc_length_c(Int shcol, Int nlev, Int nlevi, Real *host_dx,
-                   Real *host_dy, Real *tke, Real *zt_grid,
-                   Real *zi_grid, Real *dz_zt,  Real *thetal,
+                   Real *host_dy, Real *zt_grid,
+                   Real *zi_grid, Real *dz_zt,  Real *tke,
                    Real *thv, Real *brunt, Real *shoc_mix);
 
 void compute_brunt_shoc_length_c(Int nlev, Int nlevi, Int shcol ,Real *dz_zt,
@@ -473,7 +473,7 @@ void shoc_length(ShocLengthData& d)
 {
   shoc_init(d.nlev, true);
   d.transpose<ekat::TransposeDirection::c2f>();
-  shoc_length_c(d.shcol, d.nlev, d.nlevi, d.host_dx, d.host_dy, d.tke, d.zt_grid, d.zi_grid, d.dz_zt, d.thetal, d.thv, d.brunt, d.shoc_mix);
+  shoc_length_c(d.shcol, d.nlev, d.nlevi, d.host_dx, d.host_dy, d.zt_grid, d.zi_grid, d.dz_zt, d.tke, d.thv, d.brunt, d.shoc_mix);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
@@ -1998,8 +1998,8 @@ void compute_conv_time_shoc_length_f(Int shcol, Real *pblh, Real *conv_vel, Real
 }
 
 void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
-                   Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* dz_zi, Real* tke,
-                   Real*thetal, Real* thv, Real*brunt, Real* shoc_mix)
+                   Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* tke,
+                   Real* thv, Real*brunt, Real* shoc_mix)
 {
   using SHF = Functions<Real, DefaultDevice>;
 
@@ -2014,7 +2014,7 @@ void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
 
   std::vector<view_1d> temp_1d_d(2);
   std::vector<view_2d> temp_2d_d(7);
-  std::vector<int> dim1_sizes(8, shcol);
+  std::vector<int> dim1_sizes(7, shcol);
   std::vector<int> dim2_sizes = {nlev, nlev, nlevi, nlev,
                                  nlev, nlev, nlev,  nlev};
   std::vector<const Real*> ptr_array = {tke,      zt_grid, zi_grid, dz_zt,

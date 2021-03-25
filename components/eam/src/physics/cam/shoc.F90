@@ -415,7 +415,7 @@ subroutine shoc_main ( &
        shcol,nlev,nlevi,&                ! Input
        host_dx,host_dy,&                 ! Input
        zt_grid,zi_grid,dz_zt,&           ! Input
-       tke,thetal,thv,&                  ! Input
+       tke,thv,&                         ! Input
        brunt,shoc_mix)                   ! Output
 
     ! Advance the SGS TKE equation
@@ -3389,7 +3389,7 @@ subroutine shoc_length(&
          shcol,nlev,nlevi,&            ! Input
          host_dx,host_dy,&             ! Input
          zt_grid,zi_grid,dz_zt,&       ! Input
-         tke,thetal,thv,&              ! Input
+         tke,thv,&                     ! Input
          brunt,shoc_mix)               ! Output
 
   ! Purpose of this subroutine is to compute the SHOC
@@ -3422,8 +3422,6 @@ subroutine shoc_length(&
   real(rtype), intent(in) :: zi_grid(shcol,nlevi)
   ! dz on midpoint grid [m]
   real(rtype), intent(in) :: dz_zt(shcol,nlev)
-  ! liquid water potential temperature [K]
-  real(rtype), intent(in) :: thetal(shcol,nlev)
   ! virtual potential temperature [K]
   real(rtype), intent(in) :: thv(shcol,nlev)
 
@@ -3442,7 +3440,7 @@ subroutine shoc_length(&
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
       call shoc_length_f(shcol,nlev,nlevi,host_dx,host_dy,&
-                         zt_grid,zi_grid,dz_zt,tke,thetal,&
+                         zt_grid,zi_grid,dz_zt,tke,&
                          thv,brunt,shoc_mix)
 
       return

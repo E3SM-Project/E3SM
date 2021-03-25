@@ -298,7 +298,7 @@ subroutine compute_conv_time_shoc_length_f(shcol,pblh,conv_vel,tscale) bind (C)
 end subroutine compute_conv_time_shoc_length_f
 
 subroutine shoc_length_f(shcol, nlev, nlevi, host_dx, host_dy, &
-                         zt_grid, zi_grid, dz_zt, tke, thetal, &
+                         zt_grid, zi_grid, dz_zt, tke, &
                          thv, brunt, shoc_mix) bind (C)
   use iso_c_binding
 
@@ -309,11 +309,10 @@ subroutine shoc_length_f(shcol, nlev, nlevi, host_dx, host_dy, &
   real(kind=c_real), intent(in) :: host_dx(shcol)
   real(kind=c_real), intent(in) :: host_dy(shcol)
 
-  real(kind=c_real), intent(in) :: tke(shcol,nlev)
   real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
   real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
   real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
-  real(kind=c_real), intent(in) :: thetal(shcol,nlev)
+  real(kind=c_real), intent(in) :: tke(shcol,nlev)  
   real(kind=c_real), intent(in) :: thv(shcol,nlev)
 
   real(kind=c_real), intent(out) :: brunt(shcol,nlev)

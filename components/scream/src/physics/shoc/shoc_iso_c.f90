@@ -593,7 +593,7 @@ contains
   end subroutine calc_shoc_vertflux_c
 
   subroutine shoc_length_c(shcol, nlev, nlevi, host_dx, host_dy, &
-                tke, zt_grid, zi_grid, dz_zt, thetal, thv, brunt, &
+                zt_grid, zi_grid, dz_zt, tke, thv, brunt, &
 		shoc_mix) bind (C)
     use shoc, only: shoc_length
 
@@ -606,14 +606,13 @@ contains
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
     real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
     real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
-    real(kind=c_real), intent(in) :: thetal(shcol,nlev)
     real(kind=c_real), intent(in) :: thv(shcol,nlev)
 
     real(kind=c_real), intent(out) :: brunt(shcol,nlev)
     real(kind=c_real), intent(out) :: shoc_mix(shcol,nlev)
 
     call shoc_length(shcol, nlev, nlevi, host_dx, host_dy, &
-                tke, zt_grid, zi_grid, dz_zt, thetal, thv, &
+                zt_grid, zi_grid, dz_zt, tke, thv, &
 		brunt, shoc_mix)
 
   end subroutine shoc_length_c

@@ -223,7 +223,7 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
       // expects data in fortran layout
       shoc_length_f(d.shcol,d.nlev,d.nlevi,d.host_dx,d.host_dy,
                     d.zt_grid,d.zi_grid,d.dz_zt,d.tke,
-                    d.thetal,d.thv,d.brunt,d.shoc_mix);
+                    d.thv,d.brunt,d.shoc_mix);
       d.transpose<ekat::TransposeDirection::f2c>();
     }
 
