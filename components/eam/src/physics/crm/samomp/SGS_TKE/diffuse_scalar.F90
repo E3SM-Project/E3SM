@@ -53,7 +53,7 @@ contains
         fdiff(icrm,k)=0.
       enddo
     enddo
-    !$omp target teams distribute parallel do collapse(2)
+    !$omp target teams distribute parallel do collapse(4)
     do k=1,nzm
       do j=1,ny
         do i=1,nx
