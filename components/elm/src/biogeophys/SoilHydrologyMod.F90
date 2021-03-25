@@ -1518,7 +1518,7 @@ contains
                 dzsum  = dzsum + dzmm(c,j)
                 icefracsum = icefracsum + icefrac(c,j) * dzmm(c,j)
              end do
-             ! add ice impedance factor to baseflow REMOVED BY TAO - ICE NOT AN IMPEDENCE IN SALTWATER SYSTEMS
+             ! add ice impedance factor to baseflow
              if(origflag == 1) then 
                 if (use_vichydro) then
 #ifndef _OPENACC
