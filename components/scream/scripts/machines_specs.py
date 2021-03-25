@@ -16,13 +16,13 @@ from utils import expect, get_cpu_core_count, run_cmd_no_fail
 import os, sys, pathlib
 
 def get_weaver_queue():
-  out = run_cmd_no_fail("bhosts | awk '{ if($2==\"ok\" && $6==0) print $1}' | head -1")
-  if (out in ["weaver1", "weaver2", "weaver3", "weaver4", "weaver5", "weaver6", "weaver7", "weaver8"] or out==""):
-    queue = "rhel7W"
-  else:
-    queue = "dev"
+    out = run_cmd_no_fail("bhosts | awk '{ if($2==\"ok\" && $6==0) print $1}' | head -1")
+    if (out in ["weaver1", "weaver2", "weaver3", "weaver4", "weaver5", "weaver6", "weaver7", "weaver8"] or out==""):
+        queue = "rhel7W"
+    else:
+        queue = "dev"
 
-  return queue
+    return queue
     
 
 MACHINE_METADATA = {

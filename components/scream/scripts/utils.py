@@ -300,7 +300,8 @@ def get_cpu_core_count():
 def ensure_pip():
 ###############################################################################
     try:
-        import pip
+        import pip # pylint: disable=import-error, unused-import
+
     except ImportError:
         import ensurepip
 
@@ -315,7 +316,7 @@ def ensure_pip():
 def ensure_yaml():
 ###############################################################################
     try:
-        import yaml
+        import yaml # pylint: disable=import-error, unused-import
     except ImportError:
         print("Detected missing pyyaml, will attempt to install locally")
 

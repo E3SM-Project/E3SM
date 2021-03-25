@@ -1,7 +1,6 @@
 from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version
-from git_utils import get_current_head, get_current_commit, get_current_branch, \
-    is_repo_clean, cleanup_repo, get_common_ancestor, merge_git_ref, checkout_git_ref, \
-    git_refs_difference, print_last_commit
+from git_utils import get_current_head, get_current_commit, get_current_branch, is_repo_clean, \
+    cleanup_repo, merge_git_ref, checkout_git_ref, git_refs_difference, print_last_commit
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
     get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
@@ -28,6 +27,13 @@ class TestAllScream(object):
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
+
+        # When using scripts-tests, we can't pass "-l" to test-all-scream,
+        # but we can pass "-m local". So if machine="local", reset things
+        # as if local=True and machine=None
+        if machine=="local":
+            local = True
+            machine = None
 
         self._cxx_compiler            = cxx_compiler
         self._f90_compiler            = f90_compiler
@@ -171,7 +177,7 @@ class TestAllScream(object):
         if self._baseline_dir is None:
             # Use default baseline dir, and create it if necessary
             self._baseline_dir = pathlib.Path(default_baselines_root_dir).absolute()
-            self._baseline_dir.mkdir(parents=True)
+            self._baseline_dir.mkdir(parents=True,exist_ok=True)
         elif self._baseline_dir == "AUTO":
             # We treat the "AUTO" string as a request for automatic baseline dir.
             self._baseline_dir = get_mach_baseline_root_dir(self._machine)
@@ -320,7 +326,7 @@ class TestAllScream(object):
             if test_dir.exists() and clean:
                 # LB: without '._str', I was getting the error
                 # TypeError: lstat: illegal type for path parameter
-                shutil.rmtree(test_dir._str)
+                shutil.rmtree(str(test_dir))
 
             # Create this baseline's build dir
             if not test_dir.exists():

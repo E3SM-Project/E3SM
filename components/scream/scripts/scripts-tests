@@ -256,7 +256,7 @@ class TestGatherAllData(TestBaseOuter.TestBase):
 ###############################################################################
 
     CMDS_TO_TEST = [
-        "gather-all-data './scripts/test-all-scream -m $machine -b HEAD -k' -l -m $machine",
+        "./gather-all-data './scripts/test-all-scream -m $machine -b HEAD -k' -l -m $machine",
     ]
 
     def __init__(self, *internal_args):
