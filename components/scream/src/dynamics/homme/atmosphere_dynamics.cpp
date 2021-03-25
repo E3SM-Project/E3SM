@@ -158,8 +158,6 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   // Print homme's parameters, so user can see whether something wasn't set right.
   ::Homme::Context::singleton().get<::Homme::SimulationParams>().print();
 
-  // Now that all fields on the ref grid are set, create the fields on the
-
   // Now that we have all fields set in homme, let's remap the input fields,
   // so that Homme gets the correct Initial Conditions
   m_p2d_remapper->remap(true);

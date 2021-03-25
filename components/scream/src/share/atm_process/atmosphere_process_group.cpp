@@ -88,8 +88,8 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   // The atm process group (APG) acts a bit different than other atm processes.
   // There is a catch when it comes to exposing a list of required/computed
   // fields: if (and only if) the splitting is sequential, and contains
-  // 2+ processes, it is possible that some inputs of the non-first atm
-  // processes are computed by one (or more) of the previous ones.
+  // 2+ processes, it is possible that some inputs of atmosphere processes
+  // in the list are computed by processes that precede them.
   // In this case, such fields are not really 'requirements' of this
   // group, but simply "outputs" of the group (which happen to also
   // be reused by other atm processes in the group).
