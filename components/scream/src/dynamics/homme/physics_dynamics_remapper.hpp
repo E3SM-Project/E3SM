@@ -684,7 +684,14 @@ do_remap_fwd() const
         EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
     }
   };
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_fields, 1);
+
+  const auto concurrency = KT::ExeSpace::concurrency();
+#ifdef KOKKOS_ENABLE_CUDA
+  const int team_size = std::min(1024, std::min(128*num_cols,32*(concurrency/nfields+31)/32));
+#else
+  const int team_size = (concurrency<num_fields ? 1 : concurrency/num_fields);
+#endif
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(num_fields, team_size);
   Kokkos::parallel_for(policy, field_loop);
   Kokkos::fence();
 
@@ -737,7 +744,14 @@ do_remap_bwd() const
         EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
     }
   };
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_fields, 1);
+
+  const auto concurrency = KT::ExeSpace::concurrency();
+#ifdef KOKKOS_ENABLE_CUDA
+  const int team_size = std::min(1024, std::min(128*num_cols,32*(concurrency/nfields+31)/32));
+#else
+  const int team_size = (concurrency<num_fields ? 1 : concurrency/num_fields);
+#endif
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(num_fields, team_size);
   Kokkos::parallel_for(policy, field_loop);
   Kokkos::fence();
 }
