@@ -104,6 +104,7 @@ of ``e3sm_diags`` installed in the environment for that yml file.
 
 8. Create a pull request to the main repo and merge it.
 
+.. _github-release:
 
 Creating A Release On GitHub
 ----------------------------
@@ -112,8 +113,14 @@ Creating A Release On GitHub
 `here <https://github.com/E3SM-Project/e3sm_diags/releases>`_.
 and draft a new release.
 
-The tag should be what ``git_rev`` was in step 5 of the previous section.
-You can change the branch which you want to release from,
+2. ``Tag version`` and ``Release title`` should both be the version, including the "v".
+(They should match ``git_rev`` in step 5 of the previous section).
+``Target`` should be ``master``. Use ``Describe this release`` to write what features
+the release adds. You can scroll through
+`E3SM Diags commits <https://github.com/E3SM-Project/e3sm_diags/commits/master>`_ to see
+what features have been added recently.
+
+Note that you can also change the branch which you want to release from,
 this is specified after the tag (@ Target: ``master``).
 
 The title of a release is often the same as the tag, but you can set it to whatever you want.
@@ -127,6 +134,7 @@ Remember to write a description.
 
     An example of a completed page to release the code
 
+3. Click "Publish release".
 
 Updating The sha256
 --------------------
@@ -161,120 +169,33 @@ This will have the ``conda/meta.yaml`` we edited in the first section.
 Releasing The Software On Anaconda
 ----------------------------------
 
-1. Since we're building with ``noarch``, you can run the below steps on
-either a Linux or macOS machine. You **do not** need to run this steps on both.
+1. Be sure to have already completed :ref:`Creating A Release On GitHub <github-release>`.
+This triggers the CI/CD workflow that handles Anaconda releases.
 
+2. Wait until the CI/CD build is successful. You can view all workflows at
+`All Workflows <https://github.com/E3SM-Project/e3sm_diags/actions>`_.
 
-2. Make sure you have the latest versions of ``anaconda``, ``conda``, and ``conda-build``.
-You cannot be in an existing Anaconda environment when you run ``conda update``,
-so run ``conda deactivate`` first. If the ``conda deactivate`` command doesn't work, use ``source deactivate``.
-This means you have an older version of Anaconda, which should be remedied after the following ``update`` command.
+3. Check the https://anaconda.org/e3sm/e3sm_diags page to view the newly updated package.
 
-    ::
-
-        conda deactivate
-        conda update anaconda conda conda-build
-
-
-3. Go on your machine and pull the latest version of the code.
-This will have the ``meta.yaml`` we edited in the first section.
-
-    ::
-
-        git fetch <upstream-origin> master
-        git checkout -b <branch-name> <upstream-origin>/master
-
-
-4. Run the command below. The ``conda/`` folder is where ``meta.yaml`` is located and the
-channels are where the dependencies defined in ``meta.yaml`` can be found.
-
-    ::
-
-        conda build conda/ -c conda-forge -c cdat
-
-
-5. When ``conda build`` is completed, you should see something like the example below.
-We only have one package of type ``noarch``, so it's compatible with both Python 2 and 3.
-But since we only officially support Python 3, it might not work with Python 2.
-
-
-    ::
-
-        # Automatic uploading is disabled
-        # If you want to upload package(s) to anaconda.org later, type:
-
-        anaconda upload /Users/shaheen2/anaconda3/conda-bld/noarch/e3sm_diags-1.1.0-py_0.tar.bz2
-
-        # To have conda build upload to anaconda.org automatically, use
-        # $ conda config --set anaconda_upload yes
-
-Copy the ``anaconda upload`` command and append ``-u e3sm`` to upload
-the package to the ``e3sm`` Anaconda channel. Below is an example.
-
-    ::
-
-        anaconda upload /Users/shaheen2/anaconda3/conda-bld/noarch/e3sm_diags-1.1.0-py_0.tar.bz2 -u e3sm
-
-If the command isn't found, it's in the ``bin`` folder of where Anaconda is installed.
-So instead of ``anaconda upload``, try one of the following:
-
-    ::
-
-        ~/anaconda2/bin/anaconda upload ...
-        ~/anaconda3/bin/anaconda upload ...
-
-If you're having permission issues uploading a package to either of these channels,
-contact either Jill Zhang (zhang40@llnl.gov) or Rob Jacob (jacob@anl.gov) for permission.
-
-
-6. Check the https://anaconda.org/e3sm/e3sm_diags page to view the newly updated package.
-
-
-7. Notify the maintainers of the unified E3SM environment about the new release on the
+4. Notify the maintainers of the unified E3SM environment about the new release on the
 `E3SM Confluence site <https://acme-climate.atlassian.net/wiki/spaces/WORKFLOW/pages/129732419/E3SM+Unified+Anaconda+Environment>`_.
+Be sure to only update the ``e3sm_diags`` version number in the correct version(s) of
+the E3SM Unified environment. This is almost certainly one of the versions listed under
+“Next versions”. If you are uncertain of which to update, leave a comment on the page
+asking.
 
 
 
 Creating a New Version of the Documentation
 -------------------------------------------
 
-The main documentation page includes the most up-to-date information. This means it may contain information on
-features not included in a previous release. The main documentation page, :ref:`index-label`, does link to
-the documentation for previous releases.
+1. Be sure to have already completed :ref:`Creating A Release On GitHub <github-release>`.
+This triggers the CI/CD workflow that handles publishing documentation versions.
 
-After you have released a new version of E3SM Diags, create a new version of the documentation with the following steps:
+2. Wait until the CI/CD build is successful. You can view all workflows at
+`All Workflows <https://github.com/E3SM-Project/e3sm_diags/actions>`_.
 
-    ::
-
-        # cd into e3sm_diags directory
-        git fetch <fork-origin> gh-pages
-        git checkout -b <branch-name> <fork-origin>/gh-pages
-        conda activate sphinx
-        make html
-        # Copy the latest docs. They now won't be updated regularly.
-        cp -r docs/html docs/html-v2-2-0 # Replace v2-2-0 with the new version number.
-        # Copy the latest source. This will be useful if previous versions of the docs have to be updated to fix mistakes.
-        cp -r source source-v2-2-0 # Replace v2-2-0 with the version number.
-
-Then, edit ``source/index.rst``, adding the link to the new version of the docs to the list of previous versions.
-This will be of the following form:
-
-    ::
-
-        `v2.2.0 <https://e3sm-project.github.io/e3sm_diags/docs/html-v2-2-0/index.html>`_
-
-Just replace ``v2.2.0`` and ``v2-2-0`` with the new version number.
-
-Run ``make html`` to see how your changes are rendered. Once you are satisfied, commit and push them back to
-the repository: ::
-
-   $ git add .
-   $ git commit
-   $ git push <fork-origin> <branch-name>
-
-Then, create a pull request from ``<your-fork>/e3sm_diags/branch-name`` to ``E3SM-Project/e3sm_diags/gh-pages``.
-
-Once this pull request is merged, changes will immediately be available on the
+3. Changes will be available on the
 `e3sm_diags documentation page <https://e3sm-project.github.io/e3sm_diags/>`_.
 
 
