@@ -43,9 +43,77 @@ TEST_CASE("cld_fraction-stand-alone", "") {
 
   // Init and run (do not finalize, or you'll clear the field repo!)
   util::TimeStamp time (0,0,0,0);
+
   ad.initialize(atm_comm,ad_params,time);
+
+  // Because this is a relatively simple test based on two variables, we initialize them here
+  // rather than use the netCDF input structure.
+  auto& field_repo = ad.get_field_repo();
+//  auto& grid       = ad.get_grids_manager()->get_grid("Physics");
+  
+  int num_cols = 866; //grid->get_num_local_dofs(); // Number of columns on this rank
+  int num_levs = 72; //grid->get_num_vertical_levels();  // Number of levels per column
+
+  const auto& qi = field_repo.get_field("qi","Physics").get_reshaped_view<Real**,Host>();
+  const auto& liq_cld_frac = field_repo.get_field("alst","Physics").get_reshaped_view<Real**,Host>();  //TODO: This FM name will probably change soon.
+
+  for (int icol=0;icol<num_cols;++icol)
+  {
+    for (int jlev=0;jlev<num_levs;++jlev)
+    {
+      Real phase = icol*3.14/2.0/num_cols;
+      Real xval  = jlev*3.14/2.0/num_levs;
+      // Assign a simple functional value to qi based on the column index and level
+      qi(icol,jlev) = (1.0+std::sin(xval-phase))/2.0;
+      // Do something similar for liq_cloud_fraction
+      liq_cld_frac(icol,jlev) = (1.0+std::sin(xval+phase))/2.0;
+    }
+  }
+
+  // Run the code
   for (int i=0; i<num_iters; ++i) {
     ad.run(300.0);
+  }
+
+  // Check ice and total cloud fraction values
+  // Sync the values on device back to the host view.
+  const auto& ice_cld_frac_field = field_repo.get_field("aist","Physics");
+  const auto& tot_cld_frac_field = field_repo.get_field("ast","Physics");
+  const auto& ice_cld_frac_dev = ice_cld_frac_field.get_reshaped_view<Real**>();  //TODO: This FM name will probably change soon.
+  const auto& tot_cld_frac_dev = tot_cld_frac_field.get_reshaped_view<Real**>();  //TODO: This FM name will probably change soon.
+  auto ice_cld_frac = Kokkos::create_mirror_view(ice_cld_frac_dev);
+  auto tot_cld_frac = Kokkos::create_mirror_view(tot_cld_frac_dev);
+  Kokkos::deep_copy(ice_cld_frac,ice_cld_frac_dev);
+  Kokkos::deep_copy(tot_cld_frac,tot_cld_frac_dev);
+  
+  for (int icol=0;icol<num_cols;++icol)
+  {
+    for (int jlev=0;jlev<num_levs;++jlev)
+    {
+      // Make sure there are no cloud fractions greater than 1.0 or less than 0.0
+      REQUIRE((!(liq_cld_frac(icol,jlev)>1.0) or !(ice_cld_frac(icol,jlev)>1.0) or !(tot_cld_frac(icol,jlev)>1.0)));
+      REQUIRE((!(liq_cld_frac(icol,jlev)<0.0) or !(ice_cld_frac(icol,jlev)<0.0) or !(tot_cld_frac(icol,jlev)<0.0)));
+      // make sure that the cloud fraction calculation didn't accidentally change qi or liq_cld_fraction
+      Real phase = icol*3.14/2.0/num_cols;
+      Real xval  = jlev*3.14/2.0/num_levs;
+      REQUIRE(qi(icol,jlev)==(std::sin(xval-phase)+1.0)/2.0);
+      REQUIRE(liq_cld_frac(icol,jlev)==(std::sin(xval+phase)+1.0)/2.0);
+      // Test that the cloud fraction calculation appropriately calculated the ice cloud fraction
+      if (qi(icol,jlev)>=1e-5)  // TODO: This may also be updated to be a tunable parameter, we might need to grab this value from the parameter list.
+      {
+        //REQUIRE(ice_cld_frac(icol,jlev)==1.0);
+        EKAT_REQUIRE_MSG(ice_cld_frac(icol,jlev)==1.0, "error - " + std::to_string(icol) + " " + std::to_string(jlev) + " " + std::to_string(qi(icol,jlev)));
+      } else {
+        REQUIRE(ice_cld_frac(icol,jlev)==0.0);
+      }
+      // Test that the total cloud fraction is correctly calculated
+      if (liq_cld_frac(icol,jlev) >= ice_cld_frac(icol,jlev))
+      {
+        REQUIRE(tot_cld_frac(icol,jlev)==liq_cld_frac(icol,jlev));
+      } else {
+        REQUIRE(tot_cld_frac(icol,jlev)==ice_cld_frac(icol,jlev));
+      }
+    }
   }
 
   // Finalize 
