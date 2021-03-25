@@ -1,7 +1,7 @@
-#ifndef SCREAM_CLDFRACTION_HPP
-#define SCREAM_CLDFRACTION_HPP
+#ifndef SCREAM_CLD_FRACTION_HPP
+#define SCREAM_CLD_FRACTION_HPP
 
-#include "physics/cld_fraction/cldfraction_functions.hpp"
+#include "physics/cld_fraction/cld_fraction_functions.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 
@@ -18,10 +18,10 @@ namespace scream
 */
 
   using namespace cldfrac;
-  using cldfracF = Functions<Real, DefaultDevice>;
-  using Spack    = cldfracF::Spack;
-  using Smask    = cldfracF::Smask;
-  using Pack     = ekat::Pack<Real,Spack::n>;
+  using CldFractionFunc = CldFractionFunctions<Real, DefaultDevice>;
+  using Spack           = CldFractionFunc::Spack;
+  using Smask           = CldFractionFunc::Smask;
+  using Pack            = ekat::Pack<Real,Spack::n>;
 
 class CldFraction : public AtmosphereProcess
 {
@@ -44,7 +44,7 @@ public:
   // Get the required grid for subcomponent
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
-    s.insert(m_cldfraction_params.get<std::string>("Grid"));
+    s.insert(m_cld_fraction_params.get<std::string>("Grid"));
     return s;
   }
 
@@ -72,35 +72,18 @@ protected:
   std::set<FieldIdentifier> m_required_fields;
   std::set<FieldIdentifier> m_computed_fields;
 
-  std::map<std::string,const_field_type>  m_cldfraction_fields_in;
-  std::map<std::string,field_type>        m_cldfraction_fields_out;
+  std::map<std::string,const_field_type>  m_cld_fraction_fields_in;
+  std::map<std::string,field_type>        m_cld_fraction_fields_out;
 
-  template<typename T>
-  using view_type = field_type::view_type<T*>;
-
-  template<typename T>
-  using host_view_type = field_type::get_view_type<view_type<T>,Host>;
-
-  using host_view_in_type   = host_view_type<const_field_type::RT>;
-  using host_view_out_type  = host_view_type<      field_type::RT>;
-
-  std::map<std::string,host_view_in_type>   m_cldfraction_host_views_in;
-  std::map<std::string,host_view_out_type>  m_cldfraction_host_views_out;
-
-  std::map<std::string,const Real*>  m_raw_ptrs_in;
-  std::map<std::string,Real*>        m_raw_ptrs_out;
-
-  util::TimeStamp     m_current_ts;
   ekat::Comm          m_cldfraction_comm;
-  ekat::ParameterList m_cldfraction_params;
+  ekat::ParameterList m_cld_fraction_params;
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
   Int m_num_levs;
-  Int m_nk_pack;
 
 }; // class CldFraction
 
 } // namespace scream
 
-#endif // SCREAM_CLDFRACTION_HPP
+#endif // SCREAM_CLD_FRACTION_HPP

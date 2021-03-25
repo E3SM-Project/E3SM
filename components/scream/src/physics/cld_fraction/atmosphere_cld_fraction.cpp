@@ -1,4 +1,4 @@
-#include "atmosphere_cldfraction.hpp"
+#include "atmosphere_cld_fraction.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -11,7 +11,7 @@ namespace scream
 // =========================================================================================
 CldFraction::CldFraction (const ekat::Comm& comm, const ekat::ParameterList& params)
  : m_cldfraction_comm (comm)
- , m_cldfraction_params (params)
+ , m_cld_fraction_params (params)
 {
   // Nothing to do here
 }
@@ -27,11 +27,10 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   Q.set_string("kg/kg");
   Units nondim(0,0,0,0,0,0,0);
 
-  const auto& grid_name = m_cldfraction_params.get<std::string>("Grid");
+  const auto& grid_name = m_cld_fraction_params.get<std::string>("Grid");
   auto grid  = grids_manager->get_grid(grid_name);
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
-  m_nk_pack  = ekat::npack<Spack>(m_num_levs);
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -55,43 +54,26 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 // =========================================================================================
 void CldFraction::initialize_impl (const util::TimeStamp& t0)
 {
-  m_current_ts = t0;
 }
 
 // =========================================================================================
 void CldFraction::run_impl (const Real dt)
 {
-/* Luca, do we need any of the following code?
-  // Copy inputs to host. Copy also outputs, cause we might "update" them, rather than overwrite them.
-  for (auto& it : m_cldfraction_fields_in) {
-    it.second.sync_to_host();
-  }
-  for (auto& it : m_cldfraction_fields_out) {
-    it.second.sync_to_host();
-  }
-
-  // Copy outputs back to device
-  // LB: why?!?
-  for (auto& it : m_cldfraction_fields_out) {
-    it.second.sync_to_dev();
-  }
-*/
-
   
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 
-  auto qi   = m_cldfraction_fields_in["qi"].get_reshaped_view<const Pack**>();
-  auto alst = m_cldfraction_fields_in["alst"].get_reshaped_view<const Pack**>();
-  auto aist = m_cldfraction_fields_out["aist"].get_reshaped_view<Pack**>();
-  auto ast  = m_cldfraction_fields_out["ast"].get_reshaped_view<Pack**>();
+  auto qi   = m_cld_fraction_fields_in["qi"].get_reshaped_view<const Pack**>();
+  auto alst = m_cld_fraction_fields_in["alst"].get_reshaped_view<const Pack**>();
+  auto aist = m_cld_fraction_fields_out["aist"].get_reshaped_view<Pack**>();
+  auto ast  = m_cld_fraction_fields_out["ast"].get_reshaped_view<Pack**>();
 
-  cldfracF::cldfraction_main(m_num_cols,m_num_levs,qi,alst,aist,ast);
+  CldFractionFunc::main(m_num_cols,m_num_levs,qi,alst,aist,ast);
 
   // Get a copy of the current timestamp (at the beginning of the step) and
   // advance it,
   auto ts = timestamp();
   ts += dt;
-  for (auto& f : m_cldfraction_fields_out) {
+  for (auto& f : m_cld_fraction_fields_out) {
     f.second.get_header().get_tracking().update_time_stamp(ts);
   }
 
@@ -106,7 +88,7 @@ void CldFraction::finalize_impl()
 // =========================================================================================
 void CldFraction::register_fields (FieldRepository<Real>& field_repo) const {
   std::set<ci_string> q_names =
-    { "qv","qc","qr","qi","qm","nc","nr","ni","bm"};
+    { "qi" };
 
   for (const auto& fid : m_required_fields) {
     const auto& name = fid.name();
@@ -132,9 +114,7 @@ void CldFraction::set_required_field_impl (const Field<const Real>& f) {
   // no need to store a scream field here; we could simply set the view ptr
   // in the Homme's view, and be done with it.
   const auto& name = f.get_header().get_identifier().name();
-  m_cldfraction_fields_in.emplace(name,f);
-  m_cldfraction_host_views_in[name] = f.get_view<Host>();
-  m_raw_ptrs_in[name] = m_cldfraction_host_views_in[name].data();
+  m_cld_fraction_fields_in.emplace(name,f);
 
   // Add myself as customer to the field
   add_me_as_customer(f);
@@ -146,9 +126,7 @@ void CldFraction::set_computed_field_impl (const Field<      Real>& f) {
   // no need to store a scream field here; we could simply set the view ptr
   // in the Homme's view, and be done with it.
   const auto& name = f.get_header().get_identifier().name();
-  m_cldfraction_fields_out.emplace(name,f);
-  m_cldfraction_host_views_out[name] = f.get_view<Host>();
-  m_raw_ptrs_out[name] = m_cldfraction_host_views_out[name].data();
+  m_cld_fraction_fields_out.emplace(name,f);
 
   // Add myself as provider for the field
   add_me_as_provider(f);

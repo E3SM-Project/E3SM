@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-FILENAME: cldfrac_stand_alone_output
+FILENAME: cld_fraction_stand_alone_output
 AVERAGING TYPE: Instant
 GRID: Physics
 FREQUENCY:

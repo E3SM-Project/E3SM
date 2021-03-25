@@ -1,4 +1,4 @@
-#include "physics/cld_fraction/cldfraction_main_impl.hpp"
+#include "physics/cld_fraction/cld_fraction_main_impl.hpp"
 #include "share/scream_types.hpp"
 
 namespace scream {
@@ -9,7 +9,7 @@ namespace cldfrac {
  * default device.
  */
 
-template struct Functions<Real,DefaultDevice>;
+template struct CldFractionFunctions<Real,DefaultDevice>;
 
 } // namespace cldfrac
 } // namespace scream

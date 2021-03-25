@@ -1,5 +1,5 @@
-#ifndef CLDFRAC_FUNCTIONS_HPP
-#define CLDFRAC_FUNCTIONS_HPP
+#ifndef CLD_FRAC_FUNCTIONS_HPP
+#define CLD_FRAC_FUNCTIONS_HPP
 
 #include "share/scream_types.hpp"
 
@@ -10,7 +10,7 @@ namespace scream {
 namespace cldfrac {
 
 template <typename ScalarT, typename DeviceT>
-struct Functions
+struct CldFractionFunctions
 {
 
   //
@@ -25,7 +25,6 @@ struct Functions
   template <typename S>
   using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
 
-  using IntSmallPack = SmallPack<Int>;
   using Pack = BigPack<Scalar>;
   using Spack = SmallPack<Scalar>;
 
@@ -42,7 +41,7 @@ struct Functions
   template <typename S>
   using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
 
-  static void cldfraction_main(
+  static void main(
     const Int nj, 
     const Int nk,
     const view_2d<const Pack>& qi, 
@@ -51,14 +50,14 @@ struct Functions
     const view_2d<Pack>& ast);
 
   KOKKOS_FUNCTION
-  static void cldfraction_calc_icefrac( 
+  static void calc_icefrac( 
     const MemberType& team,
     const Int& nk,
     const uview_1d<const Spack>& qi,
     const uview_1d<Spack>&       aist);
 
   KOKKOS_FUNCTION
-  static void cldfraction_calc_totalfrac( 
+  static void calc_totalfrac( 
     const MemberType& team,
     const Int& nk,
     const uview_1d<const Spack>& alst,
@@ -70,4 +69,4 @@ struct Functions
 } // namespace cldfrac
 } // namespace scream
 
-#endif // CLDFRAC_FUNCTIONS_HPP
+#endif // CLD_FRAC_FUNCTIONS_HPP

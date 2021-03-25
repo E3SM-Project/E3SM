@@ -1,7 +1,7 @@
-#ifndef CLDFRACTION_MAIN_IMPL_HPP
-#define CLDFRACTION_MAIN_IMPL_HPP
+#ifndef CLD_FRACTION_MAIN_IMPL_HPP
+#define CLD_FRACTION_MAIN_IMPL_HPP
 
-#include "physics/cld_fraction/cldfraction_functions.hpp"
+#include "physics/cld_fraction/cld_fraction_functions.hpp"
 #include "ekat/kokkos/ekat_subview_utils.hpp"
 
 namespace scream {
@@ -9,8 +9,8 @@ namespace cldfrac {
 
 /*-----------------------------------------------------------------*/
 template <typename S, typename D>
-void Functions<S,D>
-::cldfraction_main(
+void CldFractionFunctions<S,D>
+::main(
   const Int nj,
   const Int nk,
   const view_2d<const Spack>& qi,
@@ -33,17 +33,17 @@ void Functions<S,D>
     const auto oaist = ekat::subview(aist, i);
     const auto oast  = ekat::subview(ast,  i);
 
-    cldfraction_calc_icefrac(team,nk,oqi,oaist);
+    calc_icefrac(team,nk,oqi,oaist);
 
-    cldfraction_calc_totalfrac(team,nk,oalst,oaist,oast);
+    calc_totalfrac(team,nk,oalst,oaist,oast);
   });
   Kokkos::fence();
-} // cldfraction_main
+} // main
 /*-----------------------------------------------------------------*/
 template <typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>
-::cldfraction_calc_icefrac(
+void CldFractionFunctions<S,D>
+::calc_icefrac(
   const MemberType& team,
   const Int& nk,
   const uview_1d<const Spack>& qi,
@@ -58,12 +58,12 @@ void Functions<S,D>
       aist(k).set(icecld, 1.0);
   }); // Kokkos_parallel_for nk_pack
   team.team_barrier();
-} // cldfraction_calc_icefrac
+} // calc_icefrac
 /*-----------------------------------------------------------------*/
 template <typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>
-::cldfraction_calc_totalfrac(
+void CldFractionFunctions<S,D>
+::calc_totalfrac(
   const MemberType& team,
   const Int& nk,
   const uview_1d<const Spack>& alst,
@@ -74,15 +74,13 @@ void Functions<S,D>
   const Int nk_pack = ekat::npack<Spack>(nk);
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
-      auto icecld = aist(k) > alst(k);
-      ast(k).set(Smask(true), alst(k));
-      ast(k).set(icecld, aist(k));
+      ast(k) = max(aist(k),alst(k));
   }); // Kokkos_parallel_for nk_pack
   team.team_barrier();
-} // cldfraction_calc_totalfrac
+} // calc_totalfrac
 /*-----------------------------------------------------------------*/
 
 } // namespace cldfrac
 } // namespace scream
 
-#endif // CLDFRACTION_MAIN_IMPL_HPP
+#endif // CLD_FRACTION_MAIN_IMPL_HPP

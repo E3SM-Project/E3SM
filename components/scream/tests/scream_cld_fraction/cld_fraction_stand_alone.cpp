@@ -2,7 +2,7 @@
 
 #include "control/atmosphere_driver.hpp"
 
-#include "physics/cld_fraction/atmosphere_cldfraction.hpp"
+#include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
 
 #include "physics/share/physics_only_grids_manager.hpp"
 
@@ -13,7 +13,7 @@
 
 namespace scream {
 
-TEST_CASE("cldfrac-stand-alone", "") {
+TEST_CASE("cld_fraction-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
 
@@ -51,7 +51,7 @@ TEST_CASE("cldfrac-stand-alone", "") {
   // Finalize 
   ad.finalize();
 
-  // If we got here, we were able to run cldfraction
+  // If we got here, we were able to run cld_fraction
   REQUIRE(true);
 }
 
