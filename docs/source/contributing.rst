@@ -68,7 +68,7 @@ To begin editing:
     # `docs/_build` is ignored by git since it does not need to be pushed
     git add .
     git commit "..."
-    git push origin <branch-name>
+    git push <fork-origin> <branch-name>
 
 6. <`OPTIONAL`> If you want to generate and view versioned docs: ::
 
@@ -83,7 +83,7 @@ To begin editing:
 
       Docs version selector dropdown in the bottom left-hand corner
 
-7. Create a pull request from ``your-fork/e3sm_diags/branch-name`` to ``E3SM-Project/e3sm_diags/master``.
+7. Create a pull request from ``<your-fork>/e3sm_diags/branch-name`` to ``E3SM-Project/e3sm_diags/master``.
 
 Once this pull request is merged and GitHub Actions finishes building the docs, changes will be available on the
 `e3sm_diags documentation page <https://e3sm-project.github.io/e3sm_diags/>`_.
@@ -92,7 +92,9 @@ How Documentation is Versioned
 ----------------------------
 The `sphinx-multiversion <https://github.com/Holzhaus/sphinx-multiversion>`_ package manages documentation versioning.
 
-``sphinx-multiversion`` is configured to generate versioned docs for available tags and branches on local, ``origin`` and ``upstream``.
+``sphinx-multiversion`` is configured to generate versioned docs for available tags and
+branches on local, ``origin`` (the likely name for your ``<fork-origin>``) and
+``upstream`` (the likely name for your ``<upstream-origin>``).
 
 Branches or tags that don’t contain both the sphinx ``source`` directory and the ``conf.py`` file will be skipped automatically.
 
@@ -107,7 +109,7 @@ they can easily be converted to rst format: ::
 
    $ jupyter nbconvert mygreatnotebook.ipynb --to rst
 
-Initial setup (for reference only)
+Initial setup (obsolete/for reference only)
 ----------------------------------
 
 The instructions below only apply for the initial configuration of the

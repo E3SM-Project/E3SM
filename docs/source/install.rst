@@ -164,31 +164,44 @@ Furthermore, the dev environment includes QA tools such as code formatters, lint
 
 1. Follow :ref:`"Others/Local" <conda_environment_others>` section for installing conda.
 
-2. Clone your fork and keep in sync with upstream ``master``
+2. Clone your fork and keep it in sync with the main repo's ``master``
 
     ::
 
-        git clone https://github.com/<your-github-username>/e3sm_diags.git
+        # Go to https://github.com/E3SM-Project/e3sm_diags
+        # Click "Fork" in the upper right hand corner. This will fork the main repo.
+        # Click the green "Code" button
+        # Choose the HTTPS or SSH option.
+        # (To use the SSH option, you need to have a SSH connection to GitHub set up).
+        # Click the clipboard icon to copy the path.
+        # On your command line:
+        git clone <path>
+        git remote -v
+        # You should see your fork listed as `origin`
 
 
-   or if you already have a clone of the fork, rebase your fork with upstream to keep in sync
+   or if you already have a clone of your fork, rebase your fork on the main repo's ``master`` to keep it in sync:
 
     ::
 
-        # Add the remote, call it "upstream":
-        git remote add upstream https://github.com/E3SM-Project/e3sm_diags.git
+        # Add the main repo as a remote.
+        # You can call it anything but "upstream" is recommended.
+        # We'll use `<upstream-origin>` here.
+        git remote add <upstream-origin> https://github.com/E3SM-Project/e3sm_diags.git
 
         # Fetch all the branches of that remote into remote-tracking branches
-        git fetch upstream
+        git fetch <upstream-origin>
 
         # Make sure that you're on your master branch:
         git checkout master
 
         # Rewrite your master branch so that any of your commits that
-        # aren't already in upstream/master are replayed on top of the
-        # other branch:
-        git rebase upstream/master
-        git push -f origin master
+        # aren't already in <upstream-origin>/master are replayed on top of that branch:
+        git rebase <upstream-origin>/master
+
+        # Push your master branch to your GitHub fork:
+        # Note that <fork-origin> should be `origin` if you cloned your fork as above.
+        git push -f <fork-origin> master
 
 
    Checkout a new branch from ``master``.

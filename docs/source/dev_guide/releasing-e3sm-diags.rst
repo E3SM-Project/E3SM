@@ -23,8 +23,8 @@ It's usually ``master``.
 
     ::
 
-        git checkout master
-        git pull origin master
+        git fetch <upstream-origin> master
+        git checkout -b <branch-name> <upstream-origin>/master
 
 
 2. Edit the ``version`` argument in ``setup.py`` to the new version.
@@ -100,8 +100,9 @@ of ``e3sm_diags`` installed in the environment for that yml file.
     ::
 
         git commit -am 'Changes before release.'
-        git push origin master
+        git push <fork-origin> <branch-name>
 
+8. Create a pull request to the main repo and merge it.
 
 
 Creating A Release On GitHub
@@ -140,34 +141,21 @@ Updating The sha256
 
 3. On your machine, pull the latest version of the code.
 This will have the ``conda/meta.yaml`` we edited in the first section.
-
     ::
 
-        git checkout master
-        git pull origin master
-
-Or:
-    ::
-
-        git fetch origin master
-        git checkout -b <branch-name> origin/master
+        git fetch <upstream-origin> master
+        git checkout -b <branch-name> <upstream-origin>/master
 
 4. Change ``sha256`` in ``conda/meta.yaml`` to the result of step 2.
 
 5. Commit and push your changes.
-
     ::
 
         git commit -am 'Edit sha256 for v1.1.0'
-        git push origin master
+        git push <fork-origin> <branch-name>
 
-Or:
 
-    ::
-
-        git commit -am 'Edit sha256 for v1.1.0'
-        git push <fork-name> <branch-name>
-        # Create pull request for the master branch
+6. Create a pull request to the main repo and merge it.
 
 
 Releasing The Software On Anaconda
@@ -193,8 +181,8 @@ This will have the ``meta.yaml`` we edited in the first section.
 
     ::
 
-        git checkout master
-        git pull origin master
+        git fetch <upstream-origin> master
+        git checkout -b <branch-name> <upstream-origin>/master
 
 
 4. Run the command below. The ``conda/`` folder is where ``meta.yaml`` is located and the
@@ -259,8 +247,8 @@ After you have released a new version of E3SM Diags, create a new version of the
     ::
 
         # cd into e3sm_diags directory
-        git fetch origin gh-pages
-        git checkout -b <branch-name> origin/gh-pages
+        git fetch <fork-origin> gh-pages
+        git checkout -b <branch-name> <fork-origin>/gh-pages
         conda activate sphinx
         make html
         # Copy the latest docs. They now won't be updated regularly.
@@ -282,9 +270,9 @@ the repository: ::
 
    $ git add .
    $ git commit
-   $ git push <your-fork-remote-name> <branch-name> # If not using a fork, use `origin`
+   $ git push <fork-origin> <branch-name>
 
-Then, create a pull request from ``your-fork/e3sm_diags/branch-name`` to ``E3SM-Project/e3sm_diags/gh-pages``.
+Then, create a pull request from ``<your-fork>/e3sm_diags/branch-name`` to ``E3SM-Project/e3sm_diags/gh-pages``.
 
 Once this pull request is merged, changes will immediately be available on the
 `e3sm_diags documentation page <https://e3sm-project.github.io/e3sm_diags/>`_.
