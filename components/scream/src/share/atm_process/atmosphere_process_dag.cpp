@@ -340,8 +340,6 @@ add_nodes (const group_type& atm_procs,
            const std::shared_ptr<FieldRepository<Real>> field_repo) {
   
   const int num_procs = atm_procs.get_num_processes();
-  const auto& remappers_in  = atm_procs.get_inputs_remappers ();
-  const auto& remappers_out = atm_procs.get_outputs_remappers ();
   const bool sequential = (atm_procs.get_schedule_type()==ScheduleType::Sequential);
 
   EKAT_REQUIRE_MSG (sequential, "Error! Parallel splitting dag not yet supported.\n");
@@ -359,213 +357,144 @@ add_nodes (const group_type& atm_procs,
       //       the sub-group will have its remappers taken care of
       add_nodes(*group,field_repo);
     } else {
-      // Add a node for the remapper(s) in (if needed)
-      for (auto r : remappers_in[i]) {
-        const auto& rem = *r.second;
-        const int nfields = rem.get_num_registered_fields();
-        if (nfields>0) {
-          m_nodes.push_back(Node());
-          Node& node = m_nodes.back();;
-          node.id = id;
-          node.name = proc->name()+" (remap in [" + rem.get_src_grid()->name() + "->" + rem.get_tgt_grid()->name() + "])";
-          m_unmet_deps[id].clear();
-          for (int k=0; k<nfields; ++k) {
-            const auto& fid_in = rem.get_src_field_id(k);
-            const int fid_in_id = add_fid(fid_in);
-            node.required.insert(fid_in_id);
-            auto it = m_fid_to_last_provider.find(fid_in_id);
-            if (it==m_fid_to_last_provider.end()) {
-              m_unmet_deps[id].insert(fid_in_id);
-            } else {
-              // Establish parent-child relationship
-              Node& parent = m_nodes[it->second];
-              parent.children.push_back(node.id);
-            }
+      // Create a node for the process
+      // Node& node = m_nodes[proc->name()];
+      m_nodes.push_back(Node());
+      Node& node = m_nodes.back();;
+      node.id = id;
+      node.name = proc->name();
+      m_unmet_deps[id].clear();
 
-            const auto& fid_out = rem.get_tgt_field_id(k);
-            const int fid_out_id = add_fid(fid_out);
-            node.computed.insert(fid_out_id);
-            m_fid_to_last_provider[fid_out_id] = id;
-          }
-          ++id;
+      // Input fields
+      for (auto fid : proc->get_required_fields()) {
+        const int fid_id = add_fid(fid);
+        node.required.insert(fid_id);
+        auto it = m_fid_to_last_provider.find(fid_id);
+        if (it==m_fid_to_last_provider.end()) {
+          m_unmet_deps[id].insert(fid_id);
+        } else {
+          // Establish parent-child relationship
+          Node& parent = m_nodes[it->second];
+          parent.children.push_back(node.id);
         }
       }
 
-      // Note: the braces are just to have this chunk of code in a scope,
-      //       and avoid vars clashing
-      {
-        // Create a node for the process
-        // Node& node = m_nodes[proc->name()];
-        m_nodes.push_back(Node());
-        Node& node = m_nodes.back();;
-        node.id = id;
-        node.name = proc->name();
-        m_unmet_deps[id].clear();
+      // Output fields
+      for (auto fid : proc->get_computed_fields()) {
+        const int fid_id = add_fid(fid);
+        node.computed.insert(fid_id);
+        m_fid_to_last_provider[fid_id] = id;
+      }
 
-        // Input fields
-        for (auto fid : proc->get_required_fields()) {
-          const int fid_id = add_fid(fid);
-          node.required.insert(fid_id);
-          auto it = m_fid_to_last_provider.find(fid_id);
+      // Input groups
+      for (auto itg : proc->get_required_groups()) {
+        EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
+        auto group = field_repo->get_field_group(itg.name,itg.grid);
+        if (!group.m_info->m_bundled) {
+          // Group is not bundled: process fields individually
+          for (const auto& it_f : group.m_fields) {
+            const auto& fid = it_f.second->get_header().get_identifier();
+            const int fid_id = add_fid(fid);
+            node.computed.insert(fid_id);
+            m_fid_to_last_provider[fid_id] = id;
+          }
+        } else {
+          // Group is bundled: process the bundled field
+          const auto& gr_fid = group.m_bundle->get_header().get_identifier();
+          const int gr_fid_id = add_fid(gr_fid);
+          node.gr_required.insert(gr_fid_id);
+          auto it = m_fid_to_last_provider.find(gr_fid_id);
           if (it==m_fid_to_last_provider.end()) {
-            m_unmet_deps[id].insert(fid_id);
-          } else {
-            // Establish parent-child relationship
-            Node& parent = m_nodes[it->second];
-            parent.children.push_back(node.id);
-          }
-        }
-
-        // Output fields
-        for (auto fid : proc->get_computed_fields()) {
-          const int fid_id = add_fid(fid);
-          node.computed.insert(fid_id);
-          m_fid_to_last_provider[fid_id] = id;
-        }
-
-        // Input groups
-        for (auto itg : proc->get_required_groups()) {
-          EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
-          auto group = field_repo->get_field_group(itg.name,itg.grid);
-          if (!group.m_info->m_bundled) {
-            // Group is not bundled: process fields individually
-            for (const auto& it_f : group.m_fields) {
-              const auto& fid = it_f.second->get_header().get_identifier();
-              const int fid_id = add_fid(fid);
-              node.computed.insert(fid_id);
-              m_fid_to_last_provider[fid_id] = id;
-            }
-          } else {
-            // Group is bundled: process the bundled field
-            const auto& gr_fid = group.m_bundle->get_header().get_identifier();
-            const int gr_fid_id = add_fid(gr_fid);
-            node.gr_required.insert(gr_fid_id);
-            auto it = m_fid_to_last_provider.find(gr_fid_id);
-            if (it==m_fid_to_last_provider.end()) {
-              // It might still be ok, as long as there is a provider for all the fields in the group
-              bool all_members_have_providers = true;
-              for (auto it_f : group.m_fields) {
-                const auto& fid = it_f.second->get_header().get_identifier();
-                const int fid_id = add_fid(fid);
-                auto it_p = m_fid_to_last_provider.find(fid_id);
-                if (it_p==m_fid_to_last_provider.end()) {
-                  m_unmet_deps[id].insert(fid_id);
-                  all_members_have_providers = false;
-                } else {
-                  Node& parent = m_nodes[it_p->second];
-                  parent.children.push_back(node.id);
-                }
-              }
-              if (!all_members_have_providers) {
-                m_unmet_deps[id].insert(gr_fid_id);
-              }
-            } else {
-              // Establish parent-child relationship
-              Node& parent = m_nodes[it->second];
-              parent.children.push_back(node.id);
-            }
-            m_gr_fid_to_group.emplace(gr_fid,group);
-          }
-        }
-
-        // Input-output groups
-        for (const auto& itg : proc->get_updated_groups()) {
-          EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
-          auto group = field_repo->get_field_group(itg.name,itg.grid);
-          if (!group.m_info->m_bundled) {
-            // Group is not bundled: process fields in the group individually
-            for (const auto& it_f : group.m_fields) {
-              const auto& fid = it_f.second->get_header().get_identifier();
-              const int fid_id = add_fid(fid);
-              node.required.insert(fid_id);
-              node.computed.insert(fid_id);
-              auto it = m_fid_to_last_provider.find(fid_id);
-              if (it==m_fid_to_last_provider.end()) {
-                m_unmet_deps[id].insert(fid_id);
-              } else {
-                // Establish parent-child relationship
-                Node& parent = m_nodes[it->second];
-                parent.children.push_back(node.id);
-              }
-              m_fid_to_last_provider[fid_id] = id;
-            }
-          } else {
-            // Group is bundled: process the bundled field
-            const auto& gr_fid = group.m_bundle->get_header().get_identifier();
-            const int gr_fid_id = add_fid(gr_fid);
-            node.gr_required.insert(gr_fid_id);
-            node.gr_updated.insert(gr_fid_id);
-            auto it = m_fid_to_last_provider.find(gr_fid_id);
-            if (it==m_fid_to_last_provider.end()) {
-              // It might still be ok, as long as there is a provider for all the fields in the group
-              bool all_members_have_providers = true;
-              for (auto it_f : group.m_fields) {
-                const auto& fid = it_f.second->get_header().get_identifier();
-                const int fid_id = add_fid(fid);
-                auto it_p = m_fid_to_last_provider.find(fid_id);
-                if (it_p==m_fid_to_last_provider.end()) {
-                  m_unmet_deps[id].insert(fid_id);
-                  all_members_have_providers = false;
-                } else {
-                  Node& parent = m_nodes[it_p->second];
-                  parent.children.push_back(node.id);
-                }
-              }
-              if (!all_members_have_providers) {
-                m_unmet_deps[id].insert(gr_fid_id);
-              }
-            } else {
-              // Establish parent-child relationship
-              Node& parent = m_nodes[it->second];
-              parent.children.push_back(node.id);
-            }
-            m_fid_to_last_provider[gr_fid_id] = id;
-            m_gr_fid_to_group.emplace(gr_fid,group);
-
-            // Additionally, each field in the group is implicitly 'computed'
-            // by this node, so update their last provider
+            // It might still be ok, as long as there is a provider for all the fields in the group
+            bool all_members_have_providers = true;
             for (auto it_f : group.m_fields) {
               const auto& fid = it_f.second->get_header().get_identifier();
               const int fid_id = add_fid(fid);
-              m_fid_to_last_provider[fid_id] = id;
+              auto it_p = m_fid_to_last_provider.find(fid_id);
+              if (it_p==m_fid_to_last_provider.end()) {
+                m_unmet_deps[id].insert(fid_id);
+                all_members_have_providers = false;
+              } else {
+                Node& parent = m_nodes[it_p->second];
+                parent.children.push_back(node.id);
+              }
             }
-          }
-        }
-        ++id;
-      }
-
-      // Add a node for the remapper(s) out (if needed)
-      for (auto r : remappers_out[i]) {
-        const auto& rem = *r.second;
-        const int nfields = rem.get_num_registered_fields();
-        if (nfields>0) {
-          m_nodes.push_back(Node());
-          Node& node = m_nodes.back();
-          node.id = id;
-          node.name = proc->name()+" (remap out [" + rem.get_src_grid()->name() + "->" + rem.get_tgt_grid()->name() + "])";
-          m_unmet_deps[id].clear();
-          for (int k=0; k<nfields; ++k) {
-            const auto& fid_in = rem.get_src_field_id(k);
-            const int fid_in_id = add_fid(fid_in);
-            node.required.insert(fid_in_id);
-            // A remapper for outputs of proc should *not* have unmet dependencies.
-            auto it = m_fid_to_last_provider.find(fid_in_id);
-            EKAT_REQUIRE_MSG (it!=m_fid_to_last_provider.end(),
-                                "Internal error! Something is off with outputs remapper for atm proc '" + proc->name() + "'.\n"
-                                "   Please, contact developers.\n");
-
+            if (!all_members_have_providers) {
+              m_unmet_deps[id].insert(gr_fid_id);
+            }
+          } else {
             // Establish parent-child relationship
             Node& parent = m_nodes[it->second];
             parent.children.push_back(node.id);
-
-            const auto& fid_out = rem.get_tgt_field_id(k);
-            const int fid_out_id = add_fid(fid_out);
-            node.computed.insert(fid_out_id);
-            m_fid_to_last_provider[fid_out_id] = id;
           }
-          ++id;
+          m_gr_fid_to_group.emplace(gr_fid,group);
         }
       }
+
+      // Input-output groups
+      for (const auto& itg : proc->get_updated_groups()) {
+        EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
+        auto group = field_repo->get_field_group(itg.name,itg.grid);
+        if (!group.m_info->m_bundled) {
+          // Group is not bundled: process fields in the group individually
+          for (const auto& it_f : group.m_fields) {
+            const auto& fid = it_f.second->get_header().get_identifier();
+            const int fid_id = add_fid(fid);
+            node.required.insert(fid_id);
+            node.computed.insert(fid_id);
+            auto it = m_fid_to_last_provider.find(fid_id);
+            if (it==m_fid_to_last_provider.end()) {
+              m_unmet_deps[id].insert(fid_id);
+            } else {
+              // Establish parent-child relationship
+              Node& parent = m_nodes[it->second];
+              parent.children.push_back(node.id);
+            }
+            m_fid_to_last_provider[fid_id] = id;
+          }
+        } else {
+          // Group is bundled: process the bundled field
+          const auto& gr_fid = group.m_bundle->get_header().get_identifier();
+          const int gr_fid_id = add_fid(gr_fid);
+          node.gr_required.insert(gr_fid_id);
+          node.gr_updated.insert(gr_fid_id);
+          auto it = m_fid_to_last_provider.find(gr_fid_id);
+          if (it==m_fid_to_last_provider.end()) {
+            // It might still be ok, as long as there is a provider for all the fields in the group
+            bool all_members_have_providers = true;
+            for (auto it_f : group.m_fields) {
+              const auto& fid = it_f.second->get_header().get_identifier();
+              const int fid_id = add_fid(fid);
+              auto it_p = m_fid_to_last_provider.find(fid_id);
+              if (it_p==m_fid_to_last_provider.end()) {
+                m_unmet_deps[id].insert(fid_id);
+                all_members_have_providers = false;
+              } else {
+                Node& parent = m_nodes[it_p->second];
+                parent.children.push_back(node.id);
+              }
+            }
+            if (!all_members_have_providers) {
+              m_unmet_deps[id].insert(gr_fid_id);
+            }
+          } else {
+            // Establish parent-child relationship
+            Node& parent = m_nodes[it->second];
+            parent.children.push_back(node.id);
+          }
+          m_fid_to_last_provider[gr_fid_id] = id;
+          m_gr_fid_to_group.emplace(gr_fid,group);
+
+          // Additionally, each field in the group is implicitly 'computed'
+          // by this node, so update their last provider
+          for (auto it_f : group.m_fields) {
+            const auto& fid = it_f.second->get_header().get_identifier();
+            const int fid_id = add_fid(fid);
+            m_fid_to_last_provider[fid_id] = id;
+          }
+        }
+      }
+      ++id;
     }
   }
 }
