@@ -1350,6 +1350,7 @@ void shoc_energy_integrals_f(Int shcol, Int nlev, Real *host_dse, Real *pdel,
   using Pack1d     = typename ekat::Pack<Real,1>;
   using view_1d    = typename SHF::view_1d<Pack1d>;
   using view_2d    = typename SHF::view_2d<Spack>;
+  using view_3d    = typename SHF::view_3d<Spack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename SHF::MemberType;
@@ -1376,8 +1377,11 @@ void shoc_energy_integrals_f(Int shcol, Int nlev, Real *host_dse, Real *pdel,
     wv_int_d("wv_int", shcol),
     wl_int_d("wl_int", shcol);
 
-  const Int nk_pack = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  // C++ treats u/v_wind as 1 array.
+  const Int nlev_packs = ekat::npack<Spack>(nlev);
+  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
+
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
@@ -1388,12 +1392,20 @@ void shoc_energy_integrals_f(Int shcol, Int nlev, Real *host_dse, Real *pdel,
     const auto u_wind_s   = ekat::subview(u_wind_d, i);
     const auto v_wind_s   = ekat::subview(v_wind_d, i);
 
+    // Copy horiz_wind into single view
+    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      horiz_wind_s(0,k) = u_wind_s(k);
+      horiz_wind_s(1,k) = v_wind_s(k);
+    });
+    team.team_barrier();
+
     Scalar se_int_s{0};
     Scalar ke_int_s{0};
     Scalar wv_int_s{0};
     Scalar wl_int_s{0};
 
-    SHF::shoc_energy_integrals(team, nlev, host_dse_s, pdel_s, rtm_s, rcm_s, u_wind_s, v_wind_s,
+    SHF::shoc_energy_integrals(team, nlev, host_dse_s, pdel_s, rtm_s, rcm_s, horiz_wind_s,
                                se_int_s, ke_int_s, wv_int_s, wl_int_s);
 
     se_int_d(i)[0] = se_int_s;
@@ -1479,6 +1491,7 @@ void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
   using SHOC       = Functions<Real, DefaultDevice>;
   using Spack      = typename SHOC::Spack;
   using view_2d    = typename SHOC::view_2d<Spack>;
+  using view_3d    = typename SHOC::view_3d<Spack>;
   using KT         = typename SHOC::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename SHOC::MemberType;
@@ -1522,8 +1535,10 @@ void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
           tkh_zi_2d("tkh_zi", shcol, nlevi_packs),
           tk_zi_2d("tk_zi", shcol, nlevi_packs);
 
-  const Int nk_pack = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  // C++ treats u/v_wind as 1 array.
+  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
+
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
@@ -1552,7 +1567,15 @@ void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
     const auto tkh_zi_1d      = ekat::subview(tkh_zi_2d, i);
     const auto tk_zi_1d       = ekat::subview(tk_zi_2d, i);
 
-    SHOC::diag_second_moments(team, nlev, nlevi, thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d,
+    // Copy wind into single view
+    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      horiz_wind_s(0,k) = u_wind_1d(k);
+      horiz_wind_s(1,k) = v_wind_1d(k);
+    });
+    team.team_barrier();
+
+    SHOC::diag_second_moments(team, nlev, nlevi, thetal_1d, qw_1d, horiz_wind_s, tke_1d, isotropy_1d, tkh_1d, tk_1d,
                      dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d, isotropy_zi_1d, tkh_zi_1d, tk_zi_1d,
                      thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d,
                      qwthl_sec_1d, uw_sec_1d, vw_sec_1d, wtke_sec_1d, w_sec_1d);
@@ -1575,6 +1598,7 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
   using Scalar        = typename SHOC::Scalar;
   using Spack         = typename SHOC::Spack;
   using view_2d       = typename SHOC::view_2d<Spack>;
+  using view_3d       = typename SHOC::view_3d<Spack>;
   using KT            = typename SHOC::KT;
   using ExeSpace      = typename KT::ExeSpace;
   using MemberType    = typename SHOC::MemberType;
@@ -1627,6 +1651,10 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
 
   const Int nlev_packs = ekat::npack<Spack>(nlev);
   const Int nlevi_packs = ekat::npack<Spack>(nlevi);
+
+  // C++ treats u/v_wind as 1 array.
+  view_3d horiz_wind_d("wind",shcol,2,nlev_packs);
+
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
   // Local variable workspace
@@ -1659,6 +1687,14 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
     const auto wtke_sec_1d    = ekat::subview(wtke_sec_2d, i);
     const auto w_sec_1d       = ekat::subview(w_sec_2d, i);
 
+    // Copy wind into single view
+    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+       horiz_wind_s(0,k) = u_wind_1d(k);
+       horiz_wind_s(1,k) = v_wind_1d(k);
+    });
+    team.team_barrier();
+
     Scalar wthl_s   = wthl_1d(i)[0];
     Scalar wqw_s    = wqw_1d(i)[0];
     Scalar uw_s     = uw_1d(i)[0];
@@ -1667,7 +1703,7 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
     Scalar wstar_s  = wstar_1d(i)[0];
 
     SHOC::diag_second_shoc_moments(team, nlev, nlevi,
-       thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d, dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d,
+       thetal_1d, qw_1d, horiz_wind_s, tke_1d, isotropy_1d, tkh_1d, tk_1d, dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d,
        wthl_s, wqw_s, uw_s, vw_s, ustar2_s, wstar_s,
        workspace, thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d, qwthl_sec_1d,
        uw_sec_1d, vw_sec_1d, wtke_sec_1d, w_sec_1d);
@@ -2282,6 +2318,9 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
   view_3d
     X1_d("X1",shcol,nlev,ekat::npack<Spack>(2));
 
+  // C++ treats u/v_wind as 1 array.
+  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
+
   // Local variable workspace
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, 8, policy);
 
@@ -2311,13 +2350,27 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
     const auto tke_s = ekat::subview(tke_d, i);
     const auto tracer_s = Kokkos::subview(tracer_d, i, Kokkos::ALL(), Kokkos::ALL());
 
+    // Copy wind into single view
+    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      horiz_wind_s(0,k) = u_wind_s(k);
+      horiz_wind_s(1,k) = v_wind_s(k);
+    });
+    team.team_barrier();
+
     SHF::update_prognostics_implicit(team, nlev, nlevi, num_tracer, dtime,
                                      dz_zt_s, dz_zi_s, rho_zt_s, zt_grid_s,
                                      zi_grid_s, tk_s, tkh_s, uw_sfc_s, vw_sfc_s,
                                      wthl_sfc_s, wqw_sfc_s, wtracer_sfc_s,
                                      workspace,
                                      X1_s,
-                                     thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s);
+                                     thetal_s, qw_s, tracer_s, tke_s, horiz_wind_s);
+
+    // Copy wind into separate views
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      u_wind_s(k) = horiz_wind_s(0,k);
+      v_wind_s(k) = horiz_wind_s(1,k);
+    });
   });
 
   // Remove extra tracer slots
@@ -2553,6 +2606,7 @@ void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_win
 
   using Spack      = typename SHF::Spack;
   using view_2d    = typename SHF::view_2d<Spack>;
+  using view_3d    = typename SHF::view_3d<Spack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename SHF::MemberType;
@@ -2575,9 +2629,11 @@ void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_win
     //output
     sterm_d (temp_d[3]);
 
-  const Int nk_pack = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  // C++ treats u/v_wind as 1 array.
+  const Int nlev_packs = ekat::npack<Spack>(nlev);
+  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
 
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const Int i = team.league_rank();
 
@@ -2588,7 +2644,15 @@ void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_win
       //output
       const auto sterm_s  = ekat::subview(sterm_d ,i);
 
-      SHF::compute_shr_prod(team, nlevi, nlev, dz_zi_s, u_wind_s, v_wind_s, sterm_s);
+      // Copy wind into single view
+      const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+        horiz_wind_s(0,k) = u_wind_s(k);
+        horiz_wind_s(1,k) = v_wind_s(k);
+      });
+      team.team_barrier();
+
+      SHF::compute_shr_prod(team, nlevi, nlev, dz_zi_s, horiz_wind_s, sterm_s);
     });
 
   // Sync back to host
@@ -2810,12 +2874,14 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
 {
   using SHF  = Functions<Real, DefaultDevice>;
 
-  using Scalar         = typename SHF::Scalar;
-  using Spack          = typename SHF::Spack;
-  using Pack1d         = typename ekat::Pack<Scalar, 1>;
-  using view_1d        = typename SHF::view_1d<Pack1d>;
-  using view_2d        = typename SHF::view_2d<Spack>;
-  using view_3d        = typename SHF::view_3d<Spack>;
+  using Scalar     = typename SHF::Scalar;
+  using Spack      = typename SHF::Spack;
+  using Pack1d     = typename ekat::Pack<Scalar, 1>;
+  using view_1d    = typename SHF::view_1d<Pack1d>;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using view_3d    = typename SHF::view_3d<Spack>;
+  using ExeSpace   = typename SHF::KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
 
   // Initialize Kokkos views, sync to device
   static constexpr Int num_1d_arrays = 7;
@@ -2911,14 +2977,33 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
   Kokkos::resize(qtracers_d,
                  shcol,nlev,ekat::npack<Spack>(num_qtracers+3));
 
+  // C++ treats u/v_wind as 1 array.
+  const auto nlev_packs = ekat::npack<Spack>(nlev);
+  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
+
+  // Copy wind into single view
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto u_wind_s = ekat::subview(u_wind_d, i);
+    const auto v_wind_s = ekat::subview(v_wind_d, i);
+    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      horiz_wind_s(0,k) = u_wind_s(k);
+      horiz_wind_s(1,k) = v_wind_s(k);
+    });
+  });
+
   // Pack our data into structs and ship it off to shoc_main.
   SHF::SHOCInput shoc_input{host_dx_d,  host_dy_d,     zt_grid_d, zi_grid_d,
                              pres_d,    presi_d,       pdel_d,    thv_d,
                              w_field_d, wthl_sfc_d,    wqw_sfc_d, uw_sfc_d,
                              vw_sfc_d,  wtracer_sfc_d, exner_d,   phis_d};
-  SHF::SHOCInputOutput shoc_input_output{host_dse_d, tke_d,    thetal_d,       qw_d,
-                                         u_wind_d,   v_wind_d, wthv_sec_d,     qtracers_d,
-                                         tk_d,       tkh_d,    shoc_cldfrac_d, shoc_ql_d};
+  SHF::SHOCInputOutput shoc_input_output{host_dse_d,   tke_d,      thetal_d,       qw_d,
+                                         horiz_wind_d, wthv_sec_d, qtracers_d,
+                                         tk_d,         tkh_d,      shoc_cldfrac_d, shoc_ql_d};
   SHF::SHOCOutput shoc_output{pblh_d, shoc_ql2_d};
   SHF::SHOCHistoryOutput shoc_history_output{shoc_mix_d,  w_sec_d,    thl_sec_d, qw_sec_d,
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
@@ -2928,6 +3013,20 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
   const auto elapsed_microsec = SHF::shoc_main(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
                                                shoc_input, shoc_input_output, shoc_output, shoc_history_output);
   (void)elapsed_microsec;
+
+  // Copy wind back into separate views
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto u_wind_s = ekat::subview(u_wind_d, i);
+    const auto v_wind_s = ekat::subview(v_wind_d, i);
+    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      u_wind_s(k) = horiz_wind_s(0,k);
+      v_wind_s(k) = horiz_wind_s(1,k);
+    });
+  });
 
   // Remove temporary slots
   Kokkos::resize(qtracers_d,
@@ -2981,6 +3080,7 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
   using view_1d    = typename SHOC::view_1d<Pack1>;
   using bview_1d   = typename SHOC::view_1d<BPack1>;
   using view_2d    = typename SHOC::view_2d<Spack>;
+  using view_3d    = typename SHOC::view_3d<Spack>;
   using ExeSpace   = typename SHOC::KT::ExeSpace;
   using MemberType = typename SHOC::MemberType;
 
@@ -3005,8 +3105,11 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
 
   Int npbl = nlev;
 
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_pack);
+  // C++ treats u/v_wind as 1 array.
+  const Int nlev_packs = ekat::npack<Spack>(nlev);
+  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
+
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
@@ -3016,12 +3119,20 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
     const auto thv_1d  = ekat::subview(thv_2d, i);
     const auto rino_1d = ekat::subview(rino_2d, i);
 
+    // Copy wind into single view
+    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      horiz_wind_s(0,k) = u_1d(k);
+      horiz_wind_s(1,k) = v_1d(k);
+    });
+    team.team_barrier();
+
     Scalar& ustar_s   = ustar_1d(i)[0];
     Scalar& thv_ref_s = thv_ref_1d(i)[0];
     Scalar& pblh_s    = pblh_1d(i)[0];
     bool& check_s     = check_1d(i)[0];
 
-    SHOC::pblintd_height(team, nlev, npbl, z_1d, u_1d, v_1d, ustar_s, thv_1d, thv_ref_s, pblh_s, rino_1d, check_s);
+    SHOC::pblintd_height(team, nlev, npbl, z_1d, horiz_wind_s, ustar_s, thv_1d, thv_ref_s, pblh_s, rino_1d, check_s);
  });
 
   std::vector<view_1d> out_1d_views = {pblh_1d};
@@ -3326,6 +3437,7 @@ void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Rea
     using Pack1d     = typename ekat::Pack<Real,1>;
     using view_1d    = typename SHF::view_1d<Pack1d>;
     using view_2d    = typename SHF::view_2d<Spack>;
+    using view_3d    = typename SHF::view_3d<Spack>;
     using KT         = typename SHF::KT;
     using ExeSpace   = typename KT::ExeSpace;
     using MemberType = typename SHF::MemberType;
@@ -3364,11 +3476,14 @@ void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Rea
 
 
     const Int npbl = nlev;
-    const Int nlev_pack = ekat::npack<Spack>(nlev);
-    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_pack);
+
+    // C++ treats u/v_wind as 1 array.
+    const Int nlev_packs = ekat::npack<Spack>(nlev);
+    view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
 
     // Local variable workspace
-    ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlev_pack, 2, policy);
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+    ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlev_packs, 2, policy);
 
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const Int i = team.league_rank();
@@ -3389,8 +3504,16 @@ void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Rea
       const auto v_s = ekat::subview(v_d, i);
       const auto cldn_s = ekat::subview(cldn_d, i);
 
-      SHF::pblintd(team,nlev,nlevi,npbl,z_s,zi_s,thl_s,ql_s,q_s,u_s,v_s,ustar_s,
-                           obklen_s,kbfs_s,cldn_s,workspace,pblh_s);
+      // Copy wind into single view
+      const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+        horiz_wind_s(0,k) = u_s(k);
+        horiz_wind_s(1,k) = v_s(k);
+      });
+      team.team_barrier();
+
+      SHF::pblintd(team,nlev,nlevi,npbl,z_s,zi_s,thl_s,ql_s,q_s,horiz_wind_s,ustar_s,
+                   obklen_s,kbfs_s,cldn_s,workspace,pblh_s);
 
       pblh_d(i)[0] = pblh_s;
     });
@@ -3411,6 +3534,7 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
   using Pack1d     = typename ekat::Pack<Real,1>;
   using view_1d    = typename SHF::view_1d<Pack1d>;
   using view_2d    = typename SHF::view_2d<Spack>;
+  using view_3d    = typename SHF::view_3d<Spack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename SHF::MemberType;
@@ -3455,6 +3579,9 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
   const Int nlevi_packs = ekat::npack<Spack>(nlevi);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
+  // C++ treats u/v_wind as 1 array.
+  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
+
   // Local variable workspace
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, 3, policy);
 
@@ -3481,8 +3608,16 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto isotropy_s = ekat::subview(isotropy_d, i);
 
+    // Copy wind into single view
+    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      horiz_wind_s(0,k) = u_wind_s(k);
+      horiz_wind_s(1,k) = v_wind_s(k);
+    });
+    team.team_barrier();
+
     SHF::shoc_tke(team,nlev,nlevi,dtime,wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
-                  u_wind_s,v_wind_s,brunt_s,obklen_s,zt_grid_s,zi_grid_s,pblh_s,
+                  horiz_wind_s,brunt_s,obklen_s,zt_grid_s,zi_grid_s,pblh_s,
                   workspace,
                   tke_s,tk_s,tkh_s,isotropy_s);
   });

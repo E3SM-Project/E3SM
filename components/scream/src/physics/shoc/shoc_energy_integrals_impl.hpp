@@ -16,8 +16,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& pdel,
   const uview_1d<const Spack>& rtm,
   const uview_1d<const Spack>& rcm,
-  const uview_1d<const Spack>& u_wind,
-  const uview_1d<const Spack>& v_wind,
+  const uview_2d<const Spack> &horiz_wind,
   Scalar&                      se_int,
   Scalar&                      ke_int,
   Scalar&                      wv_int,
@@ -35,7 +34,7 @@ void Functions<S,D>
   // Compute ke_int
   ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
-    return sp(0.5)*(ekat::square(u_wind(k))+ekat::square(v_wind(k)))*pdel(k)/ggr;
+    return sp(0.5)*(ekat::square(horiz_wind(0,k))+ekat::square(horiz_wind(1,k)))*pdel(k)/ggr;
   }, ke_int);
 
   // Compute wv_int

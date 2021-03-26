@@ -13,10 +13,9 @@ namespace shoc {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::diag_second_moments(
-  const MemberType& team, const Int& nlev, const Int& nlevi,
-  const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
-  const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
+void Functions<S,D>::diag_second_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
+  const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_2d<const Spack> &horiz_wind,
+  const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
   const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
   const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
   const uview_1d<Spack>& isotropy_zi, const uview_1d<Spack>& tkh_zi, const uview_1d<Spack>& tk_zi,
@@ -73,9 +72,11 @@ void Functions<S,D>::diag_second_moments(
   calc_shoc_vertflux(team, nlev, tkh_zi, dz_zi, tke, wtke_sec);
 
   // Calculate vertical flux for momentum (zonal wind)
+  const auto u_wind = ekat::subview(horiz_wind, 0);
   calc_shoc_vertflux(team, nlev, tk_zi, dz_zi, u_wind, uw_sec);
 
   // Calculate vertical flux for momentum (meridional wind)
+  const auto v_wind = ekat::subview(horiz_wind, 1);
   calc_shoc_vertflux(team, nlev, tk_zi, dz_zi, v_wind, vw_sec);
 }
 

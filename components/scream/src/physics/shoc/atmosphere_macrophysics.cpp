@@ -72,8 +72,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   // Input/Output variables
   m_required_fields.emplace("s",        scalar3d_layout_mid, J/kg,        grid_name);
   m_required_fields.emplace("tke",      scalar3d_layout_mid, (m*m)/(s*s), grid_name);
-  m_required_fields.emplace("u",        scalar3d_layout_mid, m/s,         grid_name);
-  m_required_fields.emplace("v",        scalar3d_layout_mid, m/s,         grid_name);
   m_required_fields.emplace("wthv_sec", scalar3d_layout_mid, K*(m/s),     grid_name);
   m_required_fields.emplace("tkh",      scalar3d_layout_mid, (m*m)/s,     grid_name);
   m_required_fields.emplace("tk",       scalar3d_layout_mid, (m*m)/s,     grid_name);
@@ -81,8 +79,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   m_computed_fields.emplace("s",        scalar3d_layout_mid, J/kg,        grid_name);
   m_computed_fields.emplace("tke",      scalar3d_layout_mid, (m*m)/(s*s), grid_name);
-  m_computed_fields.emplace("u",        scalar3d_layout_mid, m/s,         grid_name);
-  m_computed_fields.emplace("v",        scalar3d_layout_mid, m/s,         grid_name);
   m_computed_fields.emplace("wthv_sec", scalar3d_layout_mid, K*(m/s),     grid_name);
   m_computed_fields.emplace("tkh",      scalar3d_layout_mid, (m*m)/s,     grid_name);
   m_computed_fields.emplace("tk",       scalar3d_layout_mid, (m*m)/s,     grid_name);
@@ -93,28 +89,42 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   // Tracer group
   m_inout_groups_req.emplace("TRACERS",grid->name());
+
+  // Wind group
+  m_inout_groups_req.emplace("horiz_wind",grid->name());
 }
 // =========================================================================================
 void SHOCMacrophysics::
 set_updated_group (const FieldGroup<Real>& group)
 {
-  EKAT_REQUIRE_MSG(group.m_info->size() >= 3,
-                   "Error! Shoc requires at least 3 tracers (tke, shoc_qv, shoc_ql) as inputs.");
-
   const auto& name = group.m_info->m_group_name;
 
-  EKAT_REQUIRE_MSG(name=="TRACERS",
+  EKAT_REQUIRE_MSG(name=="TRACERS" || name=="horiz_wind",
     "Error! We were not expecting a field group called '" << name << "\n");
 
   EKAT_REQUIRE_MSG(group.m_info->m_bundled,
-      "Error! Shoc expects bundled fields for tracers.\n");
+      "Error! Shoc expects bundled fields for tracers and wind.\n");
 
-  // Add Q bundle as in/out field
-  m_shoc_fields_in["Q"]  = *group.m_bundle;
-  m_shoc_fields_out["Q"] = *group.m_bundle;
+  if (name=="TRACERS") {
+    EKAT_REQUIRE_MSG(group.m_info->size() >= 3,
+                     "Error! Shoc requires at least 3 tracers (tke, shoc_qv, shoc_ql) as inputs.");
 
-  // Calculate number of advected tracers
-  m_num_tracers = m_shoc_fields_in["Q"].get_header().get_identifier().get_layout().dim(1);
+    // Add Q bundle as in/out field
+    m_shoc_fields_in["Q"]  = *group.m_bundle;
+    m_shoc_fields_out["Q"] = *group.m_bundle;
+
+    // Calculate number of advected tracers
+    m_num_tracers = m_shoc_fields_in["Q"].get_header().get_identifier().get_layout().dim(1);
+  }
+
+  if (name=="horiz_wind") {
+    EKAT_REQUIRE_MSG(group.m_info->size() == 2,
+                     "Error! Shoc requires exactly 2 wind vectors (u, v) as inputs.");
+
+    // Add V bundle as in/out field
+    m_shoc_fields_in["V"]  = *group.m_bundle;
+    m_shoc_fields_out["V"] = *group.m_bundle;
+  }
 }
 
 // =========================================================================================
@@ -141,8 +151,6 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   auto shoc_qv  = m_shoc_fields_out["shoc_qv"].get_reshaped_view<Spack**>();
   auto tke      = m_shoc_fields_out["tke"].get_reshaped_view<Spack**>();
   auto s        = m_shoc_fields_out["s"].get_reshaped_view<Spack**>();
-  auto u        = m_shoc_fields_out["u"].get_reshaped_view<Spack**>();
-  auto v        = m_shoc_fields_out["v"].get_reshaped_view<Spack**>();
   auto Q        = m_shoc_fields_out["Q"].get_reshaped_view<Spack***>();
 
   const int nlev_packs = ekat::npack<Spack>(m_num_levs);
@@ -173,8 +181,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
 
   shoc_preamble.set_variables(m_num_cols,m_num_levs,m_num_tracers,nlev_packs,num_tracer_packs,t,alst,
                               zi,zm,pmid,pdel,omega,shf,cflx_k0,wsx,wsy,shoc_qv,Q,shoc_ql,tke,
-                              s,u,v,
-                              rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
+                              s,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                               wtracer_sfc,wm_zt,exner,thlm,qw,cloud_frac,tracers);
 
   // Input Variables:
@@ -200,8 +207,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   input_output.tke          = shoc_preamble.tke_zt;
   input_output.thetal       = shoc_preamble.thlm;
   input_output.qw           = shoc_preamble.qw;
-  input_output.u_wind       = shoc_preamble.um;
-  input_output.v_wind       = shoc_preamble.vm;
+  input_output.horiz_wind   = m_shoc_fields_out["V"].get_reshaped_view<Spack***>();
   input_output.wthv_sec     = m_shoc_fields_out["wthv_sec"].get_reshaped_view<Spack**>();
   input_output.qtracers     = shoc_preamble.tracers;
   input_output.tk           = m_shoc_fields_out["tk"].get_reshaped_view<Spack**>();
@@ -313,13 +319,18 @@ void SHOCMacrophysics::finalize_impl()
 
 void SHOCMacrophysics::register_fields (FieldRepository<Real>& field_repo) const {
   std::set<ci_string> q_names =
-    { "shoc_ql", "shoc_qv", "tke"};
+    { "shoc_ql", "shoc_qv", "tke" };
+  std::set<ci_string> v_names =
+    { "u", "v" };
 
   for (auto& fid : m_required_fields) {
     const auto& name = fid.name();
     if (q_names.count(name)>0) {
       field_repo.register_field<Spack>(fid,"TRACERS");
-    } else {
+    } else if (v_names.count(name)>0) {
+      field_repo.register_field<Spack>(fid,"horiz_wind");
+    }
+    else {
       field_repo.register_field<Spack>(fid);
     }
   }
@@ -327,6 +338,8 @@ void SHOCMacrophysics::register_fields (FieldRepository<Real>& field_repo) const
     const auto& name = fid.name();
     if (q_names.count(name)>0) {
       field_repo.register_field<Spack>(fid,"TRACERS");
+    } else if (v_names.count(name)>0) {
+      field_repo.register_field<Spack>(fid,"horiz_wind");
     } else {
       field_repo.register_field<Spack>(fid);
     }

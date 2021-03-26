@@ -37,8 +37,7 @@ void Functions<S,D>::update_prognostics_implicit(
   const uview_1d<Spack>&       qw,
   const uview_2d<Spack>&       tracer,
   const uview_1d<Spack>&       tke,
-  const uview_1d<Spack>&       u_wind,
-  const uview_1d<Spack>&       v_wind)
+  const uview_2d<Spack>&       horiz_wind)
 {
   // Define temporary variables
   uview_1d<Spack> tmpi, tkh_zi,
@@ -90,8 +89,8 @@ void Functions<S,D>::update_prognostics_implicit(
     const Scalar taux = rho*uw;
     const Scalar tauy = rho*vw;
 
-    const Scalar u_wind_sfc = u_wind(last_nlev_pack)[last_nlev_indx];
-    const Scalar v_wind_sfc = v_wind(last_nlev_pack)[last_nlev_indx];
+    const Scalar u_wind_sfc = horiz_wind(0, last_nlev_pack)[last_nlev_indx];
+    const Scalar v_wind_sfc = horiz_wind(1, last_nlev_pack)[last_nlev_indx];
 
     const Scalar ws = ekat::impl::max(std::sqrt((u_wind_sfc*u_wind_sfc) + v_wind_sfc*v_wind_sfc), wsmin);
     const Scalar tau = std::sqrt(taux*taux + tauy*tauy);
@@ -119,8 +118,11 @@ void Functions<S,D>::update_prognostics_implicit(
 
   // Store RHS values in X1 and tracer for 1st and 2nd solve respectively
   team.team_barrier();
+  const auto u_wind = ekat::subview(horiz_wind, 0);
+  const auto v_wind = ekat::subview(horiz_wind, 1);
   const auto s_u_wind = ekat::scalarize(u_wind);
   const auto s_v_wind = ekat::scalarize(v_wind);
+
   const auto s_thetal = ekat::scalarize(thetal);
   const auto s_qw = ekat::scalarize(qw);
   const auto s_tke = ekat::scalarize(tke);
