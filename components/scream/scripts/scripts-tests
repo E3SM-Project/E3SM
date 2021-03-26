@@ -17,7 +17,9 @@ If you are on a batch machine, it is expected that you are on a compute node.
 TODO: Add doctests to libs
 """
 
-from utils import run_cmd, check_minimum_python_version, expect, get_current_head
+from utils import run_cmd, check_minimum_python_version, expect
+from git_utils import get_current_head
+
 check_minimum_python_version(3, 4)
 
 from machines_specs import is_machine_supported, is_cuda_machine, get_all_supported_machines
@@ -254,7 +256,7 @@ class TestGatherAllData(TestBaseOuter.TestBase):
 ###############################################################################
 
     CMDS_TO_TEST = [
-        "gather-all-data './scripts/test-all-scream -m $machine -b HEAD -k' -l -m $machine",
+        "./gather-all-data './scripts/test-all-scream -m $machine -b HEAD -k' -l -m $machine",
     ]
 
     def __init__(self, *internal_args):
