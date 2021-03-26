@@ -41,21 +41,22 @@ if [ $skip_testing -eq 0 ]; then
       ./scream/components/scream/scripts/gather-all-data "./scripts/test-all-scream -t valg --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
   fi
 
-  if [ $test_scripts -eq 1 ]; then
-      cd scream/components/scream/scripts
-      ./scripts-tests -g
-      if [ $? -ne 0 ]; then
-        exit 1
-      fi
-      ./scripts-tests -c
-      if [ $? -ne 0 ]; then
-        exit 1
-      fi
-      ./scripts-tests -f -m $SCREAM_MACHINE
-      if [ $? -ne 0 ]; then
-        exit 1
-      fi
-  fi
+  # Uncomment this once pylint is available on target machines
+  # if [ $test_scripts -eq 1 ]; then
+  #     cd scream/components/scream/scripts
+  #     ./scripts-tests -g
+  #     if [ $? -ne 0 ]; then
+  #       exit 1
+  #     fi
+  #     ./scripts-tests -c
+  #     if [ $? -ne 0 ]; then
+  #       exit 1
+  #     fi
+  #     ./scripts-tests -f -m $SCREAM_MACHINE
+  #     if [ $? -ne 0 ]; then
+  #       exit 1
+  #     fi
+  # fi
 else
   echo "Tests were skipped, since the Github label 'CI: Integrate Without Testing' was found.\n"
 fi
