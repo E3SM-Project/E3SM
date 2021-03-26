@@ -9,6 +9,10 @@ except ImportError:
 
 def run_model():
 
+    MPAS_SEAICE_TESTCASES_RUN_COMMAND = os.environ.get('MPAS_SEAICE_TESTCASES_RUN_COMMAND')
+    if (MPAS_SEAICE_TESTCASES_RUN_COMMAND is None):
+        MPAS_SEAICE_TESTCASES_RUN_COMMAND = ""
+
     gridSizes = [2562, 10242, 40962, 163842]
     #gridSizes = [10242]
 
@@ -49,7 +53,7 @@ def run_model():
             os.system("ln -s namelist.seaice.%s.%i namelist.seaice" %(operatorMethod, gridSize))
             os.system("ln -s streams.seaice.strain streams.seaice")
 
-            os.system("../../../../../seaice_model")
+            os.system("%s ../../../../../seaice_model" %(MPAS_SEAICE_TESTCASES_RUN_COMMAND))
 
             os.system("mv output output_%s_%i" %(operatorMethod, gridSize))
 

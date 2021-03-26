@@ -142,7 +142,7 @@ def strain_stress_divergence_map():
     fileIC.close()
 
     # Wachspress
-    fileWach = Dataset("./output_wachspress_40962/output.2000.nc","r")
+    fileWach = Dataset("./output_wachspress_alt_40962/output.2000.nc","r")
 
     stressDivergenceUWach = fileWach.variables["stressDivergenceU"][0,:]
     stressDivergenceVWach = fileWach.variables["stressDivergenceV"][0,:]
@@ -157,7 +157,7 @@ def strain_stress_divergence_map():
     fileWach.close()
 
     # PWL
-    filePWL = Dataset("./output_pwl_40962/output.2000.nc","r")
+    filePWL = Dataset("./output_pwl_alt_40962/output.2000.nc","r")
 
     stressDivergenceUPWL = filePWL.variables["stressDivergenceU"][0,:]
     stressDivergenceVPWL = filePWL.variables["stressDivergenceV"][0,:]
@@ -272,52 +272,6 @@ def strain_stress_divergence_map():
     plt.clf()
     plt.cla()
     plt.close()
-
-
-    # histograms
-
-    stressDivergenceUWachDiffHist = []
-    stressDivergenceUPWLDiffHist  = []
-    stressDivergenceUWeakDiffHist = []
-
-    maxValue = 0.0
-    for iVertex in range(0,nVertices):
-
-        if (latVertex[iVertex] > 20.0*degreesToRadians):
-
-            stressDivergenceUWachDiffHist.append(math.fabs(stressDivergenceUWachDiff[iVertex]))
-            stressDivergenceUPWLDiffHist.append(math.fabs(stressDivergenceUPWLDiff[iVertex]))
-            stressDivergenceUWeakDiffHist.append(math.fabs(stressDivergenceUWeakDiff[iVertex]))
-
-            maxValue = max(math.fabs(stressDivergenceUWachDiff[iVertex]),maxValue)
-            maxValue = max(math.fabs(stressDivergenceUPWLDiff[iVertex]),maxValue)
-
-
-    mpl.rc('text', usetex=True)
-    mpl.rc('font', family='Times New Roman', size=8)
-    mpl.rcParams['axes.linewidth'] = 0.5
-
-    plt.figure(figsize=(3.74016, 3))
-
-    #plt.hist(stressDivergenceUWachDiffHist, 50, normed=0, range=[0.0,0.08], histtype='step', lw=1, color='blue',  label='Wachspress')
-    #plt.hist(stressDivergenceUPWLDiffHist,  50, normed=0, range=[0.0,0.08], histtype='step', lw=1, color='red',   label='PWL')
-    #plt.hist(stressDivergenceUWeakDiffHist, 50, normed=0, range=[0.0,0.08], histtype='step', lw=1, color='green', label='Weak')
-    plt.hist(stressDivergenceUWachDiffHist, 50, range=[0.0,0.08], histtype='step', lw=1, color='blue',  label='Wachspress')
-    plt.hist(stressDivergenceUPWLDiffHist,  50, range=[0.0,0.08], histtype='step', lw=1, color='red',   label='PWL')
-    plt.hist(stressDivergenceUWeakDiffHist, 50, range=[0.0,0.08], histtype='step', lw=1, color='green', label='Weak')
-
-    plt.yscale('log', nonpositive='clip')
-
-    plt.xlabel("Error")
-    plt.ylabel("Frequency")
-
-    plt.legend(["Wachspress","PWL","Weak"], frameon=False, fontsize=8)
-
-    plt.xlim([0,0.08])
-
-    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
-
-    plt.savefig("strain_stress_divergence_hist.png",dpi=400)
 
 #-------------------------------------------------------------------------------
 
