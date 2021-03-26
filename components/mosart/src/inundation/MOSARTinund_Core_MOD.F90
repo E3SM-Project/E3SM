@@ -74,7 +74,7 @@ MODULE MOSARTinund_Core_MOD
     
     ! Channel routing computation :     
     ! Diffusion wave method :
-    if ( Tctl%RoutingMethod .eq. 2 ) then               
+    if ( Tctl%RoutingMethod .eq. 4 ) then               
       
       ! --------------------------------- 
       ! Need code to retrieve values of TRunoff%yr_exchg_dstrm(:) and TRunoff%wr_exchg_dstrm(:) .
