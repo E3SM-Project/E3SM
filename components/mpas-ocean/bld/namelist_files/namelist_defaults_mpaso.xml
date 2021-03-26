@@ -136,7 +136,9 @@
 <!-- mesoscale_eddy_parameterizations -->
 <config_eddying_resolution_taper>'ramp'</config_eddying_resolution_taper>
 <config_eddying_resolution_ramp_min>20e3</config_eddying_resolution_ramp_min>
+<config_eddying_resolution_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_eddying_resolution_ramp_min>
 <config_eddying_resolution_ramp_max>30e3</config_eddying_resolution_ramp_max>
+<config_eddying_resolution_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_eddying_resolution_ramp_max>
 
 <!-- Redi_isopycnal_mixing -->
 <config_use_Redi>.true.</config_use_Redi>
