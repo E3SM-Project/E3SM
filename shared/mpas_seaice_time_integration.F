@@ -51,9 +51,6 @@ contains
          seaice_check_state, &
          seaice_load_balance_timers
 
-    use seaice_unit_test, only: &
-         seaice_perform_unit_test
-
     use seaice_velocity_solver, only: &
          seaice_run_velocity_solver
 
@@ -72,6 +69,9 @@ contains
     use seaice_prescribed, only: &
          seaice_run_prescribed_ice
 
+    use seaice_special_boundaries, only: &
+         seaice_set_special_boundaries_zero_tracers
+
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
 
@@ -88,7 +88,6 @@ contains
          configs
 
     logical, pointer :: &
-         config_perform_unit_test, &
          config_use_dynamics, &
          config_use_advection
 
@@ -121,12 +120,6 @@ contains
     configs => domain % configs
 
     call MPAS_pool_get_config(configs, "config_use_advection", config_use_advection)
-    call MPAS_pool_get_config(configs, "config_perform_unit_test", config_perform_unit_test)
-
-    if (config_perform_unit_test) then
-       call seaice_perform_unit_test(domain)
-       return
-    endif
 
     ! prescribed ice mode
     call seaice_run_prescribed_ice(domain)
@@ -175,6 +168,9 @@ contains
 
     ! check the physical state of the model
     call seaice_check_state(domain)
+
+    ! tracer special boundaries
+    call seaice_set_special_boundaries_zero_tracers(domain)
 
   end subroutine seaice_timestep!}}}
 

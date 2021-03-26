@@ -48,12 +48,8 @@ contains
        rotateCartesianGrid, &
        includeMetricTerms)!{{{
 
-    use seaice_mesh, only: &
-         seaice_cell_vertices_at_vertex
-
     use seaice_velocity_solver_variational_shared, only: &
-         seaice_calc_local_coords, &
-         seaice_calc_variational_metric_terms
+         seaice_calc_local_coords
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -66,15 +62,9 @@ contains
          rotateCartesianGrid, & !< Input:
          includeMetricTerms     !< Input:
 
-    integer, dimension(:,:), pointer :: &
-         cellVerticesAtVertex
-
     integer, pointer :: &
          nCells, &
          maxEdges
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         tanLatVertexRotatedOverRadius
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
          xLocal, &
@@ -92,8 +82,6 @@ contains
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_dimension(mesh, "maxEdges", maxEdges)
 
-    call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
-    call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
     call MPAS_pool_get_array(velocity_variational, "basisGradientU", basisGradientU)
     call MPAS_pool_get_array(velocity_variational, "basisGradientV", basisGradientV)
     call MPAS_pool_get_array(velocity_variational, "basisIntegralsMetric", basisIntegralsMetric)
@@ -108,16 +96,6 @@ contains
          xLocal, &
          yLocal, &
          rotateCartesianGrid)
-
-    call seaice_calc_variational_metric_terms(&
-         mesh, &
-         tanLatVertexRotatedOverRadius, &
-         rotateCartesianGrid, &
-         includeMetricTerms)
-
-    call seaice_cell_vertices_at_vertex(&
-         mesh, &
-         cellVerticesAtVertex)
 
     call init_velocity_solver_pwl_basis(&
          mesh, &
