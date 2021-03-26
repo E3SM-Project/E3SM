@@ -22,7 +22,8 @@ module seaice_mesh_pool
 
    integer, public :: &
       nCells,         &
-      nVerticesSolve
+      nVerticesSolve, &
+      vertexDegree
 
    integer, public, dimension(:), pointer :: & 
       nEdgesOnCell,   &
@@ -90,8 +91,9 @@ contains
          velocityVariationalPool
 
     integer, pointer ::   &
-         nCellsTmp,       &
-         nVerticesSolveTmp
+         nCellsTmp,         &
+         nVerticesSolveTmp, &
+         vertexDegreeTmp
 
     blockCount = 0
     block => domain % blocklist
@@ -109,9 +111,11 @@ contains
        ! convert mesh dimensions from pointers to scalars
        call mpas_pool_get_dimension(meshPool, 'nCells', nCellsTmp)
        call MPAS_pool_get_dimension(meshPool, "nVerticesSolve", nVerticesSolveTmp)
+       call MPAS_pool_get_dimension(meshPool, "vertexDegree", vertexDegreeTmp)
 
        nCells         = nCellsTmp
        nVerticesSolve = nVerticesSolveTmp
+       vertexDegree   = vertexDegreeTmp
 
        ! point to existing arrays
        call mpas_pool_get_array(meshPool, 'nEdgesOnCell',   nEdgesOnCell)
@@ -142,6 +146,7 @@ contains
 !$GPU ENTER_DATA COPY_IN_LP             &
 !$GPUC   nCells,                        &
 !$GPUC   nVerticesSolve,                &
+!$GPUC   vertexDegree,                  &
 !$GPUC   nEdgesOnCell,                  &
 !$GPUC   verticesOnCell,                &
 !$GPUC   cellsOnVertex,                 &
@@ -193,6 +198,7 @@ contains
 !$GPU EXIT_DATA COPY_DEL_LP             &
 !$GPUC   nCells,                        &
 !$GPUC   nVerticesSolve,                &
+!$GPUC   vertexDegree,                  &
 !$GPUC   nEdgesOnCell,                  &
 !$GPUC   verticesOnCell,                &
 !$GPUC   cellsOnVertex,                 &

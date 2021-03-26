@@ -53,6 +53,11 @@ module seaice_advection_upwind
   type(tracerConnectivity), dimension(nTracerVariables), private :: &
        tracerConnectivities
 
+  logical, parameter :: &
+       config_convert_volume_to_thickness = .true., &
+       config_limit_ice_concentration = .false., &
+       config_clean_tracers = .false.
+
 contains
 
 !-----------------------------------------------------------------------
@@ -73,12 +78,6 @@ contains
 
   subroutine seaice_init_advection_upwind(domain)!{{{
 
-    !use mpas_tracer_advection_helpers, only: &
-    !     mpas_tracer_advection_coefficients
-
-    !use mpas_tracer_advection_mono, only: &
-    !     mpas_tracer_advection_mono_init
-
     use seaice_mesh, only: &
          seaice_normal_vectors_polygon
 
@@ -93,35 +92,12 @@ contains
          configs, &
          velocity_solver
 
-    integer, pointer :: &
-         config_horiz_tracer_adv_order, &
-         config_vert_tracer_adv_order
-
-    real(kind=RKIND), pointer :: &
-         config_coef_3rd_order
-
     logical, pointer :: &
          config_rotate_cartesian_grid, &
          config_use_velocity_solver
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
-         derivTwo
-
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorEdge
-
-    real(kind=RKIND), dimension(:,:), pointer :: &
-         advCoefs, &
-         advCoefs3rd
-
-    integer, dimension(:), pointer :: &
-         nAdvCellsForEdge, &
-         maxLevelCell
-
-    integer, dimension(:,:), pointer :: &
-         advCellsForEdge, &
-         highOrderAdvectionMask, &
-         boundaryCell
 
     integer :: &
          err
@@ -134,43 +110,11 @@ contains
 
        configs => block % configs
        call MPAS_pool_get_config(configs, "config_use_velocity_solver", config_use_velocity_solver)
-       call MPAS_pool_get_config(configs, "config_horiz_tracer_adv_order", config_horiz_tracer_adv_order)
-       call MPAS_pool_get_config(configs, "config_vert_tracer_adv_order", config_vert_tracer_adv_order)
        call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
-       call MPAS_pool_get_config(configs, "config_coef_3rd_order", config_coef_3rd_order)
-
-       call MPAS_pool_get_array(mesh, "derivTwo", derivTwo)
-       call MPAS_pool_get_array(mesh, "advCoefs", advCoefs)
-       call MPAS_pool_get_array(mesh, "advCoefs3rd", advCoefs3rd)
-       call MPAS_pool_get_array(mesh, "nAdvCellsForEdge", nAdvCellsForEdge)
-       call MPAS_pool_get_array(mesh, "advCellsForEdge", advCellsForEdge)
-       call MPAS_pool_get_array(mesh, "maxLevelCell", maxLevelCell)
-       call MPAS_pool_get_array(mesh, "highOrderAdvectionMask", highOrderAdvectionMask)
-       call MPAS_pool_get_array(mesh, "boundaryCell", boundaryCell)
 
        call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
 
        err = 0
-
-       !call mpas_tracer_advection_coefficients(&
-       !     mesh, &
-       !     config_horiz_tracer_adv_order, &
-       !     derivTwo, &
-       !     advCoefs, &
-       !     advCoefs3rd, &
-       !     nAdvCellsForEdge, &
-       !     advCellsForEdge, &
-       !     err, &
-       !     maxLevelCell, &
-       !     highOrderAdvectionMask, &
-       !     boundaryCell)
-
-       !call mpas_tracer_advection_mono_init(&
-       !     3, &
-       !     config_horiz_tracer_adv_order, &
-       !     config_vert_tracer_adv_order, &
-       !     config_coef_3rd_order, &
-       !     .false., .true., err)
 
        call define_tracer_connectivities(&
             config_use_velocity_solver)
@@ -1264,6 +1208,12 @@ contains
                      childTracerOld(iTracerDimension,iCategory,iCell) * parentTracerOld(1,iCategory,iCell) + &
                      childTendency(iTracerDimension,iCategory,iCell) * dt
 
+                !write(*,*) trim(childTracerName), iCell, iCategory, iTracerDimension, &
+                !     childTracerOld(iTracerDimension,iCategory,iCell), &
+                !     parentTracerOld(1,iCategory,iCell), &
+                !     childTendency(iTracerDimension,iCategory,iCell), &
+                !     childTracerNew(iTracerDimension,iCategory,iCell)
+
                 ! store the old child tracer multiplied by the old parent. This will be the parent tracer of the next child
                 childTracerOld(iTracerDimension,iCategory,iCell) = childTracerOld(iTracerDimension,iCategory,iCell) * &
                      parentTracerOld(iTracerDimension,iCategory,iCell)
@@ -1975,7 +1925,6 @@ contains
          iCategory
 
     logical, pointer :: &
-         config_convert_volume_to_thickness, &
          config_conservation_check
 
     integer, dimension(:), pointer :: &
@@ -1995,7 +1944,6 @@ contains
     call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
     call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
 
-    call MPAS_pool_get_config(configs, "config_convert_volume_to_thickness", config_convert_volume_to_thickness)
     call MPAS_pool_get_config(configs, "config_conservation_check", config_conservation_check)
 
     if (config_convert_volume_to_thickness) then
@@ -2061,6 +2009,7 @@ contains
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
+         iceAreaCategory2, &
          surfaceTemperature, &
          iceVolumeCategory, &
          snowVolumeCategory, &
@@ -2075,10 +2024,7 @@ contains
          iCategory
 
     logical, pointer :: &
-         config_convert_volume_to_thickness, &
-         config_limit_ice_concentration, &
-         config_conservation_check, &
-         config_clean_tracers
+         config_conservation_check
 
     integer, dimension(:), pointer :: &
          itimestep
@@ -2094,14 +2040,14 @@ contains
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
     call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory2, 2)
     call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
     call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
     call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
 
-    call MPAS_pool_get_config(configs, "config_convert_volume_to_thickness", config_convert_volume_to_thickness)
-    call MPAS_pool_get_config(configs, "config_limit_ice_concentration", config_limit_ice_concentration)
     call MPAS_pool_get_config(configs, "config_conservation_check", config_conservation_check)
-    call MPAS_pool_get_config(configs, "config_clean_tracers", config_clean_tracers)
+
+    !iceAreaCategory(:,:,:) = iceAreaCategory2(:,:,:)
 
     if (config_conservation_check) &
          call final_conservation(&

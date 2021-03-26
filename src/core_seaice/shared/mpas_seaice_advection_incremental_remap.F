@@ -6415,8 +6415,11 @@ contains
             crossProduct)
 
        if (abs(crossProduct) < eps11) then  ! the two vectors are (nearly) parallel; something is wrong
-          call mpas_log_write('IR: basis vectors for IR coordinate transformations must not be parallel: iEdge, iCell =', &
-               MPAS_LOG_CRIT, intArgs=(/iEdge, iCell/))
+          call mpas_log_write('IR: basis vectors for IR coordinate transformations must not be parallel: iEdge, iCell = $i, $i', &
+               MPAS_LOG_ERR, intArgs=(/iEdge, iCell/))
+          call mpas_log_write('IR: edgeVector1: $r, $r', MPAS_LOG_ERR, realArgs=edgeVector1)
+          call mpas_log_write('IR: edgeVector2: $r, $r', MPAS_LOG_ERR, realArgs=edgeVector2)
+          call mpas_log_write('IR: Critical error', MPAS_LOG_CRIT)
        endif
 
        if (crossProduct > 0.0_RKIND) then

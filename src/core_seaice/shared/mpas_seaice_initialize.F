@@ -50,7 +50,6 @@ contains
        clock, &
        dt)!{{{
 
-    use seaice_unit_test, only: seaice_init_unit_test
     use seaice_mesh, only: seaice_init_mesh
     use seaice_advection, only: seaice_init_advection
     use seaice_velocity_solver, only: seaice_init_velocity_solver
@@ -64,6 +63,9 @@ contains
          seaice_mesh_pool_create
     use seaice_prescribed, only: &
          seaice_init_prescribed_ice
+    use seaice_special_boundaries, only: &
+         seaice_init_special_boundaries, &
+         seaice_set_special_boundaries_zero_tracers
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -79,14 +81,14 @@ contains
 
     call mpas_log_write("seaice_init: Initialize sea-ice model")
 
-    ! unit testing init
-    call seaice_init_unit_test(domain)
-
     ! init testing system test arrays
     call seaice_set_testing_system_test_arrays(domain)
 
     ! initialize junk values
     call init_junk_values(domain)
+
+    ! initialize special boundaries
+    call seaice_init_special_boundaries(domain)
 
     ! initialize prescribed ice
     call seaice_init_prescribed_ice(domain)
@@ -138,6 +140,9 @@ contains
     ! coupler flux reset
     call mpas_log_write(" Initialize coupler fluxes...")
     call seaice_reset_coupler_fluxes(domain)
+
+    ! special boundaries tracers
+    call seaice_set_special_boundaries_zero_tracers(domain)
 
   end subroutine seaice_init!}}}
 
@@ -977,9 +982,6 @@ contains
        block, &
        configs)!{{{
 
-    use seaice_constants, only: &
-         earthRadius
-
     type(block_type), intent(inout) :: &
          block !< Input/Output:
 
@@ -1005,6 +1007,7 @@ contains
          surfaceTemperature
 
     real(kind=RKIND), pointer :: &
+         earthRadius, &
          config_initial_ice_area, &
          config_initial_ice_volume, &
          config_initial_snow_volume
@@ -1017,6 +1020,8 @@ contains
 
     real(kind=RKIND) :: &
          circle_radius
+
+    call MPAS_pool_get_config(configs, "config_earth_radius", earthRadius)
 
     circle_radius = 0.1_RKIND*earthRadius
 
