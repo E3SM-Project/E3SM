@@ -767,7 +767,7 @@ flags should be captured within MPAS CMake files.
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
-  <MOAB_PATH>/home/iulian/moab-blds/blues/moabs29</MOAB_PATH>
+  <MOAB_PATH>/lcrc/soft/climate/moab/anvil/intel18</MOAB_PATH>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
@@ -921,7 +921,7 @@ flags should be captured within MPAS CMake files.
   <CPPDEFS>
     <append COMP_NAME="gptl">-DHAVE_SLASHPROC</append>
   </CPPDEFS>
-  <MOAB_PATH>/home/iulian/lib/moab/chrys</MOAB_PATH>
+  <MOAB_PATH>/lcrc/soft/climate/moab/chrysalis/intel</MOAB_PATH>
   <FFLAGS>
     <append DEBUG="FALSE">-O2 -debug minimal -qno-opt-dynamic-align</append>
   </FFLAGS>
