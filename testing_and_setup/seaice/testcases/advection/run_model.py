@@ -9,6 +9,10 @@ except ImportError:
 
 def run_model():
 
+    MPAS_SEAICE_TESTCASES_RUN_COMMAND = os.environ.get('MPAS_SEAICE_TESTCASES_RUN_COMMAND')
+    if (MPAS_SEAICE_TESTCASES_RUN_COMMAND is None):
+        MPAS_SEAICE_TESTCASES_RUN_COMMAND = ""
+
     advectionMethods = ["IR","upwind"]
     #advectionMethods = ["IR"]
 
@@ -44,7 +48,7 @@ def run_model():
                 os.system("rm -rf output_%s_%s_%i" %(advectionMethod, icType, gridSize))
                 os.system("ln -s namelist.seaice.%s namelist.seaice" %(advectionMethod))
 
-                os.system("../../../../seaice_model")
+                os.system("%s ../../../../seaice_model" %(MPAS_SEAICE_TESTCASES_RUN_COMMAND))
 
                 os.system("mv output output_%s_%s_%i" %(advectionMethod, icType, gridSize))
 
