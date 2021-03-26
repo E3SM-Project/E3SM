@@ -75,6 +75,7 @@ module physics_types
           oldps,      &! surface pressure
           cptermp,    &! layer thickness (Pa)
           cpterme,    &! layer thickness (Pa)
+          cptermdiff,    &! layer thickness (Pa)
           tebefore,      &! surface pressure
           teafter,      &! surface pressure
           psdry,   &! dry surface pressure
@@ -1635,6 +1636,9 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%cptermp(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%cpterm')
 
+  allocate(state%cptermdiff(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%cpterm')
+
   allocate(state%cpterme(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%cpterm')
 
@@ -1746,6 +1750,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
 
   state%cptermp(:) = 0.0
   state%cpterme(:) = 0.0
+  state%cptermdiff(:) = 0.0
   state%tebefore(:) = 0.0
   state%teafter(:) = 0.0
 
@@ -1877,6 +1882,9 @@ subroutine physics_state_dealloc(state)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%oldpdel')
 
   deallocate(state%cptermp, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%cpterm')
+
+  deallocate(state%cptermdiff, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%cpterm')
 
   deallocate(state%cpterme, stat=ierr)

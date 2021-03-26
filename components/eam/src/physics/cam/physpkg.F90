@@ -103,8 +103,8 @@ module physpkg
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
 
-!#define ADDCP
-#undef ADDCP
+#define ADDCP
+!#undef ADDCP
 
 #ifdef ADDCP
 
@@ -1805,6 +1805,21 @@ if (l_ac_energy_chk) then
 !    state%te_cur = state%te_cur + state%te_evap
 
 
+
+    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     *cam_in%cflx(:ncol,1)
+#if defined(USE_CPSW) && defined(USE_TS)
+    state%cptermdiff(:ncol) =  cpsw  * cam_in%ts(:ncol) * cam_in%cflx(:ncol,1)-&
+                               state%cpterme
+#elif defined(USE_CPSW) && !defined(USE_TS)
+    state%cptermdiff(:ncol) =     cpsw  * state%t(:ncol,pver)     *cam_in%cflx(:ncol,1) -&
+                               state%cpterme
+#else
+    state%cptermdiff(:ncol) = 0.0
+#endif
+    cam_in%shf(:ncol) =    cam_in%shf(:ncol) +  state%cptermdiff(:ncol) 
+
+
+
 #ifdef ADDCP
 !take CP term out of te_cur
     state%te_cur(:ncol) = state%te_cur(:ncol) - state%cptermp(:ncol)*ztodt &
@@ -1848,6 +1863,7 @@ if (l_ac_energy_chk) then
     call outfld('CPflux', (state%cptermp - state%cpterme) , pcols, lchnk )
     call outfld('CPfluxe', state%cpterme , pcols, lchnk )
     call outfld('CPfluxp', state%cptermp , pcols, lchnk )
+    call outfld('CPfluxdiff', state%cptermdiff , pcols, lchnk )
     call outfld('PWflux', (state%tebefore - state%teafter ) /ztodt , pcols, lchnk )
     call outfld('PWmCPflu', (state%tebefore - state%teafter)/ztodt - (state%cptermp - state%cpterme) , pcols, lchnk )
 
@@ -2823,13 +2839,16 @@ end if ! l_rad
 !use cam_out to compute cpterm
     state%cptermp(:ncol) = 1000.0 * cpair * state%t(:ncol,pver) * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
 
-#if defined(USE_CPSW) && defined(USE_TS)
-    state%cpterme(:ncol) =          cpsw  * cam_in%ts(:ncol)        * cam_in%cflx(:ncol,1)
-#elif defined(USE_CPSW) && !defined(USE_TS)
-    state%cpterme(:ncol) =          cpsw  * state%t(:ncol,pver)     * cam_in%cflx(:ncol,1)
-#else
-    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     * cam_in%cflx(:ncol,1)
-#endif
+!    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     * cam_in%cflx(:ncol,1)
+!#if defined(USE_CPSW) && defined(USE_TS)
+!    state%cptermdiff(:ncol) =  cpsw  * cam_in%ts(:ncol) * cam_in%cflx(:ncol,1) -&
+!                               state%cpterme
+!#elif defined(USE_CPSW) && !defined(USE_TS)
+!    state%cptermdiff(:ncol) =     cpsw  * state%t(:ncol,pver)     * cam_in%cflx(:ncol,1) -&
+!                               state%cpterme
+!#else
+!    state%cptermdiff(:ncol) = 0.0
+!#endif
 
     call check_tracers_fini(tracerint)
 
