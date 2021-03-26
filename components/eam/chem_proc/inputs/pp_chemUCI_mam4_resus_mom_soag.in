@@ -1,4 +1,5 @@
 Comments
+     "last touch 20200326 - QT"
      "Modified by Juno Hsu and Qi Tang - 4/9/2020"
      "chemUCI + MAM4 for E3SM"
      "last touch 20200331 - MJP"
@@ -230,9 +231,11 @@ CHEMISTRY
    MVKO2 + NO -> 0.5*CH3CO3 + CH2O + NO2          ; 2.700E-12, 360
    MVKO2 + HO2 -> C2H5OOH + CO                    ; 1.820E-13, 1300
 
-[ucih1]  N2O5  -> 2*HNO3                          ; 0.05E+00
-[ucih2]  NO3   -> HNO3                            ; 0.03E+00
-[ucih3]  HO2   ->                                 ; 0.10E+00
+* UCI heterogeneous reactions has problems with E3SM MAM4 aerosols
+* comment out for now. To be fixed with the aerosol team.
+*[ucih1]  N2O5  -> 2*HNO3                          ; 0.05E+00
+*[ucih2]  NO3   -> HNO3                            ; 0.03E+00
+*[ucih3]  HO2   ->                                 ; 0.10E+00
 
 [usr_e90]  E90 ->                                 ; 1.286E-7, 0.
 
