@@ -108,3 +108,6 @@ ENV/
 
 # NetCDF files
 *.nc
+
+# NetCDF files needed
+!acme_diags/driver/acme_ne30_ocean_land_mask.nc
