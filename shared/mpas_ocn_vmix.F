@@ -730,7 +730,7 @@ contains
 
       integer :: iEdge, k, cell1, cell2, N, Nsurf, nEdges
       integer, pointer :: nVertLevels
-      real (kind=RKIND) :: implicitCd
+      real (kind=RKIND) :: implicitCd, varmin
       integer, dimension(:), pointer :: nEdgesArray
 
       integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop
@@ -821,7 +821,10 @@ contains
          end do
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
-         if (config_use_vegetation_drag .AND. config_use_vegetation_manning_equation) then
+        if (config_use_implicit_bottom_roughness) then
+           varmin=min(0.16_RKIND/(log(0.5_RKIND*0.5_RKIND*(bottomDepth(cell1)+bottomDepth(cell2))/0.001))**2.0,0.1)
+           implicitCd =max(0.0025_RKIND,varmin)
+         elseif (config_use_vegetation_drag .AND. config_use_vegetation_manning_equation) then
            implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2.0 * &
             (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
          else
@@ -1137,7 +1140,9 @@ contains
       if (config_use_implicit_bottom_drag_variable) then
         call ocn_vel_vmix_tend_implicit_spatially_variable(meshPool, bottomDrag, dt, kineticEnergyCell, &
           vertViscTopOfEdge, layerThickness, layerThickEdge, normalVelocity, err)
-      else if (config_use_implicit_bottom_drag_variable_mannings) then
+          !!vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
+      else if (config_use_implicit_bottom_drag_variable_mannings.or. &
+        config_use_implicit_bottom_roughness) then
         ! update bottomDrag via Cd=g*n^2*h^(-1/3)
         call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(meshPool, forcingPool, bottomDrag, &
           dt, kineticEnergyCell, &
