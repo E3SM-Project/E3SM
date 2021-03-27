@@ -127,6 +127,8 @@ module shr_spfn_mod
   ! for IEEE double-precision.
   real(r8), parameter :: xbig_gamma = 171.624_r8
 
+  !$acc declare copyin(xinfr8,epsr8,xminr8,xbig_gamma)
+
 contains
 
   ! Wrapper functions for erf
@@ -296,6 +298,7 @@ contains
   end function shr_spfn_erfc_scaled_r8
 
   elemental function shr_spfn_gamma_r8(x) result(res)
+    !$acc routine seq
     real(r8), intent(in) :: x
     real(r8) :: res
 
@@ -755,6 +758,7 @@ contains
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   pure function shr_spfn_gamma_nonintrinsic_r8(X) result(gamma)
+    !$acc routine seq
 
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     !
