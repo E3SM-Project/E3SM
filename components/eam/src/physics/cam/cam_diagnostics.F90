@@ -194,6 +194,9 @@ subroutine diag_init()
    call addfld ('TTEND_TOT',(/ 'lev' /), 'A','K/s' ,'Total temperature tendency'   )
  
 
+   call addfld ('BCflux',horiz_only, 'A','w/m2' ,'bc pw term'   )
+   call addfld ('KEflux',horiz_only, 'A','w/m2' ,'ke pw term'   )
+
    call addfld ('CPflux',horiz_only, 'A','w/m2' ,'cp term'   )
    call addfld ('CPfluxp',horiz_only, 'A','w/m2' ,'cp p term'   )
    call addfld ('CPfluxe',horiz_only, 'A','w/m2' ,'cp e term'   )

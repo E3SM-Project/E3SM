@@ -1426,7 +1426,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     use check_energy,       only: check_energy_chng, check_water, & 
                                   check_prect, check_qflx , &
                                   check_tracers_data, check_tracers_init, &
-                                  check_tracers_chng, check_tracers_fini
+                                  check_tracers_chng, check_tracers_fini, &
+                                  energy_helper_eam_def
     use time_manager,       only: get_nstep
     use cam_abortutils,         only: endrun
     use dycore,             only: dycore_is
@@ -1514,6 +1515,11 @@ subroutine tphysac (ztodt,   cam_in,  &
     logical :: l_rayleigh
     logical :: l_gw_drag
     logical :: l_ac_energy_chk
+
+    real (r8), dimension(state%ncol)      :: ke1, ke2, se, wv, wl, wi, wr, ws, te, tw, bc1, bc2
+    real (r8), dimension(state%ncol,pver) :: teloc
+    real (r8), dimension(pcols) :: ke1t, ke2t, bc1t, bc2t
+
 
     !
     !-----------------------------------------------------------------------
@@ -1805,6 +1811,8 @@ if (l_ac_energy_chk) then
 !    state%te_cur = state%te_cur + state%te_evap
 
 
+    ke1t = 0.0; ke2t = 0.0; bc1t = 0.0; bc2t = 0.0;
+
 
     state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     *cam_in%cflx(:ncol,1)
 #if defined(USE_CPSW) && defined(USE_TS)
@@ -1819,12 +1827,17 @@ if (l_ac_energy_chk) then
     cam_in%shf(:ncol) =    cam_in%shf(:ncol) +  state%cptermdiff(:ncol) 
 
 
-
 #ifdef ADDCP
 !take CP term out of te_cur
     state%te_cur(:ncol) = state%te_cur(:ncol) - state%cptermp(:ncol)*ztodt &
                                               + state%cpterme(:ncol)*ztodt
 #endif
+
+
+!!! compute all energy terms before pw
+    call energy_helper_eam_def(state%u,state%v,state%t,state%q,state%ps,state%pdel,state%phis,&
+                                 ke1t(:ncol),se,wv,wl,wi,wr,ws,te,tw, &
+                                 ncol,teloc,bc1t(:ncol))
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!! this code is only to compare PW with cp term
@@ -1840,6 +1853,13 @@ if (l_ac_energy_chk) then
 #else
     call physics_dme_adjust(state, tend, qini, ztodt)
 #endif
+
+
+!!! compute all energy terms AFTER pw  call
+    call energy_helper_eam_def(state%u,state%v,state%t,state%q,state%ps,state%pdel,state%phis,&
+                                 ke2t(:ncol),se,wv,wl,wi,wr,ws,te,tw, &
+                                 ncol,teloc,bc2t(:ncol))
+
 
 !compute new TE from the adjusted pressure
 !this overwrites te_cur for TE after pressure adjustment
@@ -1866,6 +1886,10 @@ if (l_ac_energy_chk) then
     call outfld('CPfluxdiff', state%cptermdiff , pcols, lchnk )
     call outfld('PWflux', (state%tebefore - state%teafter ) /ztodt , pcols, lchnk )
     call outfld('PWmCPflu', (state%tebefore - state%teafter)/ztodt - (state%cptermp - state%cpterme) , pcols, lchnk )
+
+!output bc and ke terms consistently with pwterm above
+    call outfld('KEflux', (ke1t - ke2t) /ztodt , pcols, lchnk )
+    call outfld('BCflux', (bc1t - bc2t) /ztodt , pcols, lchnk )
 
     call outfld('dTEevap', state%te_evap/ztodt , pcols, lchnk )
 

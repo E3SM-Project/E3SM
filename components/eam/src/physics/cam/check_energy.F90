@@ -68,6 +68,7 @@ module check_energy
   public :: check_ieflx_fix         ! add ieflx to sensible heat flux 
 
   public :: add_surface_fluxes
+  public :: energy_helper_eam_def
 
 ! Private module data
 
@@ -485,8 +486,8 @@ end subroutine check_energy_get_integrals
     real(r8), intent(inout) :: wr(ncol)     ! vertical integral of rain
     real(r8), intent(inout) :: ws(ncol)     ! vertical integral of snow
 
-    real(r8), intent(inout), optional :: teloc(pcols,pver)
-    real(r8), intent(inout), optional :: psterm(pcols)
+    real(r8), intent(inout), optional :: teloc(ncol,pver)
+    real(r8), intent(inout), optional :: psterm(ncol)
 
     integer, intent(in) :: ncol
     integer :: i,k
@@ -505,7 +506,7 @@ end subroutine check_energy_get_integrals
     call cnst_get_ind('RAINQM', irain, abort=.false.)
     call cnst_get_ind('SNOWQM', isnow, abort=.false.)
 
-#ifdef ENERGY_DIAGNOSTICS
+!#ifdef ENERGY_DIAGNOSTICS
     if (present(teloc) .and. present(psterm))then
     teloc = 0.0; psterm = 0.0
     do k = 1, pver
@@ -523,7 +524,7 @@ end subroutine check_energy_get_integrals
        psterm(i) = phis(i)*ps(i)/gravit
     end do
     endif
-#endif
+!#endif
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(u(i,k)**2 + v(i,k)**2)*pdel(i,k)/gravit
