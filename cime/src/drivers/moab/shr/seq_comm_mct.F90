@@ -222,6 +222,7 @@ module seq_comm_mct
   logical, public :: sameg_al ! same grid atm and land; used throughout, initialized in lnd_init
   integer, public :: mbintxla ! iMOAB id for intx mesh between land and atmosphere
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
+  integer, public :: mrofid   ! iMOAB id of moab rof app
 
   integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
 
