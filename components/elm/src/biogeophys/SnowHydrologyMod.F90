@@ -781,7 +781,6 @@ contains
       !$acc routine seq
      use landunit_varcon  , only : istsoil, istdlak, istsoil, istwet, istice, istice_mec, istcrop
      use LakeCon          , only : lsadz
-     !#py use clm_time_manager , only : get_step_size
      use elm_varcon       , only : denh2o
      !
      ! !ARGUMENTS:
@@ -843,9 +842,6 @@ contains
           z                => col_pp%z                                 & ! Output: [real(r8) (:,:) ] layer thickness (m)
           )
 
-       ! Determine model time step
-
-       !#py dtime = get_step_size()
 
        ! Check the mass of ice lens of snow, when the total is less than a small value,
        ! combine it with the underlying neighbor.
@@ -1164,8 +1160,6 @@ contains
      integer                , intent(in)    :: num_snowc       ! number of column snow points in column filter
      integer                , intent(in)    :: filter_snowc(:) ! column filter for snow points
      type(aerosol_type)     , intent(inout) :: aerosol_vars
-     !type(temperature_type) , intent(inout) :: temperature_vars
-     !type(waterstate_type)  , intent(inout) :: waterstate_vars
      logical                , intent(in)    :: is_lake  !TODO - this should be examined and removed in the future
      !
      ! !LOCAL VARIABLES:

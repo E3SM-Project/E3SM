@@ -103,13 +103,13 @@ contains
 
     ! The following is set in InitGridCells
     allocate(this%gridcell  (begp:endp)); this%gridcell    (:) = ispval
-    allocate(this%wtgcell   (begp:endp)); this%wtgcell     (:) =  spval
+    allocate(this%wtgcell   (begp:endp)); this%wtgcell     (:) = nan
     allocate(this%topounit  (begp:endp)); this%topounit    (:) = ispval
-    allocate(this%wttopounit(begp:endp)); this%wttopounit  (:) =  spval
+    allocate(this%wttopounit(begp:endp)); this%wttopounit  (:) = nan
     allocate(this%landunit  (begp:endp)); this%landunit    (:) = ispval
-    allocate(this%wtlunit   (begp:endp)); this%wtlunit     (:) =  spval
+    allocate(this%wtlunit   (begp:endp)); this%wtlunit     (:) = nan
     allocate(this%column    (begp:endp)); this%column      (:) = ispval
-    allocate(this%wtcol     (begp:endp)); this%wtcol       (:) =  spval
+    allocate(this%wtcol     (begp:endp)); this%wtcol       (:) = nan
     allocate(this%itype     (begp:endp)); this%itype       (:) = ispval
     allocate(this%mxy       (begp:endp)); this%mxy         (:) = ispval
     allocate(this%active    (begp:endp)); this%active      (:) = .false.
@@ -118,7 +118,7 @@ contains
     if (use_fates) then
        allocate(this%is_veg  (begp:endp)); this%is_veg  (:) = .false.
        allocate(this%is_bareground (begp:endp)); this%is_bareground (:) = .false.
-       allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = spval
+       allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = nan
     end if
 
 	end subroutine veg_pp_init

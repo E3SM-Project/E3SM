@@ -754,7 +754,7 @@ contains
     real(r8)           :: bmatrix(bounds%begc:bounds%endc,nband,-nlevsno:nlevgrnd) ! banded matrix for numerical solution of temperature
     real(r8)           :: rvector(bounds%begc:bounds%endc,-nlevsno:nlevgrnd)       ! RHS vector for numerical solution of temperature
 
-    character(len=256) :: event
+    character(len=64) :: event
     !-----------------------------------------------------------------------
 
     associate(                                                             &
@@ -855,8 +855,10 @@ contains
     real(r8) :: fl                        ! volume fraction of liquid or unfrozen water to total water
     real(r8) :: satw                      ! relative total water content of soil.
     real(r8) :: zh2osfc
+    character(len=64) :: event
     !-----------------------------------------------------------------------
-    ! Enforce expected array sizes
+    event = 'SoilThermProp'
+    call t_startGPU( event )
 
     associate(                                                 &
          snl          =>    col_pp%snl                       , & ! Input:  [integer  (:)   ]  number of snow layers
@@ -1037,6 +1039,7 @@ contains
             end if
          end do
       end do
+      call t_stopGPU( event )
 
     end associate
 
@@ -1074,11 +1077,13 @@ contains
     real(r8) :: smp                         !frozen water potential (mm)
     real(r8) :: rho_avg
     real(r8) :: z_avg
-    !real(r8) :: dcv(bounds%begc:bounds%endc)!change in cv due to additional ice
     real(r8) :: c1
     real(r8) :: c2
+
+    character(len=64) :: event 
     !-----------------------------------------------------------------------
-    ! Enforce expected array sizes
+    event = 'PhaseChangeH2osfc'
+    call t_startGPU( event )
 
     associate(                                                                   &
          snl                       =>    col_pp%snl                               , & ! Input:  [integer  (:)   ] number of snow layers
@@ -1247,6 +1252,7 @@ contains
             endif
          endif
       enddo
+      call t_stopGPU( event )
 
     end associate
 
@@ -1300,9 +1306,11 @@ contains
     real(r8) :: propor                             !proportionality constant (-)
     real(r8) :: tinc(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)  !t(n+1)-t(n) (K)
     real(r8) :: smp                                !frozen water potential (mm)
+    
+    character(len=64) :: event 
     !-----------------------------------------------------------------------
-
-    ! Enforce expected array sizes
+    event = 'PhaseChangebeta'
+    call t_startGPU( event )
 
     associate(                                                        &
          snl              =>    col_pp%snl                             , & ! Input:  [integer  (:)   ] number of snow layers
@@ -1629,6 +1637,7 @@ contains
          end if
       end do
 
+      call t_stopGPU( event )
       do j = -nlevsno+1,0
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)

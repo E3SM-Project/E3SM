@@ -122,11 +122,9 @@ contains
 
       ! Get time step
 
-      !#py dtime = get_step_size()
-
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
-       	 nlevbed = nlev2bed(c)
+         nlevbed = nlev2bed(c)
          do j = 1,nlevbed
 
             ! Porosity of soil, partial volume of ice and liquid, fraction of ice in each layer,
@@ -361,12 +359,11 @@ contains
           icefrac              =>    soilhydrology_vars%icefrac_col            & ! Output: [real(r8) (:,:) ]  fraction of ice
               )
 
-       !#py dtime = get_step_size()
 
        ! Infiltration into surface soil layer (minus the evaporation)
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-       	  nlevbed = nlev2bed(c)
+          nlevbed = nlev2bed(c)
           do j = 1,nlevbed
              ! Porosity of soil, partial volume of ice and liquid
              vol_ice(c,j) = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
@@ -633,15 +630,12 @@ contains
           qflx_rsub_sat      =>    col_wf%qflx_rsub_sat        & ! Output: [real(r8) (:)   ]  soil saturation excess [mm h2o/s]
           )
 
-       ! Get time step
-
-       !#py dtime = get_step_size()
 
        ! Convert layer thicknesses from m to mm
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-       	  nlevbed = nlev2bed(c)
+          nlevbed = nlev2bed(c)
           do j = 1,nlevbed
              dzmm(c,j) = dz(c,j)*1.e3_r8
           end do
@@ -661,7 +655,7 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-       	  nlevbed = nlev2bed(c)
+          nlevbed = nlev2bed(c)
           jwt(c) = nlevbed
           ! allow jwt to equal zero when zwt is in top layer
           do j = 1,nlevbed
@@ -998,15 +992,12 @@ contains
           h2osoi_ice         =>    col_ws%h2osoi_ice          & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)
           )
 
-       ! Get time step
-
-       !#py dtime = get_step_size()
 
        ! Convert layer thicknesses from m to mm
 
         do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-       	  nlevbed = nlev2bed(c)
+          nlevbed = nlev2bed(c)
           do j = 1,nlevbed
              dzmm(c,j) = dz(c,j)*1.e3_r8
 
@@ -1639,10 +1630,6 @@ contains
           h2osoi_liq         =>    col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
           h2osoi_ice         =>    col_ws%h2osoi_ice          & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)
           )
-
-       ! Get time step
-
-       !#py dtime = get_step_size()
 
        ! Convert layer thicknesses from m to mm
 

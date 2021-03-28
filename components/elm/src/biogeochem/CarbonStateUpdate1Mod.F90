@@ -156,9 +156,6 @@ contains
     integer :: fp ! lake filter indices
     !-----------------------------------------------------------------------
 
-    ! set time steps
-    !#py dt = real( get_step_size(), r8 )
-
     ! patch loop
     do fp = 1,num_soilp
        p = filter_soilp(fp)

@@ -6,7 +6,6 @@ module ErosionMod
   !
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use decompMod         , only : bounds_type
-  !#py use clm_time_manager  , only : get_step_size
   use elm_varcon        , only : dzsoi_decomp
   use elm_varpar        , only : ndecomp_pools, nlevdecomp
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -113,7 +112,6 @@ contains
          do fc = 1, num_soilc
             c = filter_soilc(fc)
 
-            print *, "fc, c:", fc, c
             ! initialization
             labilep_erode(c)        = 0._r8
             labilep_deposit(c)      = 0._r8

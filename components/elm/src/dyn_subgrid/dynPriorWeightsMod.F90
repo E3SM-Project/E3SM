@@ -12,23 +12,22 @@ module dynPriorWeightsMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type, BOUNDS_LEVEL_PROC
   use ColumnType     , only : col_pp
-  use VegetationType      , only : veg_pp
+  use VegetationType , only : veg_pp
   !
   implicit none
   save
   private
   !
+
   ! !PUBLIC TYPES:
   public :: prior_weights_type
-  public :: set_prior_weights_acc
+  public :: set_prior_weights
 
   type prior_weights_type
      ! Components are public for ease-of-use and efficiency. However, these components
      ! should be treated as read-only!
-     real(r8), allocatable, public :: pwtcol(:)     ! prior pft weight on the column
-     logical , allocatable, public :: cactive(:)    ! prior col_pp%active flags
-   contains
-     procedure :: set_prior_weights      ! set prior weights to current weights
+     real(r8), pointer, public :: pwtcol(:)  => null()   ! prior pft weight on the column
+     logical , pointer, public :: cactive(:) => null()   ! prior col_pp%active flags
   end type prior_weights_type
 
   interface prior_weights_type
@@ -71,9 +70,9 @@ contains
     !
     ! !DESCRIPTION:
     ! Set prior weights to current weights
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
-    class(prior_weights_type) , intent(inout) :: this   ! this object
+    type(prior_weights_type) , intent(inout) :: this   ! this object
     type(bounds_type)         , intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:
@@ -89,25 +88,5 @@ contains
     end do
   end subroutine set_prior_weights
 
-  !------- openacc method -------- !
-  subroutine set_prior_weights_acc(prior_weights, bounds)
-    !!
-    !$acc routine seq
-    type(prior_weights_type) , intent(inout) :: prior_weights
-    type(bounds_type)        , intent(in)    :: bounds
-
-    ! !LOCAL VARIABLES:
-    integer :: p, c   ! patch & col indices
-    ! ----------------------------------------------------------------------
-
-    do p = bounds%begp, bounds%endp
-       prior_weights%pwtcol(p) = veg_pp%wtcol(p)
-    end do
-
-    do c = bounds%begc, bounds%endc
-       prior_weights%cactive(c) = col_pp%active(c)
-    end do
-
-  end subroutine set_prior_weights_acc
 
 end module dynPriorWeightsMod

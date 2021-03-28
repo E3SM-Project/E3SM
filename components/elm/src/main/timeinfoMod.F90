@@ -17,7 +17,10 @@ module timeinfoMod
   real(r8) :: nextsw_cday_mod = 1.0_r8 !nextsw_cday = mod((nstep/(86400._r8/dtime))*1.0_r8,365._r8)+1._r8
   logical  :: end_cd_mod = 0           ! end of current day
   logical  :: doalb = .false.
-contains 
+  !$acc declare copyin(dtime_mod,dayspyr_mod, year_curr, year_prev, &
+  !$acc mon_curr, mon_prev, day_curr, day_prev, secs_curr, secs_prev, nstep_mod, &
+  !$acc days_per_mon, jday_mod, thiscalday_mod, nextsw_cday_mod, end_cd_mod, doalb )
+contains
 
   subroutine increment_time_vars()
     !this subroutine is meant to do all time_advancement on gpu

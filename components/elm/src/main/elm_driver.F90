@@ -335,7 +335,7 @@ contains
             filter(nc)%num_nolakec, filter(nc)%nolakec,       &
             filter(nc)%num_lakec, filter(nc)%lakec,           &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
-            soilhydrology_vars, waterstate_vars)
+            soilhydrology_vars )
        call t_stopf('beggridwbal')
 
        if (use_betr) then
@@ -428,14 +428,10 @@ contains
     call t_startf('dyn_subgrid')
     call dynSubgrid_driver(bounds_proc,                                      &
        urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-       waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars,   &
-       canopystate_vars, photosyns_vars, cnstate_vars,                       &
+       energyflux_vars, canopystate_vars, photosyns_vars, cnstate_vars,                       &
        veg_cs, c13_veg_cs, c14_veg_cs,         &
        col_cs, c13_col_cs, c14_col_cs, col_cf,  &
-       grc_cs, grc_cf ,&
-       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,            &
-       nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,                  &
-       phosphorusstate_vars,phosphorusflux_vars, crop_vars)
+       grc_cs, grc_cf , glc2lnd_vars,  crop_vars)
     call t_stopf('dyn_subgrid')
 
     if (use_cn  .or. use_fates) then
@@ -527,7 +523,7 @@ contains
             filter(nc)%num_nolakec, filter(nc)%nolakec,       &
             filter(nc)%num_lakec, filter(nc)%lakec,           &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
-            soilhydrology_vars, waterstate_vars)
+            soilhydrology_vars )
        call t_stopf('begwbal')
 
 
@@ -1006,9 +1002,9 @@ contains
              ! EcosystemDynNoLeaching1 is called before clm_interface
              ! EcosystemDynNoLeaching2 is called after clm_interface
              !===========================================================================================
-             call EcosystemDynNoLeaching1(bounds_clump,                               &
-                       filter(nc)%num_soilc, filter(nc)%soilc,                          &
-                       filter(nc)%num_soilp, filter(nc)%soilp,                          &
+             call EcosystemDynNoLeaching1(bounds_clump,         &
+                       filter(nc)%num_soilc, filter(nc)%soilc,  &
+                       filter(nc)%num_soilp, filter(nc)%soilp,  &
                        cnstate_vars,            &
                        atm2lnd_vars,            &
                        canopystate_vars, soilstate_vars, crop_vars,   &
@@ -1083,13 +1079,13 @@ contains
              !--------------------------------------------------------------------------------
 
 
-             call EcosystemDynNoLeaching2(bounds_clump,                                   &
-                   filter(nc)%num_soilc, filter(nc)%soilc,                                  &
-                   filter(nc)%num_soilp, filter(nc)%soilp,                                  &
-                   filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,                         &
+             call EcosystemDynNoLeaching2(bounds_clump,                &
+                   filter(nc)%num_soilc, filter(nc)%soilc,             &
+                   filter(nc)%num_soilp, filter(nc)%soilp,             &
+                   filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,    &
                    cnstate_vars,  atm2lnd_vars,          &
                    canopystate_vars, soilstate_vars, crop_vars, ch4_vars, &
-                   photosyns_vars, soilhydrology_vars, energyflux_vars,          &
+                   photosyns_vars, soilhydrology_vars, energyflux_vars,   &
                    sedflux_vars)
 
              !===========================================================================================
@@ -1231,9 +1227,9 @@ contains
        if (use_cn .or. use_fates) then
           if (.not. is_active_betr_bgc)then
             call EcosystemDynLeaching(bounds_clump,                &
-               filter(nc)%num_soilc, filter(nc)%soilc,               &
-               filter(nc)%num_soilp, filter(nc)%soilp,               &
-               filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,      &
+               filter(nc)%num_soilc, filter(nc)%soilc,             &
+               filter(nc)%num_soilp, filter(nc)%soilp,             &
+               filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,    &
                cnstate_vars,  frictionvel_vars, canopystate_vars )
          end if
        end if
@@ -1255,8 +1251,8 @@ contains
 
        if (use_cn .and. doalb) then
            call VegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
-                waterstate_vars, frictionvel_vars, cnstate_vars, &
-                carbonstate_vars, canopystate_vars, crop_vars)
+                frictionvel_vars, cnstate_vars, &
+                canopystate_vars, crop_vars)
        end if
 
 
@@ -1267,15 +1263,15 @@ contains
        call t_startf('balchk')
        call ColWaterBalanceCheck(bounds_clump, &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c, &
-            atm2lnd_vars, glc2lnd_vars, solarabs_vars, waterflux_vars, &
-            waterstate_vars, energyflux_vars, canopystate_vars)
+            atm2lnd_vars, glc2lnd_vars, solarabs_vars,  &
+            energyflux_vars, canopystate_vars)
        call t_stopf('balchk')
 
        call t_startf('gridbalchk')
-       call GridBalanceCheck(bounds_clump                             , &
-            filter(nc)%num_do_smb_c, filter(nc)%do_smb_c              , &
-            atm2lnd_vars, glc2lnd_vars, solarabs_vars, waterflux_vars , &
-            waterstate_vars, energyflux_vars, canopystate_vars        , &
+       call GridBalanceCheck(bounds_clump                  , &
+            filter(nc)%num_do_smb_c, filter(nc)%do_smb_c   , &
+            atm2lnd_vars, glc2lnd_vars, solarabs_vars,       &
+            energyflux_vars, canopystate_vars              , &
             soilhydrology_vars)
        call t_stopf('gridbalchk')
 
@@ -1359,9 +1355,8 @@ contains
 
     call t_startf('lnd2atm')
     call lnd2atm(bounds_proc,       &
-         atm2lnd_vars, surfalb_vars, frictionvel_vars, &
-         energyflux_vars,               &
-         solarabs_vars, drydepvel_vars,                 &
+         atm2lnd_vars, surfalb_vars, frictionvel_vars,    &
+         energyflux_vars, solarabs_vars, drydepvel_vars,  &
          vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars)
     call t_stopf('lnd2atm')
 
@@ -1376,7 +1371,6 @@ contains
           call get_clump_bounds(nc, bounds_clump)
           call lnd2glc_vars%update_lnd2glc(bounds_clump,       &
                filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,   &
-               temperature_vars, waterflux_vars,               &
                init=.false.)
        end do
        !$OMP END PARALLEL DO
@@ -1435,7 +1429,7 @@ contains
     ! Compute water budget
     ! ============================================================================
     if (get_nstep()>0 .and. do_budgets) then
-       call WaterBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars, waterstate_vars, &
+       call WaterBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars, &
             soilhydrology_vars)
        call WaterBudget_Accum()
        call WaterBudget_Print(budget_inst,  budget_daily,  budget_month,  &
@@ -1465,7 +1459,8 @@ contains
             soilstate_vars%sucsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
             soilstate_vars%bsw_col(bounds_proc%begc:bounds_proc%endc, 1:),    &
             soilstate_vars%hksat_col(bounds_proc%begc:bounds_proc%endc, 1:))
-
+       
+       call t_stopf('elm_drv_io_htapes')
        ! Write restart/initial files if appropriate
        if (rstwr) then
           call t_startf('elm_drv_io_wrest')
@@ -1513,7 +1508,6 @@ contains
     !
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
-    use shr_infnan_mod     , only : nan => shr_infnan_nan, assignment(=)
     use elm_varpar         , only : nlevsno
     use elm_varcon         , only : h2osno_max
     use landunit_varcon    , only : istice_mec

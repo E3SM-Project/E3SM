@@ -6,9 +6,8 @@ module CropHarvestPoolsMod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : get_proc_bounds
-  !#py use spmdMod             , only : masterproc
+  use spmdMod             , only : masterproc
   use landunit_varcon     , only : istsoil
-  !#py use clm_time_manager    , only : get_step_size
   use elm_varctl          , only : use_c13, use_c14
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
@@ -68,8 +67,6 @@ contains
        col_pf%prod1p_loss(c)  = col_ps%prod1p(c)  * kprod1
     end do
 
-    ! set time steps
-    !#py dt = real( get_step_size(), r8 )
 
    ! update wood product state variables
     do fc = 1,num_soilc

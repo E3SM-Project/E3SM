@@ -18,6 +18,7 @@ module LandunitType
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use elm_varcon     , only : ispval, spval
+  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -62,7 +63,7 @@ module LandunitType
      procedure, public :: Clean => lun_pp_clean
 
   end type landunit_physical_properties
-  
+
   type(landunit_physical_properties), public, target :: lun_pp  !geomorphological landunits
   !$acc declare create(lun_pp)
   !------------------------------------------------------------------------
@@ -79,9 +80,9 @@ contains
 
     ! The following is set in InitGridCellsMod
     allocate(this%gridcell     (begl:endl)); this%gridcell  (:) = ispval
-    allocate(this%wtgcell      (begl:endl)); this%wtgcell   (:) = spval
+    allocate(this%wtgcell      (begl:endl)); this%wtgcell   (:) = nan
     allocate(this%topounit     (begl:endl)); this%topounit  (:) = ispval
-    allocate(this%wttopounit   (begl:endl)); this%wttopounit(:) = spval
+    allocate(this%wttopounit   (begl:endl)); this%wttopounit(:) = nan
     allocate(this%coli         (begl:endl)); this%coli      (:) = ispval
     allocate(this%colf         (begl:endl)); this%colf      (:) = ispval
     allocate(this%ncolumns     (begl:endl)); this%ncolumns  (:) = ispval
@@ -98,12 +99,12 @@ contains
     allocate(this%active       (begl:endl))
 
     ! The following is set in routine urbanparams_vars%Init in module UrbanParamsMod
-    allocate(this%canyon_hwr   (begl:endl)); this%canyon_hwr   (:) = spval
-    allocate(this%wtroad_perv  (begl:endl)); this%wtroad_perv  (:) = spval
-    allocate(this%wtlunit_roof (begl:endl)); this%wtlunit_roof (:) = spval
-    allocate(this%ht_roof      (begl:endl)); this%ht_roof      (:) = spval
-    allocate(this%z_0_town     (begl:endl)); this%z_0_town     (:) = spval
-    allocate(this%z_d_town     (begl:endl)); this%z_d_town     (:) = spval
+    allocate(this%canyon_hwr   (begl:endl)); this%canyon_hwr   (:) = nan
+    allocate(this%wtroad_perv  (begl:endl)); this%wtroad_perv  (:) = nan
+    allocate(this%wtlunit_roof (begl:endl)); this%wtlunit_roof (:) = nan
+    allocate(this%ht_roof      (begl:endl)); this%ht_roof      (:) = nan
+    allocate(this%z_0_town     (begl:endl)); this%z_0_town     (:) = nan
+    allocate(this%z_d_town     (begl:endl)); this%z_d_town     (:) = nan
 
   end subroutine lun_pp_init
 

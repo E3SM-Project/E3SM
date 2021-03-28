@@ -7,7 +7,6 @@ module RootDynamicsMod
   !
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  !#py use clm_time_manager    , only : get_step_size
   use elm_varpar          , only : nlevsoi, nlevgrnd
   use elm_varctl          , only : use_vertsoilc
   use decompMod           , only : bounds_type
@@ -60,9 +59,6 @@ contains
     integer                  , intent(in)    :: filter_soilp(:)    ! filter for soil pfts
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    !type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    !type(carbonflux_type)    , intent(in)    :: carbonflux_vars
-    !type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars !
     type(crop_type)          , intent(in)    :: crop_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
@@ -120,9 +116,6 @@ contains
          deadcrootc_xfer_to_deadcrootc => veg_cf%deadcrootc_xfer_to_deadcrootc ,  & ! Input  :  [real(r8) (:)] dead coarse root C growth from storage (gC/m2/s)
          altmax_lastyear         => canopystate_vars%altmax_lastyear_col         & ! Input: [real(r8) (:)   ]  maximum annual depth of thaw
          )
-
-      ! set time steps
-      !#py dt = get_step_size()
 
       !initialize to 0
       w_limit(bounds%begp:bounds%endp)              = 0._r8

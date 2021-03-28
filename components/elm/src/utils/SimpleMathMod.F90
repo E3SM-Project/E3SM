@@ -1,6 +1,6 @@
 module SimpleMathMod
 
-!#py #include "shr_assert.h"
+#include "shr_assert.h"
   !------------------------------------------------------------------------------
   !
   ! DESCRIPTIONS:
@@ -84,7 +84,6 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
   !
   !USES
   use shr_kind_mod, only: r8 => shr_kind_r8
-  !#py !#py use shr_log_mod    , only : errMsg => shr_log_errMsg
   implicit none
   integer,  intent(in) :: lbj1         !left bound of dim 1
   integer,  intent(in) :: lbj2         !left bound of dim 2
@@ -139,7 +138,6 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
   ! USES
   !
   use shr_kind_mod, only: r8 => shr_kind_r8
-  !#py !#py use shr_log_mod    , only : errMsg => shr_log_errMsg
   implicit none
   integer,  intent(in) :: lbj1         !left bound of dim 1
   integer,  intent(in) :: lbj2         !left bound of dim 2
@@ -180,8 +178,6 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
   !USES
   !
   use shr_kind_mod, only: r8 => shr_kind_r8
-  !#py use shr_assert_mod , only : shr_assert
-  !#py !#py use shr_log_mod    , only : errMsg => shr_log_errMsg
   implicit none
   real(r8), intent(in) :: arr1d_in(:)     !scaling factor
   integer,  intent(in) :: which_dim        !which dimension is scaled
@@ -239,7 +235,7 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
     subroutine matvec_acc(START,END_,RES,A,X)
       !$acc routine seq
       !As of Cuda 10.1 calling cuBlas functions from device code
-      !is not supported.  So must have create any blas routines with
+      !is not supported.  So must create any blas routines with
       !acc routine seq manually.  This is for square matrices Matrix Vector Multiplication
       !used only in PhotosynthesisMod::calcstressroot so far
 

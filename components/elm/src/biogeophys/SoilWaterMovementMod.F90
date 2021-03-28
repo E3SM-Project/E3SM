@@ -953,12 +953,12 @@ contains
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
 
-          #ifdef USE_PETSC_LIB
+#ifdef USE_PETSC_LIB
           if (lateral_connectivity) then
              g    = col_pp%gridCell(c)
              area = ldomain_lateral%ugrid%areaGrid_ghosted(g)
           endif
-          #endif
+#endif
 
           ! [mm/s] --> [kg/s]   [m^2] [kg/m^3]  [m/mm]
           flux_unit_conversion     = area * denh2o * 1.0d-3

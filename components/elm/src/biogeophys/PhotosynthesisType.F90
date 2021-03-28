@@ -384,21 +384,20 @@ contains
     integer :: j,c ! indices
     logical :: readvar      ! determine if variable is on initial file
     !-----------------------------------------------------------------------
-!#py
     if ( use_c13 ) then
        call restartvar(ncid=ncid, flag=flag, varname='rc13_canair', xtype=ncd_double,  &
             dim1name='pft', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%rc13_canair_patch)
-!#py
+
        call restartvar(ncid=ncid, flag=flag, varname='rc13_psnsun', xtype=ncd_double,  &
             dim1name='pft', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%rc13_psnsun_patch)
-!#py
+
        call restartvar(ncid=ncid, flag=flag, varname='rc13_psnsha', xtype=ncd_double,  &
             dim1name='pft', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%rc13_psnsha_patch)
     endif
-!#py
+
   end subroutine Restart
   !------------------------------------------------------------------------------
   subroutine TimeStepInit (this, bounds)

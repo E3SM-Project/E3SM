@@ -23,7 +23,7 @@ module dynConsBiogeophysMod
   use TotalWaterAndHeatMod, only : heat_base_temp
   use elm_varcon        , only : tfrz, cpliq
   use subgridAveMod     , only : p2c, c2g
-  !use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
+  use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
   use elm_varcon        , only : spval
   use GridcellDataType  , only : grc_es, grc_ef, grc_ws, grc_wf
   use LandunitType      , only : lun_pp
@@ -156,8 +156,7 @@ contains
          heat_grc = heat2(bounds%begg:bounds%endg), &
          liquid_water_temp_grc = liquid_water_temp2(bounds%begg:bounds%endg))
 
-    !TODO: FIX
-    if (.false.) then !get_for_testing_zero_dynbal_fluxes()) then
+    if (get_for_testing_zero_dynbal_fluxes()) then
        do g = begg, endg
           delta_liq(g) = 0._r8
           delta_ice(g) = 0._r8

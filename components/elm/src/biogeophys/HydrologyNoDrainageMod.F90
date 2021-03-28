@@ -255,7 +255,7 @@ contains
 
           call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
        endif
-#ENDIF
+#endif
 
       if (use_vichydro) then
          ! mapping soilmoist from CLM to VIC layers for runoff calculations

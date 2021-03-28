@@ -48,7 +48,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine ComputeSeedAmounts(bounds,p,l,c,                          &
+  subroutine ComputeSeedAmounts(p,                          &
        species,                                                        &
        leaf_patch, leaf_storage_patch, leaf_xfer_patch,                &
        compute_here_patch, ignore_current_state_patch,                 &
@@ -67,30 +67,28 @@ contains
     ! here.
     !
     ! !USES:
-      !$acc routine seq
+    !$acc routine seq
     use pftvarcon       , only : noveg
     !
-                                                                                  ! !ARGUMENTS:
-    type(bounds_type) , intent(in)     :: bounds
-    integer, value    , intent(in)     :: p,l,c
-    integer           , intent(in)     :: species                                 ! which C/N species we're operating on; should be one of the values in SpeciesMod
-    real(r8)          , intent(in)     :: leaf_patch!( bounds%begp: )             ! current leaf C or N content (g/m2)
-    real(r8)          , intent(in)     :: leaf_storage_patch!( bounds%begp: )     ! current leaf C or N storage content (g/m2)
-    real(r8)          , intent(in)     :: leaf_xfer_patch!( bounds%begp: )        ! current leaf C or N xfer content (g/m2)
+    ! !ARGUMENTS:
+    integer, value    , intent(in)     :: p
+    integer           , intent(in)     :: species                ! which C/N species we're operating on; should be one of the values in SpeciesMod
+    real(r8)          , intent(in)     :: leaf_patch             ! current leaf C or N content (g/m2)
+    real(r8)          , intent(in)     :: leaf_storage_patch     ! current leaf C or N storage content (g/m2)
+    real(r8)          , intent(in)     :: leaf_xfer_patch        ! current leaf C or N xfer content (g/m2)
                                                                                   ! whether to compute outputs for each patch
-    logical           , intent(in)     :: compute_here_patch!( bounds%begp: )
+    logical           , intent(in)     :: compute_here_patch
                                                                                   ! If ignore_current_state is true, then use default leaf proportions rather than
                                                                                   ! proportions based on current state.
-    logical           , intent(in)     :: ignore_current_state_patch!( bounds%begp: )
-    real(r8)          , intent(inout)  :: seed_leaf_patch !( bounds%begp: )         ! seed amount for leaf itself for this species (g/m2)
-    real(r8)          , intent(inout)  :: seed_leaf_storage_patch!( bounds%begp: ) ! seed amount for leaf storage for this species (g/m2)
-    real(r8)          , intent(inout)  :: seed_leaf_xfer_patch!( bounds%begp: )    ! seed amount for leaf xfer for this species (g/m2)
-    real(r8)          , intent(inout)  :: seed_deadstem_patch!( bounds%begp: )     ! seed amount for deadstem for this species (g/m2)
+    logical           , intent(in)     :: ignore_current_state_patch
+    real(r8)          , intent(inout)  :: seed_leaf_patch          ! seed amount for leaf itself for this species (g/m2)
+    real(r8)          , intent(inout)  :: seed_leaf_storage_patch  ! seed amount for leaf storage for this species (g/m2)
+    real(r8)          , intent(inout)  :: seed_leaf_xfer_patch     ! seed amount for leaf xfer for this species (g/m2)
+    real(r8)          , intent(inout)  :: seed_deadstem_patch      ! seed amount for deadstem for this species (g/m2)
     real(r8), optional, intent(in)     :: pool_seed_param
-    real(r8), optional, intent(inout)  :: pool_seed_patch!( bounds%begp: )
+    real(r8), optional, intent(inout)  :: pool_seed_patch
     !
     ! !LOCAL VARIABLES:
-    !integer  :: fp, p, c, l
     real(r8) :: my_leaf_seed
     real(r8) :: my_deadstem_seed
     real(r8) :: my_pool_seed
@@ -99,12 +97,13 @@ contains
     real(r8) :: pstor
     real(r8) :: pxfer
     !-----------------------------------------------------------------------
-
+#ifndef _OPENACC
     if (present(pool_seed_patch)) then
        if (.not. present(pool_seed_param)) then
-          stop ': pool_seed_patch can only be provided with pool_seed_param'
+          call endrun( ': pool_seed_patch can only be provided with pool_seed_param')
        end if
     end if
+#endif
 
     if (compute_here_patch) then
           my_leaf_seed = 0._r8
@@ -142,12 +141,12 @@ contains
           if (present(pool_seed_param)) then
              pool_seed_patch  = my_pool_seed
           end if
-       else
+    else
           seed_leaf_patch          = 0._r8
           seed_leaf_storage_patch  = 0._r8
           seed_leaf_xfer_patch     = 0._r8
           seed_deadstem_patch      = 0._r8
-       end if
+    end if
 
   end subroutine ComputeSeedAmounts
 
@@ -216,8 +215,8 @@ contains
     !
     ! !LOCAL VARIABLES:
 
+    character(len=*), parameter :: subname = 'SpeciesTypeMultiplier' 
     !-----------------------------------------------------------------------
-
     select case (species)
     case (CN_SPECIES_C12)
        multiplier = 1._r8
@@ -246,7 +245,10 @@ contains
              multiplier = 0._r8
           end if
        case default
-          print *, ' ERROR: unknown component: ', component
+#ifndef _OPENACC
+          write(iulog,*) subname//' ERROR: unknown component: ', component 
+          call endrun(subname//' ERROR: unknown component')
+#endif 
        end select
 
     case (CN_SPECIES_P)
@@ -262,11 +264,17 @@ contains
              multiplier = 0._r8
           end if
        case default
-          print *, ' ERROR: unknown component: ', component
+#ifndef _OPENACC
+          write(iulog,*) subname//' ERROR: unknown component: ', component 
+          call endrun(subname//' ERROR: unknown component')
+#endif 
        end select
 
     case default
-       print *, ' ERROR: unknown species: ', species
+#ifndef _OPENACC
+          write(iulog,*) subname//' ERROR: unknown species: ', species 
+          call endrun(subname//' ERROR: unknown species')
+#endif 
     end select
 
   end function SpeciesTypeMultiplier

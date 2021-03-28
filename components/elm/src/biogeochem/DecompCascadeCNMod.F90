@@ -12,7 +12,7 @@ module DecompCascadeCNMod
   use elm_varpar             , only : nlevsoi, nlevgrnd, nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use elm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc
-  use elm_varcon             , only : zsoi
+  use elm_varcon             , only : zsoi, spval
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
   use SharedParamsMod        , only : ParamsShareInst, anoxia_wtsat, nlev_soildecomp_standard
@@ -76,7 +76,7 @@ module DecompCascadeCNMod
      integer , pointer :: nsompools        => null() !4
      integer , pointer :: nlitpools        => null() !3
      integer , pointer :: ncwdpools        => null() !1
-     real(r8), pointer :: spinup_vector(:) => null()! multipliers for soil decomp during accelerated spinup
+     real(r8), pointer :: spinup_vector(:) => null() ! multipliers for soil decomp during accelerated spinup
 
 
   end type DecompCNParamsType
@@ -93,6 +93,7 @@ contains
      !
      ! !USES:
      use ncdio_pio , only : file_desc_t,ncd_io
+     use elm_varcon, only : spval
      !
      ! !ARGUMENTS:
      implicit none

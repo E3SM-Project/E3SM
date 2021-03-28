@@ -49,7 +49,6 @@ contains
     ! !LOCAL VARIABLES:
     integer :: c,p          ! indices
     integer :: fp,fc        ! lake filter indices
-    real(r8) :: dayspyr = 365.d0
     !-----------------------------------------------------------------------
     associate(&
       annsum_counter_col          => cnstate_vars%annsum_counter_col , &
@@ -74,7 +73,7 @@ contains
     end do
 
     if (num_soilc > 0) then
-      if (annsum_counter_col(filter_soilc(1)) >= dayspyr * secspday) then
+      if (annsum_counter_col(filter_soilc(1)) >= dayspyr_mod * secspday) then
           ! patch loop
           do fp = 1,num_soilp
              p = filter_soilp(fp)
@@ -116,7 +115,7 @@ contains
     ! column loop
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       if (annsum_counter_col(c) >= dayspyr * secspday) then
+       if (annsum_counter_col(c) >= dayspyr_mod * secspday) then
            annsum_counter_col(c) = 0._r8
        end if
     end do
