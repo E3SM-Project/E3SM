@@ -244,18 +244,18 @@ contains
    end subroutine C14BombSpike
 
   !-----------------------------------------------------------------------
-   subroutine C14_init_BombSpike()
-     !
-     ! !DESCRIPTION:
-     ! read netcdf file containing a timeseries of atmospheric delta C14 values; save in module-level array
-     !
-     ! !USES:
-     use ncdio_pio
-     use fileutils   , only : getfil
-     use abortutils  , only : endrun
-     use elm_varctl  , only : iulog
-     use spmdMod     , only : masterproc
-     use shr_log_mod , only : errMsg => shr_log_errMsg
+  subroutine C14_init_BombSpike()
+    !
+    ! !DESCRIPTION:
+    ! read netcdf file containing a timeseries of atmospheric delta C14 values; save in module-level array
+    !
+    ! !USES:
+    use ncdio_pio
+    use fileutils   , only : getfil
+    use abortutils  , only : endrun
+    use elm_varctl  , only : iulog
+    use spmdMod     , only : masterproc
+    use shr_log_mod , only : errMsg => shr_log_errMsg
     !
     ! !LOCAL VARIABLES:
     character(len=256) :: locfn           ! local file name
@@ -263,39 +263,39 @@ contains
     integer :: dimid,varid                ! input netCDF id's
     integer :: ntim                       ! number of input data time samples
     integer :: t
-     !-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
 
-     if ( use_c14_bombspike ) then
+    if ( use_c14_bombspike ) then
 
-        if ( masterproc ) then
-           write(iulog, *) 'C14_init_BombSpike: preparing to open file:'
-           write(iulog, *) trim(locfn)
-        endif
+       if ( masterproc ) then
+          write(iulog, *) 'C14_init_BombSpike: preparing to open file:'
+          write(iulog, *) trim(locfn)
+       endif
 
-        call getfil(atm_c14_filename, locfn, 0)
+       call getfil(atm_c14_filename, locfn, 0)
 
-        call ncd_pio_openfile (ncid, trim(locfn), 0)
+       call ncd_pio_openfile (ncid, trim(locfn), 0)
 
-        call ncd_inqdlen(ncid,dimid,ntim,'time')
+       call ncd_inqdlen(ncid,dimid,ntim,'time')
 
-        !! allocate arrays based on size of netcdf timeseries
-        allocate(atm_c14file_time(ntim))
-        allocate(atm_delta_c14(ntim))
+       !! allocate arrays based on size of netcdf timeseries
+       allocate(atm_c14file_time(ntim))
+       allocate(atm_delta_c14(ntim))
 
-        call ncd_io(ncid=ncid, varname='time', flag='read', data=atm_c14file_time)
+       call ncd_io(ncid=ncid, varname='time', flag='read', data=atm_c14file_time)
 
-        call ncd_io(ncid=ncid, varname='atm_delta_c14', flag='read', data=atm_delta_c14)
+       call ncd_io(ncid=ncid, varname='atm_delta_c14', flag='read', data=atm_delta_c14)
 
-        call ncd_pio_closefile(ncid)
+       call ncd_pio_closefile(ncid)
 
        ! check to make sure that time dimension is well behaved
-        do t = 2, ntim
-           if ( atm_c14file_time(t) - atm_c14file_time(t-1) <= 0._r8 ) then
-              write(iulog, *) 'C14_init_BombSpike: error.  time axis must be monotonically increasing'
-              call endrun(msg=errMsg(__FILE__, __LINE__))
-           endif
-        end do
-     endif
+       do t = 2, ntim
+          if ( atm_c14file_time(t) - atm_c14file_time(t-1) <= 0._r8 ) then
+             write(iulog, *) 'C14_init_BombSpike: error.  time axis must be monotonically increasing'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          endif
+       end do
+    endif
 
   end subroutine C14_init_BombSpike
 

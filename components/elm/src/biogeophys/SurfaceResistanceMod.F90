@@ -61,7 +61,6 @@ contains
      use decompMod     , only : bounds_type
      use ColumnType    , only : col_pp
      use LandunitType  , only : lun_pp
-     !#py use abortutils    , only : endrun
      !
      ! !ARGUMENTS:
      implicit none

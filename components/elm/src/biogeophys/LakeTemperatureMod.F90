@@ -1,6 +1,6 @@
 module LakeTemperatureMod
 
-!#py #include "shr_assert.h"
+#include "shr_assert.h"
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -1027,7 +1027,7 @@ contains
           eflx_soil_grnd(p) = eflx_soil_grnd(p) + errsoi(c)
           eflx_gnet(p)      = eflx_gnet(p)      + errsoi(c)
           if (abs(errsoi(c)) > 1.e-3_r8) then
-             !#py write(iulog,*)'errsoi incorporated into sensible heat in LakeTemperature: c, (W/m^2):', c, errsoi(c)
+             write(iulog,*)'errsoi incorporated into sensible heat in LakeTemperature: c, (W/m^2):', c, errsoi(c)
           end if
           errsoi(c) = 0._r8
        end if
@@ -1247,7 +1247,6 @@ contains
      ! Errors will be trapped at the end of LakeTemperature.
      !
      ! !USES:
-     !#py use clm_time_manager , only : get_step_size
       !$acc routine seq
      use elm_varcon       , only : tfrz, hfus, denh2o, denice, cpliq, cpice
      use elm_varpar       , only : nlevsno, nlevgrnd, nlevlak
@@ -1259,9 +1258,6 @@ contains
      real(r8)               , intent(inout) :: cv( bounds%begc: , -nlevsno+1: ) ! heat capacity [J/(m2 K)] [col, lev]
      real(r8)               , intent(inout) :: cv_lake( bounds%begc: , 1: )     ! heat capacity [J/(m2 K)] [col, levlak]
      real(r8)               , intent(out)   :: lhabs( bounds%begc: )            ! total per-column latent heat abs. (J/m^2) [col]
-     !type(waterstate_type)  , intent(inout) :: waterstate_vars
-     !type(waterflux_type)   , intent(inout) :: waterflux_vars
-     !type(temperature_type) , intent(inout) :: temperature_vars
      type(energyflux_type)  , intent(inout) :: energyflux_vars
      type(lakestate_type)   , intent(inout) :: lakestate_vars
      real(r8), intent(in) :: dtime
@@ -1304,9 +1300,6 @@ contains
           eflx_snomelt    => col_ef%eflx_snomelt     & ! Output: [real(r8)  (:)   ] snow melt heat flux (W/m**2)
           )
 
-       ! Get step size
-
-       !#py dtime = get_step_size()
 
        ! Initialization
 

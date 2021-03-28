@@ -323,9 +323,10 @@ contains
                if (area_ice_mec > 0) then
                   ! Determine index of the glc_mec landunit
                   l_ice_mec = top_pp%landunit_indices(istice_mec, t)
+                  
                   if (l_ice_mec == ispval) then
-                     !#py write(iulog,*) subname//' ERROR: no ice_mec landunit found within the icemask, for g = ', g
-                     !#py call endrun()
+                     write(iulog,*) ' ERROR: no ice_mec landunit found within the icemask, for g = ', g
+                     call endrun()
                   end if
 
                   frac_assigned(1:maxpatch_glcmec) = .false.

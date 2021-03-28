@@ -63,9 +63,6 @@ contains
     !character(len=*)         , parameter     :: subname = 'NitrogenStateUpdateDynPatch'
     !-----------------------------------------------------------------------
 
-
-      !#py dt = real( get_step_size(), r8 )
-
       if (.not.use_fates) then
 
          do g = bounds%begg, bounds%endg
@@ -115,8 +112,6 @@ contains
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     real(r8)                  , intent(in)    :: dt        ! radiation time step (seconds)
 
     !
@@ -143,9 +138,6 @@ contains
          nfixation_prof        => cnstate_vars%nfixation_prof_col           & ! Input:  [real(r8) (:,:)   ]  profile over which N fixation is distributed through column (1/m)
 
          )
-
-      ! set time steps
-      !#py dt = real( get_step_size(), r8 )
 
       ! column-level fluxes
 
@@ -265,7 +257,6 @@ contains
       endif  !end if is_active_betr_bgc 
 
       ! forest fertilization
-      !#py call get_curr_date(kyr, kmo, kda, mcsec)
       if (forest_fert_exp) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)

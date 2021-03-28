@@ -690,8 +690,10 @@ contains
                            cn_eca = cn_eca - ncrit + col_ns%decomp_npools_vr(c,j,l)
                            col_ns%decomp_npools_vr(c,j,l) = ncrit
                         else
-                           !#py write(iulog, "(A,2I8,E8.1)") 'error decomp_npools is negative: ',j,l,col_ns%decomp_npools_vr(c,j,l)
-                           !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
+#ifndef _OPENACC                                
+                           write(iulog, "(A,2I8,E8.1)") 'error decomp_npools is negative: ',j,l,col_ns%decomp_npools_vr(c,j,l)
+                           call endrun(msg=errMsg(__FILE__, __LINE__))
+#endif
                         end if
                      end if
                      if ( col_ps%decomp_ppools_vr(c,j,l)  < 0.0_r8 .and. floating_cp_ratio_decomp_pools(l) ) then
@@ -742,6 +744,8 @@ contains
 #endif
             end do
          endif
+
+       endif  !if ECA
 
       endif ! if (.not. is_active_betr_bgc)
 

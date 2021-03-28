@@ -434,10 +434,6 @@ contains
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)     , intent(in)    :: cnstate_vars
-    !type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    !type(carbonstate_type) , intent(in)    :: carbonstate_vars
-    !type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
-    !type(carbonstate_type) , intent(in)    :: isotopestate_vars
     integer       , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
@@ -576,10 +572,6 @@ contains
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)     , intent(in)    :: cnstate_vars
-    !type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    !type(carbonstate_type) , intent(in)    :: carbonstate_vars
-    !type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
-    !type(carbonstate_type) , intent(in)    :: isotopestate_vars
     integer                , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
@@ -727,10 +719,6 @@ contains
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)     , intent(in)    :: cnstate_vars
-    !type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    !type(carbonstate_type) , intent(in)    :: carbonstate_vars
-    !type(carbonflux_type)  , intent(inout) :: isotopeflux_vars
-    !type(carbonstate_type) , intent(in)    :: isotopestate_vars
     integer                , intent(in)    :: isotope         ! 'c13' or 'c14'
     type(column_carbon_state),intent(in)   :: isocol_cs
     type(vegetation_carbon_state),intent(in)   :: isoveg_cs
@@ -929,9 +917,8 @@ contains
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)     , intent(in)    :: cnstate_vars
-    !type(carbonflux_type)  , intent(inout) :: carbonflux_vars
-     type(column_carbon_flux), intent(inout) :: col_cf
-     type(vegetation_carbon_flux), intent(inout) :: veg_cf
+    type(column_carbon_flux), intent(inout) :: col_cf
+    type(vegetation_carbon_flux), intent(inout) :: veg_cf
     !
     ! !LOCAL VARIABLES:
     integer :: fc,c,pi,p,j

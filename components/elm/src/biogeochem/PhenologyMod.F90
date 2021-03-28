@@ -898,7 +898,6 @@ contains
     ! per year.
     !
     ! !USES:
-    !#py use clm_time_manager , only : get_days_per_year
       !$acc routine seq
     use elm_varcon       , only : secspday
     use shr_const_mod    , only : SHR_CONST_TKFRZ, SHR_CONST_PI
@@ -1379,7 +1378,6 @@ contains
     ! handle CN fluxes during the phenological onset                       & offset periods.
 
     ! !USES:
-    !#py use clm_time_manager , only : get_curr_date, get_curr_calday, get_days_per_year
       !$acc routine seq
     use pftvarcon        , only : ncorn, nscereal, nwcereal, nsoybean, gddmin, hybgdd
     use pftvarcon        , only : nwcerealirrig, nsoybeanirrig, ncornirrig, nscerealirrig
@@ -2110,11 +2108,11 @@ contains
          tkil = (tbase - 6._r8) - 6._r8 * hdidx(p)
          if (tkil >= tcrown) then
             if ((0.95_r8 - 0.02_r8 * (tcrown - tkil)**2) >= 0.02_r8) then
-               !#py write (iulog,*)  'crop damaged by cold temperatures at p,c =', p,c
+               write (iulog,*)  'crop damaged by cold temperatures at p,c =', p,c
             else if (tlai(p) > 0._r8) then ! slevis: kill if past phase1
                gddmaturity(p) = 0._r8      !         by forcing through
                huigrain(p)    = 0._r8      !         harvest
-               !#py write (iulog,*)  '95% of crop killed by cold temperatures at p,c =', p,c
+               write (iulog,*)  '95% of crop killed by cold temperatures at p,c =', p,c
             end if
          end if
       end if
@@ -2132,8 +2130,6 @@ contains
     ! CropPhenologyMod
     !
     ! !USES:
-    !#py use clm_time_manager , only : get_curr_date
-    !#py use clm_time_manager , only : get_step_size
       !$acc routine seq
     use elm_varcon       , only : secspday
     use elm_varpar       , only : numpft

@@ -12,6 +12,7 @@ module GridcellType
   ! 	 topographic units between gridcell and landunit.
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
+  use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
   use landunit_varcon, only : max_lunit
   use elm_varcon     , only : ispval, spval
   !
@@ -78,11 +79,11 @@ contains
 
     ! The following is set in InitGridCells
     allocate(this%gindex    (begg:endg)) ; this%gindex    (:) = ispval
-    allocate(this%area      (begg:endg)) ; this%area      (:) = spval
-    allocate(this%lat       (begg:endg)) ; this%lat       (:) = spval
-    allocate(this%lon       (begg:endg)) ; this%lon       (:) = spval
-    allocate(this%latdeg    (begg:endg)) ; this%latdeg    (:) = spval
-    allocate(this%londeg    (begg:endg)) ; this%londeg    (:) = spval
+    allocate(this%area      (begg:endg)) ; this%area      (:) = nan
+    allocate(this%lat       (begg:endg)) ; this%lat       (:) = nan
+    allocate(this%lon       (begg:endg)) ; this%lon       (:) = nan
+    allocate(this%latdeg    (begg:endg)) ; this%latdeg    (:) = nan
+    allocate(this%londeg    (begg:endg)) ; this%londeg    (:) = nan
 
     allocate(this%topi      (begg:endg)) ; this%topi      (:) = ispval
     allocate(this%topf      (begg:endg)) ; this%topf      (:) = ispval
@@ -98,9 +99,9 @@ contains
     allocate(this%npfts     (begg:endg)) ; this%npfts     (:) = ispval
 
     ! This is initiailized in module DayLength
-    allocate(this%max_dayl  (begg:endg)) ; this%max_dayl  (:) = spval
-    allocate(this%dayl      (begg:endg)) ; this%dayl      (:) = spval
-    allocate(this%prev_dayl (begg:endg)) ; this%prev_dayl (:) = spval
+    allocate(this%max_dayl  (begg:endg)) ; this%max_dayl  (:) = nan
+    allocate(this%dayl      (begg:endg)) ; this%dayl      (:) = nan
+    allocate(this%prev_dayl (begg:endg)) ; this%prev_dayl (:) = nan
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
 

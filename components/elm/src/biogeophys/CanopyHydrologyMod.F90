@@ -29,7 +29,7 @@ module CanopyHydrologyMod
   use elm_varcon        , only : snw_rds_min
   use pftvarcon         , only : irrigated
   use GridcellType      , only : grc_pp
-  use timeinfoMod, only : dtime
+  use timeinfoMod, only : dtime_mod
   !
   ! !PUBLIC TYPES:
   implicit none

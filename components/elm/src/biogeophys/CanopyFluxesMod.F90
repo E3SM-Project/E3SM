@@ -303,7 +303,7 @@ contains
     real(r8) :: dt_veg_temp(bounds%begp:bounds%endp)
     integer  :: iv
 
-    character(len=256) :: event !! timing event
+    character(len=64) :: event !! timing event
     !------------------------------------------------------------------------------
 
     associate(                                                               &
@@ -852,7 +852,7 @@ contains
                call Photosynthesis (bounds, fn, filterp, &
                         svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                         dayl_factor(begp:endp), atm2lnd_vars,  surfalb_vars, solarabs_vars, &
-                        canopystate_vars, photosyns_vars, 1)
+                        canopystate_vars, photosyns_vars, 'sun')
             end if
 
             if ( use_c13 ) then
@@ -873,7 +873,7 @@ contains
               call Photosynthesis (bounds, fn, filterp, &
                    svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                    dayl_factor(begp:endp), atm2lnd_vars,surfalb_vars, solarabs_vars, &
-                   canopystate_vars, photosyns_vars, 0)
+                   canopystate_vars, photosyns_vars, 'sha')
             end if
 
 

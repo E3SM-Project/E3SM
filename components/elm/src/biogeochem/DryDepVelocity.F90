@@ -265,7 +265,7 @@ CONTAINS
             elmveg     = veg_pp%itype(pi)
             soilw      = h2osoi_vol(c,1)
 
-            !map CLM veg type into Wesely veg type
+            !map ELM veg type into Wesely veg type
             wesveg = wveg_unset
             if (elmveg == noveg                               ) wesveg = 8
             if (elmveg == ndllf_evr_tmp_tree                  ) wesveg = 5
@@ -354,7 +354,7 @@ CONTAINS
             endif
 
             if (index_season<0) then
-               !#py call endrun('ERROR: not able to determine season'//errmsg(__FILE__, __LINE__))
+               call endrun('ERROR: not able to determine season'//errmsg(__FILE__, __LINE__))
             endif
 
             ! saturation specific humidity

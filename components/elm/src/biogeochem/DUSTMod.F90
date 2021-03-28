@@ -632,7 +632,6 @@ contains
      !
      ! !USES
      use shr_const_mod , only: SHR_CONST_PI, SHR_CONST_RDAIR
-     !#py use shr_spfn_mod  , only: erf => shr_spfn_erf
      use decompMod     , only : get_proc_bounds
      !
      ! !ARGUMENTS:
@@ -734,7 +733,7 @@ contains
 
       if (ryn_nbr_frc_thr_prx_opt < 0.03_r8) then
           write(iulog,*) 'dstmbl: ryn_nbr_frc_thr_prx_opt < 0.03'
-         !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
+          call endrun(msg=errMsg(__FILE__, __LINE__))
       else if (ryn_nbr_frc_thr_prx_opt < 10.0_r8) then
          ryn_nbr_frc_thr_opt_fnc = -1.0_r8 + 1.928_r8 * (ryn_nbr_frc_thr_prx_opt**0.0922_r8)
          ryn_nbr_frc_thr_opt_fnc = 0.1291_r8 * 0.1291_r8 / ryn_nbr_frc_thr_opt_fnc
@@ -917,8 +916,8 @@ contains
                vlc_grv(m) = 0.5_r8 * (vlc_grv(m)+vlc_grv_old)  ! [m s-1]
             end if
             if (itr_idx > 20) then
-               !#py write(iulog,*) 'Dustini error: Terminal velocity not converging ',&
-                    !#py ' in stk_crc_get(), breaking loop...'
+               write(iulog,*) 'Dustini error: Terminal velocity not converging ',&
+               ' in stk_crc_get(), breaking loop...'
                goto 100                                        !to next iteration
             end if
             itr_idx = itr_idx + 1

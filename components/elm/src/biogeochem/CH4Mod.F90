@@ -1472,10 +1472,10 @@ contains
             forc_pch4(t) = atmch4*forc_pbot(t)
          else
             if (forc_pch4(t) == 0._r8) then
-               print *,'not using ch4offline, but methane concentration not passed from the atmosphere'
-                    !#py 'to land model! CLM Model is stopping.'
-               !#py call endrun(msg=' ERROR: Methane not being passed to atmosphere'//&
-                    !#py !#py errMsg(__FILE__, __LINE__))
+               write(iulog,*) 'not using ch4offline, but methane concentration not passed from the atmosphere'//&
+                     'to land model! CLM Model is stopping.'
+               call endrun(msg=' ERROR: Methane not being passed to atmosphere'//&
+                     errMsg(__FILE__, __LINE__))
             end if
          end if
          c_atm(g,1) =  forc_pch4(t) / rgasm / forc_t(t) ! [mol/m3 air]
@@ -1625,18 +1625,19 @@ contains
       ! Loop over saturated and unsaturated, non-lakes
       !------------------------------------------------
 
-      sat = 0
-      !ITERATION : do while (sat <= 1 ) ! 0 == unsaturated; 1 = saturated
+      do sat = 0, 1 ! 0 == unsaturated; 1 = saturated
 
-        ! Get index of water table
-          call get_jwt (bounds, num_soilc, filter_soilc, jwt(begc:endc), &
-               soilstate_vars )
+         ! Get index of water table
+         if (sat == 0) then ! unsaturated
 
-          do fc = 1, num_soilc
-             c = filter_soilc(fc)
-             zwt_ch4_unsat(c) = zi(c,jwt(c))
+            call get_jwt (bounds, num_soilc, filter_soilc, jwt(begc:endc), &
+                 soilstate_vars )
 
-          end do
+            do fc = 1, num_soilc
+               c = filter_soilc(fc)
+               zwt_ch4_unsat(c) = zi(c,jwt(c))
+
+            end do
 
             ! Update lagged saturation status of layer
             do j=1,nlevsoi
@@ -1655,6 +1656,13 @@ contains
                   end if
                end do
             end do
+
+         else ! saturated
+            do fc = 1, num_soilc
+               c = filter_soilc(fc)
+               jwt(c) = 0
+            end do
+         endif
 
          ! calculate CH4 production in each soil layer
          call ch4_prod (bounds, &
@@ -1689,48 +1697,7 @@ contains
               jwt(begc:endc), dtime_ch4, sat, lake, &
               soilstate_vars, energyflux_vars, ch4_vars, dtime)
 
-
-      sat = 1
-       do fc = 1, num_soilc
-          c = filter_soilc(fc)
-          jwt(c) = 0
-       end do
-
-       ! calculate CH4 production in each soil layer
-       call ch4_prod (bounds, &
-            num_soilc, filter_soilc, &
-            num_soilp, filter_soilp, &
-            jwt(begc:endc), sat, lake, &
-            soilstate_vars, ch4_vars, dtime)
-
-       ! calculate CH4 oxidation in each soil layer
-       call ch4_oxid (bounds, &
-            num_soilc, filter_soilc, &
-            jwt(begc:endc), sat, lake, &
-            soilstate_vars, ch4_vars, dtime)
-
-       ! calculate CH4 aerenchyma losses in each soil layer
-       call ch4_aere (bounds, &
-            num_soilc, filter_soilc, &
-            num_soilp, filter_soilp, &
-            jwt(begc:endc), sat, lake, &
-            canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime)
-
-       ! calculate CH4 ebullition losses in each soil layer
-       call ch4_ebul (bounds, &
-            num_soilc, filter_soilc, &
-            jwt(begc:endc), sat, lake, &
-            atm2lnd_vars, lakestate_vars, soilstate_vars, ch4_vars, dtime)
-
-       ! Solve CH4 reaction/diffusion equation
-       ! Competition for oxygen will occur here.
-       call ch4_tran (bounds, &
-            num_soilc, filter_soilc, &
-            jwt(begc:endc), dtime_ch4, sat, lake, &
-            soilstate_vars, energyflux_vars, ch4_vars, dtime)
-
-
-      !end do ! sat/unsat
+      enddo ! sat/unsat
 
       !-------------------------------------------------
       ! Now do over lakes
@@ -1888,11 +1855,11 @@ contains
                errch4 = totcolch4(c) - totcolch4_bef(c) - dtime*(ch4_prod_tot(c) - ch4_oxid_tot(c) &
                     - ch4_surf_flux_tot(c)*1000._r8) ! kg C --> g C
                if (abs(errch4) > 1.e-7_r8) then ! g C / m^2 / timestep
-                  print *,'CH4 Conservation Error in CH4Mod driver, nstep, c, errch4 (gC /m^2.timestep)'
-                       !#py nstep,c,errch4
+                  write(iulog, *) 'CH4 Conservation Error in CH4Mod driver, nstep, c, errch4 (gC /m^2.timestep)',&
+                       nstep,c,errch4
                   g = col_pp%gridcell(c)
-                  print *,'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-                  !#py !#py call endrun(msg=' ERROR: Methane conservation error'//errMsg(__FILE__, __LINE__))
+                  write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+                  call endrun(msg=' ERROR: Methane conservation error'//errMsg(__FILE__, __LINE__))
                end if
             end if
 
@@ -1908,12 +1875,12 @@ contains
                   errch4 = totcolch4(c) - totcolch4_bef(c) - dtime*(ch4_prod_tot(c) - ch4_oxid_tot(c) &
                        - ch4_surf_flux_tot(c)*1000._r8) ! kg C --> g C
                   if (abs(errch4) > 1.e-7_r8) then ! g C / m^2 / timestep
-                     print *,'CH4 Conservation Error in CH4Mod driver for lake column, nstep, c, errch4 (gC/m^2.timestep)'
-                          !#py nstep,c,errch4
+                     write(iulog,*)'CH4 Conservation Error in CH4Mod driver for lake column, nstep, c, errch4 (gC/m^2.timestep)',&
+                           nstep,c,errch4
                      g = col_pp%gridcell(c)
-                     print *,'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-                     !#py call endrun(msg=' ERROR: Methane conservation error, allowlakeprod'//&
-                          !#py !#py errMsg(__FILE__, __LINE__))
+                     write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+                     call endrun(msg=' ERROR: Methane conservation error, allowlakeprod'//&
+                          errMsg(__FILE__, __LINE__))
                   end if
                end if
 
@@ -2055,8 +2022,6 @@ contains
          co2_decomp_depth => ch4_vars%co2_decomp_depth_sat_col   ! Output: [real(r8) (:,:)]  CO2 production during decomposition in each soil layer (nlevsoi) (mol/m3/s)
       endif
 
-      !#py dtime = get_step_size()
-
       q10ch4           = CH4ParamsInst%q10ch4
       q10ch4base       = CH4ParamsInst%q10ch4base
       f_ch4            = CH4ParamsInst%f_ch4
@@ -2125,8 +2090,8 @@ contains
                      end if ! anoxia
                   end if
                else
-                  !#py call endrun(msg=' ERROR: No source for decomp rate in CH4Prod.'//&
-                       !#py !#py ' CH4 model currently requires CN.'//errMsg(__FILE__, __LINE__))
+                  call endrun(msg=' ERROR: No source for decomp rate in CH4Prod.'//&
+                       ' CH4 model currently requires CN.'//errMsg(__FILE__, __LINE__))
                end if ! use_cn
 
                ! For sensitivity studies
@@ -2350,9 +2315,6 @@ contains
          o2_decomp_depth  => ch4_vars%o2_decomp_depth_sat_col   ! Output: [real(r8) (:,:)]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
       endif
 
-      ! Get land model time step
-      !#py dtime = get_step_size()
-
       ! Set oxidation parameters
       vmax_ch4_oxid   = CH4ParamsInst%vmax_ch4_oxid
       k_m             = CH4ParamsInst%k_m
@@ -2435,7 +2397,6 @@ contains
     ! !USES:
       !$acc routine seq
     use elm_varcon       , only : rpi
-    !#py use clm_time_manager , only : get_step_size
     use pftvarcon        , only : nc3_arctic_grass, crop, nc3_nonarctic_grass, nc4_grass, noveg
     use CH4varcon        , only : transpirationloss, usefrootc, use_aereoxid_prog
     !
@@ -2540,7 +2501,6 @@ contains
          ch4_prod_depth   =>  ch4_vars%ch4_prod_depth_sat_col   ! Input:  [real(r8) (:,:)]  production of CH4 in each soil layer (nlevsoi) (mol/m3/s)
       endif
 
-      !#py dtime = get_step_size()
 
       ! Set aerenchyma parameters
       aereoxid           = CH4ParamsInst%aereoxid
@@ -2686,7 +2646,6 @@ contains
     ! Bubbles are released to the water table surface in ch4_tran.
 
     ! !USES:
-    !#py use clm_time_manager   , only : get_step_size
       !$acc routine seq
     use LakeCon
     !
@@ -2755,7 +2714,6 @@ contains
       endif
 
       ! Get land model time step
-      !#py dtime = get_step_size()
       vgc_max = CH4ParamsInst%vgc_max
 
       bubble_f = 0.57_r8 ! CH4 content in gas bubbles (Kellner et al. 2006)
@@ -2825,7 +2783,6 @@ contains
     ! Then CH4 diffusive flux is calculated and consistency is checked.
 
     ! !USES:
-    !#py use clm_time_manager   , only : get_step_size, get_nstep
       !$acc routine seq
     use TridiagonalMod     , only : Tridiagonal
     use CH4varcon          , only : ch4frzout, use_aereoxid_prog
@@ -3105,35 +3062,35 @@ contains
             ! aerenchyma added to surface flux below
             ! ebul added to soil depth just above WT
             if (source(c,j,1) + conc_ch4(c,j) / dtime < -1.e-12_r8) then
-               print *, 'Methane demands exceed methane available. Error in methane competition (mol/m^3/s), c,j:'
-                    !#py source(c,j,1) + conc_ch4(c,j) / dtime, c, j
+               write(iulog,*) 'Methane demands exceed methane available. Error in methane competition (mol/m^3/s), c,j:',&
+                    source(c,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
-               print *,'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-               !#py call endrun(msg=' ERROR: Methane demands exceed methane available.'&
-                    !#py !#py //errMsg(__FILE__, __LINE__))
+               write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+               call endrun(msg=' ERROR: Methane demands exceed methane available.'&
+                    //errMsg(__FILE__, __LINE__))
             else if (ch4stress(c,j) < 1._r8 .and. source(c,j,1) + conc_ch4(c,j) / dtime > 1.e-12_r8) then
-               print *, 'Methane limited, yet some left over. Error in methane competition (mol/m^3/s), c,j:'
-                    !#py source(c,j,1) + conc_ch4(c,j) / dtime, c, j
+               write(iulog,*) 'Methane limited, yet some left over. Error in methane competition (mol/m^3/s), c,j:',&
+                    source(c,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
-               print *,'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-               !#py call endrun(msg=' ERROR: Methane limited, yet some left over.'//&
-                    !#py !#py errMsg(__FILE__, __LINE__))
+               write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+               call endrun(msg=' ERROR: Methane limited, yet some left over.'//&
+                    errMsg(__FILE__, __LINE__))
             end if
 
             source(c,j,2) = -o2_oxid_depth(c,j) - o2_decomp_depth(c,j) + o2_aere_depth(c,j) ! O2 [mol/m3/s]
             if (source(c,j,2) + conc_o2(c,j) / dtime < -1.e-12_r8) then
-               print *, 'Oxygen demands exceed oxygen available. Error in oxygen competition (mol/m^3/s), c,j:'
-                    !#py source(c,j,2) + conc_o2(c,j) / dtime, c, j
+               write(iulog,*) 'Oxygen demands exceed oxygen available. Error in oxygen competition (mol/m^3/s), c,j:',&
+                    source(c,j,2) + conc_o2(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
-               print *,'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-               !#py call endrun(msg=' ERROR: Oxygen demands exceed oxygen available.'//&
-                    !#py !#py errMsg(__FILE__, __LINE__) )
+               write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+               call endrun(msg=' ERROR: Oxygen demands exceed oxygen available.'//&
+                    errMsg(__FILE__, __LINE__) )
             else if (o2stress(c,j) < 1._r8 .and. source(c,j,2) + conc_o2(c,j) / dtime > 1.e-12_r8) then
-               print *, 'Oxygen limited, yet some left over. Error in oxygen competition (mol/m^3/s), c,j:'
-                    !#py source(c,j,2) + conc_o2(c,j) / dtime, c, j
+               write(iulog,*)  'Oxygen limited, yet some left over. Error in oxygen competition (mol/m^3/s), c,j:',&
+                    source(c,j,2) + conc_o2(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
-               print *,'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-               !#py !#py call endrun(msg=' ERROR: Oxygen limited, yet some left over.'//errMsg(__FILE__, __LINE__))
+               write(iulog,*)  'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+               call endrun(msg=' ERROR: Oxygen limited, yet some left over.'//errMsg(__FILE__, __LINE__))
             end if
 
             conc_ch4_bef(c,j) = conc_ch4(c,j) !For Balance Check
@@ -3471,16 +3428,13 @@ contains
                      deficit = - conc_ch4_rel(c,j)*epsilon_t(c,j,1)*dz(c,j)  ! Mol/m^2 added
                      if (deficit > 1.e-3_r8 * scale_factor_gasdiff) then
                         if (deficit > 1.e-2_r8) then
-                           print *,'Note: sink > source in ch4_tran, sources are changing '
-                                !#py ' quickly relative to diffusion timestep, and/or diffusion is rapid.'
+                           write(iulog,*)  'Note: sink > source in ch4_tran, sources are changing '// &
+                                ' quickly relative to diffusion timestep, and/or diffusion is rapid.'
                            g = col_pp%gridcell(c)
-                           print *,'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-                           print *,'This typically occurs when there is a larger than normal '
-                                !#py ' diffusive flux.'
-                           print *,'If this occurs frequently, consider reducing land model (or '
-                                !#py ' methane model) timestep, or reducing the max. sink per timestep in the methane model.'
+                           write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+                           write(iulog,*) 'This typically occurs when there is a larger than normal diffusive flux '
+                           write(iulog,*) 'If this occurs frequently, consider reducing land model (or  methane model) timestep, or reducing the max. sink per timestep in the methane model.'
                         end if
-                        print *, 'Negative conc. in ch4tran. c,j,deficit (mol):',c,j,deficit
                      end if
                      conc_ch4_rel(c,j) = 0._r8
                      ! Subtract deficit
@@ -3592,9 +3546,9 @@ contains
          if (abs(errch4(c)) < 1.e-8_r8) then
             ch4_surf_diff(c) = ch4_surf_diff(c) - errch4(c)/dtime
          else ! errch4 > 1e-8 mol / m^2 / timestep
-            print *,'CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.timestep)'
+            write(iulog,*) 'CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.timestep)'
             g = col_pp%gridcell(c)
-            print *,'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+            write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
          end if
       end do
 
@@ -3673,7 +3627,6 @@ contains
     ! !DESCRIPTION: Annual mean fields.
     !
     ! !USES:
-    !#py use clm_time_manager, only: get_step_size, get_days_per_year, get_nstep
       !$acc routine seq
     use elm_varcon      , only: secspday
     !
@@ -3715,7 +3668,6 @@ contains
          )
 
       ! set time steps
-      !#py dt = real(get_step_size(), r8)
       secsperyear = real( dayspyr * secspday, r8)
 
       newrun = .false.

@@ -498,8 +498,8 @@ contains
           scale_p2c(p) = 1.0_r8
        end do
     else
-      !#py  write(iulog,*)'p2l_2d error: scale type ',p2c_scale_type,' not supported'
-      !#py  call endrun(msg=errMsg(__FILE__, __LINE__))
+      write(iulog,*)'p2l_2d error: scale type ',p2c_scale_type,' not supported'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
     larr(bounds%begl : bounds%endl, :) = spval
@@ -568,8 +568,8 @@ contains
           scale_p2c(p) = 1.0_r8
        end do
     else
-       !#py write(iulog,*)'p2g_1d error: scale type ',c2l_scale_type,' not supported'
-       !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
+       write(iulog,*)'p2g_1d error: scale type ',c2l_scale_type,' not supported'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
     garr(bounds%begg : bounds%endg) = spval
@@ -856,8 +856,10 @@ contains
           end if
        end do
     else
-       !#py write(iulog,*)'p2g_2d error: scale type ',c2l_scale_type,' not supported'
-       !#py !#py all endrun(msg=errMsg(__FILE__, __LINE__))
+#ifndef _OPENACC
+       write(iulog,*)'p2g_2d error: scale type ',c2l_scale_type,' not supported'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+#endif 
     end if
 
     if (p2c_scale_type == unity) then
@@ -865,8 +867,10 @@ contains
           scale_p2c(p) = 1.0_r8
        end do
     else
-       !#py write(iulog,*)'p2g_2d error: scale type ',c2l_scale_type,' not supported'
-       !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
+#ifndef _OPENACC
+       write(iulog,*)'p2g_2d error: scale type ',c2l_scale_type,' not supported'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+#endif 
     end if
 
     garr(bounds%begg : bounds%endg, :) = spval
@@ -1111,8 +1115,10 @@ contains
        end if
     end do
     if (found) then
-        print *, 'c2g_1d error: sumwt is greater than 1.0 at g= ',index
-       !#py call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+#ifndef _OPENACC            
+        write(iulog,*) 'c2g_1d error: sumwt is greater than 1.0 at g= ',index
+        call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+#endif 
     end if
 
   end subroutine c2g_1d_gpu
@@ -1618,8 +1624,10 @@ contains
      else if (l2g_scale_type == lake) then
         scale_lookup(istdlak) = 1.0_r8
      else
-        !#py write(iulog,*)'scale_l2g_lookup_array error: scale type ',l2g_scale_type,' not supported'
-        !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
+#ifndef _OPENACC             
+        write(iulog,*)'scale_l2g_lookup_array error: scale type ',l2g_scale_type,' not supported'
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+#endif 
      end if
 
   end subroutine create_scale_l2g_lookup_gpu

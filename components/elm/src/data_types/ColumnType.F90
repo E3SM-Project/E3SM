@@ -99,11 +99,11 @@ contains
 
     ! The following is set in initGridCellsMod
     allocate(this%gridcell    (begc:endc))                     ; this%gridcell    (:)   = ispval
-    allocate(this%wtgcell     (begc:endc))                     ; this%wtgcell     (:)   =  spval
+    allocate(this%wtgcell     (begc:endc))                     ; this%wtgcell     (:)   = nan
     allocate(this%topounit    (begc:endc))                     ; this%topounit    (:)   = ispval
-    allocate(this%wttopounit  (begc:endc))                     ; this%wttopounit  (:)   =  spval
+    allocate(this%wttopounit  (begc:endc))                     ; this%wttopounit  (:)   = nan
     allocate(this%landunit    (begc:endc))                     ; this%landunit    (:)   = ispval
-    allocate(this%wtlunit     (begc:endc))                     ; this%wtlunit     (:)   =  spval
+    allocate(this%wtlunit     (begc:endc))                     ; this%wtlunit     (:)   = nan
     allocate(this%pfti        (begc:endc))                     ; this%pfti        (:)   = ispval
     allocate(this%pftf        (begc:endc))                     ; this%pftf        (:)   = ispval
     allocate(this%npfts       (begc:endc))                     ; this%npfts       (:)   = ispval
@@ -112,23 +112,22 @@ contains
 
     ! The following is set in initVerticalMod
     allocate(this%snl         (begc:endc))                     ; this%snl         (:)   = ispval  !* cannot be averaged up
-    allocate(this%dz          (begc:endc,-nlevsno+1:nlevgrnd)) ; this%dz          (:,:) = spval
-    allocate(this%z           (begc:endc,-nlevsno+1:nlevgrnd)) ; this%z           (:,:) = spval
-    allocate(this%zi          (begc:endc,-nlevsno+0:nlevgrnd)) ; this%zi          (:,:) = spval
-    allocate(this%zii         (begc:endc))                     ; this%zii         (:)   = spval
+    allocate(this%dz          (begc:endc,-nlevsno+1:nlevgrnd)) ; this%dz          (:,:) = nan
+    allocate(this%z           (begc:endc,-nlevsno+1:nlevgrnd)) ; this%z           (:,:) = nan
+    allocate(this%zi          (begc:endc,-nlevsno+0:nlevgrnd)) ; this%zi          (:,:) = nan
+    allocate(this%zii         (begc:endc))                     ; this%zii         (:)   = nan
     allocate(this%lakedepth   (begc:endc))                     ; this%lakedepth   (:)   = spval
-    allocate(this%dz_lake     (begc:endc,nlevlak))             ; this%dz_lake     (:,:) = spval
-    allocate(this%z_lake      (begc:endc,nlevlak))             ; this%z_lake      (:,:) = spval
+    allocate(this%dz_lake     (begc:endc,nlevlak))             ; this%dz_lake     (:,:) = nan
+    allocate(this%z_lake      (begc:endc,nlevlak))             ; this%z_lake      (:,:) = nan
 
-    allocate(this%glc_topo    (begc:endc))                     ; this%glc_topo    (:)   = spval
-    allocate(this%micro_sigma (begc:endc))                     ; this%micro_sigma (:)   = spval
-    allocate(this%n_melt      (begc:endc))                     ; this%n_melt      (:)   = spval
-    allocate(this%topo_slope  (begc:endc))                     ; this%topo_slope  (:)   = spval
-    allocate(this%topo_std    (begc:endc))                     ; this%topo_std    (:)   = spval
-    allocate(this%hslp_p10    (begc:endc,nlevslp))             ; this%hslp_p10    (:,:) = spval
-
+    allocate(this%glc_topo    (begc:endc))                     ; this%glc_topo    (:)   = nan
+    allocate(this%micro_sigma (begc:endc))                     ; this%micro_sigma (:)   = nan
+    allocate(this%n_melt      (begc:endc))                     ; this%n_melt      (:)   = nan
+    allocate(this%topo_slope  (begc:endc))                     ; this%topo_slope  (:)   = nan
+    allocate(this%topo_std    (begc:endc))                     ; this%topo_std    (:)   = nan
+    allocate(this%hslp_p10    (begc:endc,nlevslp))             ; this%hslp_p10    (:,:) = nan
     allocate(this%nlevbed     (begc:endc))                     ; this%nlevbed     (:)   = ispval
-    allocate(this%zibed       (begc:endc))                     ; this%zibed       (:)   =  spval
+    allocate(this%zibed       (begc:endc))                     ; this%zibed       (:)   = nan
 
     allocate(this%hydrologically_active(begc:endc))            ; this%hydrologically_active(:) = .false.
 

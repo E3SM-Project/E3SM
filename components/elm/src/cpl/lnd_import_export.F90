@@ -1145,7 +1145,7 @@ contains
        if (co2_type_idx == 0) then                    ! CO2 constant, value from namelist
          co2_ppmv_val = co2_ppmv
        else if (co2_type_idx == 1) then               ! CO2 prognostic, value from coupler field
-         co2_ppmv_val = 0d0 !x2l(index_x2l_Sa_co2prog,i)
+         co2_ppmv_val = x2l(index_x2l_Sa_co2prog,i)
        else if (co2_type_idx == 2) then               ! CO2 diagnostic, value from coupler field
          co2_ppmv_val = x2l(index_x2l_Sa_co2diag,i)
        else

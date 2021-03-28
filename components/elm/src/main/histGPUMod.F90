@@ -95,6 +95,8 @@ contains
     tape_gpu%mfilt  = tape(1)%mfilt
     tape_gpu%nhtfrq = tape(1)%nhtfrq
     !!! Fill out tape_gpu and create mappings
+    !!! TODO:  the size of field is know so should
+    !!! rewrite loop to be done in parallel.
     field = 1
     allocate(map_tapes(total_flds),map_fields(total_flds))
     do t = 1, ntapes
@@ -105,7 +107,7 @@ contains
         allocate(tape_gpu%hlist(field)%hbuf(size1,size2))
         size1 = size(tape(t)%hlist(f)%nacs,1);
         size2 = size(tape(t)%hlist(f)%nacs,2)
-        allocate(tape_gpu%hlist(f)%nacs(size1,size2))
+        allocate(tape_gpu%hlist(field)%nacs(size1,size2))
         tape_gpu%hlist(field)%hbuf(:,:) = tape(t)%hlist(f)%hbuf(:,:)
         tape_gpu%hlist(field)%nacs(:,:) = tape(t)%hlist(f)%nacs(:,:)
         !!
@@ -737,9 +739,9 @@ end subroutine hist_update_hbuf_field_1d_gpu
        end select
     end if
 
-    if (field_allocated) then
-       deallocate(field)
-    end if
+    !if (field_allocated) then
+    !   deallocate(field)
+    !end if
   end associate
   end subroutine hist_update_hbuf_field_2d_gpu
 

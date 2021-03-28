@@ -51,9 +51,6 @@ contains
     integer :: c,p,j,l,k        ! indices
     integer :: fp,fc      ! lake filter indices
     !-----------------------------------------------------------------------
-      ! set time steps
-      !#py dt = real( get_step_size(), r8 )
-
       if (.not. is_active_betr_bgc) then
          do j = 1, nlevdecomp
             ! column loop

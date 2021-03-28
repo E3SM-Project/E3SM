@@ -236,7 +236,7 @@ contains
     type(solarabs_type)    , intent(inout)    :: solarabs_vars
     type(canopystate_type) , intent(inout)    :: canopystate_vars
     type(photosyns_type)   , intent(inout)    :: photosyns_vars
-    integer,value       , intent(in)    :: phase                          ! 'sun' or 'sha'
+    character(len=3)       , intent(in)    :: phase                          ! 'sun' or 'sha'
 
     !
     ! !LOCAL VARIABLES:
@@ -401,7 +401,7 @@ contains
          s_vcmax       => veg_vp%s_vc                            &
          )
 
-      if (phase == 1) then !sun
+      if (phase == 'sun') then !sun
          par_z     =>    solarabs_vars%parsun_z_patch        ! Input:  [real(r8) (:,:) ]  par absorbed per unit lai for canopy layer (w/m**2)
          lai_z     =>    canopystate_vars%laisun_z_patch     ! Input:  [real(r8) (:,:) ]  leaf area index for canopy layer, sunlit or shaded
          vcmaxcint =>    surfalb_vars%vcmaxcintsun_patch     ! Input:  [real(r8) (:)   ]  leaf to canopy scaling coefficient
@@ -416,7 +416,7 @@ contains
          psn_wc    =>    photosyns_vars%psnsun_wc_patch      ! Output: [real(r8) (:)   ]  Rubisco-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_wj    =>    photosyns_vars%psnsun_wj_patch      ! Output: [real(r8) (:)   ]  RuBP-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
          psn_wp    =>    photosyns_vars%psnsun_wp_patch      ! Output: [real(r8) (:)   ]  product-limited foliage photosynthesis (umol co2 /m**2/ s) [always +]
-      else if (phase == 0) then !shade
+      else if (phase == 'sha') then !shade
          par_z     =>    solarabs_vars%parsha_z_patch        ! Input:  [real(r8) (:,:) ]  par absorbed per unit lai for canopy layer (w/m**2)
          lai_z     =>    canopystate_vars%laisha_z_patch     ! Input:  [real(r8) (:,:) ]  leaf area index for canopy layer, sunlit or shaded
          vcmaxcint =>    surfalb_vars%vcmaxcintsha_patch     ! Input:  [real(r8) (:)   ]  leaf to canopy scaling coefficient
@@ -890,9 +890,9 @@ contains
                ! Make sure iterative solution is correct
 
                if (gs_mol(p,iv) < 0._r8) then
-                  print *, 'Negative stomatal conductance:'
-                  !#py write (iulog,*)'p,iv,gs_mol= ',p,iv,gs_mol(p,iv)
-                  !#py !#py call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+                  write(iulog,*) 'Negative stomatal conductance:'
+                  write (iulog,*)'p,iv,gs_mol= ',p,iv,gs_mol(p,iv)
+                  call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
                   stop
                end if
 
@@ -903,8 +903,8 @@ contains
                gs_mol_err = mbb(p)*max(an(p,iv), 0._r8)*hs/cs*forc_pbot(t) + bbb(p)
 
                if (abs(gs_mol(p,iv)-gs_mol_err) > 1.e-01_r8) then
-                   print *, 'Ball-Berry error check - stomatal conductance error:'
-                  !#py write (iulog,*) gs_mol(p,iv), gs_mol_err
+                  write(iulog,*) 'Ball-Berry error check - stomatal conductance error:'
+                  write (iulog,*) gs_mol(p,iv), gs_mol_err
                end if
 
             end if    ! night or day if branch
@@ -1063,8 +1063,6 @@ contains
     type(bounds_type)     , intent(in   )    :: bounds
     integer               , intent(in   )    :: fn                   ! size of pft filter
     integer               , intent(in   )    :: filterp(fn)          ! patch filter
-    !type(atm2lnd_type)    , intent(in)    :: atm2lnd_vars
-    !type(canopystate_type), intent(in)    :: canopystate_vars
     type(cnstate_type)    , intent(in)    :: cnstate_vars
     type(solarabs_type)   , intent(in)    :: solarabs_vars
     type(surfalb_type)    , intent(in)    :: surfalb_vars
@@ -1286,8 +1284,8 @@ contains
     fa=f1
     fb=f2
     if((fa > 0._r8 .and. fb > 0._r8).or.(fa < 0._r8 .and. fb < 0._r8))then
-       !#py write(iulog,*) 'root must be bracketed for brent'
-       !#py !#py call endrun(msg=errmsg(__FILE__, __LINE__))
+       write(iulog,*) 'root must be bracketed for brent'
+       call endrun(msg=errmsg(__FILE__, __LINE__))
     endif
     c=b
     fc=fb
@@ -2527,9 +2525,9 @@ contains
                ! Make sure iterative solution is correct
 
                if (gs_mol_sun(p,iv) < 0._r8 .or. gs_mol_sha(p,iv) < 0._r8) then
-                  !#py write (iulog,*)'Negative stomatal conductance:'
-                  !#py write (iulog,*)'p,iv,gs_mol_sun,gs_mol_sha= ',p,iv,gs_mol_sun(p,iv),gs_mol_sha(p,iv)
-                  !#py !#py call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+                  write (iulog,*)'Negative stomatal conductance:'
+                  write (iulog,*)'p,iv,gs_mol_sun,gs_mol_sha= ',p,iv,gs_mol_sun(p,iv),gs_mol_sha(p,iv)
+                  call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
                end if
 
                ! Compare with Ball-Berry model: gs_mol = m * an * hs/cs p + b
@@ -2540,8 +2538,8 @@ contains
                gs_mol_err = mbb(p)*max(an_sun(p,iv), 0._r8)*hs/cs_sun*forc_pbot(t) + max( bsun(p)*bbb(p), 1._r8 )
 
                if (abs(gs_mol_sun(p,iv)-gs_mol_err) > 1.e-01_r8) then
-                  !#py write (iulog,*) 'Ball-Berry error check - sunlit stomatal conductance error:'
-                  !#py write (iulog,*) gs_mol_sun(p,iv), gs_mol_err
+                  write (iulog,*) 'Ball-Berry error check - sunlit stomatal conductance error:'
+                  write (iulog,*) gs_mol_sun(p,iv), gs_mol_err
                end if
 
                hs = (gb_mol(p)*ceair + gs_mol_sha(p,iv)*esat_tv(p)) / ((gb_mol(p)+gs_mol_sha(p,iv))*esat_tv(p))
@@ -2550,8 +2548,8 @@ contains
                gs_mol_err = mbb(p)*max(an_sha(p,iv), 0._r8)*hs/cs_sha*forc_pbot(t) + max( bsha(p)*bbb(p), 1._r8)
 
                if (abs(gs_mol_sha(p,iv)-gs_mol_err) > 1.e-01_r8) then
-                  !#py write (iulog,*) 'Ball-Berry error check - shaded stomatal conductance error:'
-                  !#py write (iulog,*) gs_mol_sha(p,iv), gs_mol_err
+                  write (iulog,*) 'Ball-Berry error check - shaded stomatal conductance error:'
+                  write (iulog,*) gs_mol_sha(p,iv), gs_mol_err
                end if
 
             end if    ! night or day if branch
@@ -2949,8 +2947,8 @@ contains
 
     do phase=1, nphs
        if ( (fa(phase) > 0._r8 .and. fb(phase) > 0._r8) .or. (fa(phase) < 0._r8 .and. fb(phase) < 0._r8) ) then
-          !#py write(iulog,*) 'root must be bracketed for brent'
-          !#py !#py call endrun(msg=errmsg(__FILE__, __LINE__))
+          write(iulog,*) 'root must be bracketed for brent'
+          call endrun(msg=errmsg(__FILE__, __LINE__))
        endif
     enddo
 
@@ -3028,7 +3026,7 @@ contains
 
        if( (fb(sun) == 0._r8) .and. (fb(sha) == 0._r8) ) exit
     enddo
-    !#py if( iter == itmax) write(iulog,*) 'brent exceeding maximum iterations', b, fb
+    if( iter == itmax) write(iulog,*) 'brent exceeding maximum iterations', b, fb
     xsun=b(sun)
     xsha=b(sha)
 
@@ -3294,7 +3292,6 @@ contains
     logical  :: havegs                ! signals direction of calculation gs->qflx or qflx->gs
     real(r8) :: soilflux              ! total soil column transpiration [mm/s]
     real(r8), parameter :: tol_lai=.001_r8 ! minimum lai where transpiration is calc'd
-    !type(cublasHandle)  :: h
     integer :: cu_error
     !------------------------------------------------------------------------------
 
@@ -3516,7 +3513,7 @@ contains
 #ifndef NDEBUG
     ! Only execute this code if DEBUG=TRUE
     if ( nvegwcs /= 4 )then
-       !#py !#py call endrun(msg='Error:: this function is hardcoded for 4x4 matrices with nvegwcs==4'//errMsg(__FILE__, __LINE__))
+       call endrun(msg='Error:: this function is hardcoded for 4x4 matrices with nvegwcs==4'//errMsg(__FILE__, __LINE__))
     end if
 #endif
 

@@ -5,7 +5,6 @@ module PhosphorusStateUpdate1Mod
   ! X.YANG
   ! !USES:
   use shr_kind_mod           , only: r8 => shr_kind_r8
-  !#py use clm_time_manager       , only : get_step_size
   use elm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   use elm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varctl             , only : iulog
@@ -20,7 +19,6 @@ module PhosphorusStateUpdate1Mod
   use elm_varctl             , only : use_pflotran, pf_cmode
   use elm_varctl             , only : nu_com
   ! forest fertilization experiment
-  !#py use clm_time_manager       , only : get_curr_date
   use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use elm_varctl             , only : forest_fert_exp
   use elm_varctl             , only : NFIX_PTASE_plant
@@ -111,8 +109,6 @@ contains
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     !
     real(r8)                 , intent(in)    :: dt !radiation time step
     ! !LOCAL VARIABLES:
@@ -135,14 +131,10 @@ contains
 
          !!! N deposition profile, will weathering profile be needed?  -X.YANG
          ndep_prof             => cnstate_vars%ndep_prof_col               & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
-!         nfixation_prof        => cnstate_vars%nfixation_prof_col          , & ! Input:  [real(r8) (:,:)   ]  profile over which N fixation is distributed through column (1/m)
          )
 
-      ! set time steps
-      !#py dt = real( get_step_size(), r8 )
 
       ! column-level fluxes
-
 
       !------------------------------------------------------------------
       ! if coupled with pflotran, the following updates are NOT needed
@@ -211,7 +203,6 @@ contains
       !------------------------------------------------------------------
 
       ! forest fertilization
-      !#py call get_curr_date(kyr, kmo, kda, mcsec)
       if (forest_fert_exp) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)

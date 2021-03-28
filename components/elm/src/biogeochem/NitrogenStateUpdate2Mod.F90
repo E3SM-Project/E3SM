@@ -6,7 +6,6 @@ module NitrogenStateUpdate2Mod
   !
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  !#py use clm_time_manager    , only : get_step_size
   use elm_varpar          , only : nlevsoi, nlevdecomp
   use elm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varctl          , only : iulog
@@ -46,8 +45,6 @@ contains
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     real(r8) , intent(in)   :: dt      ! radiation time step (seconds)
 
     !
@@ -55,12 +52,8 @@ contains
     integer  :: c,p,j,l ! indices
     integer  :: fp,fc   ! lake filter indices
     !-----------------------------------------------------------------------
-
-      ! set time steps
-      !#py dt = real( get_step_size(), r8 )
-
-
-      ! column-level nitrogen fluxes from gap-phase mortality
+      
+    ! column-level nitrogen fluxes from gap-phase mortality
       if ( .not. is_active_betr_bgc .and. &
            .not.(use_pflotran .and. pf_cmode)) then
          do j = 1, nlevdecomp
@@ -131,8 +124,6 @@ contains
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     real(r8)                 , intent(in)    :: dt      ! radiation time step (seconds)
 
     !
@@ -144,9 +135,6 @@ contains
     associate(                      &
          ivt => veg_pp%itype        & ! Input:  [integer  (:) ]  pft vegetation type
          )
-
-      ! set time steps
-      !#py dt = real( get_step_size(), r8 )
 
       if (.not. is_active_betr_bgc .and. &
            .not.(use_pflotran .and. pf_cmode)) then

@@ -1519,7 +1519,7 @@ contains
       !$acc ext_cff_mss_snw_dfs &
       !$acc )
       !
- #ifdef MODAL_AER
+#ifdef MODAL_AER
      !mgf++
      ! size-dependent BC parameters and BC enhancement factors
      if (masterproc) write(iulog,*) 'Attempting to read optical properties for within-ice BC (modal aerosol treatment) ...'
@@ -1545,7 +1545,7 @@ contains
      if (.not. readvar) call endrun()
      !$acc update device(bcenh)
      !
- #else
+#else
      ! bulk aerosol treatment
       ! BC species 1 Mie parameters
       call ncd_io( 'ss_alb_bcphil', ss_alb_bc1,           'read', ncid, posNOTonfile=.true.)
@@ -1558,7 +1558,7 @@ contains
       call ncd_io( 'ext_cff_mss_bcphob', ext_cff_mss_bc2, 'read', ncid, posNOTonfile=.true.)
       !
      !mgf--
- #endif
+#endif
     !$acc update device( &
     !$acc ss_alb_bc1     , &
     !$acc asm_prm_bc1    , &
@@ -1636,7 +1636,7 @@ contains
             write (iulog,*) 'SNICAR: Excluding OC aerosols from snow radiative transfer calculations'
          endif
          !
- #ifdef MODAL_AER
+#ifdef MODAL_AER
         !mgf++
         ! unique dimensionality for modal aerosol optical properties
         write (iulog,*) 'SNICAR: Subset of Mie single scatter albedos for BC: ', &
@@ -1650,12 +1650,12 @@ contains
              bcenh(1,1,1), bcenh(1,2,1), bcenh(1,1,2), bcenh(2,1,1), bcenh(5,10,1), bcenh(5,1,8), bcenh(5,10,8)
         ! test comparison: ncks -H -C -F -d wvl,5 -d ncl_rds,1 -d ice_rds,8 -v ss_alb_bc_mam,asm_prm_bc_mam,ext_cff_mss_bc_mam,bcint_enh_mam snicar_optics_5bnd_mam_c160322.nc
         !mgf--
- #else
+#else
          write (iulog,*) 'SNICAR: Mie single scatter albedos for hydrophillic BC: ', &
               ss_alb_bc1(1), ss_alb_bc1(2), ss_alb_bc1(3), ss_alb_bc1(4), ss_alb_bc1(5)
          write (iulog,*) 'SNICAR: Mie single scatter albedos for hydrophobic BC: ', &
               ss_alb_bc2(1), ss_alb_bc2(2), ss_alb_bc2(3), ss_alb_bc2(4), ss_alb_bc2(5)
- #endif
+#endif
         !
          if (DO_SNO_OC) then
             write (iulog,*) 'SNICAR: Mie single scatter albedos for hydrophillic OC: ', &

@@ -819,10 +819,6 @@ contains
   !
   !USES:
     !$acc routine seq
-    use Method_procs_acc, only : vegps_SetValues_acc
-    use Method_procs_acc, only : colps_setvalues_acc
-    use Method_procs_acc, only : vegpf_setvalues_acc
-    use Method_procs_acc, only : colpf_setvalues_acc
     use elm_varctl   , only: carbon_only, carbonnitrogen_only
     use elm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
    !
@@ -861,11 +857,11 @@ contains
 
    ! pflotran not yet support phosphous cycle
    if ( carbon_only .or.  carbonnitrogen_only  ) then
-      call vegps_setvalues_acc(vegps=veg_ps,num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call colps_setvalues_acc(colps=col_ps,num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
+      call veg_ps%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
+      call col_ps%SetValues(num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
 
-      call vegpf_setvalues_acc(vegpf=veg_pf, num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call colpf_setvalues_acc(colpf=col_pf, num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
+      call veg_pf%setvalues( num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
+      call col_pf%setvalues( num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
    end if
 
   end associate

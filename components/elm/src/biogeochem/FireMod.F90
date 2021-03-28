@@ -1419,7 +1419,6 @@ contains
      ! carbon loss due to deforestation fires
 
      if (transient_landcover) then    !true when landuse data is used
-        !#py call get_curr_date (kyr, kmo, kda, mcsec)
         do fc = 1,num_soilc
            c = filter_soilc(fc)
            lfc2(c)=0._r8
@@ -1459,7 +1458,6 @@ contains
  end subroutine FireFluxes
 
  !-----------------------------------------------------------------------
-
  subroutine hdm_init( bounds )
    !
    ! !DESCRIPTION:
@@ -1490,6 +1488,7 @@ contains
    character(*), parameter :: subName = "('hdmdyn_init')"
    character(*), parameter :: F00 = "('(hdmdyn_init) ',4a)"
    !-----------------------------------------------------------------------
+
    namelist /popd_streams/          &
         stream_year_first_popdens,  &
         stream_year_last_popdens,   &
@@ -1497,14 +1496,14 @@ contains
         popdensmapalgo,             &
         stream_fldFileName_popdens
 
-! Allocate pop dens forcing data
+   ! Allocate pop dens forcing data
    allocate( forc_hdm(bounds%begg:bounds%endg) )
+
    ! Default values for namelist
    stream_year_first_popdens  = 1       ! first year in stream to use
    stream_year_last_popdens   = 1       ! last  year in stream to use
    model_year_align_popdens   = 1       ! align stream_year_first_popdens with this model year
    stream_fldFileName_popdens = ' '
-
 
    ! Read popd_streams namelist
    if (masterproc) then
@@ -1538,8 +1537,7 @@ contains
 
    call elm_domain_mct (bounds, dom_elm)
 
-
-   call shr_strdata_create(sdat_hdm,name="elmhdm",     &
+   call shr_strdata_create(sdat_hdm,name="clmhdm",     &
         pio_subsystem=pio_subsystem,                   &
         pio_iotype=shr_pio_getiotype(inst_name),       &
         mpicom=mpicom, compid=comp_id,                 &
@@ -1565,13 +1563,16 @@ contains
         calendar=get_calendar(),                       &
         tintalgo='nearest',                            &
         taxmode='extend'                           )
+
    if (masterproc) then
       call shr_strdata_print(sdat_hdm,'population density data')
    endif
+
    ! Add history fields
    call hist_addfld1d (fname='HDM', units='counts/km^2',      &
          avgflag='A', long_name='human population density',   &
          ptr_lnd=forc_hdm, default='inactive')
+
 end subroutine hdm_init
 
 !-----------------------------------------------------------------------
@@ -1638,14 +1639,17 @@ subroutine lnfm_init( bounds )
   character(*), parameter :: subName = "('lnfmdyn_init')"
   character(*), parameter :: F00 = "('(lnfmdyn_init) ',4a)"
   !-----------------------------------------------------------------------
+
    namelist /light_streams/         &
         stream_year_first_lightng,  &
         stream_year_last_lightng,   &
         model_year_align_lightng,   &
         lightngmapalgo,             &
         stream_fldFileName_lightng
+
    ! Allocate lightning forcing data
    allocate( forc_lnfm(bounds%begg:bounds%endg) )
+
    ! Default values for namelist
     stream_year_first_lightng  = 1      ! first year in stream to use
     stream_year_last_lightng   = 1      ! last  year in stream to use
@@ -1684,7 +1688,7 @@ subroutine lnfm_init( bounds )
 
    call elm_domain_mct (bounds, dom_elm)
 
-   call shr_strdata_create(sdat_lnfm,name="elmlnfm",  &
+   call shr_strdata_create(sdat_lnfm,name="clmlnfm",  &
         pio_subsystem=pio_subsystem,                  &
         pio_iotype=shr_pio_getiotype(inst_name),      &
         mpicom=mpicom, compid=comp_id,                &
@@ -1709,13 +1713,16 @@ subroutine lnfm_init( bounds )
         mapalgo=lightngmapalgo,                       &
         calendar=get_calendar(),                      &
         taxmode='cycle'                            )
+
    if (masterproc) then
       call shr_strdata_print(sdat_lnfm,'Lightning data')
    endif
+
    ! Add history fields
    call hist_addfld1d (fname='LNFM', units='counts/km^2/hr',  &
          avgflag='A', long_name='Lightning frequency',        &
          ptr_lnd=forc_lnfm, default='inactive')
+
 end subroutine lnfm_init
 
 !-----------------------------------------------------------------------
