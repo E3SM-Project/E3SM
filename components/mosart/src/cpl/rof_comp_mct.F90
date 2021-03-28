@@ -51,6 +51,9 @@ module rof_comp_mct
 
   use mct_mod
   use ESMF
+#ifdef HAVE_MOAB
+  use seq_comm_mct,     only : mrofid ! id of moab rof app
+#endif
 !
 ! PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -70,6 +73,9 @@ module rof_comp_mct
   private :: rof_domain_mct           ! Set the river runoff model domain information
   private :: rof_export_mct           ! Export the river runoff model data to the CESM coupler
 !
+#ifdef HAVE_MOAB
+  private :: init_rof_moab   ! create moab mesh (cloud of points)
+#endif
 ! PRIVATE DATA MEMBERS:
 
 ! REVISION HISTORY:
@@ -127,6 +133,12 @@ contains
     character(len=8)           :: c_npes             ! number of pes
     character(len=32), parameter :: sub = 'rof_init_mct'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
+
+#ifdef HAVE_MOAB
+    integer, external :: iMOAB_RegisterFortranApplication
+    integer :: ierr
+    character*32  appname
+#endif
     !---------------------------------------------------------------------------
 
     ! Obtain cdata_r (initalized in ccsm_comp_mod.F90 in the call to 
@@ -262,6 +274,37 @@ contains
        
        ! Create mct river runoff export state
        call rof_export_mct( r2x_r )
+
+#ifdef HAVE_MOAB
+       appname="ROFMB"//CHAR(0) ! only if rof_prognostic
+    ! first rof instance, should be
+       ierr = iMOAB_RegisterFortranApplication(appname, mpicom_rof, ROFID, mrofid)
+       if (ierr > 0 )  &
+          call shr_sys_abort( sub//' Error: cannot register moab app')
+       if(masterproc) then
+          write(iulog,*) " "
+          write(iulog,*) "register MOAB ROF app:", trim(appname), "  mrofid=", mrofid, " ROFID=", ROFID
+          write(iulog,*) " "
+       endif
+       call init_rof_moab()
+
+#if 0
+    if (masterproc) then
+      debugGSMapFile = shr_file_getUnit()
+      open( debugGSMapFile, file='LndGSmapC.txt')
+      write(debugGSMapFile,*) gsMap_lnd%comp_id
+      write(debugGSMapFile,*) gsMap_lnd%ngseg
+      write(debugGSMapFile,*) gsMap_lnd%gsize
+      do n=1,gsMap_lnd%ngseg
+          write(debugGSMapFile,*) gsMap_lnd%start(n),gsMap_lnd%length(n),gsMap_lnd%pe_loc(n)
+      end do
+      close(debugGSMapFile)
+      call shr_file_freeunit(debugGSMapFile)
+    endif
+#endif
+
+!  endif HAVE_MOAB
+#endif
     else
        call seq_infodata_PutData(infodata, rofice_present=.false.)
     end if
@@ -729,5 +772,110 @@ contains
     end do
 
   end subroutine rof_export_mct
+
+#ifdef HAVE_MOAB
+  subroutine init_rof_moab()
+    ! use rtmCTL that has all we need
+    use seq_comm_mct,      only: mrofid  ! id of moab rof app
+    use shr_const_mod, only: SHR_CONST_PI
+
+    integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
+    integer lsz !  keep local size
+    integer gsize ! global size, that we do not need, actually
+    integer n
+    integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, &
+         iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+         iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
+    ! local variables to fill in data
+    integer, dimension(:), allocatable :: vgids
+    !  retrieve everything we need from rtmCTL
+    ! number of vertices is the size of local rof gsmap ?
+    real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
+    real(r8)   :: latv, lonv
+    integer   dims, i, iv, ilat, ilon, igdx, ierr, tagindex
+    integer tagtype, numco, ent_type, mbtype, block_ID
+    character*100 outfile, wopts, localmeshfile, tagname
+    character(len=32), parameter :: sub = 'init_rof_moab'
+    character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
+
+    dims  =3 ! store as 3d mesh
+
+    ! number the local grid
+    lsz = rtmCTL%lnumr
+
+    allocate(vgids(lsz)) ! use it for global ids, for elements in full mesh or vertices in point cloud
+
+    do n = 1, lsz
+       vgids(n) = rtmCTL%gindex(rtmCTL%begr+n-1)  ! local to global !
+    end do
+    gsize = rtmCTL%numr ! size of the total grid
+    ! old point cloud mesh
+    allocate(moab_vert_coords(lsz*dims))
+    do i = 1, lsz
+      n = rtmCTL%begr+i-1
+      lonv = rtmCTL%lonc(n) *SHR_CONST_PI/180.
+      latv = rtmCTL%latc(n) *SHR_CONST_PI/180.
+      moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
+      moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
+      moab_vert_coords(3*i  )=SIN(latv)
+    enddo
+    ierr = iMOAB_CreateVertices(mrofid, lsz*3, dims, moab_vert_coords)
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to create MOAB vertices in runoff model')
+
+    tagtype = 0  ! dense, integer
+    numco = 1
+    tagname='GLOBAL_ID'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to retrieve GLOBAL_ID tag ')
+
+    ent_type = 0 ! vertex type
+    ierr = iMOAB_SetIntTagStorage ( mrofid, tagname, lsz , ent_type, vgids)
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to set GLOBAL_ID tag ')
+
+    ierr = iMOAB_ResolveSharedEntities( mrofid, lsz, vgids );
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to resolve shared entities')
+
+    !there are no shared entities, but we will set a special partition tag, in order to see the
+    ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+    tagname='partition'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to create new partition tag ')
+
+    vgids = iam
+    ierr = iMOAB_SetIntTagStorage ( mrofid, tagname, lsz , ent_type, vgids)
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to set partition tag ')
+
+    ! mask
+    tagname='mask'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to create new mask tag ')
+
+    do n = 1, lsz
+       vgids(n) = rtmCTL%mask(rtmCTL%begr+n-1)  ! local to global !
+    end do
+
+    ierr = iMOAB_SetIntTagStorage ( mrofid, tagname, lsz , ent_type, vgids)
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to set mask tag ')
+
+    deallocate(moab_vert_coords)
+    deallocate(vgids)
+#ifdef MOABDEBUG
+    !     write out the mesh file to disk, in parallel
+    outfile = 'wholeRof.h5m'//CHAR(0)
+    wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+    ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to write the moab runoff mesh file')
+#endif
+  end subroutine init_rof_moab
+#endif
 
 end module rof_comp_mct
