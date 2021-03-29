@@ -328,6 +328,11 @@ void SHOCMacrophysics::register_fields (FieldRepository<Real>& field_repo) const
     if (q_names.count(name)>0) {
       field_repo.register_field<Spack>(fid,"TRACERS");
     } else if (v_names.count(name)>0) {
+      if (name=="v") {
+        EKAT_REQUIRE_MSG(field_repo.has_field("u"),
+          "Error! For horiz_wind, u must be registered before v since SHOC expects"
+          "the layout [u,v].\n");
+      }
       field_repo.register_field<Spack>(fid,"horiz_wind");
     }
     else {
@@ -339,6 +344,11 @@ void SHOCMacrophysics::register_fields (FieldRepository<Real>& field_repo) const
     if (q_names.count(name)>0) {
       field_repo.register_field<Spack>(fid,"TRACERS");
     } else if (v_names.count(name)>0) {
+      if (name=="v") {
+        EKAT_REQUIRE_MSG(field_repo.has_field("u"),
+          "Error! For horiz_wind, u must be registered before v since SHOC expects"
+          "the layout [u,v].\n");
+      }
       field_repo.register_field<Spack>(fid,"horiz_wind");
     } else {
       field_repo.register_field<Spack>(fid);
