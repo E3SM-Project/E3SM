@@ -19,18 +19,9 @@ namespace rrtmgpTest {
         }
     }
 
-    // TODO: use YAKL intrinsics for this; this won't work on the GPU
+    // TODO: use YAKL intrinsics for this to avoid needing to make host copies
     bool all_equals(real2d &arr1, real2d &arr2) {
         double tolerance = 0.01;
-        /*
-        real2d residual = arr1 - arr2;
-        if (yakl::fortran::anyGT(residual, tolerance) || yakl::fortran::anyLT(residual, -tolerance)) {
-            printf("max(arr1 - arr2) = %f\n", yakl::fortran::maxval(residual));
-            return false;
-        } else {
-            return true;
-        }
-        */
         int nx = arr1.dimension[0];
         int ny = arr2.dimension[1];
         auto arr1_h = arr1.createHostCopy();
@@ -54,16 +45,12 @@ namespace rrtmgpTest {
 
         // Setup boundary conditions, solar zenith angle, etc
         // NOTE: this stuff would come from the model in a real run
-        //int nbndsw = scream::rrtmgp::k_dist_sw.get_nband();
-        //sfc_alb_dir = real2d("sfc_alb_dir", nbndsw, ncol);
-        //sfc_alb_dif = real2d("sfc_alb_dif", nbndsw, ncol);
 
         // Ocean-ish values for surface albedos, just for example
         memset(sfc_alb_dir , 0.06_wp );
         memset(sfc_alb_dif , 0.06_wp );
 
         // Pick a solar zenith angle; this should come from the model
-        //mu0 = real1d("mu0", ncol);
         memset(mu0, 0.86_wp );
 
         // Get dummy cloud PHYSICAL properties. Note that this function call
@@ -89,10 +76,6 @@ namespace rrtmgpTest {
         // Restrict clouds to troposphere (> 100 hPa = 100*100 Pa) and not very close to the ground (< 900 hPa), and
         // put them in 2/3 of the columns since that's roughly the total cloudiness of earth.
         // Set sane values for liquid and ice water path.
-        //rel = real2d("rel", ncol, nlay);
-        //rei = real2d("rei", ncol, nlay);
-        //lwp = real2d("lwp", ncol, nlay);
-        //iwp = real2d("iwp", ncol, nlay);
         real2d cloud_mask("cloud_mask", ncol, nlay);
         parallel_for( Bounds<2>(nlay,ncol) , YAKL_LAMBDA (int ilay, int icol) {
             cloud_mask(icol,ilay) = p_lay(icol,ilay) > 100._wp * 100._wp && p_lay(icol,ilay) < 900._wp * 100._wp && mod(icol, 3) != 0;
