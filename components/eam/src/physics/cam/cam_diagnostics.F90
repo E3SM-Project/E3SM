@@ -95,6 +95,7 @@ integer  ::      prec_pcw_idx = 0
 integer  ::      snow_pcw_idx = 0
 
 integer  ::      wsresp_idx = 0
+integer  ::      tau_est_idx = 0
 
 integer :: tpert_idx=-1, qpert_idx=-1, pblh_idx=-1
 logical :: prog_modal_aero 
@@ -606,6 +607,7 @@ subroutine diag_init()
    call addfld ('PRECLav',horiz_only,    'A','m/s','Average convective precipitation  (liq + ice)'                      )
 
    call addfld ('wsresp',horiz_only,    'A','m/s/Pa','first order response of winds to stress')
+   call addfld ('tau_est',horiz_only,    'A','Pa','estimated equilibrium wind stress')
 
    ! outfld calls in diag_surf
 
@@ -838,6 +840,7 @@ subroutine diag_init()
   snow_pcw_idx = pbuf_get_index('SNOW_PCW')
 
   wsresp_idx  = pbuf_get_index('wsresp')
+  tau_est_idx  = pbuf_get_index('u_diff2surf')
 
 end subroutine diag_init
 
@@ -1922,6 +1925,7 @@ subroutine diag_conv(state, ztodt, pbuf)
    real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
 
    real(r8), pointer :: wsresp(:)                  ! first order response of winds to stress
+   real(r8), pointer :: tau_est(:)                 ! estimated equilibrium stress
 
 ! Local variables:
    
@@ -1950,6 +1954,7 @@ subroutine diag_conv(state, ztodt, pbuf)
    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
    call pbuf_get_field(pbuf, wsresp_idx, wsresp)
+   call pbuf_get_field(pbuf, tau_est_idx, tau_est)
 
 ! Precipitation rates (multi-process)
    precc(:ncol) = prec_dp(:ncol)  + prec_sh(:ncol)
@@ -1971,6 +1976,7 @@ subroutine diag_conv(state, ztodt, pbuf)
    call outfld('PRECCav ', precc, pcols, lchnk )
 
    call outfld('wsresp', wsresp, pcols, lchnk)
+   call outfld('tau_est', tau_est, pcols, lchnk)
 
 #if ( defined E3SM_SCM_REPLAY )
    call outfld('Prec   ' , prect, pcols, lchnk )

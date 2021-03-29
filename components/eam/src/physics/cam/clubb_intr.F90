@@ -1040,10 +1040,10 @@ end subroutine clubb_init_cnst
 
        call pbuf_set_field(pbuf2d, wsresp_idx,    0.0_r8)
 
-       call pbuf_set_field(pbuf2d, u_old2surf_idx,    1.0_r8)
-       call pbuf_set_field(pbuf2d, v_old2surf_idx,    1.0_r8)
-       call pbuf_set_field(pbuf2d, u_diff2surf_idx,    1.0_r8)
-       call pbuf_set_field(pbuf2d, v_diff2surf_idx,    1.0_r8)
+       call pbuf_set_field(pbuf2d, u_old2surf_idx,    0.0_r8)
+       call pbuf_set_field(pbuf2d, v_old2surf_idx,    0.0_r8)
+       call pbuf_set_field(pbuf2d, u_diff2surf_idx,    0.0_r8)
+       call pbuf_set_field(pbuf2d, v_diff2surf_idx,    0.0_r8)
 
     endif
    
@@ -2076,31 +2076,32 @@ end subroutine clubb_init_cnst
 
       ! Horrible hack, should really just take the pbuf for these variables out
       ! and correct the code to only do this on the last step.
-      !if (macmic_it == cld_macmic_num_steps) then ...
-      um_pert(i,:) = um_in
-      vm_pert(i,:) = vm_in
-      upwp_pert(i,:) = upwp_in
-      vpwp_pert(i,:) = vpwp_in
+      if (macmic_it == 1) then
+         um_pert(i,:) = um_in
+         vm_pert(i,:) = vm_in
+         upwp_pert(i,:) = upwp_in
+         vpwp_pert(i,:) = vpwp_in
+      end if
 
       ! Prefer to perturb wind/stress in the direction of the existing stress.
       ! However, if there's no existing surface stress, just perturb zonal
       ! wind/stress.
       if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
-         um_pert(i,2) = um_pert(i,2) + pert_u
+         !um_pert(i,2) = um_pert(i,2) + pert_u
          upwp_sfc_pert = upwp_sfc + pert_tau / rho_ds_zm(1)
          vpwp_sfc_pert = vpwp_sfc
       else
-         um_pert(i,2) = um_pert(i,2) + cam_in%wsx(i) * &
-              (pert_u / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
-         vm_pert(i,2) = vm_pert(i,2) + cam_in%wsy(i) * &
-              (pert_u / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
+         !um_pert(i,2) = um_pert(i,2) + cam_in%wsx(i) * &
+         !     (pert_u / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
+         !vm_pert(i,2) = vm_pert(i,2) + cam_in%wsy(i) * &
+         !     (pert_u / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
          upwp_sfc_pert = upwp_sfc + cam_in%wsx(i) * &
               (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
          vpwp_sfc_pert = vpwp_sfc + cam_in%wsy(i) * &
               (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
       end if
-      um_pert(i,1) = um_pert(i,2) ! Does this actually do anything?
-      vm_pert(i,1) = vm_pert(i,2) ! Does this actually do anything?
+      !um_pert(i,1) = um_pert(i,2) ! Does this actually do anything?
+      !vm_pert(i,1) = vm_pert(i,2) ! Does this actually do anything?
 
       pre_in(1) = pre_in(2)
       
@@ -2317,14 +2318,14 @@ end subroutine clubb_init_cnst
       endif
 
       if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
-         sfc_v_diff_u(i) = um_pert(i,2) - um_in(2)
-         sfc_v_diff_tau(i) = upwp_pert(i,2) - um_in(2)
+         !sfc_v_diff_u(i) = um_pert(i,2) - um_in(2)
+         sfc_v_diff_tau(i) = um_pert(i,2) - um_in(2)
       else
-         sfc_v_diff_u(i) = ((um_pert(i,2) - um_in(2))*cam_in%wsx(i) &
+         !sfc_v_diff_u(i) = ((um_pert(i,2) - um_in(2))*cam_in%wsx(i) &
+         !     + (vm_pert(i,2) - vm_in(2))*cam_in%wsy(i)) &
+         !     / hypot(cam_in%wsx(i), cam_in%wsy(i))
+         sfc_v_diff_tau(i) = ((um_pert(i,2) - um_in(2))*cam_in%wsx(i) &
               + (vm_pert(i,2) - vm_in(2))*cam_in%wsy(i)) &
-              / hypot(cam_in%wsx(i), cam_in%wsy(i))
-         sfc_v_diff_tau(i) = ((upwp_pert(i,2) - um_in(2))*cam_in%wsx(i) &
-              + (vpwp_pert(i,2) - vm_in(2))*cam_in%wsy(i)) &
               / hypot(cam_in%wsx(i), cam_in%wsy(i))
       end if
 
@@ -2891,26 +2892,29 @@ end subroutine clubb_init_cnst
 
    if (macmic_it == cld_macmic_num_steps) then
       do i = 1, ncol
-         ! Multiply by cld_macmic_num_steps to scale up to whole time step.
-         wsresp(i) = cld_macmic_num_steps * sfc_v_diff_tau(i) / pert_tau
+         wsresp(i) = sfc_v_diff_tau(i) / pert_tau
 
          ! Estimate of what atmosphere is doing to bottom level winds.
+         if (is_first_step()) then
+            u_old2surf(i) = state1%u(i,pver)
+            v_old2surf(i) = state1%v(i,pver)
+         end if
          u_diff2surf(i) = state1%u(i,pver) - u_old2surf(i)
          v_diff2surf(i) = state1%v(i,pver) - v_old2surf(i)
 
-         c2oc1 = max(min(sfc_v_diff_u(i) / pert_u, 1._r8 - 1.e-10_r8), 0._r8)
-         tau = hypot(cam_in%wsx(i), cam_in%wsy(i))
+         ! c2oc1 = max(min(sfc_v_diff_u(i) / pert_u, 1._r8 - 1.e-10_r8), 0._r8)
+         tau = max(hypot(cam_in%wsx(i), cam_in%wsy(i)), 1.e-10)
 
-         ! Project wind difference into direction of input stress.
-         u_fac = (u_diff2surf(i) * cam_in%wsx(i) + v_diff2surf(i) * cam_in%wsy(i)) / tau
-         u_fac = u_fac / (1._r8 - c2oc1**cld_macmic_num_steps)
+         ! ! Project wind difference into direction of input stress.
+         ! u_fac = (u_diff2surf(i) * cam_in%wsx(i) + v_diff2surf(i) * cam_in%wsy(i)) / tau
+         ! u_fac = u_fac / (1._r8 - c2oc1**cld_macmic_num_steps)
 
-         ! Project old winds into direction of stress.
-         dfdu = (u_old2surf(i) * cam_in%wsx(i) + v_old2surf(i) * cam_in%wsy(i)) / tau
-         ! (Basically, we are assuming here that tau is proportional to u^2.)
-         dfdu = 2._r8 * tau / min(dfdu, -0.01)
+         ! ! Project old winds into direction of stress.
+         ! dfdu = (u_old2surf(i) * cam_in%wsx(i) + v_old2surf(i) * cam_in%wsy(i)) / tau
+         ! ! (Basically, we are assuming here that tau is proportional to u^2.)
+         ! dfdu = 2._r8 * tau / min(dfdu, -0.01)
 
-         tau_fac = wsresp(i) / (cld_macmic_num_steps * (c2oc1 - 1._r8))
+         ! tau_fac = wsresp(i) / (cld_macmic_num_steps * (c2oc1 - 1._r8))
 
          ! If the surface calculates stress as tau = f(u), then we estimate
          ! a quasi-equilibrium tau would be:
@@ -2922,11 +2926,12 @@ end subroutine clubb_init_cnst
          !   tau_est = tau + dfdu * (u_fac + tau_fac * (tau - tau_est))
          !
          ! Rearranging this, we get:
-         tau_est = tau + (dfdu * u_fac) / (1._r8 + dfdu * tau_fac)
+         !
+         !   tau_est = tau + (dfdu * u_fac) / (1._r8 + dfdu * tau_fac)
 
          ! A crime against software engineering: store tau estimate in the
          ! udiff entry of pbuf that will be exported to the land.
-         u_diff2surf(i) = tau_est
+         u_diff2surf(i) = tau! + (dfdu * u_fac) / (1._r8 + dfdu * tau_fac)
 
          ! Store current winds as old winds.
          u_old2surf(i) = state1%u(i,pver)

@@ -149,7 +149,13 @@ contains
     real(r8) :: forc_u_adj(bounds%begp:bounds%endp) ! Adjusted forc_u for iteration
     real(r8) :: forc_v_adj(bounds%begp:bounds%endp) ! Adjusted forc_v for iteration
     real(r8) :: taux_est(bounds%begp:bounds%endp) ! Estimated equilibrium taux from atm
+    real(r8) :: taux_diff(bounds%begp:bounds%endp) ! Difference from previous iteration taux
+    real(r8) :: prev_taux(bounds%begp:bounds%endp) ! Previous iteration taux
+    real(r8) :: prev_taux_diff(bounds%begp:bounds%endp) ! Previous difference in iteration taux
     real(r8) :: tauy_est(bounds%begp:bounds%endp) ! Estimated equilibrium tauy from atm
+    real(r8) :: tauy_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tauy
+    real(r8) :: prev_tauy(bounds%begp:bounds%endp) ! Previous iteration tauy
+    real(r8) :: prev_tauy_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tauy
     !-----------------------------------------------------------------------
 
     associate(                                                           & 
@@ -348,8 +354,10 @@ contains
          forc_v_adj(p) = forc_v(t)
          ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
 
-         taux_est(p) = u_diff(t) * forc_u(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-         tauy_est(p) = u_diff(t) * forc_v(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+         taux_est(p) = -u_diff(t) * forc_u(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+         tauy_est(p) = -u_diff(t) * forc_v(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+         prev_taux(p) = taux_est(p)
+         prev_tauy(p) = tauy_est(p)
 
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t)-qsatg(c)
@@ -424,6 +432,24 @@ contains
             if ( (tauy(p)-tauy_est(p))*wsresp(t)*sign(1._r8,-forc_v(t)) > 0.99_r8*abs(forc_v(t)) ) then
                tauy(p) = tauy_est(p) - 0.99_r8 * forc_v(t) / wsresp(t)
             end if
+            taux_diff(p) = taux(p) - prev_taux(p)
+            tauy_diff(p) = tauy(p) - prev_tauy(p)
+            if (iter /= 1) then
+               ! damp possible swings in each iteration for convergence
+               ! Probably too much damping here.
+               if (abs(taux_diff(p)) > abs(0.95*prev_taux_diff(p))) then
+                  taux_diff(p) = sign(0.95*prev_taux_diff(p), taux_diff(p))
+                  taux(p) = prev_taux(p) + taux_diff(p)
+               end if
+               if (abs(tauy_diff(p)) > abs(0.95*prev_tauy_diff(p))) then
+                  tauy_diff(p) = sign(0.95*prev_tauy_diff(p), tauy_diff(p))
+                  tauy(p) = prev_tauy(p) + tauy_diff(p)
+               end if
+            end if
+            prev_taux(p) = taux(p)
+            prev_tauy(p) = tauy(p)
+            prev_taux_diff(p) = taux_diff(p)
+            prev_tauy_diff(p) = tauy_diff(p)
             forc_u_adj(p) = forc_u(t) + (taux(p)-taux_est(p))*wsresp(t)
             forc_v_adj(p) = forc_v(t) + (tauy(p)-tauy_est(p))*wsresp(t)
             ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
