@@ -71,7 +71,7 @@
     <default_value>UNSET</default_value>
     <values match="last">
       <value compset="DLND%LCLMR" grid="l%NLDAS">$DIN_LOC_ROOT/lnd/dlnd7/NLDAS</value>
-      <value compset="DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/i.e20.I1850Clm50Sp.f09_g17.001_c180502</value>
+      <value compset="DLND%SCPL" grid="l%0.9x1.25">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e21.B1850.f09_g17.CMIP6-piControl.001_c210324</value>
       <value compset="DLND%QIA">$DIN_LOC_ROOT/lnd/dlnd7/hcru_hcru</value>
       <value compset="DLND%GPCC">$DIN_LOC_ROOT/lnd/dlnd7/hcru_hcru</value>
     </values>
@@ -85,7 +85,7 @@
     <default_value>UNSET</default_value>
     <values match="last">
       <value compset="DLND%LCLMR" grid="l%NLDAS">NLDAS</value>
-      <value compset="DLND%SCPL" grid="l%0.9x1.25">i.e20.I1850Clm50Sp.f09_g17.001</value>
+      <value compset="DLND%SCPL" grid="l%0.9x1.25">b.e21.B1850.f09_g17.CMIP6-piControl.001</value>
     </values>
     <group>run_component_dlnd</group>
     <file>env_run.xml</file>
@@ -123,7 +123,7 @@
     <default_value>-999</default_value>
     <values match="last">
       <value compset="DLND%LCLMR" grid="l%NLDAS">1975</value>
-      <value compset="DLND%SCPL" grid="l%0.9x1.25">1</value>
+      <value compset="DLND%SCPL" grid="l%0.9x1.25">1971</value>
       <value compset="DLND%QIA">1948</value>
       <value compset="DLND%GPCC">1979</value>
     </values>
@@ -137,7 +137,7 @@
     <default_value>-999</default_value>
     <values match="last">
       <value compset="DLND%LCLMR" grid="l%NLDAS">1975</value>
-      <value compset="DLND%SCPL" grid="l%0.9x1.25">30</value>
+      <value compset="DLND%SCPL" grid="l%0.9x1.25">2000</value>
       <value compset="DLND%QIA">2004</value>
       <value compset="DLND%GPCC">1979</value>
     </values>
