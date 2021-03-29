@@ -95,37 +95,37 @@ y
 {}/components/ww3/src/cpl
 """.format(caseroot, tmpdir, srcroot))
 
-    # Compile ww3_grid and move to run directory
-    orig_env = dict(os.environ)
+    ## Compile ww3_grid and move to run directory
+    #orig_env = dict(os.environ)
 
-    try:
-        os.environ["WWATCH3_NETCDF"] = "NC4"
-        ncconfig = find_executable("nc-config")
-        os.environ["NETCDF_CONFIG"] = ncconfig
+    #try:
+    #    os.environ["WWATCH3_NETCDF"] = "NC4"
+    #    ncconfig = find_executable("nc-config")
+    #    os.environ["NETCDF_CONFIG"] = ncconfig
 
-        make_inp_file = os.path.join(bindir, "w3_make.inp")
-        with open(make_inp_file, "w") as fd:
-            fd.write("k\n")
+    #    make_inp_file = os.path.join(bindir, "w3_make.inp")
+    #    with open(make_inp_file, "w") as fd:
+    #        fd.write("k\n")
 
-        run_bld_cmd_ensure_logging("./w3_make ww3_grid < w3_make.inp > out.txt", logger, from_dir=bindir)
-        os.remove(make_inp_file)
+    #    run_bld_cmd_ensure_logging("./w3_make ww3_grid < w3_make.inp > out.txt", logger, from_dir=bindir)
+    #    os.remove(make_inp_file)
 
-        if os.path.exists(os.path.join(rundir, "ww3_grid")):
-            os.remove(os.path.join(rundir, "ww3_grid"))
+    #    if os.path.exists(os.path.join(rundir, "ww3_grid")):
+    #        os.remove(os.path.join(rundir, "ww3_grid"))
 
-        shutil.move(os.path.join(exedir, "ww3_grid"), rundir)
+    #    shutil.move(os.path.join(exedir, "ww3_grid"), rundir)
 
-        # Run ww3_grid.
-        #  TODO: the mesh.msh file will need to be downloaded here once it is
-        #  in the E3SM input file system.
-        #  safe_copy(os.path.join(os.environ["HOME"],"mesh.msh"), rundir)
-        run_bld_cmd_ensure_logging("./ww3_grid", logger, from_dir=rundir)
-    finally:
-        os.environ.clear()
-        os.environ.update(orig_env)
+    #    # Run ww3_grid.
+    #    #  TODO: the mesh.msh file will need to be downloaded here once it is
+    #    #  in the E3SM input file system.
+    #    #  safe_copy(os.path.join(os.environ["HOME"],"mesh.msh"), rundir)
+    #    run_bld_cmd_ensure_logging("./ww3_grid", logger, from_dir=rundir)
+    #finally:
+    #    os.environ.clear()
+    #    os.environ.update(orig_env)
 
-    # Cleanup untracked file
-    os.remove(os.path.join(modeldir, "makefile"))
+    ## Cleanup untracked file
+    #os.remove(os.path.join(modeldir, "makefile"))
 
 ###############################################################################
 def _main_func():
