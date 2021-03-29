@@ -13,14 +13,14 @@ namespace shoc {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::diag_second_shoc_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
-       const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_2d<const Spack> &horiz_wind,
-       const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
-       const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
-       const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
-       const Scalar& wthl_sfc, const Scalar& wqw_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc, Scalar& ustar2, Scalar& wstar,
+void Functions<S,D>::diag_second_shoc_moments(const MemberType& team, const Int& nlev, const Int& nlevi, 
+       const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind, 
+       const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
+       const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi, 
+       const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix, 
+       const Scalar& wthl_sfc, const Scalar& wqw_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc, Scalar& ustar2, Scalar& wstar, 
        const Workspace workspace, const uview_1d<Spack>& thl_sec,
-       const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec,
+       const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec, 
        const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec)
 {
   // This is the main routine to compute the second
@@ -50,7 +50,7 @@ void Functions<S,D>::diag_second_shoc_moments(const MemberType& team, const Int&
   // Diagnose the second order moments, for points away from boundaries.  this is
   //  the main computation for the second moments
   diag_second_moments(team, nlev, nlevi,
-                     thetal, qw, horiz_wind, tke, isotropy,tkh, tk, dz_zi, zt_grid, zi_grid, shoc_mix,
+                     thetal, qw, u_wind,v_wind, tke, isotropy,tkh, tk, dz_zi, zt_grid, zi_grid, shoc_mix,
                      isotropy_zi, tkh_zi, tk_zi, thl_sec, qw_sec, wthl_sec, wqw_sec,
                      qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec);
   team.team_barrier();

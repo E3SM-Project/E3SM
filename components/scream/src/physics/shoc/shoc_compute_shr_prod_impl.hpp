@@ -19,15 +19,15 @@ void Functions<S,D>
   const Int&                   nlevi,
   const Int&                   nlev,
   const uview_1d<const Spack>& dz_zi,
-  const uview_2d<const Spack> &horiz_wind,
+  const uview_1d<const Spack>& u_wind,
+  const uview_1d<const Spack>& v_wind,
   const uview_1d<Spack>&       sterm)
 {
   const Int nlev_pack = ekat::npack<Spack>(nlev);
 
   //scalarize so that we can use shift to compute the differece  ( x(k-1) - x )
-  const auto sclr_wind = scalarize(horiz_wind);
-  const auto sclr_uwind = ekat::subview(sclr_wind,0);
-  const auto sclr_vwind = ekat::subview(sclr_wind,1);
+  const auto sclr_uwind = scalarize(u_wind); //for u_wind
+  const auto sclr_vwind = scalarize(v_wind); //for v_wind
 
   //compute shear production term
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
@@ -45,7 +45,7 @@ void Functions<S,D>
     const Spack v_grad(range_pack1 > 0 && range_pack1 < nlev, grid_dz*(v_up_grid - v_grid));
 
     //compute shear production
-    sterm(k) = u_grad*u_grad+v_grad*v_grad;
+    sterm(k)           = u_grad*u_grad+v_grad*v_grad;
   });
   /*
    * Set lower and upper boundary for shear production
@@ -53,7 +53,7 @@ void Functions<S,D>
    * been taken into account for the TKE boundary condition,
    * thus zero out here
     */
-  sterm(0)[0] = 0;
+  sterm(0)[0]     = 0;
   const Int nlevi_pack = ekat::npack<Spack>(nlevi);
   const Int last_pack_entry = (nlevi%Spack::n == 0 ? Spack::n-1 : nlevi%Spack::n-1);
   sterm(nlevi_pack-1)[last_pack_entry] = 0;

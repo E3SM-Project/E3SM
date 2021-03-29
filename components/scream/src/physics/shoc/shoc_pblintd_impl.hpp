@@ -49,7 +49,8 @@ void Functions<S,D>::pblintd(
   const uview_1d<const Spack>& thl,
   const uview_1d<const Spack>& ql,
   const uview_1d<const Spack>& q,
-  const uview_2d<const Spack>& horiz_wind,
+  const uview_1d<const Spack>& u,
+  const uview_1d<const Spack>& v,
   const Scalar&                ustar,
   const Scalar&                obklen,
   const Scalar&                kbfs,
@@ -78,7 +79,7 @@ void Functions<S,D>::pblintd(
 
   // PBL height calculation
   team.team_barrier();
-  pblintd_height(team,nlev,npbl,z,horiz_wind,ustar,
+  pblintd_height(team,nlev,npbl,z,u,v,ustar,
                  thv,thv(nlev_v)[nlev_p],
                  pblh,rino,check);
 
@@ -89,7 +90,7 @@ void Functions<S,D>::pblintd(
   // Improve pblh estimate for unstable conditions using the convective
   // temperature excess as reference temperature:
   team.team_barrier();
-  pblintd_height(team,nlev,npbl,z,horiz_wind,ustar,
+  pblintd_height(team,nlev,npbl,z,u,v,ustar,
                  thv,tlv,
                  pblh,rino,check);
 

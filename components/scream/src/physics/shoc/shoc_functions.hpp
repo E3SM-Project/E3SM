@@ -8,7 +8,6 @@
 
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_workspace.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
 
 namespace scream {
 namespace shoc {
@@ -122,7 +121,7 @@ struct Functions
     view_2d<Spack>  thetal;
     // total water mixing ratio [kg/kg]
     view_2d<Spack>  qw;
-    // Horizontal wind velocity (u,v) [m/s]
+    // Vector-valued wind (u,v) [m/s]
     view_3d<Spack>  horiz_wind;
     // buoyancy flux [K m/s]
     view_2d<Spack>  wthv_sec;
@@ -293,7 +292,8 @@ struct Functions
     const uview_1d<const Spack>& pdel,
     const uview_1d<const Spack>& rtm,
     const uview_1d<const Spack>& rcm,
-    const uview_2d<const Spack>& horiz_wind,
+    const uview_1d<const Spack>& u_wind,
+    const uview_1d<const Spack>& v_wind,
     Scalar&                      se_int,
     Scalar&                      ke_int,
     Scalar&                      wv_int,
@@ -308,8 +308,8 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void diag_second_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
-     const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_2d<const Spack>& horiz_wind,
-     const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
+     const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
+     const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
      const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
      const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
      const uview_1d<Spack>& isotropy_zi, const uview_1d<Spack>& tkh_zi, const uview_1d<Spack>& tk_zi,
@@ -319,8 +319,8 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void diag_second_shoc_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
-     const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_2d<const Spack>& horiz_wind,
-     const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
+     const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
+     const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
      const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
      const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
      const Scalar& wthl_sfc, const Scalar& wqw_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc, Scalar& ustar2, Scalar& wstar,
@@ -466,7 +466,8 @@ struct Functions
     const uview_1d<Spack>&       qw,
     const uview_2d<Spack>&       tracer,
     const uview_1d<Spack>&       tke,
-    const uview_2d<Spack>&       horiz_wind);
+    const uview_1d<Spack>&       u_wind,
+    const uview_1d<Spack>&       v_wind);
 
   KOKKOS_FUNCTION
   static void diag_third_shoc_moments(
@@ -530,7 +531,8 @@ struct Functions
     const Int&                   nlevi,
     const Int&                   nlev,
     const uview_1d<const Spack>& dz_zi,
-    const uview_2d<const Spack>& horiz_wind,
+    const uview_1d<const Spack>& u_wind,
+    const uview_1d<const Spack>& v_wind,
     const uview_1d<Spack>&       sterm);
 
   KOKKOS_FUNCTION
@@ -608,7 +610,8 @@ struct Functions
     const uview_1d<Spack>&       tke,
     const uview_1d<Spack>&       thetal,
     const uview_1d<Spack>&       qw,
-    const uview_2d<Spack>&       horiz_wind,
+    const uview_1d<Spack>&       u_wind,
+    const uview_1d<Spack>&       v_wind,
     const uview_1d<Spack>&       wthv_sec,
     const uview_2d<Spack>&       qtracers,
     const uview_1d<Spack>&       tk,
@@ -654,7 +657,8 @@ struct Functions
     const Int& nlev,
     const Int& npbl,
     const uview_1d<const Spack>& z,
-    const uview_2d<const Spack>& horiz_wind,
+    const uview_1d<const Spack>& u,
+    const uview_1d<const Spack>& v,
     const Scalar& ustar,
     const uview_1d<const Spack>& thv,
     const Scalar& thv_ref,
@@ -705,7 +709,8 @@ struct Functions
     const uview_1d<const Spack>& thl,
     const uview_1d<const Spack>& ql,
     const uview_1d<const Spack>& q,
-    const uview_2d<const Spack>& horiz_wind,
+    const uview_1d<const Spack>& u,
+    const uview_1d<const Spack>& v,
     const Scalar&                ustar,
     const Scalar&                obklen,
     const Scalar&                kbfs,
@@ -750,7 +755,8 @@ struct Functions
     const uview_1d<const Spack>& dz_zi,
     const uview_1d<const Spack>& dz_zt,
     const uview_1d<const Spack>& pres,
-    const uview_2d<const Spack>& horiz_wind,
+    const uview_1d<const Spack>& u_wind,
+    const uview_1d<const Spack>& v_wind,
     const uview_1d<const Spack>& brunt,
     const Scalar&                obklen,
     const uview_1d<const Spack>& zt_grid,

@@ -63,7 +63,7 @@ void shoc_energy_dse_fixer_c(Int shcol, Int nlev,
 
 void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
-			    Real *invar1, Real *invar2, Real *varorcovar);
+          Real *invar1, Real *invar2, Real *varorcovar);
 
 void compute_tmpi_c(Int nlevi, Int shcol, Real dtime, Real *rho_zi,
                     Real *dz_zi, Real *tmpi);
@@ -90,7 +90,7 @@ void shoc_tke_c(Int shcol, Int nlev, Int nlevi, Real dtime, Real *wthv_sec,
                 Real *tk, Real *tkh, Real *isotropy);
 
 void integ_column_stability_c(Int nlev, Int shcol, Real *dz_zt, Real *pres,
-			      Real *brunt, Real *brunt_int);
+            Real *brunt, Real *brunt_int);
 
 void compute_shr_prod_c(Int nlevi, Int nlev, Int shcol, Real *dz_zi,
                         Real *u_wind, Real *v_wind, Real *sterm);
@@ -107,7 +107,7 @@ void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
                           Real *isotropy, Real *tke, Real *tkh, Real *tk);
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
-			  Real *dz_zi, Real *invar, Real *vertflux);
+        Real *dz_zi, Real *invar, Real *vertflux);
 
 void shoc_length_c(Int shcol, Int nlev, Int nlevi, Real *host_dx,
                    Real *host_dy, Real *pblh, Real *tke, Real *zt_grid, Real *zi_grid,
@@ -129,7 +129,7 @@ void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel,
 
 void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
                                     Real *tscale, Real *zt_grid, Real *l_inf,
-				    Real *shoc_mix);
+            Real *shoc_mix);
 
 void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
                                     Real *host_dy, Real *shoc_mix);
@@ -143,8 +143,8 @@ void fterms_input_for_diag_third_shoc_moment_c(Real dz_zi, Real dz_zt, Real dz_z
                                     Real *isosqrd, Real *buoy_sgs2, Real *bet2);
 void f0_to_f5_diag_third_shoc_moment_c(Real thedz, Real thedz2, Real bet2, Real iso,
                                     Real isosqrd, Real wthl_sec, Real wthl_sec_kc,
-				    Real wthl_sec_kb, Real thl_sec, Real thl_sec_kc,
-				    Real thl_sec_kb, Real w_sec, Real w_sec_kc, Real w_sec_zi,
+            Real wthl_sec_kb, Real thl_sec, Real thl_sec_kc,
+            Real thl_sec_kb, Real w_sec, Real w_sec_kc, Real w_sec_zi,
                                     Real tke, Real tke_kc, Real *f0, Real *f1,
                                     Real *f2, Real *f3, Real *f4, Real *f5);
 
@@ -156,7 +156,7 @@ void x_y_terms_diag_third_shoc_moment_c(Real buoy_sgs2, Real f0, Real f1, Real f
 
 void aa_terms_diag_third_shoc_moment_c(Real omega0, Real omega1, Real omega2,
                                     Real x0, Real x1, Real y0, Real y1,
-				    Real *aa0, Real *aa1);
+            Real *aa0, Real *aa1);
 
 void w3_diag_third_shoc_moment_c(Real aa0, Real aa1, Real x0,
                                     Real x1, Real f5, Real *w3);
@@ -189,27 +189,27 @@ void shoc_assumed_pdf_tilde_to_real_c(Real w_first, Real sqrtw2, Real* w1);
 
 void shoc_assumed_pdf_vv_parameters_c(Real w_first, Real w_sec, Real w3var,
                                       Real *Skew_w, Real *w1_1, Real *w1_2,
-				      Real *w2_1, Real *w2_2, Real *a);
+              Real *w2_1, Real *w2_2, Real *a);
 
 void shoc_assumed_pdf_thl_parameters_c(Real wthlsec, Real sqrtw2, Real sqrtthl,
                                        Real thlsec, Real thl_first, Real w1_1,
-				       Real w1_2, Real Skew_w, Real a, bool dothetal_skew,
+               Real w1_2, Real Skew_w, Real a, bool dothetal_skew,
                                        Real *thl1_1, Real *thl1_2, Real *thl2_1,
-				       Real *thl2_2, Real *sqrtthl2_1,
+               Real *thl2_2, Real *sqrtthl2_1,
                                        Real *sqrtthl2_2);
 
 void shoc_assumed_pdf_qw_parameters_c(Real wqwsec, Real sqrtw2, Real Skew_w,
                                        Real sqrtqt, Real qw_sec, Real w1_1,
-				       Real w1_2, Real qw_first, Real a,
+               Real w1_2, Real qw_first, Real a,
                                        Real *qw1_1, Real *qw1_2, Real *qw2_1,
-				       Real *qw2_2, Real *sqrtqw2_1,
+               Real *qw2_2, Real *sqrtqw2_1,
                                        Real *sqrtqw2_2);
 
 void shoc_assumed_pdf_inplume_correlations_c(Real sqrtqw2_1, Real sqrtthl2_1,
                                      Real a, Real sqrtqw2_2, Real sqrtthl2_2,
                                      Real qwthlsec, Real qw1_1, Real qw_first,
-				     Real thl1_1, Real thl_first, Real qw1_2,
-				     Real thl1_2, Real *r_qwthl_1);
+             Real thl1_1, Real thl_first, Real qw1_2,
+             Real thl1_2, Real *r_qwthl_1);
 
 void shoc_assumed_pdf_compute_temperature_c(Real thl1, Real basepres,
                                             Real pval, Real *Tl1);
@@ -225,7 +225,7 @@ void shoc_assumed_pdf_compute_sgs_liquid_c(Real a, Real ql1, Real ql2, Real *sho
 
 void shoc_assumed_pdf_compute_cloud_liquid_variance_c(Real a, Real s1, Real ql1,
                                Real C1, Real std_s1, Real s2, Real ql2, Real C2,
-			       Real std_s2, Real shoc_ql, Real *shoc_ql2);
+             Real std_s2, Real shoc_ql, Real *shoc_ql2);
 
 void shoc_assumed_pdf_compute_liquid_water_flux_c(Real a, Real w1_1, Real w_first,
                                Real ql1, Real w1_2, Real ql2, Real *wqls);
@@ -886,7 +886,7 @@ void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
 }
 
 void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
-			  Real *dz_zi, Real *invar, Real *vertflux)
+        Real *dz_zi, Real *invar, Real *vertflux)
 {
   using SHF = Functions<Real, DefaultDevice>;
 
@@ -1350,7 +1350,6 @@ void shoc_energy_integrals_f(Int shcol, Int nlev, Real *host_dse, Real *pdel,
   using Pack1d     = typename ekat::Pack<Real,1>;
   using view_1d    = typename SHF::view_1d<Pack1d>;
   using view_2d    = typename SHF::view_2d<Spack>;
-  using view_3d    = typename SHF::view_3d<Spack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename SHF::MemberType;
@@ -1377,11 +1376,8 @@ void shoc_energy_integrals_f(Int shcol, Int nlev, Real *host_dse, Real *pdel,
     wv_int_d("wv_int", shcol),
     wl_int_d("wl_int", shcol);
 
-  // C++ treats u/v_wind as 1 array.
-  const Int nlev_packs = ekat::npack<Spack>(nlev);
-  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
-
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
@@ -1392,20 +1388,12 @@ void shoc_energy_integrals_f(Int shcol, Int nlev, Real *host_dse, Real *pdel,
     const auto u_wind_s   = ekat::subview(u_wind_d, i);
     const auto v_wind_s   = ekat::subview(v_wind_d, i);
 
-    // Copy horiz_wind into single view
-    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-      horiz_wind_s(0,k) = u_wind_s(k);
-      horiz_wind_s(1,k) = v_wind_s(k);
-    });
-    team.team_barrier();
-
     Scalar se_int_s{0};
     Scalar ke_int_s{0};
     Scalar wv_int_s{0};
     Scalar wl_int_s{0};
 
-    SHF::shoc_energy_integrals(team, nlev, host_dse_s, pdel_s, rtm_s, rcm_s, horiz_wind_s,
+    SHF::shoc_energy_integrals(team, nlev, host_dse_s, pdel_s, rtm_s, rcm_s, u_wind_s, v_wind_s,
                                se_int_s, ke_int_s, wv_int_s, wl_int_s);
 
     se_int_d(i)[0] = se_int_s;
@@ -1491,7 +1479,6 @@ void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
   using SHOC       = Functions<Real, DefaultDevice>;
   using Spack      = typename SHOC::Spack;
   using view_2d    = typename SHOC::view_2d<Spack>;
-  using view_3d    = typename SHOC::view_3d<Spack>;
   using KT         = typename SHOC::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename SHOC::MemberType;
@@ -1535,10 +1522,8 @@ void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
           tkh_zi_2d("tkh_zi", shcol, nlevi_packs),
           tk_zi_2d("tk_zi", shcol, nlevi_packs);
 
-  // C++ treats u/v_wind as 1 array.
-  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
-
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
@@ -1567,15 +1552,7 @@ void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
     const auto tkh_zi_1d      = ekat::subview(tkh_zi_2d, i);
     const auto tk_zi_1d       = ekat::subview(tk_zi_2d, i);
 
-    // Copy wind into single view
-    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-      horiz_wind_s(0,k) = u_wind_1d(k);
-      horiz_wind_s(1,k) = v_wind_1d(k);
-    });
-    team.team_barrier();
-
-    SHOC::diag_second_moments(team, nlev, nlevi, thetal_1d, qw_1d, horiz_wind_s, tke_1d, isotropy_1d, tkh_1d, tk_1d,
+    SHOC::diag_second_moments(team, nlev, nlevi, thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d,
                      dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d, isotropy_zi_1d, tkh_zi_1d, tk_zi_1d,
                      thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d,
                      qwthl_sec_1d, uw_sec_1d, vw_sec_1d, wtke_sec_1d, w_sec_1d);
@@ -1598,7 +1575,6 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
   using Scalar        = typename SHOC::Scalar;
   using Spack         = typename SHOC::Spack;
   using view_2d       = typename SHOC::view_2d<Spack>;
-  using view_3d       = typename SHOC::view_3d<Spack>;
   using KT            = typename SHOC::KT;
   using ExeSpace      = typename KT::ExeSpace;
   using MemberType    = typename SHOC::MemberType;
@@ -1651,10 +1627,6 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
 
   const Int nlev_packs = ekat::npack<Spack>(nlev);
   const Int nlevi_packs = ekat::npack<Spack>(nlevi);
-
-  // C++ treats u/v_wind as 1 array.
-  view_3d horiz_wind_d("wind",shcol,2,nlev_packs);
-
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
   // Local variable workspace
@@ -1687,14 +1659,6 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
     const auto wtke_sec_1d    = ekat::subview(wtke_sec_2d, i);
     const auto w_sec_1d       = ekat::subview(w_sec_2d, i);
 
-    // Copy wind into single view
-    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-       horiz_wind_s(0,k) = u_wind_1d(k);
-       horiz_wind_s(1,k) = v_wind_1d(k);
-    });
-    team.team_barrier();
-
     Scalar wthl_s   = wthl_1d(i)[0];
     Scalar wqw_s    = wqw_1d(i)[0];
     Scalar uw_s     = uw_1d(i)[0];
@@ -1703,7 +1667,7 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
     Scalar wstar_s  = wstar_1d(i)[0];
 
     SHOC::diag_second_shoc_moments(team, nlev, nlevi,
-       thetal_1d, qw_1d, horiz_wind_s, tke_1d, isotropy_1d, tkh_1d, tk_1d, dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d,
+       thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d, dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d,
        wthl_s, wqw_s, uw_s, vw_s, ustar2_s, wstar_s,
        workspace, thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d, qwthl_sec_1d,
        uw_sec_1d, vw_sec_1d, wtke_sec_1d, w_sec_1d);
@@ -2318,9 +2282,6 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
   view_3d
     X1_d("X1",shcol,nlev,ekat::npack<Spack>(2));
 
-  // C++ treats u/v_wind as 1 array.
-  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
-
   // Local variable workspace
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, 8, policy);
 
@@ -2350,27 +2311,13 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
     const auto tke_s = ekat::subview(tke_d, i);
     const auto tracer_s = Kokkos::subview(tracer_d, i, Kokkos::ALL(), Kokkos::ALL());
 
-    // Copy wind into single view
-    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-      horiz_wind_s(0,k) = u_wind_s(k);
-      horiz_wind_s(1,k) = v_wind_s(k);
-    });
-    team.team_barrier();
-
     SHF::update_prognostics_implicit(team, nlev, nlevi, num_tracer, dtime,
                                      dz_zt_s, dz_zi_s, rho_zt_s, zt_grid_s,
                                      zi_grid_s, tk_s, tkh_s, uw_sfc_s, vw_sfc_s,
                                      wthl_sfc_s, wqw_sfc_s, wtracer_sfc_s,
                                      workspace,
                                      X1_s,
-                                     thetal_s, qw_s, tracer_s, tke_s, horiz_wind_s);
-
-    // Copy wind into separate views
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-      u_wind_s(k) = horiz_wind_s(0,k);
-      v_wind_s(k) = horiz_wind_s(1,k);
-    });
+                                     thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s);
   });
 
   // Remove extra tracer slots
@@ -2606,7 +2553,6 @@ void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_win
 
   using Spack      = typename SHF::Spack;
   using view_2d    = typename SHF::view_2d<Spack>;
-  using view_3d    = typename SHF::view_3d<Spack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename SHF::MemberType;
@@ -2629,11 +2575,9 @@ void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_win
     //output
     sterm_d (temp_d[3]);
 
-  // C++ treats u/v_wind as 1 array.
-  const Int nlev_packs = ekat::npack<Spack>(nlev);
-  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
 
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const Int i = team.league_rank();
 
@@ -2644,15 +2588,7 @@ void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_win
       //output
       const auto sterm_s  = ekat::subview(sterm_d ,i);
 
-      // Copy wind into single view
-      const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-        horiz_wind_s(0,k) = u_wind_s(k);
-        horiz_wind_s(1,k) = v_wind_s(k);
-      });
-      team.team_barrier();
-
-      SHF::compute_shr_prod(team, nlevi, nlev, dz_zi_s, horiz_wind_s, sterm_s);
+      SHF::compute_shr_prod(team, nlevi, nlev, dz_zi_s, u_wind_s, v_wind_s, sterm_s);
     });
 
   // Sync back to host
@@ -2977,7 +2913,7 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
   Kokkos::resize(qtracers_d,
                  shcol,nlev,ekat::npack<Spack>(num_qtracers+3));
 
-  // C++ treats u/v_wind as 1 array.
+  // shoc_main treats u/v_wind as 1 array.
   const auto nlev_packs = ekat::npack<Spack>(nlev);
   view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
 
@@ -3080,7 +3016,6 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
   using view_1d    = typename SHOC::view_1d<Pack1>;
   using bview_1d   = typename SHOC::view_1d<BPack1>;
   using view_2d    = typename SHOC::view_2d<Spack>;
-  using view_3d    = typename SHOC::view_3d<Spack>;
   using ExeSpace   = typename SHOC::KT::ExeSpace;
   using MemberType = typename SHOC::MemberType;
 
@@ -3105,11 +3040,8 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
 
   Int npbl = nlev;
 
-  // C++ treats u/v_wind as 1 array.
-  const Int nlev_packs = ekat::npack<Spack>(nlev);
-  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
-
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
@@ -3119,20 +3051,12 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
     const auto thv_1d  = ekat::subview(thv_2d, i);
     const auto rino_1d = ekat::subview(rino_2d, i);
 
-    // Copy wind into single view
-    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-      horiz_wind_s(0,k) = u_1d(k);
-      horiz_wind_s(1,k) = v_1d(k);
-    });
-    team.team_barrier();
-
     Scalar& ustar_s   = ustar_1d(i)[0];
     Scalar& thv_ref_s = thv_ref_1d(i)[0];
     Scalar& pblh_s    = pblh_1d(i)[0];
     bool& check_s     = check_1d(i)[0];
 
-    SHOC::pblintd_height(team, nlev, npbl, z_1d, horiz_wind_s, ustar_s, thv_1d, thv_ref_s, pblh_s, rino_1d, check_s);
+    SHOC::pblintd_height(team, nlev, npbl, z_1d, u_1d, v_1d, ustar_s, thv_1d, thv_ref_s, pblh_s, rino_1d, check_s);
  });
 
   std::vector<view_1d> out_1d_views = {pblh_1d};
@@ -3437,7 +3361,6 @@ void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Rea
     using Pack1d     = typename ekat::Pack<Real,1>;
     using view_1d    = typename SHF::view_1d<Pack1d>;
     using view_2d    = typename SHF::view_2d<Spack>;
-    using view_3d    = typename SHF::view_3d<Spack>;
     using KT         = typename SHF::KT;
     using ExeSpace   = typename KT::ExeSpace;
     using MemberType = typename SHF::MemberType;
@@ -3476,14 +3399,11 @@ void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Rea
 
 
     const Int npbl = nlev;
-
-    // C++ treats u/v_wind as 1 array.
-    const Int nlev_packs = ekat::npack<Spack>(nlev);
-    view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
+    const Int nlev_pack = ekat::npack<Spack>(nlev);
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_pack);
 
     // Local variable workspace
-    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
-    ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlev_packs, 2, policy);
+    ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlev_pack, 2, policy);
 
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const Int i = team.league_rank();
@@ -3504,16 +3424,8 @@ void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Rea
       const auto v_s = ekat::subview(v_d, i);
       const auto cldn_s = ekat::subview(cldn_d, i);
 
-      // Copy wind into single view
-      const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-        horiz_wind_s(0,k) = u_s(k);
-        horiz_wind_s(1,k) = v_s(k);
-      });
-      team.team_barrier();
-
-      SHF::pblintd(team,nlev,nlevi,npbl,z_s,zi_s,thl_s,ql_s,q_s,horiz_wind_s,ustar_s,
-                   obklen_s,kbfs_s,cldn_s,workspace,pblh_s);
+      SHF::pblintd(team,nlev,nlevi,npbl,z_s,zi_s,thl_s,ql_s,q_s,u_s,v_s,ustar_s,
+                           obklen_s,kbfs_s,cldn_s,workspace,pblh_s);
 
       pblh_d(i)[0] = pblh_s;
     });
@@ -3534,7 +3446,6 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
   using Pack1d     = typename ekat::Pack<Real,1>;
   using view_1d    = typename SHF::view_1d<Pack1d>;
   using view_2d    = typename SHF::view_2d<Spack>;
-  using view_3d    = typename SHF::view_3d<Spack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename SHF::MemberType;
@@ -3579,9 +3490,6 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
   const Int nlevi_packs = ekat::npack<Spack>(nlevi);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
-  // C++ treats u/v_wind as 1 array.
-  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
-
   // Local variable workspace
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, 3, policy);
 
@@ -3608,16 +3516,8 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto isotropy_s = ekat::subview(isotropy_d, i);
 
-    // Copy wind into single view
-    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-      horiz_wind_s(0,k) = u_wind_s(k);
-      horiz_wind_s(1,k) = v_wind_s(k);
-    });
-    team.team_barrier();
-
     SHF::shoc_tke(team,nlev,nlevi,dtime,wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
-                  horiz_wind_s,brunt_s,obklen_s,zt_grid_s,zi_grid_s,pblh_s,
+                  u_wind_s,v_wind_s,brunt_s,obklen_s,zt_grid_s,zi_grid_s,pblh_s,
                   workspace,
                   tke_s,tk_s,tkh_s,isotropy_s);
   });

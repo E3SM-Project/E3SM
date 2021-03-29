@@ -93,7 +93,8 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       tke,
   const uview_1d<Spack>&       thetal,
   const uview_1d<Spack>&       qw,
-  const uview_2d<Spack>&       horiz_wind,
+  const uview_1d<Spack>&       u_wind,
+  const uview_1d<Spack>&       v_wind,
   const uview_1d<Spack>&       wthv_sec,
   const uview_2d<Spack>&       qtracers,
   const uview_1d<Spack>&       tk,
@@ -138,8 +139,8 @@ void Functions<S,D>::shoc_main_internal(
   // for the computation of total energy before SHOC is called.  This is for an
   // effort to conserve energy since liquid water potential temperature (which SHOC
   // conserves) and static energy (which E3SM conserves) are not exactly equal.
-  shoc_energy_integrals(team,nlev,host_dse,pdel,qw,shoc_ql,horiz_wind, // Input
-                        se_b,ke_b,wv_b,wl_b);                          // Output
+  shoc_energy_integrals(team,nlev,host_dse,pdel,qw,shoc_ql,u_wind,v_wind, // Input
+                        se_b,ke_b,wv_b,wl_b);                             // Output
 
   for (Int t=0; t<nadv; ++t) {
     // Check TKE to make sure values lie within acceptable
@@ -170,13 +171,13 @@ void Functions<S,D>::shoc_main_internal(
                     shoc_qv(nlev_v)[nlev_p], // Input
                     ustar,kbfs,obklen);      // Output
 
-    pblintd(team,nlev,nlevi,npbl,         // Input
-            zt_grid,zi_grid,thetal,       // Input
-            shoc_ql,shoc_qv,              // Input
-            horiz_wind,ustar,obklen,kbfs, // Input
-            shoc_cldfrac,                 // Input
-            workspace,                    // Workspace
-            pblh);                        // Output
+    pblintd(team,nlev,nlevi,npbl,     // Input
+            zt_grid,zi_grid,thetal,   // Input
+            shoc_ql,shoc_qv,u_wind,   // Input
+            v_wind,ustar,obklen,kbfs, // Input
+            shoc_cldfrac,             // Input
+            workspace,                // Workspace
+            pblh);                    // Output
 
     // Update the turbulent length scale
     shoc_length(team,nlev,nlevi,host_dx,host_dy, // Input
@@ -186,13 +187,13 @@ void Functions<S,D>::shoc_main_internal(
                 brunt,shoc_mix);                 // Output
 
     // Advance the SGS TKE equation
-    shoc_tke(team,nlev,nlevi,dtime,wthv_sec,  // Input
-             shoc_mix,dz_zi,dz_zt,pres,       // Input
-             horiz_wind,brunt,obklen,zt_grid, // Input
-             zi_grid,pblh,                    // Input
-             workspace,                       // Workspace
-             tke,tk,tkh,                      // Input/Output
-             isotropy);                       // Output
+    shoc_tke(team,nlev,nlevi,dtime,wthv_sec,    // Input
+             shoc_mix,dz_zi,dz_zt,pres,u_wind,  // Input
+             v_wind,brunt,obklen,zt_grid,       // Input
+             zi_grid,pblh,                      // Input
+             workspace,                         // Workspace
+             tke,tk,tkh,                        // Input/Output
+             isotropy);                         // Output
 
     // Update SHOC prognostic variables here
     // via implicit diffusion solver
@@ -201,10 +202,10 @@ void Functions<S,D>::shoc_main_internal(
                                 dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
                                 vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
                                 workspace,                                  // Workspace
-                                X1,thetal,qw,qtracers,tke,horiz_wind);      // Input/Output
+                                X1,thetal,qw,qtracers,tke,u_wind,v_wind);   // Input/Output
 
     // Diagnose the second order moments
-    diag_second_shoc_moments(team,nlev,nlevi,thetal,qw,horiz_wind,      // Input
+    diag_second_shoc_moments(team,nlev,nlevi,thetal,qw,u_wind,v_wind,   // Input
                              tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
                              shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
                              ustar2,wstar,                              // Input/Output
@@ -242,9 +243,9 @@ void Functions<S,D>::shoc_main_internal(
                   host_dse);                // Output
 
   team.team_barrier();
-  shoc_energy_integrals(team,nlev,host_dse,pdel, // Input
-                        qw,shoc_ql,horiz_wind,   // Input
-                        se_a,ke_a,wv_a,wl_a);    // Output
+  shoc_energy_integrals(team,nlev,host_dse,pdel,  // Input
+                        qw,shoc_ql,u_wind,v_wind, // Input
+                        se_a,ke_a,wv_a,wl_a);     // Output
 
   shoc_energy_fixer(team,nlev,nlevi,dtime,nadv,zt_grid,zi_grid, // Input
                     se_b,ke_b,wv_b,wl_b,se_a,ke_a,wv_a,wl_a,    // Input
@@ -273,7 +274,7 @@ void Functions<S,D>::shoc_main_internal(
 
   pblintd(team,nlev,nlevi,npbl,zt_grid,   // Input
           zi_grid,thetal,shoc_ql,shoc_qv, // Input
-          horiz_wind,ustar,obklen,        // Input
+          u_wind,v_wind,ustar,obklen,     // Input
           kbfs,shoc_cldfrac,              // Input
           workspace,                      // Workspace
           pblh);                          // Output
@@ -342,7 +343,6 @@ Int Functions<S,D>::shoc_main(
     const auto tke_s          = ekat::subview(shoc_input_output.tke, i);
     const auto thetal_s       = ekat::subview(shoc_input_output.thetal, i);
     const auto qw_s           = ekat::subview(shoc_input_output.qw, i);
-    const auto horiz_wind_s   = ekat::subview(shoc_input_output.horiz_wind, i);
     const auto wthv_sec_s     = ekat::subview(shoc_input_output.wthv_sec, i);
     const auto tk_s           = ekat::subview(shoc_input_output.tk, i);
     const auto tkh_s          = ekat::subview(shoc_input_output.tkh, i);
@@ -364,6 +364,8 @@ Int Functions<S,D>::shoc_main(
     const auto brunt_s        = ekat::subview(shoc_history_output.brunt, i);
     const auto isotropy_s     = ekat::subview(shoc_history_output.isotropy, i);
 
+    const auto u_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, i, 0, Kokkos::ALL());
+    const auto v_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, i, 1, Kokkos::ALL());
     const auto X1_s       = Kokkos::subview(X1_d, i, Kokkos::ALL(), Kokkos::ALL());
     const auto qtracers_s = Kokkos::subview(shoc_input_output.qtracers, i, Kokkos::ALL(), Kokkos::ALL());
 
@@ -374,7 +376,7 @@ Int Functions<S,D>::shoc_main(
                        wtracer_sfc_s, exner_s, phis_s,                         // Input
                        workspace,                                              // Workspace
                        X1_s,                                                   // Local variable
-                       host_dse_s, tke_s, thetal_s, qw_s, horiz_wind_s,        // Input/Output
+                       host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s,  // Input/Output
                        wthv_sec_s, qtracers_s, tk_s, tkh_s, shoc_cldfrac_s,    // Input/Output
                        shoc_ql_s,                                              // Input/Output
                        pblh_s, shoc_ql2_s,                                     // Output

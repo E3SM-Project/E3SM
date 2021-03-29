@@ -21,7 +21,8 @@ void Functions<S,D>::pblintd_height(
   const Int& nlev,
   const Int& npbl,
   const uview_1d<const Spack>& z,
-  const uview_2d<const Spack>& horiz_wind,
+  const uview_1d<const Spack>& u,
+  const uview_1d<const Spack>& v,
   const Scalar& ustar,
   const uview_1d<const Spack>& thv,
   const Scalar& thv_ref,
@@ -53,8 +54,8 @@ void Functions<S,D>::pblintd_height(
     Spack vvk(0);
     vvk.set(in_range,
             ekat::max(tiny,
-                      ekat::square(horiz_wind(0,k) - horiz_wind(0,nlev_v)[nlev_p]) +
-                      ekat::square(horiz_wind(1,k) - horiz_wind(1,nlev_v)[nlev_p]) +
+                      ekat::square(u(k) - u(nlev_v)[nlev_p]) +
+                      ekat::square(v(k) - v(nlev_v)[nlev_p]) +
                       fac*(ustar*ustar)));
     rino(k).set(in_range,
                 ggr*(thv(k) - thv_ref)*(z(k) - z(nlev_v)[nlev_p])/(thv(nlev_v)[nlev_p]*vvk));
