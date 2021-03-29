@@ -1352,6 +1352,7 @@ contains
        l2x(index_l2x_Fall_taux,i)   = -lnd2atm_vars%taux_grc(g)
        l2x(index_l2x_Fall_tauy,i)   = -lnd2atm_vars%tauy_grc(g)
        l2x(index_l2x_Fall_lat,i)    = -lnd2atm_vars%eflx_lh_tot_grc(g)
+       l2x(index_l2x_Flxl_sgrnd,i)  = -lnd2atm_vars%eflx_soil_grnd_grc(g)
        l2x(index_l2x_Fall_sen,i)    = -lnd2atm_vars%eflx_sh_tot_grc(g)
        l2x(index_l2x_Fall_lwup,i)   = -lnd2atm_vars%eflx_lwrad_out_grc(g)
        l2x(index_l2x_Fall_evap,i)   = -lnd2atm_vars%qflx_evap_tot_grc(g)

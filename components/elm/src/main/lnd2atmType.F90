@@ -40,6 +40,7 @@ module lnd2atmType
      real(r8), pointer :: eflx_sh_tot_grc    (:)   => null() ! total sensible HF (W/m**2) [+ to atm]
      real(r8), pointer :: eflx_lwrad_out_grc (:)   => null() ! IR (longwave) radiation (W/m**2)
      real(r8), pointer :: qflx_evap_tot_grc  (:)   => null() ! qflx_evap_soi + qflx_evap_can + qflx_tran_veg
+     real(r8), pointer :: eflx_soil_grnd_grc (:)   => null() ! ground heat flux
      real(r8), pointer :: fsa_grc            (:)   => null() ! solar rad absorbed (total) (W/m**2)
      real(r8), pointer :: nee_grc            (:)   => null() ! net CO2 flux (kg CO2/m**2/s) [+ to atm]
      real(r8), pointer :: nem_grc            (:)   => null() ! gridcell average net methane correction to CO2 flux (g C/m^2/s)
@@ -123,6 +124,7 @@ contains
     allocate(this%eflx_lwrad_out_grc   (begg:endg))            ; this%eflx_lwrad_out_grc   (:) =ival
     allocate(this%eflx_sh_tot_grc      (begg:endg))            ; this%eflx_sh_tot_grc      (:) =ival
     allocate(this%eflx_lh_tot_grc      (begg:endg))            ; this%eflx_lh_tot_grc      (:) =ival
+    allocate(this%eflx_soil_grnd_grc   (begg:endg))            ; this%eflx_soil_grnd_grc   (:) =ival
     allocate(this%qflx_evap_tot_grc    (begg:endg))            ; this%qflx_evap_tot_grc    (:) =ival
     allocate(this%fsa_grc              (begg:endg))            ; this%fsa_grc              (:) =ival
     allocate(this%nee_grc              (begg:endg))            ; this%nee_grc              (:) =ival

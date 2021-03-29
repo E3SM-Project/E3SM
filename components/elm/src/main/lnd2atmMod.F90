@@ -216,6 +216,11 @@ contains
          lnd2atm_vars%eflx_lh_tot_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
+    call p2g(bounds, &
+         veg_ef%eflx_soil_grnd (bounds%begp:bounds%endp), &
+         lnd2atm_vars%eflx_soil_grnd_grc      (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
+
     if (use_cn .or. use_fates) then
        call c2g(bounds, &
             col_cf%nee(bounds%begc:bounds%endc), &

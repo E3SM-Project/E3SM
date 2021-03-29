@@ -50,6 +50,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Fall_lat        ! latent          heat flux
   integer, public ::index_l2x_Fall_sen        ! sensible        heat flux
   integer, public ::index_l2x_Fall_lwup       ! upward longwave heat flux
+  integer, public ::index_l2x_Flxl_sgrnd      ! ground heat flux
   integer, public ::index_l2x_Fall_evap       ! evaporation     water flux
   integer, public ::index_l2x_Fall_swnet      ! heat flux       shortwave net       
   integer, public ::index_l2x_Fall_fco2_lnd   ! co2 flux **For testing set to 0
@@ -199,6 +200,7 @@ contains
     index_l2x_Fall_lat      = mct_avect_indexra(l2x,'Fall_lat')
     index_l2x_Fall_sen      = mct_avect_indexra(l2x,'Fall_sen')
     index_l2x_Fall_lwup     = mct_avect_indexra(l2x,'Fall_lwup')
+    index_l2x_Flxl_sgrnd    = mct_avect_indexra(l2x,'Flxl_sgrnd')
     index_l2x_Fall_evap     = mct_avect_indexra(l2x,'Fall_evap')
     index_l2x_Fall_swnet    = mct_avect_indexra(l2x,'Fall_swnet')
     index_l2x_Fall_flxdst1  = mct_avect_indexra(l2x,'Fall_flxdst1')
