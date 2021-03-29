@@ -61,7 +61,6 @@ jobs:
           activate-environment: e3sm_diags_env_dev
           environment-file: conda/e3sm_diags_env_dev.yml
           channel-priority: strict
-          python-version: 3.7
           auto-update-conda: true
           # IMPORTANT: This needs to be set for caching to work properly!
           use-only-tar-bz2: true
