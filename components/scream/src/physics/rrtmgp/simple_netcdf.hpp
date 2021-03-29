@@ -1,5 +1,14 @@
 #ifndef SIMPLE_NETCDF_HPP
 #define SIMPLE_NETCDF_HPP
+// Provide a simple netCDF interface for RRTMGP that will read data in as YAKL
+// arrays. This replaces the simple netCDF interface that is included with YAKL
+// that requires netcdf-cxx4. We use it here instead of SCORPIO because we use
+// the I/O routines from RRTMGP++ mostly unchanged, and they used the YAKL I/O
+// for convenience. This small library mimics the functionality of the YAKL I/O
+// and provides a nearly 100% compatible API, but uses netCDF-C directly rather
+// than netcdf-cxx4. This library is provided specifically to work with
+// existing RRTMGP I/O routines; all other codes developed for SCREAM should
+// use SCORPIO for I/O.
 #include <netcdf.h>
 #include "YAKL.h"
 
