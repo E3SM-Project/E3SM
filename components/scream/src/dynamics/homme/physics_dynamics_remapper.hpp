@@ -13,6 +13,7 @@
 
 // Homme includes
 #include "Context.hpp"
+#include "HommexxEnums.hpp"
 #include "SimulationParams.hpp"
 #include "TimeLevel.hpp"
 #include "Types.hpp"
@@ -22,6 +23,8 @@
 
 namespace scream
 {
+
+using Homme::etoi;
 
 // Performs remap from physics to dynamics grids, and viceversa
 template<typename RealType>
@@ -34,6 +37,14 @@ public:
   using identifier_type = typename base_type::identifier_type;
   using layout_type     = typename base_type::layout_type;
   using grid_ptr_type   = typename base_type::grid_ptr_type;
+
+  using device_type     = typename field_type::device_type;
+
+  template<typename T, int N>
+  using uview_nd = Unmanaged<typename KokkosTypes<device_type>::template view_ND<T,N>>;
+
+  using pack_type = ekat::Pack<RealType,SCREAM_PACK_SIZE>;
+  using small_pack_type = ekat::Pack<RealType,SCREAM_SMALL_PACK_SIZE>;
 
   PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
                            const grid_ptr_type& dyn_grid);
@@ -71,12 +82,7 @@ protected:
   void do_registration_begins () override {}
   void do_register_field (const identifier_type& src, const identifier_type& tgt) override;
   void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
-  void do_unregister_field (const int ifield) override;
   void do_registration_ends () override;
-
-  // Remap methods
-  void do_remap_fwd () const override;
-  void do_remap_bwd () const override;
 
   void setup_boundary_exchange ();
 
@@ -102,13 +108,69 @@ protected:
 public:
   // These functions should be morally privade, but CUDA does not allow extended host-device lambda
   // to have private/protected access within the class
-  void local_remap_fwd_2d (const field_type& phys, const field_type& dyn, const int itl) const;
-  template<typename ScalarT>
-  void local_remap_fwd_3d_impl (const field_type& phys, const field_type& dyn, const int itl) const;
 
-  void remap_bwd_2d (const field_type& phys, const field_type& dyn, const int itl) const;
-  template<typename ScalarT>
-  void remap_bwd_3d_impl (const field_type& phys, const field_type& dyn, const int itl) const;
+  struct Pointer {
+    KOKKOS_FORCEINLINE_FUNCTION
+    Real* get() { return ptr; }
+
+    Real* ptr;
+  };
+
+  enum AllocPropType : int {
+    PackAlloc      = 0,
+    SmallPackAlloc = 1,
+    RealAlloc      = 2
+  };
+
+  struct Dims {
+    int size;
+    Kokkos::Array<int,6> dims;
+  };
+
+  KokkosTypes<DefaultDevice>::view_1d<Pointer>  phys_ptrs;
+  KokkosTypes<DefaultDevice>::view_1d<Dims>     phys_dims;
+  KokkosTypes<DefaultDevice>::view_1d<Int>      phys_layout;
+
+  KokkosTypes<DefaultDevice>::view_1d<Pointer> dyn_ptrs;
+  KokkosTypes<DefaultDevice>::view_1d<Dims>    dyn_dims;
+  KokkosTypes<DefaultDevice>::view_1d<Int>     dyn_layout;
+
+  KokkosTypes<DefaultDevice>::view_1d<bool>                   has_parent;
+  KokkosTypes<DefaultDevice>::view_1d<Int>                    pack_alloc_property;
+  KokkosTypes<DefaultDevice>::view_1d<bool>                   is_state_field_dev;
+  KokkosTypes<DefaultDevice>::view_1d<Kokkos::pair<int,int>>  time_levels;
+
+  void initialize_device_variables();
+
+  template<typename ScalarT, typename AllocType>
+  void compute_view_dims(const AllocType &alloc_prop, const std::vector<int> &field_dims, Dims &view_dims);
+
+  // Remap methods
+  void do_remap_fwd () const override;
+  void do_remap_bwd () const override;
+
+  // phys->dyn requires a halo-exchange. Since not all entries in dyn
+  // are overwritten before the exchange, to avoid leftover garbage,
+  // we need to set all entries of dyn to zero.
+  template <typename ScalarT, typename MT>
+  KOKKOS_FUNCTION
+  void set_dyn_to_zero(const MT& team) const;
+
+  template <typename ScalarT, typename MT, typename VT1, typename VT2>
+  KOKKOS_FUNCTION
+  void local_remap_fwd_2d (const MT& team, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const;
+
+  template <typename ScalarT, typename MT, typename VT1, typename VT2>
+  KOKKOS_FUNCTION
+  void local_remap_fwd_3d (const MT& team, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const;
+
+  template <typename ScalarT, typename MT, typename VT1, typename VT2>
+  KOKKOS_FUNCTION
+  void local_remap_bwd_2d (const MT& team, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const;
+
+  template <typename ScalarT, typename MT, typename VT1, typename VT2>
+  KOKKOS_FUNCTION
+  void local_remap_bwd_3d (const MT& team, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const;
 
   void create_p2d_map ();
 };
@@ -186,7 +248,6 @@ create_tgt_layout (const FieldLayout& src_layout) const {
   switch (lt) {
     case LayoutType::Scalar2D:
     case LayoutType::Vector2D:
-    case LayoutType::Tensor2D:
       // Simple: GP/NP are at the end.
       // Push back GP/NP twice
       tags.push_back(GP);
@@ -196,7 +257,6 @@ create_tgt_layout (const FieldLayout& src_layout) const {
       break;
     case LayoutType::Scalar3D:
     case LayoutType::Vector3D:
-    case LayoutType::Tensor3D:
       {
         // Replace last tag/tim with GP/NP, then push back GP/NP and LEV/nvl
         tags.back() = GP;
@@ -238,29 +298,17 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
     EKAT_REQUIRE_MSG (valid_tl_dim,
         "Error! Field has the TimeLevel tag, but it does not appear to be 'state'.");
   }
+
   m_is_state_field.push_back(has_time_level);
   m_phys[ifield] = src;
   m_dyn[ifield] = tgt;
 
-  // If this was the last field to be bound, we can setup the BE
+  // If this was the last field to be bound, we can setup the BE and
+  // precompute fields needed on device during remapper
   if (this->m_state==RepoState::Closed &&
       (this->m_num_bound_fields+1)==this->m_num_registered_fields) {
     setup_boundary_exchange ();
-  }
-}
-
-template<typename RealType>
-void PhysicsDynamicsRemapper<RealType>::
-do_unregister_field (const int ifield)
-{
-  m_phys.erase(m_phys.begin()+ifield);
-  m_dyn.erase(m_dyn.begin()+ifield);
-  m_is_state_field.erase(m_is_state_field.begin()+ifield);
-
-  // If unregistering this field makes all fields bound, we can setup the BE
-  if (this->m_state==RepoState::Closed &&
-      (this->m_num_bound_fields==(this->m_num_registered_fields+1))) {
-    setup_boundary_exchange ();
+    initialize_device_variables();
   }
 }
 
@@ -268,84 +316,398 @@ template<typename RealType>
 void PhysicsDynamicsRemapper<RealType>::
 do_registration_ends ()
 {
-  // If we have all fields allocated, we can setup the BE
+  // If we have all fields allocated, we can setup the BE and
+  // precompute fields needed on device during remapper
   if (this->m_num_bound_fields==this->m_num_registered_fields) {
     setup_boundary_exchange ();
+    initialize_device_variables();
   }
 }
+
+// Helper function to compute the dimensions of
+// field views.
+template<typename RealType>
+template<typename ScalarT, typename AllocType>
+void PhysicsDynamicsRemapper<RealType>::
+compute_view_dims (const AllocType& alloc_prop, const std::vector<int>& field_dims, Dims& view_dims)
+{
+  int num_values = alloc_prop.get_alloc_size()/sizeof(ScalarT);
+  int N = field_dims.size();
+
+  view_dims.size = N;
+  for (int i=0; i<N-1; ++i) {
+    view_dims.dims[i] = field_dims[i];
+    num_values /= field_dims[i];
+  }
+  view_dims.dims[N-1] = num_values;
+}
+
+template<typename RealType>
+void PhysicsDynamicsRemapper<RealType>::
+initialize_device_variables()
+{
+  const int num_fields = m_phys.size();
+
+  phys_ptrs   = decltype(phys_ptrs)      ("phys_ptrs",   num_fields);
+  phys_dims   = decltype(phys_dims)      ("phys_dims",   num_fields);
+  phys_layout = decltype(phys_layout)    ("phys_layout", num_fields);
+
+  dyn_ptrs   = decltype(dyn_ptrs)   ("dyn_ptrs",   num_fields);
+  dyn_dims   = decltype(dyn_dims)   ("dyn_dims",   num_fields);
+  dyn_layout = decltype(dyn_layout) ("dyn_layout", num_fields);
+
+  has_parent          = decltype(has_parent)          ("has_parent",               num_fields);
+  pack_alloc_property = decltype(pack_alloc_property) ("phys_pack_alloc_property", num_fields);
+  is_state_field_dev  = decltype(is_state_field_dev)  ("is_state_field_dev",       num_fields);
+  time_levels         = decltype(time_levels)         ("time_levels",              1);
+
+  auto h_phys_ptrs   = Kokkos::create_mirror_view(phys_ptrs);
+  auto h_phys_layout = Kokkos::create_mirror_view(phys_layout);
+  auto h_phys_dims   = Kokkos::create_mirror_view(phys_dims);
+
+  auto h_dyn_ptrs   = Kokkos::create_mirror_view(dyn_ptrs);
+  auto h_dyn_layout = Kokkos::create_mirror_view(dyn_layout);
+  auto h_dyn_dims   = Kokkos::create_mirror_view(dyn_dims);
+
+  auto h_has_parent          = Kokkos::create_mirror_view(has_parent);
+  auto h_pack_alloc_property = Kokkos::create_mirror_view(pack_alloc_property);
+  auto h_is_state_field_dev  = Kokkos::create_mirror_view(is_state_field_dev);
+  auto h_time_levels         = Kokkos::create_mirror_view(time_levels);
+
+  const auto& tl = Homme::Context::singleton().get<Homme::TimeLevel>();
+
+  for (int i=0; i<num_fields; ++i) {
+    const auto& phys = m_phys[i];
+    const auto& dyn  = m_dyn[i];
+
+    const auto& ph = phys.get_header();
+    const auto& dh = dyn.get_header();
+
+    const auto& phys_dim = ph.get_identifier().get_layout().dims();
+    const auto& dyn_dim  = dh.get_identifier().get_layout().dims();
+
+    // If field has a parent, then its view has been subviewed. We
+    // do not want to remmap subviews, only the view of the parent,
+    // so we store this and no other info for these fields, then
+    // skip these fields during the remap.
+    if (ph.get_parent().lock() != nullptr) {
+      EKAT_REQUIRE_MSG(dh.get_parent().lock() != nullptr,
+                       "Error! If physics field has parent,"
+                       "dynamics field must also have parent.");
+
+      const int ifield = this->find_field(ph.get_parent().lock()->get_identifier(), dh.get_parent().lock()->get_identifier());
+      EKAT_REQUIRE_MSG(ifield != -1,
+                       "Error! Parent must be registered for remapped subfields.");
+
+      h_has_parent(i) = true;
+      continue;
+    }
+    else {
+      h_has_parent(i) = false;
+    }
+
+    // Store view pointers
+    h_phys_ptrs(i).ptr = phys.get_view().data();
+    h_dyn_ptrs(i).ptr  = dyn.get_view().data();
+
+    // Store phys layout
+    const auto phys_lt = get_layout_type(ph.get_identifier().get_layout().tags());
+    h_phys_layout(i) = etoi(phys_lt);
+
+    // Store allocation properties
+    const auto& phys_alloc_prop = ph.get_alloc_properties();
+    const auto& dyn_alloc_prop  = dh.get_alloc_properties();
+    if (phys_alloc_prop.template is_compatible<pack_type>() &&
+        dyn_alloc_prop.template  is_compatible<pack_type>()) {
+      h_pack_alloc_property(i) = AllocPropType::PackAlloc;
+
+      // Store dimensions of phys/dyn view
+      compute_view_dims<pack_type>(phys_alloc_prop, phys_dim, h_phys_dims(i));
+      compute_view_dims<pack_type>(dyn_alloc_prop,  dyn_dim,  h_dyn_dims(i));
+    } else if (phys_alloc_prop.template is_compatible<small_pack_type>() &&
+               dyn_alloc_prop.template  is_compatible<small_pack_type>()) {
+      h_pack_alloc_property(i) = AllocPropType::SmallPackAlloc;
+
+      // Store dimensions of phys/dyn view
+      compute_view_dims<small_pack_type>(phys_alloc_prop, phys_dim, h_phys_dims(i));
+      compute_view_dims<small_pack_type>(dyn_alloc_prop,  dyn_dim,  h_dyn_dims(i));
+    } else {
+      h_pack_alloc_property(i) = AllocPropType::RealAlloc;
+
+      // Store dimensions of phys/dyn view
+      compute_view_dims<Real>(phys_alloc_prop, phys_dim, h_phys_dims(i));
+      compute_view_dims<Real>(dyn_alloc_prop,  dyn_dim,  h_dyn_dims(i));
+    }
+
+    // Store time levels
+    h_is_state_field_dev(i) = m_is_state_field[i];
+    h_time_levels(0).first  = tl.n0;
+    h_time_levels(0).second = tl.np1;
+  }
+
+  Kokkos::deep_copy(phys_ptrs,   h_phys_ptrs);
+  Kokkos::deep_copy(phys_layout, h_phys_layout);
+  Kokkos::deep_copy(phys_dims,   h_phys_dims);
+
+  Kokkos::deep_copy(dyn_ptrs,   h_dyn_ptrs);
+  Kokkos::deep_copy(dyn_layout, h_dyn_layout);
+  Kokkos::deep_copy(dyn_dims,   h_dyn_dims);
+
+  Kokkos::deep_copy(has_parent,          h_has_parent);
+  Kokkos::deep_copy(time_levels,         h_time_levels);
+  Kokkos::deep_copy(pack_alloc_property, h_pack_alloc_property);
+  Kokkos::deep_copy(is_state_field_dev,  h_is_state_field_dev);
+}
+
+template<typename RealType>
+template <typename ScalarT, typename MT>
+KOKKOS_FUNCTION
+void PhysicsDynamicsRemapper<RealType>::
+set_dyn_to_zero(const MT& team) const
+{
+  const int i = team.league_rank();
+  const int itl = time_levels(0).first;
+  const auto& dim_d = dyn_dims(i).dims;
+
+  switch (phys_layout(i)) {
+    case etoi(LayoutType::Scalar2D):
+    {
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,4> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                                                   dim_d[0],
+                                                                   dim_d[1],
+                                                                   dim_d[2],
+                                                                   dim_d[3]);
+        auto v = ekat::subview_1(dyn,itl);
+
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, v.size()), [&](const int& k) {
+          int k0   = k%dim_d[0];
+          int ktmp = k/dim_d[0];
+          int k1   = ktmp%dim_d[2];
+          int k2   = ktmp/dim_d[2];
+          v(k0, k1, k2) = 0;
+        });
+      } else {
+        auto dyn = uview_nd<ScalarT,3> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2]);
+
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, dyn.size()), [&](const int& k) {
+          int k0   = k%dim_d[0];
+          int ktmp = k/dim_d[0];
+          int k1   = ktmp%dim_d[1];
+          int k2   = ktmp/dim_d[1];
+          dyn(k0, k1, k2) = 0;
+        });
+      }
+      break;
+    }
+    case etoi(LayoutType::Vector2D):
+    {
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,5> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4]);
+        auto v = ekat::subview_1(dyn,itl);
+
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, v.size()), [&](const int& k) {
+          int k0   = k%dim_d[0];
+          int ktmp = k/dim_d[0];
+          int k1   = ktmp%dim_d[2];
+          ktmp     = ktmp/dim_d[2];
+          int k2   = ktmp%dim_d[3];
+          int k3   = ktmp/dim_d[3];
+          v(k0, k1, k2, k3) = 0;
+        });
+      } else {
+        auto dyn = uview_nd<ScalarT,4> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3]);
+
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, dyn.size()), [&](const int& k) {
+          int k0   = k%dim_d[0];
+          int ktmp = k/dim_d[0];
+          int k1   = ktmp%dim_d[1];
+          ktmp     = ktmp/dim_d[1];
+          int k2   = ktmp%dim_d[2];
+          int k3   = ktmp/dim_d[2];
+          dyn(k0, k1, k2, k3) = 0;
+        });
+      }
+      break;
+    }
+    case etoi(LayoutType::Scalar3D):
+    {
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,5> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4]);
+        auto v = ekat::subview_1(dyn,itl);
+
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, v.size()), [&](const int& k) {
+          int k0   = k%dim_d[0];
+          int ktmp = k/dim_d[0];
+          int k1   = ktmp%dim_d[2];
+          ktmp     = ktmp/dim_d[2];
+          int k2   = ktmp%dim_d[3];
+          int k3   = ktmp/dim_d[3];
+          v(k0, k1, k2, k3) = 0;
+        });
+
+      } else {
+        auto dyn = uview_nd<ScalarT,4> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3]);
+
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, dyn.size()), [&](const int& k) {
+          int k0   = k%dim_d[0];
+          int ktmp = k/dim_d[0];
+          int k1   = ktmp%dim_d[1];
+          ktmp     = ktmp/dim_d[1];
+          int k2   = ktmp%dim_d[2];
+          int k3   = ktmp/dim_d[2];
+          dyn(k0, k1, k2, k3) = 0;
+        });
+      }
+      break;
+    }
+    case etoi(LayoutType::Vector3D):
+    {
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,6> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4],
+                                        dim_d[5]);
+        auto v = ekat::subview_1(dyn,itl);
+
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, v.size()), [&](const int& k) {
+          int k0   = k%dim_d[0];
+          int ktmp = k/dim_d[0];
+          int k1   = ktmp%dim_d[2];
+          ktmp     = ktmp/dim_d[2];
+          int k2   = ktmp%dim_d[3];
+          ktmp     = ktmp/dim_d[3];
+          int k3   = ktmp%dim_d[4];
+          int k4   = ktmp/dim_d[4];
+          v(k0, k1, k2, k3, k4) = 0;
+        });
+      } else {
+        auto dyn = uview_nd<ScalarT,5> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4]);
+
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, dyn.size()), [&](const int& k) {
+          int k0   = k%dim_d[0];
+          int ktmp = k/dim_d[0];
+          int k1   = ktmp%dim_d[1];
+          ktmp     = ktmp/dim_d[1];
+          int k2   = ktmp%dim_d[2];
+          ktmp     = ktmp/dim_d[2];
+          int k3   = ktmp%dim_d[3];
+          int k4   = ktmp/dim_d[3];
+          dyn(k0, k1, k2, k3, k4) = 0;
+        });
+      }
+      break;
+    }
+    default:
+      EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
+  }
+}
+
 
 template<typename RealType>
 void PhysicsDynamicsRemapper<RealType>::
 do_remap_fwd() const
 {
-  using pack_type = ekat::Pack<RealType,SCREAM_PACK_SIZE>;
-  using small_pack_type = ekat::Pack<RealType,SCREAM_SMALL_PACK_SIZE>;
+  using KT = KokkosTypes<DefaultDevice>;
 
   const auto& tl = Homme::Context::singleton().get<Homme::TimeLevel>();
 
   const int num_fields = m_phys.size();
-  for (int i=0; i<num_fields; ++i) {
-    const auto& phys = m_phys[i];
-    const auto& dyn  = m_dyn[i];
+  const int num_cols   = m_phys_grid->get_num_local_dofs();
+  const auto lid2elgp  = m_dyn_grid->get_lid_to_idx_map();
+  const auto p2d       = m_p2d;
 
-    const int itl = m_is_state_field[i] ? tl.n0 : -1;
+  const auto field_loop = KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int i = team.league_rank();
 
-    const auto& ph = phys.get_header();
-    const auto& dh = dyn.get_header();
+    if (has_parent(i)) return;
 
-    const auto& phys_alloc_prop = ph.get_alloc_properties();
-    const auto& dyn_alloc_prop  = dh.get_alloc_properties();
+    switch (phys_layout(i)) {
+      case etoi(LayoutType::Scalar2D):
+      case etoi(LayoutType::Vector2D):
+      {
+        if (pack_alloc_property(i) == AllocPropType::PackAlloc) {
+          set_dyn_to_zero<pack_type>(team);
+          team.team_barrier();
 
-    const bool phys_pack_alloc = phys_alloc_prop.template is_compatible<pack_type>();
-    const bool dyn_pack_alloc  = dyn_alloc_prop.template  is_compatible<pack_type>();
-    const bool phys_small_pack_alloc = phys_alloc_prop.template is_compatible<small_pack_type>();
-    const bool dyn_small_pack_alloc  = dyn_alloc_prop.template  is_compatible<small_pack_type>();
+          local_remap_fwd_2d<pack_type>(team, num_cols, lid2elgp, p2d);
+        } else if (pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
+          set_dyn_to_zero<small_pack_type>(team);
+          team.team_barrier();
 
-    const auto phys_lt = get_layout_type(ph.get_identifier().get_layout().tags());
-
-    // phys->dyn requires a halo-exchange. Since not all entries in dyn
-    // are overwritten before the exchange, to avoid leftover garbage,
-    // we need to set all entries of dyn to zero.
-    if (m_is_state_field[i]) {
-      // Fill only the slice we need
-      if (phys_lt==LayoutType::Scalar2D) {
-        auto v = ekat::subview_1(dyn.template get_reshaped_view<Real****>(),itl);
-        Kokkos::deep_copy(v,0.0);
-      } else if (phys_lt==LayoutType::Scalar3D) {
-        auto v = ekat::subview_1(dyn.template get_reshaped_view<Real*****>(),itl);
-        Kokkos::deep_copy(v,0.0);
-      } else if (phys_lt==LayoutType::Vector3D) {
-        auto v = ekat::subview_1(dyn.template get_reshaped_view<Real******>(),itl);
-        Kokkos::deep_copy(v,0.0);
-      } else {
-        EKAT_ERROR_MSG("Error! Unexpected layout for a dynamic state.\n");
-      }
-    } else {
-      // Fill the whole view
-      Kokkos::deep_copy(dyn.get_view(),0.0);
-    }
-
-    switch (phys_lt) {
-      case LayoutType::Scalar2D:
-      case LayoutType::Vector2D:
-      case LayoutType::Tensor2D:
-        local_remap_fwd_2d(phys,dyn,itl);
-        break;
-      case LayoutType::Scalar3D:
-      case LayoutType::Vector3D:
-      case LayoutType::Tensor3D:
-        if (phys_pack_alloc && dyn_pack_alloc) {
-          local_remap_fwd_3d_impl<pack_type>(phys,dyn,itl);
-        } else if (phys_small_pack_alloc && dyn_small_pack_alloc) {
-          local_remap_fwd_3d_impl<small_pack_type>(phys,dyn,itl);
+          local_remap_fwd_2d<small_pack_type>(team, num_cols, lid2elgp, p2d);
         } else {
-          local_remap_fwd_3d_impl<Real>(phys,dyn,itl);
+          set_dyn_to_zero<Real>(team);
+          team.team_barrier();
+
+          local_remap_fwd_2d<Real>(team, num_cols, lid2elgp, p2d);
         }
         break;
+      }
+      case etoi(LayoutType::Scalar3D):
+      case etoi(LayoutType::Vector3D):
+      {
+        if (pack_alloc_property(i) == AllocPropType::PackAlloc) {
+          set_dyn_to_zero<pack_type>(team);
+          team.team_barrier();
+
+          local_remap_fwd_3d<pack_type>(team, num_cols, lid2elgp, p2d);
+        } else if (pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
+          set_dyn_to_zero<small_pack_type>(team);
+          team.team_barrier();
+
+          local_remap_fwd_3d<small_pack_type>(team, num_cols, lid2elgp, p2d);
+        } else {
+          set_dyn_to_zero<Real>(team);
+          team.team_barrier();
+
+          local_remap_fwd_3d<Real>(team, num_cols, lid2elgp, p2d);
+        }
+        break;
+      }
       default:
-        ekat::error::runtime_abort("Error! Unhandled case in switch statement.\n");
+        EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
     }
-  }
+  };
+
+  const auto concurrency = KT::ExeSpace::concurrency();
+#ifdef KOKKOS_ENABLE_CUDA
+  const int team_size = std::min(1024, std::min(128*num_cols,32*(concurrency/num_fields+31)/32));
+#else
+  const int team_size = (concurrency<num_fields ? 1 : concurrency/num_fields);
+#endif
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(num_fields, team_size);
+  Kokkos::parallel_for(policy, field_loop);
+  Kokkos::fence();
 
   // Exchange only the current time levels
   m_be[tl.n0]->exchange();
@@ -353,52 +715,59 @@ do_remap_fwd() const
 
 template<typename RealType>
 void PhysicsDynamicsRemapper<RealType>::
-do_remap_bwd() const {
-  using pack_type = ekat::Pack<RealType,SCREAM_PACK_SIZE>;
-  using small_pack_type = ekat::Pack<RealType,SCREAM_SMALL_PACK_SIZE>;
+do_remap_bwd() const
+{
+  using KT = KokkosTypes<DefaultDevice>;
 
-  const auto& tl = Homme::Context::singleton().get<Homme::TimeLevel>();
+  const int num_fields = m_phys.size();
+  const int num_cols   = m_phys_grid->get_num_local_dofs();
+  const auto lid2elgp  = m_dyn_grid->get_lid_to_idx_map();
+  const auto p2d       = m_p2d;
 
-  const int num_fields = m_dyn.size();
-  for (int i=0; i<num_fields; ++i) {
-    const auto& phys = m_phys[i];
-    const auto& dyn  = m_dyn[i];
+  const auto field_loop = KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int i = team.league_rank();
 
-    const auto& ph = phys.get_header();
-    const auto& dh = dyn.get_header();
+    if (has_parent(i)) return;
 
-    const auto& phys_alloc_prop = ph.get_alloc_properties();
-    const auto& dyn_alloc_prop  = dh.get_alloc_properties();
-
-    const bool phys_pack_alloc = phys_alloc_prop.template is_compatible<pack_type>();
-    const bool dyn_pack_alloc  = dyn_alloc_prop.template  is_compatible<pack_type>();
-    const bool phys_small_pack_alloc = phys_alloc_prop.template is_compatible<small_pack_type>();
-    const bool dyn_small_pack_alloc  = dyn_alloc_prop.template  is_compatible<small_pack_type>();
-
-    const int itl = m_is_state_field[i] ? tl.np1 : -1;
-
-    const LayoutType lt = get_layout_type(ph.get_identifier().get_layout().tags());
-    switch (lt) {
-      case LayoutType::Scalar2D:
-      case LayoutType::Vector2D:
-      case LayoutType::Tensor2D:
-        remap_bwd_2d(phys,dyn,itl);
-        break;
-      case LayoutType::Scalar3D:
-      case LayoutType::Vector3D:
-      case LayoutType::Tensor3D:
-        if (phys_pack_alloc && dyn_pack_alloc) {
-          remap_bwd_3d_impl<pack_type>(phys,dyn,itl);
-        } else if (phys_small_pack_alloc && dyn_small_pack_alloc) {
-          remap_bwd_3d_impl<small_pack_type>(phys,dyn,itl);
+    switch (phys_layout(i)) {
+      case etoi(LayoutType::Scalar2D):
+      case etoi(LayoutType::Vector2D):
+      {
+        if (pack_alloc_property(i) == AllocPropType::PackAlloc) {
+          local_remap_bwd_2d<pack_type>(team, num_cols, lid2elgp, p2d);
+        } else if (pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
+          local_remap_bwd_2d<small_pack_type>(team, num_cols, lid2elgp, p2d);
         } else {
-          remap_bwd_3d_impl<Real>(phys,dyn,itl);
+          local_remap_bwd_2d<Real>(team, num_cols, lid2elgp, p2d);
         }
         break;
+      }
+      case etoi(LayoutType::Scalar3D):
+      case etoi(LayoutType::Vector3D):
+      {
+        if (pack_alloc_property(i) == AllocPropType::PackAlloc) {
+          local_remap_bwd_3d<pack_type>(team, num_cols, lid2elgp, p2d);
+        } else if (pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
+          local_remap_bwd_3d<small_pack_type>(team, num_cols, lid2elgp, p2d);
+        } else {
+          local_remap_bwd_3d<Real>(team, num_cols, lid2elgp, p2d);
+        }
+        break;
+      }
       default:
-        ekat::error::runtime_abort("Error! Unhandled case in switch statement.\n");
+        EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
     }
-  }
+  };
+
+  const auto concurrency = KT::ExeSpace::concurrency();
+#ifdef KOKKOS_ENABLE_CUDA
+  const int team_size = std::min(1024, std::min(128*num_cols,32*(concurrency/num_fields+31)/32));
+#else
+  const int team_size = (concurrency<num_fields ? 1 : concurrency/num_fields);
+#endif
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(num_fields, team_size);
+  Kokkos::parallel_for(policy, field_loop);
+  Kokkos::fence();
 }
 
 template<typename RealType>
@@ -589,396 +958,394 @@ setup_boundary_exchange () {
 }
 
 template<typename RealType>
+template <typename ScalarT, typename MT, typename VT1, typename VT2>
+KOKKOS_FUNCTION
 void PhysicsDynamicsRemapper<RealType>::
-local_remap_fwd_2d(const field_type& phys_field, const field_type& dyn_field, const int itl) const
+local_remap_fwd_2d (const MT& team, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const
 {
-  using RangePolicy = typename KokkosTypes<typename field_type::device_type>::RangePolicy;
+  const int i = team.league_rank();
 
-  const auto p2d = m_p2d;
-  auto lid2elgp = m_dyn_grid->get_lid_to_idx_map();
-  const int num_cols = m_phys_grid->get_num_local_dofs();
+  const auto& dim_p = phys_dims(i).dims;
+  const auto& dim_d = dyn_dims(i).dims;
 
-  const auto& phys_layout   = phys_field.get_header().get_identifier().get_layout();
-  const auto& phys_dims = phys_layout.dims();
-  switch (get_layout_type(phys_layout.tags())) {
-    case LayoutType::Scalar2D:
+  switch (phys_layout(i)) {
+    case etoi(LayoutType::Scalar2D):
     {
-      auto phys = phys_field.template get_reshaped_view<Real*>();
-      if (itl>=0) {
-        auto dyn  = dyn_field.template get_reshaped_view<Real**[NP][NP]>();
-        Kokkos::parallel_for(RangePolicy(0,num_cols),
-                             KOKKOS_LAMBDA(const int icol) {
+      auto phys = uview_nd<ScalarT,1> (reinterpret_cast<ScalarT*>(phys_ptrs(i).get()),
+                                       dim_p[0]);
+
+      const auto tr = Kokkos::TeamThreadRange(team, num_cols);
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,4> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3]);
+
+        const auto f = [&] (const int icol) {
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-          dyn(elgp[0],itl,elgp[1],elgp[2]) = phys(icol);
-        });
+          dyn(elgp[0],time_levels(0).first,elgp[1],elgp[2]) = phys(icol);
+        };
+        Kokkos::parallel_for(tr, f);
       } else {
-        auto dyn = dyn_field.template get_reshaped_view<Real*[NP][NP]>();
-        Kokkos::parallel_for(RangePolicy(0,num_cols),
-                             KOKKOS_LAMBDA(const int icol) {
+        auto dyn = uview_nd<ScalarT,3> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                         dim_d[0],
+                                         dim_d[1],
+                                         dim_d[2]);
+
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols);
+        const auto f = [&] (const int icol) {
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           dyn(elgp[0],elgp[1],elgp[2]) = phys(icol);
-        });
+        };
+        Kokkos::parallel_for(tr, f);
       }
       break;
     }
-    case LayoutType::Vector2D:
+    case etoi(LayoutType::Vector2D):
     {
-      auto phys = phys_field.template get_reshaped_view<Real**>();
-      if (itl>=0) {
-        auto dyn = dyn_field.template get_reshaped_view<Real***[NP][NP]>();
-        const int dim = phys_dims[1];
-        Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol = idx / dim;
-          const int idim = idx % dim;
+      auto phys = uview_nd<ScalarT,2> (reinterpret_cast<ScalarT*>(phys_ptrs(i).get()),
+                                       dim_p[0],
+                                       dim_p[1]);
+
+      const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]);
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,5> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4]);
+
+        const auto f = [&] (const int idx) {
+          const int icol = idx/dim_p[1];
+          const int idim = idx%dim_p[1];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-          dyn(elgp[0],itl,idim,elgp[1],elgp[2]) = phys(icol,idim);
-        });
+          dyn(elgp[0],time_levels(0).first,idim,elgp[1],elgp[2]) = phys(icol,idim);
+        };
+        Kokkos::parallel_for(tr, f);
       } else {
-        auto dyn = dyn_field.template get_reshaped_view<Real**[NP][NP]>();
-        const int dim = phys_dims[1];
-        Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol = idx / dim;
-          const int idim = idx % dim;
+        auto dyn = uview_nd<ScalarT,4> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3]);
+
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]);
+        const auto f = [&] (const int idx) {
+          const int icol = idx/dim_p[1];
+          const int idim = idx%dim_p[1];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           dyn(elgp[0],idim,elgp[1],elgp[2]) = phys(icol,idim);
-        });
+        };
+        Kokkos::parallel_for(tr, f);
       }
-      break;
-    }
-    case LayoutType::Tensor2D:
-    {
-      auto phys = phys_field.template get_reshaped_view<Real***>();
-      auto dyn  = dyn_field.template get_reshaped_view<Real***[NP][NP]>();
-      const int dim1 = phys_dims[1];
-      const int dim2 = phys_dims[2];
-      Kokkos::pair<int,int> ordering;
-      if (phys_layout.tag(1)==dyn_field.get_header().get_identifier().get_layout().tag(1)) {
-        ordering.first=0;
-        ordering.second=1;
-      } else {
-        ordering.first=1;
-        ordering.second=0;
-      }
-      Kokkos::parallel_for(RangePolicy(0,num_cols*dim1*dim2),
-                           KOKKOS_LAMBDA(const int idx) {
-        const int icol = idx / (dim1*dim2);
-        const int dims [2] = { (idx/dim2)%dim1 , idx%dim2 };
-
-        const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-        dyn(elgp[0],dims[ordering.first],dims[ordering.second],elgp[1],elgp[2]) = phys(icol,dims[0],dims[1]);
-      });
       break;
     }
     default:
-      ekat::error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+      EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
   }
-  Kokkos::fence();
 }
 
 template<typename RealType>
-template<typename ScalarT>
+template <typename ScalarT, typename MT, typename VT1, typename VT2>
+KOKKOS_FUNCTION
 void PhysicsDynamicsRemapper<RealType>::
-local_remap_fwd_3d_impl(const field_type& phys_field, const field_type& dyn_field, const int itl) const {
-  using RangePolicy = typename KokkosTypes<typename field_type::device_type>::RangePolicy;
+local_remap_fwd_3d (const MT& team, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const
+{
+  const int i = team.league_rank();
+  const auto& dim_p = phys_dims(i).dims;
+  const auto& dim_d = dyn_dims(i).dims;
 
-  const auto p2d = m_p2d;
-  auto lid2elgp = m_dyn_grid->get_lid_to_idx_map();
-  const int num_cols = m_phys_grid->get_num_local_dofs();
-
-  const auto& phys_layout   = phys_field.get_header().get_identifier().get_layout();
-  const auto& phys_dims = phys_layout.dims();
-
-  // constexpr int pack_size = sizeof(ScalarT) / sizeof(Real);
-  // const int NumVerticalLevels = (phys_dims.back() + pack_size - 1) / pack_size;
-  switch (get_layout_type(phys_layout.tags())) {
-    case LayoutType::Scalar3D:
+  switch (phys_layout(i)) {
+    case etoi(LayoutType::Scalar3D):
     {
-      auto phys = phys_field.template get_reshaped_view<ScalarT**>();
-      if (itl>=0) {
-        auto dyn  = dyn_field.template get_reshaped_view<ScalarT*****>();
-        const int NumVerticalLevels = dyn.extent_int(4);
-        Kokkos::parallel_for(RangePolicy(0,num_cols*NumVerticalLevels),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol = idx / NumVerticalLevels;
-          const int ilev = idx % NumVerticalLevels;
+      auto phys = uview_nd<ScalarT,2> (reinterpret_cast<ScalarT*>(phys_ptrs(i).get()),
+                                       dim_p[0],
+                                       dim_p[1]);
+
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,5> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4]);
+
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_d[4]);
+        const auto f = [&] (const int idx) {
+          const int icol = idx/dim_d[4];
+          const int ilev = idx%dim_d[4];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-          dyn(elgp[0],itl,elgp[1],elgp[2],ilev) = phys(icol,ilev);
-        });
+          dyn(elgp[0],time_levels(0).first,elgp[1],elgp[2],ilev) = phys(icol,ilev);
+        };
+        Kokkos::parallel_for(tr, f);
       } else {
-        auto dyn  = dyn_field.template get_reshaped_view<ScalarT****>();
-        const int NumVerticalLevels = dyn.extent_int(3);
-        Kokkos::parallel_for(RangePolicy(0,num_cols*NumVerticalLevels),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol = idx / NumVerticalLevels;
-          const int ilev = idx % NumVerticalLevels;
+        auto dyn = uview_nd<ScalarT,4> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3]);
+
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_d[3]);
+        const auto f = [&] (const int idx) {
+          const int icol = idx/dim_d[3];
+          const int ilev = idx%dim_d[3];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           dyn(elgp[0],elgp[1],elgp[2],ilev) = phys(icol,ilev);
-        });
+        };
+        Kokkos::parallel_for(tr, f);
       }
       break;
     }
-    case LayoutType::Vector3D:
+    case etoi(LayoutType::Vector3D):
     {
-      auto phys = phys_field.template get_reshaped_view<ScalarT***>();
-      const int dim = phys_dims[1];
-      if (itl>=0) {
-        auto dyn  = dyn_field.template get_reshaped_view<ScalarT******>();
-        const int NumVerticalLevels = dyn.extent_int(5);
-        Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol =  idx / (dim*NumVerticalLevels);
-          const int idim = (idx / NumVerticalLevels) % dim;
-          const int ilev =  idx % NumVerticalLevels;
+      auto phys = uview_nd<ScalarT,3> (reinterpret_cast<ScalarT*>(phys_ptrs(i).get()),
+                                       dim_p[0],
+                                       dim_p[1],
+                                       dim_p[2]);
+
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,6> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4],
+                                        dim_d[5]);
+
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]*dim_d[5]);
+        const auto f = [&] (const int idx) {
+          const int icol =  idx/(dim_p[1]*dim_d[5]);
+          const int idim = (idx/dim_d[5])%dim_p[1];
+          const int ilev =  idx%dim_d[5];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-          dyn(elgp[0],itl,idim,elgp[1],elgp[2],ilev) = phys(icol,idim,ilev);
-        });
+          dyn(elgp[0],time_levels(0).first,idim,elgp[1],elgp[2],ilev) = phys(icol,idim,ilev);
+        };
+        Kokkos::parallel_for(tr, f);
       } else {
-        auto dyn  = dyn_field.template get_reshaped_view<ScalarT*****>();
-        const int NumVerticalLevels = dyn.extent_int(4);
-        Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol =  idx / (dim*NumVerticalLevels);
-          const int idim = (idx / NumVerticalLevels) % dim;
-          const int ilev =  idx % NumVerticalLevels;
+        auto dyn = uview_nd<ScalarT,5> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4]);
+
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]*dim_d[4]);
+        const auto f = [&] (const int idx) {
+          const int icol =  idx/(dim_p[1]*dim_d[4]);
+          const int idim = (idx/dim_d[4])%dim_p[1];
+          const int ilev =  idx%dim_d[4];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           dyn(elgp[0],idim,elgp[1],elgp[2],ilev) = phys(icol,idim,ilev);
-        });
+        };
+        Kokkos::parallel_for(tr, f);
       }
-      break;
-    }
-    case LayoutType::Tensor3D:
-    {
-      auto phys = phys_field.template get_reshaped_view<ScalarT****>();
-      auto dyn  = dyn_field.template get_reshaped_view<ScalarT******>();
-      const int dim1 = phys_dims[1];
-      const int dim2 = phys_dims[2];
-      Kokkos::pair<int,int> ordering;
-      if (phys_layout.tag(1)==dyn_field.get_header().get_identifier().get_layout().tag(1)) {
-        ordering.first=0;
-        ordering.second=1;
-      } else {
-        ordering.first=1;
-        ordering.second=0;
-      }
-      const int NumVerticalLevels = dyn.extent_int(5);
-      Kokkos::parallel_for(RangePolicy(0,num_cols*dim1*dim2*NumVerticalLevels),
-                           KOKKOS_LAMBDA(const int idx) {
-        const int icol =  idx / (dim1*dim2*NumVerticalLevels);
-        const int dims [2] = { (idx/NumVerticalLevels)%dim1 , (idx/NumVerticalLevels)%dim2 };
-        const int ilev =  idx % NumVerticalLevels;
-
-        const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-        dyn(elgp[0],dims[ordering.first],dims[ordering.second],elgp[1],elgp[1],ilev) = phys(icol,dims[0],dims[1],ilev);
-      });
       break;
     }
     default:
-      ekat::error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+      EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
   }
-  Kokkos::fence();
 }
 
 template<typename RealType>
+template <typename ScalarT, typename MT, typename VT1, typename VT2>
+KOKKOS_FUNCTION
 void PhysicsDynamicsRemapper<RealType>::
-remap_bwd_2d(const field_type& phys_field, const field_type& dyn_field, const int itl) const {
-  using RangePolicy = typename KokkosTypes<typename field_type::device_type>::RangePolicy;
+local_remap_bwd_2d (const MT& team, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const
+{
+  const int i = team.league_rank();
+  const auto& dim_p = phys_dims(i).dims;
+  const auto& dim_d = dyn_dims(i).dims;
 
-  auto lid2elgp = m_dyn_grid->get_lid_to_idx_map();
-  const int num_cols = m_phys_grid->get_num_local_dofs();
-
-  const auto& phys_layout = phys_field.get_header().get_identifier().get_layout();
-  const auto& dyn_layout  = dyn_field.get_header().get_identifier().get_layout();
-  const auto p2d = m_p2d;
-
-  const auto& phys_dims = phys_layout.dims();
-  switch (phys_dims.size()) {
+  switch (phys_dims(i).size) {
     case 1:
     {
-      auto phys = phys_field.template get_reshaped_view<Real*>();
-      if (itl>=0) {
-        auto dyn  = dyn_field.template get_reshaped_view<Real**[NP][NP]>();
-        Kokkos::parallel_for(RangePolicy(0,num_cols),
-                             KOKKOS_LAMBDA(const int icol) {
+      auto phys = uview_nd<ScalarT,1> (reinterpret_cast<ScalarT*>(phys_ptrs(i).get()),
+                                       dim_p[0]);
+
+      const auto tr = Kokkos::TeamThreadRange(team, num_cols);
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,4> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3]);
+
+        const auto f = [&] (const int icol) {
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-          phys(icol) = dyn(elgp[0],itl,elgp[1],elgp[2]);
-        });
+          phys(icol) = dyn(elgp[0],time_levels(0).second,elgp[1],elgp[2]);
+        };
+        Kokkos::parallel_for(tr, f);
       } else {
-        auto dyn  = dyn_field.template get_reshaped_view<Real*[NP][NP]>();
-        Kokkos::parallel_for(RangePolicy(0,num_cols),
-                             KOKKOS_LAMBDA(const int icol) {
+        auto dyn = uview_nd<ScalarT,3> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2]);
+
+        const auto f = [&] (const int icol) {
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           phys(icol) = dyn(elgp[0],elgp[1],elgp[2]);
-        });
+        };
+        Kokkos::parallel_for(tr, f);
       }
       break;
     }
     case 2:
     {
-      auto phys = phys_field.template get_reshaped_view<Real**>();
-      const int dim = phys_dims[1];
-      if (itl>=0) {
-        auto dyn  = dyn_field.template get_reshaped_view<Real***[NP][NP]>();
-        Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol = idx / dim;
-          const int idim = idx % dim;
+      auto phys = uview_nd<ScalarT,2> (reinterpret_cast<ScalarT*>(phys_ptrs(i).get()),
+                                       dim_p[0],
+                                       dim_p[1]);
+
+      const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]);
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,5> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4]);
+
+        const auto f = [&] (const int idx) {
+          const int icol = idx/dim_p[1];
+          const int idim = idx%dim_p[1];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-          phys(icol,idim) = dyn(elgp[0],itl,idim,elgp[1],elgp[2]);
-        });
+          phys(icol,idim) = dyn(elgp[0],time_levels(0).second,idim,elgp[1],elgp[2]);
+        };
+        Kokkos::parallel_for(tr, f);
       } else {
-        auto dyn  = dyn_field.template get_reshaped_view<Real**[NP][NP]>();
-        Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol = idx / dim;
-          const int idim = idx % dim;
+        auto dyn = uview_nd<ScalarT,4> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3]);
+
+        const auto f = [&] (const int idx) {
+          const int icol = idx/dim_p[1];
+          const int idim = idx%dim_p[1];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           phys(icol,idim) = dyn(elgp[0],idim,elgp[1],elgp[2]);
-        });
+        };
+        Kokkos::parallel_for(tr, f);
       }
-      break;
-    }
-    case 3:
-    {
-      auto phys = phys_field.template get_reshaped_view<Real***>();
-      auto dyn  = dyn_field.template get_reshaped_view<Real***[NP][NP]>();
-      const int dim1 = phys_dims[1];
-      const int dim2 = phys_dims[2];
-      Kokkos::pair<int,int> ordering;
-      if (phys_layout.tag(1)==dyn_layout.tag(1)) {
-        ordering.first=0;
-        ordering.second=1;
-      } else {
-        ordering.first=1;
-        ordering.second=0;
-      }
-      Kokkos::parallel_for(RangePolicy(0,num_cols*dim1*dim2),
-                           KOKKOS_LAMBDA(const int idx) {
-        const int icol = idx / (dim1*dim2);
-        const int dims [2] = { (idx/dim2)%dim1 , idx%dim2 };
-
-        const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-        phys(icol,dims[ordering.first],dims[ordering.second]) = dyn(elgp[0],dims[0],dims[1],elgp[1],elgp[2]);
-      });
       break;
     }
     default:
-      ekat::error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+      EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
   }
-  Kokkos::fence();
 }
 
 template<typename RealType>
-template<typename ScalarT>
+template <typename ScalarT, typename MT, typename VT1, typename VT2>
+KOKKOS_FUNCTION
 void PhysicsDynamicsRemapper<RealType>::
-remap_bwd_3d_impl(const field_type& phys_field, const field_type& dyn_field, const int itl) const {
-  using RangePolicy = typename KokkosTypes<typename field_type::device_type>::RangePolicy;
+local_remap_bwd_3d (const MT& team, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const
+{
+  const int i = team.league_rank();
+  const auto& dim_p = phys_dims(i).dims;
+  const auto& dim_d = dyn_dims(i).dims;
 
-  auto lid2elgp = m_dyn_grid->get_lid_to_idx_map();
-  const int num_cols = m_phys_grid->get_num_local_dofs();
-
-  const auto& phys_layout = phys_field.get_header().get_identifier().get_layout();
-  const auto& dyn_layout  = dyn_field.get_header().get_identifier().get_layout();
-  const auto p2d = m_p2d;
-
-  const auto& phys_dims = phys_layout.dims();
-
-  constexpr int pack_size = sizeof(ScalarT) / sizeof(Real);
-  const int NumVerticalLevels = (phys_dims.back() + pack_size - 1) / pack_size;
-  switch (phys_dims.size()) {
+  switch (phys_dims(i).size) {
     case 2:
     {
-      auto phys = phys_field.template get_reshaped_view<ScalarT**>();
-      if (itl>=0) {
-        auto dyn = dyn_field.template get_reshaped_view<ScalarT*****>();
-        Kokkos::parallel_for(RangePolicy(0,num_cols*NumVerticalLevels),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol = idx / NumVerticalLevels;
-          const int ilev = idx % NumVerticalLevels;
+      auto phys = uview_nd<ScalarT,2> (reinterpret_cast<ScalarT*>(phys_ptrs(i).get()),
+                                       dim_p[0],
+                                       dim_p[1]);
+
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,5> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4]);
+
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]);
+        const auto f = [&] (const int idx) {
+          const int icol = idx/dim_p[1];
+          const int ilev = idx%dim_p[1];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-          phys(icol,ilev) = dyn(elgp[0],itl,elgp[1],elgp[2],ilev);
-        });
+          phys(icol,ilev) = dyn(elgp[0],time_levels(0).second,elgp[1],elgp[2],ilev);
+        };
+        Kokkos::parallel_for(tr, f);
       } else {
-        auto dyn = dyn_field.template get_reshaped_view<ScalarT****>();
-        Kokkos::parallel_for(RangePolicy(0,num_cols*NumVerticalLevels),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol = idx / NumVerticalLevels;
-          const int ilev = idx % NumVerticalLevels;
+        auto dyn = uview_nd<ScalarT,4> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3]);
+
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]);
+        const auto f = [&] (const int idx) {
+          const int icol = idx/dim_p[1];
+          const int ilev = idx%dim_p[1];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           phys(icol,ilev) = dyn(elgp[0],elgp[1],elgp[2],ilev);
-        });
+        };
+        Kokkos::parallel_for(tr, f);
       }
       break;
     }
     case 3:
     {
-      auto phys = phys_field.template get_reshaped_view<ScalarT***>();
-      const int dim = phys_dims[1];
-      if (itl>=0) {
-        auto dyn = dyn_field.template get_reshaped_view<ScalarT******>();
-        Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol =  idx / (dim*NumVerticalLevels);
-          const int idim = (idx / NumVerticalLevels) % dim;
-          const int ilev =  idx % NumVerticalLevels;
+      auto phys = uview_nd<ScalarT,3> (reinterpret_cast<ScalarT*>(phys_ptrs(i).get()),
+                                       dim_p[0],
+                                       dim_p[1],
+                                       dim_p[2]);
+
+      if (is_state_field_dev(i)) {
+        auto dyn = uview_nd<ScalarT,6> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4],
+                                        dim_d[5]);
+
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]*dim_p[2]);
+        const auto f = [&] (const int idx) {
+          const int icol =  idx/(dim_p[1]*dim_p[2]);
+          const int idim = (idx/dim_p[2])%dim_p[1];
+          const int ilev =  idx%dim_p[2];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-          phys(icol,idim,ilev) = dyn(elgp[0],itl,idim,elgp[1],elgp[2],ilev);
-        });
+          phys(icol,idim,ilev) = dyn(elgp[0],time_levels(0).second,idim,elgp[1],elgp[2],ilev);
+        };
+        Kokkos::parallel_for(tr, f);
       } else {
-        auto dyn = dyn_field.template get_reshaped_view<ScalarT*****>();
-        Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
-                             KOKKOS_LAMBDA(const int idx) {
-          const int icol =  idx / (dim*NumVerticalLevels);
-          const int idim = (idx / NumVerticalLevels) % dim;
-          const int ilev =  idx % NumVerticalLevels;
+        auto dyn = uview_nd<ScalarT,5> (reinterpret_cast<ScalarT*>(dyn_ptrs(i).get()),
+                                        dim_d[0],
+                                        dim_d[1],
+                                        dim_d[2],
+                                        dim_d[3],
+                                        dim_d[4]);
+
+        const auto tr = Kokkos::TeamThreadRange(team, num_cols*dim_p[1]*dim_p[2]);
+        const auto f = [&] (const int idx) {
+          const int icol =  idx/(dim_p[1]*dim_p[2]);
+          const int idim = (idx/dim_p[2])%dim_p[1];
+          const int ilev =  idx%dim_p[2];
 
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           phys(icol,idim,ilev) = dyn(elgp[0],idim,elgp[1],elgp[2],ilev);
-        });
+        };
+        Kokkos::parallel_for(tr, f);
       }
-      break;
-    }
-    case 4:
-    {
-      auto phys = phys_field.template get_reshaped_view<ScalarT****>();
-      auto dyn  = dyn_field.template get_reshaped_view<ScalarT******>();
-      const int dim1 = phys_dims[1];
-      const int dim2 = phys_dims[2];
-      Kokkos::pair<int,int> ordering;
-      if (phys_layout.tag(1)==dyn_layout.tag(1)) {
-        ordering.first=0;
-        ordering.second=1;
-      } else {
-        ordering.first=1;
-        ordering.second=0;
-      }
-      Kokkos::parallel_for(RangePolicy(0,num_cols*dim1*dim2*NumVerticalLevels),
-                           KOKKOS_LAMBDA(const int idx) {
-        const int icol = idx / (dim1*dim2*NumVerticalLevels);
-        const int dims [2] = { (idx / (dim2*NumVerticalLevels)) % dim1 , (idx / NumVerticalLevels) % dim2 };
-        const int ilev =  idx % NumVerticalLevels;
-
-        const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
-        phys(icol,dims[ordering.first],dims[ordering.second],ilev) = dyn(elgp[0],dims[0],dims[1],elgp[1],elgp[2],ilev);
-      });
       break;
     }
     default:
-      ekat::error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+      EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
   }
-  Kokkos::fence();
 }
 
 template<typename RealType>
@@ -1005,6 +1372,7 @@ create_p2d_map () {
       }
     }
     EKAT_KERNEL_ASSERT_MSG (found, "Error! Physics grid gid not found in the dynamics grid.\n");
+    (void)found;
   });
 }
 

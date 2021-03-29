@@ -100,9 +100,6 @@ protected:
     m_fields[ifield].first  = src;
     m_fields[ifield].second = tgt;
   }
-  void do_unregister_field (const int ifield) override {
-    m_fields.erase(m_fields.begin()+ifield);
-  }
 
 // CUDA needs top level lambdas to be enclosed by a method that is public.
 #ifdef KOKKOS_ENABLE_CUDA
