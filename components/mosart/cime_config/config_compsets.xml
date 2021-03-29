@@ -19,4 +19,22 @@
     <lname>2000_DATM%QIA_DLND%GPCC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>RMOSNLDAS</alias>
+    <lname>2000_DATM%MOSARTTEST_DLND%MINGNLDAS_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>RMOSNLDAS2</alias>
+    <lname>2000_DATM%NLDAS2_DLND%LCLMR_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <entries>
+    <entry id="RUN_STARTDATE">
+      <values>
+        <value compset="2000_DATM%MOSARTTEST_DLND%MINGNLDAS_SICE_SOCN_MOSART_SGLC_SWAV" >1979-01-01</value>
+      </values>
+    </entry>
+  </entries>
+
 </compsets>
