@@ -19,7 +19,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : sameg_al ! same grid atm lnd, and land is point cloud
-  use seq_comm_mct, only : MPSIID  !  sea-ice
+  use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
   use shr_mpi_mod,  only: shr_mpi_max
   use dimensions_mod, only : np     ! for atmosphere
 
@@ -1324,6 +1324,9 @@ contains
 
     ! sea - ice
     if (comp%oneletterid == 'i'  .and. maxMSID /= -1) then
+      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
 #ifdef MOABDEBUG
         outfile = 'wholeSeaIce.h5m'//CHAR(0)
@@ -1334,7 +1337,73 @@ contains
            call shr_sys_abort(subname//' ERROR in writing sea-ice')
         endif
 #endif
+! start copy from ocean code
+        !  send sea ice mesh to coupler
+        ierr = iMOAB_SendMesh(MPSIID, mpicom_join, mpigrp_cplid, id_join, partMethod)
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in sending sea ice mesh to coupler '
+          call shr_sys_abort(subname//' ERROR in sending sea ice mesh to coupler ')
+        endif
+
+
+!        ! define here the tag that will be projected back from atmosphere
+!        !  TODO where do we want to define this?
+!        tagnameProj = 'a2oTbot_proj'//CHAR(0)
+!        tagtype = 1  ! dense, double
+!        numco = 1 !  one value per cell
+!        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
+!        ! define more tags
+!        tagnameProj = 'a2oUbot_proj'//CHAR(0)  ! U component of velocity
+!        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
+!        tagnameProj = 'a2oVbot_proj'//CHAR(0)  ! V component of velocity
+!        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
+!        if (ierr .ne. 0) then
+!          write(logunit,*) subname,' error in defining tags on ocean comp '
+!          call shr_sys_abort(subname//' ERROR in defining tags on ocean comp ')
+!        endif
+
       endif
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+        appname = "COUPLE_MPASSI"//CHAR(0)
+        ! migrated mesh gets another app id, moab moab sea ice to coupler (mbox)
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, mbixid)
+        ierr = iMOAB_ReceiveMesh(mbixid, mpicom_join, mpigrp_old, id_old)
+
+!        ! define here the tag that will be projected from atmosphere
+!        tagnameProj = 'a2oTbot_proj'//CHAR(0)  ! temperature
+!        tagtype = 1  ! dense, double
+!        numco = 1 !  one value per cell
+!        ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
+!
+!        ! define more tags
+!        tagnameProj = 'a2oUbot_proj'//CHAR(0)  ! U component of velocity
+!        ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
+!        tagnameProj = 'a2oVbot_proj'//CHAR(0)  ! V component of velocity
+!        ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
+!        if (ierr .ne. 0) then
+!          write(logunit,*) subname,' error in defining tags on ocean coupler '
+!          call shr_sys_abort(subname//' ERROR in defining tags on ocean coupler ')
+!        endif
+#ifdef MOABDEBUG
+!      debug test
+        outfile = 'recSeaIce.h5m'//CHAR(0)
+        wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+!      write out the mesh file to disk
+        ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing sea ice mesh on coupler '
+          call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
+        endif
+#endif
+      endif
+      if (MPSIID .ge. 0) then  ! we are on component ocn pes
+         ierr = iMOAB_FreeSenderBuffers(mpoid, context_id)
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in freeing buffers '
+           call shr_sys_abort(subname//' ERROR in freeing buffers ')
+         endif
+      endif
+! end copy from ocean code
     endif
 
   end subroutine cplcomp_moab_Init

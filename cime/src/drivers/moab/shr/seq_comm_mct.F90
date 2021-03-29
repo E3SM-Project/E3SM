@@ -222,6 +222,7 @@ module seq_comm_mct
   logical, public :: sameg_al ! same grid atm and land; used throughout, initialized in lnd_init
   integer, public :: mbintxla ! iMOAB id for intx mesh between land and atmosphere
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
+  integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
   integer, public :: mrofid   ! iMOAB id of moab rof app
 
   integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
@@ -606,6 +607,7 @@ contains
     mblxid = -1   ! iMOAB id for land on coupler pes
     mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes
     mpsiid = -1   ! iMOAB for sea-ice
+    mbixid = -1   ! iMOAB for sea-ice migrated to coupler
     num_moab_exports = 0 ! mostly used in debugging
 
     deallocate(comps,comms)
