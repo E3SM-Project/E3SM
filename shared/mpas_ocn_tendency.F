@@ -1243,41 +1243,90 @@ contains
 !>  config_freq_filtered_thickness is true (z-tilde)
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tend_freq_filtered_thickness(tendPool, statePool, meshPool, timeLevelIn)!{{{
 
-      type (mpas_pool_type), intent(inout) :: tendPool !< Input/Output: Tendency information
-      type (mpas_pool_type), intent(in) :: statePool !< Input: State information
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
-      integer, intent(in), optional :: timeLevelIn !< Input: Time level for state fields
+   subroutine ocn_tend_freq_filtered_thickness(tendPool, statePool, &
+                                               timeLevelIn)!{{{
 
-      integer :: timeLevel
-      integer :: err, iCell, i, k, iEdge
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
 
-      real (kind=RKIND) :: flux, invAreaCell, div_hu_btr, thickness_filter_timescale_sec, highFreqThick_restore_time_sec, &
-         totalThickness
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, &
-         layerThickness, &
-         lowFreqDivergence, highFreqThickness, &
-         tend_lowFreqDivergence, tend_highFreqThickness
-      real (kind=RKIND), dimension(:), allocatable:: div_hu
+      type (mpas_pool_type), intent(in) :: &
+         statePool           !< [in] ocean state information
+
+      ! actual input fields used from statePool
+      real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
+         normalVelocity,         &! normal velocity
+         layerThickness,         &! layer thickness
+         lowFreqDivergence,      &! low freq divergence of hu
+         highFreqThickness        ! high freq thickness
+
+      integer, intent(in), optional :: &
+         timeLevelIn         !< [in] Time level for state fields
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(inout) :: &
+         tendPool            !< [out] Tendency terms
+
+      ! actual output fields from tendPool
+      real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
+         tend_lowFreqDivergence, &! tendency for low freq divergence
+         tend_highFreqThickness   ! tendency for high freq thickness
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      integer ::     &
+         i,k,iCell,  &! loop iterators for edges, vertical, cells
+         iEdge,      &! index for edge of cell
+         err,        &! local error flag
+         timeLevel    ! time level for ocean state
+
+      real (kind=RKIND) :: &
+         flux,             &! local flux across edge
+         invAreaCell,      &! inverse cell area
+         div_hu_btr,       &! barotropic avg of div_hu
+         totalThickness     ! total depth of column
+
+      real (kind=RKIND) :: &
+         thickness_filter_timescale_sec, &
+         highFreqThick_restore_time_sec
+
+      real (kind=RKIND), dimension(:), allocatable :: &
+         div_hu             ! local temp for divergence of hu
+
+      ! End preamble
+      !-------------
+      ! Begin code
 
       call mpas_timer_start("ocn_tend_freq_filtered_thickness")
-
       err = 0
 
+      ! Set time level for state variables (default is 1)
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
       else
          timeLevel = 1
       end if
 
-      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
-      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
-      call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence, timeLevel)
-      call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThickness, timeLevel)
+      ! Retrieve variables from pools
+      call mpas_pool_get_array(statePool, 'normalVelocity', &
+                                           normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'layerThickness', &
+                                           layerThickness, timeLevel)
+      call mpas_pool_get_array(statePool, 'lowFreqDivergence', &
+                                           lowFreqDivergence, timeLevel)
+      call mpas_pool_get_array(statePool, 'highFreqThickness', &
+                                           highFreqThickness, timeLevel)
 
-      call mpas_pool_get_array(tendPool, 'lowFreqDivergence', tend_lowFreqDivergence)
-      call mpas_pool_get_array(tendPool, 'highFreqThickness', tend_highFreqThickness)
+      call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
+                                     tend_lowFreqDivergence)
+      call mpas_pool_get_array(tendPool, 'highFreqThickness', &
+                                     tend_highFreqThickness)
 
       !
       ! Low Frequency Divergence and high frequency thickness Tendency
@@ -1290,51 +1339,61 @@ contains
       allocate(div_hu(nVertLevels))
 
       !$omp parallel
-      !$omp do schedule(runtime) private(div_hu_btr, invAreaCell, i, iEdge, k, flux, totalThickness) &
-      !$omp firstprivate(div_hu)
+      !$omp do schedule(runtime) &
+      !$omp    private(i, k, iCell, iEdge, div_hu_btr, &
+      !$omp            invAreaCell, flux, totalThickness) &
+      !$omp    firstprivate(div_hu)
       do iCell = 1, nCellsAll
-        tend_lowFreqDivergence(:, iCell) = 0.0_RKIND
-        tend_highFreqThickness(:, iCell) = 0.0_RKIND
-        div_hu(:) = 0.0_RKIND
-        div_hu_btr = 0.0_RKIND
-        invAreaCell = 1.0_RKIND / areaCell(iCell)
+         do k=1,nVertLevels
+            tend_lowFreqDivergence(k, iCell) = 0.0_RKIND
+            tend_highFreqThickness(k, iCell) = 0.0_RKIND
+            div_hu(k) = 0.0_RKIND
+         end do ! vert (k) loop
+         div_hu_btr = 0.0_RKIND
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
 
-        do i = 1, nEdgesOnCell(iCell)
-          iEdge = edgesOnCell(i, iCell)
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
 
-          ! Note: changing loop limit to minLevelEdgeBot introduces non-bit-for-bit changes
-          do k = 1, maxLevelEdgeTop(iEdge)
-            flux = layerThickEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) * invAreaCell
-            div_hu(k) = div_hu(k) - flux
-            div_hu_btr = div_hu_btr - flux
-          end do
-        end do
+            do k = 1, maxLevelEdgeTop(iEdge)
+               flux = layerThickEdge(k,iEdge)*normalVelocity(k,iEdge)* &
+                      dvEdge(iEdge)*edgeSignOnCell(i,iCell)*invAreaCell
+               div_hu(k) = div_hu(k) - flux
+               div_hu_btr = div_hu_btr - flux
+            end do
+         end do ! edges on cell
 
-        totalThickness = sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell))
-        do k = minLevelCell(iCell), maxLevelCell(iCell)
+         totalThickness = sum(layerThickness(1:maxLevelCell(iCell),iCell))
+         do k = 1, maxLevelCell(iCell)
 
-           tend_lowFreqDivergence(k,iCell) = &
-              -2.0 * pii / thickness_filter_timescale_sec &
+            tend_lowFreqDivergence(k,iCell) = &
+               -2.0*pii/thickness_filter_timescale_sec &
               *(lowFreqDivergence(k,iCell)  - div_hu(k) &
-                + div_hu_btr * layerThickness(k,iCell) / totalThickness)
+                + div_hu_btr * layerThickness(k,iCell)/totalThickness)
 
-           tend_highFreqThickness(k,iCell) = &
-              - div_hu(k) + div_hu_btr * layerThickness(k,iCell) / totalThickness + lowFreqDivergence(k,iCell) &
-              + use_highFreqThick_restore*( -2.0 * pii / highFreqThick_restore_time_sec * highFreqThickness(k,iCell) )
+            tend_highFreqThickness(k,iCell) = - div_hu(k) + &
+                  div_hu_btr*layerThickness(k,iCell)/totalThickness + &
+                  lowFreqDivergence(k,iCell) + &
+                  use_highFreqThick_restore* &
+                  (-2.0*pii/highFreqThick_restore_time_sec* &
+                   highFreqThickness(k,iCell) )
 
-        end do
-      end do
+         end do ! vert (k) loop
+      end do ! cell loop
       !$omp end do
       !$omp end parallel
 
       deallocate(div_hu)
 
       !
-      !  high frequency thickness tendency: del2 horizontal hhf diffusion, div(\kappa_{hf} \nabla h^{hf})
+      !  add horizontal hhf diffusion, div(\kappa_{hf} \nabla h^{hf})
       !
-      call ocn_high_freq_thickness_hmix_del2_tend(meshPool, highFreqThickness, tend_highFreqThickness, err)
+      call ocn_high_freq_thickness_hmix_del2_tend(highFreqThickness, &
+                                        tend_highFreqThickness, err)
 
       call mpas_timer_stop("ocn_tend_freq_filtered_thickness")
+
+   !--------------------------------------------------------------------
 
    end subroutine ocn_tend_freq_filtered_thickness!}}}
 
