@@ -3272,14 +3272,14 @@ module li_calving
 
       call mpas_timer_start("iceberg detection")
       call mpas_log_write("Iceberg-detection flood-fill begin.")
-      ! Allocate needed scratch fields
+            ! Allocate needed scratch fields
 
       block => domain % blocklist
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-      call mpas_pool_get_field(geometryPool, 'contiguousDynamicIce',  contiguousDynamicIceField)
+      call mpas_pool_get_field(geometryPool, 'contiguousDynamicIce', contiguousDynamicIceField)
       call mpas_allocate_scratch_field(contiguousDynamicIceField, single_block_in = .false.)
 
-      call mpas_pool_get_field(geometryPool, 'contiguousDynamicIceOld',  contiguousDynamicIceOldField)
+      call mpas_pool_get_field(geometryPool, 'contiguousDynamicIceOld', contiguousDynamicIceOldField)
       call mpas_allocate_scratch_field(contiguousDynamicIceOldField, single_block_in = .false.)
 
       call mpas_log_write("Iceberg-detection flood-fill: allocated.")
@@ -3296,7 +3296,141 @@ module li_calving
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
 
-         ! make sure masks are up to date.  May not be necessary, but safer to do anyway.
+         ! make sure masks are up to date.  May not be necessary, but safer to
+         ! do anyway.
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         call mpas_log_write("Iceberg-detection flood-fill: updated masks.")
+         contiguousDynamicIce(:) = 0  ! initialize
+         newMaskCountLocal = 0
+         do iCell = 1, nCellsSolve
+            if (li_mask_is_grounded_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
+               contiguousDynamicIce(iCell) = 1
+               newMaskCountLocal = newMaskCountLocal + 1
+            endif
+         enddo
+         call mpas_log_write("Initialized $i cells to local mask", intArgs=(/newMaskCountLocal/))
+
+         block => block % next
+      end do
+
+      call mpas_log_write("Iceberg-detection flood-fill initialization complete.")
+
+      call flood_fill(domain)
+
+      ! Now remove any ice that was not flood-filled - these are icebergs
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
+         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIceOld', contiguousDynamicIceOld)
+         call mpas_pool_get_dimension(geometryPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(geometryPool, 'nCellsSolve', nCellsSolve)
+
+         contiguousDynamicIceOld(:) = 0
+         do iCell = 1, nCellsSolve
+            if (contiguousDynamicIce(iCell) == 0 .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
+               calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)  ! remove any remaining ice here
+               thickness(iCell) = 0.0_RKIND
+               contiguousDynamicIceOld(iCell) = 1 ! debug: make this a mask of where icebergs were removed
+            endif
+         enddo
+         localIcebergCellCount = sum(contiguousDynamicIceOld)
+
+!         where(contiguousDynamicIce == 0 .and. li_mask_is_dynamic_ice(cellMask))
+!            calvingThickness = calvingThickness + thickness  ! remove any remaining ice here
+!            thickness = 0.0_RKIND
+!         end where
+
+         block => block % next
+      end do
+
+      ! Calculate total iceberg cells removed (not needed but useful for log - note requires extra reduce!)
+      call mpas_dmpar_sum_int(domain % dminfo, localIcebergCellCount, globalIcebergCellCount)
+
+      ! update halo - probably not needed?
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'thickness')
+      call mpas_timer_stop("halo updates")
+
+      ! clean up
+      call mpas_deallocate_scratch_field(contiguousDynamicIceField, single_block_in=.false.)
+      call mpas_deallocate_scratch_field(contiguousDynamicIceOldField, single_block_in=.false.)
+
+      call mpas_log_write("Iceberg-detection flood-fill complete. Removed $i iceberg cells.", intArgs=(/globalIcebergCellCount/))
+      call mpas_timer_stop("iceberg detection")
+   end subroutine remove_icebergs
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine flood_fill
+!
+!> \brief  Flood fill routine to differentiate ice sheet from icebergs
+!> \author Trevor Hillebrand and Matthew Hoffman
+!> \date   March 2021
+!> \details 
+!-----------------------------------------------------------------------
+   subroutine flood_fill(domain)
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain !< Input/Output: domain object
+
+      ! Local variables
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: velocityPool
+
+      type (field1dInteger), pointer :: contiguousDynamicIceField
+      type (field1dInteger), pointer :: contiguousDynamicIceOldField
+
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness    !thickness of ice that calves (computed in this subroutine)
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
+
+      integer, dimension(:), pointer :: contiguousDynamicIce, contiguousDynamicIceOld
+      integer, pointer :: nCells, nCellsSolve
+      integer, dimension(:), pointer :: nCellsArray
+      integer :: iCell, jCell, n
+      integer :: newMaskCountLocal, newMaskCountLocalAccum, newMaskCountGlobal
+      integer :: err_tmp, err
+      integer :: globalLoopCount, localLoopCount
+      integer :: localIcebergCellCount, globalIcebergCellCount
+
+      err = 0
+
+
+      block => domain % blocklist
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_field(geometryPool, 'contiguousDynamicIce', contiguousDynamicIceField)
+      call mpas_allocate_scratch_field(contiguousDynamicIceField, single_block_in = .false.)
+
+      call mpas_pool_get_field(geometryPool, 'contiguousDynamicIceOld', contiguousDynamicIceOldField)
+      call mpas_allocate_scratch_field(contiguousDynamicIceOldField, single_block_in = .false.)
+
+      call mpas_log_write("Flood-fill: allocated.")
+      ! First mark grounded ice to initialize flood fill mask
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(geometryPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+
+         ! make sure masks are up to date.  May not be necessary, but safer to
+         ! do anyway.
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
 
@@ -3376,7 +3510,8 @@ module li_calving
                   endif ! if not already marked
                enddo ! loop over cells
 
-               ! Accumulate cells added locally until we do the next global reduce
+               ! Accumulate cells added locally until we do the next global
+               ! reduce
                newMaskCountLocalAccum = newMaskCountLocalAccum + newMaskCountLocal
                call mpas_log_write("    Added $i new cells to local mask", intArgs=(/newMaskCountLocal/))
             enddo ! local mask loop
@@ -3393,53 +3528,10 @@ module li_calving
          endif
       end do ! global loop
 
-
-      ! Now remove any ice that was not flood-filled - these are icebergs
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
-         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIceOld', contiguousDynamicIceOld)
-         call mpas_pool_get_dimension(geometryPool, 'nCells', nCells)
-         call mpas_pool_get_dimension(geometryPool, 'nCellsSolve', nCellsSolve)
-
-         contiguousDynamicIceOld(:) = 0
-         do iCell = 1, nCellsSolve
-            if (contiguousDynamicIce(iCell) == 0 .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
-               calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)  ! remove any remaining ice here
-               thickness(iCell) = 0.0_RKIND
-               contiguousDynamicIceOld(iCell) = 1 ! debug: make this a mask of where icebergs were removed
-            endif
-         enddo
-         localIcebergCellCount = sum(contiguousDynamicIceOld)
-
-!         where(contiguousDynamicIce == 0 .and. li_mask_is_dynamic_ice(cellMask))
-!            calvingThickness = calvingThickness + thickness  ! remove any remaining ice here
-!            thickness = 0.0_RKIND
-!         end where
-
-         block => block % next
-      end do
-
-      ! Calculate total iceberg cells removed (not needed but useful for log - note requires extra reduce!)
-      call mpas_dmpar_sum_int(domain % dminfo, localIcebergCellCount, globalIcebergCellCount)
-
-      ! update halo - probably not needed?
-      call mpas_timer_start("halo updates")
-      call mpas_dmpar_field_halo_exch(domain, 'thickness')
-      call mpas_timer_stop("halo updates")
-
-      ! clean up
       call mpas_deallocate_scratch_field(contiguousDynamicIceField, single_block_in=.false.)
       call mpas_deallocate_scratch_field(contiguousDynamicIceOldField, single_block_in=.false.)
 
-      call mpas_log_write("Iceberg-detection flood-fill complete. Removed $i iceberg cells.", intArgs=(/globalIcebergCellCount/))
-      call mpas_timer_stop("iceberg detection")
-   end subroutine remove_icebergs
-
+   end subroutine flood_fill
 
 end module li_calving
 
