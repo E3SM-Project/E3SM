@@ -1037,7 +1037,6 @@ contains
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
 
@@ -1072,7 +1071,8 @@ contains
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
 
-          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+          ! Note: changing loop limit to minLevelEdgeBot introduces non-bit-for-bit changes
+          do k = 1, maxLevelEdgeTop(iEdge)
             flux = layerThickEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) * invAreaCell
             div_hu(k) = div_hu(k) - flux
             div_hu_btr = div_hu_btr - flux
