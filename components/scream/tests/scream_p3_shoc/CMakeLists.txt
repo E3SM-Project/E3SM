@@ -1,8 +1,6 @@
 INCLUDE (ScreamUtils)
 
-SET (p3Lib p3)
-SET (shocLib shoc)
-SET (NEED_LIBS ${p3Lib} ${shocLib} scream_control scream_share)
+SET (NEED_LIBS p3 shoc scream_control scream_share)
 
 # Test atmosphere processes
 #CreateUnitTest(p3_shoc_coupled "p3_shoc_coupled.cpp" "${NEED_LIBS}" LABELS "p3;shoc;physics")

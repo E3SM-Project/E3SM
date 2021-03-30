@@ -52,7 +52,7 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 }
 
 // =========================================================================================
-void CldFraction::initialize_impl (const util::TimeStamp& t0)
+void CldFraction::initialize_impl (const util::TimeStamp& /* t0 */)
 {
 }
 
@@ -87,12 +87,10 @@ void CldFraction::finalize_impl()
 
 // =========================================================================================
 void CldFraction::register_fields (FieldRepository<Real>& field_repo) const {
-  std::set<ci_string> q_names =
-    { "qi" };
 
   for (const auto& fid : m_required_fields) {
     const auto& name = fid.name();
-    if (q_names.count(name)>0) {
+    if (name == "qi") {
       field_repo.register_field<Pack>(fid,"TRACERS");
     } else {
       field_repo.register_field<Pack>(fid);
@@ -100,7 +98,7 @@ void CldFraction::register_fields (FieldRepository<Real>& field_repo) const {
   }
   for (const auto& fid : m_computed_fields) {
     const auto& name = fid.name();
-    if (q_names.count(name)>0) {
+    if (name == "qi") {
       field_repo.register_field<Pack>(fid,"TRACERS");
     } else {
       field_repo.register_field<Pack>(fid);
@@ -109,10 +107,7 @@ void CldFraction::register_fields (FieldRepository<Real>& field_repo) const {
 }
 
 void CldFraction::set_required_field_impl (const Field<const Real>& f) {
-  // Store a copy of the field. We need this in order to do some tracking checks
-  // at the beginning of the run call. Other than that, there would be really
-  // no need to store a scream field here; we could simply set the view ptr
-  // in the Homme's view, and be done with it.
+
   const auto& name = f.get_header().get_identifier().name();
   m_cld_fraction_fields_in.emplace(name,f);
 
@@ -121,10 +116,7 @@ void CldFraction::set_required_field_impl (const Field<const Real>& f) {
 }
 
 void CldFraction::set_computed_field_impl (const Field<      Real>& f) {
-  // Store a copy of the field. We need this in order to do some tracking updates
-  // at the end of the run call. Other than that, there would be really
-  // no need to store a scream field here; we could simply set the view ptr
-  // in the Homme's view, and be done with it.
+
   const auto& name = f.get_header().get_identifier().name();
   m_cld_fraction_fields_out.emplace(name,f);
 

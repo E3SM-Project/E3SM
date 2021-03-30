@@ -1,7 +1,6 @@
 INCLUDE (ScreamUtils)
 
-SET (cld_fractionLib cld_fraction)
-SET (NEED_LIBS ${cld_fractionLib} scream_control scream_share)
+SET (NEED_LIBS cld_fraction scream_control scream_share)
 
 # Test atmosphere processes
 CreateUnitTest(cld_fraction_stand_alone "cld_fraction_stand_alone.cpp" "${NEED_LIBS}" LABELS "cld_fraction;physics")

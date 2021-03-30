@@ -333,10 +333,7 @@ void SHOCMacrophysics::register_fields (FieldRepository<Real>& field_repo) const
 }
 
 void SHOCMacrophysics::set_required_field_impl (const Field<const Real>& f) {
-  // Store a copy of the field. We need this in order to do some tracking checks
-  // at the beginning of the run call. Other than that, there would be really
-  // no need to store a scream field here; we could simply set the view ptr
-  // in the Homme's view, and be done with it.
+
   const auto& name = f.get_header().get_identifier().name();
   m_shoc_fields_in.emplace(name,f);
 
@@ -345,10 +342,7 @@ void SHOCMacrophysics::set_required_field_impl (const Field<const Real>& f) {
 }
 
 void SHOCMacrophysics::set_computed_field_impl (const Field<Real>& f) {
-  // Store a copy of the field. We need this in order to do some tracking updates
-  // at the end of the run call. Other than that, there would be really
-  // no need to store a scream field here; we could simply set the view ptr
-  // in the Homme's view, and be done with it.
+
   const auto& name = f.get_header().get_identifier().name();
   m_shoc_fields_out.emplace(name,f);
 
