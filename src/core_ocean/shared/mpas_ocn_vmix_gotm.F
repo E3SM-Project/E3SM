@@ -337,9 +337,11 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
 
-      integer, pointer :: nVertLevels
+      integer, pointer :: nVertLevels, nVertLevelsP1
+      integer, dimension(:), pointer :: nCellsArray
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         gotmVertViscTopOfCellCur, gotmVertDiffTopOfCellCur, &
@@ -401,7 +403,10 @@ contains
       ! initialize GOTM arrays
       block => domain%blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)  !
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
+         call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
          ! set pointers for GOTM viscosity/diffusivity, TKE, rate of dissipation and turbulent length scale
          ! (current and new state)
@@ -413,7 +418,7 @@ contains
          call mpas_pool_get_array(statePool, 'gotmKbTopOfCell', gotmKbTopOfCellCur, 1)
          call mpas_pool_get_array(statePool, 'gotmEpsbTopOfCell', gotmEpsbTopOfCellCur, 1)
 
-         nCells = nCellsAll
+         nCells = nCellsArray( size(nCellsArray) )
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp private(k, ki)
