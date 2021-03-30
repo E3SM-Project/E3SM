@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-
+from typing import Dict, Tuple
 import os
 
 # Must be done before any CDAT library is called.
@@ -300,10 +300,22 @@ def run_diag(parameters):
     return results
 
 
+def create_parameter_dict(parameters):
+    d: Dict[type, int] = dict()
+    for parameter in parameters:
+        t = type(parameter)
+        if t in d.keys():
+            d[t] += 1
+        else:
+            d[t] = 1
+    return d
+
+
 def main(parameters=[]):
     parser = CoreParser()
     if not parameters:
         parameters = get_parameters(parser)
+    expected_parameters = create_parameter_dict(parameters)
 
     # each case id (aka, variable) has a set of parameters specified.
     # print out the parameters for each variable for trouble shootting
@@ -350,6 +362,17 @@ def main(parameters=[]):
 
             index_path = create_viewer(path, parameters)
             print("Viewer HTML generated at {}".format(index_path))
+
+    actual_parameters = create_parameter_dict(parameters)
+    if parameters[0].fail_on_incomplete and (actual_parameters != expected_parameters):
+        d: Dict[type, Tuple[int, int]] = dict()
+        # Loop through all expected parameter types.
+        for t in expected_parameters.keys():
+            d[t] = (actual_parameters[t], expected_parameters[t])
+        message = "Not all parameters completed successfully. Check output above for errors/exceptions. The following dictionary maps parameter types to their actual and expected numbers: {}".format(
+            d
+        )
+        raise Exception(message)
 
 
 if __name__ == "__main__":

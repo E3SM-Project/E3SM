@@ -80,6 +80,7 @@ class CoreParameter(cdp.cdp_parameter.CDPParameter):
         self.granulate = ["variables", "seasons", "plevs", "regions"]
         self.selectors = ["sets", "seasons"]
         self.viewer_descr = {}
+        self.fail_on_incomplete = False
 
     def check_values(self):
         # must_have_params = ['reference_data_path', 'test_data_path', 'results_dir']

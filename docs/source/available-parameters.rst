@@ -266,6 +266,7 @@ Other parameters
 -  **granulate**: Default is ``['variables', 'seasons', 'plevs', 'regions']``.
 -  **selectors**: Default is ``['sets', 'seasons']``. See :ref:`Using the selectors parameter <selector-ex>`.
 -  **viewer_descr**: Used to specify values in the viewer. Default ``{}``.
+-  **fail_on_incomplete**: Exit status will reflect failure if any parameter fails to complete. Default is ``False`` (e.g., a failing parameter will not create a failing exit code).
 
 Deprecated parameters
 ~~~~~~~~~~~~~~~~~~~~~
