@@ -19,9 +19,6 @@ Grids Manager:
 
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
-  Initial Conditions File: cld_fraction_standalone_ne4_ne4.nc
-
-# The name of the output control file for this test.
-Output Manager:
- Output YAML Files: ["cld_fraction_standalone_output.yaml"] 
+  alst: 0.0
+  qi: 0.0 
 ...
