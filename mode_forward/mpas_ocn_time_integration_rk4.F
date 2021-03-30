@@ -242,7 +242,7 @@ module ocn_time_integration_rk4
          !$omp parallel
          !$omp do schedule(runtime) private(k)
          do iEdge = 1, nEdges
-            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+            do k = 1, maxLevelEdgeTop(iEdge)
                normalVelocityNew(k, iEdge) = normalVelocityCur(k, iEdge)
             end do
          end do
@@ -250,7 +250,7 @@ module ocn_time_integration_rk4
 
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
-            do k = minLevelCell(iCell), maxLevelCell(iCell)
+            do k = 1, maxLevelCell(iCell)
                layerThicknessNew(k, iCell) = layerThicknessCur(k, iCell)
             end do
          end do
@@ -269,7 +269,7 @@ module ocn_time_integration_rk4
                   !$omp parallel
                   !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells  ! couple tracers to thickness
-                     do k = minLevelCell(iCell), maxLevelCell(iCell)
+                     do k = 1, maxLevelCell(iCell)
                         tracersNew(:, k, iCell) = tracersCur(:, k, iCell) * layerThicknessCur(k, iCell)
                      end do
                   end do
