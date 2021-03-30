@@ -444,7 +444,7 @@
 		/>
 	</nml_record>
 	<nml_record name="initialize" in_defaults="true">
-		<nml_option name="config_earth_radius" type="real" default_value="1.0" units="m"
+		<nml_option name="config_earth_radius" type="real" default_value="6371229.0" units="m"
 			description="Earth radius in m"
 			possible_values="Any positive real number."
 		/>
@@ -2418,9 +2418,6 @@
 		<!-- Snicar -->
 		<package name="pkgSnicar" description="add snicar 5 bands snow SSP in CICE"/>
 
-		<!-- Unit tests -->
-		<package name="pkgUnitTests" description="variables for unit tests"/>
-
 		<!-- prescribed -->
 		<package name="pkgPrescribed" description=""/>
 
@@ -4200,15 +4197,6 @@
 		<var name="lonPoint" type="real" dimensions="nPoints" units="radians"
 			 description="Longitude of point locations."
 		/>
-	</var_struct>
-
-	<!-- Strain and stress divergence unit test -->
-	<var_struct name="strain_stress_divergence_unit_tests" time_levs="1" packages="pkgUnitTests">
-	        <var name="stressDivergenceUAnalytical" type="real" dimensions="nVertices Time"/>
-	        <var name="stressDivergenceVAnalytical" type="real" dimensions="nVertices Time"/>
-		<var name="strain11Analytical" type="real" dimensions="nVertices Time"/>
-		<var name="strain22Analytical" type="real" dimensions="nVertices Time"/>
-		<var name="strain12Analytical" type="real" dimensions="nVertices Time"/>
 	</var_struct>
 
 	<!-- Special boundaries -->
