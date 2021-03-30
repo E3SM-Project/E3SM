@@ -1081,7 +1081,7 @@ module ocn_time_integration_rk4
       !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
-         do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+         do k = 1, maxLevelEdgeTop(iEdge)
             normalVelocityProvis(k, iEdge) = normalVelocityCur(k, iEdge) + rkSubstepWeight &
                                            * normalVelocityTend(k, iEdge)
             normalVelocityProvis(k, iEdge) = normalVelocityProvis(k, iEdge) * (1.0_RKIND - wettingVelocity(k, iEdge))
@@ -1091,7 +1091,7 @@ module ocn_time_integration_rk4
 
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
-         do k = minLevelCell(iCell), maxLevelCell(iCell)
+         do k = 1, maxLevelCell(iCell)
             layerThicknessProvis(k, iCell) = layerThicknessCur(k, iCell) + rkSubstepWeight &
                                            * layerThicknessTend(k, iCell)
          end do
@@ -1115,7 +1115,7 @@ module ocn_time_integration_rk4
                   !$omp parallel
                   !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells
-                     do k = minLevelCell(iCell), maxLevelCell(iCell)
+                     do k = 1, maxLevelCell(iCell)
                         tracersGroupProvis(:, k, iCell) = ( layerThicknessCur(k, iCell) * tracersGroupCur(:, k, iCell)  &
                                                  + rkSubstepWeight * tracersGroupTend(:, k, iCell) &
                                                    ) / layerThicknessProvis(k, iCell)
