@@ -343,8 +343,6 @@ Int Functions<S,D>::shoc_main(
     const auto tke_s          = ekat::subview(shoc_input_output.tke, i);
     const auto thetal_s       = ekat::subview(shoc_input_output.thetal, i);
     const auto qw_s           = ekat::subview(shoc_input_output.qw, i);
-    const auto u_wind_s       = ekat::subview(shoc_input_output.u_wind, i);
-    const auto v_wind_s       = ekat::subview(shoc_input_output.v_wind, i);
     const auto wthv_sec_s     = ekat::subview(shoc_input_output.wthv_sec, i);
     const auto tk_s           = ekat::subview(shoc_input_output.tk, i);
     const auto tkh_s          = ekat::subview(shoc_input_output.tkh, i);
@@ -366,6 +364,8 @@ Int Functions<S,D>::shoc_main(
     const auto brunt_s        = ekat::subview(shoc_history_output.brunt, i);
     const auto isotropy_s     = ekat::subview(shoc_history_output.isotropy, i);
 
+    const auto u_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, i, 0, Kokkos::ALL());
+    const auto v_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, i, 1, Kokkos::ALL());
     const auto X1_s       = Kokkos::subview(X1_d, i, Kokkos::ALL(), Kokkos::ALL());
     const auto qtracers_s = Kokkos::subview(shoc_input_output.qtracers, i, Kokkos::ALL(), Kokkos::ALL());
 

@@ -121,10 +121,8 @@ struct Functions
     view_2d<Spack>  thetal;
     // total water mixing ratio [kg/kg]
     view_2d<Spack>  qw;
-    // u wind component [m/s]
-    view_2d<Spack>  u_wind;
-    // v wind component [m/s]
-    view_2d<Spack>  v_wind;
+    // Vector-valued wind (u,v) [m/s]
+    view_3d<Spack>  horiz_wind;
     // buoyancy flux [K m/s]
     view_2d<Spack>  wthv_sec;
     // tracers [varies]

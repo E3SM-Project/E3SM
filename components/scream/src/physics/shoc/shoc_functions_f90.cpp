@@ -63,7 +63,7 @@ void shoc_energy_dse_fixer_c(Int shcol, Int nlev,
 
 void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
-			    Real *invar1, Real *invar2, Real *varorcovar);
+                            Real *invar1, Real *invar2, Real *varorcovar);
 
 void compute_tmpi_c(Int nlevi, Int shcol, Real dtime, Real *rho_zi,
                     Real *dz_zi, Real *tmpi);
@@ -90,7 +90,7 @@ void shoc_tke_c(Int shcol, Int nlev, Int nlevi, Real dtime, Real *wthv_sec,
                 Real *tk, Real *tkh, Real *isotropy);
 
 void integ_column_stability_c(Int nlev, Int shcol, Real *dz_zt, Real *pres,
-			      Real *brunt, Real *brunt_int);
+                              Real *brunt, Real *brunt_int);
 
 void compute_shr_prod_c(Int nlevi, Int nlev, Int shcol, Real *dz_zi,
                         Real *u_wind, Real *v_wind, Real *sterm);
@@ -107,7 +107,7 @@ void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
                           Real *isotropy, Real *tke, Real *tkh, Real *tk);
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
-			  Real *dz_zi, Real *invar, Real *vertflux);
+                          Real *dz_zi, Real *invar, Real *vertflux);
 
 void shoc_length_c(Int shcol, Int nlev, Int nlevi, Real *host_dx,
                    Real *host_dy, Real *pblh, Real *tke, Real *zt_grid, Real *zi_grid,
@@ -129,7 +129,7 @@ void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel,
 
 void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
                                     Real *tscale, Real *zt_grid, Real *l_inf,
-				    Real *shoc_mix);
+                                    Real *shoc_mix);
 
 void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
                                     Real *host_dy, Real *shoc_mix);
@@ -143,8 +143,8 @@ void fterms_input_for_diag_third_shoc_moment_c(Real dz_zi, Real dz_zt, Real dz_z
                                     Real *isosqrd, Real *buoy_sgs2, Real *bet2);
 void f0_to_f5_diag_third_shoc_moment_c(Real thedz, Real thedz2, Real bet2, Real iso,
                                     Real isosqrd, Real wthl_sec, Real wthl_sec_kc,
-				    Real wthl_sec_kb, Real thl_sec, Real thl_sec_kc,
-				    Real thl_sec_kb, Real w_sec, Real w_sec_kc, Real w_sec_zi,
+                                    Real wthl_sec_kb, Real thl_sec, Real thl_sec_kc,
+                                    Real thl_sec_kb, Real w_sec, Real w_sec_kc, Real w_sec_zi,
                                     Real tke, Real tke_kc, Real *f0, Real *f1,
                                     Real *f2, Real *f3, Real *f4, Real *f5);
 
@@ -152,16 +152,16 @@ void omega_terms_diag_third_shoc_moment_c(Real buoy_sgs2, Real f3, Real f4,
                                     Real *omega0, Real *omega1, Real *omega2);
 
 void x_y_terms_diag_third_shoc_moment_c(Real buoy_sgs2, Real f0, Real f1, Real f2,
-                                    Real *x0, Real *y0, Real *x1, Real *y1);
+                                        Real *x0, Real *y0, Real *x1, Real *y1);
 
 void aa_terms_diag_third_shoc_moment_c(Real omega0, Real omega1, Real omega2,
-                                    Real x0, Real x1, Real y0, Real y1,
-				    Real *aa0, Real *aa1);
+                                       Real x0, Real x1, Real y0, Real y1,
+                                       Real *aa0, Real *aa1);
 
 void w3_diag_third_shoc_moment_c(Real aa0, Real aa1, Real x0,
-                                    Real x1, Real f5, Real *w3);
+                                 Real x1, Real f5, Real *w3);
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl_sfc, Real* uw_sfc, Real* vw_sfc,
-                                   Real* ustar2, Real* wstar);
+                                    Real* ustar2, Real* wstar);
 
 void diag_third_shoc_moments_c(Int shoc, Int nlev, Int nlevi, Real *w_sec,
                                Real *thl_sec,
@@ -189,53 +189,53 @@ void shoc_assumed_pdf_tilde_to_real_c(Real w_first, Real sqrtw2, Real* w1);
 
 void shoc_assumed_pdf_vv_parameters_c(Real w_first, Real w_sec, Real w3var,
                                       Real *Skew_w, Real *w1_1, Real *w1_2,
-				      Real *w2_1, Real *w2_2, Real *a);
+                                      Real *w2_1, Real *w2_2, Real *a);
 
 void shoc_assumed_pdf_thl_parameters_c(Real wthlsec, Real sqrtw2, Real sqrtthl,
                                        Real thlsec, Real thl_first, Real w1_1,
-				       Real w1_2, Real Skew_w, Real a, bool dothetal_skew,
+                                       Real w1_2, Real Skew_w, Real a, bool dothetal_skew,
                                        Real *thl1_1, Real *thl1_2, Real *thl2_1,
-				       Real *thl2_2, Real *sqrtthl2_1,
+                                       Real *thl2_2, Real *sqrtthl2_1,
                                        Real *sqrtthl2_2);
 
 void shoc_assumed_pdf_qw_parameters_c(Real wqwsec, Real sqrtw2, Real Skew_w,
-                                       Real sqrtqt, Real qw_sec, Real w1_1,
-				       Real w1_2, Real qw_first, Real a,
-                                       Real *qw1_1, Real *qw1_2, Real *qw2_1,
-				       Real *qw2_2, Real *sqrtqw2_1,
-                                       Real *sqrtqw2_2);
+                                      Real sqrtqt, Real qw_sec, Real w1_1,
+                                      Real w1_2, Real qw_first, Real a,
+                                      Real *qw1_1, Real *qw1_2, Real *qw2_1,
+                                      Real *qw2_2, Real *sqrtqw2_1,
+                                      Real *sqrtqw2_2);
 
 void shoc_assumed_pdf_inplume_correlations_c(Real sqrtqw2_1, Real sqrtthl2_1,
-                                     Real a, Real sqrtqw2_2, Real sqrtthl2_2,
-                                     Real qwthlsec, Real qw1_1, Real qw_first,
-				     Real thl1_1, Real thl_first, Real qw1_2,
-				     Real thl1_2, Real *r_qwthl_1);
+                                             Real a, Real sqrtqw2_2, Real sqrtthl2_2,
+                                             Real qwthlsec, Real qw1_1, Real qw_first,
+                                             Real thl1_1, Real thl_first, Real qw1_2,
+                                             Real thl1_2, Real *r_qwthl_1);
 
 void shoc_assumed_pdf_compute_temperature_c(Real thl1, Real basepres,
                                             Real pval, Real *Tl1);
 
 void shoc_assumed_pdf_compute_qs_c(Real Tl1_1, Real Tl1_2, Real pval,
-                              Real *qs1, Real *beta1, Real *qs2, Real *beta2);
+                                   Real *qs1, Real *beta1, Real *qs2, Real *beta2);
 
 void shoc_assumed_pdf_compute_s_c(Real qw1, Real qs1, Real beta, Real pval, Real thl2,
-                              Real qw2,Real sqrtthl2, Real sqrtqw2, Real r_qwthl,
-                              Real *s, Real *std_s, Real *qn, Real *C);
+                                  Real qw2,Real sqrtthl2, Real sqrtqw2, Real r_qwthl,
+                                  Real *s, Real *std_s, Real *qn, Real *C);
 
 void shoc_assumed_pdf_compute_sgs_liquid_c(Real a, Real ql1, Real ql2, Real *shoc_ql);
 
 void shoc_assumed_pdf_compute_cloud_liquid_variance_c(Real a, Real s1, Real ql1,
-                               Real C1, Real std_s1, Real s2, Real ql2, Real C2,
-			       Real std_s2, Real shoc_ql, Real *shoc_ql2);
+                                                      Real C1, Real std_s1, Real s2, Real ql2, Real C2,
+                                                      Real std_s2, Real shoc_ql, Real *shoc_ql2);
 
 void shoc_assumed_pdf_compute_liquid_water_flux_c(Real a, Real w1_1, Real w_first,
-                               Real ql1, Real w1_2, Real ql2, Real *wqls);
+                                                  Real ql1, Real w1_2, Real ql2, Real *wqls);
 
 void shoc_assumed_pdf_compute_buoyancy_flux_c(Real wthlsec, Real epsterm, Real wqwsec,
-                               Real pval, Real wqls, Real *wthv_sec);
+                                              Real pval, Real wqls, Real *wthv_sec);
 
 void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl_sec, Real* qw_sec,
-                                       Real* wthl_sec, Real* wqw_sec, Real* qwthl_sec,
-                                       Real* uw_sec, Real* vw_sec, Real* wtke_sec);
+                                        Real* wthl_sec, Real* wqw_sec, Real* qwthl_sec,
+                                        Real* uw_sec, Real* vw_sec, Real* wtke_sec);
 
 void shoc_pblintd_init_pot_c(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
 
@@ -886,7 +886,7 @@ void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
 }
 
 void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
-			  Real *dz_zi, Real *invar, Real *vertflux)
+        Real *dz_zi, Real *invar, Real *vertflux)
 {
   using SHF = Functions<Real, DefaultDevice>;
 
@@ -2810,12 +2810,14 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
 {
   using SHF  = Functions<Real, DefaultDevice>;
 
-  using Scalar         = typename SHF::Scalar;
-  using Spack          = typename SHF::Spack;
-  using Pack1d         = typename ekat::Pack<Scalar, 1>;
-  using view_1d        = typename SHF::view_1d<Pack1d>;
-  using view_2d        = typename SHF::view_2d<Spack>;
-  using view_3d        = typename SHF::view_3d<Spack>;
+  using Scalar     = typename SHF::Scalar;
+  using Spack      = typename SHF::Spack;
+  using Pack1d     = typename ekat::Pack<Scalar, 1>;
+  using view_1d    = typename SHF::view_1d<Pack1d>;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using view_3d    = typename SHF::view_3d<Spack>;
+  using ExeSpace   = typename SHF::KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
 
   // Initialize Kokkos views, sync to device
   static constexpr Int num_1d_arrays = 7;
@@ -2911,14 +2913,33 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
   Kokkos::resize(qtracers_d,
                  shcol,nlev,ekat::npack<Spack>(num_qtracers+3));
 
+  // shoc_main treats u/v_wind as 1 array.
+  const auto nlev_packs = ekat::npack<Spack>(nlev);
+  view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
+
+  // Copy wind into single view
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto u_wind_s = ekat::subview(u_wind_d, i);
+    const auto v_wind_s = ekat::subview(v_wind_d, i);
+    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      horiz_wind_s(0,k) = u_wind_s(k);
+      horiz_wind_s(1,k) = v_wind_s(k);
+    });
+  });
+
   // Pack our data into structs and ship it off to shoc_main.
   SHF::SHOCInput shoc_input{host_dx_d,  host_dy_d,     zt_grid_d, zi_grid_d,
                              pres_d,    presi_d,       pdel_d,    thv_d,
                              w_field_d, wthl_sfc_d,    wqw_sfc_d, uw_sfc_d,
                              vw_sfc_d,  wtracer_sfc_d, exner_d,   phis_d};
-  SHF::SHOCInputOutput shoc_input_output{host_dse_d, tke_d,    thetal_d,       qw_d,
-                                         u_wind_d,   v_wind_d, wthv_sec_d,     qtracers_d,
-                                         tk_d,       tkh_d,    shoc_cldfrac_d, shoc_ql_d};
+  SHF::SHOCInputOutput shoc_input_output{host_dse_d,   tke_d,      thetal_d,       qw_d,
+                                         horiz_wind_d, wthv_sec_d, qtracers_d,
+                                         tk_d,         tkh_d,      shoc_cldfrac_d, shoc_ql_d};
   SHF::SHOCOutput shoc_output{pblh_d, shoc_ql2_d};
   SHF::SHOCHistoryOutput shoc_history_output{shoc_mix_d,  w_sec_d,    thl_sec_d, qw_sec_d,
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
@@ -2928,6 +2949,20 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
   const auto elapsed_microsec = SHF::shoc_main(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
                                                shoc_input, shoc_input_output, shoc_output, shoc_history_output);
   (void)elapsed_microsec;
+
+  // Copy wind back into separate views
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto u_wind_s = ekat::subview(u_wind_d, i);
+    const auto v_wind_s = ekat::subview(v_wind_d, i);
+    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      u_wind_s(k) = horiz_wind_s(0,k);
+      v_wind_s(k) = horiz_wind_s(1,k);
+    });
+  });
 
   // Remove temporary slots
   Kokkos::resize(qtracers_d,

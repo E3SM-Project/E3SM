@@ -186,8 +186,6 @@ public:
     view_2d       shoc_ql;
     view_2d       shoc_s;
     view_2d       tke_zt;
-    view_2d       um;
-    view_2d       vm;
     view_2d       rrho;
     view_2d       rrho_i;
     view_2d       thv;
@@ -214,7 +212,7 @@ public:
                        view_2d_const omega_,
                        view_1d_const shf_, view_1d_const cflx_, view_1d_const wsx_, view_1d_const wsy_,
                        view_2d_const shoc_qv_, view_3d Q_, view_2d shoc_ql_, view_2d tke_,
-                       view_2d s_, view_2d u_, view_2d v_, view_2d rrho_, view_2d rrho_i_,view_2d thv_,
+                       view_2d s_, view_2d rrho_, view_2d rrho_i_,view_2d thv_,
                        view_2d dz_,view_2d zt_grid_,view_2d zi_grid_, view_1d wpthlp_sfc_,
                        view_1d wprtp_sfc_,view_1d upwp_sfc_,view_1d vpwp_sfc_, view_2d wtracer_sfc_,
                        view_2d wm_zt_,view_2d exner_,view_2d thlm_,view_2d qw_,view_2d cloud_frac_,view_3d tracers_)
@@ -242,8 +240,6 @@ public:
       shoc_ql = shoc_ql_;
       shoc_s = s_;
       tke_zt = tke_;
-      um = u_;
-      vm = v_;
       rrho = rrho_;
       rrho_i = rrho_i_;
       thv = thv_;

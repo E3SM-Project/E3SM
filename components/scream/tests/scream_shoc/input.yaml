@@ -20,5 +20,5 @@ Grids Manager:
 
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
-  Initial Conditions File: shoc_standalone_ne4_np4.nc
+  Initial Conditions File: shoc_standalone_ne4_ne4.nc
 ...
