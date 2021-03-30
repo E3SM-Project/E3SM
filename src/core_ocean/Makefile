@@ -12,6 +12,11 @@ ifneq "$(EXCLUDE_INIT_MODE)" "true"
 	OCEAN_SHARED_INCLUDES += -I$(PWD)/mode_init
 endif
 
+GOTM_CMAKE_FLAGS = -DGOTM_BUILD_LIBRARIES_ONLY=true -DGOTM_USE_FABM=false -DGOTM_USE_NetCDF=false -DCMAKE_Fortran_COMPILER="$(FC)" -DCMAKE_Fortran_FLAGS="$(FFLAGS)"
+ifeq "$(DEBUG)" "true"
+	GOTM_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug
+endif
+
 all: shared libcvmix analysis_members libBGC libgotm
 	(cd mode_forward; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
 	(cd mode_analysis; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
@@ -78,7 +83,7 @@ libgotm:
 		if [ -e gotm/build ]; then \
 			(cd gotm/build; make) \
 		else \
-			(sed -i.bk "s/\#define STDERR write(stderr,\*)/\#define STDERR if (.false.) write(stderr,\*)/" gotm/include/cppdefs.h; mkdir gotm/build; cd gotm/build; cmake ../src -DGOTM_BUILD_LIBRARIES_ONLY=true -DGOTM_USE_FABM=false -DGOTM_USE_NetCDF=false -DCMAKE_Fortran_COMPILER="$(FC)" -DCMAKE_Fortran_FLAGS="$(FCFLAGS)"; make) \
+			(sed -i.bk "s/\#define STDERR write(stderr,\*)/\#define STDERR if (.false.) write(stderr,\*)/" gotm/include/cppdefs.h; mkdir gotm/build; cd gotm/build; cmake ../src $(GOTM_CMAKE_FLAGS); make) \
 		fi \
 	else \
 		(pwd ; echo "Missing core_ocean/gotm/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
