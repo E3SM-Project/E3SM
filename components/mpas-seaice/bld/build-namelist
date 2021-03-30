@@ -534,6 +534,7 @@ add_default($nl, 'config_nSnowLayers');
 # Namelist group: initialize #
 ##############################
 
+add_default($nl, 'config_earth_radius');
 if ($ice_ic_mode eq 'spunup') {
         add_default($nl, 'config_initial_condition_type', 'val'=>"restart");
 } else {
@@ -582,14 +583,12 @@ add_default($nl, 'config_forcing_sst_type');
 add_default($nl, 'config_update_ocean_fluxes');
 add_default($nl, 'config_include_pond_freshwater_feedback');
 
-#############################
-# Namelist group: unit_test #
-#############################
+###########################
+# Namelist group: testing #
+###########################
 
-add_default($nl, 'config_perform_unit_test');
-add_default($nl, 'config_unit_test_type');
-add_default($nl, 'config_unit_test_subtype');
 add_default($nl, 'config_use_test_ice_shelf');
+add_default($nl, 'config_testing_system_test');
 
 ###################################
 # Namelist group: velocity_solver #
@@ -599,15 +598,22 @@ add_default($nl, 'config_dynamics_subcycle_number');
 add_default($nl, 'config_rotate_cartesian_grid');
 add_default($nl, 'config_include_metric_terms');
 add_default($nl, 'config_elastic_subcycle_number');
+add_default($nl, 'config_strain_scheme');
+add_default($nl, 'config_constitutive_relation_type');
 add_default($nl, 'config_stress_divergence_scheme');
 add_default($nl, 'config_variational_basis');
+add_default($nl, 'config_variational_denominator_type');
 add_default($nl, 'config_wachspress_integration_type');
 add_default($nl, 'config_wachspress_integration_order');
-add_default($nl, 'config_revised_evp');
+add_default($nl, 'config_calc_velocity_masks');
+add_default($nl, 'config_average_variational_strain');
 add_default($nl, 'config_use_air_stress');
 add_default($nl, 'config_use_ocean_stress');
 add_default($nl, 'config_use_surface_tilt');
 add_default($nl, 'config_geostrophic_surface_tilt');
+add_default($nl, 'config_ocean_stress_type');
+add_default($nl, 'config_use_special_boundaries_velocity');
+add_default($nl, 'config_use_special_boundaries_velocity_masks');
 
 #############################
 # Namelist group: advection #
@@ -651,6 +657,7 @@ add_default($nl, 'config_use_topo_meltponds');
 add_default($nl, 'config_use_aerosols');
 add_default($nl, 'config_use_effective_snow_density');
 add_default($nl, 'config_use_snow_grain_radius');
+add_default($nl, 'config_use_special_boundaries_zero_tracers');
 
 ###################################
 # Namelist group: biogeochemistry #
@@ -1213,7 +1220,7 @@ my @groups = qw(seaice_model
                 initialize
                 use_sections
                 forcing
-                unit_test
+                testing
                 velocity_solver
                 advection
                 column_package
