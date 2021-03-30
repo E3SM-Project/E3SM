@@ -8442,7 +8442,7 @@
           <ntasks_lnd>64</ntasks_lnd>
           <ntasks_rof>64</ntasks_rof>
           <ntasks_ice>2688</ntasks_ice>
-          <ntasks_ocn>2368</ntasks_ocn>
+          <ntasks_ocn>2880</ntasks_ocn>
           <ntasks_cpl>2752</ntasks_cpl>
         </ntasks>
         <nthrds>
