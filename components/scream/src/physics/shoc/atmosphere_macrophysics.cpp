@@ -50,7 +50,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
   m_required_fields.emplace("pref_mid",scalar2d_layout_lev, Pa, grid_name);
-  m_required_fields.emplace("t",       scalar3d_layout_mid, nondim, grid_name);
+  m_required_fields.emplace("T_atm",   scalar3d_layout_mid, nondim, grid_name);
   m_required_fields.emplace("alst",    scalar3d_layout_mid, Pa,     grid_name);
   m_required_fields.emplace("zi",      scalar3d_layout_int, m,      grid_name);
   m_required_fields.emplace("zm",      scalar3d_layout_mid, K,      grid_name);
@@ -61,7 +61,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   m_required_fields.emplace("wsy",     scalar2d_layout_col, K,      grid_name);
   m_required_fields.emplace("shoc_qv", scalar3d_layout_mid, Qunit,  grid_name);
 
-  m_computed_fields.emplace("t",       scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("T_atm",   scalar3d_layout_mid, nondim, grid_name);
   m_computed_fields.emplace("shoc_qv", scalar3d_layout_mid, Qunit,  grid_name);
 
   // Input variables
@@ -69,7 +69,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   m_required_fields.emplace("host_dy", scalar2d_layout_col, m,  grid_name);
   m_required_fields.emplace("pmid",    scalar3d_layout_mid, Pa, grid_name);
   m_required_fields.emplace("pint",    scalar3d_layout_int, Pa, grid_name);
-  m_required_fields.emplace("pdel",    scalar3d_layout_mid, Pa, grid_name);
+  m_required_fields.emplace("dp",      scalar3d_layout_mid, Pa, grid_name);
   m_required_fields.emplace("phis",    scalar2d_layout_col, m,  grid_name);
 
   // Input/Output variables
@@ -127,12 +127,12 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
 
-  auto t        = m_shoc_fields_out["t"].get_reshaped_view<Spack**>();
+  auto t        = m_shoc_fields_out["T_atm"].get_reshaped_view<Spack**>();
   auto alst     = m_shoc_fields_in["alst"].get_reshaped_view<const Spack**>();
   auto zi       = m_shoc_fields_in["zi"].get_reshaped_view<const Spack**>();
   auto zm       = m_shoc_fields_in["zm"].get_reshaped_view<const Spack**>();
   auto pmid     = m_shoc_fields_in["pmid"].get_reshaped_view<const Spack**>();
-  auto pdel     = m_shoc_fields_in["pdel"].get_reshaped_view<const Spack**>();
+  auto pdel     = m_shoc_fields_in["dp"].get_reshaped_view<const Spack**>();
   auto omega    = m_shoc_fields_in["omega"].get_reshaped_view<const Spack**>();
   auto shf      = m_shoc_fields_in["shf"].get_reshaped_view<const Pack1d*>();
   auto cflx_k0  = m_shoc_fields_in["cflx_k0"].get_reshaped_view<const Pack1d*>();
