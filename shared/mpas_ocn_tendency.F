@@ -528,7 +528,7 @@ contains
 
       ! iterator and modified strings for tracer categories
       type (mpas_pool_iterator_type) :: groupItr
-      character (len=StrKIND) :: &
+      character (len=:), allocatable :: &
          groupName,            &! tracer group name
          configBase,           &! base name for config options
          modifiedGroupName,    &! variations on group name for options
@@ -676,9 +676,8 @@ contains
       ! Set active tracer flag and compute if this is the active tracer
       ! group. If not active tracer, check active tracer only flag.
 
-      groupName = ' '
       groupName = trim(groupItr%memberName)
-      if (trim(groupName)=='activeTracers') then
+      if (groupName=='activeTracers') then
          isActiveTracer = .true.
       else
          isActiveTracer = .false.
@@ -686,8 +685,7 @@ contains
       if (isActiveTracer .or. (.not. activeTracersOnly)) then
 
       ! Finally, check config_use flag for this tracer group
-      configBase = ' '
-      configBase = 'config_use_' // trim(groupName)
+      configBase = 'config_use_' // groupName
       call mpas_pool_get_config(ocnConfigs, configBase, &
                                 config_use_tracerGroup)
 
@@ -699,40 +697,40 @@ contains
          computeBudgets =  (isActiveTracer .and.  &
                             config_compute_active_tracer_budgets)
 
-         modifiedConfigName = trim(configBase) // '_surface_bulk_forcing'
+         modifiedConfigName = configBase // '_surface_bulk_forcing'
          call mpas_pool_get_config(ocnConfigs, modifiedConfigName, &
                             config_use_tracerGroup_surface_bulk_forcing)
-         modifiedConfigName = trim(configBase) // '_surface_restoring'
+         modifiedConfigName = configBase // '_surface_restoring'
          call mpas_pool_get_config(ocnConfigs, modifiedConfigName, &
                             config_use_tracerGroup_surface_restoring)
-         modifiedConfigName = trim(configBase) // '_interior_restoring'
+         modifiedConfigName = configBase // '_interior_restoring'
          call mpas_pool_get_config(ocnConfigs, modifiedConfigName, &
                             config_use_tracerGroup_interior_restoring)
-         modifiedConfigName = trim(configBase) // '_exponential_decay'
+         modifiedConfigName = configBase // '_exponential_decay'
          call mpas_pool_get_config(ocnConfigs, modifiedConfigName, &
                             config_use_tracerGroup_exponential_decay)
-         modifiedConfigName = trim(configBase) // '_idealAge_forcing'
+         modifiedConfigName = configBase // '_idealAge_forcing'
          call mpas_pool_get_config(ocnConfigs, modifiedConfigName, &
                             config_use_tracerGroup_idealAge_forcing)
-         modifiedConfigName = trim(configBase) // '_ttd_forcing'
+         modifiedConfigName = configBase // '_ttd_forcing'
          call mpas_pool_get_config(ocnConfigs, modifiedConfigName, &
                             config_use_tracerGroup_ttd_forcing)
 
          ! Get tracers from pool, determine number of tracers in group
-         call mpas_pool_get_array(tracersPool, trim(groupName), &
+         call mpas_pool_get_array(tracersPool, groupName, &
                                   tracerGroup, timeLevel)
          nTracersGroup = size(tracerGroup, dim=1)
 
          ! Get Tendency array
-         modifiedGroupName = trim(groupName) // "Tend"
+         modifiedGroupName = groupName // "Tend"
          call mpas_pool_get_array(tracersTendPool, &
-                                  trim(modifiedGroupName), &
+                                  modifiedGroupName, &
                                   tracerGroupTend)
 
          ! Get surface flux array
-         modifiedGroupName = trim(groupName) // "SurfaceFlux"
+         modifiedGroupName = groupName // "SurfaceFlux"
          call mpas_pool_get_array(tracersSurfaceFluxPool, &
-                                  trim(modifiedGroupName), &
+                                  modifiedGroupName, &
                                   tracerGroupSurfaceFlux)
 
          ! Get Array of total surface temp/salt flux 
@@ -744,16 +742,16 @@ contains
          ! Get surface flux due to river runoff array
          !maltrud only active tracers have runoff flux for now,
          ! but we still need to associate for ALL tracers
-         modifiedGroupName = trim(groupName) // "SurfaceFluxRunoff"
+         modifiedGroupName = groupName // "SurfaceFluxRunoff"
          call mpas_pool_get_array(tracersSurfaceFluxPool, &
-                                  trim(modifiedGroupName), &
+                                  modifiedGroupName, &
                                   tracerGroupSurfaceFluxRunoff)
 
          ! Get surface flux removed array to keep track of how much
          ! flux is ignored
-         modifiedGroupName = trim(groupName) // "SurfaceFluxRemoved"
+         modifiedGroupName = groupName // "SurfaceFluxRemoved"
          call mpas_pool_get_array(tracersSurfaceFluxPool, &
-                                  trim(modifiedGroupName), &
+                                  modifiedGroupName, &
                                   tracerGroupSurfaceFluxRemoved)
 
          !
@@ -786,7 +784,7 @@ contains
          !
          if (config_use_tracerGroup_surface_bulk_forcing) then
 
-            call ocn_surface_bulk_forcing_tracers(meshPool, trim(groupName), &
+            call ocn_surface_bulk_forcing_tracers(meshPool, groupName, &
                                   forcingPool, tracerGroup, &
                                   tracerGroupSurfaceFlux, &
                                   tracerGroupSurfaceFluxRunoff, &
@@ -799,7 +797,7 @@ contains
          ! compute ecosystem source-sink tendencies and net surface fluxes
          ! NOTE: must be called before ocn_tracer_surface_flux_tend
          !
-         if ( trim(groupName) == 'ecosysTracers' ) then
+         if ( groupName == 'ecosysTracers' ) then
 
             call mpas_pool_get_array(tracersPool, 'activeTracers', &
                                      activeTracers, timeLevel)
@@ -822,7 +820,7 @@ contains
          ! compute DMS source-sink tendencies and net surface fluxes
          ! NOTE: must be called before ocn_tracer_surface_flux_tend
          !
-         if ( trim(groupName) == 'DMSTracers' ) then
+         if ( groupName == 'DMSTracers' ) then
             call mpas_pool_get_array(tracersPool, 'ecosysTracers', &
                                      ecosysTracers, timeLevel)
             nTracersEcosys = size(ecosysTracers, dim=1)
@@ -846,7 +844,7 @@ contains
          ! compute MacroMolecules source-sink tendencies and net surface fluxes
          ! NOTE: must be called before ocn_tracer_surface_flux_tend
          !
-         if ( trim(groupName) == 'MacroMoleculesTracers' ) then
+         if ( groupName == 'MacroMoleculesTracers' ) then
             call mpas_pool_get_array(tracersPool, 'ecosysTracers', &
                                      ecosysTracers, timeLevel)
             nTracersEcosys = size(ecosysTracers, dim=1)
@@ -870,19 +868,19 @@ contains
          ! ocean surface restoring
          !
          if (config_use_tracerGroup_surface_restoring) then
-            call mpas_timer_start("surface_restoring_"//trim(groupName))
+            call mpas_timer_start("surface_restoring_"//groupName)
             call mpas_pool_get_subpool(forcingPool, &
                                    'tracersSurfaceRestoringFields', &
                                     tracersSurfaceRestoringFieldsPool)
 
-            modifiedGroupName = trim(groupName) // "PistonVelocity"
+            modifiedGroupName = groupName // "PistonVelocity"
             call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool,&
-                                     trim(modifiedGroupName), &
+                                     modifiedGroupName, &
                                      tracerGroupPistonVelocity)
 
-            modifiedGroupName = trim(groupName)//"SurfaceRestoringValue"
+            modifiedGroupName = groupName//"SurfaceRestoringValue"
             call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool,&
-                                     trim(modifiedGroupName), &
+                                     modifiedGroupName, &
                                      tracerGroupSurfaceRestoringValue)
 
             ! Note: monthly surface salinity restoring is a special
@@ -895,14 +893,14 @@ contains
                    config_use_surface_salinity_monthly_restoring, &
                    config_salinity_restoring_constant_piston_velocity, &
                    err)
-            call mpas_timer_stop("surface_restoring_"//trim(groupName))
+            call mpas_timer_stop("surface_restoring_"//groupName)
 
          endif ! sfc restoring
 
          ! tracer fluxes at the land-ice / ocean interface
          ! this is a flux at the top ocean surface -- so these
          ! fluxes are added into tracerGroupSurfaceFlux
-         call ocn_surface_land_ice_fluxes_tracers(meshPool, trim(groupName), &
+         call ocn_surface_land_ice_fluxes_tracers(meshPool, groupName, &
                              forcingPool, tracerGroupSurfaceFlux, err)
 
          !
@@ -917,20 +915,20 @@ contains
          ! interior restoring forcing tendency
          !
          if (config_use_tracerGroup_interior_restoring) then
-            call mpas_timer_start("interior_restoring_"//trim(groupName),&
+            call mpas_timer_start("interior_restoring_"//groupName,&
                                   .false.)
             call mpas_pool_get_subpool(forcingPool, &
                               'tracersInteriorRestoringFields', &
                                tracersInteriorRestoringFieldsPool)
 
-            modifiedGroupName = trim(groupName)//"InteriorRestoringRate"
+            modifiedGroupName = groupName//"InteriorRestoringRate"
             call mpas_pool_get_array(tracersInteriorRestoringFieldsPool,&
-                                     trim(modifiedGroupName), &
+                                     modifiedGroupName, &
                                      tracerGroupInteriorRestoringRate)
 
-            modifiedGroupName = trim(groupName)//"InteriorRestoringValue"
+            modifiedGroupName = groupName//"InteriorRestoringValue"
             call mpas_pool_get_array(tracersInteriorRestoringFieldsPool,&
-                                     trim(modifiedGroupName), &
+                                     modifiedGroupName, &
                                      tracerGroupInteriorRestoringValue)
 
             call ocn_tracer_interior_restoring_compute(nTracersGroup, &
@@ -939,7 +937,7 @@ contains
                         tracerGroupInteriorRestoringValue, &
                         tracerGroupTend, err)
 
-            call mpas_timer_stop("interior_restoring_"//trim(groupName))
+            call mpas_timer_stop("interior_restoring_"//groupName)
 
          endif ! interior restoring
 
@@ -950,14 +948,14 @@ contains
             call mpas_log_write( &
                         "WARNING: exponential decay not fully tested", &
                         MPAS_LOG_WARN)
-            call mpas_timer_start("exponential decay "//trim(groupName))
+            call mpas_timer_start("exponential decay "//groupName)
             call mpas_pool_get_subpool(forcingPool, &
                                'tracersExponentialDecayFields', &
                                 tracersExponentialDecayFieldsPool)
 
-            modifiedGroupName = trim(groupName) // "ExponentialDecayRate"
+            modifiedGroupName = groupName // "ExponentialDecayRate"
             call mpas_pool_get_array(tracersExponentialDecayFieldsPool,&
-                                     trim(modifiedGroupName), &
+                                     modifiedGroupName, &
                                      tracerGroupExponentialDecayRate)
 
             call ocn_tracer_exponential_decay_compute(nTracersGroup, &
@@ -965,7 +963,7 @@ contains
                         tracerGroup, tracerGroupExponentialDecayRate, &
                         tracerGroupTend, err)
 
-            call mpas_timer_stop("exponential decay "//trim(groupName))
+            call mpas_timer_stop("exponential decay "//groupName)
 
          endif ! exponential decay
 
@@ -975,7 +973,7 @@ contains
          !   layer to zero
          !
          if (config_use_tracerGroup_idealAge_forcing) then
-            call mpas_timer_start("ideal age " // trim(groupName))
+            call mpas_timer_start("ideal age " // groupName)
             call mpas_log_write( &
                         "WARNING: ideal age not fully tested", &
                         MPAS_LOG_WARN)
@@ -984,16 +982,16 @@ contains
                                        'tracersIdealAgeFields', &
                                         tracersIdealAgeFieldsPool)
 
-            modifiedGroupName = trim(groupName) // "IdealAgeMask"
+            modifiedGroupName = groupName // "IdealAgeMask"
             call mpas_pool_get_array(tracersIdealAgeFieldsPool, &
-                                     trim(modifiedGroupName), &
+                                     modifiedGroupName, &
                                      tracerGroupIdealAgeMask)
             call ocn_tracer_ideal_age_compute(nTracersGroup, nCellsAll,&
                                       maxLevelCell, layerThickness, &
                                       tracerGroupIdealAgeMask, &
                                       tracerGroup, tracerGroupTend, err)
 
-            call mpas_timer_stop("ideal age " // trim(groupName))
+            call mpas_timer_stop("ideal age " // groupName)
 
          endif ! ideal age
 
@@ -1004,7 +1002,7 @@ contains
          !   top-most layer
          !
          if (config_use_tracerGroup_ttd_forcing) then
-            call mpas_timer_start("TTD " // trim(groupName))
+            call mpas_timer_start("TTD " // groupName)
             call mpas_log_write("WARNING: TTD not fully tested", &
                                 MPAS_LOG_WARN)
 
@@ -1012,16 +1010,16 @@ contains
                                        'tracersTTDFields', &
                                         tracersTTDFieldsPool)
 
-            modifiedGroupName = trim(groupName) // "TTDMask"
+            modifiedGroupName = groupName // "TTDMask"
             call mpas_pool_get_array(tracersTTDFieldsPool, &
-                                     trim(modifiedGroupName), &
+                                     modifiedGroupName, &
                                      tracerGroupTTDMask)
             call ocn_tracer_TTD_compute(nTracersGroup, nCellsAll, &
                                         maxLevelCell, layerThickness, &
                                         tracerGroupTTDMask, &
                                         tracerGroup, err)
 
-            call mpas_timer_stop("TTD " // trim(groupName))
+            call mpas_timer_stop("TTD " // groupName)
          endif ! TTD
 
          !
@@ -1033,7 +1031,7 @@ contains
          call ocn_tracer_advection_tend(tracerGroup, &
                             normalThicknessFlux, vertAleTransportTop, &
                             layerThickness, dt, meshPool, tracerGroupTend, &
-                            trim(groupName))
+                            groupName)
 
          !
          ! Add horizontal tracer diffusion,
@@ -1214,7 +1212,7 @@ contains
          ! Compute tracer tendency due to production/destruction of
          ! frazil ice
          call ocn_frazil_forcing_tracers(meshPool, tracersPool, &
-                     trim(groupName), forcingPool, tracerGroupTend, err)
+                     groupName, forcingPool, tracerGroupTend, err)
 
 
       end if ! config use flag on
