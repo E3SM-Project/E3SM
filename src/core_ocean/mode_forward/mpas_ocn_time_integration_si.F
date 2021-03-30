@@ -394,7 +394,7 @@ module ocn_time_integration_si
                call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
-               call ocn_tend_freq_filtered_thickness(tendPool, statePool, meshPool, stage1_tend_time)
+               call ocn_tend_freq_filtered_thickness(tendPool, statePool, stage1_tend_time)
                block => block % next
             end do
             call mpas_timer_stop("si freq-filtered-thick computations")
