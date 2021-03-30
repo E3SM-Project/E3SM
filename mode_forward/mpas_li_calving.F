@@ -3338,7 +3338,7 @@ module li_calving
       call mpas_log_write("Iceberg-detection flood-fill initialization complete.")
       
       seedMask(:) = contiguousDynamicIce(:)
-      where ( seedMask == 0 .and. li_mask_is_dynamic_ice(cellMask(:)) )
+      where ( seedMask == 0 .and. li_mask_is_floating_ice(cellMask(:)) )
              growMask = 1
       endwhere
       call flood_fill(seedMask, growMask, domain)
@@ -3358,7 +3358,7 @@ module li_calving
 
          contiguousDynamicIceOld(:) = 0
          do iCell = 1, nCellsSolve
-            if (contiguousDynamicIce(iCell) == 0 .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
+            if (contiguousDynamicIce(iCell) == 0 .and. li_mask_is_floating_ice(cellMask(iCell))) then
                calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)  ! remove any remaining ice here
                thickness(iCell) = 0.0_RKIND
                contiguousDynamicIceOld(iCell) = 1 ! debug: make this a mask of where icebergs were removed
