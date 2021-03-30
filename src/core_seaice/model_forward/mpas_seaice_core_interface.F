@@ -583,15 +583,15 @@ module seaice_core_interface
           config_use_data_icebergs, &
           config_testing_system_test, &
           config_use_snicar_ad, &
-          config_perform_unit_test, &
           config_use_prescribed_ice, &
-          config_use_periodic_velocities
+          config_use_special_boundaries_velocity, &
+          config_use_special_boundaries_velocity_masks, &
+          config_use_special_boundaries_zero_tracers
 
      logical, pointer :: &
           pkgForcingActive, &
           pkgTestingSystemTestActive, &
           pkgSnicarActive, &
-          pkgUnitTestsActive, &
           pkgPrescribedActive, &
           pkgSpecialBoundariesActive
 
@@ -628,13 +628,6 @@ module seaice_core_interface
      ! see if we are using the snicar_ad system
      pkgSnicarActive = .true.
 
-     ! pkgUnitTests
-     call MPAS_pool_get_config(configPool, "config_perform_unit_test", config_perform_unit_test)
-     call MPAS_pool_get_package(packagePool, "pkgUnitTestsActive", pkgUnitTestsActive)
-     if (config_perform_unit_test) then
-       pkgUnitTestsActive = .true.
-     endif
-
      ! pkgPrescribed
      call MPAS_pool_get_config(configPool, "config_use_prescribed_ice", config_use_prescribed_ice)
      call MPAS_pool_get_package(packagePool, "pkgPrescribedActive", pkgPrescribedActive)
@@ -643,9 +636,13 @@ module seaice_core_interface
      endif
 
      ! pkgSpecialBoundaries
-     call MPAS_pool_get_config(configPool, "config_use_periodic_velocities", config_use_periodic_velocities)
+     call MPAS_pool_get_config(configPool, "config_use_special_boundaries_velocity", config_use_special_boundaries_velocity)
+     call MPAS_pool_get_config(configPool, "config_use_special_boundaries_velocity_masks", config_use_special_boundaries_velocity_masks)
+     call MPAS_pool_get_config(configPool, "config_use_special_boundaries_zero_tracers", config_use_special_boundaries_zero_tracers)
      call MPAS_pool_get_package(packagePool, "pkgSpecialBoundariesActive", pkgSpecialBoundariesActive)
-     if (config_use_periodic_velocities) then
+     if (config_use_special_boundaries_velocity .or. &
+         config_use_special_boundaries_velocity_masks .or. &
+         config_use_special_boundaries_zero_tracers) then
         pkgSpecialBoundariesActive = .true.
      endif
 

@@ -53,7 +53,6 @@ list(APPEND RAW_SOURCES
   core_seaice/shared/mpas_seaice_advection_incremental_remap.F
   core_seaice/shared/mpas_seaice_advection_upwind.F
   core_seaice/shared/mpas_seaice_advection.F
-  core_seaice/shared/mpas_seaice_velocity_solver_unit_tests.F
   core_seaice/shared/mpas_seaice_velocity_solver.F
   core_seaice/shared/mpas_seaice_velocity_solver_weak.F
   core_seaice/shared/mpas_seaice_velocity_solver_variational.F
@@ -64,7 +63,6 @@ list(APPEND RAW_SOURCES
   core_seaice/shared/mpas_seaice_forcing.F
   core_seaice/shared/mpas_seaice_initialize.F
   core_seaice/shared/mpas_seaice_testing.F
-  core_seaice/shared/mpas_seaice_unit_test.F
   core_seaice/shared/mpas_seaice_mesh.F
   core_seaice/shared/mpas_seaice_diagnostics.F
   core_seaice/shared/mpas_seaice_numerics.F
@@ -74,6 +72,7 @@ list(APPEND RAW_SOURCES
   core_seaice/shared/mpas_seaice_error.F
   core_seaice/shared/mpas_seaice_mesh_pool.F
   core_seaice/shared/mpas_seaice_prescribed.F
+  core_seaice/shared/mpas_seaice_special_boundaries.F
 )
 
 # analysis members
