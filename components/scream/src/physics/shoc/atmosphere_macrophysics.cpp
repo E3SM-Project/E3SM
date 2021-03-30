@@ -42,7 +42,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
 
   // Layout for horiz_wind field
-  FieldLayout horiz_wind_layout { {COL,VAR,LEV}, {m_num_cols,2,m_num_levs} };
+  FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
 
   // Define fields needed in SHOC.
   // Note: shoc_main is organized by a set of 5 structures, variables below are organized
@@ -115,7 +115,7 @@ set_updated_group (const FieldGroup<Real>& group)
   m_shoc_fields_out["Q"] = *group.m_bundle;
 
   // Calculate number of advected tracers
-  m_num_tracers = m_shoc_fields_in["Q"].get_header().get_identifier().get_layout().dim(1);
+  m_num_tracers = group.m_info->size();
 }
 
 // =========================================================================================
