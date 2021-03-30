@@ -99,7 +99,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
       REQUIRE(qi(icol,jlev)==(std::sin(xval-phase)+1.0)/2.0);
       REQUIRE(liq_cld_frac(icol,jlev)==(std::sin(xval+phase)+1.0)/2.0);
       // Test that the cloud fraction calculation appropriately calculated the ice cloud fraction
-      if (qi(icol,jlev)>=1e-5)  // TODO: This may also be updated to be a tunable parameter, we might need to grab this value from the parameter list.
+      if (qi(icol,jlev)>1e-5)  // TODO: This may also be updated to be a tunable parameter, we might need to grab this value from the parameter list.
       {
         //REQUIRE(ice_cld_frac(icol,jlev)==1.0);
         EKAT_REQUIRE_MSG(ice_cld_frac(icol,jlev)==1.0, "error - " + std::to_string(icol) + " " + std::to_string(jlev) + " " + std::to_string(qi(icol,jlev)));
