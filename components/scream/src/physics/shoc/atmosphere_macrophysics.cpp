@@ -33,9 +33,11 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
+  // Layout for pref_mid_field
+  FieldLayout pref_mid_layout{ {LEV}, {m_num_levs} };
+
   // Layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
-  FieldLayout scalar2d_layout_lev{ {LEV},  {m_num_levs} };
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
@@ -49,17 +51,17 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   //       using the same approach to make it easier to follow.
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
-  m_required_fields.emplace("pref_mid",scalar2d_layout_lev, Pa, grid_name);
-  m_required_fields.emplace("T_atm",   scalar3d_layout_mid, nondim, grid_name);
-  m_required_fields.emplace("alst",    scalar3d_layout_mid, Pa,     grid_name);
-  m_required_fields.emplace("zi",      scalar3d_layout_int, m,      grid_name);
-  m_required_fields.emplace("zm",      scalar3d_layout_mid, K,      grid_name);
-  m_required_fields.emplace("omega",   scalar3d_layout_mid, K,      grid_name);
-  m_required_fields.emplace("shf",     scalar2d_layout_col, K,      grid_name);
-  m_required_fields.emplace("cflx_k0", scalar2d_layout_col, K,      grid_name);
-  m_required_fields.emplace("wsx",     scalar2d_layout_col, K,      grid_name);
-  m_required_fields.emplace("wsy",     scalar2d_layout_col, K,      grid_name);
-  m_required_fields.emplace("shoc_qv", scalar3d_layout_mid, Qunit,  grid_name);
+  m_required_fields.emplace("pref_mid", pref_mid_layout,     Pa, grid_name);
+  m_required_fields.emplace("T_atm",    scalar3d_layout_mid, nondim, grid_name);
+  m_required_fields.emplace("alst",     scalar3d_layout_mid, Pa,     grid_name);
+  m_required_fields.emplace("zi",       scalar3d_layout_int, m,      grid_name);
+  m_required_fields.emplace("zm",       scalar3d_layout_mid, K,      grid_name);
+  m_required_fields.emplace("omega",    scalar3d_layout_mid, K,      grid_name);
+  m_required_fields.emplace("shf",      scalar2d_layout_col, K,      grid_name);
+  m_required_fields.emplace("cflx_k0",  scalar2d_layout_col, K,      grid_name);
+  m_required_fields.emplace("wsx",      scalar2d_layout_col, K,      grid_name);
+  m_required_fields.emplace("wsy",      scalar2d_layout_col, K,      grid_name);
+  m_required_fields.emplace("shoc_qv",  scalar3d_layout_mid, Qunit,  grid_name);
 
   m_computed_fields.emplace("T_atm",   scalar3d_layout_mid, nondim, grid_name);
   m_computed_fields.emplace("shoc_qv", scalar3d_layout_mid, Qunit,  grid_name);
