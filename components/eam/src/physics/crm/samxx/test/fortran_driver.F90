@@ -213,8 +213,7 @@ program driver
 
   ! Run the code
   call crm(1 , ncrms, dt_gl(1), plev, crm_input, crm_state, crm_rad, crm_ecpp_output, crm_output, crm_clear_rh, &
-           lat0, long0, gcolp, 2, .true., 2.D0, .true.)
-
+           lat0, long0, gcolp, 2, .false. , 4 , .true., 2.D0 , .true.)
 
 #if HAVE_MPI
   call mpi_barrier(mpi_comm_world,ierr)
