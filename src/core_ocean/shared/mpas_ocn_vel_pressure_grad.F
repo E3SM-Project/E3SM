@@ -561,7 +561,7 @@ contains
             ! compute the pressure gradient to be applied at the edge
             pGrad = config_zonal_ssh_grad * cos(angleEdge(iEdge)) + config_meridional_ssh_grad * sin(angleEdge(iEdge))
 
-            do k=1,maxLevelEdgeTop(iEdge)
+            do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
                tend(k,iEdge) = tend(k,iEdge) - gravity * edgeMask(k,iEdge) * pGrad
             end do
          end do
