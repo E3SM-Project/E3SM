@@ -462,6 +462,9 @@ contains
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
       real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
+      real (kind=RKIND), dimension(:), pointer :: rainTemperatureFlux, evapTemperatureFlux, &
+                                                  seaIceFreshWaterTemperatureFlux, icebergFreshWaterTemperatureFlux, &
+                                                  totalFreshWaterTemperatureFlux
       real (kind=RKIND) :: requiredSalt, allowedSalt
 
       err = 0
@@ -490,6 +493,12 @@ contains
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
+
+      call mpas_pool_get_array(forcingPool, 'rainTemperatureFlux', rainTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'evapTemperatureFlux', evapTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterTemperatureFlux', seaIceFreshWaterTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'icebergFreshWaterTemperatureFlux', icebergFreshWaterTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'totalFreshWaterTemperatureFlux', totalFreshWaterTemperatureFlux)
 
       nCells = nCellsArray( 3 )
 
@@ -537,18 +546,26 @@ contains
          do iCell = 1, nCells
 
            ! Accumulate fluxes that use the surface temperature
-           tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
-                      + (rainFlux(iCell) + evaporationFlux(iCell)) * tracerGroup(index_temperature_flux,1,iCell) / rho_sw
+           rainTemperatureFlux(iCell) = rainFlux(iCell) * tracerGroup(index_temperature_flux,1,iCell) / rho_sw
+           evapTemperatureFlux(iCell) = evaporationFlux(iCell) * tracerGroup(index_temperature_flux,1,iCell) / rho_sw
 
            ! Runoff can only have a minimum temperature of 0.0C, since it is fresh water.
            tracersSurfaceFluxRunoff(index_temperature_flux,iCell) = riverRunoffFlux(iCell) &
                       * max(tracerGroup(index_temperature_flux,1,iCell), 0.0_RKIND) / rho_sw
 
            ! Accumulate fluxes that use the freezing point
+           seaIceFreshWaterTemperatureFlux(iCell) = seaIceFreshWaterFlux(iCell) * &
+               ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell), pressure=0.0_RKIND, &
+                                         inLandIceCavity=.false.) / rho_sw
+           icebergFreshWaterTemperatureFlux(iCell) = icebergFreshWaterFlux(iCell) * &
+               ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell), pressure=0.0_RKIND, &
+                                         inLandIceCavity=.false.) / rho_sw
+
+           totalFreshWaterTemperatureFlux(iCell) = rainTemperatureFlux(iCell) + evapTemperatureFlux(iCell) + &
+                                                   seaIceFreshWaterTemperatureFlux(iCell) + icebergFreshWaterFlux(iCell)
+
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
-               + (seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell)) * &
-               ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell), pressure=0.0_RKIND, inLandIceCavity=.false.)&
-               / rho_sw
+              + totalFreshWaterTemperatureFlux(iCell)
 
            ! Fields with zero temperature are not accumulated. These include:
            !    snowFlux
