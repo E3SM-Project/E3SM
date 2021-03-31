@@ -1051,7 +1051,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: nonLocalSurfaceTracerFlux, tracerGroupSurfaceFlux
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
       real (kind=RKIND), dimension(:,:,:), allocatable :: nonLocalFluxTend
-      integer, dimension(:), pointer :: maxLevelCell, minLevelCell, maxLevelEdgeTop, minLevelEdgeTop
+      integer, dimension(:), pointer :: maxLevelCell, minLevelCell, maxLevelEdgeTop, minLevelEdgeBot
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       type (mpas_pool_iterator_type) :: groupItr
@@ -1078,7 +1078,7 @@ contains
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'minLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'minLevelEdgeTop', minLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
 
@@ -1104,7 +1104,7 @@ contains
             vertViscTopOfEdge(:, iEdge) = 0.0_RKIND
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            do k=minLevelEdgeTop(iEdge),maxLevelEdgeTop(iEdge)
+            do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
                vertViscTopOfEdge(k,iEdge) = 0.5_RKIND*(vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k,cell1))
             end do
          end do
