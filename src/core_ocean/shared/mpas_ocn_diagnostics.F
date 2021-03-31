@@ -1907,8 +1907,8 @@ contains
 
       ! real pointers
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceThicknessFlux, &
-           surfaceThicknessFluxRunoff, rainFlux, evaporationFlux, &
-           icebergFreshWaterFlux, seaIceFreshWaterFlux
+           surfaceThicknessFluxRunoff, rainTemperatureFlux, evapTemperatureFlux, &
+           icebergFreshWaterTemperatureFlux, seaIceFreshWaterTemperatureFlux
 
       real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
@@ -1967,10 +1967,10 @@ contains
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
       call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
-      call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
-      call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
-      call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
-      call mpas_pool_get_array(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFlux)
+      call mpas_pool_get_array(forcingPool, 'rainTemperatureFlux', rainTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'evapTemperatureFlux', evapTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterTemperatureFlux', seaIceFreshWaterTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'icebergFreshWaterTemperatureFlux', icebergFreshWaterTemperatureFlux)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFluxRunoff', activeTracersSurfaceFluxRunoff)
@@ -2023,11 +2023,9 @@ contains
 
          nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = activeTracersSurfaceFlux(indexTempFlux,iCell) &
                  + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)  &
-                 - fracAbsorbed * (rainFlux(iCell) + evaporationFlux(iCell)) * activeTracers(indexTempFlux,1,iCell)/rho_sw &
-                 - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell)* min(activeTracers(indexTempFlux,1,iCell),0.0_RKIND)/rho_sw &
-                 - fracAbsorbed * (seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell)) * &
-                 ocn_freezing_temperature( activeTracers(indexSaltFlux, 1, iCell), pressure=0.0_RKIND, inLandIceCavity=.false.)&
-                  / rho_sw
+                 - fracAbsorbed * (rainTemperatureFlux(iCell) + evapTemperatureFlux(iCell) + &
+                                   seaIceFreshWaterTemperatureFlux(iCell) + icebergFreshWaterTemperatureFlux(iCell)) &
+                 - fracAbsorbedRunoff * activeTracersSurfaceFluxRunoff(indexTempFlux, iCell)
 
          nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = activeTracersSurfaceFlux(indexSaltFlux,iCell) &
                  - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell) &
