@@ -49,6 +49,7 @@ module ocn_comp_mct
    use ocn_time_integration
    use ocn_time_average_coupled
    use ocn_frazil_forcing
+   use ocn_equation_of_state
    use ocn_surface_land_ice_fluxes
    use ocn_diagnostics
    use ocn_diagnostics_variables
@@ -2323,6 +2324,8 @@ contains
                                                  avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
 
+   real (kind=RKIND) :: SurfacefreezingTemp
+
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
                        config_use_DMSTracers,    &
@@ -2435,7 +2438,14 @@ contains
           end if
 
           if ( keepFrazil ) then
-             seaIceEnergy(i) = min( rho_sw * cp_sw * layerThickness(1, i) * ( -1.8_RKIND + T0_Kelvin &
+
+             ! We assume here that avgTracersSurfaceValue represents only the
+             ! top layer of the ocean.
+
+             SurfacefreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
+                 pressure=0.0_RKIND,  inLandIceCavity=.false.) 
+
+             seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( SurfacefreezingTemp + T0_Kelvin &
                              - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
              if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) seaIceEnergy(i) = 0.0_RKIND
 
