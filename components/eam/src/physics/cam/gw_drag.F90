@@ -914,6 +914,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
            ptend%u(:ncol,k) = ptend%u(:ncol,k) + utgw(:,k)
            vtgw(:,k) = vtgw(:,k) * cam_in%landfrac(:ncol)
            ptend%v(:ncol,k) = ptend%v(:ncol,k) + vtgw(:,k)
+           ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k)
         enddo
 
         dE = 0.0
@@ -927,7 +928,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
         do k = 1, pver
            ptend%s(:ncol,k) = ptend%s(:ncol,k) + dE(:ncol)
-           ttgw(:ncol,k) = ttgw(:ncol,k) + dE(:ncol) / cpairv(:ncol, k, lchnk)
+           ttgw(:ncol,k) = ( ttgw(:ncol,k) + dE(:ncol) ) / cpairv(:ncol, k, lchnk)
         enddo
      endif ! gw energy fix 2
 
