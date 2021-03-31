@@ -395,9 +395,11 @@ class TestAllScream(object):
         baseline_sha = run_cmd_no_fail("cat {}".format(self._baseline_sha_file))
 
         ahead_behind = git_refs_difference(expected_baseline_sha,baseline_sha)
+        ahead = int(ahead_behind[0])
+        behind = int(ahead_behind[1])
 
         # If the copy in our repo is behind, then we need to update the repo
-        expect (int(ahead_behind[1])==0 or not self._integration_test,
+        expect (behind==0 or not self._integration_test,
             "Error! Your repo seems stale, since the baseline sha in your repo is behind\n"
             "       the one last used to generated them. We do *not* allow an integration\n"
             "       test to replace baselines with older ones, for security reasons.\n"
@@ -409,7 +411,7 @@ class TestAllScream(object):
             "   - last used baseline sha: {}\n".format(self._baseline_ref,expected_baseline_sha,baseline_sha))
 
         # If the copy in our repo is not ahead, then baselines are not expired
-        return int(ahead_behind[0]==0)
+        return ahead>0
 
     ###############################################################################
     def get_machine_file(self):
