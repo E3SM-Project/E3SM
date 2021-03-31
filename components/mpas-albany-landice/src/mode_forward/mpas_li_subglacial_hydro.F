@@ -327,7 +327,7 @@ module li_subglacial_hydro
       ! =============
       ! =============
       ! =============
-      do while (timeLeft > 0.0_RKIND)
+      timecycling: do while (timeLeft > 0.0_RKIND)
       numSubCycles = numSubCycles + 1
 
 
@@ -468,6 +468,9 @@ module li_subglacial_hydro
       ! =============
       call check_timestep(domain, timeLeft, err_tmp)
       err = ior(err, err_tmp)
+      if (err > 0) then
+         exit timecycling
+      endif
 
 
       ! =============
@@ -580,7 +583,7 @@ module li_subglacial_hydro
       ! =============
       ! =============
       ! =============
-      end do  ! while timeLeft>0
+      end do timecycling ! while timeLeft>0
       ! =============
       ! =============
       ! =============
@@ -1146,6 +1149,10 @@ module li_subglacial_hydro
          endif
       endif
 
+      if (proposedDt < 1.0E-3_RKIND) then
+         call mpas_log_write("CFL conditions are limiting subglacial hydrology timestep to <1 millisecond.", MPAS_LOG_ERR)
+         err = ior(err, 1)
+      endif
 
       ! Don't exceed the maximum allowed hydro time step
       proposedDt = min(proposedDt, maxDt)
@@ -1190,6 +1197,7 @@ module li_subglacial_hydro
          call mpas_log_write("deltatSGH > deltatSGHdiffuChannel  $r > $r", MPAS_LOG_WARN, &
             realArgs=(/deltatSGH, deltatSGHdiffuChannel/))
       endif
+
 
    !--------------------------------------------------------------------
    end subroutine check_timestep
