@@ -56,11 +56,11 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   //       using the same approach to make it easier to follow.
 
   // These variables are needed by the interface, but not actually passed to p3_main. 
-  m_required_fields.emplace("ast",   scalar3d_layout_mid, nondim, grid_name);
-  m_required_fields.emplace("pmid",  scalar3d_layout_mid, Pa,     grid_name);
-  m_required_fields.emplace("zi",    scalar3d_layout_int, m,      grid_name);
-  m_required_fields.emplace("T_atm", scalar3d_layout_mid, K,      grid_name);
-  m_computed_fields.emplace("T_atm", scalar3d_layout_mid, K,      grid_name);  // T_atm is the only one of these variables that is also updated.
+  m_required_fields.emplace("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
+  m_required_fields.emplace("p_mid",       scalar3d_layout_mid, Pa,     grid_name);
+  m_required_fields.emplace("zi",          scalar3d_layout_int, m,      grid_name);
+  m_required_fields.emplace("T_atm_mid",   scalar3d_layout_mid, K,      grid_name);
+  m_computed_fields.emplace("T_atm_mid",   scalar3d_layout_mid, K,      grid_name);  // T_atm_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
   m_required_fields.emplace("qv",     scalar3d_layout_mid, Q,    grid_name);
@@ -72,7 +72,6 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_required_fields.emplace("nr",     scalar3d_layout_mid, 1/kg, grid_name);
   m_required_fields.emplace("ni",     scalar3d_layout_mid, 1/kg, grid_name);
   m_required_fields.emplace("bm",     scalar3d_layout_mid, 1/kg, grid_name);
-//  m_required_fields.emplace("th_atm", scalar3d_layout_mid, K,    grid_name);  //TODO: Delete, don't acutally need this as required.  Keeping it as such now so that the initializr can init it.
   //
   m_computed_fields.emplace("qv",     scalar3d_layout_mid, Q,    grid_name);
   m_computed_fields.emplace("qc",     scalar3d_layout_mid, Q,    grid_name);
@@ -83,30 +82,29 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_computed_fields.emplace("nr",     scalar3d_layout_mid, 1/kg, grid_name);
   m_computed_fields.emplace("ni",     scalar3d_layout_mid, 1/kg, grid_name);
   m_computed_fields.emplace("bm",     scalar3d_layout_mid, 1/kg, grid_name);
-//  m_computed_fields.emplace("th_atm", scalar3d_layout_mid, K,    grid_name);
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
-  m_required_fields.emplace("nc_nuceat_tend",  scalar3d_layout_mid, 1/(kg*s), grid_name);
-  m_required_fields.emplace("nccn_prescribed", scalar3d_layout_mid, nondim,   grid_name);
-  m_required_fields.emplace("ni_activated",    scalar3d_layout_mid, 1/kg,     grid_name);
-  m_required_fields.emplace("inv_qc_relvar",   scalar3d_layout_mid, nondim,   grid_name);
-  m_required_fields.emplace("dp",              scalar3d_layout_mid, Pa,       grid_name);
-  m_required_fields.emplace("qv_prev",         scalar3d_layout_mid, Q,        grid_name);
-  m_required_fields.emplace("T_prev",          scalar3d_layout_mid, K,        grid_name); 
+  m_required_fields.emplace("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name);
+  m_required_fields.emplace("nc_activated",       scalar3d_layout_mid, nondim,   grid_name);
+  m_required_fields.emplace("ni_activated",       scalar3d_layout_mid, 1/kg,     grid_name);
+  m_required_fields.emplace("inv_qc_relvar",      scalar3d_layout_mid, nondim,   grid_name);
+  m_required_fields.emplace("pseudo_density",     scalar3d_layout_mid, Pa,       grid_name);
+  m_required_fields.emplace("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name);
+  m_required_fields.emplace("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name); 
   //
-  m_computed_fields.emplace("qv_prev",         scalar3d_layout_mid, Q,        grid_name);
-  m_computed_fields.emplace("T_prev",          scalar3d_layout_mid, K,        grid_name);
+  m_computed_fields.emplace("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name);
+  m_computed_fields.emplace("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name);
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
-  m_computed_fields.emplace("mu_c",               scalar3d_layout_mid, nondim, grid_name);
-  m_computed_fields.emplace("lamc",               scalar3d_layout_mid, nondim, grid_name);
-  m_computed_fields.emplace("diag_eff_radius_qc", scalar3d_layout_mid, m,      grid_name);
-  m_computed_fields.emplace("diag_eff_radius_qi", scalar3d_layout_mid, m,      grid_name);
-  m_computed_fields.emplace("precip_total_tend",  scalar3d_layout_mid, mm,     grid_name);
-  m_computed_fields.emplace("nevapr",             scalar3d_layout_mid, nondim, grid_name);
-  m_computed_fields.emplace("qr_evap_tend",       scalar3d_layout_mid, mm/s,   grid_name);
+  m_computed_fields.emplace("mu_qc",             scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("lambda_qc",         scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("eff_radius_qc",     scalar3d_layout_mid, m,      grid_name);
+  m_computed_fields.emplace("eff_radius_qi",     scalar3d_layout_mid, m,      grid_name);
+  m_computed_fields.emplace("precip_total_tend", scalar3d_layout_mid, mm,     grid_name);
+  m_computed_fields.emplace("nevapr",            scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("qr_evap_tend",      scalar3d_layout_mid, mm/s,   grid_name);
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
-  m_computed_fields.emplace("liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
-  m_computed_fields.emplace("vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name);
-  m_computed_fields.emplace("vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("micro_liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("micro_vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("micro_vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
 
 }
 
@@ -122,9 +120,9 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
   const Int nk_pack = ekat::npack<Spack>(m_num_levs);
-  auto pmid  = m_p3_fields_in["pmid"].get_reshaped_view<const Pack**>();
-  auto T_atm = m_p3_fields_out["T_atm"].get_reshaped_view<Pack**>();
-  auto ast   = m_p3_fields_in["ast"].get_reshaped_view<const Pack**>();
+  auto pmid  = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();
+  auto T_atm = m_p3_fields_out["T_atm_mid"].get_reshaped_view<Pack**>();
+  auto ast   = m_p3_fields_in["cldfrac_tot"].get_reshaped_view<const Pack**>();
   auto zi    = m_p3_fields_in["zi"].get_reshaped_view<const Pack**>();
   view_2d exner("exner",m_num_cols,nk_pack);
   view_2d th_atm("th_atm",m_num_cols,nk_pack);
@@ -148,14 +146,14 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   prog_state.th     = p3_preproc.th_atm;
   // --Diagnostic Input Variables:
   diag_inputs.nc_nuceat_tend  = m_p3_fields_in["nc_nuceat_tend"].get_reshaped_view<const Pack**>();
-  diag_inputs.nccn            = m_p3_fields_in["nccn_prescribed"].get_reshaped_view<const Pack**>();
+  diag_inputs.nccn            = m_p3_fields_in["nc_activated"].get_reshaped_view<const Pack**>();
   diag_inputs.ni_activated    = m_p3_fields_in["ni_activated"].get_reshaped_view<const Pack**>();
   diag_inputs.inv_qc_relvar   = m_p3_fields_in["inv_qc_relvar"].get_reshaped_view<const Pack**>();
-  diag_inputs.pres            = m_p3_fields_in["pmid"].get_reshaped_view<const Pack**>();
-  diag_inputs.dpres           = m_p3_fields_in["dp"].get_reshaped_view<const Pack**>();
-  auto qv_prev                = m_p3_fields_out["qv_prev"].get_reshaped_view<Pack**>();
+  diag_inputs.pres            = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();
+  diag_inputs.dpres           = m_p3_fields_in["pseudo_density"].get_reshaped_view<const Pack**>();
+  auto qv_prev                = m_p3_fields_out["qv_prev_micro_step"].get_reshaped_view<Pack**>();
   diag_inputs.qv_prev         = qv_prev;
-  auto t_prev                 = m_p3_fields_out["T_prev"].get_reshaped_view<Pack**>();
+  auto t_prev                 = m_p3_fields_out["T_prev_micro_step"].get_reshaped_view<Pack**>();
   diag_inputs.t_prev          = t_prev;
   diag_inputs.cld_frac_l      = p3_preproc.cld_frac_l;
   diag_inputs.cld_frac_i      = p3_preproc.cld_frac_i;
@@ -170,10 +168,10 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   view_2d precip_liq_flux("precip_liq_flux",m_num_cols,m_num_levs);
   view_2d precip_ice_flux("precip_ice_flux",m_num_cols,m_num_levs);
 
-  diag_outputs.mu_c               = m_p3_fields_out["mu_c"].get_reshaped_view<Pack**>();
-  diag_outputs.lamc               = m_p3_fields_out["lamc"].get_reshaped_view<Pack**>();
-  diag_outputs.diag_eff_radius_qc = m_p3_fields_out["diag_eff_radius_qc"].get_reshaped_view<Pack**>();
-  diag_outputs.diag_eff_radius_qi = m_p3_fields_out["diag_eff_radius_qi"].get_reshaped_view<Pack**>();
+  diag_outputs.mu_c               = m_p3_fields_out["mu_qc"].get_reshaped_view<Pack**>();
+  diag_outputs.lamc               = m_p3_fields_out["lambda_qc"].get_reshaped_view<Pack**>();
+  diag_outputs.diag_eff_radius_qc = m_p3_fields_out["eff_radius_qc"].get_reshaped_view<Pack**>();
+  diag_outputs.diag_eff_radius_qi = m_p3_fields_out["eff_radius_qi"].get_reshaped_view<Pack**>();
   diag_outputs.precip_total_tend  = m_p3_fields_out["precip_total_tend"].get_reshaped_view<Pack**>();
   diag_outputs.nevapr             = m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
   diag_outputs.qr_evap_tend       = m_p3_fields_out["qr_evap_tend"].get_reshaped_view<Pack**>();
@@ -196,9 +194,9 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   sview_2d col_location("col_location", m_num_cols, 3);
   infrastructure.col_location = col_location; // TODO: Initialize this here and now when P3 has access to lat/lon for each column.
   // --History Only
-  history_only.liq_ice_exchange = m_p3_fields_out["liq_ice_exchange"].get_reshaped_view<Pack**>();
-  history_only.vap_liq_exchange = m_p3_fields_out["vap_liq_exchange"].get_reshaped_view<Pack**>();
-  history_only.vap_ice_exchange = m_p3_fields_out["vap_ice_exchange"].get_reshaped_view<Pack**>();
+  history_only.liq_ice_exchange = m_p3_fields_out["micro_liq_ice_exchange"].get_reshaped_view<Pack**>();
+  history_only.vap_liq_exchange = m_p3_fields_out["micro_vap_liq_exchange"].get_reshaped_view<Pack**>();
+  history_only.vap_ice_exchange = m_p3_fields_out["micro_vap_ice_exchange"].get_reshaped_view<Pack**>();
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev);
 }
@@ -222,10 +220,10 @@ void P3Microphysics::run_impl (const Real dt)
   }
 
   // Gather views needed to pre-process local variables.
-  auto T_atm  = m_p3_fields_out["T_atm"].get_reshaped_view<Pack**>();
-  auto ast    = m_p3_fields_in["ast"].get_reshaped_view<const Pack**>();
+  auto T_atm  = m_p3_fields_out["T_atm_mid"].get_reshaped_view<Pack**>();
+  auto ast    = m_p3_fields_in["cldfrac_tot"].get_reshaped_view<const Pack**>();
   auto zi     = m_p3_fields_in["zi"].get_reshaped_view<const Pack**>();
-  auto pmid   = m_p3_fields_in["pmid"].get_reshaped_view<const Pack**>();
+  auto pmid   = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();
 
   // Assign values to local arrays used by P3, these are now stored in p3_loc.
   Kokkos::parallel_for(
