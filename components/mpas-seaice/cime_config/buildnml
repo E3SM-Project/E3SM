@@ -231,8 +231,8 @@ def buildnml(case, caseroot, compname):
         grid_date = '170111'
         grid_prefix = 'seaice.RRS18to6v3'
         if ice_ic_mode == 'spunup':
-            grid_date = '171031'
-            grid_prefix = 'seaice.RRS18to6v3_80Layer.restartFromAnvil'
+            grid_date = '210321'
+            grid_prefix = 'seaice.RRS18to6v3_80Layer.restartFromChrysalis'
 
     elif ice_grid == 'oRRS15to5':
         decomp_date = '151209'

@@ -230,8 +230,8 @@ def buildnml(case, caseroot, compname):
         ic_date = '171116'
         ic_prefix = 'oRRS18to6v3'
         if ocn_ic_mode == 'spunup':
-            ic_date = '171031'
-            ic_prefix = 'oRRS18to6v3_80Layer.restartFromAnvil'
+            ic_date = '210321'
+            ic_prefix = 'oRRS18to6v3_80Layer.restartFromChrysalis'
 
     elif ocn_grid == 'oRRS15to5':
         decomp_date = '151209'
