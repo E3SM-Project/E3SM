@@ -65,6 +65,7 @@
 <config_nSnowLayers>5</config_nSnowLayers>
 
 <!-- initialize -->
+<config_earth_radius>6371229.0</config_earth_radius>
 <config_initial_condition_type>'cice_default'</config_initial_condition_type>
 <config_initial_ice_area>1.0</config_initial_ice_area>
 <config_initial_ice_volume>1.0</config_initial_ice_volume>
@@ -101,10 +102,7 @@
 <config_update_ocean_fluxes>true</config_update_ocean_fluxes>
 <config_include_pond_freshwater_feedback>false</config_include_pond_freshwater_feedback>
 
-<!-- unit_test -->
-<config_perform_unit_test>false</config_perform_unit_test>
-<config_unit_test_type>''</config_unit_test_type>
-<config_unit_test_subtype>''</config_unit_test_subtype>
+<!-- testing -->
 <config_use_test_ice_shelf>false</config_use_test_ice_shelf>
 <config_testing_system_test>false</config_testing_system_test>
 
@@ -132,15 +130,22 @@
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
+<config_strain_scheme>'variational'</config_strain_scheme>
+<config_constitutive_relation_type>'evp'</config_constitutive_relation_type>
 <config_stress_divergence_scheme>'variational'</config_stress_divergence_scheme>
 <config_variational_basis>'wachspress'</config_variational_basis>
+<config_variational_denominator_type>'original'</config_variational_denominator_type>
 <config_wachspress_integration_type>'dunavant'</config_wachspress_integration_type>
 <config_wachspress_integration_order>8</config_wachspress_integration_order>
-<config_revised_evp>false</config_revised_evp>
+<config_calc_velocity_masks>true</config_calc_velocity_masks>
+<config_average_variational_strain>false</config_average_variational_strain>
 <config_use_air_stress>true</config_use_air_stress>
 <config_use_ocean_stress>true</config_use_ocean_stress>
 <config_use_surface_tilt>true</config_use_surface_tilt>
 <config_geostrophic_surface_tilt>false</config_geostrophic_surface_tilt>
+<config_ocean_stress_type>'quadratic'</config_ocean_stress_type>
+<config_use_special_boundaries_velocity>false</config_use_special_boundaries_velocity>
+<config_use_special_boundaries_velocity_masks>false</config_use_special_boundaries_velocity_masks>
 
 <!-- advection -->
 <config_advection_type>'incremental_remap'</config_advection_type>
@@ -167,6 +172,7 @@
 <config_use_aerosols>false</config_use_aerosols>
 <config_use_effective_snow_density>true</config_use_effective_snow_density>
 <config_use_snow_grain_radius>true</config_use_snow_grain_radius>
+<config_use_special_boundaries_zero_tracers>false</config_use_special_boundaries_zero_tracers>
 
 <!-- biogeochemistry -->
 <config_use_brine>false</config_use_brine>
