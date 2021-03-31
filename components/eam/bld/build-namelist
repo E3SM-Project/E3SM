@@ -3847,6 +3847,9 @@ if ($nl->get_value('use_gw_convect') =~ /$TRUE/io) {
     add_default($nl, 'gw_drag_file');
 }
 
+add_default($nl, 'use_gw_energy_fix'    , 'val'=>'.true.');
+
+
 # Some complexity to unpack.
 # 1. In WACCM, we want tau_0_ubc = .false., because it hasn't been tuned
 #    for that option.

@@ -1686,6 +1686,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <effgw_beres phys="default"> 0.35       </effgw_beres>
 <gw_convect_hcf phys="default"> 12.5       </gw_convect_hcf>
 <effgw_oro phys="default"> 0.375      </effgw_oro>
+<use_gw_energy_fix phys="default"> .true.      </use_gw_energy_fix>
 <clubb_C14 phys="default"> 2.5D0      </clubb_C14>
 <clubb_tk1 phys="default"> 253.15D0   </clubb_tk1>
 <dust_emis_fact phys="default"> 1.50D0     </dust_emis_fact>

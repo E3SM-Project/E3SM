@@ -36,7 +36,7 @@ module gw_drag
   use physconst,     only: cpair
 
   ! These are the actual switches for different gravity wave sources.
-  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix2
+  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix
 
 ! Typical module header
   implicit none
@@ -494,7 +494,7 @@ subroutine gw_init()
        'T tendency - gravity wave drag')
 
   if (masterproc) then
-     write (iulog,*) 'using GW energy fix2   =',use_gw_energy_fix2
+     write (iulog,*) 'using GW energy fix   =',use_gw_energy_fix
   end if
 
   if ( history_budget ) then
@@ -893,7 +893,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      ! Compute the temperature tendency from energy conservation
      ! (includes spectrum).
 
-     if(.not. use_gw_energy_fix2) then
+     if(.not. use_gw_energy_fix) then
         !original
         do k = 1, pver
            utgw(:,k) = utgw(:,k) * cam_in%landfrac(:ncol)
@@ -927,7 +927,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
         do k = 1, pver
            ptend%s(:ncol,k) = ptend%s(:ncol,k) + dE(:ncol)
-           ttgw(:ncol,k) = ptend%s(:ncol,k) / cpairv(:ncol, k, lchnk)
+           ttgw(:ncol,k) = ttgw(:ncol,k) + dE(:ncol) / cpairv(:ncol, k, lchnk)
         enddo
      endif ! gw energy fix 2
 
