@@ -131,7 +131,7 @@ contains
 
       integer :: i, iCell, iEdge, k, ki, timeLevel, nCells
 
-      real (kind=RKIND) :: invAreaCell, factor, delU2, bottomFrictionVelocity
+      real (kind=RKIND) :: invAreaCell, factor, delU2, bottomFrictionVelocity, waterDepth
       real (kind=RKIND), dimension(:), allocatable :: &
         shearSquaredTop, NSquaredTop, hLayer
 
@@ -215,34 +215,33 @@ contains
 
          ! compute shear frequency squared
          invAreaCell = 1.0_RKIND / areaCell(iCell)
-         do k=2,maxLevelCell(iCell)
+         do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
                factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
                delU2 = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
                shearSquaredTop(k) = shearSquaredTop(k) + factor * delU2
-            enddo
+            end do
             shearSquaredTop(k) = shearSquaredTop(k) / (zMid(k-1,iCell) - zMid(k,iCell))**2
          end do
-         shearSquaredTop(1) = shearSquaredTop(2)
+         shearSquaredTop(minLevelCell(iCell)) = shearSquaredTop(minLevelCell(iCell)+1)
          shearSquaredTop(maxLevelCell(iCell)+1) = shearSquaredTop(maxLevelCell(iCell))
 
          ! fill arrays of the squared buoyancy frequency and layer thickness
-         do k = 1, maxLevelCell(iCell)
+         ! and compute the water depth
+         waterDepth = 0.0_RKIND
+         do k = minLevelCell(iCell), maxLevelCell(iCell)
             NSquaredTop(k) = BruntVaisalaFreqTop(k,iCell)
             hLayer(k) = layerThickness(k,iCell)
-         enddo
-
-         ! fill the bottom values -- GOTM requires size of nlev+1 for both arrays
-         NSquaredTop(maxLevelCell(iCell)+1) = 0.0_RKIND
-         hLayer(maxLevelCell(iCell)+1) = hLayer(maxLevelCell(iCell))
+            waterDepth = waterDepth + layerThickness(k,iCell)
+         end do
 
          ! compute the bottom friction velocity
          bottomFrictionVelocity = sqrt(2.0_RKIND * gotmBottomDragCoef *  &
                                        kineticEnergyCell(maxLevelCell(iCell),iCell))
 
          ! fill GOTM arrays with current values at iCell
-         do k = 0, maxLevelCell(iCell)
+         do k = 0, maxLevelCell(iCell) - minLevelCell(iCell) + 1
             ki = maxLevelCell(iCell) - k + 1
             gotm_vertVisc(k) = gotmVertViscTopOfCellCur(ki, iCell)
             gotm_vertDiffT(k) = gotmVertDiffTopOfCellCur(ki, iCell)
@@ -273,20 +272,20 @@ contains
          !
          ! MPAS-O (1:nlev+1) <-> GOTM (nlev:0)
          !
-         call do_turbulence(maxLevelCell(iCell),                                 &
-                            gotm_dt,                                             &
-                            bottomDepth(iCell),                                  &
-                            surfaceFrictionVelocity(iCell),                      &
-                            bottomFrictionVelocity,                              &
-                            gotmSurfaceRoughnessLength,                          &
-                            gotmBottomRoughnessLength,                           &
-                            hLayer(maxLevelCell(iCell)+1:1:-1),                  &
-                            NSquaredTop(maxLevelCell(iCell)+1:1:-1),             &
-                            shearSquaredTop(maxLevelCell(iCell)+1:1:-1))
+         call do_turbulence(maxLevelCell(iCell) - minLevelCell(iCell) + 1,                &
+                            gotm_dt,                                                      &
+                            waterDepth,                                                   &
+                            surfaceFrictionVelocity(iCell),                               &
+                            bottomFrictionVelocity,                                       &
+                            gotmSurfaceRoughnessLength,                                   &
+                            gotmBottomRoughnessLength,                                    &
+                            hLayer(maxLevelCell(iCell)+1:minLevelCell(iCell):-1),         &
+                            NSquaredTop(maxLevelCell(iCell)+1:minLevelCell(iCell):-1),    &
+                            shearSquaredTop(maxLevelCell(iCell)+1:minLevelCell(iCell):-1))
 
          ! update GOTM arrays for next time step
          ! MPAS-O (1:nlev+1) <-> GOTM (nlev:0)
-         do k = 1, maxLevelCell(iCell)+1
+         do k = minLevelCell(iCell), maxLevelCell(iCell)+1
             ki = maxLevelCell(iCell) - k + 1
             gotmVertViscTopOfCellNew(k, iCell) = gotm_vertVisc(ki)
             gotmVertDiffTopOfCellNew(k, iCell) = gotm_vertDiffT(ki)
