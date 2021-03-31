@@ -3578,6 +3578,11 @@ if ($cfg->get('microphys') =~ /^mg2/) {
     add_default($nl, 'mg_prc_coeff_fix');    
 }
 
+if ($cfg->get('microphys') =~ /^p3/) {
+    add_default($nl, 'cld_macmic_num_steps');
+    add_default($nl, 'nucleate_ice_subgrid');
+}
+
 # Sub-column switches for physics packages
 # Check that a subcol_scheme is specified if use_subcol_microp is turned on (true)
 add_default($nl, 'subcol_scheme');
