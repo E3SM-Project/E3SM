@@ -119,6 +119,7 @@ module camsrfexch
      real(r8), allocatable :: lwup(:,:)       ! longwave up radiative flux
      real(r8), allocatable :: lhf(:,:)        ! latent heat flux
      real(r8), allocatable :: shf(:,:)        ! sensible heat flux
+     real(r8), allocatable :: h2otemp(:,:)    ! water temperature heat flux from ocean
      real(r8), allocatable :: wsx(:,:)        ! surface u-stress (N)
      real(r8), allocatable :: wsy(:,:)        ! surface v-stress (N)
      real(r8), allocatable :: snowhland(:,:)  ! snow depth (liquid water equivalent) over land
@@ -131,6 +132,7 @@ module camsrfexch
      real(r8), allocatable :: lwup(:)         ! longwave up radiative flux
      real(r8), allocatable :: lhf(:)          ! latent heat flux
      real(r8), allocatable :: shf(:)          ! sensible heat flux
+     real(r8), allocatable :: h2otemp(:)      ! water temperature heat flux from ocean
      real(r8), allocatable :: wsx(:)          ! surface u-stress (N)
      real(r8), allocatable :: wsy(:)          ! surface v-stress (N)
      real(r8), allocatable :: snowhland(:)    ! snow depth (liquid water equivalent) over land
@@ -236,6 +238,9 @@ CONTAINS
        allocate (cam_in(c)%shf(pcols,num_inst_atm), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error shf')
 
+       allocate (cam_in(c)%h2otemp(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error h2otemp')
+
        allocate (cam_in(c)%wsx(pcols,num_inst_atm), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error wsx')
 
@@ -265,6 +270,9 @@ CONTAINS
 
        allocate (cam_in(c)%shf(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error shf')
+
+       allocate (cam_in(c)%h2otemp(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error h2otemp')
 
        allocate (cam_in(c)%wsx(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error wsx')
@@ -366,6 +374,7 @@ CONTAINS
        cam_in(c)%lwup     (:,:) = 0._r8
        cam_in(c)%lhf      (:,:) = 0._r8
        cam_in(c)%shf      (:,:) = 0._r8
+       cam_in(c)%h2otemp  (:,:) = 0._r8
        cam_in(c)%wsx      (:,:) = 0._r8
        cam_in(c)%wsy      (:,:) = 0._r8
        cam_in(c)%snowhland(:,:) = 0._r8
@@ -377,6 +386,7 @@ CONTAINS
        cam_in(c)%lwup     (:) = 0._r8
        cam_in(c)%lhf      (:) = 0._r8
        cam_in(c)%shf      (:) = 0._r8
+       cam_in(c)%h2otemp  (:) = 0._r8
        cam_in(c)%wsx      (:) = 0._r8
        cam_in(c)%wsy      (:) = 0._r8
        cam_in(c)%snowhland(:) = 0._r8
@@ -744,6 +754,7 @@ CONTAINS
           deallocate(cam_in(c)%lwup)
           deallocate(cam_in(c)%lhf)
           deallocate(cam_in(c)%shf)
+          deallocate(cam_in(c)%h2otemp)
           deallocate(cam_in(c)%wsx)
           deallocate(cam_in(c)%wsy)
           deallocate(cam_in(c)%tref)
