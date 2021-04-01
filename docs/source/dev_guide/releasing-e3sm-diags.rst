@@ -12,7 +12,6 @@ In this guide, we'll cover:
 * creating a new version of the documentation
 * building and releasing the Docker image
 
-
 Preparing The Code For Release
 ------------------------------
 
@@ -25,7 +24,6 @@ It's usually ``master``.
 
         git fetch <upstream-origin> master
         git checkout -b <branch-name> <upstream-origin>/master
-
 
 2. Edit the ``version`` argument in ``setup.py`` to the new version.
 Don't prefix this with a "v".
@@ -48,13 +46,11 @@ Don't prefix this with a "v".
             ]}
         )
 
-
 3. Edit the ``version`` label in the ``Dockerfile`` as well.
 
     ::
 
         label version="1.1.0"  # Change this line.
-
 
 4. Edit ``__version__`` in ``acme_diags/__init__.py``.
 We use ``__version__`` when generating the webpages.
@@ -63,14 +59,14 @@ We use ``__version__`` when generating the webpages.
 
         __version__ = 'v1.1.0'
 
-
 5. Change the ``version`` and ``git_rev`` tag in ``conda/meta.yaml``.
 ``version`` is what the version of the software will be on Anaconda and
 ``git_rev`` is the tag that we'll setup on GitHub in the next section.
 
-When running ``conda build``, ``conda`` will download the code tagged by ``git_rev``.
-Even though ``meta.yaml`` is in your local clone of the repo, running ``conda build``
-from here **does not** build the package based on your local code.
+    .. note::
+        When running ``conda build``, ``conda`` will download the code tagged by ``git_rev``.
+        Even though ``meta.yaml`` is in your local clone of the repo, running ``conda build``
+        from here **does not** build the package based on your local code.
 
     ::
 
@@ -82,7 +78,6 @@ from here **does not** build the package based on your local code.
             git_url: git://github.com/E3SM-Project/e3sm_diags
             git_rev: v1.1.0
 
-
 6. Now in ``conda/e3sm_diags_env.yml``, change the version of ``e3sm_diags`` under the
 ``dependencies`` tag to whatever version is in the previous step.
 
@@ -93,7 +88,6 @@ of ``e3sm_diags`` installed in the environment for that yml file.
 
         dependencies:
         - e3sm_diags=1.1.0
-
 
 7. Commit and push your changes.
 
@@ -184,8 +178,6 @@ the E3SM Unified environment. This is almost certainly one of the versions liste
 “Next versions”. If you are uncertain of which to update, leave a comment on the page
 asking.
 
-
-
 Creating a New Version of the Documentation
 -------------------------------------------
 
@@ -198,7 +190,6 @@ This triggers the CI/CD workflow that handles publishing documentation versions.
 3. Changes will be available on the
 `e3sm_diags documentation page <https://e3sm-project.github.io/e3sm_diags/>`_.
 
-
 How To Build and Release The Docker Image
 -----------------------------------------
 
@@ -206,7 +197,6 @@ A Docker image of ``e3sm_diags`` needs to be created and released as well.
 This Docker image can be ran as a container via Docker, Shifter, or Singularity.
 
 We'll build the image, test it, and then release it.
-
 
 Prerequisites
 ^^^^^^^^^^^^^
@@ -229,7 +219,6 @@ Building
     ::
 
         export E3SM_DIAGS_VERSION=v1.5.0
-
 
 A Temporary Diversion
 """""""""""""""""""""
@@ -256,7 +245,6 @@ Due to this, open ``setup.py`` and change the ``INSTALL_PATH`` to be ``os.path.j
                 # pip install --user . && \
                 python setup.py install && \
                 rm -r build/
-
 
 Back to Building the Image
 """"""""""""""""""""""""""
@@ -293,7 +281,6 @@ You should see something like this:
         continuumio/miniconda    4.5.4               16e4fbac86ce        7 weeks ago         544MB
         hello-world              latest              e38bc07ac18e        5 months ago        1.85kB
 
-
 Testing
 """""""
 
@@ -326,7 +313,6 @@ results after each run to ensure that everything was created without errors.
 11. If you do find an error, it could be with the script ``e3sm_diags_container.py`` or with ``e3sm_diags`` itself.
 Please fix this. You might need to delete the release, or release a bug-fix version.
 
-
 Releasing
 """""""""
 
@@ -339,7 +325,6 @@ Releasing
 
 
 13. Congratulations, you're done! You can go home/nap for the day, I won't tell.
-
 
 Optional: Cleanup
 """""""""""""""""

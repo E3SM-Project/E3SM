@@ -36,7 +36,7 @@ Source: https://gist.github.com/jbenet/ee6c9ac48068889b0912
 Pre-commit
 ~~~~~~~~~~
 The repository uses the ``pre-commit`` package to manage pre-commit hooks.
-These hooks help enforce QA standards and identify simple issues
+These hooks help enforce quality assurance standards and identify simple issues
 at the commit level before submitting code reviews.
 
 .. figure:: pre-commit-flow.svg
@@ -99,23 +99,23 @@ Assuming that you followed :ref:`"(b) Development Environment" <dev-env>`:
     git rebase <upstream-origin>/master
     git push -f <fork-origin> master
 
-2. Rebase branch onto ``master`` ::
-
-    git checkout <branch-name>
-    git rebase master # If you have merge conflicts, it may be easier to `git rebase --abort` and first do step 4 with SHA of the last commit before your work
-    git push -f <fork-origin> <branch-name>
-
-3. Get the SHA of the commit OR number of commits to rebase to ::
+2. Get the SHA of the commit OR number of commits to rebase to ::
 
     git log --graph --decorate --pretty=oneline --abbrev-commit
 
-4. Squash commits::
+3. Squash commits::
 
     git rebase -i [SHA]
 
     # OR
 
     git rebase -i HEAD~[NUMBER OF COMMITS]
+
+4. Rebase branch onto ``master`` ::
+
+    git checkout <branch-name>
+    git rebase master
+    git push -f <fork-origin> <branch-name>
 
 5. Make sure your squashed commit messages are refined
 
@@ -151,13 +151,26 @@ Run a tool
 Continuous Integration / Continuous Delivery (CI/CD)
 ----------------------------------------------------
 
-This project uses `GitHub Actions <https://github.com/E3SM-Project/e3sm_diags/actions>`_ to run the CI/CD build. The build is triggered by Git ``pull_request`` and ``push`` (merging PRs) events to the the main repo's ``master``.
+This project uses `GitHub Actions <https://github.com/E3SM-Project/e3sm_diags/actions>`_ to run two CI/CD workflows.
 
-The CI/CD workflow has three jobs:
+1. CI/CD Build Workflow
 
-1. Run ``pre-commit`` for formatting, linting, and type checking
-2. Run test suite in a conda environment
-3. Publish to Anaconda using a conda environment (Only if #2 succeeds and :ref:`tagging a release <prepare-release>`)
+  This workflow is triggered by Git ``pull_request`` and ``push`` (merging PRs) events to the the main repo's ``master``.
+
+  Jobs:
+
+    1. Run ``pre-commit`` for formatting, linting, and type checking
+    2. Run test suite in a conda environment
+    3. Publish latest `master` docs (depends on jobs 1 and 2)
+
+2. CI/CD Release Workflow
+
+  This workflow is triggered by the Git ``publish`` event, which occurs when a new release is tagged.
+
+  Jobs:
+
+    1. Publish new release docs
+    2. Publish Anaconda package
 
 Style Guide
 -----------

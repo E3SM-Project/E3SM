@@ -89,7 +89,7 @@ Once this pull request is merged and GitHub Actions finishes building the docs, 
 `e3sm_diags documentation page <https://e3sm-project.github.io/e3sm_diags/>`_.
 
 How Documentation is Versioned
-----------------------------
+------------------------------
 The `sphinx-multiversion <https://github.com/Holzhaus/sphinx-multiversion>`_ package manages documentation versioning.
 
 ``sphinx-multiversion`` is configured to generate versioned docs for available tags and
@@ -110,7 +110,7 @@ they can easily be converted to rst format: ::
    $ jupyter nbconvert mygreatnotebook.ipynb --to rst
 
 Initial setup (obsolete/for reference only)
-----------------------------------
+-------------------------------------------
 
 The instructions below only apply for the initial configuration of the
 Sphinx documentation on the Github repository. They are documented here

@@ -159,8 +159,9 @@ an SSL error unless you disable the SSL verification:
 Unlike the latest stable release (i.e., the user environment), the development environment does not include E3SM Diags (``e3sm-diags``).
 Instead, the developer will ``pip install .`` to build ``e3sm-diags`` with changes (see step 6 below).
 
-Furthermore, the dev environment includes QA tools such as code formatters, linters, and ``pre-commit``.
-**NOTE**: These QA tools are enforced using ``pre-commit`` checks in the CI/CD build, so you must use the dev environment for all contributions
+.. note::
+    The dev environment includes quality assurance (QA) tools such as code formatters, linters, and ``pre-commit``.
+    **You must use the dev environment for all contributions** because these QA tools are enforced using ``pre-commit`` checks in the continuous integration/continuous deployment build.
 
 1. Follow :ref:`"Others/Local" <conda_environment_others>` section for installing conda.
 
