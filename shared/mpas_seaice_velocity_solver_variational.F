@@ -359,7 +359,7 @@ contains
 
              if (abs(abs(canonicalValues(iCV) - abs(field(iVertexOnCell1,iVertexOnCell2,iCell)))) < 1e-12) then
                 lFound = .true.
-                field(iVertexOnCell1,iVertexOnCell2,iCell) = canonicalValues(iCV) * sign(1.0, field(iVertexOnCell1,iVertexOnCell2,iCell))
+                field(iVertexOnCell1,iVertexOnCell2,iCell) = canonicalValues(iCV) * sign(1.0_RKIND, field(iVertexOnCell1,iVertexOnCell2,iCell))
                 exit
              endif
 
