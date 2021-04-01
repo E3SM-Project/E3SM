@@ -1902,8 +1902,8 @@ void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
   std::vector<view_1d> temp_1d_d(2);
   std::vector<view_2d> temp_2d_d(7);
   std::vector<int> dim1_sizes(7, shcol);
-  std::vector<int> dim2_sizes = {nlev, nlev, nlevi, nlev,
-                                 nlev, nlev, nlev,  nlev};
+  std::vector<int> dim2_sizes = {nlev, nlevi, nlev, nlev,
+                                 nlev, nlev, nlev};
   std::vector<const Real*> ptr_array = {zt_grid, zi_grid, dz_zt, tke,
                                         thv,     brunt,   shoc_mix};
   // Sync to device
