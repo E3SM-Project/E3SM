@@ -206,10 +206,6 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
 // =========================================================================================
 void P3Microphysics::run_impl (const Real dt)
 {
-  // std::array<const char*, num_views> view_names = {"q", "FQ", "T", "zi", "pmid", "dpres", "ast", "ni_activated", "nc_nuceat_tend"};
-
-  std::vector<const Real*> in;
-  std::vector<Real*> out;
 
   // Copy inputs to host. Copy also outputs, cause we might "update" them, rather than overwrite them.
   for (auto& it : m_p3_fields_in) {
@@ -296,10 +292,7 @@ void P3Microphysics::register_fields (FieldRepository<Real>& field_repo) const {
 }
 
 void P3Microphysics::set_required_field_impl (const Field<const Real>& f) {
-  // Store a copy of the field. We need this in order to do some tracking checks
-  // at the beginning of the run call. Other than that, there would be really
-  // no need to store a scream field here; we could simply set the view ptr
-  // in the Homme's view, and be done with it.
+
   const auto& name = f.get_header().get_identifier().name();
   m_p3_fields_in.emplace(name,f);
   m_p3_host_views_in[name] = f.get_view<Host>();
@@ -310,10 +303,7 @@ void P3Microphysics::set_required_field_impl (const Field<const Real>& f) {
 }
 
 void P3Microphysics::set_computed_field_impl (const Field<      Real>& f) {
-  // Store a copy of the field. We need this in order to do some tracking updates
-  // at the end of the run call. Other than that, there would be really
-  // no need to store a scream field here; we could simply set the view ptr
-  // in the Homme's view, and be done with it.
+
   const auto& name = f.get_header().get_identifier().name();
   m_p3_fields_out.emplace(name,f);
   m_p3_host_views_out[name] = f.get_view<Host>();

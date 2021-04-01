@@ -1,7 +1,6 @@
 INCLUDE (ScreamUtils)
 
-SET (shocLib shoc)
-SET (NEED_LIBS ${shocLib} scream_control scream_share)
+SET (NEED_LIBS shoc scream_control scream_share)
 
 # Test atmosphere processes
 CreateUnitTest(shoc_stand_alone "shoc_stand_alone.cpp" "${NEED_LIBS}" LABELS "shoc;physics")
