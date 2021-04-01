@@ -106,17 +106,17 @@ module physpkg
 #define ADDCP
 !#undef ADDCP
 
-#ifdef ADDCP
+!#ifdef ADDCP
 
-#define USE_CPSW
-#define USE_TS
+!#define USE_CPSW
+!#define USE_TS
 
-#else
+!#else
 
 #undef USE_CPSW
 #undef USE_TS
 
-#endif
+!#endif
 
 
   !======================================================================= 
