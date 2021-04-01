@@ -677,11 +677,6 @@ subroutine diag_init()
        call add_default ('TSMX    ', 1, ' ')
        call add_default ('SNOWHLND', 1, ' ')
        call add_default ('SNOWHICE', 1, ' ')
-
-       call add_default ('CPflux  ', 1, ' ')
-       call add_default ('CPfluxe ', 1, ' ')
-       call add_default ('CPfluxp ', 1, ' ')
-       call add_default ('PWflux  ', 1, ' ')
     endif
 
     call add_default ('OMEGA500', 1, ' ')
