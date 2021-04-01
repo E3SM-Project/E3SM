@@ -95,18 +95,6 @@ real(r8), parameter :: wavenumber2_longwave(nlwbands) = &! Longwave spectral ban
     (/  350._r8,  500._r8,  630._r8,  700._r8,  820._r8,  980._r8, 1080._r8, 1180._r8, &
        1390._r8, 1480._r8, 1800._r8, 2080._r8, 2250._r8, 2390._r8, 2600._r8, 3250._r8 /)
 
-! These can go away when old camrt disappears
-! Index of volc. cnt. abs. 0500--0650 cm-1
-integer, public, parameter :: idx_LW_0500_0650=3
-! Index of volc. cnt. abs. 0650--0800 cm-1
-integer, public, parameter :: idx_LW_0650_0800=4
-! Index of volc. cnt. abs. 0800--1000 cm-1
-integer, public, parameter :: idx_LW_0800_1000=5
-! Index of volc. cnt. abs. 1000--1200 cm-1
-integer, public, parameter :: idx_LW_1000_1200=6
-! Index of volc. cnt. abs. 1200--2000 cm-1
-integer, public, parameter :: idx_LW_1200_2000=7
-
 ! GASES TREATED BY RADIATION (line spectrae)
 
 ! gasses required by radiation

@@ -126,9 +126,7 @@ contains
 
     ! local vars
 
-    real(r8) :: psh(pver)           ! pressure scale height
     integer  :: k
-    logical :: camrt
 
     character(len=16) :: rad_pkg
 
@@ -136,21 +134,12 @@ contains
 
 
     call phys_getopts(radiation_scheme_out=rad_pkg)
-    camrt = rad_pkg == 'CAMRT' .or. rad_pkg == 'camrt'
 
     ! set max/min pressures for merging regions.
-
-    if (camrt) then
-       min_pressure_sw = 1e5_r8*exp(-10._r8)
-       max_pressure_sw = 1e5_r8*exp(-9._r8)
-       min_pressure_lw = 1e5_r8*exp(-10._r8)
-       max_pressure_lw = 1e5_r8*exp(-8.57_r8)
-    else
-       min_pressure_sw =  5._r8  
-       max_pressure_sw = 50._r8   
-       min_pressure_lw =  5._r8   
-       max_pressure_lw = 50._r8 
-    endif
+    min_pressure_sw =  5._r8  
+    max_pressure_sw = 50._r8   
+    min_pressure_lw =  5._r8   
+    max_pressure_lw = 50._r8 
 
     delta_merge_sw = max_pressure_sw - min_pressure_sw
     delta_merge_lw = max_pressure_lw - min_pressure_lw
@@ -160,22 +149,13 @@ contains
 
     do k=1,pver
 
-       ! pressure scale heights for camrt merging (waccm4)
-       psh(k)=log(1e5_r8/pref_mid(k))
-
        if ( pref_mid(k) .le. min_pressure_sw  ) then 
           qrs_wt(k) = 0._r8
        else if( pref_mid(k) .ge. max_pressure_sw) then
           qrs_wt(k) = 1._r8
        else
-          if (camrt) then
-             ! camrt
-             qrs_wt(k) = 1._r8 - tanh( (psh(k) - 9._r8)/.75_r8 )
-          else
-             ! rrtmg
-             qrs_wt(k) = 0.5_r8 + 1.5_r8*((pref_mid(k)-midpoint_sw)/delta_merge_sw) &
-                       - 2._r8*((pref_mid(k)-midpoint_sw)/delta_merge_sw)**3._r8
-          endif
+          qrs_wt(k) = 0.5_r8 + 1.5_r8*((pref_mid(k)-midpoint_sw)/delta_merge_sw) &
+                    - 2._r8*((pref_mid(k)-midpoint_sw)/delta_merge_sw)**3._r8
        endif
 
        if ( pref_mid(k) .le. min_pressure_lw  ) then 
@@ -183,14 +163,8 @@ contains
        else if( pref_mid(k) .ge. max_pressure_lw) then
           qrl_wt(k)= 1._r8
        else
-          if (camrt) then
-             ! camrt         
-             qrl_wt(k) = 1._r8 - tanh( (psh(k) - 8.57_r8) / 0.71_r8 )
-          else
-             ! rrtmg
-             qrl_wt(k) = 0.5_r8 + 1.5_r8*((pref_mid(k)-midpoint_lw)/delta_merge_lw) &
-                       - 2._r8*((pref_mid(k)-midpoint_lw)/delta_merge_lw)**3._r8
-          endif
+          qrl_wt(k) = 0.5_r8 + 1.5_r8*((pref_mid(k)-midpoint_lw)/delta_merge_lw) &
+                    - 2._r8*((pref_mid(k)-midpoint_lw)/delta_merge_lw)**3._r8
        endif
 
     end do
