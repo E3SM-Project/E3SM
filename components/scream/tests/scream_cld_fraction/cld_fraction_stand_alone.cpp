@@ -99,8 +99,10 @@ TEST_CASE("cld_fraction-stand-alone", "") {
       // make sure that the cloud fraction calculation didn't accidentally change qi or liq_cld_fraction
       Real phase = icol*3.14/2.0/num_cols;
       Real xval  = jlev*3.14/2.0/num_levs;
-      REQUIRE(qi(icol,jlev)==(std::sin(xval-phase)+1.0)/2.0);
-      REQUIRE(liq_cld_frac(icol,jlev)==(std::sin(xval+phase)+1.0)/2.0);
+      Real y_cmp = (std::sin(xval-phase)+1.0)/2.0;
+      REQUIRE(qi(icol,jlev)==y_cmp);
+      y_cmp = (std::sin(xval+phase)+1.0)/2.0;
+      REQUIRE(liq_cld_frac(icol,jlev)==y_cmp);
       // Test that the cloud fraction calculation appropriately calculated the ice cloud fraction
       if (qi(icol,jlev)>1e-5)  // TODO: This may also be updated to be a tunable parameter, we might need to grab this value from the parameter list.
       {
