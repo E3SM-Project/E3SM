@@ -86,6 +86,13 @@ static Int compare (const std::string& label, const Scalar* a,
     const auto& fr = refi.getfield(i);
     const auto& fd = di.getfield(i);
     EKAT_ASSERT(fr.size == fd.size);
+
+    // tkh is an input/output of shoc_main() in shoc.F90,
+    // but is treated as a local variable in the c++
+    // version (tkh values are reset before its used in both).
+    // So we just skip the comparison.
+    if (fr.name == "tkh") continue;
+
     nerr += compare(fr.name, fr.data, fd.data, fr.size, tol);
   }
   return nerr;
