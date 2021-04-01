@@ -307,9 +307,8 @@ contains
          ! B is diagonal term
          B(1:Nsurf-1)=0.0_RKIND
          B(Nsurf) = 1.0_RKIND - C(Nsurf) &
-           ! added Rayleigh terms
            + dt*rayleighDampingCoef/((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)
-         do k = Nsurf, N-1
+         do k = Nsurf+1, N-1
             B(k) = 1.0_RKIND - A(k) - C(k) &
               ! added Rayleigh terms
               + dt*(rayleighDampingCoef/((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal))
@@ -585,8 +584,7 @@ contains
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels))
 
-      !$omp parallel
-      !$omp do schedule(runtime) private(Nsurf, N, cell1, cell2, A, B, C, velTemp, k)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
         Nsurf = minLevelEdgeBot(iEdge)
         N = maxLevelEdgeTop(iEdge)
@@ -805,8 +803,7 @@ contains
         enddo
       endif
 
-      !$omp parallel
-      !$omp do schedule(runtime) private(Nsurf, N, A, B, C, rhs, velTemp, k)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
         Nsurf = minLevelEdgeBot(iEdge)
         N = maxLevelEdgeTop(iEdge)
@@ -868,7 +865,6 @@ contains
         end if
       end do
       !$omp end do
-      !$omp end parallel
 
       deallocate(A,B,C,velTemp)
 
