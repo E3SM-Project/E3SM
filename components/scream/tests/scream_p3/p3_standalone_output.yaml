@@ -9,7 +9,7 @@ FREQUENCY:
   OUT_MAX_STEPS: 1
 FIELDS:
   Number of Fields: 13
-  field 1: T_atm_mid
+  field 1: T_mid
   field 2: T_prev_micro_step
   field 3: qv_prev_micro_step
   field 4: lambda_qc

@@ -59,8 +59,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_required_fields.emplace("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
   m_required_fields.emplace("p_mid",       scalar3d_layout_mid, Pa,     grid_name);
   m_required_fields.emplace("zi",          scalar3d_layout_int, m,      grid_name);
-  m_required_fields.emplace("T_atm_mid",   scalar3d_layout_mid, K,      grid_name);
-  m_computed_fields.emplace("T_atm_mid",   scalar3d_layout_mid, K,      grid_name);  // T_atm_mid is the only one of these variables that is also updated.
+  m_required_fields.emplace("T_mid",       scalar3d_layout_mid, K,      grid_name);
+  m_computed_fields.emplace("T_mid",       scalar3d_layout_mid, K,      grid_name);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
   m_required_fields.emplace("qv",     scalar3d_layout_mid, Q,    grid_name);
@@ -121,7 +121,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   //       variables a local view is constructed.
   const Int nk_pack = ekat::npack<Spack>(m_num_levs);
   auto pmid  = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();
-  auto T_atm = m_p3_fields_out["T_atm_mid"].get_reshaped_view<Pack**>();
+  auto T_atm = m_p3_fields_out["T_mid"].get_reshaped_view<Pack**>();
   auto ast   = m_p3_fields_in["cldfrac_tot"].get_reshaped_view<const Pack**>();
   auto zi    = m_p3_fields_in["zi"].get_reshaped_view<const Pack**>();
   view_2d exner("exner",m_num_cols,nk_pack);
@@ -220,7 +220,7 @@ void P3Microphysics::run_impl (const Real dt)
   }
 
   // Gather views needed to pre-process local variables.
-  auto T_atm  = m_p3_fields_out["T_atm_mid"].get_reshaped_view<Pack**>();
+  auto T_atm  = m_p3_fields_out["T_mid"].get_reshaped_view<Pack**>();
   auto ast    = m_p3_fields_in["cldfrac_tot"].get_reshaped_view<const Pack**>();
   auto zi     = m_p3_fields_in["zi"].get_reshaped_view<const Pack**>();
   auto pmid   = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();

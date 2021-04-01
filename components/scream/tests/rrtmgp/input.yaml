@@ -21,7 +21,7 @@ Grids Manager:
 Initial Conditions:
   p_mid: 0.0
   pint: 0.0
-  T_atm_mid: 0.0
+  T_mid: 0.0
   tint: 0.0
   gas_vmr: 0.0
   surf_alb_direct: 0.0

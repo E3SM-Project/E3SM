@@ -38,7 +38,7 @@ namespace scream {
         // Set required (input) fields here
         m_required_fields.emplace("p_mid" , scalar3d_layout_mid, Pa, grid->name());
         m_required_fields.emplace("pint", scalar3d_layout_int, Pa, grid->name());
-        m_required_fields.emplace("T_atm_mid" , scalar3d_layout_mid, K , grid->name());
+        m_required_fields.emplace("T_mid" , scalar3d_layout_mid, K , grid->name());
         m_required_fields.emplace("tint" , scalar3d_layout_int, K , grid->name());
         m_required_fields.emplace("gas_vmr", gas_layout, kgkg, grid->name());
         m_required_fields.emplace("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
@@ -83,7 +83,7 @@ namespace scream {
         // Get device views
         auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_reshaped_view<const Real**>();
         auto d_pint = m_rrtmgp_fields_in.at("pint").get_reshaped_view<const Real**>();
-        auto d_tmid = m_rrtmgp_fields_in.at("T_atm_mid").get_reshaped_view<const Real**>();
+        auto d_tmid = m_rrtmgp_fields_in.at("T_mid").get_reshaped_view<const Real**>();
         auto d_tint = m_rrtmgp_fields_in.at("tint").get_reshaped_view<const Real**>();
         auto d_gas_vmr = m_rrtmgp_fields_in.at("gas_vmr").get_reshaped_view<const Real***>();
         auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("surf_alb_direct").get_reshaped_view<const Real**>();

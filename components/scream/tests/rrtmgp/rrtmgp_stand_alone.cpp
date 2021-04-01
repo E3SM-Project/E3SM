@@ -94,7 +94,7 @@ namespace scream {
 
         // Grab reshaped views from the field manager and wrap pointers in yakl arrays
         auto d_pmid = field_repo.get_field("p_mid", "Physics").get_reshaped_view<Real**>();
-        auto d_tmid = field_repo.get_field("T_atm_mid", "Physics").get_reshaped_view<Real**>();
+        auto d_tmid = field_repo.get_field("T_mid", "Physics").get_reshaped_view<Real**>();
         auto d_pint = field_repo.get_field("pint", "Physics").get_reshaped_view<Real**>();
         auto d_tint = field_repo.get_field("tint", "Physics").get_reshaped_view<Real**>();
         auto d_sfc_alb_dir = field_repo.get_field("surf_alb_direct", "Physics").get_reshaped_view<Real**>();
