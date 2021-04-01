@@ -54,8 +54,10 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   int num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   int num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
-  const auto& qi = field_repo.get_field("qi","Physics").get_reshaped_view<Real**,Host>();
-  const auto& liq_cld_frac = field_repo.get_field("alst","Physics").get_reshaped_view<Real**,Host>();  //TODO: This FM name will probably change soon.
+  const auto& qi_field           = field_repo.get_field("qi","Physics");
+  const auto& liq_cld_frac_field = field_repo.get_field("alst","Physics");  //TODO: This FM name will probably change soon.
+  const auto& qi           = qi_field.get_reshaped_view<Real**,Host>();
+  const auto& liq_cld_frac = liq_cld_frac_field.get_reshaped_view<Real**,Host>();
 
   for (int icol=0;icol<num_cols;++icol)
   {
@@ -69,6 +71,9 @@ TEST_CASE("cld_fraction-stand-alone", "") {
       liq_cld_frac(icol,jlev) = (1.0+std::sin(xval+phase))/2.0;
     }
   }
+  // Sync the fields back to device
+  qi_field.sync_to_dev();
+  liq_cld_frac_field.sync_to_dev();
 
   // Run the code
   for (int i=0; i<num_iters; ++i) {
@@ -77,14 +82,12 @@ TEST_CASE("cld_fraction-stand-alone", "") {
 
   // Check ice and total cloud fraction values
   // Sync the values on device back to the host view.
-  const auto& ice_cld_frac_field = field_repo.get_field("aist","Physics");
-  const auto& tot_cld_frac_field = field_repo.get_field("ast","Physics");
-  const auto& ice_cld_frac_dev = ice_cld_frac_field.get_reshaped_view<Real**>();  //TODO: This FM name will probably change soon.
-  const auto& tot_cld_frac_dev = tot_cld_frac_field.get_reshaped_view<Real**>();  //TODO: This FM name will probably change soon.
-  auto ice_cld_frac = Kokkos::create_mirror_view(ice_cld_frac_dev);
-  auto tot_cld_frac = Kokkos::create_mirror_view(tot_cld_frac_dev);
-  Kokkos::deep_copy(ice_cld_frac,ice_cld_frac_dev);
-  Kokkos::deep_copy(tot_cld_frac,tot_cld_frac_dev);
+  const auto& ice_cld_frac_field = field_repo.get_field("aist","Physics");  //TODO: This FM name will probably change soon.
+  const auto& tot_cld_frac_field = field_repo.get_field("ast","Physics");   //TODO: This FM name will probably change soon.
+  ice_cld_frac_field.sync_to_host();
+  tot_cld_frac_field.sync_to_host();
+  const auto& ice_cld_frac = ice_cld_frac_field.get_reshaped_view<Real**,Host>();
+  const auto& tot_cld_frac = tot_cld_frac_field.get_reshaped_view<Real**,Host>();
   
   for (int icol=0;icol<num_cols;++icol)
   {
@@ -101,8 +104,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
       // Test that the cloud fraction calculation appropriately calculated the ice cloud fraction
       if (qi(icol,jlev)>1e-5)  // TODO: This may also be updated to be a tunable parameter, we might need to grab this value from the parameter list.
       {
-        //REQUIRE(ice_cld_frac(icol,jlev)==1.0);
-        EKAT_REQUIRE_MSG(ice_cld_frac(icol,jlev)==1.0, "error - " + std::to_string(icol) + " " + std::to_string(jlev) + " " + std::to_string(qi(icol,jlev)));
+        REQUIRE(ice_cld_frac(icol,jlev)==1.0);
       } else {
         REQUIRE(ice_cld_frac(icol,jlev)==0.0);
       }
@@ -119,8 +121,6 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   // Finalize 
   ad.finalize();
 
-  // If we got here, we were able to run cld_fraction
-  REQUIRE(true);
 }
 
 } // empty namespace

@@ -2487,7 +2487,7 @@ Default: 700.e2
 <entry id="cldfrc_iceopt" type="integer" category="conv"
        group="cldfrc_nl" valid_values="" >
 Scheme for ice cloud fraction: 1=wang & sassen, 2=schiller (iciwc),  
-3=wood & field, 4=Wilson (based on smith), 5=modified slingo (ssat & empyt cloud)
+3=wood & field, 4=Wilson (based on smith), 5=modified slingo (ssat & empty cloud)
 6=Gettelman (based on Heymsfield), 7=all-or-nothing
 Default: 5
 </entry>

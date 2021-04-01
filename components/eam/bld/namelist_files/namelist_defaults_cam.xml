@@ -1321,6 +1321,7 @@
 <cldfrc_iceopt                             > 1 </cldfrc_iceopt>
 <cldfrc_iceopt  phys="cam5"                > 5 </cldfrc_iceopt>
 <cldfrc_minice  phys="cam5"                > 1.0e-12 </cldfrc_minice>
+<cldfrc_minice  phys="cam5",iceopt="7"     > 1.0e-5 </cldfrc_minice>
 
 <cldfrc_icecrit                            > 0.95D0 </cldfrc_icecrit>
 <cldfrc_icecrit phys="cam5"                > 0.93D0 </cldfrc_icecrit>

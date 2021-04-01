@@ -732,7 +732,6 @@ subroutine aist_single(qv, T, p, qi, landfrac, snowh, aist, &
    real(r8) es, qs
 
    real(r8) rhi                             ! grid box averaged relative humidity over ice
-!ASD   real(r8) minice                          ! minimum grid box avg ice for having a 'cloud'  - Should be a namelist option now
    real(r8) mincld                          ! minimum ice cloud fraction threshold
    real(r8) icimr                           ! in cloud ice mixing ratio
    real(r8) rhdif                           ! working variable for slingo scheme
@@ -763,7 +762,6 @@ subroutine aist_single(qv, T, p, qi, landfrac, snowh, aist, &
      Kc = 75._r8
    ! Wilson & Ballard closure ( Option.4. smaller = more ice clouds)
    ! Slingo modified (option 5)
-!ASD     minice = 1.e-12_r8  - Should be a namelist option now
      mincld = 1.e-4_r8
 
    rhmaxi = rhmaxi_const
@@ -861,8 +859,9 @@ subroutine aist_single(qv, T, p, qi, landfrac, snowh, aist, &
         endif
      elseif (iceopt.eq.7) then
        ! All-or-nothing ice cloud fraction scheme
+       aist = 0._r8
        if (qi.ge.minice) then
-         aist = 1.0
+         aist = 1._r8
        endif
      endif 
 
@@ -934,7 +933,6 @@ subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, landfrac_in, snowh_in, a
    real(r8) qsat_in(pcols)
 
    real(r8) rhi                             ! grid box averaged relative humidity over ice
-!ASD   real(r8) minice                          ! minimum grid box avg ice for having a 'cloud' - Should be a namelist option now
    real(r8) mincld                          ! minimum ice cloud fraction threshold
    real(r8) icimr                           ! in cloud ice mixing ratio
    real(r8) rhdif                           ! working variable for slingo scheme
@@ -962,8 +960,6 @@ subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, landfrac_in, snowh_in, a
      Kc = 75._r8
    ! Wilson & Ballard closure ( Option.4. smaller = more ice clouds)
    ! Slingo modified (option 5)
-!ASD     minice = 1.e-12_r8 - Should be a namelist option now
-     if (iceopt.eq.7) minice = 1.e-5_r8
      mincld = 1.e-4_r8
 
      rhmaxi          = rhmaxi_const
