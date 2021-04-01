@@ -63,8 +63,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   m_required_fields.emplace("surf_v_mom_flux",  scalar2d_layout_col, K,      grid_name);
   m_required_fields.emplace("qv",               scalar3d_layout_mid, Qunit,  grid_name);
 
-  m_computed_fields.emplace("T_atm",   scalar3d_layout_mid, nondim, grid_name);
-  m_computed_fields.emplace("qv",      scalar3d_layout_mid, Qunit,  grid_name);
+  m_computed_fields.emplace("T_atm_mid",        scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("qv",               scalar3d_layout_mid, Qunit,  grid_name);
 
   // Input variables
   m_required_fields.emplace("host_dx",        scalar2d_layout_col, m,  grid_name);
@@ -127,7 +127,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
 
-  auto t        = m_shoc_fields_out["T_atm"].get_reshaped_view<Spack**>();
+  auto t        = m_shoc_fields_out["T_atm_mid"].get_reshaped_view<Spack**>();
   auto alst     = m_shoc_fields_in["cldfrac_liq"].get_reshaped_view<const Spack**>();
   auto zi       = m_shoc_fields_in["zi"].get_reshaped_view<const Spack**>();
   auto zm       = m_shoc_fields_in["zm"].get_reshaped_view<const Spack**>();

@@ -77,20 +77,20 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   FieldLayout scalar_state_3d_int { {EL,TL,GP,GP,ILEV},     {ne, NTL,    NGP,NGP,NVL+1} };
   FieldLayout vector_state_3d_mid { {EL,TL,CMP,GP,GP,LEV},  {ne, NTL,  2,NGP,NGP,NVL} };
 
-  m_dyn_fids.emplace("v"        , FID("v",          vector_state_3d_mid, m/s,            dgn));
-  m_dyn_fids.emplace("vtheta_dp", FID("vtheta_dp",  scalar_state_3d_mid, K,              dgn));
-  m_dyn_fids.emplace("phi_i"    , FID("phi_i",      scalar_state_3d_int, Pa*pow(m,3)/kg, dgn));
-  m_dyn_fids.emplace("w_i"      , FID("w_i",        scalar_state_3d_int, m/s,            dgn));
-  m_dyn_fids.emplace("dp"       , FID("dp",         scalar_state_3d_mid, Pa,             dgn));
+  m_dyn_fids.emplace("horiz_winds"             , FID("horiz_winds",              vector_state_3d_mid, m/s,            dgn));
+  m_dyn_fids.emplace("vtheta_dp"     , FID("vtheta_dp",      scalar_state_3d_mid, K,              dgn));
+  m_dyn_fids.emplace("phi_i"         , FID("phi_i",          scalar_state_3d_int, Pa*pow(m,3)/kg, dgn));
+  m_dyn_fids.emplace("w_int"         , FID("w_int",          scalar_state_3d_int, m/s,            dgn));
+  m_dyn_fids.emplace("pseudo_density", FID("pseudo_density", scalar_state_3d_mid, Pa,             dgn));
 
   // Create the PD remapper, and register fields
   m_p2d_remapper = grids_manager->create_remapper_from_ref_grid(m_dyn_grid);
   m_p2d_remapper->registration_begins();
-  m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("v"));
+  m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("horiz_winds"));
   m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("vtheta_dp"));
   m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("phi_i"));
-  m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("w_i"));
-  m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("dp"));
+  m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("w_int"));
+  m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("pseudo_density"));
 
   // Create the std::set of required/computed fids
   for (int i=0; i<m_p2d_remapper->get_num_registered_fields(); ++i) {
@@ -111,18 +111,18 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
                      "       Found " + std::to_string(ftype) + " instead.\n");
 
   // Input-output groups
-  m_inout_groups_req.emplace("TRACERS",grids_manager->get_reference_grid()->name());
+  m_inout_groups_req.emplace("tracers",grids_manager->get_reference_grid()->name());
 }
 
 void HommeDynamics::
 set_updated_group (const FieldGroup<Real>& group)
 {
   const auto& name = group.m_info->m_group_name;
-  EKAT_REQUIRE_MSG(name=="TRACERS",
+  EKAT_REQUIRE_MSG(name=="tracers",
     "Error! We were not expecting a field group called '" << name << "\n");
 
   EKAT_REQUIRE_MSG(not group.m_info->empty(),
-    "Error! There should be at least one tracer (qv) in the 'TRACERS' group.\n");
+    "Error! There should be at least one tracer (qv) in the 'tracers' group.\n");
 
   EKAT_REQUIRE_MSG(group.m_info->m_bundled,
       "Error! Homme expects a bundled field for tracers.\n");
@@ -190,7 +190,7 @@ void HommeDynamics::register_fields (FieldRepository<Real>& field_repo) const
   FieldLayout qv_layout { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
   FieldIdentifier qv("qv", qv_layout, Q,  m_dyn_grid->name());
 
-  field_repo.register_field(m_p2d_remapper->create_src_fid(qv),"TRACERS");
+  field_repo.register_field(m_p2d_remapper->create_src_fid(qv),"tracers");
 }
 
 void HommeDynamics::run_impl (const Real dt)
@@ -251,7 +251,7 @@ void HommeDynamics::set_computed_field_impl (const Field<Real>& f) {
   f_dyn.get_header().get_alloc_properties().request_allocation<Homme::Scalar>();
   f_dyn.allocate_view();
 
-  if (name=="v") {
+  if (name=="horiz_winds") {
     // Velocity
     auto& v = state.m_v;
     auto v_in = f_dyn.get_reshaped_view<Scalar*[NTL][2][NP][NP][NVL]>();
@@ -269,13 +269,13 @@ void HommeDynamics::set_computed_field_impl (const Field<Real>& f) {
     auto phi_in = f_dyn.get_reshaped_view<Scalar*[NTL][NP][NP][NVLI]>();
     using phi_type = std::remove_reference<decltype(phi)>::type;
     phi = phi_type(phi_in.data(),num_elems);
-  } else if (name=="w_i") {
+  } else if (name=="w_int") {
     // Geopotential
     auto& w = state.m_w_i;
     auto w_in = f_dyn.get_reshaped_view<Scalar*[NTL][NP][NP][NVLI]>();
     using w_type = std::remove_reference<decltype(w)>::type;
     w = w_type(w_in.data(),num_elems);
-  } else if (name=="dp") {
+  } else if (name=="pseudo_density") {
     // Levels thickness
     auto& dp = state.m_dp3d;
     auto dp_in = f_dyn.template get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
