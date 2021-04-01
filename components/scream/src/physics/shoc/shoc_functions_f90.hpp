@@ -348,7 +348,7 @@ struct ShocLengthData : public PhysicsTestData {
   Real *brunt, *shoc_mix;
 
   ShocLengthData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy }, { &tke, &zt_grid, &dz_zt, &thv, &brunt, &shoc_mix }, { &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy }, { &zt_grid, &dz_zt, &tke, &thv, &brunt, &shoc_mix }, { &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
   PTD_STD_DEF(ShocLengthData, 3, shcol, nlev, nlevi);
 };

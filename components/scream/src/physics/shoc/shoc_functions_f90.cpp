@@ -1904,7 +1904,7 @@ void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
   std::vector<int> dim1_sizes(7, shcol);
   std::vector<int> dim2_sizes = {nlev, nlev, nlevi, nlev,
                                  nlev, nlev, nlev,  nlev};
-  std::vector<const Real*> ptr_array = {tke,      zt_grid, zi_grid, dz_zt,
+  std::vector<const Real*> ptr_array = {zt_grid, zi_grid, dz_zt, tke,
                                         thv,     brunt,   shoc_mix};
   // Sync to device
   ekat::host_to_device({host_dx, host_dy}, shcol, temp_1d_d);
@@ -1916,13 +1916,13 @@ void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
     host_dy_d(temp_1d_d[1]);
 
   view_2d
-    tke_d(temp_2d_d[0]),
-    zt_grid_d(temp_2d_d[1]),
-    zi_grid_d(temp_2d_d[2]),
-    dz_zt_d(temp_2d_d[3]),
-    thv_d(temp_2d_d[5]),
-    brunt_d(temp_2d_d[6]),
-    shoc_mix_d(temp_2d_d[7]);
+    zt_grid_d(temp_2d_d[0]),
+    zi_grid_d(temp_2d_d[1]),
+    dz_zt_d(temp_2d_d[2]),
+    tke_d(temp_2d_d[3]),
+    thv_d(temp_2d_d[4]),
+    brunt_d(temp_2d_d[5]),
+    shoc_mix_d(temp_2d_d[6]);
 
   const Int nlev_packs = ekat::npack<Spack>(nlev);
   const Int nlevi_packs = ekat::npack<Spack>(nlevi);
@@ -1940,10 +1940,10 @@ void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
     const Scalar host_dx_s{host_dx_d(i)[0]};
     const Scalar host_dy_s{host_dy_d(i)[0]};
 
-    const auto tke_s = ekat::subview(tke_d, i);
     const auto zt_grid_s = ekat::subview(zt_grid_d, i);
     const auto zi_grid_s = ekat::subview(zi_grid_d, i);
     const auto dz_zt_s = ekat::subview(dz_zt_d, i);
+    const auto tke_s = ekat::subview(tke_d, i);
     const auto thv_s = ekat::subview(thv_d, i);
     const auto brunt_s = ekat::subview(brunt_d, i);
     const auto shoc_mix_s = ekat::subview(shoc_mix_d, i);
