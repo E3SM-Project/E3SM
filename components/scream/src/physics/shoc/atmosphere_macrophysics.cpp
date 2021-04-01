@@ -79,7 +79,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   m_required_fields.emplace("tke",        scalar3d_layout_mid, (m*m)/(s*s), grid_name);
   m_required_fields.emplace("horiz_wind", horiz_wind_layout,   m/s,         grid_name);
   m_required_fields.emplace("wthv_sec",   scalar3d_layout_mid, K*(m/s),     grid_name);
-  m_required_fields.emplace("tkh",        scalar3d_layout_mid, (m*m)/s,     grid_name);
   m_required_fields.emplace("tk",         scalar3d_layout_mid, (m*m)/s,     grid_name);
   m_required_fields.emplace("shoc_ql",    scalar3d_layout_mid, Qunit,           grid_name);
 
@@ -87,7 +86,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   m_computed_fields.emplace("tke",        scalar3d_layout_mid, (m*m)/(s*s), grid_name);
   m_computed_fields.emplace("horiz_wind", horiz_wind_layout,   m/s,         grid_name);
   m_computed_fields.emplace("wthv_sec",   scalar3d_layout_mid, K*(m/s),     grid_name);
-  m_computed_fields.emplace("tkh",        scalar3d_layout_mid, (m*m)/s,     grid_name);
   m_computed_fields.emplace("tk",         scalar3d_layout_mid, (m*m)/s,     grid_name);
   m_computed_fields.emplace("shoc_ql",    scalar3d_layout_mid, Qunit,       grid_name);
 
@@ -204,7 +202,6 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   input_output.wthv_sec     = m_shoc_fields_out["wthv_sec"].get_reshaped_view<Spack**>();
   input_output.qtracers     = shoc_preamble.tracers;
   input_output.tk           = m_shoc_fields_out["tk"].get_reshaped_view<Spack**>();
-  input_output.tkh          = m_shoc_fields_out["tkh"].get_reshaped_view<Spack**>();
   input_output.shoc_cldfrac = shoc_preamble.cloud_frac;
   input_output.shoc_ql      = shoc_preamble.shoc_ql;
 

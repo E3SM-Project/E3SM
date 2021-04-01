@@ -2808,6 +2808,9 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
                  Real* qw_sec, Real* qwthl_sec, Real* wthl_sec, Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec,
                  Real* w3, Real* wqls_sec, Real* brunt, Real* shoc_ql2)
 {
+  // tkh is a local variable in C++ impl
+  (void)tkh;
+
   using SHF  = Functions<Real, DefaultDevice>;
 
   using Scalar     = typename SHF::Scalar;
@@ -2821,7 +2824,7 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
 
   // Initialize Kokkos views, sync to device
   static constexpr Int num_1d_arrays = 7;
-  static constexpr Int num_2d_arrays = 35;
+  static constexpr Int num_2d_arrays = 34;
   static constexpr Int num_3d_arrays = 1;
 
   std::vector<view_1d> temp_1d_d(num_1d_arrays);
@@ -2831,14 +2834,14 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
   std::vector<int> dim1_2d_sizes = {shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
-                                    shcol, shcol, shcol, shcol, shcol,
+                                    shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol};
   std::vector<int> dim2_2d_sizes = {nlev,  nlevi, nlev,         nlevi, nlev,
                                     nlev,  nlev,  num_qtracers, nlev,  nlev,
                                     nlev,  nlev,  nlev,         nlev,  nlev,
-                                    nlev,  nlev,  nlev,         nlev,  nlev,
+                                    nlev,  nlev,  nlev,  nlev,
                                     nlev,  nlev,  nlev,         nlevi, nlevi,
                                     nlevi, nlevi, nlevi,        nlevi, nlevi,
                                     nlevi, nlevi, nlev,         nlev,  nlev};
@@ -2848,7 +2851,7 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
   std::vector<const Real*> ptr_array_2d = {zt_grid,   zi_grid,  pres,        presi,        pdel,
                                            thv,       w_field,  wtracer_sfc, exner,        host_dse,
                                            tke,       thetal,   qw,          u_wind,       v_wind,
-                                           wthv_sec,  tk,       tkh,         shoc_cldfrac, shoc_ql,
+                                           wthv_sec,  tk,       shoc_cldfrac, shoc_ql,
                                            shoc_ql2,  shoc_mix, w_sec,       thl_sec,      qw_sec,
                                            qwthl_sec, wthl_sec, wqw_sec,     wtke_sec,     uw_sec,
                                            vw_sec,    w3,       wqls_sec,    brunt,        isotropy};
@@ -2887,7 +2890,6 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
     v_wind_d      (temp_2d_d[index_counter++]),
     wthv_sec_d    (temp_2d_d[index_counter++]),
     tk_d          (temp_2d_d[index_counter++]),
-    tkh_d         (temp_2d_d[index_counter++]),
     shoc_cldfrac_d(temp_2d_d[index_counter++]),
     shoc_ql_d     (temp_2d_d[index_counter++]),
     shoc_ql2_d    (temp_2d_d[index_counter++]),
@@ -2939,7 +2941,7 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
                              vw_sfc_d,  wtracer_sfc_d, exner_d,   phis_d};
   SHF::SHOCInputOutput shoc_input_output{host_dse_d,   tke_d,      thetal_d,       qw_d,
                                          horiz_wind_d, wthv_sec_d, qtracers_d,
-                                         tk_d,         tkh_d,      shoc_cldfrac_d, shoc_ql_d};
+                                         tk_d,         shoc_cldfrac_d, shoc_ql_d};
   SHF::SHOCOutput shoc_output{pblh_d, shoc_ql2_d};
   SHF::SHOCHistoryOutput shoc_history_output{shoc_mix_d,  w_sec_d,    thl_sec_d, qw_sec_d,
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
@@ -2976,25 +2978,25 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl,
 
   // 2d
   std::vector<int> dim1_2d_out = {shcol, shcol, shcol, shcol, shcol,
-                                  shcol, shcol, shcol, shcol, shcol,
+                                  shcol, shcol, shcol, shcol,
                                   shcol, shcol, shcol, shcol, shcol,
                                   shcol, shcol, shcol, shcol, shcol,
                                   shcol, shcol, shcol, shcol, shcol,
                                   shcol};
   std::vector<int> dim2_2d_out = {nlev,  nlev,  nlev,  nlev,  nlev,
-                                  nlev,  nlev,  nlev,  nlev,  nlev,
+                                  nlev,  nlev,  nlev,  nlev,
                                   nlev,  nlev,  nlev,  nlev,  nlevi,
                                   nlevi, nlevi, nlevi, nlevi, nlevi,
                                   nlevi, nlevi, nlevi, nlev,  nlev,
                                   nlev};
   std::vector<Real*> ptr_array_2d_out = {host_dse, tke,       thetal,   qw,       u_wind,
-                                         v_wind,   wthv_sec,  tk,       tkh,      shoc_cldfrac,
+                                         v_wind,   wthv_sec,  tk,       shoc_cldfrac,
                                          shoc_ql,  shoc_ql2,  shoc_mix, w_sec,    thl_sec,
                                          qw_sec,   qwthl_sec, wthl_sec, wqw_sec,  wtke_sec,
                                          uw_sec,   vw_sec,    w3,       wqls_sec, brunt,
                                          isotropy};
   std::vector<view_2d> out_views_2d = {host_dse_d, tke_d,       thetal_d,   qw_d,       u_wind_d,
-                                       v_wind_d,   wthv_sec_d,  tk_d,       tkh_d,      shoc_cldfrac_d,
+                                       v_wind_d,   wthv_sec_d,  tk_d,       shoc_cldfrac_d,
                                        shoc_ql_d,  shoc_ql2_d,  shoc_mix_d, w_sec_d,    thl_sec_d,
                                        qw_sec_d,   qwthl_sec_d, wthl_sec_d, wqw_sec_d,  wtke_sec_d,
                                        uw_sec_d,   vw_sec_d,    w3_d,       wqls_sec_d, brunt_d,

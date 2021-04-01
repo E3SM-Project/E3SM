@@ -442,7 +442,6 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
         REQUIRE(d_f90.u_wind[k] == d_cxx.u_wind[k]);
         REQUIRE(d_f90.v_wind[k] == d_cxx.v_wind[k]);
         REQUIRE(d_f90.wthv_sec[k] == d_cxx.wthv_sec[k]);
-        REQUIRE(d_f90.tkh[k] == d_cxx.tkh[k]);
         REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
         REQUIRE(d_f90.shoc_ql[k] == d_cxx.shoc_ql[k]);
         REQUIRE(d_f90.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
