@@ -99,23 +99,23 @@ Assuming that you followed :ref:`"(b) Development Environment" <dev-env>`:
     git rebase <upstream-origin>/master
     git push -f <fork-origin> master
 
-2. Rebase branch onto ``master`` ::
-
-    git checkout <branch-name>
-    git rebase master # If you have merge conflicts, it may be easier to `git rebase --abort` and first do step 4 with SHA of the last commit before your work
-    git push -f <fork-origin> <branch-name>
-
-3. Get the SHA of the commit OR number of commits to rebase to ::
+2. Get the SHA of the commit OR number of commits to rebase to ::
 
     git log --graph --decorate --pretty=oneline --abbrev-commit
 
-4. Squash commits::
+3. Squash commits::
 
     git rebase -i [SHA]
 
     # OR
 
     git rebase -i HEAD~[NUMBER OF COMMITS]
+
+4. Rebase branch onto ``master`` ::
+
+    git checkout <branch-name>
+    git rebase master
+    git push -f <fork-origin> <branch-name>
 
 5. Make sure your squashed commit messages are refined
 
