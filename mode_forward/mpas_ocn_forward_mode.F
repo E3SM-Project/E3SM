@@ -184,6 +184,10 @@ module ocn_forward_mode
       endif
       call mpas_get_time(startTime, dateTimeString=startTimeStamp)
 
+      ! Extract block structure from domain
+      ! Currently only support one block per task
+      block => domain % blocklist
+
       !-----------------------------------------------------------------
       ! Initialize data from external file input
       !-----------------------------------------------------------------
@@ -263,15 +267,14 @@ module ocn_forward_mode
       ! Initialize submodules and fields that are required by others
       ! or that have dependencies that require specific ordering.
       !-----------------------------------------------------------------
-      ! Initialize submodules before initializing blocks.
-      call ocn_timestep_init(ierr)
 
+      ! Needed for later call to compute land ice fluxes
       call ocn_surface_land_ice_fluxes_init(err_tmp)
       ierr = ior(ierr, err_tmp)
 
+      ! Needed for later diagnostic_solve computations
       call ocn_equation_of_state_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
-
       call ocn_diagnostics_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
 
@@ -286,20 +289,7 @@ module ocn_forward_mode
 
       call ocn_init_routines_compute_min_max_level(domain)
 
-      call mpas_pool_get_config(domain % configs, 'config_time_integrator', config_time_integrator)
-
-      select case (trim(config_time_integrator))
-
-      case ('semi_implicit')
-         call ocn_time_integration_si_init(domain)
-
-      case ('split_explicit','unsplit_explicit')
-         call ocn_time_integration_split_init(domain)
-
-      case ('RK4')
-         ! No init routine needs to be run for RK4
-
-      end select
+      call ocn_timestep_init(domain, ierr)
 
       call mpas_log_write(' Vertical coordinate movement is: ' // trim(config_vert_coord_movement))
 
@@ -326,13 +316,9 @@ module ocn_forward_mode
       ! find the maximum value of the meshDensity
       if (config_maxMeshDensity < 0.0_RKIND) then
         maxDensity=-1
-        block => domain % blocklist
-        do while (associated(block))
-          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-          call mpas_pool_get_array(meshPool, 'meshDensity', meshDensity)
-          maxDensity = max(maxDensity, maxval(meshDensity))
-          block => block % next
-        end do
+        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+        call mpas_pool_get_array(meshPool, 'meshDensity', meshDensity)
+        maxDensity = max(maxDensity, maxval(meshDensity))
         call mpas_dmpar_max_real(domain % dminfo, maxDensity, maxDensity_global)
         config_maxMeshDensity = maxDensity_global
       endif
@@ -347,34 +333,24 @@ module ocn_forward_mode
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)
       call mpas_get_timeInterval(timeStep, dt=dt)
 
-      block => domain % blocklist
-      do while (associated(block))
-         call ocn_init_routines_block(block, dt, ierr)
+      call ocn_init_routines_block(block, dt, ierr)
 
-         if(ierr.eq.1) then
-             call mpas_log_write('An error was encountered in ocn_init_routines_block', MPAS_LOG_CRIT)
-         endif
+      if(ierr.eq.1) then
+          call mpas_log_write('An error was encountered in ocn_init_routines_block', MPAS_LOG_CRIT)
+      endif
 
-         xtime = startTimeStamp
+      xtime = startTimeStamp
 
-         ! Set simulationStartTime only if that variable is not read from the restart file.
-         if (trim(simulationStartTime)=="no_date_available") then
-            simulationStartTime = startTimeStamp
-         end if
+      ! Set simulationStartTime only if that variable is not read from the restart file.
+      if (trim(simulationStartTime)=="no_date_available") then
+         simulationStartTime = startTimeStamp
+      end if
 
-         block => block % next
-      end do
-
-      block => domain % blocklist
-      do while (associated(block))
-         ! compute time since start of simulation, in days
-         call mpas_set_time(xtime_timeType, dateTimeString=xtime)
-         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
-         call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
-         daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
-
-         block => block % next
-      end do
+      ! compute time since start of simulation, in days
+      call mpas_set_time(xtime_timeType, dateTimeString=xtime)
+      call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
+      call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
+      daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
 
       ! Update any mesh fields that may have been modified during init
       call ocn_meshUpdateFields(domain)
