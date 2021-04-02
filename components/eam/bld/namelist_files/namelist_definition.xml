@@ -2497,6 +2497,7 @@ Default: 5
 Minimum ice mass mixing ratio used for calculating the ice cloud fraction,
 Used for cldfrc_iceopt = [4,5,6,7]
 Default: 1e-5 for iceopt=7, else 1e-12
+</entry>
 
 <entry id="cldfrc_icecrit" type="real" category="conv"
        group="cldfrc_nl" valid_values="" >
