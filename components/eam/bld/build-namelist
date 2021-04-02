@@ -3708,6 +3708,7 @@ add_default($nl, 'cldfrc_dp2');
 add_default($nl, 'cldfrc_premit');
 add_default($nl, 'cldfrc_premib');
 add_default($nl, 'cldfrc_iceopt');
+add_default($nl, 'cldfrc_minice');
 add_default($nl, 'cldfrc_icecrit');
 add_default($nl, 'cldfrc2m_rhmini');
 add_default($nl, 'cldfrc2m_rhmaxi');
