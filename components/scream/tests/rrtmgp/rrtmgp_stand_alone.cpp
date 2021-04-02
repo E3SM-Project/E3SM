@@ -93,17 +93,17 @@ namespace scream {
         REQUIRE(nlay == sw_flux_up_ref.dimension[1]-1);
 
         // Grab reshaped views from the field manager and wrap pointers in yakl arrays
-        auto d_pmid = field_repo.get_field("pmid", "Physics").get_reshaped_view<Real**>();
-        auto d_tmid = field_repo.get_field("tmid", "Physics").get_reshaped_view<Real**>();
+        auto d_pmid = field_repo.get_field("p_mid", "Physics").get_reshaped_view<Real**>();
+        auto d_tmid = field_repo.get_field("T_mid", "Physics").get_reshaped_view<Real**>();
         auto d_pint = field_repo.get_field("pint", "Physics").get_reshaped_view<Real**>();
         auto d_tint = field_repo.get_field("tint", "Physics").get_reshaped_view<Real**>();
-        auto d_sfc_alb_dir = field_repo.get_field("sfc_alb_dir", "Physics").get_reshaped_view<Real**>();
-        auto d_sfc_alb_dif = field_repo.get_field("sfc_alb_dif", "Physics").get_reshaped_view<Real**>();
+        auto d_sfc_alb_dir = field_repo.get_field("surf_alb_direct", "Physics").get_reshaped_view<Real**>();
+        auto d_sfc_alb_dif = field_repo.get_field("surf_alb_diffuse", "Physics").get_reshaped_view<Real**>();
         auto d_lwp = field_repo.get_field("lwp", "Physics").get_reshaped_view<Real**>();
         auto d_iwp = field_repo.get_field("iwp", "Physics").get_reshaped_view<Real**>();
-        auto d_rel = field_repo.get_field("rel", "Physics").get_reshaped_view<Real**>();
-        auto d_rei = field_repo.get_field("rei", "Physics").get_reshaped_view<Real**>();
-        auto d_mu0 = field_repo.get_field("mu0", "Physics").get_reshaped_view<Real*>();
+        auto d_rel = field_repo.get_field("eff_radius_qc", "Physics").get_reshaped_view<Real**>();
+        auto d_rei = field_repo.get_field("eff_radius_qi", "Physics").get_reshaped_view<Real**>();
+        auto d_mu0 = field_repo.get_field("cos_zenith", "Physics").get_reshaped_view<Real*>();
         auto d_gas_vmr = field_repo.get_field("gas_vmr", "Physics").get_reshaped_view<Real***>();
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay("p_lay", d_pmid.data(), ncol, nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay("t_lay", d_tmid.data(), ncol, nlay);

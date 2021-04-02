@@ -36,25 +36,25 @@ namespace scream {
         FieldLayout scalar2d_swband_layout { {COL,SWBND}, {m_ncol,m_nswbands} };
 
         // Set required (input) fields here
-        m_required_fields.emplace("pmid" , scalar3d_layout_mid, Pa, grid->name());
+        m_required_fields.emplace("p_mid" , scalar3d_layout_mid, Pa, grid->name());
         m_required_fields.emplace("pint", scalar3d_layout_int, Pa, grid->name());
-        m_required_fields.emplace("tmid" , scalar3d_layout_mid, K , grid->name());
+        m_required_fields.emplace("T_mid" , scalar3d_layout_mid, K , grid->name());
         m_required_fields.emplace("tint" , scalar3d_layout_int, K , grid->name());
         m_required_fields.emplace("gas_vmr", gas_layout, kgkg, grid->name());
-        m_required_fields.emplace("sfc_alb_dir", scalar2d_swband_layout, nondim, grid->name());
-        m_required_fields.emplace("sfc_alb_dif", scalar2d_swband_layout, nondim, grid->name());
-        m_required_fields.emplace("mu0", scalar2d_layout, nondim, grid->name());
+        m_required_fields.emplace("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
+        m_required_fields.emplace("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name());
+        m_required_fields.emplace("cos_zenith", scalar2d_layout, nondim, grid->name());
         m_required_fields.emplace("lwp", scalar3d_layout_mid, kg/m3, grid->name());
         m_required_fields.emplace("iwp", scalar3d_layout_mid, kg/m3, grid->name());
-        m_required_fields.emplace("rel", scalar3d_layout_mid, micron, grid->name());
-        m_required_fields.emplace("rei", scalar3d_layout_mid, micron, grid->name());
+        m_required_fields.emplace("eff_radius_qc", scalar3d_layout_mid, micron, grid->name());
+        m_required_fields.emplace("eff_radius_qi", scalar3d_layout_mid, micron, grid->name());
 
         // Set computed (output) fields
-        m_computed_fields.emplace("sw_flux_dn", scalar3d_layout_int, Wm2, grid->name());
-        m_computed_fields.emplace("sw_flux_up", scalar3d_layout_int, Wm2, grid->name());
-        m_computed_fields.emplace("sw_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name());
-        m_computed_fields.emplace("lw_flux_up", scalar3d_layout_int, Wm2, grid->name());
-        m_computed_fields.emplace("lw_flux_dn", scalar3d_layout_int, Wm2, grid->name());
+        m_computed_fields.emplace("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
+        m_computed_fields.emplace("SW_flux_up", scalar3d_layout_int, Wm2, grid->name());
+        m_computed_fields.emplace("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name());
+        m_computed_fields.emplace("LW_flux_up", scalar3d_layout_int, Wm2, grid->name());
+        m_computed_fields.emplace("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
 
     }  // RRTMGPRadiation::set_grids
 
@@ -81,23 +81,23 @@ namespace scream {
         // TODO: how can I just keep these around without having to create every time?
         // They are just pointers, so should be able to keep them somewhere else and just associate them once?
         // Get device views
-        auto d_pmid = m_rrtmgp_fields_in.at("pmid").get_reshaped_view<const Real**>();
+        auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_reshaped_view<const Real**>();
         auto d_pint = m_rrtmgp_fields_in.at("pint").get_reshaped_view<const Real**>();
-        auto d_tmid = m_rrtmgp_fields_in.at("tmid").get_reshaped_view<const Real**>();
+        auto d_tmid = m_rrtmgp_fields_in.at("T_mid").get_reshaped_view<const Real**>();
         auto d_tint = m_rrtmgp_fields_in.at("tint").get_reshaped_view<const Real**>();
         auto d_gas_vmr = m_rrtmgp_fields_in.at("gas_vmr").get_reshaped_view<const Real***>();
-        auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("sfc_alb_dir").get_reshaped_view<const Real**>();
-        auto d_sfc_alb_dif = m_rrtmgp_fields_in.at("sfc_alb_dif").get_reshaped_view<const Real**>();
-        auto d_mu0 = m_rrtmgp_fields_in.at("mu0").get_reshaped_view<const Real*>();
+        auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("surf_alb_direct").get_reshaped_view<const Real**>();
+        auto d_sfc_alb_dif = m_rrtmgp_fields_in.at("surf_alb_diffuse").get_reshaped_view<const Real**>();
+        auto d_mu0 = m_rrtmgp_fields_in.at("cos_zenith").get_reshaped_view<const Real*>();
         auto d_lwp = m_rrtmgp_fields_in.at("lwp").get_reshaped_view<const Real**>();
         auto d_iwp = m_rrtmgp_fields_in.at("iwp").get_reshaped_view<const Real**>();
-        auto d_rel = m_rrtmgp_fields_in.at("rel").get_reshaped_view<const Real**>();
-        auto d_rei = m_rrtmgp_fields_in.at("rei").get_reshaped_view<const Real**>();
-        auto d_sw_flux_up = m_rrtmgp_fields_out.at("sw_flux_up").get_reshaped_view<Real**>();
-        auto d_sw_flux_dn = m_rrtmgp_fields_out.at("sw_flux_dn").get_reshaped_view<Real**>();
-        auto d_sw_flux_dn_dir = m_rrtmgp_fields_out.at("sw_flux_dn_dir").get_reshaped_view<Real**>();
-        auto d_lw_flux_up = m_rrtmgp_fields_out.at("lw_flux_up").get_reshaped_view<Real**>();
-        auto d_lw_flux_dn = m_rrtmgp_fields_out.at("lw_flux_dn").get_reshaped_view<Real**>();
+        auto d_rel = m_rrtmgp_fields_in.at("eff_radius_qc").get_reshaped_view<const Real**>();
+        auto d_rei = m_rrtmgp_fields_in.at("eff_radius_qi").get_reshaped_view<const Real**>();
+        auto d_sw_flux_up = m_rrtmgp_fields_out.at("SW_flux_up").get_reshaped_view<Real**>();
+        auto d_sw_flux_dn = m_rrtmgp_fields_out.at("SW_flux_dn").get_reshaped_view<Real**>();
+        auto d_sw_flux_dn_dir = m_rrtmgp_fields_out.at("SW_flux_dn_dir").get_reshaped_view<Real**>();
+        auto d_lw_flux_up = m_rrtmgp_fields_out.at("LW_flux_up").get_reshaped_view<Real**>();
+        auto d_lw_flux_dn = m_rrtmgp_fields_out.at("LW_flux_dn").get_reshaped_view<Real**>();
  
         // Map to YAKL
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay  ("p_lay", const_cast<Real*>(d_pmid.data()), m_ncol, m_nlay);
@@ -105,18 +105,18 @@ namespace scream {
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev  ("p_lev",const_cast<Real*>(d_pint.data()), m_ncol, m_nlay+1);
         yakl::Array<double,2,memDevice,yakl::styleFortran> t_lev  ("t_lev",const_cast<Real*>(d_tint.data()), m_ncol, m_nlay+1);
         yakl::Array<double,3,memDevice,yakl::styleFortran> gas_vmr("gas_vmr",const_cast<Real*>(d_gas_vmr.data()), m_ncol, m_nlay, m_ngas);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dir("sfc_alb_dir",const_cast<Real*>(d_sfc_alb_dir.data()), m_ncol, m_nswbands);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dif("sfc_alb_dif",const_cast<Real*>(d_sfc_alb_dif.data()), m_ncol, m_nswbands);
-        yakl::Array<double,1,memDevice,yakl::styleFortran> mu0("mu0",const_cast<Real*>(d_mu0.data()), m_ncol);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dir("surf_alb_direct",const_cast<Real*>(d_sfc_alb_dir.data()), m_ncol, m_nswbands);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dif("surf_alb_diffuse",const_cast<Real*>(d_sfc_alb_dif.data()), m_ncol, m_nswbands);
+        yakl::Array<double,1,memDevice,yakl::styleFortran> mu0("cos_zenith",const_cast<Real*>(d_mu0.data()), m_ncol);
         yakl::Array<double,2,memDevice,yakl::styleFortran> lwp("lwp",const_cast<Real*>(d_lwp.data()), m_ncol, m_nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> iwp("iwp",const_cast<Real*>(d_iwp.data()), m_ncol, m_nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> rel("rel",const_cast<Real*>(d_rel.data()), m_ncol, m_nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> rei("rei",const_cast<Real*>(d_rei.data()), m_ncol, m_nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_up("sw_flux_up", d_sw_flux_up.data(), m_ncol, m_nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn("sw_flux_dn", d_sw_flux_dn.data(), m_ncol, m_nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn_dir("sw_flux_dn_dir", d_sw_flux_dn_dir.data(), m_ncol, m_nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_up("lw_flux_up", d_lw_flux_up.data(), m_ncol, m_nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_dn("lw_flux_dn", d_lw_flux_dn.data(), m_ncol, m_nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> rel("eff_radius_qc",const_cast<Real*>(d_rel.data()), m_ncol, m_nlay);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> rei("eff_radius_qi",const_cast<Real*>(d_rei.data()), m_ncol, m_nlay);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_up("SW_flux_up", d_sw_flux_up.data(), m_ncol, m_nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn("SW_flux_dn", d_sw_flux_dn.data(), m_ncol, m_nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn_dir("SW_flux_dn_dir", d_sw_flux_dn_dir.data(), m_ncol, m_nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_up("LW_flux_up", d_lw_flux_up.data(), m_ncol, m_nlay+1);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_dn("LW_flux_dn", d_lw_flux_dn.data(), m_ncol, m_nlay+1);
 
         // Make GasConcs from gas_vmr and gas_names
         // TODO: only allocate at initialization and 

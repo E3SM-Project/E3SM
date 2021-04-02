@@ -19,6 +19,6 @@ Grids Manager:
 
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
-  alst: 0.0
+  cldfrac_liq: 0.0
   qi: 0.0 
 ...

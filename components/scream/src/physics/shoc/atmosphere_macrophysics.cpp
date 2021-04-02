@@ -51,60 +51,60 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   //       using the same approach to make it easier to follow.
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
-  m_required_fields.emplace("pref_mid", pref_mid_layout,     Pa, grid_name);
-  m_required_fields.emplace("T_atm",    scalar3d_layout_mid, nondim, grid_name);
-  m_required_fields.emplace("alst",     scalar3d_layout_mid, Pa,     grid_name);
-  m_required_fields.emplace("zi",       scalar3d_layout_int, m,      grid_name);
-  m_required_fields.emplace("zm",       scalar3d_layout_mid, K,      grid_name);
-  m_required_fields.emplace("omega",    scalar3d_layout_mid, K,      grid_name);
-  m_required_fields.emplace("shf",      scalar2d_layout_col, K,      grid_name);
-  m_required_fields.emplace("cflx_k0",  scalar2d_layout_col, K,      grid_name);
-  m_required_fields.emplace("wsx",      scalar2d_layout_col, K,      grid_name);
-  m_required_fields.emplace("wsy",      scalar2d_layout_col, K,      grid_name);
-  m_required_fields.emplace("shoc_qv",  scalar3d_layout_mid, Qunit,  grid_name);
+  m_required_fields.emplace("pref_mid",         pref_mid_layout,     Pa, grid_name);
+  m_required_fields.emplace("T_mid",            scalar3d_layout_mid, nondim, grid_name);
+  m_required_fields.emplace("cldfrac_liq",      scalar3d_layout_mid, Pa,     grid_name);
+  m_required_fields.emplace("zi",               scalar3d_layout_int, m,      grid_name);
+  m_required_fields.emplace("zm",               scalar3d_layout_mid, K,      grid_name);
+  m_required_fields.emplace("omega",            scalar3d_layout_mid, K,      grid_name);
+  m_required_fields.emplace("surf_sens_flux",   scalar2d_layout_col, K,      grid_name);
+  m_required_fields.emplace("surf_latent_flux", scalar2d_layout_col, K,      grid_name);
+  m_required_fields.emplace("surf_u_mom_flux",  scalar2d_layout_col, K,      grid_name);
+  m_required_fields.emplace("surf_v_mom_flux",  scalar2d_layout_col, K,      grid_name);
+  m_required_fields.emplace("qv",               scalar3d_layout_mid, Qunit,  grid_name);
 
-  m_computed_fields.emplace("T_atm",   scalar3d_layout_mid, nondim, grid_name);
-  m_computed_fields.emplace("shoc_qv", scalar3d_layout_mid, Qunit,  grid_name);
+  m_computed_fields.emplace("T_mid",            scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("qv",               scalar3d_layout_mid, Qunit,  grid_name);
 
   // Input variables
-  m_required_fields.emplace("host_dx", scalar2d_layout_col, m,  grid_name);
-  m_required_fields.emplace("host_dy", scalar2d_layout_col, m,  grid_name);
-  m_required_fields.emplace("pmid",    scalar3d_layout_mid, Pa, grid_name);
-  m_required_fields.emplace("pint",    scalar3d_layout_int, Pa, grid_name);
-  m_required_fields.emplace("dp",      scalar3d_layout_mid, Pa, grid_name);
-  m_required_fields.emplace("phis",    scalar2d_layout_col, m,  grid_name);
+  m_required_fields.emplace("host_dx",        scalar2d_layout_col, m,  grid_name);
+  m_required_fields.emplace("host_dy",        scalar2d_layout_col, m,  grid_name);
+  m_required_fields.emplace("p_mid",          scalar3d_layout_mid, Pa, grid_name);
+  m_required_fields.emplace("pint",           scalar3d_layout_int, Pa, grid_name);
+  m_required_fields.emplace("pseudo_density", scalar3d_layout_mid, Pa, grid_name);
+  m_required_fields.emplace("phis",           scalar2d_layout_col, m,  grid_name);
 
   // Input/Output variables
-  m_required_fields.emplace("s",          scalar3d_layout_mid, J/kg,        grid_name);
-  m_required_fields.emplace("tke",        scalar3d_layout_mid, (m*m)/(s*s), grid_name);
-  m_required_fields.emplace("horiz_wind", horiz_wind_layout,   m/s,         grid_name);
-  m_required_fields.emplace("wthv_sec",   scalar3d_layout_mid, K*(m/s),     grid_name);
-  m_required_fields.emplace("tk",         scalar3d_layout_mid, (m*m)/s,     grid_name);
-  m_required_fields.emplace("shoc_ql",    scalar3d_layout_mid, Qunit,           grid_name);
+  m_required_fields.emplace("s",             scalar3d_layout_mid, J/kg,        grid_name);
+  m_required_fields.emplace("tke",           scalar3d_layout_mid, (m*m)/(s*s), grid_name);
+  m_required_fields.emplace("horiz_winds",   horiz_wind_layout,   m/s,         grid_name);
+  m_required_fields.emplace("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name);
+  m_required_fields.emplace("eddy_diff_mom", scalar3d_layout_mid, (m*m)/s,     grid_name);
+  m_required_fields.emplace("qc",            scalar3d_layout_mid, Qunit,           grid_name);
 
-  m_computed_fields.emplace("s",          scalar3d_layout_mid, J/kg,        grid_name);
-  m_computed_fields.emplace("tke",        scalar3d_layout_mid, (m*m)/(s*s), grid_name);
-  m_computed_fields.emplace("horiz_wind", horiz_wind_layout,   m/s,         grid_name);
-  m_computed_fields.emplace("wthv_sec",   scalar3d_layout_mid, K*(m/s),     grid_name);
-  m_computed_fields.emplace("tk",         scalar3d_layout_mid, (m*m)/s,     grid_name);
-  m_computed_fields.emplace("shoc_ql",    scalar3d_layout_mid, Qunit,       grid_name);
+  m_computed_fields.emplace("s",             scalar3d_layout_mid, J/kg,        grid_name);
+  m_computed_fields.emplace("tke",           scalar3d_layout_mid, (m*m)/(s*s), grid_name);
+  m_computed_fields.emplace("horiz_winds",   horiz_wind_layout,   m/s,         grid_name);
+  m_computed_fields.emplace("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name);
+  m_computed_fields.emplace("eddy_diff_mom", scalar3d_layout_mid, (m*m)/s,     grid_name);
+  m_computed_fields.emplace("qc",            scalar3d_layout_mid, Qunit,       grid_name);
 
   // Output variables
-  m_computed_fields.emplace("pblh", scalar2d_layout_col, m, grid_name);
+  m_computed_fields.emplace("pbl_height", scalar2d_layout_col, m, grid_name);
 
   // Tracer group
-  m_inout_groups_req.emplace("TRACERS",grid->name());
+  m_inout_groups_req.emplace("tracers",grid->name());
 }
 // =========================================================================================
 void SHOCMacrophysics::
 set_updated_group (const FieldGroup<Real>& group)
 {
   EKAT_REQUIRE_MSG(group.m_info->size() >= 3,
-                   "Error! Shoc requires at least 3 tracers (tke, shoc_qv, shoc_ql) as inputs.");
+                   "Error! Shoc requires at least 3 tracers (tke, qv, qc) as inputs.");
 
   const auto& name = group.m_info->m_group_name;
 
-  EKAT_REQUIRE_MSG(name=="TRACERS",
+  EKAT_REQUIRE_MSG(name=="tracers",
     "Error! We were not expecting a field group called '" << name << "\n");
 
   EKAT_REQUIRE_MSG(group.m_info->m_bundled,
@@ -127,19 +127,19 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
 
-  auto t        = m_shoc_fields_out["T_atm"].get_reshaped_view<Spack**>();
-  auto alst     = m_shoc_fields_in["alst"].get_reshaped_view<const Spack**>();
+  auto t        = m_shoc_fields_out["T_mid"].get_reshaped_view<Spack**>();
+  auto alst     = m_shoc_fields_in["cldfrac_liq"].get_reshaped_view<const Spack**>();
   auto zi       = m_shoc_fields_in["zi"].get_reshaped_view<const Spack**>();
   auto zm       = m_shoc_fields_in["zm"].get_reshaped_view<const Spack**>();
-  auto pmid     = m_shoc_fields_in["pmid"].get_reshaped_view<const Spack**>();
-  auto pdel     = m_shoc_fields_in["dp"].get_reshaped_view<const Spack**>();
+  auto pmid     = m_shoc_fields_in["p_mid"].get_reshaped_view<const Spack**>();
+  auto pdel     = m_shoc_fields_in["pseudo_density"].get_reshaped_view<const Spack**>();
   auto omega    = m_shoc_fields_in["omega"].get_reshaped_view<const Spack**>();
-  auto shf      = m_shoc_fields_in["shf"].get_reshaped_view<const Pack1d*>();
-  auto cflx_k0  = m_shoc_fields_in["cflx_k0"].get_reshaped_view<const Pack1d*>();
-  auto wsx      = m_shoc_fields_in["wsx"].get_reshaped_view<const Pack1d*>();
-  auto wsy      = m_shoc_fields_in["wsy"].get_reshaped_view<const Pack1d*>();
-  auto shoc_ql  = m_shoc_fields_out["shoc_ql"].get_reshaped_view<Spack**>();
-  auto shoc_qv  = m_shoc_fields_out["shoc_qv"].get_reshaped_view<Spack**>();
+  auto shf      = m_shoc_fields_in["surf_sens_flux"].get_reshaped_view<const Pack1d*>();
+  auto cflx_k0  = m_shoc_fields_in["surf_latent_flux"].get_reshaped_view<const Pack1d*>();
+  auto wsx      = m_shoc_fields_in["surf_u_mom_flux"].get_reshaped_view<const Pack1d*>();
+  auto wsy      = m_shoc_fields_in["surf_v_mom_flux"].get_reshaped_view<const Pack1d*>();
+  auto shoc_ql  = m_shoc_fields_out["qc"].get_reshaped_view<Spack**>();
+  auto shoc_qv  = m_shoc_fields_out["qv"].get_reshaped_view<Spack**>();
   auto tke      = m_shoc_fields_out["tke"].get_reshaped_view<Spack**>();
   auto s        = m_shoc_fields_out["s"].get_reshaped_view<Spack**>();
   auto Q        = m_shoc_fields_out["Q"].get_reshaped_view<Spack***>();
@@ -198,15 +198,15 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   input_output.tke          = shoc_preamble.tke_zt;
   input_output.thetal       = shoc_preamble.thlm;
   input_output.qw           = shoc_preamble.qw;
-  input_output.horiz_wind   = m_shoc_fields_out["horiz_wind"].get_reshaped_view<Spack***>();
-  input_output.wthv_sec     = m_shoc_fields_out["wthv_sec"].get_reshaped_view<Spack**>();
+  input_output.horiz_wind   = m_shoc_fields_out["horiz_winds"].get_reshaped_view<Spack***>();
+  input_output.wthv_sec     = m_shoc_fields_out["sgs_buoy_flux"].get_reshaped_view<Spack**>();
   input_output.qtracers     = shoc_preamble.tracers;
-  input_output.tk           = m_shoc_fields_out["tk"].get_reshaped_view<Spack**>();
+  input_output.tk           = m_shoc_fields_out["eddy_diff_mom"].get_reshaped_view<Spack**>();
   input_output.shoc_cldfrac = shoc_preamble.cloud_frac;
   input_output.shoc_ql      = shoc_preamble.shoc_ql;
 
   // Output Variables
-  output.pblh     = m_shoc_fields_out["pblh"].get_reshaped_view<Pack1d*>();
+  output.pblh     = m_shoc_fields_out["pbl_height"].get_reshaped_view<Pack1d*>();
 
   view_2d shoc_ql2("shoc_ql2",m_num_cols,nlev_packs);
   output.shoc_ql2 = shoc_ql2;
@@ -309,12 +309,12 @@ void SHOCMacrophysics::finalize_impl()
 
 void SHOCMacrophysics::register_fields (FieldRepository<Real>& field_repo) const {
   std::set<ci_string> q_names =
-    { "shoc_ql", "shoc_qv", "tke"};
+    { "qc", "qv", "tke"};
 
   for (auto& fid : m_required_fields) {
     const auto& name = fid.name();
     if (q_names.count(name)>0) {
-      field_repo.register_field<Spack>(fid,"TRACERS");
+      field_repo.register_field<Spack>(fid,"tracers");
     } else {
       field_repo.register_field<Spack>(fid);
     }
@@ -322,7 +322,7 @@ void SHOCMacrophysics::register_fields (FieldRepository<Real>& field_repo) const
   for (auto& fid : m_computed_fields) {
     const auto& name = fid.name();
     if (q_names.count(name)>0) {
-      field_repo.register_field<Spack>(fid,"TRACERS");
+      field_repo.register_field<Spack>(fid,"tracers");
     } else {
       field_repo.register_field<Spack>(fid);
     }

@@ -40,11 +40,11 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 
   // Set of fields used strictly as input
   m_required_fields.emplace("qi",   scalar3d_layout_mid, Q,      grid_name);
-  m_required_fields.emplace("alst", scalar3d_layout_mid, nondim, grid_name);
+  m_required_fields.emplace("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name);
 
   // Set of fields used strictly as output
-  m_computed_fields.emplace("ast",   scalar3d_layout_mid, nondim, grid_name);
-  m_computed_fields.emplace("aist",  scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("cldfrac_tot",   scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("cldfrac_ice",  scalar3d_layout_mid, nondim, grid_name);
 
   // Set of fields used as input and output
   // - There are no fields used as both input and output.
@@ -63,9 +63,9 @@ void CldFraction::run_impl (const Real dt)
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 
   auto qi   = m_cld_fraction_fields_in["qi"].get_reshaped_view<const Pack**>();
-  auto liq_cld_frac = m_cld_fraction_fields_in["alst"].get_reshaped_view<const Pack**>();
-  auto ice_cld_frac = m_cld_fraction_fields_out["aist"].get_reshaped_view<Pack**>();
-  auto tot_cld_frac  = m_cld_fraction_fields_out["ast"].get_reshaped_view<Pack**>();
+  auto liq_cld_frac = m_cld_fraction_fields_in["cldfrac_liq"].get_reshaped_view<const Pack**>();
+  auto ice_cld_frac = m_cld_fraction_fields_out["cldfrac_ice"].get_reshaped_view<Pack**>();
+  auto tot_cld_frac = m_cld_fraction_fields_out["cldfrac_tot"].get_reshaped_view<Pack**>();
 
   CldFractionFunc::main(m_num_cols,m_num_levs,qi,liq_cld_frac,ice_cld_frac,tot_cld_frac);
 

@@ -290,7 +290,7 @@ FieldRepository<RealType>::get_field (const std::string& name, const std::string
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
       "Error! Cannot get fields from the repo while registration has not yet completed.\n");
   auto ptr = get_field_ptr(name,grid);
-  EKAT_REQUIRE_MSG(ptr!=nullptr, "Error! Field not found.\n");
+  EKAT_REQUIRE_MSG(ptr!=nullptr, "Error! Field " + name + " not found.\n");
   return *ptr;
 }
 
