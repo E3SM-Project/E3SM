@@ -20,8 +20,8 @@ namespace scream {
  *  This class is responsible of implementing common kernels used in
  *  scream to compute quantities at level midpoints and level interfaces.
  *  For instance, compute interface quantities from midpoints
- *  ones, or integrate over a column, or compute increments of midpoint
- *  quantities (which will be defined at interfaces).
+ *  ones, or integrate over a column, or compute increments of interface
+ *  quantities (which will be defined at midpoints).
  *  The kernels are meant to be launched from within a parallel region, with
  *  team policy. More precisely, they are meant to be called from the outer most
  *  parallel region. In other words, you should *not* be inside a TeamThreadRange
@@ -41,14 +41,11 @@ namespace scream {
  *    using pack_type = typename col_ops::pack_type;
  *    
  *    auto prod = [&](const int k)->pack_type { return x(k)*y(k); }
- *    col_ops::compute_midpoint_values(team,prod,output);
+ *    col_ops::compute_midpoint_values(team,nlevs,prod,output);
  *
  *  Note: all methods have a different impl, depending on whether PackSize>1.
  *        The if statement is evaluated at compile-time, so there is no run-time
  *        penalization. The only requirement is that both branches must compile.
- *        Also, the impl for PackSize>1 is not thread safe (no ||for or single),
- *        so it would *not* work on GPU. Hence, the whole class has a static_assert
- *        to make sure we have PackSize==1 if we are in a GPU build.
  */
 
 template<typename DeviceType, typename ScalarType, int PackSize>
