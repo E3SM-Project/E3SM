@@ -197,10 +197,11 @@ contains
 
       nCells = nCellsHalo( 2 )
 
-      ! allocate squared shear and buoyancy frequencies
-      allocate(shearSquaredTop(nVertLevelsP1))
-      allocate(NSquaredTop(nVertLevelsP1))
-      allocate(hLayer(nVertLevelsP1))
+      ! allocate arrays for squared shear, squared buoyancy frequency and layer thickness
+      ! to be used in GOTM, the indices are in the GOTM order (bottom to top)
+      allocate(shearSquaredTop(0:nVertLevels))
+      allocate(NSquaredTop(0:nVertLevels))
+      allocate(hLayer(0:nVertLevels))
 
       call mpas_timer_start('gotm cell loop', .false.)
 
@@ -215,25 +216,27 @@ contains
 
          ! compute shear frequency squared
          invAreaCell = 1.0_RKIND / areaCell(iCell)
-         do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
+         do k = 1, maxLevelCell(iCell) - minLevelCell(iCell)
+            ki = maxLevelCell(iCell) - k + 1
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
                factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
-               delU2 = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
+               delU2 = (normalVelocity(ki-1,iEdge) - normalVelocity(ki,iEdge))**2
                shearSquaredTop(k) = shearSquaredTop(k) + factor * delU2
             end do
-            shearSquaredTop(k) = shearSquaredTop(k) / (zMid(k-1,iCell) - zMid(k,iCell))**2
+            shearSquaredTop(k) = shearSquaredTop(k) / (zMid(ki-1,iCell) - zMid(ki,iCell))**2
          end do
-         shearSquaredTop(minLevelCell(iCell)) = shearSquaredTop(minLevelCell(iCell)+1)
-         shearSquaredTop(maxLevelCell(iCell)+1) = shearSquaredTop(maxLevelCell(iCell))
+         shearSquaredTop(0) = shearSquaredTop(1)
+         shearSquaredTop(maxLevelCell(iCell)-minLevelCell(iCell)+1) = shearSquaredTop(maxLevelCell(iCell)-minLevelCell(iCell))
 
          ! fill arrays of the squared buoyancy frequency and layer thickness
          ! and compute the water depth
          waterDepth = 0.0_RKIND
-         do k = minLevelCell(iCell), maxLevelCell(iCell)
-            NSquaredTop(k) = BruntVaisalaFreqTop(k,iCell)
-            hLayer(k) = layerThickness(k,iCell)
-            waterDepth = waterDepth + layerThickness(k,iCell)
+         do k = 1, maxLevelCell(iCell) - minLevelCell(iCell) + 1
+            ki = maxLevelCell(iCell) - k + 1
+            NSquaredTop(k) = BruntVaisalaFreqTop(ki,iCell)
+            hLayer(k) = layerThickness(ki,iCell)
+            waterDepth = waterDepth + layerThickness(ki,iCell)
          end do
 
          ! compute the bottom friction velocity
@@ -279,9 +282,9 @@ contains
                             bottomFrictionVelocity,                                       &
                             gotmSurfaceRoughnessLength,                                   &
                             gotmBottomRoughnessLength,                                    &
-                            hLayer(maxLevelCell(iCell)+1:minLevelCell(iCell):-1),         &
-                            NSquaredTop(maxLevelCell(iCell)+1:minLevelCell(iCell):-1),    &
-                            shearSquaredTop(maxLevelCell(iCell)+1:minLevelCell(iCell):-1))
+                            hLayer(0:maxLevelCell(iCell)-minLevelCell(iCell)+1),          &
+                            NSquaredTop(0:maxLevelCell(iCell)-minLevelCell(iCell)+1),     &
+                            shearSquaredTop(0:maxLevelCell(iCell)-minLevelCell(iCell)+1))
 
          ! update GOTM arrays for next time step
          ! MPAS-O (1:nlev+1) <-> GOTM (nlev:0)
