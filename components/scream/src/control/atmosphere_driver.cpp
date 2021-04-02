@@ -196,7 +196,7 @@ initialize_fields (const util::TimeStamp& t0)
     // First, check if the input file contains constant values for some of the fields
     if (ic_pl.isParameter(name)) {
       // The user provided a constant value for this field. Simply use that.
-      initialize_one_field(name, ic_pl);
+      initialize_one_field<double>(name, ic_pl);
     } else {
       // The field does not have a constant value, so we expect to find it in the nc file
       ic_fields.set(ekat::strint("field",ifield+1),name); 
@@ -230,6 +230,7 @@ initialize_fields (const util::TimeStamp& t0)
   m_ad_status |= s_fields_inited;
 }
 
+template<typename T>
 void AtmosphereDriver::initialize_one_field(const std::string& name, const ekat::ParameterList& ic_pl)
 {
   printf("ASD - name = %s\n",name.c_str());  //ASD - DELETE
@@ -243,7 +244,7 @@ void AtmosphereDriver::initialize_one_field(const std::string& name, const ekat:
   if (layout.is_vector_layout()) {
     const auto idim = layout.get_vector_dim();
     const auto vec_dim = layout.dim(idim);
-    const auto& values = ic_pl.get<std::vector<Real>>(name);
+    const auto& values = ic_pl.get<std::vector<T>>(name);
     EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
         "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
         "       Field dimension: " + std::to_string(vec_dim) + "\n"
@@ -257,7 +258,7 @@ void AtmosphereDriver::initialize_one_field(const std::string& name, const ekat:
       printf("    - [%d] = %f\n",comp,values[comp]);    // ASD-DELETE
     }
   } else {
-    const auto& value = ic_pl.get<double>(name);
+    const auto& value = ic_pl.get<T>(name);
     printf("    - val = %f\n",value);  //ASD - DELETE
     f.set_value(value);
   }
