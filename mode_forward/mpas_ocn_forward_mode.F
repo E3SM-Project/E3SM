@@ -289,8 +289,6 @@ module ocn_forward_mode
 
       call ocn_init_routines_compute_min_max_level(domain)
 
-      call ocn_timestep_init(domain, ierr)
-
       call mpas_log_write(' Vertical coordinate movement is: ' // trim(config_vert_coord_movement))
 
       if (config_vert_coord_movement.ne.'fixed'.and. &
@@ -386,26 +384,17 @@ module ocn_forward_mode
 
       endif
 
-      ! Preconditioner for the semi-implicit barotropic mode solver
-      if (config_time_integrator == 'semi_implicit' ) then
-
-         call mpas_log_write(' Building a preconditioning matrix: ')
-         call mpas_timer_start("preconditioning matrix build")
-
-         ! Building a preconditioning matrix
-         call ocn_time_integrator_si_preconditioner(domain, dt)
-
-         call mpas_timer_stop("preconditioning matrix build")
-      endif
-
-      call mpas_dmpar_exch_group_create(domain, 'subcycleFields')
-      call mpas_dmpar_exch_group_add_field(domain, 'subcycleFields', 'sshSubcycle')
-      call mpas_dmpar_exch_group_add_field(domain, 'subcycleFields', 'normalBarotropicVelocitySubcycle')
-      call mpas_dmpar_exch_group_build_reusable_buffers(domain, 'subcycleFields')
-
       !-----------------------------------------------------------------
       ! Complete all remaining module initializations.
       !-----------------------------------------------------------------
+
+      call ocn_timestep_init(domain, dt, ierr)
+      if (ierr /= 0) then
+         call mpas_log_write( &
+              'Error initializing ocean time integration ', &
+              MPAS_LOG_ERR, masterOnly=.true., flushNow=.true.)
+         return
+      endif
 
       ! Initialize thickness tendency modules
       call ocn_thick_hadv_init(err_tmp)
