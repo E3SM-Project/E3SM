@@ -78,15 +78,18 @@ def buildlib(bldroot, installpath, case):
 y
 """.format(sf90, scc, tmpdir))
 
-    run_bld_cmd_ensure_logging("./w3_setup {} -c {} -s E3SM < w3_setup.inp".format(modeldir, comp), logger, from_dir=bindir)
+    run_bld_cmd_ensure_logging("./w3_setup {} -s E3SM < w3_setup.inp".format(modeldir), logger, from_dir=bindir)
     os.remove(inp_file)
     os.remove(os.path.join(bindir, "switch_E3SM"))
 
     # Generate pre-processed WW3 source code
-    tarfile = "{}/work/ww3_shel.tar.gz".format(modeldir)
-    run_bld_cmd_ensure_logging("./w3_source ww3_shel", logger, from_dir=bindir)
-    shutil.move(tarfile, tmpdir)
-    run_bld_cmd_ensure_logging("tar -xzvf ww3_shel.tar.gz", logger, from_dir=tmpdir)
+    ww3_exe = ['ww3_shel','ww3_grid']
+    for exe in ww3_exe:
+      run_bld_cmd_ensure_logging("./w3_source {}".format(exe), logger, from_dir=bindir)
+    for exe in ww3_exe:
+      tarfile = "{}/work/{}.tar.gz".format(modeldir,exe)
+      shutil.move(tarfile, tmpdir)
+      run_bld_cmd_ensure_logging("tar -xzvf {}.tar.gz".format(exe), logger, from_dir=tmpdir)
 
     with open(os.path.join(casebuild, "ww3conf", "Filepath"), "w") as fd:
         fd.write(

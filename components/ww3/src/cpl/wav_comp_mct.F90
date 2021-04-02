@@ -163,6 +163,7 @@
 !/
       use w3initmd, only: w3init 
       use w3wavemd, only: w3wave 
+      use w3gridmd, only: w3grid
 !/
       use w3iopomd, only:
       use w3timemd, only: stme21 
@@ -208,6 +209,7 @@
       private :: wav_domain_mct
 
       integer,save :: stdout
+      integer,save :: odat(40)
 
       include "mpif.h"
 !--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -249,6 +251,7 @@ CONTAINS
       integer :: stop_ymd          ! stop date (yyyymmdd)
       integer :: stop_tod          ! stop time of day (sec)
       integer :: ix, iy
+      integer :: iproc
 
       character(CL)            :: starttype
       type(mct_gsmap), pointer :: gsmap
@@ -257,7 +260,7 @@ CONTAINS
 
       integer             :: unitn            ! namelist unit number
       integer             :: ndso, ndse, nds(13), ntrace(2), time0(2)
-      integer             :: timen(2), odat(35), nh(4), iprt(6)
+      integer             :: timen(2), nh(4), iprt(6)
       integer             :: i,j,npts
       integer             :: ierr
       integer             :: jsea,isea
@@ -294,22 +297,6 @@ CONTAINS
       namelist /ww3_inparm/ initfile, outfreq
 
       !--------------------------------------------------------------------
-      ! Set up data structures
-      !--------------------------------------------------------------------
-
-      call w3nmod ( 1, 6, 6 )
-      call w3ndat (    6, 6 )
-      call w3naux (    6, 6 )
-      call w3nout (    6, 6 )
-      call w3ninp (    6, 6 )
-
-      call w3setg ( 1, 6, 6 )
-      call w3setw ( 1, 6, 6 )
-      call w3seta ( 1, 6, 6 )
-      call w3seto ( 1, 6, 6 )
-      call w3seti ( 1, 6, 6 )
-
-      !--------------------------------------------------------------------
       ! Initialize mpi
       !--------------------------------------------------------------------
 
@@ -319,6 +306,39 @@ CONTAINS
       inst_index  = seq_comm_inst(compid)
       inst_suffix = seq_comm_suffix(compid)
       call ww3_cpl_indices_set()
+    
+      !--------------------------------------------------------------------
+      ! Initialize WW3 grid
+      !--------------------------------------------------------------------
+
+      call mpi_barrier ( mpi_comm, ierr )
+      
+      call mpi_comm_rank(mpi_comm, iproc, ierr)
+      if ( iproc .eq. 1 ) then
+        call w3grid
+      endif
+
+      call mpi_barrier ( mpi_comm, ierr )
+
+      !--------------------------------------------------------------------
+      ! Set up data structures
+      !--------------------------------------------------------------------
+      
+      if ( iproc .ne. 1) then
+        call w3nmod ( 1, 6, 6 ) ! this is called for iproc = 1 in w3grid
+      endif
+      call w3ndat (    6, 6 )
+      call w3naux (    6, 6 )
+      if ( iproc .ne. 1 ) then
+        call w3nout (    6, 6 ) ! this is called for iproc = 1 in w3grid
+      end if
+      call w3ninp (    6, 6 )
+
+      call w3setg ( 1, 6, 6 )
+      call w3setw ( 1, 6, 6 )
+      call w3seta ( 1, 6, 6 )
+      call w3seto ( 1, 6, 6 )
+      call w3seti ( 1, 6, 6 )
 
       call mpi_comm_size(mpi_comm, naproc, ierr)
       call mpi_comm_rank(mpi_comm, iaproc, ierr)
@@ -476,17 +496,18 @@ CONTAINS
       ! Actually will need a new restart flag - since all of the ODAT
       ! should be set to 0 - since they are initializated in w3initmd
       ! ODAT    I.A.   I   Output data, five parameters per output type
+      !                     1-5  Data for OTYPE = 1; gridded fields.
       !                          1 YYYMMDD for first output.
       !                          2 HHMMSS for first output.
       !                          3 Output interval in seconds.
       !                          4 YYYMMDD for last output.
       !                          5 HHMMSS for last output.
-      !                     1-5  Data for OTYPE = 1; gridded fields.
-      !                     6-10 Id.  for OTYPE = 2; point output.
-      !                    11-15 Id.  for OTYPE = 3; track point output.
-      !                    16-20 Id.  for OTYPE = 4; restart files.
-      !                    21-25 Id.  for OTYPE = 5; boundary data.
-      !                    31-35 Id.  for OTYPE = 5; coupling data.
+      !                     6-10 Id. for OTYPE = 2; point output.
+      !                    11-15 Id. for OTYPE = 3; track point output.
+      !                    16-20 Id. for OTYPE = 4; restart files.
+      !                    21-25 Id. for OTYPE = 5; boundary data.
+      !                    31-35 Id. for OTYPE = 7; coupling data.
+      !                    36-40 Id. for OTYPE = 8; second restart file
       ! FLGRD   L.A.   I   Flags for gridded output.
       ! NPT     Int.   I   Number of output points
       ! X/YPT   R.A.   I   Coordinates of output points.
@@ -496,7 +517,7 @@ CONTAINS
       allocate ( x(1), y(1), pnames(1) )
       pnames(1) = ' '
 
-      notype = 7
+      notype = 8
 
       do j=1, notype
          odat(5*(j-1)+3) = 0
@@ -947,7 +968,7 @@ CONTAINS
       !      write(stdout,*) 'wrm tcx7a'
       !      call shr_sys_flush(stdout)
 
-      call w3wave ( 1, timen )
+      call w3wave ( 1, odat, timen )
 
       ! copy ww3 data to coupling datatype
       ! QL, 150612, copy enhancement factor, uStokes, vStokes to coupler
