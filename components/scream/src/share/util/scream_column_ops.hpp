@@ -71,7 +71,6 @@ public:
   template<typename T>
   using view_1d = typename KT::template view_1d<T>;
 
-
   static constexpr scalar_type one  () { return scalar_type(1); }
   static constexpr scalar_type zero () { return scalar_type(0); }
 
@@ -85,7 +84,8 @@ public:
   KOKKOS_INLINE_FUNCTION
   static void team_parallel_for (const TeamMember& team,
                                  const int count,
-                                const Lambda& f) {
+                                 const Lambda& f)
+  {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,count),f);
   }
 
@@ -93,9 +93,9 @@ public:
   template<typename Lambda>
   KOKKOS_INLINE_FUNCTION
   static void team_parallel_for (const TeamMember& team,
-                                 const int start,
-                                 const int end,
-                                 const Lambda& f) {
+                                 const int start, const int end,
+                                 const Lambda& f)
+  {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,start,end),f);
   }
 
@@ -104,15 +104,16 @@ public:
   KOKKOS_INLINE_FUNCTION
   static void team_parallel_scan (const TeamMember& team,
                                   const int count,
-                                  const Lambda& f) {
+                                  const Lambda& f)
+  {
     Kokkos::parallel_scan(Kokkos::TeamThreadRange(team,count),f);
   }
   template<typename Lambda>
   KOKKOS_INLINE_FUNCTION
   static void team_parallel_scan (const TeamMember& team,
-                                  const int start,
-                                  const int end,
-                                  const Lambda& f) {
+                                  const int start, const int end,
+                                  const Lambda& f)
+  {
     Kokkos::parallel_scan(Kokkos::TeamThreadRange(team,start,end),f);
   }
 
@@ -120,7 +121,8 @@ public:
   template<typename Lambda>
   KOKKOS_INLINE_FUNCTION
   static void team_single (const TeamMember& team,
-                           const Lambda& f) {
+                           const Lambda& f)
+  {
     Kokkos::single(Kokkos::PerTeam(team),f);
   }
 
@@ -171,31 +173,40 @@ public:
     } else {
 
       const auto NUM_MID_PACKS     = pack_info::num_packs(num_mid_levels);
-      const auto LAST_MID_PACK     = pack_info::last_pack_idx(num_mid_levels);
-      const auto LAST_INT_PACK     = pack_info::last_pack_idx(num_mid_levels+1);
-      const auto LAST_INT_PACK_END = pack_info::last_vec_end(num_mid_levels+1);
+      const auto NUM_INT_PACKS     = pack_info::num_packs(num_mid_levels+1);
 
-      // Try to use SIMD operations as much as possible.
-      team_parallel_for(team,NUM_MID_PACKS-1,
-                        [&](const int k){
+      // It is easier to read if we check whether #int_packs==#mid_packs.
+      // This lambda can be used in both cases to process packs that have a next pack
+      auto shift_and_avg = [&](const int k){
         // Shift's first arg is the scalar to put in the "empty" spot at the end
         pack_type tmp = ekat::shift_left(x_i(k+1)[0], x_i(k));
         tmp += x_i(k);
         tmp /= 2.0;
         combine<CM>(tmp, x_m(k), alpha, beta);
-      });
+      };
+      if (NUM_MID_PACKS==NUM_INT_PACKS) {
+        const auto LAST_PACK =  NUM_MID_PACKS-1;
 
-      team_single (team, [&]() {
-        // Last level pack treated separately, since int pack k+1 may not exist,
-        // depending on whether NUM_MID_PACKS==NUM_INT_PACKS.
-        // The shift left might not even "need" the 2nd arg (if num int packs == num mid packs),
-        // but passing the last x_int value takes care of both scenarios.
-        pack_type tmp = ekat::shift_left(x_i(LAST_INT_PACK)[LAST_INT_PACK_END-1], x_i(LAST_MID_PACK));
+        // Use SIMD operations only on NUM_MID_PACKS-1, since mid pack
+        // does not have a 'next' one
+        team_parallel_for(team,NUM_MID_PACKS-1,shift_and_avg);
 
-        tmp += x_i(LAST_MID_PACK);
-        tmp /= 2.0;
-        combine<CM>(tmp, x_m(LAST_MID_PACK), alpha, beta);
-      });
+        team_single (team, [&]() {
+          // Last level pack treated separately, since int pack k+1 does not exist.
+          // Shift's first arg is the scalar to put in the "empty" spot at the end.
+          // In this case, we don't need it, so just uze zero.
+          const auto& xi_last = x_i(LAST_PACK);
+          pack_type tmp = ekat::shift_left(zero(), xi_last);
+
+          tmp += xi_last;
+          tmp /= 2.0;
+          combine<CM>(tmp, x_m(LAST_PACK), alpha, beta);
+        });
+      } else {
+        // We can use SIMD operations on all NUM_MID_PACKS mid packs,
+        // since x_i(k+1) is *always* fine
+        team_parallel_for(team,NUM_MID_PACKS,shift_and_avg);
+      }
     }
   }
 
@@ -241,22 +252,34 @@ public:
       });
     } else {
       const auto NUM_MID_PACKS     = pack_info::num_packs(num_mid_levels);
-      const auto LAST_MID_PACK     = NUM_MID_PACKS - 1;
-      const auto LAST_INT_PACK     = pack_info::last_pack_idx(num_mid_levels+1);
-      const auto LAST_INT_PACK_END = pack_info::last_vec_end(num_mid_levels+1);
+      const auto NUM_INT_PACKS     = pack_info::num_packs(num_mid_levels+1);
 
-      // Try to use SIMD operations as much as possible.
-      team_parallel_for(team,NUM_MID_PACKS-1,
-                        [&](const int k){
+      // It is easier to read if we check whether #int_packs==#mid_packs.
+      // This lambda can be used in both cases to process packs that have a next pack
+      auto shift_and_subtract = [&](const int k){
         auto tmp = ekat::shift_left(x_i(k+1)[0], x_i(k));
         combine<CM>(tmp - x_i(k),dx_m(k),alpha,beta);
-      });
+      };
+      if (NUM_MID_PACKS==NUM_INT_PACKS) {
+        const auto LAST_PACK = NUM_MID_PACKS - 1;
 
-      team_single(team, [&](){
-        // Last pack does not necessarily have a next pack, so needs to be treated apart.
-        auto tmp = ekat::shift_left(x_i(LAST_INT_PACK)[LAST_INT_PACK_END-1],x_i(LAST_MID_PACK));
-        combine<CM>(tmp - x_i(LAST_MID_PACK),dx_m(LAST_MID_PACK),alpha,beta);
-      });
+        // Use SIMD operations only on NUM_MID_PACKS-1, since mid pack
+        // does not have a 'next' one
+        team_parallel_for(team,NUM_MID_PACKS-1,shift_and_subtract);
+
+        // Last pack does not have a next one, so needs to be treated separately and serially.
+        team_single(team, [&](){
+          // Shift's first arg is the scalar to put in the "empty" spot at the end.
+          // In this case, we don't need it, so just uze zero.
+          const auto& xi_last = x_i(LAST_PACK);
+          auto tmp = ekat::shift_left(zero(),xi_last);
+          combine<CM>(tmp - xi_last,dx_m(LAST_PACK),alpha,beta);
+        });
+      } else {
+        // We can use SIMD operations on all NUM_MID_PACKS mid packs,
+        // since x_i(k+1) is *always* fine
+        team_parallel_for(team,NUM_MID_PACKS,shift_and_subtract);
+      }
     }
   }
 
