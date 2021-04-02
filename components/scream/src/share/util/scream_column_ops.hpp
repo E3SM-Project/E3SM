@@ -206,64 +206,18 @@ public:
   // Note: with proper bc, then x_int(x_mid(x_int))==x_int. However, this version
   //       weighs neighboring cells equally, even if one is larger than the other.
   // RECALL: k=0 is the model top, while k=num_mid_levels+1 is the surface!
-  template<CombineMode CM = CombineMode::Replace,
+  template<bool FixTop,
+           CombineMode CM = CombineMode::Replace,
            typename InputProvider = DefaultProvider>
   KOKKOS_INLINE_FUNCTION
   static void
   compute_interface_values (const TeamMember& team,
                             const int num_mid_levels,
                             const InputProvider& x_m,
-                            const scalar_type& x_top,
-                            const scalar_type& x_bot,
-                            const view_1d<pack_type>& x_i,
-                            const scalar_type alpha = one(),
-                            const scalar_type beta = zero())
+                            const scalar_type& bc,
+                            const view_1d<pack_type>& x_i)
   {
-    // Sanity checks
-    debug_checks<InputProvider>(num_mid_levels+1,x_i);
-
-    // For GPU (or any build with pack size 1), things are simpler
-    if (pack_size==1) {
-      team_parallel_for(team,1,num_mid_levels,
-                        [&](const int& k) {
-        auto tmp = ( x_m(k) + x_m(k-1) ) / 2.0;
-        combine<CM>(tmp, x_i(k), alpha, beta);
-      });
-
-      // Fix the top/bottom
-      team_single(team,[&](){
-        combine<CM>(x_top, x_i(0), alpha, beta);
-        combine<CM>(x_bot, x_i(num_mid_levels), alpha, beta);
-      });
-    } else {
-
-      const auto NUM_MID_PACKS     = pack_info::num_packs(num_mid_levels);
-      const auto LAST_INT_PACK     = pack_info::last_pack_idx(num_mid_levels+1);
-      const auto LAST_INT_PACK_END = pack_info::last_vec_end(num_mid_levels+1);
-
-      // Try to use SIMD operations as much as possible.
-      team_parallel_for(team,1,NUM_MID_PACKS,
-                        [&](const int k){
-        // Shift's first arg is the scalar to put in the "empty" spot at the beginning
-        auto tmp = ekat::shift_right(x_m(k-1)[pack_size-1], x_m(k));
-        tmp += x_m(k);
-        tmp /= 2.0;
-        combine<CM>(tmp, x_i(k), alpha, beta);
-      });
-
-      team_single(team,[&](){
-        // Treat first pack and BC separately. Note: can pick any val for tmp[0],
-        // since BC will overwrite anyways.
-        auto tmp = ekat::shift_right(zero(), x_m(0));
-        tmp += x_m(0);
-        tmp /= 2.0;
-        combine<CM>(tmp, x_i(0), alpha, beta);
-
-        // Fix top/bottom
-        combine<CM>(x_top, x_i(0)[0], alpha, beta);
-        combine<CM>(x_bot, x_i(LAST_INT_PACK)[LAST_INT_PACK_END-1], alpha, beta);
-      });
-    }
+    compute_interface_values_impl<pack_size,FixTop>(team,num_mid_levels,x_m,bc,x_i);
   }
 
   // Given X at level interfaces, compute dX at level midpoints.
@@ -329,12 +283,28 @@ public:
     debug_checks<InputProvider>(num_mid_levels+1,x_i);
 
     // Scan's impl is quite lengthy, so split impl into two fcns, depending on pack size.
-    column_scan_impl<pack_size,FromTop>(team,num_mid_levels,dx_m,x_i,s0);
+    column_scan_impl<pack_size,false,FromTop>(team,num_mid_levels,dx_m,x_i,s0);
   }
 
 protected:
 
-  template<int PackLength,bool FromTop,typename InputProvider>
+  // Reduce a pack in two steps: first, reduce odd and even entries
+  // separately, then combine the results. Can help with accuracy if
+  // the pack contains alternating + and - entries of similar magnitude.
+  KOKKOS_INLINE_FUNCTION
+  static scalar_type interleaved_reduce_sum (const pack_type& p) {
+    scalar_type s_even = zero();
+    scalar_type s_odd  = zero();
+    vector_simd
+    for (int i=0; i<pack_size/2; ++i) {
+      s_even += p[2*i];
+      s_odd  += p[2*i+1];
+    }
+    return s_even+s_odd;
+  }
+
+  template<int PackLength,bool InterleavedReduction,
+           bool FromTop,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<PackLength==1>::type
   column_scan_impl (const TeamMember& team,
@@ -374,7 +344,8 @@ protected:
     }
   }
 
-  template<int PackLength,bool FromTop,typename InputProvider>
+  template<int PackLength,bool InterleavedReduction,
+           bool FromTop,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(PackLength>1)>::type
   column_scan_impl (const TeamMember& team,
@@ -415,7 +386,11 @@ protected:
         scalar_type s = s0;
         // If k==0, x_i(k) does not contain any scan sum (and may contain garbage), so ignore it
         if (k!=0) {
-          ekat::reduce_sum<false>(x_i(k),s);
+          if (InterleavedReduction) {
+            s += interleaved_reduce_sum (x_i(k));
+          } else {
+            ekat::reduce_sum<false>(x_i(k),s);
+          }
         }
         x_i(k)[0] = s;
 
@@ -461,9 +436,16 @@ protected:
       // Now let s = s0 + reduce_sum(x_i(k)). The second term is the sum of all dx_m
       // on all "physical" levels on all packs above current one.
       // Then, do the scan over the current pack: x_i(k)[i] = s + dx_m(k)[i,...,pack_end]
-      team_parallel_for(team,NUM_INT_PACKS,
+
+      // If NUM_INT_PACKS>NUM_MID_PACKS, the last int pack only needs s0
+      if (NUM_INT_PACKS>NUM_MID_PACKS) {
+        team_single(team,[&]() {
+          x_i(LAST_INT_PACK)[0] = s0;
+        });
+      }
+      team_parallel_for(team,NUM_MID_PACKS,
                         [&](const int k) {
-        const auto k_bwd = NUM_INT_PACKS - k - 1;
+        const auto k_bwd = NUM_MID_PACKS - k - 1;
         const auto this_pack_end = pack_info::vec_end(num_mid_levels+1,k_bwd);
 
         scalar_type s = s0;
@@ -471,8 +453,6 @@ protected:
           ekat::reduce_sum(x_i(k_bwd),s);
         }
 
-        // Note: if NUM_INT_PACKS>NUM_MID_PACKS, this_pack_end==1 on last int pack,
-        // so we will *not* access dx_m(LAST_INT_PACK) (which would be OOB).
         auto tally = s;
         auto& x_i_kbwd = x_i(k_bwd);
         for (int i=this_pack_end-1; i>=0; --i) {
@@ -482,6 +462,167 @@ protected:
       });
     }
   }
+
+  template<int PackLength, bool FixTop,
+           CombineMode CM = CombineMode::Replace,
+           typename InputProvider = DefaultProvider>
+  KOKKOS_INLINE_FUNCTION
+  static typename std::enable_if<PackLength==1>::type
+  compute_interface_values_impl (const TeamMember& team,
+                                 const int num_mid_levels,
+                                 const InputProvider& x_m,
+                                 const scalar_type& bc,
+                                 const view_1d<pack_type>& x_i)
+  {
+    // Sanity checks
+    debug_checks<InputProvider>(num_mid_levels+1,x_i);
+
+    auto sign = [](const int k) -> scalar_type {
+      return 1 - 2*(k%2);
+    };
+
+    auto lambda_odd = [&](const int k)->pack_type {
+      return k%2==1 ? 2*x_m(k) : 0;
+    };
+    auto lambda_even = [&](const int k)->pack_type {
+      return k%2==0 ? 2*x_m(k) : 0;
+    };
+
+    // Do a scan sum with 0 bc.
+    if (FixTop) {
+      team_single(team,[&](){
+        x_i(0)[0] = zero();
+      });
+      // No need for a barrier here
+
+      // To avoid adding + and - quantities (which may have similar magnitude),
+      // split the scan sum of even and odd entries.
+      team_parallel_scan(team,(num_mid_levels+1)/2,
+                         [&](const int k, scalar_type& accumulator, const bool last) {
+        accumulator += lambda_even(2*k)[0];
+        if (last) {
+          x_i(2*k+1)[0] = accumulator;
+        }
+      });
+      team_parallel_scan(team,num_mid_levels/2,
+                         [&](const int k, scalar_type& accumulator, const bool last) {
+        accumulator += lambda_odd(2*k+1)[0];
+        if (last) {
+          x_i(2*k+2)[0] = accumulator;
+        }
+      });
+
+      // Now, even entries of x_i contain scan_sum of previous even midpoints,
+      // and similartly for odd entries. To obtain a complete scan sum, all
+      // we need is to subtract the previous inteface from the current.
+      // CAREFUL: do this starting from last interface!
+      team.team_barrier();
+      team_parallel_for(team,num_mid_levels,
+                        [&](const int k) {
+        const int k_bwd = num_mid_levels - k - 1;
+        x_i(k_bwd+1) -= x_i(k_bwd);
+        x_i(k_bwd+1) -= sign(k_bwd)*bc;
+      });
+      team_single(team,[&](){
+        x_i(0)[0] = bc;
+      });
+    } else {
+      team_single(team,[&](){
+        x_i(num_mid_levels)[0] = 0;
+      });
+      // No need for a barrier here
+
+      // To avoid adding + and - quantities (which may have similar magnitude),
+      // split the scan sum of even and odd entries.
+      team_parallel_scan(team,(num_mid_levels+1)/2,
+                         [&](const int k, scalar_type& accumulator, const bool last) {
+        const int k_bwd = (num_mid_levels+1)/2 - k - 1;
+        accumulator += lambda_even(2*k_bwd)[0];
+        if (last) {
+          x_i(2*k_bwd)[0] = accumulator;
+        }
+      });
+      team_parallel_scan(team,num_mid_levels/2,
+                         [&](const int k, scalar_type& accumulator, const bool last) {
+        const int k_bwd = num_mid_levels/2 - k - 1;
+        accumulator += lambda_odd(2*k_bwd+1)[0];
+        if (last) {
+          x_i(2*k_bwd+1)[0] = accumulator;
+        }
+      });
+
+      // Now, even entries of x_i contain scan_sum of previous even midpoints,
+      // and similartly for odd entries. To obtain a complete scan sum, all
+      // we need is to subtract the previous inteface from the current.
+      team.team_barrier();
+      team_parallel_for(team,num_mid_levels+1,
+                        [&](const int k) {
+        x_i(k-1) -= x_i(k);
+        x_i(k-1) -= sign(k)*bc;
+      });
+      team_single(team,[&](){
+        x_i(num_mid_levels)[0] = bc;
+      });
+    }
+  }
+
+  template<int PackLength, bool FixTop,
+           CombineMode CM = CombineMode::Replace,
+           typename InputProvider = DefaultProvider>
+  KOKKOS_INLINE_FUNCTION
+  static typename std::enable_if<(PackLength>1)>::type
+  compute_interface_values_impl (const TeamMember& team,
+                                 const int num_mid_levels,
+                                 const InputProvider& x_m,
+                                 const scalar_type& bc,
+                                 const view_1d<pack_type>& x_i)
+  {
+    // Sanity checks
+    debug_checks<InputProvider>(num_mid_levels+1,x_i);
+
+    auto m1_pow_k = [](const int k)->int {
+      return 1 - 2*(k%2);
+    };
+    // Store a pack of (-1)^k
+    pack_type sign = 0;
+    vector_simd
+    for (int i=0; i<pack_size; ++i) {
+      sign[i] = m1_pow_k(i);
+    }
+
+    // Scanned quantity is (-1)^n x_m(n)
+    auto lambda = [&](const int k)->pack_type {
+      return sign*x_m(k);
+    };
+
+    // Do a scan sum with 0 bc.
+    // Note: the 2nd template arge tells column_scan_impl to perform the final
+    // reduction on a single pack using 'interleaved_reduce_sum'
+    column_scan_impl<pack_size,true,FixTop>(team,num_mid_levels,lambda,x_i);
+    team.team_barrier();
+
+    const auto NUM_INT_PACKS = pack_info::num_packs(num_mid_levels+1);
+    if (FixTop) {
+      // Final formula:
+      //   x_i(k+1) = (-1)^k [ -x_i(0) + 2\Sum_{n=0}^k (-1)^n x_m(n) ]
+      // At this stage, x_i(k) contains the part within the \Sum
+
+      team_parallel_for(team,NUM_INT_PACKS,
+                        [&](const int k) {
+        x_i(k) = sign*(bc - 2.0*x_i(k));
+      });
+    } else {
+      // Final formula:
+      //   x_i(k) = (-1)^k [ (-1)^N x_i(N) + 2\Sum_{n=k}^{N-1} (-1)^n x_m(n) ]
+      // At this stage, x_i(k) contains the part within the \Sum
+
+      team_parallel_for(team,NUM_INT_PACKS,
+                        [&](const int k) {
+        x_i(k) = sign*(bc*m1_pow_k(num_mid_levels) + 2.0*x_i(k));
+      });
+    }
+  }
+
 };
 
 } // namespace Homme
