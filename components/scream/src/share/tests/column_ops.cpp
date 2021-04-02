@@ -27,11 +27,11 @@ TEST_CASE ("combine_ops") {
   pack_type x;
 
   x = two;
-  combine<Replace>(two,x,1.0,0.0);
+  combine<Replace>(two,x);
   REQUIRE ( (x==two).all() );
 
   x = two;
-  combine<Scale>(two,x,3.0,0.0);
+  combine<Scale>(two,x,3.0);
   REQUIRE ( (x==six).all() );
 
   x = two;
@@ -43,19 +43,19 @@ TEST_CASE ("combine_ops") {
   REQUIRE ( (x==six).all() );
 
   x = two;
-  combine<ScaleAdd>(two,x,2.0,0.0);
+  combine<ScaleAdd>(two,x,2.0);
   REQUIRE ( (x==six).all() );
 
   x = two;
-  combine<Add>(two,x,1.0,0.0);
+  combine<Add>(two,x);
   REQUIRE ( (x==four).all() );
 
   x = two;
-  combine<Multiply>(two,x,1.0,0.0);
+  combine<Multiply>(two,x);
   REQUIRE ( (x==four).all() );
 
   x = four;
-  combine<Divide>(two,x,1.0,0.0);
+  combine<Divide>(two,x);
   REQUIRE ( (x==two).all() );
 }
 

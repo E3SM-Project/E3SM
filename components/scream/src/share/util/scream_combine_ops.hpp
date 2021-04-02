@@ -4,6 +4,7 @@
 // For KOKKOS_INLINE_FUNCTION
 #include <Kokkos_Core.hpp>
 #include <type_traits>
+#include "ekat/ekat_scalar_traits.hpp"
 
 namespace scream {
 
@@ -57,10 +58,12 @@ static constexpr bool needsBeta () {
 // This routine should have no overhead compared to a manual
 // update (assuming you call it with the proper CM)
 
-template<CombineMode CM, typename ScalarIn, typename ScalarOut, typename CoeffType>
+template<CombineMode CM, typename ScalarIn, typename ScalarOut,
+         typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
 KOKKOS_FORCEINLINE_FUNCTION
 void combine (const ScalarIn& newVal, ScalarOut& result,
-         const CoeffType alpha, const CoeffType beta){
+              const CoeffType alpha = CoeffType(1),
+              const CoeffType beta = CoeffType(0)){
   // Sanity check
   EKAT_KERNEL_ASSERT (needsAlpha<CM>() || alpha==CoeffType(1));
   EKAT_KERNEL_ASSERT (needsBeta<CM>() || beta==CoeffType(0));
