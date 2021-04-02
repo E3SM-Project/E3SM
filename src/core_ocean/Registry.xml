@@ -3091,6 +3091,22 @@
 			 description="Short wave flux at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG;ecosysTracersPKG"
 		/>
+		<var name="rainTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+			 description="Heat flux associated with rain at cell centers sent to coupler. Positive into the ocean."
+		/>
+		<var name="evapTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+			 description="Heat flux associated with Evaporation at cell centers sent to coupler. Positive into the ocean."
+		/>
+		<var name="seaIceFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+			 description="Heat flux associated with sea ice melt water at cell centers sent to coupler. Positive into the ocean."
+		/>
+		<var name="icebergFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+			 description="Heat flux associated with iceberg melt at cell centers sent to coupler. Positive into the ocean."
+		/>
+
+		<var name="totalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
+		/>
 
 
 		<!-- Coupling fields associated with mass or salinity fluxes -->
@@ -3183,6 +3199,9 @@
 		<var name="filteredSSHGradientMeridional" type="real" dimensions="nCells Time" units="m m^{-1}"
 			description="Time filtered meridional gradient of SSH"
 			packages="forwardMode;analysisMode"
+		/>
+		<var name="avgTotalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
 
 		<!-- Input fields from coupler or initial condition for forcing under land ice -->
