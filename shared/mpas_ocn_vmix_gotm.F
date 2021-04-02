@@ -350,6 +350,7 @@ contains
         gotmTKETopOfCellCur, gotmDissTopOfCellCur, gotmLengthTopOfCellCur, &
         gotmKbTopOfCellCur, gotmEpsbTopOfCellCur
 
+      logical :: testFile
       integer :: namlstUnit !< unit for GOTM namelist file
       integer :: k, ki, iCell, nCells
       type (MPAS_timeInterval_type) :: timeStep
@@ -388,10 +389,19 @@ contains
 
       !
       ! initialize GOTM turbulence module
-      ! read in GOTM namelist, required by init_turbulence
-      call mpas_new_unit(namlstUnit)
-      call init_turbulence(namlstUnit, trim(config_gotm_namelist_file), nVertLevels)
-      call mpas_release_unit(namlstUnit)
+      ! check if GOTM namelist file exist or not
+      testFile = .false.
+      inquire(file=trim(config_gotm_namelist_file), exist=testFile)
+      if (testFile) then
+         ! read in GOTM namelist, required by init_turbulence
+         call mpas_new_unit(namlstUnit)
+         call init_turbulence(namlstUnit, trim(config_gotm_namelist_file), nVertLevels)
+         call mpas_release_unit(namlstUnit)
+      else
+         call mpas_log_write(' fatal error: gotm namelist file does not exist: config_gotm_namelist_file = '//config_gotm_namelist_file, MPAS_LOG_ERR)
+         err = 1
+         return
+      end if
 
       ! initialize GOTM tridiagnoal solver
       call init_tridiagonal(nVertLevels)
