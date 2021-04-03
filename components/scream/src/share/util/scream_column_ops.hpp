@@ -12,6 +12,7 @@
 #include "ekat/util//ekat_arch.hpp"
 #include "ekat/ekat_pack.hpp"
 
+
 namespace scream {
 
 /*
@@ -214,9 +215,7 @@ public:
   // Note: with proper bc, then x_int(x_mid(x_int))==x_int. However, this version
   //       weighs neighboring cells equally, even if one is larger than the other.
   // RECALL: k=0 is the model top, while k=num_mid_levels+1 is the surface!
-  template<bool FixTop,
-           CombineMode CM = CombineMode::Replace,
-           typename InputProvider = DefaultProvider>
+  template<bool FixTop, typename InputProvider = DefaultProvider>
   KOKKOS_INLINE_FUNCTION
   static void
   compute_interface_values (const TeamMember& team,
@@ -303,28 +302,12 @@ public:
     debug_checks<InputProvider>(num_mid_levels+1,x_i);
 
     // Scan's impl is quite lengthy, so split impl into two fcns, depending on pack size.
-    column_scan_impl<pack_size,false,FromTop>(team,num_mid_levels,dx_m,x_i,s0);
+    column_scan_impl<pack_size,FromTop>(team,num_mid_levels,dx_m,x_i,s0);
   }
 
 protected:
 
-  // Reduce a pack in two steps: first, reduce odd and even entries
-  // separately, then combine the results. Can help with accuracy if
-  // the pack contains alternating + and - entries of similar magnitude.
-  KOKKOS_INLINE_FUNCTION
-  static scalar_type interleaved_reduce_sum (const pack_type& p) {
-    scalar_type s_even = zero();
-    scalar_type s_odd  = zero();
-    vector_simd
-    for (int i=0; i<pack_size/2; ++i) {
-      s_even += p[2*i];
-      s_odd  += p[2*i+1];
-    }
-    return s_even+s_odd;
-  }
-
-  template<int PackLength,bool InterleavedReduction,
-           bool FromTop,typename InputProvider>
+  template<int PackLength, bool FromTop,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<PackLength==1>::type
   column_scan_impl (const TeamMember& team,
@@ -364,8 +347,7 @@ protected:
     }
   }
 
-  template<int PackLength,bool InterleavedReduction,
-           bool FromTop,typename InputProvider>
+  template<int PackLength,bool FromTop,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(PackLength>1)>::type
   column_scan_impl (const TeamMember& team,
@@ -378,113 +360,138 @@ protected:
     const int NUM_MID_PACKS = pack_info::num_packs(num_mid_levels);
     const int NUM_INT_PACKS = pack_info::num_packs(num_mid_levels+1);
     const int LAST_INT_PACK = NUM_INT_PACKS - 1;
-    const int LAST_MID_PACK = NUM_MID_PACKS - 1;
 
     if (FromTop) {
-      // Te last interface pack is problematic, and needs to be pre-filled with zeros.
-      team_single(team,[&](){
-        x_i(LAST_INT_PACK) = zero();
-      });
-      team.team_barrier();
+      // Strategy:
+      //  1. Do a packed reduction of x_m, to get x_i(k) = dx_m(0)+...+dx_m(k-1)
+      //  2. Let s = s0 + reduce(x_i(k)). The rhs is the sum of all dx_m
+      //     on all "physical" levels on all previous packs (plus bc).
+      //  3. Do the scan over the current pack: x_i(k)[i] = s + dx_m(k)[0,...,i-1]
 
-      // First, do a packed reduction of x_m, to get x_i(k) = dx_m(0)+...+dx_m(k-1)
-      // Note: stop at NUM_INT_PACKS-2, to avoid OOB access.
-      team_parallel_scan(team,NUM_INT_PACKS-1,
-                         [&](const int& k, pack_type& accumulator, const bool last) {
+      // It is easier to read if we check whether #int_packs==#mid_packs.
+      // This lambda can be used so long as there is a 'next' pack x_i(k+1);
+      auto packed_scan_from_top = [&](const int& k, pack_type& accumulator, const bool last) {
         accumulator += dx_m(k);
         if (last) {
           x_i(k+1) = accumulator;
         }
-      });
-      team.team_barrier();
+      };
 
-      // Now let s = s0 + reduce_sum(x_i(k)). The second term is the sum of all dx_m
-      // on all "physical" levels on all previous packs.
-      // Then, do the scan over the current pack: x_i(k)[i] = s + dx_m(k)[0,...,i-1]
-      team_parallel_for(team,NUM_INT_PACKS,
-                        [&](const int k) {
-        scalar_type s = s0;
-        // If k==0, x_i(k) does not contain any scan sum (and may contain garbage), so ignore it
-        if (k!=0) {
-          if (InterleavedReduction) {
-            s += interleaved_reduce_sum (x_i(k));
-          } else {
+      if (NUM_MID_PACKS==NUM_INT_PACKS) {
+        // Compute sum of previous packs (hence, stop at second-to-last pack)
+        team_parallel_scan(team,NUM_MID_PACKS-1,packed_scan_from_top);
+        team.team_barrier();
+
+        // On each pack, reduce the result of the previous step, add the bc s0,
+        // then do the scan sum within the current pack.
+        team_parallel_for(team,NUM_INT_PACKS,
+                          [&](const int k) {
+          scalar_type s = s0;
+          // If k==0, x_i(k) does not contain any scan sum (and may contain garbage), so ignore it
+          if (k!=0) {
             ekat::reduce_sum<false>(x_i(k),s);
           }
-        }
-        x_i(k)[0] = s;
+          x_i(k)[0] = s;
 
-        // Note: if NUM_INT_PACKS>NUM_MID_PACKS, this_pack_end==1 on last int pack,
-        // so we will *not* access dx_m(LAST_INT_PACK) (which would be OOB).
-        const auto this_pack_end = pack_info::vec_end(num_mid_levels+1,k);
-        for (int i=1; i<this_pack_end; ++i) {
-          x_i(k)[i] = x_i(k)[i-1] + dx_m(k)[i-1];
-        }
-      });
-    } else {
-      // First, do a packed reduction of x_m, to get x_i(k) = dx_m(k)+...+dx_m(last_mid_pack)
-
-      // The last interface pack as well as possibly the 2nd last (depending on whether
-      // NUM_INT_PACKS==NUM_MID_PACKS or not) are problematic, and need to be pre-filled with zeros.
-      team_single(team,[&](){
-        x_i(LAST_INT_PACK) = zero();
-        x_i(LAST_MID_PACK) = zero();
-      });
-      team.team_barrier();
-
-      const auto LAST_MID_PACK_END = pack_info::last_vec_end(num_mid_levels);
-      team_parallel_scan(team,1,NUM_MID_PACKS,
-                         [&](const int& k, pack_type& accumulator, const bool last) {
-        const auto k_bwd = NUM_MID_PACKS - k;
-        accumulator += dx_m(k_bwd);
-        if (k==0 && LAST_MID_PACK_END!=pack_size) {
-          // Note: dx_m(LAST_MID_PACK) might contain junk, so we need to zero out
-          // the trailing part of the accumulator (if any)
-          for (int i=LAST_MID_PACK_END+1; i<pack_size; ++i) {
-            accumulator = zero();
+          const auto this_pack_end = pack_info::vec_end(num_mid_levels,k);
+          for (int i=1; i<this_pack_end; ++i) {
+            x_i(k)[i] = x_i(k)[i-1] + dx_m(k)[i-1];
           }
-        }
+        });
+      } else {
+        // Compute sum of previous packs
+        team_parallel_scan(team,NUM_MID_PACKS,packed_scan_from_top);
+        team.team_barrier();
 
-        if (last) {
-          x_i(k_bwd-1) = accumulator;
-        }
-      });
+        // On each pack, reduce the result of the previous step, add the bc s0,
+        // then do the scan sum within the current pack.
+        team_parallel_for(team,NUM_INT_PACKS,
+                          [&](const int k) {
+          scalar_type s = s0;
+          // If k==0, x_i(k) does not contain any scan sum (and may contain garbage), so ignore it
+          if (k!=0) {
+            ekat::reduce_sum<false>(x_i(k),s);
+          }
+          x_i(k)[0] = s;
 
-      // Need to wait for the packed scan to be done before we move fwd
-      team.team_barrier();
-
-      // Now let s = s0 + reduce_sum(x_i(k)). The second term is the sum of all dx_m
-      // on all "physical" levels on all packs above current one.
-      // Then, do the scan over the current pack: x_i(k)[i] = s + dx_m(k)[i,...,pack_end]
-
-      // If NUM_INT_PACKS>NUM_MID_PACKS, the last int pack only needs s0
-      if (NUM_INT_PACKS>NUM_MID_PACKS) {
-        team_single(team,[&]() {
-          x_i(LAST_INT_PACK)[0] = s0;
+          // Note: for the last interface, this_pack_end==1, so we will *not* access
+          //       dx_m(LAST_INT_PACK) (which would be OOB).
+          const auto this_pack_end = pack_info::vec_end(num_mid_levels,k);
+          for (int i=1; i<this_pack_end; ++i) {
+            x_i(k)[i] = x_i(k)[i-1] + dx_m(k)[i-1];
+          }
         });
       }
-      team_parallel_for(team,NUM_MID_PACKS,
-                        [&](const int k) {
-        const auto k_bwd = NUM_MID_PACKS - k - 1;
-        const auto this_pack_end = pack_info::vec_end(num_mid_levels+1,k_bwd);
+    } else {
+      // Strategy:
+      //  1. Do a packed reduction of x_m, to get x_i(k) = dx_m(k)+...+dx_m(num_mid_levs-1)
+      //  2. Let s = s0 + reduce(x_i(k)). The rhs is the sum of all dx_m
+      //     on all "physical" levels on all subsequent packs (plus bc).
+      //  3. Do the scan over the current pack: x_i(k)[i] = s + dx_m(k)[0,...,i-1]
 
-        scalar_type s = s0;
-        if (k_bwd<NUM_MID_PACKS) {
-          ekat::reduce_sum(x_i(k_bwd),s);
-        }
+      // It is easier to read if we check whether #int_packs==#mid_packs.
+      if (NUM_MID_PACKS==NUM_INT_PACKS) {
+        // The easiest thing to do is to do the scan sum in the last pack,
+        // where dx_m contains junk, then call this routine again, but
+        // for num_mid_levels=(NUM_MID_PACKS-1)*PackLength.
+        team_single(team,[&]() {
+          auto& xi_last = x_i(NUM_INT_PACKS-1);
+          const auto& dxm_last = dx_m(NUM_MID_PACKS-1);
+          auto LAST_INT_VEC_END = pack_info::last_vec_end(num_mid_levels+1);
+          xi_last[LAST_INT_VEC_END-1] = s0;
+          for (int i=LAST_INT_VEC_END-2; i>=0; --i) {
+            xi_last[i] = xi_last[i+1] + dxm_last[i];
+          }
+        });
+        team.team_barrier();
+        column_scan_impl<PackLength,FromTop>(team,(NUM_MID_PACKS-1)*PackLength,dx_m,x_i,x_i(NUM_INT_PACKS-1)[0]);
+      } else {
+        // In this case, all packs of dx_m are full of meaningful values.
+        auto packed_scan_from_bot = [&](const int& k, pack_type& accumulator, const bool last) {
+          const auto k_bwd = NUM_MID_PACKS - k - 1;
+          accumulator += dx_m(k_bwd);
+          if (last) {
+            x_i(k_bwd-1) = accumulator;
+          }
+        };
+        team_parallel_scan(team,NUM_MID_PACKS-1,packed_scan_from_bot);
 
-        auto tally = s;
-        auto& x_i_kbwd = x_i(k_bwd);
-        for (int i=this_pack_end-1; i>=0; --i) {
-          tally += dx_m(k_bwd)[i];
-          x_i_kbwd[i] = tally;
-        }
-      });
+        // Need to wait for the packed scan to be done before we move fwd
+        team.team_barrier();
+
+        // Now let s = s0 + reduce_sum(x_i(k)). The second term is the sum of all dx_m
+        // on all "physical" levels on all packs above current one.
+        // Then, do the scan over the current pack: x_i(k)[i] = s + dx_m(k)[i,...,pack_end]
+
+        // The last int pack only needs s0, and the second to last had no "following"
+        // midpoints pack, and we didn't write anything in it during the scan sum,
+        // so fill it with 0's
+        team_single(team,[&]() {
+          x_i(LAST_INT_PACK)[0] = s0;
+          x_i(LAST_INT_PACK-1) = 0;
+        });
+
+        team_parallel_for(team,NUM_MID_PACKS,
+                          [&](const int k) {
+          const auto k_bwd = NUM_MID_PACKS - k - 1;
+
+          scalar_type s = s0;
+          if (k_bwd<NUM_MID_PACKS) {
+            ekat::reduce_sum(x_i(k_bwd),s);
+          }
+
+          auto& xi_kbwd = x_i(k_bwd);
+          const auto& dxm_kbwd = dx_m(k_bwd);
+          xi_kbwd[PackLength-1] = s + dxm_kbwd[PackLength-1];
+          for (int i=PackLength-2; i>=0; --i) {
+            xi_kbwd[i] = xi_kbwd[i+1]+dxm_kbwd[i];
+          }
+        });
+      }
     }
   }
 
   template<int PackLength, bool FixTop,
-           CombineMode CM = CombineMode::Replace,
            typename InputProvider = DefaultProvider>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<PackLength==1>::type
@@ -497,97 +504,44 @@ protected:
     // Sanity checks
     debug_checks<InputProvider>(num_mid_levels+1,x_i);
 
-    auto sign = [](const int k) -> scalar_type {
+    // Helper function that returns (-1)^k
+    auto m1_pow_k = [](const int k) -> scalar_type {
       return 1 - 2*(k%2);
     };
 
-    auto lambda_odd = [&](const int k)->pack_type {
-      return k%2==1 ? 2*x_m(k) : 0;
-    };
-    auto lambda_even = [&](const int k)->pack_type {
-      return k%2==0 ? 2*x_m(k) : 0;
+    // The expression of x_i is (N=num_mid_levels)
+    //   x_i(k+1) = (-1)^k [ -x_i(0) + 2\Sum_{n=0}^k (-1)^n x_m(n) ]
+    //   x_i(k)   = (-1)^k [ (-1)^N x_i(N) + 2\Sum_{n=k}^{N-1} (-1)^n x_m(n) ]
+    // for the cases where we fix top and bot respectively. In both cases,
+    // we do a scan sum of (-1)^n x_m(n), using the alt_sign impl of column_scan.
+    auto scan_input = [&](const int k) -> pack_type {
+      // The first term is -1 for k odd and 1 for k even.
+      return 2*m1_pow_k(k) * x_m(k);
     };
 
-    // Do a scan sum with 0 bc.
+    column_scan_impl<pack_size,FixTop>(team,num_mid_levels,scan_input,x_i,0);
+
     if (FixTop) {
-      team_single(team,[&](){
-        x_i(0)[0] = zero();
-      });
-      // No need for a barrier here
 
-      // To avoid adding + and - quantities (which may have similar magnitude),
-      // split the scan sum of even and odd entries.
-      team_parallel_scan(team,(num_mid_levels+1)/2,
-                         [&](const int k, scalar_type& accumulator, const bool last) {
-        accumulator += lambda_even(2*k)[0];
-        if (last) {
-          x_i(2*k+1)[0] = accumulator;
-        }
-      });
-      team_parallel_scan(team,num_mid_levels/2,
-                         [&](const int k, scalar_type& accumulator, const bool last) {
-        accumulator += lambda_odd(2*k+1)[0];
-        if (last) {
-          x_i(2*k+2)[0] = accumulator;
-        }
-      });
-
-      // Now, even entries of x_i contain scan_sum of previous even midpoints,
-      // and similartly for odd entries. To obtain a complete scan sum, all
-      // we need is to subtract the previous inteface from the current.
-      // CAREFUL: do this starting from last interface!
-      team.team_barrier();
-      team_parallel_for(team,num_mid_levels,
-                        [&](const int k) {
-        const int k_bwd = num_mid_levels - k - 1;
-        x_i(k_bwd+1) -= x_i(k_bwd);
-        x_i(k_bwd+1) -= sign(k_bwd)*bc;
-      });
-      team_single(team,[&](){
-        x_i(0)[0] = bc;
-      });
-    } else {
-      team_single(team,[&](){
-        x_i(num_mid_levels)[0] = 0;
-      });
-      // No need for a barrier here
-
-      // To avoid adding + and - quantities (which may have similar magnitude),
-      // split the scan sum of even and odd entries.
-      team_parallel_scan(team,(num_mid_levels+1)/2,
-                         [&](const int k, scalar_type& accumulator, const bool last) {
-        const int k_bwd = (num_mid_levels+1)/2 - k - 1;
-        accumulator += lambda_even(2*k_bwd)[0];
-        if (last) {
-          x_i(2*k_bwd)[0] = accumulator;
-        }
-      });
-      team_parallel_scan(team,num_mid_levels/2,
-                         [&](const int k, scalar_type& accumulator, const bool last) {
-        const int k_bwd = num_mid_levels/2 - k - 1;
-        accumulator += lambda_odd(2*k_bwd+1)[0];
-        if (last) {
-          x_i(2*k_bwd+1)[0] = accumulator;
-        }
-      });
-
-      // Now, even entries of x_i contain scan_sum of previous even midpoints,
-      // and similartly for odd entries. To obtain a complete scan sum, all
-      // we need is to subtract the previous inteface from the current.
+      // Need to add -x_i(0), adn multiply everything by (-1)^k
       team.team_barrier();
       team_parallel_for(team,num_mid_levels+1,
                         [&](const int k) {
-        x_i(k-1) -= x_i(k);
-        x_i(k-1) -= sign(k)*bc;
+        x_i(k) -= bc;
+        x_i(k) *= m1_pow_k(k+1);
       });
-      team_single(team,[&](){
-        x_i(num_mid_levels)[0] = bc;
+    } else {
+      // Need to add (-1)^N x_i(N), adn multiply everything by (-1)^k
+      team.team_barrier();
+      team_parallel_for(team,num_mid_levels+1,
+                        [&](const int k) {
+        x_i(k) += m1_pow_k(num_mid_levels) * bc;
+        x_i(k) *= m1_pow_k(k);
       });
     }
   }
 
   template<int PackLength, bool FixTop,
-           CombineMode CM = CombineMode::Replace,
            typename InputProvider = DefaultProvider>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(PackLength>1)>::type
@@ -618,7 +572,7 @@ protected:
     // Do a scan sum with 0 bc.
     // Note: the 2nd template arge tells column_scan_impl to perform the final
     // reduction on a single pack using 'interleaved_reduce_sum'
-    column_scan_impl<pack_size,true,FixTop>(team,num_mid_levels,lambda,x_i);
+    column_scan_impl<pack_size,FixTop>(team,num_mid_levels,lambda,x_i);
     team.team_barrier();
 
     const auto NUM_INT_PACKS = pack_info::num_packs(num_mid_levels+1);
