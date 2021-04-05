@@ -23,6 +23,7 @@ module crm_physics
 
    public :: crm_physics_register
    public :: crm_physics_init
+   public :: crm_physics_final
    public :: crm_physics_tend
    public :: crm_surface_flux_bypass_tend
    public :: m2005_effradius
@@ -425,6 +426,11 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    end if
 
 end subroutine crm_physics_init
+
+subroutine crm_physics_final()
+   use gator_mod, only: gator_finalize
+   call gator_finalize()
+end subroutine crm_physics_final
 
 !===================================================================================================
 !===================================================================================================
