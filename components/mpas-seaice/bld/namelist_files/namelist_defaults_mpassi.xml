@@ -27,6 +27,7 @@
 <config_dt ice_grid="EC30to60E2r2">1800.0</config_dt>
 <config_dt ice_grid="WC14to60E2r3">1800.0</config_dt>
 <config_dt ice_grid="WCAtl12to45E2r4">1800.0</config_dt>
+<config_dt ice_grid="SOwISC12to60E2r4">1800.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -74,10 +75,12 @@
 <config_initial_latitude_north>70.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oEC60to30v3wLI">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="ECwISC30to60E1r2">75.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="SOwISC12to60E2r4">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_south>-60.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oEC60to30v3wLI">-75.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="ECwISC30to60E1r2">-75.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="SOwISC12to60E2r4">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_velocity_type>'uniform'</config_initial_velocity_type>
 <config_initial_uvelocity>0.0</config_initial_uvelocity>
@@ -129,6 +132,7 @@
 <config_dynamics_subcycle_number ice_grid="EC30to60E2r2">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="WC14to60E2r3">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="WCAtl12to45E2r4">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="SOwISC12to60E2r4">1</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
@@ -386,10 +390,12 @@
 <config_use_high_frequency_coupling>true</config_use_high_frequency_coupling>
 <config_use_high_frequency_coupling ice_grid="WC14to60E2r3">false</config_use_high_frequency_coupling>
 <config_use_high_frequency_coupling ice_grid="WCAtl12to45E2r4">false</config_use_high_frequency_coupling>
+<config_use_high_frequency_coupling ice_grid="SOwISC12to60E2r4">false</config_use_high_frequency_coupling>
 <config_use_high_frequency_coupling ice_grid="EC30to60E2r2">false</config_use_high_frequency_coupling>
 <config_boundary_layer_iteration_number>10</config_boundary_layer_iteration_number>
 <config_boundary_layer_iteration_number ice_grid="WC14to60E2r3">5</config_boundary_layer_iteration_number>
 <config_boundary_layer_iteration_number ice_grid="WCAtl12to45E2r4">5</config_boundary_layer_iteration_number>
+<config_boundary_layer_iteration_number ice_grid="SOwISC12to60E2r4">5</config_boundary_layer_iteration_number>
 <config_boundary_layer_iteration_number ice_grid="EC30to60E2r2">5</config_boundary_layer_iteration_number>
 
 <!-- ocean -->
