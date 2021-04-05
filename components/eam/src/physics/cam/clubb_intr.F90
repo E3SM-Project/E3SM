@@ -22,7 +22,7 @@ module clubb_intr
   use ppgrid,        only: pver, pverp
   use phys_control,  only: phys_getopts
   use physconst,     only: rair, cpair, gravit, latvap, latice, zvir, rh2o, karman, &
-                           tms_orocnst, tms_z0fac
+                           tms_orocnst, tms_z0fac, pi
   use cam_logfile,   only: iulog
   use spmd_utils,    only: masterproc
   use constituents,  only: pcnst, cnst_add
@@ -104,9 +104,10 @@ module clubb_intr
 
   real(r8), parameter :: unset_r8 = huge(1.0_r8)
 
-!PMA
- real(r8), parameter :: qsmall = 1.e-18_r8 ! qsmall used in MG
+  !PMA
+  real(r8), parameter :: qsmall = 1.e-18_r8 ! qsmall used in MG
 
+  real(r8), parameter ::  rad_to_deg = 180.0_r8/pi !converts radians to degrees
 
   real(r8) :: clubb_timestep = unset_r8  ! Default CLUBB timestep, unless overwriten by namelist
   real(r8) :: clubb_rnevap_effic = unset_r8
@@ -2183,8 +2184,8 @@ end subroutine clubb_init_cnst
             write(fstderr,*) "Fatal error in CLUBB: at timestep ", get_nstep(), &
                  "LAT (radians): ", state1%lat(i), &
                  "LON (radians): ", state1%lon(i), &
-                 "LAT (degrees): ", (180.0_r8/3.14159_r8)*state1%lat(i), &
-                 "LON (degrees): ", (180.0_r8/3.14159_r8)*state1%lon(i), &
+                 "LAT (degrees): ", rad_to_deg*state1%lat(i), &
+                 "LON (degrees): ", rad_to_deg*state1%lon(i), &
                  "Global Column Number: ", get_gcol_p(lchnk,i)
             call endrun('clubb_tend_cam:  Fatal error in CLUBB library'//errmsg(__FILE__,__LINE__))
          end if
