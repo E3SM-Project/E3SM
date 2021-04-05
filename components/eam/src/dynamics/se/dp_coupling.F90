@@ -296,6 +296,11 @@ CONTAINS
     end do ! lchnk
 #endif
 
+    do lchnk = begchunk,endchunk
+      ncols = get_ncols_p(lchnk)
+      phys_state(lchnk)%q1(:ncols,:) = phys_state(lchnk)%q(:ncols,:,1)
+    end do ! lchnk
+
     if ( write_inithist() ) then
       if (fv_nphys > 0) then
 
@@ -386,7 +391,15 @@ CONTAINS
 
     if(adiabatic) return
 
+#define LF
+!#undef LF
+
+#ifdef LF
+    call measure_pressure_work(phys_state,phys_tend)
+#endif
+
     call t_startf('pd_copy')
+
     if(local_dp_map) then
 
       !$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2, idmb3, ie, ioff, ilyr, m)
@@ -638,4 +651,175 @@ CONTAINS
   end subroutine derived_phys
   !=================================================================================================
   !=================================================================================================
+#if 1
+  subroutine measure_pressure_work(state,tend)
+    use control_mod,             only: ftype  !, adjust_ps
+    use dyn_comp,                only: hvcoord
+    use check_energy,            only: energy_helper_eam_def
+    use cam_history,             only: outfld
+    use physconst,               only: gravit, cpair
+    use time_manager,   only: get_step_size
+    use phys_gmean,      only: gmean
+
+    implicit none
+    ! INPUT PARAMETERS:
+    type(physics_state), intent(in), dimension(begchunk:endchunk) :: state
+    type(physics_tend),  intent(inout), dimension(begchunk:endchunk) :: tend
+    ! LOCAL VARIABLES
+    integer                                      :: ncol, k, ic, m
+    integer(kind=int_kind)                       :: lchnk
+
+    real (kind=real_kind), dimension(pcols)      :: te, tw, ke, se, wv, wl, wi,wr, ws, tebefore, kebefore, teadjusted
+    real (kind=real_kind), dimension(pcols,pver) :: ustate,vstate,tstate,pdel,dp_adj,&
+                                                    teloc1,teloc2,ttendadj
+    real (kind=real_kind), dimension(pcols,pver,pcnst) :: qstate
+    real (kind=real_kind), dimension(pcols)      :: ps,phisstate,psterm1,psterm2, ttendhor, ttendadjhor
+    real (kind=real_kind)                        :: fq, dtime
+    real (kind=real_kind), dimension(pcols)      :: fdq
+
+!for energy 
+    real(kind=real_kind) :: te_storage(pcols,begchunk:endchunk,2)    ! total energy of input/output states
+    real(kind=real_kind) :: te_glob(2),heat_glob             ! global means of total energy
+
+
+
+    dtime=get_step_size()
+
+    do lchnk = begchunk, endchunk
+       ncol = state(lchnk)%ncol
+       ! input flux
+       te_storage(:ncol,lchnk,1) = state(lchnk)%cpterme(:ncol) - state(lchnk)%cptermp(:ncol)
+       ! surface pressure for heating rate
+       te_storage(:ncol,lchnk,2) = state(lchnk)%pint(:ncol,pver+1)
+    end do
+    call gmean(te_storage, te_glob, 2)
+
+    heat_glob  = te_glob(1) * gravit / (te_glob(2) -state(begchunk)%pint(1,1))
+
+
+
+
+!!!!!! fix all
+!!    !$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2,
+!!    !idmb3, ie, ioff, ilyr, m)
+    do lchnk = begchunk,endchunk
+      ncol = get_ncols_p(lchnk)
+
+      te=0.0; tw=0.0; ke=0.0; se=0.0; wv=0.0; wl=0.0; wi=0.0; wr=0.0; ws=0.0;
+      ustate=0.0; vstate=0.0; tstate=0.0; pdel=0.0; ps=0.0; phisstate=0.0;
+
+      ustate(:ncol,:pver)=state(lchnk)%u(:ncol,:pver)
+      vstate(:ncol,:pver)=state(lchnk)%v(:ncol,:pver)
+      tstate(:ncol,:pver)=state(lchnk)%t(:ncol,:pver)
+      phisstate(:ncol)=state(lchnk)%phis(:ncol)
+      qstate(:ncol,:pver,:pcnst)=state(lchnk)%q(:ncol,:pver,:pcnst)
+
+      pdel(:ncol,:pver)=state(lchnk)%pdel(:ncol,:pver)
+      ps(:ncol)=state(lchnk)%ps(:ncol)
+
+      call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&
+                                 kebefore(:ncol),se(:ncol),wv(:ncol),wl(:ncol),wi(:ncol),wr(:ncol),ws(:ncol),tebefore(:ncol),tw(:ncol), &
+                                 ncol,teloc1(:ncol,:pver),psterm1(:ncol) )
+
+!version with Q adjust, should work with dp or ps adjust
+      !make qdp array 
+      do m = 1, pcnst
+      do k = 1, pver
+         qstate(:ncol,k,m) = qstate(:ncol,k,m) * pdel(:ncol,k)
+      enddo
+      end do
+
+      dp_adj(:ncol,:) = pdel(:ncol,:)
+      ps(:ncol)=state(lchnk)%pint(:ncol,1)
+      do k = 1, pver
+
+         ! adjusment factor is just change in water vapor
+         fdq(:ncol) = 1._r8 + state(lchnk)%q(:ncol,k,1) -state(lchnk)%q1(:ncol,k )
+         dp_adj(:ncol,k  ) = dp_adj(:ncol,k  ) * fdq(:ncol)
+         ps(:ncol)=ps(:ncol) + dp_adj(:ncol,k)
+      enddo
+
+!last part to decide to adjust ps and hybrid or dp3d
+      !if (adjust_ps) then
+      if (.false.) then
+         ! compute new dp3d from adjusted ps()
+         do k=1,pver
+            dp_adj(:ncol,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0+ &
+                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:ncol)
+         enddo
+      endif
+      pdel(:ncol,:pver)=dp_adj(:ncol,:pver)
+
+!make q array 
+      do m = 1, pcnst
+      do k = 1, pver
+         qstate(:ncol,k,m) = qstate(:ncol,k,m) / pdel(:ncol,k)
+      enddo
+      end do
+
+      !compute energy after PW
+      call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&
+                                 ke(:ncol),se(:ncol),wv(:ncol),wl(:ncol),wi(:ncol),wr(:ncol),ws(:ncol),te(:ncol),tw(:ncol), &
+                                 ncol,teloc2(:ncol,:pver),psterm2(:ncol))
+
+      !difference of energy: after PW minus before PW
+      !call outfld('TEdiff', te-tebefore, pcols, lchnk)
+      !call outfld('KEdiff', ke-kebefore, pcols, lchnk)
+      !call outfld('BCdiff', psterm2-psterm1, pcols, lchnk)
+
+      !compute temperature tend from PW adjustment
+      !keep is as local as possible
+      ttendadj(:ncol,:)=0.0
+      do ic=1,ncol
+         !first, tendency from terms at each vertical level
+         fq=0.0
+         do k=1,pver
+            ttendadj(ic,k)=(teloc1(ic,k)-teloc2(ic,k))*gravit/cpair/pdel(ic,k)
+            !sum pdel into fq for the next, boundary (or ps) term
+            fq=fq+pdel(ic,k)
+         enddo
+
+         !second, tendency from ps term is peanutbuttered to each level
+         ttendadj(ic,1:pver) = ttendadj(ic,1:pver) +(psterm1(ic)-psterm2(ic))*gravit/cpair/fq
+
+         !fields summed vertically, for diagnostics
+         !temperature tendency from PW
+         ttendadjhor(ic) = sum(ttendadj(ic,1:pver)/dtime)
+         !original temperature tendency from physics
+         ttendhor(ic) = sum(tend(lchnk)%dtdt(ic,1:pver))
+      enddo
+
+      !temperature tendency from PW for output
+      !call outfld('dTadj', ttendadj(:,:), pcols, lchnk)
+      !temperature tendency from PW for output, summed in vertical
+      !call outfld('dTadjhor', ttendadjhor(:), pcols, lchnk)
+      !original temperature tendency from physics for output, summed in vertical
+      !call outfld('TTENDhor', ttendhor(:), pcols, lchnk)
+
+      !sanity check for temperature tendency from PW:
+      !compute energy levels from the temperature adjusted for PW and the new
+      !adjusted pressure, other state variables (including q1) staying the same. 
+      !to pass the check, the new TE should match the old TE, 'tebefore'
+      call energy_helper_eam_def(ustate,vstate,tstate+ttendadj,&
+                                 qstate,ps,pdel,phisstate,&
+                                 ke,se,wv,wl,wi,wr,ws,teadjusted,tw, &
+                                 ncol)
+      !call outfld('TEdiffadj', teadjusted-tebefore, pcols, lchnk)
+      !faster check, in output:
+      !print *, 'OG check',
+      !tebefore(1),te(1),teadjusted(1),(te(1)-tebefore(1)),(teadjusted(1)-tebefore(1))
+
+      !!!!!!!!!!!!!!!!add new tendency from pressure adjustment to ttend
+      tend(lchnk)%dtdt(:ncol,:) = tend(lchnk)%dtdt(:ncol,:) &
+                                + ttendadj(:ncol,:)/dtime
+
+      !!!!!!!!!!!!!!!!add new tendency from cp
+      tend(lchnk)%dtdt(:ncol,:) = tend(lchnk)%dtdt(:ncol,:) &
+                                + heat_glob/cpair
+
+    end do ! lchnk
+
+  end subroutine measure_pressure_work
+#endif
+
 end module dp_coupling

@@ -100,6 +100,9 @@ module physics_types
           exner,   &! inverse exner function w.r.t. surface pressure (ps/p)^(R/cp)
           zm        ! geopotential height above surface at midpoints (m)
 
+     real(r8), dimension(:,:),allocatable        :: &
+          q1         ! vapor to save at beginning of physics timestep
+
      real(r8), dimension(:,:,:),allocatable      :: &
           q,    &     ! constituent mixing ratio (kg/kg moist or dry air depending on type)
           oldq        ! constituent mixing ratio (kg/kg moist or dry air depending on type)
@@ -1633,6 +1636,9 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%oldpdel(psetcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%oldpdel')
 
+  allocate(state%q1(psetcols,pver), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%q1')
+
   allocate(state%cptermp(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%cpterm')
 
@@ -1764,6 +1770,9 @@ subroutine physics_state_dealloc(state)
 
   type(physics_state), intent(inout) :: state
   integer                            :: ierr = 0
+
+  deallocate(state%q1, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%q1')
 
   deallocate(state%lat, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%lat')

@@ -1813,8 +1813,13 @@ if (l_ac_energy_chk) then
 
     ke1t = 0.0; ke2t = 0.0; bc1t = 0.0; bc2t = 0.0;
 
+!orig
+!    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     *cam_in%cflx(:ncol,1)
+!TS
+!    state%cpterme(:ncol) =          cpair * cam_in%ts(:ncol)     *cam_in%cflx(:ncol,1)
+!T0
+    state%cpterme(:ncol) =          cpair * 288.0     *cam_in%cflx(:ncol,1)
 
-    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     *cam_in%cflx(:ncol,1)
 #if defined(USE_CPSW) && defined(USE_TS)
     state%cptermdiff(:ncol) =  cpsw  * cam_in%ts(:ncol) * cam_in%cflx(:ncol,1)-&
                                state%cpterme
@@ -2861,18 +2866,12 @@ end if ! l_rad
     call t_stopf('diag_export')
 
 !use cam_out to compute cpterm
-    state%cptermp(:ncol) = 1000.0 * cpair * state%t(:ncol,pver) * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
-
-!    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     * cam_in%cflx(:ncol,1)
-!#if defined(USE_CPSW) && defined(USE_TS)
-!    state%cptermdiff(:ncol) =  cpsw  * cam_in%ts(:ncol) * cam_in%cflx(:ncol,1) -&
-!                               state%cpterme
-!#elif defined(USE_CPSW) && !defined(USE_TS)
-!    state%cptermdiff(:ncol) =     cpsw  * state%t(:ncol,pver)     * cam_in%cflx(:ncol,1) -&
-!                               state%cpterme
-!#else
-!    state%cptermdiff(:ncol) = 0.0
-!#endif
+!orig
+!    state%cptermp(:ncol) = 1000.0 * cpair * state%t(:ncol,pver) * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
+!use TSurf
+!    state%cptermp(:ncol) = 1000.0 * cpair * cam_in%ts(:ncol) * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
+!T0
+    state%cptermp(:ncol) = 1000.0 * cpair * 288.0 * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
 
     call check_tracers_fini(tracerint)
 
