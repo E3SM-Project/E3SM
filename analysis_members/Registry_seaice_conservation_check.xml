@@ -32,6 +32,26 @@
 			description="" default_value="1"
 		/>
 	</var_struct>
+	<var_struct name="conservationCheckAreaAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="earthArea" type="real" dimensions="Time" units="m2"
+			description="Area of the whole Earth"
+		/>
+		<var name="domainArea" type="real" dimensions="Time" units="m2"
+			description="Area of the domain"
+		/>
+		<var name="domainFraction" type="real" dimensions="Time" units=""
+			description="Ratio of domain to Earth area"
+		/>
+		<var name="totalSeaiceArea" type="real" dimensions="Time" units="m2"
+			description="Total sea-ice area"
+		/>
+		<var name="NHSeaiceArea" type="real" dimensions="Time" units="m2"
+			description="NH sea-ice area"
+		/>
+		<var name="SHSeaiceArea" type="real" dimensions="Time" units="m2"
+			description="SH sea-ice area"
+		/>
+	</var_struct>
 	<var_struct name="conservationCheckEnergyAM" time_levs="1" packages="conservationCheckAMPKG">
 		<var name="initialEnergy" type="real" dimensions="Time" units="J"
 			description="Total initial energy of ice and snow"
@@ -160,6 +180,12 @@
 				clobber_mode="replace_files"
 				runtime_format="single_file">
 			<var name="xtime"/>
+			<var name="earthArea"/>
+			<var name="domainArea"/>
+			<var name="domainFraction"/>
+			<var name="totalSeaiceArea"/>
+			<var name="NHSeaiceArea"/>
+			<var name="SHSeaiceArea"/>
 			<var name="initialEnergy"/>
 			<var name="finalEnergy"/>
 			<var name="energyChange"/>
