@@ -725,13 +725,14 @@ contains
     integer,           intent(in)    :: retVal
 
     type(pio_file_list_t), pointer :: curr => NULL()
+    integer :: ierr
 
     if (retVal .ne. PIO_NOERR) then
       write(*,'(I8,2x,A200)') retVal,trim(errMsg)
       ! Kill run
       call eam_pio_finalize() 
       call finalize_scream_session()
-      call mpi_abort(pio_mpicom,0,retVal)
+      call mpi_abort(pio_mpicom,retVal,ierr)
     end if
 
   end subroutine errorHandle
