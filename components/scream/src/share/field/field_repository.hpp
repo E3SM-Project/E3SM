@@ -233,7 +233,7 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
     if (group==nullptr) {
       group = std::make_shared<group_info_type>(group_name);
     }
-    
+
     // Add the field name to the list of fields belonging to this group
     if (ekat::find(group->m_fields_names,id.name())==group->m_fields_names.end()) {
       group->m_fields_names.push_back(id.name());

@@ -102,7 +102,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
 
     // Save result for checking with next test
     Real pblh_save[shcol];
-    for(Int s = 0; s < shcol-1; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       pblh_save[s] = SDS.pblh[s];
     }
 

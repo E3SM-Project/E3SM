@@ -130,7 +130,7 @@ void Functions<S,D>
   constexpr Scalar rho_600mb    = C::RHO_600MB;
   constexpr Scalar rho_h2o      = C::RHO_H2O;
   constexpr Scalar nccnst       = C::NCCNST;
-  constexpr Scalar T_zerodegc     = C::T_zerodegc;
+  constexpr Scalar T_zerodegc   = C::T_zerodegc;
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
 

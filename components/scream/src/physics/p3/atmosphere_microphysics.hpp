@@ -5,7 +5,7 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "physics/p3/p3_main_impl.hpp"
 #include "physics/p3/p3_functions.hpp"
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs 
+#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 
 #include <string>
 
@@ -76,7 +76,7 @@ public:
   // This is an important step to avoid having those variables just share pointers to memory.
   // Structure to handle the local generation of data needed by p3_main in run_impl
   struct p3_preamble {
-    p3_preamble() = default; 
+    p3_preamble() = default;
     // Functor for Kokkos loop to pre-process every run step
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
@@ -90,7 +90,7 @@ public:
         const Spack oT_atm(T_atm(icol,ipack));
         const Smask oT_atm_mask(!isnan(oT_atm) and oT_atm>0.0);
         auto oth = physics_fun::T_to_th(oT_atm,oexner,oT_atm_mask);
-        th_atm(icol,ipack).set(oT_atm_mask,oth); 
+        th_atm(icol,ipack).set(oT_atm_mask,oth);
         // Cloud fraction and dz
         const Spack oast(ast(icol,ipack));
         const Smask oasti_mask(!isnan(oast) and oast>mincld);
@@ -108,13 +108,18 @@ public:
           Int ipack_p1 = (lev + 1) / Spack::n;
           Int ivec_p1  = (lev + 1) % Spack::n;
           if (lev != 0) { /* Not applicable at the very top layer */
-            cld_frac_r(icol,ipack)[ivec] = ast(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ? 
+            cld_frac_r(icol,ipack)[ivec] = ast(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ?
                                               ast(icol,ipack_m1)[ivec_m1] :
                                               cld_frac_r(icol,ipack)[ivec];
           }
           // dz is calculated as the difference between the two layer interfaces.  Note that the lower the index the higher the altitude.
           // We also want to make sure we use the top level index for assignment since dz[0] = zi[0]-zi[1], for example.
-          dz(icol,ipack)[ivec] = zi(icol,ipack)[ivec]-zi(icol,ipack_p1)[ivec_p1]; 
+          if (ipack_p1 < m_npack) {
+            dz(icol,ipack)[ivec] = zi(icol,ipack)[ivec]-zi(icol,ipack_p1)[ivec_p1];
+          }
+          else {
+            dz(icol,ipack)[ivec] = zi(icol,ipack)[ivec];
+          }
         }
         //
       }
@@ -133,7 +138,7 @@ public:
     view_2d       cld_frac_r;
     view_2d       dz;
     // Assigning local variables
-    void set_variables(const int ncol, const int npack, 
+    void set_variables(const int ncol, const int npack,
            view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_,
            view_2d exner_, view_2d th_atm_, view_2d cld_frac_l_, view_2d cld_frac_i_, view_2d cld_frac_r_, view_2d dz_
            )
@@ -160,7 +165,7 @@ public:
   // Structure to handle the generation of data needed by the rest of the model based on output from
   // p3_main.
   struct p3_postamble {
-    p3_postamble() = default; 
+    p3_postamble() = default;
     // Functor for Kokkos loop to pre-process every run step
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
@@ -208,9 +213,9 @@ public:
       // qme, vap_liq_exchange
       // ENERGY Conservation: prec_str, snow_str
       // RAD Vars: icinc, icwnc, icimrst, icwmrst, rel, rei, dei
-      // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffrain, reffsnow  
-    } // set_variables 
-  }; // p3_preamble
+      // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffrain, reffsnow
+    } // set_variables
+  }; // p3_postamble
   /* --------------------------------------------------------------------------------------------*/
 
 protected:
@@ -250,7 +255,7 @@ protected:
   ekat::ParameterList m_p3_params;
 
   // Keep track of field dimensions and the iteration count
-  Int m_num_cols; 
+  Int m_num_cols;
   Int m_num_levs;
   Int m_nk_pack;
 
@@ -263,7 +268,7 @@ protected:
   p3_preamble              p3_preproc;
   p3_postamble             p3_postproc;
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
-  // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs. 
+  // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs.
 
 }; // class P3Microphysics
 
