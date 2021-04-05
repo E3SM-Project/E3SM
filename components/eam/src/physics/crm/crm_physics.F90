@@ -428,8 +428,10 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 end subroutine crm_physics_init
 
 subroutine crm_physics_final()
+#if defined(MMF_SAMXX)
    use gator_mod, only: gator_finalize
    call gator_finalize()
+#endif
 end subroutine crm_physics_final
 
 !===================================================================================================
