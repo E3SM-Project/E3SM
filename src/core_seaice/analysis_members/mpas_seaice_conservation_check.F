@@ -214,7 +214,7 @@ contains
            initialEnergy, &
            initialMass, &
            initialSalt, &
-           initialCarbon 
+           initialCarbon
 
       err = 0
 
@@ -245,7 +245,7 @@ contains
          call compute_total_salt(domain, initialSalt)
 
          ! initial total carbon
-         call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+         call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
          call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckCarbonAM", conservationCheckCarbonAMPool)
          call MPAS_pool_get_array(conservationCheckCarbonAMPool, "initialCarbon", initialCarbon)
@@ -332,8 +332,8 @@ contains
 
       err = 0
 
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
-                                                               config_AM_conservationCheck_write_to_logfile)
+      call MPAS_pool_get_config(domain % configs, "config_AM_conservationCheck_write_to_logfile", &
+                                                   config_AM_conservationCheck_write_to_logfile)
 
       if (config_AM_conservationCheck_write_to_logfile .and. &
           MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
@@ -342,6 +342,9 @@ contains
          call MPAS_get_time(currentTime, dateTimeString=timeStr, ierr=ierr)
          call mpas_log_write(' Conservation checks: '//trim(timeStr))
       endif
+
+      ! area analysis
+      call area_analysis(domain, err)
 
       ! energy conservation check
       call energy_conservation(domain, err)
@@ -353,7 +356,7 @@ contains
       call salt_conservation(domain, err)
 
       ! initial total carbon
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+      call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
       if (config_use_column_biogeochemistry) call carbon_conservation(domain, err)
 
       if (config_AM_conservationCheck_write_to_logfile .and. &
@@ -368,6 +371,168 @@ contains
       endif
 
    end subroutine seaice_compute_conservation_check!}}}
+
+!***********************************************************************
+!
+!  routine area_analysis
+!
+!> \brief   Compute MPAS-Seaice analysis member
+!> \author  Adrian K. Turner
+!> \date    1st April 2021
+!> \details
+!>  Analyses areas used in the model.
+!
+!-----------------------------------------------------------------------
+
+   subroutine area_analysis(domain, err)
+
+     use seaice_constants, only: &
+          pii
+
+      type(domain_type), intent(inout) :: &
+           domain
+
+      integer, intent(out) :: &
+           err !< Output: error flag
+
+      type(block_type), pointer :: &
+           blockPtr
+
+      type(MPAS_pool_type), pointer :: &
+           conservationCheckAreaAMPool, &
+           meshPool, &
+           tracersAggregatePool
+
+      real(kind=RKIND), dimension(:), pointer :: &
+           areaCell, &
+           latCell, &
+           iceAreaCell
+
+      real(kind=RKIND), pointer :: &
+           earthRadius, &
+           earthArea, &
+           domainArea, &
+           domainFraction, &
+           totalSeaiceArea, &
+           NHSeaiceArea, &
+           SHSeaiceArea
+
+      real(kind=RKIND), dimension(:), allocatable :: &
+           sumArray, &
+           sumArrayOut
+
+      logical, pointer :: &
+           config_AM_conservationCheck_write_to_logfile
+
+      integer, pointer :: &
+           nCellsSolve
+
+      integer :: &
+           iCell, &
+           ierr
+
+      integer, parameter :: &
+           nSums = 4
+
+      call MPAS_pool_get_config(domain % configs, "config_AM_conservationCheck_write_to_logfile", &
+                                                   config_AM_conservationCheck_write_to_logfile)
+
+      allocate(sumArray(nSums))
+      allocate(sumArrayOut(nSums))
+
+      sumArray = 0.0_RKIND
+
+      blockPtr => domain % blocklist
+      do while (associated(blockPtr))
+
+         call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
+
+         call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracersAggregatePool)
+
+         call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
+         call MPAS_pool_get_array(meshPool, "latCell", latCell)
+         call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
+
+         do iCell = 1, nCellsSolve
+
+            sumArray(1) = sumArray(1) + &
+                 areaCell(iCell)
+
+            sumArray(2) = sumArray(2) + &
+                 areaCell(iCell) * iceAreaCell(iCell)
+
+            if (latCell(iCell) > 0.0_RKIND) then
+               sumArray(3) = sumArray(3) + &
+                    areaCell(iCell) * iceAreaCell(iCell)
+            endif
+
+            if (latCell(iCell) < 0.0_RKIND) then
+               sumArray(4) = sumArray(4) + &
+                    areaCell(iCell) * iceAreaCell(iCell)
+            endif
+
+         enddo ! iCell
+
+         blockPtr => blockPtr % next
+      enddo
+
+      ! perform the sums over processors
+      call MPAS_dmpar_sum_real_array(domain % dminfo, nSums, sumArray, sumArrayOut)
+
+      ! cleanup
+      deallocate(sumArray)
+
+      !-------------------------------------------------------------
+      ! Area analysis
+      !-------------------------------------------------------------
+
+      if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
+
+         call MPAS_pool_get_config(domain % configs, "config_earth_radius", earthRadius)
+
+         call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAreaAM", conservationCheckAreaAMPool)
+
+         call MPAS_pool_get_array(conservationCheckAreaAMPool, "earthArea", earthArea)
+         call MPAS_pool_get_array(conservationCheckAreaAMPool, "domainArea", domainArea)
+         call MPAS_pool_get_array(conservationCheckAreaAMPool, "domainFraction", domainFraction)
+         call MPAS_pool_get_array(conservationCheckAreaAMPool, "totalSeaiceArea", totalSeaiceArea)
+         call MPAS_pool_get_array(conservationCheckAreaAMPool, "NHSeaiceArea", NHSeaiceArea)
+         call MPAS_pool_get_array(conservationCheckAreaAMPool, "SHSeaiceArea", SHSeaiceArea)
+
+         earthArea = 4.0_RKIND * pii * earthRadius**2
+
+         domainArea = sumArrayOut(1)
+         domainFraction = domainArea / earthArea
+         totalSeaiceArea = sumArrayOut(2)
+         NHSeaiceArea = sumArrayOut(3)
+         SHSeaiceArea = sumArrayOut(4)
+
+         !-------------------------------------------------------------
+         ! Output to log file
+         !-------------------------------------------------------------
+
+         if (config_AM_conservationCheck_write_to_logfile) then
+
+            call mpas_log_write('----------------------------------------------------------')
+            call mpas_log_write(' Area analysis')
+            call mpas_log_write(' ')
+            call mpas_log_write(' Earth radius             (m) = $r', realArgs=(/earthRadius/))
+            call mpas_log_write(' Earth area              (m2) = $r', realArgs=(/earthArea/))
+            call mpas_log_write(' Domain area             (m2) = $r', realArgs=(/domainArea/))
+            call mpas_log_write(' Domain fraction          (-) = $r', realArgs=(/domainFraction/))
+            call mpas_log_write(' Total sea-ice area      (m2) = $r', realArgs=(/totalSeaiceArea/))
+            call mpas_log_write(' NH sea-ice area         (m2) = $r', realArgs=(/NHSeaiceArea/))
+            call mpas_log_write(' SH sea-ice area         (m2) = $r', realArgs=(/SHSeaiceArea/))
+
+         endif
+
+      endif
+
+      ! cleanup
+      deallocate(sumArrayOut)
+
+    end subroutine area_analysis
 
 !***********************************************************************
 !
@@ -395,7 +560,7 @@ contains
            err !< Output: error flag
 
       type(block_type), pointer :: &
-           block
+           blockPtr
 
       type(MPAS_pool_type), pointer :: &
            conservationCheckEnergyAMPool
@@ -462,14 +627,11 @@ contains
       integer, parameter :: &
            nSums = 5
 
-      character(len=17) :: &
-           formatString
-
       err = 0
 
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_dt", dt)
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
-                                                               config_AM_conservationCheck_write_to_logfile)
+      call MPAS_pool_get_config(domain % configs, "config_dt", dt)
+      call MPAS_pool_get_config(domain % configs, "config_AM_conservationCheck_write_to_logfile", &
+                                                   config_AM_conservationCheck_write_to_logfile)
 
       !-------------------------------------------------------------
       ! Net heat flux to ice
@@ -480,21 +642,21 @@ contains
 
       sumArray = 0.0_RKIND
 
-      block => domain % blocklist
-      do while (associated(block))
+      blockPtr => domain % blocklist
+      do while (associated(blockPtr))
 
-         call MPAS_pool_get_config(block % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
+         call MPAS_pool_get_config(blockPtr % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
 
-         call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
 
-         call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-         call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
-         call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
-         call MPAS_pool_get_subpool(block % structs, "shortwave", shortwavePool)
-         call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxesPool)
-         call MPAS_pool_get_subpool(block % structs, "atmos_fluxes", atmosFluxesPool)
-         call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCouplingPool)
-         call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracersAggregatePool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "shortwave", shortwavePool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "ocean_fluxes", oceanFluxesPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "atmos_fluxes", atmosFluxesPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "atmos_coupling", atmosCouplingPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "diagnostics", diagnosticsPool)
 
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
@@ -550,7 +712,7 @@ contains
 
          enddo ! iCell
 
-         block => block % next
+         blockPtr => blockPtr % next
       enddo
 
       ! perform the sums over processors
@@ -615,8 +777,6 @@ contains
 
          if (config_AM_conservationCheck_write_to_logfile) then
 
-            formatString = "(a32,2x,1pe24.17)"
-
             call mpas_log_write('----------------------------------------------------------')
             call mpas_log_write(' Energy conservation check')
             call mpas_log_write(' ')
@@ -667,7 +827,7 @@ contains
            err !< Output: error flag
 
       type(block_type), pointer :: &
-           block
+           blockPtr
 
       type(MPAS_pool_type), pointer :: &
            conservationCheckMassAMPool
@@ -730,14 +890,11 @@ contains
       integer, parameter :: &
            nSums = 5
 
-      character(len=17) :: &
-           formatString
-
       err = 0
 
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_dt", dt)
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
-                                                               config_AM_conservationCheck_write_to_logfile)
+      call MPAS_pool_get_config(domain % configs, "config_dt", dt)
+      call MPAS_pool_get_config(domain % configs, "config_AM_conservationCheck_write_to_logfile", &
+                                                   config_AM_conservationCheck_write_to_logfile)
 
       !-------------------------------------------------------------
       ! Net mass flux to ice
@@ -748,21 +905,21 @@ contains
 
       sumArray = 0.0_RKIND
 
-      block => domain % blocklist
-      do while (associated(block))
+      blockPtr => domain % blocklist
+      do while (associated(blockPtr))
 
-         call MPAS_pool_get_config(block % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
-         call MPAS_pool_get_config(block % configs, "config_thermodynamics_type", config_thermodynamics_type)
+         call MPAS_pool_get_config(blockPtr % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
+         call MPAS_pool_get_config(blockPtr % configs, "config_thermodynamics_type", config_thermodynamics_type)
 
-         call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
 
-         call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-         call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
-         call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
-         call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCouplingPool)
-         call MPAS_pool_get_subpool(block % structs, "atmos_fluxes", atmosFluxesPool)
-         call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxesPool)
-         call MPAS_pool_get_subpool(block % structs, "melt_growth_rates", meltGrowthRatesPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracersAggregatePool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "atmos_coupling", atmosCouplingPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "atmos_fluxes", atmosFluxesPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "ocean_fluxes", oceanFluxesPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "melt_growth_rates", meltGrowthRatesPool)
 
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
@@ -805,7 +962,7 @@ contains
 
          endif
 
-         block => block % next
+         blockPtr => blockPtr % next
       enddo
 
       ! perform the sums over processors
@@ -870,8 +1027,6 @@ contains
 
          if (config_AM_conservationCheck_write_to_logfile) then
 
-            formatString = "(a32,2x,1pe24.17)"
-
             call mpas_log_write('----------------------------------------------------------')
             call mpas_log_write(' Mass conservation check')
             call mpas_log_write(' ')
@@ -923,7 +1078,7 @@ contains
            err !< Output: error flag
 
       type(block_type), pointer :: &
-           block
+           blockPtr
 
       type(MPAS_pool_type), pointer :: &
            conservationCheckSaltAMPool
@@ -974,14 +1129,11 @@ contains
       integer, parameter :: &
            nSums = 2
 
-      character(len=17) :: &
-           formatString
-
       err = 0
 
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_dt", dt)
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
-                                                               config_AM_conservationCheck_write_to_logfile)
+      call MPAS_pool_get_config(domain % configs, "config_dt", dt)
+      call MPAS_pool_get_config(domain % configs, "config_AM_conservationCheck_write_to_logfile", &
+                                                   config_AM_conservationCheck_write_to_logfile)
 
       !-------------------------------------------------------------
       ! Net salt flux to ice
@@ -992,17 +1144,17 @@ contains
 
       sumArray = 0.0_RKIND
 
-      block => domain % blocklist
-      do while (associated(block))
+      blockPtr => domain % blocklist
+      do while (associated(blockPtr))
 
-         call MPAS_pool_get_config(block % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
-         call MPAS_pool_get_config(block % configs, "config_thermodynamics_type", config_thermodynamics_type)
+         call MPAS_pool_get_config(blockPtr % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
+         call MPAS_pool_get_config(blockPtr % configs, "config_thermodynamics_type", config_thermodynamics_type)
 
-         call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
 
-         call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-         call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxesPool)
-         call MPAS_pool_get_subpool(block % structs, "melt_growth_rates", meltGrowthRatesPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "ocean_fluxes", oceanFluxesPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "melt_growth_rates", meltGrowthRatesPool)
 
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(oceanFluxesPool, "oceanSaltFluxArea", oceanSaltFluxArea)
@@ -1028,7 +1180,7 @@ contains
 
          endif
 
-         block => block % next
+         blockPtr => blockPtr % next
       enddo
 
       ! perform the sums over processors
@@ -1084,8 +1236,6 @@ contains
 
          if (config_AM_conservationCheck_write_to_logfile) then
 
-            formatString = "(a32,2x,1pe24.17)"
-
             call mpas_log_write('----------------------------------------------------------')
             call mpas_log_write(' Salt conservation check')
             call mpas_log_write(' ')
@@ -1130,7 +1280,7 @@ contains
            err !< Output: error flag
 
       type(block_type), pointer :: &
-           block
+           blockPtr
 
       type(MPAS_pool_type), pointer :: &
            conservationCheckCarbonAMPool
@@ -1174,14 +1324,11 @@ contains
       integer, parameter :: &
            nSums = 1
 
-      character(len=17) :: &
-           formatString
-
       err = 0
 
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_dt", dt)
-      call MPAS_pool_get_config(domain % blocklist % configs, "config_AM_conservationCheck_write_to_logfile", &
-                                                               config_AM_conservationCheck_write_to_logfile)
+      call MPAS_pool_get_config(domain % configs, "config_dt", dt)
+      call MPAS_pool_get_config(domain % configs, "config_AM_conservationCheck_write_to_logfile", &
+                                                   config_AM_conservationCheck_write_to_logfile)
 
       !-------------------------------------------------------------
       ! Net carbon flux to ice
@@ -1192,13 +1339,13 @@ contains
 
       sumArray = 0.0_RKIND
 
-      block => domain % blocklist
-      do while (associated(block))
+      blockPtr => domain % blocklist
+      do while (associated(blockPtr))
 
-         call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
 
-         call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-         call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "biogeochemistry", biogeochemistryPool)
 
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(biogeochemistryPool, "totalOceanCarbonFlux", totalOceanCarbonFlux)
@@ -1211,7 +1358,7 @@ contains
 
          enddo ! iCell
 
-         block => block % next
+         blockPtr => blockPtr % next
       enddo
 
       ! perform the sums over processors
@@ -1264,8 +1411,6 @@ contains
 
          if (config_AM_conservationCheck_write_to_logfile) then
 
-            formatString = "(a32,2x,1pe24.17)"
-
             call mpas_log_write('----------------------------------------------------------')
             call mpas_log_write(' Carbon conservation check')
             call mpas_log_write(' ')
@@ -1308,7 +1453,7 @@ contains
            totalEnergy
 
       type(block_type), pointer :: &
-           block
+           blockPtr
 
       type(MPAS_pool_type), pointer :: &
            meshPool, &
@@ -1344,16 +1489,16 @@ contains
 
       energy = 0.0_RKIND
 
-      block => domain % blocklist
-      do while (associated(block))
+      blockPtr => domain % blocklist
+      do while (associated(blockPtr))
 
-         call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-         call MPAS_pool_get_subpool(block % structs, "tracers", tracersPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "tracers", tracersPool)
 
-         call MPAS_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
-         call MPAS_pool_get_dimension(block % dimensions, 'nCategories', nCategories)
-         call MPAS_pool_get_dimension(block % dimensions, 'nIceLayers', nIceLayers)
-         call MPAS_pool_get_dimension(block % dimensions, 'nSnowLayers', nSnowLayers)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nCellsSolve', nCellsSolve)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nCategories', nCategories)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nIceLayers', nIceLayers)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nSnowLayers', nSnowLayers)
 
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(tracersPool, "iceEnthalpy", iceEnthalpy, 1)
@@ -1390,7 +1535,7 @@ contains
             enddo ! iCategory
          enddo ! iCell
 
-         block => block % next
+         blockPtr => blockPtr % next
       enddo
 
       ! sum across processors
@@ -1423,7 +1568,7 @@ contains
            totalMass
 
       type(block_type), pointer :: &
-           block
+           blockPtr
 
       type(MPAS_pool_type), pointer :: &
            meshPool, &
@@ -1458,17 +1603,17 @@ contains
 
       mass = 0.0_RKIND
 
-      block => domain % blocklist
-      do while (associated(block))
+      blockPtr => domain % blocklist
+      do while (associated(blockPtr))
 
-         call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
+         call MPAS_pool_get_config(blockPtr % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
 
-         call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-         call MPAS_pool_get_subpool(block % structs, "tracers", tracersPool)
-         call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "tracers", tracersPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracersAggregatePool)
 
-         call MPAS_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
-         call MPAS_pool_get_dimension(block % dimensions, 'nCategories', nCategories)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nCellsSolve', nCellsSolve)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nCategories', nCategories)
 
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(tracersAggregatePool, "iceVolumeCell", iceVolumeCell)
@@ -1503,7 +1648,7 @@ contains
 
          endif
 
-         block => block % next
+         blockPtr => blockPtr % next
       enddo
 
       ! sum across processors
@@ -1537,7 +1682,7 @@ contains
            totalSalt
 
       type(block_type), pointer :: &
-           block
+           blockPtr
 
       type(MPAS_pool_type), pointer :: &
            meshPool, &
@@ -1562,13 +1707,13 @@ contains
 
       salt = 0.0_RKIND
 
-      block => domain % blocklist
-      do while (associated(block))
+      blockPtr => domain % blocklist
+      do while (associated(blockPtr))
 
-         call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-         call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracersAggregatePool)
 
-         call MPAS_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nCellsSolve', nCellsSolve)
 
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(tracersAggregatePool, "iceVolumeCell", iceVolumeCell)
@@ -1581,7 +1726,7 @@ contains
 
          enddo ! iCell
 
-         block => block % next
+         blockPtr => blockPtr % next
       enddo
 
       salt = salt * rhoi * ice_ref_salinity * 0.001_RKIND
@@ -1612,7 +1757,7 @@ contains
            totalCarbon
 
       type(block_type), pointer :: &
-           block
+           blockPtr
 
       type(MPAS_pool_type), pointer :: &
            meshPool, &
@@ -1633,18 +1778,18 @@ contains
 
       carbon = 0.0_RKIND
 
-      block => domain % blocklist
-      do while (associated(block))
+      blockPtr => domain % blocklist
+      do while (associated(blockPtr))
 
-         call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-         call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "biogeochemistry", biogeochemistryPool)
 
-         call MPAS_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nCellsSolve', nCellsSolve)
 
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(biogeochemistryPool, "totalCarbonContentCell", totalCarbonContentCell)
 
-         call compute_carbon_cell(block,totalCarbonContentCell)
+         call compute_carbon_cell(blockPtr,totalCarbonContentCell)
 
          do iCell = 1, nCellsSolve
 
@@ -1654,7 +1799,7 @@ contains
 
          enddo ! iCell
 
-         block => block % next
+         blockPtr => blockPtr % next
       enddo
 
       ! sum across processors
@@ -1678,7 +1823,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine compute_carbon_cell(block,totalCarbonContentCell)
+  subroutine compute_carbon_cell(blockPtr,totalCarbonContentCell)
 
     use seaice_constants, only: &
          skeletalLayerThickness
@@ -1687,7 +1832,7 @@ contains
          totalCarbonContentCell
 
     type(block_type), intent(in) :: &
-         block
+         blockPtr
 
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
@@ -1746,27 +1891,27 @@ contains
          iLayers, &
          iCell
 
-    call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
-    call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-    call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
-    call MPAS_pool_get_config(block % configs, "config_use_carbon", config_use_carbon)
-    call MPAS_pool_get_config(block % configs, "config_use_DON", config_use_DON)
-    call MPAS_pool_get_config(block % configs, "config_use_humics",config_use_humics)
-    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
-    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
-    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
-    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
+    call MPAS_pool_get_config(blockPtr % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
+    call MPAS_pool_get_config(blockPtr % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+    call MPAS_pool_get_config(blockPtr % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
+    call MPAS_pool_get_config(blockPtr % configs, "config_use_carbon", config_use_carbon)
+    call MPAS_pool_get_config(blockPtr % configs, "config_use_DON", config_use_DON)
+    call MPAS_pool_get_config(blockPtr % configs, "config_use_humics",config_use_humics)
+    call MPAS_pool_get_config(blockPtr % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
+    call MPAS_pool_get_config(blockPtr % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
+    call MPAS_pool_get_config(blockPtr % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
+    call MPAS_pool_get_config(blockPtr % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
 
-    call MPAS_pool_get_dimension(block % dimensions, "nBioLayers", nBioLayers)
-    call MPAS_pool_get_dimension(block % dimensions, "nBioLayersP1", nBioLayersP1)
-    call MPAS_pool_get_dimension(block % dimensions, "nAlgae", nAlgae)
-    call MPAS_pool_get_dimension(block % dimensions, "nDOC", nDOC)
-    call MPAS_pool_get_dimension(block % dimensions, "nDIC", nDIC)
-    call MPAS_pool_get_dimension(block % dimensions, "nDON", nDON)
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "nBioLayers", nBioLayers)
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "nBioLayersP1", nBioLayersP1)
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "nAlgae", nAlgae)
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "nDOC", nDOC)
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "nDIC", nDIC)
+    call MPAS_pool_get_dimension(blockPtr % dimensions, "nDON", nDON)
 
-    call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
+    call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracers_aggregate)
+    call MPAS_pool_get_subpool(blockPtr % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(blockPtr % structs, "biogeochemistry", biogeochemistry)
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
