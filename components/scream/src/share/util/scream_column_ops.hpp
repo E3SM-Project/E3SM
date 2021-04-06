@@ -72,7 +72,9 @@ public:
   template<typename T>
   using view_1d = typename KT::template view_1d<T>;
 
+  KOKKOS_INLINE_FUNCTION
   static constexpr scalar_type one  () { return scalar_type(1); }
+  KOKKOS_INLINE_FUNCTION
   static constexpr scalar_type zero () { return scalar_type(0); }
 
   // All functions have an 'input' provider template parameter. This can
