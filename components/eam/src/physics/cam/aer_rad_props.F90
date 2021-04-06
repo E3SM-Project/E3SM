@@ -42,7 +42,6 @@ real(r8), parameter :: km_inv_to_m_inv = 0.001_r8      !1/km to 1/m
 character(len=fieldname_len), pointer :: odv_names(:)  ! outfld names for visible OD
 integer  :: idx_ext_sw, idx_ssa_sw, idx_af_sw, idx_ext_lw !pbuf indices for volcanic cmip6 file
 integer  :: ihuge ! a huge integer
-real(r8) :: rhuge ! a huge real number
 !==============================================================================
 contains
 !==============================================================================
@@ -60,8 +59,7 @@ subroutine aer_rad_props_init()
 
    !----------------------------------------------------------------------------
 
-   rhuge = huge(1.0_r8)
-   ihuge = huge(1)
+   ihuge = huge(ihuge)
 
    call phys_getopts( history_aero_optics_out    = history_aero_optics, &
                       history_amwg_out           = history_amwg,    &
