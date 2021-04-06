@@ -114,8 +114,7 @@ struct Baseline {
     Int nerr = 0;
 
     // These times are thrown out, I just wanted to be able to use auto
-    auto start = std::chrono::steady_clock::now(), finish = start;
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+    Int duration = 0;
 
     for (auto ps : params_) {
       for (Int r = -1; r < m_repeat; ++r) {
@@ -135,13 +134,10 @@ struct Baseline {
         }
 
         for (int it = 0; it < m_num_iters; ++it) {
-          start  = std::chrono::steady_clock::now();
-
-          shoc_main(*d);
+          Int current_microsec = shoc_main(*d, use_fortran);
 
           if (r != -1 && m_repeat > 0) { // do not count the "cold" run
-            finish = std::chrono::steady_clock::now();
-            duration += std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+            duration += current_microsec;
           }
 
           if (m_repeat == 0) {
@@ -150,7 +146,7 @@ struct Baseline {
         }
       }
       if (m_repeat > 0) {
-        const double report_time = (1e-6*duration.count()) / m_repeat;
+        const double report_time = (1e-6*duration) / m_repeat;
 
         printf("Time = %1.3e seconds\n", report_time);
       }
@@ -178,7 +174,7 @@ struct Baseline {
           std::cout << "--- checking case # " << case_num << ", timestep # = " << (it+1)*ps.nadv
                      << " ---\n" << std::flush;
           read(fid, d_ref);
-          shoc_main(*d);
+          shoc_main(*d,use_fortran);
           ne = compare(tol, d_ref, d);
           if (ne) std::cout << "Ref impl failed.\n";
           nerr += ne;

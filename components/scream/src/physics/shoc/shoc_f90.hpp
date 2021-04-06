@@ -71,7 +71,7 @@ private:
 void shoc_init(Int nlev, bool use_fortran=false, bool force_reinit=false);
 
 // Run SHOC subroutines, populating inout and out fields of d.
-void shoc_main(FortranData& d);
+ekat::Int shoc_main(FortranData& d, bool use_fortran);
 
 // We will likely want to remove these checks in the future, as we're not tied
 // to the exact implementation or arithmetic in SHOC. For now, these checks are

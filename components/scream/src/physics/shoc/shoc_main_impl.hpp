@@ -384,6 +384,7 @@ Int Functions<S,D>::shoc_main(
 
     shoc_output.pblh(i)[0] = pblh_s;
   });
+  Kokkos::fence();
 
   auto finish = std::chrono::steady_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
