@@ -124,6 +124,7 @@ public:
         // Tracers are updated as a group. These tracers act as seperate inputs to shoc_main
         // and should have different output as tracer group. We make a copy and pass these to
         // shoc_main, then copy back to tracer group in postprocessing.
+        // TODO: remove *_copy views once SHOC can request a subset of tracers.
         tke_copy(i,k) = tke(i,k);
         qc_copy(i,k) = qc(i,k);
         qv_copy(i,k) = qv(i,k);
