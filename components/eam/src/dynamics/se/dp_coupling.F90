@@ -766,8 +766,8 @@ CONTAINS
 
       !difference of energy: after PW minus before PW
       !call outfld('TEdiff', te-tebefore, pcols, lchnk)
-      call outfld('KEflux', (ke-kebefore)/dtime, pcols, lchnk)
-      call outfld('BCflux', (psterm2-psterm1)/dtime, pcols, lchnk)
+      !call outfld('KEflux', (ke-kebefore)/dtime, pcols, lchnk)
+      !call outfld('BCflux', (psterm2-psterm1)/dtime, pcols, lchnk)
 
       !compute temperature tend from PW adjustment
       !keep is as local as possible
