@@ -874,7 +874,7 @@ end if
     if(par%masterproc) write(iulog,*)'-DCOLUMN_OPENMP disabled'
 #endif
 
-if (topology == "plane" .and. mesh_file /= "none") then
+if (topology == "plane" .and. (mesh_file /= "/dev/null" .and. mesh_file /= "none")) then
   call abortmp("RRM grids not yet supported for plane")
 end if
 
