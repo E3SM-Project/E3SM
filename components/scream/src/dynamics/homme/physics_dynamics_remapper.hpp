@@ -163,11 +163,11 @@ public:
 
   template <typename ScalarT, typename MT, typename VT1, typename VT2>
   KOKKOS_FUNCTION
-  void local_remap_bwd_2d (const MT& team, const int num_fields, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const;
+  void local_remap_bwd_2d (const MT& team, const int num_fields, const VT1 lid2elgp, const VT2 p2d) const;
 
   template <typename ScalarT, typename MT, typename VT1, typename VT2>
   KOKKOS_FUNCTION
-  void local_remap_bwd_3d (const MT& team, const int num_fields, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const;
+  void local_remap_bwd_3d (const MT& team, const int num_fields, const VT1 lid2elgp, const VT2 p2d) const;
 
   void create_p2d_map ();
 
@@ -757,11 +757,11 @@ do_remap_bwd() const
       case etoi(LayoutType::Vector2D):
       {
         if (pack_alloc_property(i) == AllocPropType::PackAlloc) {
-          local_remap_bwd_2d<pack_type>(team, num_fields, num_cols, lid2elgp, p2d);
+          local_remap_bwd_2d<pack_type>(team, num_fields, lid2elgp, p2d);
         } else if (pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
-          local_remap_bwd_2d<small_pack_type>(team, num_fields, num_cols, lid2elgp, p2d);
+          local_remap_bwd_2d<small_pack_type>(team, num_fields, lid2elgp, p2d);
         } else {
-          local_remap_bwd_2d<Real>(team, num_fields, num_cols, lid2elgp, p2d);
+          local_remap_bwd_2d<Real>(team, num_fields, lid2elgp, p2d);
         }
         break;
       }
@@ -769,11 +769,11 @@ do_remap_bwd() const
       case etoi(LayoutType::Vector3D):
       {
         if (pack_alloc_property(i) == AllocPropType::PackAlloc) {
-          local_remap_bwd_3d<pack_type>(team, num_fields, num_cols, lid2elgp, p2d);
+          local_remap_bwd_3d<pack_type>(team, num_fields, lid2elgp, p2d);
         } else if (pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
-          local_remap_bwd_3d<small_pack_type>(team, num_fields, num_cols, lid2elgp, p2d);
+          local_remap_bwd_3d<small_pack_type>(team, num_fields, lid2elgp, p2d);
         } else {
-          local_remap_bwd_3d<Real>(team, num_fields, num_cols, lid2elgp, p2d);
+          local_remap_bwd_3d<Real>(team, num_fields, lid2elgp, p2d);
         }
         break;
       }
@@ -1141,7 +1141,7 @@ template<typename RealType>
 template <typename ScalarT, typename MT, typename VT1, typename VT2>
 KOKKOS_FUNCTION
 void PhysicsDynamicsRemapper<RealType>::
-local_remap_bwd_2d (const MT& team, const int num_fields, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const
+local_remap_bwd_2d (const MT& team, const int num_fields, const VT1 lid2elgp, const VT2 p2d) const
 {
   const int rank = team.league_rank();
   const int i = rank%num_fields;
@@ -1198,7 +1198,7 @@ template<typename RealType>
 template <typename ScalarT, typename MT, typename VT1, typename VT2>
 KOKKOS_FUNCTION
 void PhysicsDynamicsRemapper<RealType>::
-local_remap_bwd_3d (const MT& team, const int num_fields, const int num_cols, const VT1 lid2elgp, const VT2 p2d) const
+local_remap_bwd_3d (const MT& team, const int num_fields, const VT1 lid2elgp, const VT2 p2d) const
 {
   const int rank = team.league_rank();
   const int i = rank%num_fields;
