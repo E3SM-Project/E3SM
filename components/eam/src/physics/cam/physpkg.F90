@@ -106,18 +106,6 @@ module physpkg
 #define ADDCP
 !#undef ADDCP
 
-!#ifdef ADDCP
-
-!#define USE_CPSW
-!#define USE_TS
-
-!#else
-
-#undef USE_CPSW
-#undef USE_TS
-
-!#endif
-
 
   !======================================================================= 
 contains
@@ -1806,31 +1794,18 @@ if (l_ac_energy_chk) then
     tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
     tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
 
-!!!!!!!!!!!!!!!!!!
-!this removes the need for pw to adjust evaporation
-!    state%te_cur = state%te_cur + state%te_evap
-
-
     ke1t = 0.0; ke2t = 0.0; bc1t = 0.0; bc2t = 0.0;
 
-!orig
-!    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     *cam_in%cflx(:ncol,1)
-!TS
+!orig, tbot, tbot
+!    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     * cam_in%cflx(:ncol,1)
+!    state%cptermp(:ncol) = 1000.0 * cpair * state%t(:ncol,pver)     * (cam_out%precl(:ncol) + cam_out%precc(:ncol) )
+
+!TS ...
 !    state%cpterme(:ncol) =          cpair * cam_in%ts(:ncol)     *cam_in%cflx(:ncol,1)
-!T0
-    state%cpterme(:ncol) =          cpair * 288.0     *cam_in%cflx(:ncol,1)
 
-#if defined(USE_CPSW) && defined(USE_TS)
-    state%cptermdiff(:ncol) =  cpsw  * cam_in%ts(:ncol) * cam_in%cflx(:ncol,1)-&
-                               state%cpterme
-#elif defined(USE_CPSW) && !defined(USE_TS)
-    state%cptermdiff(:ncol) =     cpsw  * state%t(:ncol,pver)     *cam_in%cflx(:ncol,1) -&
-                               state%cpterme
-#else
-    state%cptermdiff(:ncol) = 0.0
-#endif
-    cam_in%shf(:ncol) =    cam_in%shf(:ncol) +  state%cptermdiff(:ncol) 
-
+!T0, T0
+    state%cpterme(:ncol) =          cpair * 288.0     * cam_in%cflx(:ncol,1)
+    state%cptermp(:ncol) = 1000.0 * cpair * 288.0     * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
 
 #ifdef ADDCP
 !take CP term out of te_cur
@@ -2864,14 +2839,6 @@ end if ! l_rad
     call t_startf('diag_export')
     call diag_export(cam_out)
     call t_stopf('diag_export')
-
-!use cam_out to compute cpterm
-!orig
-!    state%cptermp(:ncol) = 1000.0 * cpair * state%t(:ncol,pver) * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
-!use TSurf
-!    state%cptermp(:ncol) = 1000.0 * cpair * cam_in%ts(:ncol) * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
-!T0
-    state%cptermp(:ncol) = 1000.0 * cpair * 288.0 * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
 
     call check_tracers_fini(tracerint)
 
