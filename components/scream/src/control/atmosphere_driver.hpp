@@ -70,7 +70,6 @@ public:
   // Load initial conditions for atm inputs
   void initialize_fields (const util::TimeStamp& t0);
 
-  template<typename T>
   void initialize_one_field(const std::string& name, const ekat::ParameterList& ic_pl);
 
   // Initialie I/O structures for output

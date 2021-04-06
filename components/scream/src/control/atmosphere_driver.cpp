@@ -190,13 +190,20 @@ initialize_fields (const util::TimeStamp& t0)
   ic_reader_params.set("GRID",m_grids_manager->get_reference_grid()->name());
   auto& ic_fields = ic_reader_params.sublist("FIELDS");
   int ifield=0;
+  std::vector<std::string> ic_fields_to_copy;
   for (auto& fid : fields_in) {
     const auto& name = fid.name();
     auto f = m_field_repo->get_field(fid);
     // First, check if the input file contains constant values for some of the fields
     if (ic_pl.isParameter(name)) {
       // The user provided a constant value for this field. Simply use that.
-      initialize_one_field<double>(name, ic_pl);
+      if (ic_pl.isType<double>(name) or ic_pl.isType<std::vector<double>>(name)) {
+        initialize_one_field(name, ic_pl);
+      } else if (ic_pl.isType<std::string>(name)) {
+        ic_fields_to_copy.push_back(name);
+      } else {
+        EKAT_REQUIRE_MSG (false, "ERROR: invalid assignment for variable " + name + ", only double or string arguments are allowed");
+      }
     } else {
       // The field does not have a constant value, so we expect to find it in the nc file
       ic_fields.set(ekat::strint("field",ifield+1),name); 
@@ -225,15 +232,21 @@ initialize_fields (const util::TimeStamp& t0)
     ic_reader.pull_input();
   }
 
+  // If there were any fields that needed to be copied per the input yaml file, now we copy them.
+  for (auto& name_tgt : ic_fields_to_copy) {
+    const auto& name_src = ic_pl.get<std::string>(name_tgt);
+    auto f_tgt = m_field_repo->get_field(name_tgt,m_grids_manager->get_reference_grid()->name());
+    auto f_src = m_field_repo->get_field(name_src,m_grids_manager->get_reference_grid()->name());
+    f_tgt.set_value(f_src);
+  }
+
   m_current_ts = t0;
 
   m_ad_status |= s_fields_inited;
 }
 
-template<typename T>
 void AtmosphereDriver::initialize_one_field(const std::string& name, const ekat::ParameterList& ic_pl)
 {
-  printf("ASD - name = %s\n",name.c_str());  //ASD - DELETE
   auto f = m_field_repo->get_field(name,m_grids_manager->get_reference_grid()->name());
   // The user provided a constant value for this field. Simply use that.
   const auto& layout = f.get_header().get_identifier().get_layout();
@@ -244,7 +257,7 @@ void AtmosphereDriver::initialize_one_field(const std::string& name, const ekat:
   if (layout.is_vector_layout()) {
     const auto idim = layout.get_vector_dim();
     const auto vec_dim = layout.dim(idim);
-    const auto& values = ic_pl.get<std::vector<T>>(name);
+    const auto& values = ic_pl.get<std::vector<double>>(name);
     EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
         "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
         "       Field dimension: " + std::to_string(vec_dim) + "\n"
@@ -255,11 +268,9 @@ void AtmosphereDriver::initialize_one_field(const std::string& name, const ekat:
     for (int comp=0; comp<vec_dim; ++comp) {
       auto f_i = f.get_component(comp);
       f_i.set_value(values[comp]);
-      printf("    - [%d] = %f\n",comp,values[comp]);    // ASD-DELETE
     }
   } else {
-    const auto& value = ic_pl.get<T>(name);
-    printf("    - val = %f\n",value);  //ASD - DELETE
+    const auto& value = ic_pl.get<double>(name);
     f.set_value(value);
   }
 }

@@ -71,6 +71,7 @@ public:
       m_output_fids.emplace("B",layout,ekat::units::m,m_grid->name());
       m_output_fids.emplace("C",layout,ekat::units::m,m_grid->name());
       m_input_fids.emplace("D",layout_vec,ekat::units::m,m_grid->name());
+      m_input_fids.emplace("E",layout,ekat::units::m,m_grid->name());
     } else if (m_dummy_type == G2A) {
       m_output_fids.emplace("A",layout,ekat::units::m,m_grid->name());
     }

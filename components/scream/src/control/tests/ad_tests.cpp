@@ -31,6 +31,16 @@ TEST_CASE ("group_requirements","[!throws]")
   // Init and run a single time step
   util::TimeStamp init_time(0,0,0,0.0);
   ad.initialize(atm_comm,ad_params,init_time);
+  // Verify that after initialization field "E" matches field "A"
+  auto& field_repo = ad.get_field_repo();
+  const auto& view_A = field_repo.get_field("A","Point Grid A").get_reshaped_view<const Real**>();
+  const auto& view_E = field_repo.get_field("E","Point Grid A").get_reshaped_view<const Real**>();
+  for (int icol=0;icol<num_cols;++icol) {
+    for (int jlev=0;jlev<num_vl;++jlev) {
+      REQUIRE(view_E(icol,jlev)==view_A(icol,jlev));
+    }
+  }
+  // Resume ad run and testing.
   ad.run(1.0);
   ad.finalize ();
 
