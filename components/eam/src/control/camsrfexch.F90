@@ -30,6 +30,7 @@ module camsrfexch
   public atm2hub_deallocate
   public hub2atm_deallocate
   public cam_export
+  public cam_export_uv
 !
 ! Public data types
 !
@@ -47,6 +48,8 @@ module camsrfexch
      real(r8), allocatable :: zbot(:)     ! bot level height above surface
      real(r8), allocatable :: ubot(:)     ! bot level u wind
      real(r8), allocatable :: vbot(:)     ! bot level v wind
+     real(r8), allocatable :: uold(:)     ! prev. tstp bot level u wind
+     real(r8), allocatable :: vold(:)     ! prev. tstp bot level v wind
      real(r8), allocatable :: qbot(:,:)   ! bot level specific humidity
      real(r8), allocatable :: pbot(:)     ! bot level pressure
      real(r8), allocatable :: rho(:)      ! bot level density	
@@ -78,6 +81,8 @@ module camsrfexch
      real(r8), allocatable :: dstdry3(:)  ! dry deposition of dust (bin3)
      real(r8), allocatable :: dstwet4(:)  ! wet deposition of dust (bin4)
      real(r8), allocatable :: dstdry4(:)  ! dry deposition of dust (bin4)
+     real(r8), allocatable :: wsx(:)      ! Zonal surface stress applied in PBL scheme
+     real(r8), allocatable :: wsy(:)      ! Meridional surface stress applied in PBL scheme
   end type cam_out_t 
 
 !---------------------------------------------------------------------------
@@ -386,6 +391,12 @@ CONTAINS
        allocate (cam_out(c)%vbot(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error vbot')
 
+       allocate (cam_out(c)%uold(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error uold')
+
+       allocate (cam_out(c)%vold(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error vold')
+
        allocate (cam_out(c)%qbot(pcols,pcnst), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error qbot')
 
@@ -478,6 +489,12 @@ CONTAINS
 
        allocate (cam_out(c)%dstdry4(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstdry4')
+
+       allocate (cam_out(c)%wsx(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error wsx')
+
+       allocate (cam_out(c)%wsy(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error wsy')
     enddo  
 
     do c = begchunk,endchunk
@@ -487,6 +504,8 @@ CONTAINS
        cam_out(c)%zbot(:)     = 0._r8
        cam_out(c)%ubot(:)     = 0._r8
        cam_out(c)%vbot(:)     = 0._r8
+       cam_out(c)%uold(:)     = 0._r8
+       cam_out(c)%vold(:)     = 0._r8
        cam_out(c)%qbot(:,:)   = 0._r8
        cam_out(c)%pbot(:)     = 0._r8
        cam_out(c)%rho(:)      = 0._r8
@@ -518,6 +537,8 @@ CONTAINS
        cam_out(c)%dstwet3(:)  = 0._r8
        cam_out(c)%dstdry4(:)  = 0._r8
        cam_out(c)%dstwet4(:)  = 0._r8
+       cam_out(c)%wsx(:)  = 0._r8
+       cam_out(c)%wsy(:)  = 0._r8
     end do
 
   end subroutine atm2hub_alloc
@@ -532,6 +553,8 @@ CONTAINS
           deallocate(cam_out(c)%zbot)
           deallocate(cam_out(c)%ubot)
           deallocate(cam_out(c)%vbot)
+          deallocate(cam_out(c)%uold)
+          deallocate(cam_out(c)%vold)
           deallocate(cam_out(c)%qbot)
           deallocate(cam_out(c)%pbot)
           deallocate(cam_out(c)%rho)
@@ -562,6 +585,8 @@ CONTAINS
           deallocate(cam_out(c)%dstdry3)
           deallocate(cam_out(c)%dstwet4)
           deallocate(cam_out(c)%dstdry4)
+          deallocate(cam_out(c)%wsx)
+          deallocate(cam_out(c)%wsy)
        enddo  
 
        deallocate(cam_out)
@@ -725,8 +750,12 @@ subroutine cam_export(state,cam_out,pbuf)
       cam_out%tbot(i)  = state%t(i,pver)
       cam_out%thbot(i) = state%t(i,pver) * state%exner(i,pver)
       cam_out%zbot(i)  = state%zm(i,pver)
-      cam_out%ubot(i)  = state%u(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
-      cam_out%vbot(i)  = state%v(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
+
+      ! Winds were already exported, so just add gustiness rather than
+      ! overwriting these values.
+      cam_out%ubot(i)  = cam_out%ubot(i) * ((vmag_gust(i)+vmag(i))/vmag(i))
+      cam_out%vbot(i)  = cam_out%vbot(i) * ((vmag_gust(i)+vmag(i))/vmag(i))
+
       cam_out%pbot(i)  = state%pmid(i,pver)
       cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
       psm1(i,lchnk)    = state%ps(i)
@@ -768,5 +797,47 @@ subroutine cam_export(state,cam_out,pbuf)
    prcsnw(:ncol,lchnk) = cam_out%precsc(:ncol) + cam_out%precsl(:ncol)   
 
 end subroutine cam_export
+
+subroutine cam_export_uv(state,cam_out,pbuf)
+
+   ! Transfer atmospheric fields into necessary surface data structures
+
+   use physics_types,    only: physics_state
+   use ppgrid,           only: pver
+   use physics_buffer,   only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
+
+   implicit none
+
+   ! Input arguments
+   type(physics_state),  intent(in)    :: state
+   type (cam_out_t),     intent(inout) :: cam_out
+   type(physics_buffer_desc), pointer  :: pbuf(:)
+
+   ! Local variables
+
+   integer :: i              ! Longitude index
+   integer :: ncol
+   integer :: ubot_old_idx, vbot_old_idx
+   real(r8), pointer :: ubot_old(:), vbot_old(:)
+
+   !-----------------------------------------------------------------------
+
+   ncol  = state%ncol
+
+   ubot_old_idx = pbuf_get_index('ubot_old')
+   vbot_old_idx = pbuf_get_index('vbot_old')
+
+   call pbuf_get_field(pbuf, ubot_old_idx, ubot_old)
+   call pbuf_get_field(pbuf, vbot_old_idx, vbot_old)
+
+   do i=1,ncol
+      cam_out%uold(i)  = ubot_old(i)
+      cam_out%vold(i)  = vbot_old(i)
+
+      cam_out%ubot(i)  = state%u(i,pver)
+      cam_out%vbot(i)  = state%v(i,pver)
+   end do
+
+end subroutine cam_export_uv
 
 end module camsrfexch

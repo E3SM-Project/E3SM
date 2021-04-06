@@ -120,7 +120,7 @@ module clubb_intr
     l_input_fields   = .false.,       &  ! Always false for EAM-CLUBB.
     l_implemented    = .true.,        &  ! Implemented in a host model (always true)
     l_host_applies_sfc_fluxes = .false.  ! Whether the host model applies the surface fluxes
-    
+
   logical            :: do_tms
   logical            :: lq(pcnst)
   logical            :: lq2(pcnst)
@@ -153,6 +153,10 @@ module clubb_intr
     rtm_idx, &          ! mean total water mixing ratio
     um_idx, &           ! mean of east-west wind
     vm_idx, &           ! mean of north-south wind
+    um2_bc_idx, &       ! surface east-west wind before coupling
+    vm2_bc_idx, &       ! surface north-south wind before coupling
+    upwp1_cr_idx, &     ! corrected surface east-west momentum flux
+    vpwp1_cr_idx, &     ! corrected surface north-south momentum flux
     cld_idx, &          ! Cloud fraction
     concld_idx, &       ! Convective cloud fraction
     ast_idx, &          ! Stratiform cloud fraction
@@ -313,6 +317,11 @@ module clubb_intr
     call pbuf_add_field('RTM',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtm_idx)
     call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), um_idx)
     call pbuf_add_field('VM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vm_idx)
+
+    call pbuf_add_field('UM2_BC'  ,   'global', dtype_r8, (/pcols/), um2_bc_idx)
+    call pbuf_add_field('VM2_BC'  ,   'global', dtype_r8, (/pcols/), vm2_bc_idx)
+    call pbuf_add_field('UPWP1_CR',   'global', dtype_r8, (/pcols/), upwp1_cr_idx)
+    call pbuf_add_field('VPWP1_CR',   'global', dtype_r8, (/pcols/), vpwp1_cr_idx)
 
     call pbuf_add_field('WPTHVP',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wpthvp_idx)
     call pbuf_add_field('WP2THVP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wp2thvp_idx)
@@ -994,6 +1003,9 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, radf_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, qrl_idx,     0.0_r8)
 
+       call pbuf_set_field(pbuf2d, upwp1_cr_idx, 0.0_r8)
+       call pbuf_set_field(pbuf2d, vpwp1_cr_idx, 0.0_r8)
+
        call pbuf_set_field(pbuf2d, wpthvp_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, wp2thvp_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, rtpthvp_idx,    0.0_r8)
@@ -1027,8 +1039,9 @@ end subroutine clubb_init_cnst
 
    subroutine clubb_tend_cam( &
                               state,   ptend_all,   pbuf,     hdtime, &
-                              cmfmc,   cam_in,   sgh30, & 
-                              macmic_it, cld_macmic_num_steps,dlf, det_s, det_ice, alst_o)
+                              cmfmc,   cam_in,   cam_out, sgh30, &
+                              macmic_it, cld_macmic_num_steps, dlf, det_s, det_ice, alst_o, &
+                              upwp_sfco, vpwp_sfco, l_correct_upwp1)
 
 !-------------------------------------------------------------------------------
 ! Description: Provide tendencies of shallow convection, turbulence, and 
@@ -1053,7 +1066,7 @@ end subroutine clubb_init_cnst
    use ppgrid,         only: pver, pverp, pcols
    use constituents,   only: cnst_get_ind, cnst_type
    use co2_cycle,      only: co2_cycle_set_cnst_type
-   use camsrfexch,     only: cam_in_t
+   use camsrfexch,     only: cam_in_t, cam_out_t
    use ref_pres,       only: top_lev => trop_cloud_top_lev  
    use time_manager,   only: is_first_step, is_first_restart_step
    use cam_abortutils, only: endrun
@@ -1105,6 +1118,7 @@ end subroutine clubb_init_cnst
 
    type(physics_state), intent(in)    :: state                    ! Physics state variables                 [vary]
    type(cam_in_t),      intent(in)    :: cam_in
+   type(cam_out_t),     intent(in)    :: cam_out
    real(r8),            intent(in)    :: hdtime                   ! Host model timestep                     [s]
    real(r8),            intent(in)    :: dlf(pcols,pver)          ! Detraining cld H20 from deep convection [kg/ks/s]
    real(r8),            intent(in)    :: cmfmc(pcols,pverp)       ! convective mass flux--m sub c           [kg/m2/s]
@@ -1129,7 +1143,9 @@ end subroutine clubb_init_cnst
    real(r8),            intent(out)   :: det_ice(pcols)            ! Integral of detrained ice for energy check
 
    real(r8), intent(out) :: alst_o(pcols,pver)  ! H. Wang: for old liquid status fraction 
-        
+   real(r8),            intent(out)   :: upwp_sfco(pcols)          ! rho v'w' at surface     [kg/m/s^2]
+   real(r8),            intent(out)   :: vpwp_sfco(pcols)          ! rho v'w' at surface     [kg/m/s^2]
+   logical,             intent(in)    :: l_correct_upwp1
    ! --------------- !
    ! Local Variables !
    ! --------------- !
@@ -1361,6 +1377,10 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: rtm      ! mean moisture mixing ratio                   [kg/kg]
    real(r8), pointer, dimension(:,:) :: um       ! mean east-west wind                          [m/s]
    real(r8), pointer, dimension(:,:) :: vm       ! mean north-south wind                        [m/s]
+   real(r8), pointer, dimension(:)   :: um2_bc   ! surface east-west wind before coupling       [m/s]
+   real(r8), pointer, dimension(:)   :: vm2_bc   ! surface north-south wind before coupling     [m/s]
+   real(r8), pointer, dimension(:)   :: upwp1_cr ! corrected east-west surface momentum flux    [m^2/s^2]
+   real(r8), pointer, dimension(:)   :: vpwp1_cr ! corrected north-south surface momentum flux  [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: ast      ! stratiform cloud fraction                    [fraction]
@@ -1545,6 +1565,11 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, vm_idx,      vm,      start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
+
+   call pbuf_get_field(pbuf, um2_bc_idx,     um2_bc)
+   call pbuf_get_field(pbuf, vm2_bc_idx,     vm2_bc)
+   call pbuf_get_field(pbuf, upwp1_cr_idx, upwp1_cr)
+   call pbuf_get_field(pbuf, vpwp1_cr_idx, vpwp1_cr)
 
    call pbuf_get_field(pbuf, wpthvp_idx,     wpthvp,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, wp2thvp_idx,    wp2thvp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
@@ -1749,6 +1774,11 @@ end subroutine clubb_init_cnst
    um(1:ncol,pverp)   = state1%u(1:ncol,pver)
    vm(1:ncol,pverp)   = state1%v(1:ncol,pver)
    thlm(1:ncol,pverp) = thlm(1:ncol,pver)
+
+   if (is_first_step()) then
+      um2_bc(1:ncol) = um(1:ncol,pver)
+      vm2_bc(1:ncol) = vm(1:ncol,pver)
+   endif
   
    if (clubb_do_adv) then 
       thlp2(1:ncol,pverp)=thlp2(1:ncol,pver)
@@ -1949,9 +1979,26 @@ end subroutine clubb_init_cnst
       !  Surface fluxes provided by host model
       wpthlp_sfc = cam_in%shf(i)/(cpair*rho_ds_zm(1))       ! Sensible heat flux
       wprtp_sfc  = cam_in%cflx(i,1)/(rho_ds_zm(1))      ! Latent heat flux
-      upwp_sfc   = cam_in%wsx(i)/rho_ds_zm(1)               ! Surface meridional momentum flux
-      vpwp_sfc   = cam_in%wsy(i)/rho_ds_zm(1)               ! Surface zonal momentum flux  
-      
+
+      if (macmic_it  ==  1) then
+         upwp_sfco(i) = 0._r8
+         vpwp_sfco(i) = 0._r8
+         if (l_correct_upwp1) then
+            um2_bc   (i) = cam_out%uold(i)
+            vm2_bc   (i) = cam_out%vold(i)
+         end if
+      end if
+      if (l_correct_upwp1) then
+         upwp1_cr(i) = max(um2_bc(i)**2 + vm2_bc(i)**2,.25_r8)
+         vpwp1_cr(i) = max(sqrt(um(i,pver)**2+vm(i,pver)**2),.5_r8)/upwp1_cr(i)
+         upwp1_cr(i) = sqrt(cam_in%wsx(i)**2+cam_in%wsy(i)**2)*vpwp1_cr(i)
+         vpwp1_cr(i) =-upwp1_cr(i)*vm(i,pver)
+         upwp1_cr(i) =-upwp1_cr(i)*um(i,pver)
+      else
+         upwp1_cr(i) = cam_in%wsx(i)
+         vpwp1_cr(i) = cam_in%wsy(i)
+      endif
+
       ! ------------------------------------------------- !
       ! Apply TMS                                         !
       ! ------------------------------------------------- !    
@@ -2115,6 +2162,9 @@ end subroutine clubb_init_cnst
             call stats_begin_timestep_api(time_elapsed, 1, 1)
          endif 
 
+         upwp_sfc = upwp1_cr(i)/rho_ds_zm(1)
+         vpwp_sfc = vpwp1_cr(i)/rho_ds_zm(1)
+
          !  Advance CLUBB CORE one timestep in the future
          call t_startf('advance_clubb_core')
          !Balli- to do: check whether initent-ins and intent-inouts are actually what they say
@@ -2152,6 +2202,10 @@ end subroutine clubb_init_cnst
               wprcp_out, ice_supersat_frac, &                              ! intent(out)
               rcm_in_layer_out, cloud_cover_out)                           ! intent(out)
          call t_stopf('advance_clubb_core')
+
+         ! diagnose applied surface stress over this physics time-step
+         upwp_sfco(i)= upwp_sfco(i) + upwp_sfc
+         vpwp_sfco(i)= vpwp_sfco(i) + vpwp_sfc
 
          pdf_zm_w_1_inout = pdf_params_zm%w_1
          pdf_zm_w_2_inout = pdf_params_zm%w_2
@@ -2200,7 +2254,12 @@ end subroutine clubb_init_cnst
 
       enddo  ! end time loop
       call t_stopf('adv_clubb_core_ts_loop')
-     
+
+      if (macmic_it  ==  cld_macmic_num_steps) then ! diagnose applied stress
+         upwp_sfco(i) = upwp_sfco(i)/(nadv*cld_macmic_num_steps)*rho_ds_zm(1)
+         vpwp_sfco(i) = vpwp_sfco(i)/(nadv*cld_macmic_num_steps)*rho_ds_zm(1)
+      endif
+
       if (clubb_do_adv) then
          if (macmic_it .eq. cld_macmic_num_steps) then 
             wp2_in=zm2zt_api(wp2_in)   

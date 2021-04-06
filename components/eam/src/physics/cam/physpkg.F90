@@ -38,7 +38,7 @@ module physpkg
 #endif
   use perf_mod
   use cam_logfile,     only: iulog
-  use camsrfexch,      only: cam_export
+  use camsrfexch,      only: cam_export, cam_export_uv
 
   use modal_aero_calcsize,    only: modal_aero_calcsize_init, &
                                     modal_aero_calcsize_reg
@@ -68,6 +68,10 @@ module physpkg
   integer ::  snow_dp_idx        = 0
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
+
+  integer ::  ubot_old_idx       = 0
+  integer ::  vbot_old_idx       = 0
+
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
   save
@@ -238,6 +242,9 @@ subroutine phys_register
          call pbuf_register_subcol('PREC_SED', 'phys_register', prec_sed_idx)
          call pbuf_register_subcol('SNOW_SED', 'phys_register', snow_sed_idx)
        end if
+
+       call pbuf_add_field('ubot_old',  'global', dtype_r8,(/pcols/),ubot_old_idx)
+       call pbuf_add_field('vbot_old',  'global', dtype_r8,(/pcols/),vbot_old_idx)
 
     ! Who should add FRACIS? 
     ! -- It does not seem that aero_intr should add it since FRACIS is used in convection
@@ -437,6 +444,9 @@ subroutine phys_inidat( cam_out, pbuf2d )
     vmag_gust_idx = pbuf_get_index( 'vmag_gust')
     call pbuf_set_field(pbuf2d, vmag_gust_idx, tptr)
 
+    tptr(:,:) = 0._r8
+    call pbuf_set_field(pbuf2d, ubot_old_idx, tptr)
+    call pbuf_set_field(pbuf2d, vbot_old_idx, tptr)
 
     fieldname='QPERT'  
     qpert_idx = pbuf_get_index( 'qpert',ierr)
@@ -1981,6 +1991,8 @@ subroutine tphysbc (ztodt,               &
     real(r8),pointer :: snow_sed(:)     ! snow from cloud ice sedimentation
     real(r8) :: sh_e_ed_ratio(pcols,pver)       ! shallow conv [ent/(ent+det)] ratio  
 
+    real(r8),pointer :: ubot_old(:)     ! Saved ubot
+    real(r8),pointer :: vbot_old(:)     ! Saved vbot
 
     ! Local copies for substepping
     real(r8) :: prec_pcw_macmic(pcols)
@@ -2044,6 +2056,9 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
+    real(r8)       :: upwp_sfc(pcols), vpwp_sfc(pcols)
+    logical, parameter :: l_align_surface_wind=.true. &
+                         ,l_clubb_updates_surface_stress=.true.
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -2357,6 +2372,15 @@ if (l_tracer_aero) then
     
 end if
 
+    if (l_align_surface_wind) then
+    ! Save atmospheric fields to force surface models
+       call t_startf('cam_export_uv')
+       call cam_export_uv (state,cam_out,pbuf)
+       call t_stopf('cam_export_uv')
+    end if
+
+    cam_out%wsx(:ncol)=cam_in%wsx(:ncol)
+    cam_out%wsy(:ncol)=cam_in%wsy(:ncol)
 
     if( microp_scheme == 'RK' ) then
 
@@ -2465,8 +2489,8 @@ end if
              ! =====================================================  
    
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
-                cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
-                dlf, det_s, det_ice, lcldo)
+                cmfmc, cam_in, cam_out, sgh30, macmic_it, cld_macmic_num_steps, &
+                dlf, det_s, det_ice, lcldo, upwp_sfc, vpwp_sfc, l_clubb_updates_surface_stress)
 
                 !  Since we "added" the reserved liquid back in this routine, we need 
                 !    to account for it in the energy checker
@@ -2485,7 +2509,6 @@ end if
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
- 
           endif
 
           call t_stopf('macrop_tend')
@@ -2586,6 +2609,8 @@ end if
        prec_str(:ncol) = prec_pcw(:ncol) + prec_sed(:ncol)
        snow_str(:ncol) = snow_pcw(:ncol) + snow_sed(:ncol)
 
+       cam_out%wsx(:ncol)=upwp_sfc(:ncol)
+       cam_out%wsy(:ncol)=vpwp_sfc(:ncol)
      end if !microp_scheme
 
    if (l_tracer_aero) then
@@ -2685,9 +2710,19 @@ end if ! l_rad
     call t_stopf('tropopause')
 
     ! Save atmospheric fields to force surface models
+    if (.not.l_align_surface_wind) call cam_export_uv (state,cam_out,pbuf)
+
     call t_startf('cam_export')
     call cam_export (state,cam_out,pbuf)
     call t_stopf('cam_export')
+
+    call pbuf_get_field(pbuf, ubot_old_idx, ubot_old)
+    call pbuf_get_field(pbuf, vbot_old_idx, vbot_old)
+
+    do i = 1, ncol
+       ubot_old(i) = cam_out%ubot(i)
+       vbot_old(i) = cam_out%vbot(i)
+    end do
 
     ! Write export state to history file
     call t_startf('diag_export')

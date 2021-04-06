@@ -615,6 +615,10 @@ subroutine diag_init()
 
    call addfld ('TAUX',horiz_only,    'A','N/m2','Zonal surface stress')
    call addfld ('TAUY',horiz_only,    'A','N/m2','Meridional surface stress')
+
+   call addfld ('TAUXadj',  horiz_only, 'A', 'N/m2','Zonal surf. stress adjustment')
+   call addfld ('TAUYadj',  horiz_only, 'A', 'N/m2','Meridional surf. stress adjustment')
+
    call addfld ('TREFHT',horiz_only,    'A','K','Reference height temperature', &
       standard_name='air_temperature')
    call addfld ('TREFHTMN',horiz_only,    'M','K','Minimum reference height temperature over output period')
@@ -2038,8 +2042,11 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
     call outfld('LHFLX',    cam_in%lhf,       pcols, lchnk)
     call outfld('QFLX',     cam_in%cflx(1,1), pcols, lchnk)
 
-    call outfld('TAUX',     cam_in%wsx,       pcols, lchnk)
-    call outfld('TAUY',     cam_in%wsy,       pcols, lchnk)
+    call outfld('TAUX',    cam_out%wsx,       pcols, lchnk)
+    call outfld('TAUY',    cam_out%wsy,       pcols, lchnk)
+    call outfld('TAUXadj',cam_out%wsx-cam_in%wsx,pcols, lchnk)
+    call outfld('TAUYadj',cam_out%wsy-cam_in%wsy,pcols, lchnk)
+
     call outfld('TREFHT  ', cam_in%tref,      pcols, lchnk)
     call outfld('TREFHTMX', cam_in%tref,      pcols, lchnk)
     call outfld('TREFHTMN', cam_in%tref,      pcols, lchnk)

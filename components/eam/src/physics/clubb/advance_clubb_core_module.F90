@@ -519,7 +519,8 @@ module advance_clubb_core_module
 
     real( kind = core_rknd ), intent(in) ::  &
       wpthlp_sfc,   & ! w' theta_l' at surface   [(m K)/s]
-      wprtp_sfc,    & ! w' r_t' at surface       [(kg m)/( kg s)]
+      wprtp_sfc       ! w' r_t' at surface       [(kg m)/( kg s)]
+    real( kind = core_rknd ), intent(inout) ::  &
       upwp_sfc,     & ! u'w' at surface          [m^2/s^2]
       vpwp_sfc        ! v'w' at surface          [m^2/s^2]
 
@@ -1520,6 +1521,10 @@ module advance_clubb_core_module
                             uprcp, vprcp, rc_coef,                           & ! intent(in)
                             rtm, wprtp, thlm, wpthlp,                        & ! intent(inout)
                             sclrm, wpsclrp, um, upwp, vm, vpwp )               ! intent(inout)
+
+     !store surface mom. flux that was actually applied
+      upwp_sfc = upwp(1)
+      vpwp_sfc = vpwp(1)
 
       if ( clubb_at_least_debug_level( 0 ) ) then
           if ( err_code == clubb_fatal_error ) then
