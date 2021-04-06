@@ -546,19 +546,19 @@ contains
          do iCell = 1, nCells
 
            ! Accumulate fluxes that use the surface temperature
-           rainTemperatureFlux(iCell) = rainFlux(iCell) * tracerGroup(index_temperature_flux,1,iCell) / rho_sw
-           evapTemperatureFlux(iCell) = evaporationFlux(iCell) * tracerGroup(index_temperature_flux,1,iCell) / rho_sw
+           rainTemperatureFlux(iCell) = rainFlux(iCell) * tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell) / rho_sw
+           evapTemperatureFlux(iCell) = evaporationFlux(iCell) * tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell) / rho_sw
 
            ! Runoff can only have a minimum temperature of 0.0C, since it is fresh water.
            tracersSurfaceFluxRunoff(index_temperature_flux,iCell) = riverRunoffFlux(iCell) &
-                      * max(tracerGroup(index_temperature_flux,1,iCell), 0.0_RKIND) / rho_sw
+                      * max(tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell), 0.0_RKIND) / rho_sw
 
            ! Accumulate fluxes that use the freezing point
            seaIceFreshWaterTemperatureFlux(iCell) = seaIceFreshWaterFlux(iCell) * &
-               ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell), pressure=0.0_RKIND, &
+               ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
                                          inLandIceCavity=.false.) / rho_sw
            icebergFreshWaterTemperatureFlux(iCell) = icebergFreshWaterFlux(iCell) * &
-               ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell), pressure=0.0_RKIND, &
+               ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
                                          inLandIceCavity=.false.) / rho_sw
 
            totalFreshWaterTemperatureFlux(iCell) = rainTemperatureFlux(iCell) + evapTemperatureFlux(iCell) + &
