@@ -431,7 +431,7 @@ TEST_CASE("column_ops_ps_1") {
 
 TEST_CASE("column_ops_ps_N") {
   // No point in re-running test for a larger pack size
-  if (!ekat::OnGpu<ekat::DefaultDevice>::value) {
+  if (!ekat::OnGpu<ekat::DefaultDevice::execution_space>::value) {
     using namespace scream;
     using device_type = DefaultDevice;
     using KT = ekat::KokkosTypes<device_type>;
