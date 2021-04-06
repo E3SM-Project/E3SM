@@ -74,7 +74,7 @@ TEST_CASE("column_ops_ps_1") {
   using column_ops    = ColumnOps<device_type,Real,1>;
 
   constexpr int num_cols = 1;
-  constexpr int num_levs = 10;
+  constexpr int num_levs = 16;
 
   policy_type policy(num_cols,std::min(num_levs,exec_space::concurrency()));
 

@@ -109,6 +109,15 @@ public:
                                   const int count,
                                   const Lambda& f)
   {
+    auto is_pow_of_2 = [](const int n)->bool {
+      // This seems funky, but write down a pow of 2 and a non-pow of 2 in binary (both positive),
+      // and you'll see why it works
+      return n>0 && (n & (n-1))==0;
+    };
+    EKAT_KERNEL_REQUIRE_MSG (!ekat::OnGpu<typename device_type::execution_space>::value ||
+                             is_pow_of_2(team.team_size()),
+      "Error! Team-level parallel_scan on CUDA only works for team sizes that are power of 2.\n"
+      "       You could try to reduce the team size to the previous pow of 2.\n");
     Kokkos::parallel_scan(Kokkos::TeamThreadRange(team,count),f);
   }
   template<typename Lambda>
