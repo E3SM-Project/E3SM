@@ -450,6 +450,9 @@ subroutine diag_init()
       call add_default ('VV      ', 1, ' ')
       call add_default ('VQ      ', 1, ' ')
 
+      call add_default ('KEflux  ', 1, ' ')
+      call add_default ('BCflux  ', 1, ' ')
+
       call add_default ('CPflux  ', 1, ' ')
       call add_default ('CPfluxp ', 1, ' ')
       call add_default ('CPfluxe ', 1, ' ')

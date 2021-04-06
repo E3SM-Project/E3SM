@@ -705,6 +705,8 @@ CONTAINS
     do lchnk = begchunk,endchunk
       ncol = get_ncols_p(lchnk)
 
+      kebefore=0.0; ke=0.0; psterm1=0.0; psterm2=0.0
+
       te=0.0; tw=0.0; ke=0.0; se=0.0; wv=0.0; wl=0.0; wi=0.0; wr=0.0; ws=0.0;
       ustate=0.0; vstate=0.0; tstate=0.0; pdel=0.0; ps=0.0; phisstate=0.0;
 
@@ -764,8 +766,8 @@ CONTAINS
 
       !difference of energy: after PW minus before PW
       !call outfld('TEdiff', te-tebefore, pcols, lchnk)
-      !call outfld('KEdiff', ke-kebefore, pcols, lchnk)
-      !call outfld('BCdiff', psterm2-psterm1, pcols, lchnk)
+      call outfld('KEflux', (ke-kebefore)/dtime, pcols, lchnk)
+      call outfld('BCflux', (psterm2-psterm1)/dtime, pcols, lchnk)
 
       !compute temperature tend from PW adjustment
       !keep is as local as possible
