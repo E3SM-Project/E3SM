@@ -316,14 +316,12 @@
   <lname>20TR_EAM%CMIP6_ELM%CNPECACNTBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BDRD</lname>
 </compset>
 
-<!-- E3SM v2 cryosphere compsets -->
+<!-- E3SM cryosphere compsets -->
 
 <compset>
   <alias>CRYO1850</alias>
   <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
 </compset>
-
-<!-- E3SM v1 cryosphere compsets -->
 
 <compset>
   <alias>A_WCYCL1850-DIB</alias>
