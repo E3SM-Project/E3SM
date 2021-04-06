@@ -74,7 +74,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   m_required_fields.emplace("phis",           scalar2d_layout_col, m,  grid_name);
 
   // Input/Output variables
-  m_required_fields.emplace("s",             scalar3d_layout_mid, J/kg,        grid_name);
   m_required_fields.emplace("tke",           scalar3d_layout_mid, (m*m)/(s*s), grid_name);
   m_required_fields.emplace("horiz_winds",   horiz_wind_layout,   m/s,         grid_name);
   m_required_fields.emplace("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name);
@@ -82,7 +81,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   m_required_fields.emplace("qc",            scalar3d_layout_mid, Qunit,           grid_name);
   m_required_fields.emplace("cldfrac_liq",   scalar3d_layout_mid, Pa,          grid_name);
 
-  m_computed_fields.emplace("s",             scalar3d_layout_mid, J/kg,        grid_name);
   m_computed_fields.emplace("tke",           scalar3d_layout_mid, (m*m)/(s*s), grid_name);
   m_computed_fields.emplace("horiz_winds",   horiz_wind_layout,   m/s,         grid_name);
   m_computed_fields.emplace("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name);
@@ -129,8 +127,8 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
   auto T_mid            = m_shoc_fields_out["T_mid"].get_reshaped_view<Spack**>();
-  auto zi               = m_shoc_fields_in["zi"].get_reshaped_view<const Spack**>();
-  auto zm               = m_shoc_fields_in["zm"].get_reshaped_view<const Spack**>();
+  auto z_int            = m_shoc_fields_in["zi"].get_reshaped_view<const Spack**>();
+  auto z_mid            = m_shoc_fields_in["zm"].get_reshaped_view<const Spack**>();
   auto p_mid            = m_shoc_fields_in["p_mid"].get_reshaped_view<const Spack**>();
   auto pseudo_density   = m_shoc_fields_in["pseudo_density"].get_reshaped_view<const Spack**>();
   auto omega            = m_shoc_fields_in["omega"].get_reshaped_view<const Spack**>();
@@ -141,11 +139,11 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   auto qc               = m_shoc_fields_out["qc"].get_reshaped_view<Spack**>();
   auto qv               = m_shoc_fields_out["qv"].get_reshaped_view<Spack**>();
   auto tke              = m_shoc_fields_out["tke"].get_reshaped_view<Spack**>();
-  auto s                = m_shoc_fields_out["s"].get_reshaped_view<Spack**>();
   auto Q                = m_shoc_fields_out["Q"].get_reshaped_view<Spack***>();
   auto cldfrac_liq      = m_shoc_fields_out["cldfrac_liq"].get_reshaped_view<Spack**>();
   auto sgs_buoy_flux    = m_shoc_fields_out["sgs_buoy_flux"].get_reshaped_view<Spack**>();
   auto inv_qc_relvar    = m_shoc_fields_out["inv_qc_relvar"].get_reshaped_view<Spack**>();
+  auto phis             = m_shoc_fields_in["phis"].get_reshaped_view<const Pack1d*>();
 
   const int nlev_packs = ekat::npack<Spack>(m_num_levs);
   const int nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
@@ -167,6 +165,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
           exner("exner",m_num_cols,nlev_packs),
           thlm("thlm",m_num_cols,nlev_packs),
           qw("qw",m_num_cols,nlev_packs),
+          s("s",m_num_cols,nlev_packs),
           qv_copy("qv_copy",m_num_cols,nlev_packs),
           qc_copy("qc_copy",m_num_cols,nlev_packs),
           tke_copy("tke_copy",m_num_cols,nlev_packs);
@@ -176,7 +175,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   view_3d tracers("tracers",m_num_cols,m_num_levs,num_tracer_packs);
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,nlev_packs,num_tracer_packs,T_mid,
-                                zi,zm,p_mid,pseudo_density,omega,surf_sens_flux,surf_latent_flux,
+                                z_int,z_mid,p_mid,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
                                 surf_u_mom_flux,surf_v_mom_flux,qv,qv_copy,Q,qc,qc_copy,tke,tke_copy,
                                 s,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,exner,thlm,qw,tracers);
@@ -197,7 +196,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   input.vw_sfc      = shoc_preprocess.vpwp_sfc;
   input.wtracer_sfc = shoc_preprocess.wtracer_sfc;
   input.exner       = shoc_preprocess.exner;
-  input.phis        = m_shoc_fields_in["phis"].get_reshaped_view<const Pack1d*>();
+  input.phis        = phis;
 
   // Input/Output Variables
   input_output.host_dse     = shoc_preprocess.shoc_s;

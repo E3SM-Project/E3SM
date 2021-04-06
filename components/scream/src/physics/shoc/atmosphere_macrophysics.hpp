@@ -110,14 +110,14 @@ public:
       const int nlevi_v = nlev/Spack::n;
       const int nlevi_p = nlev%Spack::n;
 
-      const auto sub_zi = ekat::subview(zi, i);
-      const auto s_zi = ekat::scalarize(sub_zi);
+      const auto sub_z_int = ekat::subview(z_int, i);
+      const auto s_z_int = ekat::scalarize(sub_z_int);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
         // Exner
-        const Spack opmid(p_mid(i,k));
-        const Smask opmid_mask(!isnan(opmid) and opmid>0.0);
-        auto oexner = physics_fun::get_exner(opmid,opmid_mask);
-        exner(i,k) = oexner;
+        const Spack p_mid_ik(p_mid(i,k));
+        const Smask p_mid_mask(!isnan(p_mid_ik) and p_mid_ik>0.0);
+        auto exner_ik = physics_fun::get_exner(p_mid_ik,p_mid_mask);
+        exner(i,k) = exner_ik;
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 
@@ -135,18 +135,29 @@ public:
         thlm(i,k) = theta_zt - (latvap/cpair)*qc(i,k);
         thv(i,k)  = theta_zt*(1 + zvir*qv(i,k) - qc(i,k));
 
+        // Dry static energy
+        const Spack T_mid_ik(T_mid(i,k));
+        const Spack z_mid_ik(z_mid(i,k));
+        const Real  phis_i(phis(i)[0]);
+        const Smask range_mask(!isnan(T_mid_ik) && T_mid_ik>0.0 &&
+                               !isnan(z_mid_ik) && z_mid_ik>0.0 &&
+                               !isnan(phis_i)   && phis_i>0.0);
+        auto dse_ik = physics_fun::get_dse(T_mid_ik,z_mid_ik,phis_i,range_mask);
+        shoc_s(i,k) = dse_ik;
+
         Spack zi_k, zi_kp1;
         auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
         auto range_pack2 = range_pack1;
         range_pack2.set(range_pack1 > nlev, 1);
-        ekat::index_and_shift<1>(s_zi, range_pack2, zi_k, zi_kp1);
+        ekat::index_and_shift<1>(s_z_int, range_pack2, zi_k, zi_kp1);
         dz(i,k).set(range_pack1 < nlev, zi_k - zi_kp1);
 
-        zt_grid(i,k) = zm(i,k) - zi(i, nlevi_v)[nlevi_p];
+        zt_grid(i,k) = z_mid(i,k) - z_int(i, nlevi_v)[nlevi_p];
         rrho(i,k) = (1/ggr)*(pseudo_density(i,k)/dz(i,k));
+
         wm_zt(i,k) = -1*omega(i,k)/(rrho(i,k)*ggr);
 
-        zi_grid(i,k) = zi(i,k) - zi(i, nlevi_v)[nlevi_p];
+        zi_grid(i,k) = z_int(i,k) - z_int(i, nlevi_v)[nlevi_p];
       });
       zi_grid(i,nlevi_v)[nlevi_p] = 0;
 
@@ -175,11 +186,12 @@ public:
     // Local variables
     int ncol, nlev, nlev_packs, num_tracers, num_tracer_packs;
     view_2d_const T_mid;
-    view_2d_const zi;
-    view_2d_const zm;
+    view_2d_const z_int;
+    view_2d_const z_mid;
     view_2d_const p_mid;
     view_2d_const pseudo_density;
     view_2d_const omega;
+    view_1d_const phis;
     view_1d_const surf_sens_flux;
     view_1d_const surf_latent_flux;
     view_1d_const surf_u_mom_flux;
@@ -213,10 +225,10 @@ public:
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_tracers_,
                        const int nlev_packs_, const int num_tracer_packs_,
-                       view_2d_const T_mid_, view_2d_const zi_,
-                       view_2d_const zm_, view_2d_const p_mid_, view_2d_const pseudo_density_,
+                       view_2d_const T_mid_, view_2d_const z_int_,
+                       view_2d_const z_mid_, view_2d_const p_mid_, view_2d_const pseudo_density_,
                        view_2d_const omega_,
-                       view_1d_const surf_sens_flux_, view_1d_const surf_latent_flux_,
+                       view_1d_const phis_, view_1d_const surf_sens_flux_, view_1d_const surf_latent_flux_,
                        view_1d_const surf_u_mom_flux_, view_1d_const surf_v_mom_flux_,
                        view_2d_const qv_, view_2d qv_copy_, view_3d Q_, view_2d qc_, view_2d qc_copy_,
                        view_2d tke_, view_2d tke_copy_, view_2d s_, view_2d rrho_, view_2d rrho_i_,
@@ -231,11 +243,12 @@ public:
       num_tracer_packs = num_tracer_packs_;
       // IN
       T_mid = T_mid_;
-      zi = zi_;
-      zm = zm_;
+      z_int = z_int_;
+      z_mid = z_mid_;
       p_mid = p_mid_;
       pseudo_density = pseudo_density_;
       omega = omega_;
+      phis = phis_;
       surf_sens_flux = surf_sens_flux_;
       surf_latent_flux = surf_latent_flux_;
       surf_u_mom_flux = surf_u_mom_flux_;
