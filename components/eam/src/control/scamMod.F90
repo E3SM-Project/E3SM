@@ -16,7 +16,7 @@ module scamMod
   use time_manager, only: get_nstep,timemgr_time_inc,&
                           get_start_date,get_curr_date,&
                           timemgr_init,get_curr_calday,&
-                          is_first_step
+                          is_first_step, is_first_restart_step
   use shr_scam_mod, only: shr_scam_GetCloseLatLon
   use constituents, only: readtrace, cnst_get_ind, pcnst, cnst_name
   use string_utils, only: to_lower
@@ -537,7 +537,7 @@ subroutine setiopupdate
    save last_date, last_sec
 !------------------------------------------------------------------------------
 
-   if ( get_nstep() .eq. 0 ) then
+   if ( get_nstep() .eq. 0 .or. is_first_restart_step()) then
 !     
 !     Open  IOP dataset
 !     
