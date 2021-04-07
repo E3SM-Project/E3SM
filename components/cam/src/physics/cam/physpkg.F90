@@ -2476,13 +2476,21 @@ end if
     end if
 !!== KZ_WATCON 
 
+    ! SPS: Don't know what to do with qqflx_fixer for Strang splitting of CLUBB.
+
              ! =====================================================
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
-   
-             call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
-                cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
-                dlf, det_s, det_ice, lcldo)
+
+             if (macmic_it == 1) then
+                call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt / 2.,&
+                   cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
+                   dlf, det_s, det_ice, lcldo)
+             else
+                call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
+                   cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
+                   dlf, det_s, det_ice, lcldo)
+             end if
 
                 !  Since we "added" the reserved liquid back in this routine, we need 
                 !    to account for it in the energy checker
@@ -2494,13 +2502,23 @@ end if
                 ! with substeps correctly. For now, work around this by scaling
                 ! ptend down by the number of substeps, then applying it for
                 ! the full time (ztodt).
-                call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
+                if (macmic_it == 1) then
+                   call physics_ptend_scale(ptend, 1._r8/(2*cld_macmic_num_steps), ncol)
+                else
+                   call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
+                end if
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics              
                 call physics_update(state, ptend, ztodt, tend)
-                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
-                     cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
-                     det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                if (macmic_it == 1) then
+                   call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
+                        cam_in%cflx(:,1)/(2*cld_macmic_num_steps), flx_cnd/(2*cld_macmic_num_steps), &
+                        det_ice/(2*cld_macmic_num_steps), flx_heat/(2*cld_macmic_num_steps))
+                else
+                   call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
+                        cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
+                        det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
+                end if
  
           endif
 
@@ -2594,6 +2612,33 @@ end if
           snow_pcw_macmic(:ncol) = snow_pcw_macmic(:ncol) + snow_pcw(:ncol)
 
        end do ! end substepping over macrophysics/microphysics
+
+       macmic_it = cld_macmic_num_steps+1
+             ! =====================================================
+             !    CLUBB call (PBL, shallow convection, macrophysics)
+             ! =====================================================  
+
+             call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt / 2.,&
+                cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
+                dlf, det_s, det_ice, lcldo)
+
+                !  Since we "added" the reserved liquid back in this routine, we need 
+                !    to account for it in the energy checker
+                flx_cnd(:ncol) = -1._r8*rliq(:ncol) 
+                flx_heat(:ncol) = cam_in%shf(:ncol) + det_s(:ncol)
+
+                ! Unfortunately, physics_update does not know what time period
+                ! "tend" is supposed to cover, and therefore can't update it
+                ! with substeps correctly. For now, work around this by scaling
+                ! ptend down by the number of substeps, then applying it for
+                ! the full time (ztodt).
+                call physics_ptend_scale(ptend, 1._r8/(2*cld_macmic_num_steps), ncol)
+                !    Update physics tendencies and copy state to state_eq, because that is 
+                !      input for microphysics              
+                call physics_update(state, ptend, ztodt, tend)
+                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
+                     cam_in%cflx(:,1)/(2*cld_macmic_num_steps), flx_cnd/(2*cld_macmic_num_steps), &
+                     det_ice/(2*cld_macmic_num_steps), flx_heat/(2*cld_macmic_num_steps))
 
        prec_sed(:ncol) = prec_sed_macmic(:ncol)/cld_macmic_num_steps
        snow_sed(:ncol) = snow_sed_macmic(:ncol)/cld_macmic_num_steps

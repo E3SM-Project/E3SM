@@ -1470,7 +1470,7 @@ end subroutine clubb_init_cnst
    if (clubb_do_adv) then
      ! If not last step of macmic loop then set apply_const back to 
      !   zero to prevent output from being corrupted.  
-     if (macmic_it .eq. cld_macmic_num_steps) then    
+     if (macmic_it .eq. cld_macmic_num_steps+1) then    
        apply_const = 1._r8 
      else
        apply_const = 0._r8
@@ -1927,7 +1927,7 @@ end subroutine clubb_init_cnst
       call t_stopf('adv_clubb_core_ts_loop')
      
       if (clubb_do_adv) then
-         if (macmic_it .eq. cld_macmic_num_steps) then 
+         if (macmic_it .eq. cld_macmic_num_steps+1) then 
             wp2_in=zm2zt(wp2_in)   
             wpthlp_in=zm2zt(wpthlp_in)
             wprtp_in=zm2zt(wprtp_in)
@@ -2040,7 +2040,7 @@ end subroutine clubb_init_cnst
          ptend_loc%s(i,k)   = (clubb_s(k)-state1%s(i,k))/hdtime          ! Tendency of static energy
 
          if (clubb_do_adv) then
-            if (macmic_it .eq. cld_macmic_num_steps) then
+            if (macmic_it .eq. cld_macmic_num_steps+1) then
 
                ! Here add a constant to moments which can be either positive or 
                !  negative.  This is to prevent clipping when dynamics tries to
@@ -2098,7 +2098,7 @@ end subroutine clubb_init_cnst
    
    ! Add constant to ghost point so that output is not corrupted 
    if (clubb_do_adv) then
-      if (macmic_it .eq. cld_macmic_num_steps) then
+      if (macmic_it .eq. cld_macmic_num_steps+1) then
          wp3(:,pverp) = wp3(:,pverp) + wp3_const
          rtpthlp(:,pverp) = rtpthlp(:,pverp) + rtpthlp_const
          wpthlp(:,pverp) = wpthlp(:,pverp) + wpthlp_const
