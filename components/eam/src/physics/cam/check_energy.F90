@@ -501,10 +501,10 @@ end subroutine check_energy_get_integrals
     wr = 0._r8
     ws = 0._r8
 
-    call cnst_get_ind('CLDICE', icldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', icldliq, abort=.false.)
-    call cnst_get_ind('RAINQM', irain, abort=.false.)
-    call cnst_get_ind('SNOWQM', isnow, abort=.false.)
+    call cnst_get_ind('CLDICE', icldice, abrtf=.false.)
+    call cnst_get_ind('CLDLIQ', icldliq, abrtf=.false.)
+    call cnst_get_ind('RAINQM', irain, abrtf=.false.)
+    call cnst_get_ind('SNOWQM', isnow, abrtf=.false.)
 
 !#ifdef ENERGY_DIAGNOSTICS
     if (present(teloc) .and. present(psterm))then
