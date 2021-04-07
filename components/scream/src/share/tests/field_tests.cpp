@@ -184,7 +184,7 @@ TEST_CASE("field", "") {
     REQUIRE(views_are_equal(f1,f2));
   }
 
-  SECTION ("set_value") {
+  SECTION ("deep_copy") {
     std::vector<FieldTag> t1 = {COL,VAR,LEV};
     std::vector<int> d1 = {3,2,24};
 
@@ -192,7 +192,7 @@ TEST_CASE("field", "") {
 
     Field<Real> f1(fid1);
     f1.allocate_view();
-    f1.set_value(1.0);
+    f1.deep_copy(1.0);
     f1.sync_to_host();
     auto v = f1.get_view<Host>();
     for (int i=0; i<fid1.get_layout().size(); ++i) {
@@ -254,8 +254,8 @@ TEST_CASE("field", "") {
     // f0 is scalar, no vector dimension
     REQUIRE_THROWS(f0.get_component(0));
 
-    f0.set_value(1.0);
-    f1.set_value(2.0);
+    f0.deep_copy(1.0);
+    f1.deep_copy(2.0);
 
     f_vec.sync_to_host();
 

@@ -198,11 +198,11 @@ initialize_fields (const util::TimeStamp& t0)
     if (ic_pl.isParameter(name)) {
       // The user provided a constant value for this field. Simply use that.
       if (ic_pl.isType<double>(name) or ic_pl.isType<std::vector<double>>(name)) {
-        initialize_one_field(name, ic_pl);
+        initialize_constant_field(name, ic_pl);
       } else if (ic_pl.isType<std::string>(name)) {
         ic_fields_to_copy.push_back(name);
       } else {
-        EKAT_REQUIRE_MSG (false, "ERROR: invalid assignment for variable " + name + ", only double or string arguments are allowed");
+        EKAT_REQUIRE_MSG (false, "ERROR: invalid assignment for variable " + name + ", only scalar double or string, or vector double arguments are allowed");
       }
     } else {
       // The field does not have a constant value, so we expect to find it in the nc file
@@ -237,7 +237,7 @@ initialize_fields (const util::TimeStamp& t0)
     const auto& name_src = ic_pl.get<std::string>(name_tgt);
     auto f_tgt = m_field_repo->get_field(name_tgt,m_grids_manager->get_reference_grid()->name());
     auto f_src = m_field_repo->get_field(name_src,m_grids_manager->get_reference_grid()->name());
-    f_tgt.set_value(f_src);
+    f_tgt.deep_copy(f_src);
   }
 
   m_current_ts = t0;
@@ -245,7 +245,7 @@ initialize_fields (const util::TimeStamp& t0)
   m_ad_status |= s_fields_inited;
 }
 
-void AtmosphereDriver::initialize_one_field(const std::string& name, const ekat::ParameterList& ic_pl)
+void AtmosphereDriver::initialize_constant_field(const std::string& name, const ekat::ParameterList& ic_pl)
 {
   auto f = m_field_repo->get_field(name,m_grids_manager->get_reference_grid()->name());
   // The user provided a constant value for this field. Simply use that.
@@ -267,11 +267,11 @@ void AtmosphereDriver::initialize_one_field(const std::string& name, const ekat:
     // considering that this code is executed during initialization only.
     for (int comp=0; comp<vec_dim; ++comp) {
       auto f_i = f.get_component(comp);
-      f_i.set_value(values[comp]);
+      f_i.deep_copy(values[comp]);
     }
   } else {
     const auto& value = ic_pl.get<double>(name);
-    f.set_value(value);
+    f.deep_copy(value);
   }
 }
 
