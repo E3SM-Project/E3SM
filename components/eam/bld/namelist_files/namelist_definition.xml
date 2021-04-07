@@ -5647,13 +5647,13 @@ Default: Set by build-namelist.
 
 <entry id="se_ne_x" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Number of columns in the x direction, for doubly periodic mode
+Number of elements in the x direction, for doubly periodic mode
 Default: Set by build-namelist.
 </entry>
 
 <entry id="se_ne_y" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Number of columns in the y direction, for doubly periodic mode
+Number of elements in the y direction, for doubly periodic mode
 Default: Set by build-namelist.
 </entry>
 
