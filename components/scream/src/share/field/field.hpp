@@ -479,12 +479,7 @@ deep_copy (const field_type& field_src) {
           " to field " + get_header().get_identifier().name() + ".  Layouts don't match.");
   const auto  rank = layout.rank();
   // Note: we can't just do a deep copy on get_view<HD>(), since this
-  //       field might be a subfield of another. So check the header
-  //       first, to see if we have a parent. If not, deep copy is fine.
-  //       If we do, we need to get the reshaped view first.
-  const auto parent = get_header().get_parent();
-  // We have a parent. We only want to set *this* field to value,
-  // not the rest of the parent field. We need the reshaped view
+  //       field might be a subfield of another. We need the reshaped view.
   switch (rank) {
     case 1:
       {
@@ -511,6 +506,13 @@ deep_copy (const field_type& field_src) {
       {
         auto v     = get_reshaped_view<RT****,HD>();
         auto v_src = field_src.get_reshaped_view<RT****,HD>();
+        Kokkos::deep_copy(v,v_src);
+      }
+      break;
+    case 5:
+      {
+        auto v     = get_reshaped_view<RT*****,HD>();
+        auto v_src = field_src.get_reshaped_view<RT*****,HD>();
         Kokkos::deep_copy(v,v_src);
       }
       break;
@@ -558,6 +560,12 @@ deep_copy (const RT value) {
       case 4:
         {
           auto v = get_reshaped_view<RT****,HD>();
+          Kokkos::deep_copy(v,value);
+        }
+        break;
+      case 5:
+        {
+          auto v = get_reshaped_view<RT*****,HD>();
           Kokkos::deep_copy(v,value);
         }
         break;
