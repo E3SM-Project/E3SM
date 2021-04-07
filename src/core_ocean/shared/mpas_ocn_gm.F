@@ -470,7 +470,7 @@ contains
          !$omp do schedule(runtime) private(k, h1, h2)
          do iEdge = 1, nEdges
             ! The interpolation can only be carried out on non-boundary edges
-            if (maxLevelEdgeTop(iEdge) .GE. 1) then
+            if (maxLevelEdgeTop(iEdge) .GE. minLevelEdgeBot(iEdge)) then
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   h1 = layerThickEdge(k-1,iEdge)
                   h2 = layerThickEdge(k,iEdge)
@@ -493,7 +493,7 @@ contains
 
          !$omp do schedule(runtime) private(k)
          do iEdge = 1, nEdges
-            if (maxLevelEdgeTop(iEdge) .GE. 1) then
+            if (maxLevelEdgeTop(iEdge) .GE. minLevelEdgeBot(iEdge)) then
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)+1
                   gradDensityConstZTopOfEdge(k,iEdge) = gradDensityTopOfEdge(k,iEdge) - dDensityDzTopOfEdge(k,iEdge) &
                                                    * gradZMidTopOfEdge(k,iEdge)
@@ -672,8 +672,8 @@ contains
 
             gmStreamFuncTopOfEdge(:, iEdge) = 0.0_RKIND
 
-            ! Construct the tridiagonal matrix
-            if (maxLevelEdgeTop(iEdge) .GE. 3) then
+            ! Construct the tridiagonal matrix if there are at least 3 active cells
+            if ((maxLevelEdgeTop(iEdge) - minLevelEdgeBot(iEdge)) .GE. 2) then
                ! First row
                k = minLevelEdgeBot(iEdge)+1
 
