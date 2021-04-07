@@ -262,9 +262,7 @@ contains
           totalDepth = totalDepth + layerThickness(k,iCell)
         end do
 
-        do k = minLevelCell(iCell), maxLevelCell(iCell)
-          tidalLayerThicknessTendency(:,iCell) = 0.0_RKIND
-        end do
+        tidalLayerThicknessTendency(:,iCell) = 0.0_RKIND
         if (trim(config_tidal_forcing_type) == 'thickness_source') then
           ! distribute tidal forcing tendency fractionally over water column
           do k = minLevelCell(iCell), maxLevelCell(iCell)
