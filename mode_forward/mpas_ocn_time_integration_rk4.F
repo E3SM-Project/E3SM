@@ -141,7 +141,7 @@ module ocn_time_integration_rk4
       ! Diagnostics Indices
 
       ! Mesh array pointers
-      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, minLevelEdgeBot, maxLevelEdgeTop
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, maxLevelEdgeTop
       real (kind=RKIND), dimension(:), pointer :: bottomDepth
 
       ! Provis Array Pointers
@@ -234,10 +234,11 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergenceCur, 1)
          call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergenceNew, 2)
 
-         call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-         call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
+         ! Lower k-loop limit of 1 rather than minLevel* needed in *New = *Cur
+         ! assignments below are needed to maintain bit-for-bit results
 
          !$omp parallel
          !$omp do schedule(runtime) private(k)
@@ -622,6 +623,8 @@ module ocn_time_integration_rk4
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+         call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
@@ -721,8 +724,8 @@ module ocn_time_integration_rk4
          !$omp parallel
          !$omp do schedule(runtime) 
          do iCell = 1, nCells
-            surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(minLevelEdgeBot(iEdge), iCell)
-            surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(minLevelEdgeBot(iEdge), iCell)
+            surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(minLevelCell(iCell), iCell)
+            surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(minLevelCell(iCell), iCell)
 
             SSHGradient(indexSSHGradientZonal, iCell) = gradSSHZonal(iCell)
             SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(iCell)
@@ -1033,7 +1036,7 @@ module ocn_time_integration_rk4
 
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupCur, tracersGroupProvis, tracersGroupTend
 
-      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, minLevelEdgeBot, maxLevelEdgeTop
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, maxLevelEdgeTop
 
       logical, pointer :: config_use_tracerGroup
       type (mpas_pool_iterator_type) :: groupItr
@@ -1075,7 +1078,6 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
       !$omp parallel
