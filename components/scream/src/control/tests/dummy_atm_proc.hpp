@@ -63,11 +63,15 @@ public:
       dims = {num_levs,num_cols};
     }
     FieldLayout layout (tags,dims);
+    // To test vector input
+    FieldLayout layout_vec ( {COL,CMP,LEV}, {num_cols,2,num_levs} );
 
     if (m_dummy_type==A2G) {
       m_input_fids.emplace("A",layout,ekat::units::m,m_grid->name());
       m_output_fids.emplace("B",layout,ekat::units::m,m_grid->name());
       m_output_fids.emplace("C",layout,ekat::units::m,m_grid->name());
+      m_input_fids.emplace("D",layout_vec,ekat::units::m,m_grid->name());
+      m_input_fids.emplace("E",layout,ekat::units::m,m_grid->name());
     } else if (m_dummy_type == G2A) {
       m_output_fids.emplace("A",layout,ekat::units::m,m_grid->name());
     }
@@ -76,7 +80,9 @@ public:
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real>& field_repo) const {
     if (m_dummy_type==A2G) {
-      field_repo.register_field(*m_input_fids.begin());
+      for (const auto& in : m_input_fids) {
+        field_repo.register_field(in);
+      }
       for (const auto& out : m_output_fids) {
         field_repo.register_field(out,"The Group");
       }

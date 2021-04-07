@@ -8,6 +8,8 @@ Initial Conditions:
   A: 1.0
   B: 2.0
   C: 3.0
+  D: [4.0, 5.0]
+  E: "A"
 
 Atmosphere Processes:
   Number of Entries: 3

@@ -190,35 +190,19 @@ initialize_fields (const util::TimeStamp& t0)
   ic_reader_params.set("GRID",m_grids_manager->get_reference_grid()->name());
   auto& ic_fields = ic_reader_params.sublist("FIELDS");
   int ifield=0;
+  std::vector<std::string> ic_fields_to_copy;
   for (auto& fid : fields_in) {
     const auto& name = fid.name();
     auto f = m_field_repo->get_field(fid);
     // First, check if the input file contains constant values for some of the fields
     if (ic_pl.isParameter(name)) {
       // The user provided a constant value for this field. Simply use that.
-      const auto& layout = f.get_header().get_identifier().get_layout();
-
-      // For vector fields, we expect something like "fname: [val0,...,valN],
-      // where the field dim is N+1. For scalars, "fname: val". So check the
-      // field layout first, so we know what to get from the parameter list.
-      if (layout.is_vector_layout()) {
-        const auto idim = layout.get_vector_dim();
-        const auto vec_dim = layout.dim(idim);
-        const auto& values = ic_pl.get<std::vector<Real>>(name);
-        EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
-            "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
-            "       Field dimension: " + std::to_string(vec_dim) + "\n"
-            "       Array dimenions: " + std::to_string(values.size()) + "\n");
-
-        // Extract a subfield for each component. This is not "too" expensive, expecially
-        // considering that this code is executed during initialization only.
-        for (int comp=0; comp<vec_dim; ++comp) {
-          auto f_i = f.get_component(comp);
-          f_i.set_value(values[comp]);
-        }
+      if (ic_pl.isType<double>(name) or ic_pl.isType<std::vector<double>>(name)) {
+        initialize_constant_field(name, ic_pl);
+      } else if (ic_pl.isType<std::string>(name)) {
+        ic_fields_to_copy.push_back(name);
       } else {
-        const auto& value = ic_pl.get<double>(name);
-        f.set_value(value);
+        EKAT_REQUIRE_MSG (false, "ERROR: invalid assignment for variable " + name + ", only scalar double or string, or vector double arguments are allowed");
       }
     } else {
       // The field does not have a constant value, so we expect to find it in the nc file
@@ -248,9 +232,47 @@ initialize_fields (const util::TimeStamp& t0)
     ic_reader.pull_input();
   }
 
+  // If there were any fields that needed to be copied per the input yaml file, now we copy them.
+  for (auto& name_tgt : ic_fields_to_copy) {
+    const auto& name_src = ic_pl.get<std::string>(name_tgt);
+    auto f_tgt = m_field_repo->get_field(name_tgt,m_grids_manager->get_reference_grid()->name());
+    auto f_src = m_field_repo->get_field(name_src,m_grids_manager->get_reference_grid()->name());
+    f_tgt.deep_copy(f_src);
+  }
+
   m_current_ts = t0;
 
   m_ad_status |= s_fields_inited;
+}
+
+void AtmosphereDriver::initialize_constant_field(const std::string& name, const ekat::ParameterList& ic_pl)
+{
+  auto f = m_field_repo->get_field(name,m_grids_manager->get_reference_grid()->name());
+  // The user provided a constant value for this field. Simply use that.
+  const auto& layout = f.get_header().get_identifier().get_layout();
+
+  // For vector fields, we expect something like "fname: [val0,...,valN],
+  // where the field dim is N+1. For scalars, "fname: val". So check the
+  // field layout first, so we know what to get from the parameter list.
+  if (layout.is_vector_layout()) {
+    const auto idim = layout.get_vector_dim();
+    const auto vec_dim = layout.dim(idim);
+    const auto& values = ic_pl.get<std::vector<double>>(name);
+    EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
+        "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
+        "       Field dimension: " + std::to_string(vec_dim) + "\n"
+        "       Array dimenions: " + std::to_string(values.size()) + "\n");
+
+    // Extract a subfield for each component. This is not "too" expensive, expecially
+    // considering that this code is executed during initialization only.
+    for (int comp=0; comp<vec_dim; ++comp) {
+      auto f_i = f.get_component(comp);
+      f_i.deep_copy(values[comp]);
+    }
+  } else {
+    const auto& value = ic_pl.get<double>(name);
+    f.deep_copy(value);
+  }
 }
 
 void AtmosphereDriver::initialize_atm_procs ()

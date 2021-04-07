@@ -70,6 +70,8 @@ public:
   // Load initial conditions for atm inputs
   void initialize_fields (const util::TimeStamp& t0);
 
+  void initialize_constant_field(const std::string& name, const ekat::ParameterList& ic_pl);
+
   // Initialie I/O structures for output
   void initialize_output_manager ();
 
