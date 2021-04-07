@@ -1797,15 +1797,15 @@ if (l_ac_energy_chk) then
     ke1t = 0.0; ke2t = 0.0; bc1t = 0.0; bc2t = 0.0;
 
 !orig, tbot, tbot
-!    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     * cam_in%cflx(:ncol,1)
-!    state%cptermp(:ncol) = 1000.0 * cpair * state%t(:ncol,pver)     * (cam_out%precl(:ncol) + cam_out%precc(:ncol) )
+    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver)     * cam_in%cflx(:ncol,1)
+    state%cptermp(:ncol) = 1000.0 * cpair * state%t(:ncol,pver)     * (cam_out%precl(:ncol) + cam_out%precc(:ncol) )
 
 !TS ...
 !    state%cpterme(:ncol) =          cpair * cam_in%ts(:ncol)     *cam_in%cflx(:ncol,1)
 
 !T0, T0
-    state%cpterme(:ncol) =          cpair * 288.0     * cam_in%cflx(:ncol,1)
-    state%cptermp(:ncol) = 1000.0 * cpair * 288.0     * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
+!    state%cpterme(:ncol) =          cpair * 288.0     * cam_in%cflx(:ncol,1)
+!    state%cptermp(:ncol) = 1000.0 * cpair * 288.0     * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
 
 #ifdef ADDCP
 !take CP term out of te_cur
