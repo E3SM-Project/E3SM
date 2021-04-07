@@ -8,19 +8,17 @@ FREQUENCY:
   OUT_OPTION: Steps
   OUT_MAX_STEPS: 1
 FIELDS:
-  Number of Fields: 12
+  Number of Fields: 10
   field 1: T_mid
   field 2: T_prev_micro_step
   field 3: qv_prev_micro_step
   field 4: lambda_qc
   field 5: micro_liq_ice_exchange
   field 6: mu_qc
-  field 7: qr_evap_tend
-  field 8: micro_vap_liq_exchange
-  field 9: micro_vap_ice_exchange
-  field 10: eff_radius_qc
-  field 11: eff_radius_qi
-  field 12: precip_total_tend
+  field 7: micro_vap_liq_exchange
+  field 8: micro_vap_ice_exchange
+  field 9: eff_radius_qc
+  field 10: eff_radius_qi
 #  field 14: bm
 #  field 15: nc
 #  field 16: ni
@@ -31,4 +29,6 @@ FIELDS:
 #  field 21: qr
 #  field 22: qv
 #  field 7: nevapr - depracated
+#  field 7: qr_evap_tend
+#  field 11: precip_total_tend
 ...

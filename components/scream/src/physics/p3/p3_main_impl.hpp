@@ -1034,10 +1034,12 @@ Int Functions<S,D>
     const auto omu_c               = ekat::subview(diagnostic_outputs.mu_c, i);
     const auto olamc               = ekat::subview(diagnostic_outputs.lamc, i);
     const auto oqv2qi_depos_tend   = ekat::subview(diagnostic_outputs.qv2qi_depos_tend, i);
-    const auto oprecip_total_tend  = ekat::subview(diagnostic_outputs.precip_total_tend, i);
+//ASD    const auto oprecip_total_tend  = ekat::subview(diagnostic_outputs.precip_total_tend, i);
+    const auto oprecip_total_tend  = ekat::subview(deprecated.precip_total_tend, i);
 //ASD    const auto onevapr             = ekat::subview(diagnostic_outputs.nevapr, i);
     const auto onevapr             = ekat::subview(deprecated.nevapr, i);
-    const auto oqr_evap_tend       = ekat::subview(diagnostic_outputs.qr_evap_tend, i);
+//ASD    const auto oqr_evap_tend       = ekat::subview(diagnostic_outputs.qr_evap_tend, i);
+    const auto oqr_evap_tend       = ekat::subview(deprecated.qr_evap_tend, i);
     const auto oprecip_liq_flux    = ekat::subview(diagnostic_outputs.precip_liq_flux, i);
     const auto oprecip_ice_flux    = ekat::subview(diagnostic_outputs.precip_ice_flux, i);
     const auto oliq_ice_exchange   = ekat::subview(history_only.liq_ice_exchange, i);

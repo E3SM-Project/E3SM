@@ -164,12 +164,12 @@ struct Functions
     view_2d<Spack> diag_eff_radius_qi;
     // Bulk density of ice [kg m-3]
     view_2d<Spack> rho_qi;
-    // Total precipitation (rain + snow)
-    view_2d<Spack> precip_total_tend;
-//    // Evaporation of total precipitation (rain + snow)
-//    view_2d<Spack> nevapr;
-    // Evaporation of rain
-    view_2d<Spack> qr_evap_tend;
+//ASD    // Total precipitation (rain + snow)
+//ASD    view_2d<Spack> precip_total_tend;
+//ASD    // Evaporation of total precipitation (rain + snow)
+//ASD    view_2d<Spack> nevapr;
+//ASD    // Evaporation of rain
+//ASD    view_2d<Spack> qr_evap_tend;
     // Grid-box average rain flux [kg m^-2 s^-1] pverp
     view_2d<Spack> precip_liq_flux;
     // Grid-box average ice/snow flux [kg m^-2 s^-1] pverp
@@ -216,6 +216,10 @@ struct Functions
     P3Deprecated() = default;
     // Evaporation of total precipitation (rain + snow)
     view_2d<Spack> nevapr;
+    // Evaporation of rain
+    view_2d<Spack> qr_evap_tend;
+    // Total precipitation (rain + snow)
+    view_2d<Spack> precip_total_tend;
   };
 
   // -- Table3 --

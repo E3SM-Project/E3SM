@@ -98,13 +98,13 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_computed_fields.emplace("lambda_qc",         scalar3d_layout_mid, nondim, grid_name);
   m_computed_fields.emplace("eff_radius_qc",     scalar3d_layout_mid, m,      grid_name);
   m_computed_fields.emplace("eff_radius_qi",     scalar3d_layout_mid, m,      grid_name);
-  m_computed_fields.emplace("precip_total_tend", scalar3d_layout_mid, mm,     grid_name);
-  m_computed_fields.emplace("qr_evap_tend",      scalar3d_layout_mid, mm/s,   grid_name);
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
   m_computed_fields.emplace("micro_liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
   m_computed_fields.emplace("micro_vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name);
   m_computed_fields.emplace("micro_vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
   // Deprecated: (these should be removed from the AD eventually)
+//ASD  m_computed_fields.emplace("precip_total_tend", scalar3d_layout_mid, mm,     grid_name);
+//ASD  m_computed_fields.emplace("qr_evap_tend",      scalar3d_layout_mid, mm/s,   grid_name);
 //ASD  m_computed_fields.emplace("nevapr",            scalar3d_layout_mid, nondim, grid_name);
 
 }
@@ -173,8 +173,6 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   diag_outputs.lamc               = m_p3_fields_out["lambda_qc"].get_reshaped_view<Pack**>();
   diag_outputs.diag_eff_radius_qc = m_p3_fields_out["eff_radius_qc"].get_reshaped_view<Pack**>();
   diag_outputs.diag_eff_radius_qi = m_p3_fields_out["eff_radius_qi"].get_reshaped_view<Pack**>();
-  diag_outputs.precip_total_tend  = m_p3_fields_out["precip_total_tend"].get_reshaped_view<Pack**>();
-  diag_outputs.qr_evap_tend       = m_p3_fields_out["qr_evap_tend"].get_reshaped_view<Pack**>();
 
   diag_outputs.precip_liq_surf  = precip_liq_surf; 
   diag_outputs.precip_ice_surf  = precip_ice_surf; 
@@ -199,8 +197,14 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   history_only.vap_ice_exchange = m_p3_fields_out["micro_vap_ice_exchange"].get_reshaped_view<Pack**>();
   // Deprecated -- These are fields actively being deleted, but are still needed for F90 BFB tests.
 //ASD  diag_outputs.nevapr           = m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
+//ASD  diag_outputs.qr_evap_tend = m_p3_fields_out["qr_evap_tend"].get_reshaped_view<Pack**>();
+//ASD  diag_outputs.precip_total_tend  = m_p3_fields_out["precip_total_tend"].get_reshaped_view<Pack**>();
   view_2d nevapr("nevapr",m_num_cols,nk_pack);
-  deprecated.nevapr             = nevapr; //m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
+  view_2d qr_evap_tend("qr_evap_tend",m_num_cols,nk_pack);
+  view_2d precip_total_tend("precip_total_tend",m_num_cols,nk_pack);
+  deprecated.nevapr            = nevapr; //m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
+  deprecated.qr_evap_tend      = qr_evap_tend; //m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
+  deprecated.precip_total_tend = precip_total_tend; //m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi,diag_outputs.lamc,diag_outputs.mu_c,
