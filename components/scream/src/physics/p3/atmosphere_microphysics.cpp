@@ -198,7 +198,9 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   history_only.vap_liq_exchange = m_p3_fields_out["micro_vap_liq_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_ice_exchange = m_p3_fields_out["micro_vap_ice_exchange"].get_reshaped_view<Pack**>();
   // -- Set values for the post-amble structure
-  p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev);
+  p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev,
+      diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi,diag_outputs.lamc,diag_outputs.mu_c,
+      ast);
 }
 
 // =========================================================================================

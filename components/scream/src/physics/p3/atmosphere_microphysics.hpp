@@ -176,10 +176,22 @@ public:
         auto oT = physics_fun::th_to_T(oth_atm,oexner,oth_atm_mask);
         T_atm(icol,ipack).set(oth_atm_mask,oT);
         T_prev(icol,ipack).set(oth_atm_mask,T_atm(icol,ipack));
-         // Update qv_prev
+        // Update qv_prev
         const Spack oqv(qv(icol,ipack));
         const Smask oqv_mask(!isnan(oqv) and oqv>0.0);
         qv_prev(icol,ipack).set(oqv_mask,oqv);
+        // Limiter for low cloud fraction
+        Real mucon = 5.3;
+        Real dcon  = 25.e-6;
+        const Spack ocld_tot(cldfrac_tot(icol,ipack));
+        const Smask ocld_mask(!isnan(ocld_tot) and ocld_tot<1.e-4);
+        lambda_qc(icol,ipack).set(ocld_mask,mucon);
+        mu_qc(icol,ipack).set(ocld_mask,(mucon + 1.0)/dcon);
+        // Rescale effective radius' into microns
+        for (int ivec=0;ivec<Spack::n;ivec++) {
+          diag_eff_radius_qc(icol,ipack)[ivec] *= 1e6;
+          diag_eff_radius_qi(icol,ipack)[ivec] *= 1e6;
+        }
       } // for ipack
     } // operator
     // Local variables
@@ -190,22 +202,33 @@ public:
     view_2d       T_prev;
     view_2d       qv;
     view_2d       qv_prev;
+    view_2d       diag_eff_radius_qc;
+    view_2d       diag_eff_radius_qi;
+    view_2d       lambda_qc;
+    view_2d       mu_qc;
+    view_2d_const cldfrac_tot;
     // Assigning local values
     void set_variables(const int ncol, const int npack,
                     view_2d th_atm_, view_2d exner_, view_2d T_atm_, view_2d T_prev_,
-                    view_2d qv_, view_2d qv_prev_
+                    view_2d qv_, view_2d qv_prev_, view_2d diag_eff_radius_qc_, view_2d diag_eff_radius_qi_,
+                    view_2d lambda_qc_, view_2d mu_qc_, view_2d_const cldfrac_tot_
                    )
     {
       m_ncol  = ncol;
       m_npack = npack;
       // IN
-      th_atm = th_atm_;
-      exner  = exner_;
-      qv     = qv_;
+      th_atm      = th_atm_;
+      exner       = exner_;
+      qv          = qv_;
+      cldfrac_tot = cldfrac_tot_;
       // OUT
-      T_atm  = T_atm_;
-      T_prev = T_prev_;
-      qv_prev = qv_prev_;
+      T_atm              = T_atm_;
+      T_prev             = T_prev_;
+      qv_prev            = qv_prev_;
+      diag_eff_radius_qc = diag_eff_radius_qc_;
+      diag_eff_radius_qi = diag_eff_radius_qi_;
+      lambda_qc          = lambda_qc_;
+      mu_qc              = mu_qc_;
       // TODO: This is a list of variables not yet defined for post-processing, but are
       // defined in the F90 p3 interface code.  So this list will need to be checked as
       // new processes come online to make sure their requirements from p3 are being met.
