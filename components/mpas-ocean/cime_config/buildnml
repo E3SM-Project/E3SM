@@ -297,6 +297,17 @@ def buildnml(case, caseroot, compname):
             ic_date = '210318'
             ic_prefix = 'mpaso.WCAtl12to45E2r4.rstFromG-anvil'
 
+    elif ocn_grid == 'SOwISC12to60E2r4':
+        decomp_date = '210107'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.SOwISC12to60E2r4_nomask.210120.nc'
+        analysis_mask_file = 'SOwISC12to60E2r4_moc_masks_and_transects.nc'
+        ic_date = '210107'
+        ic_prefix = 'ocean.SOwISC12to60E2r4'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '210203'
+            ic_prefix = 'mpaso.SOwISC12to60E2r4.rstFromG-anvil'
+
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
