@@ -155,25 +155,27 @@ contains
       ! if coupled with pflotran, the following updates are NOT needed
       ! if (.not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
-      if(.not. is_active_betr_bgc)then
-      do j = 1, nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+      if((.not.is_active_betr_bgc) )then
 
-            ! plant to litter fluxes
-            ! phenology and dynamic landcover fluxes
-            col_pf%decomp_ppools_sourcesink(c,j,i_met_lit) = &
-                 col_pf%phenology_p_to_litr_met_p(c,j) * dt
-
-            col_pf%decomp_ppools_sourcesink(c,j,i_cel_lit) = &
-                 col_pf%phenology_p_to_litr_cel_p(c,j) * dt
-
-            col_pf%decomp_ppools_sourcesink(c,j,i_lig_lit) = &
-                 col_pf%phenology_p_to_litr_lig_p(c,j) * dt
-
-         end do
-      end do
-
+         if(.not.use_fates)then
+            do j = 1, nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  
+                  ! plant to litter fluxes
+                  ! phenology and dynamic landcover fluxes
+                  col_pf%decomp_ppools_sourcesink(c,j,i_met_lit) = &
+                       col_pf%phenology_p_to_litr_met_p(c,j) * dt
+                  
+                  col_pf%decomp_ppools_sourcesink(c,j,i_cel_lit) = &
+                       col_pf%phenology_p_to_litr_cel_p(c,j) * dt
+                  
+                  col_pf%decomp_ppools_sourcesink(c,j,i_lig_lit) = &
+                       col_pf%phenology_p_to_litr_lig_p(c,j) * dt
+                  
+               end do
+            end do
+         end if
 
       ! decomposition fluxes
       do k = 1, ndecomp_cascade_transitions
@@ -230,142 +232,144 @@ contains
          end do
       end if
 
+      if(.not.use_fates)then
 
-      ! patch loop
+          ! patch loop (veg)
 
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
+          do fp = 1,num_soilp
+              p = filter_soilp(fp)
 
-         ! phenology: transfer growth fluxes
-         veg_ps%leafp(p)       = veg_ps%leafp(p)       + veg_pf%leafp_xfer_to_leafp(p)*dt
-         veg_ps%leafp_xfer(p)  = veg_ps%leafp_xfer(p)  - veg_pf%leafp_xfer_to_leafp(p)*dt
-         veg_ps%frootp(p)      = veg_ps%frootp(p)      + veg_pf%frootp_xfer_to_frootp(p)*dt
-         veg_ps%frootp_xfer(p) = veg_ps%frootp_xfer(p) - veg_pf%frootp_xfer_to_frootp(p)*dt
+              ! phenology: transfer growth fluxes
+              veg_ps%leafp(p)       = veg_ps%leafp(p)       + veg_pf%leafp_xfer_to_leafp(p)*dt
+              veg_ps%leafp_xfer(p)  = veg_ps%leafp_xfer(p)  - veg_pf%leafp_xfer_to_leafp(p)*dt
+              veg_ps%frootp(p)      = veg_ps%frootp(p)      + veg_pf%frootp_xfer_to_frootp(p)*dt
+              veg_ps%frootp_xfer(p) = veg_ps%frootp_xfer(p) - veg_pf%frootp_xfer_to_frootp(p)*dt
 
-         if (woody(ivt(p)) == 1.0_r8) then
-            veg_ps%livestemp(p)       = veg_ps%livestemp(p)       + veg_pf%livestemp_xfer_to_livestemp(p)*dt
-            veg_ps%livestemp_xfer(p)  = veg_ps%livestemp_xfer(p)  - veg_pf%livestemp_xfer_to_livestemp(p)*dt
-            veg_ps%deadstemp(p)       = veg_ps%deadstemp(p)       + veg_pf%deadstemp_xfer_to_deadstemp(p)*dt
-            veg_ps%deadstemp_xfer(p)  = veg_ps%deadstemp_xfer(p)  - veg_pf%deadstemp_xfer_to_deadstemp(p)*dt
-            veg_ps%livecrootp(p)      = veg_ps%livecrootp(p)      + veg_pf%livecrootp_xfer_to_livecrootp(p)*dt
-            veg_ps%livecrootp_xfer(p) = veg_ps%livecrootp_xfer(p) - veg_pf%livecrootp_xfer_to_livecrootp(p)*dt
-            veg_ps%deadcrootp(p)      = veg_ps%deadcrootp(p)      + veg_pf%deadcrootp_xfer_to_deadcrootp(p)*dt
-            veg_ps%deadcrootp_xfer(p) = veg_ps%deadcrootp_xfer(p) - veg_pf%deadcrootp_xfer_to_deadcrootp(p)*dt
-         end if
+              if (woody(ivt(p)) == 1.0_r8) then
+                  veg_ps%livestemp(p)       = veg_ps%livestemp(p)       + veg_pf%livestemp_xfer_to_livestemp(p)*dt
+                  veg_ps%livestemp_xfer(p)  = veg_ps%livestemp_xfer(p)  - veg_pf%livestemp_xfer_to_livestemp(p)*dt
+                  veg_ps%deadstemp(p)       = veg_ps%deadstemp(p)       + veg_pf%deadstemp_xfer_to_deadstemp(p)*dt
+                  veg_ps%deadstemp_xfer(p)  = veg_ps%deadstemp_xfer(p)  - veg_pf%deadstemp_xfer_to_deadstemp(p)*dt
+                  veg_ps%livecrootp(p)      = veg_ps%livecrootp(p)      + veg_pf%livecrootp_xfer_to_livecrootp(p)*dt
+                  veg_ps%livecrootp_xfer(p) = veg_ps%livecrootp_xfer(p) - veg_pf%livecrootp_xfer_to_livecrootp(p)*dt
+                  veg_ps%deadcrootp(p)      = veg_ps%deadcrootp(p)      + veg_pf%deadcrootp_xfer_to_deadcrootp(p)*dt
+                  veg_ps%deadcrootp_xfer(p) = veg_ps%deadcrootp_xfer(p) - veg_pf%deadcrootp_xfer_to_deadcrootp(p)*dt
+              end if
 
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-            ! lines here for consistency; the transfer terms are zero
-            veg_ps%livestemp(p)       = veg_ps%livestemp(p)      + veg_pf%livestemp_xfer_to_livestemp(p)*dt
-            veg_ps%livestemp_xfer(p)  = veg_ps%livestemp_xfer(p) - veg_pf%livestemp_xfer_to_livestemp(p)*dt
-            veg_ps%grainp(p)          = veg_ps%grainp(p)         + veg_pf%grainp_xfer_to_grainp(p)*dt
-            veg_ps%grainp_xfer(p)     = veg_ps%grainp_xfer(p)    - veg_pf%grainp_xfer_to_grainp(p)*dt
-         end if
+              if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+                  ! lines here for consistency; the transfer terms are zero
+                  veg_ps%livestemp(p)       = veg_ps%livestemp(p)      + veg_pf%livestemp_xfer_to_livestemp(p)*dt
+                  veg_ps%livestemp_xfer(p)  = veg_ps%livestemp_xfer(p) - veg_pf%livestemp_xfer_to_livestemp(p)*dt
+                  veg_ps%grainp(p)          = veg_ps%grainp(p)         + veg_pf%grainp_xfer_to_grainp(p)*dt
+                  veg_ps%grainp_xfer(p)     = veg_ps%grainp_xfer(p)    - veg_pf%grainp_xfer_to_grainp(p)*dt
+              end if
 
-         ! phenology: litterfall and retranslocation fluxes
-         veg_ps%leafp(p)    = veg_ps%leafp(p)    - veg_pf%leafp_to_litter(p)*dt
-         veg_ps%frootp(p)   = veg_ps%frootp(p)   - veg_pf%frootp_to_litter(p)*dt
-         veg_ps%leafp(p)    = veg_ps%leafp(p)    - veg_pf%leafp_to_retransp(p)*dt
-         veg_ps%retransp(p) = veg_ps%retransp(p) + veg_pf%leafp_to_retransp(p)*dt
+              ! phenology: litterfall and retranslocation fluxes
+              veg_ps%leafp(p)    = veg_ps%leafp(p)    - veg_pf%leafp_to_litter(p)*dt
+              veg_ps%frootp(p)   = veg_ps%frootp(p)   - veg_pf%frootp_to_litter(p)*dt
+              veg_ps%leafp(p)    = veg_ps%leafp(p)    - veg_pf%leafp_to_retransp(p)*dt
+              veg_ps%retransp(p) = veg_ps%retransp(p) + veg_pf%leafp_to_retransp(p)*dt
 
-         ! live wood turnover and retranslocation fluxes
-         if (woody(ivt(p)) == 1._r8) then
-            veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - veg_pf%livestemp_to_deadstemp(p)*dt
-            veg_ps%deadstemp(p)  = veg_ps%deadstemp(p)  + veg_pf%livestemp_to_deadstemp(p)*dt
-            veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - veg_pf%livestemp_to_retransp(p)*dt
-            veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livestemp_to_retransp(p)*dt
-            veg_ps%livecrootp(p) = veg_ps%livecrootp(p) - veg_pf%livecrootp_to_deadcrootp(p)*dt
-            veg_ps%deadcrootp(p) = veg_ps%deadcrootp(p) + veg_pf%livecrootp_to_deadcrootp(p)*dt
-            veg_ps%livecrootp(p) = veg_ps%livecrootp(p) - veg_pf%livecrootp_to_retransp(p)*dt
-            veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livecrootp_to_retransp(p)*dt
-         end if
-         if (ivt(p) >= npcropmin) then ! Beth adds retrans from froot
-            veg_ps%frootp(p)     = veg_ps%frootp(p)     - veg_pf%frootp_to_retransp(p)*dt
-            veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%frootp_to_retransp(p)*dt
-            veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - veg_pf%livestemp_to_litter(p)*dt
-            veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - veg_pf%livestemp_to_retransp(p)*dt
-            veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livestemp_to_retransp(p)*dt
-            veg_ps%grainp(p)     = veg_ps%grainp(p)     - veg_pf%grainp_to_food(p)*dt
+              ! live wood turnover and retranslocation fluxes
+              if (woody(ivt(p)) == 1._r8) then
+                  veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - veg_pf%livestemp_to_deadstemp(p)*dt
+                  veg_ps%deadstemp(p)  = veg_ps%deadstemp(p)  + veg_pf%livestemp_to_deadstemp(p)*dt
+                  veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - veg_pf%livestemp_to_retransp(p)*dt
+                  veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livestemp_to_retransp(p)*dt
+                  veg_ps%livecrootp(p) = veg_ps%livecrootp(p) - veg_pf%livecrootp_to_deadcrootp(p)*dt
+                  veg_ps%deadcrootp(p) = veg_ps%deadcrootp(p) + veg_pf%livecrootp_to_deadcrootp(p)*dt
+                  veg_ps%livecrootp(p) = veg_ps%livecrootp(p) - veg_pf%livecrootp_to_retransp(p)*dt
+                  veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livecrootp_to_retransp(p)*dt
+              end if
+              if (ivt(p) >= npcropmin) then ! Beth adds retrans from froot
+                  veg_ps%frootp(p)     = veg_ps%frootp(p)     - veg_pf%frootp_to_retransp(p)*dt
+                  veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%frootp_to_retransp(p)*dt
+                  veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - veg_pf%livestemp_to_litter(p)*dt
+                  veg_ps%livestemp(p)  = veg_ps%livestemp(p)  - veg_pf%livestemp_to_retransp(p)*dt
+                  veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livestemp_to_retransp(p)*dt
+                  veg_ps%grainp(p)     = veg_ps%grainp(p)     - veg_pf%grainp_to_food(p)*dt
 
-            veg_ps%cropseedp_deficit(p) = veg_ps%cropseedp_deficit(p) &
-                 - veg_pf%crop_seedp_to_leaf(p) * dt
-         end if
+                  veg_ps%cropseedp_deficit(p) = veg_ps%cropseedp_deficit(p) &
+                        - veg_pf%crop_seedp_to_leaf(p) * dt
+              end if
 
-         ! uptake from soil mineral N pool
-         veg_ps%ppool(p) = &
-              veg_ps%ppool(p) + veg_pf%sminp_to_ppool(p)*dt
-         if (nu_com .ne. 'RD') veg_ps%ppool(p) = veg_ps%ppool(p) + veg_pf%supplement_to_plantp(p)*dt
-         if (NFIX_PTASE_plant) veg_ps%ppool(p) = veg_ps%ppool(p) + veg_pf%biochem_pmin_to_plant(p)*dt
+              ! uptake from soil mineral N pool
+              veg_ps%ppool(p) = &
+                    veg_ps%ppool(p) + veg_pf%sminp_to_ppool(p)*dt
+              if (nu_com .ne. 'RD') veg_ps%ppool(p) = veg_ps%ppool(p) + veg_pf%supplement_to_plantp(p)*dt
+              if (NFIX_PTASE_plant) veg_ps%ppool(p) = veg_ps%ppool(p) + veg_pf%biochem_pmin_to_plant(p)*dt
 
-         ! deployment from retranslocation pool
-         veg_ps%ppool(p)    = veg_ps%ppool(p)    + veg_pf%retransp_to_ppool(p)*dt
-         veg_ps%retransp(p) = veg_ps%retransp(p) - veg_pf%retransp_to_ppool(p)*dt
+              ! deployment from retranslocation pool
+              veg_ps%ppool(p)    = veg_ps%ppool(p)    + veg_pf%retransp_to_ppool(p)*dt
+              veg_ps%retransp(p) = veg_ps%retransp(p) - veg_pf%retransp_to_ppool(p)*dt
 
-         ! allocation fluxes
-         veg_ps%ppool(p)           = veg_ps%ppool(p)          - veg_pf%ppool_to_leafp(p)*dt
-         veg_ps%leafp(p)           = veg_ps%leafp(p)          + veg_pf%ppool_to_leafp(p)*dt
-         veg_ps%ppool(p)           = veg_ps%ppool(p)          - veg_pf%ppool_to_leafp_storage(p)*dt
-         veg_ps%leafp_storage(p)   = veg_ps%leafp_storage(p)  + veg_pf%ppool_to_leafp_storage(p)*dt
-         veg_ps%ppool(p)           = veg_ps%ppool(p)          - veg_pf%ppool_to_frootp(p)*dt
-         veg_ps%frootp(p)          = veg_ps%frootp(p)         + veg_pf%ppool_to_frootp(p)*dt
-         veg_ps%ppool(p)           = veg_ps%ppool(p)          - veg_pf%ppool_to_frootp_storage(p)*dt
-         veg_ps%frootp_storage(p)  = veg_ps%frootp_storage(p) + veg_pf%ppool_to_frootp_storage(p)*dt
+              ! allocation fluxes
+              veg_ps%ppool(p)           = veg_ps%ppool(p)          - veg_pf%ppool_to_leafp(p)*dt
+              veg_ps%leafp(p)           = veg_ps%leafp(p)          + veg_pf%ppool_to_leafp(p)*dt
+              veg_ps%ppool(p)           = veg_ps%ppool(p)          - veg_pf%ppool_to_leafp_storage(p)*dt
+              veg_ps%leafp_storage(p)   = veg_ps%leafp_storage(p)  + veg_pf%ppool_to_leafp_storage(p)*dt
+              veg_ps%ppool(p)           = veg_ps%ppool(p)          - veg_pf%ppool_to_frootp(p)*dt
+              veg_ps%frootp(p)          = veg_ps%frootp(p)         + veg_pf%ppool_to_frootp(p)*dt
+              veg_ps%ppool(p)           = veg_ps%ppool(p)          - veg_pf%ppool_to_frootp_storage(p)*dt
+              veg_ps%frootp_storage(p)  = veg_ps%frootp_storage(p) + veg_pf%ppool_to_frootp_storage(p)*dt
 
-         if (woody(ivt(p)) == 1._r8) then
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp(p)*dt
-            veg_ps%livestemp(p)          = veg_ps%livestemp(p)          + veg_pf%ppool_to_livestemp(p)*dt
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp_storage(p)*dt
-            veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p)  + veg_pf%ppool_to_livestemp_storage(p)*dt
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_deadstemp(p)*dt
-            veg_ps%deadstemp(p)          = veg_ps%deadstemp(p)          + veg_pf%ppool_to_deadstemp(p)*dt
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_deadstemp_storage(p)*dt
-            veg_ps%deadstemp_storage(p)  = veg_ps%deadstemp_storage(p)  + veg_pf%ppool_to_deadstemp_storage(p)*dt
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livecrootp(p)*dt
-            veg_ps%livecrootp(p)         = veg_ps%livecrootp(p)         + veg_pf%ppool_to_livecrootp(p)*dt
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livecrootp_storage(p)*dt
-            veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) + veg_pf%ppool_to_livecrootp_storage(p)*dt
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_deadcrootp(p)*dt
-            veg_ps%deadcrootp(p)         = veg_ps%deadcrootp(p)         + veg_pf%ppool_to_deadcrootp(p)*dt
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_deadcrootp_storage(p)*dt
-            veg_ps%deadcrootp_storage(p) = veg_ps%deadcrootp_storage(p) + veg_pf%ppool_to_deadcrootp_storage(p)*dt
-         end if
+              if (woody(ivt(p)) == 1._r8) then
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp(p)*dt
+                  veg_ps%livestemp(p)          = veg_ps%livestemp(p)          + veg_pf%ppool_to_livestemp(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp_storage(p)*dt
+                  veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p)  + veg_pf%ppool_to_livestemp_storage(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_deadstemp(p)*dt
+                  veg_ps%deadstemp(p)          = veg_ps%deadstemp(p)          + veg_pf%ppool_to_deadstemp(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_deadstemp_storage(p)*dt
+                  veg_ps%deadstemp_storage(p)  = veg_ps%deadstemp_storage(p)  + veg_pf%ppool_to_deadstemp_storage(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livecrootp(p)*dt
+                  veg_ps%livecrootp(p)         = veg_ps%livecrootp(p)         + veg_pf%ppool_to_livecrootp(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livecrootp_storage(p)*dt
+                  veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) + veg_pf%ppool_to_livecrootp_storage(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_deadcrootp(p)*dt
+                  veg_ps%deadcrootp(p)         = veg_ps%deadcrootp(p)         + veg_pf%ppool_to_deadcrootp(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_deadcrootp_storage(p)*dt
+                  veg_ps%deadcrootp_storage(p) = veg_ps%deadcrootp_storage(p) + veg_pf%ppool_to_deadcrootp_storage(p)*dt
+              end if
 
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp(p)*dt
-            veg_ps%livestemp(p)          = veg_ps%livestemp(p)          + veg_pf%ppool_to_livestemp(p)*dt
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp_storage(p)*dt
-            veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p)  + veg_pf%ppool_to_livestemp_storage(p)*dt
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_grainp(p)*dt
-            veg_ps%grainp(p)             = veg_ps%grainp(p)             + veg_pf%ppool_to_grainp(p)*dt
-            veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_grainp_storage(p)*dt
-            veg_ps%grainp_storage(p)     = veg_ps%grainp_storage(p)     + veg_pf%ppool_to_grainp_storage(p)*dt
-         end if
+              if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp(p)*dt
+                  veg_ps%livestemp(p)          = veg_ps%livestemp(p)          + veg_pf%ppool_to_livestemp(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_livestemp_storage(p)*dt
+                  veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p)  + veg_pf%ppool_to_livestemp_storage(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_grainp(p)*dt
+                  veg_ps%grainp(p)             = veg_ps%grainp(p)             + veg_pf%ppool_to_grainp(p)*dt
+                  veg_ps%ppool(p)              = veg_ps%ppool(p)              - veg_pf%ppool_to_grainp_storage(p)*dt
+                  veg_ps%grainp_storage(p)     = veg_ps%grainp_storage(p)     + veg_pf%ppool_to_grainp_storage(p)*dt
+              end if
 
-         ! move storage pools into transfer pools
-         veg_ps%leafp_storage(p)  = veg_ps%leafp_storage(p)  - veg_pf%leafp_storage_to_xfer(p)*dt
-         veg_ps%leafp_xfer(p)     = veg_ps%leafp_xfer(p)     + veg_pf%leafp_storage_to_xfer(p)*dt
-         veg_ps%frootp_storage(p) = veg_ps%frootp_storage(p) - veg_pf%frootp_storage_to_xfer(p)*dt
-         veg_ps%frootp_xfer(p)    = veg_ps%frootp_xfer(p)    + veg_pf%frootp_storage_to_xfer(p)*dt
+              ! move storage pools into transfer pools
+              veg_ps%leafp_storage(p)  = veg_ps%leafp_storage(p)  - veg_pf%leafp_storage_to_xfer(p)*dt
+              veg_ps%leafp_xfer(p)     = veg_ps%leafp_xfer(p)     + veg_pf%leafp_storage_to_xfer(p)*dt
+              veg_ps%frootp_storage(p) = veg_ps%frootp_storage(p) - veg_pf%frootp_storage_to_xfer(p)*dt
+              veg_ps%frootp_xfer(p)    = veg_ps%frootp_xfer(p)    + veg_pf%frootp_storage_to_xfer(p)*dt
 
-         if (woody(ivt(p)) == 1._r8) then
-            veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p)  - veg_pf%livestemp_storage_to_xfer(p)*dt
-            veg_ps%livestemp_xfer(p)     = veg_ps%livestemp_xfer(p)     + veg_pf%livestemp_storage_to_xfer(p)*dt
-            veg_ps%deadstemp_storage(p)  = veg_ps%deadstemp_storage(p)  - veg_pf%deadstemp_storage_to_xfer(p)*dt
-            veg_ps%deadstemp_xfer(p)     = veg_ps%deadstemp_xfer(p)     + veg_pf%deadstemp_storage_to_xfer(p)*dt
-            veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) - veg_pf%livecrootp_storage_to_xfer(p)*dt
-            veg_ps%livecrootp_xfer(p)    = veg_ps%livecrootp_xfer(p)    + veg_pf%livecrootp_storage_to_xfer(p)*dt
-            veg_ps%deadcrootp_storage(p) = veg_ps%deadcrootp_storage(p) - veg_pf%deadcrootp_storage_to_xfer(p)*dt
-            veg_ps%deadcrootp_xfer(p)    = veg_ps%deadcrootp_xfer(p)    + veg_pf%deadcrootp_storage_to_xfer(p)*dt
-         end if
+              if (woody(ivt(p)) == 1._r8) then
+                  veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p)  - veg_pf%livestemp_storage_to_xfer(p)*dt
+                  veg_ps%livestemp_xfer(p)     = veg_ps%livestemp_xfer(p)     + veg_pf%livestemp_storage_to_xfer(p)*dt
+                  veg_ps%deadstemp_storage(p)  = veg_ps%deadstemp_storage(p)  - veg_pf%deadstemp_storage_to_xfer(p)*dt
+                  veg_ps%deadstemp_xfer(p)     = veg_ps%deadstemp_xfer(p)     + veg_pf%deadstemp_storage_to_xfer(p)*dt
+                  veg_ps%livecrootp_storage(p) = veg_ps%livecrootp_storage(p) - veg_pf%livecrootp_storage_to_xfer(p)*dt
+                  veg_ps%livecrootp_xfer(p)    = veg_ps%livecrootp_xfer(p)    + veg_pf%livecrootp_storage_to_xfer(p)*dt
+                  veg_ps%deadcrootp_storage(p) = veg_ps%deadcrootp_storage(p) - veg_pf%deadcrootp_storage_to_xfer(p)*dt
+                  veg_ps%deadcrootp_xfer(p)    = veg_ps%deadcrootp_xfer(p)    + veg_pf%deadcrootp_storage_to_xfer(p)*dt
+              end if
 
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-            ! lines here for consistency; the transfer terms are zero
-            veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p) - veg_pf%livestemp_storage_to_xfer(p)*dt
-            veg_ps%livestemp_xfer(p)     = veg_ps%livestemp_xfer(p)    + veg_pf%livestemp_storage_to_xfer(p)*dt
-            veg_ps%grainp_storage(p)     = veg_ps%grainp_storage(p)    - veg_pf%grainp_storage_to_xfer(p)*dt
-            veg_ps%grainp_xfer(p)        = veg_ps%grainp_xfer(p)       + veg_pf%grainp_storage_to_xfer(p)*dt
-         end if
+              if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+                  ! lines here for consistency; the transfer terms are zero
+                  veg_ps%livestemp_storage(p)  = veg_ps%livestemp_storage(p) - veg_pf%livestemp_storage_to_xfer(p)*dt
+                  veg_ps%livestemp_xfer(p)     = veg_ps%livestemp_xfer(p)    + veg_pf%livestemp_storage_to_xfer(p)*dt
+                  veg_ps%grainp_storage(p)     = veg_ps%grainp_storage(p)    - veg_pf%grainp_storage_to_xfer(p)*dt
+                  veg_ps%grainp_xfer(p)        = veg_ps%grainp_xfer(p)       + veg_pf%grainp_storage_to_xfer(p)*dt
+              end if
 
-      end do
+          end do ! num_soilp
+      end if  !if(.not.use_fates)
 
     end associate
 

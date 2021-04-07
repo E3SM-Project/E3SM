@@ -332,7 +332,6 @@ contains
        unitn = getavu()
        write(iulog,*) 'Read in elm_inparm namelist from: ', trim(NLFilename)
        open( unitn, file=trim(NLFilename), status='old' )
-       print*,trim(NLFilename),"X.YANG debug"
        call shr_nl_find_group_name(unitn, 'elm_inparm', status=ierr)
        if (ierr == 0) then
           read(unitn, elm_inparm, iostat=ierr)
@@ -341,7 +340,6 @@ contains
           end if
        end if
        
-       print*,"X.YANG debug SUPL NITROGEN and PHOSPHORUS ",suplnitro,suplphos
        call relavu( unitn )
 
        ! ----------------------------------------------------------------------
@@ -405,6 +403,35 @@ contains
                    errMsg(__FILE__, __LINE__))
           end if
 
+          if (use_c13 .or. use_c14) then
+              call endrun(msg=' ERROR:: use_c13 and use_c14 are not compatible with FATES.'//&
+                    errMsg(__FILE__, __LINE__))
+          end if
+
+          if(nu_com_nfix) then
+              call endrun(msg=' ERROR:: n_com_nfix and use_fates cannot both be true'//&
+                    errMsg(__FILE__, __LINE__))
+          end if
+
+          ! If parteh mode > 1, then NP are turned on, potentially
+          if(fates_parteh_mode > 1 ) then
+             if(use_fates_ed_prescribed_phys) then
+                call endrun(msg=' ERROR:: fates_parteh_mode > 1 not compatible with prescribed physiology'//&
+                     errMsg(__FILE__, __LINE__))
+             end if
+             if(use_fates_ed_st3) then
+                call endrun(msg=' ERROR:: fates_parteh_mode > 1 not compatible with FATES ST3 model'//&
+                     errMsg(__FILE__, __LINE__))
+             end if
+          end if
+
+          ! Deposition may work with FATES
+          ! but not when lai streams are turned on
+          if(use_lai_streams) then
+             call endrun(msg=' ERROR:: use_lai_streams and use_fates cannot both be true'//&
+                  errMsg(__FILE__, __LINE__))
+          end if
+
        end if
 
 
@@ -418,6 +445,11 @@ contains
             errMsg(__FILE__, __LINE__))
        end if
        
+       if (.not. use_crop .and. irrigate) then
+          call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
+            errMsg(__FILE__, __LINE__))
+       end if
+
        if (.not. use_erosion .and. ero_ccycle) then
           call endrun(msg=' ERROR: ero_ccycle = .true. requires erosion model active.'//&
             errMsg(__FILE__, __LINE__))
@@ -607,6 +639,7 @@ contains
     call mpi_bcast (use_vichydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_century_decomp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_cn, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_crop, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_voc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_snicar_frc, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -646,7 +679,8 @@ contains
 
     ! BGC
     call mpi_bcast (co2_type, len(co2_type), MPI_CHARACTER, 0, mpicom, ier)
-    if (use_cn) then
+    
+    if (use_cn .or. use_fates) then
        call mpi_bcast (suplnitro, len(suplnitro), MPI_CHARACTER, 0, mpicom, ier)
        call mpi_bcast (nfix_timeconst, 1, MPI_REAL8, 0, mpicom, ier)
        call mpi_bcast (spinup_state, 1, MPI_INTEGER, 0, mpicom, ier)
@@ -654,6 +688,11 @@ contains
        call mpi_bcast (spinup_mortality_factor, 1, MPI_REAL8, 0, mpicom, ier)
        call mpi_bcast (override_bgc_restart_mismatch_dump, 1, MPI_LOGICAL, 0, mpicom, ier)
     end if
+
+    ! This group of flags has always been sent for both use_cn or otherwise
+    ! So I did not change this. It does not seem a liability to broadcast
+    ! in all run types (RGK 07-2020)
+    
     call mpi_bcast (suplphos, len(suplphos), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (nu_com, len(nu_com), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (nu_com_phosphatase, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -671,7 +710,7 @@ contains
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_c14, 1, MPI_LOGICAL, 0, mpicom, ier)
 
-    call mpi_bcast (use_fates, 1, MPI_LOGICAL, 0, mpicom, ier)
+    
     call mpi_bcast (fates_spitfire_mode, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (use_fates_logging, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -692,11 +731,12 @@ contains
 
     call mpi_bcast (use_dynroot, 1, MPI_LOGICAL, 0, mpicom, ier)
 
-    if (use_cn .and. use_vertsoilc) then
+    if ((use_cn .or. use_fates) .and. use_vertsoilc) then
        ! vertical soil mixing variables
        call mpi_bcast (som_adv_flux, 1, MPI_REAL8,  0, mpicom, ier)
        call mpi_bcast (max_depth_cryoturb, 1, MPI_REAL8,  0, mpicom, ier)
-
+    end if
+    if (use_cn .and. use_vertsoilc) then
        ! C and N input vertical profiles
        call mpi_bcast (exponential_rooting_profile,       1, MPI_LOGICAL,  0, mpicom, ier)
        call mpi_bcast (rootprof_exp,            1, MPI_REAL8,  0, mpicom, ier)
@@ -704,7 +744,7 @@ contains
        call mpi_bcast (pftspecific_rootingprofile,        1, MPI_LOGICAL,  0, mpicom, ier)
     end if
 
-    if (use_cn .and. use_nitrif_denitrif) then 
+    if ((use_cn .or. use_fates).and. use_nitrif_denitrif) then 
        call mpi_bcast (no_frozen_nitrif_denitrif,  1, MPI_LOGICAL, 0, mpicom, ier)
     end if
 

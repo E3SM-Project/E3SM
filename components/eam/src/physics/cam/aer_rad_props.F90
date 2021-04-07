@@ -74,10 +74,10 @@ subroutine aer_rad_props_init()
       'Total Aerosol Optical Depth in visible band', flag_xyfill=.true.)
    
    !For testing puposes only, the following addfld call should be removed before merging to master
-   call addfld ('extinct_lw_bnd7',(/ 'lev' /),    'A','/m','EXTINCT LW H2O window band 7 output', flag_xyfill=.true.)
-   call addfld ('extinct_lw_inp',(/ 'lev' /),    'A','/km',&
+   call addfld ('extinct_lw_bnd7',(/ 'lev' /),    'A','1/m','EXTINCT LW H2O window band 7 output', flag_xyfill=.true.)
+   call addfld ('extinct_lw_inp',(/ 'lev' /),    'A','1/km',&
         'EXTINCT LW H2O window band 7 output directly read from prescribed input file', flag_xyfill=.true.)
-   call addfld ('extinct_sw_inp',(/ 'lev' /),    'A','/km',&
+   call addfld ('extinct_sw_inp',(/ 'lev' /),    'A','1/km',&
         'Aerosol extinction directly read from prescribed input file', flag_xyfill=.true.)
 
    ! Contributions to AEROD_v from individual aerosols (climate species).
@@ -265,13 +265,8 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
 
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
-      if(present(clear_rh)) then
-         call modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw(:,:,idx_sw_diag), trop_level, &
-              tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh)
-      else
-         call modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw(:,:,idx_sw_diag), trop_level, &
-              tau, tau_w, tau_w_g, tau_w_f)
-      endif
+      call modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw(:,:,idx_sw_diag), trop_level, &
+           tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh)
    else
       tau    (1:ncol,:,:) = 0._r8
       tau_w  (1:ncol,:,:) = 0._r8
@@ -429,11 +424,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, dt, state, pbuf,  odap_aer,
 
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
-      if (present(clear_rh)) then
-         call modal_aero_lw(list_idx, dt, state, pbuf, odap_aer,clear_rh)
-      else
-         call modal_aero_lw(list_idx, dt, state, pbuf, odap_aer)
-      endif
+      call modal_aero_lw(list_idx, dt, state, pbuf, odap_aer,clear_rh)
    else
       odap_aer = 0._r8
    end if

@@ -155,16 +155,31 @@ contains
                 cam_in(c)%cflx(i,c_i(1)) = cam_in(c)%fco2_ocn(i)
              else if (co2_readFlux_ocn) then 
                 ! convert from molesCO2/m2/s to kgCO2/m2/s
+! The below section involves a temporary workaround for fluxes from data (read in from a file)
+! There is an issue with infld that does not allow time-varying 2D files to be read correctly.
+! The work around involves adding a singleton 3rd dimension offline and reading the files as 
+! 3D fields.  Once this issue is corrected, the old implementation can be reinstated.
+! This is the case for both data_flux_ocn and data_flux_fuel
+!++BEH  vvv old implementation vvv
+!                cam_in(c)%cflx(i,c_i(1)) = &
+!                     -data_flux_ocn%co2flx(i,c)*(1._r8- cam_in(c)%landfrac(i)) &
+!                     *mwco2*1.0e-3_r8
+!       ^^^ old implementation ^^^   ///    vvv new implementation vvv
                 cam_in(c)%cflx(i,c_i(1)) = &
-                     -data_flux_ocn%co2flx(i,c)*(1._r8- cam_in(c)%landfrac(i)) &
+                     -data_flux_ocn%co2flx(i,1,c)*(1._r8- cam_in(c)%landfrac(i)) &
                      *mwco2*1.0e-3_r8
+!--BEH  ^^^ new implementation ^^^
              else
                 cam_in(c)%cflx(i,c_i(1)) = 0._r8
              end if
              
              ! co2 flux from fossil fuel
              if (co2_readFlux_fuel) then
-                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
+!++BEH  vvv old implementation vvv
+!                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
+!       ^^^ old implementation ^^^   ///    vvv new implementation vvv
+                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
+!--BEH  ^^^ new implementation ^^^
              else
                 cam_in(c)%cflx(i,c_i(2)) = 0._r8
              end if

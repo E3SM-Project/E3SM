@@ -37,6 +37,7 @@ module dimensions_mod
   public :: qsize,qsize_d
 
   integer, public :: ne
+  integer, public :: ne_x,ne_y   ! used for planar topology- number of elements in each direction
   integer, public :: nelem       ! total number of elements
   integer, public :: nelemd      ! number of elements per MPI task
   integer, public :: nelemdmax   ! max number of elements on any MPI task

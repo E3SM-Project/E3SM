@@ -27,6 +27,7 @@ program tool_main
   use native_mapping, only: create_native_mapping_files
   use gll_subcell_grid, only: write_gll_subcell_grid
   use prim_movie_mod,   only : prim_movie_output, prim_movie_finish,prim_movie_init
+  use thread_mod,             only : omp_get_max_threads, omp_set_num_threads
 
 
 
@@ -40,15 +41,17 @@ program tool_main
   type (hvcoord_t)            :: hvcoord        ! hybrid vertical coordinate struct
   type (TimeLevel_t)          :: tl             ! Main time level struct
   integer :: ithr, nets, nete, ierr
+  integer :: nthreads_max
   
   par = initmp()
 
+  nthreads_max=omp_get_max_threads()  ! save max threads, before set by prim_init1
   call set_namelist_defaults()
 
   call prim_init1(elem, par, dom_mt, tl)
   theta_hydrostatic_mode=.true.  ! disable some NH tests
 
-  ! Set up fake threading; this offline tool doesn't thread.
+  ! Set up fake threading; this offline tool doesn't thread over elements
   ithr = 0
   hybrid = hybrid_create(par,ithr,1)
   nets = 1
@@ -68,6 +71,7 @@ program tool_main
         call topo_gll_to_smoothed(elem, hybrid, tl)
      case ('interpolate_tool')
         ! Interpolate a netcdf file from one grid to another
+        call omp_set_num_threads(nthreads_max) ! enable threading of interp setup loop
         call interpolate_tool(elem, hybrid)
      case ('gll_mapping_file')
         ! output HOMME's internal interpolation operator as a mapping file
@@ -204,13 +208,10 @@ contains
     type (element_t)     , intent(inout), target :: elem(:)
     type (TimeLevel_t)   , intent(in)     :: tl     
 
-    character*8 :: varname
-
-    if (smooth_phis_numcycle>0) then
+    if (smooth_phis_numcycle>=0) then
        if (len(trim(infilenames(1)))==0 ) then
           call abortmp('homme_tool: topo_gll_to_smoothed requires infilenames 1 to be defined')
        end if
-       varname='PHIS'
        call pio_read_phis(elem,hybrid%par,'PHIS')
        call smooth_topo_datasets(elem, hybrid, 1, nelemd)
        test_case = 'phis-smoothed'

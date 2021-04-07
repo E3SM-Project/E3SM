@@ -70,10 +70,10 @@ contains
     if ( has_sslt ) source = DATA
 
     if ( .not. has_sslt ) then
-       call cnst_get_ind ('SSLT01', indices(1), abort=.false.)
-       call cnst_get_ind ('SSLT02', indices(2), abort=.false.)
-       call cnst_get_ind ('SSLT03', indices(3), abort=.false.)
-       call cnst_get_ind ('SSLT04', indices(4), abort=.false.)
+       call cnst_get_ind ('SSLT01', indices(1), abrtf=.false.)
+       call cnst_get_ind ('SSLT02', indices(2), abrtf=.false.)
+       call cnst_get_ind ('SSLT03', indices(3), abrtf=.false.)
+       call cnst_get_ind ('SSLT04', indices(4), abrtf=.false.)
        has_sslt = all( indices(:) > 0 )
        if ( has_sslt ) source = PROG
     endif

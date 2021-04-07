@@ -250,7 +250,7 @@ contains
 
        spc_name = trim(solsym(m))
 
-       call cnst_get_ind(spc_name, n, abort=.false. )
+       call cnst_get_ind(spc_name, n, abrtf=.false. )
        if ( n > 0 ) then
           attr = cnst_longname(n)
        elseif ( trim(spc_name) == 'H2O' ) then

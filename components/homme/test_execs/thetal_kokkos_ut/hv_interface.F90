@@ -22,6 +22,8 @@ contains
     use edge_mod_base, only: initEdgeBuffer, edge_g
     use element_state, only: nlev_tom, nu_scale_top
     use geometry_interface_mod, only: par, elem
+    use physical_constants,     only: scale_factor, scale_factor_inv, laplacian_rigid_factor, rearth, rrearth
+
     !
     ! Inputs
     !
@@ -34,7 +36,10 @@ contains
     !
     integer :: ie
 
-
+    scale_factor = rearth
+    scale_factor_inv = rrearth
+    laplacian_rigid_factor = rrearth
+    
     call init_f90(ne, hyai, hybi, hyam, hybm, dvv, mp, ps0)
 
     ! There are 4 scalar fields (dp,theta,phi,w) and 1 vector field (v)

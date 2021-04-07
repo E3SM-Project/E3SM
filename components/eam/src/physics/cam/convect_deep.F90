@@ -138,8 +138,6 @@ subroutine convect_deep_init(pref_edge)
   case('ZM') !    1 ==> Zhang-McFarlane (default)
      if (masterproc) write(iulog,*)'convect_deep initializing Zhang-McFarlane convection'
      call zm_conv_init(pref_edge)
-  case('UNICON')
-     if (masterproc) write(iulog,*)'convect_deep: deep convection done by UNICON'
   case default
      if (masterproc) write(iulog,*)'WARNING: convect_deep: no deep convection scheme. May fail.'
   end select
@@ -243,7 +241,7 @@ subroutine convect_deep_tend( &
    call pbuf_get_field(pbuf, icwmrdp_idx, ql    )
 
   select case ( deep_scheme )
-  case('off', 'CLUBB_SGS', 'UNICON') !    0 ==> no deep convection
+  case('off', 'CLUBB_SGS' ) !    0 ==> no deep convection
     zero = 0     
     mcon = 0
     dlf = 0

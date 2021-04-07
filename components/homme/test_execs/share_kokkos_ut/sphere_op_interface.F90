@@ -4,6 +4,7 @@ module sphere_op_interface_mod
   use kinds,                only : real_kind
   use derivative_mod_base,  only : derivative_t
   use element_mod,          only : element_t
+  use physical_constants,   only : scale_factor, scale_factor_inv, laplacian_rigid_factor, rearth, rrearth
 
   implicit none
   private
@@ -27,6 +28,7 @@ contains
 
   subroutine gradient_sphere_c_callable(s, dvv, dinv, grad) bind(c)
     use derivative_mod_base, only : gradient_sphere
+
     !
     ! Inputs
     !
@@ -39,6 +41,8 @@ contains
     !
     type(derivative_t) :: deriv
 
+    scale_factor_inv = rrearth
+    
     deriv%dvv = dvv
 
     grad = gradient_sphere(s, deriv, dinv)
@@ -48,6 +52,7 @@ contains
 
   subroutine curl_sphere_wk_testcov_c_callable(s,dvv,D,mp,ds) bind(c)
     use derivative_mod_base, only : curl_sphere_wk_testcov
+
     !
     ! Inputs
     !
@@ -62,6 +67,8 @@ contains
     type (element_t)     :: elem
     real(kind=real_kind) :: ds(np,np,2)
 
+    scale_factor_inv = rrearth
+    
     deriv%dvv = dvv
     elem%D = D
     elem%mp = mp
@@ -72,6 +79,7 @@ contains
 
   subroutine gradient_sphere_wk_testcov_c_callable(s,dvv,metinv,metdet,D,mp,ds) bind(c)
     use derivative_mod_base, only : gradient_sphere_wk_testcov
+
     !
     ! Inputs
     !
@@ -88,6 +96,8 @@ contains
     type (derivative_t) :: deriv
     type (element_t) :: elem
 
+    scale_factor_inv = rrearth
+    
     deriv%dvv = dvv
     elem%D = D
     elem%mp = mp
@@ -100,6 +110,7 @@ contains
 
   subroutine divergence_sphere_wk_c_callable(v, dvv, spheremp, Dinv, div) bind(c)
     use derivative_mod_base, only : divergence_sphere_wk
+
     !
     ! Inputs
     !
@@ -114,6 +125,8 @@ contains
     type(derivative_t) :: deriv
     type(element_t) :: elem
 
+    scale_factor_inv = rrearth
+    
     deriv%dvv = dvv
     elem%Dinv = Dinv
     elem%spheremp = spheremp
@@ -124,6 +137,7 @@ contains
 
   subroutine vorticity_sphere_c_callable(v, dvv, rmetdet, d, vort) bind(c)
     use derivative_mod_base, only : vorticity_sphere
+
     !
     ! Inputs
     !
@@ -138,6 +152,8 @@ contains
     type(derivative_t) :: deriv
     type(element_t) :: elem
 
+    scale_factor_inv = rrearth
+    
     deriv%dvv = dvv
     elem%D = d
     elem%rmetdet = rmetdet
@@ -148,6 +164,7 @@ contains
 
   subroutine divergence_sphere_c_callable(v, dvv, metdet, dinv, div) bind(c)
     use derivative_mod_base, only : divergence_sphere
+
     !
     ! Inputs
     !
@@ -162,6 +179,8 @@ contains
     type(derivative_t) :: deriv
     type(element_t) :: elem
 
+    scale_factor_inv = rrearth
+    
     deriv%dvv = dvv
     elem%Dinv = dinv
     elem%metdet = metdet
@@ -183,6 +202,7 @@ contains
   subroutine laplace_sphere_wk_c_callable(s,dvv,dinv,spheremp,tensorVisc,&
              hvpower, hvscaling, var_coef,laplace) bind(c)
     use derivative_mod_base, only : laplace_sphere_wk
+
     !
     ! Inputs
     !
@@ -201,6 +221,8 @@ contains
     type (derivative_t) :: deriv
     type (element_t) :: elem
 
+    scale_factor_inv = rrearth
+    
 !redefining params from control_mod, not the usual homme practice, but...
     hypervis_power = hvpower
     hypervis_scaling = hvscaling
@@ -217,6 +239,7 @@ contains
 ! not a homme function, for debugging cxx
   subroutine laplace_simple_c_callable(s,dvv,dinv,spheremp,laplace) bind(c)
     use derivative_mod_base, only : gradient_sphere, divergence_sphere_wk
+
     !
     ! Inputs
     !
@@ -232,6 +255,8 @@ contains
     type (derivative_t) :: deriv
     real(kind=real_kind) :: grads(np,np,2)
 
+    scale_factor_inv = rrearth
+    
     deriv%dvv = dvv
     elem%Dinv = dinv
     elem%spheremp = spheremp
@@ -247,6 +272,7 @@ contains
              tensorVisc, vec_sph2cart, hvpower, hvscaling, var_coef, laplace) bind(c)
     use derivative_mod_base, only : vlaplace_sphere_wk_cartesian
     use control_mod,         only : hypervis_power, hypervis_scaling
+
     !
     ! Inputs
     !
@@ -265,6 +291,8 @@ contains
     type (derivative_t) :: deriv
     type (element_t) :: elem
 
+    laplacian_rigid_factor = rrearth
+    
 !redefining params from control_mod, not the usual homme practice, but...
     hypervis_power = hvpower
     hypervis_scaling = hvscaling
@@ -287,6 +315,7 @@ contains
   subroutine vlaplace_sphere_wk_contra_c_callable(v, dvv, d, dinv, mp, spheremp, metinv,&
                                                   metdet, rmetdet, nu_ratio, laplace) bind(c)
     use derivative_mod_base, only : vlaplace_sphere_wk_contra
+
     !
     ! Inputs
     !
@@ -307,6 +336,9 @@ contains
     type (derivative_t) :: deriv
     type (element_t) :: elem
 
+    scale_factor_inv = rrearth
+    laplacian_rigid_factor = rrearth
+    
     deriv%dvv = dvv
     elem%D = D
     elem%mp = mp

@@ -33,6 +33,29 @@ begin
   return(gauss_grid)
 end
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; smooth the spectra for ploting
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+function spec_smooth(spc[*][*]:double,nlat:integer,kmax:integer)
+local n1
+;
+begin
+  ; SMOOTH wave numbers > 15
+  spc_smooth=spc
+  spc_smooth2=spc
+  eps=.25
+
+  do k=0,kmax
+    do n1=1,nlat-2
+      spc_smooth2(:,n1) = eps*spc_smooth(:,n1-1)+(1-2*eps)*spc_smooth(:,n1)+eps*spc_smooth(:,n1+1)
+    end do
+    spc_smooth = spc_smooth2
+  end do
+  return(spc_smooth)
+end
+
+
+
 
 ;
 ;  NCL script to plot topography: contour plots and spherical harmonic spectra
@@ -56,15 +79,23 @@ end setvalues
 
   fnames =  systemfunc(\
 ;+"ls ~/scratch1/topodata/fv0.9x1.25-default-PHIS-new-SGH-SGH30.nc; "\
-; "ls ~/scratch1/topodata/USGS-gtopo30_ne120np4_latlon.nc; "\
- "ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4_latlon.nc; "\
+; "ls ~/scratch1/topodata/ne120/USGS-gtopo30_ne120np4.latlon.nc; "\
+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4.latlon.nc; "\
+;+"ls ~/scratch1/topodata/ne30/ne30pg4_c2t_topo.latlon.nc;"\
 +"ls ~/scratch1/topodata/fv_0.9x1.25_nc3000_Nsw042_Nrs008_Co060_Fi001_ZR_sgh30_24km_GRNL_c170103.nc;"\
-+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4_7xdel2_latlon.nc; "\
-+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4_8xdel2_latlon.nc; "\
-+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4_16xdel2_latlon.nc; "\
++"ls ~/scratch1/topodata/ne30np4_nc3000_Co060_Fi001_PF_nullRR_Nsw042_20171020.latlon.nc;"\
+;+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.latlon.nc; "\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_x4.latlon.nc; "\
 ;+"ls ~/scratch1/topodata/ne120/USGS-gtopo30_ne120np4_224xdel2_latlon.nc; "\
 ;+"ls ~/scratch1/topodata/ne120/USGS-gtopo30_ne120np4_384xdel2_latlon.nc; "\
+;+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_fx1t.latlon.nc; "\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_fx2t.latlon.nc; "\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_fx3.5t.latlon.nc; "\
+;+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_fx4t.latlon.nc; "\
 );
+
+legend_labels = (/"0x","CAM-FV","CAM-SE","4x","fx2","fx3.5t"/) 
+
 
 
 ;  output_format = "ncgm"
@@ -112,10 +143,13 @@ x = x@_FillValue
 
 do fn=0,fcnt-1
   f1=f[fn]
-  
+  if isfilevar(f1,"PHIS_d") then
+    field="PHIS_d"
+  else
+    field="PHIS"
+  end if  
   nlat = dimsizes(f1->lat)
   nlon = dimsizes(f1->lon)
-  
   tmp1 = stringtochar(fnames(fn))
   l1 = 0
   l2 = dimsizes(tmp1)
@@ -134,6 +168,7 @@ do fn=0,fcnt-1
     l2 = l1+ii-1
   end if
   f1name = chartostring(tmp1(l1:l2))
+  print("name = "+f1name+" field="+field)
   delete(tmp1)
 
 ;
@@ -190,13 +225,14 @@ do fn=0,fcnt-1
   
   res@mpOutlineOn          = True
   res@mpFillOn             = False
+
+
   
   varmin = 1.e9
   varmax = -1.
   var(:,:)= (f1->$field$(:,:))
   copyatt( var, f1->$field$(:,:) )
 
-  print("name = "+f1name+" field="+field)
   print ("min/max = "+min(var(:,:))+", "+max(var(:,:)) )
       
   res@tiMainString        = f1name
@@ -238,7 +274,7 @@ do fn=0,fcnt-1
         spc(n1) = spc(n1) + 2.*(pwr(n1,m))
       end do
     end do
-    athick=4
+    athick=1
     lthick=2
     
     resxy=True
@@ -258,13 +294,18 @@ do fn=0,fcnt-1
     resxy@tmXBMinorThicknessF = athick 
     resxy@tmYLMinorThicknessF = athick 
     resxy@tmBorderThicknessF = athick
+    resxy@tmXMajorGrid = True
+    resxy@tmYMajorGrid = True
+    resxy@tmXMinorGrid = False
+    resxy@tmYMinorGrid = False
+
     resxy@tiXAxisString          = "~F21~spherical wavenumber"
     resxy@tiYAxisString          = "~F21~Energy"
     resxy@gsnFrame = False
     resxy@xyLineThicknessF = lthick
     resxy@xyDashPattern = 0
     
-    resxy@trXMinF = 1       
+    resxy@trXMinF = 1e0
     resxy@trXMaxF = 1e3
     resxy@trYMinF = 1e-1      
     resxy@trYMaxF = 1e8
@@ -272,19 +313,37 @@ do fn=0,fcnt-1
     delete(spc)
     delete(var_hat)
     delete(pwr)
+    print("done computing spectra.")
   end if
 
   delete(var)
 ; loop over files
 end do 
 
+spc_all = spec_smooth(spc_all,nlat_max,fcnt)
+
+
 if ( plot_spectra) then
   resxy@xyLineColors = (/"black","purple","blue","green","orange","red3","cyan","brown"/)
 
-  resxy@trXMinF = 1       
+  resxy@trXMinF = 1e0     
   resxy@trXMaxF = 1e3
-  resxy@trYMinF = 1e-1      
+  resxy@trYMinF = 1e3
   resxy@trYMaxF = 1e8
+
+  resxy@pmLegendDisplayMode    = "Always"            ; turn on legend
+  resxy@pmLegendSide           = "Right"               ; Change location of 
+  resxy@pmLegendParallelPosF   = .1                  ; move units right
+  resxy@pmLegendOrthogonalPosF = -0.3                ; move units down
+  resxy@pmLegendWidthF         = 0.15                ; Change width and
+  resxy@pmLegendHeightF        = 0.18                ; height of legend.
+  resxy@lgPerimOn              = False               ; turn off box around
+  resxy@lgLabelFontHeightF     = .03                 ; label font height
+  resxy@xyExplicitLegendLabels = legend_labels
+
+
+
+
   plot  = gsn_xy (wks,x(0:kmax-1),spc_all(:,0:kmax-1),resxy) ; create plot
   frame(wks)                                     ; now advance
 
@@ -293,6 +352,8 @@ if ( plot_spectra) then
   do n1=0,fcnt-1
     thresh=.50
     abovethresh=True
+    thresh2=.90
+    abovethresh2=True
     do j=0,nlat_max-1
       spc_r(n1,j)=0
       if (.not. ismissing(spc_all(0,j)) .and. spc_all(0,j) .gt. 0) then
@@ -302,14 +363,18 @@ if ( plot_spectra) then
            abovethresh=False
            print("kf="+n1+" smoothing(thresh="+thresh+") for wavenumbers k>="+j)
         end if
+        if (abovethresh2 .and. ( spc_r(n1,j) .lt. thresh2 ) ) then
+           abovethresh2=False
+           print("kf="+n1+" smoothing(thresh="+thresh2+") for wavenumbers k>="+j)
+        end if
         end if
       end if
     end do
     print("kf="+n1+" E("+x(0)+")="+spc_all(n1,0))
   end do
-  resxy@trXMinF = 1       
+  resxy@trXMinF = 1e1       
   resxy@trXMaxF = 1e3
-  resxy@trYMinF = .01
+  resxy@trYMinF = 5e-2
   resxy@trYMaxF = 2e0
   plot  = gsn_xy (wks,x(0:kmax-1),spc_r(:,0:kmax-1),resxy) ; create plot
   frame(wks)                                     ; now advance
@@ -318,10 +383,10 @@ if ( plot_spectra) then
   do n1=0,nlat_max-1
     spc_all(:,n1) = spc_all(:,n1)*(n1*(n1+1))
   end do
-  resxy@trXMinF = 1       
+  resxy@trXMinF = 1e0       
   resxy@trXMaxF = 1e3
-  resxy@trYMinF = 1e6      
-  resxy@trYMaxF = 1e10
+  resxy@trYMinF = 5e7      
+  resxy@trYMaxF = 2e9
   plot  = gsn_xy (wks,x(0:kmax-1),spc_all(:,0:kmax-1),resxy) ; create plot
   frame(wks)                                     ; now advance
 

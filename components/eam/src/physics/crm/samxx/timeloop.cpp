@@ -45,6 +45,13 @@ void timeloop() {
       //       Buoyancy term:
       buoyancy();
 
+      //-----------------------------------------------------------
+      // variance transport forcing
+      if (use_VT) {
+        VT_diagnose();
+        VT_forcing();
+      }
+
       //------------------------------------------------------------
       //       Large-scale and surface forcing:
       forcing();
@@ -105,6 +112,10 @@ void timeloop() {
       if (dosgs) { 
         sgs_mom();
       }
+
+#ifdef MMF_ESMT
+      scalar_momentum_tend();
+#endif
 
       //-----------------------------------------------------------
       //       Coriolis force:

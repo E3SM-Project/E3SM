@@ -249,7 +249,6 @@ subroutine rad_cnst_readnl(nlfile)
 
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
-   use shr_log_mod ,    only: errmsg => shr_log_errmsg
    use mpishorthand
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
@@ -360,9 +359,6 @@ subroutine rad_cnst_readnl(nlfile)
    do i = 0, N_DIAG
       if (active_calls(i)) then
          if (i > 0) then
-            !Temporarily block radiation diagnostic calls until we place a fix for these calls
-            call endrun('Radiation diagnostic calls are temporarily not supported,' // &
-                 ' please remove rad_diag_* specifier(s) from the namelist '//errmsg(__FILE__,__LINE__))
             write(suffix, fmt = '(i2.2)') i
          else
             suffix='  '
@@ -1060,7 +1056,7 @@ integer function get_cam_idx(source, name, routine)
 
    else if (source(1:1) == 'A') then
 
-      call cnst_get_ind(trim(name), idx, abort=.false.)
+      call cnst_get_ind(trim(name), idx, abrtf=.false.)
       if (idx < 0) then
          call endrun(routine//' ERROR: cannot find constituent field '//trim(name))
       end if

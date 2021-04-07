@@ -149,6 +149,7 @@ contains
             call readCH4Params (ncid)
          end if
       endif
+      call readNitrogenDynamicsParams (ncid)
     end if
 
     if (use_cn) then
@@ -158,7 +159,6 @@ contains
          call readPhenolParams(ncid)
        endif
        call readMaintenanceRespParams (ncid)
-       call readNitrogenDynamicsParams (ncid)
        if(is_active_betr_bgc)then
          call readCNGapMortBeTRParams (ncid)
        else

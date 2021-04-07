@@ -198,10 +198,10 @@ contains
     integer :: m
 
     do m = 1, seasalt_nbin
-       call cnst_get_ind(seasalt_names(m), seasalt_indices(m),abort=.false.)
+       call cnst_get_ind(seasalt_names(m), seasalt_indices(m),abrtf=.false.)
     enddo
     do m = 1, seasalt_nnum
-       call cnst_get_ind(seasalt_names(seasalt_nbin+m), seasalt_indices(seasalt_nbin+m),abort=.false.)
+       call cnst_get_ind(seasalt_names(seasalt_nbin+m), seasalt_indices(seasalt_nbin+m),abrtf=.false.)
     enddo
 
     seasalt_active = any(seasalt_indices(:) > 0)

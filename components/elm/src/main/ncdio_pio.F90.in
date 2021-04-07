@@ -915,7 +915,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ncd_defvar_bynf(ncid, varname, xtype, ndims, dimid, varid, &
-       long_name, units, cell_method, missing_value, fill_value, &
+       long_name, standard_name, units, cell_method, missing_value, fill_value, &
        imissing_value, ifill_value, comment, flag_meanings, &
        flag_values, nvalid_range )
     !
@@ -930,6 +930,7 @@ contains
     integer            , intent(inout) :: varid                 ! returned var id
     integer            , intent(in), optional :: dimid(:)       ! dimids
     character(len=*)   , intent(in), optional :: long_name      ! attribute
+    character(len=*)   , intent(in), optional :: standard_name  ! attribute
     character(len=*)   , intent(in), optional :: units          ! attribute
     character(len=*)   , intent(in), optional :: cell_method    ! attribute
     character(len=*)   , intent(in), optional :: comment        ! attribute
@@ -994,6 +995,11 @@ contains
     if (present(long_name)) then
        call ncd_putatt(ncid, varid, 'long_name', trim(long_name))
     end if
+    if (present(standard_name)) then
+       if (standard_name /= ' ') then
+          call ncd_putatt(ncid, varid, 'standard_name', trim(standard_name))
+       end if
+    end if
     if (present(flag_values)) then
        status = PIO_put_att(ncid,varid,'flag_values',flag_values)
        if ( .not. present(flag_meanings)) then
@@ -1056,7 +1062,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine ncd_defvar_bygrid(ncid, varname, xtype, &
        dim1name, dim2name, dim3name, dim4name, dim5name, &
-       long_name, units, cell_method, missing_value, fill_value, &
+       long_name, standard_name, units, cell_method, missing_value, fill_value, &
        imissing_value, ifill_value, switchdim, comment, &
        flag_meanings, flag_values, nvalid_range )
     !
@@ -1073,6 +1079,7 @@ contains
     character(len=*)   , intent(in), optional :: dim4name       ! dimension name
     character(len=*)   , intent(in), optional :: dim5name       ! dimension name
     character(len=*)   , intent(in), optional :: long_name      ! attribute
+    character(len=*)   , intent(in), optional :: standard_name  ! attribute
     character(len=*)   , intent(in), optional :: units          ! attribute
     character(len=*)   , intent(in), optional :: cell_method    ! attribute
     character(len=*)   , intent(in), optional :: comment        ! attribute
@@ -1123,7 +1130,7 @@ contains
     end if
 
     call ncd_defvar_bynf(ncid,varname,xtype,ndims,dimid,varid, &
-         long_name=long_name, units=units, cell_method=cell_method, &
+         long_name=long_name, standard_name=standard_name,units=units, cell_method=cell_method, &
          missing_value=missing_value, fill_value=fill_value, &
          imissing_value=imissing_value, ifill_value=ifill_value, &
          comment=comment, flag_meanings=flag_meanings, &

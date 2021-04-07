@@ -6,6 +6,7 @@ module thetal_test_interface
   use kinds,          only: real_kind 
   use hybvcoord_mod,  only: hvcoord_t 
   use parallel_mod,   only: abortmp
+  use geometry_mod,   only: set_area_correction_map0
 
   implicit none
 
@@ -20,8 +21,7 @@ contains
 
   subroutine init_f90 (ne, hyai, hybi, hyam, hybm, dvv, mp, ps0) bind(c)
     use control_mod,            only: cubed_sphere_map
-    use cube_mod,               only: cube_init_atomic, set_corner_coordinates, &
-                                      set_area_correction_map0
+    use cube_mod,               only: cube_init_atomic, set_corner_coordinates
     use derivative_mod,         only: derivinit
     use dimensions_mod,         only: nelemd, nlev, nlevp, np
     use geometry_interface_mod, only: initmp_f90, init_cube_geometry_f90, init_connectivity_f90
@@ -31,6 +31,7 @@ contains
                                       nlev_tom, nu_scale_top
     use mass_matrix_mod,        only: mass_matrix
     use quadrature_mod,         only: gausslobatto, quadrature_t
+    use physical_constants,     only: scale_factor, scale_factor_inv, laplacian_rigid_factor, rearth, rrearth
     !
     ! Inputs
     !
@@ -44,6 +45,10 @@ contains
     integer :: ie, k
     type (quadrature_t) :: gp
 
+    scale_factor = rearth
+    scale_factor_inv = rrearth
+    laplacian_rigid_factor = rrearth
+    
     call derivinit(deriv)
 
     call initmp_f90()
@@ -60,8 +65,6 @@ contains
     enddo
     call allocate_element_arrays(nelemd)
 
-    call mass_matrix(par,elem)
-    call set_area_correction_map0(elem, nelemd, par, gp)
     call mass_matrix(par,elem)
 
     ! Copy refFE matrices back to C

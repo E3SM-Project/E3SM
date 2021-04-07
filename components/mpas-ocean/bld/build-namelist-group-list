@@ -24,11 +24,15 @@ my @groups = qw(run_modes
                 pressure_gradient
                 eos
                 eos_linear
+                eos_wright
+                split_timestep_share
                 split_explicit_ts
+                semi_implicit_ts
                 ale_vertical_grid
                 ale_frequency_filtered_thickness
                 debug
                 testing
+                init_mode_vert_levels
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers

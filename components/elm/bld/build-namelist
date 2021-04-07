@@ -3,14 +3,14 @@
 #
 # elm build-namelist driver
 #
-# Placing all of build-namelist into CLMBuildNamelist.pm means we can unit test the module.
+# Placing all of build-namelist into ELMBuildNamelist.pm means we can unit test the module.
 #
 require 5;
 
 use strict;
 
 BEGIN {
-  # ensure that the cesm create_X scripts can find CLMBuildNamelist.pm
+  # ensure that the cesm create_X scripts can find ELMBuildNamelist.pm
   use File::Basename qw(dirname);
   use Cwd qw(abs_path);
   my $dirname = dirname(abs_path($0));
@@ -18,6 +18,6 @@ BEGIN {
   unshift @INC, @dirs;
 }
 
-use CLMBuildNamelist qw(main);
+use ELMBuildNamelist qw(main);
 
-CLMBuildNamelist::main();
+ELMBuildNamelist::main();

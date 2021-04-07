@@ -7,6 +7,7 @@ module shallow_water_mod
   use kinds, only : real_kind
   ! ------------------------
   use physical_constants, only : omega, g, rearth=>rearth0, rrearth=>rrearth0, dd_pi
+  use physical_constants, only : Lx, Ly
   ! ------------------------
   use dimensions_mod, only : nlev, np
   ! ------------------------
@@ -174,7 +175,20 @@ module shallow_water_mod
 
   !subcase 4 is the same as subcase 2 but with added zonal flow, see below
  
-
+  ! ============================================
+  ! Shallow Water Test Case Parameters
+  ! Parameters for test case planar_dbl_vrtx,
+  ! Planar Double Vortex
+  ! ============================================
+  real (kind=real_kind), parameter, private :: h0_dbv    = 750.0D0     ! mean fluid depth (meters)
+  real (kind=real_kind), parameter, private :: dh_dbv  = 75.0D0       ! perturbation depth (meters)
+  real (kind=real_kind),  private           :: gh0_dbv   = g*h0_dbv      ! mean geopotential
+  real (kind=real_kind), private, parameter :: f_dbv    = 0.00006147D0        ! Coriolis parameter
+  real (kind=real_kind), private, parameter :: sigmax_dbv = 3.0D0/40.0D0 ! vortex size in y-dir as a fraction of Lx
+  real (kind=real_kind), private, parameter :: sigmay_dbv = 3.0D0/40.0D0 ! vortex size in x-dir as a fraction of Ly
+  real (kind=real_kind), private, parameter :: ox_dbv = 0.1D0         ! offset in x-dir for vortices
+  real (kind=real_kind), private, parameter :: oy_dbv = 0.1D0         ! offset in y-dir for vortices
+  
   public  :: sweq_invariants
   public  :: tc1_init_state  ! Initialize test case 1: Cosine Bell
   public  :: tc1_init_pmean  ! Initialize pmean for test case 1
@@ -187,14 +201,14 @@ module shallow_water_mod
   public  :: tc2_init_state  ! Initialize test case 2: Global steady state nonlinear geostrophic flow
   public  :: tc2_init_pmean
   public  :: tc2_geopotential
-  private :: tc2_coreolis_init
+  private :: tc2_coriolis_init
   public  :: tc2_errors
   public  :: tc2_phi
 
   public  :: tc5_init_state  ! Initialize test case 5: Flow Over a Mountain
   public  :: tc5_init_pmean
   public  :: tc5_velocity
-  private :: tc5_coreolis_init
+  private :: tc5_coriolis_init
   public  :: tc5_mountain
   public  :: tc5_geopotential
   public  :: tc5_errors
@@ -236,6 +250,11 @@ module shallow_water_mod
   private :: sj1_velocity_cubedsphere
   public  :: sj1_errors
   !public  :: sj1_invariants
+
+  public  :: planar_dbl_vrtx_init_state  ! Initialize planar double vortex test case
+  private :: planar_dbl_vrtx_geopotential
+  private :: planar_dbl_vrtx_velocity
+  public  :: planar_dbl_vrtx_invariants
 
   real (kind=real_kind), public,save :: Imass0,Ienergy0,Ipenst0
 !  common /comintegral/Imass0,Ienergy0,Ipenst0
@@ -1231,7 +1250,7 @@ contains
     ! p 218, for test case 2.
 
     do ie=nets,nete
-       elem(ie)%fcor=tc2_coreolis_init(elem(ie)%spherep)
+       elem(ie)%fcor=tc2_coriolis_init(elem(ie)%spherep)
        do k=1,nlev
           elem(ie)%state%p(:,:,k,n0)=tc2_geopotential(elem(ie)%spherep(:,:))
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
@@ -1324,13 +1343,13 @@ contains
   end function tc2_phi
 
   ! ========================================
-  ! tc2_coreolis_init:
+  ! tc2_coriolis_init:
   !
-  ! Initialize coreolis term for test case 2
+  ! Initialize coriolis term for test case 2
   !
   ! ========================================
 
-  function tc2_coreolis_init(sphere) result(fcor)
+  function tc2_coriolis_init(sphere) result(fcor)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
     real (kind=real_kind) :: fcor(np,np)
@@ -1357,7 +1376,7 @@ contains
        end do
     end do
 
-  end function tc2_coreolis_init
+  end function tc2_coriolis_init
 
 
   ! ===========================================
@@ -1458,7 +1477,7 @@ contains
     pmean_adjust = 0  ! 340.284*g 
 
     do ie=nets,nete
-       elem(ie)%fcor=tc2_coreolis_init(elem(ie)%spherep)
+       elem(ie)%fcor=tc2_coriolis_init(elem(ie)%spherep)
        elem(ie)%state%ps(:,:)=tc5_mountain(elem(ie)%spherep(:,:))
 
        do k=1,nlev
@@ -1534,13 +1553,13 @@ contains
   end function tc5_velocity
 
   ! ========================================
-  ! tc5_coreolis_init:
+  ! tc5_coriolis_init:
   !
-  ! Initialize coreolis term for test case 5
+  ! Initialize coriolis term for test case 5
   !
   ! ========================================
 
-  function tc5_coreolis_init(sphere) result(fcor)
+  function tc5_coriolis_init(sphere) result(fcor)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
     real (kind=real_kind) :: fcor(np,np)
@@ -1567,7 +1586,7 @@ contains
        end do
     end do
 
-  end function tc5_coreolis_init
+  end function tc5_coriolis_init
   ! ===========================================
   !
   ! tc5_mountain:
@@ -2249,7 +2268,7 @@ contains
 
           lat   = sphere(i,j)%lat
           lon   = sphere(i,j)%lon
-          f     = 2.0D0*omega  ! coreolis coefficient
+          f     = 2.0D0*omega  ! coriolis coefficient
           pi2   = 0.5D0*DD_PI
 
           if (lat <= (lat_tc8-gamma_tc8) ) then
@@ -3882,5 +3901,321 @@ subroutine toy_chemistry_forcing(elem, nets, nete, tl, dt)
 
 
 
+
+  ! ===========================================
+  !
+  ! planar_dbl_vrtx_init_state:
+  !
+  ! Initialize planar double vortex test case
+  !
+  ! ===========================================
+
+  subroutine planar_dbl_vrtx_init_state(elem,nets,nete,pmean,deriv)
+    type(element_t), intent(inout) :: elem(:)
+
+    integer, intent(in) :: nets
+    integer, intent(in) :: nete
+    real (kind=real_kind) :: pmean
+    type (derivative_t)   :: deriv
+
+    ! Local variables
+
+    integer ie,k
+    integer :: nm1
+    integer :: n0
+    integer :: np1
+
+    nm1= 1
+    n0 = 2
+    np1= 3
+
+    pmean = gh0_dbv
+
+    do ie=nets,nete
+       elem(ie)%fcor(:,:)= f_dbv
+       elem(ie)%state%ps(:,:)=0.0D0
+
+       do k=1,nlev
+          elem(ie)%state%p(:,:,k,n0)=planar_dbl_vrtx_geopotential(elem(ie)%spherep(:,:))
+          elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
+          elem(ie)%state%p(:,:,k,np1)=0.0D0
+
+          elem(ie)%state%v(:,:,:,k,n0)=planar_dbl_vrtx_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
+          elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
+          elem(ie)%state%v(:,:,:,k,np1)=0.0D0
+       end do
+    end do
+
+  end subroutine planar_dbl_vrtx_init_state
+
+  ! ===========================================
+  !
+  ! planar_dbl_vrtx_velocity:
+  !
+  ! Reset velocities to initial values
+  ! for a single layer of one element for
+  ! double vortex test case, during the timestep.
+  !
+  ! ===========================================
+
+  function planar_dbl_vrtx_velocity(sphere,D) result(v)
+
+    type (spherical_polar_t), intent(in) :: sphere(np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
+    real (kind=real_kind)                :: v(np,np,2)
+
+    ! Local variables
+
+    real (kind=real_kind) :: V1,V2
+    real (kind=real_kind) :: xprime1,yprime1,xprime2,yprime2
+    real (kind=real_kind) :: xprimeprime1,xprimeprime2,yprimeprime1,yprimeprime2
+    real (kind=real_kind) :: xc1, xc2, yc1, yc2
+    integer i,j
+
+    xc1 = (0.5D0 - ox_dbv)*Lx
+    xc2 = (0.5D0 + ox_dbv)*Lx
+    yc1 = (0.5D0 - oy_dbv)*Ly
+    yc2 = (0.5D0 + oy_dbv)*Ly
+
+    do j=1,np
+       do i=1,np
+
+         xprime1 = 1.0D0/(DD_PI*sigmax_dbv) * SIN(DD_PI/Lx * (sphere(i,j)%lon - xc1))
+         yprime1 = 1.0D0/(DD_PI*sigmay_dbv) * SIN(DD_PI/Ly * (sphere(i,j)%lat - yc1))
+         xprime2 = 1.0D0/(DD_PI*sigmax_dbv) * SIN(DD_PI/Lx * (sphere(i,j)%lon - xc2))
+         yprime2 = 1.0D0/(DD_PI*sigmay_dbv) * SIN(DD_PI/Ly * (sphere(i,j)%lat - yc2))
+
+          xprimeprime1 = 1.0D0/(2.0D0*DD_PI*sigmax_dbv) * SIN(2.0D0*DD_PI/Lx * (sphere(i,j)%lon - xc1))
+          yprimeprime1 = 1.0D0/(2.0D0*DD_PI*sigmay_dbv) * SIN(2.0D0*DD_PI/Ly * (sphere(i,j)%lat - yc1))
+          xprimeprime2 = 1.0D0/(2.0D0*DD_PI*sigmax_dbv) * SIN(2.0D0*DD_PI/Lx * (sphere(i,j)%lon - xc2))
+          yprimeprime2 = 1.0D0/(2.0D0*DD_PI*sigmay_dbv) * SIN(2.0D0*DD_PI/Ly * (sphere(i,j)%lat - yc2))
+
+          V1 =  -g*dh_dbv/(f_dbv * sigmay_dbv*Ly) * (yprimeprime1 * EXP(-0.5D0 * (xprime1 * xprime1 + yprime1 * yprime1)) + yprimeprime2 * EXP(-0.5D0 * (xprime2 * xprime2 + yprime2 * yprime2)))
+          V2 =   g*dh_dbv/(f_dbv * sigmax_dbv*Lx) * (xprimeprime1 * EXP(-0.5D0 * (xprime1 * xprime1 + yprime1 * yprime1)) + xprimeprime2 * EXP(-0.5D0 * (xprime2 * xprime2 + yprime2 * yprime2)))
+
+
+          ! =====================================================
+          ! map physical domain velocities onto the contravariant reference domain velocities
+          ! using the D mapping matrix (see Loft notes for details)
+          ! =====================================================
+
+          v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+          v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
+       end do
+    end do
+
+  end function planar_dbl_vrtx_velocity
+
+  ! ===========================================
+  !
+  ! planar_dbl_vrtx_geopotential:
+  !
+  ! Set geopotential to initial values
+  !
+  ! ===========================================
+
+  function planar_dbl_vrtx_geopotential(sphere) result(p)
+
+    type (spherical_polar_t), intent(in) :: sphere(np,np)
+    real (kind=real_kind)                :: p(np,np)
+
+    ! Local variables
+    real (kind=real_kind) :: xprime1,yprime1,xprime2,yprime2
+    real (kind=real_kind) :: xc1, xc2, yc1, yc2
+    integer i,j
+
+    xc1 = (0.5D0 - ox_dbv)*Lx
+    xc2 = (0.5D0 + ox_dbv)*Lx
+    yc1 = (0.5D0 - oy_dbv)*Ly
+    yc2 = (0.5D0 + oy_dbv)*Ly
+
+    do j=1,np
+       do i=1,np
+
+         xprime1 = 1.0D0/(DD_PI*sigmax_dbv) * SIN(DD_PI/Lx * (sphere(i,j)%lon - xc1))
+         yprime1 = 1.0D0/(DD_PI*sigmay_dbv) * SIN(DD_PI/Ly * (sphere(i,j)%lat - yc1))
+         xprime2 = 1.0D0/(DD_PI*sigmax_dbv) * SIN(DD_PI/Lx * (sphere(i,j)%lon - xc2))
+         yprime2 = 1.0D0/(DD_PI*sigmay_dbv) * SIN(DD_PI/Ly * (sphere(i,j)%lat - yc2))
+
+         p(i,j) = -g*dh_dbv * (EXP(-0.5D0 * (xprime1 * xprime1 + yprime1 * yprime1)) + EXP(-0.5D0 * (xprime2 * xprime2 + yprime2 * yprime2)) - 4.0D0*DD_PI*sigmax_dbv*sigmay_dbv)
+
+       end do
+    end do
+
+  end function planar_dbl_vrtx_geopotential
+
+  ! ======================================================
+  ! planar_dbl_vrtx_invariants:
+  ! compute invariants on page 221 of Williamson, et. al.
+  ! on a non-staggered grid.
+  ! ======================================================
+  subroutine planar_dbl_vrtx_invariants(elem, iounit,tl,pmean,edge2,deriv,hybrid,nets,nete)
+    type(element_t), intent(inout) :: elem(:)
+
+    integer              , intent(in) :: iounit
+    type (TimeLevel_t)  , intent(in) :: tl
+    real (kind=real_kind), intent(in) :: pmean
+    type (EdgeBuffer_t)               :: edge2
+    type (derivative_t)               :: deriv
+    type (hybrid_t)      , intent(in) :: hybrid
+    integer              , intent(in) :: nets,nete
+
+    ! Local variables
+
+    integer :: ie,i,j,kptr
+
+    real (kind=real_kind) :: vco(np,np,2)
+    real (kind=real_kind) :: gv(np,np,2)
+
+    real (kind=real_kind) :: zeta(np,np,nets:nete)
+    real (kind=real_kind) :: E(np,np)
+
+    real (kind=real_kind) :: mass(np,np,nets:nete)
+    real (kind=real_kind) :: energy(np,np,nets:nete)
+    real (kind=real_kind) :: penst(np,np,nets:nete)
+    real (kind=real_kind) :: vort(np,np,nets:nete)
+    real (kind=real_kind) :: div(np,np,nets:nete)
+    real (kind=real_kind) :: divsq(np,np,nets:nete)
+
+    real (kind=real_kind) :: v1,v2
+    real (kind=real_kind) :: h,hstar,hs
+
+    real (kind=real_kind) :: time
+    real (kind=real_kind) :: Imass,Ienergy,Ipenst,Ivort,Idiv,Idivsq
+
+    integer               :: npts
+    integer               :: n0
+
+    n0 = tl%n0
+
+    if (tl%nstep == 0) then
+       if (hybrid%masterthread) then
+          open(iounit+0,file=TRIM(output_prefix)//"planar_dbl_vrtx.mass",status="unknown",form="formatted")
+          open(iounit+1,file=TRIM(output_prefix)//"planar_dbl_vrtx.energy",status="unknown",form="formatted")
+          open(iounit+2,file=TRIM(output_prefix)//"planar_dbl_vrtx.penst",status="unknown",form="formatted")
+          open(iounit+3,file=TRIM(output_prefix)//"planar_dbl_vrtx.vort",status="unknown",form="formatted")
+          open(iounit+4,file=TRIM(output_prefix)//"planar_dbl_vrtx.div",status="unknown",form="formatted")
+          open(iounit+5,file=TRIM(output_prefix)//"planar_dbl_vrtx.rmsdiv",status="unknown",form="formatted")
+       endif
+    endif
+
+    do ie=nets,nete
+
+       do j=1,np
+          do i=1,np
+
+             v1     = elem(ie)%state%v(i,j,1,1,n0)
+             v2     = elem(ie)%state%v(i,j,2,1,n0)
+
+             vco(i,j,1) = elem(ie)%met(i,j,1,1)*v1 + elem(ie)%met(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%met(i,j,2,1)*v1 + elem(ie)%met(i,j,2,2)*v2
+
+             gv(i,j,1) = elem(ie)%metdet(i,j)*v1
+             gv(i,j,2) = elem(ie)%metdet(i,j)*v2
+
+          end do
+       end do
+
+       zeta(:,:,ie)  = vorticity(vco,deriv)
+       div(:,:,ie)   = divergence(gv,deriv)
+
+       do j=1,np
+          do i=1,np
+             zeta(i,j,ie)=elem(ie)%mp(i,j)*(zeta(i,j,ie)/elem(ie)%metdet(i,j))
+             div(i,j,ie)=elem(ie)%mp(i,j)*(div(i,j,ie)/elem(ie)%metdet(i,j))
+          end do
+       end do
+
+       kptr=0
+       call edgeVpack(edge2, zeta(1,1,ie), 1, kptr,ie)
+
+       kptr=1
+       call edgeVpack(edge2, div(1,1,ie), 1, kptr,ie)
+
+    end do
+
+    call bndry_exchangeV(hybrid,edge2)
+
+    do ie=nets,nete
+
+       kptr=0
+       call edgeVunpack(edge2, zeta(1,1,ie), 1, kptr, ie)
+
+       kptr=1
+       call edgeVunpack(edge2, div(1,1,ie), 1, kptr, ie)
+
+       do j=1,np
+          do i=1,np
+             zeta(i,j,ie) = elem(ie)%rmp(i,j)*zeta(i,j,ie)
+             div(i,j,ie) = elem(ie)%rmp(i,j)*div(i,j,ie)
+             penst(i,j,ie) = 0.5D0*(zeta(i,j,ie) + elem(ie)%fcor(i,j))**2
+          end do
+       end do
+
+       do j=1,np
+          do i=1,np
+
+             v1     = elem(ie)%state%v(i,j,1,1,n0)
+             v2     = elem(ie)%state%v(i,j,2,1,n0)
+
+             vco(i,j,1) = elem(ie)%met(i,j,1,1)*v1 + elem(ie)%met(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%met(i,j,2,1)*v1 + elem(ie)%met(i,j,2,2)*v2
+             E(i,j) = 0.5D0*( vco(i,j,1)*v1 + vco(i,j,2)*v2 )
+
+          end do
+       end do
+
+       do j=1,np
+          do i=1,np
+             hstar         = (elem(ie)%state%p(i,j,1,n0) + pmean)/g
+             hs            = elem(ie)%state%ps(i,j)/g
+             h             = hstar + hs
+             mass(i,j,ie)    = hstar
+             energy(i,j,ie)  = hstar*E(i,j) + 0.5D0*g*(h**2 - hs**2)
+             penst(i,j,ie)   = penst(i,j,ie)/hstar
+             divsq(i,j,ie)   = div(i,j,ie)*div(i,j,ie)
+             vort(i,j,ie)    = zeta(i,j,ie)
+          end do
+       end do
+
+    end do
+
+    npts=np
+    Imass   = global_integral(elem,mass(:,:,nets:nete),hybrid,npts,nets,nete)
+    Ienergy = global_integral(elem,energy(:,:,nets:nete),hybrid,npts,nets,nete)
+    Ipenst  = global_integral(elem,penst(:,:,nets:nete),hybrid,npts,nets,nete)
+    Ivort   = global_integral(elem,vort(:,:,nets:nete),hybrid,npts,nets,nete)
+    Idiv    = global_integral(elem,div(:,:,nets:nete),hybrid,npts,nets,nete)
+    Idivsq  = global_integral(elem,divsq(:,:,nets:nete),hybrid,npts,nets,nete)
+
+    time   = Time_at(tl%nstep)
+
+    if (hybrid%masterthread) then
+       !print *,'mass, pmean/g = ',Imass,pmean/g
+       if (tl%nstep==0) then
+          Imass0   = Imass
+          Ienergy0 = Ienergy
+          Ipenst0  = Ipenst
+       end if
+
+       write(iounit+0,*)time/secpday,(Imass-Imass0)/Imass0,Imass0
+       write(iounit+1,*)time/secpday,(Ienergy-Ienergy0)/Ienergy0,Ienergy0
+       write(iounit+2,*)time/secpday,(Ipenst-Ipenst0)/Ipenst0,Ipenst0
+       write(iounit+3,*)time/secpday,Ivort
+       write(iounit+4,*)time/secpday,Idiv
+       write(iounit+5,*)time/secpday,SQRT(Idivsq)
+
+       write(6,*)""
+       write(6,*)time/secpday,"mass          =",(Imass-Imass0)/Imass0
+       write(6,*)time/secpday,"total energy  =",(Ienergy-Ienergy0)/Ienergy0
+       write(6,*)time/secpday,"pot enstrophy =",(Ipenst-Ipenst0)/Ipenst0
+       write(6,*)time/secpday,"vorticity     =",Ivort
+       write(6,*)time/secpday,"divergence    =",Idiv
+       write(6,*)time/secpday,"RMS divergence=",SQRT(Idivsq)
+
+    end if
+
+
+  end subroutine planar_dbl_vrtx_invariants
 
 end module shallow_water_mod

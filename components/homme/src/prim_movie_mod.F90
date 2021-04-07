@@ -19,7 +19,7 @@ module prim_movie_mod
   use element_mod, only : element_t
 
   use cube_mod, only : cube_assemble
-  use control_mod, only : test_case, runtype, &
+  use control_mod, only : test_case, runtype, geometry, &
        restartfreq, &
        integration, hypervis_power, qsplit
   use common_io_mod, only : &
@@ -219,10 +219,18 @@ contains
     call nf_global_attribute(ncdf, 'np', np)
     call nf_global_attribute(ncdf, 'ne', ne)
 
+  if (geometry=="sphere") then
     call nf_variable_attributes(ncdf, 'ps', 'surface pressure','Pa','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'area', 'area weights','radians^2','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
+  else if (geometry=="plane") then
+    call nf_variable_attributes(ncdf, 'ps', 'surface pressure','Pa','coordinates','x y')
+    call nf_variable_attributes(ncdf, 'area', 'area weights','m^2','coordinates','x y')
+    call nf_variable_attributes(ncdf, 'u', 'x-dir wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'v', 'y-dir wind component','meters/second')
+  end if
+
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'Th','potential temperature \theta','degrees kelvin')
     call nf_variable_attributes(ncdf, 'w', 'vertical wind component','meters/second')
@@ -235,8 +243,14 @@ contains
     call nf_variable_attributes(ncdf, 'PHIS', 'surface geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
 #endif
+  if (geometry=="sphere") then
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
+  else if (geometry=="plane") then
+    call nf_variable_attributes(ncdf, 'lat', 'column y','m')
+    call nf_variable_attributes(ncdf, 'lon', 'column x','m')
+  end if
+
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
     call nf_variable_attributes(ncdf, 'lev' ,'hybrid level at midpoints' ,'level','positive','down') !,'formula_terms','a: hyam b: hybm p0: P0 ps: PS')
     call nf_variable_attributes(ncdf, 'ilev','hybrid level at interfaces','level','positive','down') !,'formula_terms','a: hyai b: hybi p0: P0 ps: PS')
@@ -286,8 +300,11 @@ contains
             end if
           enddo
 
+          ! only do conversion if we are on the sphere
+          if (geometry=="sphere") then
           latp=latp*180/dd_pi
           lonp=lonp*180/dd_pi
+          end if
           call nf_put_var(ncdf(ios),latp,start(1:1),count(1:1),name='lat', iodescin=iodesc2d)
           call nf_put_var(ncdf(ios),lonp,start(1:1),count(1:1),name='lon', iodescin=iodesc2d)
 
@@ -329,7 +346,12 @@ contains
                 en=st+elem(ie)%idxp%NumUniquePts-1
                 vartmp = 0
                 do k=1,kmax
+                  ! only do conversion if we are on the sphere
+                  if (geometry=="sphere") then
                    vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lon*180/dd_pi
+                 else if (geometry=="plane") then
+                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lon
+                  end if
                 enddo
                 call UniquePoints(elem(ie)%idxp, nlev, vartmp, var3d(st:en,:))
                 st=en+1
@@ -345,7 +367,12 @@ contains
                 en=st+elem(ie)%idxp%NumUniquePts-1
                 vartmp = 0
                 do k=1,kmax
+                  ! only do conversion if we are on the sphere
+                  if (geometry=="sphere") then
                    vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lat*180/dd_pi
+                  else if (geometry=="plane") then
+                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lat
+                  end if
                 enddo
                 call UniquePoints(elem(ie)%idxp,nlev,vartmp,var3d(st:en,:))
                 st=en+1
