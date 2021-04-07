@@ -7,6 +7,7 @@
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
 
 namespace scream {
 namespace physics {
@@ -215,9 +216,19 @@ struct UnitWrap::UnitTest<D>::TestUniversal
         Real zi_top = zi_bot + (k+1); 
         dz_tests(zi_top,zi_bot,errors);
         // DSE Test
-        Real temp = k+1;
-        Real height = k+1;
-        Real surface_height = k+1;
+        std::random_device rd;
+        using rngAlg = std::mt19937_64;
+        const unsigned int catchRngSeed = Catch::rngSeed();
+        const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+        rngAlg engine(seed);
+        using RPDF = std::uniform_real_distribution<Real>;
+        RPDF pdf(1e-3,1e3);
+
+        Real temp,height,surface_height;
+        ekat::genRandArray(&temp,1,engine,pdf);
+        ekat::genRandArray(&height,1,engine,pdf);
+        ekat::genRandArray(&surface_height,1,engine,pdf);
+
         dse_tests(temp,height,surface_height,errors);
       }
 

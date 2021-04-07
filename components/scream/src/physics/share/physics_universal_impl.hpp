@@ -120,14 +120,15 @@ Functions<S,D>::get_dse(const Spack& T_mid, const Spack& z_mid, const Real surf_
   static constexpr Scalar cp  = C::CP;
   static constexpr Scalar ggr = C::gravit;
 
-  Spack result;
-  const Spack dse = cp*T_mid + ggr*z_mid + surf_geopotential;
+  const Spack dse(range_mask, cp*T_mid + ggr*z_mid + surf_geopotential);
+
   // Check that there are no obvious errors in the result.
-  EKAT_KERNEL_ASSERT_MSG(!((isnan(dse) && range_mask).any()), "Error in get_dse, dse has NaN values.\n"); // exit with an error message
-  EKAT_KERNEL_ASSERT_MSG(!(((dse <= 0) && range_mask).any()), "Error in get_dse, dse has negative values.\n"); // exit with an error message
-  // Set the values of the result
-  result.set(range_mask,dse);
-  return result;
+  EKAT_KERNEL_ASSERT_MSG((isnan(T_mid) && range_mask).none(), "Error in get_dse, T_mid has NaN values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG((isnan(z_mid) && range_mask).none(), "Error in get_dse, z_mid has NaN values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG((isnan(surf_geopotential) && range_mask).none(), "Error in get_dse, surf_geopotential has NaN values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG(((dse <= 0) && range_mask).none(), "Error in get_dse, dse has negative values.\n"); // exit with an error message
+
+  return dse;
 }
 //-----------------------------------------------------------------------------------------------//
 
