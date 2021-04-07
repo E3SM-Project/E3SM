@@ -94,17 +94,18 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_computed_field("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name);
   add_computed_field("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name);
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
-  add_computed_field("mu_qc",             scalar3d_layout_mid, nondim, grid_name);
-  add_computed_field("lambda_qc",         scalar3d_layout_mid, nondim, grid_name);
-  add_computed_field("eff_radius_qc",     scalar3d_layout_mid, m,      grid_name);
-  add_computed_field("eff_radius_qi",     scalar3d_layout_mid, m,      grid_name);
-  add_computed_field("precip_total_tend", scalar3d_layout_mid, mm,     grid_name);
-  add_computed_field("nevapr",            scalar3d_layout_mid, nondim, grid_name);
-  add_computed_field("qr_evap_tend",      scalar3d_layout_mid, mm/s,   grid_name);
+  m_computed_fields.emplace("mu_qc",             scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("lambda_qc",         scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("eff_radius_qc",     scalar3d_layout_mid, m,      grid_name);
+  m_computed_fields.emplace("eff_radius_qi",     scalar3d_layout_mid, m,      grid_name);
+  m_computed_fields.emplace("precip_total_tend", scalar3d_layout_mid, mm,     grid_name);
+  m_computed_fields.emplace("qr_evap_tend",      scalar3d_layout_mid, mm/s,   grid_name);
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
-  add_computed_field("micro_liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
-  add_computed_field("micro_vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name);
-  add_computed_field("micro_vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("micro_liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("micro_vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("micro_vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
+  // Depracated: (these should be removed from the AD eventually)
+//ASD  m_computed_fields.emplace("nevapr",            scalar3d_layout_mid, nondim, grid_name);
 
 }
 
@@ -173,7 +174,6 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   diag_outputs.diag_eff_radius_qc = m_p3_fields_out["eff_radius_qc"].get_reshaped_view<Pack**>();
   diag_outputs.diag_eff_radius_qi = m_p3_fields_out["eff_radius_qi"].get_reshaped_view<Pack**>();
   diag_outputs.precip_total_tend  = m_p3_fields_out["precip_total_tend"].get_reshaped_view<Pack**>();
-  diag_outputs.nevapr             = m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
   diag_outputs.qr_evap_tend       = m_p3_fields_out["qr_evap_tend"].get_reshaped_view<Pack**>();
 
   diag_outputs.precip_liq_surf  = precip_liq_surf; 
@@ -197,6 +197,10 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   history_only.liq_ice_exchange = m_p3_fields_out["micro_liq_ice_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_liq_exchange = m_p3_fields_out["micro_vap_liq_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_ice_exchange = m_p3_fields_out["micro_vap_ice_exchange"].get_reshaped_view<Pack**>();
+  // Depracated -- These are fields actively being deleted, but are still needed for F90 BFB tests.
+//ASD  diag_outputs.nevapr           = m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
+  view_2d nevapr("nevapr",m_num_cols,nk_pack);
+  depracated.nevapr             = nevapr; //m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi,diag_outputs.lamc,diag_outputs.mu_c,
@@ -242,7 +246,7 @@ void P3Microphysics::run_impl (const Real dt)
 
   // Run p3 main
   P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-                                       history_only, m_num_cols, m_num_levs);
+                                       history_only, depracated, m_num_cols, m_num_levs);
 
   // Conduct the post-processing of the p3_main output.
   Kokkos::parallel_for(

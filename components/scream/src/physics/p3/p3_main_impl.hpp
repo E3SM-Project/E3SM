@@ -914,6 +914,7 @@ Int Functions<S,D>
   const P3DiagnosticOutputs& diagnostic_outputs,
   const P3Infrastructure& infrastructure,
   const P3HistoryOnly& history_only,
+  const P3Depracated& depracated,
   Int nj,
   Int nk)
 {
@@ -1034,7 +1035,8 @@ Int Functions<S,D>
     const auto olamc               = ekat::subview(diagnostic_outputs.lamc, i);
     const auto oqv2qi_depos_tend   = ekat::subview(diagnostic_outputs.qv2qi_depos_tend, i);
     const auto oprecip_total_tend  = ekat::subview(diagnostic_outputs.precip_total_tend, i);
-    const auto onevapr             = ekat::subview(diagnostic_outputs.nevapr, i);
+//ASD    const auto onevapr             = ekat::subview(diagnostic_outputs.nevapr, i);
+    const auto onevapr             = ekat::subview(depracated.nevapr, i);
     const auto oqr_evap_tend       = ekat::subview(diagnostic_outputs.qr_evap_tend, i);
     const auto oprecip_liq_flux    = ekat::subview(diagnostic_outputs.precip_liq_flux, i);
     const auto oprecip_ice_flux    = ekat::subview(diagnostic_outputs.precip_ice_flux, i);

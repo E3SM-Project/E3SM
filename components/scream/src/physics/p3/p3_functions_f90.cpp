@@ -3347,15 +3347,17 @@ Int p3_main_f(
                                       exner_d, qv_prev_d, t_prev_d};
   P3F::P3DiagnosticOutputs diag_outputs{mu_c_d, lamc_d, qv2qi_depos_tend_d, precip_liq_surf_d,
                                         precip_ice_surf_d, diag_eff_radius_qc_d, diag_eff_radius_qi_d,
-                                        rho_qi_d, precip_total_tend_d, nevapr_d,
+                                        rho_qi_d, precip_total_tend_d, 
+//ASD                                        nevapr_d,
                                         qr_evap_tend_d, precip_liq_flux_d, precip_ice_flux_d};
   P3F::P3Infrastructure infrastructure{dt, it, its, ite, kts, kte,
                                        do_predict_nc, do_prescribed_CCN, col_location_d};
   P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d,
                                   vap_ice_exchange_d};
+  P3F::P3Depracated  depracated{nevapr_d};
 
   auto elapsed_microsec = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-                                       history_only, nj, nk);
+                                       history_only, depracated, nj, nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
     precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_liq_surf_d(i);

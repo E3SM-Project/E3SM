@@ -166,8 +166,8 @@ struct Functions
     view_2d<Spack> rho_qi;
     // Total precipitation (rain + snow)
     view_2d<Spack> precip_total_tend;
-    // Evaporation of total precipitation (rain + snow)
-    view_2d<Spack> nevapr;
+//    // Evaporation of total precipitation (rain + snow)
+//    view_2d<Spack> nevapr;
     // Evaporation of rain
     view_2d<Spack> qr_evap_tend;
     // Grid-box average rain flux [kg m^-2 s^-1] pverp
@@ -209,6 +209,13 @@ struct Functions
     view_2d<Spack> vap_liq_exchange;
     // Sum of vap-ice phase change tendencies
     view_2d<Spack> vap_ice_exchange;
+  };
+
+  // This struct stores diagnostic outputs computed by P3.
+  struct P3Depracated {
+    P3Depracated() = default;
+    // Evaporation of total precipitation (rain + snow)
+    view_2d<Spack> nevapr;
   };
 
   // -- Table3 --
@@ -966,6 +973,7 @@ struct Functions
     const P3DiagnosticOutputs& diagnostic_outputs,
     const P3Infrastructure& infrastructure,
     const P3HistoryOnly& history_only,
+    const P3Depracated& depracated,
     Int nj, // number of columns
     Int nk); // number of vertical cells per column
 
