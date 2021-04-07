@@ -2308,6 +2308,7 @@ contains
 
    real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
                                                filteredSSHGradientZonal, filteredSSHGradientMeridional, &
+                                               avgTotalFreshWaterTemperatureFlux, &
                                                avgCO2_gas_flux, DMSFlux, surfaceUpwardCO2Flux, &
                                                avgOceanSurfaceDIC, &
                                                avgOceanSurfaceDON, &
@@ -2376,6 +2377,7 @@ contains
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
      call mpas_pool_get_array(forcingPool, 'filteredSSHGradientZonal', filteredSSHGradientZonal)
      call mpas_pool_get_array(forcingPool, 'filteredSSHGradientMeridional', filteredSSHGradientMeridional)
+     call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
      if ( frazilIceActive ) then
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
         call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
@@ -2428,6 +2430,9 @@ contains
 
        o2x_o % rAttr(index_o2x_So_dhdx, n) = filteredSSHGradientZonal(i)
        o2x_o % rAttr(index_o2x_So_dhdy, n) = filteredSSHGradientMeridional(i)
+
+       o2x_o % rAttr(index_o2x_Faoo_h2otemp, n) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
+
        if ( frazilIceActive ) then
           ! negative when frazil ice can be melted
           keepFrazil = .true.
