@@ -1859,13 +1859,13 @@ contains
                                  tend_normalVelocity(maxLevelEdgeBot(iEdge),iEdge)
         thicknessSum  = layerThickEdge(maxLevelEdgeBot(iEdge),iEdge)
 
-        do k = maxLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
+        do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
           normalThicknessFluxSum = normalThicknessFluxSum + layerThickEdge(k,iEdge) * tend_normalVelocity(k,iEdge)
           thicknessSum  =  thicknessSum + layerThickEdge(k,iEdge)
         enddo
 
         vertSum = normalThicknessFluxSum / thicknessSum
-        do k = maxLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+        do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
           tend_normalVelocity(k,iEdge) = tend_normalVelocity(k,iEdge) - vertSum
         enddo
       enddo ! iEdge
