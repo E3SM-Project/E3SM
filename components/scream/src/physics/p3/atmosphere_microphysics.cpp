@@ -104,7 +104,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_computed_fields.emplace("micro_liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
   m_computed_fields.emplace("micro_vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name);
   m_computed_fields.emplace("micro_vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
-  // Depracated: (these should be removed from the AD eventually)
+  // Deprecated: (these should be removed from the AD eventually)
 //ASD  m_computed_fields.emplace("nevapr",            scalar3d_layout_mid, nondim, grid_name);
 
 }
@@ -197,10 +197,10 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   history_only.liq_ice_exchange = m_p3_fields_out["micro_liq_ice_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_liq_exchange = m_p3_fields_out["micro_vap_liq_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_ice_exchange = m_p3_fields_out["micro_vap_ice_exchange"].get_reshaped_view<Pack**>();
-  // Depracated -- These are fields actively being deleted, but are still needed for F90 BFB tests.
+  // Deprecated -- These are fields actively being deleted, but are still needed for F90 BFB tests.
 //ASD  diag_outputs.nevapr           = m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
   view_2d nevapr("nevapr",m_num_cols,nk_pack);
-  depracated.nevapr             = nevapr; //m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
+  deprecated.nevapr             = nevapr; //m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi,diag_outputs.lamc,diag_outputs.mu_c,
@@ -246,7 +246,7 @@ void P3Microphysics::run_impl (const Real dt)
 
   // Run p3 main
   P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-                                       history_only, depracated, m_num_cols, m_num_levs);
+                                       history_only, deprecated, m_num_cols, m_num_levs);
 
   // Conduct the post-processing of the p3_main output.
   Kokkos::parallel_for(

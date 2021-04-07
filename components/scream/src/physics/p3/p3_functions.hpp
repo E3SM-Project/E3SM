@@ -212,8 +212,8 @@ struct Functions
   };
 
   // This struct stores diagnostic outputs computed by P3.
-  struct P3Depracated {
-    P3Depracated() = default;
+  struct P3Deprecated {
+    P3Deprecated() = default;
     // Evaporation of total precipitation (rain + snow)
     view_2d<Spack> nevapr;
   };
@@ -973,7 +973,7 @@ struct Functions
     const P3DiagnosticOutputs& diagnostic_outputs,
     const P3Infrastructure& infrastructure,
     const P3HistoryOnly& history_only,
-    const P3Depracated& depracated,
+    const P3Deprecated& deprecated,
     Int nj, // number of columns
     Int nk); // number of vertical cells per column
 
