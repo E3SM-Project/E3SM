@@ -519,7 +519,7 @@ contains
               do i = 1, nEdgesOnCell(iCell)
                  iEdge = edgesOnCell(i, iCell)
 
-                 deltaVelocitySquared(minLevelCell(iCell):minLevelCell(iCell)) = 0.0_RKIND
+                 deltaVelocitySquared(1:minLevelCell(iCell)) = 0.0_RKIND
 
                  normalVelocitySum(minLevelCell(iCell)) = normalVelocity(minLevelCell(iCell), iEdge)* &
                                                           layerThickEdge(minLevelCell(iCell),iEdge)
@@ -662,8 +662,8 @@ contains
                           Snonlocal = cvmix_variables%kpp_Snonlocal_iface(minLevelCell(iCell):maxLevelCell(iCell)+1), &
                           surf_fric = cvmix_variables%SurfaceFriction,                      &
                           surf_buoy = cvmix_variables%SurfaceBuoyancyForcing,               &
-                          nlev = maxLevelCell(iCell),                                  &
-                          max_nlev = nVertLevels,                                      &
+                          nlev = maxLevelCell(iCell) - minLevelCell(iCell) + 2,             &
+                          max_nlev = maxLevelCell(iCell) - minLevelCell(iCell) + 2,         &
                           Langmuir_EFactor = langmuirEnhancementFactor )
 !           call mpas_timer_stop('cvmix coeffs kpp')
 
@@ -687,7 +687,7 @@ contains
          if ( kpp_stage == 2) then
          ! call convective mixing scheme
          if (config_use_cvmix_convection) then
-            do k = minLevelCell(iCell), maxLevelCell(iCell) + 1
+            do k = 1, maxLevelCell(iCell) + 1
                cvmix_variables % Mdiff_iface(k) = 0.0_RKIND
                cvmix_variables % Tdiff_iface(k) = 0.0_RKIND
             end do
