@@ -521,7 +521,7 @@
     <BASELINE_ROOT>$ENV{HOME}/projects/e3sm/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
-    <GMAKE_J>16</GMAKE_J>
+    <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <SUPPORTED_BY>lukasz at uchicago dot edu</SUPPORTED_BY>
