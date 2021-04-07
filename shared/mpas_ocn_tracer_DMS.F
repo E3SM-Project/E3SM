@@ -172,10 +172,10 @@ contains
 
       numColumns = 1
       column = 1
-      iLevelSurface = minLevelCell(iCell)
 
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
+         iLevelSurface = minLevelCell(iCell)
          DMS_input%number_of_active_levels(column) = maxLevelCell(iCell) - minLevelCell(iCell) + 1
 
          DMS_forcing%ShortWaveFlux_surface(column)  = shortWaveHeatFlux(iCell)
