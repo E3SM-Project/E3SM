@@ -58,7 +58,8 @@ MODULE MOSART_physics_mod
     
     integer :: iunit, idam, m, k, unitUp, cnt, ier, dd, nSubStep   !local index
     real(r8) :: temp_erout, localDeltaT, temp_haout, temp_Tt, temp_Tr, temp_T, temp_ha
-    real(r8) :: negchan, numSubSteps
+    real(r8) :: negchan
+	integer  :: numSubSteps
     integer  :: yr,mon,day,tod
     real(r8) :: myTINYVALUE
     character(len=*),parameter :: subname = '(Euler)'
@@ -372,14 +373,12 @@ MODULE MOSART_physics_mod
        if (TUnit%euler_calc(nt)) then
        do iunit=rtmCTL%begr,rtmCTL%endr
           if(TUnit%mask(iunit) > 0) then
-                                                                          
              temp_erout = 0._r8
              temp_haout = 0._r8
              temp_Tr = 0._r8
              if(Tctl%RoutingMethod==1) then  ! local stepping method only applicable for kinamatic wave routing method
                  numSubSteps = TUnit%numDT_r(iunit)
                  localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/numSubSteps
-                 TRunoff%rslp_energy(iunit) = TUnit%rslp(iunit)
                  do k=1,numSubSteps
                     call mainchannelRouting(iunit,nt,localDeltaT)    
                     TRunoff%wr(iunit,nt) = TRunoff%wr(iunit,nt) + TRunoff%dwr(iunit,nt) * localDeltaT
@@ -392,7 +391,7 @@ MODULE MOSART_physics_mod
                     temp_erout = temp_erout + TRunoff%erout(iunit,nt) ! erout here might be inflow to some downstream subbasin, so treat it differently than erlateral
                  end do
              elseif(Tctl%RoutingMethod==2) then ! diffusion wave routing method
-                 numSubSteps = 1 ! now set as 1, could be increased as needed.
+                 numSubSteps = 20 ! now set as 20, could be adjusted as needed.
                  localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/numSubSteps
                  TRunoff%rslp_energy(iunit) = CRRSLP(iunit)
                  do k=1,numSubSteps
