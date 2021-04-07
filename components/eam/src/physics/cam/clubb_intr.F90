@@ -1019,7 +1019,7 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, pdf_zm_varnce_w_2_idx, 0.0_r8)
        call pbuf_set_field(pbuf2d, pdf_zm_mixt_frac_idx, 0.0_r8)
 
-       call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
+       call pbuf_set_field(pbuf2d, vmag_gust_idx,    0.0_r8)
 
     endif
    
@@ -1437,6 +1437,8 @@ end subroutine clubb_init_cnst
    real(r8),parameter :: gust_facl = 1.2_r8 !gust fac for land
    real(r8),parameter :: gust_faco = 0.9_r8 !gust fac for ocean
    real(r8),parameter :: gust_facc = 1.5_r8 !gust fac for clubb
+
+   real(r8) :: gust_mult
 
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
@@ -1989,11 +1991,15 @@ end subroutine clubb_init_cnst
          end if
       end if
       if (l_correct_upwp1) then
+         umb(i)  = state1%u(i,pver)
+         vmb(i)  = state1%v(i,pver)
+         vmag(i) = max(1.e-5_r8, sqrt(umb(i)**2._r8 + vmb(i)**2._r8))
+         gust_mult = (vmag_gust(i) + vmag(i)) / vmag(i)
          upwp1_cr(i) = max(um2_bc(i)**2 + vm2_bc(i)**2,.25_r8)
-         vpwp1_cr(i) = max(sqrt(um(i,pver)**2+vm(i,pver)**2),.5_r8)/upwp1_cr(i)
+         vpwp1_cr(i) = max(sqrt(um(i,pver)**2+vm(i,pver)**2) * gust_mult,.5_r8)/upwp1_cr(i)
          upwp1_cr(i) = sqrt(cam_in%wsx(i)**2+cam_in%wsy(i)**2)*vpwp1_cr(i)
-         vpwp1_cr(i) =-upwp1_cr(i)*vm(i,pver)
-         upwp1_cr(i) =-upwp1_cr(i)*um(i,pver)
+         vpwp1_cr(i) =-upwp1_cr(i) * gust_mult * vm(i,pver)
+         upwp1_cr(i) =-upwp1_cr(i) * gust_mult * um(i,pver)
       else
          upwp1_cr(i) = cam_in%wsx(i)
          vpwp1_cr(i) = cam_in%wsy(i)
