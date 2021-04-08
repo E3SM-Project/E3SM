@@ -198,8 +198,7 @@ class TestAllScream(object):
         if not self.baselines_are_present():
             print ("Some baselines were not found. Rebuilding them.")
             self._must_generate_baselines = True
-        elif self.baselines_are_expired(expected_baseline_sha=baseline_ref_sha):
-
+        elif self._integration_test and self.baselines_are_expired(expected_baseline_sha=baseline_ref_sha):
             print ("Baselines expired. Rebuilding them.")
             self._must_generate_baselines = True
         else:
