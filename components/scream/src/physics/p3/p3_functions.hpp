@@ -148,10 +148,10 @@ struct Functions
   // This struct stores diagnostic outputs computed by P3.
   struct P3DiagnosticOutputs {
     P3DiagnosticOutputs() = default;
-    // Size distribution shape parameter for radiation
-    view_2d<Spack> mu_c;
-    // Size distribution slope parameter for radiation
-    view_2d<Spack> lamc;
+//ASD    // Size distribution shape parameter for radiation
+//ASD    view_2d<Spack> mu_c;
+//ASD    // Size distribution slope parameter for radiation
+//ASD    view_2d<Spack> lamc;
     // qitend due to deposition/sublimation
     view_2d<Spack> qv2qi_depos_tend;
     // Precipitation rate, liquid [m s-1]
@@ -220,6 +220,10 @@ struct Functions
     view_2d<Spack> qr_evap_tend;
     // Total precipitation (rain + snow)
     view_2d<Spack> precip_total_tend;
+    // Size distribution shape parameter for radiation
+    view_2d<Spack> mu_c;
+    // Size distribution slope parameter for radiation
+    view_2d<Spack> lamc;
   };
 
   // -- Table3 --

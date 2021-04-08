@@ -1031,8 +1031,10 @@ Int Functions<S,D>
     const auto odiag_eff_radius_qc = ekat::subview(diagnostic_outputs.diag_eff_radius_qc, i);
     const auto odiag_eff_radius_qi = ekat::subview(diagnostic_outputs.diag_eff_radius_qi, i);
     const auto orho_qi             = ekat::subview(diagnostic_outputs.rho_qi, i);
-    const auto omu_c               = ekat::subview(diagnostic_outputs.mu_c, i);
-    const auto olamc               = ekat::subview(diagnostic_outputs.lamc, i);
+//ASD    const auto omu_c               = ekat::subview(diagnostic_outputs.mu_c, i);
+    const auto omu_c               = ekat::subview(deprecated.mu_c, i);
+//ASD    const auto olamc               = ekat::subview(diagnostic_outputs.lamc, i);
+    const auto olamc               = ekat::subview(deprecated.lamc, i);
     const auto oqv2qi_depos_tend   = ekat::subview(diagnostic_outputs.qv2qi_depos_tend, i);
 //ASD    const auto oprecip_total_tend  = ekat::subview(diagnostic_outputs.precip_total_tend, i);
     const auto oprecip_total_tend  = ekat::subview(deprecated.precip_total_tend, i);
