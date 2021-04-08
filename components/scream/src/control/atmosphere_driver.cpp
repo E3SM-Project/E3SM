@@ -116,7 +116,7 @@ void AtmosphereDriver::create_grids()
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
 
-  m_ad_status |= s_procs_created;
+  m_ad_status |= s_grids_created;
 }
 
 void AtmosphereDriver::create_fields()
