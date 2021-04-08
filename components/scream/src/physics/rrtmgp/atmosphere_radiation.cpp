@@ -51,6 +51,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name());
 
   // Set computed (output) fields
+  add_field<Computed>("T_mid"     , scalar3d_layout_mid, K  , grid->name());
   add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
   add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid->name());
   add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name());
@@ -84,7 +85,6 @@ void RRTMGPRadiation::run_impl (const Real /* dt */) {
   // Get device views
   auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_reshaped_view<const Real**>();
   auto d_pint = m_rrtmgp_fields_in.at("pint").get_reshaped_view<const Real**>();
-  auto d_tmid = m_rrtmgp_fields_in.at("T_mid").get_reshaped_view<const Real**>();
   auto d_tint = m_rrtmgp_fields_in.at("tint").get_reshaped_view<const Real**>();
   auto d_gas_vmr = m_rrtmgp_fields_in.at("gas_vmr").get_reshaped_view<const Real***>();
   auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("surf_alb_direct").get_reshaped_view<const Real**>();
@@ -94,6 +94,7 @@ void RRTMGPRadiation::run_impl (const Real /* dt */) {
   auto d_iwp = m_rrtmgp_fields_in.at("iwp").get_reshaped_view<const Real**>();
   auto d_rel = m_rrtmgp_fields_in.at("eff_radius_qc").get_reshaped_view<const Real**>();
   auto d_rei = m_rrtmgp_fields_in.at("eff_radius_qi").get_reshaped_view<const Real**>();
+  auto d_tmid = m_rrtmgp_fields_out.at("T_mid").get_reshaped_view<Real**>();
   auto d_sw_flux_up = m_rrtmgp_fields_out.at("SW_flux_up").get_reshaped_view<Real**>();
   auto d_sw_flux_dn = m_rrtmgp_fields_out.at("SW_flux_dn").get_reshaped_view<Real**>();
   auto d_sw_flux_dn_dir = m_rrtmgp_fields_out.at("SW_flux_dn_dir").get_reshaped_view<Real**>();
