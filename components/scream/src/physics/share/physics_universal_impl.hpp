@@ -125,7 +125,7 @@ Functions<S,D>::get_dse(const Spack& T_mid, const Spack& z_mid, const Real surf_
   // Check that there are no obvious errors in the result.
   EKAT_KERNEL_ASSERT_MSG((isnan(T_mid) && range_mask).none(), "Error in get_dse, T_mid has NaN values.\n"); // exit with an error message
   EKAT_KERNEL_ASSERT_MSG((isnan(z_mid) && range_mask).none(), "Error in get_dse, z_mid has NaN values.\n"); // exit with an error message
-  EKAT_KERNEL_ASSERT_MSG((isnan(surf_geopotential) && range_mask).none(), "Error in get_dse, surf_geopotential has NaN values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG(!isnan(surf_geopotential), "Error in get_dse, surf_geopotential has NaN values.\n"); // exit with an error message
   EKAT_KERNEL_ASSERT_MSG(((dse <= 0) && range_mask).none(), "Error in get_dse, dse has negative values.\n"); // exit with an error message
 
   return dse;
