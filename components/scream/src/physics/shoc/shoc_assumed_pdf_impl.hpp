@@ -81,7 +81,9 @@ void Functions<S,D>::shoc_assumed_pdf(
   linear_interp(team,zi_grid,zt_grid,wqw_sec,wqw_sec_zt,nlevi,nlev,largeneg);
   linear_interp(team,zi_grid,zt_grid,qw_sec,qw_sec_zt,nlevi,nlev,0);
 
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  // The following is morally a const var, but there are issues with
+  // gnu and std=c++14. The macro ConstExceptGnu is defined in ekat_kokkos_types.hpp.
+  ConstExceptGnu Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
 
     // Store active pack entries
