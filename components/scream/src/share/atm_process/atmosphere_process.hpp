@@ -153,16 +153,14 @@ public:
   //       as provider/customer. The group is just a 'design layer', and the stored
   //       processes are the actuall providers/customers.
   void set_required_field (const Field<const Real>& f) {
-    ekat::error::runtime_check(
-        requires(f.get_header().get_identifier()),
+    EKAT_REQUIRE_MSG (requires_field(f.get_header().get_identifier()),
         "Error! This atmosphere process does not require\n  " +
         f.get_header().get_identifier().get_id_string() +
         "\nSomething is wrong up the call stack. Please, contact developers.\n");
     set_required_field_impl (f);
   }
   void set_computed_field (const Field<Real>& f) {
-    ekat::error::runtime_check(
-        computes(f.get_header().get_identifier()),
+    EKAT_REQUIRE_MSG (computes_field(f.get_header().get_identifier()),
         "Error! This atmosphere process does not compute\n  " +
         f.get_header().get_identifier().get_id_string() +
         "\nSomething is wrong up the call stack. Please, contact developers.\n");
@@ -176,7 +174,7 @@ public:
   //       and if so, and if desired, they can access the bundled field directly.
   //       See field_group.hpp for more details.
   virtual void set_required_group (const FieldGroup<const Real>& /* group */) {
-    ekat::error::runtime_abort(
+    EKAT_ERROR_MSG (
       "Error! This atmosphere process does not require a group of fields, meaning\n"
       "       that 'get_required_groups' was not overridden in this class, or that\n"
       "       its override returns an empty set.\n"
@@ -185,7 +183,7 @@ public:
     );
   }
   virtual void set_updated_group (const FieldGroup<Real>& /* group */) {
-    ekat::error::runtime_abort(
+    EKAT_ERROR_MSG (
       "Error! This atmosphere process does not update a group of fields, meaning\n"
       "       that 'get_updated_groups' was not overridden in this class, or that\n"
       "       its override returns an empty set.\n"
@@ -215,8 +213,8 @@ public:
   }
 
   // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use our util free function
-  bool requires (const FieldIdentifier& id) const { return ekat::contains(get_required_fields(),id); }
-  bool computes (const FieldIdentifier& id) const { return ekat::contains(get_computed_fields(),id); }
+  bool requires_field (const FieldIdentifier& id) const { return ekat::contains(get_required_fields(),id); }
+  bool computes_field (const FieldIdentifier& id) const { return ekat::contains(get_computed_fields(),id); }
 
   bool requires_group (const std::string& name, const std::string& grid) const {
     for (const auto& it : get_required_groups()) {
