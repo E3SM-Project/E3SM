@@ -19,6 +19,9 @@ namespace scream
  *  All the calls to setup/run methods are simply forwarded to the stored list of
  *  atm processes, and the stored list of required/computed fields is simply a
  *  concatenation of the correspong lists in the underlying atm processes.
+ *  The only caveat is required fields in sequential scheduling: if an atm proc
+ *  requires a field that is computed by a previous atm proc in the group,
+ *  that field is not exposed as a required field of the group.
  */
 
 class AtmosphereProcessGroup : public AtmosphereProcess
@@ -54,12 +57,6 @@ public:
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real>& field_repo) const;
 
-  // The methods used to query the process for its inputs/outputs
-  const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }
-
-  std::set<GroupRequest> get_required_groups () const;
-  std::set<GroupRequest> get_updated_groups () const;
 
   // --- Methods specific to AtmosphereProcessGroup --- //
 
@@ -106,10 +103,6 @@ protected:
 
   // The schedule type: Parallel vs Sequential
   ScheduleType   m_group_schedule_type;
-
-  // The cumulative set of required/computed fields of the atm processes in the group
-  std::set<FieldIdentifier>      m_required_fields;
-  std::set<FieldIdentifier>      m_computed_fields;
 };
 
 } // namespace scream

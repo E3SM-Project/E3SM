@@ -43,9 +43,7 @@ public:
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real>& /* field_repo */) const {}
 
-  // Providing a list of required and computed fields
-  const std::set<FieldIdentifier>&  get_required_fields () const { return m_fids_in; }
-  const std::set<FieldIdentifier>&  get_computed_fields () const { return m_fids_out; }
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& /* field_repos */) const {}
 
 protected:
 
@@ -63,9 +61,6 @@ protected:
   // Setting the field in the atmosphere process
   void set_required_field_impl (const Field<const Real>& /* f */) {}
   void set_computed_field_impl (const Field<      Real>& /* f */) {}
-
-  std::set<FieldIdentifier> m_fids_in;
-  std::set<FieldIdentifier> m_fids_out;
 
   std::string m_name;
   std::string m_grid_name;
@@ -90,9 +85,8 @@ public:
     const auto grid = gm->get_grid(m_grid_name);
     const auto dyn_lt = grid->get_3d_scalar_layout(true);
 
-    m_fids_in.emplace("Temperature tendency",dyn_lt,K/s,m_grid_name);
-
-    m_fids_out.emplace("Temperature",dyn_lt,K,m_grid_name);
+    add_required_field("Temperature tendency",dyn_lt,K/s,m_grid_name);
+    add_computed_field("Temperature",dyn_lt,K,m_grid_name);
   }
 };
 
@@ -113,9 +107,8 @@ public:
     const auto grid = gm->get_grid(m_grid_name);
     const auto phys_lt = grid->get_3d_scalar_layout (true);
 
-    m_fids_in.emplace("Temperature",phys_lt,K,m_grid_name);
-
-    m_fids_out.emplace("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
+    add_required_field("Temperature",phys_lt,K,m_grid_name);
+    add_computed_field("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
   }
 };
 
@@ -136,10 +129,10 @@ public:
     const auto grid = gm->get_grid(m_grid_name);
     const auto phys_lt = grid->get_3d_scalar_layout (true);
 
-    m_fids_in.emplace("Temperature",phys_lt,K,m_grid_name);
-    m_fids_in.emplace("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
+    add_required_field("Temperature",phys_lt,K,m_grid_name);
+    add_required_field("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
 
-    m_fids_out.emplace("Temperature tendency",phys_lt,K/s,m_grid_name);
+    add_computed_field("Temperature tendency",phys_lt,K/s,m_grid_name);
   }
 };
 

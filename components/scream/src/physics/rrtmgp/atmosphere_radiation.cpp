@@ -37,25 +37,25 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   FieldLayout scalar2d_swband_layout { {COL,SWBND}, {m_ncol,m_nswbands} };
 
   // Set required (input) fields here
-  m_required_fields.emplace("p_mid" , scalar3d_layout_mid, Pa, grid->name());
-  m_required_fields.emplace("pint", scalar3d_layout_int, Pa, grid->name());
-  m_required_fields.emplace("T_mid" , scalar3d_layout_mid, K , grid->name());
-  m_required_fields.emplace("tint" , scalar3d_layout_int, K , grid->name());
-  m_required_fields.emplace("gas_vmr", gas_layout, kgkg, grid->name());
-  m_required_fields.emplace("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
-  m_required_fields.emplace("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name());
-  m_required_fields.emplace("cos_zenith", scalar2d_layout, nondim, grid->name());
-  m_required_fields.emplace("lwp", scalar3d_layout_mid, kg/m3, grid->name());
-  m_required_fields.emplace("iwp", scalar3d_layout_mid, kg/m3, grid->name());
-  m_required_fields.emplace("eff_radius_qc", scalar3d_layout_mid, micron, grid->name());
-  m_required_fields.emplace("eff_radius_qi", scalar3d_layout_mid, micron, grid->name());
+  add_required_field("p_mid" , scalar3d_layout_mid, Pa, grid->name());
+  add_required_field("pint", scalar3d_layout_int, Pa, grid->name());
+  add_required_field("T_mid" , scalar3d_layout_mid, K , grid->name());
+  add_required_field("tint" , scalar3d_layout_int, K , grid->name());
+  add_required_field("gas_vmr", gas_layout, kgkg, grid->name());
+  add_required_field("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
+  add_required_field("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name());
+  add_required_field("cos_zenith", scalar2d_layout, nondim, grid->name());
+  add_required_field("lwp", scalar3d_layout_mid, kg/m3, grid->name());
+  add_required_field("iwp", scalar3d_layout_mid, kg/m3, grid->name());
+  add_required_field("eff_radius_qc", scalar3d_layout_mid, micron, grid->name());
+  add_required_field("eff_radius_qi", scalar3d_layout_mid, micron, grid->name());
 
   // Set computed (output) fields
-  m_computed_fields.emplace("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
-  m_computed_fields.emplace("SW_flux_up", scalar3d_layout_int, Wm2, grid->name());
-  m_computed_fields.emplace("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name());
-  m_computed_fields.emplace("LW_flux_up", scalar3d_layout_int, Wm2, grid->name());
-  m_computed_fields.emplace("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
+  add_computed_field("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
+  add_computed_field("SW_flux_up", scalar3d_layout_int, Wm2, grid->name());
+  add_computed_field("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name());
+  add_computed_field("LW_flux_up", scalar3d_layout_int, Wm2, grid->name());
+  add_computed_field("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
 
 }  // RRTMGPRadiation::set_grids
 

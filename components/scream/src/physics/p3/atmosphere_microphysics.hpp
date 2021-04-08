@@ -65,8 +65,6 @@ public:
   void register_fields (FieldRepository<Real>& field_repo) const;
 
   // Get the set of required/computed fields
-  const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
 
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
@@ -229,8 +227,6 @@ protected:
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
 
-  std::set<FieldIdentifier> m_required_fields;
-  std::set<FieldIdentifier> m_computed_fields;
 
   std::map<std::string,const_field_type>  m_p3_fields_in;
   std::map<std::string,field_type>        m_p3_fields_out;

@@ -197,27 +197,22 @@ public:
 
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.
-  virtual const std::set<FieldIdentifier>& get_required_fields () const = 0;
-  virtual const std::set<FieldIdentifier>& get_computed_fields () const = 0;
+  const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
+  const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
 
   // If needed, an Atm Proc can claim to need/update a whole group of fields, without really knowing
   // a priori how many they are, or even what they are. Each entry of the returned set is a pair
   // of strings, where the 1st is the group name, and the 2nd the grid name. If the same group is
   // needed on multiple grids, two separate entries are needed.
-  // Note: we provide a default empty version since most Atm Proc classes will likely not need this feature.
-  virtual std::set<GroupRequest> get_required_groups () const {
-    return std::set<GroupRequest>();
-  }
-  virtual std::set<GroupRequest> get_updated_groups () const {
-    return std::set<GroupRequest>();
-  }
+  const std::set<GroupRequest>& get_required_groups () const { return m_required_groups; }
+  const std::set<GroupRequest>& get_updated_groups  () const { return m_updated_groups; }
 
   // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use our util free function
-  bool requires_field (const FieldIdentifier& id) const { return ekat::contains(get_required_fields(),id); }
-  bool computes_field (const FieldIdentifier& id) const { return ekat::contains(get_computed_fields(),id); }
+  bool requires_field (const FieldIdentifier& id) const { return ekat::contains(m_required_fields,id); }
+  bool computes_field (const FieldIdentifier& id) const { return ekat::contains(m_computed_fields,id); }
 
   bool requires_group (const std::string& name, const std::string& grid) const {
-    for (const auto& it : get_required_groups()) {
+    for (const auto& it : m_required_groups) {
       if (it.name==name && it.grid==grid) {
         return true;
       }
@@ -225,7 +220,7 @@ public:
     return false;
   }
   bool updates_group (const std::string& name, const std::string& grid) const {
-    for (const auto& it : get_updated_groups()) {
+    for (const auto& it : m_updated_groups) {
       if (it.name==name && it.grid==grid) {
         return true;
       }
@@ -234,6 +229,38 @@ public:
   }
 
 protected:
+
+  // Derived classes can used these method, so that if we change how fields/groups
+  // requirement are stored (e.g., std::set -> std::liit), they don't need to change
+  // their implementation.
+  void add_required_field (const std::string& name, const FieldLayout& layout,
+                           const ekat::units::Units& u, const std::string& grid_name) {
+    add_required_field(FieldIdentifier(name,layout,u,grid_name));
+  }
+  void add_required_field (const FieldIdentifier& fid) {
+    m_required_fields.emplace(fid);
+  }
+  void add_computed_field (const std::string& name, const FieldLayout& layout,
+                           const ekat::units::Units& u, const std::string& grid_name) {
+    add_computed_field(FieldIdentifier(name,layout,u,grid_name));
+  }
+  void add_computed_field (const FieldIdentifier& fid) {
+    m_computed_fields.emplace(fid);
+  }
+  void add_required_group (const std::string& name, const std::string& grid_name,
+                           const int pack_size = 1) {
+    add_required_group (GroupRequest(name,grid_name,pack_size));
+  }
+  void add_required_group (const GroupRequest& req) {
+    m_required_groups.emplace(req);
+  }
+  void add_updated_group (const std::string& name, const std::string& grid_name,
+                           const int pack_size = 1) {
+    add_updated_group (GroupRequest(name,grid_name,pack_size));
+  }
+  void add_updated_group (const GroupRequest& req) {
+    m_updated_groups.emplace(req);
+  }
 
   // Override this method to initialize your subclass.
   virtual void initialize_impl(const TimeStamp& t0) = 0;
@@ -262,6 +289,12 @@ protected:
   virtual void set_computed_field_impl (const Field<      Real>& f) = 0;
 
 private:
+
+  std::set<FieldIdentifier>   m_required_fields;
+  std::set<FieldIdentifier>   m_computed_fields;
+
+  std::set<GroupRequest>      m_required_groups;
+  std::set<GroupRequest>      m_updated_groups;
 
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.
