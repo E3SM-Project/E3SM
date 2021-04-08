@@ -3,17 +3,27 @@ name: CI/CD Build Workflow
 on:
   push:
     branches: [master]
-    paths-ignore: ["docs/**"]
 
   pull_request:
     branches: [master]
-    paths-ignore: ["docs/**"]
 
 env:
   UVCDAT_ANONYMOUS_LOG: False
 
 jobs:
+  pre_job:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          paths_ignore: '["**/README.md", "**/docs/**", "**/examples/**", "**/misc/**"]'
+
   pre-commit-hooks:
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -32,6 +42,8 @@ jobs:
         uses: pre-commit/action@v2.0.0
 
   build:
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -79,8 +91,8 @@ jobs:
           bash tests/test.sh
 
   publish-docs:
-    if: github.event_name == 'push'
-    needs: [pre-commit-hooks, build]
+    needs: [pre_job, pre-commit-hooks, build]
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     defaults:
       run:
