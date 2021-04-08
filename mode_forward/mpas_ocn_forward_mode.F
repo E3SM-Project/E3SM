@@ -264,6 +264,24 @@ module ocn_forward_mode
       endif
 
       !-----------------------------------------------------------------
+      ! Initialize mesh before anything else since many depend on it
+      !-----------------------------------------------------------------
+
+      call ocn_init_routines_vert_coord(domain)
+      call ocn_init_routines_compute_min_max_level(domain)
+
+      ! find the maximum value of the meshDensity
+      if (config_maxMeshDensity < 0.0_RKIND) then
+        maxDensity=-1
+        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+        call mpas_pool_get_array(meshPool, 'meshDensity', meshDensity)
+        maxDensity = max(maxDensity, maxval(meshDensity))
+        call mpas_dmpar_max_real(domain % dminfo, maxDensity, maxDensity_global)
+        config_maxMeshDensity = maxDensity_global
+      endif
+
+
+      !-----------------------------------------------------------------
       ! Initialize submodules and fields that are required by others
       ! or that have dependencies that require specific ordering.
       !-----------------------------------------------------------------
@@ -278,47 +296,8 @@ module ocn_forward_mode
       call ocn_diagnostics_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
 
-
       if(ierr.eq.1) then
           call mpas_log_write('An error was encountered while initializing the MPAS-Ocean forward mode', MPAS_LOG_CRIT)
-      endif
-
-      call ocn_init_metadata(domain)
-
-      call ocn_init_routines_vert_coord(domain)
-
-      call ocn_init_routines_compute_min_max_level(domain)
-
-      call mpas_log_write(' Vertical coordinate movement is: ' // trim(config_vert_coord_movement))
-
-      if (config_vert_coord_movement.ne.'fixed'.and. &
-          config_vert_coord_movement.ne.'uniform_stretching'.and. &
-          config_vert_coord_movement.ne.'impermeable_interfaces'.and. &
-          config_vert_coord_movement.ne.'tapered'.and. &
-          config_vert_coord_movement.ne.'user_specified') then
-         call mpas_log_write(' Incorrect choice of config_vert_coord_movement.')
-         call mpas_log_write('Incorrect choice of config_vert_coord_movement.', MPAS_LOG_CRIT)
-      endif
-
-      if (config_vert_coord_movement .ne. 'impermeable_interfaces' &
-             .and. config_pressure_gradient_type .eq. 'MontgomeryPotential') then
-         call mpas_log_write( &
-             'Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type', MPAS_LOG_CRIT)
-      end if
-
-      if (config_filter_btr_mode.and. &
-          config_vert_coord_movement.ne.'fixed')then
-         call mpas_log_write('filter_btr_mode has only been tested with config_vert_coord_movement=fixed.', MPAS_LOG_CRIT)
-      endif
-
-      ! find the maximum value of the meshDensity
-      if (config_maxMeshDensity < 0.0_RKIND) then
-        maxDensity=-1
-        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-        call mpas_pool_get_array(meshPool, 'meshDensity', meshDensity)
-        maxDensity = max(maxDensity, maxval(meshDensity))
-        call mpas_dmpar_max_real(domain % dminfo, maxDensity, maxDensity_global)
-        config_maxMeshDensity = maxDensity_global
       endif
 
       !
@@ -387,6 +366,9 @@ module ocn_forward_mode
       !-----------------------------------------------------------------
       ! Complete all remaining module initializations.
       !-----------------------------------------------------------------
+
+      ! add some mesh metadata to tau performance tools if enabled
+      call ocn_init_metadata(domain)
 
       call ocn_timestep_init(domain, dt, ierr)
       if (ierr /= 0) then

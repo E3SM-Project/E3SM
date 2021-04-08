@@ -476,14 +476,23 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This routine initializes vertical coordinate variables
+!>  This routine initializes vertical coordinate variables, including
+!>  zlevel-type variables and adjusted initial conditions for partial
+!>  bottom cells.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_init_routines_vert_coord(domain)!{{{
-   ! Initialize zlevel-type variables and adjust initial conditions for
-   ! partial bottom cells.
 
-      type (domain_type), intent(inout) :: domain
+   subroutine ocn_init_routines_vert_coord(domain)!{{{
+
+      !-----------------------------------------------------------------
+      ! Input/output variables
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain !< [inout] ocean state
+
+      !-----------------------------------------------------------------
+      ! Local variables
+      !-----------------------------------------------------------------
 
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
@@ -511,118 +520,169 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
 
       type (mpas_pool_iterator_type) :: groupItr
 
+      ! End preamble
+      !-------------
+      ! Begin code
+
       ! Initialize z-level mesh variables from h, read in from input file.
+      ! Retrieve needed variables from pools
+
       block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
-         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
-         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+      call mpas_pool_get_subpool(block % structs, 'state', statePool)
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
+      call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+      call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+      call mpas_pool_get_array(meshPool, 'refBottomDepthTopOfCell', refBottomDepthTopOfCell)
+      call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+      call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-         call mpas_pool_get_array(meshPool, 'refBottomDepthTopOfCell', refBottomDepthTopOfCell)
-         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
-         call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
-         call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
-         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
+      call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
 
-         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
-         call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
-         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+      ! TopOfCell needed where zero depth for the very top may be referenced.
+      refBottomDepthTopOfCell(1) = 0.0_RKIND
+      do k = 1, nVertLevels
+         refBottomDepthTopOfCell(k+1) = refBottomDepth(k)
+         refLayerThickness(k) = refBottomDepth(k) - &
+                                refBottomDepthTopOfCell(k)
+         refZMid(k) = - refBottomDepthTopOfCell(k) - &
+                        refLayerThickness(k)/2.0_RKIND
+      end do
 
-         ! TopOfCell needed where zero depth for the very top may be referenced.
-         refBottomDepthTopOfCell(1) = 0.0_RKIND
+      ! Initialization of vertCoordMovementWeights. 
+      ! This determines how SSH perturbations are distributed throughout
+      ! the column. Check for invalid choice of vert coord movement.
+
+      call mpas_log_write(' Vertical coordinate movement is: ' // &
+                          trim(config_vert_coord_movement))
+
+
+      select case (trim(config_vert_coord_movement))
+      case ('fixed')
+
+         vertCoordMovementWeights = 0.0_RKIND
+         vertCoordMovementWeights(1) = 1.0_RKIND
+
+      case ('uniform_stretching')
+
+         vertCoordMovementWeights = 1.0_RKIND
+
+      case ('tapered')
+
+         ! Set weight tapering:
+         !  1.0 shallower than config_vert_taper_weight_depth_1
+         !  linear in between
+         !  0.0 deeper than config_vert_taper_weight_depth_2
          do k = 1, nVertLevels
-            refBottomDepthTopOfCell(k+1) = refBottomDepth(k)
-            refLayerThickness(k) = refBottomDepth(k) - refBottomDepthTopOfCell(k)
-            refZMid(k) = - refBottomDepthTopOfCell(k) - refLayerThickness(k)/2.0_RKIND
+            vertCoordMovementWeights(k) = 1.0_RKIND + &
+                 (refZMid(k) + config_vert_taper_weight_depth_1) / &
+                 (config_vert_taper_weight_depth_2 - &
+                  config_vert_taper_weight_depth_1)
+            ! limit range to (0,1)
+            vertCoordMovementWeights(k) = max( 0.0_RKIND, &
+                      min( 1.0_RKIND, vertCoordMovementWeights(k) ) )
          end do
 
-         ! Initialization of vertCoordMovementWeights. This determines how SSH perturbations
-         ! are distributed throughout the column.
-         if (config_vert_coord_movement.eq.'fixed') then
+      case ('impermeable_interfaces')
 
-           vertCoordMovementWeights = 0.0_RKIND
-           vertCoordMovementWeights(1) = 1.0_RKIND
+         ! weights are never used, no init needed
 
-         elseif (config_vert_coord_movement.eq.'uniform_stretching') then
+      case ('user_specified')
 
-            vertCoordMovementWeights = 1.0_RKIND
+         ! weights should be input? probably should check
 
-         elseif (config_vert_coord_movement.eq.'tapered') then
+      case default
 
-            ! Set weight tapering:
-            !  1.0 shallower than config_vert_taper_weight_depth_1
-            !  linear in between
-            !  0.0 deeper than config_vert_taper_weight_depth_2
-            do k = 1, nVertLevels
-               vertCoordMovementWeights(k) = 1.0_RKIND + &
-                 (refZMid(k) + config_vert_taper_weight_depth_1) / &
-                 (config_vert_taper_weight_depth_2 - config_vert_taper_weight_depth_1)
-               vertCoordMovementWeights(k) = max( 0.0_RKIND, min( 1.0_RKIND, vertCoordMovementWeights(k) ) )
-            end do
+         call mpas_log_write( &
+            'Incorrect choice of config_vert_coord_movement.', &
+             MPAS_LOG_CRIT)
 
-         endif
+      end select
 
-         if (config_check_ssh_consistency) then
-            ! Check if abs(ssh)>20m.  If so, print warning.
-            consistentSSH = .true.
-            if ( associated(landIceMask) ) then
-              do iCell = 1,nCells
-                 if (landIceMask(iCell)==0 .and. &
-                     abs(sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell))- &
-                     bottomDepth(iCell))>20.0_RKIND) then
-                    consistentSSH = .false.
-                    call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', &
-                       MPAS_LOG_ERR)
-                    call mpas_log_write(' iCell: $i, minLevelCell(iCell), maxLevelCell(iCell): $i, $i, bottomDepth(iCell): $r, sum(h): $r', &
-                       intArgs=(/iCell, minLevelCell(iCell), maxLevelCell(iCell) /), &
-                       realArgs=(/ bottomDepth(iCell),sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell)) /) )
-                 endif
-               enddo
-            else ! landIceMask not associated, so no ice shelves
-              do iCell = 1,nCells
-                 if (abs(sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell))- &
-                     bottomDepth(iCell))>20.0_RKIND) then
-                    consistentSSH = .false.
-                    call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', &
-                       MPAS_LOG_ERR)
-                    call mpas_log_write(' iCell: $i, minLevelCell(iCell), maxLevelCell(iCell): $i, $i, bottomDepth(iCell): $r, sum(h): $r', &
-                       intArgs=(/iCell, minLevelCell(iCell), maxLevelCell(iCell) /), &
-                       realArgs=(/ bottomDepth(iCell),sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell)) /) )
-                 endif
-               enddo
-            endif
+      !-----------------------------------------------------------------
+      ! Check consistency and validity of options
+      !-----------------------------------------------------------------
 
-            if (.not. consistentSSH) then
-               call mpas_log_write('Warning: SSH is not consistent. Most likely, initial layerThickness does not match bottomDepth.')
-            end if
-
-         endif ! config_check_ssh_consistency
-
-         if (config_check_zlevel_consistency) then
+      ! SSH consistency
+      if (config_check_ssh_consistency) then
+         ! Check if abs(ssh)>20m.  If so, print warning.
+         consistentSSH = .true.
+         if ( associated(landIceMask) ) then ! ice shelves
             do iCell = 1,nCells
-               ! Check that bottomDepth and maxLevelCell match.  Some older meshs do not have the bottomDepth variable.
-               if (bottomDepth(iCell) > refBottomDepth(maxLevelCell(iCell)).or. &
-                   bottomDepth(iCell) < refBottomDepthTopOfCell(maxLevelCell(iCell))) then
-                  call mpas_log_write(' fatal error: bottomDepth and maxLevelCell do not match:', MPAS_LOG_ERR)
-                  call mpas_log_write(' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r', &
-                     intArgs=(/iCell, maxLevelCell(iCell) /), &
-                     realArgs=(/ bottomDepth(iCell) /) )
+               if (landIceMask(iCell)==0 .and. &
+                    abs(sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell))- &
+                     bottomDepth(iCell))>20.0_RKIND) then
+                    consistentSSH = .false.
+                  call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', &
+                       MPAS_LOG_ERR)
+                  call mpas_log_write(' iCell: $i, minLevelCell(iCell), maxLevelCell(iCell): $i, $i, bottomDepth(iCell): $r, sum(h): $r', &
+                       intArgs=(/iCell, minLevelCell(iCell), maxLevelCell(iCell) /), &
+                       realArgs=(/ bottomDepth(iCell),sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell)) /) )
                endif
-
             enddo
-         endif
+         else ! landIceMask not associated, so no ice shelves
+            do iCell = 1,nCells
+               if (abs(sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell))- &
+                     bottomDepth(iCell))>20.0_RKIND) then
+                  consistentSSH = .false.
+                  call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', &
+                       MPAS_LOG_ERR)
+                  call mpas_log_write(' iCell: $i, minLevelCell(iCell), maxLevelCell(iCell): $i, $i, bottomDepth(iCell): $r, sum(h): $r', &
+                       intArgs=(/iCell, minLevelCell(iCell), maxLevelCell(iCell) /), &
+                       realArgs=(/ bottomDepth(iCell),sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell)) /) )
+               endif
+            enddo
+         endif ! land ice 
 
-      block => block % next
-      end do
+         if (.not. consistentSSH) then
+            call mpas_log_write('Warning: SSH is not consistent. Most likely, initial layerThickness does not match bottomDepth.')
+         end if
+
+      endif ! config_check_ssh_consistency
+
+      ! Z-level consistency
+      if (config_check_zlevel_consistency) then
+         do iCell = 1,nCells
+            ! Check that bottomDepth and maxLevelCell match.  Some
+            ! older meshs do not have the bottomDepth variable.
+            if (bottomDepth(iCell) > refBottomDepth(maxLevelCell(iCell)).or. &
+                bottomDepth(iCell) < refBottomDepthTopOfCell(maxLevelCell(iCell))) then
+               call mpas_log_write( &
+                 ' fatal error: bottomDepth and maxLevelCell do not match:',  &
+                 MPAS_LOG_ERR)
+               call mpas_log_write( &
+                 ' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r', &
+                 intArgs=(/iCell, maxLevelCell(iCell) /), &
+                 realArgs=(/ bottomDepth(iCell) /) )
+            endif
+         enddo ! cell loop
+      endif ! check_zlevel_consistency
+
+      ! pressure gradient compatibility
+      if (config_vert_coord_movement /= 'impermeable_interfaces' .and. &
+          config_pressure_gradient_type == 'MontgomeryPotential') then
+         call mpas_log_write( &
+            'Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type', MPAS_LOG_CRIT)
+      end if
+
+      ! barotropic filter mode compatibility
+      if (config_filter_btr_mode .and. &
+          config_vert_coord_movement /= 'fixed')then
+         call mpas_log_write('filter_btr_mode has only been tested with config_vert_coord_movement=fixed.', MPAS_LOG_CRIT)
+      endif
+
+   !--------------------------------------------------------------------
 
    end subroutine ocn_init_routines_vert_coord!}}}
 
