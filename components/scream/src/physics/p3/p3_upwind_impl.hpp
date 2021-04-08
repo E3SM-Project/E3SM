@@ -32,7 +32,10 @@ void Functions<S,D>
     // Add 1 to make [kmin, kmax). But then the extra term (Spack::n -
     // 1) to determine pack index cancels the +1.
     kmax = (kmax_scalar + Spack::n) / Spack::n;
-  const Int k_top_pack = k_top / Spack::n;
+
+  // The following is morally a const var, but there are issues with
+  // gnu and std=c++14. The macro ConstExceptGnu is defined in ekat_kokkos_types.hpp.
+  ConstExceptGnu Int k_top_pack = k_top / Spack::n;
 
   // calculate fluxes
   Kokkos::parallel_for(
