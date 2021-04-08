@@ -93,29 +93,62 @@ contains
 !>  This routine initializes max level and boundary mask variables
 !
 !-----------------------------------------------------------------------
-subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
-! Initialize maxLevel and boundary mesh variables.
 
-   type (domain_type), intent(inout) :: domain
-   type (mpas_pool_type), pointer :: meshPool
+   subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
 
-   integer :: i, iCell, iEdge, iVertex, k
-   type (block_type), pointer :: block
+      !-----------------------------------------------------------------
+      ! Input/output variables
+      !-----------------------------------------------------------------
 
-   integer, pointer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
+      type (domain_type), intent(inout) :: &
+         domain           !< [inout] structure with all data for ocean
 
-   integer, dimension(:), pointer :: &
-      minLevelCell, minLevelEdgeTop, minLevelEdgeBot, &
-      minLevelVertexTop, minLevelVertexBot, &
-      maxLevelCell, maxLevelEdgeTop, maxLevelEdgeBot, &
-      maxLevelVertexTop, maxLevelVertexBot
-   integer, dimension(:,:), pointer :: &
-      cellsOnEdge, cellsOnVertex, boundaryEdge, boundaryCell, &
-      boundaryVertex, verticesOnEdge, edgeMask, cellMask, vertexMask
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
 
-   ! Initialize z-level mesh variables from h, read in from input file.
-   block => domain % blocklist
-   do while (associated(block))
+      integer :: &
+         iCell, iEdge, iVertex, &! loop indices for cells,edges,vertices
+         i, k                    ! loop indices for neighbors, vertical
+
+      type (block_type), pointer :: block
+
+      type (mpas_pool_type), pointer :: meshPool
+
+      integer, pointer :: &
+         nCells, nEdges, nVertices, &! number of cells, edges, vertices
+         nVertLevels,               &! number of vertical levels
+         vertexDegree                ! max cell nbrs around vertex
+
+      integer, dimension(:), pointer :: &
+         minLevelCell,      &! min vert level in each cell column
+         minLevelEdgeTop,   &! min vert level at top of edge
+         minLevelEdgeBot,   &! min vert level at bot of edge
+         minLevelVertexTop, &! min vert level at top of vertex
+         minLevelVertexBot, &! min vert level at bot of vertex
+         maxLevelCell,      &! max vert level in each cell column
+         maxLevelEdgeTop,   &! max vert level at top of edge
+         maxLevelEdgeBot,   &! max vert level at bot of edge
+         maxLevelVertexTop, &! max vert level at top of vertex
+         maxLevelVertexBot   ! max vert level at bot of vertex
+
+      integer, dimension(:,:), pointer :: &
+         cellsOnEdge,    &! indices for cells on an edge
+         cellsOnVertex,  &! indices for cells on a vertex
+         verticesOnEdge, &! indices for vertices on an edge
+         boundaryEdge,   &! mask for edges    on boundaries
+         boundaryCell,   &! mask for cells    on boundaries
+         boundaryVertex, &! mask for vertices on boundaries
+         edgeMask,       &! mask for active edge   points
+         cellMask,       &! mask for active cell   points
+         vertexMask       ! mask for active vertex points
+
+      ! End preamble
+      !-------------
+      ! Begin code
+
+      ! Retrieve data from block, pools
+      block => domain % blocklist
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -146,8 +179,7 @@ subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
 
       ! minLevelEdgeTop is the minimum (shallowest) of the surrounding cells
       ! if the water column is dry, set minLevelCell outside of bounds
-      
-      ! prevent dry cells from determining minimum
+      ! to prevent dry cells from determining minimum
       do iCell = 1, nCells+1
          if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = nVertLevels+1 
       end do
@@ -156,11 +188,9 @@ subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
             min( minLevelCell(cellsOnEdge(1,iEdge)), &
                  minLevelCell(cellsOnEdge(2,iEdge)) )
       end do
-
       minLevelEdgeTop(nEdges+1) = 0
 
-      ! minLevelEdgeBot is the maximum (deepest) of the surrounding cells
-      
+      ! minLevelEdgeBot is the maximum (deepest) of surrounding cells
       ! prevent dry cells from determining maximum
       do iCell = 1, nCells+1
          if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = 1 
@@ -170,25 +200,23 @@ subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
             max( minLevelCell(cellsOnEdge(1,iEdge)), &
                  minLevelCell(cellsOnEdge(2,iEdge)) )
       end do
-
       minLevelEdgeBot(nEdges+1) = 0
 
-      ! minLevelVertexBot is the maximum (deepest) of the surrounding cells
+      ! minLevelVertexBot is the maximum (deepest) of surrounding cells
       do iVertex = 1,nVertices
-         minLevelVertexBot(iVertex) = minLevelCell(cellsOnVertex(1,iVertex))
+         minLevelVertexBot(iVertex) = &
+              minLevelCell(cellsOnVertex(1,iVertex))
          do i = 2, vertexDegree
             minLevelVertexBot(iVertex) = &
                max( minLevelVertexBot(iVertex), &
                     minLevelCell(cellsOnVertex(i,iVertex)))
          end do
       end do
-
       minLevelVertexBot(nVertices+1) = 0
 
-      ! minLevelVertexTop is the minimum (shallowest) of the surrounding cells
+      ! minLevelVertexTop is the minimum (shallowest) of surrounding cells
       ! if the water column is dry, set minLevelCell outside of bounds
-      
-      ! prevent dry cells from determining minimum
+      ! to prevent dry cells from determining minimum
       do iCell = 1, nCells+1
          if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = nVertLevels+1 
       end do
@@ -200,7 +228,6 @@ subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
                     minLevelCell(cellsOnVertex(i,iVertex)))
          end do
       end do
-
       minLevelVertexTop(nVertices+1) = 0
 
       ! if the water column is dry, set minLevelCell = 1
@@ -208,25 +235,23 @@ subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
          if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = 1
       end do
       
-      ! maxLevelEdgeTop is the minimum (shallowest) of the surrounding cells
+      ! maxLevelEdgeTop is the minimum (shallowest) of surrounding cells
       do iEdge = 1, nEdges
          maxLevelEdgeTop(iEdge) = &
             min( maxLevelCell(cellsOnEdge(1,iEdge)), &
                  maxLevelCell(cellsOnEdge(2,iEdge)) )
       end do
-
       maxLevelEdgeTop(nEdges+1) = 0
 
-      ! maxLevelEdgeBot is the maximum (deepest) of the surrounding cells
+      ! maxLevelEdgeBot is the maximum (deepest) of surrounding cells
       do iEdge = 1, nEdges
          maxLevelEdgeBot(iEdge) = &
             max( maxLevelCell(cellsOnEdge(1,iEdge)), &
                  maxLevelCell(cellsOnEdge(2,iEdge)) )
       end do
-
       maxLevelEdgeBot(nEdges+1) = 0
 
-      ! maxLevelVertexBot is the maximum (deepest) of the surrounding cells
+      ! maxLevelVertexBot is the maximum (deepest) of surrounding cells
       do iVertex = 1,nVertices
          maxLevelVertexBot(iVertex) = maxLevelCell(cellsOnVertex(1,iVertex))
          do i = 2, vertexDegree
@@ -235,10 +260,9 @@ subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
                     maxLevelCell(cellsOnVertex(i,iVertex)))
          end do
       end do
-
       maxLevelVertexBot(nVertices+1) = 0
 
-      ! maxLevelVertexTop is the minimum (shallowest) of the surrounding cells
+      ! maxLevelVertexTop is the minimum (shallowest) of surrounding cells
       do iVertex = 1,nVertices
          maxLevelVertexTop(iVertex) = maxLevelCell(cellsOnVertex(1,iVertex))
          do i = 2, vertexDegree
@@ -247,31 +271,28 @@ subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
                     maxLevelCell(cellsOnVertex(i,iVertex)))
          end do
       end do
-
       maxLevelVertexTop(nVertices+1) = 0
 
       ! set boundary edge
       boundaryEdge(:,1:nEdges+1)=1
       edgeMask(:,1:nEdges+1)=0
 
-
       do iEdge = 1, nEdges
-         boundaryEdge(minLevelEdgeBot(iEdge):maxLevelEdgeTop(iEdge),iEdge)=0
-         edgeMask(minLevelEdgeBot(iEdge):maxLevelEdgeTop(iEdge),iEdge)=1
+      do k= minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
+         boundaryEdge(k,iEdge)=0
+         edgeMask(k,iEdge)=1
+      end do
       end do
 
-      !
       ! Find cells and vertices that have an edge on the boundary
-      !
       boundaryCell(:,1:nCells+1) = 0
       cellMask(:,1:nCells+1) = 0
       boundaryVertex(:,1:nVertices+1) = 0
       vertexMask(:,1:nVertices+1) = 0
 
-
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
-            if (boundaryEdge(k,iEdge).eq.1) then
+            if (boundaryEdge(k,iEdge) == 1) then
                boundaryCell(k,cellsOnEdge(1,iEdge)) = 1
                boundaryCell(k,cellsOnEdge(2,iEdge)) = 1
                boundaryVertex(k,verticesOnEdge(1,iEdge)) = 1
@@ -298,11 +319,11 @@ subroutine ocn_init_routines_compute_min_max_level(domain)!{{{
          end do
       end do
 
-      block => block % next
-   end do
 
-   ! Note: We do not update halos on maxLevel* variables.  I want the
-   ! outside edge of a halo to be zero on each processor.
+      ! Note: We do not update halos on maxLevel* variables.  We want
+      ! the outside edge of a halo to be zero on each processor.
+
+   !--------------------------------------------------------------------
 
 end subroutine ocn_init_routines_compute_min_max_level!}}}
 
@@ -318,6 +339,7 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
 !>   kiteIndexOnCell.
 !
 !-----------------------------------------------------------------------
+
    subroutine ocn_init_routines_setup_sign_and_index_fields()!{{{
 
        integer :: iCell, iEdge, iVertex, i, j, k
@@ -372,6 +394,7 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
 !>  This routine initializes edgeAreaFractionOfCell
 !
 !-----------------------------------------------------------------------
+
    subroutine ocn_init_routines_area_weights(meshPool, edgeAreaFractionOfCell)!{{{
 
       type(mpas_pool_type), intent(inout) :: meshPool
@@ -494,63 +517,86 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
       ! Local variables
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: statePool
-      type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: tracersPool
-      type (mpas_pool_type), pointer :: forcingPool
-      type (mpas_pool_type), pointer :: verticalMeshPool
-      type (dm_info) :: dminfo
+      type (block_type), pointer :: block ! all ocn data in a block
 
-      integer :: i, iCell, iEdge, iVertex, k, km1
-      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: &
+         meshPool,         &! mesh data
+         verticalMeshPool, &! vertical mesh data
+         statePool,        &! ocean state (layer thickness)
+         forcingPool        ! forcing data (land ice mask)
 
-      integer :: iTracer, cell, cell1, cell2
-      real (kind=RKIND) :: thicknessSum, hEdge1, zMidPBC, &
-         depth1, depth2
+      integer :: &
+         iCell, k,         &! loop indices for cell, vertical loops
+         kmin, kmax         ! min, max active levels in column
 
-      integer, dimension(:), pointer :: maxLevelCell, landIceMask
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, &
-         refBottomDepthTopOfCell, vertCoordMovementWeights, bottomDepth, refZMid, refLayerThickness
-      real (kind=RKIND), dimension(:), allocatable :: minBottomDepth, minBottomDepthMid, zMidZLevel
+      integer, pointer ::  &
+         nVertLevels,      &! number of vertical levels
+         nCells             ! total number of cells
 
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
-      integer, pointer :: nVertLevels, nCells
-      logical :: consistentSSH
+      logical :: &
+         consistentSSH,    &! flag if SSH consistent with depth
+         landIceFlag,      &! flag if land ice mask exists
+         checkSSH           ! flag for checking SSH in cell column
 
-      type (mpas_pool_iterator_type) :: groupItr
+      real (kind=RKIND) &
+         thickDepth         ! depth based on sum of layer thicknesses
+
+      integer, dimension(:), pointer :: &
+         minLevelCell,     &! min vertical level in each cell column
+         maxLevelCell,     &! max vertical level in each cell column
+         landIceMask        ! land ice mask
+
+      real (kind=RKIND), dimension(:), pointer :: &
+         refBottomDepth,           &! reference bottom depth
+         refBottomDepthTopOfCell,  &! reference depth at top of cell
+         vertCoordMovementWeights, &! weights for distributing hgt change
+         bottomDepth,              &! bottom depth
+         refZMid,                  &! reference depth at mid-layer
+         refLayerThickness          ! reference profile layer thickness
+
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         layerThickness     ! current layer thickness
 
       ! End preamble
       !-------------
       ! Begin code
 
-      ! Initialize z-level mesh variables from h, read in from input file.
-      ! Retrieve needed variables from pools
-
+      ! Extract pools from domain
       block => domain % blocklist
-      call mpas_pool_get_subpool(block % structs, 'state', statePool)
-      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-      call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
-      call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
-      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+      call mpas_pool_get_subpool(block%structs, 'state', statePool)
+      call mpas_pool_get_subpool(block%structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block%structs, 'verticalMesh', &
+                                                 verticalMeshPool)
+      call mpas_pool_get_subpool(block%structs, 'forcing', forcingPool)
 
-      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
-      call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-      call mpas_pool_get_array(meshPool, 'refBottomDepthTopOfCell', refBottomDepthTopOfCell)
-      call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
-      call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
-      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      ! Extract needed variables from pools
+      call mpas_pool_get_array(statePool, 'layerThickness', &
+                                           layerThickness, 1)
+      call mpas_pool_get_array(meshPool,  'refBottomDepth', &
+                                           refBottomDepth)
+      call mpas_pool_get_array(meshPool,  'refBottomDepthTopOfCell', &
+                                           refBottomDepthTopOfCell)
+      call mpas_pool_get_array(meshPool,  'bottomDepth', bottomDepth)
+      call mpas_pool_get_array(meshPool,  'vertCoordMovementWeights', &
+                                           vertCoordMovementWeights)
+      call mpas_pool_get_array(meshPool,  'minLevelCell', minLevelCell)
+      call mpas_pool_get_array(meshPool,  'maxLevelCell', maxLevelCell)
 
       call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
-      call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
+      call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', &
+                                                  refLayerThickness)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+      if (associated(landIceMask)) then
+         landIceFlag = .true.  ! ice shelves
+      else
+         landIceFlag = .false. ! ice shelves
+      endif
 
-      ! TopOfCell needed where zero depth for the very top may be referenced.
+      ! Initialize reference z coordinates based on refBottomDepth
       refBottomDepthTopOfCell(1) = 0.0_RKIND
       do k = 1, nVertLevels
          refBottomDepthTopOfCell(k+1) = refBottomDepth(k)
@@ -616,38 +662,41 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
 
       ! SSH consistency
       if (config_check_ssh_consistency) then
+
          ! Check if abs(ssh)>20m.  If so, print warning.
          consistentSSH = .true.
-         if ( associated(landIceMask) ) then ! ice shelves
-            do iCell = 1,nCells
-               if (landIceMask(iCell)==0 .and. &
-                    abs(sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell))- &
-                     bottomDepth(iCell))>20.0_RKIND) then
-                    consistentSSH = .false.
-                  call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', &
-                       MPAS_LOG_ERR)
-                  call mpas_log_write(' iCell: $i, minLevelCell(iCell), maxLevelCell(iCell): $i, $i, bottomDepth(iCell): $r, sum(h): $r', &
-                       intArgs=(/iCell, minLevelCell(iCell), maxLevelCell(iCell) /), &
-                       realArgs=(/ bottomDepth(iCell),sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell)) /) )
-               endif
-            enddo
-         else ! landIceMask not associated, so no ice shelves
-            do iCell = 1,nCells
-               if (abs(sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell))- &
-                     bottomDepth(iCell))>20.0_RKIND) then
-                  consistentSSH = .false.
-                  call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', &
-                       MPAS_LOG_ERR)
-                  call mpas_log_write(' iCell: $i, minLevelCell(iCell), maxLevelCell(iCell): $i, $i, bottomDepth(iCell): $r, sum(h): $r', &
-                       intArgs=(/iCell, minLevelCell(iCell), maxLevelCell(iCell) /), &
-                       realArgs=(/ bottomDepth(iCell),sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell)) /) )
-               endif
-            enddo
-         endif ! land ice 
+         do iCell = 1,nCells
 
-         if (.not. consistentSSH) then
-            call mpas_log_write('Warning: SSH is not consistent. Most likely, initial layerThickness does not match bottomDepth.')
-         end if
+            ! Only check for open ocean when land ice is being used
+            checkSSH = .true.
+            if (landIceFlag) then
+               if (landIceMask(iCell) /= 0) checkSSH = .false.
+            endif
+
+            ! Check whether thickness is consistent with bottom depth
+            if (checkSSH) then
+               kmin = minLevelCell(iCell)
+               kmax = maxLevelCell(iCell)
+
+               thickDepth = sum(layerThickness(kmin:kmax,iCell))
+
+               if (abs(thickDepth - bottomDepth(iCell)) > 20.0_RKIND) then
+                  consistentSSH = .false.
+
+                  call mpas_log_write( &
+                     ' Warning: Sea surface height outside of acceptable range (20m)', &
+                     MPAS_LOG_ERR)
+                  call mpas_log_write( &
+                     ' iCell: $i, minLevelCell(iCell), maxLevelCell(iCell): $i, $i, bottomDepth(iCell): $r, sum(h): $r', &
+                     intArgs=(/iCell, minLevelCell(iCell), maxLevelCell(iCell) /), &
+                     realArgs=(/ bottomDepth(iCell), thickDepth /) )
+               endif ! depth diff check
+            endif ! checkSSH
+         end do ! cell loop
+
+         if (.not. consistentSSH) call mpas_log_write( &
+            'Warning: SSH not consistent - ' // &
+            'initial layerThickness does not match bottomDepth.')
 
       endif ! config_check_ssh_consistency
 
@@ -656,14 +705,15 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
          do iCell = 1,nCells
             ! Check that bottomDepth and maxLevelCell match.  Some
             ! older meshs do not have the bottomDepth variable.
-            if (bottomDepth(iCell) > refBottomDepth(maxLevelCell(iCell)).or. &
-                bottomDepth(iCell) < refBottomDepthTopOfCell(maxLevelCell(iCell))) then
+            kmax = maxLevelCell(iCell)
+            if (bottomDepth(iCell) > refBottomDepth(kmax) .or. &
+                bottomDepth(iCell) < refBottomDepthTopOfCell(kmax)) then
                call mpas_log_write( &
                  ' fatal error: bottomDepth and maxLevelCell do not match:',  &
                  MPAS_LOG_ERR)
                call mpas_log_write( &
                  ' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r', &
-                 intArgs=(/iCell, maxLevelCell(iCell) /), &
+                 intArgs=(/iCell, kmax /), &
                  realArgs=(/ bottomDepth(iCell) /) )
             endif
          enddo ! cell loop
@@ -672,14 +722,18 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
       ! pressure gradient compatibility
       if (config_vert_coord_movement /= 'impermeable_interfaces' .and. &
           config_pressure_gradient_type == 'MontgomeryPotential') then
-         call mpas_log_write( &
-            'Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type', MPAS_LOG_CRIT)
+         call mpas_log_write( 'Incompatible choice of ' // &
+            'impermeable vertical interfaces and Montgomery Potential',&
+            MPAS_LOG_CRIT)
       end if
 
       ! barotropic filter mode compatibility
       if (config_filter_btr_mode .and. &
           config_vert_coord_movement /= 'fixed')then
-         call mpas_log_write('filter_btr_mode has only been tested with config_vert_coord_movement=fixed.', MPAS_LOG_CRIT)
+         call mpas_log_write( &
+          'filter_btr_mode has only been tested with ' // &
+          'config_vert_coord_movement=fixed.', &
+          MPAS_LOG_CRIT)
       endif
 
    !--------------------------------------------------------------------
