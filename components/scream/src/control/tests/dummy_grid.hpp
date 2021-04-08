@@ -64,7 +64,7 @@ public:
   }
 
   bool compatible_layouts (const layout_type& src,
-                           const layout_type& tgt) const {
+                           const layout_type& tgt) const override {
     const auto rank = src.rank();
     return rank==tgt.rank() &&
           (rank==1 ? src==tgt :
@@ -88,8 +88,8 @@ protected:
     return m_fields[ifield].second;
   }
 
-  void do_registration_begins () {}
-  void do_registration_ends () {}
+  void do_registration_begins () override {}
+  void do_registration_ends () override {}
 
   void do_register_field (const identifier_type& src, const identifier_type& tgt) override {
     field_type f1(src);
