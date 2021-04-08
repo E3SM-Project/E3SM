@@ -304,44 +304,6 @@ void AtmosphereDriver::initialize_atm_procs ()
   m_ad_status |= s_procs_inited;
 }
 
-void AtmosphereDriver::finish_setup ()
-{
-#ifdef SCREAM_DEBUG
-  // In debug mode, we create a bkp field repo. We'll use it for a
-  // very scrupolous check, to ensure atm procs don't update fields
-  // that they were not entitled to update.
-  m_bkp_field_repo.registration_begins();
-  for (const auto& it : *m_field_repo) {
-    for (const auto& id_field : it.second) {
-      const auto& id = id_field.first;
-      const auto& f = id_field.second;
-      const auto& groups = f.get_header().get_tracking().get_groups_names();
-      // Unfortunately, set<string> and set<CaseInsensitiveString>
-      // are unrelated types for the compiler
-      std::set<std::string> grps;
-      for (const auto& group : groups) {
-        grps.insert(group);
-      }
-      m_bkp_field_repo.register_field(id,grps);
-    }
-  }
-  m_bkp_field_repo.registration_ends();
-
-  // Deep copy the fields
-  for (const auto& it : *m_field_repo) {
-    for (const auto& id_field : it.second) {
-      const auto& id = id_field.first;
-      const auto& f  = id_field.second;
-      auto src = f.get_view();
-      auto tgt = m_bkp_field_repo.get_field(id).get_view();
-
-      Kokkos::deep_copy(tgt,src);
-    }
-  }
-  m_atm_process_group->set_field_repos(*m_field_repo,m_bkp_field_repo);
-#endif
-}
-
 void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
                                    const ekat::ParameterList& params,
                                    const util::TimeStamp& t0)
@@ -360,8 +322,6 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   initialize_output_manager ();
 
   initialize_atm_procs ();
-
-  finish_setup ();
 }
 
 void AtmosphereDriver::run (const Real dt) {
@@ -396,9 +356,6 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_output_manager.finalize();
 
   m_field_repo->clean_up();
-#ifdef SCREAM_DEBUG
-  m_bkp_field_repo.clean_up();
-#endif
 
   if (scorpio::is_eam_pio_subsystem_inited()) {
     scorpio::eam_pio_finalize();
@@ -474,28 +431,6 @@ void AtmosphereDriver::register_groups () {
   has_group_fields_on_grid( m_atm_process_group->get_required_groups() );
   has_group_fields_on_grid( m_atm_process_group->get_updated_groups() );
 }
-
-#ifdef SCREAM_DEBUG
-void AtmosphereDriver::create_bkp_field_repo () {
-  m_bkp_field_repo.registration_begins();
-  for (const auto& it : *m_field_repo) {
-    for (const auto& id_field : it.second) {
-      const auto& id = id_field.first;
-      const auto& f = id_field.second;
-      const auto& groups = f.get_header().get_tracking().get_groups_names();
-      // Unfortunately, set<string> and set<CaseInsensitiveString>
-      // are unrelated types for the compiler
-      std::set<std::string> grps;
-      for (const auto& group : groups) {
-        grps.insert(group);
-      }
-      m_bkp_field_repo.register_field(id,grps);
-    }
-  }
-  m_bkp_field_repo.registration_ends();
-
-}
-#endif
 
 void AtmosphereDriver::
 check_ad_status (const int flag, const bool must_be_set)

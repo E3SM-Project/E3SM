@@ -76,11 +76,6 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     m_group_name += " ";
     m_group_name += m_atm_processes.back()->name();
   }
-
-#ifdef SCREAM_DEBUG
-  m_field_repo     = nullptr;
-  m_bkp_field_repo = nullptr;
-#endif
 }
 
 void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
@@ -142,44 +137,6 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
     // Run the process
     auto atm_proc = m_atm_processes[iproc];
     atm_proc->run(dt);
-
-#ifdef SCREAM_DEBUG
-    if (m_field_repo!=nullptr && m_bkp_field_repo!=nullptr) {
-      // Check that this process did not update any field it should not have updated
-      const auto& computed = atm_proc->get_computed_fields();
-      for (const auto& it : (*m_field_repo)) {
-        for (const auto& f : it.second) {
-          const auto& fid = f.first;
-          const auto& gn = fid.get_grid_name();
-          auto& f_old = m_bkp_field_repo->get_field(fid);
-          bool field_is_unchanged = views_are_equal(f_old,f.second);
-          if (ekat::contains(computed,fid)) {
-            // For fields that changed, make sure the time stamp has been updated
-            const auto& ts = f.second.get_header().get_tracking().get_time_stamp();
-            EKAT_REQUIRE_MSG(field_is_unchanged || ts==timestamp(),
-                               "Error! Process '" + atm_proc->name() + "' updated field '" +
-                                fid.get_id_string() + "', but it did not update its time stamp.\n");
-          } else {
-            // For non computed fields, make sure the field in m_repo matches
-            // the copy in m_bkp_repo, and update the copy in m_bkp_repo.
-            // There are three ok scenarios: 1) field is unchanged, 2) field is computed,
-            // 3) field is a remapped input.
-            EKAT_REQUIRE_MSG(field_is_unchanged,
-                               "Error! Process '" + atm_proc->name() + "' updated field '" +
-                                fid.get_id_string() + "', which it wasn't allowed to update.\n");
-
-          }
-        }
-      }
-      // Update the computed fields in the bkp field repo
-      for (auto& fid : computed) {
-        auto src = m_field_repo->get_field(fid).get_view();
-        auto dst = m_bkp_field_repo->get_field(fid).get_view();
-
-        Kokkos::deep_copy(dst,src);
-      }
-    }
-#endif
   }
 }
 
@@ -322,26 +279,6 @@ void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real>& f) {
     }
   }
 }
-
-#ifdef SCREAM_DEBUG
-void AtmosphereProcessGroup::
-set_field_repos (const FieldRepository<Real>& repo,
-                 const FieldRepository<Real>& bkp_repo) {
-  m_field_repo = &repo;
-  m_bkp_field_repo = &bkp_repo;
-  for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->type()==AtmosphereProcessType::Group) {
-      auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_proc);
-      EKAT_REQUIRE_MSG(static_cast<bool>(group),
-                         "Error! Something went is wrong with the atmosphere process\n" +
-                         ("          " + atm_proc->name() + "\n") +
-                         "       Its type returns 'Group', but casting to AtmosphereProcessGroup\n" +
-                         "       returns a null shared_ptr.\n");
-      group->set_field_repos (repo,bkp_repo);
-    }
-  }
-}
-#endif
 
 void AtmosphereProcessGroup::
 process_required_field (const FieldIdentifier& fid) {

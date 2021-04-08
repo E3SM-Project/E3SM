@@ -71,11 +71,6 @@ public:
 
   ScheduleType get_schedule_type () const { return m_group_schedule_type; }
 
-#ifdef SCREAM_DEBUG
-  void set_field_repos (const FieldRepository<Real>& repo,
-                        const FieldRepository<Real>& bkp_repo);
-#endif
-
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).
@@ -115,13 +110,6 @@ protected:
   // The cumulative set of required/computed fields of the atm processes in the group
   std::set<FieldIdentifier>      m_required_fields;
   std::set<FieldIdentifier>      m_computed_fields;
-
-#ifdef SCREAM_DEBUG
-  using field_type = Field<Real>;
-
-  const FieldRepository<Real>*   m_field_repo;
-  const FieldRepository<Real>*   m_bkp_field_repo;
-#endif
 };
 
 } // namespace scream

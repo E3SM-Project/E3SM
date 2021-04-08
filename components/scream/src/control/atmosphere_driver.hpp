@@ -78,9 +78,6 @@ public:
   // Call 'initialize' on all atm procs
   void initialize_atm_procs ();
 
-  // Complete any leftover initialization task (e.g., some debug stuff)
-  void finish_setup ();
-
   // ---- End of initialization methods ---- //
 
   // A wrapper of all of the above (except setting SurfaceCoupling),
@@ -98,9 +95,6 @@ public:
   void finalize ( /* inputs */ );
 
   const FieldRepository<Real>& get_field_repo () const { return *m_field_repo; }
-#ifdef SCREAM_DEBUG
-  const FieldRepository<Real>& get_bkp_field_repo () const { return m_bkp_field_repo; }
-#endif
 
   const std::shared_ptr<SurfaceCoupling>& get_surface_coupling () const { return m_surface_coupling; }
 
@@ -112,14 +106,8 @@ public:
 protected:
 
   void register_groups ();
-#ifdef SCREAM_DEBUG
-  void create_bkp_field_repo ();
-#endif
 
   std::shared_ptr<FieldRepository<Real> >  m_field_repo;
-#ifdef SCREAM_DEBUG
-  FieldRepository<Real>                    m_bkp_field_repo;
-#endif
 
   std::shared_ptr<AtmosphereProcessGroup>             m_atm_process_group;
 
