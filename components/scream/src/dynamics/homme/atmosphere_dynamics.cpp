@@ -64,6 +64,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
   const auto dgn = "Dynamics";
   m_dyn_grid = grids_manager->get_grid(dgn);
+  m_ref_grid = grids_manager->get_reference_grid();
 
   const int ne = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
 
@@ -168,8 +169,9 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   prim_init_model_f90 ();
 }
 
-void HommeDynamics::register_fields (FieldRepository<Real>& field_repo) const
-{
+void HommeDynamics::
+register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const {
+  auto& field_repo = *field_repos.at(m_ref_grid->name());
   // Inputs
   for (int i=0; i<m_p2d_remapper->get_num_registered_fields(); ++i) {
     const auto& src = m_p2d_remapper->get_src_field_id(i);

@@ -86,8 +86,10 @@ void CldFraction::finalize_impl()
 }
 
 // =========================================================================================
-void CldFraction::register_fields (FieldRepository<Real>& field_repo) const {
-
+void CldFraction::
+register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const {
+  const auto& grid_name = m_cld_fraction_params.get<std::string>("Grid");
+  auto& field_repo = *field_repos.at(grid_name);
   for (const auto& fid : get_required_fields()) {
     const auto& name = fid.name();
     if (name == "qi") {

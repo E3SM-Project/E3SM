@@ -39,6 +39,8 @@ namespace control {
 class AtmosphereDriver
 {
 public:
+  using field_repo_type = FieldRepository<Real>;
+  using field_repo_ptr  = std::shared_ptr<field_repo_type>;
 
   AtmosphereDriver () = default;
   AtmosphereDriver (const ekat::Comm& atm_comm,
@@ -94,7 +96,8 @@ public:
   // Clean up the driver (includes cleaning up the parameterizations and the fm's);
   void finalize ( /* inputs */ );
 
-  const FieldRepository<Real>& get_field_repo () const { return *m_field_repo; }
+  field_repo_ptr get_field_repo () const;
+  field_repo_ptr get_field_repo (const std::string& grid_name) const;
 
   const std::shared_ptr<SurfaceCoupling>& get_surface_coupling () const { return m_surface_coupling; }
 
@@ -107,7 +110,7 @@ protected:
 
   void register_groups ();
 
-  std::shared_ptr<FieldRepository<Real> >  m_field_repo;
+  std::map<std::string,field_repo_ptr>    m_field_repos;
 
   std::shared_ptr<AtmosphereProcessGroup>             m_atm_process_group;
 

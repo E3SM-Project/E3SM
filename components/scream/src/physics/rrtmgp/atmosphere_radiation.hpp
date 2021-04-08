@@ -39,7 +39,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grid_manager);
 
   // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repos) const;
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const;
 
   // Get the set of required/computed fields
   const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }

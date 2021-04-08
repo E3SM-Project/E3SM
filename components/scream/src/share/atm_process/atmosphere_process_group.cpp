@@ -146,31 +146,11 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
 void AtmosphereProcessGroup::
 set_required_group (const FieldGroup<const Real>& group)
 {
-  const auto& name = group.m_info->m_group_name;
-  const auto& grid = group.m_grid_name;
-
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];
 
-    if (atm_proc->requires_group(name,grid)) {
+    if (atm_proc->requires_group(group.m_info->m_group_name,group.grid_name())) {
       atm_proc->set_required_group(group);
-      // Some groups might be optional, so don't error out if they're empty
-      if (not group.m_info->empty()) {
-        // If the group is 'bundled', we remap the bundled group,
-        // otherwise remap each individual field.
-        if (group.m_info->m_bundled) {
-          const auto& f = *group.m_bundle;
-          const auto& fid = f.get_header().get_identifier();
-          process_required_field(fid);
-        } else {
-          // We also might need to add each field of the group to the remap in/out
-          for (const auto& it : group.m_fields) {
-            const auto& f = *it.second;
-            const auto& fid = f.get_header().get_identifier();
-            process_required_field(fid);
-          }
-        }
-      }
     }
   }
 }
@@ -178,51 +158,36 @@ set_required_group (const FieldGroup<const Real>& group)
 void AtmosphereProcessGroup::
 set_updated_group (const FieldGroup<Real>& group)
 {
-  const auto& name = group.m_info->m_group_name;
-  const auto& grid = group.m_grid_name;
-
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];
 
-    if (atm_proc->updates_group(name,grid)) {
+    if (atm_proc->updates_group(group.m_info->m_group_name,group.grid_name())) {
       atm_proc->set_updated_group(group);
-      // Some groups might be optional, so don't error out if they're empty
-      if (not group.m_info->empty()) {
-        // If the group is 'bundled', we remap the bundled group,
-        // otherwise remap each individual field.
-        if (group.m_info->m_bundled) {
-          const auto& f = *group.m_bundle;
-          const auto& fid = f.get_header().get_identifier();
-          m_computed_fields.insert(fid);
-        } else {
-          // We also might need to add each field of the group to the remap in/out
-          for (const auto& it : group.m_fields) {
-            const auto& f = *it.second;
-            const auto& fid = f.get_header().get_identifier();
-            m_computed_fields.insert(fid);
-          }
-        }
-      }
     }
   }
 }
 
-void AtmosphereProcessGroup::register_fields (FieldRepository<Real>& field_repo) const {
+void AtmosphereProcessGroup::
+register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const {
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     const auto& atm_proc = m_atm_processes[iproc];
-    atm_proc->register_fields(field_repo);
+    atm_proc->register_fields(field_repos);
 
 #ifdef SCREAM_DEBUG
     // Make sure processes are not calling methods they shouldn't on the repo
-    EKAT_REQUIRE_MSG(field_repo.repository_state()==RepoState::Open,
-                         "Error! Atmosphere processes are *not* allowed to modify the state of the repository.\n");
+    for (const auto& it : field_repos) {
+      EKAT_REQUIRE_MSG(it.second->repository_state()==RepoState::Open,
+          "Error! Atmosphere processes are *not* allowed to modify the state of the repository.\n");
 
-    // Check that the required fields are indeed in the repo now
-    for (const auto& id : atm_proc->get_required_fields()) {
-      EKAT_REQUIRE_MSG(field_repo.has_field(id), "Error! Process '" + atm_proc->name() + "' failed to register required field '" + id.get_id_string() + "'.\n");
-    }
-    for (const auto& id : atm_proc->get_computed_fields()) {
-      EKAT_REQUIRE_MSG(field_repo.has_field(id), "Error! Process '" + atm_proc->name() + "' failed to register computed field '" + id.get_id_string() + "'.\n");
+      // Check that the required fields are indeed in the repo now
+      for (const auto& id : atm_proc->get_required_fields()) {
+        EKAT_REQUIRE_MSG(it.second->has_field(id),
+            "Error! Process '" + atm_proc->name() + "' failed to register required field '" + id.get_id_string() + "'.\n");
+      }
+      for (const auto& id : atm_proc->get_computed_fields()) {
+        EKAT_REQUIRE_MSG(it.second->has_field(id),
+            "Error! Process '" + atm_proc->name() + "' failed to register computed field '" + id.get_id_string() + "'.\n");
+      }
     }
 #endif
   }
@@ -249,6 +214,29 @@ void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real>& f) {
     if (atm_proc->requires_field(fid)) {
       atm_proc->set_required_field(f);
     }
+  }
+}
+
+void AtmosphereProcessGroup::
+process_required_group (const GroupRequest& req) {
+  if (m_group_schedule_type==ScheduleType::Sequential) {
+    if (updates_group(req.name,req.grid)) {
+      // Some previous atm proc updated this group, so it's not an 'input'
+      // of the atm group as a whole. However, we might need a different
+      // pack size. So, instead of adding to the required groups,
+      // we add to the computed fields. This way we don't modify the inputs
+      // of the group, and still manage to communicate to the AD the pack size
+      // that we need.
+      // NOTE; we don't have a way to check if all the fields in the group
+      //       are computed by previous processes, since we don't have
+      //       the list of all fields in this group.
+      add_updated_group(req);
+    } else {
+      add_required_group(req);
+    }
+  } else {
+    // In parallel schedule, the inputs of all processes are inputs of the group
+    add_required_group(req);
   }
 }
 

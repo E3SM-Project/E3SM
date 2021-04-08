@@ -193,7 +193,7 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
   for (auto const& name : m_fields)
   {
     // Get all the info for this field.
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_repo->get_field(name);
     auto view_d = field.get_view();
     auto g_view = Kokkos::create_mirror_view( view_d );
     Kokkos::deep_copy(g_view, view_d);
@@ -280,7 +280,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
  *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
  */
   using namespace scorpio;
-  auto fid = m_field_repo->get_field(name, m_grid_name).get_header().get_identifier();
+  auto fid = m_field_repo->get_field(name).get_header().get_identifier();
   // check to see if all the dims for this field are already set to be registered.
   for (int ii=0; ii<fid.get_layout().rank(); ++ii)
   {
@@ -314,7 +314,7 @@ void AtmosphereOutput::register_views()
   // Cycle through all fields and register.
   for (auto const& name : m_fields)
   {
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_repo->get_field(name);
     // If the "averaging type" is instant then just need a ptr to the view.
     EKAT_REQUIRE_MSG (field.get_header().get_parent().expired(), "Error! Cannot deal with subfield, for now.");
     auto view_d = field.get_view();
@@ -331,7 +331,7 @@ void AtmosphereOutput::register_variables(const std::string& filename)
   // Cycle through all fields and register.
   for (auto const& name : m_fields)
   {
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_repo->get_field(name);
     auto& fid  = field.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
@@ -360,7 +360,7 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
   // Cycle through all fields and set dof.
   for (auto const& name : m_fields)
   {
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_repo->get_field(name);
     auto& fid  = field.get_header().get_identifier();
     // bool has_cols = true;
     Int dof_len, n_dim_len, num_cols;

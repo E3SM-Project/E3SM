@@ -55,11 +55,9 @@ public:
   void set_updated_group (const FieldGroup<Real>& group);
 
   // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repo) const;
-
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const;
 
   // --- Methods specific to AtmosphereProcessGroup --- //
-
   int get_num_processes () const { return m_atm_processes.size(); }
 
   std::shared_ptr<const atm_proc_type> get_process (const int i) const {
@@ -72,6 +70,7 @@ protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).
   void process_required_field (const FieldIdentifier& fid);
+  void process_required_group (const GroupRequest& req);
 
   // The initialization, run, and finalization methods
   void initialize_impl (const TimeStamp& t0);
@@ -97,9 +96,6 @@ protected:
 
   // The grids required by this process
   std::set<std::string>  m_required_grids;
-
-  // The reference grid name.
-  std::string m_ref_grid_name;
 
   // The schedule type: Parallel vs Sequential
   ScheduleType   m_group_schedule_type;

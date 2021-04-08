@@ -80,8 +80,8 @@ namespace scream {
          */
 
         // Get dimension sizes from the field manager
-        auto& field_repo = ad.get_field_repo();
         const auto& grid = ad.get_grids_manager()->get_grid("Physics");
+        const auto& field_repo = *ad.get_field_repo(grid->name());
         int ncol = grid->get_num_local_dofs();
         int nlay = grid->get_num_vertical_levels();
 
@@ -93,18 +93,18 @@ namespace scream {
         REQUIRE(nlay == sw_flux_up_ref.dimension[1]-1);
 
         // Grab reshaped views from the field manager and wrap pointers in yakl arrays
-        auto d_pmid = field_repo.get_field("p_mid", "Physics").get_reshaped_view<Real**>();
-        auto d_tmid = field_repo.get_field("T_mid", "Physics").get_reshaped_view<Real**>();
-        auto d_pint = field_repo.get_field("pint", "Physics").get_reshaped_view<Real**>();
-        auto d_tint = field_repo.get_field("tint", "Physics").get_reshaped_view<Real**>();
-        auto d_sfc_alb_dir = field_repo.get_field("surf_alb_direct", "Physics").get_reshaped_view<Real**>();
-        auto d_sfc_alb_dif = field_repo.get_field("surf_alb_diffuse", "Physics").get_reshaped_view<Real**>();
-        auto d_lwp = field_repo.get_field("lwp", "Physics").get_reshaped_view<Real**>();
-        auto d_iwp = field_repo.get_field("iwp", "Physics").get_reshaped_view<Real**>();
-        auto d_rel = field_repo.get_field("eff_radius_qc", "Physics").get_reshaped_view<Real**>();
-        auto d_rei = field_repo.get_field("eff_radius_qi", "Physics").get_reshaped_view<Real**>();
-        auto d_mu0 = field_repo.get_field("cos_zenith", "Physics").get_reshaped_view<Real*>();
-        auto d_gas_vmr = field_repo.get_field("gas_vmr", "Physics").get_reshaped_view<Real***>();
+        auto d_pmid = field_repo.get_field("p_mid").get_reshaped_view<Real**>();
+        auto d_tmid = field_repo.get_field("T_mid").get_reshaped_view<Real**>();
+        auto d_pint = field_repo.get_field("pint").get_reshaped_view<Real**>();
+        auto d_tint = field_repo.get_field("tint").get_reshaped_view<Real**>();
+        auto d_sfc_alb_dir = field_repo.get_field("surf_alb_direct").get_reshaped_view<Real**>();
+        auto d_sfc_alb_dif = field_repo.get_field("surf_alb_diffuse").get_reshaped_view<Real**>();
+        auto d_lwp = field_repo.get_field("lwp").get_reshaped_view<Real**>();
+        auto d_iwp = field_repo.get_field("iwp").get_reshaped_view<Real**>();
+        auto d_rel = field_repo.get_field("eff_radius_qc").get_reshaped_view<Real**>();
+        auto d_rei = field_repo.get_field("eff_radius_qi").get_reshaped_view<Real**>();
+        auto d_mu0 = field_repo.get_field("cos_zenith").get_reshaped_view<Real*>();
+        auto d_gas_vmr = field_repo.get_field("gas_vmr").get_reshaped_view<Real***>();
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay("p_lay", d_pmid.data(), ncol, nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay("t_lay", d_tmid.data(), ncol, nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev("p_lev", d_pint.data(), ncol, nlay+1);
@@ -146,11 +146,11 @@ namespace scream {
 
         // Check values; need to get fluxes from field manager first
         // The AD should have called RRTMGP to calculate these values in the ad.run() call
-        auto d_sw_flux_up = field_repo.get_field("sw_flux_up", "Physics").get_reshaped_view<Real**>();
-        auto d_sw_flux_dn = field_repo.get_field("sw_flux_dn", "Physics").get_reshaped_view<Real**>();
-        auto d_sw_flux_dn_dir = field_repo.get_field("sw_flux_dn_dir", "Physics").get_reshaped_view<Real**>();
-        auto d_lw_flux_up = field_repo.get_field("lw_flux_up", "Physics").get_reshaped_view<Real**>();
-        auto d_lw_flux_dn = field_repo.get_field("lw_flux_dn", "Physics").get_reshaped_view<Real**>();
+        auto d_sw_flux_up = field_repo.get_field("sw_flux_up").get_reshaped_view<Real**>();
+        auto d_sw_flux_dn = field_repo.get_field("sw_flux_dn").get_reshaped_view<Real**>();
+        auto d_sw_flux_dn_dir = field_repo.get_field("sw_flux_dn_dir").get_reshaped_view<Real**>();
+        auto d_lw_flux_up = field_repo.get_field("lw_flux_up").get_reshaped_view<Real**>();
+        auto d_lw_flux_dn = field_repo.get_field("lw_flux_dn").get_reshaped_view<Real**>();
         yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_up_test("sw_flux_up_test", d_sw_flux_up.data(), ncol, nlay+1);
         yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn_test("sw_flux_dn_test", d_sw_flux_dn.data(), ncol, nlay+1);
         yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn_dir_test("sw_flux_dn_dir_test", d_sw_flux_dn_dir.data(), ncol, nlay+1);

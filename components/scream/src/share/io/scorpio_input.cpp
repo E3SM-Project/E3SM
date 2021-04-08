@@ -58,7 +58,7 @@ AtmosphereInput::view_type_host AtmosphereInput::pull_input(const std::string& n
     grid_read_data_array(m_filename,name,m_dofs_sizes.at(name),l_view.data());
     return l_view;
   } else {
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_repo->get_field(name);
     view_type_host l_view("",field.get_view().extent(0));
     grid_read_data_array(m_filename,name,m_dofs_sizes.at(name),l_view.data());
     return l_view;
@@ -74,7 +74,7 @@ void AtmosphereInput::pull_input()
   init();
 
   for (auto const& name : m_fields_names) {
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_repo->get_field(name);
     const auto& fh  = field.get_header();
     const auto& fl  = fh.get_identifier().get_layout();
     const auto& fap = fh.get_alloc_properties();
@@ -215,7 +215,7 @@ void AtmosphereInput::register_variables()
 
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_repo->get_field(name);
     auto& fid  = field.get_header().get_identifier();
 
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
@@ -277,7 +277,7 @@ void AtmosphereInput::set_degrees_of_freedom()
 
   // Cycle through all fields and set dof.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_repo->get_field(name);
     auto& fid  = field.get_header().get_identifier();
 
     // Given dof_len and n_dim_len it should be possible to create an integer array

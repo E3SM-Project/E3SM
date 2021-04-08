@@ -193,7 +193,7 @@ public:
   }
 
   // Register required/computed fields in the field repo
-  virtual void register_fields (FieldRepository<Real>& field_repo) const = 0;
+  virtual void register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const = 0;
 
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.

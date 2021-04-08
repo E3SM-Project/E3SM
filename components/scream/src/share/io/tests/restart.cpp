@@ -24,7 +24,7 @@ using namespace scream;
 using namespace ekat::units;
 using input_type = AtmosphereInput;
 
-std::shared_ptr<FieldRepository<Real>>    get_test_repo(const Int num_lcols, const Int num_levs);
+std::shared_ptr<FieldRepository<Real>>    get_test_repo(std::shared_ptr<const AbstractGrid> grid);
 std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 ekat::ParameterList                       get_om_params(const Int casenum, const ekat::Comm& comm);
 ekat::ParameterList                       get_in_params(const std::string& type, const ekat::Comm& comm);
@@ -39,9 +39,10 @@ TEST_CASE("restart","io")
   Int num_levs = 2;
 
   // First set up a field manager and grids manager to interact with the output functions
-  std::shared_ptr<UserProvidedGridsManager> grid_man   = get_test_gm(io_comm,num_gcols,num_levs);
-  int num_lcols = grid_man->get_grid("Physics")->get_num_local_dofs();
-  std::shared_ptr<FieldRepository<Real>>    field_repo = get_test_repo(num_lcols,num_levs);
+  auto grid_man = get_test_gm(io_comm,num_gcols,num_levs);
+  auto grid = grid_man->get_grid("Physics");
+  int num_lcols = grid->get_num_local_dofs();
+  auto field_repo = get_test_repo(grid);
 
   // Initialize the pio_subsystem for this test:
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
@@ -65,7 +66,7 @@ TEST_CASE("restart","io")
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii) {
     for (const auto& fname : out_fields->m_fields_names) {
-      auto f = field_repo->get_field(fname,"Physics");
+      auto f = field_repo->get_field(fname);
       f.sync_to_host();
       auto f_host = f.get_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
@@ -97,9 +98,9 @@ TEST_CASE("restart","io")
   // Note, that only field_1 and field_2 were marked for restart.  Check to make sure values
   // in the field manager reflect those fields as restarted from 15 and field_3 as being
   // freshly restarted:
-  auto field1 = field_repo->get_field("field_1","Physics");
-  auto field2 = field_repo->get_field("field_2","Physics");
-  auto field3 = field_repo->get_field("field_3","Physics");
+  auto field1 = field_repo->get_field("field_1");
+  auto field2 = field_repo->get_field("field_2");
+  auto field3 = field_repo->get_field("field_3");
   auto field1_hst = field1.get_view<Host>();
   auto field2_hst = field2.get_view<Host>();
   auto field3_hst = field3.get_reshaped_view<Real**,Host>();
@@ -117,7 +118,7 @@ TEST_CASE("restart","io")
   // Finish the last 5 steps
   for (Int ii=0;ii<5;++ii) {
     for (const auto& fname : out_fields->m_fields_names) {
-      auto f = field_repo->get_field(fname,"Physics");
+      auto f = field_repo->get_field(fname);
       f.sync_to_host();
       auto f_host = f.get_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
@@ -159,12 +160,17 @@ TEST_CASE("restart","io")
   grid_man->clean_up();
 } // TEST_CASE restart
 /*===================================================================================================================*/
-std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs)
+std::shared_ptr<FieldRepository<Real>> get_test_repo(std::shared_ptr<const AbstractGrid> grid)
 {
   using namespace ShortFieldTagsNames;
+  using FL = FieldLayout;
 
   // Create a repo
-  std::shared_ptr<FieldRepository<Real>>  repo = std::make_shared<FieldRepository<Real>>();
+  auto repo = std::make_shared<FieldRepository<Real>>(grid);
+
+  const int num_lcols = grid->get_num_local_dofs();
+  const int num_levs = grid->get_num_vertical_levels();
+
   // Create some fields for this repo
   std::vector<FieldTag> tag_h  = {COL};
   std::vector<FieldTag> tag_v  = {LEV};
@@ -174,8 +180,8 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
   std::vector<Int>     dims_v  = {num_levs};
   std::vector<Int>     dims_2d = {num_lcols,num_levs};
 
-  using FL = FieldLayout;
-  const std::string gn = "Physics";
+  const std::string& gn = grid->name();
+
   FieldIdentifier fid1("field_1",FL{tag_h,dims_h},m,gn);
   FieldIdentifier fid2("field_2",FL{tag_v,dims_v},kg,gn);
   FieldIdentifier fid3("field_3",FL{tag_2d,dims_2d},kg/m,gn);
@@ -203,9 +209,9 @@ void Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_lcol
 {
 
   // Initialize these fields
-  const auto& f1 = repo.get_field("field_1","Physics");
-  const auto& f2 = repo.get_field("field_2","Physics");
-  const auto& f3 = repo.get_field("field_3","Physics");
+  const auto& f1 = repo.get_field("field_1");
+  const auto& f2 = repo.get_field("field_2");
+  const auto& f3 = repo.get_field("field_3");
   auto f1_hst = f1.get_view<Host>();
   auto f2_hst = f2.get_view<Host>();
   auto f3_hst = f3.get_reshaped_view<Real**,Host>();

@@ -26,6 +26,10 @@ public:
   template<typename DevT, typename DataT>
   using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
 
+  using field_repo_type = const FieldRepository<Real>;
+  using field_repo_ptr  = std::shared_ptr<field_repo_type>;
+  using grid_type       = const AbstractGrid;
+  using grid_ptr        = std::shared_ptr<grid_type>;
 
   // Use const type for exports, to protect against bugs
   using import_field_type  = Field<      Real>;
@@ -35,8 +39,7 @@ public:
   using cpl_data_ptr_type = double*;
 
   // The input grid is the one where import/export happens
-  SurfaceCoupling (const std::shared_ptr<const AbstractGrid>& grid,
-                   const FieldRepository<Real>& repo);
+  SurfaceCoupling (const field_repo_ptr& field_repo);
 
   // This allocates some service views
   void set_num_fields (const int num_imports, const int num_exports);
@@ -133,13 +136,12 @@ protected:
   std::set<FieldIdentifier>  m_imports_fids;
   std::set<FieldIdentifier>  m_exports_fids;
 
-  const FieldRepository<Real>& m_field_repo;
+  field_repo_ptr m_field_repo;
 
   int           m_num_imports;
   int           m_num_exports;
 
   int           m_num_cols;
-  std::string   m_grid_name;
 
   RepoState     m_state;
 };

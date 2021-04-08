@@ -46,7 +46,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repo) const;
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const;
 
   // Dynamics updates 'TRACERS'.
   void set_updated_group (const FieldGroup<Real>& group);
@@ -86,6 +86,7 @@ protected:
 
   // For standalong tests, we might need the grid info later
   std::shared_ptr<const AbstractGrid>  m_dyn_grid;
+  std::shared_ptr<const AbstractGrid>  m_ref_grid;
 
   ekat::ParameterList     m_params;
   ekat::Comm              m_dynamics_comm;

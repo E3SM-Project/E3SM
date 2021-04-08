@@ -13,6 +13,7 @@
 #include "share/grid/user_provided_grids_manager.hpp"
 
 #include "ekat/ekat_pack.hpp"
+#include "ekat/ekat_pack_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 
 namespace {
@@ -308,50 +309,49 @@ TEST_CASE("field_repo", "") {
   using namespace scream;
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
+  using FID = FieldIdentifier;
+  using Pack = ekat::Pack<Real,8>;
 
-  std::vector<FieldTag> tags1 = {EL, GP, GP};
-  std::vector<FieldTag> tags2 = {COL};
-  std::vector<FieldTag> tags3 = {ILEV};
-  std::vector<FieldTag> tags4 = {COL,LEV};
+  const int ncols = 4;
+  const int nlevs = 7;
 
-  std::vector<int> dims1 = {2, 3, 4};
-  std::vector<int> dims2 = {2, 3, 3};
-  std::vector<int> dims3 = {13};
-  std::vector<int> dims4 = {6};
-  std::vector<int> dims5 = {13,6};
+  std::vector<FieldTag> tags1 = {COL,LEV};
+  std::vector<FieldTag> tags2 = {EL,GP,GP};
+
+  std::vector<int> dims1 = {ncols,nlevs};
+  std::vector<int> dims2 = {2,4,4};
+  std::vector<int> dims3 = {ncols,nlevs+1};
 
   const auto km = 1000*m;
 
-  FieldIdentifier fid1("field_1", {tags1, dims1},  m/s, "grid_1");
-  FieldIdentifier fid2("field_2", {tags1, dims2},  m/s, "grid_1");
-  FieldIdentifier fid3("field_2", {tags2, dims3},  m/s, "grid_2");
-  FieldIdentifier fid4("field_2", {tags2, dims3}, km/s, "grid_1");
-  FieldIdentifier fid5("field_3", {tags2, dims3}, km/s, "grid_1");
-  FieldIdentifier fid6("field_4", {tags2, dims3}, km/s, "grid_1");
-  FieldIdentifier fid7("field_5", {tags2, dims3}, km/s, "grid_3");
-  FieldIdentifier fid8("field_5", {tags3, dims4}, km/s, "grid_3");
-  FieldIdentifier fid9("field_packed", {tags4,dims5}, km/s, "grid_3");
+  FID fid1("field_1", {tags1, dims1},  m/s, "phys");
+  FID fid2("field_2", {tags1, dims1},  m/s, "phys");
+  FID fid3("field_3", {tags1, dims1},  m/s, "phys");
 
-  FieldRepository<Real> repo;
+  FID bad1("field_1", {tags2, dims2},  m/s, "dyn");  // Bad grid
+  FID bad2("field_2", {tags1, dims1}, km/s, "phys"); // Bad units
+  FID bad3("field_2", {tags1, dims3},  m/s, "phys"); // Bad layout
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  auto pg = create_point_grid("phys",ncols*comm.size(),nlevs,comm);
+  FieldRepository<Real> repo(pg);
 
   // Should not be able to register fields yet
-  REQUIRE_THROWS(repo.register_field(fid1,"group_1"));
+  REQUIRE_THROWS(repo.register_field(fid1,"phys"));
 
   repo.registration_begins();
-  repo.register_field(fid1,"group_1");
-  repo.register_field(fid2,"group_2");
-  repo.register_field(fid3,"group_2");
-  // Test that you can assign more than one group to a field
-  repo.register_field(fid5,{"group_3","group_5"});
-  repo.register_field(fid6,{"group_4","group_5","group_6"});
-  // Test for same field and grid name, different layout
-  repo.register_field(fid7,"group_7");
-  repo.register_field(fid8,"group_7");
-  // Test for packed field
-  using Pack         = ekat::Pack<Real,8>;
-  repo.register_field<Pack>(fid9);
-  // Should not be able to register the same field name with two different units
-  REQUIRE_THROWS(repo.register_field(fid4));
+
+  // === Valid registration calls === //
+  repo.register_field<Pack>(fid1,"group_1");
+  repo.register_field(fid2,16,"group_2");
+  repo.register_field(fid3,"group_4");
+  repo.register_field(fid3,{"group_1","group_2","group_3"});
+  repo.register_field(fid2,"group_4");
+
+  // === Invalid registration calls === //
+  REQUIRE_THROWS(repo.register_field(bad1));
+  REQUIRE_THROWS(repo.register_field(bad2));
+  REQUIRE_THROWS(repo.register_field(bad2));
   repo.registration_ends();
 
   // Should not be able to register fields anymore
@@ -359,28 +359,14 @@ TEST_CASE("field_repo", "") {
 
   // Check registration is indeed closed
   REQUIRE (repo.repository_state()==RepoState::Closed);
-  REQUIRE (repo.size()==6);
-  REQUIRE (repo.internal_size()==8);
+  REQUIRE (repo.size()==3);
 
-  auto f1 = repo.get_field(fid1);
-  auto f2 = repo.get_field(fid2);
-  auto f5 = repo.get_field(fid5);
-  auto f6 = repo.get_field(fid6);
-
-  // Check that get_field with a field name and grid name as arguments returns the appropriate field
-  // Using grid_1 should return fid2 field, using grid_2 should return fid3 field, using grid_3 should throw an error.
-  // Retrieving field 5 on grid 3 should return an error since it has been defined on grid 3 with two different layouts.
-  auto f7 = repo.get_field("field_2","grid_1");
-  auto f8 = repo.get_field("field_2","grid_2");
-  REQUIRE_THROWS( repo.get_field("field_5","grid_3") );
-  REQUIRE_THROWS( repo.get_field("field_2","grid_3") );
-  REQUIRE(f7.get_header().get_identifier()==fid2);
-  REQUIRE(f7.get_header().get_identifier()!=fid3);
-  REQUIRE(f8.get_header().get_identifier()!=fid2);
-  REQUIRE(f8.get_header().get_identifier()==fid3);
-
-  // Check the two fields identifiers are indeed different
-  REQUIRE (f1.get_header().get_identifier()!=f2.get_header().get_identifier());
+  // Get all fields
+  auto f1 = repo.get_field(fid1.name());
+  auto f2 = repo.get_field(fid2.name());
+  auto f3 = repo.get_field(fid3.name());
+  REQUIRE_THROWS(repo.get_field("bad")); // Not in the repo
+  REQUIRE(f1.get_header().get_identifier()==fid1);
 
   // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
   auto has_group = [](const ekat::WeakPtrSet<const FieldGroupInfo>& groups,
@@ -394,31 +380,38 @@ TEST_CASE("field_repo", "") {
   };
   REQUIRE (has_group(f1.get_header().get_tracking().get_groups_info(),"gRouP_1"));
   REQUIRE (has_group(f2.get_header().get_tracking().get_groups_info(),"Group_2"));
-  REQUIRE (has_group(f5.get_header().get_tracking().get_groups_info(),"Group_3"));
-  REQUIRE (has_group(f5.get_header().get_tracking().get_groups_info(),"Group_5"));
-  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_4"));
-  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_5"));
-  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_6"));
+  REQUIRE (has_group(f2.get_header().get_tracking().get_groups_info(),"Group_4"));
+  REQUIRE (has_group(f3.get_header().get_tracking().get_groups_info(),"Group_1"));
+  REQUIRE (has_group(f3.get_header().get_tracking().get_groups_info(),"Group_2"));
+  REQUIRE (has_group(f3.get_header().get_tracking().get_groups_info(),"Group_3"));
+  REQUIRE (has_group(f3.get_header().get_tracking().get_groups_info(),"Group_4"));
 
   // Check that the groups in the repo contain the correct fields
   REQUIRE (repo.get_groups_info().count("GROUP_1")==1);
   REQUIRE (repo.get_groups_info().count("GRoup_2")==1);
   REQUIRE (repo.get_groups_info().count("group_3")==1);
   REQUIRE (repo.get_groups_info().count("groUP_4")==1);
-  REQUIRE (repo.get_groups_info().count("group_5")==1);
-  REQUIRE (repo.get_groups_info().at("group_5")->m_fields_names.size()==2);
-  REQUIRE (repo.get_groups_info().count("group_6")==1);
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_1")->m_fields_names,"Field_1"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_2")->m_fields_names,"Field_2"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_3")->m_fields_names,"Field_3"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_4")->m_fields_names,"Field_4"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_5")->m_fields_names,"Field_3"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_5")->m_fields_names,"Field_4"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_6")->m_fields_names,"Field_4"));
+  REQUIRE (repo.get_groups_info().count("group_5")==0);
+  REQUIRE (repo.get_groups_info().at("group_2")->m_fields_names.size()==2);
 
-  // Check that get_padding returns the appropriate value
-  auto f9 = repo.get_field("field_packed","grid_3");
-  REQUIRE (f9.get_header().get_alloc_properties().get_padding()==2);
+  auto g1 = repo.get_groups_info().at("group_1");
+  auto g2 = repo.get_groups_info().at("group_2");
+  auto g3 = repo.get_groups_info().at("group_3");
+  auto g4 = repo.get_groups_info().at("group_4");
+  REQUIRE (ekat::contains(g1->m_fields_names,"Field_1"));
+  REQUIRE (ekat::contains(g1->m_fields_names,"Field_3"));
+  REQUIRE (ekat::contains(g2->m_fields_names,"Field_2"));
+  REQUIRE (ekat::contains(g2->m_fields_names,"Field_3"));
+  REQUIRE (ekat::contains(g3->m_fields_names,"Field_3"));
+  REQUIRE (ekat::contains(g4->m_fields_names,"Field_2"));
+  REQUIRE (ekat::contains(g4->m_fields_names,"Field_3"));
+
+  // Check alloc props for f1 and f2 (which requested pack size > 1)
+  auto f1_padding = f1.get_header().get_alloc_properties().get_padding();
+  auto f2_padding = f2.get_header().get_alloc_properties().get_padding();
+
+  REQUIRE (f1_padding==ekat::PackInfo<Pack::n>::padding(nlevs));
+  REQUIRE (f2_padding==ekat::PackInfo<16>::padding(nlevs));
 }
 
 TEST_CASE("tracers_bundle", "") {
@@ -441,28 +434,24 @@ TEST_CASE("tracers_bundle", "") {
 
   ekat::Comm comm(MPI_COMM_WORLD);
   auto pg = create_point_grid(grid_name,ncols*comm.size(),nlevs,comm);
-  auto gm = create_user_provided_grids_manager(comm,ekat::ParameterList());
-  auto upgm = std::dynamic_pointer_cast<UserProvidedGridsManager>(gm);
-  upgm->set_grid(pg);
-  upgm->set_reference_grid(grid_name);
 
-  FieldRepository<Real> repo;
+  FieldRepository<Real> repo(pg);
   repo.registration_begins();
   repo.register_field(qv_id,"TRACERS");
   repo.register_field(qc_id,"TRACERS");
   repo.register_field(qr_id,"TRACERS");
-  repo.registration_ends(gm);
+  repo.registration_ends();
 
-  auto qv = repo.get_field(qv_id);
-  auto qc = repo.get_field(qc_id);
-  auto qr = repo.get_field(qr_id);
+  auto qv = repo.get_field(qv_id.name());
+  auto qc = repo.get_field(qc_id.name());
+  auto qr = repo.get_field(qr_id.name());
 
-  auto group = repo.get_field_group("TRACERS",grid_name);
+  auto group = repo.get_field_group("TRACERS");
   // The repo should have allocated the group bundled
   REQUIRE (group.m_info->m_bundled);
 
   const auto& Q_name = group.m_bundle->get_header().get_identifier().name();
-  auto Q = repo.get_field(Q_name,grid_name);
+  auto Q = repo.get_field(Q_name);
 
   // The bundled field in the group should match the field we get from the repo
   REQUIRE (Q.equivalent(*group.m_bundle));
@@ -524,8 +513,6 @@ TEST_CASE("tracers_bundle", "") {
   REQUIRE (qv_ptr->equivalent(qv));
   REQUIRE (qc_ptr->equivalent(qc));
   REQUIRE (qr_ptr->equivalent(qr));
-
-  upgm->clean_up();
 }
 
 TEST_CASE("field_property_check", "") {

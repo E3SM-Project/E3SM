@@ -389,7 +389,7 @@ add_nodes (const group_type& atm_procs,
       // Input groups
       for (const auto& itg : proc->get_required_groups()) {
         EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
-        auto group = field_repo->get_field_group(itg.name,itg.grid);
+        auto group = field_repo->get_field_group(itg.name);
         if (!group.m_info->m_bundled) {
           // Group is not bundled: process fields individually
           for (const auto& it_f : group.m_fields) {
@@ -434,7 +434,7 @@ add_nodes (const group_type& atm_procs,
       // Input-output groups
       for (const auto& itg : proc->get_updated_groups()) {
         EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
-        auto group = field_repo->get_field_group(itg.name,itg.grid);
+        auto group = field_repo->get_field_group(itg.name);
         if (!group.m_info->m_bundled) {
           // Group is not bundled: process fields in the group individually
           for (const auto& it_f : group.m_fields) {

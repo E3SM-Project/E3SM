@@ -25,10 +25,10 @@ using input_type = AtmosphereInput;
 const int packsize = 2;
 using Pack         = ekat::Pack<Real,packsize>;
 
-std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs);
-std::shared_ptr<UserProvidedGridsManager>            get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
-ekat::ParameterList                                  get_om_params(const Int casenum, const ekat::Comm& comm);
-ekat::ParameterList                                  get_in_params(const std::string type, const ekat::Comm& comm);
+std::shared_ptr<FieldRepository<Real>>      get_test_repo(std::shared_ptr<const AbstractGrid> grid);
+std::shared_ptr<UserProvidedGridsManager>   get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
+ekat::ParameterList                         get_om_params(const Int casenum, const ekat::Comm& comm);
+ekat::ParameterList                         get_in_params(const std::string type, const ekat::Comm& comm);
 
 TEST_CASE("input_output_basic","io")
 {
@@ -42,9 +42,10 @@ TEST_CASE("input_output_basic","io")
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
   // First set up a field manager and grids manager to interact with the output functions
-  std::shared_ptr<UserProvidedGridsManager> grid_man   = get_test_gm(io_comm,num_gcols,num_levs);
-  Int num_lcols = grid_man->get_grid("Physics")->get_num_local_dofs();
-  std::shared_ptr<FieldRepository<Real>>    field_repo = get_test_repo(num_lcols,num_levs);
+  auto grid_man = get_test_gm(io_comm,num_gcols,num_levs);
+  auto grid = grid_man->get_grid("Physics");
+  int num_lcols = grid->get_num_local_dofs();
+  auto field_repo = get_test_repo(grid);
 
   // Create an Output manager for testing output
   OutputManager m_output_manager;
@@ -65,7 +66,7 @@ TEST_CASE("input_output_basic","io")
   for (Int ii=0;ii<max_steps;++ii) {
     time += dt;
     for (const auto& fname : out_fields->m_fields_names) {
-      auto f  = field_repo->get_field(fname,"Physics");
+      auto f  = field_repo->get_field(fname);
       auto f_host = f.get_view<Host>();
       f.sync_to_host();
       for (size_t jj=0;jj<f_host.size();++jj) {
@@ -80,7 +81,7 @@ TEST_CASE("input_output_basic","io")
   // to nan to ensure no false-positive tests if a field is simply not read in as input.
   for (const auto& fname : out_fields->m_fields_names)
   {
-    auto f_dev  = field_repo->get_field(fname,"Physics").get_view();
+    auto f_dev  = field_repo->get_field(fname).get_view();
     Kokkos::deep_copy(f_dev,std::nan(""));
   }
 
@@ -97,10 +98,10 @@ TEST_CASE("input_output_basic","io")
   // Check instant output
   input_type ins_input(io_comm,ins_params,field_repo,grid_man);
   ins_input.pull_input();
-  auto f1 = field_repo->get_field("field_1","Physics");
-  auto f2 = field_repo->get_field("field_2","Physics");
-  auto f3 = field_repo->get_field("field_3","Physics");
-  auto f4 = field_repo->get_field("field_packed","Physics");
+  auto f1 = field_repo->get_field("field_1");
+  auto f2 = field_repo->get_field("field_2");
+  auto f3 = field_repo->get_field("field_3");
+  auto f4 = field_repo->get_field("field_packed");
   auto f1_host = f1.get_view<Host>();
   auto f2_host = f2.get_view<Host>();
   auto f3_host = f3.get_reshaped_view<Real**,Host>();
@@ -203,12 +204,17 @@ TEST_CASE("input_output_basic","io")
 /* ----------------------------------*/
 
 /*===================================================================================================================*/
-std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs)
+std::shared_ptr<FieldRepository<Real>> get_test_repo(std::shared_ptr<const AbstractGrid> grid)
 {
   using namespace ShortFieldTagsNames;
+  using FL = FieldLayout;
 
   // Create a repo
-  std::shared_ptr<FieldRepository<Real>>  repo = std::make_shared<FieldRepository<Real>>();
+  auto repo = std::make_shared<FieldRepository<Real>>(grid);
+
+  const int num_lcols = grid->get_num_local_dofs();
+  const int num_levs = grid->get_num_vertical_levels();
+
   // Create some fields for this repo
   std::vector<FieldTag> tag_h  = {COL};
   std::vector<FieldTag> tag_v  = {LEV};
@@ -218,8 +224,8 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
   std::vector<Int>     dims_v  = {num_levs};
   std::vector<Int>     dims_2d = {num_lcols,num_levs};
 
-  using FL = FieldLayout;
-  const std::string gn = "Physics";
+  const std::string& gn = grid->name();
+
   FieldIdentifier fid1("field_1",FL{tag_h,dims_h},m,gn);
   FieldIdentifier fid2("field_2",FL{tag_v,dims_v},kg,gn);
   FieldIdentifier fid3("field_3",FL{tag_2d,dims_2d},kg/m,gn);
@@ -231,7 +237,7 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
   repo->register_field(fid1,{"output"});
   repo->register_field(fid2,{"output","restart"});
   repo->register_field(fid3,{"output","restart"});
-  repo->register_field<Pack>(fid4,{"output","restart"}); // Register field as packed
+  repo->register_field(fid4,Pack::n,{"output","restart"}); // Register field as packed
   repo->registration_ends();
 
   // Make sure that field 4 is in fact a packed field

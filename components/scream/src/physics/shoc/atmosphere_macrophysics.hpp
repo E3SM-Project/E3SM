@@ -67,7 +67,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repo) const;
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const;
 
   // SHOC updates the 'TRACERS' group.
   void set_updated_group (const FieldGroup<Real>& group);

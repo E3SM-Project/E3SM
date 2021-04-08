@@ -10,7 +10,7 @@
 
 namespace scream {
 
-void dummy_atm_init (const int num_cols, const int nvl, const ekat::Comm& comm) {
+inline void dummy_atm_init (const int num_cols, const int nvl, const ekat::Comm& comm) {
   using namespace scream;
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
@@ -39,7 +39,7 @@ void dummy_atm_init (const int num_cols, const int nvl, const ekat::Comm& comm) 
   upgm.set_remapper(std::make_shared<InverseRemapper<Real>>(r_ab));
 }
 
-void dummy_atm_cleanup () {
+inline void dummy_atm_cleanup () {
   UserProvidedGridsManager upgm;
   upgm.clean_up();
 
