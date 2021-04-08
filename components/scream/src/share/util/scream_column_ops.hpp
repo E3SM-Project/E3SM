@@ -47,6 +47,8 @@ namespace scream {
  *  Note: all methods have a different impl, depending on whether PackSize>1.
  *        The if statement is evaluated at compile-time, so there is no run-time
  *        penalization. The only requirement is that both branches must compile.
+ *
+ *  RECALL: k=0 is the model top, while k=num_mid_levels+1 is the surface!
  */
 
 template<typename DeviceType, typename ScalarType, int PackSize>
@@ -222,10 +224,8 @@ public:
     }
   }
 
-  // Compute X at level interfaces, given X at level midpoints and top/bot bc values
-  // Note: with proper bc, then x_int(x_mid(x_int))==x_int. However, this version
-  //       weighs neighboring cells equally, even if one is larger than the other.
-  // RECALL: k=0 is the model top, while k=num_mid_levels+1 is the surface!
+  // Compute X at level interfaces, given X at level midpoints and top or bot bc.
+  // Note: with proper bc, then x_int(x_mid(x_int))==x_int.
   template<bool FixTop, typename InputProvider = DefaultProvider>
   KOKKOS_INLINE_FUNCTION
   static void
@@ -297,7 +297,6 @@ public:
   // This function is the logical inverse of the one above
   // Notes:
   //  - FromTop: true means we scan over [0,num_mid_levels), while false is the opposite.
-  //    RECALL: k=0 is the model top, while k=num_mid_levels+1 is the surface!
   //  - InputProvider: must provide an input al all mid levels
   //  - s0: used as bc value at k=0 (Forward) or k=num_mid_levels (Backward)
   template<bool FromTop, typename InputProvider>
