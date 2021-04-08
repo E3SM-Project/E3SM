@@ -182,6 +182,26 @@ struct UnitWrap::UnitTest<D>::TestUniversal
   {
     using physics = scream::physics::Functions<Scalar, Device>;
 
+    int num_levs = 100; // Number of levels to use for tests.
+
+    // Compute random values for dse test
+    using view_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Real>;
+    view_1d temp("temp",num_levs),
+            height("height",num_levs),
+            surface_height("surface_height",num_levs);
+
+    std::random_device rd;
+    using rngAlg = std::mt19937_64;
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    rngAlg engine(seed);
+    using RPDF = std::uniform_real_distribution<Real>;
+    RPDF pdf(1e-3,1e3);
+
+    ekat::genRandArray(temp,engine,pdf);
+    ekat::genRandArray(height,engine,pdf);
+    ekat::genRandArray(surface_height,engine,pdf);
+
     int nerr = 0;
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType&, int& errors) {
@@ -192,7 +212,6 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       static constexpr Scalar rd     = C::RD;
       static constexpr Scalar inv_cp = C::INV_CP;
       static constexpr Scalar tmelt  = C::Tmelt;
-      int num_levs = 100; // Number of levels to use for tests.
 
       // Create dummy level data for testing:
       Real pres_top = 200.;
@@ -216,20 +235,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
         Real zi_top = zi_bot + (k+1); 
         dz_tests(zi_top,zi_bot,errors);
         // DSE Test
-        std::random_device rd;
-        using rngAlg = std::mt19937_64;
-        const unsigned int catchRngSeed = Catch::rngSeed();
-        const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-        rngAlg engine(seed);
-        using RPDF = std::uniform_real_distribution<Real>;
-        RPDF pdf(1e-3,1e3);
-
-        Real temp,height,surface_height;
-        ekat::genRandArray(&temp,1,engine,pdf);
-        ekat::genRandArray(&height,1,engine,pdf);
-        ekat::genRandArray(&surface_height,1,engine,pdf);
-
-        dse_tests(temp,height,surface_height,errors);
+        dse_tests(temp(k),height(k),surface_height(k),errors);
       }
 
     }, nerr);
