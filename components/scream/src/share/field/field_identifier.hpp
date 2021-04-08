@@ -4,7 +4,6 @@
 #include "share/field/field_layout.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/util/ekat_units.hpp"
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 
 #include <vector>
 
@@ -20,7 +19,7 @@ namespace scream
  *  There is no additional meta data about this field.
  */
 
-class FieldIdentifier : ekat::enable_shared_from_this<FieldIdentifier> {
+class FieldIdentifier {
 public:
   using layout_type     = FieldLayout;
   using layout_ptr_type = std::shared_ptr<const layout_type>;
