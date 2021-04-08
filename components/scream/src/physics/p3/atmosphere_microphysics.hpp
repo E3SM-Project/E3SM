@@ -197,13 +197,10 @@ public:
     view_2d       qv_prev;
     view_2d       diag_eff_radius_qc;
     view_2d       diag_eff_radius_qi;
-    view_2d_const cldfrac_tot;
     // Assigning local values
     void set_variables(const int ncol, const int npack,
                     view_2d th_atm_, view_2d exner_, view_2d T_atm_, view_2d T_prev_,
-                    view_2d qv_, view_2d qv_prev_, view_2d diag_eff_radius_qc_, view_2d diag_eff_radius_qi_,
-                    view_2d_const cldfrac_tot_
-                   )
+                    view_2d qv_, view_2d qv_prev_, view_2d diag_eff_radius_qc_, view_2d diag_eff_radius_qi_)
     {
       m_ncol  = ncol;
       m_npack = npack;
@@ -211,7 +208,6 @@ public:
       th_atm      = th_atm_;
       exner       = exner_;
       qv          = qv_;
-      cldfrac_tot = cldfrac_tot_;
       // OUT
       T_atm              = T_atm_;
       T_prev             = T_prev_;
