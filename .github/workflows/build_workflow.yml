@@ -11,7 +11,7 @@ env:
   UVCDAT_ANONYMOUS_LOG: False
 
 jobs:
-  pre_job:
+  check-jobs-to-skip:
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
@@ -19,11 +19,12 @@ jobs:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master
         with:
+          cancel_others: true
           paths_ignore: '["**/README.md", "**/docs/**", "**/examples/**", "**/misc/**"]'
 
   pre-commit-hooks:
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    needs: check-jobs-to-skip
+    if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -42,8 +43,7 @@ jobs:
         uses: pre-commit/action@v2.0.0
 
   build:
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    needs: check-jobs-to-skip
     strategy:
       fail-fast: false
       matrix:
@@ -55,9 +55,13 @@ jobs:
         shell: bash -l {0}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v2
+      # if conditional must be repeated in order to skip matrix jobs that are required PR checks
+      # https://github.com/fkirc/skip-duplicate-actions/issues/44#issuecomment-723430339
+      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
+        uses: actions/checkout@v2
 
-      - name: Cache Conda
+      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
+        name: Cache Conda
         uses: actions/cache@v2
         env:
           # Increase this value to reset cache if conda/e3sm_diags_env_dev.yml has not changed in the workflow
@@ -67,7 +71,8 @@ jobs:
           key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
             hashFiles('conda/e3sm_diags_env_dev.yml') }}
 
-      - name: Build Conda Environment
+      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
+        name: Build Conda Environment
         uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: e3sm_diags_env_dev
@@ -77,22 +82,25 @@ jobs:
           # IMPORTANT: This needs to be set for caching to work properly!
           use-only-tar-bz2: true
 
-      - name: Show Conda Environment Info
+      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
+        name: Show Conda Environment Info
         run: |
           conda config --set anaconda_upload no
           conda info
           conda list
 
-      - name: Install `e3sm-diags` Package
+      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
+        name: Install `e3sm-diags` Package
         run: pip install .
 
-      - name: Run Tests
+      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
+        name: Run Tests
         run: |
           bash tests/test.sh
 
   publish-docs:
-    needs: [pre_job, pre-commit-hooks, build]
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' && github.event_name == 'push' }}
+    needs: [check-jobs-to-skip, pre-commit-hooks, build]
+    if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     defaults:
       run:
