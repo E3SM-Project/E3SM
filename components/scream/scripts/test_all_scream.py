@@ -196,13 +196,18 @@ class TestAllScream(object):
 
         print ("Checking baselines directory: {}".format(self._baseline_dir))
         if not self.baselines_are_present():
-            print ("Some baselines were not found. Rebuilding them.")
-            self._must_generate_baselines = True
-        elif self._integration_test and self.baselines_are_expired(expected_baseline_sha=baseline_ref_sha):
-            print ("Baselines expired. Rebuilding them.")
+            print (" -> Some baselines were not found. Rebuilding them.")
             self._must_generate_baselines = True
         else:
-            print ("Baselines found and not expired. Skipping baselines generation.")
+            print (" -> Baselines found.")
+
+        if self._integration_test:
+            print ("Integration test requires up-to-date baseline. Checking if baselines are expired.")
+            if self.baselines_are_expired(expected_baseline_sha=baseline_ref_sha):
+                print (" -> Baselines expired. Rebuilding them.")
+                self._must_generate_baselines = True
+            else:
+                print (" -> Baselines not expired. Skipping baselines generation.")
 
         if self._must_generate_baselines:
             print("Using commit {} to generate baselines".format(self._baseline_ref))
