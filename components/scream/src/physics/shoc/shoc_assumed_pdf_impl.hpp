@@ -258,7 +258,7 @@ void Functions<S,D>::shoc_assumed_pdf(
       Spack s1(0), std_s1(0), qn1(0), C1(0), ql1(0),
             s2(0), std_s2(0), qn2(0), C2(0), ql2(0);
       {
-        const Scalar sqrt2(std::sqrt(2)), sqrt2pi(std::sqrt(2*pi));
+        const Scalar sqrt2(std::sqrt(Scalar(2.0))), sqrt2pi(std::sqrt(2*pi));
 
         // First plume
         const Spack cthl1=((1 + beta1*qw1_1)/ekat::square(1 + beta1*qs1))*(cp/lcond)*
