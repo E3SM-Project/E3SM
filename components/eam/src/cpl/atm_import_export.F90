@@ -67,6 +67,11 @@ contains
              cam_in(c)%cflx(i,1) = -x2a(index_x2a_Faxx_evap,ig)                
              cam_in(c)%lhf(i)    = -x2a(index_x2a_Faxx_lat, ig)     
           endif
+
+          if (index_x2a_Faoo_h2otemp /= 0) then
+             cam_in(c)%h2otemp(i) = -x2a(index_x2a_Faoo_h2otemp,ig)
+          end if
+           
           cam_in(c)%wsx(i)    = -x2a(index_x2a_Faxx_taux,ig)     
           cam_in(c)%wsy(i)    = -x2a(index_x2a_Faxx_tauy,ig)     
           cam_in(c)%lwup(i)      = -x2a(index_x2a_Faxx_lwup,ig)    
@@ -83,7 +88,7 @@ contains
           cam_in(c)%u10(i)       =  x2a(index_x2a_Sx_u10,   ig)
           cam_in(c)%icefrac(i)   =  x2a(index_x2a_Sf_ifrac, ig)  
           cam_in(c)%ocnfrac(i)   =  x2a(index_x2a_Sf_ofrac, ig)
-	  cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac, ig)
+          cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac, ig)
           if ( associated(cam_in(c)%ram1) ) &
                cam_in(c)%ram1(i) =  x2a(index_x2a_Sl_ram1 , ig)
           if ( associated(cam_in(c)%fv) ) &
