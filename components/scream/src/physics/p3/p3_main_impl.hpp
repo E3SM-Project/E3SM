@@ -1030,18 +1030,8 @@ Int Functions<S,D>
     const auto oth                 = ekat::subview(prognostic_state.th, i);
     const auto odiag_eff_radius_qc = ekat::subview(diagnostic_outputs.diag_eff_radius_qc, i);
     const auto odiag_eff_radius_qi = ekat::subview(diagnostic_outputs.diag_eff_radius_qi, i);
-    const auto orho_qi             = ekat::subview(diagnostic_outputs.rho_qi, i);
-//ASD    const auto omu_c               = ekat::subview(diagnostic_outputs.mu_c, i);
-    const auto omu_c               = ekat::subview(deprecated.mu_c, i);
-//ASD    const auto olamc               = ekat::subview(diagnostic_outputs.lamc, i);
-    const auto olamc               = ekat::subview(deprecated.lamc, i);
     const auto oqv2qi_depos_tend   = ekat::subview(diagnostic_outputs.qv2qi_depos_tend, i);
-//ASD    const auto oprecip_total_tend  = ekat::subview(diagnostic_outputs.precip_total_tend, i);
-    const auto oprecip_total_tend  = ekat::subview(deprecated.precip_total_tend, i);
-//ASD    const auto onevapr             = ekat::subview(diagnostic_outputs.nevapr, i);
-    const auto onevapr             = ekat::subview(deprecated.nevapr, i);
-//ASD    const auto oqr_evap_tend       = ekat::subview(diagnostic_outputs.qr_evap_tend, i);
-    const auto oqr_evap_tend       = ekat::subview(deprecated.qr_evap_tend, i);
+    const auto orho_qi             = ekat::subview(diagnostic_outputs.rho_qi, i);
     const auto oprecip_liq_flux    = ekat::subview(diagnostic_outputs.precip_liq_flux, i);
     const auto oprecip_ice_flux    = ekat::subview(diagnostic_outputs.precip_ice_flux, i);
     const auto oliq_ice_exchange   = ekat::subview(history_only.liq_ice_exchange, i);
@@ -1052,6 +1042,12 @@ Int Functions<S,D>
     const auto olatent_heat_fusion = ekat::subview(latent_heat_fusion, i);
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
+    // Deprecated fields that are still needed for F90 BFB, to be removed eventually (TODO).
+    const auto omu_c               = ekat::subview(deprecated.mu_c, i);
+    const auto olamc               = ekat::subview(deprecated.lamc, i);
+    const auto oprecip_total_tend  = ekat::subview(deprecated.precip_total_tend, i);
+    const auto onevapr             = ekat::subview(deprecated.nevapr, i);
+    const auto oqr_evap_tend       = ekat::subview(deprecated.qr_evap_tend, i);
 
     // Need to watch out for race conditions with these shared variables
     bool &nucleationPossible  = bools(i, 0);

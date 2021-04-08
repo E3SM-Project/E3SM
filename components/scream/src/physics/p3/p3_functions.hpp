@@ -148,10 +148,6 @@ struct Functions
   // This struct stores diagnostic outputs computed by P3.
   struct P3DiagnosticOutputs {
     P3DiagnosticOutputs() = default;
-//ASD    // Size distribution shape parameter for radiation
-//ASD    view_2d<Spack> mu_c;
-//ASD    // Size distribution slope parameter for radiation
-//ASD    view_2d<Spack> lamc;
     // qitend due to deposition/sublimation
     view_2d<Spack> qv2qi_depos_tend;
     // Precipitation rate, liquid [m s-1]
@@ -164,12 +160,6 @@ struct Functions
     view_2d<Spack> diag_eff_radius_qi;
     // Bulk density of ice [kg m-3]
     view_2d<Spack> rho_qi;
-//ASD    // Total precipitation (rain + snow)
-//ASD    view_2d<Spack> precip_total_tend;
-//ASD    // Evaporation of total precipitation (rain + snow)
-//ASD    view_2d<Spack> nevapr;
-//ASD    // Evaporation of rain
-//ASD    view_2d<Spack> qr_evap_tend;
     // Grid-box average rain flux [kg m^-2 s^-1] pverp
     view_2d<Spack> precip_liq_flux;
     // Grid-box average ice/snow flux [kg m^-2 s^-1] pverp

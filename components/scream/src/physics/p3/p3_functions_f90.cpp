@@ -3345,16 +3345,9 @@ Int p3_main_f(
   P3F::P3DiagnosticInputs diag_inputs{nc_nuceat_tend_d, nccn_prescribed_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d,
                                       cld_frac_l_d, cld_frac_r_d, pres_d, dz_d, dpres_d,
                                       exner_d, qv_prev_d, t_prev_d};
-  P3F::P3DiagnosticOutputs diag_outputs{
-//ASD                                        mu_c_d, 
-//ASD                                        lamc_d, 
-                                        qv2qi_depos_tend_d, precip_liq_surf_d,
+  P3F::P3DiagnosticOutputs diag_outputs{qv2qi_depos_tend_d, precip_liq_surf_d,
                                         precip_ice_surf_d, diag_eff_radius_qc_d, diag_eff_radius_qi_d,
-                                        rho_qi_d,
-//ASD                                        precip_total_tend_d, 
-//ASD                                        nevapr_d,
-//ASD                                        qr_evap_tend_d, 
-                                        precip_liq_flux_d, precip_ice_flux_d};
+                                        rho_qi_d,precip_liq_flux_d, precip_ice_flux_d};
   P3F::P3Infrastructure infrastructure{dt, it, its, ite, kts, kte,
                                        do_predict_nc, do_prescribed_CCN, col_location_d};
   P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d,
