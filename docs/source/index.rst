@@ -4,8 +4,8 @@
    contain the root `toctree` directive.
 
 .. _index-label:
-***************************
 
+***************************
 E3SM Diagnostics Package v2
 ***************************
 Welcome to the E3SM Diagnostics Package documentation hub.
@@ -39,7 +39,7 @@ Overview
 --------
 
 This diagnostics package is constructed to support the diagnostics
-needs of DOE's `Energy Exascale Earth System Model (E3SM) project 
+needs of DOE's `Energy Exascale Earth System Model (E3SM) project
 <https://climatemodeling.science.energy.gov/projects/energy-exascale-earth-system-model>`__,
 formerly known as Accelerated Climate Modeling for Energy (ACME).
 The ultimate goal of this work is to develop a comprehensive diagnostics package
@@ -57,20 +57,20 @@ that:
 -  is flexible for user-specified diagnostics and configuration for
    use by other climate models.
 
-Current State (v2 release) 
+Current State (v2 release)
 --------------------------
 
-Algorithm and visualization codes for **latitude-longitude contour maps**, 
-**polar contour maps**, the accompanying **summarizing table** and **Taylor diagram plots**,  **pressure-latitude zonal mean contour plots**, 
-**zonal mean line plots**, **pressure-longitude meridional mean contour plots**, **area mean time series plots**, and **Cloud Top Height-Tau** joint histograms 
+Algorithm and visualization codes for **latitude-longitude contour maps**,
+**polar contour maps**, the accompanying **summarizing table** and **Taylor diagram plots**,  **pressure-latitude zonal mean contour plots**,
+**zonal mean line plots**, **pressure-longitude meridional mean contour plots**, **area mean time series plots**, and **Cloud Top Height-Tau** joint histograms
 from COSP cloud simulator output. Plots can be created for annual
 and seasonal climatologies, and monthly mean time series.
 
 The package also supports custom user diagnostics, by specifying
-plot type, desired region (global, ocean, land, etc.), 
+plot type, desired region (global, ocean, land, etc.),
 pressure levels for variables with the vertical dimension.
 
-For flexibility, the code structure cleanly separates data manipulation 
+For flexibility, the code structure cleanly separates data manipulation
 (reading input files, processing data, etc) from plotting functions.
 One back-end is available:
 

@@ -143,6 +143,7 @@ Updating The sha256
 
 3. On your machine, pull the latest version of the code.
 This will have the ``conda/meta.yaml`` we edited in the first section.
+
     ::
 
         git fetch <upstream-origin> master
