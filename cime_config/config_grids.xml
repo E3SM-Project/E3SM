@@ -2722,7 +2722,7 @@
       <nx>237984</nx>
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.ECwISC30to60E2r1.201007.nc</file>
-      <desc>ECwISC30to60E2r1 is a MPAS ocean grid generated with the jigsaw/compass process using the eddy closure density function that is roughly comparable to the pop 1 degree resolution:</desc>
+      <desc>ECwISC30to60E2r1 is a MPAS ocean grid generated with the jigsaw/compass process using the eddy closure density function that has 30 km gridcells at the equator, 60 km at mid-latitudes, and 35 km at high latitudes. Additionally, it has ocean under landice cavities:</desc>
     </domain>
 
     <!-- ROF (river) grids-->
@@ -3180,7 +3180,7 @@
 
     <gridmap atm_grid="ne30np4.pg2" ocn_grid="ECwISC30to60E2r1">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_ECwISC30to60E2r1_mono.201006.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_ECwISC30to60E2r1_mono.201006.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_ECwISC30to60E2r1_bilin.210409.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_ECwISC30to60E2r1-nomask_bilin.201006.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/ECwISC30to60E2r1/map_ECwISC30to60E2r1-nomask_to_ne30pg2_mono.201006.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/ECwISC30to60E2r1/map_ECwISC30to60E2r1-nomask_to_ne30pg2_mono.201006.nc</map>
