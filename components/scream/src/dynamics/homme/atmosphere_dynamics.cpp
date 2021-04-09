@@ -137,7 +137,6 @@ set_updated_group (const FieldGroup<Real>& group)
 
   // Set Q in the remapper
   m_p2d_remapper->register_field(Q_phys,Q_dyn);
-  m_p2d_remapper->registration_ends();
 
   // Now that we have Q, we have the exact count for tracers,
   // and we can use that info to setup tracers stuff in Homme
@@ -161,6 +160,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 
   // Now that we have all fields set in homme, let's remap the input fields,
   // so that Homme gets the correct Initial Conditions
+  m_p2d_remapper->registration_ends();
   m_p2d_remapper->remap(true);
 
   // Finish homme initialization
