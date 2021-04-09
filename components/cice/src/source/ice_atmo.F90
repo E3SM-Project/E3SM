@@ -53,6 +53,7 @@
                                       indxi,    indxj,    & 
                                       Tsf,      potT,     &
                                       uatm,     vatm,     &  
+                                      wsresp,   tau_est,  &
                                       uvel,     vvel,     &  
                                       wind,     zlvl,     &  
                                       Qa,       rhoa,     &
@@ -98,6 +99,8 @@
          potT     , & ! air potential temperature  (K)
          uatm     , & ! x-direction wind speed (m/s)
          vatm     , & ! y-direction wind speed (m/s)
+         wsresp   , & ! response of atmospheric boundary layer to stress (m/s/Pa)
+         tau_est  , & ! estimated boundary layer equilibrium stress (Pa)
          uvel     , & ! x-direction ice speed (m/s)
          vvel     , & ! y-direction ice speed (m/s)
          wind     , & ! wind speed (m/s)
@@ -130,7 +133,7 @@
          TsfK  , & ! surface temperature in Kelvin (K)
          xqq   , & ! temporary variable
          psimh , & ! stability function at zlvl   (momentum)
-         tau   , & ! stress at zlvl
+         taufac, & ! factor limiting changes in tau during iteration
          fac   , & ! interpolation factor
          al2   , & ! ln(z10   /zTrf)
          psix2 , & ! stability function at zTrf   (heat and water)
@@ -152,6 +155,11 @@
          re    , & ! sqrt of exchange coefficient (water)
          rh    , & ! sqrt of exchange coefficient (heat)
          vmag  , & ! surface wind magnitude   (m/s)
+         vmagit, & ! iteration loop surface wind magnitude   (m/s)
+         tau   , & ! stress at zlvl (Pa)
+         taupr , & ! stress from previous iteration (Pa)
+         dtau  , & ! difference in stress vs previous iteration (Pa)
+         dtaupr, & ! difference in stress over previous iteration (Pa)
          alz   , & ! ln(zlvl  /z10)
          thva  , & ! virtual temperature      (K)
          cp    , & ! specific heat of moist air
@@ -271,6 +279,11 @@
          tstar(ij) = rhn(ij) * delt(i,j)
          qstar(ij) = ren(ij) * delq(i,j)
 
+         ! Set up variables for velocity iteration.
+         vmagit(ij) = vmag(ij)
+         taupr(ij) = tau_est(i,j)
+         dtau(ij) = 1.e100_dbl_kind
+
       enddo                     ! ij
 
       !------------------------------------------------------------
@@ -308,9 +321,25 @@
             re(ij) = ren(ij) / (c1+ren(ij)/vonkar*(alz(ij)-psixh(ij)))
 
         ! update ustar, tstar, qstar using updated, shifted coeffs
-            ustar(ij) = rd(ij) * vmag(ij)
+            ustar(ij) = rd(ij) * vmagit(ij)
             tstar(ij) = rh(ij) * delt(i,j)
             qstar(ij) = re(ij) * delq(i,j)
+
+            tau(ij) = rhoa(i,j) * ustar(ij) * ustar(ij)
+            dtaupr(ij) = dtau(ij)
+            dtau(ij) = tau(ij) - taupr(ij)
+            ! damp large changes each iteration for convergence
+            if (dtau(ij)*dtaupr(ij) < 0._dbl_kind) then
+               taufac = 0.6_dbl_kind
+            else
+               taufac = 0.95_dbl_kind
+            end if
+            if (abs(dtau(ij)) > abs(taufac * dtaupr(ij))) then
+               dtau(ij) = sign(taufac * dtaupr(ij), dtau(ij))
+               tau(ij) = taupr(ij) + dtau(ij)
+            end if
+            taupr(ij) = tau(ij)
+            vmagit(ij) = max(umin, vmag(ij) - (tau(ij) - tau_est(i,j)) * wsresp(i,j))
 
          enddo                  ! ij
       enddo                     ! end iteration
@@ -342,9 +371,9 @@
       ! stry = tau * vatm(i,j) / vmag
       !------------------------------------------------------------
 
-         tau = rhoa(i,j) * ustar(ij) * rd(ij) ! not the stress at zlvl(i,j)
-         strx(i,j) = tau * (uatm(i,j)-uvel(i,j))
-         stry(i,j) = tau * (vatm(i,j)-vvel(i,j))
+         tau(ij) = rhoa(i,j) * ustar(ij) * rd(ij) ! not the stress at zlvl(i,j)
+         strx(i,j) = tau(ij) * (uatm(i,j)-uvel(i,j)) * (vmagit(ij) / vmag(ij))
+         stry(i,j) = tau(ij) * (vatm(i,j)-vvel(i,j)) * (vmagit(ij) / vmag(ij))
 
       enddo                     ! ij
 

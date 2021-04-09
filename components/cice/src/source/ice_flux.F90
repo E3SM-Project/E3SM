@@ -125,7 +125,9 @@
          swvdf   , & ! sw down, visible, diffuse (W/m^2)
          swidr   , & ! sw down, near IR, direct  (W/m^2)
          swidf   , & ! sw down, near IR, diffuse (W/m^2)
-         flw         ! incoming longwave radiation (W/m^2)
+         flw     , & ! incoming longwave radiation (W/m^2)
+         wsresp  , & ! response of atmospheric boundary layer to wind (m/s/Pa)
+         tau_est     ! estimated stress at equilibrium with wind (Pa)
 
        ! in from atmosphere (if .not. Tsfc_calc)
        ! required for coupling to HadGEM3
@@ -390,6 +392,8 @@
       rhoa  (:,:,:) = 1.3_dbl_kind    ! air density (kg/m^3)
       uatm  (:,:,:) = c5              ! wind velocity    (m/s)
       vatm  (:,:,:) = c5
+      wsresp(:,:,:) = c0              ! response of wind to stress (m/s/Pa)
+      tau_est(:,:,:)= c0              ! stress in equilibrium with wind (Pa)
       strax (:,:,:) = 0.05_dbl_kind
       stray (:,:,:) = 0.05_dbl_kind
       if (l_winter) then
