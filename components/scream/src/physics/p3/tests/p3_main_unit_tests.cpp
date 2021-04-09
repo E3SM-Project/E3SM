@@ -388,8 +388,10 @@ static void run_bfb_p3_main()
       d.qc, d.nc, d.qr, d.nr, d.th_atm, d.qv, d.dt, d.qi, d.qm, d.ni,
       d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
       d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi,
-      d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.dpres, d.exner, d.qv2qi_depos_tend, d.precip_total_tend,
-      d.nevapr, d.qr_evap_tend, d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i, 
+      d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.dpres, d.exner, d.qv2qi_depos_tend,
+//ASD      d.precip_total_tend,
+//ASD      d.nevapr, d.qr_evap_tend,
+      d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i, 
 //ASD      d.mu_c,
 //ASD      d.lamc, 
       d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev);

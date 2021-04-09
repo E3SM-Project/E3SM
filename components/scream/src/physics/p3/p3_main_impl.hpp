@@ -1064,7 +1064,7 @@ Int Functions<S,D>
       &nc_incld, &nr_incld, &ni_incld, &bm_incld,
       &inv_rho, &prec, &rho, &rhofacr, &rhofaci, &acn, &qv_sat_l, &qv_sat_i, &sup, &qv_supersat_i,
       &tmparr1, &qtend_ignore, &ntend_ignore,
-      &mu_c, &lamc, &orho_qi, &oqv2qi_depos_tend, &oprecip_total_tend, &onevapr, &oprecip_liq_flux, &oprecip_ice_flux
+      &mu_c, &lamc, &orho_qi, &oqv2qi_depos_tend, &precip_total_tend, &nevapr, &oprecip_liq_flux, &oprecip_ice_flux
     };
 
     // initialize
@@ -1100,7 +1100,7 @@ Int Functions<S,D>
       oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm, olatent_heat_vapor,
       olatent_heat_sublim, olatent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
-      mu_r, lamr, logn0r, oqv2qi_depos_tend, oprecip_total_tend, onevapr, oqr_evap_tend,
+      mu_r, lamr, logn0r, oqv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
       pratot, prctot, hydrometeorsPresent, nk);
 
