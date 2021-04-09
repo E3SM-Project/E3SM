@@ -927,7 +927,7 @@ Int Functions<S,D>
   const Int nk_pack = ekat::npack<Spack>(nk);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
 
-  ekat::WorkspaceManager<Spack, Device> workspace_mgr(nk_pack, 47, policy);
+  ekat::WorkspaceManager<Spack, Device> workspace_mgr(nk_pack, 52, policy);
 
   // load constants into local vars
   const     Scalar inv_dt          = 1 / infrastructure.dt;
@@ -966,7 +966,7 @@ Int Functions<S,D>
     //
     uview_1d<Spack>
       mu_r,   // shape parameter of rain
-      T_atm,      // temperature at the beginning of the microhpysics step [K]
+      T_atm,      // temperature at the beginning of the microphysics step [K]
 
       // 2D size distribution and fallspeed parameters
       lamr, logn0r, nu, cdist, cdist1, cdistr,
@@ -982,9 +982,12 @@ Int Functions<S,D>
       tmparr1, inv_exner, diag_equiv_reflectivity, diag_vm_qi, diag_diam_qi, pratot, prctot,
 
       // p3_tend_out, may not need these
-      qtend_ignore, ntend_ignore;
+      qtend_ignore, ntend_ignore,
 
-    workspace.template take_many_and_reset<41>(
+      // Variables still used in F90 but removed from C++ interface
+      mu_c, lamc, precip_total_tend, nevapr, qr_evap_tend;
+
+    workspace.template take_many_and_reset<46>(
       {
         "mu_r", "T_atm", "lamr", "logn0r", "nu", "cdist", "cdist1", "cdistr",
         "inv_cld_frac_i", "inv_cld_frac_l", "inv_cld_frac_r", "qc_incld", "qr_incld", "qi_incld", "qm_incld",
@@ -992,7 +995,8 @@ Int Functions<S,D>
         "inv_dz", "inv_rho", "ze_ice", "ze_rain", "prec", "rho",
         "rhofacr", "rhofaci", "acn", "qv_sat_l", "qv_sat_i", "sup", "qv_supersat_i",
         "tmparr1", "inv_exner", "diag_equiv_reflectivity", "diag_vm_qi", "diag_diam_qi",
-        "pratot", "prctot", "qtend_ignore", "ntend_ignore"
+        "pratot", "prctot", "qtend_ignore", "ntend_ignore",
+        "mu_c", "lamc", "precip_total_tend", "nevapr", "qr_evap_tend"
       },
       {
         &mu_r, &T_atm, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
@@ -1001,9 +1005,10 @@ Int Functions<S,D>
         &inv_dz, &inv_rho, &ze_ice, &ze_rain, &prec, &rho,
         &rhofacr, &rhofaci, &acn, &qv_sat_l, &qv_sat_i, &sup, &qv_supersat_i,
         &tmparr1, &inv_exner, &diag_equiv_reflectivity, &diag_vm_qi, &diag_diam_qi,
-        &pratot, &prctot, &qtend_ignore, &ntend_ignore
+        &pratot, &prctot, &qtend_ignore, &ntend_ignore, 
+        &mu_c, &lamc, &precip_total_tend, &nevapr, &qr_evap_tend
       });
-
+      
     // Get single-column subviews of all inputs, shouldn't need any i-indexing
     // after this.
     const auto opres               = ekat::subview(diagnostic_inputs.pres, i);
