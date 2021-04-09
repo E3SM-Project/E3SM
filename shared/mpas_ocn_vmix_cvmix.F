@@ -662,8 +662,8 @@ contains
                           Snonlocal = cvmix_variables%kpp_Snonlocal_iface(minLevelCell(iCell):maxLevelCell(iCell)+1), &
                           surf_fric = cvmix_variables%SurfaceFriction,                      &
                           surf_buoy = cvmix_variables%SurfaceBuoyancyForcing,               &
-                          nlev = maxLevelCell(iCell) - minLevelCell(iCell) + 2,             &
-                          max_nlev = maxLevelCell(iCell) - minLevelCell(iCell) + 2,         &
+                          nlev = maxLevelCell(iCell) - minLevelCell(iCell) + 1,             &
+                          max_nlev = nVertLevels,         &
                           Langmuir_EFactor = langmuirEnhancementFactor )
 !           call mpas_timer_stop('cvmix coeffs kpp')
 
