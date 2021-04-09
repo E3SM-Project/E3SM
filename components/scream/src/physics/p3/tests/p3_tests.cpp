@@ -13,7 +13,6 @@ TEST_CASE("FortranDataIterator", "p3") {
   using scream::p3::ic::Factory;
   const auto d = Factory::create(Factory::mixed);
   scream::p3::FortranDataIterator fdi(d);
-  //ASD
   REQUIRE(fdi.nfield() == 34);
   const auto& f = fdi.getfield(0);
   REQUIRE(f.dim == 2);

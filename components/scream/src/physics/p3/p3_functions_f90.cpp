@@ -230,11 +230,7 @@ void p3_main_c(
   Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
   Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed, Real* dpres, Real* exner,
-  Real* qv2qi_depos_tend,
-//ASD  Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend,
-  Real* precip_liq_flux,
-  Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
-//ASD
+  Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev, Real* elapsed_s);
 
 void ice_supersat_conservation_c(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt, Real qi2qv_sublim_tend, Real qr2qv_evap_tend);
@@ -837,8 +833,6 @@ void p3_main(P3MainData& d)
     d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
     d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi,
     d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.dpres, d.exner, d.qv2qi_depos_tend,
-//ASD    d.precip_total_tend, d.nevapr,
-//ASD    d.qr_evap_tend,
     d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i,
     d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev, &d.elapsed_s);
   d.transpose<ekat::TransposeDirection::f2c>();
@@ -3240,11 +3234,7 @@ Int p3_main_f(
   Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
   Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* exner,
-  Real* qv2qi_depos_tend,
-//ASD  Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend,
-  Real* precip_liq_flux,
-  Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, 
-//ASD  Real* mu_c, Real* lamc,
+  Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, 
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev)
 {
   using P3F  = Functions<Real, DefaultDevice>;
@@ -3273,20 +3263,15 @@ Int p3_main_f(
   std::vector<const Real*> ptr_array = {
     pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, dpres, exner, cld_frac_i, cld_frac_l, cld_frac_r, inv_qc_relvar,
     qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, qv_prev, t_prev, diag_eff_radius_qc, diag_eff_radius_qi,
-    rho_qi, 
-//ASD    mu_c, lamc, 
-    qv2qi_depos_tend,
-//ASD    precip_total_tend, nevapr, qr_evap_tend,
-     liq_ice_exchange,
-    vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
+    rho_qi, qv2qi_depos_tend,
+    liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
   };
 
   //PMC - hardcoding the index for each variable is very brittle :-(.
-  //ASD
-  dim2_sizes[30] = nk+1; // precip_liq_flux
-  dim2_sizes[31] = nk+1; // precip_ice_flux
-  dim1_sizes[32] = 1; dim2_sizes[32] = nj; // precip_liq_surf
-  dim1_sizes[33] = 1; dim2_sizes[33] = nj; // precip_ice_surf
+  dim2_sizes[P3MainData::NUM_ARRAYS-4] = nk+1; // precip_liq_flux
+  dim2_sizes[P3MainData::NUM_ARRAYS-3] = nk+1; // precip_ice_flux
+  dim1_sizes[P3MainData::NUM_ARRAYS-2] = 1; dim2_sizes[P3MainData::NUM_ARRAYS-2] = nj; // precip_liq_surf
+  dim1_sizes[P3MainData::NUM_ARRAYS-1] = 1; dim2_sizes[P3MainData::NUM_ARRAYS-1] = nj; // precip_ice_surf
 
   // Initialize outputs to avoid uninitialized read warnings in memory checkers
   for (size_t i = P3MainData::NUM_INPUT_ARRAYS; i < P3MainData::NUM_ARRAYS; ++i) {
@@ -3325,19 +3310,14 @@ Int p3_main_f(
     diag_eff_radius_qc_d   (temp_d[counter++]),
     diag_eff_radius_qi_d   (temp_d[counter++]),
     rho_qi_d               (temp_d[counter++]), //25
-//ASD    mu_c_d                 (temp_d[counter++]),
-//ASD - change counters too    lamc_d                 (temp_d[counter++]),
     qv2qi_depos_tend_d     (temp_d[counter++]),
-//ASD    precip_total_tend_d    (temp_d[counter++]),
-//ASD    nevapr_d               (temp_d[counter++]), //30
-//ASD    qr_evap_tend_d         (temp_d[counter++]),
     liq_ice_exchange_d     (temp_d[counter++]),
     vap_liq_exchange_d     (temp_d[counter++]),
     vap_ice_exchange_d     (temp_d[counter++]),
-    precip_liq_flux_d      (temp_d[counter++]), //35
+    precip_liq_flux_d      (temp_d[counter++]), //30 
     precip_ice_flux_d      (temp_d[counter++]),
     precip_liq_surf_temp_d (temp_d[counter++]),
-    precip_ice_surf_temp_d (temp_d[counter++]); //38
+    precip_ice_surf_temp_d (temp_d[counter++]); //33
 
   // Special cases: precip_liq_surf=1d<scalar>(ni), precip_ice_surf=1d<scalar>(ni), col_location=2d<scalar>(nj, 3)
   sview_1d precip_liq_surf_d("precip_liq_surf_d", nj), precip_ice_surf_d("precip_ice_surf_d", nj);
@@ -3385,29 +3365,22 @@ Int p3_main_f(
   std::vector<view_2d> inout_views = {
     qc_d, nc_d, qr_d, nr_d, qi_d, qm_d, ni_d, bm_d, qv_d, th_atm_d,
     diag_eff_radius_qc_d, diag_eff_radius_qi_d, rho_qi_d,
-//ASD    mu_c_d, lamc_d, 
     qv2qi_depos_tend_d,
-//ASD    precip_total_tend_d,
-//ASD    nevapr_d, qr_evap_tend_d,
-    liq_ice_exchange_d, vap_liq_exchange_d,
-    vap_ice_exchange_d, precip_liq_flux_d, precip_ice_flux_d, precip_liq_surf_temp_d, precip_ice_surf_temp_d
+    liq_ice_exchange_d, vap_liq_exchange_d, vap_ice_exchange_d,
+    precip_liq_flux_d, precip_ice_flux_d, precip_liq_surf_temp_d, precip_ice_surf_temp_d
   };
   std::vector<size_t> dim1_sizes_out(P3MainData::NUM_ARRAYS - 13, nj);
   std::vector<size_t> dim2_sizes_out(P3MainData::NUM_ARRAYS - 13, nk);
-//ASD
-  dim2_sizes_out[17] = nk+1; // precip_liq_flux
-  dim2_sizes_out[18] = nk+1; // precip_ice_flux
-  dim1_sizes_out[19] = 1; dim2_sizes_out[19] = nj; // precip_liq_surf
-  dim1_sizes_out[20] = 1; dim2_sizes_out[20] = nj; // precip_ice_surf
+  int dim_sizes_adj = P3MainData::NUM_ARRAYS-13;
+  dim2_sizes_out[dim_sizes_adj-4] = nk+1; // precip_liq_flux
+  dim2_sizes_out[dim_sizes_adj-3] = nk+1; // precip_ice_flux
+  dim1_sizes_out[dim_sizes_adj-2] = 1; dim2_sizes_out[dim_sizes_adj-2] = nj; // precip_liq_surf
+  dim1_sizes_out[dim_sizes_adj-1] = 1; dim2_sizes_out[dim_sizes_adj-1] = nj; // precip_ice_surf
 
   ekat::device_to_host({
       qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, diag_eff_radius_qc, diag_eff_radius_qi,
-      rho_qi, 
-//ASD      mu_c, lamc, 
-      qv2qi_depos_tend,
-//ASD      precip_total_tend, nevapr, qr_evap_tend,
-      liq_ice_exchange,
-      vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
+      rho_qi, qv2qi_depos_tend,
+      liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
     },
     dim1_sizes_out, dim2_sizes_out, inout_views, true);
 
