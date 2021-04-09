@@ -7,6 +7,8 @@ on:
   pull_request:
     branches: [master]
 
+  workflow_dispatch:
+
 env:
   UVCDAT_ANONYMOUS_LOG: False
 
@@ -44,12 +46,8 @@ jobs:
 
   build:
     needs: check-jobs-to-skip
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["ubuntu-latest", "macos-latest"]
-    name: ${{ matrix.os }} Build
-    runs-on: ${{ matrix.os }}
+    if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash -l {0}
@@ -57,11 +55,9 @@ jobs:
     steps:
       # if conditional must be repeated in order to skip matrix jobs that are required PR checks
       # https://github.com/fkirc/skip-duplicate-actions/issues/44#issuecomment-723430339
-      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
-        name: Cache Conda
+      - name: Cache Conda
         uses: actions/cache@v2
         env:
           # Increase this value to reset cache if conda/e3sm_diags_env_dev.yml has not changed in the workflow
@@ -71,8 +67,7 @@ jobs:
           key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
             hashFiles('conda/e3sm_diags_env_dev.yml') }}
 
-      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
-        name: Build Conda Environment
+      - name: Build Conda Environment
         uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: e3sm_diags_env_dev
@@ -89,18 +84,15 @@ jobs:
           conda info
           conda list
 
-      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
-        name: Install `e3sm-diags` Package
+      - name: Install `e3sm-diags` Package
         run: pip install .
 
-      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
-        name: Run Tests
+      - name: Run Tests
         run: |
           bash tests/test.sh
 
   publish-docs:
-    needs: [check-jobs-to-skip, pre-commit-hooks, build]
-    if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' && github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     defaults:
       run:
