@@ -3268,10 +3268,11 @@ Int p3_main_f(
   };
 
   //PMC - hardcoding the index for each variable is very brittle :-(.
-  dim2_sizes[P3MainData::NUM_ARRAYS-4] = nk+1; // precip_liq_flux
-  dim2_sizes[P3MainData::NUM_ARRAYS-3] = nk+1; // precip_ice_flux
-  dim1_sizes[P3MainData::NUM_ARRAYS-2] = 1; dim2_sizes[P3MainData::NUM_ARRAYS-2] = nj; // precip_liq_surf
-  dim1_sizes[P3MainData::NUM_ARRAYS-1] = 1; dim2_sizes[P3MainData::NUM_ARRAYS-1] = nj; // precip_ice_surf
+  int dim_sizes_len = dim1_sizes.size(); 
+  dim2_sizes[dim_sizes_len-4] = nk+1; // precip_liq_flux
+  dim2_sizes[dim_sizes_len-3] = nk+1; // precip_ice_flux
+  dim1_sizes[dim_sizes_len-2] = 1; dim2_sizes[dim_sizes_len-2] = nj; // precip_liq_surf
+  dim1_sizes[dim_sizes_len-1] = 1; dim2_sizes[dim_sizes_len-1] = nj; // precip_ice_surf
 
   // Initialize outputs to avoid uninitialized read warnings in memory checkers
   for (size_t i = P3MainData::NUM_INPUT_ARRAYS; i < P3MainData::NUM_ARRAYS; ++i) {
@@ -3369,11 +3370,11 @@ Int p3_main_f(
   };
   std::vector<size_t> dim1_sizes_out(P3MainData::NUM_ARRAYS - 13, nj);
   std::vector<size_t> dim2_sizes_out(P3MainData::NUM_ARRAYS - 13, nk);
-  int dim_sizes_adj = P3MainData::NUM_ARRAYS-13;
-  dim2_sizes_out[dim_sizes_adj-4] = nk+1; // precip_liq_flux
-  dim2_sizes_out[dim_sizes_adj-3] = nk+1; // precip_ice_flux
-  dim1_sizes_out[dim_sizes_adj-2] = 1; dim2_sizes_out[dim_sizes_adj-2] = nj; // precip_liq_surf
-  dim1_sizes_out[dim_sizes_adj-1] = 1; dim2_sizes_out[dim_sizes_adj-1] = nj; // precip_ice_surf
+  int dim_sizes_out_len = dim1_sizes_out.size();
+  dim2_sizes_out[dim_sizes_out_len-4] = nk+1; // precip_liq_flux
+  dim2_sizes_out[dim_sizes_out_len-3] = nk+1; // precip_ice_flux
+  dim1_sizes_out[dim_sizes_out_len-2] = 1; dim2_sizes_out[dim_sizes_out_len-2] = nj; // precip_liq_surf
+  dim1_sizes_out[dim_sizes_out_len-1] = 1; dim2_sizes_out[dim_sizes_out_len-1] = nj; // precip_ice_surf
 
   ekat::device_to_host({
       qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, diag_eff_radius_qc, diag_eff_radius_qi,
