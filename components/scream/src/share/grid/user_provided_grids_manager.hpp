@@ -114,9 +114,6 @@ create_user_provided_grids_manager (const ekat::Comm& /* comm */, const ekat::Pa
   return std::make_shared<UserProvidedGridsManager>();
 }
 
-GridsManager::grid_repo_type UserProvidedGridsManager::m_provided_grids;
-UserProvidedGridsManager::remap_repo_type UserProvidedGridsManager::m_provided_remappers;
-
 } // namespace scream
 
 #endif // SCREAM_USER_PROVIDED_GRIDS_MANAGER_HPP
