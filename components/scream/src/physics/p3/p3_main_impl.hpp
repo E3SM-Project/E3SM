@@ -914,7 +914,6 @@ Int Functions<S,D>
   const P3DiagnosticOutputs& diagnostic_outputs,
   const P3Infrastructure& infrastructure,
   const P3HistoryOnly& history_only,
-  const P3Deprecated& deprecated,
   Int nj,
   Int nk)
 {
@@ -1047,12 +1046,6 @@ Int Functions<S,D>
     const auto olatent_heat_fusion = ekat::subview(latent_heat_fusion, i);
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
-    // Deprecated fields that are still needed for F90 BFB, to be removed eventually (TODO).
-    const auto omu_c               = ekat::subview(deprecated.mu_c, i);
-    const auto olamc               = ekat::subview(deprecated.lamc, i);
-    const auto oprecip_total_tend  = ekat::subview(deprecated.precip_total_tend, i);
-    const auto onevapr             = ekat::subview(deprecated.nevapr, i);
-    const auto oqr_evap_tend       = ekat::subview(deprecated.qr_evap_tend, i);
 
     // Need to watch out for race conditions with these shared variables
     bool &nucleationPossible  = bools(i, 0);

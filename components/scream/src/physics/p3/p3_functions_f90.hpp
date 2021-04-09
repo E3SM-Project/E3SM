@@ -754,7 +754,6 @@ struct P3MainPart3Data : public PhysicsTestData
 
 struct P3MainData : public PhysicsTestData
 {
-  //ASD
   static constexpr size_t NUM_ARRAYS = 34;
   static constexpr size_t NUM_INPUT_ARRAYS = 24;
 
@@ -1096,11 +1095,7 @@ Int p3_main_f(
   Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
   Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* exner,
-  Real* qv2qi_depos_tend,
-//ASD  Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend,
-  Real* precip_liq_flux,
-  Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, 
-//ASD  Real* mu_c, Real* lamc,
+  Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, 
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
 
 void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt, Real qi2qv_sublim_tend, Real qr2qv_evap_tend);

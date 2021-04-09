@@ -32,10 +32,8 @@ struct FortranData {
   // Out
   Array1 precip_liq_surf, precip_ice_surf;
   Array2 diag_eff_radius_qc, diag_eff_radius_qi, rho_qi, qv2qi_depos_tend,
-//ASD         precip_total_tend, nevapr, qr_evap_tend,
          precip_liq_flux, precip_ice_flux, cld_frac_r, cld_frac_l, cld_frac_i;
   Array3 p3_tend_out;
-//ASD  Array2 mu_c, lamc;
   Array2 liq_ice_exchange,vap_liq_exchange,vap_ice_exchange;
 
   FortranData(Int ncol, Int nlev);

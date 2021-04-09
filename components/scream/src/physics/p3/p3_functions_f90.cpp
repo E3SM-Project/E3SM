@@ -3351,10 +3351,8 @@ Int p3_main_f(
                                        do_predict_nc, do_prescribed_CCN, col_location_d};
   P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d,
                                   vap_ice_exchange_d};
-  P3F::P3Deprecated  deprecated{nevapr_d,qr_evap_tend_d,precip_total_tend_d,mu_c_d,lamc_d};
-
   auto elapsed_microsec = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-                                       history_only, deprecated, nj, nk);
+                                       history_only, nj, nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
     precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_liq_surf_d(i);

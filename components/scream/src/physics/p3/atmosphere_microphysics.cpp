@@ -187,17 +187,6 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   history_only.liq_ice_exchange = m_p3_fields_out["micro_liq_ice_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_liq_exchange = m_p3_fields_out["micro_vap_liq_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_ice_exchange = m_p3_fields_out["micro_vap_ice_exchange"].get_reshaped_view<Pack**>();
-  // Deprecated -- These are fields actively being deleted, but are still needed for F90 BFB tests.
-  view_2d nevapr("nevapr",m_num_cols,nk_pack);
-  view_2d qr_evap_tend("qr_evap_tend",m_num_cols,nk_pack);
-  view_2d precip_total_tend("precip_total_tend",m_num_cols,nk_pack);
-  view_2d mu_c("mu_c",m_num_cols,nk_pack);
-  view_2d lamc("lamc",m_num_cols,nk_pack);
-  deprecated.nevapr            = nevapr; 
-  deprecated.qr_evap_tend      = qr_evap_tend; 
-  deprecated.precip_total_tend = precip_total_tend; 
-  deprecated.mu_c              = mu_c; 
-  deprecated.lamc              = lamc; 
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
@@ -242,7 +231,7 @@ void P3Microphysics::run_impl (const Real dt)
 
   // Run p3 main
   P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-                                       history_only, deprecated, m_num_cols, m_num_levs);
+                                       history_only, m_num_cols, m_num_levs);
 
   // Conduct the post-processing of the p3_main output.
   Kokkos::parallel_for(

@@ -270,7 +270,6 @@ protected:
   P3F::P3DiagnosticOutputs diag_outputs;
   P3F::P3HistoryOnly       history_only;
   P3F::P3Infrastructure    infrastructure;
-  P3F::P3Deprecated        deprecated;
   p3_preamble              p3_preproc;
   p3_postamble             p3_postproc;
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.

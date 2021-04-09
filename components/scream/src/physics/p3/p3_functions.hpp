@@ -201,21 +201,6 @@ struct Functions
     view_2d<Spack> vap_ice_exchange;
   };
 
-  // This struct stores diagnostic outputs computed by P3.
-  struct P3Deprecated {
-    P3Deprecated() = default;
-    // Evaporation of total precipitation (rain + snow)
-    view_2d<Spack> nevapr;
-    // Evaporation of rain
-    view_2d<Spack> qr_evap_tend;
-    // Total precipitation (rain + snow)
-    view_2d<Spack> precip_total_tend;
-    // Size distribution shape parameter for radiation
-    view_2d<Spack> mu_c;
-    // Size distribution slope parameter for radiation
-    view_2d<Spack> lamc;
-  };
-
   // -- Table3 --
 
   struct Table3 {
@@ -971,7 +956,6 @@ struct Functions
     const P3DiagnosticOutputs& diagnostic_outputs,
     const P3Infrastructure& infrastructure,
     const P3HistoryOnly& history_only,
-    const P3Deprecated& deprecated,
     Int nj, // number of columns
     Int nk); // number of vertical cells per column
 
