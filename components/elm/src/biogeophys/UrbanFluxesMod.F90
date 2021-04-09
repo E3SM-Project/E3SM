@@ -194,10 +194,11 @@ contains
     integer, parameter  :: itmax = 30             ! maximum number of iterations
     real(r8) :: wind_speed0(bounds%begl:bounds%endl) ! Wind speed from atmosphere at start of iteration
     real(r8) :: wind_speed_adj(bounds%begl:bounds%endl) ! Adjusted wind speed for iteration
-    real(r8) :: tau(bounds%begl:bounds%endl) ! Stress used in iteration
+    real(r8) :: tau(bounds%begl:bounds%endl)      ! Stress used in iteration
     real(r8) :: tau_diff(bounds%begl:bounds%endl) ! Difference from previous iteration tau
     real(r8) :: prev_tau(bounds%begl:bounds%endl) ! Previous iteration tau
     real(r8) :: prev_tau_diff(bounds%begl:bounds%endl) ! Previous difference in iteration tau
+    real(r8) :: tau_diff_fac                      ! used to limit wild changes in iteration tau
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
@@ -335,6 +336,7 @@ contains
          ur(l) = max(1.0_r8, wind_speed_adj(l))
 
          prev_tau(l) = -tau_est(t)
+         tau_diff(l) = 1.100_r8
 
       end do
 
@@ -419,16 +421,22 @@ contains
             if ( -(tau(l)+tau_est(t))*wsresp(t) > 0.99_r8*wind_speed0(l) ) then
                tau(l) = -tau_est(t) - 0.99_r8 * wind_speed0(l) / wsresp(t)
             end if
+            prev_tau_diff(l) = tau_diff(l)
             tau_diff(l) = tau(l) - prev_tau(l)
-            if (iter /= 1) then
-               ! damp possible swings in each iteration for convergence
-               if (abs(tau_diff(l)) > abs(0.95*prev_tau_diff(l))) then
-                  tau_diff(l) = sign(0.95*prev_tau_diff(l), tau_diff(l))
-                  tau(l) = prev_tau(l) + tau_diff(l)
-               end if
+            ! damp large changes each iteration for convergence
+            if (tau_diff(l) * prev_tau_diff(l) < 0._r8) then
+               ! if oscillating about the solution, use stronger damping
+               ! this should not be set below 0.5, though
+               tau_diff_fac = 0.6_r8
+            else
+               tau_diff_fac = 0.95_r8
+            end if
+            ! damp possible swings in each iteration for convergence
+            if (abs(tau_diff(l)) > abs(tau_diff_fac*prev_tau_diff(l))) then
+               tau_diff(l) = sign(tau_diff_fac*prev_tau_diff(l), tau_diff(l))
+               tau(l) = prev_tau(l) + tau_diff(l)
             end if
             prev_tau(l) = tau(l)
-            prev_tau_diff(l) = tau_diff(l)
             wind_speed_adj(l) = wind_speed0(l) + (tau(l)+tau_est(t))*wsresp(t)
             ur(l) = max(1.0_r8, wind_speed_adj(l))
 
@@ -930,8 +938,9 @@ contains
          l = filter_urbanl(fl)
          if (abs(tau_diff(l)) > dtaumin) then
             write(iulog,*)'WARNING: Stress did not converge for urban columns ',&
-                 ' nstep = ',nstep,' indexl= ',l,' tau_diff= ',tau_diff(l),&
-                 ' iter_final= ',iter_final
+                 ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(l),&
+                 ' tau_diff= ',tau_diff(l),' tau= ',tau(l),&
+                 ' wind_speed_adj= ',wind_speed_adj(l),' iter_final= ',iter_final
          end if
       end do
 
