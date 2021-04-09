@@ -231,7 +231,8 @@ void p3_main_c(
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
   Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed, Real* dpres, Real* exner,
   Real* qv2qi_depos_tend, Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend, Real* precip_liq_flux,
-  Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
+  Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
+//ASD
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev, Real* elapsed_s);
 
 void ice_supersat_conservation_c(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt, Real qi2qv_sublim_tend, Real qr2qv_evap_tend);
@@ -834,7 +835,7 @@ void p3_main(P3MainData& d)
     d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
     d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi,
     d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.dpres, d.exner, d.qv2qi_depos_tend, d.precip_total_tend, d.nevapr,
-    d.qr_evap_tend, d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i, d.mu_c, d.lamc,
+    d.qr_evap_tend, d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i,
     d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev, &d.elapsed_s);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
@@ -3236,7 +3237,8 @@ Int p3_main_f(
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
   Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* exner,
   Real* qv2qi_depos_tend, Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend, Real* precip_liq_flux,
-  Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
+  Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, 
+//ASD  Real* mu_c, Real* lamc,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev)
 {
   using P3F  = Functions<Real, DefaultDevice>;
@@ -3265,15 +3267,18 @@ Int p3_main_f(
   std::vector<const Real*> ptr_array = {
     pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, dpres, exner, cld_frac_i, cld_frac_l, cld_frac_r, inv_qc_relvar,
     qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, qv_prev, t_prev, diag_eff_radius_qc, diag_eff_radius_qi,
-    rho_qi, mu_c, lamc, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, liq_ice_exchange,
+    rho_qi, 
+//ASD    mu_c, lamc, 
+    qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, liq_ice_exchange,
     vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
   };
 
   //PMC - hardcoding the index for each variable is very brittle :-(.
-  dim2_sizes[35] = nk+1; // precip_liq_flux
-  dim2_sizes[36] = nk+1; // precip_ice_flux
-  dim1_sizes[37] = 1; dim2_sizes[37] = nj; // precip_liq_surf
-  dim1_sizes[38] = 1; dim2_sizes[38] = nj; // precip_ice_surf
+  //ASD
+  dim2_sizes[33] = nk+1; // precip_liq_flux
+  dim2_sizes[34] = nk+1; // precip_ice_flux
+  dim1_sizes[35] = 1; dim2_sizes[35] = nj; // precip_liq_surf
+  dim1_sizes[36] = 1; dim2_sizes[36] = nj; // precip_ice_surf
 
   // Initialize outputs to avoid uninitialized read warnings in memory checkers
   for (size_t i = P3MainData::NUM_INPUT_ARRAYS; i < P3MainData::NUM_ARRAYS; ++i) {
@@ -3312,8 +3317,8 @@ Int p3_main_f(
     diag_eff_radius_qc_d   (temp_d[counter++]),
     diag_eff_radius_qi_d   (temp_d[counter++]),
     rho_qi_d               (temp_d[counter++]), //25
-    mu_c_d                 (temp_d[counter++]),
-    lamc_d                 (temp_d[counter++]),
+//ASD    mu_c_d                 (temp_d[counter++]),
+//ASD - change counters too    lamc_d                 (temp_d[counter++]),
     qv2qi_depos_tend_d     (temp_d[counter++]),
     precip_total_tend_d    (temp_d[counter++]),
     nevapr_d               (temp_d[counter++]), //30
@@ -3329,6 +3334,9 @@ Int p3_main_f(
   // Special cases: precip_liq_surf=1d<scalar>(ni), precip_ice_surf=1d<scalar>(ni), col_location=2d<scalar>(nj, 3)
   sview_1d precip_liq_surf_d("precip_liq_surf_d", nj), precip_ice_surf_d("precip_ice_surf_d", nj);
   sview_2d col_location_d("col_location_d", nj, 3);
+
+  view_2d mu_c_d("mu_c_d",nj,nk);
+  view_2d lamc_d("lamc_d",nj,nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
     precip_liq_surf_d(i) = precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n];
@@ -3365,21 +3373,25 @@ Int p3_main_f(
   // Sync back to host
   std::vector<view_2d> inout_views = {
     qc_d, nc_d, qr_d, nr_d, qi_d, qm_d, ni_d, bm_d, qv_d, th_atm_d,
-    diag_eff_radius_qc_d, diag_eff_radius_qi_d, rho_qi_d, mu_c_d, lamc_d, qv2qi_depos_tend_d, precip_total_tend_d,
+    diag_eff_radius_qc_d, diag_eff_radius_qi_d, rho_qi_d,
+//ASD    mu_c_d, lamc_d, 
+    qv2qi_depos_tend_d, precip_total_tend_d,
     nevapr_d, qr_evap_tend_d, liq_ice_exchange_d, vap_liq_exchange_d,
     vap_ice_exchange_d, precip_liq_flux_d, precip_ice_flux_d, precip_liq_surf_temp_d, precip_ice_surf_temp_d
   };
   std::vector<size_t> dim1_sizes_out(P3MainData::NUM_ARRAYS - 13, nj);
   std::vector<size_t> dim2_sizes_out(P3MainData::NUM_ARRAYS - 13, nk);
-
-  dim2_sizes_out[22] = nk+1; // precip_liq_flux
-  dim2_sizes_out[23] = nk+1; // precip_ice_flux
-  dim1_sizes_out[24] = 1; dim2_sizes_out[24] = nj; // precip_liq_surf
-  dim1_sizes_out[25] = 1; dim2_sizes_out[25] = nj; // precip_ice_surf
+//ASD
+  dim2_sizes_out[20] = nk+1; // precip_liq_flux
+  dim2_sizes_out[21] = nk+1; // precip_ice_flux
+  dim1_sizes_out[22] = 1; dim2_sizes_out[22] = nj; // precip_liq_surf
+  dim1_sizes_out[23] = 1; dim2_sizes_out[23] = nj; // precip_ice_surf
 
   ekat::device_to_host({
       qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, diag_eff_radius_qc, diag_eff_radius_qi,
-      rho_qi, mu_c, lamc, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, liq_ice_exchange,
+      rho_qi, 
+//ASD      mu_c, lamc, 
+      qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, liq_ice_exchange,
       vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
     },
     dim1_sizes_out, dim2_sizes_out, inout_views, true);

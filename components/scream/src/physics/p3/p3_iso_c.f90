@@ -107,7 +107,7 @@ contains
   subroutine p3_main_c(qc,nc,qr,nr,th_atm,qv,dt,qi,qm,ni,bm,   &
        pres,dz,nc_nuceat_tend,nccn_prescribed,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_eff_radius_qc,     &
        diag_eff_radius_qi,rho_qi,do_predict_nc,do_prescribed_CCN,dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr, &
-       qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,mu_c,lamc,liq_ice_exchange, &
+       qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,liq_ice_exchange, &
        vap_liq_exchange, vap_ice_exchange, qv_prev, t_prev, elapsed_s) bind(C)
     use micro_p3, only : p3_main
 
@@ -132,7 +132,7 @@ contains
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: precip_liq_flux
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: precip_ice_flux
     real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: cld_frac_i, cld_frac_l, cld_frac_r
-    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: mu_c, lamc
+!ASD    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: mu_c_old, lamc_old
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: liq_ice_exchange
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_liq_exchange
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_ice_exchange
@@ -143,6 +143,7 @@ contains
 
     real(kind=c_real), dimension(its:ite,kts:kte,49)   :: p3_tend_out
     real(kind=c_real), dimension(its:ite,3) :: col_location
+    real(kind=c_real), dimension(its:ite,kts:kte)      :: mu_c, lamc
     integer :: i
     do i = its,ite
       col_location(i,:) = real(i)
