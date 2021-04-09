@@ -185,7 +185,7 @@ TEST_CASE("field", "") {
   }
 
   SECTION ("deep_copy") {
-    std::vector<FieldTag> t1 = {COL,VAR,LEV};
+    std::vector<FieldTag> t1 = {COL,CMP,LEV};
     std::vector<int> d1 = {3,2,24};
 
     FieldIdentifier fid1("vec_3d",{t1,d1},m/s,"some_grid");
@@ -202,7 +202,7 @@ TEST_CASE("field", "") {
 
   // Subfields
   SECTION ("subfield") {
-    std::vector<FieldTag> t1 = {COL,VAR,CMP,LEV};
+    std::vector<FieldTag> t1 = {COL,CMP,CMP,LEV};
     std::vector<int> d1 = {3,10,2,24};
 
     FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
@@ -237,7 +237,7 @@ TEST_CASE("field", "") {
   }
 
   SECTION ("vector_component") {
-    std::vector<FieldTag> tags_2 = {COL,VAR,LEV};
+    std::vector<FieldTag> tags_2 = {COL,CMP,LEV};
     std::vector<int> dims_2 = {3,2,24};
 
     FieldIdentifier fid_2("vec_3d",{tags_2,dims_2},m/s,"some_grid");

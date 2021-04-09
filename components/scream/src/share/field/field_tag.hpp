@@ -36,7 +36,6 @@ enum class FieldTag {
   Component2,
   Component3,
   TimeLevel,
-  Variable,
   // Added for RRTMGP, TODO: Revisit this approach, is there a better way than adding more field tags?
   Gases,
   ShortWaveBand,
@@ -79,9 +78,6 @@ inline std::string e2str (const FieldTag ft) {
     case FieldTag::Component3:
       name = "CMP3";
       break;
-    case FieldTag::Variable:
-      name = "VAR";
-      break;
     // Added for rrtmgp - see TODO item above
     case FieldTag::Gases:
       name = "NGAS";
@@ -106,7 +102,6 @@ namespace ShortFieldTagsNames {
   constexpr auto COL  = FieldTag::Column;
   constexpr auto GP   = FieldTag::GaussPoint;
   constexpr auto TL   = FieldTag::TimeLevel;
-  constexpr auto VAR  = FieldTag::Variable;
   constexpr auto LEV  = FieldTag::LevelMidPoint;
   constexpr auto ILEV = FieldTag::LevelInterface;
   constexpr auto CMP  = FieldTag::Component;

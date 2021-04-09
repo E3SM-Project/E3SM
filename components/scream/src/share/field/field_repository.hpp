@@ -462,13 +462,13 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
 
   const std::string& Q_name = m_bundled_groups.at("TRACERS");
   const std::string& FQ_name = m_bundled_groups.at("TRACERS TENDENCY");
-  constexpr auto VAR = ShortFieldTagsNames::VAR;
+  constexpr auto CMP = ShortFieldTagsNames::CMP;
   const auto q_units = ekat::units::Units::nondimensional();
 
   // Create "bundled" tracers and tracers forcing
   for (const auto& gn : tr_grids) {
     // Create field id for Q
-    auto layout = gm->get_grid(gn)->get_3d_vector_layout(true,VAR,nt);
+    auto layout = gm->get_grid(gn)->get_3d_vector_layout(true,CMP,nt);
     FieldIdentifier fid_Q (Q_name,layout,q_units,gn);
 
     // Create Q field
@@ -535,7 +535,7 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
         const auto& Q_tags = Q->get_header().get_identifier().get_layout().tags();
         // Note: as of 02/2021, idim should *always* be 1, but we store it just in case,
         //       to avoid bugs in the future.
-        const int idim = std::distance(Q_tags.begin(),ekat::find(Q_tags,VAR));
+        const int idim = std::distance(Q_tags.begin(),ekat::find(Q_tags,CMP));
         auto q = Q->subfield(fname,fh.get_identifier().get_units(),idim,iq);
 
         // Either this is the first tracer we set in the group (m_subview_dim still -1),
@@ -561,7 +561,7 @@ registration_ends (const std::shared_ptr<const GridsManager>& gm) {
         const auto& FQ_tags = FQ->get_header().get_identifier().get_layout().tags();
         // Note: as of 02/2021, idim should *always* be 1, but we store it just in case,
         //       to avoid bugs in the future.
-        const int idim = std::distance(FQ_tags.begin(),ekat::find(FQ_tags,VAR));
+        const int idim = std::distance(FQ_tags.begin(),ekat::find(FQ_tags,CMP));
         auto fq = FQ->subfield(fname,fh.get_identifier().get_units(),idim,iq);
 
         // Either this is the first tracer we set in the group (m_subview_dim still -1),

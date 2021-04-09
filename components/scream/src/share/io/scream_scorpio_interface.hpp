@@ -102,7 +102,6 @@ inline std::string get_nc_tag_name (const FieldTag& t, const int extent) {
       name = "gp";
       break;
     case CMP:
-    case VAR:
       name = "dim" + std::to_string(extent);
       break;
     // Added for rrtmgp - TODO revisit this paradigm, see comment in field_tag.hpp
