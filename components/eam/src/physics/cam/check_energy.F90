@@ -705,6 +705,8 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
        case(2) 
           ienet(:ncol,lchnk) = cpsw * qflx(:ncol,lchnk) * cam_in(lchnk)%ts(:ncol) - & 
                                cpsw * rhow * ( rain(:ncol,lchnk) + snow(:ncol,lchnk) ) * cam_in(lchnk)%ts(:ncol)
+       case(3) 
+          ienet(:ncol,lchnk) = cam_in(lchnk)%h2otemp(:ncol)
        case default 
           call endrun('*** incorrect ieflx_opt ***')
        end select 
