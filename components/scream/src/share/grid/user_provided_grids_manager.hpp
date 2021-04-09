@@ -22,10 +22,6 @@ public:
 
   std::string name () const { return "User Provided Grids Manager"; }
 
-  std::string get_reference_grid_name () const {
-    return m_ref_grid_name;
-  }
-
   std::set<std::string> supported_grids () const {
     std::set<std::string> gnames;
 
@@ -80,9 +76,14 @@ public:
   void clean_up () {
     m_provided_remappers.clear();
     m_provided_grids.clear();
+    m_ref_grid_name = "";
   }
 
 protected:
+
+  std::string get_reference_grid_name () const {
+    return m_ref_grid_name;
+  }
 
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,

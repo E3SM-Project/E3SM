@@ -126,16 +126,18 @@ void AtmosphereDriver::create_fields()
 
   // By now, the processes should have fully built the ids of their
   // required/computed fields. Let them register them in the repo
-  for (const auto& gn : m_grids_manager->supported_grids()) {
-    m_field_repos[gn] = std::make_shared<field_repo_type>(m_grids_manager->get_grid(gn));
-    m_field_repos[gn]->registration_begins();
+  for (auto it : m_grids_manager->get_repo()) {
+    auto grid = it.second;
+    m_field_repos[grid->name()] = std::make_shared<field_repo_type>(grid);
+    m_field_repos[grid->name()]->registration_begins();
   }
   // Register required/computed fields
   m_atm_process_group->register_fields(m_field_repos);
 
   register_groups();
-  for (const auto& gn : m_grids_manager->supported_grids()) {
-    m_field_repos[gn]->registration_ends();
+  for (auto it : m_grids_manager->get_repo()) {
+    auto grid = it.second;
+    m_field_repos[grid->name()]->registration_ends();
   }
 
   m_ad_status |= s_fields_created;

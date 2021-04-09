@@ -90,6 +90,8 @@ DynamicsDrivenGridsManager::do_create_remapper (const grid_ptr_type from_grid,
 void DynamicsDrivenGridsManager::
 build_grids (const std::set<std::string>& grid_names,
              const std::string& reference_grid) {
+  m_ref_grid_name = reference_grid;
+
   // Retrieve all grid codes
   std::set<int> codes;
   for (const auto& gn : grid_names) {
@@ -133,9 +135,6 @@ build_grids (const std::set<std::string>& grid_names,
 
   // Now we can cleanup all the grid stuff in f90
   cleanup_grid_init_data_f90 ();
-
-  // Set the ptr to the ref grid
-  m_grids["Reference"] = get_grid(reference_grid); 
 }
 
 void DynamicsDrivenGridsManager::build_dynamics_grid () {

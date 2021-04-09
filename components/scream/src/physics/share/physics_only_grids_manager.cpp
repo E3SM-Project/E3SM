@@ -22,7 +22,7 @@ do_create_remapper (const grid_ptr_type from_grid,
   // As of today (6/2020), we only support the old np4 grid for physis.
   // TODO: add support for pg2
   EKAT_REQUIRE_MSG(from_grid->name()==to_grid->name(),
-                   "Error! So far, PhysicsOnlyGridsManager assumes only one type of grid for physiccs.\n");
+      "Error! So far, PhysicsOnlyGridsManager assumes only one type of grid for physiccs.\n");
 
   return std::make_shared<IdentityRemapper<Real> >(from_grid);
 }
@@ -32,11 +32,11 @@ build_grids (const std::set<std::string>& grid_names,
              const std::string& reference_grid) {
   for (const auto& gn : grid_names) {
     EKAT_REQUIRE_MSG (gn=="Physics",
-                      "Error! Only 'Physics' grid supported for physics-only runs.\n"
-                      "       Requested grid: " + gn + "\n");
+        "Error! Only 'Physics' grid supported for physics-only runs.\n"
+        "       Requested grid: " + gn + "\n");
   }
   EKAT_REQUIRE_MSG (reference_grid=="Physics",
-                    "Error! Reference grid '" + reference_grid + "' is not supported by PhysicsOnlyGridsManager.\n");
+        "Error! Reference grid '" + reference_grid + "' is not supported by PhysicsOnlyGridsManager.\n");
 
   const auto& phys_only_gm_params = m_params.sublist("Physics Only");
   const int num_global_cols = phys_only_gm_params.get<int>("Number of global columns");
@@ -44,7 +44,7 @@ build_grids (const std::set<std::string>& grid_names,
 
   auto grid = create_point_grid("Physics",num_global_cols,num_vertical_lev,m_comm);
 
-  m_grids["Reference"] = m_grids["Physics"] = grid;
+  m_grids["Physics"] = grid;
 }
 
 } // namespace physics
