@@ -18,6 +18,7 @@ module mpaso_cpl_indices
   integer :: index_o2x_So_dhdy
   integer :: index_o2x_Fioo_meltp
   integer :: index_o2x_Fioo_frazil
+  integer :: index_o2x_Faoo_h2otemp
   integer :: index_o2x_Faoo_fco2_ocn
   integer :: index_o2x_Faoo_fdms_ocn
 
@@ -154,6 +155,7 @@ contains
     index_o2x_So_dhdy       = mct_avect_indexra(o2x,'So_dhdy')
     index_o2x_Fioo_meltp    = mct_avect_indexra(o2x,'Fioo_meltp',perrWith='quiet')
     index_o2x_Fioo_frazil   = mct_avect_indexra(o2x,'Fioo_frazil',perrWith='quiet')
+    index_o2x_Faoo_h2otemp  = mct_avect_indexra(o2x,'Faoo_h2otemp',perrWith='quiet')
     index_o2x_Faoo_fco2_ocn = mct_avect_indexra(o2x,'Faoo_fco2_ocn',perrWith='quiet')
     index_o2x_Faoo_fdms_ocn = mct_avect_indexra(o2x,'Faoo_fdms_ocn',perrWith='quiet')
 
