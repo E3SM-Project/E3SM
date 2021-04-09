@@ -166,8 +166,8 @@ namespace scream {
         const auto& layout = fid.get_layout();
         auto v = f.get_view();
         EKAT_REQUIRE_MSG (
-            layout.size() == v.size(), 
-            "ERROR: field " << fid.name() << " was padded (to allow packing), but currently RRTMGP does not work with padded views."
+          static_cast<size_t>(layout.size()) == v.size(),
+          "ERROR: field " << fid.name() << " was padded (to allow packing), but currently RRTMGP does not work with padded views."
         );
     }
 

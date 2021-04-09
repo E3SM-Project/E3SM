@@ -16,7 +16,7 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestUniversal
 {
 
-//-----------------------------------------------------------------------------------------------// 
+//-----------------------------------------------------------------------------------------------//
   KOKKOS_FUNCTION static void exner_tests(const Scalar& pressure, const Scalar& expected_val, int& errors){
 
     // Allow usage of universal functions
@@ -63,7 +63,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     // This function tests both the T_to_th and th_to_T universal conversion functions.
     //
     // Inputs:
-    //   T_in:    An example temperature, K. 
+    //   T_in:    An example temperature, K.
     //   pres_in: A pressure value to use for conversion, Pa.
     // Outputs:
     //   errors:  A tally of any errors that this test detects.
@@ -100,14 +100,14 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     const Spack th_temp = physics::T_to_th(T,exner,Smask(true));
     const Spack T_new   = physics::th_to_T(th_temp,exner,Smask(true));
     if (std::abs(T_new[0]-T_in)>tol) {
-      printf("T to th test: abs[ T_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",T_new,T_in,std::abs(T_new[0]-T_in),tol);
+      printf("T to th test: abs[ T_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",T_new[0],T_in,std::abs(T_new[0]-T_in),tol);
       errors++;
     }
     // and vice versa
     const Spack T_temp = physics::th_to_T(T,exner,Smask(true));
     const Spack th_new = physics::T_to_th(T_temp,exner,Smask(true));
-    if (std::abs(T_new[0]-T_in)>tol) {
-      printf("T to th test: abs[ th_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",th_new,T_in,std::abs(th_new[0]-T_in),tol);
+    if (std::abs(th_new[0]-T_in)>tol) {
+      printf("T to th test: abs[ th_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",th_new[0],T_in,std::abs(th_new[0]-T_in),tol);
       errors++;
     }
   } // T_th_conversion_test
@@ -121,7 +121,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     Real tol = 1000*eps;
 
     //========================================================
-    // Test calculation of layer thickness using get_dz 
+    // Test calculation of layer thickness using get_dz
     //========================================================
     // This function tests the function "get_dz" for a set of interface layer heights.
     //
@@ -141,13 +141,11 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       errors++;
     }
 
-  } // dz_test 
+  } // dz_test
 
 //-----------------------------------------------------------------------------------------------//
   static void run()
   {
-    using physics = scream::physics::Functions<Scalar, Device>;
-
     int nerr = 0;
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType&, int& errors) {
@@ -179,7 +177,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
         //   - Determine the z-layer bottom and top as being the (k+1) thick.
         //     Allow for varying interface heights by setting zi_bot equal to the sum(0,...,k).
         Real zi_bot = (pow(k,2)+k)/2.0;
-        Real zi_top = zi_bot + (k+1); 
+        Real zi_top = zi_bot + (k+1);
         dz_tests(zi_top,zi_bot,errors);
       }
 

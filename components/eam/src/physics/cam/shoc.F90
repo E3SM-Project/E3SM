@@ -1197,7 +1197,7 @@ subroutine diag_second_moments_srf(&
   real(rtype), intent(out) :: wstar(shcol)
 
 ! LOCAL VARIABLES
-  integer :: i, p
+  integer :: i
 
   ! Constants to parameterize surface variances
   real(rtype), parameter :: z_const = 1.0_rtype
@@ -1287,7 +1287,7 @@ subroutine diag_second_moments_lbycond(&
   real(rtype), intent(out) :: qwthl_sec(shcol)
 
 ! LOCAL VARIABLES
-  integer :: i, p
+  integer :: i
   real(rtype) :: uf
 
   ! Constants to parameterize surface variances
@@ -1410,7 +1410,6 @@ subroutine diag_second_moments(&
   real(rtype), intent(out) :: w_sec(shcol,nlev)
 
   ! LOCAL VARIABLES
-  integer :: p
   real(rtype) :: isotropy_zi(shcol,nlevi)
   real(rtype) :: tkh_zi(shcol,nlevi)
   real(rtype) :: tk_zi(shcol,nlevi)
@@ -1815,11 +1814,10 @@ subroutine compute_diag_third_shoc_moment(&
   ! third moment of vertical velocity
   real(rtype), intent(out) :: w3(shcol,nlevi)
 ! LOCAL VARIABLES
-  integer i, j, k, kb, kc
+  integer i, k, kb, kc
   real(rtype) :: omega0, omega1, omega2
   real(rtype) :: X0, Y0, X1, Y1, AA0, AA1
-  real(rtype) :: zvar, x5var, iso, thedz, thedz2
-  real(rtype) :: theterm, tsign
+  real(rtype) :: iso, thedz, thedz2
   real(rtype) :: isosqrd
   real(rtype) :: buoy_sgs2, bet2
   real(rtype) :: f0, f1, f2, f3, f4, f5
@@ -1846,34 +1844,34 @@ subroutine compute_diag_third_shoc_moment(&
 
         !Compute inputs for computing f0 to f5 terms
         call fterms_input_for_diag_third_shoc_moment(&
-	     dz_zi(i,k), dz_zt(i,k), dz_zt(i,kc), &               ! Input
+             dz_zi(i,k), dz_zt(i,k), dz_zt(i,kc), &               ! Input
              isotropy_zi(i,k), brunt_zi(i,k), thetal_zi(i,k), &   ! Input
              thedz, thedz2, iso, isosqrd, buoy_sgs2, bet2)        ! Output
 
         !Compute f0 to f5 terms
         call f0_to_f5_diag_third_shoc_moment(&
-	     thedz, thedz2, bet2, iso, isosqrd, &                 ! Input
-	     wthl_sec (i,k), wthl_sec(i,kc), wthl_sec(i,kb), &    ! Input
-	     thl_sec(i,k), thl_sec(i,kc), thl_sec(i,kb), &        ! Input
+             thedz, thedz2, bet2, iso, isosqrd, &                 ! Input
+             wthl_sec (i,k), wthl_sec(i,kc), wthl_sec(i,kb), &    ! Input
+             thl_sec(i,k), thl_sec(i,kc), thl_sec(i,kb), &        ! Input
              w_sec(i,k), w_sec(i,kc), w_sec_zi(i,k), &            ! Input
              tke(i,k), tke(i,kc), &                               ! Input
              f0, f1, f2, f3, f4, f5)                              ! Output
 
         !Compute the omega terms
         call omega_terms_diag_third_shoc_moment(&
-	     buoy_sgs2, f3, f4, &       ! Input
-	     omega0, omega1, omega2)    ! Output
+             buoy_sgs2, f3, f4, &       ! Input
+             omega0, omega1, omega2)    ! Output
 
         !Compute the X0, Y0, X1, Y1 terms
         call x_y_terms_diag_third_shoc_moment(&
-	     buoy_sgs2, f0, f1, f2, &   ! Input
-	     x0, y0, x1, y1)            ! Output
+             buoy_sgs2, f0, f1, f2, &   ! Input
+             x0, y0, x1, y1)            ! Output
 
         !Compute the AA0, AA1 terms
         call aa_terms_diag_third_shoc_moment(&
-	     omega0, omega1, omega2, &  ! Input
-	     x0, x1, y0, y1, &          ! Input
-	     aa0, aa1)                  ! Output
+             omega0, omega1, omega2, &  ! Input
+             x0, x1, y0, y1, &          ! Input
+             aa0, aa1)                  ! Output
 
         !Finally, we have the third moment of w
         w3(i,k) = w3_diag_third_shoc_moment(aa0, aa1, x0, x1, f5)
@@ -1969,7 +1967,7 @@ end subroutine f0_to_f5_diag_third_shoc_moment
 
 subroutine omega_terms_diag_third_shoc_moment(&
            buoy_sgs2, f3, f4, &    ! Input
-	   omega0, omega1, omega2) ! Output
+           omega0, omega1, omega2) ! Output
 
   implicit none
 
@@ -1993,7 +1991,7 @@ end subroutine omega_terms_diag_third_shoc_moment
 
 subroutine x_y_terms_diag_third_shoc_moment(&
            buoy_sgs2, f0, f1, f2,&  ! Input
-	   x0, y0, x1, y1)          ! Output
+           x0, y0, x1, y1)          ! Output
 
   implicit none
 
@@ -2026,8 +2024,8 @@ end subroutine x_y_terms_diag_third_shoc_moment
 
 subroutine aa_terms_diag_third_shoc_moment(&
            omega0, omega1, omega2, & ! Input
-	   x0, x1, y0, y1, &         ! Input
-	   aa0, aa1)                 ! Output
+           x0, x1, y0, y1, &         ! Input
+           aa0, aa1)                 ! Output
 
   implicit none
 
@@ -2064,7 +2062,7 @@ end function w3_diag_third_shoc_moment
 
 subroutine clipping_diag_third_shoc_moments(&
            nlevi,shcol,w_sec_zi,& ! Input
-	   w3)                    ! Input/Output
+           w3)                    ! Input/Output
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
     use shoc_iso_f, only: clipping_diag_third_shoc_moments_f
@@ -3153,7 +3151,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
         ! March equation forward one timestep
         tke(i,k)=max(mintke,tke(i,k)+dtime* &
-	  (max(0._rtype,a_prod_sh+a_prod_bu)-a_diss(i,k)))
+             (max(0._rtype,a_prod_sh+a_prod_bu)-a_diss(i,k)))
 
         tke(i,k)=min(tke(i,k),maxtke)
      enddo
@@ -3440,8 +3438,6 @@ subroutine shoc_length(&
   real(rtype) :: conv_vel(shcol), tscale(shcol)
   real(rtype) :: thv_zi(shcol,nlevi)
   real(rtype) :: l_inf(shcol)
-
-  integer :: i,k
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
@@ -3923,7 +3919,7 @@ subroutine shoc_energy_total_fixer(&
   real(rtype) :: rho_zi(shcol,nlevi)
   ! sensible and latent heat fluxes [W/m^2]
   real(rtype) :: shf, lhf, hdtime
-  integer :: i, k
+  integer :: i
 
   ! compute the host timestep
   hdtime = dtime * float(nadv)
@@ -3979,7 +3975,7 @@ subroutine shoc_energy_threshold_fixer(&
 
   ! LOCAL VARIABLES
   ! sensible and latent heat fluxes [W/m^2]
-  integer :: i, k
+  integer :: i
 
   ! Limit the energy fixer to find highest layer where SHOC is active
   ! Find first level where wp2 is higher than lowest threshold
@@ -4354,7 +4350,6 @@ subroutine pblintd_height(&
     integer  :: i                       ! longitude index
     integer  :: k                       ! level index
     real(rtype) :: vvk                     ! velocity magnitude squared
-    real(rtype) :: th
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
