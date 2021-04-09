@@ -50,12 +50,13 @@ contains
     use elm_varpar          , only : nlevlak
     use elm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
     use elm_varcon          , only : sb, vkc, grav, denh2o, tfrz, spval, zsno
-    use elm_varctl          , only : use_lch4
+    use elm_varctl          , only : iulog, use_lch4
     use LakeCon             , only : betavis, z0frzlake, tdmax, emg_lake
     use LakeCon             , only : lake_use_old_fcrit_minz0
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit
     use QSatMod             , only : QSat
     use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni
+    use clm_time_manager    , only : get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds  
@@ -76,7 +77,10 @@ contains
     real(r8), pointer :: z0mg_col(:)               ! roughness length over ground, momentum [m]
     real(r8), pointer :: z0hg_col(:)               ! roughness length over ground, sensible heat [m]
     real(r8), pointer :: z0qg_col(:)               ! roughness length over ground, latent heat [m]
-    integer , parameter  :: niters = 30            ! maximum number of iterations for surface temperature
+    real(r8), parameter :: dtaumin = 0.01_r8       ! max limit for stress convergence [Pa]
+    integer, parameter  :: itmax_no_tau = 4        ! maximum number of iterations with no tau update
+    integer, parameter  :: itmax_tau = 30          ! maximum number of iterations with tau update
+    integer, parameter  :: itmax = itmax_tau       ! maximum number of iterations
     real(r8), parameter :: beta1 = 1._r8           ! coefficient of convective velocity (in computing W_*) [-]
     real(r8), parameter :: zii = 1000._r8          ! convective boundary height [m]
     integer  :: i,fc,fp,g,t,c,p                    ! do loop or array index
@@ -84,6 +88,7 @@ contains
     integer  :: fnold                              ! previous number of pft filter values
     integer  :: fpcopy(num_lakep)                  ! patch filter copy for iteration loop
     integer  :: iter                               ! iteration index
+    integer  :: iter_final                         ! number of iterations used
     integer  :: nmozsgn(bounds%begp:bounds%endp)   ! number of times moz changes sign
     integer  :: jtop(bounds%begc:bounds%endc)      ! top level for each column (no longer all 1)
     real(r8) :: ax                                 ! used in iteration loop for calculating t_grnd (numerator of NR solution)
@@ -146,16 +151,12 @@ contains
     real(r8) :: kva                                ! kinematic viscosity of air at ground temperature and forcing pressure
     real(r8), parameter :: prn = 0.713             ! Prandtl # for air at neutral stability
     real(r8), parameter :: sch = 0.66              ! Schmidt # for water in air at neutral stability
-    real(r8) :: forc_u_adj(bounds%begp:bounds%endp) ! Adjusted forc_u for iteration
-    real(r8) :: forc_v_adj(bounds%begp:bounds%endp) ! Adjusted forc_v for iteration
-    real(r8) :: taux_est(bounds%begp:bounds%endp) ! Estimated equilibrium taux from atm
-    real(r8) :: taux_diff(bounds%begp:bounds%endp) ! Difference from previous iteration taux
-    real(r8) :: prev_taux(bounds%begp:bounds%endp) ! Previous iteration taux
-    real(r8) :: prev_taux_diff(bounds%begp:bounds%endp) ! Previous difference in iteration taux
-    real(r8) :: tauy_est(bounds%begp:bounds%endp) ! Estimated equilibrium tauy from atm
-    real(r8) :: tauy_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tauy
-    real(r8) :: prev_tauy(bounds%begp:bounds%endp) ! Previous iteration tauy
-    real(r8) :: prev_tauy_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tauy
+    real(r8) :: wind_speed0(bounds%begp:bounds%endp) ! Wind speed from atmosphere at start of iteration
+    real(r8) :: wind_speed_adj(bounds%begp:bounds%endp) ! Adjusted wind speed for iteration
+    real(r8) :: tau(bounds%begp:bounds%endp) ! Stress used in iteration
+    real(r8) :: tau_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tau
+    real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
+    real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     !-----------------------------------------------------------------------
 
     associate(                                                           & 
@@ -350,14 +351,11 @@ contains
          ! Initialize stability variables
 
          ! Initialize winds for iteration.
-         forc_u_adj(p) = forc_u(t)
-         forc_v_adj(p) = forc_v(t)
-         ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
+         wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+         wind_speed_adj(p) = wind_speed0(p)
+         ur(p) = max(1.0_r8, wind_speed_adj(p))
 
-         taux_est(p) = -tau_est(t) * forc_u(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-         tauy_est(p) = -tau_est(t) * forc_v(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-         prev_taux(p) = taux_est(p)
-         prev_tauy(p) = tauy_est(p)
+         prev_tau(p) = -tau_est(t)
 
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t)-qsatg(c)
@@ -375,7 +373,7 @@ contains
 
       ! Begin stability iteration
 
-      ITERATION : do while (iter <= niters .and. fncopy > 0)
+      ITERATION : do while (iter <= itmax .and. fncopy > 0)
 
          ! Determine friction velocity, and potential temperature and humidity
          ! profiles of the surface boundary layer
@@ -424,35 +422,22 @@ contains
             ! Forbid removing more than 99% of wind speed in a time step.
             ! This is mainly to avoid convergence issues since this is such a
             ! basic form of iteration in this loop...
-            taux(p) = -forc_rho(t)*forc_u_adj(p)/ram(p)
-            tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram(p)
-            if ( (taux(p)-taux_est(p))*wsresp(t)*sign(1._r8,-forc_u(t)) > 0.99_r8*abs(forc_u(t)) ) then
-               taux(p) = taux_est(p) - 0.99_r8 * forc_u(t) / wsresp(t)
+            tau(p) = -forc_rho(t)*wind_speed_adj(p)/ram(p)
+            if ( -(tau(p)+tau_est(t))*wsresp(t) > 0.99_r8*wind_speed0(p) ) then
+               tau(p) = -tau_est(t) - 0.99_r8 * wind_speed0(p) / wsresp(t)
             end if
-            if ( (tauy(p)-tauy_est(p))*wsresp(t)*sign(1._r8,-forc_v(t)) > 0.99_r8*abs(forc_v(t)) ) then
-               tauy(p) = tauy_est(p) - 0.99_r8 * forc_v(t) / wsresp(t)
-            end if
-            taux_diff(p) = taux(p) - prev_taux(p)
-            tauy_diff(p) = tauy(p) - prev_tauy(p)
+            tau_diff(p) = tau(p) - prev_tau(p)
             if (iter /= 1) then
                ! damp possible swings in each iteration for convergence
-               ! Probably too much damping here.
-               if (abs(taux_diff(p)) > abs(0.95*prev_taux_diff(p))) then
-                  taux_diff(p) = sign(0.95*prev_taux_diff(p), taux_diff(p))
-                  taux(p) = prev_taux(p) + taux_diff(p)
-               end if
-               if (abs(tauy_diff(p)) > abs(0.95*prev_tauy_diff(p))) then
-                  tauy_diff(p) = sign(0.95*prev_tauy_diff(p), tauy_diff(p))
-                  tauy(p) = prev_tauy(p) + tauy_diff(p)
+               if (abs(tau_diff(p)) > abs(0.95*prev_tau_diff(p))) then
+                  tau_diff(p) = sign(0.95*prev_tau_diff(p), tau_diff(p))
+                  tau(p) = prev_tau(p) + tau_diff(p)
                end if
             end if
-            prev_taux(p) = taux(p)
-            prev_tauy(p) = tauy(p)
-            prev_taux_diff(p) = taux_diff(p)
-            prev_tauy_diff(p) = tauy_diff(p)
-            forc_u_adj(p) = forc_u(t) + (taux(p)-taux_est(p))*wsresp(t)
-            forc_v_adj(p) = forc_v(t) + (tauy(p)-tauy_est(p))*wsresp(t)
-            ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
+            prev_tau(p) = tau(p)
+            prev_tau_diff(p) = tau_diff(p)
+            wind_speed_adj(p) = wind_speed0(p) + (tau(p)+tau_est(t))*wsresp(t)
+            ur(p) = max(1.0_r8, wind_speed_adj(p))
 
             ! Get derivative of fluxes with respect to ground temperature
 
@@ -557,15 +542,16 @@ contains
 
          end do   ! end of filtered pft loop
 
+         iter_final = iter
          iter = iter + 1
-         if (iter <= niters ) then
+         if (iter <= itmax ) then
             ! Rebuild copy of pft filter for next pass through the ITERATION loop
 
             fnold = fncopy
             fncopy = 0
             do fp = 1, fnold
                p = fpcopy(fp)
-               if (nmozsgn(p) < 3) then
+               if (nmozsgn(p) < 3 .or. abs(tau_diff(p)) >= dtaumin) then
                   fncopy = fncopy + 1
                   fpcopy(fncopy) = p
                end if
@@ -629,8 +615,8 @@ contains
          ! The variable eflx_gnet will be used to pass the actual heat flux
          !from the ground interface into the lake.
 
-         taux(p) = -forc_rho(t)*forc_u_adj(p)/ram(p)
-         tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram(p)
+         taux(p) = -forc_rho(t)*forc_u(t)/ram(p) * (wind_speed_adj(p) / wind_speed0(p))
+         tauy(p) = -forc_rho(t)*forc_v(t)/ram(p) * (wind_speed_adj(p) / wind_speed0(p))
 
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_soi(p)
@@ -671,6 +657,13 @@ contains
          z0hg_col(c) = z0hg(p)
          z0qg_col(c) = z0qg(p)
          ust_lake(c) = ustar(p)
+
+         ! Check for convergence of stress.
+         if (abs(tau_diff(p)) > dtaumin) then
+            write(iulog,*)'WARNING: Stress did not converge for lake ',&
+                 ' nstep = ',get_nstep(),' p= ',p,' tau_diff= ',tau_diff(p),&
+                 ' iter_final= ',iter_final
+         end if
 
       end do
 

@@ -2860,7 +2860,7 @@ end subroutine clubb_init_cnst
       do i = 1, ncol
          wsresp(i) = sfc_v_diff_tau(i) / pert_tau
          ! Estimated tau in balance with wind is the tau we just used.
-         tau_est(i) = max(hypot(cam_in%wsx(i), cam_in%wsy(i)), 1.e-10)
+         tau_est(i) = hypot(cam_in%wsx(i), cam_in%wsy(i))
       end do
    end if
 

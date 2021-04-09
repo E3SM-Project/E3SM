@@ -143,12 +143,13 @@ contains
     real(r8), pointer   :: bsha(:)          ! shaded canopy transpiration wetness factor (0 to 1)
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
     real(r8), parameter :: zii = 1000.0_r8  ! convective boundary layer height [m]
-    real(r8), parameter :: beta = 1.0_r8    ! coefficient of conective velocity [-]
+    real(r8), parameter :: beta = 1.0_r8    ! coefficient of convective velocity [-]
     real(r8), parameter :: delmax = 1.0_r8  ! maxchange in  leaf temperature [K]
     real(r8), parameter :: dlemin = 0.1_r8  ! max limit for energy flux convergence [w/m2]
     real(r8), parameter :: dtmin = 0.01_r8  ! max limit for temperature convergence [K]
-    integer , parameter :: itmax = 40       ! maximum number of iteration [-]
-    integer , parameter :: itmin = 30       ! minimum number of iteration [-]
+    real(r8), parameter :: dtaumin = 0.01_r8! max limit for stress convergence [Pa]
+    integer , parameter :: itmax = 41       ! maximum number of iteration [-]
+    integer , parameter :: itmin = 3        ! minimum number of iteration [-]
     real(r8), parameter :: irrig_min_lai = 0.0_r8           ! Minimum LAI for irrigation
     real(r8), parameter :: irrig_btran_thresh = 0.999999_r8 ! Irrigate when btran falls below 0.999999 rather than 1 to allow for round-off error
     integer , parameter :: irrig_start_time = isecspday/4   ! (6AM) Time of day to check whether we need irrigation, seconds (0 = midnight). 
@@ -259,6 +260,7 @@ contains
     real(r8) :: smp_node_lf                          ! F. Li and S. Levis
     real(r8) :: vol_liq                              ! partial volume of liquid water in layer
     integer  :: itlef                                ! counter for leaf temperature iteration [-]
+    integer  :: iter_final                           ! number of iterations used
     integer  :: nmozsgn(bounds%begp:bounds%endp)     ! number of times stability changes sign
     real(r8) :: w                                    ! exp(-LSAI)
     real(r8) :: csoilcn                              ! interpolated csoilc for less than dense canopies
@@ -322,16 +324,12 @@ contains
     real(r8) :: temprootr                 
     real(r8) :: dt_veg_temp(bounds%begp:bounds%endp)
     integer  :: iv
-    real(r8) :: forc_u_adj(bounds%begp:bounds%endp) ! Adjusted forc_u for iteration
-    real(r8) :: forc_v_adj(bounds%begp:bounds%endp) ! Adjusted forc_v for iteration
-    real(r8) :: taux_est(bounds%begp:bounds%endp) ! Estimated equilibrium taux from atm
-    real(r8) :: taux_diff(bounds%begp:bounds%endp) ! Difference from previous iteration taux
-    real(r8) :: prev_taux(bounds%begp:bounds%endp) ! Previous iteration taux
-    real(r8) :: prev_taux_diff(bounds%begp:bounds%endp) ! Previous difference in iteration taux
-    real(r8) :: tauy_est(bounds%begp:bounds%endp) ! Estimated equilibrium tauy from atm
-    real(r8) :: tauy_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tauy
-    real(r8) :: prev_tauy(bounds%begp:bounds%endp) ! Previous iteration tauy
-    real(r8) :: prev_tauy_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tauy
+    real(r8) :: wind_speed0(bounds%begp:bounds%endp) ! Wind speed from atmosphere at start of iteration
+    real(r8) :: wind_speed_adj(bounds%begp:bounds%endp) ! Adjusted wind speed for iteration
+    real(r8) :: tau(bounds%begp:bounds%endp) ! Stress used in iteration
+    real(r8) :: tau_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tau
+    real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
+    real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     !------------------------------------------------------------------------------
 
     associate(                                                               & 
@@ -727,14 +725,11 @@ contains
          qaf(p) = (forc_q(t)+qg(c))/2._r8
 
          ! Initialize winds for iteration.
-         forc_u_adj(p) = forc_u(t)
-         forc_v_adj(p) = forc_v(t)
-         ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
- 
-         taux_est(p) = -tau_est(t) * forc_u(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-         tauy_est(p) = -tau_est(t) * forc_v(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-         prev_taux(p) = taux_est(p)
-         prev_tauy(p) = tauy_est(p)
+         wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+         wind_speed_adj(p) = wind_speed0(p)
+         ur(p) = max(1.0_r8, wind_speed_adj(p))
+
+         prev_tau(p) = -tau_est(t)
 
          dth(p) = thm(p)-taf(p)
          dqh(p) = forc_q(t)-qaf(p)
@@ -769,7 +764,7 @@ contains
 
       ! Set counter for leaf temperature iteration (itlef)
 
-      itlef = 0    
+      itlef = 1
       fnorig = fn
       fporig(1:fn) = filterp(1:fn)
 
@@ -783,7 +778,7 @@ contains
 
          call FrictionVelocity (begp, endp, fn, filterp, &
               displa(begp:endp), z0mv(begp:endp), z0hv(begp:endp), z0qv(begp:endp), &
-              obu(begp:endp), itlef+1, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
+              obu(begp:endp), itlef, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
               temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
               frictionvel_vars)
 
@@ -805,35 +800,22 @@ contains
             ! Forbid removing more than 99% of wind speed in a time step.
             ! This is mainly to avoid convergence issues since this is such a
             ! basic form of iteration in this loop...
-            taux(p) = -forc_rho(t)*forc_u_adj(p)/ram1(p)
-            tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram1(p)
-            if ( (taux(p)-taux_est(p))*wsresp(t)*sign(1._r8,-forc_u(t)) > 0.99_r8*abs(forc_u(t)) ) then
-               taux(p) = taux_est(p) - 0.99_r8 * forc_u(t) / wsresp(t)
+            tau(p) = -forc_rho(t)*wind_speed_adj(p)/ram1(p)
+            if ( -(tau(p)+tau_est(t))*wsresp(t) > 0.99_r8*wind_speed0(p) ) then
+               tau(p) = -tau_est(t) - 0.99_r8 * wind_speed0(p) / wsresp(t)
             end if
-            if ( (tauy(p)-tauy_est(p))*wsresp(t)*sign(1._r8,-forc_v(t)) > 0.99_r8*abs(forc_v(t)) ) then
-               tauy(p) = tauy_est(p) - 0.99_r8 * forc_v(t) / wsresp(t)
-            end if
-            taux_diff(p) = taux(p) - prev_taux(p)
-            tauy_diff(p) = tauy(p) - prev_tauy(p)
+            tau_diff(p) = tau(p) - prev_tau(p)
             if (itlef /= 1) then
                ! damp possible swings in each iteration for convergence
-               ! Probably too much damping here.
-               if (abs(taux_diff(p)) > abs(0.95*prev_taux_diff(p))) then
-                  taux_diff(p) = sign(0.95*prev_taux_diff(p), taux_diff(p))
-                  taux(p) = prev_taux(p) + taux_diff(p)
-               end if
-               if (abs(tauy_diff(p)) > abs(0.95*prev_tauy_diff(p))) then
-                  tauy_diff(p) = sign(0.95*prev_tauy_diff(p), tauy_diff(p))
-                  tauy(p) = prev_tauy(p) + tauy_diff(p)
+               if (abs(tau_diff(p)) > abs(0.95*prev_tau_diff(p))) then
+                  tau_diff(p) = sign(0.95*prev_tau_diff(p), tau_diff(p))
+                  tau(p) = prev_tau(p) + tau_diff(p)
                end if
             end if
-            prev_taux(p) = taux(p)
-            prev_tauy(p) = tauy(p)
-            prev_taux_diff(p) = taux_diff(p)
-            prev_tauy_diff(p) = tauy_diff(p)
-            forc_u_adj(p) = forc_u(t) + (taux(p)-taux_est(p))*wsresp(t)
-            forc_v_adj(p) = forc_v(t) + (tauy(p)-tauy_est(p))*wsresp(t)
-            ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
+            prev_tau(p) = tau(p)
+            prev_tau_diff(p) = tau_diff(p)
+            wind_speed_adj(p) = wind_speed0(p) + (tau(p)+tau_est(t))*wsresp(t)
+            ur(p) = max(1.0_r8, wind_speed_adj(p))
 
             ! Bulk boundary layer resistance of leaves
 
@@ -1182,7 +1164,7 @@ contains
          enddo
             
          ! Test for convergence
-
+         iter_final = itlef
          itlef = itlef+1
          if (itlef > itmin) then
             do f = 1, fn
@@ -1195,7 +1177,8 @@ contains
             fn = 0
             do f = 1, fnold
                p = filterp(f)
-               if (.not. (det(p) < dtmin .and. dele(p) < dlemin)) then
+               if (.not. (det(p) < dtmin .and. dele(p) < dlemin .and. &
+                          abs(tau_diff(p)) < dtaumin)) then
                   fn = fn + 1
                   filterp(fn) = p
                end if
@@ -1227,8 +1210,8 @@ contains
          ! Fluxes from ground to canopy space
 
          delt    = wtal(p)*t_grnd(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         taux(p) = -forc_rho(t)*forc_u_adj(p)/ram1(p)
-         tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram1(p)
+         taux(p) = -forc_rho(t)*forc_u(t)/ram1(p) * (wind_speed_adj(p) / wind_speed0(p))
+         tauy(p) = -forc_rho(t)*forc_v(t)/ram1(p) * (wind_speed_adj(p) / wind_speed0(p))
          eflx_sh_grnd(p) = cpair*forc_rho(t)*wtg(p)*delt
 
          ! compute individual sensible heat fluxes
@@ -1287,6 +1270,13 @@ contains
          ! Update dew accumulation (kg/m2)
 
          h2ocan(p) = max(0._r8,h2ocan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime)
+
+         ! Check for convergence of stress.
+         if (abs(tau_diff(p)) > dtaumin) then
+            write(iulog,*)'WARNING: Stress did not converge for canopy ',&
+                 ' nstep = ',get_nstep(),' p= ',p,' tau_diff= ',tau_diff(p),&
+                 ' iter_final= ',iter_final
+         end if
 
       end do
 

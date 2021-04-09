@@ -48,11 +48,12 @@ contains
     use shr_const_mod        , only : SHR_CONST_RGAS
     use elm_varpar           , only : nlevgrnd
     use elm_varcon           , only : cpair, vkc, grav, denice, denh2o
-    use elm_varctl           , only : use_lch4
+    use elm_varctl           , only : iulog, use_lch4
     use landunit_varcon      , only : istsoil, istcrop
     use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni
     use QSatMod              , only : QSat
     use SurfaceResistanceMod , only : do_soilevap_beta
+    use clm_time_manager     , only : get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -69,12 +70,18 @@ contains
     type(waterstate_type)  , intent(inout) :: waterstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer, parameter  :: niters = 30           ! maximum number of iterations for surface temperature
+    real(r8), parameter :: dtaumin = 0.01_r8     ! max limit for stress convergence [Pa]
+    integer, parameter  :: itmin = 3             ! minimum number of iterations
+    integer, parameter  :: itmax = 30            ! maximum number of iterations
     integer  :: p,c,t,g,f,j,l                    ! indices
     integer  :: filterp(bounds%endp-bounds%begp+1) ! patch filter for vegetated patches
     integer  :: fn                               ! number of values in local pft filter
+    integer  :: filterp0(bounds%endp-bounds%begp+1) ! pre-iteration filterp
+    integer  :: fn0                              ! pre-iteration fn
+    integer  :: fnold                            ! previous iteration fn
     integer  :: fp                               ! lake filter pft index
     integer  :: iter                             ! iteration index
+    integer  :: iter_final                       ! number of iterations used
     real(r8) :: zldis(bounds%begp:bounds%endp)   ! reference height "minus" zero displacement height [m]
     real(r8) :: displa(bounds%begp:bounds%endp)  ! displacement height [m]
     real(r8) :: zeta                             ! dimensionless height used in Monin-Obukhov theory
@@ -109,16 +116,12 @@ contains
     real(r8) :: qsat_ref2m             ! 2 m height surface saturated specific humidity [kg/kg]
     real(r8) :: dqsat2mdT              ! derivative of 2 m height surface saturated specific humidity on t_ref2m
     real(r8) :: www                    ! surface soil wetness [-]
-    real(r8) :: forc_u_adj(bounds%begp:bounds%endp) ! Adjusted forc_u for iteration
-    real(r8) :: forc_v_adj(bounds%begp:bounds%endp) ! Adjusted forc_v for iteration
-    real(r8) :: taux_est(bounds%begp:bounds%endp) ! Estimated equilibrium taux from atm
-    real(r8) :: taux_diff(bounds%begp:bounds%endp) ! Difference from previous iteration taux
-    real(r8) :: prev_taux(bounds%begp:bounds%endp) ! Previous iteration taux
-    real(r8) :: prev_taux_diff(bounds%begp:bounds%endp) ! Previous difference in iteration taux
-    real(r8) :: tauy_est(bounds%begp:bounds%endp) ! Estimated equilibrium tauy from atm
-    real(r8) :: tauy_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tauy
-    real(r8) :: prev_tauy(bounds%begp:bounds%endp) ! Previous iteration tauy
-    real(r8) :: prev_tauy_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tauy
+    real(r8) :: wind_speed0(bounds%begp:bounds%endp) ! Wind speed from atmosphere at start of iteration
+    real(r8) :: wind_speed_adj(bounds%begp:bounds%endp) ! Adjusted wind speed for iteration
+    real(r8) :: tau(bounds%begp:bounds%endp) ! Stress used in iteration
+    real(r8) :: tau_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tau
+    real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
+    real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     !------------------------------------------------------------------------------
 
     associate(                                                          &
@@ -225,14 +228,11 @@ contains
          ulrad(p)  = 0._r8
 
          ! Initialize winds for iteration.
-         forc_u_adj(p) = forc_u(t)
-         forc_v_adj(p) = forc_v(t)
-         ur(p)    = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
+         wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+         wind_speed_adj(p) = wind_speed0(p)
+         ur(p) = max(1.0_r8, wind_speed_adj(p))
 
-         taux_est(p) = -tau_est(t) * forc_u(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-         tauy_est(p) = -tau_est(t) * forc_v(t) / max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-         prev_taux(p) = taux_est(p)
-         prev_tauy(p) = tauy_est(p)
+         prev_tau(p) = -tau_est(t)
 
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t) - qg(c)
@@ -255,7 +255,10 @@ contains
       ! Determine friction velocity, and potential temperature and humidity
       ! profiles of the surface boundary layer
 
-      do iter = 1, niters
+      fn0 = fn
+      filterp0(1:fn) = filterp(1:fn)
+
+      ITERATION: do iter = 1, itmax
 
          call FrictionVelocity(begp, endp, fn, filterp, &
               displa(begp:endp), z0mg_patch(begp:endp), z0hg_patch(begp:endp), z0qg_patch(begp:endp), &
@@ -273,35 +276,22 @@ contains
             ! Forbid removing more than 99% of wind speed in a time step.
             ! This is mainly to avoid convergence issues since this is such a
             ! basic form of iteration in this loop...
-            taux(p) = -forc_rho(t)*forc_u_adj(p)/ram
-            tauy(p) = -forc_rho(t)*forc_v_adj(p)/ram
-            if ( (taux(p)-taux_est(p))*wsresp(t)*sign(1._r8,-forc_u(t)) > 0.99_r8*abs(forc_u(t)) ) then
-               taux(p) = taux_est(p) - 0.99_r8 * forc_u(t) / wsresp(t)
+            tau(p) = -forc_rho(t)*wind_speed_adj(p)/ram
+            if ( -(tau(p)+tau_est(t))*wsresp(t) > 0.99_r8*wind_speed0(p) ) then
+               tau(p) = -tau_est(t) - 0.99_r8 * wind_speed0(p) / wsresp(t)
             end if
-            if ( (tauy(p)-tauy_est(p))*wsresp(t)*sign(1._r8,-forc_v(t)) > 0.99_r8*abs(forc_v(t)) ) then
-               tauy(p) = tauy_est(p) - 0.99_r8 * forc_v(t) / wsresp(t)
-            end if
-            taux_diff(p) = taux(p) - prev_taux(p)
-            tauy_diff(p) = tauy(p) - prev_tauy(p)
+            tau_diff(p) = tau(p) - prev_tau(p)
             if (iter /= 1) then
                ! damp possible swings in each iteration for convergence
-               ! Probably too much damping here.
-               if (abs(taux_diff(p)) > abs(0.95*prev_taux_diff(p))) then
-                  taux_diff(p) = sign(0.95*prev_taux_diff(p), taux_diff(p))
-                  taux(p) = prev_taux(p) + taux_diff(p)
-               end if
-               if (abs(tauy_diff(p)) > abs(0.95*prev_tauy_diff(p))) then
-                  tauy_diff(p) = sign(0.95*prev_tauy_diff(p), tauy_diff(p))
-                  tauy(p) = prev_tauy(p) + tauy_diff(p)
+               if (abs(tau_diff(p)) > abs(0.95*prev_tau_diff(p))) then
+                  tau_diff(p) = sign(0.95*prev_tau_diff(p), tau_diff(p))
+                  tau(p) = prev_tau(p) + tau_diff(p)
                end if
             end if
-            prev_taux(p) = taux(p)
-            prev_tauy(p) = tauy(p)
-            prev_taux_diff(p) = taux_diff(p)
-            prev_tauy_diff(p) = tauy_diff(p)
-            forc_u_adj(p) = forc_u(t) + (taux(p)-taux_est(p))*wsresp(t)
-            forc_v_adj(p) = forc_v(t) + (tauy(p)-tauy_est(p))*wsresp(t)
-            ur(p) = max(1.0_r8,sqrt(forc_u_adj(p)*forc_u_adj(p)+forc_v_adj(p)*forc_v_adj(p)))
+            prev_tau(p) = tau(p)
+            prev_tau_diff(p) = tau_diff(p)
+            wind_speed_adj(p) = wind_speed0(p) + (tau(p)+tau_est(t))*wsresp(t)
+            ur(p) = max(1.0_r8, wind_speed_adj(p))
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
@@ -321,7 +311,27 @@ contains
             obu(p) = zldis(p)/zeta
          end do
 
-      end do ! end stability iteration
+         ! Test for convergence
+         iter_final = iter
+         if (iter >= itmin) then
+            fnold = fn
+            fn = 0
+            do f = 1, fnold
+               p = filterp(f)
+               if (.not. (abs(tau_diff(p)) < dtaumin)) then
+                  fn = fn + 1
+                  filterp(fn) = p
+               end if
+            end do
+            if (fn == 0) then
+               exit ITERATION
+            end if
+         end if
+
+      end do ITERATION ! end stability iteration
+
+      fn = fn0
+      filterp(1:fn) = filterp0(1:fn)
 
       do f = 1, fn
          p = filterp(f)
@@ -364,8 +374,8 @@ contains
 
          ! Surface fluxes of momentum, sensible and latent heat
          ! using ground temperatures from previous time step
-         taux(p)          = -forc_rho(t)*forc_u_adj(p)/ram
-         tauy(p)          = -forc_rho(t)*forc_v_adj(p)/ram
+         taux(p)          = -forc_rho(t)*forc_u(t)/ram * (wind_speed_adj(p) / wind_speed0(p))
+         tauy(p)          = -forc_rho(t)*forc_v(t)/ram * (wind_speed_adj(p) / wind_speed0(p))
          eflx_sh_grnd(p)  = -raih*dth(p)
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
 
@@ -397,6 +407,13 @@ contains
          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             rh_ref2m_r(p) = rh_ref2m(p)
             t_ref2m_r(p) = t_ref2m(p)
+         end if
+
+         ! Check for convergence of stress.
+         if (abs(tau_diff(p)) > dtaumin) then
+            write(iulog,*)'WARNING: Stress did not converge for bare ground ',&
+                 ' nstep = ',get_nstep(),' p= ',p,' tau_diff= ',tau_diff(p),&
+                 ' iter_final= ',iter_final
          end if
 
       end do
