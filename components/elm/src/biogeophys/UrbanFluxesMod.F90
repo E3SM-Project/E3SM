@@ -937,10 +937,12 @@ contains
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          if (abs(tau_diff(l)) > dtaumin) then
-            write(iulog,*)'WARNING: Stress did not converge for urban columns ',&
-                 ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(l),&
-                 ' tau_diff= ',tau_diff(l),' tau= ',tau(l),&
-                 ' wind_speed_adj= ',wind_speed_adj(l),' iter_final= ',iter_final
+            if (nstep > 0) then ! Suppress common warnings on the first time step.
+               write(iulog,*)'WARNING: Stress did not converge for urban columns ',&
+                    ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(l),&
+                    ' tau_diff= ',tau_diff(l),' tau= ',tau(l),&
+                    ' wind_speed_adj= ',wind_speed_adj(l),' iter_final= ',iter_final
+            end if
          end if
       end do
 
