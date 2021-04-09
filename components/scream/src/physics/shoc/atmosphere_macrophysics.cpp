@@ -78,7 +78,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_required_field("horiz_winds",   horiz_wind_layout,   m/s,         grid_name);
   add_required_field("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name);
   add_required_field("eddy_diff_mom", scalar3d_layout_mid, (m*m)/s,     grid_name);
-  add_required_field("qc",            scalar3d_layout_mid, Qunit,           grid_name);
+  add_required_field("qc",            scalar3d_layout_mid, Qunit,       grid_name);
   add_required_field("cldfrac_liq",   scalar3d_layout_mid, Pa,          grid_name);
 
   add_computed_field("tke",           scalar3d_layout_mid, (m*m)/(s*s), grid_name);
@@ -93,7 +93,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_computed_field("inv_qc_relvar", scalar3d_layout_mid, Qunit*Qunit, grid_name);
 
   // Tracer group
-  m_inout_groups_req.emplace("tracers",grid->name());
+  add_updated_group("tracers",grid->name());
 }
 // =========================================================================================
 void SHOCMacrophysics::

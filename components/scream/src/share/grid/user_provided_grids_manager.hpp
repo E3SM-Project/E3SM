@@ -22,6 +22,10 @@ public:
 
   std::string name () const { return "User Provided Grids Manager"; }
 
+  std::string get_reference_grid_name () const {
+    return m_ref_grid_name;
+  }
+
   std::set<std::string> supported_grids () const {
     std::set<std::string> gnames;
 
@@ -46,14 +50,14 @@ public:
   void set_remapper (const remapper_ptr_type remapper) {
     string_pair from_to = std::make_pair(remapper->get_src_grid()->name(),remapper->get_tgt_grid()->name());
     EKAT_REQUIRE_MSG (has_grid(remapper->get_src_grid()->name()),
-                        "Error! The remapper's source grid '" + from_to.first + "' is not supported."
-                        "       Set the grids before setting the remappers.\n");
+        "Error! The remapper's source grid '" + from_to.first + "' is not supported."
+        "       Set the grids before setting the remappers.\n");
     EKAT_REQUIRE_MSG (has_grid(remapper->get_tgt_grid()->name()),
-                        "Error! The remapper's target grid '" + from_to.first + "' is not supported."
-                        "       Set the grids before setting the remappers.\n");
+        "Error! The remapper's target grid '" + from_to.first + "' is not supported."
+        "       Set the grids before setting the remappers.\n");
     EKAT_REQUIRE_MSG (m_provided_remappers.find(from_to)==m_provided_remappers.end(),
-                        "Error! A remapper from grid '" + from_to.first + "' to grid '" +
-                        from_to.second + "' was already set.\n");
+        "Error! A remapper from grid '" + from_to.first + "' to grid '" +
+        from_to.second + "' was already set.\n");
     m_provided_remappers[from_to] = remapper;
   }
 
@@ -64,11 +68,13 @@ public:
   }
 
   void set_reference_grid (const std::string& grid_name) {
-    EKAT_REQUIRE_MSG (m_provided_grids.find("Reference")==m_provided_grids.end(),
-                        "Error! A reference was already set.\n");
+
+    EKAT_REQUIRE_MSG (m_ref_grid_name=="",
+        "Error! A reference was already set.\n");
     EKAT_REQUIRE_MSG (has_grid(grid_name),
-                        "Error! A grid with name '" + grid_name + "' was not set.\n");
-    m_provided_grids["Reference"] = get_grid(grid_name);
+        "Error! A grid with name '" + grid_name + "' was not set.\n");
+
+    m_ref_grid_name = grid_name;
   }
 
   void clean_up () {
@@ -96,9 +102,11 @@ protected:
   const grid_repo_type& get_repo () const { return m_provided_grids; }
         grid_repo_type& get_repo ()       { return m_provided_grids; }
 
-  static grid_repo_type  m_provided_grids;
+  static grid_repo_type   m_provided_grids;
 
-  static remap_repo_type m_provided_remappers;
+  static std::string      m_ref_grid_name;
+
+  static remap_repo_type  m_provided_remappers;
 };
 
 inline std::shared_ptr<GridsManager>

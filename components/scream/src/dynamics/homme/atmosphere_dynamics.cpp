@@ -96,15 +96,15 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // Create the std::set of required/computed fids
   for (int i=0; i<m_p2d_remapper->get_num_registered_fields(); ++i) {
     const auto& ref_fid = m_p2d_remapper->get_src_field_id(i);
-    m_required_fields.insert(ref_fid);
-    m_computed_fields.insert(ref_fid);
+    add_required_field(ref_fid);
+    add_computed_field(ref_fid);
   }
 
   // qv is needed to make sure Q is not empty (dyn needs qv to transform T<->Theta),
   // while ps is needed for initial conditions only.
   FieldLayout scalar_3d_mid { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
   FieldIdentifier qv("qv", scalar_3d_mid, Q, dgn);
-  m_required_fields.insert(m_p2d_remapper->create_src_fid(qv));
+  add_required_field(m_p2d_remapper->create_src_fid(qv));
 
   const int ftype = get_homme_param<int>("ftype");
   EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,
@@ -112,7 +112,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
                      "       Found " + std::to_string(ftype) + " instead.\n");
 
   // Input-output groups
-  m_inout_groups_req.emplace("tracers",grids_manager->get_reference_grid()->name());
+  add_updated_group("tracers",grids_manager->get_reference_grid()->name());
 }
 
 void HommeDynamics::

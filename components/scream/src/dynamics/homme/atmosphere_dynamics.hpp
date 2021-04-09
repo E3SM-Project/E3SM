@@ -51,12 +51,6 @@ public:
   // Dynamics updates 'TRACERS'.
   void set_updated_group (const FieldGroup<Real>& group);
 
-  // Get the set of required/computed fields
-  const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }
-
-  std::set<GroupRequest> get_updated_groups () const { return m_inout_groups_req; }
-
 protected:
 
   // These are the three main interfaces:
@@ -67,10 +61,6 @@ protected:
   // Setting the fields in the atmosphere process
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
-
-  std::set<FieldIdentifier> m_required_fields;
-  std::set<FieldIdentifier> m_computed_fields;
-  std::set<GroupRequest>    m_inout_groups_req;
 
   std::map<std::string,FieldIdentifier> m_dyn_fids;
 

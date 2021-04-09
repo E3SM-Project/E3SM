@@ -48,7 +48,6 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 
   // Set of fields used as input and output
   // - There are no fields used as both input and output.
-
 }
 
 // =========================================================================================
@@ -59,7 +58,6 @@ void CldFraction::initialize_impl (const util::TimeStamp& /* t0 */)
 // =========================================================================================
 void CldFraction::run_impl (const Real dt)
 {
-  
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 
   auto qi   = m_cld_fraction_fields_in["qi"].get_reshaped_view<const Pack**>();
@@ -76,7 +74,6 @@ void CldFraction::run_impl (const Real dt)
   for (auto& f : m_cld_fraction_fields_out) {
     f.second.get_header().get_tracking().update_time_stamp(ts);
   }
-
 }
 
 // =========================================================================================

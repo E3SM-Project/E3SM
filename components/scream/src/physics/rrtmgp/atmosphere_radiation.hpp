@@ -41,10 +41,6 @@ public:
   // Register all fields in the given repo
   void register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const;
 
-  // Get the set of required/computed fields
-  const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
-
 // NOTE: cannot use lambda functions for CUDA devices if these are protected!
 public:
   // The three main interfaces for the subcomponent
@@ -55,9 +51,6 @@ public:
   // Set fields in the atmosphere process
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
-
-  std::set<FieldIdentifier> m_required_fields;
-  std::set<FieldIdentifier> m_computed_fields;
 
   // Input and input/output fields
   std::map<std::string,const_field_type> m_rrtmgp_fields_in;

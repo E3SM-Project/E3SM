@@ -159,8 +159,12 @@ void RRTMGPRadiation::finalize_impl  () {
 void RRTMGPRadiation::
 register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const {
   auto& field_repo = *field_repos.at("Physics");
-  for (auto& fid: m_required_fields) { field_repo.register_field(fid); }
-  for (auto& fid: m_computed_fields) { field_repo.register_field(fid); }
+  for (const auto& fid: get_required_fields()) {
+    field_repo.register_field(fid);
+  }
+  for (const auto& fid: get_computed_fields()) {
+    field_repo.register_field(fid);
+  }
 }
 
 // Private function to check that fields are not padded
