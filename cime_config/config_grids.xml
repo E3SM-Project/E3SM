@@ -2722,7 +2722,7 @@
       <nx>237984</nx>
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.ECwISC30to60E2r1.201007.nc</file>
-      <desc>ECwISC30to60E2r1 is a MPAS ocean grid generated with the jigsaw/compass process using the eddy closure density function that has 30 km gridcells at the equator, 60 km at mid-latitudes, and 35 km at high latitudes. Additionally, it has ocean under landice cavities:</desc>
+      <desc>ECwISC30to60E2r1 is a MPAS ocean grid generated with the jigsaw/compass process using the eddy closure density function that has 30 km gridcells at the equator, 60 km at mid-latitudes, and 35 km at high latitudes. Additionally, it has ocean in ice-shelf cavities:</desc>
     </domain>
 
     <!-- ROF (river) grids-->
