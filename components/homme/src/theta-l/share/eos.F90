@@ -209,11 +209,17 @@ implicit none
    
 
    if (present(pnh_i_out)) then
-      ! boundary values already computed.  interior only:
+      ! boundary values already computed. interpolate interior
       do k=2,nlev
-         pnh_i(:,:,k)=(hvcoord%d_etam(k)*pnh(:,:,k)+hvcoord%d_etam(k-1)*pnh(:,:,k-1))/&
-              (hvcoord%d_etai(k)*2)
+         pnh_i(:,:,k)=(hvcoord%d_etam(k-1)*pnh(:,:,k)+hvcoord%d_etam(k)*pnh(:,:,k-1))/&
+              (hvcoord%d_etam(k-1)+hvcoord%d_etam(k))
       enddo
+#if 0
+      ! scan, to invert  pnh(k)= .5*(pnh_i(k+1)+pnh_i(k)), using ptop
+      do k=1,nlev
+         pnh_i(:,:,k+1)=2*pnh(:,:,k)-pnh_i(:,:,k)
+      enddo
+#endif
       pnh_i_out=pnh_i    
    endif
    
