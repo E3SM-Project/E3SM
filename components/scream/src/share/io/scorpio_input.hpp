@@ -11,7 +11,7 @@
 
 #include "share/io/scream_scorpio_interface.hpp"
 
-#include "share/field/field_repository.hpp"
+#include "share/field/field_manager.hpp"
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_identifier.hpp"
@@ -67,7 +67,7 @@
  * 2. Use pull input to gather the desired data:
  *    in_object.pull_input(*grid_manager)
  *
- * The AtmosphereInput class will replace all fields in the field_repo that are part of the input with
+ * The AtmosphereInput class will replace all fields in the field_manager that are part of the input with
  * data read from the input file.
  *    
  * --------------------------------------------------------------------------------
@@ -85,11 +85,11 @@ public:
 
   // --- Constructor(s) & Destructor --- //
   AtmosphereInput (const ekat::Comm& comm, const ekat::ParameterList& params,
-                   const std::shared_ptr<const FieldRepository<Real>>& repo,
+                   const std::shared_ptr<const FieldManager<Real>>& repo,
                    const std::shared_ptr<const GridsManager>& gm)
     : m_params     (params)
     , m_comm       (comm)
-    , m_field_repo (repo)
+    , m_field_manager (repo)
     , m_gm         (gm)
   {
     // Nothing to do here
@@ -153,7 +153,7 @@ protected:
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
 
-  std::shared_ptr<const FieldRepository<Real>> m_field_repo;
+  std::shared_ptr<const FieldManager<Real>> m_field_manager;
   std::shared_ptr<const GridsManager>          m_gm;
   
   std::string m_filename;

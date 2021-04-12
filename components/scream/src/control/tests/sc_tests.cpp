@@ -58,8 +58,8 @@ TEST_CASE ("surface_coupling")
   const int num_fields = num_s2d+num_s3d+2*num_v3d;
 
   // Keep two separate repos, so we can compare original and final fields.
-  auto repo_in = std::make_shared<FieldRepository<Real>> (grid);
-  auto repo_out = std::make_shared<FieldRepository<Real>> (grid);
+  auto repo_in = std::make_shared<FieldManager<Real>> (grid);
+  auto repo_out = std::make_shared<FieldManager<Real>> (grid);
   repo_in->registration_begins();
   repo_in->register_field(s2d_id);
   repo_in->register_field(s3d_id);

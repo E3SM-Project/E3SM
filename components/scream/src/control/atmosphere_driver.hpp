@@ -3,7 +3,7 @@
 
 #include "control/surface_coupling.hpp"
 
-#include "share/field/field_repository.hpp"
+#include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/scream_types.hpp"
@@ -39,8 +39,8 @@ namespace control {
 class AtmosphereDriver
 {
 public:
-  using field_repo_type = FieldRepository<Real>;
-  using field_repo_ptr  = std::shared_ptr<field_repo_type>;
+  using field_mgr_type = FieldManager<Real>;
+  using field_mgr_ptr  = std::shared_ptr<field_mgr_type>;
 
   AtmosphereDriver () = default;
   AtmosphereDriver (const ekat::Comm& atm_comm,
@@ -96,8 +96,8 @@ public:
   // Clean up the driver (includes cleaning up the parameterizations and the fm's);
   void finalize ( /* inputs */ );
 
-  field_repo_ptr get_field_repo () const;
-  field_repo_ptr get_field_repo (const std::string& grid_name) const;
+  field_mgr_ptr get_field_mgr () const;
+  field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
 
   const std::shared_ptr<SurfaceCoupling>& get_surface_coupling () const { return m_surface_coupling; }
 
@@ -110,7 +110,7 @@ protected:
 
   void register_groups ();
 
-  std::map<std::string,field_repo_ptr>    m_field_repos;
+  std::map<std::string,field_mgr_ptr>    m_field_mgrs;
 
   std::shared_ptr<AtmosphereProcessGroup>             m_atm_process_group;
 

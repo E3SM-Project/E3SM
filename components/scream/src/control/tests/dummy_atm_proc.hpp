@@ -81,8 +81,8 @@ public:
   }
 
   // Register all fields in the given repo
-  void register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const {
-    auto repo = field_repos.at(m_grid->name());
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
+    auto repo = field_mgrs.at(m_grid->name());
     if (m_dummy_type==A2G) {
       for (const auto& fid : get_required_fields()) {
         repo->register_field(fid);

@@ -268,26 +268,26 @@ void P3Microphysics::finalize_impl()
 
 // =========================================================================================
 void P3Microphysics::
-register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const {
+register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
   std::set<ci_string> q_names =
     { "qv","qc","qr","qi","qm","nc","nr","ni","bm"};
 
   const auto& grid_name = m_p3_params.get<std::string>("Grid");
-  auto& field_repo = *field_repos.at(grid_name);
+  auto& field_mgr = *field_mgrs.at(grid_name);
   for (const auto& fid : get_required_fields()) {
     const auto& name = fid.name();
     if (q_names.count(name)>0) {
-      field_repo.register_field<Pack>(fid,"TRACERS");
+      field_mgr.register_field<Pack>(fid,"TRACERS");
     } else {
-      field_repo.register_field<Pack>(fid);
+      field_mgr.register_field<Pack>(fid);
     }
   }
   for (const auto& fid : get_computed_fields()) {
     const auto& name = fid.name();
     if (q_names.count(name)>0) {
-      field_repo.register_field<Pack>(fid,"TRACERS");
+      field_mgr.register_field<Pack>(fid,"TRACERS");
     } else {
-      field_repo.register_field<Pack>(fid);
+      field_mgr.register_field<Pack>(fid);
     }
   }
 }

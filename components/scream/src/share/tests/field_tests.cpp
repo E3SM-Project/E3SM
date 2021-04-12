@@ -3,7 +3,7 @@
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_repository.hpp"
+#include "share/field/field_manager.hpp"
 #include "share/field/field_positivity_check.hpp"
 #include "share/field/field_within_interval_check.hpp"
 #include "share/field/field_monotonicity_check.hpp"
@@ -305,7 +305,7 @@ TEST_CASE("field", "") {
   }
 }
 
-TEST_CASE("field_repo", "") {
+TEST_CASE("field_mgr", "") {
   using namespace scream;
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
@@ -334,7 +334,7 @@ TEST_CASE("field_repo", "") {
 
   ekat::Comm comm(MPI_COMM_WORLD);
   auto pg = create_point_grid("phys",ncols*comm.size(),nlevs,comm);
-  FieldRepository<Real> repo(pg);
+  FieldManager<Real> repo(pg);
 
   // Should not be able to register fields yet
   REQUIRE_THROWS(repo.register_field(fid1,"phys"));
@@ -435,7 +435,7 @@ TEST_CASE("tracers_bundle", "") {
   ekat::Comm comm(MPI_COMM_WORLD);
   auto pg = create_point_grid(grid_name,ncols*comm.size(),nlevs,comm);
 
-  FieldRepository<Real> repo(pg);
+  FieldManager<Real> repo(pg);
   repo.registration_begins();
   repo.register_field(qv_id,"TRACERS");
   repo.register_field(qc_id,"TRACERS");

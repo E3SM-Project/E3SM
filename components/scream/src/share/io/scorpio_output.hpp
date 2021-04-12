@@ -14,7 +14,7 @@
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 
-#include "share/field/field_repository.hpp"
+#include "share/field/field_manager.hpp"
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_identifier.hpp"
@@ -92,24 +92,24 @@ public:
 
   // Constructor
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
-                   const std::shared_ptr<const FieldRepository<Real>>& repo,
+                   const std::shared_ptr<const FieldManager<Real>>& repo,
                    const std::shared_ptr<const GridsManager>& gm)
   {
     m_comm       = comm;
     m_params     = params;
-    m_field_repo = repo;
+    m_field_manager = repo;
     m_gm         = gm;
     m_read_restart_hist = false;
   }
   // Constructor
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
-                   const std::shared_ptr<const FieldRepository<Real>>& repo,
+                   const std::shared_ptr<const FieldManager<Real>>& repo,
                    const std::shared_ptr<const GridsManager>& gm,
                    const bool read_restart_hist)
   {
     m_comm       = comm;
     m_params     = params;
-    m_field_repo = repo;
+    m_field_manager = repo;
     m_gm         = gm;
     m_read_restart_hist = read_restart_hist;
   }
@@ -137,7 +137,7 @@ protected:
   // Internal variables
   ekat::ParameterList                          m_params;
   ekat::Comm                                   m_comm;
-  std::shared_ptr<const FieldRepository<Real>> m_field_repo;
+  std::shared_ptr<const FieldManager<Real>> m_field_manager;
   std::shared_ptr<const GridsManager>          m_gm;
   
   // Main output control data

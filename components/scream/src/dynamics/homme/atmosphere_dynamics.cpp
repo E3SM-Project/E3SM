@@ -170,12 +170,12 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 }
 
 void HommeDynamics::
-register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const {
-  auto& field_repo = *field_repos.at(m_ref_grid->name());
+register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
+  auto& field_mgr = *field_mgrs.at(m_ref_grid->name());
   // Inputs
   for (int i=0; i<m_p2d_remapper->get_num_registered_fields(); ++i) {
     const auto& src = m_p2d_remapper->get_src_field_id(i);
-    field_repo.register_field(src);
+    field_mgr.register_field(src);
   }
 
   // Make sure qv is registered (we need at least that one tracer, for T<->Theta conversions)
@@ -192,7 +192,7 @@ register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real
   FieldLayout qv_layout { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
   FieldIdentifier qv("qv", qv_layout, Q,  m_dyn_grid->name());
 
-  field_repo.register_field(m_p2d_remapper->create_src_fid(qv),"tracers");
+  field_mgr.register_field(m_p2d_remapper->create_src_fid(qv),"tracers");
 }
 
 void HommeDynamics::run_impl (const Real dt)

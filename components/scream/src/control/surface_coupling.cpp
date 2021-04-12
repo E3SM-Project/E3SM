@@ -6,11 +6,11 @@ namespace scream {
 namespace control {
 
 SurfaceCoupling::
-SurfaceCoupling (const field_repo_ptr& field_repo)
- : m_field_repo (field_repo)
+SurfaceCoupling (const field_mgr_ptr& field_mgr)
+ : m_field_mgr (field_mgr)
  , m_state (RepoState::Clean)
 {
-  auto grid = m_field_repo->get_grid();
+  auto grid = m_field_mgr->get_grid();
 
   m_num_cols  = grid->get_num_local_dofs();
 
@@ -55,7 +55,7 @@ register_import(const std::string& fname,
                      "Error! Imports view is already full. Did you call 'set_num_fields' with the wrong arguments?\n");
 
   // Get the field, and check that is valid
-  import_field_type field = m_field_repo->get_field(fname);
+  import_field_type field = m_field_mgr->get_field(fname);
   EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Import field view has not been allocated yet.\n");
   
   EKAT_REQUIRE_MSG(cpl_idx>=0, "Error! Input cpl_idx is negative.\n");
@@ -100,7 +100,7 @@ register_export (const std::string& fname,
                      "Error! Exports view is already full. Did you call 'set_num_fields' with the wrong arguments?\n");
 
   // Get the field, and check that is valid
-  export_field_type field = m_field_repo->get_field(fname);
+  export_field_type field = m_field_mgr->get_field(fname);
   EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Export field view has not been allocated yet.\n");
 
   EKAT_REQUIRE_MSG(cpl_idx>=0, "Error! Input cpl_idx is negative.\n");

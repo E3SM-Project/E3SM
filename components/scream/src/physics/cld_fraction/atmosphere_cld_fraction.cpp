@@ -84,23 +84,23 @@ void CldFraction::finalize_impl()
 
 // =========================================================================================
 void CldFraction::
-register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const {
+register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
   const auto& grid_name = m_cld_fraction_params.get<std::string>("Grid");
-  auto& field_repo = *field_repos.at(grid_name);
+  auto& field_mgr = *field_mgrs.at(grid_name);
   for (const auto& fid : get_required_fields()) {
     const auto& name = fid.name();
     if (name == "qi") {
-      field_repo.register_field<Pack>(fid,"TRACERS");
+      field_mgr.register_field<Pack>(fid,"TRACERS");
     } else {
-      field_repo.register_field<Pack>(fid);
+      field_mgr.register_field<Pack>(fid);
     }
   }
   for (const auto& fid : get_computed_fields()) {
     const auto& name = fid.name();
     if (name == "qi") {
-      field_repo.register_field<Pack>(fid,"TRACERS");
+      field_mgr.register_field<Pack>(fid,"TRACERS");
     } else {
-      field_repo.register_field<Pack>(fid);
+      field_mgr.register_field<Pack>(fid);
     }
   }
 }

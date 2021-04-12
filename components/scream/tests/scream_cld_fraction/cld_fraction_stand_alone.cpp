@@ -49,13 +49,13 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   // Because this is a relatively simple test based on two variables, we initialize them here
   // rather than use the netCDF input structure.
   const auto& grid = ad.get_grids_manager()->get_grid("Physics");
-  const auto& field_repo = *ad.get_field_repo(grid->name());
+  const auto& field_mgr = *ad.get_field_mgr(grid->name());
   
   int num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   int num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
-  const auto& qi_field           = field_repo.get_field("qi");
-  const auto& liq_cld_frac_field = field_repo.get_field("cldfrac_liq");  //TODO: This FM name will probably change soon.
+  const auto& qi_field           = field_mgr.get_field("qi");
+  const auto& liq_cld_frac_field = field_mgr.get_field("cldfrac_liq");  //TODO: This FM name will probably change soon.
   const auto& qi           = qi_field.get_reshaped_view<Real**,Host>();
   const auto& liq_cld_frac = liq_cld_frac_field.get_reshaped_view<Real**,Host>();
 
@@ -82,8 +82,8 @@ TEST_CASE("cld_fraction-stand-alone", "") {
 
   // Check ice and total cloud fraction values
   // Sync the values on device back to the host view.
-  const auto& ice_cld_frac_field = field_repo.get_field("cldfrac_ice");  //TODO: This FM name will probably change soon.
-  const auto& tot_cld_frac_field = field_repo.get_field("cldfrac_tot");   //TODO: This FM name will probably change soon.
+  const auto& ice_cld_frac_field = field_mgr.get_field("cldfrac_ice");  //TODO: This FM name will probably change soon.
+  const auto& tot_cld_frac_field = field_mgr.get_field("cldfrac_tot");   //TODO: This FM name will probably change soon.
   ice_cld_frac_field.sync_to_host();
   tot_cld_frac_field.sync_to_host();
   const auto& ice_cld_frac = ice_cld_frac_field.get_reshaped_view<Real**,Host>();

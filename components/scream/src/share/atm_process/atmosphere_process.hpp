@@ -3,7 +3,7 @@
 
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/field/field_identifier.hpp"
-#include "share/field/field_repository.hpp"
+#include "share/field/field_manager.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
 #include "share/grid/grids_manager.hpp"
@@ -193,7 +193,7 @@ public:
   }
 
   // Register required/computed fields in the field repo
-  virtual void register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const = 0;
+  virtual void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const = 0;
 
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.

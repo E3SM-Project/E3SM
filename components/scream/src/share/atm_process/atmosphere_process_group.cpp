@@ -168,14 +168,14 @@ set_updated_group (const FieldGroup<Real>& group)
 }
 
 void AtmosphereProcessGroup::
-register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const {
+register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     const auto& atm_proc = m_atm_processes[iproc];
-    atm_proc->register_fields(field_repos);
+    atm_proc->register_fields(field_mgrs);
 
 #ifdef SCREAM_DEBUG
     // Make sure processes are not calling methods they shouldn't on the repo
-    for (const auto& it : field_repos) {
+    for (const auto& it : field_mgrs) {
       EKAT_REQUIRE_MSG(it.second->repository_state()==RepoState::Open,
           "Error! Atmosphere processes are *not* allowed to modify the state of the repository.\n");
 

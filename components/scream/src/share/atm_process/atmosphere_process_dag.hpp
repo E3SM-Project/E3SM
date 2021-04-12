@@ -13,7 +13,7 @@ public:
   static constexpr int VERB_MAX = 4;
 
   void create_dag (const group_type& atm_procs,
-                   const std::shared_ptr<FieldRepository<Real>> field_repo);
+                   const std::shared_ptr<FieldManager<Real>> field_mgr);
 
   void add_surface_coupling (const std::set<FieldIdentifier>& imports,
                              const std::set<FieldIdentifier>& exports);
@@ -30,7 +30,7 @@ protected:
   void cleanup ();
 
   void add_nodes (const group_type& atm_procs,
-                  const std::shared_ptr<FieldRepository<Real>> field_repo);
+                  const std::shared_ptr<FieldManager<Real>> field_mgr);
 
   // Add fid to list of fields in the dag, and return its position.
   // If already stored, simply return its position

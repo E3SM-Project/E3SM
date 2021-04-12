@@ -157,13 +157,13 @@ void RRTMGPRadiation::finalize_impl  () {
 
 // Register all required and computed field in the field repository
 void RRTMGPRadiation::
-register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const {
-  auto& field_repo = *field_repos.at("Physics");
+register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
+  auto& field_mgr = *field_mgrs.at("Physics");
   for (const auto& fid: get_required_fields()) {
-    field_repo.register_field(fid);
+    field_mgr.register_field(fid);
   }
   for (const auto& fid: get_computed_fields()) {
-    field_repo.register_field(fid);
+    field_mgr.register_field(fid);
   }
 }
 

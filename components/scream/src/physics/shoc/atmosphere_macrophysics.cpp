@@ -328,26 +328,26 @@ void SHOCMacrophysics::finalize_impl()
 // =========================================================================================
 
 void SHOCMacrophysics::
-register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const {
+register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
   const auto& grid_name = m_shoc_params.get<std::string>("Grid");
-  auto& field_repo = *field_repos.at(grid_name);
+  auto& field_mgr = *field_mgrs.at(grid_name);
   std::set<ci_string> q_names =
     { "qc", "qv", "tke"};
 
   for (const auto& fid : get_required_fields()) {
     const auto& name = fid.name();
     if (q_names.count(name)>0) {
-      field_repo.register_field<Spack>(fid,"tracers");
+      field_mgr.register_field<Spack>(fid,"tracers");
     } else {
-      field_repo.register_field<Spack>(fid);
+      field_mgr.register_field<Spack>(fid);
     }
   }
   for (const auto& fid : get_computed_fields()) {
     const auto& name = fid.name();
     if (q_names.count(name)>0) {
-      field_repo.register_field<Spack>(fid,"tracers");
+      field_mgr.register_field<Spack>(fid,"tracers");
     } else {
-      field_repo.register_field<Spack>(fid);
+      field_mgr.register_field<Spack>(fid);
     }
   }
 }

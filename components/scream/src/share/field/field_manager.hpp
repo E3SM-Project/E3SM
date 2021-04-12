@@ -22,7 +22,7 @@ namespace scream
   *  This is enough to fully deduce the type of the stored views. All views
   *  are stored on the default device.
   *
-  *  The FieldRepository is associated with a specific grid. While there
+  *  The FieldManager is associated with a specific grid. While there
   *  *may* be multiple fields with the same name (e.g., a 3d scalar at
   *  level midpoints and a 3d scalar at level interfaces), we decide to
   *  enforece a *single* copy for each field. That means that, in the
@@ -31,7 +31,7 @@ namespace scream
   */
 
 template<typename RealType>
-class FieldRepository {
+class FieldManager {
 public:
 
   // Public types
@@ -48,12 +48,12 @@ public:
   using grid_ptr_type    = std::shared_ptr<const AbstractGrid>;
 
   // Constructor(s)
-  explicit FieldRepository (const grid_ptr_type& grid);
+  explicit FieldManager (const grid_ptr_type& grid);
 
   // No copies, cause the internal database is not a shared_ptr.
   // NOTE: you can change this if you find that copies are needed/useful.
-  FieldRepository (const FieldRepository&) = delete;
-  FieldRepository& operator= (const FieldRepository&) = delete;
+  FieldManager (const FieldManager&) = delete;
+  FieldManager& operator= (const FieldManager&) = delete;
 
   // Change the state of the database
   void registration_begins ();
@@ -88,7 +88,7 @@ public:
   int size () const { return m_fields.size(); }
   RepoState repository_state () const { return m_repo_state; }
 
-  // Return the grid associated to this FieldRepository
+  // Return the grid associated to this FieldManager
   grid_ptr_type get_grid () const { return m_grid; }
 
   // Get the group_name->group_info map of all stored groups
@@ -141,8 +141,8 @@ protected:
 // ============================== IMPLEMENTATION ============================= //
 
 template<typename RealType>
-FieldRepository<RealType>::
-FieldRepository (const grid_ptr_type& grid)
+FieldManager<RealType>::
+FieldManager (const grid_ptr_type& grid)
   : m_repo_state (RepoState::Clean)
   , m_grid       (grid)
 {
@@ -155,7 +155,7 @@ FieldRepository (const grid_ptr_type& grid)
 
 template<typename RealType>
 template<typename RequestedValueType>
-void FieldRepository<RealType>::
+void FieldManager<RealType>::
 register_field (const identifier_type& id, const std::set<std::string>& groups_names) {
   EKAT_REQUIRE_MSG (m_repo_state!=RepoState::Clean,
       "Error! Repo state is not 'Open' yet. You must call registration_begins() first.\n");
@@ -225,7 +225,7 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
 }
 
 template<typename RealType>
-void FieldRepository<RealType>::
+void FieldManager<RealType>::
 register_field (const identifier_type& identifier, const int pack_size,
                 const std::initializer_list<std::string>& groups_names) {
   register_field(identifier,groups_names);
@@ -234,13 +234,13 @@ register_field (const identifier_type& identifier, const int pack_size,
 }
 
 template<typename RealType>
-bool FieldRepository<RealType>::has_field (const identifier_type& id) const {
+bool FieldManager<RealType>::has_field (const identifier_type& id) const {
   return has_field(id.name()) && m_fields.at(id.name())->get_header()->get_identifier()==id;
 }
 
 template<typename RealType>
-typename FieldRepository<RealType>::field_type
-FieldRepository<RealType>::get_field (const identifier_type& id) const {
+typename FieldManager<RealType>::field_type
+FieldManager<RealType>::get_field (const identifier_type& id) const {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
       "Error! Cannot get fields from the repo while registration has not yet completed.\n");
   auto ptr = get_field_ptr(id);
@@ -250,8 +250,8 @@ FieldRepository<RealType>::get_field (const identifier_type& id) const {
 }
 
 template<typename RealType>
-typename FieldRepository<RealType>::field_type
-FieldRepository<RealType>::get_field (const std::string& name) const {
+typename FieldManager<RealType>::field_type
+FieldManager<RealType>::get_field (const std::string& name) const {
 
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
       "Error! Cannot get fields from the repo while registration has not yet completed.\n");
@@ -261,8 +261,8 @@ FieldRepository<RealType>::get_field (const std::string& name) const {
 }
 
 template<typename RealType>
-FieldGroup<typename FieldRepository<RealType>::RT>
-FieldRepository<RealType>::
+FieldGroup<typename FieldManager<RealType>::RT>
+FieldManager<RealType>::
 get_field_group (const std::string& group_name) const
 {
   // Sanity checks
@@ -298,8 +298,8 @@ get_field_group (const std::string& group_name) const
 }
 
 template<typename RealType>
-FieldGroup<typename FieldRepository<RealType>::const_RT>
-FieldRepository<RealType>::
+FieldGroup<typename FieldManager<RealType>::const_RT>
+FieldManager<RealType>::
 get_const_field_group (const std::string& group_name) const
 {
   // Saniti checks
@@ -336,7 +336,7 @@ get_const_field_group (const std::string& group_name) const
 }
 
 template<typename RealType>
-void FieldRepository<RealType>::
+void FieldManager<RealType>::
 init_fields_time_stamp (const util::TimeStamp& t0)
 {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
@@ -348,14 +348,14 @@ init_fields_time_stamp (const util::TimeStamp& t0)
 }
 
 template<typename RealType>
-void FieldRepository<RealType>::registration_begins ()
+void FieldManager<RealType>::registration_begins ()
 {
   // Update the state of the repo
   m_repo_state = RepoState::Open;
 }
 
 template<typename RealType>
-void FieldRepository<RealType>::
+void FieldManager<RealType>::
 registration_ends ()
 {
   // Count fields in the 'TRACERS' group
@@ -464,7 +464,7 @@ registration_ends ()
 }
 
 template<typename RealType>
-void FieldRepository<RealType>::clean_up() {
+void FieldManager<RealType>::clean_up() {
   // Clear the maps
   m_fields.clear();
   m_field_groups.clear();
@@ -476,8 +476,8 @@ void FieldRepository<RealType>::clean_up() {
 }
 
 template<typename RealType>
-std::shared_ptr<typename FieldRepository<RealType>::field_type>
-FieldRepository<RealType>::get_field_ptr (const identifier_type& id) const {
+std::shared_ptr<typename FieldManager<RealType>::field_type>
+FieldManager<RealType>::get_field_ptr (const identifier_type& id) const {
   auto it = m_fields.find(id.name());
   if (it!=m_fields.end() && it->second->get_header().get_identifier()==id) {
     return it->second;
@@ -486,8 +486,8 @@ FieldRepository<RealType>::get_field_ptr (const identifier_type& id) const {
 }
 
 template<typename RealType>
-std::shared_ptr<typename FieldRepository<RealType>::field_type>
-FieldRepository<RealType>::get_field_ptr (const std::string& name) const {
+std::shared_ptr<typename FieldManager<RealType>::field_type>
+FieldManager<RealType>::get_field_ptr (const std::string& name) const {
   auto it = m_fields.find(name);
   return it==m_fields.end() ? nullptr : it->second;
 }

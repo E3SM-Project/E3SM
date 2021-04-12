@@ -6,7 +6,7 @@
 
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
-#include "share/field/field_repository.hpp"
+#include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
 
 namespace scream
@@ -61,14 +61,14 @@ public:
   OutputManager() = default;
 
   OutputManager( const ekat::Comm& comm, const ekat::ParameterList& params,
-                 const std::shared_ptr<const FieldRepository<Real>>& repo,
+                 const std::shared_ptr<const FieldManager<Real>>& repo,
                  const std::shared_ptr<const GridsManager>& gm,
                  const bool runtype_restart)
   {
     atm_comm            = comm;
     m_params            = params;
     param_set           = true;
-    m_device_field_repo = repo;
+    m_device_field_manager = repo;
     repo_set            = true;
     m_grids_manager     = gm;
     gm_set              = true;
@@ -76,13 +76,13 @@ public:
   }
 
   OutputManager( const ekat::Comm& comm, const ekat::ParameterList& params,
-                 const std::shared_ptr<const FieldRepository<Real>>& repo,
+                 const std::shared_ptr<const FieldManager<Real>>& repo,
                  const std::shared_ptr<const GridsManager>& gm)
   {
     atm_comm            = comm;
     m_params            = params;
     param_set           = true;
-    m_device_field_repo = repo;
+    m_device_field_manager = repo;
     repo_set            = true;
     m_grids_manager     = gm;
     gm_set              = true;
@@ -101,7 +101,7 @@ public:
   void set_comm(const ekat::Comm& comm) { atm_comm = comm; }
   void set_params(const ekat::ParameterList& params) { m_params=params; param_set=true;}
   void set_grids(const std::shared_ptr<const GridsManager>& gm) { m_grids_manager = gm; gm_set=true;}
-  void set_repo(const std::shared_ptr<const FieldRepository<Real>>& repo) { m_device_field_repo = repo; repo_set=true;}
+  void set_fm(const std::shared_ptr<const FieldManager<Real>>& repo) { m_device_field_manager = repo; repo_set=true;}
   void set_runtype_restart(const bool bval) { m_runtype_restart = bval; }
   void make_restart_param_list(ekat::ParameterList& params);
 
@@ -110,7 +110,7 @@ protected:
   ekat::Comm                                   atm_comm;
   ekat::Comm                                   pio_comm; 
   ekat::ParameterList                          m_params;
-  std::shared_ptr<const FieldRepository<Real>> m_device_field_repo;
+  std::shared_ptr<const FieldManager<Real>> m_device_field_manager;
   std::shared_ptr<const GridsManager>          m_grids_manager;
 
   bool                                 param_set = false;
@@ -126,14 +126,14 @@ protected:
  * stream.  See scorpio_output.hpp for more information on what the parameter list needs.         */
 inline void OutputManager::new_output(const ekat::ParameterList& params)
 {
-  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_repo,m_grids_manager,m_runtype_restart);
+  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_manager,m_grids_manager,m_runtype_restart);
   output_instance->init();
   m_output_streams.push_back(output_instance);
 }
 /* --------------------------------------------------------------------- */
 inline void OutputManager::new_output(const ekat::ParameterList& params, const bool runtype_restart)
 {
-  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_repo,m_grids_manager,runtype_restart);
+  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_manager,m_grids_manager,runtype_restart);
   output_instance->init();
   m_output_streams.push_back(output_instance);
 }
@@ -262,7 +262,7 @@ inline void OutputManager::make_restart_param_list(ekat::ParameterList& params)
   // set fields for restart
   // If a developer wants a field to be stored in the restart file than they must add the "restart" group tag
   // to that field when registering the field with the field repository.
-  auto restart_fields = m_device_field_repo->get_field_group("restart");
+  auto restart_fields = m_device_field_manager->get_field_group("restart");
   auto& field_params = params.sublist("FIELDS");
   field_params.set<Int>("Number of Fields",restart_fields.m_fields.size());
   Int it_cnt = 0;

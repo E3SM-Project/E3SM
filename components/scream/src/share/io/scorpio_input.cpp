@@ -58,7 +58,7 @@ AtmosphereInput::view_type_host AtmosphereInput::pull_input(const std::string& n
     grid_read_data_array(m_filename,name,m_dofs_sizes.at(name),l_view.data());
     return l_view;
   } else {
-    auto field = m_field_repo->get_field(name);
+    auto field = m_field_manager->get_field(name);
     view_type_host l_view("",field.get_view().extent(0));
     grid_read_data_array(m_filename,name,m_dofs_sizes.at(name),l_view.data());
     return l_view;
@@ -74,7 +74,7 @@ void AtmosphereInput::pull_input()
   init();
 
   for (auto const& name : m_fields_names) {
-    auto field = m_field_repo->get_field(name);
+    auto field = m_field_manager->get_field(name);
     const auto& fh  = field.get_header();
     const auto& fl  = fh.get_identifier().get_layout();
     const auto& fap = fh.get_alloc_properties();
@@ -215,7 +215,7 @@ void AtmosphereInput::register_variables()
 
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_repo->get_field(name);
+    auto field = m_field_manager->get_field(name);
     auto& fid  = field.get_header().get_identifier();
 
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
@@ -223,7 +223,7 @@ void AtmosphereInput::register_variables()
     std::string io_decomp_tag           = get_io_decomp(vec_of_dims);
     get_variable(m_filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);
     // TODO  Need to change dtype to allow for other variables. 
-    //  Currently the field_repo only stores Real variables so it is not an issue,
+    //  Currently the field_manager only stores Real variables so it is not an issue,
     //  but in the future if non-Real variables are added we will want to accomodate that.
     //TODO: Should be able to simply inquire fromt he netCDF the dimensions for each variable.
   }
@@ -277,7 +277,7 @@ void AtmosphereInput::set_degrees_of_freedom()
 
   // Cycle through all fields and set dof.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_repo->get_field(name);
+    auto field = m_field_manager->get_field(name);
     auto& fid  = field.get_header().get_identifier();
 
     // Given dof_len and n_dim_len it should be possible to create an integer array

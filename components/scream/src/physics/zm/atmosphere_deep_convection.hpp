@@ -51,7 +51,7 @@ public:
   void finalize_impl   ();
 
   // Register all fields in the given repo
-  void register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const;
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 
 protected:
 

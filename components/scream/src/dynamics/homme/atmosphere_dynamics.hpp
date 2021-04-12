@@ -46,7 +46,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // Register all fields in the given repo
-  void register_fields (const std::map<std::string,std::shared_ptr<FieldRepository<Real>>>& field_repos) const;
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 
   // Dynamics updates 'TRACERS'.
   void set_updated_group (const FieldGroup<Real>& group);
@@ -65,7 +65,7 @@ protected:
   std::map<std::string,FieldIdentifier> m_dyn_fids;
 
   // Fields on reference and dynamics grid
-  // NOTE: the dyn grid fields are *NOT* in the FieldRepository. We still use
+  // NOTE: the dyn grid fields are *NOT* in the FieldManager. We still use
   //       scream Field's (rather than, e.g., raw views) cause we want to use
   //       the remapper infrastructure to remap from/to ref grid to/from dyn grid.
   std::map<std::string,field_type>  m_ref_grid_fields;
