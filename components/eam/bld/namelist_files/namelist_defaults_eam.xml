@@ -1352,7 +1352,7 @@
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_enax4v1"   > 2 </hypervis_subcycle>
 
 
-<!-- Modifications for MMF, whcih uses a shorter physics time step for stability (20 min for ne4, ne30)-->
+<!-- Modifications for MMF, which uses a shorter physics time step for stability (20 min for ne4, ne30)-->
 <dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </dt_tracer_factor>
 <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </hypervis_subcycle_q>
 
