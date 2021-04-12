@@ -207,20 +207,6 @@ module init_atm_cases
             end if
 
             if (config_static_interp) then
-
-               !  
-               !  Without a convex mesh partition file, interpolating static fields in parallel 
-               !     will give incorrect results. Since it is very unlikely that typical users
-               !     will have convex partitions, it's safer to just stop if multiple MPI tasks are
-               !     detected when performing the static_interp step.
-               !  
-               if (domain % dminfo % nprocs > 1) then
-                 call mpas_log_write('****************************************************************', messageType=MPAS_LOG_ERR)
-                 call mpas_log_write('Error: Interpolation of static fields does not work in parallel.', messageType=MPAS_LOG_ERR)
-                 call mpas_log_write('Please run the static_interp step using only a single MPI task.',  messageType=MPAS_LOG_ERR)
-                 call mpas_log_write('****************************************************************', messageType=MPAS_LOG_CRIT)
-               end if
-
                call init_atm_static(mesh, block_ptr % dimensions, block_ptr % configs)
             end if
 
