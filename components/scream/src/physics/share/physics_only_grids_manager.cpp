@@ -19,10 +19,10 @@ PhysicsOnlyGridsManager::
 do_create_remapper (const grid_ptr_type from_grid,
                     const grid_ptr_type to_grid) const
 {
-  // As of today (6/2020), we only support the old np4 grid for physis.
+  // As of today (6/2020), we only support the old np4 grid for physics.
   // TODO: add support for pg2
   EKAT_REQUIRE_MSG(from_grid->name()==to_grid->name(),
-      "Error! So far, PhysicsOnlyGridsManager assumes only one type of grid for physiccs.\n");
+      "Error! So far, PhysicsOnlyGridsManager assumes only one type of grid for physics.\n");
 
   return std::make_shared<IdentityRemapper<Real> >(from_grid);
 }

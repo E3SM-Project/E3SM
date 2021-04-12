@@ -232,7 +232,7 @@ public:
 protected:
 
   // Derived classes can used these method, so that if we change how fields/groups
-  // requirement are stored (e.g., std::set -> std::liit), they don't need to change
+  // requirement are stored (e.g., std::set -> std::list), they don't need to change
   // their implementation.
   void add_required_field (const std::string& name, const FieldLayout& layout,
                            const ekat::units::Units& u, const std::string& grid_name) {
