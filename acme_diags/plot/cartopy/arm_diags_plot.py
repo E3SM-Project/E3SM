@@ -9,7 +9,6 @@ from acme_diags.driver.utils.general import get_output_dir
 
 matplotlib.use("agg")
 
-import matplotlib.cm as cm  # isort:skip  # noqa: E402
 import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
 
 
@@ -109,15 +108,10 @@ def plot_convection_onset_statistics(
         hist_cwv = np.empty([number_of_bins, 1]) * np.nan
         hist_precip_points = np.empty([number_of_bins, 1]) * np.nan
         pr_binned_mean = np.empty([number_of_bins, 1]) * np.nan
-        pr_binned_var = np.empty([number_of_bins, 1]) * np.nan
         pr_binned_std = np.empty([number_of_bins, 1]) * np.nan
         pr_probability = np.empty([number_of_bins, 1]) * np.nan
         errorbar_precip_points = np.empty([number_of_bins, 1]) * np.nan
         errorbar_precip = np.empty([number_of_bins, 1]) * np.nan
-        # FIXME: F841 - assigned but unused
-        std_error_precip = np.empty([number_of_bins, 1]) * np.nan  # noqa
-        pdf_cwv = np.empty([number_of_bins, 1]) * np.nan
-        pdf_precipitating_points = np.empty([number_of_bins, 1]) * np.nan
 
         ###
         errorbar_precip_binom = np.empty([number_of_bins, 2]) * np.nan
@@ -128,20 +122,12 @@ def plot_convection_onset_statistics(
         hist_precip_points = np.nansum(precip_counts, axis=1)
         hist_precip_points[hist_precip_points <= 1] = 0
         pr_binned_mean = np.nanmean(precip_binned, axis=1)
-        # FIXME: F841 - assigned but unused
-        pr_binned_var = np.nanvar(precip_binned, axis=1)  # noqa
         pr_binned_std = np.nanstd(precip_binned, axis=1)
         r = np.empty([1, number_of_bins]) * np.nan
         r = np.sum(~np.isnan(precip_counts), axis=1)
         pr_probability = np.nansum(precip_counts, axis=1) / r
         freq_cwv = (hist_cwv / bin_width) / np.nansum(hist_cwv)
-        # FIXME: F841 - assigned but unused
-        pdf_cwv = (hist_cwv / bin_width) / np.nansum(hist_cwv / bin_width)  # noqa
         freq_precipitating_points = hist_precip_points / bin_width / np.nansum(hist_cwv)
-        # FIXME: F841 - assigned but unused
-        pdf_precipitating_points = (hist_precip_points / bin_width) / np.nansum(  # noqa
-            hist_cwv / bin_width
-        )
 
         for i in range(0, number_of_bins):
             errorbar_precip[i] = pr_binned_std[i] / math.sqrt(hist_cwv[i])
@@ -151,17 +137,9 @@ def plot_convection_onset_statistics(
                 / bin_width
             )
             z = 0.675
-            # FIXME: F841 - assigned but unused
-            p = hist_precip_points[i] / hist_cwv[i]  # noqa
-            # FIXME: F841 - assigned but unused
-            NT = hist_cwv[i]  # noqa
             phat = hist_precip_points[i] / hist_cwv[i]
             errorbar_precip_binom[i, 0] = z * math.sqrt(phat * (1 - phat) / hist_cwv[i])
             errorbar_precip_binom[i, 1] = z * math.sqrt(phat * (1 - phat) / hist_cwv[i])
-        # FIXME: F841 - assigned but unused
-        scatter_colors = cm.jet(  # noqa
-            np.linspace(0, 1, number_of_bins, endpoint=True)
-        )
         axes_fontsize = 12  # size of font in all plots
         legend_fontsize = 9
         marker_size = 40  # size of markers in scatter plots
@@ -176,12 +154,9 @@ def plot_convection_onset_statistics(
         xllim = 5 * np.floor(np.min(np.round(bin_center - bin_width / 2)) / 5)
         # ax1.set_xlim(xllim-10,xulim+15)
         # ax1.set_xticks(np.arange(np.ceil(xllim/10)*10-10,np.ceil(xulim/10)*10+15,15))
-        # FIXME: F841 - assigned but unused
-        ulim = np.nanmax(pr_binned_mean)  # noqa
         # ax1.set_yticks(np.arange(0,5))
         ax1.tick_params(labelsize=axes_fontsize)
         ax1.tick_params(axis="x", pad=10)
-        error = [errorbar_precip, errorbar_precip]
         ax1.errorbar(
             bin_center,
             pr_binned_mean,
@@ -267,8 +242,6 @@ def plot_convection_onset_statistics(
         )
         # low_lim = -6.0
         low_lim = -4.0
-        # FIXME: F841 - assigned but unused
-        up_lim = np.ceil(np.log10(np.max(freq_cwv)))  # noqa
         ax3.set_ylim(10 ** low_lim, 100)
         ax3.set_yticks(10 ** np.arange(low_lim, 2, dtype="float64"))
         ax3.tick_params(labelsize=axes_fontsize)
@@ -276,8 +249,6 @@ def plot_convection_onset_statistics(
         freq_precipitating_points[freq_precipitating_points == 0] = np.nan
         freq_cwv[freq_cwv == 0] = np.nan
 
-        # FIXME: F841 - assigned but unused
-        error = [errorbar_precip_points, errorbar_precip_points]  # noqa
         # ax3.errorbar(bin_center, freq_precipitating_points, xerr=0, yerr=errorbar_precip_points.squeeze(), ls='none', color='black')
         ax3.scatter(
             bin_center,
@@ -355,8 +326,6 @@ def get_seasonal_mean(data):
 
 def plot_annual_cycle(var, vars_to_data, parameter):
     line_color = ["r", "b", "g", "m"]
-    # FIXME: F841 - assigned but unused
-    num_year = int(parameter.test_end_yr) - int(parameter.test_start_yr) + 1  # noqa
     fig = plt.figure()  # Create figure
 
     ax1 = fig.add_axes([0.15, 0.1, 0.8, 0.8])  # Create axes
@@ -396,8 +365,7 @@ def plot_annual_cycle(var, vars_to_data, parameter):
     cell_text = np.round(np.vstack((test_season, ref_season, bias)), 2)
     collabel = ("ANN", "DJF", "MAM", "JJA", "SON")
     rows = ("Test", "Ref", "Bias")
-    # FIXME: F841 - assigned but unused
-    the_table = plt.table(  # noqa
+    plt.table(
         cellText=cell_text,
         rowLabels=rows,
         colLabels=collabel,

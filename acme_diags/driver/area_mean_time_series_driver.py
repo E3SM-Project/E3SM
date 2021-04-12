@@ -124,9 +124,6 @@ def run_diag(parameter):
                         "No valid value for reference datasets available for the specified time range"
                     )
 
-            # FIXME: variable is never reassigned
-            metrics_dict = []  # type: ignore
-
             # save data for potential later use
             parameter.output_file = "-".join([var, region])
             fnm = os.path.join(
@@ -139,7 +136,7 @@ def run_diag(parameter):
                 json.dump(save_data, outfile)
 
             regions_to_data[region] = RefsTestMetrics(
-                test=test_domain_year, refs=refs, metrics=metrics_dict
+                test=test_domain_year, refs=refs, metrics=[]
             )
 
         area_mean_time_series_plot.plot(var, regions_to_data, parameter)

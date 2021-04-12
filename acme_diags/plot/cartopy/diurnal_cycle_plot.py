@@ -64,8 +64,6 @@ def determine_tick_step(degrees_covered):
 def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
 
     normalize_test_amp = parameter.normalize_test_amp
-    # FIXME: F841 - assigned but unused
-    lon = var.getLongitude()  # noqa
     lat = var.getLatitude()
     var = ma.squeeze(var.asma())
     max_amp = amp.max()

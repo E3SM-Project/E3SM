@@ -78,8 +78,6 @@ def run_diag(parameter):
                     ref_amplitude,
                     ref_maxtime,
                 ) = utils.diurnal_cycle.composite_diurnal_cycle(ref_domain, season)
-                # FIXME: F841 - assigned but unused
-                metrics_dict = {}  # noqa
                 parameter.var_region = region
                 plot(
                     parameter.current_set,

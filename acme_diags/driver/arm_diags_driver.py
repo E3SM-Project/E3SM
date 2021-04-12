@@ -51,8 +51,6 @@ def run_diag_diurnal_cycle(parameter):
     variables = parameter.variables
     regions = parameter.regions
     ref_name = parameter.ref_name
-    # FIXME: F841 - assigned but unused
-    run_type = parameter.run_type  # noqa
     ref_path = parameter.reference_data_path
 
     seasons = ["DJF", "MAM", "JJA", "SON"]
@@ -155,8 +153,6 @@ def run_diag_diurnal_cycle_zt(parameter):
     variables = parameter.variables
     regions = parameter.regions
     ref_name = parameter.ref_name
-    # FIXME: F841 - assigned but unused
-    run_type = parameter.run_type  # noqa
     ref_path = parameter.reference_data_path
 
     seasons = ["ANNUALCYCLE"]
@@ -270,8 +266,6 @@ def run_diag_annual_cycle(parameter):
     variables = parameter.variables
     regions = parameter.regions
     ref_name = parameter.ref_name
-    # FIXME: F841 - assigned but unused
-    run_type = parameter.run_type  # noqa
     ref_path = parameter.reference_data_path
 
     seasons = ["ANNUALCYCLE"]
@@ -375,20 +369,13 @@ def run_diag_annual_cycle(parameter):
 def run_diag_convection_onset(parameter):
     regions = parameter.regions
     ref_name = parameter.ref_name
-    # FIXME: F841 - assigned but unused
-    run_type = parameter.run_type  # noqa
     ref_path = parameter.reference_data_path
     # Read in observation data
-    # FIXME: F841 - assigned but unused
-    variables = ["PRECT", "TMQ"]  # noqa
 
     for region in regions:
         # The regions that are supported are in acme_diags/derivations/default_regions.py
         # You can add your own if it's not in there.
         print("Selected region: {}".format(region))
-
-        # FIXME: F841 - assigned but unused
-        vars_to_data = collections.OrderedDict()  # noqa
 
         test_data = utils.dataset.Dataset(parameter, test=True)
 
@@ -426,6 +413,10 @@ def run_diag_convection_onset(parameter):
     return parameter
 
 
+def run_diag_pdf_daily(parameter):
+    print("'run_diag_pdf_daily' is not yet implemented.")
+
+
 def run_diag(parameter):
 
     if parameter.diags_set == "annual_cycle":
@@ -435,8 +426,7 @@ def run_diag(parameter):
     elif parameter.diags_set == "diurnal_cycle_zt":
         return run_diag_diurnal_cycle_zt(parameter)
     elif parameter.diags_set == "pdf_daily":
-        # FIXME: F821: undefined name 'run_diag_pdf_daily'
-        return run_diag_pdf_daily(parameter)  # type: ignore # noqa
+        return run_diag_pdf_daily(parameter)
     elif parameter.diags_set == "convection_onset":
         return run_diag_convection_onset(parameter)
     else:

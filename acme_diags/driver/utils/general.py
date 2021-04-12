@@ -41,8 +41,6 @@ def adjust_time_from_time_bounds(var):
     var_time = var.getTime()
     tbounds = var_time.getBounds()
     var_time[:] = 0.5 * (tbounds[:, 0] + tbounds[:, 1])
-    # FIXME: F841 - assigned but unused
-    var_time_absolute = var_time.asComponentTime()  # noqa
     time2 = cdms2.createAxis(var_time)
     time2.designateTime()
     # .designateTime() needs to be set before attributes changes.
