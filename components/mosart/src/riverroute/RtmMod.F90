@@ -1779,7 +1779,7 @@ contains
 !EOP
     integer  :: i, j, n, nr, ns, nt, n2, nf, idam ! indices
     integer, parameter :: budget_terms_total = 80
-    logical  :: output_all_budget_terms = .true.   ! output flag
+    logical  :: output_all_budget_terms = .false.   ! output flag
     real(r8) :: budget_terms (budget_terms_total,nt_rtm)    ! local budget sums
     real(r8) :: budget_global(budget_terms_total,nt_rtm)    ! global budget sums
 
@@ -1804,7 +1804,7 @@ contains
     ! budget_input = input
     ! budget_output = output
     ! budget_other = other terms
-    ! budget_total = budget_volume - budget_input + budget_output - budget_other
+    ! budget_total = budget_volume - budget_inpu/t + budget_output - budget_other
     ! bv_ generally accumulates a volume (m3)
     ! br_ generally accumulates a rate (m3/s)
 
@@ -2460,7 +2460,7 @@ contains
     ! BUDGET
     !-----------------------------------
 
-    budget_write = .true.
+    budget_write = .false.
     if (day == 1 .and. mon == 1) budget_write = .true.
     if (tod == 0) budget_write = .true.
 
