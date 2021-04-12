@@ -31,7 +31,6 @@ namespace scream {
         FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };
         FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_ncol,m_nlay} };
         FieldLayout scalar3d_layout_int { {COL,LEV}, {m_ncol,m_nlay+1} };
-        // Use VAR field tag for gases for now; consider adding a tag?
         FieldLayout gas_layout          { {COL,LEV,NGAS}, {m_ncol,m_nlay,m_ngas} };
         FieldLayout scalar2d_swband_layout { {COL,SWBND}, {m_ncol,m_nswbands} };
 
