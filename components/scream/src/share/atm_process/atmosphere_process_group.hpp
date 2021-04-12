@@ -54,7 +54,7 @@ public:
   void set_required_group (const FieldGroup<const Real>& group);
   void set_updated_group (const FieldGroup<Real>& group);
 
-  // Register all fields in the proper repo(s).
+  // Register all fields in the proper field manager(s).
   // Note: field_mgrs[grid_name] is the FM on grid $grid_name
   void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 

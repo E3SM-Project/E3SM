@@ -19,7 +19,7 @@ pull_input(const std::string& filename, const std::string& var_name,
 {
   using namespace scream::scorpio;
   
-  auto gids_dev = m_gm->get_grid(m_grid_name)->get_dofs_gids();
+  auto gids_dev = m_grid_mgr->get_grid(m_grid_name)->get_dofs_gids();
   m_gids_host = Kokkos::create_mirror_view( gids_dev );
   Kokkos::deep_copy(m_gids_host,gids_dev);
 
@@ -47,10 +47,10 @@ pull_input(const std::string& filename, const std::string& var_name,
 AtmosphereInput::view_type_host AtmosphereInput::pull_input(const std::string& name)
 {
 /*  Run through the sequence of opening the file, reading input and then closing the file.  
- *  Overloaded case to deal with just one output and to not put output into field repo.
+ *  Overloaded case to deal with just one output and to not put output into field manager.
  *  This is an inefficient way to handle this special case because the same file would need
  *  to be opened and closed multiple times if there is more than one variable.  TODO: Make this
- *  a lot more efficient, most likely will need to overhaul the "pull_input" paradigm.
+ *  a lot more efficient, most likely will need to overhaul the "pull_input" paradigrid_mgr.
  */
   using namespace scream::scorpio;
   if (name=="avg_count") {
@@ -58,7 +58,7 @@ AtmosphereInput::view_type_host AtmosphereInput::pull_input(const std::string& n
     grid_read_data_array(m_filename,name,m_dofs_sizes.at(name),l_view.data());
     return l_view;
   } else {
-    auto field = m_field_manager->get_field(name);
+    auto field = m_field_mgr->get_field(name);
     view_type_host l_view("",field.get_view().extent(0));
     grid_read_data_array(m_filename,name,m_dofs_sizes.at(name),l_view.data());
     return l_view;
@@ -74,7 +74,7 @@ void AtmosphereInput::pull_input()
   init();
 
   for (auto const& name : m_fields_names) {
-    auto field = m_field_manager->get_field(name);
+    auto field = m_field_mgr->get_field(name);
     const auto& fh  = field.get_header();
     const auto& fl  = fh.get_identifier().get_layout();
     const auto& fap = fh.get_alloc_properties();
@@ -148,7 +148,7 @@ void AtmosphereInput::init()
 /* 
  * Call all of the necessary SCORPIO routines to open the file, gather the variables and dimensions,
  * and set the degrees-of-freedom for reading.
- * Organize local structures responsible for writing over field repo data.
+ * Organize local structures responsible for writing over field manager data.
  */
   using namespace scorpio;
   using namespace ShortFieldTagsNames;
@@ -164,7 +164,7 @@ void AtmosphereInput::init()
   }
 
   // Check setup against information from grid manager:
-  auto grid = m_gm->get_grid(m_grid_name);
+  auto grid = m_grid_mgr->get_grid(m_grid_name);
   EKAT_REQUIRE_MSG(grid->get_2d_scalar_layout().tags().front()==COL,
       "Error with input grid! scorpio_input.hpp class only supports input on a Physics grid for now.\n");
 
@@ -178,7 +178,7 @@ void AtmosphereInput::init()
   MPI_Allreduce(&local_dofs, &total_dofs, 1, MPI_INT, MPI_SUM, m_comm.mpi_comm());
   EKAT_REQUIRE_MSG(m_comm.size()<=total_dofs,"Error, PIO interface only allows for the IO comm group size to be less than or equal to the total # of columns in grid.  Consider decreasing size of IO comm group.\n");
 
-  // Create map of fields in this input with the field_identifier in the field repository.
+  // Create map of fields in this input with the field_identifier in the field manager.
   auto& var_params = m_params.sublist("FIELDS");
   for (int var_i=0; var_i<var_params.get<Int>("Number of Fields");++var_i) {
     /* Determine the variable name */
@@ -215,7 +215,7 @@ void AtmosphereInput::register_variables()
 
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_manager->get_field(name);
+    auto field = m_field_mgr->get_field(name);
     auto& fid  = field.get_header().get_identifier();
 
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
@@ -277,7 +277,7 @@ void AtmosphereInput::set_degrees_of_freedom()
 
   // Cycle through all fields and set dof.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_manager->get_field(name);
+    auto field = m_field_mgr->get_field(name);
     auto& fid  = field.get_header().get_identifier();
 
     // Given dof_len and n_dim_len it should be possible to create an integer array

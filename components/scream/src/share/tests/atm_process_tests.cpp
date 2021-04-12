@@ -40,7 +40,7 @@ public:
   // The communicator associated with this atm process
   const ekat::Comm& get_comm () const { return m_comm; }
 
-  // Register all fields in the given repo
+  // Register all fields in the given field manager(s)
   void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& /* field_mgrs */) const {}
 
 protected:

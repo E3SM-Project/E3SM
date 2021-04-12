@@ -334,38 +334,38 @@ TEST_CASE("field_mgr", "") {
 
   ekat::Comm comm(MPI_COMM_WORLD);
   auto pg = create_point_grid("phys",ncols*comm.size(),nlevs,comm);
-  FieldManager<Real> repo(pg);
+  FieldManager<Real> field_mgr(pg);
 
   // Should not be able to register fields yet
-  REQUIRE_THROWS(repo.register_field(fid1,"phys"));
+  REQUIRE_THROWS(field_mgr.register_field(fid1,"phys"));
 
-  repo.registration_begins();
+  field_mgr.registration_begins();
 
   // === Valid registration calls === //
-  repo.register_field<Pack>(fid1,"group_1");
-  repo.register_field(fid2,16,"group_2");
-  repo.register_field(fid3,"group_4");
-  repo.register_field(fid3,{"group_1","group_2","group_3"});
-  repo.register_field(fid2,"group_4");
+  field_mgr.register_field<Pack>(fid1,"group_1");
+  field_mgr.register_field(fid2,16,"group_2");
+  field_mgr.register_field(fid3,"group_4");
+  field_mgr.register_field(fid3,{"group_1","group_2","group_3"});
+  field_mgr.register_field(fid2,"group_4");
 
   // === Invalid registration calls === //
-  REQUIRE_THROWS(repo.register_field(bad1));
-  REQUIRE_THROWS(repo.register_field(bad2));
-  REQUIRE_THROWS(repo.register_field(bad2));
-  repo.registration_ends();
+  REQUIRE_THROWS(field_mgr.register_field(bad1));
+  REQUIRE_THROWS(field_mgr.register_field(bad2));
+  REQUIRE_THROWS(field_mgr.register_field(bad2));
+  field_mgr.registration_ends();
 
   // Should not be able to register fields anymore
-  REQUIRE_THROWS(repo.register_field(fid1,"group_1"));
+  REQUIRE_THROWS(field_mgr.register_field(fid1,"group_1"));
 
   // Check registration is indeed closed
-  REQUIRE (repo.repository_state()==RepoState::Closed);
-  REQUIRE (repo.size()==3);
+  REQUIRE (field_mgr.repository_state()==RepoState::Closed);
+  REQUIRE (field_mgr.size()==3);
 
   // Get all fields
-  auto f1 = repo.get_field(fid1.name());
-  auto f2 = repo.get_field(fid2.name());
-  auto f3 = repo.get_field(fid3.name());
-  REQUIRE_THROWS(repo.get_field("bad")); // Not in the repo
+  auto f1 = field_mgr.get_field(fid1.name());
+  auto f2 = field_mgr.get_field(fid2.name());
+  auto f3 = field_mgr.get_field(fid3.name());
+  REQUIRE_THROWS(field_mgr.get_field("bad")); // Not in the field_mgr
   REQUIRE(f1.get_header().get_identifier()==fid1);
 
   // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
@@ -386,18 +386,18 @@ TEST_CASE("field_mgr", "") {
   REQUIRE (has_group(f3.get_header().get_tracking().get_groups_info(),"Group_3"));
   REQUIRE (has_group(f3.get_header().get_tracking().get_groups_info(),"Group_4"));
 
-  // Check that the groups in the repo contain the correct fields
-  REQUIRE (repo.get_groups_info().count("GROUP_1")==1);
-  REQUIRE (repo.get_groups_info().count("GRoup_2")==1);
-  REQUIRE (repo.get_groups_info().count("group_3")==1);
-  REQUIRE (repo.get_groups_info().count("groUP_4")==1);
-  REQUIRE (repo.get_groups_info().count("group_5")==0);
-  REQUIRE (repo.get_groups_info().at("group_2")->m_fields_names.size()==2);
+  // Check that the groups in the field_mgr contain the correct fields
+  REQUIRE (field_mgr.get_groups_info().count("GROUP_1")==1);
+  REQUIRE (field_mgr.get_groups_info().count("GRoup_2")==1);
+  REQUIRE (field_mgr.get_groups_info().count("group_3")==1);
+  REQUIRE (field_mgr.get_groups_info().count("groUP_4")==1);
+  REQUIRE (field_mgr.get_groups_info().count("group_5")==0);
+  REQUIRE (field_mgr.get_groups_info().at("group_2")->m_fields_names.size()==2);
 
-  auto g1 = repo.get_groups_info().at("group_1");
-  auto g2 = repo.get_groups_info().at("group_2");
-  auto g3 = repo.get_groups_info().at("group_3");
-  auto g4 = repo.get_groups_info().at("group_4");
+  auto g1 = field_mgr.get_groups_info().at("group_1");
+  auto g2 = field_mgr.get_groups_info().at("group_2");
+  auto g3 = field_mgr.get_groups_info().at("group_3");
+  auto g4 = field_mgr.get_groups_info().at("group_4");
   REQUIRE (ekat::contains(g1->m_fields_names,"Field_1"));
   REQUIRE (ekat::contains(g1->m_fields_names,"Field_3"));
   REQUIRE (ekat::contains(g2->m_fields_names,"Field_2"));
@@ -435,25 +435,25 @@ TEST_CASE("tracers_bundle", "") {
   ekat::Comm comm(MPI_COMM_WORLD);
   auto pg = create_point_grid(grid_name,ncols*comm.size(),nlevs,comm);
 
-  FieldManager<Real> repo(pg);
-  repo.registration_begins();
-  repo.register_field(qv_id,"TRACERS");
-  repo.register_field(qc_id,"TRACERS");
-  repo.register_field(qr_id,"TRACERS");
-  repo.registration_ends();
+  FieldManager<Real> field_mgr(pg);
+  field_mgr.registration_begins();
+  field_mgr.register_field(qv_id,"TRACERS");
+  field_mgr.register_field(qc_id,"TRACERS");
+  field_mgr.register_field(qr_id,"TRACERS");
+  field_mgr.registration_ends();
 
-  auto qv = repo.get_field(qv_id.name());
-  auto qc = repo.get_field(qc_id.name());
-  auto qr = repo.get_field(qr_id.name());
+  auto qv = field_mgr.get_field(qv_id.name());
+  auto qc = field_mgr.get_field(qc_id.name());
+  auto qr = field_mgr.get_field(qr_id.name());
 
-  auto group = repo.get_field_group("TRACERS");
-  // The repo should have allocated the group bundled
+  auto group = field_mgr.get_field_group("TRACERS");
+  // The field_mgr should have allocated the group bundled
   REQUIRE (group.m_info->m_bundled);
 
   const auto& Q_name = group.m_bundle->get_header().get_identifier().name();
-  auto Q = repo.get_field(Q_name);
+  auto Q = field_mgr.get_field(Q_name);
 
-  // The bundled field in the group should match the field we get from the repo
+  // The bundled field in the group should match the field we get from the field_mgr
   REQUIRE (Q.equivalent(*group.m_bundle));
 
   // Check that Q is set as parent for all q's.

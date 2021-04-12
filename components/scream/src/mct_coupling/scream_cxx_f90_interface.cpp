@@ -122,7 +122,7 @@ void scream_init (const MPI_Fint& f_comm,
     util::TimeStamp time (yy,mm,dd,start_tod);
 
     // Init and run (to finalize, wait till checks are completed,
-    // or you'll clear the field repo!)
+    // or you'll clear the field managers!)
     ad.initialize(atm_comm,ad_params,time);
   });
 }

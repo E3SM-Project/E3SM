@@ -1,5 +1,5 @@
-#ifndef SCREAM_FIELD_REPOSITORY_HPP
-#define SCREAM_FIELD_REPOSITORY_HPP
+#ifndef SCREAM_FIELD_MANAGER_HPP
+#define SCREAM_FIELD_MANAGER_HPP
 
 #include "share/grid/grids_manager.hpp"
 #include "share/field/field.hpp"
@@ -18,7 +18,7 @@ namespace scream
 
  /*
   *  A database for all the persistent fields needed in an atm time step
-  *  We template a field repository over the field's (real) value type.
+  *  We template a field manager over the field's (real) value type.
   *  This is enough to fully deduce the type of the stored views. All views
   *  are stored on the default device.
   *
@@ -134,7 +134,7 @@ protected:
   // The map works m_bundled_groups[group_name] = bundled_field_name
   std::map<ci_string,ci_string>  m_bundled_groups;
 
-  // The grid where the fields in this repo live
+  // The grid where the fields in this FM live
   std::shared_ptr<const AbstractGrid> m_grid;
 };
 
@@ -175,7 +175,7 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
 
   // Make sure the grid name from the id matches the name of m_grid
   EKAT_REQUIRE_MSG(id.get_grid_name()==m_grid->name(),
-      "Error! Input identifier stores a different grid name than the repo:\n"
+      "Error! Input identifier stores a different grid name than the FM:\n"
       "         - input id grid name: " + id.get_grid_name() + "\n"
       "         - stored grid name:   " + m_grid->name() + "\n");
 
@@ -494,4 +494,4 @@ FieldManager<RealType>::get_field_ptr (const std::string& name) const {
 
 } // namespace scream
 
-#endif // SCREAM_FIELD_REPOSITORY_HPP
+#endif // SCREAM_FIELD_MANAGER_HPP

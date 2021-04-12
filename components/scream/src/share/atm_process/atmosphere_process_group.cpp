@@ -174,12 +174,12 @@ register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>
     atm_proc->register_fields(field_mgrs);
 
 #ifdef SCREAM_DEBUG
-    // Make sure processes are not calling methods they shouldn't on the repo
+    // Make sure processes are not calling methods they shouldn't on the field manager
     for (const auto& it : field_mgrs) {
       EKAT_REQUIRE_MSG(it.second->repository_state()==RepoState::Open,
-          "Error! Atmosphere processes are *not* allowed to modify the state of the repository.\n");
+          "Error! Atmosphere processes are *not* allowed to modify the state of the field manager.\n");
 
-      // Check that the required fields are indeed in the repo now
+      // Check that the required fields are indeed in the FM now
       for (const auto& id : atm_proc->get_required_fields()) {
         EKAT_REQUIRE_MSG(it.second->has_field(id),
             "Error! Process '" + atm_proc->name() + "' failed to register required field '" + id.get_id_string() + "'.\n");

@@ -36,7 +36,7 @@
  *  At construction time All input instances require
  *  1. an EKAT comm group and
  *  2. a EKAT parameter list
- *  3. a shared pointer to the field repository
+ *  3. a shared pointer to the field manager
  *  4. a shared pointer to the grids manager
  *  The parameter list contains all of the essential data regarding
  *  the input file name and the set of variables to be read.  The parameter list can be
@@ -59,7 +59,7 @@
  *  GRID: is a string of the grid the input file is written on, currently only "Physics" is supported.
  *  FIELDS: designation of a sublist, so empty here
  *    Number of Fields: is an integer value>0 telling the number of fields
- *    field_x: is the xth field variable name.  Should match the name in the file and the name in the field repo.  TODO: add a rename option if variable names differ in file and field repo.
+ *    field_x: is the xth field variable name.  Should match the name in the file and the name in the field manager.  TODO: add a rename option if variable names differ in file and field manager.
  *
  * Usage:
  * 1. Construct an instance of the AtmosphereInput class:
@@ -85,20 +85,20 @@ public:
 
   // --- Constructor(s) & Destructor --- //
   AtmosphereInput (const ekat::Comm& comm, const ekat::ParameterList& params,
-                   const std::shared_ptr<const FieldManager<Real>>& repo,
-                   const std::shared_ptr<const GridsManager>& gm)
-    : m_params     (params)
-    , m_comm       (comm)
-    , m_field_manager (repo)
-    , m_gm         (gm)
+                   const std::shared_ptr<const FieldManager<Real>>& field_mgr,
+                   const std::shared_ptr<const GridsManager>& grid_mgr)
+    : m_params    (params)
+    , m_comm      (comm)
+    , m_field_mgr (field_mgr)
+    , m_grid_mgr  (grid_mgr)
   {
     // Nothing to do here
   }
 
   AtmosphereInput (const ekat::Comm& comm, const std:: string grid_name,
-                   const std::shared_ptr<const GridsManager>& gm)
+                   const std::shared_ptr<const GridsManager>& grid_mgr)
     : m_comm      (comm)
-    , m_gm        (gm)
+    , m_grid_mgr  (grid_mgr)
     , m_grid_name (grid_name)
   {
     // Nothing to do here
@@ -153,8 +153,8 @@ protected:
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
 
-  std::shared_ptr<const FieldManager<Real>> m_field_manager;
-  std::shared_ptr<const GridsManager>          m_gm;
+  std::shared_ptr<const FieldManager<Real>>   m_field_mgr;
+  std::shared_ptr<const GridsManager>         m_grid_mgr;
   
   std::string m_filename;
   std::string m_avg_type;

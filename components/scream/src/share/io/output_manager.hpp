@@ -24,22 +24,22 @@ namespace scream
  *
  * PROPER USAGE:
  * The output manager requires a communication group, a parameter list of control
- * variables, a grid manager and a field repository.
+ * variables, a grid manager and a field manager.
  * Each of these four things are set using the setter function 'set_X' where
  *   X = comm, for the EKAT comm group.
  *     = params, for the parameter list.  In typical SCREAM runs this parameter
  *       list is a sublist of the scream control yaml file.
  *     = grids, for the grids mananger
- *     = repo, for the field repository.
+ *     = fm, for the field manager.
  * The setup of the output manager in the SCREAM-AD is one of the last steps to
  * ensure that all four of the above objects have already been constructed.
  * see /control/atmospheric_driver.cpp for an example.
  *
  * For UNIT TESTS:
  * The output manager does require a comm group, list of parameters, grids manager
- * and field repository to work.  If output is desired in a unit test then these
+ * and field manager to work.  If output is desired in a unit test then these
  * must be established.  There are examples in /src/share/io/tests of how to 
- * establish a simple grids manager and field repository.  As well as how to
+ * establish a simple grids manager and field manager.  As well as how to
  * locally create a parameter list.
  *
  * Adding output streams mid-simulation:
@@ -61,31 +61,31 @@ public:
   OutputManager() = default;
 
   OutputManager( const ekat::Comm& comm, const ekat::ParameterList& params,
-                 const std::shared_ptr<const FieldManager<Real>>& repo,
+                 const std::shared_ptr<const FieldManager<Real>>& fm,
                  const std::shared_ptr<const GridsManager>& gm,
                  const bool runtype_restart)
   {
-    atm_comm            = comm;
-    m_params            = params;
-    param_set           = true;
-    m_device_field_manager = repo;
-    repo_set            = true;
-    m_grids_manager     = gm;
-    gm_set              = true;
-    m_runtype_restart   = runtype_restart;
+    atm_comm               = comm;
+    m_params               = params;
+    param_set              = true;
+    m_device_field_manager = fm;
+    fm_set                 = true;
+    m_grids_manager        = gm;
+    gm_set                 = true;
+    m_runtype_restart      = runtype_restart;
   }
 
   OutputManager( const ekat::Comm& comm, const ekat::ParameterList& params,
-                 const std::shared_ptr<const FieldManager<Real>>& repo,
+                 const std::shared_ptr<const FieldManager<Real>>& fm,
                  const std::shared_ptr<const GridsManager>& gm)
   {
-    atm_comm            = comm;
-    m_params            = params;
-    param_set           = true;
-    m_device_field_manager = repo;
-    repo_set            = true;
-    m_grids_manager     = gm;
-    gm_set              = true;
+    atm_comm               = comm;
+    m_params               = params;
+    param_set              = true;
+    m_device_field_manager = fm;
+    fm_set                 = true;
+    m_grids_manager        = gm;
+    gm_set                 = true;
   }
 
   void init();
@@ -101,7 +101,7 @@ public:
   void set_comm(const ekat::Comm& comm) { atm_comm = comm; }
   void set_params(const ekat::ParameterList& params) { m_params=params; param_set=true;}
   void set_grids(const std::shared_ptr<const GridsManager>& gm) { m_grids_manager = gm; gm_set=true;}
-  void set_fm(const std::shared_ptr<const FieldManager<Real>>& repo) { m_device_field_manager = repo; repo_set=true;}
+  void set_field_mgr(const std::shared_ptr<const FieldManager<Real>>& fm) { m_device_field_manager = fm; fm_set=true;}
   void set_runtype_restart(const bool bval) { m_runtype_restart = bval; }
   void make_restart_param_list(ekat::ParameterList& params);
 
@@ -115,7 +115,7 @@ protected:
 
   bool                                 param_set = false;
   bool                                 gm_set    = false;
-  bool                                 repo_set  = false;
+  bool                                 fm_set  = false;
   bool                        m_runtype_restart  = false;
 
 }; // class OutputManager
@@ -148,11 +148,11 @@ inline void OutputManager::new_output(const ekat::ParameterList& params, const b
 inline void OutputManager::init()
 {
   using namespace scorpio;
-  if (!param_set and !gm_set and !repo_set) { return; }
-  // Make sure params, repo and grids manager are already set
+  if (!param_set and !gm_set and !fm_set) { return; }
+  // Make sure params, fm and grids manager are already set
   EKAT_REQUIRE_MSG(param_set,"Error! Output manager requires a parameter list to be set before initialization");
   EKAT_REQUIRE_MSG(gm_set,   "Error! Output manager requires a grids manager to be set before initialization");
-  EKAT_REQUIRE_MSG(repo_set, "Error! Output manager requires a field repo to be set before initialization");
+  EKAT_REQUIRE_MSG(fm_set, "Error! Output manager requires a field fm to be set before initialization");
   // First parse the param list for output.
   // Starting with the stride.  NOTE: Only a stride of 1 is supported right now.  TODO: Allow for stride of any value.
   Int stride = m_params.get<Int>("PIO Stride",1);
@@ -261,7 +261,7 @@ inline void OutputManager::make_restart_param_list(ekat::ParameterList& params)
   
   // set fields for restart
   // If a developer wants a field to be stored in the restart file than they must add the "restart" group tag
-  // to that field when registering the field with the field repository.
+  // to that field when registering the field with the field manager.
   auto restart_fields = m_device_field_manager->get_field_group("restart");
   auto& field_params = params.sublist("FIELDS");
   field_params.set<Int>("Number of Fields",restart_fields.m_fields.size());

@@ -54,7 +54,7 @@ TEST_CASE("restart","io")
   m_output_manager.set_params(output_params);
   m_output_manager.set_comm(io_comm);
   m_output_manager.set_grids(grid_man);
-  m_output_manager.set_fm(field_manager);
+  m_output_manager.set_field_mgr(field_manager);
   m_output_manager.init();
 
   // Construct a timestamp
@@ -86,7 +86,7 @@ TEST_CASE("restart","io")
   m_output_manager_res.set_params(output_params);
   m_output_manager_res.set_comm(io_comm);
   m_output_manager_res.set_grids(grid_man);
-  m_output_manager_res.set_fm(field_manager);
+  m_output_manager_res.set_field_mgr(field_manager);
   m_output_manager_res.set_runtype_restart(true);
   m_output_manager_res.init();
   auto res_params = get_in_params("Restart",io_comm);

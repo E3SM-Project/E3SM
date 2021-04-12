@@ -53,7 +53,7 @@ TEST_CASE("input_output_basic","io")
   m_output_manager.set_params(output_params);
   m_output_manager.set_comm(io_comm);
   m_output_manager.set_grids(grid_man);
-  m_output_manager.set_fm(field_manager);
+  m_output_manager.set_field_mgr(field_manager);
   m_output_manager.init();
 
   // Construct a timestamp

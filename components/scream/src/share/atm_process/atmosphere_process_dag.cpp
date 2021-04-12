@@ -388,7 +388,7 @@ add_nodes (const group_type& atm_procs,
 
       // Input groups
       for (const auto& itg : proc->get_required_groups()) {
-        EKAT_REQUIRE_MSG (field_mgr, "Error! Field repo pointer is null.\n");
+        EKAT_REQUIRE_MSG (field_mgr, "Error! Field manager pointer is null.\n");
         auto group = field_mgr->get_field_group(itg.name);
         if (!group.m_info->m_bundled) {
           // Group is not bundled: process fields individually
@@ -433,7 +433,7 @@ add_nodes (const group_type& atm_procs,
 
       // Input-output groups
       for (const auto& itg : proc->get_updated_groups()) {
-        EKAT_REQUIRE_MSG (field_mgr, "Error! Field repo pointer is null.\n");
+        EKAT_REQUIRE_MSG (field_mgr, "Error! Field manager pointer is null.\n");
         auto group = field_mgr->get_field_group(itg.name);
         if (!group.m_info->m_bundled) {
           // Group is not bundled: process fields in the group individually

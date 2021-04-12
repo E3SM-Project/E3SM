@@ -15,7 +15,7 @@ namespace scream {
  * (wrapped in a FieldGroupInfo sturct), as well as pointers to the fields.
  *
  * A group is basically a "label" attached to fields, to allow users to
- * query the repo for all fields that have such label attached. A field can
+ * query a FieldManager for all fields that have such label attached. A field can
  * belong to any number of groups, or no group at all.
  *
  * A FieldGroupInfo stores:

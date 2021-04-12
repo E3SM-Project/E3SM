@@ -155,7 +155,7 @@ void RRTMGPRadiation::finalize_impl  () {
   rrtmgp::rrtmgp_finalize();
 }
 
-// Register all required and computed field in the field repository
+// Register all required and computed field in the field manager
 void RRTMGPRadiation::
 register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
   auto& field_mgr = *field_mgrs.at("Physics");

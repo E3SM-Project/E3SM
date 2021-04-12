@@ -80,19 +80,20 @@ public:
     }
   }
 
-  // Register all fields in the given repo
+  // Register all fields in the proper fm(s).
+  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
   void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
-    auto repo = field_mgrs.at(m_grid->name());
+    auto fm = field_mgrs.at(m_grid->name());
     if (m_dummy_type==A2G) {
       for (const auto& fid : get_required_fields()) {
-        repo->register_field(fid);
+        fm->register_field(fid);
       }
       for (const auto& fid : get_computed_fields()) {
-        repo->register_field(fid,"The Group");
+        fm->register_field(fid,"The Group");
       }
     } else if (m_dummy_type == G2A) {
       for (const auto& fid : get_computed_fields()) {
-        repo->register_field(fid);
+        fm->register_field(fid);
       }
     }
   }

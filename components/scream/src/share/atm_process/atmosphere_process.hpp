@@ -192,7 +192,7 @@ public:
     );
   }
 
-  // Register all fields in the proper repo(s).
+  // Register all fields in the proper field manager(s).
   // Note: field_mgrs[grid_name] is the FM on grid $grid_name
   virtual void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const = 0;
 
