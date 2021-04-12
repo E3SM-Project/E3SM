@@ -192,9 +192,9 @@ subroutine shoc_main ( &
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
      wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
      uw_sec, vw_sec, w3,&                 ! Output (diagnostic)
-     wqls_sec, brunt, shoc_ql2,&          ! Output (diagnostic)
+     wqls_sec, brunt, shoc_ql2 &          ! Output (diagnostic)
 #ifdef SCREAM_CONFIG_IS_CMAKE
-     elapsed_s &
+     , elapsed_s &
 #endif
      )
 
