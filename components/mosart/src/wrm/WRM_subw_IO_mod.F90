@@ -558,6 +558,8 @@ MODULE WRM_subw_IO_mod
      StorWater%releaseG=0._r8
      allocate (WRMUnit%StorMthStOpG(begr:endr))
      WRMUnit%StorMthStOpG = 0
+     allocate (StorWater%active_stageG(begr:endr))
+     StorWater%active_stageG=0
 
      allocate (StorWater%WithDemIrrig(begr:endr))
      StorWater%WithDemIrrig=0._r8

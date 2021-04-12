@@ -383,6 +383,7 @@ contains
     integer :: ig, idam         ! indices
     logical :: varok            ! variable ok flag for reading/writing
     real(r8) , pointer :: dfld(:) ! temporary array
+    integer, pointer :: dfld_int(:) ! temporary array
     logical :: compute_release  ! if release or stormthstop not read
     logical :: storage_read     ! check if storage on restart file
     logical :: release_read     ! check if release on restart file
@@ -397,7 +398,7 @@ contains
     stormth_read = .true.
 
 if (wrmflag) then
-    nvmax = 18
+    nvmax = 19
 else
 
     nvmax = 15
@@ -463,9 +464,7 @@ endif
           vname = 'RTM_INUNDFF_'//trim(rtm_tracers(nt))
           lname = 'inundation fp area fraction'
           uname = 'no unit'
-          dfld  => rtmCTL%inundff(:)
-          
-          
+          dfld  => rtmCTL%inundff(:)        
        elseif (nv == 12 .and. trim(rtm_tracers(nt)) == 'LIQ') then
           vname = 'RTM_MR_'//trim(rtm_tracers(nt))
           lname = 'mr'
@@ -535,19 +534,47 @@ endif
              lname = 'dam StorMthStOp'
              uname = 'm3'
              dfld  => WRMUnit%StorMthStOpG(:)
+          endif        
+       elseif (nv == 19 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          varok = .false.
+          if (wrmflag) then
+             varok = .true.
+             StorWater%active_stageG = 0._r8
+             if (flag == 'write') then
+                do idam = 1, ctlSubwWRM%localNumDam
+                   ig = WRMUnit%icell(idam)
+                   StorWater%active_stageG(ig) = StorWater%active_stage(idam)
+                enddo
+             endif
+             vname = 'DAM_ACTIVE_'//trim(rtm_tracers(nt))
+             lname = 'dam active stage'
+             uname = 'no unit'
+             dfld_int  => StorWater%active_stageG(:)
           endif
+          
        else
           varok = .false.
        endif
 
        if (varok) then
        if (flag == 'define') then
+         if (nv == 19) then
+          call ncd_defvar(ncid=ncid, varname=trim(vname), &
+               xtype=ncd_int,  dim1name='rtmlon', dim2name='rtmlat', &
+               long_name=trim(lname), units=trim(uname))
+         else
           call ncd_defvar(ncid=ncid, varname=trim(vname), &
                xtype=ncd_double,  dim1name='rtmlon', dim2name='rtmlat', &
                long_name=trim(lname), units=trim(uname))
+         endif
        else if (flag == 'read' .or. flag == 'write') then
+         if (nv==19) then
+          call ncd_io(varname=trim(vname), data=dfld_int, dim1name='allrof', &
+               ncid=ncid, flag=flag, readvar=readvar)
+         else
           call ncd_io(varname=trim(vname), data=dfld, dim1name='allrof', &
                ncid=ncid, flag=flag, readvar=readvar)
+         endif
           if (flag=='read' .and. .not. readvar) then
              if (nsrest == nsrContinue) then
                 call shr_sys_abort()
@@ -590,6 +617,7 @@ endif
              if (abs(storWater%storageG(n)) > 1.e30) storWater%storageG(n) = 0.
              if (abs(storWater%releaseG(n)) > 1.e30) storWater%releaseG(n) = 0.
              if (abs(WRMUnit%StorMthStOpG(n)) > 1.e30) WRMUnit%StorMthStOpG(n) = 0.
+             if (abs(storWater%active_stageG(n)) > 1.e30) storWater%active_stageG(n) = 0.
           endif
 
           if (rtmCTL%mask(n) == 1) then
@@ -612,6 +640,7 @@ endif
              if (storage_read) StorWater%storage(idam) = StorWater%storageG(ig)
              if (release_read) StorWater%release(idam) = StorWater%releaseG(ig)
              if (stormth_read) WRMUnit%StorMthStOp(idam) = WRMUnit%StorMthStOpG(ig)
+             StorWater%active_stage(idam) = StorWater%active_stageG(ig)
           enddo
           if (compute_release) then
              call WRM_computeRelease()

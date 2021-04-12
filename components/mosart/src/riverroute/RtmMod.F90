@@ -1779,7 +1779,7 @@ contains
 !EOP
     integer  :: i, j, n, nr, ns, nt, n2, nf, idam ! indices
     integer, parameter :: budget_terms_total = 80
-    logical  :: output_all_budget_terms = .false.   ! output flag
+    logical  :: output_all_budget_terms = .true.   ! output flag
     real(r8) :: budget_terms (budget_terms_total,nt_rtm)    ! local budget sums
     real(r8) :: budget_global(budget_terms_total,nt_rtm)    ! global budget sums
 
@@ -2460,7 +2460,7 @@ contains
     ! BUDGET
     !-----------------------------------
 
-    budget_write = .false.
+    budget_write = .true.
     if (day == 1 .and. mon == 1) budget_write = .true.
     if (tod == 0) budget_write = .true.
 

@@ -166,6 +166,7 @@ MODULE WRM_type_mod
      real(r8), pointer :: pot_evap(:)       ! (b:e) potential evaporation in mm from the grid
      real(r8), pointer :: Conveyance (:)    ! (nd) Conveyance loss flux
      integer , pointer :: active_stage(:)   ! (nd) whether dam is not functional (before construction) or during filling (<10 yrs after built and <80% of capacity) or fully functional (10 yrs after built or >80% of capacity)
+     integer , pointer :: active_stageG(:)  ! (b:e) active_stage on gridcell
   end type WRMwater
 
   ! parameters to be calibrated. Ideally, these parameters are supposed to be uniform for one region
