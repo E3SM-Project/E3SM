@@ -46,6 +46,7 @@ contains
     !
     ! !USES:
     use shr_const_mod        , only : SHR_CONST_RGAS
+    use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varpar           , only : nlevgrnd
     use elm_varcon           , only : cpair, vkc, grav, denice, denh2o
     use elm_varctl           , only : iulog, use_lch4
@@ -122,7 +123,6 @@ contains
     real(r8) :: tau_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tau
     real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
     real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
-    real(r8) :: tau_diff_fac                      ! used to limit wild changes in iteration tau
     !------------------------------------------------------------------------------
 
     associate(                                                          &
@@ -233,7 +233,7 @@ contains
          wind_speed_adj(p) = wind_speed0(p)
          ur(p) = max(1.0_r8, wind_speed_adj(p))
 
-         prev_tau(p) = -tau_est(t)
+         prev_tau(p) = tau_est(t)
          tau_diff(p) = 1.e100_r8
 
          dth(p)   = thm(p)-t_grnd(c)
@@ -275,29 +275,12 @@ contains
             g = veg_pp%gridcell(p)
 
             ram = 1._r8/(ustar(p)*ustar(p)/um(p))
-            ! Forbid removing more than 99% of wind speed in a time step.
-            ! This is mainly to avoid convergence issues since this is such a
-            ! basic form of iteration in this loop...
-            tau(p) = -forc_rho(t)*wind_speed_adj(p)/ram
-            if ( -(tau(p)+tau_est(t))*wsresp(t) > 0.99_r8*wind_speed0(p) ) then
-               tau(p) = -tau_est(t) - 0.99_r8 * wind_speed0(p) / wsresp(t)
-            end if
-            prev_tau_diff(p) = tau_diff(p)
-            tau_diff(p) = tau(p) - prev_tau(p)
-            ! damp large changes each iteration for convergence
-            if (tau_diff(p) * prev_tau_diff(p) < 0._r8) then
-               ! if oscillating about the solution, use stronger damping
-               ! this should not be set below 0.5, though
-               tau_diff_fac = 0.6_r8
-            else
-               tau_diff_fac = 0.95_r8
-            end if
-            if (abs(tau_diff(p)) > abs(tau_diff_fac*prev_tau_diff(p))) then
-               tau_diff(p) = sign(tau_diff_fac*prev_tau_diff(p), tau_diff(p))
-               tau(p) = prev_tau(p) + tau_diff(p)
-            end if
-            prev_tau(p) = tau(p)
-            wind_speed_adj(p) = wind_speed0(p) + (tau(p)+tau_est(t))*wsresp(t)
+
+            ! Calculate magnitude of stress and update wind speed.
+            tau(p) = forc_rho(t)*wind_speed_adj(p)/ram
+            call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
+                 tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
+                 wind_speed_adj(p))
             ur(p) = max(1.0_r8, wind_speed_adj(p))
 
             tstar = temp1(p)*dth(p)

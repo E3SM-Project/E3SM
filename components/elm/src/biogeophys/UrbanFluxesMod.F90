@@ -54,6 +54,7 @@ contains
     ! shadewall, pervious and impervious road).
 
     ! !USES:
+    use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
     use elm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
@@ -198,7 +199,6 @@ contains
     real(r8) :: tau_diff(bounds%begl:bounds%endl) ! Difference from previous iteration tau
     real(r8) :: prev_tau(bounds%begl:bounds%endl) ! Previous iteration tau
     real(r8) :: prev_tau_diff(bounds%begl:bounds%endl) ! Previous difference in iteration tau
-    real(r8) :: tau_diff_fac                      ! used to limit wild changes in iteration tau
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
@@ -335,7 +335,7 @@ contains
          wind_speed_adj(l) = wind_speed0(l)
          ur(l) = max(1.0_r8, wind_speed_adj(l))
 
-         prev_tau(l) = -tau_est(t)
+         prev_tau(l) = tau_est(t)
          tau_diff(l) = 1.100_r8
 
       end do
@@ -417,27 +417,10 @@ contains
             ! Forbid removing more than 99% of wind speed in a time step.
             ! This is mainly to avoid convergence issues since this is such a
             ! basic form of iteration in this loop...
-            tau(l) = -forc_rho(t)*wind_speed_adj(l)/ramu(l)
-            if ( -(tau(l)+tau_est(t))*wsresp(t) > 0.99_r8*wind_speed0(l) ) then
-               tau(l) = -tau_est(t) - 0.99_r8 * wind_speed0(l) / wsresp(t)
-            end if
-            prev_tau_diff(l) = tau_diff(l)
-            tau_diff(l) = tau(l) - prev_tau(l)
-            ! damp large changes each iteration for convergence
-            if (tau_diff(l) * prev_tau_diff(l) < 0._r8) then
-               ! if oscillating about the solution, use stronger damping
-               ! this should not be set below 0.5, though
-               tau_diff_fac = 0.6_r8
-            else
-               tau_diff_fac = 0.95_r8
-            end if
-            ! damp possible swings in each iteration for convergence
-            if (abs(tau_diff(l)) > abs(tau_diff_fac*prev_tau_diff(l))) then
-               tau_diff(l) = sign(tau_diff_fac*prev_tau_diff(l), tau_diff(l))
-               tau(l) = prev_tau(l) + tau_diff(l)
-            end if
-            prev_tau(l) = tau(l)
-            wind_speed_adj(l) = wind_speed0(l) + (tau(l)+tau_est(t))*wsresp(t)
+            tau(l) = forc_rho(t)*wind_speed_adj(l)/ramu(l)
+            call shr_flux_update_stress(wind_speed0(l), wsresp(t), tau_est(t), &
+                 tau(l), prev_tau(l), tau_diff(l), prev_tau_diff(l), &
+                 wind_speed_adj(l))
             ur(l) = max(1.0_r8, wind_speed_adj(l))
 
             ! Canyon top wind
