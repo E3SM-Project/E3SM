@@ -153,7 +153,7 @@ void AtmosphereDriver::initialize_output_manager () {
     m_output_manager.set_params(out_params);
     m_output_manager.set_comm(m_atm_comm);
     m_output_manager.set_grids(m_grids_manager);
-    m_output_manager.set_fm(get_field_mgr());
+    m_output_manager.set_fm(get_ref_grid_field_mgr());
   }
   m_output_manager.init();
 
@@ -175,7 +175,7 @@ initialize_fields (const util::TimeStamp& t0)
     AtmProcDAG dag;
 
     // First, add all atm processes
-    dag.create_dag(*m_atm_process_group,get_field_mgr());
+    dag.create_dag(*m_atm_process_group,get_ref_grid_field_mgr());
 
     // Then, add all surface coupling dependencies, if any
     if (m_surface_coupling) {
@@ -197,7 +197,7 @@ initialize_fields (const util::TimeStamp& t0)
   ic_reader_params.set("GRID",m_grids_manager->get_reference_grid()->name());
   auto& ic_fields = ic_reader_params.sublist("FIELDS");
   int ifield=0;
-  auto ref_fm = get_field_mgr();
+  auto ref_fm = get_ref_grid_field_mgr();
   std::vector<std::string> ic_fields_to_copy;
   for (auto& fid : fields_in) {
     const auto& name = fid.name();
@@ -241,7 +241,7 @@ initialize_fields (const util::TimeStamp& t0)
   }
 
   // If there were any fields that needed to be copied per the input yaml file, now we copy them.
-  auto ref_grid_repo = get_field_mgr();
+  auto ref_grid_repo = get_ref_grid_field_mgr();
   for (auto& name_tgt : ic_fields_to_copy) {
     const auto& name_src = ic_pl.get<std::string>(name_tgt);
     auto f_tgt = ref_grid_repo->get_field(name_tgt);
@@ -256,7 +256,7 @@ initialize_fields (const util::TimeStamp& t0)
 
 void AtmosphereDriver::initialize_constant_field(const std::string& name, const ekat::ParameterList& ic_pl)
 {
-  auto f = get_field_mgr()->get_field(name);
+  auto f = get_ref_grid_field_mgr()->get_field(name);
   // The user provided a constant value for this field. Simply use that.
   const auto& layout = f.get_header().get_identifier().get_layout();
 
@@ -378,7 +378,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 }
 
 AtmosphereDriver::field_mgr_ptr
-AtmosphereDriver::get_field_mgr () const {
+AtmosphereDriver::get_ref_grid_field_mgr () const {
   EKAT_REQUIRE_MSG (m_ad_status & s_grids_created,
       "Error! Field repo(s) are created *after* the grids.\n");
 

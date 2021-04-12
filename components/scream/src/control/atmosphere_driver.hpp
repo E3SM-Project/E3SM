@@ -96,7 +96,7 @@ public:
   // Clean up the driver (includes cleaning up the parameterizations and the fm's);
   void finalize ( /* inputs */ );
 
-  field_mgr_ptr get_field_mgr () const;
+  field_mgr_ptr get_ref_grid_field_mgr () const;
   field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
 
   const std::shared_ptr<SurfaceCoupling>& get_surface_coupling () const { return m_surface_coupling; }
