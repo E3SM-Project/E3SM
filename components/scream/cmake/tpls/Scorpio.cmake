@@ -56,8 +56,12 @@ macro (CreateScorpioTarget CREATE_FLIB)
       # Not a CIME build. Add scorpio as a subdir
       add_subdirectory (${E3SM_EXTERNALS_DIR}/scorpio ${CMAKE_BINARY_DIR}/externals/scorpio)
       EkatDisableAllWarning(pioc)
-      EkatDisableAllWarning(piof)
       EkatDisableAllWarning(gptl)
+      # target piof is not always created by scorpio depending on CMake settings
+      # if it is created, we don't want to see warnings from it when building SCREAM
+      if (TARGET piof)
+        EkatDisableAllWarning(piof)
+      endif()
     endif()
   endif ()
 
