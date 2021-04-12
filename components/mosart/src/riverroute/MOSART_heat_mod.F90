@@ -66,6 +66,10 @@ MODULE MOSART_heat_mod
             THeat%deltaH_t(iunit) = theDeltaT * (THeat%Hs_t(iunit) + THeat%Hl_t(iunit) + THeat%He_t(iunit) + THeat%Hc_t(iunit) + THeat%Hh_t(iunit))
             ! change of energy due to advective heat flux
             THeat%deltaM_t(iunit) = theDeltaT * (THeat%Ha_h2t(iunit)-cr_advectheat(Qsur + Qsub, THeat%Tt(iunit)))
+			
+        if(TUnit%iD0(iunit)==16511) then
+            write(unit=2110,fmt="(3(i10), 11(e20.11))") iunit, Tunit%mask(iunit), rtmCTL%mask(iunit), THeat%Tt(iunit), THeat%Tqsur(iunit), THeat%Tqsub(iunit), THeat%Hs_t(iunit), THeat%Hl_t(iunit), THeat%He_t(iunit), THeat%Hh_t(iunit), THeat%Hc_t(iunit), THeat%Ha_h2t(iunit), Qsur, Qsub          
+        end if
     end subroutine subnetworkHeat
 
     subroutine subnetworkHeat_simple(iunit, theDeltaT)
@@ -132,6 +136,13 @@ MODULE MOSART_heat_mod
             ! Their routing model is based on source-to-sink, while our model is explicitly tracing inflow from each upstream channel.
             Ha_temp = cr_advectheat(TRunoff%erin(iunit,nt_nliq)+TRunoff%erin(iunit,nt_nice)+TRunoff%erlateral(iunit,nt_nliq)+TRunoff%erlateral(iunit,nt_nice),THeat%Tr(iunit))
             THeat%deltaM_r(iunit) = theDeltaT * (THeat%Ha_lateral(iunit) + THeat%Ha_rin(iunit) - Ha_temp)
+
+        !if(iunit==100800) then
+        !    write(unit=2110,fmt="(3(i10), 10(e20.11))") iunit, Tunit%mask(iunit), rtmCTL%mask(iunit), THeat%Tr(iunit), THeat%Tqsur(iunit), THeat%Tqsub(iunit), THeat%Hs_r(iunit), THeat%Hl_r(iunit), THeat%He_r(iunit), THeat%Hh_r(iunit), THeat%Hc_r(iunit), THeat%Ha_rin(iunit), TRunoff%erin(iunit, 1)          
+        !end if
+        if(abs(THeat%Tr(iunit)) > 400._r8) then
+            write(unit=2113,fmt="(3(i10), 10(e20.11))") iunit, Tunit%mask(iunit), rtmCTL%mask(iunit), THeat%Tr(iunit), THeat%Tqsur(iunit), THeat%Tqsub(iunit), THeat%Hs_r(iunit), THeat%Hl_r(iunit), THeat%He_r(iunit), THeat%Hh_r(iunit), THeat%Hc_r(iunit), THeat%Ha_rin(iunit), TRunoff%erin(iunit, 1)          
+        end if
             
         !end if
     end subroutine mainchannelHeat
@@ -228,7 +239,11 @@ MODULE MOSART_heat_mod
         if(THeat%Tr(iunit) < 273.15_r8) then
             THeat%Tr(iunit) = 273.15_r8
         end if
-
+        
+        if(abs(THeat%Tr(iunit)) > 400._r8) then
+            write(unit=1118,fmt="(i10, (e20.11))") iunit, THeat%Tr(iunit)         
+        end if
+        
     end subroutine mainchannelTemp
 
     subroutine mainchannelTemp_simple(iunit)

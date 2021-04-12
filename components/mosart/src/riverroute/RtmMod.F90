@@ -263,7 +263,7 @@ contains
     rstraflag   = .false.
     rinittemp   = 283.15_r8
     ngeom       = 50  
-    nlayers     = 30				  
+    nlayers     = 30                  
     inundflag   = .false.
     sediflag    = .false.
     heatflag    = .false.
@@ -1574,7 +1574,7 @@ contains
        call t_startf('mosarti_wrm_init')
     end if
     if (wrmflag .and. heatflag .and. rstraflag) then
-       call regeom					
+       call regeom                    
     end if  
 
     !-------------------------------------------------------
@@ -1611,7 +1611,21 @@ contains
              TRunoff%ffunit_ini(:) = rtmCTL%inundffunit(:)
           end if
        end if
-
+ 
+       if (heatflag) then
+          !Theat%tqsur      = rtmCTL%tqsur
+          !Theat%tqsub      = rtmCTL%tqsub
+          Theat%Tt         = rtmCTL%Tt
+          Theat%Tr         = rtmCTL%Tr
+          Theat%Ha_rout    = rtmCTL%Ha_rout
+          !Theat%forc_t     = rtmCTL%forc_t
+          !Theat%forc_pbot  = rtmCTL%forc_pbot
+          !Theat%forc_vp    = rtmCTL%forc_vp
+          !Theat%forc_wind  = rtmCTL%forc_wind
+          !Theat%forc_lwrad = rtmCTL%forc_lwrad
+          !Theat%forc_solar = rtmCTL%forc_solar
+          !Theat%coszen     = rtmCTL%coszen          
+       end if
     else
 !       do nt = 1,nt_rtm
 !       do nr = rtmCTL%begr,rtmCTL%endr
@@ -2435,11 +2449,18 @@ contains
     end if
 
     if (heatflag) then
-      rtmCTL%Tqsur   = THeat%Tqsur
-      rtmCTL%Tqsub   = THeat%Tqsub
-      rtmCTL%Tt      = THeat%Tt
-      rtmCTL%Tr      = THeat%Tr
-      rtmCTL%Ha_rout   = THeat%Ha_rout
+      !rtmCTL%Tqsur      = THeat%Tqsur
+      !rtmCTL%Tqsub      = THeat%Tqsub
+      rtmCTL%Tt         = THeat%Tt
+      rtmCTL%Tr         = THeat%Tr
+      rtmCTL%Ha_rout    = THeat%Ha_rout
+      !rtmCTL%forc_t     = THeat%forc_t
+      !rtmCTL%forc_pbot  = THeat%forc_pbot
+      !rtmCTL%forc_vp    = THeat%forc_vp
+      !rtmCTL%forc_wind  = THeat%forc_wind
+      !rtmCTL%forc_lwrad = THeat%forc_lwrad
+      !rtmCTL%forc_solar = THeat%forc_solar
+      !rtmCTL%coszen     = THeat%coszen
     
       do n = rtmCTL%begr,rtmCTL%endr
          if(rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
@@ -3252,24 +3273,31 @@ contains
      call shr_sys_flush(iulog)
 
      do n = rtmCtl%begr, rtmCTL%endr
-        if (Tunit%mask(n) < 0) then
+        if (Tunit%mask(n) < 0) then  !ocean grids
            Tunit%mask(n) = 0
-        elseif (Tunit%mask(n) == 0) then
+        elseif (Tunit%mask(n) == 0) then ! basin outlet grids
            Tunit%mask(n) = 2
            if (abs(Tunit%frac(n)-1.0_r8)>1.0e-9) then
               write(iulog,*) subname,' ERROR frac ne 1.0',n,Tunit%frac(n)
               call shr_sys_abort(subname//' ERROR frac ne 1.0')
            endif
-        elseif (Tunit%mask(n) > 0) then
+		   
+		   if(rtmCTL%mask(n)==2) then
+		       rtmCTL%mask(n) = 3
+		   end if
+        elseif (Tunit%mask(n) > 0) then ! inland grids
            Tunit%mask(n) = 1
            if (abs(Tunit%frac(n)-1.0_r8)>1.0e-9) then
               write(iulog,*) subname,' ERROR frac ne 1.0',n,Tunit%frac(n)
               call shr_sys_abort(subname//' ERROR frac ne 1.0')
            endif
+		   if(rtmCTL%mask(n)==2) then
+		       rtmCTL%mask(n) = 1
+		   end if
         else
            call shr_sys_abort(subname//' Tunit mask error')
         endif
-       
+                                           		
        if (wrmflag) then       
         if (Tunit%domainfrac(n) == 0) then
           Tunit%domainfrac(n) = 1
@@ -3902,10 +3930,10 @@ contains
              allocate(TPara%t_mu(begr:endr))
            TPara%t_mu = 0.5278_r8
         end if
-		
+        
         allocate (THeat%coszen(begr:endr))
         THeat%coszen = 0._r8
-		
+        
      end if
     
      call pio_freedecomp(ncid, iodesc_dbl)
@@ -3970,7 +3998,6 @@ contains
         end if
         
         if(TUnit%rslp(iunit) <= 0._r8) then
-
         if (inundflag) then
            if (inundflag) then
               TUnit%rslp(iunit) = Tctl%rslp_assume
@@ -3978,8 +4005,8 @@ contains
         else
            TUnit%rslp(iunit) = 0.0001_r8
         endif
-
         end if
+        
         if(TUnit%tslp(iunit) <= 0._r8) then
            TUnit%tslp(iunit) = 0.0001_r8
         end if
@@ -4179,53 +4206,53 @@ contains
 !----------------------------------------------------------------------------
 
   subroutine regeom
-	
+    
 ! Calculate reservoir layer average area (km2) 
  use shr_sys_mod   , only : shr_sys_flush
  use WRM_type_mod  , only : WRMUnit
  use RunoffMod     , only : rtmCTL
  use RtmVar         , only : iulog, ngeom, nlayers
-	
+    
  implicit none
  real(r8) :: M_W,M_L,gm_j,d_res,dd_in,C_a,C_v
  real(r8),dimension(ngeom+1) :: d_zi0,v_zti0,a_di0
- real(r8) ::dd_zz(ngeom),a_dd(ngeom+1),a_zi(ngeom+1),C_aa(ngeom+1), ar_f = 1.0e6             	! Factor to convert area to m^2
- real(r8) :: pi      = 3.141593_r8  	! pi
- real(r8) :: d_s	= 1.0_r8		!0.60_r8		           								! Surface layer depth (m)
+ real(r8) ::dd_zz(ngeom),a_dd(ngeom+1),a_zi(ngeom+1),C_aa(ngeom+1), ar_f = 1.0e6                 ! Factor to convert area to m^2
+ real(r8) :: pi      = 3.141593_r8      ! pi
+ real(r8) :: d_s    = 1.0_r8        !0.60_r8                                                   ! Surface layer depth (m)
  real(r8) :: dv,da,dz
- real(r8) :: d_v(nlayers)			   			! Reservoir volume change at layer (m^3)
- real(r8) :: rho_z(nlayers)			   			! Reservoir layer density (kg/m^3), taken constant for furture revision 
- real(r8) :: delta_z                        		! depth change to calculate corresponding area/volume(m)
- integer :: i,j,k,iunit,damID							! indices
+ real(r8) :: d_v(nlayers)                           ! Reservoir volume change at layer (m^3)
+ real(r8) :: rho_z(nlayers)                           ! Reservoir layer density (kg/m^3), taken constant for furture revision 
+ real(r8) :: delta_z                                ! depth change to calculate corresponding area/volume(m)
+ integer :: i,j,k,iunit,damID                            ! indices
  real(r8) :: s_tin,s_lum,a_sur,fac                 ! Initial total storage (10*6m^3), Lumped storage for grids with multiple reservoirs (m^3)
- real(r8) :: A_cf,V_cf						!Area and volume correcting factor for error from geometry estimation
+ real(r8) :: A_cf,V_cf                        !Area and volume correcting factor for error from geometry estimation
  character(len=*),parameter :: subname = '(regeom)'        
-						    
+                            
 !**************************************************************************************************************************************************
-	
- do iunit = rtmCTL%begr,rtmCTL%endr	
-		
+    
+ do iunit = rtmCTL%begr,rtmCTL%endr    
+        
      damID = WRMUnit%INVicell(iunit)
      if (damID>0.0_r8 .and. WRMUnit%d_ns(damID) >= 1) then ! .and. WRMUnit%Depth(damID) > 0.0_r8 .and. WRMUnit%Height(damID) > 0.0_r8
           if (WRMUnit%Depth(damID) <= 2.0_r8)WRMUnit%Depth(damID) = 2._r8
           if (WRMUnit%Height(damID) <= 2.0_r8)WRMUnit%Height(damID) = WRMUnit%Depth(damID)
           WRMUnit%d_resrv(damID) = 0.95_r8*WRMUnit%Height(damID)
           WRMUnit%h_resrv(damID) = 0.95_r8*WRMUnit%Height(damID)
-	  
+      
           s_lum = WRMUnit%StorCap(damID)
           s_tin = WRMUnit%V_str(damID)
           a_sur = WRMUnit%SurfArea(damID)
-				
+                
           if (s_lum <= 0.0_r8 .or. s_tin <= 0.0_r8 .or. ((s_lum/1.0e6) - s_tin)<0_r8) then
                fac = 0.0_r8
           elseif  (((s_lum/1.0e6) - s_tin)>=0_r8) then
                fac = ((s_lum/1.0e6) - s_tin)/s_tin
           endif
-				
-          !	Calculate layer depth	
+                
+          !    Calculate layer depth    
           if (WRMUnit%Width_r(damID) <= 0.0_r8)WRMUnit%Width_r(damID) = 1._r8
           if (WRMUnit%Length_r(damID) <= 0.0_r8)WRMUnit%Length_r(damID) = 1._r8
-						
+                        
           ! Area and volume correcting factors for relative error as compared to GRanD
           if (WRMUnit%A_dfs(damID)>=0_r8) then
                A_cf = 1._r8 + (abs(WRMUnit%A_errs(damID))/100._r8)
@@ -4239,92 +4266,92 @@ contains
           end if
           if (A_cf<=0._r8)A_cf = 0.1_r8
           if (V_cf<=0._r8)V_cf = 0.1_r8
-				
+                
           M_W   = WRMUnit%Width_r(damID)
           M_L   = WRMUnit%Length_r(damID)
           if (M_W<1._r8)M_W = 1.0_r8
           if (M_L<1._r8)M_L = 1.0_r8
           gm_j  = WRMUnit%geometry(damID)
-          d_res = WRMUnit%d_resrv(damID)		
+          d_res = WRMUnit%d_resrv(damID)        
           C_a   = WRMUnit%C_as(damID)
           C_v   = WRMUnit%C_vs(damID)
-				
+                
           if (WRMUnit%A_str(damID)<= 0._r8) WRMUnit%A_str(damID)= 1._r8
-				
+                
           if (WRMUnit%A_str(damID)<= 2._r8) then
                C_a  = 2.0_r8*WRMUnit%C_as(damID)
           end if
-							
-          ! Uniform subsurface layer depth for initialization	and limit maximum layer thickness 
+                            
+          ! Uniform subsurface layer depth for initialization    and limit maximum layer thickness 
           dd_in = d_res/ngeom !bottom layers evenly descritized
-							
-          ! Calculate reservoir geometry to establish depth-area-volume relationship			
-					
-          ! Calculate depth area	
+                            
+          ! Calculate reservoir geometry to establish depth-area-volume relationship            
+                    
+          ! Calculate depth area    
           !********** Curved Lake Bottom 
-				
-          do j = 1, ngeom!	
-               if (gm_j == 1.0_r8) then	
+                
+          do j = 1, ngeom!    
+               if (gm_j == 1.0_r8) then    
                      a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)
-               else if (gm_j == 2.0_r8) then	
+               else if (gm_j == 2.0_r8) then    
                      a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1))/d_res))
-               else if (gm_j == 3.0_r8) then	
+               else if (gm_j == 3.0_r8) then    
                      a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
-               else if (gm_j == 4.0_r8) then	
+               else if (gm_j == 4.0_r8) then    
                      a_dd(j) = C_a*(2._r8/3._r8)*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1)))/d_res)
-               else if (gm_j == 5.0_r8) then	
+               else if (gm_j == 5.0_r8) then    
                      a_dd(j) = C_a*pi*0.25_r8*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
-               end if					
+               end if                    
           end do
-					
-          a_dd(ngeom+1) = a_dd(ngeom)*0.001_r8			!Bottom area given non-zero value
-					
+                    
+          a_dd(ngeom+1) = a_dd(ngeom)*0.001_r8            !Bottom area given non-zero value
+                    
           ! Reverse indexing so that bottom is 1 and top is d_n+1 and convert to m2
           do j = 1,ngeom+1
                k =ngeom+2-j  
                a_di0(k) = ((a_dd(j)))
                if (a_di0(k)==0._r8) a_di0(k)=1._r8
-               WRMUnit%a_di(damID,k)  = (A_cf*a_di0(k)) 	!Area corrected for error for optimal geometry
+               WRMUnit%a_di(damID,k)  = (A_cf*a_di0(k))     !Area corrected for error for optimal geometry
                if (WRMUnit%a_di(damID,k)==0._r8) WRMUnit%a_di(damID,k)=1._r8
-          end do	
-				
+          end do    
+                
           ! Calculate layer depth,area,and volume from bottom 
           d_zi0(1) = 0._r8
           WRMUnit%d_zi(damID,1)  = d_zi0(1)
-          do j = 2, ngeom+1	
+          do j = 2, ngeom+1    
                d_zi0(j) = d_zi0(j-1) + dd_in
                WRMUnit%d_zi(damID,j)  = d_zi0(j) 
           end do
-						
+                        
           ! Calculate layer average area,and total volume from bottom
-          v_zti0(1) = (0.001_r8*0.5_r8*(WRMUnit%a_di(damID,1)+WRMUnit%a_di(damID,2))*dd_in)!	
-          WRMUnit%v_zti(damID,1) = (V_cf*v_zti0(1)) 	!lower Volume corrected for error
+          v_zti0(1) = (0.001_r8*0.5_r8*(WRMUnit%a_di(damID,1)+WRMUnit%a_di(damID,2))*dd_in)!    
+          WRMUnit%v_zti(damID,1) = (V_cf*v_zti0(1))     !lower Volume corrected for error
           if (WRMUnit%v_zti(damID,1)==0._r8) WRMUnit%v_zti(damID,1)=1._r8
-          do j = 2, ngeom+1	 
+          do j = 2, ngeom+1     
                a_zi(j) = 0.5_r8*(WRMUnit%a_di(damID,j)+WRMUnit%a_di(damID,j-1)) !Area converted to m^2
                v_zti0(j) = v_zti0(j-1) + ((C_v*a_zi(j)*dd_in))
-               WRMUnit%v_zti(damID,j) = (V_cf*v_zti0(j)) 	!Volume corrected for error
+               WRMUnit%v_zti(damID,j) = (V_cf*v_zti0(j))     !Volume corrected for error
                if (WRMUnit%v_zti(damID,j)==0._r8) WRMUnit%v_zti(damID,j)=1._r8
                if (WRMUnit%a_di(damID,j)<0._r8 .or. WRMUnit%v_zti(damID,j)<0._r8) write(iulog,*) 'geom negative',iunit,WRMUnit%grandid(damID)
           end do
-				
+                
           !Initial reservoir storage 
           do j = WRMUnit%d_ns(damID),1,-1
                if (j == WRMUnit%d_ns(damID) .and. WRMUnit%d_ns(damID) == 1) then
                      WRMUnit%dd_z(damID,j) = WRMUnit%d_resrv(damID)
                elseif (j == WRMUnit%d_ns(damID) .and. WRMUnit%d_ns(damID) > 1) then !top layer depth kept constant
-                     WRMUnit%dd_z(damID,j) = d_s		!0.6_r8
+                     WRMUnit%dd_z(damID,j) = d_s        !0.6_r8
                elseif ((WRMUnit%d_ns(damID)>1 .and.j < WRMUnit%d_ns(damID)).and.(WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)))>0._r8) then
                      WRMUnit%dd_z(damID,j) = (WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID))) / (WRMUnit%d_ns(damID) - 1) !bottom layers evenly descritized
                endif
-          end do	
-			
+          end do    
+            
           if (WRMUnit%d_ns(damID)>1 .and. WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)-1)<d_s)then !layer thickness too small
                WRMUnit%d_ns(damID)=int((WRMUnit%d_resrv(damID)/d_s)+1) 
                do j=1,nlayers!WRMUnit%d_ns(damID)
                      WRMUnit%dd_z(damID,j) = 0._r8
                end do
-					
+                    
                ! Reinitialize layer thickness
                do j = WRMUnit%d_ns(damID),1,-1
                      if (j == WRMUnit%d_ns(damID)) then
@@ -4332,24 +4359,24 @@ contains
                      else
                          WRMUnit%dd_z(damID,j) = (WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)))/(WRMUnit%d_ns(damID) - 1) !bottom layers evenly descritized
                      end if
-               end do	
+               end do    
           end if
-		
+        
           if (WRMUnit%d_ns(damID)>1) then
                WRMUnit%ddz_local(damID) = WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)-1)
           else
                WRMUnit%ddz_local(damID) = WRMUnit%dd_z(damID,WRMUnit%d_ns(damID))
           end if
-				
-          ! Calculate layer depth (minimum at bottom)	
+                
+          ! Calculate layer depth (minimum at bottom)    
           WRMUnit%d_z(damID,1)=0._r8
-          do j = 2, nlayers	
+          do j = 2, nlayers    
                if (j<=WRMUnit%d_ns(damID)+1) then
                      WRMUnit%d_z(damID,j) = WRMUnit%d_z(damID,j-1) + WRMUnit%dd_z(damID,j-1)
                else 
                      WRMUnit%d_z(damID,j) = 0._r8
                end if
-          end do	
+          end do    
           ! Assign layer area and volume based on depth-area-volume relationship
           WRMUnit%a_d(damID,1)=(WRMUnit%a_di(damID,1))
           WRMUnit%v_zt(damID,1)=(WRMUnit%v_zti(damID,1))
@@ -4372,12 +4399,12 @@ contains
                      WRMUnit%v_zt(damID,i) = 0._r8
                end if
           end do
-								
+                                
           ! Calculate layer volume(m^3)
-          do j = 1, nlayers	
+          do j = 1, nlayers    
                if (j<=WRMUnit%d_ns(damID)) then
-                     WRMUnit%d_v(damID,j) = ((WRMUnit%v_zt(damID,j+1) - WRMUnit%v_zt(damID,j)))	
-                     if (WRMUnit%d_v(damID,j)==0._r8) WRMUnit%d_v(damID,j)=1._r8	
+                     WRMUnit%d_v(damID,j) = ((WRMUnit%v_zt(damID,j+1) - WRMUnit%v_zt(damID,j)))    
+                     if (WRMUnit%d_v(damID,j)==0._r8) WRMUnit%d_v(damID,j)=1._r8    
                      WRMUnit%dd_z(damID,j) = WRMUnit%d_z(damID,j+1) - WRMUnit%d_z(damID,j)
                      if (WRMUnit%d_v(damID,j)<0.0_r8) then 
                          write(iulog,*) subname,'Layer volume negative:Check geometry data for dam',WRMUnit%grandid(damID)
@@ -4386,18 +4413,18 @@ contains
                      WRMUnit%d_v(damID,j) = 0._r8
                      WRMUnit%dd_z(damID,j) = 0._r8
                end if
-          end do		
-				
-          ! 	Intitialize layer temperature and total storage					
-          do j=1,WRMUnit%d_ns(damID)					
+          end do        
+                
+          !     Intitialize layer temperature and total storage                    
+          do j=1,WRMUnit%d_ns(damID)                    
                rho_z(j) = 1000._r8*( 1._r8 - 1.9549e-05*(abs(WRMUnit%temp_resrv(damID,j)-277._r8))**1.68_r8) 
                WRMUnit%v_zn(damID,j) = (WRMUnit%d_v(damID,j))
                WRMUnit%m_zo(damID,j) = (WRMUnit%d_v(damID,j)*rho_z(j)) 
                WRMUnit%m_zn(damID,j) = (WRMUnit%d_v(damID,j)*rho_z(j))
           end do
      end if
- end do	
- end subroutine regeom 				   
+ end do    
+ end subroutine regeom                    
 !---------------------------------------------------------------------------- 
 
   subroutine SubTimestep

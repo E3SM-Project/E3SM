@@ -84,6 +84,13 @@ module RunoffMod
      real(r8), pointer :: Tt(:)            ! MOSART sub-network water temperature (K)
      real(r8), pointer :: Tr(:)            ! MOSART main channel water temperature (K)
      real(r8), pointer :: Ha_rout(:)       ! MOSART heat flux out of the main channel, instantaneous (Watt)
+     real(r8), pointer :: forc_t(:)      ! atmospheric temperature (Kelvin)
+     real(r8), pointer :: forc_pbot(:)   ! atmospheric pressure (Pa)
+     real(r8), pointer :: forc_vp(:)     ! atmospheric vapor pressure (Pa)
+     real(r8), pointer :: forc_wind(:)   ! atmospheric wind speed (m/s)
+     real(r8), pointer :: forc_lwrad(:)  ! downward infrared (longwave) radiation (W/m**2)
+     real(r8), pointer :: forc_solar(:)  ! atmospheric incident solar (shortwave) radiation (W/m**2)
+     real(r8), pointer :: coszen(:)      ! Cosine of Zenith angle (-)
 
      ! inputs
      real(r8), pointer :: qsur(:,:)        ! coupler surface forcing [m3/s]
@@ -577,6 +584,13 @@ contains
                rtmCTL%Tt(begr:endr),                    &
                rtmCTL%Tr(begr:endr),                    &
                rtmCTL%Ha_rout(begr:endr),               &
+               rtmCTL%forc_t(begr:endr),                &
+               rtmCTL%forc_pbot(begr:endr),             &
+               rtmCTL%forc_vp(begr:endr),               &
+               rtmCTL%forc_wind(begr:endr),             &
+               rtmCTL%forc_lwrad(begr:endr),            &
+               rtmCTL%forc_solar(begr:endr),            &
+               rtmCTL%coszen(begr:endr),                &
                rtmCTL%templand_Tqsur(begr:endr),        &
                rtmCTL%templand_Tqsub(begr:endr),        &
                rtmCTL%templand_Ttrib(begr:endr),        &

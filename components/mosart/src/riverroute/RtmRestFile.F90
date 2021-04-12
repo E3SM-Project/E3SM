@@ -14,7 +14,7 @@ module RtmRestFile
   use RtmSpmd       , only : masterproc 
   use RtmVar        , only : rtmlon, rtmlat, iulog, inst_suffix, rpntfil, &
                              caseid, nsrest, brnch_retain_casename, &
-                             finidat_rtm, nrevsn_rtm, wrmflag, inundflag, &
+                             finidat_rtm, nrevsn_rtm, wrmflag, inundflag, heatflag, &
                              nsrContinue, nsrBranch, nsrStartup, &
                              ctitle, version, username, hostname, conventions, source
   use RtmHistFile   , only : RtmHistRestart
@@ -76,7 +76,7 @@ contains
 
     ! Define dimensions and variables
 
-    if (masterproc) then	
+    if (masterproc) then    
        write(iulog,*)
        write(iulog,*)'restFile_open: writing RTM restart dataset '
        write(iulog,*)
@@ -396,15 +396,16 @@ contains
     release_read = .true.
     stormth_read = .true.
 
-if (wrmflag) then
-    nvmax = 10
-else
-
     nvmax = 7
-endif
-
-
-    do nv = 1,nvmax
+    if(wrmflag .and. .not.(heatflag)) then
+        nvmax = 10
+    elseif(.not.(wrmflag) .and. heatflag) then
+        nvmax = 13
+    elseif(wrmflag .and. heatflag) then
+        nvmax = 16
+    end if
+    
+    do nv = 1,7
     do nt = 1,nt_rtm
 
        varok = .true.
@@ -444,10 +445,121 @@ endif
           lname = 'instataneous flow out of main channel in cell'
           uname = 'm3/s'
           dfld  => rtmCTL%erout(:,nt)
-       elseif (nv == 8 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+       else
           varok = .false.
-          if (wrmflag) then
-             varok = .true.
+       end if	   
+
+       if (varok) then
+       if (flag == 'define') then
+          call ncd_defvar(ncid=ncid, varname=trim(vname), &
+               xtype=ncd_double,  dim1name='rtmlon', dim2name='rtmlat', &
+               long_name=trim(lname), units=trim(uname))
+       else if (flag == 'read' .or. flag == 'write') then
+          call ncd_io(varname=trim(vname), data=dfld, dim1name='allrof', &
+               ncid=ncid, flag=flag, readvar=readvar)
+          if (flag=='read' .and. .not. readvar) then
+             if (nsrest == nsrContinue) then
+                call shr_sys_abort()
+             else
+                dfld = 0._r8
+                if (vname == 'DAM_STORAGE_LIQ') then
+                   storage_read = .false.
+                elseif (vname == 'DAM_RELEASE_LIQ') then
+                   release_read = .false.
+                   compute_release = .true.
+                elseif (vname == 'DAM_STORMTHSTOP_LIQ') then
+                   stormth_read = .false.
+                   compute_release = .true.
+                endif
+             end if
+          end if
+       end if
+       end if  ! varok
+
+    enddo
+    enddo
+
+    do nv = 8,nvmax
+    do nt = 1,1       
+       if(wrmflag .and. .not.(heatflag)) then	   
+          if (nv == 8 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+             varok = .false.
+             if (wrmflag) then
+                varok = .true.
+                StorWater%storageG = 0._r8
+                if (flag == 'write') then
+                   do idam = 1, ctlSubwWRM%localNumDam
+                      ig = WRMUnit%icell(idam)
+                      StorWater%storageG(ig) = StorWater%storage(idam)
+                   enddo
+                endif
+                vname = 'DAM_STORAGE_'//trim(rtm_tracers(nt))
+                lname = 'dam storage'
+                uname = 'm3'
+                dfld  => StorWater%storageG(:)
+             endif
+          elseif (nv == 9 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+             varok = .false.
+             if (wrmflag) then
+                varok = .true.
+                StorWater%releaseG = 0._r8
+                if (flag == 'write') then
+                   do idam = 1, ctlSubwWRM%localNumDam
+                      ig = WRMUnit%icell(idam)
+                      StorWater%releaseG(ig) = StorWater%release(idam)
+                   enddo
+                endif
+                vname = 'DAM_RELEASE_'//trim(rtm_tracers(nt))
+                lname = 'dam release'
+                uname = 'm3'
+                dfld  => StorWater%releaseG(:)
+             endif
+          elseif (nv == 10 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+             varok = .false.
+             if (wrmflag) then
+                varok = .true.
+                WRMUnit%StorMthStOpG = 0._r8
+                if (flag == 'write') then
+                   do idam = 1, ctlSubwWRM%localNumDam
+                      ig = WRMUnit%icell(idam)
+                      WRMUnit%StorMthStOpG(ig) = WRMUnit%StorMthStOp(idam)
+                   enddo
+                endif
+                vname = 'DAM_STORMTHSTOP_'//trim(rtm_tracers(nt))
+                lname = 'dam StorMthStOp'
+                uname = 'm3'
+                dfld  => WRMUnit%StorMthStOpG(:)
+             endif
+          else
+             varok = .false.
+          endif
+	   end if
+
+       if(.not.(wrmflag) .and. heatflag) then
+          varok = .true.	   
+          if (nv == 8) then
+             vname = 'TEMP_TRIB'
+             lname = 'Temperature of sub-network channel'
+             uname = 'Kelvin'
+             dfld  => rtmCTL%Tt
+          elseif (nv == 9) then
+             vname = 'TEMP_CHANR'
+             lname = 'Temperature of main channel'
+             uname = 'Kelvin'
+             dfld  => rtmCTL%Tr
+          elseif (nv == 10) then
+             vname = 'Ha_rout'
+             lname = 'instataneous heat flux out of main channel in cell'
+             uname = 'Watt'
+             dfld  => rtmCTL%Ha_rout
+          else
+             varok = .false.
+          endif
+	   end if
+
+       if(wrmflag .and. heatflag) then
+          varok = .true.	   
+          if (nv == 8 .and. trim(rtm_tracers(nt)) == 'LIQ') then
              StorWater%storageG = 0._r8
              if (flag == 'write') then
                 do idam = 1, ctlSubwWRM%localNumDam
@@ -459,11 +571,7 @@ endif
              lname = 'dam storage'
              uname = 'm3'
              dfld  => StorWater%storageG(:)
-          endif
-       elseif (nv == 9 .and. trim(rtm_tracers(nt)) == 'LIQ') then
-          varok = .false.
-          if (wrmflag) then
-             varok = .true.
+          elseif (nv == 9 .and. trim(rtm_tracers(nt)) == 'LIQ') then
              StorWater%releaseG = 0._r8
              if (flag == 'write') then
                 do idam = 1, ctlSubwWRM%localNumDam
@@ -475,11 +583,7 @@ endif
              lname = 'dam release'
              uname = 'm3'
              dfld  => StorWater%releaseG(:)
-          endif
-       elseif (nv == 10 .and. trim(rtm_tracers(nt)) == 'LIQ') then
-          varok = .false.
-          if (wrmflag) then
-             varok = .true.
+          elseif (nv == 10 .and. trim(rtm_tracers(nt)) == 'LIQ') then
              WRMUnit%StorMthStOpG = 0._r8
              if (flag == 'write') then
                 do idam = 1, ctlSubwWRM%localNumDam
@@ -491,10 +595,25 @@ endif
              lname = 'dam StorMthStOp'
              uname = 'm3'
              dfld  => WRMUnit%StorMthStOpG(:)
+          elseif (nv == 11) then
+             vname = 'TEMP_TRIB'
+             lname = 'Temperature of sub-network channel'
+             uname = 'Kelvin'
+             dfld  => rtmCTL%Tt
+          elseif (nv == 12) then
+             vname = 'TEMP_CHANR'
+             lname = 'Temperature of main channel'
+             uname = 'Kelvin'
+             dfld  => rtmCTL%Tr
+          elseif (nv == 13) then
+             vname = 'Ha_rout'
+             lname = 'instataneous heat flux out of main channel in cell'
+             uname = 'Watt'
+             dfld  => rtmCTL%Ha_rout
+          else
+             varok = .false.
           endif
-       else
-          varok = .false.
-       endif
+	   end if
 
        if (varok) then
        if (flag == 'define') then
@@ -543,7 +662,13 @@ endif
              if (abs(storWater%releaseG(n)) > 1.e30) storWater%releaseG(n) = 0.
              if (abs(WRMUnit%StorMthStOpG(n)) > 1.e30) WRMUnit%StorMthStOpG(n) = 0.
           endif
-
+          
+		  if (heatflag) then
+             if (abs(rtmCTL%Tt(n)) > 1.e10)         rtmCTL%Tt(n)      = 273.15_r8
+             if (abs(rtmCTL%Tr(n)) > 1.e10)         rtmCTL%Tr(n)      = 273.15_r8
+             if (abs(rtmCTL%Ha_rout(n)) > 1.e30)    rtmCTL%Ha_rout(n) = 0._r8		  
+		  end if
+		  
           if (rtmCTL%mask(n) == 1) then
              do nt = 1,nt_rtm
                 rtmCTL%runofflnd(n,nt) = rtmCTL%runoff(n,nt)

@@ -610,6 +610,10 @@ contains
        if(heatflag) then
           rtmCTL%Tqsur(n) = x2r_r%rAttr(index_x2r_Flrl_Tqsur,n2)
           rtmCTL%Tqsub(n) = x2r_r%rAttr(index_x2r_Flrl_Tqsub,n2)
+          if(abs(rtmCTL%Tqsur(n)) > 1000._r8 .and. TUnit%mask(n) > 0) then
+              rtmCTL%Tqsur(n) = 273.15_r8
+              rtmCTL%Tqsub(n) = 273.15_r8
+          end if
           THeat%Tqsur(n) = rtmCTL%Tqsur(n)
           THeat%Tqsub(n) = rtmCTL%Tqsub(n)
        
@@ -624,7 +628,9 @@ contains
           shum = x2r_r%rAttr(index_x2r_Sa_shum,n2)
           THeat%forc_vp(n)   = shum * THeat%forc_pbot(n)  / (0.622_r8 + 0.378_r8 * shum)
           THeat%coszen(n)    = x2r_r%rAttr(index_x2r_coszen_str,n2)
+		  		  
        end if
+       
     enddo
 
   end subroutine rof_import_mct
