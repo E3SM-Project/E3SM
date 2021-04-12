@@ -192,7 +192,8 @@ public:
     );
   }
 
-  // Register required/computed fields in the field repo
+  // Register all fields in the proper repo(s).
+  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
   virtual void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const = 0;
 
   // These two methods allow the driver to figure out what process need
