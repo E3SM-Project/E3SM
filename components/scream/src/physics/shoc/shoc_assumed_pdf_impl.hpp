@@ -81,7 +81,9 @@ void Functions<S,D>::shoc_assumed_pdf(
   linear_interp(team,zi_grid,zt_grid,wqw_sec,wqw_sec_zt,nlevi,nlev,largeneg);
   linear_interp(team,zi_grid,zt_grid,qw_sec,qw_sec_zt,nlevi,nlev,0);
 
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  // The following is morally a const var, but there are issues with
+  // gnu and std=c++14. The macro ConstExceptGnu is defined in ekat_kokkos_types.hpp.
+  ConstExceptGnu Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
 
     // Store active pack entries
@@ -256,7 +258,7 @@ void Functions<S,D>::shoc_assumed_pdf(
       Spack s1(0), std_s1(0), qn1(0), C1(0), ql1(0),
             s2(0), std_s2(0), qn2(0), C2(0), ql2(0);
       {
-        const Scalar sqrt2(std::sqrt(2)), sqrt2pi(std::sqrt(2*pi));
+        const Scalar sqrt2(std::sqrt(Scalar(2.0))), sqrt2pi(std::sqrt(2*pi));
 
         // First plume
         const Spack cthl1=((1 + beta1*qw1_1)/ekat::square(1 + beta1*qs1))*(cp/lcond)*
