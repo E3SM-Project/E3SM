@@ -222,7 +222,6 @@ namespace scream {
 
             // Problem size
             int nbnd = k_dist.get_nband();
-            int ngpt = k_dist.get_ngpt();
             int ncol = p_lay.dimension[0];
             int nlay = p_lay.dimension[1];
 

@@ -111,7 +111,7 @@ namespace simple_netcdf {
                         if (vtype == NC_FLOAT) {
                             Array<float,rank,memHost,myStyle> tmp("tmp",dimSizes);
                             handle_error(nc_get_var(ncid, varid, tmp.data()), __FILE__, __LINE__);
-                            for (int i=0; i < arr.totElems(); i++) { arrHost.myData[i] = tmp.myData[i]; }
+                            for (size_t i=0; i < arr.totElems(); i++) { arrHost.myData[i] = tmp.myData[i]; }
                         } else {
                             handle_error(nc_get_var(ncid, varid, arrHost.data()), __FILE__, __LINE__);
                         }
@@ -122,12 +122,12 @@ namespace simple_netcdf {
                         // Create boolean array from integer arrays
                         Array<int,rank,memHost,myStyle> tmp("tmp",dimSizes);
                         handle_error(nc_get_var(ncid, varid, tmp.data()), __FILE__, __LINE__);
-                        for (int i=0; i < arr.totElems(); i++) { arr.myData[i] = tmp.myData[i] == 1; }
+                        for (size_t i=0; i < arr.totElems(); i++) { arr.myData[i] = tmp.myData[i] == 1; }
                     } else {
                         if (vtype == NC_FLOAT) {
                             Array<float,rank,memHost,myStyle> tmp("tmp",dimSizes);
                             handle_error(nc_get_var(ncid, varid, tmp.data()), __FILE__, __LINE__);
-                            for (int i=0; i < arr.totElems(); i++) { arr.myData[i] = tmp.myData[i]; }
+                            for (size_t i=0; i < arr.totElems(); i++) { arr.myData[i] = tmp.myData[i]; }
                         } else {
                             handle_error(nc_get_var(ncid, varid, arr.data()), __FILE__, __LINE__);
                         }
@@ -232,8 +232,8 @@ namespace simple_netcdf {
                 // Define dimensions if they do not exist and get dimension IDs
                 int dimids[rank];
                 size_t dimSize;
-                int idim;
-                for (int i = 0; i < dimNames.size(); i++) {
+                size_t idim;
+                for (size_t i = 0; i < dimNames.size(); i++) {
                     // If style is Fortran, dimension ordering is reversed
                     if (myStyle == styleC) {
                         idim = i;
