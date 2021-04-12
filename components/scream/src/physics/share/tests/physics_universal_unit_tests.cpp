@@ -7,6 +7,7 @@
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
 
 namespace scream {
 namespace physics {
@@ -142,10 +143,65 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     }
 
   } // dz_test
+//-----------------------------------------------------------------------------------------------//
+  KOKKOS_FUNCTION static void dse_tests(const Scalar& temp, const Scalar& height, const Scalar surface_height, int& errors){
 
+    // Allow usage of universal functions
+    using physics = scream::physics::Functions<Scalar, Device>;
+    // Gather the test tolerance
+    static constexpr Scalar eps = C::macheps;
+    Real tol = 1000*eps;
+
+    //========================================================
+    // Test calculation of dry static energy using get_dse
+    //========================================================
+    // This function tests the function "get_dse".
+    //
+    // Inputs:
+    //   temp is the atmospheric temperature. Units in K.
+    //   height is the geopotential height above surface at midpoints. Units in m.
+    //   surface_height is the surface geopotential height. Units in m.
+    // Outputs:
+    //   errors:  A tally of any errors that this test detects.
+    //========================================================
+
+    static constexpr Scalar cp = C::CP;
+    static constexpr Scalar ggr = C::gravit;
+    const Spack T_mid(temp);
+    const Spack z_mid(height);
+    Real expected_dse = cp*temp+ggr*height+surface_height;
+    const Spack dse = physics::get_dse(T_mid, z_mid, surface_height, Smask(true));
+    if (std::abs(dse[0]-expected_dse)>tol) {
+      printf("get_dse test: abs(dse-expected_dse)=%e is larger than the tol=%e\n",std::abs(dse[0]-expected_dse),tol);
+      errors++;
+    }
+
+  } // dse_test
 //-----------------------------------------------------------------------------------------------//
   static void run()
   {
+    using physics = scream::physics::Functions<Scalar, Device>;
+
+    int num_levs = 100; // Number of levels to use for tests.
+
+    // Compute random values for dse test
+    using view_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Real>;
+    view_1d temp("temp",num_levs),
+            height("height",num_levs),
+            surface_height("surface_height",num_levs);
+
+    std::random_device rd;
+    using rngAlg = std::mt19937_64;
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    rngAlg engine(seed);
+    using RPDF = std::uniform_real_distribution<Real>;
+    RPDF pdf(1e-3,1e3);
+
+    ekat::genRandArray(temp,engine,pdf);
+    ekat::genRandArray(height,engine,pdf);
+    ekat::genRandArray(surface_height,engine,pdf);
+
     int nerr = 0;
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType&, int& errors) {
@@ -156,7 +212,6 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       static constexpr Scalar rd     = C::RD;
       static constexpr Scalar inv_cp = C::INV_CP;
       static constexpr Scalar tmelt  = C::Tmelt;
-      int num_levs = 100; // Number of levels to use for tests.
 
       // Create dummy level data for testing:
       Real pres_top = 200.;
@@ -179,6 +234,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
         Real zi_bot = (pow(k,2)+k)/2.0;
         Real zi_top = zi_bot + (k+1);
         dz_tests(zi_top,zi_bot,errors);
+        // DSE Test
+        dse_tests(temp(k),height(k),surface_height(k),errors);
       }
 
     }, nerr);

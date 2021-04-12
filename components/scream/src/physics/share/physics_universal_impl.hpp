@@ -106,7 +106,31 @@ Functions<S,D>::get_dz(const Spack& zi_top, const Spack& zi_bot, const Smask& ra
   return result;
 }
 //-----------------------------------------------------------------------------------------------//
+// Compute dry static energy (DSE).
+// The result unit is in J/kg
+// The inputs are
+//   T_mid is the atmospheric temperature. Units in K.
+//   z_mid is the geopotential height above surface at midpoints. Units in m.
+//   surf_geopotential is the surface geopotential height. Units in m.
+template <typename S, typename D>
+KOKKOS_FUNCTION
+typename Functions<S,D>::Spack
+Functions<S,D>::get_dse(const Spack& T_mid, const Spack& z_mid, const Real surf_geopotential, const Smask& range_mask)
+{
+  static constexpr Scalar cp  = C::CP;
+  static constexpr Scalar ggr = C::gravit;
 
+  const Spack dse(range_mask, cp*T_mid + ggr*z_mid + surf_geopotential);
+
+  // Check that there are no obvious errors in the result.
+  EKAT_KERNEL_ASSERT_MSG((isnan(T_mid) && range_mask).none(), "Error in get_dse, T_mid has NaN values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG((isnan(z_mid) && range_mask).none(), "Error in get_dse, z_mid has NaN values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG(!isnan(surf_geopotential), "Error in get_dse, surf_geopotential has NaN values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG(((dse <= 0) && range_mask).none(), "Error in get_dse, dse has negative values.\n"); // exit with an error message
+
+  return dse;
+}
+//-----------------------------------------------------------------------------------------------//
 
 } // namespace physics
 } // namespace scream
