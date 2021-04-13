@@ -66,16 +66,12 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repo) const;
+  // Register all fields in the proper field manager(s).
+  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 
   // SHOC updates the 'TRACERS' group.
   void set_updated_group (const FieldGroup<Real>& group);
-
-  // Get the set of required/computed fields and groups
-  const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
-  std::set<GroupRequest> get_updated_groups () const { return m_inout_groups_req; }
 
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
@@ -382,10 +378,6 @@ protected:
   // Setting the fields in the atmospheric process
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
-
-  std::set<FieldIdentifier> m_required_fields;
-  std::set<FieldIdentifier> m_computed_fields;
-  std::set<GroupRequest>    m_inout_groups_req;
 
   std::map<std::string,const_field_type>  m_shoc_fields_in;
   std::map<std::string,field_type>        m_shoc_fields_out;

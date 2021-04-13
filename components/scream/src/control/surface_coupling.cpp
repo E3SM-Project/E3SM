@@ -6,19 +6,17 @@ namespace scream {
 namespace control {
 
 SurfaceCoupling::
-SurfaceCoupling (const std::shared_ptr<const AbstractGrid>& grid,
-                 const FieldRepository<Real>& repo)
- : m_field_repo (repo)
+SurfaceCoupling (const field_mgr_ptr& field_mgr)
+ : m_field_mgr (field_mgr)
  , m_state (RepoState::Clean)
 {
-  EKAT_REQUIRE_MSG (grid!=nullptr, "Error! Invalid grid pointer.\n");
+  auto grid = m_field_mgr->get_grid();
 
   m_num_cols  = grid->get_num_local_dofs();
-  m_grid_name = grid->name();
 
   EKAT_REQUIRE_MSG(grid->type()==GridType::Point,
-                     "Error! Surface coupling only implemented for 'Point' grids.\n"
-                     "       Input grid type: " + e2str(grid->type()) + "\n");
+      "Error! Surface coupling only implemented for 'Point' grids.\n"
+      "       Input grid type: " + e2str(grid->type()) + "\n");
 }
 
 void SurfaceCoupling::
@@ -57,7 +55,7 @@ register_import(const std::string& fname,
                      "Error! Imports view is already full. Did you call 'set_num_fields' with the wrong arguments?\n");
 
   // Get the field, and check that is valid
-  import_field_type field = m_field_repo.get_field(fname,m_grid_name);
+  import_field_type field = m_field_mgr->get_field(fname);
   EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Import field view has not been allocated yet.\n");
   
   EKAT_REQUIRE_MSG(cpl_idx>=0, "Error! Input cpl_idx is negative.\n");
@@ -102,14 +100,8 @@ register_export (const std::string& fname,
                      "Error! Exports view is already full. Did you call 'set_num_fields' with the wrong arguments?\n");
 
   // Get the field, and check that is valid
-  export_field_type field = m_field_repo.get_field(fname,m_grid_name);
+  export_field_type field = m_field_mgr->get_field(fname);
   EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Export field view has not been allocated yet.\n");
-
-  const std::string& fgn = field.get_header().get_identifier().get_grid_name();
-  EKAT_REQUIRE_MSG (fgn==m_grid_name,
-                      "Error! Input field '" + fname + "' is defined on the wrong grid:\n"
-                      "       expected grid name: " + m_grid_name + "\n"
-                      "       field grid name: " + fgn + "\n");
 
   EKAT_REQUIRE_MSG(cpl_idx>=0, "Error! Input cpl_idx is negative.\n");
 

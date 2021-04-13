@@ -35,7 +35,7 @@ public:
   grid_ptr_type get_grid (const std::string& name) const;
 
   grid_ptr_type get_reference_grid () const {
-    return get_grid("Reference");
+    return get_grid(get_reference_grid_name());
   }
 
   // The list of grids that this GM can build
@@ -91,7 +91,11 @@ public:
     return create_remapper(grid,get_reference_grid());
   }
 
+  virtual const grid_repo_type& get_repo () const = 0;
+
 protected:
+
+  virtual std::string get_reference_grid_name  () const = 0;
 
   virtual remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
@@ -128,8 +132,6 @@ protected:
     }
     return str;
   }
-
-  virtual const grid_repo_type& get_repo () const = 0;
 };
 
 inline GridsManager::grid_ptr_type

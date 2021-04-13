@@ -22,7 +22,7 @@ namespace scream
  *      padding was used to accommodate use of the fields with packs.
  *
  *      For instance, say you declare a field with dimensions (3,10).
- *      In the field repo, this would be stored as a 1d field: View<Real*>.
+ *      In the field manager, this would be stored as a 1d field: View<Real*>.
  *      Let's say you have one class that uses the field as View<Real**>,
  *      and another class that used the field in a packed way, taht is,
  *      as View<Pack<Real,4>**>. The second view will have dimensions (3,4),

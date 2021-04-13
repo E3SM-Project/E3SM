@@ -51,12 +51,9 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repo) const;
-
-  // Get the set of required/computed fields
-  const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
+  // Register all fields in the proper field manager(s).
+  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 
 protected:
 
@@ -68,9 +65,6 @@ protected:
   // Setting the fields in the atmospheric process
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
-
-  std::set<FieldIdentifier> m_required_fields;
-  std::set<FieldIdentifier> m_computed_fields;
 
   std::map<std::string,const_field_type>  m_cld_fraction_fields_in;
   std::map<std::string,field_type>        m_cld_fraction_fields_out;

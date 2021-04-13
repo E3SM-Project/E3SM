@@ -19,6 +19,9 @@ namespace scream
  *  All the calls to setup/run methods are simply forwarded to the stored list of
  *  atm processes, and the stored list of required/computed fields is simply a
  *  concatenation of the correspong lists in the underlying atm processes.
+ *  The only caveat is required fields in sequential scheduling: if an atm proc
+ *  requires a field that is computed by a previous atm proc in the group,
+ *  that field is not exposed as a required field of the group.
  */
 
 class AtmosphereProcessGroup : public AtmosphereProcess
@@ -51,18 +54,11 @@ public:
   void set_required_group (const FieldGroup<const Real>& group);
   void set_updated_group (const FieldGroup<Real>& group);
 
-  // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repo) const;
-
-  // The methods used to query the process for its inputs/outputs
-  const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }
-
-  std::set<GroupRequest> get_required_groups () const;
-  std::set<GroupRequest> get_updated_groups () const;
+  // Register all fields in the proper field manager(s).
+  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 
   // --- Methods specific to AtmosphereProcessGroup --- //
-
   int get_num_processes () const { return m_atm_processes.size(); }
 
   std::shared_ptr<const atm_proc_type> get_process (const int i) const {
@@ -71,15 +67,11 @@ public:
 
   ScheduleType get_schedule_type () const { return m_group_schedule_type; }
 
-#ifdef SCREAM_DEBUG
-  void set_field_repos (const FieldRepository<Real>& repo,
-                        const FieldRepository<Real>& bkp_repo);
-#endif
-
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).
   void process_required_field (const FieldIdentifier& fid);
+  void process_required_group (const GroupRequest& req);
 
   // The initialization, run, and finalization methods
   void initialize_impl (const TimeStamp& t0);
@@ -106,22 +98,8 @@ protected:
   // The grids required by this process
   std::set<std::string>  m_required_grids;
 
-  // The reference grid name.
-  std::string m_ref_grid_name;
-
   // The schedule type: Parallel vs Sequential
   ScheduleType   m_group_schedule_type;
-
-  // The cumulative set of required/computed fields of the atm processes in the group
-  std::set<FieldIdentifier>      m_required_fields;
-  std::set<FieldIdentifier>      m_computed_fields;
-
-#ifdef SCREAM_DEBUG
-  using field_type = Field<Real>;
-
-  const FieldRepository<Real>*   m_field_repo;
-  const FieldRepository<Real>*   m_bkp_field_repo;
-#endif
 };
 
 } // namespace scream

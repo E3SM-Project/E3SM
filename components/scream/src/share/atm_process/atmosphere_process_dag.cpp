@@ -7,12 +7,12 @@ namespace scream {
 
 void AtmProcDAG::
 create_dag(const group_type& atm_procs,
-           const std::shared_ptr<FieldRepository<Real>> field_repo) {
+           const std::shared_ptr<FieldManager<Real>> field_mgr) {
 
   cleanup ();
 
   // Create the nodes
-  add_nodes(atm_procs,field_repo);
+  add_nodes(atm_procs,field_mgr);
 
   // Add a 'begin' and 'end' placeholders. While they are not actual
   // nodes of the graph, they come handy when representing inputs
@@ -337,7 +337,7 @@ void AtmProcDAG::cleanup () {
 
 void AtmProcDAG::
 add_nodes (const group_type& atm_procs,
-           const std::shared_ptr<FieldRepository<Real>> field_repo) {
+           const std::shared_ptr<FieldManager<Real>> field_mgr) {
   
   const int num_procs = atm_procs.get_num_processes();
   const bool sequential = (atm_procs.get_schedule_type()==ScheduleType::Sequential);
@@ -355,7 +355,7 @@ add_nodes (const group_type& atm_procs,
       // Add all the stuff in the group.
       // Note: no need to add remappers for this process, because
       //       the sub-group will have its remappers taken care of
-      add_nodes(*group,field_repo);
+      add_nodes(*group,field_mgr);
     } else {
       // Create a node for the process
       // Node& node = m_nodes[proc->name()];
@@ -366,7 +366,7 @@ add_nodes (const group_type& atm_procs,
       m_unmet_deps[id].clear();
 
       // Input fields
-      for (auto fid : proc->get_required_fields()) {
+      for (const auto& fid : proc->get_required_fields()) {
         const int fid_id = add_fid(fid);
         node.required.insert(fid_id);
         auto it = m_fid_to_last_provider.find(fid_id);
@@ -380,16 +380,16 @@ add_nodes (const group_type& atm_procs,
       }
 
       // Output fields
-      for (auto fid : proc->get_computed_fields()) {
+      for (const auto& fid : proc->get_computed_fields()) {
         const int fid_id = add_fid(fid);
         node.computed.insert(fid_id);
         m_fid_to_last_provider[fid_id] = id;
       }
 
       // Input groups
-      for (auto itg : proc->get_required_groups()) {
-        EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
-        auto group = field_repo->get_field_group(itg.name,itg.grid);
+      for (const auto& itg : proc->get_required_groups()) {
+        EKAT_REQUIRE_MSG (field_mgr, "Error! Field manager pointer is null.\n");
+        auto group = field_mgr->get_field_group(itg.name);
         if (!group.m_info->m_bundled) {
           // Group is not bundled: process fields individually
           for (const auto& it_f : group.m_fields) {
@@ -433,8 +433,8 @@ add_nodes (const group_type& atm_procs,
 
       // Input-output groups
       for (const auto& itg : proc->get_updated_groups()) {
-        EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
-        auto group = field_repo->get_field_group(itg.name,itg.grid);
+        EKAT_REQUIRE_MSG (field_mgr, "Error! Field manager pointer is null.\n");
+        auto group = field_mgr->get_field_group(itg.name);
         if (!group.m_info->m_bundled) {
           // Group is not bundled: process fields in the group individually
           for (const auto& it_f : group.m_fields) {

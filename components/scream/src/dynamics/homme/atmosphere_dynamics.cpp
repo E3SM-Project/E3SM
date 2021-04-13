@@ -64,6 +64,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
   const auto dgn = "Dynamics";
   m_dyn_grid = grids_manager->get_grid(dgn);
+  m_ref_grid = grids_manager->get_reference_grid();
 
   const int ne = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
 
@@ -95,15 +96,15 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // Create the std::set of required/computed fids
   for (int i=0; i<m_p2d_remapper->get_num_registered_fields(); ++i) {
     const auto& ref_fid = m_p2d_remapper->get_src_field_id(i);
-    m_required_fields.insert(ref_fid);
-    m_computed_fields.insert(ref_fid);
+    add_required_field(ref_fid);
+    add_computed_field(ref_fid);
   }
 
   // qv is needed to make sure Q is not empty (dyn needs qv to transform T<->Theta),
   // while ps is needed for initial conditions only.
   FieldLayout scalar_3d_mid { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
   FieldIdentifier qv("qv", scalar_3d_mid, Q, dgn);
-  m_required_fields.insert(m_p2d_remapper->create_src_fid(qv));
+  add_required_field(m_p2d_remapper->create_src_fid(qv));
 
   const int ftype = get_homme_param<int>("ftype");
   EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,
@@ -111,7 +112,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
                      "       Found " + std::to_string(ftype) + " instead.\n");
 
   // Input-output groups
-  m_inout_groups_req.emplace("tracers",grids_manager->get_reference_grid()->name());
+  add_updated_group("tracers",grids_manager->get_reference_grid()->name());
 }
 
 void HommeDynamics::
@@ -136,7 +137,6 @@ set_updated_group (const FieldGroup<Real>& group)
 
   // Set Q in the remapper
   m_p2d_remapper->register_field(Q_phys,Q_dyn);
-  m_p2d_remapper->registration_ends();
 
   // Now that we have Q, we have the exact count for tracers,
   // and we can use that info to setup tracers stuff in Homme
@@ -160,6 +160,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 
   // Now that we have all fields set in homme, let's remap the input fields,
   // so that Homme gets the correct Initial Conditions
+  m_p2d_remapper->registration_ends();
   m_p2d_remapper->remap(true);
 
   // Finish homme initialization
@@ -168,12 +169,13 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   prim_init_model_f90 ();
 }
 
-void HommeDynamics::register_fields (FieldRepository<Real>& field_repo) const
-{
+void HommeDynamics::
+register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
+  auto& field_mgr = *field_mgrs.at(m_ref_grid->name());
   // Inputs
   for (int i=0; i<m_p2d_remapper->get_num_registered_fields(); ++i) {
     const auto& src = m_p2d_remapper->get_src_field_id(i);
-    field_repo.register_field(src);
+    field_mgr.register_field(src);
   }
 
   // Make sure qv is registered (we need at least that one tracer, for T<->Theta conversions)
@@ -190,7 +192,7 @@ void HommeDynamics::register_fields (FieldRepository<Real>& field_repo) const
   FieldLayout qv_layout { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
   FieldIdentifier qv("qv", qv_layout, Q,  m_dyn_grid->name());
 
-  field_repo.register_field(m_p2d_remapper->create_src_fid(qv),"tracers");
+  field_mgr.register_field(m_p2d_remapper->create_src_fid(qv),"tracers");
 }
 
 void HommeDynamics::run_impl (const Real dt)

@@ -39,16 +39,15 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
 
   // Set of fields used strictly as input
-  m_required_fields.emplace("qi",   scalar3d_layout_mid, Q,      grid_name);
-  m_required_fields.emplace("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name);
+  add_required_field("qi",   scalar3d_layout_mid, Q,      grid_name);
+  add_required_field("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name);
 
   // Set of fields used strictly as output
-  m_computed_fields.emplace("cldfrac_tot",   scalar3d_layout_mid, nondim, grid_name);
-  m_computed_fields.emplace("cldfrac_ice",  scalar3d_layout_mid, nondim, grid_name);
+  add_computed_field("cldfrac_tot",   scalar3d_layout_mid, nondim, grid_name);
+  add_computed_field("cldfrac_ice",  scalar3d_layout_mid, nondim, grid_name);
 
   // Set of fields used as input and output
   // - There are no fields used as both input and output.
-
 }
 
 // =========================================================================================
@@ -59,7 +58,6 @@ void CldFraction::initialize_impl (const util::TimeStamp& /* t0 */)
 // =========================================================================================
 void CldFraction::run_impl (const Real dt)
 {
-  
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 
   auto qi   = m_cld_fraction_fields_in["qi"].get_reshaped_view<const Pack**>();
@@ -76,7 +74,6 @@ void CldFraction::run_impl (const Real dt)
   for (auto& f : m_cld_fraction_fields_out) {
     f.second.get_header().get_tracking().update_time_stamp(ts);
   }
-
 }
 
 // =========================================================================================
@@ -86,22 +83,24 @@ void CldFraction::finalize_impl()
 }
 
 // =========================================================================================
-void CldFraction::register_fields (FieldRepository<Real>& field_repo) const {
-
-  for (const auto& fid : m_required_fields) {
+void CldFraction::
+register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
+  const auto& grid_name = m_cld_fraction_params.get<std::string>("Grid");
+  auto& field_mgr = *field_mgrs.at(grid_name);
+  for (const auto& fid : get_required_fields()) {
     const auto& name = fid.name();
     if (name == "qi") {
-      field_repo.register_field<Pack>(fid,"TRACERS");
+      field_mgr.register_field<Pack>(fid,"TRACERS");
     } else {
-      field_repo.register_field<Pack>(fid);
+      field_mgr.register_field<Pack>(fid);
     }
   }
-  for (const auto& fid : m_computed_fields) {
+  for (const auto& fid : get_computed_fields()) {
     const auto& name = fid.name();
     if (name == "qi") {
-      field_repo.register_field<Pack>(fid,"TRACERS");
+      field_mgr.register_field<Pack>(fid,"TRACERS");
     } else {
-      field_repo.register_field<Pack>(fid);
+      field_mgr.register_field<Pack>(fid);
     }
   }
 }

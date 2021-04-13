@@ -16,7 +16,7 @@
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_repository.hpp"
+#include "share/field/field_manager.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 namespace {
@@ -24,11 +24,11 @@ using namespace scream;
 using namespace ekat::units;
 using input_type = AtmosphereInput;
 
-std::shared_ptr<FieldRepository<Real>>    get_test_repo(const Int num_lcols, const Int num_levs);
+std::shared_ptr<FieldManager<Real>>    get_test_fm(std::shared_ptr<const AbstractGrid> grid);
 std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 ekat::ParameterList                       get_om_params(const Int casenum, const ekat::Comm& comm);
 ekat::ParameterList                       get_in_params(const std::string& type, const ekat::Comm& comm);
-void                                      Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_lcols, const Int num_levs);
+void                                      Initialize_field_manager(const FieldManager<Real>& fm, const Int num_lcols, const Int num_levs);
 
 TEST_CASE("restart","io")
 {
@@ -39,9 +39,10 @@ TEST_CASE("restart","io")
   Int num_levs = 2;
 
   // First set up a field manager and grids manager to interact with the output functions
-  std::shared_ptr<UserProvidedGridsManager> grid_man   = get_test_gm(io_comm,num_gcols,num_levs);
-  int num_lcols = grid_man->get_grid("Physics")->get_num_local_dofs();
-  std::shared_ptr<FieldRepository<Real>>    field_repo = get_test_repo(num_lcols,num_levs);
+  auto grid_man = get_test_gm(io_comm,num_gcols,num_levs);
+  auto grid = grid_man->get_grid("Physics");
+  int num_lcols = grid->get_num_local_dofs();
+  auto field_manager = get_test_fm(grid);
 
   // Initialize the pio_subsystem for this test:
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
@@ -53,19 +54,19 @@ TEST_CASE("restart","io")
   m_output_manager.set_params(output_params);
   m_output_manager.set_comm(io_comm);
   m_output_manager.set_grids(grid_man);
-  m_output_manager.set_repo(field_repo);
+  m_output_manager.set_field_mgr(field_manager);
   m_output_manager.init();
 
   // Construct a timestamp
   util::TimeStamp time (0,0,0,0);
 
   //  Cycle through data and write output
-  const auto& out_fields = field_repo->get_groups_info().at("output");
+  const auto& out_fields = field_manager->get_groups_info().at("output");
   Int max_steps = 17;  // Go a few steps past the last restart write to make sure that the last written file is on the 15th step.
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii) {
     for (const auto& fname : out_fields->m_fields_names) {
-      auto f = field_repo->get_field(fname,"Physics");
+      auto f = field_manager->get_field(fname);
       f.sync_to_host();
       auto f_host = f.get_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
@@ -85,21 +86,21 @@ TEST_CASE("restart","io")
   m_output_manager_res.set_params(output_params);
   m_output_manager_res.set_comm(io_comm);
   m_output_manager_res.set_grids(grid_man);
-  m_output_manager_res.set_repo(field_repo);
+  m_output_manager_res.set_field_mgr(field_manager);
   m_output_manager_res.set_runtype_restart(true);
   m_output_manager_res.init();
   auto res_params = get_in_params("Restart",io_comm);
   // reinit fields
-  Initialize_field_repo(*field_repo,num_lcols,num_levs);
+  Initialize_field_manager(*field_manager,num_lcols,num_levs);
   // grab restart data
-  input_type ins_input(io_comm,res_params,field_repo,grid_man);
+  input_type ins_input(io_comm,res_params,field_manager,grid_man);
   ins_input.pull_input();
   // Note, that only field_1 and field_2 were marked for restart.  Check to make sure values
   // in the field manager reflect those fields as restarted from 15 and field_3 as being
   // freshly restarted:
-  auto field1 = field_repo->get_field("field_1","Physics");
-  auto field2 = field_repo->get_field("field_2","Physics");
-  auto field3 = field_repo->get_field("field_3","Physics");
+  auto field1 = field_manager->get_field("field_1");
+  auto field2 = field_manager->get_field("field_2");
+  auto field3 = field_manager->get_field("field_3");
   auto field1_hst = field1.get_view<Host>();
   auto field2_hst = field2.get_view<Host>();
   auto field3_hst = field3.get_reshaped_view<Real**,Host>();
@@ -117,7 +118,7 @@ TEST_CASE("restart","io")
   // Finish the last 5 steps
   for (Int ii=0;ii<5;++ii) {
     for (const auto& fname : out_fields->m_fields_names) {
-      auto f = field_repo->get_field(fname,"Physics");
+      auto f = field_manager->get_field(fname);
       f.sync_to_host();
       auto f_host = f.get_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
@@ -137,7 +138,7 @@ TEST_CASE("restart","io")
   // with the initial value.  Note that we only took 5 steps, so field 3 should reflect a a value that stored steps 11-15
   // the restart history file, but was re-initialized and run for the last 5 steps.
   auto avg_params = get_in_params("Final",io_comm);
-  input_type avg_input(io_comm,avg_params,field_repo,grid_man);
+  input_type avg_input(io_comm,avg_params,field_manager,grid_man);
   avg_input.pull_input();
   field1.sync_to_host();
   field2.sync_to_host();
@@ -159,13 +160,18 @@ TEST_CASE("restart","io")
   grid_man->clean_up();
 } // TEST_CASE restart
 /*===================================================================================================================*/
-std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs)
+std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
 {
   using namespace ShortFieldTagsNames;
+  using FL = FieldLayout;
 
-  // Create a repo
-  std::shared_ptr<FieldRepository<Real>>  repo = std::make_shared<FieldRepository<Real>>();
-  // Create some fields for this repo
+  // Create a fm
+  auto fm = std::make_shared<FieldManager<Real>>(grid);
+
+  const int num_lcols = grid->get_num_local_dofs();
+  const int num_levs = grid->get_num_vertical_levels();
+
+  // Create some fields for this fm
   std::vector<FieldTag> tag_h  = {COL};
   std::vector<FieldTag> tag_v  = {LEV};
   std::vector<FieldTag> tag_2d = {COL,LEV};
@@ -174,38 +180,38 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const 
   std::vector<Int>     dims_v  = {num_levs};
   std::vector<Int>     dims_2d = {num_lcols,num_levs};
 
-  using FL = FieldLayout;
-  const std::string gn = "Physics";
+  const std::string& gn = grid->name();
+
   FieldIdentifier fid1("field_1",FL{tag_h,dims_h},m,gn);
   FieldIdentifier fid2("field_2",FL{tag_v,dims_v},kg,gn);
   FieldIdentifier fid3("field_3",FL{tag_2d,dims_2d},kg/m,gn);
 
-  // Register fields with repo
-  repo->registration_begins();
-  repo->register_field(fid1,{"output","restart"});
-  repo->register_field(fid2,{"output","restart"});
-  repo->register_field(fid3,{"output"});
-  repo->registration_ends();
+  // Register fields with fm
+  fm->registration_begins();
+  fm->register_field(fid1,{"output","restart"});
+  fm->register_field(fid2,{"output","restart"});
+  fm->register_field(fid3,{"output"});
+  fm->registration_ends();
 
   // Initialize these fields
-  Initialize_field_repo(*repo,num_lcols,num_levs);
+  Initialize_field_manager(*fm,num_lcols,num_levs);
   // Update timestamp
-  auto f1 = repo->get_field(fid1);
-  auto f2 = repo->get_field(fid2);
-  auto f3 = repo->get_field(fid3);
+  auto f1 = fm->get_field(fid1);
+  auto f2 = fm->get_field(fid2);
+  auto f3 = fm->get_field(fid3);
   util::TimeStamp time (0,0,0,0);
-  repo->init_fields_time_stamp(time);
+  fm->init_fields_time_stamp(time);
 
-  return repo;
+  return fm;
 }
 /*===================================================================================================================*/
-void Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_lcols, const Int num_levs)
+void Initialize_field_manager(const FieldManager<Real>& fm, const Int num_lcols, const Int num_levs)
 {
 
   // Initialize these fields
-  const auto& f1 = repo.get_field("field_1","Physics");
-  const auto& f2 = repo.get_field("field_2","Physics");
-  const auto& f3 = repo.get_field("field_3","Physics");
+  const auto& f1 = fm.get_field("field_1");
+  const auto& f2 = fm.get_field("field_2");
+  const auto& f3 = fm.get_field("field_3");
   auto f1_hst = f1.get_view<Host>();
   auto f2_hst = f2.get_view<Host>();
   auto f3_hst = f3.get_reshaped_view<Real**,Host>();
