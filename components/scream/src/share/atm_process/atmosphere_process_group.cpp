@@ -97,13 +97,13 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
       process_required_field(req);
     }
     for (const auto& req : atm_proc->get_computed_fields()) {
-      add_computed_field(req);
+      add_field<Required>(req);
     }
     for (const auto& req : atm_proc->get_required_groups()) {
-      add_required_group(req);
+      add_group<Required>(req);
     }
     for (const auto& req : atm_proc->get_updated_groups()) {
-      add_updated_group(req);
+      add_group<Updated>(req);
     }
   }
 }
@@ -224,39 +224,39 @@ process_required_group (const GroupRequest& req) {
       // Some previous atm proc updated this group, so it's not an 'input'
       // of the atm group as a whole. However, we might need a different
       // pack size. So, instead of adding to the required groups,
-      // we add to the computed fields. This way we don't modify the inputs
+      // we add to the updated ones. This way we don't modify the inputs
       // of the group, and still manage to communicate to the AD the pack size
       // that we need.
       // NOTE; we don't have a way to check if all the fields in the group
       //       are computed by previous processes, since we don't have
       //       the list of all fields in this group.
-      add_updated_group(req);
+      add_group<Updated>(req);
     } else {
-      add_required_group(req);
+      add_group<Required>(req);
     }
   } else {
     // In parallel schedule, the inputs of all processes are inputs of the group
-    add_required_group(req);
+    add_group<Required>(req);
   }
 }
 
 void AtmosphereProcessGroup::
-process_required_field (const FieldIdentifier& fid) {
+process_required_field (const FieldRequest& req) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
-    if (computes_field(fid)) {
+    if (computes_field(req.fid)) {
       // Some previous atm proc computes this field, so it's not an 'input'
       // of the group as a whole. However, we might need a different pack size,
       // or want to add it to a different group. So, instead of adding to
       // the required fields, we add to the computed fields. This way we
       // don't modify the inputs of the group, and still manage to communicate
       // to the AD the pack size and group affiliations that we need
-      add_computed_field(fid);
+      add_field<Computed>(req);
     } else {
-      add_required_field(fid);
+      add_field<Required>(req);
     }
   } else {
     // In parallel schedule, the inputs of all processes are inputs of the group
-    add_required_field(fid);
+    add_field<Required>(req);
   }
 }
 

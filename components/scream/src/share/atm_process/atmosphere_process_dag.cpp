@@ -366,7 +366,8 @@ add_nodes (const group_type& atm_procs,
       m_unmet_deps[id].clear();
 
       // Input fields
-      for (const auto& fid : proc->get_required_fields()) {
+      for (const auto& req : proc->get_required_fields()) {
+        const auto& fid = req.fid;
         const int fid_id = add_fid(fid);
         node.required.insert(fid_id);
         auto it = m_fid_to_last_provider.find(fid_id);
@@ -380,7 +381,8 @@ add_nodes (const group_type& atm_procs,
       }
 
       // Output fields
-      for (const auto& fid : proc->get_computed_fields()) {
+      for (const auto& req : proc->get_computed_fields()) {
+        const auto& fid = req.fid;
         const int fid_id = add_fid(fid);
         node.computed.insert(fid_id);
         m_fid_to_last_provider[fid_id] = id;

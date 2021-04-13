@@ -54,6 +54,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
   using FID = FieldIdentifier;
+  using FL  = FieldLayout;
 
   constexpr int NGP  = HOMMEXX_NP;
   constexpr int NVL  = HOMMEXX_NUM_PHYSICAL_LEV;
@@ -93,18 +94,18 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("w_int"));
   m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("pseudo_density"));
 
-  // Create the std::set of required/computed fids
+  // Add inout fields to the list of required/computed fields
   for (int i=0; i<m_p2d_remapper->get_num_registered_fields(); ++i) {
     const auto& ref_fid = m_p2d_remapper->get_src_field_id(i);
-    add_required_field(ref_fid);
-    add_computed_field(ref_fid);
+    add_field<Required>(ref_fid);
+    add_field<Computed>(ref_fid);
   }
 
   // qv is needed to make sure Q is not empty (dyn needs qv to transform T<->Theta),
   // while ps is needed for initial conditions only.
   FieldLayout scalar_3d_mid { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
   FieldIdentifier qv("qv", scalar_3d_mid, Q, dgn);
-  add_required_field(m_p2d_remapper->create_src_fid(qv));
+  add_field<Required>(m_p2d_remapper->create_src_fid(qv));
 
   const int ftype = get_homme_param<int>("ftype");
   EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,
@@ -112,7 +113,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
                      "       Found " + std::to_string(ftype) + " instead.\n");
 
   // Input-output groups
-  add_updated_group("tracers",grids_manager->get_reference_grid()->name());
+  add_group<Updated>("tracers",grids_manager->get_reference_grid()->name());
 }
 
 void HommeDynamics::
@@ -163,8 +164,6 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   m_p2d_remapper->registration_ends();
   m_p2d_remapper->remap(true);
 
-  // Finish homme initialization
-  // Homme::initialize_dp3d_from_ps_c();
 
   prim_init_model_f90 ();
 }

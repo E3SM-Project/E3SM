@@ -67,16 +67,16 @@ public:
     FieldLayout layout_vec ( {COL,CMP,LEV}, {num_cols,2,num_levs} );
 
     if (m_dummy_type==A2G) {
-      add_required_field("A",layout,ekat::units::m,m_grid->name());
-      add_computed_field("B",layout,ekat::units::m,m_grid->name());
-      add_computed_field("C",layout,ekat::units::m,m_grid->name());
-      add_required_field("D",layout_vec,ekat::units::m,m_grid->name());
-      add_required_field("E",layout,ekat::units::m,m_grid->name());
+      add_field<Required>("A",layout,ekat::units::m,m_grid->name());
+      add_field<Computed>("B",layout,ekat::units::m,m_grid->name());
+      add_field<Computed>("C",layout,ekat::units::m,m_grid->name());
+      add_field<Required>("D",layout_vec,ekat::units::m,m_grid->name());
+      add_field<Required>("E",layout,ekat::units::m,m_grid->name());
     } else if (m_dummy_type == G2A) {
-      add_computed_field("A",layout,ekat::units::m,m_grid->name());
-      add_required_group("The Group",m_grid->name());
+      add_field<Computed>("A",layout,ekat::units::m,m_grid->name());
+      add_group<Required>("The Group",m_grid->name());
     } else {
-      add_updated_group("The Group",m_grid->name());
+      add_group<Updated>("The Group",m_grid->name());
     }
   }
 
@@ -85,15 +85,15 @@ public:
   void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
     auto fm = field_mgrs.at(m_grid->name());
     if (m_dummy_type==A2G) {
-      for (const auto& fid : get_required_fields()) {
-        fm->register_field(fid);
+      for (const auto& req : get_required_fields()) {
+        fm->register_field(req.fid);
       }
-      for (const auto& fid : get_computed_fields()) {
-        fm->register_field(fid,"The Group");
+      for (const auto& req : get_computed_fields()) {
+        fm->register_field(req.fid,"The Group");
       }
     } else if (m_dummy_type == G2A) {
-      for (const auto& fid : get_computed_fields()) {
-        fm->register_field(fid);
+      for (const auto& req : get_computed_fields()) {
+        fm->register_field(req.fid);
       }
     }
   }
@@ -106,7 +106,7 @@ public:
       const auto& f = it.second;
       const auto& fid = f->get_header().get_identifier();
       m_inputs.emplace(fid.name(),*f);
-      add_required_field(fid);
+      add_field<Required>(fid);
     }
   }
   void set_updated_group (const FieldGroup<Real>& field_group) {
@@ -116,8 +116,8 @@ public:
     for (const auto& it : field_group.m_fields) {
       const auto& f = it.second;
       const auto& fid = f->get_header().get_identifier();
-      add_required_field(fid);
-      add_computed_field(fid);
+      add_field<Required>(fid);
+      add_field<Computed>(fid);
 
       m_inputs.emplace(fid.name(),f->get_const());
       m_outputs.emplace(fid.name(),*f);

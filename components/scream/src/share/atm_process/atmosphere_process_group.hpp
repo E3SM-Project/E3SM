@@ -70,7 +70,7 @@ public:
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).
-  void process_required_field (const FieldIdentifier& fid);
+  void process_required_field (const FieldRequest& req);
   void process_required_group (const GroupRequest& req);
 
   // The initialization, run, and finalization methods

@@ -39,12 +39,12 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
 
   // Set of fields used strictly as input
-  add_required_field("qi",   scalar3d_layout_mid, Q,      grid_name);
-  add_required_field("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name);
+  add_field<Required>("qi",   scalar3d_layout_mid, Q,      grid_name);
+  add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name);
 
   // Set of fields used strictly as output
-  add_computed_field("cldfrac_tot",   scalar3d_layout_mid, nondim, grid_name);
-  add_computed_field("cldfrac_ice",  scalar3d_layout_mid, nondim, grid_name);
+  add_field<Computed>("cldfrac_tot",   scalar3d_layout_mid, nondim, grid_name);
+  add_field<Computed>("cldfrac_ice",  scalar3d_layout_mid, nondim, grid_name);
 
   // Set of fields used as input and output
   // - There are no fields used as both input and output.
@@ -87,7 +87,8 @@ void CldFraction::
 register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
   const auto& grid_name = m_cld_fraction_params.get<std::string>("Grid");
   auto& field_mgr = *field_mgrs.at(grid_name);
-  for (const auto& fid : get_required_fields()) {
+  for (const auto& req : get_required_fields()) {
+    const auto& fid = req.fid;
     const auto& name = fid.name();
     if (name == "qi") {
       field_mgr.register_field<Pack>(fid,"TRACERS");
@@ -95,7 +96,8 @@ register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>
       field_mgr.register_field<Pack>(fid);
     }
   }
-  for (const auto& fid : get_computed_fields()) {
+  for (const auto& req : get_computed_fields()) {
+    const auto& fid = req.fid;
     const auto& name = fid.name();
     if (name == "qi") {
       field_mgr.register_field<Pack>(fid,"TRACERS");

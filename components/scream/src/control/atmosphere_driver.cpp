@@ -199,7 +199,8 @@ initialize_fields (const util::TimeStamp& t0)
   int ifield=0;
   auto ref_fm = get_ref_grid_field_mgr();
   std::vector<std::string> ic_fields_to_copy;
-  for (auto& fid : fields_in) {
+  for (auto& req : fields_in) {
+    const auto& fid = req.fid;
     const auto& name = fid.name();
     auto f = ref_fm->get_field(fid);
     // First, check if the input file contains constant values for some of the fields
@@ -290,12 +291,14 @@ void AtmosphereDriver::initialize_atm_procs ()
   // Input fields will be handed to the processes as const
   const auto& inputs  = m_atm_process_group->get_required_fields();
   const auto& outputs = m_atm_process_group->get_computed_fields();
-  for (const auto& fid : inputs) {
+  for (const auto& req : inputs) {
+    const auto& fid = req.fid;
     auto fm = get_field_mgr(fid.get_grid_name());
     m_atm_process_group->set_required_field(fm->get_field(fid).get_const());
   }
   // Output fields are handed to the processes as writable
-  for (const auto& fid : outputs) {
+  for (const auto& req : outputs) {
+    const auto& fid = req.fid;
     auto fm = get_field_mgr(fid.get_grid_name());
     m_atm_process_group->set_computed_field(fm->get_field(fid));
   }
@@ -399,12 +402,13 @@ AtmosphereDriver::get_field_mgr (const std::string& grid_name) const {
 }
 
 void AtmosphereDriver::register_groups () {
-  using GroupRequest = AtmosphereProcess::GroupRequest;
   // Given a GroupRequest for group $group on grid $grid with pack size $ps,
   // make sure that the fm on grid $grid contains all the fields that are
-  // in group $group on the fm on the ref grid.
+  // in group $group on the fm on the ref grid, and that all fields can
+  // accommodate the requested pack size.
   // In other words, the group on the input grid must be a super-set of the
   // group on the ref grid.
+
   auto ref_grid = m_grids_manager->get_reference_grid();
   auto ref_fm = m_field_mgrs.at(ref_grid->name());
   auto has_whole_ref_grid_group_on_grid = [&](const GroupRequest& req)
@@ -470,6 +474,44 @@ void AtmosphereDriver::register_groups () {
   }
   for (auto it : m_atm_process_group->get_updated_groups()) {
     has_whole_ref_grid_group_on_grid(it);
+  }
+
+  // Given a GroupRequest, ensures that all the fields of the group
+  // are present on the requested grid, and that their allocation
+  // will accommodate the requested pack size.
+  auto process_request = [&](const GroupRequest& req) {
+    const auto& name = req.name;
+    const auto& grid = req.grid;
+
+    const auto fm = get_field_mgr(grid);
+    // If the group has no "parent", we simply loop over its fields,
+    // and make sure the given pack size is requested.
+    if (req.parent==nullptr) {
+      if (req.pack_size>1) {
+        auto it = fm->get_groups_info().find(name);
+        EKAT_REQUIRE_MSG (it!=fm->get_groups_info().end(),
+            "Error! Could not accommodate group request. Group not found in the field manager.\n"
+            "       Group name: " + name + "\n"
+            "       Grid name:  " + grid + "\n");
+
+        for (const auto& n : it->second->m_fields_names) {
+          fm->get_field_ptr(n)->get_header().get_alloc_properties().request_allocation<Real>(req.pack_size);
+        }
+      }
+    } else {
+      // This request has a parent request. Depending on the kind of parent, we need to do different things
+      switch (req.child_type) {
+        case ChildGroupRequestType::SoftCopyAlias:
+          // Easy case: loop over 
+          break;
+        default:
+          break;
+      }
+    }
+  };
+
+  for (auto it : m_atm_process_group->get_required_groups()) {
+    process_request(it);
   }
 }
 
