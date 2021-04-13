@@ -11,7 +11,7 @@ extern "C" {
   void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
                    Real zvir, Real latvap, Real latice, Real karman);
   void shoc_use_cxx_c(bool use_cxx);
-  void shoc_main_c(int shcol, int nlev, int nlevi, Real dtime, int nadv,
+  Int shoc_main_c(int shcol, int nlev, int nlevi, Real dtime, int nadv,
                    Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid,
                    Real* zi_grid, Real* pres, Real* presi, Real* pdel,
                    Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc,
@@ -23,7 +23,7 @@ extern "C" {
                    Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec,
                    Real* qw_sec, Real* qwthl_sec, Real* wthl_sec, Real* wqw_sec,
                    Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3,
-                   Real* wqls_sec, Real* brunt, Real* shoc_ql2);
+                   Real* wqls_sec, Real* brunt, Real* shoc_ql2, Real* elapsed_s);
 }
 
 namespace scream {
@@ -139,21 +139,43 @@ void shoc_init(Int nlev, bool use_fortran, bool force_reinit) {
   shoc_use_cxx_c(!use_fortran);
 }
 
-void shoc_main(FortranData& d) {
-  shoc_main_c((int)d.shcol, (int)d.nlev, (int)d.nlevi, d.dtime, (int)d.nadv,
-              d.host_dx.data(), d.host_dy.data(), d.thv.data(),
-              d.zt_grid.data(), d.zi_grid.data(), d.pres.data(), d.presi.data(),
-              d.pdel.data(), d.wthl_sfc.data(), d.wqw_sfc.data(), d.uw_sfc.data(),
-              d.vw_sfc.data(), d.wtracer_sfc.data(), (int)d.num_qtracers,
-              d.w_field.data(), d.exner.data(), d.phis.data(), d.host_dse.data(),
-              d.tke.data(), d.thetal.data(), d.qw.data(), d.u_wind.data(),
-              d.v_wind.data(), d.qtracers.data(), d.wthv_sec.data(), d.tkh.data(),
-              d.tk.data(), d.shoc_ql.data(), d.shoc_cldfrac.data(), d.pblh.data(),
-              d.shoc_mix.data(), d.isotropy.data(), d.w_sec.data(),
-              d.thl_sec.data(), d.qw_sec.data(), d.qwthl_sec.data(),
-              d.wthl_sec.data(), d.wqw_sec.data(), d.wtke_sec.data(),
-              d.uw_sec.data(), d.vw_sec.data(), d.w3.data(), d.wqls_sec.data(),
-              d.brunt.data(), d.shoc_ql2.data() );
+Int shoc_main(FortranData& d, bool use_fortran) {
+  if (use_fortran) {
+    Real elapsed_s;
+    shoc_main_c((int)d.shcol, (int)d.nlev, (int)d.nlevi, d.dtime, (int)d.nadv,
+                d.host_dx.data(), d.host_dy.data(), d.thv.data(),
+                d.zt_grid.data(), d.zi_grid.data(), d.pres.data(), d.presi.data(),
+                d.pdel.data(), d.wthl_sfc.data(), d.wqw_sfc.data(), d.uw_sfc.data(),
+                d.vw_sfc.data(), d.wtracer_sfc.data(), (int)d.num_qtracers,
+                d.w_field.data(), d.exner.data(), d.phis.data(), d.host_dse.data(),
+                d.tke.data(), d.thetal.data(), d.qw.data(), d.u_wind.data(),
+                d.v_wind.data(), d.qtracers.data(), d.wthv_sec.data(), d.tkh.data(),
+                d.tk.data(), d.shoc_ql.data(), d.shoc_cldfrac.data(), d.pblh.data(),
+                d.shoc_mix.data(), d.isotropy.data(), d.w_sec.data(),
+                d.thl_sec.data(), d.qw_sec.data(), d.qwthl_sec.data(),
+                d.wthl_sec.data(), d.wqw_sec.data(), d.wtke_sec.data(),
+                d.uw_sec.data(), d.vw_sec.data(), d.w3.data(), d.wqls_sec.data(),
+                d.brunt.data(), d.shoc_ql2.data(), &elapsed_s);
+    return static_cast<Int>(elapsed_s * 1000000);
+  } else {
+    const int npbl = d.nlev;
+    return shoc_main_f((int)d.shcol, (int)d.nlev, (int)d.nlevi, d.dtime, (int)d.nadv,
+                       npbl, d.host_dx.data(), d.host_dy.data(),
+                       d.thv.data(), d.zt_grid.data(), d.zi_grid.data(), d.pres.data(),
+                       d.presi.data(), d.pdel.data(), d.wthl_sfc.data(),
+                       d.wqw_sfc.data(), d.uw_sfc.data(), d.vw_sfc.data(),
+                       d.wtracer_sfc.data(), (int)d.num_qtracers,
+                       d.w_field.data(), d.exner.data(), d.phis.data(), d.host_dse.data(),
+                       d.tke.data(), d.thetal.data(), d.qw.data(),
+                       d.u_wind.data(), d.v_wind.data(), d.qtracers.data(), d.wthv_sec.data(),
+                       d.tkh.data(), d.tk.data(), d.shoc_ql.data(),
+                       d.shoc_cldfrac.data(), d.pblh.data(), d.shoc_mix.data(), d.isotropy.data(),
+                       d.w_sec.data(), d.thl_sec.data(),
+                       d.qw_sec.data(), d.qwthl_sec.data(), d.wthl_sec.data(), d.wqw_sec.data(),
+                       d.wtke_sec.data(), d.uw_sec.data(),
+                       d.vw_sec.data(), d.w3.data(), d.wqls_sec.data(), d.brunt.data(),
+                       d.shoc_ql2.data());
+  }
 }
 
 int test_FortranData () {
@@ -373,7 +395,7 @@ int test_shoc_ic (bool use_fortran, bool gen_plot_scripts) {
   // 3. Run 100 steps, each of size dtime = 10 (as in that method)
   d->nadv = 100;
   d->dtime = 10;
-  shoc_main(*d);
+  shoc_main(*d,use_fortran);
 
   // 4. Generate a Python script that plots the results.
   {

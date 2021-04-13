@@ -192,7 +192,11 @@ subroutine shoc_main ( &
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
      wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
      uw_sec, vw_sec, w3,&                 ! Output (diagnostic)
-     wqls_sec, brunt, shoc_ql2)           ! Output (diagnostic)
+     wqls_sec, brunt, shoc_ql2 &          ! Output (diagnostic)
+#ifdef SCREAM_CONFIG_IS_CMAKE
+     , elapsed_s &
+#endif
+     )
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
     use shoc_iso_f, only: shoc_main_f
@@ -314,6 +318,11 @@ subroutine shoc_main ( &
   ! return to isotropic timescale [s]
   real(rtype), intent(out) :: isotropy(shcol,nlev)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  real(rtype), optional, intent(out) :: elapsed_s ! duration of main loop in seconds
+#endif
+
+
   !============================================================================
 ! LOCAL VARIABLES
 
@@ -344,6 +353,10 @@ subroutine shoc_main ( &
               wv_a(shcol),wl_a(shcol)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
+  integer :: clock_count1, clock_count_rate, clock_count_max, clock_count2, clock_count_diff
+#endif
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
     call shoc_main_f(shcol, nlev, nlevi, dtime, nadv, npbl,& ! Input
                      host_dx, host_dy,thv, &                 ! Input
@@ -363,6 +376,10 @@ subroutine shoc_main ( &
                      wqls_sec, brunt, shoc_ql2)              ! Output (diagnostic)
      return
   endif
+#endif
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    call system_clock(clock_count1, clock_count_rate, clock_count_max)
 #endif
 
   ! Compute integrals of static energy, kinetic energy, water vapor, and liquid water
@@ -523,6 +540,15 @@ subroutine shoc_main ( &
      shoc_qv,u_wind,v_wind,&              ! Input
      ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
      pblh)                                ! Output
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  call system_clock(clock_count2, clock_count_rate, clock_count_max)
+  clock_count_diff = clock_count2 - clock_count1
+  if (present(elapsed_s)) then
+    elapsed_s = real(clock_count_diff) / real(clock_count_rate)
+  endif
+#endif
+
   return
 
 end subroutine shoc_main
