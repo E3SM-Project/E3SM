@@ -59,7 +59,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
 }  // RRTMGPRadiation::set_grids
 
-void RRTMGPRadiation::initialize_impl(const util::TimeStamp& t0) {
+void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   // Names of active gases
   // TODO: this needs to be not hard-coded...I wanted to get these from
   // input files, but need to get around the rrtmgp_initializer logic.
@@ -77,7 +77,7 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& t0) {
   rrtmgp::rrtmgp_initialize(gas_concs);
 }
 
-void RRTMGPRadiation::run_impl      (const Real dt) {
+void RRTMGPRadiation::run_impl (const Real /* dt */) {
   // Get data from AD; RRTMGP wants YAKL views
   // TODO: how can I just keep these around without having to create every time?
   // They are just pointers, so should be able to keep them somewhere else and just associate them once?
@@ -148,7 +148,6 @@ void RRTMGPRadiation::run_impl      (const Real dt) {
     sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
     lw_flux_up, lw_flux_dn
   );
-
 }
 
 void RRTMGPRadiation::finalize_impl  () {
