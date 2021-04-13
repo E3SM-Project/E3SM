@@ -5136,8 +5136,8 @@ class QLT : public cedr::qlt::QLT<ES> {
 
   static Int solve (const Int nlev, const VerticalLevelsData& vld,
                     const Real& tot_mass) {
-    solve(nlev, vld.ones.data(), tot_mass, vld.lo.data(), vld.hi.data(),
-          vld.mass.data(), vld.wrk.data());    
+    return solve(nlev, vld.ones.data(), tot_mass, vld.lo.data(), vld.hi.data(),
+                 vld.mass.data(), vld.wrk.data());    
   }
 
   static Int solve_unittest () {
