@@ -95,7 +95,19 @@ module micro_p3_interface
       accre_enhan_idx,    &
       mon_ccn_1_idx,      &
       mon_ccn_2_idx,      &
+      mon_ccn_3_idx,      &
+      mon_ccn_4_idx,      &
+      mon_ccn_5_idx,      &
+      mon_ccn_6_idx,      &
+      mon_ccn_7_idx,      &
+      mon_ccn_8_idx,      &
+      mon_ccn_9_idx,      &
+      mon_ccn_10_idx,     &
+      mon_ccn_11_idx,     &
+      mon_ccn_12_idx,     &
       current_month      !Needed for prescribed CCN option         
+
+   integer,dimension(12) :: mon_ccn_idx
 
 ! Physics buffer indices for fields registered by other modules
    integer :: &
@@ -296,8 +308,19 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('QV_PREV',     'global',dtype_r8,(/pcols,pver/), qv_prev_idx)
    call pbuf_add_field('T_PREV',      'global',dtype_r8,(/pcols,pver/), t_prev_idx)
  !! for prescribed CCN
-   call pbuf_add_field('MON_CCN_1',  'global', dtype_r8,(/pcols,pver/),mon_ccn_1_idx)
-   call pbuf_add_field('MON_CCN_2',  'global', dtype_r8,(/pcols,pver/),mon_ccn_2_idx)
+   call pbuf_add_field('MON_CCN_1',  'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(1)) !ASDmon_ccn_1_idx)
+   call pbuf_add_field('MON_CCN_2',  'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(2)) !ASDmon_ccn_2_idx)
+   call pbuf_add_field('MON_CCN_3',  'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(3)) !ASDmon_ccn_3_idx)
+   call pbuf_add_field('MON_CCN_4',  'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(4)) !ASDmon_ccn_4_idx)
+   call pbuf_add_field('MON_CCN_5',  'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(5)) !ASDmon_ccn_5_idx)
+   call pbuf_add_field('MON_CCN_6',  'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(6)) !ASDmon_ccn_6_idx)
+   call pbuf_add_field('MON_CCN_7',  'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(7)) !ASDmon_ccn_7_idx)
+   call pbuf_add_field('MON_CCN_8',  'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(8)) !ASDmon_ccn_8_idx)
+   call pbuf_add_field('MON_CCN_9',  'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(9)) !ASDmon_ccn_9_idx)
+   call pbuf_add_field('MON_CCN_10', 'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(10)) !ASDmon_ccn_10_idx)
+   call pbuf_add_field('MON_CCN_11', 'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(11)) !ASDmon_ccn_11_idx)
+   call pbuf_add_field('MON_CCN_12', 'global', dtype_r8,(/pcols,pver/),mon_ccn_idx(12)) !ASDmon_ccn_12_idx)
+
 
    if (masterproc) write(iulog,'(A20)') '    P3 register finished'
   end subroutine micro_p3_register
@@ -698,32 +721,20 @@ end subroutine micro_p3_readnl
       end if
    end if
 
-   if (do_prescribed_CCN) then !intialize mon_ccn_1 and mon_ccn_2
+   if (do_prescribed_CCN) then !intialize mon_ccn_1-12
 
       !find current_month
       call get_curr_date(year,month,day,tod)
       current_month = month
-      if (month==12) then
-         next_month = 1
-      else
-         next_month = month + 1
-      end if
-
-      allocate(ccn_values(pcols,pver,begchunk:endchunk))
-
-      call get_prescribed_CCN_from_file(micro_p3_lookup_dir,current_month,ccn_values)
-
-      call pbuf_set_field(pbuf2d, mon_ccn_1_idx, ccn_values)
-
-      deallocate(ccn_values)
-
-      allocate(ccn_values(pcols,pver,begchunk:endchunk))
-
-      call get_prescribed_CCN_from_file(micro_p3_lookup_dir,next_month,ccn_values)
-
-      call pbuf_set_field(pbuf2d, mon_ccn_2_idx, ccn_values)
-
-      deallocate(ccn_values)
+      do month = 1,12
+        allocate(ccn_values(pcols,pver,begchunk:endchunk))
+  
+        call get_prescribed_CCN_from_file(micro_p3_lookup_dir,month,ccn_values)
+  
+        call pbuf_set_field(pbuf2d, mon_ccn_idx(month), ccn_values)
+  
+        deallocate(ccn_values)
+      end do
 
    endif
 
@@ -820,10 +831,7 @@ end subroutine micro_p3_readnl
       real(rtype) :: fraction_of_month
       real(rtype), pointer :: mon_ccn_1(:,:)
       real(rtype), pointer :: mon_ccn_2(:,:)
-      real(rtype), pointer :: ccn_values(:,:,:)
       real(rtype), dimension(12):: days_per_month
-
-      nullify(ccn_values)
 
       !fill days_per_month, SPA does not recognize leap year
       days_per_month = (/31,28,31,30,31,30,31,31,30,31,30,31/)
@@ -831,36 +839,17 @@ end subroutine micro_p3_readnl
       !get current time step's date
       call get_curr_date(year,month,day,tod)
 
-      !populate mon_ccn_1 and mon_ccn_2 with corresponding pbuf variables
-
-      call pbuf_get_field(pbuf,mon_ccn_1_idx, mon_ccn_1)
-
-      call pbuf_get_field(pbuf,mon_ccn_2_idx, mon_ccn_2)
-
-      if (current_month .ne. month) then
-
-         mon_ccn_1 = mon_ccn_2
-
-         if (month==12) then
-            next_month = 1
-         else
-            next_month = month + 1
-         end if
-
-         allocate(ccn_values(pcols,pver,begchunk:endchunk))
-
-         call get_prescribed_CCN_from_file(micro_p3_lookup_dir,next_month,ccn_values)
-
-         mon_ccn_2 = ccn_values(:,:,lchnk)
-
-         deallocate(ccn_values)
-         
-         current_month = month
-
+      if (month==12) then
+         next_month = 1
+      else
+         next_month = month + 1
       end if
-                                    
+
       !interpolate between mon_ccn_1 and mon_ccn_2 to calculate nccn_prescribed
       !based on current date
+      call pbuf_get_field(pbuf,mon_ccn_idx(month), mon_ccn_1)
+
+      call pbuf_get_field(pbuf,mon_ccn_idx(next_month), mon_ccn_2)
 
       fraction_of_month = (day*3600.0*24.0 + tod)/(3600*24*days_per_month(current_month)) !tod is in seconds
 
