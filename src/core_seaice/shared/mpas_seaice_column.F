@@ -2312,7 +2312,8 @@ contains
        abortMessage = ""
 
        !$omp parallel do default(shared) private(iCategory,iBioTracers,iBioData,&
-       !$omp&   abortMessage) firstprivate(newlyFormedIceLogical,oceanBioConcentrationsUsed) &
+       !$omp&   totalCarbonInitial,abortMessage,oceanBioFluxesTemp,totalCarbonFinal,&
+       !$omp&   carbonError) firstprivate(newlyFormedIceLogical,oceanBioConcentrationsUsed) &
        !$omp&   reduction(.or.:abortFlag)
        do iCell = 1, nCellsSolve
 
