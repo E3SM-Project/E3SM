@@ -636,10 +636,10 @@ module advance_clubb_core_module
 ! <--- h1g, 2012-06-14
 #endif
 
-    real( kind = core_rknd ), intent(in), optional ::  &
+    real( kind = core_rknd ), intent(in), pointer ::  &
       upwp_sfc_pert,     & ! pertubed u'w' at surface          [m^2/s^2]
       vpwp_sfc_pert        ! pertubed v'w' at surface          [m^2/s^2]
-    real( kind = core_rknd ), intent(inout), dimension(gr%nz), optional ::  &
+    real( kind = core_rknd ), intent(inout), dimension(:), pointer ::  &
       um_pert,      & ! pertubed eastward grid-mean wind component (thermodynamic levels)   [m/s]
       vm_pert,      & ! pertubed northward grid-mean wind component (thermodynamic levels)   [m/s]
       upwp_pert,    & ! pertubed u'w' (momentum levels)                         [m^2/s^2]
@@ -902,7 +902,8 @@ module advance_clubb_core_module
       wprtp(1)  = wprtp_sfc
       upwp(1)   = upwp_sfc
       vpwp(1)   = vpwp_sfc
-      if (present(upwp_pert)) then
+      if (associated(upwp_sfc_pert) .and. associated(vpwp_sfc_pert) .and. &
+           associated(upwp_pert) .and. associated(vpwp_pert)) then
          upwp_pert(1) = upwp_sfc_pert
          vpwp_pert(1) = vpwp_sfc_pert
       end if

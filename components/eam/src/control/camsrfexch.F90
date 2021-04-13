@@ -671,6 +671,7 @@ subroutine cam_export(state,cam_out,pbuf)
    use constituents,     only: pcnst
    use cam_control_mod,  only: rair
    use physics_buffer,   only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
+   use phys_control,     only: phys_getopts
    implicit none
 
    !------------------------------Arguments--------------------------------
@@ -692,6 +693,7 @@ subroutine cam_export(state,cam_out,pbuf)
    integer :: prec_sed_idx,snow_sed_idx,prec_pcw_idx,snow_pcw_idx
    integer :: vmag_gust_idx, wsresp_idx, tau_est_idx
    real(r8) :: umb(pcols), vmb(pcols),vmag(pcols)
+   logical :: linearize_pbl_winds ! Send wsresp and tau_est to coupler.
 
    real(r8), pointer :: prec_dp(:)                 ! total precipitation   from ZM convection
    real(r8), pointer :: snow_dp(:)                 ! snow from ZM   convection
@@ -710,6 +712,8 @@ subroutine cam_export(state,cam_out,pbuf)
    lchnk = state%lchnk
    ncol  = state%ncol
 
+   call phys_getopts(linearize_pbl_winds_out=linearize_pbl_winds)
+
    prec_dp_idx = pbuf_get_index('PREC_DP')
    snow_dp_idx = pbuf_get_index('SNOW_DP')
    prec_sh_idx = pbuf_get_index('PREC_SH')
@@ -719,8 +723,6 @@ subroutine cam_export(state,cam_out,pbuf)
    prec_pcw_idx = pbuf_get_index('PREC_PCW')
    snow_pcw_idx = pbuf_get_index('SNOW_PCW')
    vmag_gust_idx = pbuf_get_index('vmag_gust')
-   wsresp_idx = pbuf_get_index('wsresp')
-   tau_est_idx = pbuf_get_index('tau_est')
 
    call pbuf_get_field(pbuf, prec_dp_idx, prec_dp)
    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp)
@@ -731,8 +733,13 @@ subroutine cam_export(state,cam_out,pbuf)
    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
    call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
-   call pbuf_get_field(pbuf, wsresp_idx, wsresp)
-   call pbuf_get_field(pbuf, tau_est_idx, tau_est)
+
+   if (linearize_pbl_winds) then
+      wsresp_idx = pbuf_get_index('wsresp')
+      tau_est_idx = pbuf_get_index('tau_est')
+      call pbuf_get_field(pbuf, wsresp_idx, wsresp)
+      call pbuf_get_field(pbuf, tau_est_idx, tau_est)
+   end if
 
 !PMA adds gustiness to surface scheme c20181128
 
@@ -747,8 +754,10 @@ subroutine cam_export(state,cam_out,pbuf)
       cam_out%vbot(i)  = state%v(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
       cam_out%pbot(i)  = state%pmid(i,pver)
       cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
-      cam_out%wsresp(i)= max(wsresp(i), 0._r8)
-      cam_out%tau_est(i)= tau_est(i)
+      if (linearize_pbl_winds) then
+         cam_out%wsresp(i)= max(wsresp(i), 0._r8)
+         cam_out%tau_est(i)= tau_est(i)
+      end if
       psm1(i,lchnk)    = state%ps(i)
       srfrpdel(i,lchnk)= state%rpdel(i,pver)
    end do

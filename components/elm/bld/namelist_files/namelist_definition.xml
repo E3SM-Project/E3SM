@@ -561,6 +561,11 @@ If TRUE, write diagnostic of global radiative temperature written to ELM log fil
 Subgrid fluxes for snow
 </entry>
 
+<entry id="implicit_stress" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="">
+If TRUE, use implicit method to calculate stresses output to atmosphere.
+</entry>
+
 <!-- ========================================================================================  -->
 <!-- Former CPP tokens -->
 <!-- ========================================================================================  -->

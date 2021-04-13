@@ -113,7 +113,7 @@ contains
     use perf_mod           , only : t_startf, t_stopf
     use domainMod          , only : ldomain
     use QSatMod            , only : QSat
-    use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni
+    use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni, implicit_stress
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use SurfaceResistanceMod, only : getlblcef
     !
@@ -726,11 +726,15 @@ contains
          qaf(p) = (forc_q(t)+qg(c))/2._r8
 
          ! Initialize winds for iteration.
-         wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-         wind_speed_adj(p) = wind_speed0(p)
-         ur(p) = max(1.0_r8, wind_speed_adj(p))
+         if (implicit_stress) then
+            wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+            wind_speed_adj(p) = wind_speed0(p)
+            ur(p) = max(1.0_r8, wind_speed_adj(p))
 
-         prev_tau(p) = tau_est(t)
+            prev_tau(p) = tau_est(t)
+         else
+            ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         end if
          tau_diff(p) = 1.e100_r8
 
          dth(p) = thm(p)-taf(p)
@@ -802,11 +806,13 @@ contains
             ! Forbid removing more than 99% of wind speed in a time step.
             ! This is mainly to avoid convergence issues since this is such a
             ! basic form of iteration in this loop...
-            tau(p) = forc_rho(t)*wind_speed_adj(p)/ram1(p)
-            call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
-                 tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
-                 wind_speed_adj(p))
-            ur(p) = max(1.0_r8, wind_speed_adj(p))
+            if (implicit_stress) then
+               tau(p) = forc_rho(t)*wind_speed_adj(p)/ram1(p)
+               call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
+                    tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
+                    wind_speed_adj(p))
+               ur(p) = max(1.0_r8, wind_speed_adj(p))
+            end if
 
             ! Bulk boundary layer resistance of leaves
 
@@ -1168,8 +1174,8 @@ contains
             fn = 0
             do f = 1, fnold
                p = filterp(f)
-               if (.not. (det(p) < dtmin .and. dele(p) < dlemin .and. &
-                          abs(tau_diff(p)) < dtaumin)) then
+               if (.not. (det(p) < dtmin .and. dele(p) < dlemin) .or. &
+                    (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) then
                   fn = fn + 1
                   filterp(fn) = p
                end if
@@ -1201,8 +1207,12 @@ contains
          ! Fluxes from ground to canopy space
 
          delt    = wtal(p)*t_grnd(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
-         taux(p) = -forc_rho(t)*forc_u(t)/ram1(p) * (wind_speed_adj(p) / wind_speed0(p))
-         tauy(p) = -forc_rho(t)*forc_v(t)/ram1(p) * (wind_speed_adj(p) / wind_speed0(p))
+         taux(p) = -forc_rho(t)*forc_u(t)/ram1(p)
+         tauy(p) = -forc_rho(t)*forc_v(t)/ram1(p)
+         if (implicit_stress) then
+            taux(p) = taux(p) * (wind_speed_adj(p) / wind_speed0(p))
+            tauy(p) = tauy(p) * (wind_speed_adj(p) / wind_speed0(p))
+         end if
          eflx_sh_grnd(p) = cpair*forc_rho(t)*wtg(p)*delt
 
          ! compute individual sensible heat fluxes
@@ -1263,7 +1273,7 @@ contains
          h2ocan(p) = max(0._r8,h2ocan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime)
 
          ! Check for convergence of stress.
-         if (abs(tau_diff(p)) > dtaumin) then
+         if (implicit_stress .and. abs(tau_diff(p)) > dtaumin) then
             if (get_nstep() > 0) then ! Suppress common warnings on the first time step.
                write(iulog,*)'WARNING: Stress did not converge for canopy ',&
                     ' nstep = ',get_nstep(),' p= ',p,' prev_tau_diff= ',prev_tau_diff(p),&

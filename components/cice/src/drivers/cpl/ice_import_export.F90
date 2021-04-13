@@ -91,9 +91,16 @@ contains
              aflds(i,j,13,iblk)   = x2i(index_x2i_Faxa_lwdn,n)
              aflds(i,j,14,iblk)   = x2i(index_x2i_Faxa_rain,n)
              aflds(i,j,15,iblk)   = x2i(index_x2i_Faxa_snow,n)
-             aflds(i,j,16,iblk)   = x2i(index_x2i_Sa_wsresp,n)
-             aflds(i,j,17,iblk)   = x2i(index_x2i_Sa_tau_est,n)
-
+             if (index_x2i_Sa_wsresp == 0) then
+                aflds(i,j,16,iblk) = 0._dbl_kind
+             else
+                aflds(i,j,16,iblk) = x2i(index_x2i_Sa_wsresp,n)
+             end if
+             if (index_x2i_Sa_tau_est == 0) then
+                aflds(i,j,17,iblk) = 0._dbl_kind
+             else
+                aflds(i,j,17,iblk) = x2i(index_x2i_Sa_tau_est,n)
+             end if
           enddo    !i
        enddo    !j
 

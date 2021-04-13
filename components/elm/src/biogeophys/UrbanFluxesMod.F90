@@ -60,7 +60,7 @@ contains
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall
     use filterMod           , only : filter
-    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni
+    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, implicit_stress
     use QSatMod             , only : QSat
     use elm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
     use clm_time_manager    , only : get_curr_date, get_step_size, get_nstep
@@ -193,6 +193,7 @@ contains
     real(r8), parameter :: dtaumin = 0.01_r8      ! max limit for stress convergence [Pa]
     integer, parameter  :: itmin = 3              ! minimum number of iterations
     integer, parameter  :: itmax = 30             ! maximum number of iterations
+    integer  :: loopmax                           ! bound for iteration loop
     real(r8) :: wind_speed0(bounds%begl:bounds%endl) ! Wind speed from atmosphere at start of iteration
     real(r8) :: wind_speed_adj(bounds%begl:bounds%endl) ! Adjusted wind speed for iteration
     real(r8) :: tau(bounds%begl:bounds%endl)      ! Stress used in iteration
@@ -331,11 +332,15 @@ contains
          end if
 
          ! Initialize winds for iteration.
-         wind_speed0(l) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-         wind_speed_adj(l) = wind_speed0(l)
-         ur(l) = max(1.0_r8, wind_speed_adj(l))
+         if (implicit_stress) then
+            wind_speed0(l) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+            wind_speed_adj(l) = wind_speed0(l)
+            ur(l) = max(1.0_r8, wind_speed_adj(l))
 
-         prev_tau(l) = tau_est(t)
+            prev_tau(l) = tau_est(t)
+         else
+            ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         end if
          tau_diff(l) = 1.100_r8
 
       end do
@@ -388,7 +393,13 @@ contains
       filterl_copy(1:num_urbanl) = filter_urbanl(1:num_urbanl)
       filterc_copy(1:num_urbanc) = filter_urbanc(1:num_urbanc)
 
-      ITERATION: do iter = 1, itmax
+      if (implicit_stress) then
+         loopmax = itmax
+      else
+         loopmax = itmin
+      end if
+
+      ITERATION: do iter = 1, loopmax
 
          ! Get friction velocity, relation for potential
          ! temperature and humidity profiles of surface boundary layer.
@@ -414,33 +425,36 @@ contains
             rahu(l) = 1._r8/(temp1(l)*ustar(l))
             rawu(l) = 1._r8/(temp2(l)*ustar(l))
 
-            ! Forbid removing more than 99% of wind speed in a time step.
-            ! This is mainly to avoid convergence issues since this is such a
-            ! basic form of iteration in this loop...
-            tau(l) = forc_rho(t)*wind_speed_adj(l)/ramu(l)
-            call shr_flux_update_stress(wind_speed0(l), wsresp(t), tau_est(t), &
-                 tau(l), prev_tau(l), tau_diff(l), prev_tau_diff(l), &
-                 wind_speed_adj(l))
-            ur(l) = max(1.0_r8, wind_speed_adj(l))
+            ! Calculate magnitude of stress and update wind speed.
+            if (implicit_stress) then
+               tau(l) = forc_rho(t)*wind_speed_adj(l)/ramu(l)
+               call shr_flux_update_stress(wind_speed0(l), wsresp(t), tau_est(t), &
+                    tau(l), prev_tau(l), tau_diff(l), prev_tau_diff(l), &
+                    wind_speed_adj(l))
+               ur(l) = max(1.0_r8, wind_speed_adj(l))
+            end if
 
             ! Canyon top wind
+            ! If the wind does not change in this loop (explicit stress), then
+            ! we only need to calculate this on the first iteration.
+            if (implicit_stress .or. iter == 1) then
+               canyontop_wind(l) = ur(l) * &
+                    log( (ht_roof(l)-z_d_town(l)) / z_0_town(l) ) / &
+                    log( (forc_hgt_u_patch(lun_pp%pfti(l))-z_d_town(l)) / z_0_town(l) )
 
-            canyontop_wind(l) = ur(l) * &
-                 log( (ht_roof(l)-z_d_town(l)) / z_0_town(l) ) / &
-                 log( (forc_hgt_u_patch(lun_pp%pfti(l))-z_d_town(l)) / z_0_town(l) )
+               ! U component of canyon wind 
 
-            ! U component of canyon wind 
-
-            if (canyon_hwr(l) < 0.5_r8) then  ! isolated roughness flow
-               canyon_u_wind(l) = canyontop_wind(l) * exp( -0.5_r8*canyon_hwr(l)* &
-                    (1._r8-(wind_hgt_canyon(l)/ht_roof(l))) )
-            else if (canyon_hwr(l) < 1.0_r8) then ! wake interference flow
-               canyon_u_wind(l) = canyontop_wind(l) * (1._r8+2._r8*(2._r8/rpi - 1._r8)* &
-                    (ht_roof(l)/(ht_roof(l)/canyon_hwr(l)) - 0.5_r8)) * &
-                    exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
-            else  ! skimming flow
-               canyon_u_wind(l) = canyontop_wind(l) * (2._r8/rpi) * &
-                    exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
+               if (canyon_hwr(l) < 0.5_r8) then  ! isolated roughness flow
+                  canyon_u_wind(l) = canyontop_wind(l) * exp( -0.5_r8*canyon_hwr(l)* &
+                       (1._r8-(wind_hgt_canyon(l)/ht_roof(l))) )
+               else if (canyon_hwr(l) < 1.0_r8) then ! wake interference flow
+                  canyon_u_wind(l) = canyontop_wind(l) * (1._r8+2._r8*(2._r8/rpi - 1._r8)* &
+                       (ht_roof(l)/(ht_roof(l)/canyon_hwr(l)) - 0.5_r8)) * &
+                       exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
+               else  ! skimming flow
+                  canyon_u_wind(l) = canyontop_wind(l) * (2._r8/rpi) * &
+                       exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
+               end if
             end if
 
             ! Determine magnitude of canyon wind by using horizontal wind determined
@@ -792,8 +806,12 @@ contains
 
          ! Surface fluxes of momentum, sensible and latent heat
 
-         taux(p) = -forc_rho(t)*forc_u(t)/ramu(l) * (wind_speed_adj(l) / wind_speed0(l))
-         tauy(p) = -forc_rho(t)*forc_v(t)/ramu(l) * (wind_speed_adj(l) / wind_speed0(l))
+         taux(p) = -forc_rho(t)*forc_u(t)/ramu(l)
+         tauy(p) = -forc_rho(t)*forc_v(t)/ramu(l)
+         if (implicit_stress) then
+            taux(p) = taux(p) * (wind_speed_adj(l) / wind_speed0(l))
+            tauy(p) = tauy(p) * (wind_speed_adj(l) / wind_speed0(l))
+         end if
 
          ! Use new canopy air temperature
          dth(l) = taf(l) - t_grnd(c)
@@ -919,7 +937,7 @@ contains
       ! Check for convergence of stress.
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
-         if (abs(tau_diff(l)) > dtaumin) then
+         if (implicit_stress .and. abs(tau_diff(l)) > dtaumin) then
             if (nstep > 0) then ! Suppress common warnings on the first time step.
                write(iulog,*)'WARNING: Stress did not converge for urban columns ',&
                     ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(l),&

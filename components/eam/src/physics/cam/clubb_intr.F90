@@ -122,6 +122,7 @@ module clubb_intr
     l_host_applies_sfc_fluxes = .false.  ! Whether the host model applies the surface fluxes
     
   logical            :: do_tms
+  logical            :: linearize_pbl_winds
   logical            :: lq(pcnst)
   logical            :: lq2(pcnst)
   logical            :: prog_modal_aero
@@ -264,6 +265,7 @@ module clubb_intr
     call phys_getopts( eddy_scheme_out                 = eddy_scheme, &
                        deep_scheme_out                 = deep_scheme, & 
                        do_tms_out                      = do_tms,      &
+                       linearize_pbl_winds_out         = linearize_pbl_winds,      &
                        history_budget_out              = history_budget, &
                        history_budget_histfile_num_out = history_budget_histfile_num, &
                        micro_do_icesupersat_out        = micro_do_icesupersat, &
@@ -315,10 +317,12 @@ module clubb_intr
 
     call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), upwp_idx)
     call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vpwp_idx)
-    call pbuf_add_field('UM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), um_pert_idx)
-    call pbuf_add_field('VM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), vm_pert_idx)
-    call pbuf_add_field('UPWP_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), upwp_pert_idx)
-    call pbuf_add_field('VPWP_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), vpwp_pert_idx)
+    if (linearize_pbl_winds) then
+       call pbuf_add_field('UM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), um_pert_idx)
+       call pbuf_add_field('VM_PERT',    'physpkg', dtype_r8, (/pcols,pverp/), vm_pert_idx)
+       call pbuf_add_field('UPWP_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), upwp_pert_idx)
+       call pbuf_add_field('VPWP_PERT',  'physpkg', dtype_r8, (/pcols,pverp/), vpwp_pert_idx)
+    end if
     call pbuf_add_field('THLM',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), thlm_idx)
     call pbuf_add_field('RTM',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtm_idx)
     call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), um_idx)
@@ -339,8 +343,10 @@ module clubb_intr
 
     call pbuf_add_field('vmag_gust',       'global', dtype_r8, (/pcols/),      vmag_gust_idx) !PMA total gustiness
 
-    call pbuf_add_field('wsresp',          'global', dtype_r8, (/pcols/),      wsresp_idx)
-    call pbuf_add_field('tau_est',         'global', dtype_r8, (/pcols/),      tau_est_idx)
+    if (linearize_pbl_winds) then
+       call pbuf_add_field('wsresp',          'global', dtype_r8, (/pcols/),      wsresp_idx)
+       call pbuf_add_field('tau_est',         'global', dtype_r8, (/pcols/),      tau_est_idx)
+    end if
 #endif 
 
   end subroutine clubb_register_cam
@@ -744,9 +750,6 @@ end subroutine clubb_init_cnst
     snow_dp_idx = pbuf_get_index('SNOW_DP') !PMA ZM snow for gustiness
     vmag_gust_idx = pbuf_get_index('vmag_gust') !PMA ZM snow for gustiness
 
-    wsresp_idx = pbuf_get_index('wsresp') ! First order response of surface stress to winds
-    tau_est_idx = pbuf_get_index('tau_est') ! Estimate of stress in balance with winds
-
     iisclr_rt  = -1
     iisclr_thl = -1
     iisclr_CO2 = -1
@@ -1004,10 +1007,12 @@ end subroutine clubb_init_cnst
       
        call pbuf_set_field(pbuf2d, upwp_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, vpwp_idx,    0.0_r8)
-       call pbuf_set_field(pbuf2d, um_pert_idx, 0.0_r8)
-       call pbuf_set_field(pbuf2d, vm_pert_idx, 0.0_r8)
-       call pbuf_set_field(pbuf2d, upwp_pert_idx, 0.0_r8)
-       call pbuf_set_field(pbuf2d, vpwp_pert_idx, 0.0_r8)
+       if (linearize_pbl_winds) then
+          call pbuf_set_field(pbuf2d, um_pert_idx, 0.0_r8)
+          call pbuf_set_field(pbuf2d, vm_pert_idx, 0.0_r8)
+          call pbuf_set_field(pbuf2d, upwp_pert_idx, 0.0_r8)
+          call pbuf_set_field(pbuf2d, vpwp_pert_idx, 0.0_r8)
+       end if
        call pbuf_set_field(pbuf2d, tke_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
@@ -1029,8 +1034,10 @@ end subroutine clubb_init_cnst
 
        call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
 
-       call pbuf_set_field(pbuf2d, wsresp_idx,    0.0_r8)
-       call pbuf_set_field(pbuf2d, tau_est_idx,   0.0_r8)
+       if (linearize_pbl_winds) then
+          call pbuf_set_field(pbuf2d, wsresp_idx,    0.0_r8)
+          call pbuf_set_field(pbuf2d, tau_est_idx,   0.0_r8)
+       end if
     endif
    
     ! --------------- !
@@ -1282,8 +1289,8 @@ end subroutine clubb_init_cnst
    real(r8) :: varmu(pcols)
    real(r8) :: varmu2
 
-   real(r8) :: upwp_sfc_pert                    ! u'w' at surface                               [m^2/s^2]
-   real(r8) :: vpwp_sfc_pert                    ! v'w' at surface                               [m^2/s^2]
+   real(r8), pointer :: upwp_sfc_pert       ! u'w' at surface                               [m^2/s^2]
+   real(r8), pointer :: vpwp_sfc_pert       ! v'w' at surface                               [m^2/s^2]
    
    real(r8) :: invrs_hdtime                     ! Preculate 1/hdtime to reduce divide operations
    real(r8) :: invrs_gravit                     ! Preculate 1/gravit to reduce divide operations
@@ -1408,6 +1415,13 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: accre_enhan ! accretion enhancement factor              [-]
    real(r8), pointer, dimension(:,:) :: cmeliq 
    real(r8), pointer, dimension(:,:) :: cmfmc_sh ! Shallow convective mass flux--m subc (pcols,pverp) [kg/m2/s/]
+
+   ! These pointers point to specific columns of the corresponding field, if
+   ! these fields are actually needed.
+   real(r8), pointer, dimension(:) :: um_pert_col
+   real(r8), pointer, dimension(:) :: vm_pert_col
+   real(r8), pointer, dimension(:) :: upwp_pert_col
+   real(r8), pointer, dimension(:) :: vpwp_pert_col
    
    type(pdf_parameter), pointer :: pdf_params    ! PDF parameters (thermo. levs.) [units vary]
    type(pdf_parameter), pointer :: pdf_params_zm ! PDF parameters on momentum levs. [units vary]
@@ -1575,10 +1589,17 @@ end subroutine clubb_init_cnst
 
    call pbuf_get_field(pbuf, upwp_idx,    upwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, vpwp_idx,    vpwp,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
-   call pbuf_get_field(pbuf, um_pert_idx, um_pert, start=(/1,1/),          kount=(/pcols,pverp/))
-   call pbuf_get_field(pbuf, vm_pert_idx, vm_pert, start=(/1,1/),          kount=(/pcols,pverp/))
-   call pbuf_get_field(pbuf, upwp_pert_idx,upwp_pert,start=(/1,1/),        kount=(/pcols,pverp/))
-   call pbuf_get_field(pbuf, vpwp_pert_idx,vpwp_pert,start=(/1,1/),        kount=(/pcols,pverp/))
+   if (linearize_pbl_winds) then
+      call pbuf_get_field(pbuf, um_pert_idx, um_pert, start=(/1,1/),          kount=(/pcols,pverp/))
+      call pbuf_get_field(pbuf, vm_pert_idx, vm_pert, start=(/1,1/),          kount=(/pcols,pverp/))
+      call pbuf_get_field(pbuf, upwp_pert_idx,upwp_pert,start=(/1,1/),        kount=(/pcols,pverp/))
+      call pbuf_get_field(pbuf, vpwp_pert_idx,vpwp_pert,start=(/1,1/),        kount=(/pcols,pverp/))
+   else
+      nullify(um_pert)
+      nullify(vm_pert)
+      nullify(upwp_pert)
+      nullify(vpwp_pert)
+   end if
    call pbuf_get_field(pbuf, thlm_idx,    thlm,    start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
    call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim_old/), kount=(/pcols,pverp,1/))
@@ -1627,8 +1648,10 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp)
    call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
 
-   call pbuf_get_field(pbuf, wsresp_idx, wsresp)
-   call pbuf_get_field(pbuf, tau_est_idx, tau_est)
+   if (linearize_pbl_winds) then
+      call pbuf_get_field(pbuf, wsresp_idx, wsresp)
+      call pbuf_get_field(pbuf, tau_est_idx, tau_est)
+   end if
 
    ! Intialize the apply_const variable (note special logic is due to eularian backstepping)
    if (clubb_do_adv .and. (is_first_step() .or. all(wpthlp(1:ncol,1:pver) .eq. 0._r8))) then
@@ -2051,26 +2074,41 @@ end subroutine clubb_init_cnst
 
       enddo
 
-      ! Each host model time step, reset the perturbed variables to be equal to
-      ! the unperturbed values.
-      if (macmic_it == 1) then
-         um_pert(i,:) = um_in
-         vm_pert(i,:) = vm_in
-         upwp_pert(i,:) = upwp_in
-         vpwp_pert(i,:) = vpwp_in
-      end if
+      if (linearize_pbl_winds) then
+         ! Each host model time step, reset the perturbed variables to be equal to
+         ! the unperturbed values.
+         if (macmic_it == 1) then
+            um_pert(i,:) = um_in
+            vm_pert(i,:) = vm_in
+            upwp_pert(i,:) = upwp_in
+            vpwp_pert(i,:) = vpwp_in
+         end if
+         um_pert_col => um_pert(i,:)
+         vm_pert_col => vm_pert(i,:)
+         upwp_pert_col => upwp_pert(i,:)
+         vpwp_pert_col => vpwp_pert(i,:)
 
-      ! Prefer to perturb wind/stress in the direction of the existing stress.
-      ! However, if there's no existing surface stress, just perturb zonal
-      ! wind/stress.
-      if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
-         upwp_sfc_pert = upwp_sfc + pert_tau / rho_ds_zm(1)
-         vpwp_sfc_pert = vpwp_sfc
+         allocate(upwp_sfc_pert)
+         allocate(vpwp_sfc_pert)
+         ! Prefer to perturb wind/stress in the direction of the existing stress.
+         ! However, if there's no existing surface stress, just perturb zonal
+         ! wind/stress.
+         if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
+            upwp_sfc_pert = upwp_sfc + pert_tau / rho_ds_zm(1)
+            vpwp_sfc_pert = vpwp_sfc
+         else
+            upwp_sfc_pert = upwp_sfc + cam_in%wsx(i) * &
+                 (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
+            vpwp_sfc_pert = vpwp_sfc + cam_in%wsy(i) * &
+                 (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
+         end if
       else
-         upwp_sfc_pert = upwp_sfc + cam_in%wsx(i) * &
-              (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
-         vpwp_sfc_pert = vpwp_sfc + cam_in%wsy(i) * &
-              (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
+         nullify(upwp_sfc_pert)
+         nullify(vpwp_sfc_pert)
+         nullify(um_pert_col)
+         nullify(vm_pert_col)
+         nullify(upwp_pert_col)
+         nullify(vpwp_pert_col)
       end if
 
       pre_in(1) = pre_in(2)
@@ -2215,7 +2253,7 @@ end subroutine clubb_init_cnst
               wprcp_out, ice_supersat_frac, &                              ! intent(out)
               rcm_in_layer_out, cloud_cover_out, &                         ! intent(out)
               upwp_sfc_pert, vpwp_sfc_pert, &                              ! intent(in)
-              um_pert(i,:), vm_pert(i,:), upwp_pert(i,:), vpwp_pert(i,:))  ! intent(inout)
+              um_pert_col, vm_pert_col, upwp_pert_col, vpwp_pert_col)      ! intent(inout)
          call t_stopf('advance_clubb_core')
 
          pdf_zm_w_1_inout = pdf_params_zm%w_1
@@ -2287,12 +2325,16 @@ end subroutine clubb_init_cnst
          endif
       endif
 
-      if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
-         sfc_v_diff_tau(i) = um_pert(i,2) - um_in(2)
-      else
-         sfc_v_diff_tau(i) = ((um_pert(i,2) - um_in(2))*cam_in%wsx(i) &
-              + (vm_pert(i,2) - vm_in(2))*cam_in%wsy(i)) &
-              / hypot(cam_in%wsx(i), cam_in%wsy(i))
+      if (linearize_pbl_winds) then
+         if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
+            sfc_v_diff_tau(i) = um_pert(i,2) - um_in(2)
+         else
+            sfc_v_diff_tau(i) = ((um_pert(i,2) - um_in(2))*cam_in%wsx(i) &
+                 + (vm_pert(i,2) - vm_in(2))*cam_in%wsy(i)) &
+                 / hypot(cam_in%wsx(i), cam_in%wsy(i))
+         end if
+         deallocate(upwp_sfc_pert)
+         deallocate(vpwp_sfc_pert)
       end if
 
       !  Arrays need to be "flipped" to CAM grid 
@@ -2856,7 +2898,7 @@ end subroutine clubb_init_cnst
        end do
     end if
 
-   if (macmic_it == cld_macmic_num_steps) then
+   if (linearize_pbl_winds .and. macmic_it == cld_macmic_num_steps) then
       do i = 1, ncol
          wsresp(i) = sfc_v_diff_tau(i) / pert_tau
          ! Estimated tau in balance with wind is the tau we just used.

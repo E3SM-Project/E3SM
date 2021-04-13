@@ -51,7 +51,7 @@ contains
     use elm_varcon           , only : cpair, vkc, grav, denice, denh2o
     use elm_varctl           , only : iulog, use_lch4
     use landunit_varcon      , only : istsoil, istcrop
-    use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni
+    use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni, implicit_stress
     use QSatMod              , only : QSat
     use SurfaceResistanceMod , only : do_soilevap_beta
     use clm_time_manager     , only : get_nstep
@@ -83,6 +83,7 @@ contains
     integer  :: fp                               ! lake filter pft index
     integer  :: iter                             ! iteration index
     integer  :: iter_final                       ! number of iterations used
+    integer  :: loopmax                          ! maximum number of iterations for this configuration
     real(r8) :: zldis(bounds%begp:bounds%endp)   ! reference height "minus" zero displacement height [m]
     real(r8) :: displa(bounds%begp:bounds%endp)  ! displacement height [m]
     real(r8) :: zeta                             ! dimensionless height used in Monin-Obukhov theory
@@ -229,11 +230,15 @@ contains
          ulrad(p)  = 0._r8
 
          ! Initialize winds for iteration.
-         wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-         wind_speed_adj(p) = wind_speed0(p)
-         ur(p) = max(1.0_r8, wind_speed_adj(p))
+         if (implicit_stress) then
+            wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+            wind_speed_adj(p) = wind_speed0(p)
+            ur(p) = max(1.0_r8, wind_speed_adj(p))
 
-         prev_tau(p) = tau_est(t)
+            prev_tau(p) = tau_est(t)
+         else
+            ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         end if
          tau_diff(p) = 1.e100_r8
 
          dth(p)   = thm(p)-t_grnd(c)
@@ -260,7 +265,13 @@ contains
       fn0 = fn
       filterp0(1:fn) = filterp(1:fn)
 
-      ITERATION: do iter = 1, itmax
+      if (implicit_stress) then
+         loopmax = itmax
+      else
+         loopmax = itmin
+      end if
+
+      ITERATION: do iter = 1, loopmax
 
          call FrictionVelocity(begp, endp, fn, filterp, &
               displa(begp:endp), z0mg_patch(begp:endp), z0hg_patch(begp:endp), z0qg_patch(begp:endp), &
@@ -274,14 +285,15 @@ contains
             t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
 
-            ram = 1._r8/(ustar(p)*ustar(p)/um(p))
-
             ! Calculate magnitude of stress and update wind speed.
-            tau(p) = forc_rho(t)*wind_speed_adj(p)/ram
-            call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
-                 tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
-                 wind_speed_adj(p))
-            ur(p) = max(1.0_r8, wind_speed_adj(p))
+            if (implicit_stress) then
+               ram = 1._r8/(ustar(p)*ustar(p)/um(p))
+               tau(p) = forc_rho(t)*wind_speed_adj(p)/ram
+               call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
+                    tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
+                    wind_speed_adj(p))
+               ur(p) = max(1.0_r8, wind_speed_adj(p))
+            end if
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
@@ -364,8 +376,12 @@ contains
 
          ! Surface fluxes of momentum, sensible and latent heat
          ! using ground temperatures from previous time step
-         taux(p)          = -forc_rho(t)*forc_u(t)/ram * (wind_speed_adj(p) / wind_speed0(p))
-         tauy(p)          = -forc_rho(t)*forc_v(t)/ram * (wind_speed_adj(p) / wind_speed0(p))
+         taux(p)          = -forc_rho(t)*forc_u(t)/ram
+         tauy(p)          = -forc_rho(t)*forc_v(t)/ram
+         if (implicit_stress) then
+            taux(p)          = taux(p) * (wind_speed_adj(p) / wind_speed0(p))
+            tauy(p)          = tauy(p) * (wind_speed_adj(p) / wind_speed0(p))
+         end if
          eflx_sh_grnd(p)  = -raih*dth(p)
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
 
@@ -400,7 +416,7 @@ contains
          end if
 
          ! Check for convergence of stress.
-         if (abs(tau_diff(p)) > dtaumin) then
+         if (implicit_stress .and. abs(tau_diff(p)) > dtaumin) then
             if (get_nstep() > 0) then ! Suppress common warnings on the first time step.
                write(iulog,*)'WARNING: Stress did not converge for bare ground ',&
                     ' nstep = ',get_nstep(),' p= ',p,' prev_tau_diff= ',prev_tau_diff(p),&

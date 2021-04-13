@@ -107,7 +107,7 @@ module clip_explicit
     real( kind = core_rknd ), dimension(gr%nz,sclr_dim), intent(inout) :: &
       wpsclrp ! w'sclr'         [units m/s]
 
-    real( kind = core_rknd ), dimension(gr%nz), intent(inout), optional :: &
+    real( kind = core_rknd ), dimension(:), intent(inout), pointer :: &
       upwp_pert,   & ! u'w'          [m^2/s^2]
       vpwp_pert      ! v'w'          [m^2/s^2]
 
@@ -278,7 +278,7 @@ module clip_explicit
       call clip_covar( clip_upwp, l_first_clip_ts,   & ! intent(in)
                        l_last_clip_ts, dt, wp2, up2, & ! intent(in)
                        upwp, upwp_chnge )              ! intent(inout)
-      if ( present(upwp_pert) ) then
+      if ( associated(upwp_pert) ) then
          call clip_covar( clip_upwp, l_first_clip_ts,   & ! intent(in)
                           l_last_clip_ts, dt, wp2, up2, & ! intent(in)
                           upwp_pert, upwp_chnge )         ! intent(inout)
@@ -288,7 +288,7 @@ module clip_explicit
       call clip_covar( clip_upwp, l_first_clip_ts,   & ! intent(in)
                        l_last_clip_ts, dt, wp2, wp2, & ! intent(in)
                        upwp, upwp_chnge )              ! intent(inout)
-      if ( present(upwp_pert) ) then
+      if ( associated(upwp_pert) ) then
          call clip_covar( clip_upwp, l_first_clip_ts,   & ! intent(in)
                           l_last_clip_ts, dt, wp2, wp2, & ! intent(in)
                           upwp_pert, upwp_chnge )         ! intent(inout)
@@ -332,7 +332,7 @@ module clip_explicit
       call clip_covar( clip_vpwp, l_first_clip_ts,   & ! intent(in)
                        l_last_clip_ts, dt, wp2, vp2, & ! intent(in)
                        vpwp, vpwp_chnge )              ! intent(inout)
-      if ( present(vpwp_pert) ) then
+      if ( associated(vpwp_pert) ) then
          call clip_covar( clip_vpwp, l_first_clip_ts,   & ! intent(in)
                           l_last_clip_ts, dt, wp2, vp2, & ! intent(in)
                           vpwp_pert, vpwp_chnge )         ! intent(inout)
@@ -342,7 +342,7 @@ module clip_explicit
       call clip_covar( clip_vpwp, l_first_clip_ts,   & ! intent(in)
                        l_last_clip_ts, dt, wp2, wp2, & ! intent(in)
                        vpwp, vpwp_chnge )              ! intent(inout)
-      if ( present(vpwp_pert) ) then
+      if ( associated(vpwp_pert) ) then
          call clip_covar( clip_vpwp, l_first_clip_ts,   & ! intent(in)
                           l_last_clip_ts, dt, wp2, wp2, & ! intent(in)
                           vpwp_pert, vpwp_chnge )              ! intent(inout)

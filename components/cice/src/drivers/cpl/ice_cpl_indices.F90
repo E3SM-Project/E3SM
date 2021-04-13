@@ -120,8 +120,9 @@ contains
     index_x2i_Sa_z          = mct_avect_indexra(x2i,'Sa_z')
     index_x2i_Sa_u          = mct_avect_indexra(x2i,'Sa_u')
     index_x2i_Sa_v          = mct_avect_indexra(x2i,'Sa_v')
-    index_x2i_Sa_wsresp     = mct_avect_indexra(x2i,'Sa_wsresp')
-    index_x2i_Sa_tau_est    = mct_avect_indexra(x2i,'Sa_tau_est')
+    ! These two variables are absent if the stress calculation is explicit.
+    index_x2i_Sa_wsresp     = mct_avect_indexra(x2i,'Sa_wsresp', perrWith='quiet')
+    index_x2i_Sa_tau_est    = mct_avect_indexra(x2i,'Sa_tau_est', perrWith='quiet')
     index_x2i_Sa_tbot       = mct_avect_indexra(x2i,'Sa_tbot')
     index_x2i_Sa_ptem       = mct_avect_indexra(x2i,'Sa_ptem')
     index_x2i_Sa_pbot       = mct_avect_indexra(x2i,'Sa_pbot')

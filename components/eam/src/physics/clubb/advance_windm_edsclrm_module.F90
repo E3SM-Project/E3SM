@@ -162,7 +162,7 @@ module advance_windm_edsclrm_module
       wpedsclrp      ! w'edsclr' (momentum levels)           [m/s {units vary}]
 
     ! Variables used to track perturbed version of winds.
-    real( kind = core_rknd ), intent(inout), dimension(gr%nz), optional ::  & 
+    real( kind = core_rknd ), intent(inout), dimension(:), pointer ::  & 
       um_pert,   & ! perturbed <u>    [m/s]
       vm_pert,   & ! perturbed <v>    [m/s]
       upwp_pert, & ! perturbed <u'w'> [m^2/s^2]
@@ -205,7 +205,9 @@ module advance_windm_edsclrm_module
     logical :: l_perturbed_wind
 
     !--------------------------- Begin Code ------------------------------------
-    l_perturbed_wind = (.not. l_predict_upwp_vpwp) .and. present(um_pert)
+    l_perturbed_wind = (.not. l_predict_upwp_vpwp) .and. associated(um_pert) &
+         .and. associated(vm_pert) .and. associated(upwp_pert) .and. &
+         associated(vpwp_pert)
 
     dummy_nu = 0._core_rknd
 

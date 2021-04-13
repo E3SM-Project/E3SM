@@ -718,10 +718,10 @@ contains
       RH_crit  ! critical relative humidity for droplet and ice nucleation
     logical, intent(in)                 ::  do_liquid_only_in_clubb
 #endif
-    real( kind = core_rknd ), intent(in), optional ::  &
+    real( kind = core_rknd ), intent(in), pointer ::  &
       upwp_sfc_pert,     & ! pertubed u'w' at surface          [m^2/s^2]
       vpwp_sfc_pert        ! pertubed v'w' at surface          [m^2/s^2]
-    real( kind = core_rknd ), intent(inout), dimension(gr%nz), optional ::  &
+    real( kind = core_rknd ), intent(inout), dimension(:), pointer ::  &
       um_pert,      & ! pertubed eastward grid-mean wind component (thermodynamic levels)   [m/s]
       vm_pert,      & ! pertubed northward grid-mean wind component (thermodynamic levels)   [m/s]
       upwp_pert,    & ! pertubed u'w' (momentum levels)                         [m^2/s^2]

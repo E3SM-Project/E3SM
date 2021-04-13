@@ -325,7 +325,7 @@ module advance_xm_wpxp_module
       vpwp    ! <v'w'>:  momentum flux (momentum levels)               [m^2/s^2]
 
     ! Variables used to track perturbed version of winds.
-    real( kind = core_rknd ), intent(inout), dimension(gr%nz), optional ::  & 
+    real( kind = core_rknd ), intent(inout), dimension(:), pointer ::  & 
       um_pert,   & ! perturbed <u>    [m/s]
       vm_pert,   & ! perturbed <v>    [m/s]
       upwp_pert, & ! perturbed <u'w'> [m^2/s^2]
@@ -491,7 +491,9 @@ module advance_xm_wpxp_module
 
     ! ----- Begin Code -----
 
-    l_perturbed_wind = l_predict_upwp_vpwp .and. present(um_pert)
+    l_perturbed_wind = l_predict_upwp_vpwp .and. associated(um_pert) .and. &
+         associated(vm_pert) .and. associated(upwp_pert) .and. &
+         associated(vpwp_pert)
 
     if ( l_clip_semi_implicit &
          .or. ( ( iiPDF_type == iiPDF_new ) &

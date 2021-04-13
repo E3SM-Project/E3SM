@@ -38,6 +38,7 @@ module controlMod
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
   use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
+  use FrictionVelocityMod     , only: implicit_stress
   use elm_varcon              , only: h2osno_max
   use elm_varctl              , only: use_dynroot
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
@@ -227,6 +228,10 @@ contains
 
     namelist /elm_inparm/  &
          urban_hac, urban_traffic
+
+    ! Stress options
+    namelist /elm_inparm/ &
+         implicit_stress
 
     ! vertical soil mixing variables
     namelist /elm_inparm/  &
@@ -768,6 +773,7 @@ contains
     ! physics variables
     call mpi_bcast (urban_hac, len(urban_hac), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (urban_traffic , 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (implicit_stress, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (nsegspc, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (subgridflag , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (wrtdia, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1049,6 +1055,7 @@ contains
     write(iulog,*) '   land-ice albedos      (unitless 0-1)   = ', albice
     write(iulog,*) '   urban air conditioning/heating and wasteheat   = ', urban_hac
     write(iulog,*) '   urban traffic flux   = ', urban_traffic
+    write(iulog,*) '   implicit_stress   = ', implicit_stress
     write(iulog,*) '   more vertical layers = ', more_vertlayers
     if (nsrest == nsrContinue) then
        write(iulog,*) 'restart warning:'

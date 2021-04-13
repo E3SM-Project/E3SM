@@ -17,6 +17,8 @@ module FrictionVelocityMod
   ! !PUBLIC TYPES:
   implicit none
   save
+
+  logical, public :: implicit_stress = .false.
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: FrictionVelocity       ! Calculate friction velocity
