@@ -391,7 +391,6 @@ contains
 
       end do
       end do
-      call mpas_log_write('leaving eq of state')
 #ifdef MPAS_OPENACC
       !$acc update host(density)
       !$acc exit data delete(p, p2, tracerTemp, tracerSalt)
@@ -399,6 +398,8 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
+
+      call mpas_log_write('leaving eq of state')
 
       deallocate(p,p2)
       deallocate(tracerTemp)
