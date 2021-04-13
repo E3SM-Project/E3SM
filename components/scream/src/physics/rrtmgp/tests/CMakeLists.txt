@@ -8,7 +8,7 @@ endif()
 
 # Required libraries
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
-set (NEED_LIBS ${NETCDF_C} rrtmgp scream_rrtmgp scream_control scream_share yakl)
+set (NEED_LIBS ${NETCDF_C} rrtmgp scream_rrtmgp scream_share yakl)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
