@@ -518,10 +518,10 @@ contains
          end do
          end do
 
-         do n = 1, nCellsAll    ! debug, mdt :: areaCell(nCellsAll+1 is later set to 1e-34)
+         do n = 1, nCellsAll
             invAreaCell(n) = 1.0_RKIND / areaCell(n)
          end do
-         invAreaCell(nCellsAll+1) = 0.0_RKIND    ! debug, mdt
+         invAreaCell(nCellsAll+1) = 0.0_RKIND
 
          ! Copy structure and components to accelerator
          ! Must manually do a deep copy with structure itself copied first.

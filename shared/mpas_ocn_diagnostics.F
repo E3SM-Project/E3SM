@@ -1849,7 +1849,6 @@ contains
 #ifdef MPAS_OPENACC
       !$acc enter data create(div_hu, projectedSSH, ALE_Thickness)
 
-! DEBUG, MDT :: need to add OpenACC
       !$acc parallel loop &
       !$acc          present(div_hu, invAreaCell, nEdgesOnCell, edgesOnCell, maxLevelEdgeTop, &
       !$acc                  layerThicknessEdge, normalVelocity, dvEdge, edgeSignOnCell, &
