@@ -87,6 +87,7 @@
       <value compset="_EAM%MMF[12]-RCE"       >-aquaplanet -rce </value>
       <value compset="_EAM%MMFXX-AQUA"        >-aquaplanet </value>
       <value compset="_EAM%MMFXX-RCE"         >-aquaplanet -rce </value>
+      <value compset="_EAM%P3"                >-clubb_sgs -microphys p3 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
       <value compset="GEOS_EAM"      >-nlev 56</value>
@@ -160,6 +161,7 @@
       <value compset="AR97_EAM"     >scam_arm97</value>
       <value compset="SCAM_EAM"        >scam_generic</value>
       <value compset="PIPD_EAM"        >1850-PD_cam5</value>
+      <value compset="2010S_EAM.*P3" >2010S_cam5_P3</value>
       <!-- Aqua planet -->
       <value compset="_EAM%AQUA"     >aquaplanet_EAMv1</value>
       <!-- Radiative-Convective Equilibrium (RCE) -->
