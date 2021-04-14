@@ -15,6 +15,7 @@
 
 <!-- 2010 GHG values from CMIP6 input4MIPS -->
 <!-- <co2vmr>312.821e-6</co2vmr> The CMIP6 concentration set by CCSM_CO2_PPMV in cime/src/drivers/mct/cime_config/config_component_acme.xml -->
+<co2vmr>388.717e-6</co2vmr>
 <ch4vmr>1807.851e-9</ch4vmr>
 <n2ovmr>323.141e-9</n2ovmr>
 <f11vmr>768.7644e-12</f11vmr>
