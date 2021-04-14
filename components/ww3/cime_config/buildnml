@@ -48,8 +48,18 @@ def buildnml(case, caseroot, compname):
     # Verify wav grid is supported
     #--------------------------------------------------------------------
 
-    wav_grid_supported = ("null", "wDE4","wQU100")
+    wav_grid_supported = ("null", "wQU225EC60to30", "wQU100")
     expect(wav_grid in wav_grid_supported, "WAV_GRID '{}' is not supported in ww3. Choose from: '{}'".format(wav_grid,' ,'.join(wav_grid_supported)))
+
+    #--------------------------------------------------------------------
+    # Generate input data file
+    #--------------------------------------------------------------------
+
+    with open(os.path.join(casebuild, "ww3.input_data_list"), "w") as input_list:
+
+        input_list.write("mesh = {}/wav/ww3/{}.msh\n".format(din_loc_root,wav_grid))
+        input_list.write("stations = {}/wav/ww3/stations.txt\n".format(din_loc_root,wav_grid))
+        #input_list.write("uost = {}/wav/ww3/{}/{}.{}.nc\n".format(din_loc_root,))
 
     #--------------------------------------------------------------------
     # Invoke ww3 build-namelist - output will go in $CASEBUILD/ww3conf
@@ -87,11 +97,9 @@ def buildnml(case, caseroot, compname):
 
         # Runtime namelist for WW3 component
         sysmod  = os.path.join(srcroot, "components/ww3/bld/build-namelist")
-        sysmod += " -infile {}/cesm_namelist".format(wavconf_dir)
         sysmod += " -caseroot {}".format(caseroot)
         sysmod += " -scriptsroot {}".format(scriptsroot)
         sysmod += " -nml_type {}".format('ww3')
-        #sysmod += ' -namelist " &ww3exp {} /" '.format(ww3_namelist_opts)
         sysmod += ' -inst_string "{}" '.format(inst_string)
         run_cmd_no_fail(sysmod, from_dir=wavconf_dir)
 

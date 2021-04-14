@@ -16,6 +16,14 @@
 WaveWatchII restart file
 </entry>
 
+<entry id="stafile" 
+       type="char*1024" 
+       category="ww3_inparm"
+       group="ww3_inparm" 
+       valid_values="" >
+WaveWatchII station output file
+</entry>
+
 <entry id="outfreq" 
        type="integer" 
        category="ww3_inparm"

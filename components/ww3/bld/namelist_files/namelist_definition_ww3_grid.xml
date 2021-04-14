@@ -203,7 +203,7 @@ mesh scale factor
 </entry>
 
 <entry id="unst%filename" 
-       type="char*30" 
+       type="char*128" 
        category="unst_nml"
        group="unst_nml" 
        valid_values="" >

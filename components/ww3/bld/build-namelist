@@ -296,6 +296,7 @@ if ($print>=2) {
 
 if ($NML_TYPE eq "ww3") {
     add_default($nl, 'initfile');
+    add_default($nl, 'stafile', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/stations.txt'");
     add_default($nl, 'outfreq');
 }
 if ($NML_TYPE eq "ww3_grid") {
@@ -327,7 +328,7 @@ if ($NML_TYPE eq "ww3_grid") {
     add_default($nl, 'grid%dmin');
 
     add_default($nl, 'unst%sf');
-    add_default($nl, 'unst%filename');
+    add_default($nl, 'unst%filename', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/${WAV_GRID}.msh'");
     add_default($nl, 'unst%idf');
     add_default($nl, 'unst%idla');
     add_default($nl, 'unst%idfm');

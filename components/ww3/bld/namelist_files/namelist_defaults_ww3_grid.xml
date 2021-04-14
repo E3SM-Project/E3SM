@@ -21,7 +21,7 @@ attributes to express the dependency.
 <run%flcx>.true.</run%flcx>
 <run%flcy>.true.</run%flcy>
 <run%flcth>.true.</run%flcth>
-<run%flck>.false.</run%flck>
+<run%flck>.true.</run%flck>
 <run%flsou>.true.</run%flsou>
 
 <timesteps%dtmax>900.0</timesteps%dtmax>
@@ -29,13 +29,13 @@ attributes to express the dependency.
 <timesteps%dtkth>450.0</timesteps%dtkth>
 <timesteps%dtmin>30.0</timesteps%dtmin>
 
-<grid%name>glo_unst</grid%name>
+<grid%name wav_grid="wQU225EC60to30">wQU225EC60to30</grid%name>
 <grid%nml>ww3_grid_namelists.nml</grid%nml>
 <grid%type>UNST</grid%type>
 <grid%coord>SPHE</grid%coord>
 <grid%clos>SMPL</grid%clos>
 <grid%zlim>-0.10</grid%zlim>
-<grid%dmin>2.5</grid%dmin>
+<grid%dmin>.25</grid%dmin>
 
 <unst%sf>-1.0</unst%sf>
 <unst%filename>mesh.msh</unst%filename>
