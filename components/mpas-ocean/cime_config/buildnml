@@ -313,10 +313,10 @@ def buildnml(case, caseroot, compname):
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E2r1_nomask.201221.nc'
         analysis_mask_file = 'ECwISC30to60E2r1_mocBasinsAndTransects20210331.nc'
-        ic_date = '210407'
+        ic_date = '210413'
         ic_prefix = 'ocean.ECwISC30to60E2r1'
         if ocn_ic_mode == 'spunup':
-            ic_date = '210408'
+            ic_date = '210414'
             ic_prefix = 'mpaso.ECwISC30to60E2r1.rstFromG-anvil'
 
 

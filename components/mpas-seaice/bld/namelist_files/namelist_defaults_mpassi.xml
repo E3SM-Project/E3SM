@@ -77,13 +77,13 @@
 <config_initial_latitude_north ice_grid="oEC60to30v3wLI">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="ECwISC30to60E1r2">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="SOwISC12to60E2r4">85.0</config_initial_latitude_north>
-<config_initial_latitude_north ice_grid="ECwISC30to60E2r1">85.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="ECwISC30to60E2r1">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_south>-60.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oEC60to30v3wLI">-75.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="ECwISC30to60E1r2">-75.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="SOwISC12to60E2r4">-85.0</config_initial_latitude_south>
-<config_initial_latitude_south ice_grid="ECwISC30to60E2r1">-85.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="ECwISC30to60E2r1">-75.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_velocity_type>'uniform'</config_initial_velocity_type>
 <config_initial_uvelocity>0.0</config_initial_uvelocity>

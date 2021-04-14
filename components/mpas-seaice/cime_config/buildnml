@@ -299,13 +299,13 @@ def buildnml(case, caseroot, compname):
             grid_prefix = 'mpassi.SOwISC12to60E2r4.rstFromG-anvil'
 
     elif ice_grid == 'ECwISC30to60E2r1':
-        grid_date = '210407'
+        grid_date = '210413'
         grid_prefix = 'seaice.ECwISC30to60E2r1'
         decomp_date = '200916'
         decomp_prefix = 'mpas-seaice.graph.info.'
         data_iceberg_file += 'Iceberg_Interannual_Merino_ECwISC30to60E2r1.nc'
         if ice_ic_mode == 'spunup':
-            grid_date = '210408'
+            grid_date = '210414'
             grid_prefix = 'mpassi.ECwISC30to60E2r1.rstFromG-anvil'
 
 
