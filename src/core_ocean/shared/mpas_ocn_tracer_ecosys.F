@@ -1016,7 +1016,7 @@ contains
       type (mpas_pool_type), pointer :: ecosysAuxiliary,  &  ! additional forcing fields
                                         ecosysSeaIceCoupling
 
-      integer :: numColumns, column, iCell, iTracer, iLevelSurface
+      integer :: numColumns, column, iCell, iTracer, kSurface
 
 ! input flux components in forcing pool
       real (kind=RKIND), dimension(:), pointer :: &
@@ -1173,7 +1173,7 @@ contains
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
 
-         iLevelSurface = minLevelCell(iCell)
+         kSurface = minLevelCell(iCell)
 !        BGC_forcing%surfacePressure(column) = atmosphericPressure(iCell)*PascalsToAtmospheres
          BGC_forcing%surfacePressure(column) = 1.0_RKIND
          BGC_forcing%iceFraction(column) = iceFraction(iCell)
@@ -1186,17 +1186,16 @@ contains
          BGC_forcing%atmCO2_ALT_CO2(column) = atmosphericCO2_ALT_CO2(iCell)
          BGC_forcing%surface_pH(column) = PH_PREV(iCell)
          BGC_forcing%surface_pH_alt_co2(column) = PH_PREV_ALT_CO2(iCell)
-         BGC_forcing%surfaceDepth(column) = -1.0_RKIND*zMid(iLevelSurface,iCell)
-         BGC_forcing%SST(column) = activeTracers(indexTemperature,iLevelSurface,iCell)
-         BGC_forcing%SSS(column) = activeTracers(indexSalinity,iLevelSurface,iCell)
+         BGC_forcing%surfaceDepth(column) = -1.0_RKIND*zMid(kSurface,iCell)
+         BGC_forcing%SST(column) = activeTracers(indexTemperature,kSurface,iCell)
+         BGC_forcing%SSS(column) = activeTracers(indexSalinity,kSurface,iCell)
 
-         ! the 1 indices may need to be changed to iLevelSurface
-         BGC_input%BGC_tracers(1,column,BGC_indices%dic_ind) = ecosysTracers(ecosysIndices%dic_ind,1,iCell)
-         BGC_input%BGC_tracers(1,column,BGC_indices%dic_alt_co2_ind) = ecosysTracers(ecosysIndices%dic_alt_co2_ind,1,iCell)
-         BGC_input%BGC_tracers(1,column,BGC_indices%alk_ind) = ecosysTracers(ecosysIndices%alk_ind,1,iCell)
-         BGC_input%BGC_tracers(1,column,BGC_indices%po4_ind) = ecosysTracers(ecosysIndices%po4_ind,1,iCell)
-         BGC_input%BGC_tracers(1,column,BGC_indices%sio3_ind) = ecosysTracers(ecosysIndices%sio3_ind,1,iCell)
-         BGC_input%BGC_tracers(1,column,BGC_indices%o2_ind) = ecosysTracers(ecosysIndices%o2_ind,1,iCell)
+         BGC_input%BGC_tracers(kSurface,column,BGC_indices%dic_ind) = ecosysTracers(ecosysIndices%dic_ind,kSurface,iCell)
+         BGC_input%BGC_tracers(kSurface,column,BGC_indices%dic_alt_co2_ind) = ecosysTracers(ecosysIndices%dic_alt_co2_ind,kSurface,iCell)
+         BGC_input%BGC_tracers(kSurface,column,BGC_indices%alk_ind) = ecosysTracers(ecosysIndices%alk_ind,kSurface,iCell)
+         BGC_input%BGC_tracers(kSurface,column,BGC_indices%po4_ind) = ecosysTracers(ecosysIndices%po4_ind,kSurface,iCell)
+         BGC_input%BGC_tracers(kSurface,column,BGC_indices%sio3_ind) = ecosysTracers(ecosysIndices%sio3_ind,kSurface,iCell)
+         BGC_input%BGC_tracers(kSurface,column,BGC_indices%o2_ind) = ecosysTracers(ecosysIndices%o2_ind,kSurface,iCell)
 
 ! NOTE pass in total Fe and mult by parm_Fe_bioavail inside the flux routine
 !             divide river Fe by bioavail since it is already the available to make it total
