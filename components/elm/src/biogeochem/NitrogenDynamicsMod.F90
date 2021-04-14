@@ -11,7 +11,7 @@ module NitrogenDynamicsMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use elm_varcon          , only : dzsoi_decomp, zisoi
-  use elm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
+  use elm_varctl          , only : use_vertsoilc
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNCarbonFluxType    , only : carbonflux_type
@@ -72,11 +72,7 @@ contains
        ! wasn't specified by the user namelist and we need to assign
        ! it the correct default value. If the user specified it in the
        ! name list, we leave it alone.
-       if (use_nitrif_denitrif) then
-          nfix_timeconst = 10._r8
-       else
-          nfix_timeconst = 0._r8
-       end if
+       nfix_timeconst = 10._r8
     end if
    
   end subroutine NitrogenDynamicsInit
@@ -255,7 +251,6 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: j,c,fc                                 ! indices
     real(r8) :: dt                                     ! radiation time step (seconds)
-    real(r8) :: sf                                     ! soluble fraction of mineral N (unitless)
     real(r8) :: sf_no3                                 ! soluble fraction of NO3 (unitless)
     real(r8) :: disn_conc                              ! dissolved mineral N concentration (gN/kg water)
     real(r8) :: tot_water(bounds%begc:bounds%endc)     ! total column liquid water (kg water/m2)
@@ -266,13 +261,9 @@ contains
 
     associate(& 
          h2osoi_liq          => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
-
          qflx_drain          => col_wf%qflx_drain             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
          qflx_surf           => col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
-         
-         sminn_vr            => col_ns%sminn_vr           , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N                          
          smin_no3_vr         => col_ns%smin_no3_vr        , & ! Input:  [real(r8) (:,:) ]                                                  
-         sminn_leached_vr    => col_nf%sminn_leached_vr    , & ! Output: [real(r8) (:,:) ]  rate of mineral N leaching (gN/m3/s)            
          smin_no3_leached_vr => col_nf%smin_no3_leached_vr , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)          
          smin_no3_runoff_vr  => col_nf%smin_no3_runoff_vr    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)  
          )
@@ -280,13 +271,8 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      if (.not. use_nitrif_denitrif) then
-         ! set constant sf 
-         sf = CNNDynamicsParamsInst%sf
-      else
-         ! Assume that 100% of the soil NO3 is in a soluble form
-         sf_no3 =  CNNDynamicsParamsInst%sf_no3 
-      end if
+      ! Assume that 100% of the soil NO3 is in a soluble form
+      sf_no3 =  CNNDynamicsParamsInst%sf_no3 
 
       ! calculate the total soil water
       tot_water(bounds%begc:bounds%endc) = 0._r8
@@ -319,126 +305,71 @@ contains
          drain_tot(c) = qflx_drain(c)
       end do
 
+      do j = 1,nlevdecomp
+         ! Loop through columns
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
 
-      if (.not. use_nitrif_denitrif) then
-
-         !----------------------------------------
-         ! --------- NITRIF_NITRIF OFF------------
-         !----------------------------------------
-
-         do j = 1,nlevdecomp
-            ! Loop through columns
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-
-               if (.not. use_vertsoilc) then
-                  ! calculate the dissolved mineral N concentration (gN/kg water)
-                  ! assumes that 10% of mineral nitrogen is soluble
-                  disn_conc = 0._r8
-                  if (tot_water(c) > 0._r8) then
-                     disn_conc = (sf * sminn_vr(c,j) ) / tot_water(c)
-                  end if
-
-                  ! calculate the N leaching flux as a function of the dissolved
-                  ! concentration and the sub-surface drainage flux
-                  sminn_leached_vr(c,j) = disn_conc * drain_tot(c)
-               else
-                  ! calculate the dissolved mineral N concentration (gN/kg water)
-                  ! assumes that 10% of mineral nitrogen is soluble
-                  disn_conc = 0._r8
-                  if (h2osoi_liq(c,j) > 0._r8) then
-                     disn_conc = (sf * sminn_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
-                  end if
-
-                  ! calculate the N leaching flux as a function of the dissolved
-                  ! concentration and the sub-surface drainage flux
-                  sminn_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
-
+            if (.not. use_vertsoilc) then
+               ! calculate the dissolved mineral N concentration (gN/kg water)
+               ! assumes that 10% of mineral nitrogen is soluble
+               disn_conc = 0._r8
+               if (tot_water(c) > 0._r8) then
+                  disn_conc = (sf_no3 * smin_no3_vr(c,j) )/tot_water(c)
                end if
 
-               ! limit the flux based on current sminn state
-               ! only let at most the assumed soluble fraction
-               ! of sminn be leached on any given timestep
-               sminn_leached_vr(c,j) = min(sminn_leached_vr(c,j), (sf * sminn_vr(c,j))/dt)
-
-               ! limit the flux to a positive value
-               sminn_leached_vr(c,j) = max(sminn_leached_vr(c,j), 0._r8)
-
-            end do
-         end do
-
-      else     
-
-         !----------------------------------------
-         ! --------- NITRIF_NITRIF ON-------------
-         !----------------------------------------
-
-         do j = 1,nlevdecomp
-            ! Loop through columns
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-
-               if (.not. use_vertsoilc) then
-                  ! calculate the dissolved mineral N concentration (gN/kg water)
-                  ! assumes that 10% of mineral nitrogen is soluble
-                  disn_conc = 0._r8
-                  if (tot_water(c) > 0._r8) then
-                     disn_conc = (sf_no3 * smin_no3_vr(c,j) )/tot_water(c)
-                  end if
-
-                  ! calculate the N leaching flux as a function of the dissolved
-                  ! concentration and the sub-surface drainage flux
-                  smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c)
-               else
-                  ! calculate the dissolved mineral N concentration (gN/kg water)
-                  ! assumes that 10% of mineral nitrogen is soluble
-                  disn_conc = 0._r8
-                  if (h2osoi_liq(c,j) > 0._r8) then
-                     disn_conc = (sf_no3 * smin_no3_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
-                  end if
-                  !
-                  ! calculate the N leaching flux as a function of the dissolved
-                  ! concentration and the sub-surface drainage flux
-                  smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
-                  !
-                  ! ensure that leaching rate isn't larger than soil N pool
-                  smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), smin_no3_vr(c,j) / dt )
-                  !
-                  ! limit the leaching flux to a positive value
-                  smin_no3_leached_vr(c,j) = max(smin_no3_leached_vr(c,j), 0._r8)
-                  !
-                  !
-                  ! calculate the N loss from surface runoff, assuming a shallow mixing of surface waters into soil and removal based on runoff
-                  if ( zisoi(j) <= depth_runoff_Nloss )  then
-                     smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
-                          h2osoi_liq(c,j) / ( surface_water(c) * col_pp%dz(c,j) )
-                  elseif ( zisoi(j-1) < depth_runoff_Nloss )  then
-                     smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
-                          h2osoi_liq(c,j) * ((depth_runoff_Nloss - zisoi(j-1)) / &
-                          col_pp%dz(c,j)) / ( surface_water(c) * (depth_runoff_Nloss-zisoi(j-1) ))
-                  else
-                     smin_no3_runoff_vr(c,j) = 0._r8
-                  endif
-                  !
-                  ! ensure that runoff rate isn't larger than soil N pool
-                  smin_no3_runoff_vr(c,j) = min(smin_no3_runoff_vr(c,j), smin_no3_vr(c,j) / dt - smin_no3_leached_vr(c,j))
-                  !
-                  ! limit the flux to a positive value
-                  smin_no3_runoff_vr(c,j) = max(smin_no3_runoff_vr(c,j), 0._r8)
-
-
-               endif
-               ! limit the flux based on current smin_no3 state
-               ! only let at most the assumed soluble fraction
-               ! of smin_no3 be leached on any given timestep
-               smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), (sf_no3 * smin_no3_vr(c,j))/dt)
-
-               ! limit the flux to a positive value
+               ! calculate the N leaching flux as a function of the dissolved
+               ! concentration and the sub-surface drainage flux
+               smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c)
+            else
+               ! calculate the dissolved mineral N concentration (gN/kg water)
+               ! assumes that 10% of mineral nitrogen is soluble
+               disn_conc = 0._r8
+               if (h2osoi_liq(c,j) > 0._r8) then
+                  disn_conc = (sf_no3 * smin_no3_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
+               end if
+               !
+               ! calculate the N leaching flux as a function of the dissolved
+               ! concentration and the sub-surface drainage flux
+               smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
+               !
+               ! ensure that leaching rate isn't larger than soil N pool
+               smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), smin_no3_vr(c,j) / dt )
+               !
+               ! limit the leaching flux to a positive value
                smin_no3_leached_vr(c,j) = max(smin_no3_leached_vr(c,j), 0._r8)
+               !
+               !
+               ! calculate the N loss from surface runoff, assuming a shallow mixing of surface waters into soil and removal based on runoff
+               if ( zisoi(j) <= depth_runoff_Nloss )  then
+                  smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
+                       h2osoi_liq(c,j) / ( surface_water(c) * col_pp%dz(c,j) )
+               elseif ( zisoi(j-1) < depth_runoff_Nloss )  then
+                  smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
+                       h2osoi_liq(c,j) * ((depth_runoff_Nloss - zisoi(j-1)) / &
+                       col_pp%dz(c,j)) / ( surface_water(c) * (depth_runoff_Nloss-zisoi(j-1) ))
+               else
+                  smin_no3_runoff_vr(c,j) = 0._r8
+               endif
+               !
+               ! ensure that runoff rate isn't larger than soil N pool
+               smin_no3_runoff_vr(c,j) = min(smin_no3_runoff_vr(c,j), smin_no3_vr(c,j) / dt - smin_no3_leached_vr(c,j))
+               !
+               ! limit the flux to a positive value
+               smin_no3_runoff_vr(c,j) = max(smin_no3_runoff_vr(c,j), 0._r8)
 
-            end do
+
+            endif
+            ! limit the flux based on current smin_no3 state
+            ! only let at most the assumed soluble fraction
+            ! of smin_no3 be leached on any given timestep
+            smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), (sf_no3 * smin_no3_vr(c,j))/dt)
+
+            ! limit the flux to a positive value
+            smin_no3_leached_vr(c,j) = max(smin_no3_leached_vr(c,j), 0._r8)
+
          end do
-      endif
+      end do
 
     end associate
   end subroutine NitrogenLeaching

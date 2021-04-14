@@ -586,13 +586,6 @@ CLM Biogeochemistry mode : Carbon Nitrogen with Dynamic Global Vegetation Model 
 (or CLM45BGCDV if phys=clm4_5, vsoilc_centbgc='on', and elm4me='on')
 </entry>
 
-<entry id="use_nitrif_denitrif" type="logical" category="bgc"
-       group="elm_inparm" valid_values="" value=".false.">
-Nitrification/denitrification splits the prognostic mineral N pool into two 
-   mineral N pools: NO3 and NH4, and includes the transformations between them.
-Requires the CN model to work (either CN or CNDV).
-</entry>
-
 <entry id="use_vertsoilc" type="logical" category="bgc"
        group="elm_inparm" valid_values="" value=".false.">
 Turn on vertical soil carbon.
@@ -1320,7 +1313,6 @@ Command line arguement for biogeochemistry mode for CLM4.5
    cn  = Carbon Nitrogen model
    bgc = CLM4.5 BGC model with: 
         CENTURY model pools 
-        Nitrification/De-nitrification
         Methane model
         Vertically resolved Carbon
    fates = functionally assembled terrestrial ecosystem simulator

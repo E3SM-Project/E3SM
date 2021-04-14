@@ -9,7 +9,7 @@ module NitrogenStateUpdate3Mod
   use shr_kind_mod        , only: r8 => shr_kind_r8
   use elm_varpar          , only: nlevdecomp, ndecomp_pools
   use clm_time_manager    , only : get_step_size
-  use elm_varctl          , only : iulog, use_nitrif_denitrif
+  use elm_varctl          , only : iulog
   use elm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use elm_varctl          , only : use_erosion, ero_ccycle
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -70,18 +70,13 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
                
-               if (.not. use_nitrif_denitrif) then
-                  ! mineral N loss due to leaching
-                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) - col_nf%sminn_leached_vr(c,j) * dt
-               else
-                  ! mineral N loss due to leaching and runoff
-                  col_ns%smin_no3_vr(c,j) = max( col_ns%smin_no3_vr(c,j) - &
-                       ( col_nf%smin_no3_leached_vr(c,j) + col_nf%smin_no3_runoff_vr(c,j) ) * dt, 0._r8)
-                  
-                  col_ns%sminn_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_ns%smin_nh4_vr(c,j)
-                  if (use_pflotran .and. pf_cmode) then 
-                        col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_ns%smin_nh4sorb_vr(c,j)
-                  end if
+               ! mineral N loss due to leaching and runoff
+               col_ns%smin_no3_vr(c,j) = max( col_ns%smin_no3_vr(c,j) - &
+                    ( col_nf%smin_no3_leached_vr(c,j) + col_nf%smin_no3_runoff_vr(c,j) ) * dt, 0._r8)
+               
+               col_ns%sminn_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_ns%smin_nh4_vr(c,j)
+               if (use_pflotran .and. pf_cmode) then 
+                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_ns%smin_nh4sorb_vr(c,j)
                end if
                
                if (.not.(use_pflotran .and. pf_cmode)) then
