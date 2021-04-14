@@ -13,7 +13,6 @@
 # -f <scripfilename> Input grid filename 
 # -t <type>          Output type, supported values are [regional, global]
 # -r <res>           Output resolution
-# -p <CLM-version>   CLM version to use (clm4_0 or clm4_5) (defaults to clm4_5)
 # -b                 use batch mode (not default)
 # -l                 list mapping files required (so can use check_input_data to get them)
 # -d                 debug usage -- display mkmapdata that will be run but don't execute them
@@ -39,7 +38,7 @@ dir=${0%/*}
 if [ "$dir" = "$0" ];then
   dir="."
 fi
-outfilelist="clm.input_data_list"
+outfilelist="elm.input_data_list"
 default_res="10x15"
 
 #----------------------------------------------------------------------
@@ -65,15 +64,13 @@ usage() {
   echo "    This variable will override the automatic generation of the"
   echo "    filename generated from the -res argument "
   echo "    the filename is generated ASSUMING that this is a supported "
-  echo "    grid that has entries in the file namelist_defaults_clm.xml"
+  echo "    grid that has entries in the file namelist_defaults.xml"
   echo "    the -r|--res argument MUST be specied if this argument is specified" 
   echo "[-r|--res <res>]"
   echo "    Model output resolution (default is $default_res)"
   echo "[-t|--gridtype <type>]"
   echo "    Model output grid type"
   echo "    supported values are [regional,global], (default is global)"
-  echo "    Model version to generate mapping files for. Currently the only"
-  echo "    supported value is clm4_5."
   echo "[-i|--inputdata-path <inputdata_path>]"
   echo "    Full path to root of inputdata directory"
   echo "[-n|--ntasks <ntasks>]"
