@@ -178,6 +178,40 @@ struct UnitWrap::UnitTest<D>::TestUniversal
 
   } // dse_test
 //-----------------------------------------------------------------------------------------------//
+  KOKKOS_FUNCTION static void virtual_temperature_test(const Scalar& T_mid_in, const Scalar& qv_in, int& errors){
+
+    // Allow usage of universal functions
+    using physics = scream::physics::Functions<Scalar, Device>;
+    // Gather the machine epsilon for the error tolerance
+    static constexpr Scalar eps = C::macheps;
+    static constexpr Scalar ep_2 = C::ep_2;
+    Real tol = 2000*eps;
+
+    //========================================================
+    // Test calculation of virtual temperature using get_virtual_temperature
+    //========================================================
+    // This function tests the function "get_virtual_temperature".
+    //
+    // Inputs:
+    //   T_mid_in is the atmospheric temperature. Units in K.
+    //   qv_in is the atmospheric water vapor mass mixing ratio.  Units in kg/kg
+    // Outputs:
+    //   errors:  A tally of any errors that this test detects.
+    //========================================================
+    const Spack T_mid(T_mid_in);
+    const Spack qv(qv_in);
+    // Given T and qv, determine T_virt
+    const Spack T_virt = physics::get_virtual_temperature(T_mid,qv,Smask(true));
+    // Determine the expected virtual temperature
+    Real expected_T_virt = T_mid_in*(qv_in+ep_2)/(ep_2*(1.0+qv_in));
+
+    if (std::abs(T_virt[0]-expected_T_virt)>tol) {
+      printf("get_virtual_temperature test: abs(T_virt-expected_T_virt)=%e is larger than the tol=%e\n",std::abs(T_virt[0]-expected_T_virt),tol);
+      errors++;
+    }
+  
+  } // virtual_temperature_test
+//-----------------------------------------------------------------------------------------------//
   static void run()
   {
     using physics = scream::physics::Functions<Scalar, Device>;
@@ -188,7 +222,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     using view_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Real>;
     view_1d temp("temp",num_levs),
             height("height",num_levs),
-            surface_height("surface_height",num_levs);
+            surface_height("surface_height",num_levs),
+            qv("qv",num_levs);
 
     std::random_device rd;
     using rngAlg = std::mt19937_64;
@@ -201,6 +236,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     ekat::genRandArray(temp,engine,pdf);
     ekat::genRandArray(height,engine,pdf);
     ekat::genRandArray(surface_height,engine,pdf);
+    ekat::genRandArray(qv,engine,pdf);
 
     int nerr = 0;
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
@@ -236,6 +272,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
         dz_tests(zi_top,zi_bot,errors);
         // DSE Test
         dse_tests(temp(k),height(k),surface_height(k),errors);
+        // virtual temperature test
+        virtual_temperature_test(temp(k),qv(k),errors);
       }
 
     }, nerr);

@@ -131,7 +131,29 @@ Functions<S,D>::get_dse(const Spack& T_mid, const Spack& z_mid, const Real surf_
   return dse;
 }
 //-----------------------------------------------------------------------------------------------//
+  // Compute virtual temperature
+  // The result unit is in K
+  // The inputs are
+  //   T_mid is the atmospheric temperature.  Units in K.
+  //   qv    is the water vapor mass mixing ratio.  Units in kg/kg
+template <typename S, typename D>
+KOKKOS_FUNCTION
+typename Functions<S,D>::Spack
+Functions<S,D>::get_virtual_temperature(const Spack& T_mid, const Spack& qv, const Smask& range_mask)
+{
+  static constexpr Scalar ep_2 = C::ep_2;
 
+  const Spack T_virt(range_mask, T_mid*(qv+ep_2)/(ep_2*(1.0+qv)));
+
+// Check that there are no obvious errors in the result.
+  EKAT_KERNEL_ASSERT_MSG((isnan(T_mid) && range_mask).none(),  "Error in get_virtual_temperature, T_mid has NaN values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG((isnan(qv) && range_mask).none(),     "Error in get_virtual_temperature, qv has NaN values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG((isnan(T_virt) && range_mask).none(), "Error in get_virtual_temperature, T_virt has NaN values.\n"); // exit with an error message
+
+  return T_virt;
+}
+
+//-----------------------------------------------------------------------------------------------//
 } // namespace physics
 } // namespace scream
 
