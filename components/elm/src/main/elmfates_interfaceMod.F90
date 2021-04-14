@@ -55,7 +55,6 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_inventory_init
    use elm_varctl        , only : use_fates_fixed_biogeog
    use elm_varctl        , only : fates_inventory_ctrl_filename
-   use elm_varctl        , only : use_nitrif_denitrif
    use elm_varcon        , only : tfrz
    use elm_varcon        , only : spval 
    use elm_varcon        , only : denice
@@ -315,11 +314,7 @@ contains
         ! FATES also checks that if NO3 is cycled in ELM, then
         ! any plant affinity parameters are checked.
         
-        if(use_nitrif_denitrif) then
-           call set_fates_ctrlparms('nitrogen_spec',ival=1)
-        else
-           call set_fates_ctrlparms('nitrogen_spec',ival=2)
-        end if
+        call set_fates_ctrlparms('nitrogen_spec',ival=1)
         call set_fates_ctrlparms('phosphorus_spec',ival=1)
            
         

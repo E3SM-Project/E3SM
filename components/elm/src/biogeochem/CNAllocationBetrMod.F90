@@ -9,7 +9,7 @@ module CNAllocationBeTRMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use elm_varcon          , only : dzsoi_decomp
-  use elm_varctl          , only : use_c13, use_c14, use_nitrif_denitrif, spinup_state
+  use elm_varctl          , only : use_c13, use_c14, spinup_state
   use elm_varctl          , only : nyears_ad_carbon_only
   use abortutils          , only : endrun
   use decompMod           , only : bounds_type

@@ -41,7 +41,7 @@ contains
     ! they get too small.
     !
     ! !USES:
-    use elm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif, use_fates
+    use elm_varctl , only : iulog, use_c13, use_c14, use_fates
     use elm_varpar , only : nlevdecomp_full, crop_prog
     use pftvarcon  , only : nc3crop
     use tracer_varcon          , only : is_active_betr_bgc    
@@ -632,29 +632,28 @@ contains
 
          end do   ! end of column loop
 
-         if (use_nitrif_denitrif) then
-            ! remove small negative perturbations for stability purposes, if any should arise.
-
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               do j = 1,nlevdecomp_full
-                  if (abs(col_ns%smin_no3_vr(c,j)) < ncrit/1e4_r8) then
-                     if ( col_ns%smin_no3_vr(c,j)  < 0._r8 ) then
-                        write(iulog, *) '-10^-12 < smin_no3 < 0. resetting to zero.'
-                        write(iulog, *) 'smin_no3_vr_col(c,j), c, j: ', col_ns%smin_no3_vr(c,j), c, j
-                        col_ns%smin_no3_vr(c,j) = 0._r8
-                     endif
-                  end if
-                  if (abs(col_ns%smin_nh4_vr(c,j)) < ncrit/1e4_r8) then
-                     if ( col_ns%smin_nh4_vr(c,j)  < 0._r8 ) then
-                        write(iulog, *) '-10^-12 < smin_nh4 < 0. resetting to zero.'
-                        write(iulog, *) 'smin_nh4_vr_col(c,j), c, j: ', col_ns%smin_nh4_vr(c,j), c, j
-                        col_ns%smin_nh4_vr(c,j) = 0._r8
-                     endif
-                  end if
-               end do
+         ! remove small negative perturbations for stability purposes, if any should arise.
+         
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            do j = 1,nlevdecomp_full
+               if (abs(col_ns%smin_no3_vr(c,j)) < ncrit/1e4_r8) then
+                  if ( col_ns%smin_no3_vr(c,j)  < 0._r8 ) then
+                     write(iulog, *) '-10^-12 < smin_no3 < 0. resetting to zero.'
+                     write(iulog, *) 'smin_no3_vr_col(c,j), c, j: ', col_ns%smin_no3_vr(c,j), c, j
+                     col_ns%smin_no3_vr(c,j) = 0._r8
+                  endif
+               end if
+               if (abs(col_ns%smin_nh4_vr(c,j)) < ncrit/1e4_r8) then
+                  if ( col_ns%smin_nh4_vr(c,j)  < 0._r8 ) then
+                     write(iulog, *) '-10^-12 < smin_nh4 < 0. resetting to zero.'
+                     write(iulog, *) 'smin_nh4_vr_col(c,j), c, j: ', col_ns%smin_nh4_vr(c,j), c, j
+                     col_ns%smin_nh4_vr(c,j) = 0._r8
+                  endif
+               end if
             end do
-         endif
+         end do
+
 
          if (nu_com .eq. 'ECA') then
             ! decompose P pool adjust according to C pool
