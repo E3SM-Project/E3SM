@@ -40,37 +40,72 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine seaice_calc_local_coords(&
-       mesh, &
        xLocal, &
        yLocal, &
-       rotateCartesianGrid)!{{{
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
+       nCells, &
+       nEdgesOnCell, &
+       verticesOnCell, &
+       xVertex, &
+       yVertex, &
+       zVertex, &
+       xCell, &
+       yCell, &
+       zCell, &
+       rotateCartesianGrid, &
+       onASphere)!{{{
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
          xLocal, & !< Output:
          yLocal    !< Output:
 
+    integer, intent(in) :: &
+         nCells !< Input:
+
+    integer, dimension(:), intent(in) :: &
+         nEdgesOnCell !< Input:
+
+    integer, dimension(:,:), intent(in) :: &
+         verticesOnCell !< Input:
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         xVertex, & !< Input:
+         yVertex, & !< Input:
+         zVertex, & !< Input:
+         xCell, &   !< Input:
+         yCell, &   !< Input:
+         zCell      !< Input:
+
     logical, intent(in) :: &
-         rotateCartesianGrid !< Input:
+         rotateCartesianGrid, & !< Input:
+         onASphere              !< Input:
 
-    logical, pointer :: &
-         on_a_sphere
-
-    call MPAS_pool_get_config(mesh, "on_a_sphere", on_a_sphere)
-
-    if (on_a_sphere) then
+    if (onASphere) then
        call calc_local_coords_spherical(&
-            mesh, &
             xLocal, &
             yLocal, &
+            nCells, &
+            nEdgesOnCell, &
+            verticesOnCell, &
+            xVertex, &
+            yVertex, &
+            zVertex, &
+            xCell, &
+            yCell, &
+            zCell, &
             rotateCartesianGrid)
     else
        call calc_local_coords_planar(&
-            mesh, &
             xLocal, &
-            yLocal)
+            yLocal, &
+            nCells, &
+            nEdgesOnCell, &
+            verticesOnCell, &
+            xVertex, &
+            yVertex, &
+            zVertex, &
+            xCell, &
+            yCell, &
+            zCell)
     endif
 
   end subroutine seaice_calc_local_coords!}}}
@@ -88,45 +123,43 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine calc_local_coords_planar(&
-       mesh, &
        xLocal, &
-       yLocal)!{{{
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
+       yLocal, &
+       nCells, &
+       nEdgesOnCell, &
+       verticesOnCell, &
+       xVertex, &
+       yVertex, &
+       zVertex, &
+       xCell, &
+       yCell, &
+       zCell)!{{{
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
          xLocal, & !< Output:
          yLocal    !< Output:
 
+    integer, intent(in) :: &
+         nCells !< Input:
+
+    integer, dimension(:), intent(in) :: &
+         nEdgesOnCell !< Input:
+
+    integer, dimension(:,:), intent(in) :: &
+         verticesOnCell !< Input:
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         xVertex, & !< Input:
+         yVertex, & !< Input:
+         zVertex, & !< Input:
+         xCell, &   !< Input:
+         yCell, &   !< Input:
+         zCell      !< Input:
+
     integer :: &
          iCell, &
          iVertex, &
          iVertexOnCell
-
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
-
-    integer, dimension(:,:), pointer :: &
-         verticesOnCell
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         xVertex, &
-         yVertex, &
-         xCell, &
-         yCell
-
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
-    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
-    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
-    call MPAS_pool_get_array(mesh, "xCell", xCell)
-    call MPAS_pool_get_array(mesh, "yCell", yCell)
 
     do iCell = 1, nCells
 
@@ -156,21 +189,43 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine calc_local_coords_spherical(&
-       mesh, &
        xLocal, &
        yLocal, &
+       nCells, &
+       nEdgesOnCell, &
+       verticesOnCell, &
+       xVertex, &
+       yVertex, &
+       zVertex, &
+       xCell, &
+       yCell, &
+       zCell, &
        rotateCartesianGrid)!{{{
 
     use seaice_mesh, only: &
          seaice_project_3D_vector_onto_local_2D, &
          seaice_grid_rotation_forward
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
-
     real(kind=RKIND), dimension(:,:), intent(out) :: &
          xLocal, & !< Output:
          yLocal    !< Output:
+
+    integer, intent(in) :: &
+         nCells !< Input:
+
+    integer, dimension(:), intent(in) :: &
+         nEdgesOnCell !< Input:
+
+    integer, dimension(:,:), intent(in) :: &
+         verticesOnCell !< Input:
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         xVertex, & !< Input:
+         yVertex, & !< Input:
+         zVertex, & !< Input:
+         xCell, &   !< Input:
+         yCell, &   !< Input:
+         zCell      !< Input:
 
     logical, intent(in) :: &
          rotateCartesianGrid !< Input:
@@ -186,38 +241,10 @@ contains
          iVertex, &
          iVertexOnCell
 
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
-
-    integer, dimension(:,:), pointer :: &
-         verticesOnCell
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         xVertex, &
-         yVertex, &
-         zVertex, &
-         xCell, &
-         yCell, &
-         zCell
-
     real(kind=RKIND) :: &
          xCellRotated, &
          yCellRotated, &
          zCellRotated
-
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
-    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
-    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
-    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
-    call MPAS_pool_get_array(mesh, "xCell", xCell)
-    call MPAS_pool_get_array(mesh, "yCell", yCell)
-    call MPAS_pool_get_array(mesh, "zCell", zCell)
 
     do iCell = 1, nCells
 
@@ -264,50 +291,44 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine seaice_calc_variational_metric_terms(&
-       mesh, &
        tanLatVertexRotatedOverRadius, &
+       nVertices, &
+       xVertex, &
+       yVertex, &
+       zVertex, &
+       sphereRadius, &
        rotateCartesianGrid, &
        includeMetricTerms)
 
     use seaice_mesh, only: &
          seaice_grid_rotation_forward
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
-
     real(kind=RKIND), dimension(:), intent(out) :: &
          tanLatVertexRotatedOverRadius !< Output:
+
+    integer, intent(in) :: &
+         nVertices !< Input:
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, & !< Input:
+         yVertex, & !< Input:
+         zVertex    !< Input:
+
+    real(kind=RKIND), pointer :: &
+         sphereRadius !< Input:
 
     logical, intent(in) :: &
          rotateCartesianGrid, & !< Input:
          includeMetricTerms     !< Input:
 
-    integer, pointer :: &
-         nVertices
-
     integer :: &
          iVertex
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         xVertex, &
-         yVertex, &
-         zVertex
-
-    real(kind=RKIND), pointer :: &
-         sphere_radius
 
     real(kind=RKIND) :: &
          xVertexRotated, &
          yVertexRotated, &
          zVertexRotated, &
          latVertexRotated
-
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
-
-    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
-    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
-    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
 
     if (includeMetricTerms) then
 
@@ -318,9 +339,9 @@ contains
                xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
                rotateCartesianGrid)
 
-          latVertexRotated = asin(zVertexRotated / sphere_radius)
+          latVertexRotated = asin(zVertexRotated / sphereRadius)
 
-          tanLatVertexRotatedOverRadius(iVertex) = tan(latVertexRotated) / sphere_radius
+          tanLatVertexRotatedOverRadius(iVertex) = tan(latVertexRotated) / sphereRadius
 
        enddo ! iVertex
 
