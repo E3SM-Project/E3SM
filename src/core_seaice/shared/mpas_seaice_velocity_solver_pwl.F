@@ -42,97 +42,20 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine seaice_init_velocity_solver_pwl(&
-       mesh, &
-       velocity_variational, &
-       boundary, &
-       rotateCartesianGrid, &
-       includeMetricTerms)!{{{
-
-    use seaice_velocity_solver_variational_shared, only: &
-         seaice_calc_local_coords
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
-
-    type(MPAS_pool_type), pointer :: &
-         velocity_variational, & !< Input/Output:
-         boundary                !< Input/Output:
-
-    logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input:
-         includeMetricTerms     !< Input:
-
-    integer, pointer :: &
-         nCells, &
-         maxEdges
-
-    real(kind=RKIND), dimension(:,:), allocatable :: &
-         xLocal, &
-         yLocal
-
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         basisGradientU, &
-         basisGradientV, &
-         basisIntegralsMetric, &
-         basisIntegralsU, &
-         basisIntegralsV
-
-    integer :: iCell, i1, i2
-
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-    call MPAS_pool_get_dimension(mesh, "maxEdges", maxEdges)
-
-    call MPAS_pool_get_array(velocity_variational, "basisGradientU", basisGradientU)
-    call MPAS_pool_get_array(velocity_variational, "basisGradientV", basisGradientV)
-    call MPAS_pool_get_array(velocity_variational, "basisIntegralsMetric", basisIntegralsMetric)
-    call MPAS_pool_get_array(velocity_variational, "basisIntegralsU", basisIntegralsU)
-    call MPAS_pool_get_array(velocity_variational, "basisIntegralsV", basisIntegralsV)
-
-    allocate(xLocal(maxEdges,nCells))
-    allocate(yLocal(maxEdges,nCells))
-
-    call seaice_calc_local_coords(&
-         mesh, &
-         xLocal, &
-         yLocal, &
-         rotateCartesianGrid)
-
-    call init_velocity_solver_pwl_basis(&
-         mesh, &
-         basisGradientU, &
-         basisGradientV, &
-         basisIntegralsMetric, &
-         basisIntegralsU, &
-         basisIntegralsV, &
-         xLocal, &
-         yLocal)
-
-    deallocate(xLocal)
-    deallocate(yLocal)
-
-  end subroutine seaice_init_velocity_solver_pwl!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  init_velocity_solver_pwl_basis
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine init_velocity_solver_pwl_basis(&
-       mesh, &
+       nCells, &
+       maxEdges, &
+       nEdgesOnCell, &
+       verticesOnCell, &
+       edgesOnCell, &
+       dvEdge, &
+       areaCell, &
+       xLocal, &
+       yLocal, &
        basisGradientU, &
        basisGradientV, &
        basisIntegralsMetric, &
        basisIntegralsU, &
-       basisIntegralsV, &
-       xLocal, &
-       yLocal)!{{{
+       basisIntegralsV)!{{{
 
     use seaice_numerics, only: &
          seaice_solve_linear_basis_system
@@ -140,8 +63,24 @@ contains
     use seaice_velocity_solver_variational_shared, only: &
          seaice_wrapped_index
 
-    type(MPAS_pool_type), pointer :: &
-         mesh !< Input:
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         xLocal, & !< Input:
+         yLocal    !< Input:
+
+    integer, intent(in) :: &
+         nCells, & !< Input:
+         maxEdges  !< Input:
+
+    integer, dimension(:), intent(in) :: &
+         nEdgesOnCell !< Input:
+
+    integer, dimension(:,:), intent(in) :: &
+         verticesOnCell, & !< Input:
+         edgesOnCell       !< Input:
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         dvEdge, & !< Input:
+         areaCell  !< Input:
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          basisGradientU, &       !< Output:
@@ -149,10 +88,6 @@ contains
          basisIntegralsMetric, & !< Output:
          basisIntegralsU, &      !< Output:
          basisIntegralsV         !< Output:
-
-    real(kind=RKIND), dimension(:,:), intent(in) :: &
-         xLocal, & !< Input:
-         yLocal    !< Input:
 
     real(kind=RKIND) :: &
          xPWLCentre, &
@@ -187,21 +122,6 @@ contains
          rightHandSide, &
          solutionVector
 
-    integer, pointer :: &
-         nCells, &
-         maxEdges
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
-
-    integer, dimension(:,:), pointer :: &
-         verticesOnCell, &
-         edgesOnCell
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         dvEdge, &
-         areaCell
-
     real(kind=RKIND), dimension(:,:), allocatable :: &
          subBasisGradientU, &
          subBasisGradientV, &
@@ -211,16 +131,6 @@ contains
 
     real(kind=RKIND), dimension(:), allocatable :: &
          basisSubArea
-
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-    call MPAS_pool_get_dimension(mesh, "maxEdges", maxEdges)
-
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
-    call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
-    call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
-    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
     allocate(subBasisGradientU(maxEdges,3))
     allocate(subBasisGradientV(maxEdges,3))
@@ -460,7 +370,7 @@ contains
     deallocate(subCellgradientV)
     deallocate(basisSubArea)
 
-  end subroutine init_velocity_solver_pwl_basis!}}}
+  end subroutine seaice_init_velocity_solver_pwl!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
