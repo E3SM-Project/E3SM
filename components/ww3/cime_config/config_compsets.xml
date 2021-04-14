@@ -20,8 +20,8 @@
   </compset>
 
   <compset>
-    <alias>UWAV-SANDY</alias>
-    <lname>2000_DATM%CFSv2_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
+    <alias>UWAV-CFSv2</alias>
+    <lname>_DATM%CFSv2_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
   </compset>
 
   <compset>
