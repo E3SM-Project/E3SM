@@ -3267,7 +3267,6 @@ Int p3_main_f(
     liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
   };
 
-  //PMC - hardcoding the index for each variable is very brittle :-(.
   int dim_sizes_len = dim1_sizes.size(); 
   dim2_sizes[dim_sizes_len-4] = nk+1; // precip_liq_flux
   dim2_sizes[dim_sizes_len-3] = nk+1; // precip_ice_flux

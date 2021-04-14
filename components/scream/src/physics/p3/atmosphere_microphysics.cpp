@@ -94,12 +94,12 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_computed_field("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name);
   add_computed_field("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name);
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
-  m_computed_fields.emplace("eff_radius_qc",     scalar3d_layout_mid, m,      grid_name);
-  m_computed_fields.emplace("eff_radius_qi",     scalar3d_layout_mid, m,      grid_name);
+  add_computed_fields.emplace("eff_radius_qc",     scalar3d_layout_mid, m,      grid_name);
+  add_computed_fields.emplace("eff_radius_qi",     scalar3d_layout_mid, m,      grid_name);
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
-  m_computed_fields.emplace("micro_liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
-  m_computed_fields.emplace("micro_vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name);
-  m_computed_fields.emplace("micro_vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
+  add_computed_fields.emplace("micro_liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
+  add_computed_fields.emplace("micro_vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name);
+  add_computed_fields.emplace("micro_vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
 
 }
 
