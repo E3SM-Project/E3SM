@@ -72,7 +72,6 @@ usage() {
   echo "[-t|--gridtype <type>]"
   echo "    Model output grid type"
   echo "    supported values are [regional,global], (default is global)"
-  echo "[-p|--phys <CLM-version>]"
   echo "    Model version to generate mapping files for. Currently the only"
   echo "    supported value is clm4_5."
   echo "[-i|--inputdata-path <inputdata_path>]"
@@ -153,7 +152,6 @@ interactive="YES"
 debug="no"
 res="default"
 gridtype="global"
-phys="clm4_5"
 verbose="no"
 list="no"
 outgrid=""
@@ -185,10 +183,6 @@ while [ $# -gt 0 ]; do
             ;;
         -t|--gridtype)
             gridtype=$2
-            shift
-            ;;
-        -p|--phys)
-            phys=$2
             shift
             ;;
         -i|--inputdata-path)
@@ -231,7 +225,7 @@ echo "Script to create mapping files required by mksurfdata_map"
 #----------------------------------------------------------------------
 
 # Set general query command used below
-QUERY="$dir/../../../bld/queryDefaultNamelist.pl -silent -namelist clmexp -phys $phys "
+QUERY="$dir/../../../bld/queryDefaultNamelist.pl -silent -namelist elmexp "
 QUERY="$QUERY -justvalue -options sim_year=2000 -csmdata $INPUTDATA_PATH"
 echo "query command is $QUERY"
 
@@ -255,28 +249,6 @@ if [ "$gridfile" != "default" ]; then
 else
     echo "Error: no grid file specified"
     exit 1
-    if [ "$res" = "default" ]; then
-        res=$default_res
-    fi
-
-    QUERYARGS="-res $res -options lmask=nomask"
-
-    # Find the output grid file for this resolution using the XML database
-    QUERYFIL="$QUERY -var scripgriddata $QUERYARGS -onlyfiles"
-    if [ "$verbose" = "YES" ]; then
-        echo $QUERYFIL
-    fi
-    GRIDFILE=`$QUERYFIL`
-    echo "Using default scrip grid file: $GRIDFILE" 
-
-    # Determine extra information about the destination grid file
-    DST_LRGFIL=`$QUERY -var scripgriddata_lrgfile_needed $QUERYARGS`
-    DST_TYPE=`$QUERY -var scripgriddata_type $QUERYARGS`
-    if [ "$DST_TYPE" = "UGRID" ]; then
-        # For UGRID, we need extra information: the meshname variable
-        dst_meshname=`$QUERY -var scripgriddata_meshname $QUERYARGS`
-        DST_EXTRA_ARGS="$DST_EXTRA_ARGS --dst_meshname $dst_meshname"
-    fi
 fi
 
 # Make sure grid type is consistent
@@ -305,30 +277,25 @@ fi
 #----------------------------------------------------------------------
 # Determine all input grid files and output file names 
 #----------------------------------------------------------------------
-
-if [ "$phys" = "clm4_5" ]; then
-    grids=(                                     \
-        "0.5x0.5_AVHRR"                         \
-        "0.5x0.5_MODIS"                         \
-        "3x3min_LandScan2004"                   \
-        "3x3min_MODIS"                          \
-        "3x3min_USGS"                           \
-        "5x5min_nomask"                         \
-        "5x5min_IGBP-GSDP"                      \
-        "5x5min_ISRIC-WISE"                     \
-        "10x10min_nomask"                       \
-        "10x10min_IGBPmergeICESatGIS"           \
-        "3x3min_GLOBE-Gardner"                  \
-        "3x3min_GLOBE-Gardner-mergeGIS"         \
-        "0.9x1.25_GRDC"                         \
-        "360x720cru_cruncep"                    \
-        "1km-merge-10min_HYDRO1K-merge-nomask"  \
-        "0.5x0.5_GSDTG2000"                     \
-    )
-else
-    echo "ERROR: Unknown value for phys: $phys"
-    exit 1
-fi
+# TODO: get this from elm somehow?
+grids=(                                     \
+    "0.5x0.5_AVHRR"                         \
+    "0.5x0.5_MODIS"                         \
+    "3x3min_LandScan2004"                   \
+    "3x3min_MODIS"                          \
+    "3x3min_USGS"                           \
+    "5x5min_nomask"                         \
+    "5x5min_IGBP-GSDP"                      \
+    "5x5min_ISRIC-WISE"                     \
+    "10x10min_nomask"                       \
+    "10x10min_IGBPmergeICESatGIS"           \
+    "3x3min_GLOBE-Gardner"                  \
+    "3x3min_GLOBE-Gardner-mergeGIS"         \
+    "0.9x1.25_GRDC"                         \
+    "360x720cru_cruncep"                    \
+    "1km-merge-10min_HYDRO1K-merge-nomask"  \
+    "0.5x0.5_GSDTG2000"                     \
+)
 
 # Set timestamp for names below 
 CDATE="c"`date +%y%m%d`
