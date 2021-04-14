@@ -71,19 +71,34 @@
 		<var name="relativeEnergyError" type="real" dimensions="nHemispheres Time" units="None"
 			description="Relative energy conservation error"
 		/>
-		<var name="accumulatedSurfaceHeatFlux" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="energyConsSurfaceHeatFlux" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
-		<var name="accumulatedOceanHeatFlux" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="energyConsAbsorbedShortwaveFlux" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
-		<var name="accumulatedFreezingPotential" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="energyConsOceanShortwaveFlux" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
-		<var name="accumulatedSnowfallHeat" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="energyConsSensibleHeatFlux" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
-		<var name="accumulatedLatentHeat" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="energyConsLongwaveUp" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsLongwaveDown" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsOceanHeatFlux" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsFreezingPotential" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsSnowfallHeat" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
+		<var name="energyConsLatentHeat" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
 	</var_struct>
@@ -109,19 +124,19 @@
 		<var name="relativeMassError" type="real" dimensions="nHemispheres Time" units="None"
 			description="Relative mass conservation error"
 		/>
-		<var name="accumulatedRainfallRate" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="massConsRainfallRate" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
-		<var name="accumulatedSnowfallRate" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="massConsSnowfallRate" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
-		<var name="accumulatedEvaporation" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="massConsEvaporation" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
-		<var name="accumulatedFreshWater" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="massConsFreshWater" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
-		<var name="accumulatedFrazilWater" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="massConsFrazilWater" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
 	</var_struct>
@@ -147,10 +162,10 @@
 		<var name="relativeSaltError" type="real" dimensions="nHemispheres Time" units="None"
 			description="Relative salt conservation error"
 		/>
-		<var name="accumulatedOceanSaltFlux" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="saltConsOceanSaltFlux" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
-		<var name="accumulatedFrazilSaltFlux" type="real" dimensions="nHemispheres Time" units="None"
+		<var name="saltConsFrazilSaltFlux" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
 	</var_struct>
@@ -176,7 +191,7 @@
 		<var name="relativeCarbonError" type="real" dimensions="nHemispheres Time" units="None"
 			description="Relative carbon conservation error"
 		/>
-		<var name="accumulatedOceanCarbonFlux" type="real" dimensions="nHemispheres Time" units="mmol/s"
+		<var name="carbonConsOceanCarbonFlux" type="real" dimensions="nHemispheres Time" units="mmol/s"
 			description="Total ocean carbon flux, positive into the ocean"
 		/>
 	</var_struct>
@@ -196,11 +211,16 @@
 			<var name="finalEnergy"/>
 			<var name="energyChange"/>
 			<var name="energyChangeFlux"/>
-			<var name="accumulatedSurfaceHeatFlux"/>
-			<var name="accumulatedOceanHeatFlux"/>
-			<var name="accumulatedFreezingPotential"/>
-			<var name="accumulatedSnowfallHeat"/>
-			<var name="accumulatedLatentHeat"/>
+			<var name="energyConsSurfaceHeatFlux"/>
+			<var name="energyConsAbsorbedShortwaveFlux"/>
+			<var name="energyConsOceanShortwaveFlux"/>
+			<var name="energyConsSensibleHeatFlux"/>
+			<var name="energyConsLongwaveUp"/>
+			<var name="energyConsLongwaveDown"/>
+			<var name="energyConsOceanHeatFlux"/>
+			<var name="energyConsFreezingPotential"/>
+			<var name="energyConsSnowfallHeat"/>
+			<var name="energyConsLatentHeat"/>
 			<var name="netEnergyFlux"/>
 			<var name="absoluteEnergyError"/>
 			<var name="relativeEnergyError"/>
@@ -208,11 +228,11 @@
 			<var name="finalMass"/>
 			<var name="massChange"/>
 			<var name="massChangeFlux"/>
-			<var name="accumulatedRainfallRate"/>
-			<var name="accumulatedSnowfallRate"/>
-			<var name="accumulatedEvaporation"/>
-			<var name="accumulatedFreshWater"/>
-			<var name="accumulatedFrazilWater"/>
+			<var name="massConsRainfallRate"/>
+			<var name="massConsSnowfallRate"/>
+			<var name="massConsEvaporation"/>
+			<var name="massConsFreshWater"/>
+			<var name="massConsFrazilWater"/>
 			<var name="netMassFlux"/>
 			<var name="absoluteMassError"/>
 			<var name="relativeMassError"/>
@@ -220,8 +240,8 @@
 			<var name="finalSalt"/>
 			<var name="saltChange"/>
 			<var name="saltChangeFlux"/>
-			<var name="accumulatedOceanSaltFlux"/>
-			<var name="accumulatedFrazilSaltFlux"/>
+			<var name="saltConsOceanSaltFlux"/>
+			<var name="saltConsFrazilSaltFlux"/>
 			<var name="netSaltFlux"/>
 			<var name="absoluteSaltError"/>
 			<var name="relativeSaltError"/>
@@ -229,7 +249,7 @@
 			<var name="finalCarbon"/>
 			<var name="carbonChange"/>
 			<var name="carbonChangeFlux"/>
-			<var name="accumulatedOceanCarbonFlux"/>
+			<var name="carbonConsOceanCarbonFlux"/>
 			<var name="netCarbonFlux"/>
 			<var name="absoluteCarbonError"/>
 			<var name="relativeCarbonError"/>
@@ -248,21 +268,26 @@
 			<var name="performConservationPrecompute"/>
 			<var name="accumulatedSeaIceArea"/>
 			<var name="initialEnergy"/>
-			<var name="accumulatedSurfaceHeatFlux"/>
-			<var name="accumulatedOceanHeatFlux"/>
-			<var name="accumulatedFreezingPotential"/>
-			<var name="accumulatedSnowfallHeat"/>
-			<var name="accumulatedLatentHeat"/>
+			<var name="energyConsSurfaceHeatFlux"/>
+			<var name="energyConsAbsorbedShortwaveFlux"/>
+			<var name="energyConsOceanShortwaveFlux"/>
+			<var name="energyConsSensibleHeatFlux"/>
+			<var name="energyConsLongwaveUp"/>
+			<var name="energyConsLongwaveDown"/>
+			<var name="energyConsOceanHeatFlux"/>
+			<var name="energyConsFreezingPotential"/>
+			<var name="energyConsSnowfallHeat"/>
+			<var name="energyConsLatentHeat"/>
 			<var name="initialMass"/>
-			<var name="accumulatedRainfallRate"/>
-			<var name="accumulatedSnowfallRate"/>
-			<var name="accumulatedEvaporation"/>
-			<var name="accumulatedFreshWater"/>
-			<var name="accumulatedFrazilWater"/>
+			<var name="massConsRainfallRate"/>
+			<var name="massConsSnowfallRate"/>
+			<var name="massConsEvaporation"/>
+			<var name="massConsFreshWater"/>
+			<var name="massConsFrazilWater"/>
 			<var name="initialSalt"/>
-			<var name="accumulatedOceanSaltFlux"/>
-			<var name="accumulatedFrazilSaltFlux"/>
+			<var name="saltConsOceanSaltFlux"/>
+			<var name="saltConsFrazilSaltFlux"/>
 			<var name="initialCarbon"/>
-			<var name="accumulatedOceanCarbonFlux"/>
+			<var name="carbonConsOceanCarbonFlux"/>
 		</stream>
 	</streams>
