@@ -90,6 +90,8 @@ y
       tarfile = "{}/work/{}.tar.gz".format(modeldir,exe)
       shutil.move(tarfile, tmpdir)
       run_bld_cmd_ensure_logging("tar -xzvf {}.tar.gz".format(exe), logger, from_dir=tmpdir)
+    run_bld_cmd_ensure_logging("rm ww3_shel.F90", logger, from_dir=tmpdir)
+    run_bld_cmd_ensure_logging("rm ww3_grid.F90", logger, from_dir=tmpdir)
 
     with open(os.path.join(casebuild, "ww3conf", "Filepath"), "w") as fd:
         fd.write(
