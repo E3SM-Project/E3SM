@@ -53,8 +53,6 @@ jobs:
         shell: bash -l {0}
     timeout-minutes: 20
     steps:
-      # if conditional must be repeated in order to skip matrix jobs that are required PR checks
-      # https://github.com/fkirc/skip-duplicate-actions/issues/44#issuecomment-723430339
       - uses: actions/checkout@v2
 
       - name: Cache Conda

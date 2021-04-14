@@ -2,10 +2,15 @@ from __future__ import print_function
 
 import copy
 from collections import OrderedDict
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import MV2
 import numpy as np
 from genutil import udunits
+
+if TYPE_CHECKING:
+    from cdms2.axis import FileAxis
+    from cdms2.fvariable import FileVariable
 
 
 def rename(new_name):
@@ -304,19 +309,55 @@ def netflux6(rsds, rsus, rlds, rlus, hfls, hfss):
     return var
 
 
-# FIXME: C901 'cosp_bin_sum' is too complex (22)
-def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):  # noqa
-    """sum of cosp bins to calculate cloud fraction in specified cloud top pressure and
-    cloud thickness bins, input variable has dimention (cosp_prs,cosp_tau,lat,lon)"""
-    prs = cld.getAxis(0)
-    tau = cld.getAxis(1)
+def adjust_prs_val_units(
+    prs: "FileAxis", prs_val: float, prs_val0: Optional[float]
+) -> float:
+    """Adjust the prs_val units based on the prs.id"""
+    # COSP v2 cosp_pr in units Pa instead of hPa as in v1
+    # COSP v2 cosp_htmisr in units m instead of km as in v1
+    adjust_ids = {"cosp_prs": 100, "cosp_htmsir": 1000}
 
-    prs_low = prs[0]
-    prs_high = prs[-1]
-    if prs_low0:
-        prs_low = prs_low0
-    if prs_high0:
-        prs_high = prs_high0
+    if prs_val0:
+        prs_val = prs_val0
+        if prs.id in adjust_ids.keys() and max(prs.getData()) > 1000:
+            prs_val = prs_val * adjust_ids[prs.id]
+
+    return prs_val
+
+
+def determine_cloud_level(
+    prs_low: float,
+    prs_high: float,
+    low_bnds: Tuple[int, int],
+    high_bnds: Tuple[int, int],
+) -> str:
+    """Determines the cloud type based on prs values and the specified boundaries"""
+    # Threshold for cloud top height: high cloud (<440hPa or > 7km), midlevel cloud (440-680hPa, 3-7 km) and low clouds (>680hPa, < 3km)
+    if prs_low in low_bnds and prs_high in high_bnds:
+        return "middle cloud fraction"
+    elif prs_low in low_bnds:
+        return "high cloud fraction"
+    elif prs_high in high_bnds:
+        return "low cloud fraction"
+    else:
+        return "total cloud fraction"
+
+
+def cosp_bin_sum(
+    cld: "FileVariable",
+    prs_low0: Optional[float],
+    prs_high0: Optional[float],
+    tau_low0: Optional[float],
+    tau_high0: Optional[float],
+):
+    """sum of cosp bins to calculate cloud fraction in specified cloud top pressure / height and
+    cloud thickness bins, input variable has dimension (cosp_prs,cosp_tau,lat,lon)/(cosp_ht,cosp_tau,lat,lon)"""
+    prs: FileAxis = cld.getAxis(0)
+    tau: FileAxis = cld.getAxis(1)
+
+    prs_low: float = adjust_prs_val_units(prs, prs[0], prs_low0)
+    prs_high: float = adjust_prs_val_units(prs, prs[-1], prs_high0)
+
     if prs_low0 is None and prs_high0 is None:
         prs_lim = "total cloud fraction"
 
@@ -343,44 +384,38 @@ def cosp_bin_sum(cld, prs_low0, prs_high0, tau_low0, tau_high0):  # noqa
         cld_bin = cld(isccp_prs=(prs_low, prs_high), isccp_tau=(tau_low, tau_high))
 
     if cld.id == "CLMODIS":  # MODIS
-        try:
+        prs_lim = determine_cloud_level(prs_low, prs_high, (440, 44000), (680, 68000))
+        simulator = "MODIS"
+
+        if prs.id == "cosp_prs":  # Model
             cld_bin = cld(
-                cosp_prs=(prs_low, prs_high),
-                cosp_tau_modis=(tau_low, tau_high),
-            )  # MODIS model
-            if prs_high == 440:
-                prs_lim = "high cloud fraction"
-            if prs_high == 680 and prs_low == 440:
-                prs_lim = "middle cloud fraction"
-            if prs_low == 680:
-                prs_lim = "low cloud fraction"
-            simulator = "MODIS"
-        except BaseException:
-            cld_bin = cld(
-                modis_prs=(prs_low, prs_high), modis_tau=(tau_low, tau_high)
-            )  # MODIS obs
+                cosp_prs=(prs_low, prs_high), cosp_tau_modis=(tau_low, tau_high)
+            )
+        elif prs.id == "modis_prs":  # Obs
+            cld_bin = cld(modis_prs=(prs_low, prs_high), modis_tau=(tau_low, tau_high))
 
     if cld.id == "CLD_MISR":  # MISR model
+        if max(prs) > 1000:  # COSP v2 cosp_htmisr in units m instead of km as in v1
+            cld = cld[
+                1:, :, :, :
+            ]  # COSP v2 cosp_htmisr[0] equals to 0 instead of -99 as in v1, therefore cld needs to be masked manually
         cld_bin = cld(cosp_htmisr=(prs_low, prs_high), cosp_tau=(tau_low, tau_high))
-        if prs_low == 7:
-            prs_lim = "high cloud fraction"
-        if prs_high == 7 and prs_low == 3:
-            prs_lim = "middle cloud fraction"
-        if prs_high == 3:
-            prs_lim = "low cloud fraction"
+        prs_lim = determine_cloud_level(prs_low, prs_high, (7, 7000), (3, 3000))
         simulator = "MISR"
     if cld.id == "CLMISR":  # MISR obs
         cld_bin = cld(misr_cth=(prs_low, prs_high), misr_tau=(tau_low, tau_high))
 
     cld_bin_sum = MV2.sum(MV2.sum(cld_bin, axis=1), axis=0)
+
     try:
         cld_bin_sum.long_name = simulator + ": " + prs_lim + " with " + tau_lim
+        # cld_bin_sum.long_name = "{}: {} with {}".format(simulator, prs_lim, tau_lim)
     except BaseException:
         pass
     return cld_bin_sum
 
 
-def cosp_histogram_standardize(cld):
+def cosp_histogram_standardize(cld: "FileVariable"):
     """standarize cloud top pressure and cloud thickness bins to dimensions that
     suitable for plotting, input variable has dimention (cosp_prs,cosp_tau)"""
     prs = cld.getAxis(0)
@@ -432,6 +467,11 @@ def cosp_histogram_standardize(cld):
             cld_hist = cld(modis_tau=(0.3, tau_high))  # MODIS obs
 
     if cld.id == "CLD_MISR":  # MISR model
+        if max(prs) > 1000:  # COSP v2 cosp_htmisr in units m instead of km as in v1
+            cld = cld[
+                1:, :, :, :
+            ]  # COSP v2 cosp_htmisr[0] equals to 0 instead of -99 as in v1, therefore cld needs to be masked manually
+            prs_high = 1000.0 * prs_high
         cld_hist = cld(cosp_tau=(0.3, tau_high), cosp_htmisr=(0, prs_high))
     if cld.id == "CLMISR":  # MISR obs
         cld_hist = cld(misr_tau=(0.3, tau_high), misr_cth=(0, prs_high))
@@ -1041,7 +1081,7 @@ derived_variables = {
             (
                 ("CLMODIS",),
                 lambda cld: convert_units(
-                    cosp_bin_sum(cld, 0, 440, 1.3, None), target_units="%"
+                    cosp_bin_sum(cld, 440, 0, 1.3, None), target_units="%"
                 ),
             ),
         ]
@@ -1051,7 +1091,7 @@ derived_variables = {
             (
                 ("CLMODIS",),
                 lambda cld: convert_units(
-                    cosp_bin_sum(cld, 0, 440, 1.3, 9.4), target_units="%"
+                    cosp_bin_sum(cld, 440, 0, 1.3, 9.4), target_units="%"
                 ),
             ),
         ]
@@ -1061,7 +1101,7 @@ derived_variables = {
             (
                 ("CLMODIS",),
                 lambda cld: convert_units(
-                    cosp_bin_sum(cld, 0, 440, 9.4, None), target_units="%"
+                    cosp_bin_sum(cld, 440, 0, 9.4, None), target_units="%"
                 ),
             ),
         ]
