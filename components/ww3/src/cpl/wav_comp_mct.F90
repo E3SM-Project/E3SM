@@ -277,7 +277,8 @@ CONTAINS
       character(len=20)   :: strng
       character(len=23)   :: dtme21
       character(len=30)   :: idotyp(6)
-      character(len=10), allocatable :: pnames(:)
+      character(len=40), allocatable :: pnames(:)
+      character(len=256) :: stafile
 
       !/ ------------------------------------------------------------------- /
 
@@ -294,7 +295,7 @@ CONTAINS
       DATA IDSTR  / 'LEV', 'CUR', 'WND', 'ICE', 'DT0', 'DT1', 'DT2',  &
                     'MOV' /
 
-      namelist /ww3_inparm/ initfile, outfreq
+      namelist /ww3_inparm/ initfile, outfreq, stafile
 
       !--------------------------------------------------------------------
       ! Initialize mpi
@@ -485,6 +486,30 @@ CONTAINS
       time = time0
 
       !--------------------------------------------------------------------
+      ! Read namelist (set initfile in w3cesmmd)
+      !--------------------------------------------------------------------
+      if ( iaproc .eq. napout ) then
+         unitn = shr_file_getunit()
+         write(ndso,*) 'Read in ww3_inparm namelist from ww3_in'//trim(inst_suffix)
+
+         open( unitn, file='ww3_in'//trim(inst_suffix), status='old' )
+
+         call shr_nl_find_group_name(unitn, 'ww3_inparm', status=ierr)
+         if (ierr == 0) then
+            read (unitn, ww3_inparm, iostat=ierr)
+            if (ierr /= 0) then
+               call shr_sys_abort('problem reading ww3_inparm namelist')
+            end if
+         end if
+         close( unitn )
+         call shr_file_freeUnit( unitn )
+      end if
+      call shr_mpi_bcast(initfile, mpi_comm)
+      call shr_mpi_bcast(outfreq, mpi_comm)
+      call shr_mpi_bcast(stafile, mpi_comm)
+
+
+      !--------------------------------------------------------------------
       ! Define output type and fields
       !--------------------------------------------------------------------
 
@@ -513,9 +538,6 @@ CONTAINS
       ! X/YPT   R.A.   I   Coordinates of output points.
       ! PNAMES  C.A.   I   Output point names.
 
-      npts = 0
-      allocate ( x(1), y(1), pnames(1) )
-      pnames(1) = ' '
 
       notype = 8
 
@@ -527,29 +549,32 @@ CONTAINS
       rstwr = .false.
       ! QL, 160601, initialize flag for history file
       histwr = .false.
-
       ! QL, 160601, get coupling interval
       call seq_timemgr_eclockgetdata(eclock, dtime=dtime_sync )
-      !DEBUG
-      ! Hardwire gridded output for now
-      ! first output time stamp is now read from file
-      ! QL, 150525, 1-5 for history files, 16-20 for restart files
-      !     150629, restart output interval is set to the total time of run
-      !     150823, restart is taken over by rstwr
-      !     160601, output interval is set to coupling interval, so that
-      !             variables calculated in W3IOGO could be updated at
-      !             every coupling interval
+
       odat(1) = time(1)     ! YYYYMMDD for first output
       odat(2) = time(2)     ! HHMMSS for first output
       odat(3) = dtime_sync  ! output interval in sec ! changed by Adrean
       odat(4) = 99990101    ! YYYYMMDD for last output
       odat(5) = 0           ! HHMMSS for last output
+
+      odat(6) = time(1)     ! YYYYMMDD for first output
+      odat(7) = time(2)     ! HHMMSS for first output
+      odat(8) = dtime_sync  ! output interval in sec 
+      odat(9) = 99990101    ! YYYYMMDD for last output
+      odat(10) = 0          ! HHMMSS for last output
+
       odat(16) = time(1)    ! YYYYMMDD for first output
       odat(17) = time(2)    ! HHMMSS for first output
       odat(18) = 86400*5    ! output interval in sec
       odat(19) = 99990101   ! YYYYMMDD for last output
       odat(20) = 0          ! HHMMSS for last output
-      !DEBUG
+
+      odat(31) = time(1)    ! YYYYMMDD for first output
+      odat(32) = time(2)    ! HHMMSS for first output
+      odat(33) = dtime_sync ! output interval in sec
+      odat(34) = 99990101   ! YYYYMMDD for last output
+      odat(35) = 0          ! HHMMSS for last output
 
       ! Output Type 1: fields of mean wave parameters gridded output
       flogrd2 = .false.
@@ -674,6 +699,8 @@ CONTAINS
 
       call shr_sys_flush(ndso)
 
+      call read_stations_file(stafile,npts,x,y,pnames)
+
       !--------------------------------------------------------------------
       ! Wave model initializations
       !--------------------------------------------------------------------
@@ -689,25 +716,6 @@ CONTAINS
       if ( iaproc .eq. napout ) write (ndso,951) 'wave model ...'
       call shr_sys_flush(ndso)
 
-      ! Read namelist (set initfile in w3cesmmd)
-      if ( iaproc .eq. napout ) then
-         unitn = shr_file_getunit()
-         write(ndso,*) 'Read in ww3_inparm namelist from ww3_in'//trim(inst_suffix)
-
-         open( unitn, file='ww3_in'//trim(inst_suffix), status='old' )
-
-         call shr_nl_find_group_name(unitn, 'ww3_inparm', status=ierr)
-         if (ierr == 0) then
-            read (unitn, ww3_inparm, iostat=ierr)
-            if (ierr /= 0) then
-               call shr_sys_abort('problem reading ww3_inparm namelist')
-            end if
-         end if
-         close( unitn )
-         call shr_file_freeUnit( unitn )
-      end if
-      call shr_mpi_bcast(initfile, mpi_comm)
-      call shr_mpi_bcast(outfreq, mpi_comm)
 
       ! Set casename (in w3cesmmd)
       call seq_infodata_GetData(infodata,case_name=casename)
@@ -1166,5 +1174,101 @@ CONTAINS
       deallocate(idata)
 
     end subroutine wav_domain_mct
+
+!=====================================================================
+!=====================================================================
+!=====================================================================
+
+    subroutine read_stations_file(fname,npts,x,y,pnames)
+
+    implicit none
+
+    character(*), intent(in) :: fname
+    integer, intent(out) :: npts
+    real, dimension(:), allocatable, intent(out) :: x
+    real, dimension(:), allocatable, intent(out) :: y
+    character(len=40), dimension(:), allocatable, intent(out) :: pnames
+
+    integer :: ndso,ndsl
+    integer :: ipts
+    integer :: iloop
+    integer :: ierr
+    character(len=256) :: tmpline,test
+    character(len=1) :: comstr
+    real :: xx, yy
+    character(len=40) :: pn
+
+    ! Adapted from ww3_shel.ftn
+
+    NDSO = 6
+    NDSL = shr_file_getunit()
+    COMSTR = "$"
+
+    OPEN(NDSL, FILE=TRIM(ADJUSTL(fname)), FORM='FORMATTED', STATUS='OLD', ERR=2104, IOSTAT=IERR)
+    
+    ! first loop to count the number of points
+    ! second loop to allocate the array and store the points
+    IPTS = 0
+    DO ILOOP=1,2
+      REWIND (NDSL)
+    
+      IF ( ILOOP.EQ.2) THEN 
+        NPTS = IPTS 
+        IF ( NPTS.GT.0 ) THEN 
+          ALLOCATE ( X(NPTS), Y(NPTS), PNAMES(NPTS) )
+          IPTS = 0 ! reset counter to be reused for next do loop
+        ELSE 
+          ALLOCATE ( X(1), Y(1), PNAMES(1) )
+          return 
+        END IF
+      END IF
+    
+      DO   
+        READ (NDSL,*,ERR=2004,IOSTAT=IERR) TMPLINE
+        ! if end of file or stopstring, then exit
+        IF ( IERR.NE.0 .OR. INDEX(TMPLINE,"STOPSTRING").NE.0 ) EXIT 
+        ! leading blanks removed and placed on the right
+        TEST = ADJUSTL ( TMPLINE )
+        IF ( TEST(1:1).EQ.COMSTR .OR. LEN_TRIM(TEST).EQ.0 ) THEN 
+          ! if comment or blank line, then skip
+          CYCLE
+        ELSE 
+          ! otherwise, backup to beginning of line
+          BACKSPACE ( NDSL, ERR=2004, IOSTAT=IERR)
+          READ (NDSL,*,ERR=2004,IOSTAT=IERR) XX, YY, PN
+        END IF
+        IPTS = IPTS + 1
+        IF ( ILOOP .EQ. 1 ) CYCLE
+        IF ( ILOOP .EQ. 2 ) THEN 
+          X(IPTS)      = XX 
+          Y(IPTS)      = YY 
+          PNAMES(IPTS) = PN 
+          IF ( IAPROC .EQ. NAPOUT ) THEN 
+            IF ( IPTS .EQ. 1 ) THEN 
+              WRITE (NDSO,2945) XX, YY, PN
+            ELSE 
+              WRITE (NDSO,2946) IPTS, XX, YY, PN
+            END IF
+          END IF
+        END IF ! ILOOP.EQ.2
+      END DO ! end of file                      
+    END DO ! ILOOP
+    CLOSE(NDSL)
+
+ 2945 FORMAT ( '            Point  1 : ',2F8.2,2X,A)
+ 2946 FORMAT ( '              ',I6,' : ',2F8.2,2X,A)
+ 1104 FORMAT (/' *** WAVEWATCH III ERROR IN W3SHEL : *** '/           &
+               '     ERROR IN OPENING POINT FILE'/                    &
+               '     IOSTAT =',I5/)
+ 1004 FORMAT (/' *** WAVEWATCH III ERROR IN W3SHEL : *** '/           &
+               '     ERROR IN READING FROM POINT FILE'/               &
+               '     IOSTAT =',I5/)
+
+ 2104 CONTINUE
+      IF ( IAPROC .EQ. NAPERR ) WRITE (NDSO,1104) IERR 
+ 2004 CONTINUE
+      IF ( IAPROC .EQ. NAPERR ) WRITE (NDSO,1004) IERR 
+
+    end subroutine read_stations_file
 
   END MODULE WAV_COMP_MCT
