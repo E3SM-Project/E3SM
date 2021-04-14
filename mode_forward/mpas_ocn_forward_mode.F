@@ -280,6 +280,9 @@ module ocn_forward_mode
         config_maxMeshDensity = maxDensity_global
       endif
 
+      ! fill the ocean mesh structure
+      call ocn_meshCreate(domain)
+      call ocn_init_routines_setup_sign_and_index_fields()
 
       !-----------------------------------------------------------------
       ! Initialize submodules and fields that are required by others
@@ -303,9 +306,6 @@ module ocn_forward_mode
       !
       ! Initialize core
       !
-
-      ! fill the ocean mesh structure
-      call ocn_meshCreate(domain)
 
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)
       call mpas_get_timeInterval(timeStep, dt=dt)

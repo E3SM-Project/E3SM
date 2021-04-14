@@ -146,6 +146,11 @@ module ocn_mesh
       derivTwo, &! 2nd derivative of edge reconstruction polynomial
       cellTangentPlane, &! two vectors defining tangent plane at cell center
       coeffs_reconstruct  ! coeffs for reconstructing vectors at cell centers
+
+   ! Derived mesh values needed
+   real(kind=RKIND), public, dimension(:, :), allocatable :: &
+      edgeAreaFractionOfCell
+
    !}}}
 
    !----------------------------------------------------------------------------
@@ -514,6 +519,10 @@ contains
          end do
          end do
 
+         ! Initialize other mesh quantities
+
+         call ocn_meshAreaWeights()
+
          ! Copy structure and components to accelerator
          ! Must manually do a deep copy with structure itself copied first.
          !$acc enter data copyin( &
@@ -606,7 +615,8 @@ contains
          !$acc                   advCoefs3rd,              &
          !$acc                   derivTwo,                 &
          !$acc                   cellTangentPlane,         &
-         !$acc                   coeffs_reconstruct)
+         !$acc                   coeffs_reconstruct,       &
+         !$acc                   edgeAreaFractionOfCell)
 
          block => block%next
       end do
@@ -742,7 +752,8 @@ contains
       !$acc                  advCoefs3rd,       &
       !$acc                  derivTwo,          &
       !$acc                  cellTangentPlane,  &
-      !$acc                  coeffs_reconstruct)
+      !$acc                  coeffs_reconstruct,&
+      !$acc                  edgeAreaFractionOfCell)
 
       ! Reset all scalars to zero
       nCellsAll = 0
@@ -840,7 +851,8 @@ contains
                   boundaryVertex, &
                   edgeSignOnCell, &
                   edgeSignOnVertex, &
-                  highOrderAdvectionMask)
+                  highOrderAdvectionMask, &
+                  edgeAreaFractionOfCell)
 
 !-------------------------------------------------------------------------------
 
@@ -1188,15 +1200,67 @@ contains
       !$acc               advCoefs3rd,              &
       !$acc               derivTwo,                 &
       !$acc               cellTangentPlane,         &
-      !$acc               coeffs_reconstruct)
+      !$acc               coeffs_reconstruct,       &
+      !$acc               edgeAreaFractionOfCell)
 
 !-------------------------------------------------------------------------------
 
    end subroutine ocn_meshUpdateFields !}}}
 
-!*******************************************************************************
+!***********************************************************************
+!
+!  routine ocn_meshAreaWeights
+!
+!> \brief  set up area weighting
+!> \author Mark Petersen
+!> \date   June 2020
+!> \details
+!>  This routine initializes edgeAreaFractionOfCell which is defined as
+!>  the fractional area of cell iCell encompassed by the triangle with
+!>  edge iEdge connected to the cell center of cell iCell. On a perfect
+!>  planar hex mesh this is always 1/6. This weighting is used to
+!>  interpolate scalars from edges to cell centers.
+!>  Use 2*edgeAreaFractionOfCell to interpolate normal vectors at
+!>  edges to vector norms at cell centers.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_meshAreaWeights()!{{{
+
+      !-----------------------------------------------------------------
+      ! Local variables
+      !-----------------------------------------------------------------
+
+      integer :: &
+         iCell, iEdge, &! cell, edge addresses
+         i,            &! edge on cell index
+         ierr           ! internal error flag
+
+      ! End preamble
+      !-------------
+      ! Begin code
+
+      ! Allocate space
+      allocate (edgeAreaFractionOfCell(maxEdges,nCellsAll), STAT=ierr)
+      if (ierr /= 0) call mpas_log( &
+         'Error allocating edgeAreaFractionOfCell in ocn_mesh', &
+          MPAS_LOG_CRIT)
+
+      do iCell = 1, nCellsAll
+      do i = 1, nEdgesOnCell(iCell)
+         iEdge = edgesOnCell(i, iCell)
+         edgeAreaFractionOfCell(i, iCell) = 0.25_RKIND* &
+               dcEdge(iEdge)*dvEdge(iEdge)/areaCell(iCell)
+      end do
+      end do
+
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_meshAreaWeights !}}}
+
+!***********************************************************************
 
 end module ocn_mesh
 
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker

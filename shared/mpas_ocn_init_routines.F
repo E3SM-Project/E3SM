@@ -385,41 +385,6 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_routines_area_weights
-!
-!> \brief  set up area weighting
-!> \author Mark Petersen
-!> \date   June 2020
-!> \details
-!>  This routine initializes edgeAreaFractionOfCell
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_init_routines_area_weights(meshPool, edgeAreaFractionOfCell)!{{{
-
-      type(mpas_pool_type), intent(inout) :: meshPool
-      real (kind=RKIND), dimension(:,:), intent(inout) :: edgeAreaFractionOfCell
-
-      integer :: iCell, iEdge, i, j, k
-
-      do iCell = 1, nCellsAll
-         do i = 1, nEdgesOnCell(iCell)
-            iEdge = edgesOnCell(i, iCell)
-            ! edgeAreaFractionOfCell is the fractional area of cell iCell
-            ! encompassed by the triangle with edge iEdge connected to the cell
-            ! center of cell iCell. On a perfect planar hex mesh this is always
-            ! 1/6. This weighting is used to interpolate scalars from edges to
-            ! cell centers. Use 2*edgeAreaFractionOfCell to interpolate normal
-            ! vectors at edges to vector norms at cell centers."
-            edgeAreaFractionOfCell(i, iCell) = &
-               0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge) / areaCell(iCell)
-         end do
-      end do
-
-   end subroutine ocn_init_routines_area_weights!}}}
-
-!***********************************************************************
-!
 !  routine ocn_init_routines_compute_mesh_scaling
 !
 !> \brief   set up mesh scaling variables
@@ -794,7 +759,7 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
-      call ocn_init_routines_setup_sign_and_index_fields()
+      !call ocn_init_routines_setup_sign_and_index_fields()
 
       ! Update edgeSignOnCell and edgeSignOnVertex pionters in ocn_mesh.  The ocn_mesh allocatables
       ! are updated in ocn_init_routines_setup_sign_and_index_fields.  This updates the pointers to
@@ -804,7 +769,6 @@ end subroutine ocn_init_routines_compute_min_max_level!}}}
       edgeSignOnCellTmp = int(edgeSignOnCell)
       edgeSignOnVertexTmp = int(edgeSignOnVertex)
 
-      call ocn_init_routines_area_weights(meshPool, edgeAreaFractionOfCell)
       call mpas_initialize_deriv_two(meshPool, derivTwo, err)
       call mpas_tracer_advection_coefficients(meshPool, &
           config_horiz_tracer_adv_order, derivTwo, advCoefs, &
