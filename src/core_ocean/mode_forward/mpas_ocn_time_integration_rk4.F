@@ -141,7 +141,7 @@ module ocn_time_integration_rk4
       ! Diagnostics Indices
 
       ! Mesh array pointers
-      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, maxLevelEdgeTop
       real (kind=RKIND), dimension(:), pointer :: bottomDepth
 
       ! Provis Array Pointers
@@ -236,6 +236,9 @@ module ocn_time_integration_rk4
 
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
+         ! Lower k-loop limit of 1 rather than minLevel* needed in *New = *Cur
+         ! assignments below are needed to maintain bit-for-bit results
 
          !$omp parallel
          !$omp do schedule(runtime) private(k)
@@ -620,6 +623,8 @@ module ocn_time_integration_rk4
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+         call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
@@ -658,12 +663,12 @@ module ocn_time_integration_rk4
              if (tidalInputMask(iCell) == 1.0_RKIND) then
                ! compute total depth for relative thickness contribution
                totalDepth = 0.0_RKIND
-               do k = 1, maxLevelCell(iCell)
+               do k = minLevelCell(iCell), maxLevelCell(iCell)
                  totalDepth = totalDepth + restingThickness(k,iCell)
                end do
 
                ! only modify layer thicknesses on tidal boundary
-               do k = 1, maxLevelCell(iCell)
+               do k = minLevelCell(iCell), maxLevelCell(iCell)
                  layerThicknessNew(k, iCell) = tidalInputMask(iCell)*(tidalBCValue(iCell) + bottomDepth(iCell))*(restingThickness(k,iCell)/totalDepth)
                  !(1.0_RKIND - tidalInputMask(iCell))*layerThicknessNew(k, iCell)  ! generalized tappered assumption code
                end do
@@ -719,8 +724,8 @@ module ocn_time_integration_rk4
          !$omp parallel
          !$omp do schedule(runtime) 
          do iCell = 1, nCells
-            surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(1, iCell)
-            surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(1, iCell)
+            surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(minLevelCell(iCell), iCell)
+            surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(minLevelCell(iCell), iCell)
 
             SSHGradient(indexSSHGradientZonal, iCell) = gradSSHZonal(iCell)
             SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(iCell)
@@ -1031,7 +1036,7 @@ module ocn_time_integration_rk4
 
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupCur, tracersGroupProvis, tracersGroupTend
 
-      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, maxLevelEdgeTop
 
       logical, pointer :: config_use_tracerGroup
       type (mpas_pool_iterator_type) :: groupItr
@@ -1071,6 +1076,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_array(tendPool, 'layerThickness', layerThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', lowFreqDivergenceTend)
 
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
@@ -1208,7 +1214,7 @@ module ocn_time_integration_rk4
 
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupNew, tracersGroupTend
 
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 
       logical, pointer :: config_use_tracerGroup
       type (mpas_pool_iterator_type) :: groupItr
@@ -1243,12 +1249,13 @@ module ocn_time_integration_rk4
       call mpas_pool_get_array(tendPool, 'highFreqThickness', highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', lowFreqDivergenceTend)
 
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
-         do k = 1, maxLevelCell(iCell)
+         do k = minLevelCell(iCell), maxLevelCell(iCell)
             layerThicknessNew(k, iCell) = layerThicknessNew(k, iCell) + rkWeight * layerThicknessTend(k, iCell)
          end do
       end do
@@ -1277,7 +1284,7 @@ module ocn_time_integration_rk4
                   !$omp parallel
                   !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells
-                     do k = 1, maxLevelCell(iCell)
+                     do k = minLevelCell(iCell), maxLevelCell(iCell)
                         tracersGroupNew(:, k, iCell) = tracersGroupNew(:, k, iCell) + rkWeight &
                                                 * tracersGroupTend(:, k, iCell)
                      end do
@@ -1326,7 +1333,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessNew, normalVelocityNew
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupNew
 
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 
       logical, pointer :: config_use_tracerGroup
       type (mpas_pool_iterator_type) :: groupItr
@@ -1355,6 +1362,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       call mpas_pool_begin_iteration(tracersPool)
@@ -1365,7 +1373,7 @@ module ocn_time_integration_rk4
                !$omp parallel
                !$omp do schedule(runtime) private(k)
                do iCell = 1, nCells
-                 do k = 1, maxLevelCell(iCell)
+                 do k = minLevelCell(iCell), maxLevelCell(iCell)
                    tracersGroupNew(:, k, iCell) = tracersGroupNew(:, k, iCell) / layerThicknessNew(k, iCell)
                  end do
                end do

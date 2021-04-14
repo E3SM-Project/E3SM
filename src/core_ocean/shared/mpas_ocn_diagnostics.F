@@ -1855,16 +1855,17 @@ contains
         ! thicknessSum is initialized outside the loop because on land boundaries
         ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a
         ! nonzero value to avoid a NaN.
-        normalThicknessFluxSum = layerThickEdge(1,iEdge) * tend_normalVelocity(1,iEdge)
-        thicknessSum  = layerThickEdge(1,iEdge)
+        normalThicknessFluxSum = layerThickEdge(maxLevelEdgeBot(iEdge),iEdge) * &
+                                 tend_normalVelocity(maxLevelEdgeBot(iEdge),iEdge)
+        thicknessSum  = layerThickEdge(maxLevelEdgeBot(iEdge),iEdge)
 
-        do k = 2, maxLevelEdgeTop(iEdge)
+        do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
           normalThicknessFluxSum = normalThicknessFluxSum + layerThickEdge(k,iEdge) * tend_normalVelocity(k,iEdge)
           thicknessSum  =  thicknessSum + layerThickEdge(k,iEdge)
         enddo
 
         vertSum = normalThicknessFluxSum / thicknessSum
-        do k = 1, maxLevelEdgeTop(iEdge)
+        do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
           tend_normalVelocity(k,iEdge) = tend_normalVelocity(k,iEdge) - vertSum
         enddo
       enddo ! iEdge
@@ -2015,8 +2016,8 @@ contains
          !
 
          ! Compute fraction of thickness flux that is in the top model layer
-         fracAbsorbed = 1.0_RKIND - exp( max(-layerThickness(1, iCell) / config_flux_attenuation_coefficient, -100.0_RKIND) )
-         fracAbsorbedRunoff = 1.0_RKIND - exp( max(-layerThickness(1, iCell) / config_flux_attenuation_coefficient_runoff, &
+         fracAbsorbed = 1.0_RKIND - exp( max(-layerThickness(minLevelCell(iCell), iCell) / config_flux_attenuation_coefficient, -100.0_RKIND) )
+         fracAbsorbedRunoff = 1.0_RKIND - exp( max(-layerThickness(minLevelCell(iCell), iCell) / config_flux_attenuation_coefficient_runoff, &
                               -100.0_RKIND) )
          ! Store the total tracer flux below in nonLocalSurfaceTemperatureFlux for use in the CVMix nonlocal
          ! transport code.  This includes tracer forcing due to thickness
@@ -2028,12 +2029,12 @@ contains
                  - fracAbsorbedRunoff * activeTracersSurfaceFluxRunoff(indexTempFlux, iCell)
 
          nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = activeTracersSurfaceFlux(indexSaltFlux,iCell) &
-                 - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell) &
-                 - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) * activeTracers(indexSaltFlux,1,iCell)
+                 - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,minLevelCell(iCell),iCell) &
+                 - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) * activeTracers(indexSaltFlux,minLevelCell(iCell),iCell)
 
-         surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
+         surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (minLevelCell(iCell),iCell) &
                 * nonLocalSurfaceTracerFlux(indexTempFlux,iCell) &
-                - salineContractionCoeff(1,iCell) * nonLocalSurfaceTracerFlux(indexSaltFlux,iCell)
+                - salineContractionCoeff(minLevelCell(iCell),iCell) * nonLocalSurfaceTracerFlux(indexSaltFlux,iCell)
 
          ! at this point, surfaceBuoyancyForcing has units of m/s
          ! change into units of m^2/s^3 (which can be thought of as the flux of buoyancy, units of buoyancy * velocity )

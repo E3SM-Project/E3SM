@@ -124,7 +124,7 @@ contains
       real(kind=RKIND), dimension(:), pointer   :: &
                 ssh, fEdge
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
-      integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
+      integer, dimension(:), pointer   :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp
@@ -167,6 +167,8 @@ contains
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
@@ -236,7 +238,7 @@ contains
             !$omp parallel
             !$omp do schedule(runtime) private(maxLocation, k, BruntVaisalaFreqTopEdge, maxN)
             do iCell = 1, nCells
-               k = min(maxLevelCell(iCell) - 1, max(1, indMLD(iCell)))
+               k = min(maxLevelCell(iCell) - 1, max(minLevelCell(iCell), indMLD(iCell)))
                maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
                do while (BruntVaisalaFreqTop(k + 1, iCell) > maxN .and. k < maxLevelCell(iCell) - 1)
                  k = k + 1
@@ -259,10 +261,10 @@ contains
             !$omp parallel
             !$omp do schedule (runtime) private(zMLD, k)
             do iCell = 1, nCells
-               k = max(1, indMLD(iCell))
+               k = max(minLevelCell(iCell), indMLD(iCell))
                zMLD = ssh(iCell) - zMid(k, iCell)
    
-               do k = 1, indMLD(iCell)
+               do k = minLevelCell(iCell), indMLD(iCell)
                   RediKappaSfcTaper(k, iCell) = abs((ssh(iCell) - zMid(k, iCell))/(zMLD))
                end do
             end do
@@ -281,7 +283,7 @@ contains
             k33(1:maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
             k33Norm(1:maxLevelCell(iCell) + 1) = epsGM
             ! prep dz, dTdz and dSdz for this column
-            do k = 2, maxLevelCell(iCell)
+            do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
                dzTop(k) = 0.5_RKIND*(layerThickness(k - 1, iCell) + layerThickness(k, iCell))
                dTdzTop(k) = (activeTracers(indexTemperature, k - 1, iCell) &
                              - activeTracers(indexTemperature, k, iCell)) &
@@ -290,9 +292,9 @@ contains
                              - activeTracers(indexSalinity, k, iCell)) &
                             /dzTop(k)
             end do
-            dzTop(1) = -1e-15_RKIND
-            dTdzTop(1) = -1e-15_RKIND
-            dSdzTop(1) = -1e-15_RKIND
+            dzTop(1:minLevelCell(iCell)) = -1e-15_RKIND
+            dTdzTop(1:minLevelCell(iCell)) = -1e-15_RKIND
+            dSdzTop(1:minLevelCell(iCell)) = -1e-15_RKIND
             dzTop(maxLevelCell(iCell) + 1) = -1e-15_RKIND
             dTdzTop(maxLevelCell(iCell) + 1) = -1e-15_RKIND
             dSdzTop(maxLevelCell(iCell) + 1) = -1e-15_RKIND
@@ -309,7 +311,7 @@ contains
                dcEdgeInv = 1.0_RKIND/dcEdge(iEdge)
                areaEdge = dcEdge(iEdge)*dvEdge(iEdge)
    
-               do k = 1, maxLevelEdgeTop(iEdge)
+               do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   drhoDT = -thermExpCoeff(k, iCell)
                   drhoDS = salineContractCoeff(k, iCell)
                   dTdx = (activeTracers(indexTemperature, k, cell2) &
@@ -365,7 +367,7 @@ contains
                      slopeTaperDown*sfcTaperDown*slopeTriadDown(k, iCellSelf, iEdge)
    
                   ! Griffies 1998 eqn 34
-                  if (k > 1) then
+                  if (k > minLevelCell(iCell)) then
                      k33(k, iCell) = k33(k, iCell) +  &
                                      areaEdge*dzTop(k)*slopeTriadUp(k, iCellSelf, iEdge)**2
                      k33Norm(k) = k33Norm(k) + areaEdge*dzTop(k)
@@ -381,10 +383,10 @@ contains
             end do ! nEdgesOnCell(iCell)
    
             ! Normalize k33
-            do k = 2, maxLevelCell(iCell)
+            do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
                k33(k, iCell) = k33(k, iCell)/k33Norm(k)*RediKappaScaling(k, iCell)
             end do
-            k33(1, iCell) = 0.0_RKIND
+            k33(1:minLevelCell(iCell), iCell) = 0.0_RKIND
             k33(maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
          end do ! iCell
          !$omp end do
@@ -420,7 +422,7 @@ contains
          !$omp parallel
          !$omp do schedule(runtime) private(k, rtmp)
          do iCell = 1, nCells
-            do k = 2, maxLevelCell(iCell)
+            do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
                rtmp = (displacedDensity(k-1,iCell) - density(k,iCell)) / (zMid(k-1,iCell) - zMid(k,iCell))
                dDensityDzTopOfCell(k,iCell) = min(rtmp, -epsGM)
             end do
@@ -428,7 +430,7 @@ contains
             ! Approximation of dDensityDzTopOfCell on the top and bottom interfaces through the idea of having
             ! ghost cells above the top and below the bottom layers of the same depths and density.
             ! Essentially, this enforces the boundary condition (d density)/dz = 0 at the top and bottom.
-            dDensityDzTopOfCell(1,iCell) = 0.0_RKIND
+            dDensityDzTopOfCell(1:minLevelCell(iCell),iCell) = 0.0_RKIND
             dDensityDzTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
          end do
          !$omp end do
@@ -440,7 +442,7 @@ contains
          !$omp parallel
          !$omp do schedule(runtime) private(k, cell1, cell2)
          do iEdge = 1, nEdges
-            do k = 1, maxLevelEdgeTop(iEdge)+1
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)+1
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                dDensityDzTopOfEdge(k,iEdge) = 0.5_RKIND * (dDensityDzTopOfCell(k,cell1) + dDensityDzTopOfCell(k,cell2))
@@ -458,7 +460,7 @@ contains
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
 
-            do k=1,maxLevelEdgeTop(iEdge)
+            do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
                gradDensityEdge(k,iEdge) = (density(k,cell2) - density(k,cell1)) / dcEdge(iEdge)
                gradZMidEdge(k,iEdge) = (zMid(k,cell2) - zMid(k,cell1)) / dcEdge(iEdge)
             end do
@@ -468,8 +470,8 @@ contains
          !$omp do schedule(runtime) private(k, h1, h2)
          do iEdge = 1, nEdges
             ! The interpolation can only be carried out on non-boundary edges
-            if (maxLevelEdgeTop(iEdge) .GE. 1) then
-               do k = 2, maxLevelEdgeTop(iEdge)
+            if (maxLevelEdgeTop(iEdge) .GE. minLevelEdgeBot(iEdge)) then
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   h1 = layerThickEdge(k-1,iEdge)
                   h2 = layerThickEdge(k,iEdge)
                   ! Using second-order interpolation below
@@ -481,9 +483,9 @@ contains
 
                ! Approximation of values on the top and bottom interfaces through the idea of having ghost cells 
                ! above the top and below the bottom layers of the same depths and density.
-               gradDensityTopOfEdge(1,iEdge) = gradDensityEdge(1,iEdge)
+               gradDensityTopOfEdge(minLevelEdgeBot(iEdge),iEdge) = gradDensityEdge(minLevelEdgeBot(iEdge),iEdge)
                gradDensityTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = gradDensityEdge(maxLevelEdgeTop(iEdge),iEdge)
-               gradZMidTopOfEdge(1,iEdge) = gradZMidEdge(1,iEdge)
+               gradZMidTopOfEdge(minLevelEdgeBot(iEdge),iEdge) = gradZMidEdge(minLevelEdgeBot(iEdge),iEdge)
                gradZMidTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = gradZMidEdge(maxLevelEdgeTop(iEdge),iEdge)
             end if
          end do
@@ -491,8 +493,8 @@ contains
 
          !$omp do schedule(runtime) private(k)
          do iEdge = 1, nEdges
-            if (maxLevelEdgeTop(iEdge) .GE. 1) then
-               do k = 1, maxLevelEdgeTop(iEdge)+1
+            if (maxLevelEdgeTop(iEdge) .GE. minLevelEdgeBot(iEdge)) then
+               do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)+1
                   gradDensityConstZTopOfEdge(k,iEdge) = gradDensityTopOfEdge(k,iEdge) - dDensityDzTopOfEdge(k,iEdge) &
                                                    * gradZMidTopOfEdge(k,iEdge)
                end do
@@ -508,19 +510,19 @@ contains
             !$omp parallel
             !$omp do schedule(runtime) private(k, BruntVaisalaFreqTopEdge, maxN, cell1, cell2)
             do iEdge=1,nEdges
-               k=1
+               k=minLevelEdgeBot(iEdge)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
                                                     BruntVaisalaFreqTop(k,cell2))
                maxN = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-               do k = 2, maxLevelEdgeTop(iEdge)
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
                                                       BruntVaisalaFreqTop(k,cell2))
                  maxN = max(maxN,max(BruntVaisalaFreqTopEdge, 0.0_RKIND))
                enddo
 
-               do k = 2, maxLevelEdgeTop(iEdge)
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
                                                        BruntVaisalaFreqTop(k,cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
@@ -546,7 +548,7 @@ contains
                cell2 = cellsOnEdge(2, iEdge)
                sumN2 = 0.0
 
-               do k = 2, maxLevelEdgeTop(iEdge)-1
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)-1
 
                   lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
                   lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
@@ -580,7 +582,7 @@ contains
            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, sumRi, countN2, &
            !$omp             zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge, lt1, lt2)
            do iEdge = 1, nEdges
-              k=1
+              k=minLevelEdgeBot(iEdge)
               sumN2 = 0.0_RKIND
               ltSum = 0.0_RKIND
               sumRi = 0.0_RKIND
@@ -588,7 +590,7 @@ contains
               cell1 = cellsOnEdge(1, iEdge)
               cell2 = cellsOnEdge(2, iEdge)
 
-              k = 2
+              k = minLevelEdgeBot(iEdge)+1
               zEdge = -layerThickEdge(k-1,iEdge)
               do while(zEdge > -config_GM_Visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
                 lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
@@ -637,7 +639,7 @@ contains
               Lr = min(cGMphaseSpeed(iEdge) / abs(fEdge(iEdge)),          &
                        sqrt(cGMphaseSpeed(iEdge) / (2.0_RKIND*betaEdge(iEdge))))
 
-              do k=2,maxLevelEdgeTop(iEdge)
+              do k=minLevelEdgeBot(iEdge)+1,maxLevelEdgeTop(iEdge)
                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
                                           max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
                  shearEdgeInv = (0.5_RKIND*(layerThickEdge(k-1,iEdge) + layerThickEdge(k,iEdge)))**2.0 &
@@ -670,10 +672,10 @@ contains
 
             gmStreamFuncTopOfEdge(:, iEdge) = 0.0_RKIND
 
-            ! Construct the tridiagonal matrix
-            if (maxLevelEdgeTop(iEdge) .GE. 3) then
+            ! Construct the tridiagonal matrix if there are at least 3 active cells
+            if ((maxLevelEdgeTop(iEdge) - minLevelEdgeBot(iEdge)) .GE. 2) then
                ! First row
-               k = 2
+               k = minLevelEdgeBot(iEdge)+1
 
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
@@ -685,7 +687,7 @@ contains
                                       *gradDensityConstZTopOfEdge(k,iEdge)
 
                ! Second to next to the last rows
-               do k = 3, maxLevelEdgeTop(iEdge) - 1
+               do k = minLevelEdgeBot(iEdge) + 2, maxLevelEdgeTop(iEdge) - 1
                   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
                   tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k - 1, iEdge) &
@@ -709,11 +711,14 @@ contains
                rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
                                       *gradDensityConstZTopOfEdge(k,iEdge)
                ! Total number of rows
-               N = maxLevelEdgeTop(iEdge) - 1
+               N = maxLevelEdgeTop(iEdge) - minLevelEdgeBot(iEdge)
 
                ! Call the tridiagonal solver
-               call tridiagonal_solve(tridiagA, tridiagB, tridiagC, rightHandSide, &
-                                      gmStreamFuncTopOfEdge(2:maxLevelEdgeTop(iEdge), iEdge), N)
+               call tridiagonal_solve(tridiagA(minLevelEdgeBot(iEdge):maxLevelEdgeTop(iEdge)), &
+                                      tridiagB(minLevelEdgeBot(iEdge):maxLevelEdgeTop(iEdge)), &
+                                      tridiagC(minLevelEdgeBot(iEdge):maxLevelEdgeTop(iEdge)), &
+                                      rightHandSide(minLevelEdgeBot(iEdge):maxLevelEdgeTop(iEdge)), &
+                                      gmStreamFuncTopOfEdge(minLevelEdgeBot(iEdge)+1:maxLevelEdgeTop(iEdge), iEdge), N)
             end if
          end do
          !!$omp end do
@@ -723,7 +728,7 @@ contains
          !$omp parallel
          !$omp do schedule(runtime) private(k)
          do iEdge = 1, nEdges
-            do k = 1, maxLevelEdgeTop(iEdge)
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                normalGMBolusVelocity(k, iEdge) = gmResolutionTaper(iEdge) * (gmStreamFuncTopOfEdge(k, iEdge) &
                       - gmStreamFuncTopOfEdge(k + 1, iEdge)) /layerThickEdge(k, iEdge)
             end do
@@ -743,7 +748,7 @@ contains
 
                areaEdge = 0.25_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
 
-               do k = 1, maxLevelEdgeTop(iEdge)
+               do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   rtmp = 0.5_RKIND*(gmStreamFuncTopOfEdge(k, iEdge) + gmStreamFuncTopOfEdge(k + 1, iEdge))*areaEdge
                   gmStreamFuncTopOfCell(k, iCell) = gmStreamFuncTopOfCell(k, iCell) + gmResolutionTaper(iEdge) * rtmp
                end do

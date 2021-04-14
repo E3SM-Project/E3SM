@@ -65,7 +65,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_ideal_age_compute(nTracers, nCellsSolve, maxLevelCell, layerThickness, &
+   subroutine ocn_tracer_ideal_age_compute(nTracers, nCellsSolve, minLevelCell, maxLevelCell, layerThickness, &
                   idealAgeMask, tracers, tracer_tend, err)!{{{
 
       !-----------------------------------------------------------------
@@ -76,7 +76,7 @@ contains
 
       ! one dimensional arrays
       integer, dimension(:), intent(in) :: &
-         maxLevelCell
+         minLevelCell, maxLevelCell
 
       ! two dimensional arrays
       real (kind=RKIND), dimension(:,:), intent(in) :: &
@@ -121,7 +121,7 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) private(iLevel, iTracer)
       do iCell=1,nCellsSolve
-        do iLevel=1,maxLevelCell(iCell)
+        do iLevel=minLevelCell(iCell),maxLevelCell(iCell)
           do iTracer=1,nTracers
              ! zero tracers at surface to zero where idealAgeMask == zero
              ! idealAgeMask should be equal to 1.0 elsewhere
