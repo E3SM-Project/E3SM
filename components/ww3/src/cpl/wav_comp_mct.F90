@@ -149,7 +149,7 @@
 ! 10. Source code :
 !
 !/ ------------------------------------------------------------------- /
-      use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, nx, ny, nseal, mapsf, mapsta, x0, y0, sx, sy, w3nmod, w3setg
+      use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, nx, ny, nseal, mapsf, mapsta, x0, y0, sx, sy, w3nmod, w3setg, AnglD
       use w3wdatmd, only: time, w3ndat, w3setw
       use w3adatmd, only: ussx, ussy, w3naux, w3seta, sxx, sxy, syy !SB, lamult
       use w3idatmd, only: inflags1, w3seti, w3ninp
@@ -160,6 +160,7 @@
       USE W3IDATMD, ONLY: !SB, HML   ! QL, 150525, mixing layer depth
       use w3odatmd, only: w3nout, w3seto, naproc, iaproc, napout, naperr,             &
                           nogrp, ngrpp, noge, idout, fnmpre, iostyp, notype
+      use w3servmd, only: w3xyrtn
 !/
       use w3initmd, only: w3init 
       use w3wavemd, only: w3wave 
@@ -831,6 +832,8 @@ CONTAINS
       type(mct_aVect) :: x2w0
       type(mct_gsmap),pointer :: gsmap
       real :: def_value
+      real, dimension(:), allocatable :: cx, cy 
+      real, dimension(:), allocatable :: wx, wy 
 
       character(len=*),parameter :: subname = '(wav_run_mct)'
 
@@ -921,6 +924,38 @@ CONTAINS
       call seq_cdata_setptrs(cdata_w,gsmap=gsmap,mpicom=mpi_comm)
       call mct_aVect_gather(x2w_w,x2w0,gsmap,0,mpi_comm)
       call mct_aVect_bcast(x2w0,0,mpi_comm)
+ 
+      if (inflags1(2)) then 
+        allocate(wx(NX*NY), wy(NX*NY))
+      endif
+      if (inflags1(3)) then
+        allocate(cx(NX*NY), cy(NX*NY))
+      endif
+
+      gindex = 0
+      do IY = 1,NY
+      do IX = 1,NX
+         gindex = gindex + 1
+
+         if (inflags1(2)) then
+            CX(gindex)  = x2w0%rattr(index_x2w_so_u,gindex)
+            CY(gindex)  = x2w0%rattr(index_x2w_so_v,gindex)
+         endif
+
+         if (inflags1(3)) then
+            WX(gindex)  = x2w0%rattr(index_x2w_sa_u,gindex)
+            WY(gindex)  = x2w0%rattr(index_x2w_sa_v,gindex)
+         endif
+
+      enddo
+      enddo
+
+      if (inflags1(2)) then
+        call w3xyrtn(NX*NY,CX,CY,-AnglD) 
+      endif
+      if (inflags1(3)) then
+        call w3xyrtn(NX*NY,WX,WY,-AnglD)
+      endif
 
       ! use these loops for global copy
       gindex = 0
@@ -939,16 +974,16 @@ CONTAINS
          endif
 
          if (inflags1(2)) then
-            CX0(IX,IY)  = x2w0%rattr(index_x2w_so_u,gindex)
+            CX0(IX,IY)  = CX(gindex) 
             CXN(IX,IY)  = CX0(IX,IY)
-            CY0(IX,IY)  = x2w0%rattr(index_x2w_so_v,gindex)
+            CY0(IX,IY)  = CY(gindex)
             CYN(IX,IY)  = CY0(IX,IY)
          endif
 
          if (inflags1(3)) then
-            WX0(IX,IY)  = x2w0%rattr(index_x2w_sa_u,gindex)
+            WX0(IX,IY)  = WX(gindex) 
             WXN(IX,IY)  = WX0(IX,IY)
-            WY0(IX,IY)  = x2w0%rattr(index_x2w_sa_v,gindex)
+            WY0(IX,IY)  = WY(gindex) 
             WYN(IX,IY)  = WY0(IX,IY)
             DT0(IX,IY)  = x2w0%rattr(index_x2w_sa_tbot,gindex) - x2w0%rattr(index_x2w_so_t,gindex)
             DTN(IX,IY)  = DT0(IX,IY)
