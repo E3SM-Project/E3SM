@@ -199,8 +199,14 @@ attributes to express the dependency.
 <icesds>1.00</icesds>
 <iceddisp>80.00</iceddisp>
 <icefdisp>2.00</icefdisp>
-<noleap>.false.</noleap
+<noleap>.false.</noleap>
 <trckcmpr>.true.</trckcmpr>
 <btbet>1.20</btbet>
+
+<!-- rotd -->
+
+<plat>72.3200</plat>
+<plon>-42.8906</plon>
+<unrot>.true.</unrot>
  
 </namelist_defaults>

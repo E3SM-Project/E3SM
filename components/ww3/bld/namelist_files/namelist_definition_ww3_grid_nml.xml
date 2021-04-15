@@ -999,5 +999,26 @@
        group="misc"
        valid_values="">
 </entry>
+
+<!-- rotd -->
+
+<entry id="plat"
+       type="real"
+       category="rotd"
+       group="rotd"
+       valid_values="">
+</entry>
+<entry id="plon"
+       type="real"
+       category="rotd"
+       group="rotd"
+       valid_values="">
+</entry>
+<entry id="unrot"
+       type="logical"
+       category="rotd"
+       group="rotd"
+       valid_values="">
+</entry>
  
 </namelist_definition>
