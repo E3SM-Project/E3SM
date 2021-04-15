@@ -310,6 +310,8 @@ TEST_CASE("field_mgr", "") {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   using FID = FieldIdentifier;
+  using FR  = FieldRequest;
+  using SL  = std::list<std::string>;
   using Pack = ekat::Pack<Real,8>;
 
   const int ncols = 4;
@@ -337,25 +339,25 @@ TEST_CASE("field_mgr", "") {
   FieldManager<Real> field_mgr(pg);
 
   // Should not be able to register fields yet
-  REQUIRE_THROWS(field_mgr.register_field(fid1,"phys"));
+  REQUIRE_THROWS(field_mgr.register_field(FR(fid1)));
 
   field_mgr.registration_begins();
 
   // === Valid registration calls === //
-  field_mgr.register_field<Pack>(fid1,"group_1");
-  field_mgr.register_field(fid2,16,"group_2");
-  field_mgr.register_field(fid3,"group_4");
-  field_mgr.register_field(fid3,{"group_1","group_2","group_3"});
-  field_mgr.register_field(fid2,"group_4");
+  field_mgr.register_field(FR(fid1,"group_1"));
+  field_mgr.register_field(FR{fid2,"group_2",16});
+  field_mgr.register_field(FR{fid3,"group_4"});
+  field_mgr.register_field(FR{fid3,SL{"group_1","group_2","group_3"}});
+  field_mgr.register_field(FR{fid2,"group_4"});
 
   // === Invalid registration calls === //
-  REQUIRE_THROWS(field_mgr.register_field(bad1));
-  REQUIRE_THROWS(field_mgr.register_field(bad2));
-  REQUIRE_THROWS(field_mgr.register_field(bad2));
+  REQUIRE_THROWS(field_mgr.register_field(FR{bad1}));
+  REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
+  REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
   field_mgr.registration_ends();
 
   // Should not be able to register fields anymore
-  REQUIRE_THROWS(field_mgr.register_field(fid1,"group_1"));
+  REQUIRE_THROWS(field_mgr.register_field(FR{fid1}));
 
   // Check registration is indeed closed
   REQUIRE (field_mgr.repository_state()==RepoState::Closed);
@@ -418,6 +420,7 @@ TEST_CASE("tracers_bundle", "") {
   using namespace scream;
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
+  using FR  = FieldRequest;
 
   const int ncols = 4;
   const int nlevs = 7;
@@ -437,9 +440,9 @@ TEST_CASE("tracers_bundle", "") {
 
   FieldManager<Real> field_mgr(pg);
   field_mgr.registration_begins();
-  field_mgr.register_field(qv_id,"TRACERS");
-  field_mgr.register_field(qc_id,"TRACERS");
-  field_mgr.register_field(qr_id,"TRACERS");
+  field_mgr.register_field(FR{qv_id,"TRACERS"});
+  field_mgr.register_field(FR{qc_id,"TRACERS"});
+  field_mgr.register_field(FR{qr_id,"TRACERS"});
   field_mgr.registration_ends();
 
   auto qv = field_mgr.get_field(qv_id.name());

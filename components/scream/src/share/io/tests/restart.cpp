@@ -164,6 +164,8 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
 {
   using namespace ShortFieldTagsNames;
   using FL = FieldLayout;
+  using FR = FieldRequest;
+  using SL = std::list<std::string>;
 
   // Create a fm
   auto fm = std::make_shared<FieldManager<Real>>(grid);
@@ -188,9 +190,9 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
 
   // Register fields with fm
   fm->registration_begins();
-  fm->register_field(fid1,{"output","restart"});
-  fm->register_field(fid2,{"output","restart"});
-  fm->register_field(fid3,{"output"});
+  fm->register_field(FR{fid1,SL{"output","restart"}});
+  fm->register_field(FR{fid2,SL{"output","restart"}});
+  fm->register_field(FR{fid3,"output"});
   fm->registration_ends();
 
   // Initialize these fields
