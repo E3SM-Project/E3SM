@@ -190,6 +190,7 @@ print $fh  <<"EOF";
 <?xml version="1.0"?>
 <config_definition>
 <entry id="ice_grid" value="$ICE_GRID">
+<entry id="prognostic_mode" value="$prognostic_mode">
 <entry id="decomp_prefix" value="$decomp_prefix">
 <entry id="date_stamp" value="$date_stamp">
 </config_definition>
@@ -554,20 +555,12 @@ add_default($nl, 'config_calculate_coriolis');
 # Namelist group: use_sections #
 ################################
 
-if ($prognostic_mode eq 'prescribed') {
-    add_default($nl, 'config_use_dynamics', 'val'=>".false");
-} else {
-    add_default($nl, 'config_use_dynamics');
-}
+add_default($nl, 'config_use_dynamics');
 add_default($nl, 'config_use_velocity_solver');
 add_default($nl, 'config_use_advection');
 add_default($nl, 'config_use_forcing');
 add_default($nl, 'config_use_column_package');
-if ($prognostic_mode eq 'prescribed') {
-    add_default($nl, 'config_use_prescribed_ice', 'val'=>".true.");
-} else {
-    add_default($nl, 'config_use_prescribed_ice');
-}
+add_default($nl, 'config_use_prescribed_ice');
 add_default($nl, 'config_use_prescribed_ice_forcing');
 
 ###########################
@@ -636,11 +629,7 @@ if ($ice_bgc eq 'ice_bgc') {
 } else {
         add_default($nl, 'config_use_column_biogeochemistry', 'val'=>".false.");
 }
-if ($prognostic_mode eq 'prescribed') {
-        add_default($nl, 'config_use_column_itd_thermodynamics', 'val'=>".false.");
-} else {
-        add_default($nl, 'config_use_column_itd_thermodynamics');
-}
+add_default($nl, 'config_use_column_itd_thermodynamics');
 add_default($nl, 'config_use_column_ridging');
 add_default($nl, 'config_use_column_snow_tracers');
 
