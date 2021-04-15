@@ -141,8 +141,16 @@ namespace scream {
         });
         gas_concs.reset();
 
+        // Before running, make a copy of T_mid so we can see changes
+        auto T_mid0 = real2d("T_mid0", ncol, nlay);
+        t_lay.deep_copy_to(T_mid0);
+
         // Run driver
         ad.run(300.0);
+
+        // Dumb check to verify that we did indeed update temperature
+        REQUIRE(t_lay(1,1) != T_mid0(1,1));
+        T_mid0.deallocate();
 
         // Check values; need to get fluxes from field manager first
         // The AD should have called RRTMGP to calculate these values in the ad.run() call
