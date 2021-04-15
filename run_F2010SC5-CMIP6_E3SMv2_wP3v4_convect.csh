@@ -6,7 +6,7 @@
 
   #
 
-  set compset=F2010SC5-CMIP6   # Or you may use F20TR, or F2010
+  set compset=F2010SC5-P3   # Or you may use F20TR, or F2010
 
   set machine=compy
 
@@ -22,7 +22,7 @@
 
  
 
-  set CASEID=20210120_tune.$compset
+  set CASEID=2021April14_Test.$compset
 
  
 
@@ -59,7 +59,7 @@
 
   ./xmlchange CAM_TARGET=theta-l  # for theta-l + SL tracer transport
 
-  ./xmlchange --id CAM_CONFIG_OPTS --val "-mach $machine -phys cam5 -clubb_sgs -microphys p3 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -bc_dep_to_snow_updates -cosp -cosp"
+  ./xmlchange --id CAM_CONFIG_OPTS --val "-mach $machine -phys default -clubb_sgs -microphys p3 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -bc_dep_to_snow_updates -cosp -cosp"
 
 # turn cosp on if plan to use the simulation for other purpose as well
 #
@@ -89,9 +89,6 @@
 
  state_debug_checks = .true.
  history_budget = .true.
- nucleate_ice_subgrid = 1.2d0
- use_hetfrz_classnuc = .true.
- do_Cooper_inP3 = .false.
  
 
 EOF

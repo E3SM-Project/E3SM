@@ -179,7 +179,7 @@ do_Cooper_inP3 = .false.
 <mam_mom_specifier >'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'			 </mam_mom_specifier >
 
 <cld_macmic_num_steps hgrid="ne30np4"  > 6 </cld_macmic_num_steps>     
-<cld_macmic_num_steps hgrid="ne120np4" > 3 </cld_macmic_num_steps>
+<cld_macmic_num_steps hgrid="ne120np4" > 6 </cld_macmic_num_steps>
 
 
 <!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
