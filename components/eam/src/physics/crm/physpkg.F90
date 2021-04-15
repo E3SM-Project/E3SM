@@ -334,17 +334,17 @@ subroutine phys_inidat( cam_out, pbuf2d )
     deallocate(tptr3d_2)
   end if
 
-  ! fieldname='CUSH'
-  ! m = pbuf_get_index('cush')
-  ! call infld(fieldname, fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, tptr, found, gridname='physgrid')
-  ! if(.not.found) then
-  !   if(masterproc) write(iulog,*) trim(fieldname), ' initialized to 1000.'
-  !   tptr=1000._r8
-  ! end if
-  ! do n=1,dyn_time_lvls
-  !   call pbuf_set_field(pbuf2d, m, tptr, start=(/1,n/), kount=(/pcols,1/))
-  ! end do
-  ! deallocate(tptr)
+  fieldname='CUSH'
+  m = pbuf_get_index('cush')
+  call infld(fieldname, fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, tptr, found, gridname='physgrid')
+  if(.not.found) then
+    if(masterproc) write(iulog,*) trim(fieldname), ' initialized to 1000.'
+    tptr=1000._r8
+  end if
+  do n=1,dyn_time_lvls
+    call pbuf_set_field(pbuf2d, m, tptr, start=(/1,n/), kount=(/pcols,1/))
+  end do
+  deallocate(tptr)
 
   !
   ! 3-D fields
@@ -658,7 +658,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
   call rad_solar_var_init()
 
-  call cloud_diagnostics_init(phys_state, pbuf2d)
+  call cloud_diagnostics_init()
 
   call radheat_init(pref_mid)
 
