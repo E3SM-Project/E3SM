@@ -44,17 +44,13 @@ end subroutine cloud_diagnostics_register
 
 !===============================================================================
 !===============================================================================
-subroutine cloud_diagnostics_init(state, pbuf)
+subroutine cloud_diagnostics_init()
   use physics_buffer,    only: pbuf_get_index, pbuf_get_field, physics_buffer_desc, pbuf_get_chunk
   use phys_control,      only: phys_getopts
   use physics_types,     only: physics_state
   use constituents,      only: cnst_get_ind
   use cloud_cover_diags, only: cloud_cover_diags_init
   implicit none
-  !-----------------------------------------------------------------------------
-  ! Arguments
-  type(physics_state),       pointer :: state(:)
-  type(physics_buffer_desc), pointer :: pbuf(:,:)
   !-----------------------------------------------------------------------------
   ! Local Variables
   type(physics_buffer_desc), pointer :: pbuf_chunk(:)
@@ -109,26 +105,6 @@ subroutine cloud_diagnostics_init(state, pbuf)
   call add_default ('TGCLDIWP', 1, ' ')
   call add_default ('TGCLDCWP', 1, ' ')
   if (history_verbose) call add_default ('EMISCLD', 1, ' ')
-
-  do lchnk = begchunk, endchunk
-
-    pbuf_chunk => pbuf_get_chunk(pbuf, lchnk)
-    call pbuf_get_field(pbuf_chunk, pbuf_get_index('ICLWP'), iclwp )
-    call pbuf_get_field(pbuf_chunk, pbuf_get_index('ICIWP'), iciwp )
-    ncol = state(lchnk)%ncol
-
-    do k = 1,pver
-      do i = 1,ncol
-        iciwp(i,k)  = 0._r8
-        iclwp(i,k)  = 0._r8
-        icimr(i,k)  = 0._r8
-        icwmr(i,k)  = 0._r8
-        iwc(i,k)    = 0._r8
-        lwc(i,k)    = 0._r8
-      end do
-    end do
-
-  end do
 
   return
 end subroutine cloud_diagnostics_init
