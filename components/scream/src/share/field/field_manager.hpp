@@ -134,7 +134,7 @@ FieldManager (const grid_ptr_type& grid)
   : m_repo_state (RepoState::Clean)
   , m_grid       (grid)
 {
-  m_field_groups["tracers"] = std::make_shared<group_info_type>("tracers");
+  // m_field_groups["tracers"] = std::make_shared<group_info_type>("tracers");
 
   EKAT_REQUIRE_MSG (m_grid!=nullptr,
       "Error! Input grid pointer is not valid.");
@@ -420,8 +420,8 @@ registration_ends ()
     }
 
     if (r.releative!=nullptr) {
-      if (r.relative_type==Relationship::Parent) {
-        // All fields in the relative must be added to this group
+      if (r.relative_type==Relationship::Child) {
+        // All fields in the child group must be added to this group
         auto& members = m_field_groups.at(r.name)->m_fields_names;
         const auto& relatives = m_field_groups.at(r.releative->name)->m_fields_names;
         for (const auto& n : relatives) {
@@ -429,8 +429,8 @@ registration_ends ()
             members.push_back(n);
           }
         }
-      } else if (r.relative_type==Relationship::Child) {
-        // We take all fields in the relative group and add them to this group,
+      } else if (r.relative_type==Relationship::Parent) {
+        // We take all fields in the parent group and add them to this group,
         // provided that they are not in the 'exclude' list.
         auto& members = m_field_groups.at(r.name)->m_fields_names;
         const auto& relatives = m_field_groups.at(r.releative->name)->m_fields_names;
@@ -456,6 +456,14 @@ registration_ends ()
           "    -  Field name: " + e + "\n");
 
     }
+
+    // Finally, check that groups are non-empty
+    for (const auto& it : m_field_groups) {
+      EKAT_REQUIRE_MSG (it.second->size()>0,
+          "Error! We have a group in this Field Manager that has no members.\n"
+          "       Group name: " + it.first + "\n"
+          "       Grid name:  " + m_grid->name() + "\n");
+    }
   };
 
   // First, check groups are defined, and contain the correct members
@@ -477,11 +485,47 @@ registration_ends ()
     }
   }
 
+  // Homme currently wants qv to be the first tracer. We should be able to
+  // modify Homme, to use something like qv_idx. However, that requires
+  // extensive changes in Homme. Instead, we hack our way around this limitatin
+  // (for now), and rearrange groups/fields so that we can expect qv to be the
+  // first tracer.
+  if (has_field("qv")) {
+    auto it = ekat::find(groups_to_bundle,"tracers");
+    if (it!=groups_to_bundle.end()) {
+      // Bring tracers to the front
+      std::swap(*it,groups_to_bundle.front());
+
+      // // Make qv the 1st tracer
+      // auto& tracers_names = m_field_groups.at("tracers")->m_fields_names;
+      // auto qv_it = ekat::find(tracers_names,"qv");
+      // EKAT_REQUIRE_MSG (it!=tracers_names.end(),
+          // "Error! It appears 'qv' is not part of the tracers group in this Field Manager.\n"
+          // "       Grid name: " + m_grid->name() + "\n");
+      // std::swap(*qv_it,tracers_names.front());
+
+      // Adding the 'fake' group G=(qv) at the front of groups_to_bundle ensures qv won't be put
+      // in the middle of the tracers group. We use a highly unlikely group name, to avoid clashing
+      // with a real group name. Later, after having found an global ordering for the tracers fields,
+      // we will remove this group.
+      groups_to_bundle.push_front("__qv__");
+      m_field_groups.emplace("__qv__",std::make_shared<group_info_type>("__qv__"));
+      m_field_groups.at("__qv__")->m_fields_names.push_back("qv");
+    }
+  }
+
+  // and any of its groups is in groups_to_bundle, put one of its groups
+  // first in groups_to_bundle, and rearrange the fields of that group so that
+  // qv comes first. This does NOT guarantee that qv will be the 1st
+
+  // Do all the bundling stuff only if there are groups do bundle at all.
   if (groups_to_bundle.size()>0) {
     using namespace ShortFieldTagsNames;
+
     // A cluster is a pair <cluster_name,list of names of groups in the cluster>
     using cluster_type = std::list<std::string>;
 
+    // Determine if two lists have elements in common (does not compute the intersection)
     auto intersect = [] (const std::list<ci_string>& lhs,
                          const std::list<ci_string>& rhs) -> bool {
       for (const auto& s : lhs) {
@@ -592,6 +636,21 @@ registration_ends ()
       //    group name for the bundled field, otherwise make one up from the names of all groups.
       //  - allocate the cluster field F.
       //  - loop over the groups in the cluster, and subview F at the proper (contiguous) indices.
+
+      // WARNING: this lines should be removed if we move away from Homme's requirement that
+      //          qv be the first tracer
+      auto qv_it = ekat::find(cluster_ordered_fields,"qv");
+      if (qv_it!=cluster_ordered_fields.end()) {
+        // Check that qv comes first or last (if last, reverse the list). If not, error out.
+        // NOTE: I *think* this should not happen, unless 'tracers' is a subgroup of a bigger group.
+        EKAT_REQUIRE_MSG(qv_it==cluster_ordered_fields.begin() || qv_it==(cluster_ordered_fields.end()--),
+            "Error! The water vapor field has to be the first tracer, but it is not.\n");
+
+        if (qv_it!=cluster_ordered_fields.begin()) {
+          // Note: reversing the order of the fields preserves subgroups contiguity
+          cluster_ordered_fields.reverse();
+        }
+      }
 
       // Check if there is a group with all the fields. Notice that it is enough to check
       // if any list in the LOL has the same length as cluster_ordered_fields.

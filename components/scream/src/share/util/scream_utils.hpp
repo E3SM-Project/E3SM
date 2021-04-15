@@ -147,7 +147,8 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
     for (auto it = first; it!=end; ++it) {
       auto diff = difference(*it,intersections[*it]);
       if (diff.size()>0) {
-        // Only the first and last non-empty intersections can be less than lol's entry.
+        // Only the first and last non-empty intersections can be "partial", meaning
+        // the intersection is smaller than the whole list in lol.
         if (not (it==first || it==last) ) {
           return std::list<T>();
         }
@@ -173,6 +174,7 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
         lol.push_front(remainder);
       } else {
         // We never found an empty intersection after non-empty ones, so intersections must be at the back.
+        // Or maybe we never found an intersection at all. Either way, append the remainted at the end.
         lol.push_back(remainder);
       }
     }
