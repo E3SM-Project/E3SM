@@ -154,18 +154,6 @@ void RRTMGPRadiation::finalize_impl  () {
   rrtmgp::rrtmgp_finalize();
 }
 
-// Register all required and computed field in the field manager
-void RRTMGPRadiation::
-register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
-  auto& field_mgr = *field_mgrs.at("Physics");
-  for (const auto& req: get_required_fields()) {
-    field_mgr.register_field(req.fid);
-  }
-  for (const auto& req: get_computed_fields()) {
-    field_mgr.register_field(req.fid);
-  }
-}
-
 // Private function to check that fields are not padded
 void RRTMGPRadiation::require_unpadded(const Field<const Real>& f) {
   const auto& fid = f.get_header().get_identifier();

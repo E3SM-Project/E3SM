@@ -17,17 +17,16 @@ namespace scream
  * in its list of subcomponents (the AD should make sure of this).
 */
 
-  using namespace cld_fraction;
-  using CldFractionFunc = CldFractionFunctions<Real, DefaultDevice>;
-  using Spack           = CldFractionFunc::Spack;
-  using Smask           = CldFractionFunc::Smask;
-  using Pack            = ekat::Pack<Real,Spack::n>;
-
 class CldFraction : public AtmosphereProcess
 {
 public:
   using field_type       = Field<      Real>;
   using const_field_type = Field<const Real>;
+
+  using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
+  using Spack           = CldFractionFunc::Spack;
+  using Smask           = CldFractionFunc::Smask;
+  using Pack            = ekat::Pack<Real,Spack::n>;
 
   // Constructors
   CldFraction (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -50,10 +49,6 @@ public:
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
-
-  // Register all fields in the proper field manager(s).
-  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
-  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 
 protected:
 

@@ -49,48 +49,52 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   // Define fields needed in SHOC.
   // Note: shoc_main is organized by a set of 5 structures, variables below are organized
   //       using the same approach to make it easier to follow.
+  std::set<ci_string> q_names =
+    { "qc", "qv", "tke"};
+
+  constexpr int ps = Spack::n;
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
-  add_field<Required>("pref_mid",         pref_mid_layout,     Pa,     grid_name);
-  add_field<Required>("T_mid",            scalar3d_layout_mid, nondim, grid_name);
-  add_field<Required>("zi",               scalar3d_layout_int, m,      grid_name);
-  add_field<Required>("zm",               scalar3d_layout_mid, K,      grid_name);
-  add_field<Required>("omega",            scalar3d_layout_mid, K,      grid_name);
-  add_field<Required>("surf_sens_flux",   scalar2d_layout_col, K,      grid_name);
-  add_field<Required>("surf_latent_flux", scalar2d_layout_col, K,      grid_name);
-  add_field<Required>("surf_u_mom_flux",  scalar2d_layout_col, K,      grid_name);
-  add_field<Required>("surf_v_mom_flux",  scalar2d_layout_col, K,      grid_name);
-  add_field<Required>("qv",               scalar3d_layout_mid, Qunit,  grid_name);
+  add_field<Required>("pref_mid",         pref_mid_layout,     Pa,     grid_name, ps);
+  add_field<Required>("T_mid",            scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Required>("zi",               scalar3d_layout_int, m,      grid_name, ps);
+  add_field<Required>("zm",               scalar3d_layout_mid, K,      grid_name, ps);
+  add_field<Required>("omega",            scalar3d_layout_mid, K,      grid_name, ps);
+  add_field<Required>("surf_sens_flux",   scalar2d_layout_col, K,      grid_name, ps);
+  add_field<Required>("surf_latent_flux", scalar2d_layout_col, K,      grid_name, ps);
+  add_field<Required>("surf_u_mom_flux",  scalar2d_layout_col, K,      grid_name, ps);
+  add_field<Required>("surf_v_mom_flux",  scalar2d_layout_col, K,      grid_name, ps);
+  add_field<Required>("qv",               scalar3d_layout_mid, Qunit,  grid_name, "tracers", ps);
 
-  add_field<Computed>("T_mid",            scalar3d_layout_mid, nondim, grid_name);
-  add_field<Computed>("qv",               scalar3d_layout_mid, Qunit,  grid_name);
+  add_field<Computed>("T_mid",            scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Computed>("qv",               scalar3d_layout_mid, Qunit,  grid_name, "tracers", ps);
 
   // Input variables
-  add_field<Required>("host_dx",        scalar2d_layout_col, m,  grid_name);
-  add_field<Required>("host_dy",        scalar2d_layout_col, m,  grid_name);
-  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name);
-  add_field<Required>("pint",           scalar3d_layout_int, Pa, grid_name);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name);
-  add_field<Required>("phis",           scalar2d_layout_col, m,  grid_name);
+  add_field<Required>("host_dx",        scalar2d_layout_col, m,  grid_name, ps);
+  add_field<Required>("host_dy",        scalar2d_layout_col, m,  grid_name, ps);
+  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
+  add_field<Required>("pint",           scalar3d_layout_int, Pa, grid_name, ps);
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name, ps);
+  add_field<Required>("phis",           scalar2d_layout_col, m,  grid_name, ps);
 
   // Input/Output variables
-  add_field<Required>("tke",           scalar3d_layout_mid, (m*m)/(s*s), grid_name);
-  add_field<Required>("horiz_winds",   horiz_wind_layout,   m/s,         grid_name);
-  add_field<Required>("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name);
-  add_field<Required>("eddy_diff_mom", scalar3d_layout_mid, (m*m)/s,     grid_name);
-  add_field<Required>("qc",            scalar3d_layout_mid, Qunit,       grid_name);
-  add_field<Required>("cldfrac_liq",   scalar3d_layout_mid, Pa,          grid_name);
+  add_field<Required>("tke",           scalar3d_layout_mid, (m*m)/(s*s), grid_name, "tracers", ps);
+  add_field<Required>("horiz_winds",   horiz_wind_layout,   m/s,         grid_name, ps);
+  add_field<Required>("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name, ps);
+  add_field<Required>("eddy_diff_mom", scalar3d_layout_mid, (m*m)/s,     grid_name, ps);
+  add_field<Required>("qc",            scalar3d_layout_mid, Qunit,       grid_name, "tracers", ps);
+  add_field<Required>("cldfrac_liq",   scalar3d_layout_mid, Pa,          grid_name, ps);
 
-  add_field<Computed>("tke",           scalar3d_layout_mid, (m*m)/(s*s), grid_name);
-  add_field<Computed>("horiz_winds",   horiz_wind_layout,   m/s,         grid_name);
-  add_field<Computed>("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name);
-  add_field<Computed>("eddy_diff_mom", scalar3d_layout_mid, (m*m)/s,     grid_name);
-  add_field<Computed>("qc",            scalar3d_layout_mid, Qunit,       grid_name);
-  add_field<Computed>("cldfrac_liq",   scalar3d_layout_mid, Pa,          grid_name);
+  add_field<Computed>("tke",           scalar3d_layout_mid, (m*m)/(s*s), grid_name, "tracers", ps);
+  add_field<Computed>("horiz_winds",   horiz_wind_layout,   m/s,         grid_name, ps);
+  add_field<Computed>("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name, ps);
+  add_field<Computed>("eddy_diff_mom", scalar3d_layout_mid, (m*m)/s,     grid_name, ps);
+  add_field<Computed>("qc",            scalar3d_layout_mid, Qunit,       grid_name, "tracers", ps);
+  add_field<Computed>("cldfrac_liq",   scalar3d_layout_mid, Pa,          grid_name, ps);
 
   // Output variables
-  add_field<Computed>("pbl_height",    scalar2d_layout_col, m, grid_name);
-  add_field<Computed>("inv_qc_relvar", scalar3d_layout_mid, Qunit*Qunit, grid_name);
+  add_field<Computed>("pbl_height",    scalar2d_layout_col, m,           grid_name, ps);
+  add_field<Computed>("inv_qc_relvar", scalar3d_layout_mid, Qunit*Qunit, grid_name, ps);
 
   // Tracer group
   add_group<Updated>("tracers",grid->name());
@@ -326,33 +330,6 @@ void SHOCMacrophysics::finalize_impl()
   // Do nothing
 }
 // =========================================================================================
-
-void SHOCMacrophysics::
-register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
-  const auto& grid_name = m_shoc_params.get<std::string>("Grid");
-  auto& field_mgr = *field_mgrs.at(grid_name);
-  std::set<ci_string> q_names =
-    { "qc", "qv", "tke"};
-
-  for (const auto& req : get_required_fields()) {
-    const auto& fid = req.fid;
-    const auto& name = fid.name();
-    if (q_names.count(name)>0) {
-      field_mgr.register_field<Spack>(fid,"tracers");
-    } else {
-      field_mgr.register_field<Spack>(fid);
-    }
-  }
-  for (const auto& req : get_computed_fields()) {
-    const auto& fid = req.fid;
-    const auto& name = fid.name();
-    if (q_names.count(name)>0) {
-      field_mgr.register_field<Spack>(fid,"tracers");
-    } else {
-      field_mgr.register_field<Spack>(fid);
-    }
-  }
-}
 
 void SHOCMacrophysics::set_required_field_impl (const Field<const Real>& f) {
 

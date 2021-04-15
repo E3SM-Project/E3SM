@@ -164,10 +164,6 @@ public:
     );
   }
 
-  // Register all fields in the proper field manager(s).
-  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
-  virtual void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const = 0;
-
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.
   const std::set<FieldRequest>& get_required_fields () const { return m_required_fields; }

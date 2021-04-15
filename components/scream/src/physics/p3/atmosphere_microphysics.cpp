@@ -55,51 +55,56 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   // Note: p3_main is organized by a set of 5 structures, variables below are organized
   //       using the same approach to make it easier to follow.
 
+  constexpr int ps = Pack::n;
+
   // These variables are needed by the interface, but not actually passed to p3_main. 
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
-  add_field<Required>("p_mid",       scalar3d_layout_mid, Pa,     grid_name);
-  add_field<Required>("zi",          scalar3d_layout_int, m,      grid_name);
-  add_field<Required>("T_mid",       scalar3d_layout_mid, K,      grid_name);
-  add_field<Computed>("T_mid",       scalar3d_layout_mid, K,      grid_name);  // T_mid is the only one of these variables that is also updated.
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Required>("p_mid",       scalar3d_layout_mid, Pa,     grid_name, ps);
+  add_field<Required>("zi",          scalar3d_layout_int, m,      grid_name, ps);
+  add_field<Required>("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);
+  add_field<Computed>("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
-  add_field<Required>("qv",     scalar3d_layout_mid, Q,    grid_name);
-  add_field<Required>("qc",     scalar3d_layout_mid, Q,    grid_name);
-  add_field<Required>("qr",     scalar3d_layout_mid, Q,    grid_name);
-  add_field<Required>("qi",     scalar3d_layout_mid, Q,    grid_name);
-  add_field<Required>("qm",     scalar3d_layout_mid, Q,    grid_name);
-  add_field<Required>("nc",     scalar3d_layout_mid, 1/kg, grid_name);
-  add_field<Required>("nr",     scalar3d_layout_mid, 1/kg, grid_name);
-  add_field<Required>("ni",     scalar3d_layout_mid, 1/kg, grid_name);
-  add_field<Required>("bm",     scalar3d_layout_mid, 1/kg, grid_name);
+  add_field<Required>("qv",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Required>("qc",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Required>("qr",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Required>("qi",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Required>("qm",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Required>("nc",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+  add_field<Required>("nr",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+  add_field<Required>("ni",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+  add_field<Required>("bm",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
   //
-  add_field<Computed>("qv",     scalar3d_layout_mid, Q,    grid_name);
-  add_field<Computed>("qc",     scalar3d_layout_mid, Q,    grid_name);
-  add_field<Computed>("qr",     scalar3d_layout_mid, Q,    grid_name);
-  add_field<Computed>("qi",     scalar3d_layout_mid, Q,    grid_name);
-  add_field<Computed>("qm",     scalar3d_layout_mid, Q,    grid_name);
-  add_field<Computed>("nc",     scalar3d_layout_mid, 1/kg, grid_name);
-  add_field<Computed>("nr",     scalar3d_layout_mid, 1/kg, grid_name);
-  add_field<Computed>("ni",     scalar3d_layout_mid, 1/kg, grid_name);
-  add_field<Computed>("bm",     scalar3d_layout_mid, 1/kg, grid_name);
+  add_field<Computed>("qv",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Computed>("qc",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Computed>("qr",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Computed>("qi",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Computed>("qm",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Computed>("nc",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+  add_field<Computed>("nr",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+  add_field<Computed>("ni",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+  add_field<Computed>("bm",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
-  add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name);
-  add_field<Required>("nc_activated",       scalar3d_layout_mid, nondim,   grid_name);
-  add_field<Required>("ni_activated",       scalar3d_layout_mid, 1/kg,     grid_name);
-  add_field<Required>("inv_qc_relvar",      scalar3d_layout_mid, nondim,   grid_name);
-  add_field<Required>("pseudo_density",     scalar3d_layout_mid, Pa,       grid_name);
-  add_field<Required>("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name);
-  add_field<Required>("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name); 
+  add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
+  add_field<Required>("nc_activated",       scalar3d_layout_mid, nondim,   grid_name, ps);
+  add_field<Required>("ni_activated",       scalar3d_layout_mid, 1/kg,     grid_name, ps);
+  add_field<Required>("inv_qc_relvar",      scalar3d_layout_mid, nondim,   grid_name, ps);
+  add_field<Required>("pseudo_density",     scalar3d_layout_mid, Pa,       grid_name, ps);
+  add_field<Required>("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name, ps);
+  add_field<Required>("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps); 
   //
-  add_field<Computed>("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name);
-  add_field<Computed>("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name);
+  add_field<Computed>("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name, ps);
+  add_field<Computed>("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps);
+
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
-  add_field<Computed>("eff_radius_qc",      scalar3d_layout_mid, m,        grid_name);
-  add_field<Computed>("eff_radius_qi",      scalar3d_layout_mid, m,        grid_name);
+  add_field<Computed>("eff_radius_qc",      scalar3d_layout_mid, m,        grid_name, ps);
+  add_field<Computed>("eff_radius_qi",      scalar3d_layout_mid, m,        grid_name, ps);
+
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
-  add_field<Computed>("micro_liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
-  add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name);
-  add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
+  add_field<Computed>("micro_liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name, ps);
 
 }
 
@@ -255,34 +260,6 @@ void P3Microphysics::run_impl (const Real dt)
 void P3Microphysics::finalize_impl()
 {
   // Do nothing
-}
-
-// =========================================================================================
-void P3Microphysics::
-register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
-  std::set<ci_string> q_names =
-    { "qv","qc","qr","qi","qm","nc","nr","ni","bm"};
-
-  const auto& grid_name = m_p3_params.get<std::string>("Grid");
-  auto& field_mgr = *field_mgrs.at(grid_name);
-  for (const auto& req : get_required_fields()) {
-    const auto& fid = req.fid;
-    const auto& name = fid.name();
-    if (q_names.count(name)>0) {
-      field_mgr.register_field<Pack>(fid,"TRACERS");
-    } else {
-      field_mgr.register_field<Pack>(fid);
-    }
-  }
-  for (const auto& req : get_computed_fields()) {
-    const auto& fid = req.fid;
-    const auto& name = fid.name();
-    if (q_names.count(name)>0) {
-      field_mgr.register_field<Pack>(fid,"TRACERS");
-    } else {
-      field_mgr.register_field<Pack>(fid);
-    }
-  }
 }
 
 void P3Microphysics::set_required_field_impl (const Field<const Real>& f) {

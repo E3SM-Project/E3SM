@@ -68,8 +68,8 @@ public:
 
     if (m_dummy_type==A2G) {
       add_field<Required>("A",layout,ekat::units::m,m_grid->name());
-      add_field<Computed>("B",layout,ekat::units::m,m_grid->name());
-      add_field<Computed>("C",layout,ekat::units::m,m_grid->name());
+      add_field<Computed>("B",layout,ekat::units::m,m_grid->name(),"The Group");
+      add_field<Computed>("C",layout,ekat::units::m,m_grid->name(),"The Group");
       add_field<Required>("D",layout_vec,ekat::units::m,m_grid->name());
       add_field<Required>("E",layout,ekat::units::m,m_grid->name());
     } else if (m_dummy_type == G2A) {
@@ -77,24 +77,6 @@ public:
       add_group<Required>("The Group",m_grid->name());
     } else {
       add_group<Updated>("The Group",m_grid->name());
-    }
-  }
-
-  // Register all fields in the proper fm(s).
-  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
-  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
-    auto fm = field_mgrs.at(m_grid->name());
-    if (m_dummy_type==A2G) {
-      for (const auto& req : get_required_fields()) {
-        fm->register_field(req.fid);
-      }
-      for (const auto& req : get_computed_fields()) {
-        fm->register_field(req.fid,"The Group");
-      }
-    } else if (m_dummy_type == G2A) {
-      for (const auto& req : get_computed_fields()) {
-        fm->register_field(req.fid);
-      }
     }
   }
 

@@ -38,10 +38,6 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grid_manager);
 
-  // Register all fields in the proper field manager(s).
-  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
-  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
-
 // NOTE: cannot use lambda functions for CUDA devices if these are protected!
 public:
   // The three main interfaces for the subcomponent
