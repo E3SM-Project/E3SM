@@ -48,14 +48,6 @@
 <taubgnd                 >2.5D-3 </taubgnd>
 <raytau0                 >5.0D0 </raytau0>
 
-<!-- <ice_sed_ai>         500.0  </ice_sed_ai> -->
-<!-- <cldfrc_dp1>         0.045D0</cldfrc_dp1> -->
-
-<!-- <prc_coef1               >30500.0D0</prc_coef1> -->
-<!-- <prc_exp                 >3.19D0</prc_exp> -->
-<!-- <prc_exp1                >-1.2D0</prc_exp1> -->
-<!-- <rrtmg_temp_fix          >.true.</rrtmg_temp_fix> -->
-
 <!-- External forcing for BAM or MAM -->
 <soag_ext_file ver="mam" >atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160427.nc</soag_ext_file>
 
