@@ -1,6 +1,7 @@
 #include "ekat/ekat_assert.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
+#include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL/YAKL.h"
 
@@ -149,6 +150,22 @@ void RRTMGPRadiation::run_impl (const Real /* dt */) {
     sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
     lw_flux_up, lw_flux_dn
   );
+
+  // Compute and apply heating rates
+  auto sw_heating  = real2d("sw_heating", m_ncol, m_nlay);
+  auto lw_heating  = real2d("lw_heating", m_ncol, m_nlay);
+  auto rad_heating = real2d("rad_heating", m_ncol, m_nlay);
+  rrtmgp::compute_heating_rate(
+    sw_flux_up, sw_flux_dn, p_lev, sw_heating
+  );
+  rrtmgp::compute_heating_rate(
+    lw_flux_up, lw_flux_dn, p_lev, lw_heating
+  );
+  parallel_for(Bounds<2>(m_nlay,m_ncol), YAKL_LAMBDA(int ilay, int icol) {
+    rad_heating(icol,ilay) = sw_heating(icol,ilay) + lw_heating(icol,ilay);
+    t_lay(icol,ilay) = t_lay(icol,ilay) + rad_heating(icol,ilay) * dt;
+  });
+
 }
 
 void RRTMGPRadiation::finalize_impl  () {
