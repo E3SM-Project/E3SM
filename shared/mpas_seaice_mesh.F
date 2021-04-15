@@ -630,25 +630,26 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine seaice_cell_vertices_at_vertex(&
-       mesh, &
-       cellVerticesAtVertex)!{{{
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
+       cellVerticesAtVertex, &
+       nVertices, &
+       vertexDegree, &
+       nEdgesOnCell, &
+       verticesOnCell, &
+       cellsOnVertex)!{{{
 
     integer, dimension(:,:), intent(out) :: &
          cellVerticesAtVertex !< Output:
 
-    integer, pointer :: &
-         nVertices, &
-         vertexDegree
+    integer, intent(in) :: &
+         nVertices, & !< Input:
+         vertexDegree !< Input:
 
-    integer, dimension(:,:), pointer :: &
-         cellsOnVertex, &
-         verticesOnCell
+    integer, dimension(:), intent(in) :: &
+         nEdgesOnCell !< Input:
 
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
+    integer, dimension(:,:), intent(in) :: &
+         cellsOnVertex, & !< Input:
+         verticesOnCell   !< Input:
 
     integer :: &
          iVertex, &
@@ -656,14 +657,6 @@ contains
          iCell, &
          iVertexOnCell, &
          jVertex
-
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
-
-    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
 
     do iVertex = 1, nVertices
 

@@ -61,10 +61,66 @@ contains
        integrationType, &
        integrationOrder)!{{{
 
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input:
+
+    type(MPAS_pool_type), pointer :: &
+         velocity_variational, & !< Input/Output:
+         boundary                !< Input/Output:
+
+    logical, intent(in) :: &
+         rotateCartesianGrid, & !< Input:
+         includeMetricTerms     !< Input:
+
+    character(len=*), intent(in) :: &
+         variationalBasisType, &       !< Input:
+         variationalDenominatorType, & !< Input:
+         integrationType               !< Input:
+
+    integer, intent(in) :: &
+         integrationOrder !< Input:
+
+    call init_velocity_solver_variational_primary_mesh(&
+         mesh, &
+         velocity_variational, &
+         boundary, &
+         rotateCartesianGrid, &
+         includeMetricTerms, &
+         variationalBasisType, &
+         variationalDenominatorType, &
+         integrationType, &
+         integrationOrder)
+
+  end subroutine seaice_init_velocity_solver_variational
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_velocity_solver_variational_primary_mesh
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 24 October 2014
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_velocity_solver_variational_primary_mesh(&
+       mesh, &
+       velocity_variational, &
+       boundary, &
+       rotateCartesianGrid, &
+       includeMetricTerms, &
+       variationalBasisType, &
+       variationalDenominatorType, &
+       integrationType, &
+       integrationOrder)!{{{
+
     use seaice_mesh, only: &
          seaice_cell_vertices_at_vertex
 
     use seaice_velocity_solver_variational_shared, only: &
+         seaice_calc_local_coords, &
          seaice_calc_variational_metric_terms
 
     use seaice_velocity_solver_wachspress, only: &
@@ -96,44 +152,164 @@ contains
          cellVerticesAtVertex
 
     real(kind=RKIND), dimension(:), pointer :: &
-         tanLatVertexRotatedOverRadius
+         tanLatVertexRotatedOverRadius, &
+         variationalDenominator
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         basisGradientU, &
+         basisGradientV, &
+         basisIntegralsMetric, &
+         basisIntegralsU, &
+         basisIntegralsV
+
+    integer, pointer :: &
+         nCells, &
+         nVertices, &
+         vertexDegree, &
+         maxEdges
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell, &
+         interiorVertex
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell, &
+         cellsOnVertex, &
+         edgesOnCell
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex, &
+         zVertex, &
+         xCell, &
+         yCell, &
+         zCell, &
+         areaCell, &
+         areaTriangle, &
+         dvEdge
+
+    logical, pointer :: &
+         on_a_sphere
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    real(kind=RKIND), dimension(:,:), allocatable :: &
+         xLocal, &
+         yLocal
+
+    call MPAS_pool_get_config(mesh, "on_a_sphere", on_a_sphere)
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "maxEdges", maxEdges)
+
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
+    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
+    call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
+
+    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
     call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
     call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
+    call MPAS_pool_get_array(velocity_variational, "basisGradientU", basisGradientU)
+    call MPAS_pool_get_array(velocity_variational, "basisGradientV", basisGradientV)
+    call MPAS_pool_get_array(velocity_variational, "basisIntegralsU", basisIntegralsU)
+    call MPAS_pool_get_array(velocity_variational, "basisIntegralsV", basisIntegralsV)
+    call MPAS_pool_get_array(velocity_variational, "basisIntegralsMetric", basisIntegralsMetric)
+    call MPAS_pool_get_array(velocity_variational, "variationalDenominator", variationalDenominator)
 
     call mpas_timer_start("variational calc_metric_terms")
     call seaice_calc_variational_metric_terms(&
-         mesh, &
          tanLatVertexRotatedOverRadius, &
+         nVertices, &
+         xVertex, &
+         yVertex, &
+         zVertex, &
+         sphere_radius, &
          rotateCartesianGrid, &
          includeMetricTerms)
     call mpas_timer_stop("variational calc_metric_terms")
 
-    call mpas_timer_start("wachpress vertices_at_vertex")
+    call mpas_timer_start("variational vertices_at_vertex")
     call seaice_cell_vertices_at_vertex(&
-         mesh, &
-         cellVerticesAtVertex)
-    call mpas_timer_stop("wachpress vertices_at_vertex")
+         cellVerticesAtVertex, &
+         nVertices, &
+         vertexDegree, &
+         nEdgesOnCell, &
+         verticesOnCell, &
+         cellsOnVertex)
+    call mpas_timer_stop("variational vertices_at_vertex")
+
+    call mpas_timer_start("variational calc_local_coords")
+    allocate(xLocal(maxEdges,nCells))
+    allocate(yLocal(maxEdges,nCells))
+
+    call seaice_calc_local_coords(&
+         xLocal, &
+         yLocal, &
+         nCells, &
+         nEdgesOnCell, &
+         verticesOnCell, &
+         xVertex, &
+         yVertex, &
+         zVertex, &
+         xCell, &
+         yCell, &
+         zCell, &
+         rotateCartesianGrid, &
+         on_a_sphere)
+    call mpas_timer_stop("variational calc_local_coords")
 
     if (trim(variationalBasisType) == "wachspress") then
 
        call seaice_init_velocity_solver_wachspress(&
-            mesh, &
-            velocity_variational, &
-            boundary, &
+            nCells, &
+            maxEdges, &
+            nEdgesOnCell, &
+            xLocal, &
+            yLocal, &
             rotateCartesianGrid, &
             includeMetricTerms, &
+            on_a_sphere, &
             integrationType, &
-            integrationOrder)
+            integrationOrder, &
+            sphere_radius, &
+            basisGradientU, &
+            basisGradientV, &
+            basisIntegralsU, &
+            basisIntegralsV, &
+            basisIntegralsMetric)
 
     else if (trim(variationalBasisType) == "pwl") then
 
        call seaice_init_velocity_solver_pwl(&
-            mesh, &
-            velocity_variational, &
-            boundary, &
-            rotateCartesianGrid, &
-            includeMetricTerms)
+            nCells, &
+            maxEdges, &
+            nEdgesOnCell, &
+            verticesOnCell, &
+            edgesOnCell, &
+            dvEdge, &
+            areaCell, &
+            xLocal, &
+            yLocal, &
+            basisGradientU, &
+            basisGradientV, &
+            basisIntegralsMetric, &
+            basisIntegralsU, &
+            basisIntegralsV)
 
     else if (trim(variationalBasisType) == "none") then
 
@@ -145,15 +321,27 @@ contains
 
     endif
 
+    call mpas_timer_start("variational denominator")
     call variational_denominator(&
-         mesh, &
-         boundary, &
-         velocity_variational, &
-         variationalDenominatorType)
+         nVertices, &
+         vertexDegree, &
+         nEdgesOnCell, &
+         interiorVertex, &
+         areaTriangle, &
+         cellsOnVertex, &
+         cellVerticesAtVertex, &
+         basisIntegralsMetric, &
+         variationalDenominatorType, &
+         variationalDenominator)
+    call mpas_timer_stop("variational denominator")
+
+    ! clean up
+    deallocate(xLocal)
+    deallocate(yLocal)
 
     !call homogenize_variational_basis_field()
 
-  end subroutine seaice_init_velocity_solver_variational
+  end subroutine init_velocity_solver_variational_primary_mesh
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -168,32 +356,42 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine variational_denominator(&
-       mesh, &
-       boundary, &
-       velocity_variational, &
-       variationalDenominatorType)
+       nVertices, &
+       vertexDegree, &
+       nEdgesOnCell, &
+       interiorVertex, &
+       areaTriangle, &
+       cellsOnVertex, &
+       cellVerticesAtVertex, &
+       basisIntegralsMetric, &
+       variationalDenominatorType, &
+       variationalDenominator)
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh, &              !< Input:
-         boundary, &          !< Input:
-         velocity_variational !< Input:
+    integer, intent(in) :: &
+         nVertices, & !< Input:
+         vertexDegree !< Input:
+
+    integer, dimension(:), intent(in) :: &
+         nEdgesOnCell, & !< Input:
+         interiorVertex  !< Input:
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         areaTriangle !< Input:
+
+    integer, dimension(:,:), intent(in) :: &
+         cellsOnVertex !< Input:
+
+    integer, dimension(:,:), intent(in) :: &
+         cellVerticesAtVertex !< Input:
+
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         basisIntegralsMetric !< Input:
 
     character(len=*), intent(in) :: &
          variationalDenominatorType !< Input:
 
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         basisIntegralsMetric
-
-    integer, dimension(:,:), pointer :: &
-         cellVerticesAtVertex
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         areaTriangle, &
+    real(kind=RKIND), dimension(:), intent(out) :: &
          variationalDenominator
-
-    integer, pointer :: &
-         nVertices, &
-         vertexDegree
 
     integer :: &
          iVertex, &
@@ -202,28 +400,7 @@ contains
          iCell, &
          iVelocityVertex
 
-    integer, dimension(:,:), pointer :: &
-         cellsOnVertex
-
-    integer, dimension(:), pointer :: &
-         interiorVertex, &
-         nEdgesOnCell
-
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
-
-    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
-
-    call MPAS_pool_get_array(velocity_variational, "variationalDenominator", variationalDenominator)
-
     if (trim(variationalDenominatorType) == "alternate") then
-
-       call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
-
-       call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
-       call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-
-       call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
-       call MPAS_pool_get_array(velocity_variational, "basisIntegralsMetric", basisIntegralsMetric)
 
        do iVertex = 1, nVertices
 
@@ -254,8 +431,6 @@ contains
        enddo ! iVertex
 
     else if (trim(variationalDenominatorType) == "original") then
-
-       call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
 
        do iVertex = 1, nVertices
           variationalDenominator(iVertex) = areaTriangle(iVertex)
