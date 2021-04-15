@@ -87,7 +87,8 @@ struct Functions
 
   using MemberType = typename KT::MemberType;
 
-  using Workspace = typename ekat::WorkspaceManager<Spack, Device>::Workspace;
+  using WorkspaceManager = typename ekat::WorkspaceManager<Spack, Device>;
+  using Workspace        = typename WorkspaceManager::Workspace;
 
   // This struct stores prognostic variables evolved by P3.
   struct P3PrognosticState {
@@ -956,6 +957,7 @@ struct Functions
     const P3DiagnosticOutputs& diagnostic_outputs,
     const P3Infrastructure& infrastructure,
     const P3HistoryOnly& history_only,
+    const WorkspaceManager& workspace_mgr,
     Int nj, // number of columns
     Int nk); // number of vertical cells per column
 

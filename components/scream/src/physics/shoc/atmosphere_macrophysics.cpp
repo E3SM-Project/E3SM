@@ -93,6 +93,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   // Tracer group
   add_group<Updated>("tracers",grid->name(),Bundling::Required);
 }
+
 // =========================================================================================
 void SHOCMacrophysics::
 set_updated_group (const FieldGroup<Real>& group)
@@ -114,6 +115,130 @@ set_updated_group (const FieldGroup<Real>& group)
 
   // Calculate number of advected tracers
   m_num_tracers = group.m_info->size();
+}
+
+// =========================================================================================
+int SHOCMacrophysics::requested_buffer_size_in_bytes() const
+{
+  const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
+  const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
+  const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
+
+  // Number of Reals needed by local views in the interface
+  const int interface_request = Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
+                                Buffer::num_2d_vector_mid*m_num_cols*nlev_packs*sizeof(Spack) +
+                                Buffer::num_2d_vector_int*m_num_cols*nlevi_packs*sizeof(Spack) +
+                                Buffer::num_2d_vector_tr*m_num_cols*num_tracer_packs*sizeof(Spack);
+
+  // Number of Reals needed by the WorkspaceManager passed to shoc_main
+  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const int n_wind_slots  = ekat::npack<Spack>(2)*Spack::n;
+  const int n_trac_slots  = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
+  const int wsm_request   = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
+
+  return interface_request + wsm_request;
+}
+
+// =========================================================================================
+void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
+{
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
+
+  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+
+  // 1d scalar views
+  m_buffer.cell_length = decltype(m_buffer.cell_length)(mem, m_num_cols);
+  mem += m_buffer.cell_length.size();
+  m_buffer.wpthlp_sfc = decltype(m_buffer.wpthlp_sfc)(mem, m_num_cols);
+  mem += m_buffer.wpthlp_sfc.size();
+  m_buffer.wprtp_sfc = decltype(m_buffer.wprtp_sfc)(mem, m_num_cols);
+  mem += m_buffer.wprtp_sfc.size();
+  m_buffer.upwp_sfc = decltype(m_buffer.upwp_sfc)(mem, m_num_cols);
+  mem += m_buffer.upwp_sfc.size();
+  m_buffer.vpwp_sfc = decltype(m_buffer.vpwp_sfc)(mem, m_num_cols);
+  mem += m_buffer.vpwp_sfc.size();
+
+  Spack* s_mem = reinterpret_cast<Spack*>(mem);
+
+  // 2d packed views
+  const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
+  const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
+  const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
+
+  m_buffer.rrho = decltype(m_buffer.rrho)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.rrho.size();
+  m_buffer.rrho_i = decltype(m_buffer.rrho_i)(s_mem, m_num_cols, nlevi_packs);
+  s_mem += m_buffer.rrho_i.size();
+  m_buffer.thv = decltype(m_buffer.thv)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.thv.size();
+  m_buffer.dz = decltype(m_buffer.dz)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.dz .size();
+  m_buffer.zt_grid = decltype(m_buffer.zt_grid)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.zt_grid.size();
+  m_buffer.zi_grid = decltype(m_buffer.zi_grid)(s_mem, m_num_cols, nlevi_packs);
+  s_mem += m_buffer.zi_grid.size();
+  m_buffer.wtracer_sfc = decltype(m_buffer.wtracer_sfc)(s_mem, m_num_cols, num_tracer_packs);
+  s_mem += m_buffer.wtracer_sfc.size();
+  m_buffer.wm_zt = decltype(m_buffer.wm_zt)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.wm_zt.size();
+  m_buffer.exner = decltype(m_buffer.exner)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.exner.size();
+  m_buffer.thlm = decltype(m_buffer.thlm)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.thlm.size();
+  m_buffer.qw = decltype(m_buffer.qw)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.qw.size();
+  m_buffer.s = decltype(m_buffer.s)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.s.size();
+  m_buffer.qv_copy = decltype(m_buffer.qv_copy)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.qv_copy.size();
+  m_buffer.qc_copy = decltype(m_buffer.qc_copy)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.qc_copy.size();
+  m_buffer.tke_copy = decltype(m_buffer.tke_copy)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.tke_copy.size();
+  m_buffer.shoc_ql2 = decltype(m_buffer.shoc_ql2)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.shoc_ql2.size();
+  m_buffer.shoc_mix = decltype(m_buffer.shoc_mix)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.shoc_mix.size();
+  m_buffer.isotropy = decltype(m_buffer.isotropy)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.isotropy.size();
+  m_buffer.w_sec = decltype(m_buffer.w_sec)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.w_sec.size();
+  m_buffer.thl_sec = decltype(m_buffer.thl_sec)(s_mem, m_num_cols, nlevi_packs);
+  s_mem += m_buffer.thl_sec.size();
+  m_buffer.qw_sec = decltype(m_buffer.qw_sec)(s_mem, m_num_cols, nlevi_packs);
+  s_mem += m_buffer.qw_sec.size();
+  m_buffer.qwthl_sec = decltype(m_buffer.qwthl_sec)(s_mem, m_num_cols, nlevi_packs);
+  s_mem += m_buffer.qwthl_sec.size();
+  m_buffer.wthl_sec = decltype(m_buffer.wthl_sec)(s_mem, m_num_cols, nlevi_packs);
+  s_mem += m_buffer.wthl_sec.size();
+  m_buffer.wqw_sec = decltype(m_buffer.wqw_sec)(s_mem, m_num_cols, nlevi_packs);
+  s_mem += m_buffer.wqw_sec.size();
+  m_buffer.wtke_sec = decltype(m_buffer.wtke_sec)(s_mem, m_num_cols, nlevi_packs);
+  s_mem += m_buffer.wtke_sec.size();
+  m_buffer.uw_sec = decltype(m_buffer.uw_sec)(s_mem, m_num_cols, nlevi_packs);
+  s_mem += m_buffer.uw_sec.size();
+  m_buffer.vw_sec = decltype(m_buffer.vw_sec)(s_mem, m_num_cols, nlevi_packs);
+  s_mem += m_buffer.vw_sec.size();
+  m_buffer.w3 = decltype(m_buffer.w3)(s_mem, m_num_cols, nlevi_packs);
+  s_mem += m_buffer.w3.size();
+  m_buffer.wqls_sec = decltype(m_buffer.wqls_sec)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.wqls_sec.size();
+  m_buffer.brunt = decltype(m_buffer.brunt)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.brunt.size();
+
+  // WSM data
+  m_buffer.wsm_data = s_mem;
+
+  // Compute workspace manager size to check used memory
+  // vs. requested memory
+  const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
+  const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
+  const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
+  s_mem += wsm_size;
+
+  int used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
+  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for SHOCMacrophysics.");
 }
 
 // =========================================================================================
@@ -142,31 +267,28 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   const auto& inv_qc_relvar    = m_shoc_fields_out["inv_qc_relvar"].get_reshaped_view<Spack**>();
   const auto& phis             = m_shoc_fields_in["phis"].get_reshaped_view<const Real*>();
 
-  const int nlev_packs = ekat::npack<Spack>(m_num_levs);
-  const int nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
-  const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
-
-  view_1d cell_length("cell_length",m_num_cols),
-          wpthlp_sfc("wpthlp_sfc",m_num_cols),
-          wprtp_sfc("wprtp_sfc",m_num_cols),
-          upwp_sfc("upwp_sfc",m_num_cols),
-          vpwp_sfc("vpwp_sfc",m_num_cols);
-
-  view_2d rrho("rrho",m_num_cols,nlev_packs),
-          rrho_i("rrhoi",m_num_cols,nlevi_packs),
-          thv("thv",m_num_cols,nlev_packs),
-          dz("dz",m_num_cols,nlev_packs),
-          zt_grid("zt_grid",m_num_cols,nlev_packs),
-          zi_grid("zi_grid",m_num_cols,nlevi_packs),
-          wtracer_sfc("wtracer_sfc",m_num_cols,num_tracer_packs),
-          wm_zt("wm_zt",m_num_cols,nlev_packs),
-          exner("exner",m_num_cols,nlev_packs),
-          thlm("thlm",m_num_cols,nlev_packs),
-          qw("qw",m_num_cols,nlev_packs),
-          s("s",m_num_cols,nlev_packs),
-          qv_copy("qv_copy",m_num_cols,nlev_packs),
-          qc_copy("qc_copy",m_num_cols,nlev_packs),
-          tke_copy("tke_copy",m_num_cols,nlev_packs);
+  // Alias local variables from temporary buffer
+  auto cell_length = m_buffer.cell_length;
+  auto wpthlp_sfc  = m_buffer.wpthlp_sfc;
+  auto wprtp_sfc   = m_buffer.wprtp_sfc;
+  auto upwp_sfc    = m_buffer.upwp_sfc;
+  auto vpwp_sfc    = m_buffer.vpwp_sfc;
+  auto rrho        = m_buffer.rrho;
+  auto rrho_i      = m_buffer.rrho_i;
+  auto thv         = m_buffer.thv;
+  auto dz          = m_buffer.dz;
+  auto zt_grid     = m_buffer.zt_grid;
+  auto zi_grid     = m_buffer.zi_grid;
+  auto wtracer_sfc = m_buffer.wtracer_sfc;
+  auto wm_zt       = m_buffer.wm_zt;
+  auto exner       = m_buffer.exner;
+  auto thlm        = m_buffer.thlm;
+  auto qw          = m_buffer.qw;
+  auto s           = m_buffer.s;
+  auto qv_copy     = m_buffer.qv_copy;
+  auto qc_copy     = m_buffer.qc_copy;
+  auto tke_copy    = m_buffer.tke_copy;
+  auto shoc_ql2    = m_buffer.shoc_ql2;
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,m_cell_area,
                                 T_mid,z_int,z_mid,p_mid,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
@@ -205,43 +327,24 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   input_output.shoc_ql      = shoc_preprocess.qc_copy;
 
   // Output Variables
-  output.pblh = m_shoc_fields_out["pbl_height"].get_reshaped_view<Real*>();
-
-  view_2d shoc_ql2("shoc_ql2",m_num_cols,nlev_packs);
+  output.pblh     = m_shoc_fields_out["pbl_height"].get_reshaped_view<Real*>();
   output.shoc_ql2 = shoc_ql2;
 
   // Ouput (diagnostic)
-  // TODO: A temporary buffer should be added to the AD for these local
-  //       views.
-  view_2d shoc_mix("shoc_mix",m_num_cols,nlev_packs);
-  view_2d isotropy("isotropy",m_num_cols,nlev_packs);
-  view_2d w_sec("w_sec",m_num_cols,nlev_packs);
-  view_2d thl_sec("thl_sec",m_num_cols,nlevi_packs);
-  view_2d qw_sec("qw_sec",m_num_cols,nlevi_packs);
-  view_2d qwthl_sec("qwthl_sec",m_num_cols,nlevi_packs);
-  view_2d wthl_sec("wthl_sec",m_num_cols,nlevi_packs);
-  view_2d wqw_sec("wqw_sec",m_num_cols,nlevi_packs);
-  view_2d wtke_sec("wtke_sec",m_num_cols,nlevi_packs);
-  view_2d uw_sec("uw_sec",m_num_cols,nlevi_packs);
-  view_2d vw_sec("vw_sec",m_num_cols,nlevi_packs);
-  view_2d w3("w3",m_num_cols,nlevi_packs);
-  view_2d wqls_sec("wqls_sec",m_num_cols,nlev_packs);
-  view_2d brunt("brunt",m_num_cols,nlev_packs);
-
-  history_output.shoc_mix  = shoc_mix;
-  history_output.isotropy  = isotropy;
-  history_output.w_sec     = w_sec;
-  history_output.thl_sec   = thl_sec;
-  history_output.qw_sec    = qw_sec;
-  history_output.qwthl_sec = qwthl_sec;
-  history_output.wthl_sec  = wthl_sec;
-  history_output.wqw_sec   = wqw_sec;
-  history_output.wtke_sec  = wtke_sec;
-  history_output.uw_sec    = uw_sec;
-  history_output.vw_sec    = vw_sec;
-  history_output.w3        = w3;
-  history_output.wqls_sec  = wqls_sec;
-  history_output.brunt     = brunt;
+  history_output.shoc_mix  = m_buffer.shoc_mix;
+  history_output.isotropy  = m_buffer.isotropy;
+  history_output.w_sec     = m_buffer.w_sec;
+  history_output.thl_sec   = m_buffer.thl_sec;
+  history_output.qw_sec    = m_buffer.qw_sec;
+  history_output.qwthl_sec = m_buffer.qwthl_sec;
+  history_output.wthl_sec  = m_buffer.wthl_sec;
+  history_output.wqw_sec   = m_buffer.wqw_sec;
+  history_output.wtke_sec  = m_buffer.wtke_sec;
+  history_output.uw_sec    = m_buffer.uw_sec;
+  history_output.vw_sec    = m_buffer.vw_sec;
+  history_output.w3        = m_buffer.w3;
+  history_output.wqls_sec  = m_buffer.wqls_sec;
+  history_output.brunt     = m_buffer.brunt;
 
   shoc_postprocess.set_variables(m_num_cols,m_num_levs,
                                  rrho,qv,qv_copy,qc,qc_copy,tke,tke_copy,shoc_ql2,
@@ -259,13 +362,14 @@ void SHOCMacrophysics::run_impl (const Real dt)
     it.second.sync_to_host();
   }
 
-  {
-    const auto nlev_packs = ekat::npack<Spack>(m_num_cols);
-    const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
-    Kokkos::parallel_for("shoc_preprocess",
-                         policy,
-                         shoc_preprocess);
-  }
+  const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
+  const auto nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
+  const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+
+  // Preprocessing of SHOC inputs
+  Kokkos::parallel_for("shoc_preprocess",
+                       policy,
+                       shoc_preprocess);
   Kokkos::fence();
 
 
@@ -281,17 +385,19 @@ void SHOCMacrophysics::run_impl (const Real dt)
   hdtime = dt;
   m_nadv = ekat::impl::max(hdtime/dt,sp(1));
 
+  // WorkspaceManager for internal local variables
+  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
+  const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(m_buffer.wsm_data, nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
+
   // Run shoc main
   SHF::shoc_main(m_num_cols, m_num_levs, m_num_levs+1, m_npbl, m_nadv, m_num_tracers, dt,
-                 input,input_output,output,history_output);
+                 workspace_mgr,input,input_output,output,history_output);
 
-  {
-    const auto nlev_packs = ekat::npack<Spack>(m_num_cols);
-    const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
-    Kokkos::parallel_for("shoc_postprocess",
-                         policy,
-                         shoc_postprocess);
-  }
+  // Postprocessing of SHOC outputs
+  Kokkos::parallel_for("shoc_postprocess",
+                       policy,
+                       shoc_postprocess);
   Kokkos::fence();
 
   // Get a copy of the current timestamp (at the beginning of the step) and

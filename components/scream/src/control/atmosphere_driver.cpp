@@ -327,6 +327,9 @@ void AtmosphereDriver::initialize_atm_procs ()
     m_atm_process_group->set_updated_group(group);
   }
 
+  // Initialize memory buffer for all atm processes
+  m_atm_process_group->initialize_atm_memory_buffer(memory_buffer);
+
   // Initialize the processes
   m_atm_process_group->initialize(m_current_ts);
 

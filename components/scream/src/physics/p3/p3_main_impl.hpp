@@ -914,6 +914,7 @@ Int Functions<S,D>
   const P3DiagnosticOutputs& diagnostic_outputs,
   const P3Infrastructure& infrastructure,
   const P3HistoryOnly& history_only,
+  const WorkspaceManager& workspace_mgr,
   Int nj,
   Int nk)
 {
@@ -925,8 +926,6 @@ Int Functions<S,D>
 
   const Int nk_pack = ekat::npack<Spack>(nk);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
-
-  ekat::WorkspaceManager<Spack, Device> workspace_mgr(nk_pack, 52, policy);
 
   // load constants into local vars
   const     Scalar inv_dt          = 1 / infrastructure.dt;

@@ -1,5 +1,4 @@
 #include "ekat/ekat_assert.hpp"
-#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
@@ -66,6 +65,85 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
 }  // RRTMGPRadiation::set_grids
 
+int RRTMGPRadiation::requested_buffer_size_in_bytes() const
+{
+  const int interface_request = Buffer::num_1d_ncol*m_ncol*sizeof(Real) +
+                                Buffer::num_2d_nlay*m_ncol*m_nlay*sizeof(Real) +
+                                Buffer::num_2d_nlay_p1*m_ncol*(m_nlay+1)*sizeof(Real) +
+                                Buffer::num_2d_nswbands*m_ncol*m_nswbands*sizeof(Real) +
+                                Buffer::num_3d_ngas*m_ncol*m_nlay*m_ngas*sizeof(Real);
+
+  return interface_request;
+} // RRTMGPRadiation::requested_buffer_size
+
+void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
+{
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
+
+  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+
+  // 1d array
+  m_buffer.mu0 = decltype(m_buffer.mu0)("mu0", mem, m_ncol);
+  mem += m_buffer.mu0.totElems();
+
+  // 2d arrays
+  m_buffer.p_lay = decltype(m_buffer.p_lay)("p_lay", mem, m_ncol, m_nlay);
+  mem += m_buffer.p_lay.totElems();
+  m_buffer.t_lay = decltype(m_buffer.t_lay)("t_lay", mem, m_ncol, m_nlay);
+  mem += m_buffer.t_lay.totElems();
+  m_buffer.p_del = decltype(m_buffer.p_del)("p_del", mem, m_ncol, m_nlay);
+  mem += m_buffer.p_del.totElems();
+  m_buffer.qc = decltype(m_buffer.qc)("qc", mem, m_ncol, m_nlay);
+  mem += m_buffer.qc.totElems();
+  m_buffer.qi = decltype(m_buffer.qi)("qi", mem, m_ncol, m_nlay);
+  mem += m_buffer.qi.totElems();
+  m_buffer.cldfrac_tot = decltype(m_buffer.cldfrac_tot)("cldfrac_tot", mem, m_ncol, m_nlay);
+  mem += m_buffer.cldfrac_tot.totElems();
+  m_buffer.eff_radius_qc = decltype(m_buffer.eff_radius_qc)("eff_radius_qc", mem, m_ncol, m_nlay);
+  mem += m_buffer.eff_radius_qc.totElems();
+  m_buffer.eff_radius_qi = decltype(m_buffer.eff_radius_qi)("eff_radius_qi", mem, m_ncol, m_nlay);
+  mem += m_buffer.eff_radius_qi.totElems();
+  m_buffer.tmp2d = decltype(m_buffer.tmp2d)("tmp2d", mem, m_ncol, m_nlay);
+  mem += m_buffer.tmp2d.totElems();
+  m_buffer.lwp = decltype(m_buffer.lwp)("lwp", mem, m_ncol, m_nlay);
+  mem += m_buffer.lwp.totElems();
+  m_buffer.iwp = decltype(m_buffer.iwp)("iwp", mem, m_ncol, m_nlay);
+  mem += m_buffer.iwp.totElems();
+  m_buffer.sw_heating = decltype(m_buffer.sw_heating)("sw_heating", mem, m_ncol, m_nlay);
+  mem += m_buffer.sw_heating.totElems();
+  m_buffer.lw_heating = decltype(m_buffer.lw_heating)("lw_heating", mem, m_ncol, m_nlay);
+  mem += m_buffer.lw_heating.totElems();
+  m_buffer.rad_heating = decltype(m_buffer.rad_heating)("rad_heating", mem, m_ncol, m_nlay);
+  mem += m_buffer.rad_heating.totElems();
+
+  m_buffer.p_lev = decltype(m_buffer.p_lev)("p_lev", mem, m_ncol, m_nlay+1);
+  mem += m_buffer.p_lev.totElems();
+  m_buffer.t_lev = decltype(m_buffer.t_lev)("t_lev", mem, m_ncol, m_nlay+1);
+  mem += m_buffer.t_lev.totElems();
+  m_buffer.sw_flux_up = decltype(m_buffer.sw_flux_up)("sw_flux_up", mem, m_ncol, m_nlay+1);
+  mem += m_buffer.sw_flux_up.totElems();
+  m_buffer.sw_flux_dn = decltype(m_buffer.sw_flux_dn)("sw_flux_dn", mem, m_ncol, m_nlay+1);
+  mem += m_buffer.sw_flux_dn.totElems();
+  m_buffer.sw_flux_dn_dir = decltype(m_buffer.sw_flux_dn_dir)("sw_flux_dn_dir", mem, m_ncol, m_nlay+1);
+  mem += m_buffer.sw_flux_dn_dir.totElems();
+  m_buffer.lw_flux_up = decltype(m_buffer.lw_flux_up)("lw_flux_up", mem, m_ncol, m_nlay+1);
+  mem += m_buffer.lw_flux_up.totElems();
+  m_buffer.lw_flux_dn = decltype(m_buffer.lw_flux_dn)("lw_flux_dn", mem, m_ncol, m_nlay+1);
+  mem += m_buffer.lw_flux_dn.totElems();
+
+  m_buffer.sfc_alb_dir = decltype(m_buffer.sfc_alb_dir)("surf_alb_direct", mem, m_ncol, m_nswbands);
+  mem += m_buffer.sfc_alb_dir.totElems();
+  m_buffer.sfc_alb_dif = decltype(m_buffer.sfc_alb_dif)("surf_alb_diffuse", mem, m_ncol, m_nswbands);
+  mem += m_buffer.sfc_alb_dif.totElems();
+
+  // 3d array
+  m_buffer.gas_vmr = decltype(m_buffer.gas_vmr)("gas_vmr", mem, m_ncol, m_nlay, m_ngas);
+  mem += m_buffer.gas_vmr.totElems();
+
+  int used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
+  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
+} // RRTMGPRadiation::init_buffers
+
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   // Names of active gases
   // TODO: this needs to be not hard-coded...I wanted to get these from
@@ -73,7 +151,7 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   // Maybe can store the gas names somewhere else?
   string1d gas_names_1d("gas_names",m_ngas);
   for (int igas = 1; igas <= m_ngas; igas++) {
-      gas_names_1d(igas) = m_gas_names[igas-1];
+    gas_names_1d(igas) = m_gas_names[igas-1];
   }
 
   // Initialize GasConcs object to pass to RRTMGP initializer;
@@ -108,25 +186,25 @@ void RRTMGPRadiation::run_impl (const Real dt) {
 
   // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
   // as the fastest index. For this reason we must copy the data.
-  auto p_lay = real2d("p_lay", m_ncol, m_nlay);
-  auto t_lay = real2d("t_lay", m_ncol, m_nlay);
-  auto p_lev = real2d("p_lev", m_ncol, m_nlay+1);
-  auto p_del = real2d ("p_del", m_ncol, m_nlay);
-  auto t_lev = real2d ("t_lev", m_ncol, m_nlay+1);
-  auto gas_vmr = real3d("gas_vmr", m_ncol, m_nlay, m_ngas);
-  auto sfc_alb_dir = real2d("surf_alb_direct", m_ncol, m_nswbands);
-  auto sfc_alb_dif = real2d("surf_alb_diffuse", m_ncol, m_nswbands);
-  auto mu0 = real1d("cos_zenith", m_ncol);
-  auto qc = real2d("qc", m_ncol, m_nlay);
-  auto qi = real2d("qi", m_ncol, m_nlay);
-  auto cldfrac_tot = real2d("cldfrac_tot", m_ncol, m_nlay);
-  auto rel = real2d("eff_radius_qc", m_ncol, m_nlay);
-  auto rei = real2d("eff_radius_qi", m_ncol, m_nlay);
-  auto sw_flux_up = real2d("SW_flux_up", m_ncol, m_nlay+1);
-  auto sw_flux_dn = real2d("SW_flux_dn", m_ncol, m_nlay+1);
-  auto sw_flux_dn_dir = real2d("SW_flux_dn_dir", m_ncol, m_nlay+1);
-  auto lw_flux_up = real2d("LW_flux_up", m_ncol, m_nlay+1);
-  auto lw_flux_dn = real2d("LW_flux_dn", m_ncol, m_nlay+1);
+  auto p_lay          = m_buffer.p_lay;
+  auto t_lay          = m_buffer.t_lay;
+  auto p_lev          = m_buffer.p_lev;
+  auto p_del          = m_buffer.p_del;
+  auto t_lev          = m_buffer.t_lev;
+  auto gas_vmr        = m_buffer.gas_vmr;
+  auto sfc_alb_dir    = m_buffer.sfc_alb_dir;
+  auto sfc_alb_dif    = m_buffer.sfc_alb_dif;
+  auto mu0            = m_buffer.mu0;
+  auto qc             = m_buffer.qc;
+  auto qi             = m_buffer.qi;
+  auto cldfrac_tot    = m_buffer.cldfrac_tot;
+  auto rel            = m_buffer.eff_radius_qc;
+  auto rei            = m_buffer.eff_radius_qi;
+  auto sw_flux_up     = m_buffer.sw_flux_up;
+  auto sw_flux_dn     = m_buffer.sw_flux_dn;
+  auto sw_flux_dn_dir = m_buffer.sw_flux_dn_dir;
+  auto lw_flux_up     = m_buffer.lw_flux_up;
+  auto lw_flux_dn     = m_buffer.lw_flux_dn;
 
   // Copy data from the FieldManager to the YAKL arrays
   {
@@ -136,16 +214,16 @@ void RRTMGPRadiation::run_impl (const Real dt) {
 
       mu0(i+1) = d_mu0(i);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlay), [&] (const int& k) {
-        p_lay(i+1,k+1) = d_pmid(i,k);
-        t_lay(i+1,k+1) = d_tmid(i,k);
-        p_del(i+1,k+1) = d_pdel(i,k);
-        qc(i+1,k+1)    = d_qc(i,k);
-        qi(i+1,k+1)    = d_qi(i,k);
+        p_lay(i+1,k+1)       = d_pmid(i,k);
+        t_lay(i+1,k+1)       = d_tmid(i,k);
+        p_del(i+1,k+1)       = d_pdel(i,k);
+        qc(i+1,k+1)          = d_qc(i,k);
+        qi(i+1,k+1)          = d_qi(i,k);
         cldfrac_tot(i+1,k+1) = d_cldfrac_tot(i,k);
-        rel(i+1,k+1)   = d_rel(i,k);
-        rei(i+1,k+1)   = d_rei(i,k);
-        p_lev(i+1,k+1) = d_pint(i,k);
-        t_lev(i+1,k+1) = d_tint(i,k);
+        rel(i+1,k+1)         = d_rel(i,k);
+        rei(i+1,k+1)         = d_rei(i,k);
+        p_lev(i+1,k+1)       = d_pint(i,k);
+        t_lev(i+1,k+1)       = d_tint(i,k);
 
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, m_ngas), [&] (const int& g) {
           gas_vmr(i+1,k+1,g+1) = d_gas_vmr(i,k,g);
@@ -162,32 +240,29 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     });
   }
   Kokkos::fence();
-
+  
   // Make GasConcs from gas_vmr and gas_names
-  // TODO: only allocate at initialization and 
+  // TODO: only allocate at initialization and
   // just update values here
   string1d gas_names_1d("gas_names",m_ngas);
   for (int igas = 1; igas <= m_ngas; igas++) {
-      gas_names_1d(igas) = m_gas_names[igas-1];
+    gas_names_1d(igas) = m_gas_names[igas-1];
   }
-  
+
   // Create and populate a GasConcs object to pass to RRTMGP driver
   GasConcs gas_concs;
   gas_concs.init(gas_names_1d,m_ncol,m_nlay);
-  real2d tmp2d;
-  tmp2d = real2d("tmp", m_ncol, m_nlay);
+  auto tmp2d = m_buffer.tmp2d;
   for (int igas = 1; igas <= m_ngas; igas++) {
-      parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
-          tmp2d(icol,ilay) = gas_vmr(icol,ilay,igas);
-      });
-      gas_concs.set_vmr(gas_names_1d(igas), tmp2d);
+    parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
+        tmp2d(icol,ilay) = gas_vmr(icol,ilay,igas);
+    });
+    gas_concs.set_vmr(gas_names_1d(igas), tmp2d);
   }
 
   // Compute layer cloud mass (per unit area)
-  real2d lwp;
-  real2d iwp;
-  lwp = real2d("lwp", m_ncol, m_nlay);
-  iwp = real2d("iwp", m_ncol, m_nlay);
+  auto lwp = m_buffer.lwp;
+  auto iwp = m_buffer.iwp;
   scream::rrtmgp::mixing_ratio_to_cloud_mass(qc, cldfrac_tot, p_del, lwp);
   scream::rrtmgp::mixing_ratio_to_cloud_mass(qi, cldfrac_tot, p_del, iwp);
   // Convert to g/m2 (needed by RRTMGP)
@@ -208,9 +283,9 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   );
 
   // Compute and apply heating rates
-  auto sw_heating  = real2d("sw_heating", m_ncol, m_nlay);
-  auto lw_heating  = real2d("lw_heating", m_ncol, m_nlay);
-  auto rad_heating = real2d("rad_heating", m_ncol, m_nlay);
+  auto sw_heating  = m_buffer.sw_heating;
+  auto lw_heating  = m_buffer.lw_heating;
+  auto rad_heating = m_buffer.rad_heating;
   rrtmgp::compute_heating_rate(
     sw_flux_up, sw_flux_dn, p_del, sw_heating
   );
