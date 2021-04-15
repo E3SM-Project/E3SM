@@ -872,7 +872,7 @@ set input_data_dir = `$xmlquery_exe DIN_LOC_ROOT --value`
 #NOTE:  CAM_NAMELIST_OPTS should NOT be used.  Instead, use the user_nl section after case_scripts.build
 
 # +++ 
-$xmlchange_exe --id CAM_CONFIG_OPTS --val "-mach $machine -phys cam5 -clubb_sgs -microphys p3 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates -nlev 72 -cosp"
+#$xmlchange_exe --id CAM_CONFIG_OPTS --val "-mach $machine -phys cam5 -clubb_sgs -microphys p3 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates -nlev 72 -cosp"
 # +++
 
 # Use atmosphere theta-l dynamical core
@@ -1022,6 +1022,7 @@ EOF
 
 cat >> user_nl_elm <<EOF
 
+finidat = '/global/cfs/cdirs/e3sm/shpundk/elm_inputdata/20201103.IELM.r05_oECv3.elm.r.0030-01-01-00000.nc'
 
 EOF
 

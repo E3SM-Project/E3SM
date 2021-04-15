@@ -1022,11 +1022,11 @@ EOF
 
  cat >> user_nl_elm <<EOF
 
-  finidat = '/compyfs/shpu881/E3SM_simulations/More_files_from_Wuyin/20200703.ICRUCLM45.r0125_oRRS18to6v3.clm2.r.2010-01-01-00000.nc'
+!  finidat = '/compyfs/shpu881/E3SM_simulations/More_files_from_Wuyin/20200703.ICRUCLM45.r0125_oRRS18to6v3.clm2.r.2010-01-01-00000.nc'
 !
 ! lnd spinup run uses simyear2000, starting from 1991-01-01
 ! following fsurdat used in  I-case spinup, must also be used here for F2010SC5-CMIP6 at ne120pg2_r0125_oRRS18to6v3
-  fsurdat = '/compyfs/shpu881/E3SM_simulations/More_files_from_Wuyin/surfdata_0.125x0.125_simyr2000_c190730.nc'
+!  fsurdat = '/compyfs/shpu881/E3SM_simulations/More_files_from_Wuyin/surfdata_0.125x0.125_simyr2000_c190730.nc'
 
 EOF
 
