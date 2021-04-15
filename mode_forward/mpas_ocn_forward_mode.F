@@ -267,22 +267,8 @@ module ocn_forward_mode
       ! Initialize mesh before anything else since many depend on it
       !-----------------------------------------------------------------
 
-      call ocn_init_routines_vert_coord(domain)
-      call ocn_init_routines_compute_min_max_level(domain)
-
-      ! find the maximum value of the meshDensity
-      if (config_maxMeshDensity < 0.0_RKIND) then
-        maxDensity=-1
-        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-        call mpas_pool_get_array(meshPool, 'meshDensity', meshDensity)
-        maxDensity = max(maxDensity, maxval(meshDensity))
-        call mpas_dmpar_max_real(domain % dminfo, maxDensity, maxDensity_global)
-        config_maxMeshDensity = maxDensity_global
-      endif
-
       ! fill the ocean mesh structure
       call ocn_meshCreate(domain)
-      call ocn_init_routines_setup_sign_and_index_fields()
 
       !-----------------------------------------------------------------
       ! Initialize submodules and fields that are required by others
