@@ -57,6 +57,9 @@ public:
   // Assignment (defaulted)
   FieldLayout& operator= (const FieldLayout&) = default;
 
+  // Create invalid layout
+  static FieldLayout invalid () { return FieldLayout({}); }
+
   // ----- Getters ----- //
 
   // Name and layout informations
@@ -98,6 +101,7 @@ protected:
 
 bool operator== (const FieldLayout& fl1, const FieldLayout& fl2);
 LayoutType get_layout_type (const std::vector<FieldTag>& field_tags);
+std::string print (const FieldLayout& l);
 
 // ========================== IMPLEMENTATION ======================= //
 

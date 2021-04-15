@@ -35,16 +35,9 @@ void FieldIdentifier::update_identifier () {
   // Create a verbose identifier string.
   m_identifier = m_name + "[" + m_grid_name + "]";
   if (m_layout) {
-    m_identifier += "<" + e2str(m_layout->tags()[0]);
-    for (int dim=1; dim<m_layout->rank(); ++dim) {
-      m_identifier += "," + e2str(m_layout->tags()[dim]);
-    }
-    m_identifier += ">(" + std::to_string(m_layout->dims()[0]);
-    for (int dim=1; dim<m_layout->rank(); ++dim) {
-      m_identifier += "," + std::to_string(m_layout->dims()[dim]);
-    }
-    m_identifier += ") [" + m_units.get_string() + "]";
+    m_identifier += print(*m_layout);
   }
+  m_identifier += ") [" + m_units.get_string() + "]";
 }
 
 // Free functions for identifiers comparison

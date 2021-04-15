@@ -135,5 +135,23 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
   return result;
 }
 
+std::string print (const FieldLayout& layout)
+{
+  if (layout.rank()==0) {
+    return "<>()";
+  }
+
+  std::string s;
+  s += "<" + e2str(layout.tags()[0]);
+  for (int dim=1; dim<layout.rank(); ++dim) {
+    s += "," + e2str(layout.tags()[dim]);
+  }
+  s += ">(" + std::to_string(layout.dims()[0]);
+  for (int dim=1; dim<layout.rank(); ++dim) {
+    s += "," + std::to_string(layout.dims()[dim]);
+  }
+
+  return s;
+}
 
 } // namespace scream
