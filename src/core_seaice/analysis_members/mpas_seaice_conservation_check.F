@@ -258,7 +258,7 @@ contains
 
       do iHemisphere = 1, nHemispheres
          domainArea(iHemisphere) = sumArrayOut(iHemisphere)
-      enddo ! iCell
+      enddo ! iHemisphere
 
       ! cleanup
       deallocate(sumArray)
@@ -614,7 +614,7 @@ contains
 
       do iHemisphere = 1, nHemispheres
          accumulatedSeaIceArea(iHemisphere) = accumulatedSeaIceArea(iHemisphere) + sumArrayOut(iHemisphere)
-      enddo ! iCell
+      enddo ! iHemisphere
 
       ! cleanup
       deallocate(sumArray)
@@ -837,9 +837,9 @@ contains
 
          do iCell = 1, nCellsSolve
 
-            oceanHeatCell         = oceanHeatFluxArea(iCell) * areaCell(iCell)
-            freezingPotentialCell = max(0.0_RKIND, freezingMeltingPotentialInitial(iCell)) * areaCell(iCell)
-            snowfallHeatCell      = - snowfallRate(iCell) * iceAreaCellInitial(iCell) * areaCell(iCell) * Lfresh
+            oceanHeatCell         = -oceanHeatFluxArea(iCell) * areaCell(iCell)
+            freezingPotentialCell = -max(0.0_RKIND, freezingMeltingPotentialInitial(iCell)) * areaCell(iCell)
+            snowfallHeatCell      = -snowfallRate(iCell) * iceAreaCellInitial(iCell) * areaCell(iCell) * Lfresh
             latentHeatCell        = evaporativeWaterFlux(iCell) * iceAreaCell(iCell) * areaCell(iCell) * Lvap
 
             do iHemisphere = 1, nHemispheres
@@ -985,8 +985,8 @@ contains
                energyConsSurfaceHeatFlux(:) &
              + energyConsSnowfallHeat(:) &
              + energyConsLatentHeat(:) &
-             - energyConsOceanHeatFlux(:) &
-             - energyConsFreezingPotential(:)
+             + energyConsOceanHeatFlux(:) &
+             + energyConsFreezingPotential(:)
 
          ! absolute error
          call MPAS_pool_get_array(conservationCheckEnergyAMPool, "absoluteEnergyError", absoluteEnergyError)
@@ -1003,7 +1003,7 @@ contains
          energyConsLatentHeat(:)            = energyConsLatentHeat(:)            * fluxScale
          energyConsOceanHeatFlux(:)         = energyConsOceanHeatFlux(:)         * fluxScale
          energyConsFreezingPotential(:)     = energyConsFreezingPotential(:)     * fluxScale
-         netEnergyFlux(:)                    = netEnergyFlux(:)                    * fluxScale
+         netEnergyFlux(:)                   = netEnergyFlux(:)                   * fluxScale
 
          ! relative flux error
          call MPAS_pool_get_array(conservationCheckEnergyAMPool, "relativeEnergyError", relativeEnergyError)
@@ -1215,7 +1215,7 @@ contains
             rainfallCell         = rainfallRate(iCell) * iceAreaCellInitial(iCell) * areaCell(iCell)
             snowfallCell         = snowfallRate(iCell) * iceAreaCellInitial(iCell) * areaCell(iCell)
             evaporativeWaterCell = evaporativeWaterFlux(iCell) * iceAreaCell(iCell) * areaCell(iCell)
-            oceanFreshWaterCell  = oceanFreshWaterFluxArea(iCell) * areaCell(iCell)
+            oceanFreshWaterCell  = -oceanFreshWaterFluxArea(iCell) * areaCell(iCell)
 
             do iHemisphere = 1, nHemispheres
                iSumPrev = (iHemisphere-1) * nVars
@@ -1306,7 +1306,7 @@ contains
                 massConsRainfallRate(:) &
               + massConsSnowfallRate(:) &
               + massConsEvaporation(:) &
-              - massConsFreshWater(:) &
+              + massConsFreshWater(:) &
               + massConsFrazilWater(:)
 
          ! absolute error
@@ -1319,7 +1319,7 @@ contains
          massConsEvaporation(:)  = massConsEvaporation(:)  * fluxScale
          massConsFreshWater(:)   = massConsFreshWater(:)   * fluxScale
          massConsFrazilWater(:)  = massConsFrazilWater(:)  * fluxScale
-         netMassFlux(:)             = netMassFlux(:)             * fluxScale
+         netMassFlux(:)          = netMassFlux(:)          * fluxScale
 
          ! compute the final energy error
          call MPAS_pool_get_array(conservationCheckMassAMPool, "relativeMassError", relativeMassError)
@@ -1500,7 +1500,7 @@ contains
 
          do iCell = 1, nCellsSolve
 
-            oceanSaltCell = oceanSaltFluxArea(iCell) * areaCell(iCell)
+            oceanSaltCell = -oceanSaltFluxArea(iCell) * areaCell(iCell)
 
             do iHemisphere = 1, nHemispheres
                iSumPrev = (iHemisphere-1) * nVars
@@ -1545,7 +1545,7 @@ contains
          iSumPrev = (iHemisphere-1) * nVars
          saltConsOceanSaltFlux (iHemisphere) = saltConsOceanSaltFlux (iHemisphere) + sumArrayOut(iSumPrev+1)
          saltConsFrazilSaltFlux(iHemisphere) = saltConsFrazilSaltFlux(iHemisphere) + sumArrayOut(iSumPrev+2)
-      enddo ! iCell
+      enddo ! iHemisphere
 
       ! cleanup
       deallocate(sumArray)
@@ -1580,7 +1580,7 @@ contains
          ! calculate the final net salt flux to the ice
          call MPAS_pool_get_array(conservationCheckSaltAMPool, "netSaltFlux", netSaltFlux)
          netSaltFlux(:) = &
-              - saltConsOceanSaltFlux(:) &
+              + saltConsOceanSaltFlux(:) &
               + saltConsFrazilSaltFlux(:)
 
          ! absolute error
