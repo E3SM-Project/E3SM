@@ -4,6 +4,7 @@
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_manager.hpp"
+#include "share/field/field_request.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
 #include "share/grid/grids_manager.hpp"
@@ -280,7 +281,7 @@ protected:
   // Group requests
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid, const int ps, const Bundling b,
-                  const GroupRequest* p, const ChildGroupRequestType t, const std::list<std::string>& excl)
+                  const GroupRequest* p, const Relationship t, const std::list<std::string>& excl)
   { add_group<RT>(GroupRequest(name,grid,ps,b,p,t,excl)); }
 
   template<RequestType RT>
