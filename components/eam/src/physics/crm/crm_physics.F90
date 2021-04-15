@@ -3,11 +3,8 @@
 #endif
 
 module crm_physics
-
 !---------------------------------------------------------------------------------------------------
-! 
 ! Purpose: Provides the interface to the crm code for the MMF configuration
-! 
 !---------------------------------------------------------------------------------------------------
    use shr_kind_mod,    only: r8 => shr_kind_r8
    use shr_sys_mod,     only: shr_sys_flush
@@ -28,31 +25,7 @@ module crm_physics
    public :: crm_physics_init
    public :: crm_physics_tend
    public :: crm_surface_flux_bypass_tend
-   public :: crm_recall_state_tend
-   public :: crm_save_state_tend
    public :: m2005_effradius
-
-   integer :: crm_qaerwat_idx, crm_dgnumwet_idx
-   ! integer :: prec_dp_idx, snow_dp_idx, prec_sh_idx, snow_sh_idx
-   integer :: prec_sed_idx, snow_sed_idx, snow_str_idx, prec_pcw_idx, snow_pcw_idx
-   integer :: cldo_idx, cld_idx, concld_idx, iciwp_idx, iclwp_idx
-
-   ! Physics buffer fields normally registered by offline parameterizations
-   integer :: qme_idx
-   integer :: prain_idx
-   integer :: nevapr_idx
-   integer :: wsedl_idx
-   integer :: rei_idx
-   integer :: rel_idx
-   integer :: dei_idx
-   integer :: mu_idx
-   integer :: prer_evap_idx
-   integer :: lambdac_idx
-   integer :: iciwpst_idx
-   integer :: iclwpst_idx
-   integer :: des_idx
-   integer :: icswp_idx
-   integer :: cldfsnow_idx
 
    ! Constituent names
    character(len=8), parameter :: cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
@@ -74,7 +47,6 @@ module crm_physics
    integer :: prec_dp_idx     = -1
    integer :: snow_dp_idx     = -1
    integer :: ttend_dp_idx    = -1
-
    integer :: icwmrsh_idx     = -1
    integer :: rprdsh_idx      = -1
    integer :: rprdtot_idx     = -1
@@ -83,35 +55,32 @@ module crm_physics
    integer :: nevapr_shcu_idx = -1
    integer :: prec_sh_idx     = -1
    integer :: snow_sh_idx     = -1
+   integer :: prec_sed_idx    = -1
+   integer :: snow_sed_idx    = -1
+   integer :: snow_str_idx    = -1
+   integer :: prec_pcw_idx    = -1
+   integer :: snow_pcw_idx    = -1
+   integer :: cldo_idx        = -1
+   integer :: cld_idx         = -1
+   integer :: concld_idx      = -1
+   integer :: qme_idx         = -1
+   integer :: prain_idx       = -1
+   integer :: nevapr_idx      = -1
+   integer :: wsedl_idx       = -1
+   integer :: rei_idx         = -1
+   integer :: rel_idx         = -1
+   integer :: dei_idx         = -1
+   integer :: mu_idx          = -1
+   integer :: prer_evap_idx   = -1
+   integer :: lambdac_idx     = -1
+   integer :: iciwpst_idx     = -1
+   integer :: iclwpst_idx     = -1
+   integer :: des_idx         = -1
+   integer :: icswp_idx       = -1
+   integer :: cldfsnow_idx    = -1
 
-   integer :: ast_idx         = -1 ! stratiform cloud fraction index in physics buffer
-   integer :: aist_idx        = -1 ! ice stratiform cloud fraction index in physics buffer
-   integer :: alst_idx        = -1 ! liquid stratiform cloud fraction index in physics buffer
-   integer :: qist_idx        = -1 ! ice stratiform in-cloud IWC 
-   integer :: qlst_idx        = -1 ! liquid stratiform in-cloud LWC  
-   integer :: fice_idx        = -1
-
-   integer :: qcwat_idx       = -1 ! qcwat index in physics buffer
-   integer :: lcwat_idx       = -1 ! lcwat index in physics buffer
-   integer :: iccwat_idx      = -1 ! iccwat index in physics buffer
-   integer :: nlwat_idx       = -1 ! nlwat index in physics buffer
-   integer :: niwat_idx       = -1 ! niwat index in physics buffer
-   integer :: tcwat_idx       = -1 ! tcwat index in physics buffer
-
-   real(r8),pointer                        :: acldy_cen_tbeg(:,:)        ! cloud fraction
+   real(r8), pointer                       :: acldy_cen_tbeg(:,:)        ! cloud fraction
    real(r8), pointer, dimension(:,:)       :: cldo
-
-   type(physics_state)                     :: state_save
-   type(physics_tend)                      :: tend_save
-   real(r8), dimension(:,:), allocatable   :: cldo_save     ! saved cloud fraction
-   real(r8), dimension(:,:,:), allocatable :: q_aero        ! used to keep aerosol changes from offline physics
-#ifdef MODAL_AERO
-   real(r8), dimension(:,:,:), allocatable :: qqcw_save
-   real(r8), dimension(:,:,:), allocatable :: qqcw_all
-   real(r8), dimension(:,:,:), allocatable :: dgnumwet_save
-   real(r8),pointer  :: dgnumwet(:,:,:)
-#endif
-
 
 contains
 !===================================================================================================
@@ -119,9 +88,7 @@ contains
 
 subroutine crm_physics_register()
 !---------------------------------------------------------------------------------------------------
-! 
 ! Purpose:  add necessary fields into physics buffer
-!
 !---------------------------------------------------------------------------------------------------
    use spmd_utils,          only: masterproc
    use physconst,           only: cpair, mwh2o, mwdry
@@ -260,8 +227,6 @@ subroutine crm_physics_register()
    call pbuf_add_field('ICIWPST', 'physpkg',dtype_r8,(/pcols,pver/), iciwpst_idx)    ! Stratiform only in cloud ice water path for radiation
    call pbuf_add_field('ICLWPST', 'physpkg',dtype_r8,(/pcols,pver/), iclwpst_idx)    ! Stratiform in cloud liquid water path for radiation
    call pbuf_add_field('DES',     'physpkg',dtype_r8,(/pcols,pver/), des_idx)        ! Snow effective diameter for radiation
-   call pbuf_add_field('ICIWP',   'physpkg',dtype_r8,(/pcols,pver/), iciwp_idx)      ! In cloud ice water path for radiation
-   call pbuf_add_field('ICLWP',   'physpkg',dtype_r8,(/pcols,pver/), iclwp_idx)      ! In cloud liquid water path for radiation
    call pbuf_add_field('ICSWP',   'physpkg',dtype_r8,(/pcols,pver/), icswp_idx)      ! In cloud snow water path for radiation
    call pbuf_add_field('CLDFSNOW','physpkg',dtype_r8,(/pcols,pver,dyn_time_lvls/), cldfsnow_idx) ! Cloud fraction for liquid drops + snow
 
@@ -324,12 +289,8 @@ subroutine crm_physics_register()
    call pbuf_add_field('NEVAPR_DPCU','physpkg',dtype_r8,(/pcols,pver/),nevapr_dpcu_idx)
    call pbuf_add_field('PREC_DP',    'physpkg',dtype_r8,(/pcols/),     prec_dp_idx)
    call pbuf_add_field('SNOW_DP',    'physpkg',dtype_r8,(/pcols/),     snow_dp_idx)
-
    call pbuf_add_field('SH_FRAC', 'physpkg', dtype_r8, (/pcols,pver/), idx) 
    call pbuf_add_field('DP_FRAC', 'physpkg', dtype_r8, (/pcols,pver/), idx) 
-
-   if (use_gw_convect) call pbuf_add_field('TTEND_DP','physpkg',dtype_r8,(/pcols,pver/),ttend_dp_idx)
-
    call pbuf_add_field('ICWMRSH',    'physpkg',dtype_r8,(/pcols,pver/),icwmrsh_idx )
    call pbuf_add_field('RPRDSH',     'physpkg',dtype_r8,(/pcols,pver/),rprdsh_idx )
    call pbuf_add_field('RPRDTOT',    'physpkg',dtype_r8,(/pcols,pver/),rprdtot_idx )
@@ -338,11 +299,11 @@ subroutine crm_physics_register()
    call pbuf_add_field('NEVAPR_SHCU','physpkg',dtype_r8,(/pcols,pver/),nevapr_shcu_idx )
    call pbuf_add_field('PREC_SH',    'physpkg',dtype_r8,(/pcols/),     prec_sh_idx )
    call pbuf_add_field('SNOW_SH',    'physpkg',dtype_r8,(/pcols/),     snow_sh_idx )
-
    call pbuf_add_field('cush',       'global'  ,dtype_r8,(/pcols,dyn_time_lvls/), idx )  
+   call pbuf_add_field('AST',        'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), idx)
+   call pbuf_add_field('FICE',       'physpkg', dtype_r8, (/pcols,pver/), idx)
 
-   call pbuf_add_field('AST',      'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), ast_idx)
-   call pbuf_add_field('FICE',     'physpkg', dtype_r8, (/pcols,pver/), fice_idx)
+   if (use_gw_convect) call pbuf_add_field('TTEND_DP','physpkg',dtype_r8,(/pcols,pver/),ttend_dp_idx)
 
    !----------------------------------------------------------------------------
    !----------------------------------------------------------------------------
@@ -354,13 +315,11 @@ end subroutine crm_physics_register
 
 subroutine crm_physics_init(state, pbuf2d, species_class)
 !---------------------------------------------------------------------------------------------------
-! 
 ! Purpose: initialize some variables, and add necessary fields into output fields 
-!
 !---------------------------------------------------------------------------------------------------
    use time_manager,          only: is_first_step
    use physics_buffer,        only: physics_buffer_desc, pbuf_get_index, pbuf_set_field
-   use phys_control,          only: phys_getopts
+   use phys_control,          only: phys_getopts, use_gw_convect
    use crm_history,           only: crm_history_init
    use cam_history,    only: addfld
    use constituents,   only: apcnst, bpcnst, cnst_name, cnst_longname, cnst_get_ind
@@ -378,7 +337,7 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    !----------------------------------------------------------------------------
    ! local variables
    integer :: m, mm
-   integer :: ncnst = 8
+   integer :: ncnst
    integer :: ierror   ! Error code
    logical :: use_ECPP
    logical :: use_MMF_VT
@@ -397,60 +356,31 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    end if
 #endif
 
-   allocate (cldo_save(pcols,pver), stat=ierror)
-   if ( ierror /= 0 ) call endrun('CRM_PHYSICS_INIT error: allocation error cldo_save')
-
-   allocate (q_aero(pcols,pver,pcnst), stat=ierror)
-   if ( ierror /= 0 ) call endrun('CRM_PHYSICS_INIT error: allocation error q_aero')
-
-#ifdef MODAL_AERO
-   allocate (qqcw_save(pcols,pver,pcnst), stat=ierror)
-   if ( ierror /= 0 ) call endrun('CRM_PHYSICS_INIT error: allocation error qqcw_save')
-
-   allocate (qqcw_all(pcols,pver,pcnst), stat=ierror)
-   if ( ierror /= 0 ) call endrun('CRM_PHYSICS_INIT error: allocation error qqcw_all')
-
-   allocate (dgnumwet_save(pcols,pver,ntot_amode), stat=ierror)
-   if ( ierror /= 0 ) call endrun('CRM_PHYSICS_INIT error: allocation error dgnumwet')
-#endif
-
    call crm_history_init(species_class)
 
-   ! Register history variables
+   ! Register contituent history variables (previously added by micro_mg_cam.F90)
+   ncnst = size(cnst_names)
    do m = 1, ncnst
       call cnst_get_ind(cnst_names(m), mm)
       if ( any(mm == (/ ixcldliq, ixcldice, ixrain, ixsnow /)) ) then
          ! mass mixing ratios
          call addfld(cnst_name(mm), (/ 'lev' /), 'A', 'kg/kg', cnst_longname(mm)                   )
-         ! call addfld(sflxnam(mm),    horiz_only, 'A',   'kg/m2/s', trim(cnst_name(mm))//' surface flux')
       else if ( any(mm == (/ ixnumliq, ixnumice, ixnumrain, ixnumsnow /)) ) then
          ! number concentrations
          call addfld(cnst_name(mm), (/ 'lev' /), 'A', '1/kg', cnst_longname(mm)                   )
-         ! call addfld(sflxnam(mm),    horiz_only, 'A',   '1/m2/s', trim(cnst_name(mm))//' surface flux')
       else
          call endrun( "crm_physics_init: Could not call addfld for constituent with unknown units.")
       endif
    end do
 
-   call addfld(apcnst(ixcldliq), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' after physics'  )
-   call addfld(apcnst(ixcldice), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldice))//' after physics'  )
-   call addfld(bpcnst(ixcldliq), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' before physics' )
-   call addfld(bpcnst(ixcldice), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldice))//' before physics' )
-   
-   call addfld(apcnst(ixrain), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixrain))//' after physics'  )
-   call addfld(apcnst(ixsnow), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixsnow))//' after physics'  )
-   call addfld(bpcnst(ixrain), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixrain))//' before physics' )
-   call addfld(bpcnst(ixsnow), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixsnow))//' before physics' )
-
-   prec_dp_idx  = pbuf_get_index('PREC_DP')
-   snow_dp_idx  = pbuf_get_index('SNOW_DP')
-   prec_sh_idx  = pbuf_get_index('PREC_SH')
-   snow_sh_idx  = pbuf_get_index('SNOW_SH')
-   prec_sed_idx = pbuf_get_index('PREC_SED')
-   snow_sed_idx = pbuf_get_index('SNOW_SED')
-   snow_str_idx = pbuf_get_index('SNOW_STR')
-   prec_pcw_idx = pbuf_get_index('PREC_PCW')
-   snow_pcw_idx = pbuf_get_index('SNOW_PCW')
+   call addfld(apcnst(ixcldliq), (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' after physics'  )
+   call addfld(apcnst(ixcldice), (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixcldice))//' after physics'  )
+   call addfld(bpcnst(ixcldliq), (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixcldliq))//' before physics' )
+   call addfld(bpcnst(ixcldice), (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixcldice))//' before physics' )
+   call addfld(apcnst(ixrain),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixrain))//' after physics'  )
+   call addfld(apcnst(ixsnow),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixsnow))//' after physics'  )
+   call addfld(bpcnst(ixrain),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixrain))//' before physics' )
+   call addfld(bpcnst(ixsnow),   (/'lev'/), 'A', 'kg/kg', trim(cnst_name(ixsnow))//' before physics' )
 
    if (use_MMF_VT) then
       ! initialize variance transport tracers
@@ -463,15 +393,28 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       end do
    end if
 
+   ! Get pbuf indices
+   prec_dp_idx  = pbuf_get_index('PREC_DP')
+   snow_dp_idx  = pbuf_get_index('SNOW_DP')
+   prec_sh_idx  = pbuf_get_index('PREC_SH')
+   snow_sh_idx  = pbuf_get_index('SNOW_SH')
+   prec_sed_idx = pbuf_get_index('PREC_SED')
+   snow_sed_idx = pbuf_get_index('SNOW_SED')
+   snow_str_idx = pbuf_get_index('SNOW_STR')
+   prec_pcw_idx = pbuf_get_index('PREC_PCW')
+   snow_pcw_idx = pbuf_get_index('SNOW_PCW')
+
+   ! Initialize pbuf variables
    if (is_first_step()) then
-      call pbuf_set_field(pbuf2d, cldo_idx,   0._r8)
-      call pbuf_set_field(pbuf2d, prer_evap_idx,  0._r8)
+      call pbuf_set_field(pbuf2d, cldo_idx,      0._r8)
+      call pbuf_set_field(pbuf2d, prer_evap_idx, 0._r8)
+
       call pbuf_set_field(pbuf2d, pbuf_get_index('ICWMRDP')    , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('RPRDDP')     , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('NEVAPR_DPCU'), 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('PREC_DP')    , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('SNOW_DP')    , 0._r8)
-      call pbuf_set_field(pbuf2d, pbuf_get_index('TTEND_DP')   , 0._r8)
+
       call pbuf_set_field(pbuf2d, pbuf_get_index('ICWMRSH')    , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('RPRDSH')     , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('RPRDTOT')    , 0._r8)
@@ -482,7 +425,9 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       call pbuf_set_field(pbuf2d, pbuf_get_index('ICIWPST')    , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('ICLWPST')    , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('ICSWP')      , 0._r8)
-      call pbuf_set_field(pbuf2d, pbuf_get_index('CLDFSNOW')      , 0._r8)
+      call pbuf_set_field(pbuf2d, pbuf_get_index('CLDFSNOW')   , 0._r8)
+
+      if (use_gw_convect) call pbuf_set_field(pbuf2d, pbuf_get_index('TTEND_DP')   , 0._r8)
       
    end if
 
@@ -494,13 +439,9 @@ end subroutine crm_physics_init
 subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                             species_class, crm_ecpp_output, mmf_clear_rh, &
                             mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
-
    !------------------------------------------------------------------------------------------------
-   !
    ! Purpose: CRM interface for the MMF configuration to update GCM state
-   ! 
    ! Original Author: Marat Khairoutdinov
-   ! 
    !------------------------------------------------------------------------------------------------
    use ppgrid
    use perf_mod
@@ -612,7 +553,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(r8) :: ideep_crm(pcols)                    ! gathering array for convective columns
    logical  :: ls, lu, lv, lq(pcnst)               ! flags for updating ptend
    logical  :: use_ECPP                            ! flag for ECPP mode
-   character(len=16) :: microp_scheme              ! GCM microphysics scheme
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
    logical(c_bool):: use_MMF_VT                    ! flag for MMF variance transport (for C++ CRM)
@@ -630,10 +570,15 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(crm_rknd), dimension(pcols) :: crm_angle
 
    ! surface flux variables for using adjusted fluxes from flux_avg_run
-   real(crm_rknd), pointer, dimension(:) :: shf_tmp
-   real(crm_rknd), pointer, dimension(:) :: lhf_tmp
-   real(crm_rknd), pointer, dimension(:) :: wsx_tmp
-   real(crm_rknd), pointer, dimension(:) :: wsy_tmp
+   real(crm_rknd), pointer, dimension(:) :: shf_ptr
+   real(crm_rknd), pointer, dimension(:) :: lhf_ptr
+   real(crm_rknd), pointer, dimension(:) :: wsx_ptr
+   real(crm_rknd), pointer, dimension(:) :: wsy_ptr
+
+   real(crm_rknd), dimension(pcols) :: shf_tmp
+   real(crm_rknd), dimension(pcols) :: lhf_tmp
+   real(crm_rknd), dimension(pcols) :: wsx_tmp
+   real(crm_rknd), dimension(pcols) :: wsy_tmp
 
    ! CRM types
    type(crm_state_type)  :: crm_state
@@ -994,10 +939,14 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 
       ! Set surface flux variables
       if (phys_do_flux_avg()) then
-         call pbuf_get_field(pbuf, pbuf_get_index('LHFLX'), shf_tmp)
-         call pbuf_get_field(pbuf, pbuf_get_index('SHFLX'), lhf_tmp)
-         call pbuf_get_field(pbuf, pbuf_get_index('TAUX'),  wsx_tmp)
-         call pbuf_get_field(pbuf, pbuf_get_index('TAUY'),  wsy_tmp)
+         call pbuf_get_field(pbuf, pbuf_get_index('LHFLX'), shf_ptr)
+         call pbuf_get_field(pbuf, pbuf_get_index('SHFLX'), lhf_ptr)
+         call pbuf_get_field(pbuf, pbuf_get_index('TAUX'),  wsx_ptr)
+         call pbuf_get_field(pbuf, pbuf_get_index('TAUY'),  wsy_ptr)
+         shf_tmp = shf_ptr
+         lhf_tmp = lhf_ptr
+         wsx_tmp = wsx_ptr
+         wsy_tmp = wsy_ptr
       else
          shf_tmp = cam_in%shf
          lhf_tmp = cam_in%lhf
@@ -1170,11 +1119,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ttend_dp_idx = pbuf_get_index('TTEND_DP')
       if (ttend_dp_idx > 0) then
          call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
-         if ( allocated(ptend%s) ) then
-            ttend_dp(:state%ncol,:pver) = ptend%s(:state%ncol,:pver)/cpair
-         else
-            ttend_dp(:state%ncol,:pver) = 0.0_r8
-         endif
+         ttend_dp(:ncol,:pver) = ptend%s(:ncol,:pver)/cpair
       end if
 
       !---------------------------------------------------------------------------------------------
@@ -1316,60 +1261,57 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 !---------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------
 
-      call phys_getopts(microp_scheme_out=microp_scheme)
-      if (microp_scheme .eq. 'MG' ) then
 #ifdef m2005
-         if (MMF_microphysics_scheme .eq. 'm2005') then
-            call cnst_get_ind('NUMLIQ', ixnumliq)
-            call cnst_get_ind('NUMICE', ixnumice)
-            call cnst_get_ind('RAINQM', ixrain)   
-            call cnst_get_ind('SNOWQM', ixsnow)   
-            call cnst_get_ind('NUMRAI', ixnumrain)
-            call cnst_get_ind('NUMSNO', ixnumsnow)
-            ptend%lq(ixnumliq)  = .TRUE.
-            ptend%lq(ixnumice)  = .TRUE.
-            ptend%q(:,:,ixnumliq)  = 0._r8
-            ptend%q(:,:,ixnumice)  = 0._r8
+      if (MMF_microphysics_scheme .eq. 'm2005') then
+         call cnst_get_ind('NUMLIQ', ixnumliq)
+         call cnst_get_ind('NUMICE', ixnumice)
+         call cnst_get_ind('RAINQM', ixrain)   
+         call cnst_get_ind('SNOWQM', ixsnow)   
+         call cnst_get_ind('NUMRAI', ixnumrain)
+         call cnst_get_ind('NUMSNO', ixnumsnow)
+         ptend%lq(ixnumliq)  = .TRUE.
+         ptend%lq(ixnumice)  = .TRUE.
+         ptend%q(:,:,ixnumliq)  = 0._r8
+         ptend%q(:,:,ixnumice)  = 0._r8
 #ifdef ECPP
-            ptend%lq(ixrain)    = .TRUE. 
-            ptend%lq(ixsnow)    = .TRUE. 
-            ptend%lq(ixnumrain) = .TRUE. 
-            ptend%lq(ixnumsnow) = .TRUE. 
-            ptend%q(:,:,ixrain)    = 0._r8 
-            ptend%q(:,:,ixsnow)    = 0._r8 
-            ptend%q(:,:,ixnumrain) = 0._r8 
-            ptend%q(:,:,ixnumsnow) = 0._r8 
+         ptend%lq(ixrain)    = .TRUE. 
+         ptend%lq(ixsnow)    = .TRUE. 
+         ptend%lq(ixnumrain) = .TRUE. 
+         ptend%lq(ixnumsnow) = .TRUE. 
+         ptend%q(:,:,ixrain)    = 0._r8 
+         ptend%q(:,:,ixsnow)    = 0._r8 
+         ptend%q(:,:,ixnumrain) = 0._r8 
+         ptend%q(:,:,ixnumsnow) = 0._r8 
 #endif /* ECPP */
 
-            do i = 1, ncol
-            do k = 1, crm_nz 
-               m = pver-k+1
-               do ii = 1, crm_nx
-               do jj = 1, crm_ny
-                 ptend%q(i,m,ixnumliq)  = ptend%q(i,m,ixnumliq)  + crm_state%nc(i,ii,jj,k) 
-                 ptend%q(i,m,ixnumice)  = ptend%q(i,m,ixnumice)  + crm_state%ni(i,ii,jj,k)
+         do i = 1, ncol
+         do k = 1, crm_nz 
+            m = pver-k+1
+            do ii = 1, crm_nx
+            do jj = 1, crm_ny
+              ptend%q(i,m,ixnumliq)  = ptend%q(i,m,ixnumliq)  + crm_state%nc(i,ii,jj,k) 
+              ptend%q(i,m,ixnumice)  = ptend%q(i,m,ixnumice)  + crm_state%ni(i,ii,jj,k)
 #ifdef ECPP
-                 ptend%q(i,m,ixrain)    = ptend%q(i,m,ixrain)    + crm_state%qr(i,ii,jj,k)
-                 ptend%q(i,m,ixsnow)    = ptend%q(i,m,ixsnow)    + crm_state%qs(i,ii,jj,k)
-                 ptend%q(i,m,ixnumrain) = ptend%q(i,m,ixnumrain) + crm_state%nr(i,ii,jj,k)
-                 ptend%q(i,m,ixnumsnow) = ptend%q(i,m,ixnumsnow) + crm_state%ns(i,ii,jj,k)
+              ptend%q(i,m,ixrain)    = ptend%q(i,m,ixrain)    + crm_state%qr(i,ii,jj,k)
+              ptend%q(i,m,ixsnow)    = ptend%q(i,m,ixsnow)    + crm_state%qs(i,ii,jj,k)
+              ptend%q(i,m,ixnumrain) = ptend%q(i,m,ixnumrain) + crm_state%nr(i,ii,jj,k)
+              ptend%q(i,m,ixnumsnow) = ptend%q(i,m,ixnumsnow) + crm_state%ns(i,ii,jj,k)
 #endif /* ECPP */
-               end do
-               end do
-               ptend%q(i,m,ixnumliq)  = (ptend%q(i,m,ixnumliq) /(crm_nx*crm_ny) - state%q(i,m,ixnumliq)) /crm_run_time
-               ptend%q(i,m,ixnumice)  = (ptend%q(i,m,ixnumice) /(crm_nx*crm_ny) - state%q(i,m,ixnumice)) /crm_run_time
+            end do
+            end do
+            ptend%q(i,m,ixnumliq)  = (ptend%q(i,m,ixnumliq) /(crm_nx*crm_ny) - state%q(i,m,ixnumliq)) /crm_run_time
+            ptend%q(i,m,ixnumice)  = (ptend%q(i,m,ixnumice) /(crm_nx*crm_ny) - state%q(i,m,ixnumice)) /crm_run_time
 #ifdef ECPP
-               ptend%q(i,m,ixrain)    = (ptend%q(i,m,ixrain)   /(crm_nx*crm_ny) - state%q(i,m,ixrain))   /crm_run_time
-               ptend%q(i,m,ixsnow)    = (ptend%q(i,m,ixsnow)   /(crm_nx*crm_ny) - state%q(i,m,ixsnow))   /crm_run_time
-               ptend%q(i,m,ixnumrain) = (ptend%q(i,m,ixnumrain)/(crm_nx*crm_ny) - state%q(i,m,ixnumrain))/crm_run_time
-               ptend%q(i,m,ixnumsnow) = (ptend%q(i,m,ixnumsnow)/(crm_nx*crm_ny) - state%q(i,m,ixnumsnow))/crm_run_time
+            ptend%q(i,m,ixrain)    = (ptend%q(i,m,ixrain)   /(crm_nx*crm_ny) - state%q(i,m,ixrain))   /crm_run_time
+            ptend%q(i,m,ixsnow)    = (ptend%q(i,m,ixsnow)   /(crm_nx*crm_ny) - state%q(i,m,ixsnow))   /crm_run_time
+            ptend%q(i,m,ixnumrain) = (ptend%q(i,m,ixnumrain)/(crm_nx*crm_ny) - state%q(i,m,ixnumrain))/crm_run_time
+            ptend%q(i,m,ixnumsnow) = (ptend%q(i,m,ixnumsnow)/(crm_nx*crm_ny) - state%q(i,m,ixnumsnow))/crm_run_time
 #endif /* ECPP */
 
-            end do
-            end do
-         end if
+         end do
+         end do
+      end if
 #endif /* m2005 */
-      end if ! microp_scheme .eq. 'MG'
 
       !---------------------------------------------------------------------------------------------
       ! calculate column integrated water for energy check
@@ -1479,8 +1421,6 @@ subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
    ! apply fluxes to bottom layer
    do icol = 1,ncol
       g_dp = gravit * state%rpdel(icol,pver)             ! note : rpdel = 1./pdel
-      ! ptend%s(icol,:)   = 0.
-      ! ptend%q(icol,:,1) = 0.
       ptend%s(icol,pver)   = g_dp * cam_in%shf(icol)
       ptend%q(icol,pver,1) = g_dp * cam_in%cflx(icol,1)
    end do
@@ -1592,12 +1532,10 @@ subroutine crm_recall_state_tend(state,tend,pbuf)
 
    integer ncol, lchnk, i, m
    logical :: use_ECPP
-   character(len=16) :: microp_scheme           ! host model microphysics scheme
    real(r8), pointer, dimension(:,:) :: cld     ! cloud fraction
    real(r8), pointer, dimension(:,:) :: qqcw    ! 
    
    call phys_getopts( use_ECPP_out      = use_ECPP  )
-   call phys_getopts( microp_scheme_out = microp_scheme )
 
    lchnk = state%lchnk
    ncol  = state%ncol
@@ -1622,11 +1560,7 @@ subroutine crm_recall_state_tend(state,tend,pbuf)
    ! So all change in aerosol and gas species in the conventinal CAM are discarded.
    ! Minghuai Wang, 2010-01 (Minghuai.Wang@pnl.gov)
    if (.not. use_ECPP) then
-      if ( microp_scheme .eq. 'MG' ) then
-         state%q(:ncol,:pver,6:pcnst) = q_aero(:ncol,:pver,6:pcnst)
-      else if ( microp_scheme .eq. 'RK' ) then
-         state%q(:ncol,:pver,4:pcnst) = q_aero(:ncol,:pver,4:pcnst)
-      end if
+      state%q(:ncol,:pver,6:pcnst) = q_aero(:ncol,:pver,6:pcnst)
    end if
 
    ! whannah - not sure why we do this...
