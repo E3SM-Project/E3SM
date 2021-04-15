@@ -19,6 +19,11 @@ if (NOT ${SCREAM_BASELINES_ONLY})
         EXCLUDE_MAIN_CPP
     )
     set_target_properties(rrtmgp_tests PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+    set (SRC rrtmgp_unit_tests.cpp rrtmgp_test_utils.cpp)
+    CreateUnitTest(
+        rrtmgp_unit_tests "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics"
+    )
+    set_target_properties(rrtmgp_unit_tests PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
 endif()
 
 # Build baseline code
