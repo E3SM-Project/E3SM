@@ -18,6 +18,8 @@ module dry_planar_tests
 
   implicit none
 
+!take from physical const mod instead
+
   real(rl), parameter :: Rd 	= 287.0d0,	&	! Ideal gas const dry air (J kg^-1 K^1)
 				                        g	= 9.80616d0,	&	! Gravity (m s^2)
 				                        cp	= 1004.5d0,	&	! Specific heat capacity (J kg^-1 K^1)
@@ -170,9 +172,226 @@ subroutine planar_rising_bubble_init(elem,hybrid,hvcoord,nets,nete)
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   integer,            intent(in)            :: nets,nete                ! start, end element index
 
-  call abortmp('planar rising bubble not yet implemented')
+  call dry_bubble_init(elem,hybrid,hvcoord,nets,nete,.25d0,0.d0)
 
 end subroutine planar_rising_bubble_init
+
+
+subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
+
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+  real(rl),           intent(in)            :: d                        ! radius of perturbation
+  real(rl),           intent(in)            :: f                        ! (const) Coriolis force
+
+  integer,  parameter :: zcoords = 0                                    ! we are not using z coords
+  logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
+
+  real(rl), parameter ::    &                                           !parameters needed to get eta from z
+    T0      = 300.d0,       &   ! temperature (k)
+    ztop    = 10000.d0,     & ! model top (m)
+    N       = 0.01d0,       & ! Brunt-Vaisala frequency
+    bigG    = (g*g)/(N*N*Cp)  ! temperature, isothermal
+
+  integer :: i,j,k,ie                                                   ! loopindices
+  real(rl):: x,y,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
+  real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q(1),dp    !pointwise field values
+
+  real(rl):: L, Lt, pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp)
+
+  if (hybrid%masterthread) write(iulog,*) 'initializing hot bubble'
+
+  ! set analytic vertical coordinates
+  call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)
+! get evenly spaced z levels
+!  hvcoord%etai  = ( (bigG/T0)*(exp(-zi*N*N/g) -1 )+1 ) **(1.0/kappa)    ! set eta levels from z
+!  call set_hybrid_coefficients(hvcoord,hybrid,  hvcoord%etai(1), 1.0_rl)! set hybrid A and B from eta levels
+!  call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+
+Lt=p0**kappa * g / rd * kappa
+
+  ! set initial conditions
+  do ie = nets,nete
+
+ do j=1,np; do i=1,np
+
+  ! get horizontal coordinates at column i,j
+  x  = elem(ie)%spherep(i,j)%lon
+  y  = elem(ie)%spherep(i,j)%lat
+
+  do k=1,nlevp
+  if ( sqrt( x*x+y*y + (zi(k)-5000.0)**2 ) < 1000.0 ) then !.and. abs(zi(k)-5000.0)< 500.0 ) then
+      th0(k)=300.0
+
+!print *, 'xx+yy',x*x+y*y
+
+  else
+      th0(k) = 295.0
+  endif
+
+  L = Lt/th0(k)
+  pi(k) = ( p0**kappa - zi(k)*L)**(1.0/kappa)
+  enddo
+
+  elem(ie)%state%ps_v(i,j,:) = pi(nlevp)
+
+  do k=1,nlev
+  th0m(k)=(th0(k)+th0(k+1))/2.0
+  dpm(k)=(pi(k+1)-pi(k))
+
+  elem(ie)%state%v = 0.0
+  elem(ie)%state%w_i= 0.0
+
+  elem(ie)%state%dp3d(i,j,k,:)   = dpm(k)
+
+  elem(ie)%state%phis(i,j) = 0.0
+
+  elem(ie)%state%vtheta_dp(i,j,k,:) = dpm(k)*th0m(k)
+
+  enddo
+
+enddo; enddo
+enddo
+
+!create hybrid coords now from the 1st column
+ai(:) = 0.0; bi(:) = 0.0
+ai(1) = pi(1)/p0
+
+do k=2,nlevp
+ai(k) = zi(k)/zi(1)*ai(1)
+bi(k) = 1.0 - zi(k)/zi(1)
+enddo
+
+
+hvcoord%hyai = ai
+hvcoord%hybi = bi
+
+!set : hyam hybm 
+hvcoord%hyam = 0.5_rl *(ai(2:nlev+1) + ai(1:nlev))
+hvcoord%hybm = 0.5_rl *(bi(2:nlev+1) + bi(1:nlev))
+
+!  call set_layer_locations: sets  etam, etai, dp0, checks that Am=ai/2+ai/2
+ call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+
+!print *, 'zi', zi
+!print *, 'pi', pi
+
+!print *,'am',hvcoord%hyam
+!print *,'ai',hvcoord%hyai
+!print *,'bm',hvcoord%hybm
+!print *,'bi',hvcoord%hybi
+!print *,'etam',hvcoord%etam
+!print *,'etai',hvcoord%etai
+
+
+  do ie = nets,nete
+     elem(ie)%fcor(:,:) = f
+     call tests_finalize(elem(ie),hvcoord)
+
+!print *, 'geo', elem(ie)%state%phinh_i(1,1,:,1)
+
+  enddo
+
+end subroutine dry_bubble_init
+
+#if 0
+subroutine bubble(x,y,p,z,zcoords,hybrid_eta,hyam,hybm,d,u,v,w,t,t_mean,phis,ps,rho,rho_mean,q)
+
+IMPLICIT NONE
+!-----------------------------------------------------------------------
+!     input/output params parameters at given location
+!-----------------------------------------------------------------------
+  real(rl), intent(in)     :: x        ! x (m)
+  real(rl), intent(in)     :: y        ! y (m)
+  real(rl), intent(inout)  :: z          ! Height (m)
+  real(rl), intent(in)     :: hyam       ! A coefficient for hybrid-eta
+  real(rl), intent(in)     :: hybm       ! B coefficient for hybrid-eta
+  logical, intent(in)     :: hybrid_eta ! flag to indicate whether the hybrid
+  real(rl), intent(inout)  :: p          ! Pressure  (Pa)
+  integer, intent(in)     :: zcoords    ! 0 or 1 see below
+  real(rl), intent(in)    :: d           ! Width for Pert
+  real(rl), intent(out)    :: u          ! x-dir wind (m s^-1)
+  real(rl), intent(out)    :: v          ! y-dir wind (m s^-1)
+  real(rl), intent(out)    :: w          ! Vertical Velocity (m s^-1)
+  real(rl), intent(out)    :: t          ! Temperature (K)
+  real(rl), intent(out)    :: t_mean     ! Temperature (K)
+  real(rl), intent(out)    :: phis       ! Surface Geopotential (m^2 s^-2)
+  real(rl), intent(out)    :: ps         ! Surface Pressure (Pa)
+  real(rl), intent(out)    :: rho        ! density (kg m^-3)
+  real(rl), intent(out)    :: rho_mean   ! density (kg m^-3)
+  real(rl), intent(out)    :: q          ! Specific Humidity (kg/kg)
+
+! if zcoords = 1, then we use z and output z
+! if zcoords = 0, then we use p
+
+!-----------------------------------------------------------------------
+!     test case parameters
+!-----------------------------------------------------------------------
+  real(rl), parameter :: &
+    Tref     = 300.d0,      & ! Reference Temperature + Potential Temperature
+    Pref     = 100000.d0,   & ! Reference PS
+    ztop    = 10000.d0,     & ! Model Top
+    yc    = 0.d0,           & ! y-loc of bubble center
+    xc    = 0.d0,           & ! x-loc of bubble center
+    N       = 0.01d0,       & ! Brunt-Vaisala frequency
+    N2      = N*N,          & ! Brunt-Vaisala frequency Squared
+    bigG    = (g*g)/(N2*cp)   ! Constant
+
+  real(rl) :: t_pert           ! temperature perturbation
+  real(rl) :: theta_pert       ! Pot-temp perturbation
+  real(rl) :: height,Ts,r2
+
+  u = 0.d0
+  v = 0.d0
+  w = 0.d0
+
+  phis = 0.d0
+
+  Ts = Tref
+
+  ps = Pref
+
+  if (zcoords .eq. 1) then
+
+    height = z
+    p = ps*( (bigG/Ts)*exp(-N2*height/g)+1.d0 - (bigG/Ts)  )**(cp/Rd)
+
+  else
+
+    if (hybrid_eta) p = hyam*p0 + hybm*ps
+    height = (-g/N2)*log( (Ts/bigG)*( (p/ps)**(Rd/cp) - 1.d0  ) + 1.d0 )
+    z = height
+
+  endif
+
+  t_mean = bigG*(1.d0 - exp(N2*height/g))+ Ts*exp(N2*height/g)
+
+  rho_mean = p/(Rd*t_mean)
+
+  if (planar_slice .eqv. .true.) then
+    r2  = (x-xc)**2
+  else
+    r2  = (x-xc)**2 + (y-yc)**2
+  end if
+
+  if (r2 > d) then
+  theta_pert = Tref
+  else
+   theta_pert = 1.2*Tref
+  endif
+
+  t_pert = theta_pert*(p/p0)**(Rd/cp)
+  t = t_mean + t_pert
+
+  rho = p/(Rd*t)
+
+  q = 0.d0
+
+end subroutine bubble
+#endif
+
 
 
 ! planar baroclinic instability
@@ -196,17 +415,16 @@ IMPLICIT NONE
 !-----------------------------------------------------------------------
 !     input/output params parameters at given location
 !-----------------------------------------------------------------------
-
-	real(rl), intent(in)     :: x        ! x (m)
+  real(rl), intent(in)     :: x        ! x (m)
   real(rl), intent(in)     :: y        ! y (m)
   real(rl), intent(inout)  :: z          ! Height (m)
   real(rl), intent(in)     :: hyam       ! A coefficient for hybrid-eta coordinate, at model level midpoint
   real(rl), intent(in)     :: hybm       ! B coefficient for hybrid-eta coordinate, at model level midpoint
   logical, intent(in)     :: hybrid_eta ! flag to indicate whether the hybrid sigma-p (eta) coordinate is used
-	real(rl), intent(inout)  :: p          ! Pressure  (Pa)
-	integer, intent(in)     :: zcoords    ! 0 or 1 see below
+  real(rl), intent(inout)  :: p          ! Pressure  (Pa)
+  integer, intent(in)     :: zcoords    ! 0 or 1 see below
   real(rl), intent(in)    :: d           ! Width for Pert
-	real(rl), intent(out)    :: u          ! x-dir wind (m s^-1)
+  real(rl), intent(out)    :: u          ! x-dir wind (m s^-1)
   real(rl), intent(out)    :: v          ! y-dir wind (m s^-1)
   real(rl), intent(out)    :: w          ! Vertical Velocity (m s^-1)
   real(rl), intent(out)    :: t          ! Temperature (K)
@@ -217,86 +435,80 @@ IMPLICIT NONE
   real(rl), intent(out)    :: rho_mean   ! density (kg m^-3)
   real(rl), intent(out)    :: q          ! Specific Humidity (kg/kg)
 
-	! if zcoords = 1, then we use z and output z
-	! if zcoords = 0, then we use p
+! if zcoords = 1, then we use z and output z
+! if zcoords = 0, then we use p
 
 !-----------------------------------------------------------------------
 !     test case parameters
 !-----------------------------------------------------------------------
-	real(rl), parameter :: &
-    u0      = 20.d0,        &	! Reference Velocity
-    Tref     = 300.d0,       &	! Reference Temperature + Potential Temperature
-    Pref     = 100000.d0,		&	! Reference PS
-    ztop    = 10000.d0,     &	! Model Top
+  real(rl), parameter :: &
+    u0      = 20.d0,        &! Reference Velocity
+    Tref     = 300.d0,      &! Reference Temperature + Potential Temperature
+    Pref     = 100000.d0,   &! Reference PS
+    ztop    = 10000.d0,     &! Model Top
     yc    = 0.d0,         & ! y-loc of Pert Center
     xc    = 0.d0,         & ! x-loc of Pert Center
     delta_theta = 1.d0,     & ! Max Amplitude of Pert
-    Lz      = 20000.d0, 		& ! Vertical Wavelength of Pert
+    Lz      = 20000.d0,   & ! Vertical Wavelength of Pert
     N       = 0.01d0,       & ! Brunt-Vaisala frequency
-    N2      = N*N,          &	! Brunt-Vaisala frequency Squared
+    N2      = N*N,          &! Brunt-Vaisala frequency Squared
     bigG    = (g*g)/(N2*cp)   ! Constant
 
   real(rl) :: height           ! Model level height
-  real(rl) :: r2, s							! Shape of perturbation
-  real(rl) :: Ts 							! Surface temperature
+  real(rl) :: r2, s            ! Shape of perturbation
+  real(rl) :: Ts               ! Surface temperature
   real(rl) :: t_pert           ! temperature perturbation
   real(rl) :: theta_pert       ! Pot-temp perturbation
 
 !-----------------------------------------------------------------------
 !    THE VELOCITIES
 !-----------------------------------------------------------------------
+  ! Zonal Velocity
+  u = u0
 
-	! Zonal Velocity
+  ! Meridional Velocity
+  v = 0.d0
 
-	u = u0
-
-	! Meridional Velocity
-
-	v = 0.d0
-
-	! Vertical Velocity = Vertical Pressure Velocity = 0
-
-	w = 0.d0
+  ! Vertical Velocity = Vertical Pressure Velocity = 0
+  w = 0.d0
 
 !-----------------------------------------------------------------------
 !    PHIS (surface geopotential)
 !-----------------------------------------------------------------------
-
-	phis = 0.d0
+  phis = 0.d0
 
 !-----------------------------------------------------------------------
 !    SURFACE TEMPERATURE
 !-----------------------------------------------------------------------
-	Ts = Tref
+  Ts = Tref
 
 !-----------------------------------------------------------------------
 !    PS (surface pressure)
 !-----------------------------------------------------------------------
-	ps = Pref
+  ps = Pref
 
 !-----------------------------------------------------------------------
 !    HEIGHT AND PRESSURE AND MEAN TEMPERATURE
 !-----------------------------------------------------------------------
-	if (zcoords .eq. 1) then
+  if (zcoords .eq. 1) then
 
-		height = z
-		p = ps*( (bigG/Ts)*exp(-N2*height/g)+1.d0 - (bigG/Ts)  )**(cp/Rd)
+    height = z
+    p = ps*( (bigG/Ts)*exp(-N2*height/g)+1.d0 - (bigG/Ts)  )**(cp/Rd)
 
-	else
+  else
 
     if (hybrid_eta) p = hyam*p0 + hybm*ps
-		height = (-g/N2)*log( (Ts/bigG)*( (p/ps)**(Rd/cp) - 1.d0  ) + 1.d0 )
-    z      = height
+        height = (-g/N2)*log( (Ts/bigG)*( (p/ps)**(Rd/cp) - 1.d0  ) + 1.d0 )
+    z = height
 
-	endif
+  endif
 
-	t_mean = bigG*(1.d0 - exp(N2*height/g))+ Ts*exp(N2*height/g)
+  t_mean = bigG*(1.d0 - exp(N2*height/g))+ Ts*exp(N2*height/g)
 
 !-----------------------------------------------------------------------
 !    rho (density), unperturbed using the background temperature t_mean
 !-----------------------------------------------------------------------
-
-	rho_mean = p/(Rd*t_mean)
+  rho_mean = p/(Rd*t_mean)
 
 !-----------------------------------------------------------------------
 !    POTENTIAL TEMPERATURE PERTURBATION,
@@ -309,15 +521,15 @@ IMPLICIT NONE
   if (planar_slice .eqv. .true.) then
     r2  = (x-xc)**2
   else
-	r2  = (x-xc)**2 + (y-yc)**2
-end if
+    r2  = (x-xc)**2 + (y-yc)**2
+  end if
 
-	s = (d**2)/(d**2 + r2)
+  s = (d**2)/(d**2 + r2)
 
-	theta_pert = delta_theta*s*sin(2.d0*DD_PI*height/Lz)
+  theta_pert = delta_theta*s*sin(2.d0*DD_PI*height/Lz)
 
-	t_pert = theta_pert*(p/p0)**(Rd/cp)
-	t = t_mean + t_pert
+  t_pert = theta_pert*(p/p0)**(Rd/cp)
+  t = t_mean + t_pert
 
   rho = p/(Rd*t)
 
@@ -325,7 +537,7 @@ end if
 !     initialize Q, set to zero
 !-----------------------------------------------------------------------
 
-	q = 0.d0
+  q = 0.d0
 
 END SUBROUTINE gravity_wave
 

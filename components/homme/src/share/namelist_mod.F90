@@ -947,10 +947,10 @@ end if
        Sx = -25.6D0 * 1000.0D0
        Sy = -25.6D0 * 1000.0D0
     else if (test_case == "planar_rising_bubble" .OR. test_case == "planar_moist_rising_bubble") then
-       Lx = 1.0D0 * 1000.0D0
-       Ly = 1.0D0 * 1000.0D0
-       Sx = 0.0D0
-       Sy = 0.0D0
+       Lx = 1.0D0 * 10000.0D0
+       Ly = 1.0D0 * 10000.0D0
+       Sx = -5000.0D0
+       Sy = -5000.0D0
 ! THESE ARE WRONG AND NEED TO BE FIXED WHEN THESE CASES ARE ACTUALLY IMPLEMENTED....
 !else if (test_case == "planar_baroclinic_instab" .OR. test_case == "planar_moist_baroclinic_instab") then
 !       Lx = 5000.0D0 * 1000.0D0
