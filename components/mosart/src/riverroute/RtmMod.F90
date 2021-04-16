@@ -1804,7 +1804,7 @@ contains
     ! budget_input = input
     ! budget_output = output
     ! budget_other = other terms
-    ! budget_total = budget_volume - budget_inpu/t + budget_output - budget_other
+    ! budget_total = budget_volume - budget_input + budget_output - budget_other
     ! bv_ generally accumulates a volume (m3)
     ! br_ generally accumulates a rate (m3/s)
 
