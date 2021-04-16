@@ -51,7 +51,8 @@ CreateUnitTest(p3_test_setup p3_test_setup.cpp "${NEED_LIBS}"
 if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}"
                  THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-                 PROPERTIES FIXTURES_REQUIRED p3_tables)
+                 PROPERTIES FIXTURES_REQUIRED p3_tables
+                 LABELS "p3;physics")
 endif()
 
 # Set inf tolerance for release builds. This will effectively disable all baseline
@@ -64,13 +65,15 @@ CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                THREADS ${SCREAM_TEST_MAX_THREADS}
                EXE_ARGS "${TOL_FLAG} ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
                PROPERTIES FIXTURES_REQUIRED p3_tables
-               EXCLUDE_MAIN_CPP)
+               EXCLUDE_MAIN_CPP
+               LABELS "p3;physics")
 
 CreateUnitTest(p3_run_and_cmp_f90 "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                THREADS ${SCREAM_TEST_MAX_THREADS}
                EXE_ARGS "${TOL_FLAG} -f ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
                PROPERTIES FIXTURES_REQUIRED p3_tables
-               EXCLUDE_MAIN_CPP)
+               EXCLUDE_MAIN_CPP
+               LABELS "p3;physics")
 
 # By default, baselines should be created using all fortran (make baseline). If the user wants
 # to use CXX to generate their baselines, they should use "make baseline_cxx".
