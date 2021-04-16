@@ -114,8 +114,7 @@ subroutine phys_register
   !---------------------------------------------------------------------------
   ! Local variables
   !---------------------------------------------------------------------------
-  integer :: m,mm     ! loop and constituent indices
-  integer :: dummy    ! for unused output from pbuf_add_field calls
+  integer :: dummy    ! for unused pbuf and constituent indices
   integer :: nmodes
   character(len=16) :: MMF_microphysics_scheme
   !---------------------------------------------------------------------------
@@ -133,31 +132,27 @@ subroutine phys_register
 
   ! Register water vapor.
   ! This must be the first call to cnst_add so that water vapor is constituent 1.
-  call cnst_add('Q', mwh2o, cpwv, 1.E-12_r8, mm, longname='Specific humidity', readiv=.true., is_convtran1=.true.)
+  call cnst_add('Q', mwh2o, cpwv, 1.E-12_r8, dummy, longname='Specific humidity', readiv=.true., is_convtran1=.true.)
 
   ! Fields for physics package diagnostics
-  call pbuf_add_field('TINI',      'physpkg', dtype_r8, (/pcols,pver/), tini_idx)
-  call pbuf_add_field('QINI',      'physpkg', dtype_r8, (/pcols,pver/), qini_idx)
-  call pbuf_add_field('CLDLIQINI', 'physpkg', dtype_r8, (/pcols,pver/), cldliqini_idx)
-  call pbuf_add_field('CLDICEINI', 'physpkg', dtype_r8, (/pcols,pver/), cldiceini_idx)
-  call pbuf_add_field('static_ener_ac', 'global', dtype_r8, (/pcols/), static_ener_ac_idx)
-  call pbuf_add_field('water_vap_ac',   'global', dtype_r8, (/pcols/), water_vap_ac_idx)
+  call pbuf_add_field('TINI',           'physpkg',dtype_r8,(/pcols,pver/), tini_idx)
+  call pbuf_add_field('QINI',           'physpkg',dtype_r8,(/pcols,pver/), qini_idx)
+  call pbuf_add_field('CLDLIQINI',      'physpkg',dtype_r8,(/pcols,pver/), cldliqini_idx)
+  call pbuf_add_field('CLDICEINI',      'physpkg',dtype_r8,(/pcols,pver/), cldiceini_idx)
+  call pbuf_add_field('static_ener_ac', 'global', dtype_r8,(/pcols/), static_ener_ac_idx)
+  call pbuf_add_field('water_vap_ac',   'global', dtype_r8,(/pcols/), water_vap_ac_idx)
+  call pbuf_add_field('vmag_gust',      'global', dtype_r8,(/pcols/), dummy)
+  call pbuf_add_field('PREC_PCW',       'physpkg',dtype_r8,(/pcols/), prec_pcw_idx)
+  call pbuf_add_field('SNOW_PCW',       'physpkg',dtype_r8,(/pcols/), snow_pcw_idx)
+  call pbuf_add_field('PREC_SED',       'physpkg',dtype_r8,(/pcols/), prec_sed_idx)
+  call pbuf_add_field('SNOW_SED',       'physpkg',dtype_r8,(/pcols/), snow_sed_idx)
+  call pbuf_add_field('FRACIS',         'physpkg',dtype_r8,(/pcols,pver,pcnst/),dummy)
 
   ! check energy package
   call check_energy_register
 
   ! register fluxes for saving across time
   if (phys_do_flux_avg()) call flux_avg_register()
-     
-  ! Some of these pbuf fields may not be needed for MMF
-  call pbuf_add_field('vmag_gust', 'global', dtype_r8, (/pcols/), dummy)
-  call pbuf_add_field('PREC_STR',  'physpkg',dtype_r8,(/pcols/),prec_str_idx)
-  call pbuf_add_field('SNOW_STR',  'physpkg',dtype_r8,(/pcols/),snow_str_idx)
-  call pbuf_add_field('PREC_PCW',  'physpkg',dtype_r8,(/pcols/),prec_pcw_idx)
-  call pbuf_add_field('SNOW_PCW',  'physpkg',dtype_r8,(/pcols/),snow_pcw_idx)
-  call pbuf_add_field('PREC_SED',  'physpkg',dtype_r8,(/pcols/),prec_sed_idx)
-  call pbuf_add_field('SNOW_SED',  'physpkg',dtype_r8,(/pcols/),snow_sed_idx)
-  call pbuf_add_field('FRACIS',    'physpkg',dtype_r8,(/pcols,pver,pcnst/),m)
 
   call conv_water_register()
 
@@ -1029,7 +1024,6 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   real(r8) :: tmp_t     (pcols,pver)        ! tmp variable
   real(r8) :: ftem      (pcols,pver)        ! tmp variable
   logical  :: labort                        ! abort flag
-  logical  :: state_debug_checks            ! Debug physics_state
   logical  :: l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
@@ -1037,8 +1031,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   ncol  = state%ncol
   nstep = get_nstep()
   
-  call phys_getopts( state_debug_checks_out = state_debug_checks &
-                    ,l_tracer_aero_out      = l_tracer_aero      &
+  call phys_getopts( l_tracer_aero_out      = l_tracer_aero      &
                     ,l_vdiff_out            = l_vdiff            &
                     ,l_rayleigh_out         = l_rayleigh         &
                     ,l_gw_drag_out          = l_gw_drag          &
@@ -1408,8 +1401,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   integer                         :: necpp             ! number of GCM time steps in which ECPP is called once
 #endif /* ECPP */
 
-  call phys_getopts( state_debug_checks_out = state_debug_checks &
-                    ,l_bc_energy_fix_out    = l_bc_energy_fix    &
+  call phys_getopts( l_bc_energy_fix_out    = l_bc_energy_fix    &
                     ,l_dry_adj_out          = l_dry_adj          &
                     ,l_tracer_aero_out      = l_tracer_aero      &
                     ,l_st_mac_out           = l_st_mac           &

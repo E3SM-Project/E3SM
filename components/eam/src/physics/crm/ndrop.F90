@@ -1082,9 +1082,8 @@ subroutine dropmixnuc( &
                if(species_class(m).eq.spec_class_gas) then
                   flxconv = 0.0_r8
                   zerogas(:) = 0.0_r8
-                  call explmix(rgascol(1,m,nnew),zerogas,ekkp,ekkm,overlapp,overlapm,  &
-                             rgascol(1,m,nsav),zero, flxconv, pver,dtmix,&
-                               .true., zerogas)
+                  call explmix(rgascol(1,m,nnew), zerogas, ekkp, ekkm, overlapp, overlapm,  &
+                     rgascol(1,m,nsav), zero, flxconv, pver, dtmix, .true., zerogas)
                end if
             end do
          endif
