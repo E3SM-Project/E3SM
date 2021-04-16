@@ -95,6 +95,7 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
     return copy;
   };
 
+  // A list-of-lists (lol);
   std::list<std::list<T>> lol;
   // Process the remaining groups
   for (const auto& g : groups) {

@@ -5,7 +5,7 @@
 
 namespace scream {
 
-// Whether a the bundling of a field group (see below) is needed, optional, or not needed.
+// Whether the bundling of a field group (see below) is needed, optional, or not needed.
 enum class Bundling : int {
   Required,
   Preferred,
@@ -46,7 +46,16 @@ inline std::string e2str (const Relationship rt) {
  * field. For more details about the FieldGroup struct, see field_group.hpp.
  */
 struct GroupRequest {
-  // Main constructor method
+  // Main constructor method. Here is what the args are:
+  //  - name: the name of the group
+  //  - grid: the grid where the group is requested
+  //  - ps: the pack size that the allocation of the fields in the group
+  //        (and the bundled field, if any) should accommodate (see field_alloc_prop.hpp)
+  //  - bundling: whether the group should be bundled (see field_group.hpp)
+  //  - r: allows to specify specs of this request in terms of another.
+  //  - t: the relationshipt of group in request r compared to this one.
+  //       E.g.: t=Parent means r->name is a superset of group this->name.
+  //  - excl: if t=Parent, this group contains all field in r, *except* those in this list.
   GroupRequest (const std::string& name_, const std::string& grid_, const int ps, const Bundling b,
                 const GroupRequest* r, const Relationship t, const std::list<std::string>& excl = {})
    : name(name_), grid(grid_), pack_size(ps), bundling(b)
@@ -82,31 +91,23 @@ struct GroupRequest {
   // Default copy ctor is perfectly fine
   GroupRequest (const GroupRequest&) = default;
 
-  // Group name
-  std::string name;
-  // Grid name
-  std::string grid;
-  // Request an allocation that can accomodate a value type like Pack<Real,pack_size>
-  int       pack_size;
+  
+  std::string name;   // Group name
+  std::string grid;   // Grid name
+  int pack_size;      // Request an allocation that can accomodate Pack<Real,pack_size>
 
   // The following members allow to specify a request in terms of another group.
-  // E.g., one can ask for group G1 to be an alias of G2, which will tell the FM
-  // to create a field group G1 "equivalent" to G2. The alias can be soft or hard.
-  // If soft, the group bundle of G1 will store the same view of the bundle in G2
-  // (assuming G2 is bundled), and same for the fields. A hard alias, will create
-  // G1 as a separate bundled field, and will *not* create the fields corresponding
-  // to the individual group members (the user can still "subview" the bundled group
-  // at particular entries, of course).
-  // Another use of the relative group is when an atm proc wants to create G1 "excluding"
+  // A possible use of this is when an atm proc wants to create G1 "excluding"
   // some fields from G2, and have the remaining ones still contiguous in mem (i.e.,
   // accessible with a bundled array). This will inform the FM to rearrange the fields
-  // in G2 so that the subset of fields that are in G1 appear contiguously. Clearly,
-  // the FM can only accommodate certain requests of this type, so if not possible,
-  // the FM will throw.
+  // in G2 so that the subset of fields that are in G1 appear contiguously.
+  // See comments in FieldManager::registration_ends() for more details
   std::shared_ptr<GroupRequest>   relative;
 
   Bundling bundling;
-  // Note: if relative_type=Parent, then r is my parent (not the other way around)
+
+  // Note: relative_type is what the group relative->name is *to me*. So, if relative_type=Child,
+  //       then the group relative->name contains a subset of the fields in the group this->name;
   Relationship relative_type;
   std::list<std::string> exclude;
 };
@@ -121,7 +122,7 @@ etoi (const EnumT e) {
 }
 
 // In order to use GroupRequest in std sorted containers (like std::set),
-// we need to provide an overload of op< or std::less.
+// we need to provide an overload of op< (or a specialization of  std::less<T>).
 inline bool operator< (const GroupRequest& lhs,
                        const GroupRequest& rhs)
 {
@@ -162,7 +163,10 @@ struct FieldRequest {
   using Units = ekat::units::Units;
   using FID   = FieldIdentifier;
 
-  // Main constructor
+  // Main constructor. Here is what the args are:
+  //  - fid: the FieldIdentifier for the requested field (see field_identifier.hpp)
+  //  - groups_: a list of groups that this field should be added to (see field_group.hpp)
+  //  - ps: the pack size that the allocation of the field should accommodate (see field_alloc_prop.hpp)
   FieldRequest (const FID& fid_, const std::list<std::string>& groups_, const int ps)
    : fid(fid_), pack_size(ps), groups(groups_)
   {
@@ -174,7 +178,9 @@ struct FieldRequest {
         "Error! We only support pack sizes that are (positive) powers of 2.\n");
   }
 
-  // Convenience constructors
+  // Convenience constructors.
+  // They first three allow defaulting ps/groups_ and/or allow simpler sintax for single-group requests.
+  // The last three do the same, but also allow to build a FieldIdentifier on the fly.
   FieldRequest (const FID& fid, const int ps = 1)
    : FieldRequest(fid,std::list<std::string>{},ps)
   { /* Nothing to do here */ }
@@ -204,7 +210,7 @@ struct FieldRequest {
 };
 
 // In order to use FieldRequest in std sorted containers (like std::set),
-// we need to provide an overload of op< or std::less.
+// we need to provide an overload of op< (or a specialization of  std::less<T>).
 inline bool operator< (const FieldRequest& lhs,
                        const FieldRequest& rhs)
 {
