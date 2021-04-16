@@ -1753,6 +1753,16 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="CFSR_wQU225EC60to30" compset="_WW3">
+      <grid name="atm">CFSR</grid>
+      <grid name="lnd">null</grid>
+      <grid name="ocnice">null</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">wQU225EC60to30</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
     <model_grid alias="T62_oEC60to30v3_wQU100" compset="_WW3">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
@@ -2773,8 +2783,7 @@
     <domain name="wQU225EC60to30">
       <nx>56131</nx>
       <ny>1</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.CFSv2_wQU225EC60to30.210413.nc</file>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.CFSv2_wQU225EC60to30.210413.nc</file>
+      <file grid="wav">$DIN_LOC_ROOT/share/domains/domain.ocn.wQU225EC60to30.210413.nc</file>
       <desc>WW3 unstructured QU 225km global grid with EC60to30 coastlines</desc>
     </domain>
 
@@ -4045,6 +4054,10 @@
 
     <gridmap atm_grid="CFSv2" wav_grid="wQU225EC60to30">
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_CFSv2_TO_wQU225EC60to30_blin.20210412.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="CFSR" wav_grid="wQU225EC60to30">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_CFSR_TO_wQU225EC60to30_blin.20210415.nc</map>
     </gridmap>
 
     <gridmap atm_grid="1.9x2.5" wav_grid="ww3a">
