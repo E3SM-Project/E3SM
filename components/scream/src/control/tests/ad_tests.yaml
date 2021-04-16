@@ -18,17 +18,17 @@ Atmosphere Processes:
   Process 0:
     Process Name: Dummy
     Sub Name: A to BC
-    Grid Name: Point Grid A
+    Grid Name: Point Grid
   Process 1:
     Process Name: Dummy
     Sub Name: Group to Group
-    Grid Name: Point Grid B
+    Grid Name: Point Grid
   Process 2:
     Process Name: Dummy
     Sub Name: Group to A
-    Grid Name: Point Grid A
+    Grid Name: Point Grid
 
 Grids Manager:
   Type: User Provided
-  Reference Grid: Point Grid A
+  Reference Grid: Point Grid
 ...

@@ -24,10 +24,8 @@ public:
     m_params = params;
     m_name = m_params.get<std::string>("Sub Name");
     if (m_name=="Group to Group") {
-      m_params.set<std::string>("Grid Name","Point Grid B");
       m_dummy_type = G2G;
     } else {
-      m_params.set<std::string>("Grid Name","Point Grid A");
       m_dummy_type = (m_name=="A to BC") ? A2G : G2A;
     }
   }
@@ -53,16 +51,7 @@ public:
     const auto num_cols = m_grid->get_num_local_dofs();
     const auto num_levs = m_grid->get_num_vertical_levels();
 
-    std::vector<FieldTag> tags;
-    std::vector<int> dims;
-    if (m_grid->name()=="Point Grid A") {
-      tags = {COL,LEV};
-      dims = {num_cols, num_levs};
-    } else {
-      tags = {LEV,COL};
-      dims = {num_levs,num_cols};
-    }
-    FieldLayout layout (tags,dims);
+    FieldLayout layout ({COL,LEV},{num_cols,num_levs});
     // To test vector input
     FieldLayout layout_vec ( {COL,CMP,LEV}, {num_cols,2,num_levs} );
 
@@ -126,7 +115,6 @@ public:
       const auto view_C = m_outputs["C"].get_reshaped_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-        // A to BC is on grid A: (COL,LEV)
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
 
@@ -139,12 +127,11 @@ public:
       const auto view_C = m_outputs["C"].get_reshaped_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-        // Group to Group is on grid B: (LEV,COL)
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
 
-        view_B(ilev,icol) = view_B(ilev,icol) / 2;
-        view_C(ilev,icol) = view_C(ilev,icol) / 2;
+        view_B(icol,ilev) = view_B(icol,ilev) / 2;
+        view_C(icol,ilev) = view_C(icol,ilev) / 2;
       });
     } else {
       const auto view_B = m_inputs["B"].get_reshaped_view<const Real**>();
@@ -152,7 +139,6 @@ public:
       const auto view_A = m_outputs["A"].get_reshaped_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-        // Group to A is on grid A: (COL,LEV)
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
 

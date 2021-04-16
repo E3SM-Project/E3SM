@@ -3,10 +3,9 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
-#include "share/grid/remap/inverse_remapper.hpp"
+#include "share/grid/point_grid.hpp"
 
 #include "dummy_atm_proc.hpp"
-#include "dummy_grid.hpp"
 
 namespace scream {
 
@@ -27,16 +26,10 @@ inline void dummy_atm_init (const int num_cols, const int nvl, const ekat::Comm&
   // Recall that this class stores *static* members, so whatever
   // we set here, will be reflected in the GM built by the factory.
   UserProvidedGridsManager upgm;
-  auto dummy_grid_a = create_point_grid("Point Grid A",num_cols,nvl,comm);
-  auto dummy_grid_b = create_point_grid("Point Grid B",num_cols,nvl,comm);
+  auto dummy_grid_a = create_point_grid("Point Grid",num_cols,nvl,comm);
 
   upgm.set_grid(dummy_grid_a);
-  upgm.set_grid(dummy_grid_b);
-  upgm.set_reference_grid("Point Grid A");
-  using remapper_type = DummyPointGridRemapper<Real>;
-  upgm.set_remapper(std::make_shared<remapper_type>(dummy_grid_a,dummy_grid_b));
-  auto r_ab = std::make_shared<remapper_type>(dummy_grid_a,dummy_grid_b);
-  upgm.set_remapper(std::make_shared<InverseRemapper<Real>>(r_ab));
+  upgm.set_reference_grid("Point Grid");
 }
 
 inline void dummy_atm_cleanup () {
