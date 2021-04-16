@@ -21,7 +21,12 @@
 
   <compset>
     <alias>UWAV-CFSv2</alias>
-    <lname>_DATM%CFSv2_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
+    <lname>2000_DATM%CFSv2_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
+  </compset>
+
+  <compset>
+    <alias>UWAV-CFSR</alias>
+    <lname>2000_DATM%CFSR_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
   </compset>
 
   <compset>
