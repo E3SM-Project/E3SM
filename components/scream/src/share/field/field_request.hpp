@@ -112,15 +112,6 @@ struct GroupRequest {
   std::list<std::string> exclude;
 };
 
-template<typename EnumT>
-constexpr typename
-std::enable_if<std::is_enum<EnumT>::value,
-                 typename std::underlying_type<EnumT>::type
-              >::type
-etoi (const EnumT e) {
-  return static_cast<typename std::underlying_type<EnumT>::type>(e);
-}
-
 // In order to use GroupRequest in std sorted containers (like std::set),
 // we need to provide an overload of op< (or a specialization of  std::less<T>).
 inline bool operator< (const GroupRequest& lhs,

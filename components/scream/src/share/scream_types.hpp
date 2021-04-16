@@ -49,6 +49,17 @@ sp (const T val) {
   return Real(val);
 }
 
+// Micro-utility, that given an enum returns the underlying int.
+// The only use of this is if you need to sort scoped enums.
+template<typename EnumT>
+constexpr typename
+std::enable_if<std::is_enum<EnumT>::value,
+               typename std::underlying_type<EnumT>::type
+              >::type
+etoi (const EnumT e) {
+  return static_cast<typename std::underlying_type<EnumT>::type>(e);
+}
+
 } // namespace scream
 
 #endif // SCREAM_TYPES_HPP

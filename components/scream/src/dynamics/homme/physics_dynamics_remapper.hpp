@@ -24,8 +24,6 @@
 namespace scream
 {
 
-using Homme::etoi;
-
 // Performs remap from physics to dynamics grids, and viceversa
 template<typename RealType>
 class PhysicsDynamicsRemapper : public AbstractRemapper<RealType>
