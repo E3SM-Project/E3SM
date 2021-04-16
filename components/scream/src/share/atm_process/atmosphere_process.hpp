@@ -219,11 +219,6 @@ protected:
     Updated
   };
 
-  template<RequestType r>
-  using RequiredOrComputed = typename std::enable_if<r==Required || r==Computed>::type;
-  template<RequestType r>
-  using RequiredOrUpdated = typename std::enable_if<r==Required || r==Updated>::type;
-
   // Derived classes can used these method, so that if we change how fields/groups
   // requirement are stored (e.g., std::set -> std::list), they don't need to change
   // their implementation.
@@ -268,10 +263,17 @@ protected:
   template<RequestType RT>
   void add_field (const FieldRequest& req)
   {
-    static_assert(RT==Required || RT==Computed, "Error! Invalid request type in call to add_field.\n");
+    // Since we use C-style enum, let's avoid invalid integers casts
+    static_assert(RT==Required || RT==Computed || RT==Updated,
+                  "Error! Invalid request type in call to add_field.\n");
 
-    auto& fields = RT==Required ? m_required_fields : m_computed_fields;
-    fields.emplace(req);
+    if (RT==Updated) {
+      add_field<Required>(req);
+      add_field<Computed>(req);
+    } else {
+      auto& fields = RT==Required ? m_required_fields : m_computed_fields;
+      fields.emplace(req);
+    }
   }
 
   // Group requests

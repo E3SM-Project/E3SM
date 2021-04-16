@@ -61,29 +61,18 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
   add_field<Required>("p_mid",       scalar3d_layout_mid, Pa,     grid_name, ps);
   add_field<Required>("zi",          scalar3d_layout_int, m,      grid_name, ps);
-  add_field<Required>("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);
-  add_field<Computed>("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
+  add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
-  add_field<Required>("qv",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Required>("qc",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Required>("qr",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Required>("qi",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Required>("qm",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Required>("nc",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
-  add_field<Required>("nr",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
-  add_field<Required>("ni",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
-  add_field<Required>("bm",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
-  //
-  add_field<Computed>("qv",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Computed>("qc",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Computed>("qr",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Computed>("qi",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Computed>("qm",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
-  add_field<Computed>("nc",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
-  add_field<Computed>("nr",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
-  add_field<Computed>("ni",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
-  add_field<Computed>("bm",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+  add_field<Updated>("qv",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Updated>("qc",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Updated>("qr",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Updated>("qi",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Updated>("qm",     scalar3d_layout_mid, Q,    grid_name, "tracers", ps);
+  add_field<Updated>("nc",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+  add_field<Updated>("nr",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+  add_field<Updated>("ni",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
+  add_field<Updated>("bm",     scalar3d_layout_mid, 1/kg, grid_name, "tracers", ps);
 
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
@@ -91,11 +80,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Required>("ni_activated",       scalar3d_layout_mid, 1/kg,     grid_name, ps);
   add_field<Required>("inv_qc_relvar",      scalar3d_layout_mid, nondim,   grid_name, ps);
   add_field<Required>("pseudo_density",     scalar3d_layout_mid, Pa,       grid_name, ps);
-  add_field<Required>("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name, ps);
-  add_field<Required>("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps); 
-  //
-  add_field<Computed>("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name, ps);
-  add_field<Computed>("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps);
+  add_field<Updated> ("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name, ps);
+  add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps);
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
   add_field<Computed>("eff_radius_qc",      scalar3d_layout_mid, m,        grid_name, ps);

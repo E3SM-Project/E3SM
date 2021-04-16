@@ -97,8 +97,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   constexpr int ps = sizeof(Homme::Scalar) / sizeof(Real);
   for (int i=0; i<m_p2d_remapper->get_num_registered_fields(); ++i) {
     const auto& ref_fid = m_p2d_remapper->get_src_field_id(i);
-    add_field<Required>(ref_fid,ps);
-    add_field<Computed>(ref_fid,ps);
+    add_field<Updated>(ref_fid,ps);
   }
 
   // qv is needed to make sure Q is not empty (dyn needs qv to transform T<->Theta),
