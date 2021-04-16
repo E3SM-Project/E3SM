@@ -1137,12 +1137,12 @@ module li_subglacial_hydro
       ! Write out dt info on the final subcycle
       if (proposedDt >= timeLeft) then
          if (config_SGH_chnl_active) then
-            call mpas_log_write("deltatSGH: used=$r, advec=$r, diffu=$r, pressure=$r, advecChannel=$r, diffuChannel=$r", &
-              realArgs=(/deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, &
+            call mpas_log_write("deltatSGH: used=$r, prev=$r, advec=$r, diffu=$r, pressure=$r, advecChannel=$r, diffuChannel=$r",&
+              realArgs=(/proposedDt, deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, &
                          deltatSGHdiffuChannel/))
          else
-            call mpas_log_write("deltatSGH: used=$r, advec=$r, diffu=$r, pressure=$r", &
-              realArgs=(/deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure/))
+            call mpas_log_write("deltatSGH: used=$r, previous=$r, advec=$r, diffu=$r, pressure=$r", &
+              realArgs=(/proposedDt, deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure/))
          endif
       endif
 
