@@ -1037,6 +1037,8 @@ CONTAINS
 
       ! copy ww3 data to coupling datatype
       ! QL, 150612, copy enhancement factor, uStokes, vStokes to coupler
+
+      call w3xyrtn(NX*NY,USSX,USSY,AnglD)
       do jsea=1, nseal
          isea = iaproc + (jsea-1)*naproc
          IX  = MAPSF(ISEA,1)
