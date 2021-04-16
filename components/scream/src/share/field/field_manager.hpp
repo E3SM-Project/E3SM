@@ -208,8 +208,11 @@ void FieldManager<RealType>::register_group (const GroupRequest& req)
       "       Request grid: " + req.grid + "\n"
       "       Stored grid:  " + m_grid->name() + "\n");
 
-  // Groups have to be handled once registration is over, so for now simply store the request
+  // Groups have to be handled once registration is over, so for now simply store the request,
+  // and create an empty group info
   m_group_requests[req.name].insert(req);
+
+  m_field_groups.emplace(req.name,std::make_shared<group_info_type>(req.name));
 }
 
 template<typename RealType>
@@ -397,7 +400,7 @@ registration_ends ()
 
   // This lambda process a group request, and ensures the group contains only what it should contain
   auto ensure_group_members_correctness = [&] (const GroupRequest& r) {
-    if (r.releative==nullptr || r.relative_type==Relationship::Parent) {
+    if (r.relative==nullptr || r.relative_type==Relationship::Parent) {
       // This request is either not related to another group, or it is a superset
       // of another group. Either way, the group of this request must exist.
       // TODO: should this be removed? What if a group is 'optional'?
@@ -408,19 +411,19 @@ registration_ends ()
     } else {
       // If this request is a relative (alias or subset) of a relative group, then the
       // relative group must exist.
-      EKAT_REQUIRE_MSG(m_field_groups.find(r.releative->name)!=m_field_groups.end(),
+      EKAT_REQUIRE_MSG(m_field_groups.find(r.relative->name)!=m_field_groups.end(),
           "Error! Found a requested group with a relative that has no fields associated to it.\n"
           "    -  Group name:    " + r.name + "\n"
-          "    -  Relative name: " + r.releative->name + "\n"
+          "    -  Relative name: " + r.relative->name + "\n"
           "    -  Relative type: " + e2str(r.relative_type) + "\n"
           "    -  Grid name:     " + r.grid + "\n");
     }
 
-    if (r.releative!=nullptr) {
-      if (r.relative_type==Relationship::Child) {
-        // All fields in the child group must be added to this group
+    if (r.relative!=nullptr) {
+      if (r.relative_type==Relationship::Child || r.relative_type==Relationship::Alias) {
+        // All fields in the child/alias group must be added to this group
         auto& members = m_field_groups.at(r.name)->m_fields_names;
-        const auto& relatives = m_field_groups.at(r.releative->name)->m_fields_names;
+        const auto& relatives = m_field_groups.at(r.relative->name)->m_fields_names;
         for (const auto& n : relatives) {
           if (!ekat::contains(members,n)) {
             members.push_back(n);
@@ -430,7 +433,7 @@ registration_ends ()
         // We take all fields in the parent group and add them to this group,
         // provided that they are not in the 'exclude' list.
         auto& members = m_field_groups.at(r.name)->m_fields_names;
-        const auto& relatives = m_field_groups.at(r.releative->name)->m_fields_names;
+        const auto& relatives = m_field_groups.at(r.relative->name)->m_fields_names;
         for (const auto& n : relatives) {
           if (!ekat::contains(members,n) && !ekat::contains(r.exclude,n)) {
             members.push_back(n);
@@ -453,21 +456,19 @@ registration_ends ()
           "    -  Field name: " + e + "\n");
 
     }
-
-    // Finally, check that groups are non-empty
-    for (const auto& it : m_field_groups) {
-      EKAT_REQUIRE_MSG (it.second->size()>0,
-          "Error! We have a group in this Field Manager that has no members.\n"
-          "       Group name: " + it.first + "\n"
-          "       Grid name:  " + m_grid->name() + "\n");
-    }
   };
 
-  // First, check groups are defined, and contain the correct members
+  // First, check groups are well defined, and contain the correct members
   for (const auto& greqs : m_group_requests) {
     for (const auto& r : greqs.second) {
       ensure_group_members_correctness (r);
     }
+  }
+  for (const auto& it : m_field_groups) {
+    EKAT_REQUIRE_MSG (it.second->size()>0,
+        "Error! We have a group in this Field Manager that has no members.\n"
+        "       Group name: " + it.first + "\n"
+        "       Grid name:  " + m_grid->name() + "\n");
   }
 
   // Gather a list of groups to be bundled

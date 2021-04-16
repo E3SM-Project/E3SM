@@ -48,23 +48,23 @@ inline std::string e2str (const Relationship rt) {
 struct GroupRequest {
   // Main constructor method
   GroupRequest (const std::string& name_, const std::string& grid_, const int ps, const Bundling b,
-                const GroupRequest* r, const Relationship t, const std::list<std::string>& excl)
+                const GroupRequest* r, const Relationship t, const std::list<std::string>& excl = {})
    : name(name_), grid(grid_), pack_size(ps), bundling(b)
   {
     EKAT_REQUIRE_MSG(pack_size>=1, "Error! Invalid pack size request.\n");
     if (r!=nullptr) {
-      releative = std::make_shared<GroupRequest>(*r);
+      relative = std::make_shared<GroupRequest>(*r);
       relative_type = t;
       EKAT_REQUIRE_MSG (t!=Relationship::None,
           "Error! RelativType cannot be None if the relative pointer is not null.\n");
-      EKAT_REQUIRE_MSG (excl.size()==0 || t==Relationship::Child,
-          "Error! You can only exclude fields from a releative group if creating a Subset child group.\n");
+      EKAT_REQUIRE_MSG (excl.size()==0 || t==Relationship::Parent,
+          "Error! You can only exclude fields from a relative group if the input GroupRequest ptr is a Parent.\n");
       exclude = excl;
 
       // TODO: should we relax this? Not allowing multiple levels of nested
-      //       releativeing makes it easier for the AD and FM to correctly allocated
+      //       relativeing makes it easier for the AD and FM to correctly allocated
       //       fields...
-      EKAT_REQUIRE_MSG (r->releative==nullptr,
+      EKAT_REQUIRE_MSG (r->relative==nullptr,
           "Error! We cannot handle multiple levels of nested groups.\n");
     }
   }
@@ -97,13 +97,13 @@ struct GroupRequest {
   // G1 as a separate bundled field, and will *not* create the fields corresponding
   // to the individual group members (the user can still "subview" the bundled group
   // at particular entries, of course).
-  // Another use of the releative group is when an atm proc wants to create G1 "excluding"
+  // Another use of the relative group is when an atm proc wants to create G1 "excluding"
   // some fields from G2, and have the remaining ones still contiguous in mem (i.e.,
   // accessible with a bundled array). This will inform the FM to rearrange the fields
   // in G2 so that the subset of fields that are in G1 appear contiguously. Clearly,
   // the FM can only accommodate certain requests of this type, so if not possible,
   // the FM will throw.
-  std::shared_ptr<GroupRequest>   releative;
+  std::shared_ptr<GroupRequest>   relative;
 
   Bundling bundling;
   // Note: if relative_type=Parent, then r is my parent (not the other way around)
@@ -134,12 +134,12 @@ inline bool operator< (const GroupRequest& lhs,
       if (lhs.pack_size < rhs.pack_size) {
         return true;
       } else if (lhs.pack_size==rhs.pack_size) {
-        if (lhs.releative==nullptr) {
-          return rhs.releative!=nullptr;
-        } else if (rhs.releative!=nullptr) {
-          if ( (*lhs.releative) < (*rhs.releative) ) {
+        if (lhs.relative==nullptr) {
+          return rhs.relative!=nullptr;
+        } else if (rhs.relative!=nullptr) {
+          if ( (*lhs.relative) < (*rhs.relative) ) {
             return true;
-          } else if ( ! ( (*rhs.releative)<(*lhs.releative)) ) {
+          } else if ( ! ( (*rhs.relative)<(*lhs.relative)) ) {
             return etoi(lhs.bundling) < etoi(rhs.bundling) ||
                    (etoi(lhs.bundling) == etoi(rhs.bundling) &&
                     etoi(lhs.relative_type) < etoi(rhs.relative_type));

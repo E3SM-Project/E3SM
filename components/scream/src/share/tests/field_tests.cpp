@@ -519,6 +519,111 @@ TEST_CASE("tracers_bundle", "") {
   REQUIRE (qr_ptr->equivalent(qr));
 }
 
+TEST_CASE("multiple_bundles") {
+  using namespace scream;
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+  using SL = std::list<std::string>;
+
+  const int ncols = 4;
+  const int nlevs = 7;
+
+  std::vector<FieldTag> tags = {COL,LEV};
+  std::vector<int> dims = {ncols,nlevs};
+
+  const auto nondim = Units::nondimensional();
+
+  const std::string grid_name = "physics";
+  ekat::Comm comm(MPI_COMM_WORLD);
+  auto pg = create_point_grid(grid_name,ncols*comm.size(),nlevs,comm);
+
+  FieldIdentifier a_id("a", {tags, dims}, nondim, grid_name);
+  FieldIdentifier b_id("b", {tags, dims}, nondim, grid_name);
+  FieldIdentifier c_id("c", {tags, dims}, nondim, grid_name);
+  FieldIdentifier d_id("d", {tags, dims}, nondim, grid_name);
+  FieldIdentifier e_id("e", {tags, dims}, nondim, grid_name);
+  FieldIdentifier f_id("f", {tags, dims}, nondim, grid_name);
+
+  FieldRequest a_req(a_id,"group1");
+  FieldRequest b_req(b_id,SL{"group1"});
+  FieldRequest c_req(c_id,SL{"group1","group2"});
+  FieldRequest d_req(d_id,SL{"group1","group3"});
+  FieldRequest e_req(e_id,SL{"group1","group2"});
+  FieldRequest f_req(f_id,SL{"group1","group3"});
+
+  GroupRequest g1_req ("group1",grid_name,Bundling::Required);
+  GroupRequest g2_req ("group2",grid_name,Bundling::Required);
+  // group3 = group3 + group2
+  GroupRequest g3_req ("group3",grid_name,4,Bundling::Required,&g2_req,Relationship::Child);
+  // group4 = group2
+  GroupRequest g4_req ("group4",grid_name,4,Bundling::Required,&g2_req,Relationship::Alias);
+  // group5 = group1 - {c,d}
+  GroupRequest g5_req ("group5",grid_name,4,Bundling::Preferred,&g1_req,Relationship::Parent,SL{"c","d"});
+
+  // The above group specs give the following groups:
+  // g1: [a,b,c,d,e,f]
+  // g2: [c,e]
+  // g3: [d,f,c,e]
+  // g4: [c,e]
+  // g5: [a,b,e,f]
+  // The bundling requests can be accommodated for g1-g4, but not g5.
+  // But g5 request is only 'Preferred', so the FM won't error out.
+  // The order of fields in the 'encompassing' group is {[c,e][d,f][a,b]},
+  // where [c,e] means that the order of those two fields can be anything.
+  // The 'block'-reverse of that list is also possible: {[a,b][d,f][c,e]}
+
+  FieldManager<Real> field_mgr(pg);
+  field_mgr.registration_begins();
+
+  // Register single fields
+  field_mgr.register_field(a_req);
+  field_mgr.register_field(b_req);
+  field_mgr.register_field(c_req);
+  field_mgr.register_field(d_req);
+  field_mgr.register_field(e_req);
+  field_mgr.register_field(f_req);
+
+  // Register groups
+  field_mgr.register_group(g1_req);
+  field_mgr.register_group(g2_req);
+  field_mgr.register_group(g3_req);
+  field_mgr.register_group(g4_req);
+  field_mgr.register_group(g5_req);
+
+  field_mgr.registration_ends();
+
+  auto g1 = field_mgr.get_field_group(g1_req.name);
+  auto g2 = field_mgr.get_field_group(g2_req.name);
+  auto g3 = field_mgr.get_field_group(g3_req.name);
+  auto g4 = field_mgr.get_field_group(g4_req.name);
+  auto g5 = field_mgr.get_field_group(g5_req.name);
+
+  // First 4 groups should be bundled
+  REQUIRE (g1.m_info->m_bundled);
+  REQUIRE (g2.m_info->m_bundled);
+  REQUIRE (g3.m_info->m_bundled);
+  REQUIRE (g4.m_info->m_bundled);
+  REQUIRE (not g5.m_info->m_bundled);
+
+  // Check that the order of fields in g1 is the expected one
+  const auto& fnames = g1.m_info->m_fields_names;
+  const auto& f1 = *std::next(fnames.begin(),0);
+  const auto& f2 = *std::next(fnames.begin(),1);
+  const auto& f3 = *std::next(fnames.begin(),2);
+  const auto& f4 = *std::next(fnames.begin(),3);
+  const auto& f5 = *std::next(fnames.begin(),4);
+  const auto& f6 = *std::next(fnames.begin(),5);
+  if (f1=="a" || f1=="b") {
+    REQUIRE ( ((f1=="a" && f2=="b") || (f1=="b" && f2=="a")) );
+    REQUIRE ( ((f3=="d" && f4=="f") || (f3=="f" && f4=="d")) );
+    REQUIRE ( ((f5=="c" && f6=="e") || (f5=="e" && f6=="c")) );
+  } else {
+    REQUIRE ( ((f1=="c" && f2=="e") || (f1=="e" && f2=="c")) );
+    REQUIRE ( ((f3=="d" && f4=="f") || (f3=="f" && f4=="d")) );
+    REQUIRE ( ((f5=="a" && f6=="b") || (f5=="b" && f6=="a")) );
+  }
+}
+
 TEST_CASE("field_property_check", "") {
 
   using namespace scream;
