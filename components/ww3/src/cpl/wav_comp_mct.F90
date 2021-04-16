@@ -167,6 +167,7 @@
       use w3gridmd, only: w3grid
 !/
       use w3iopomd, only:
+      use w3iogomd, only: w3flgrdflag
       use w3timemd, only: stme21 
       use w3cesmmd, only : casename, initfile, rstwr, runtype, histwr, outfreq
       use w3cesmmd, only : inst_index, inst_name, inst_suffix
@@ -267,8 +268,8 @@ CONTAINS
       integer             :: jsea,isea
       real                :: a(nhmax,4)
       real, allocatable   :: x(:), y(:)
-      logical             :: flogrd(nogrp,ngrpp), flogrd2(nogrp,ngrpp)
-      logical             :: flogd(nogrp), flogd2(nogrp)
+      logical             :: flgrd(nogrp,ngrpp), flgrd2(nogrp,ngrpp)
+      logical             :: flgd(nogrp), flgd2(nogrp)
       logical             :: prtfrm, flt
       character(len=*),parameter :: subname = '(wav_init_mct)'
 
@@ -280,6 +281,7 @@ CONTAINS
       character(len=30)   :: idotyp(6)
       character(len=40), allocatable :: pnames(:)
       character(len=256) :: stafile
+      character(len=1024) :: fldout, fldcou
 
       !/ ------------------------------------------------------------------- /
 
@@ -296,7 +298,7 @@ CONTAINS
       DATA IDSTR  / 'LEV', 'CUR', 'WND', 'ICE', 'DT0', 'DT1', 'DT2',  &
                     'MOV' /
 
-      namelist /ww3_inparm/ initfile, outfreq, stafile
+      namelist /ww3_inparm/ initfile, outfreq, stafile, fldout, fldcou
 
       !--------------------------------------------------------------------
       ! Initialize mpi
@@ -508,6 +510,8 @@ CONTAINS
       call shr_mpi_bcast(initfile, mpi_comm)
       call shr_mpi_bcast(outfreq, mpi_comm)
       call shr_mpi_bcast(stafile, mpi_comm)
+      call shr_mpi_bcast(fldout, mpi_comm)
+      call shr_mpi_bcast(fldcou, mpi_comm)
 
 
       !--------------------------------------------------------------------
@@ -553,24 +557,28 @@ CONTAINS
       ! QL, 160601, get coupling interval
       call seq_timemgr_eclockgetdata(eclock, dtime=dtime_sync )
 
+      ! Gridded fields
       odat(1) = time(1)     ! YYYYMMDD for first output
       odat(2) = time(2)     ! HHMMSS for first output
       odat(3) = dtime_sync  ! output interval in sec ! changed by Adrean
       odat(4) = 99990101    ! YYYYMMDD for last output
       odat(5) = 0           ! HHMMSS for last output
 
+      ! Point output
       odat(6) = time(1)     ! YYYYMMDD for first output
       odat(7) = time(2)     ! HHMMSS for first output
       odat(8) = dtime_sync  ! output interval in sec 
       odat(9) = 99990101    ! YYYYMMDD for last output
       odat(10) = 0          ! HHMMSS for last output
 
+      ! Restart files
       odat(16) = time(1)    ! YYYYMMDD for first output
       odat(17) = time(2)    ! HHMMSS for first output
       odat(18) = 86400*5    ! output interval in sec
       odat(19) = 99990101   ! YYYYMMDD for last output
       odat(20) = 0          ! HHMMSS for last output
 
+      ! Coupling data
       odat(31) = time(1)    ! YYYYMMDD for first output
       odat(32) = time(2)    ! HHMMSS for first output
       odat(33) = dtime_sync ! output interval in sec
@@ -578,125 +586,139 @@ CONTAINS
       odat(35) = 0          ! HHMMSS for last output
 
       ! Output Type 1: fields of mean wave parameters gridded output
-      flogrd2 = .false.
-      flogd2  = .false.
-      flogd = .false.
+      flgrd2 = .false.
+      flgd2  = .false.
+      flgd = .false.
 
-      ! 1) Forcing fields
-      flogrd(1,1)  = .false. ! Water depth         
-      flogrd(1,2)  = .false. ! Current vel.        
-      flogrd(1,3)  = .true.  ! Wind speed          
-      flogrd(1,4)  = .false. ! Air-sea temp. dif.  
-      flogrd(1,5)  = .false. ! Water level         
-      flogrd(1,6)  = .false. ! Ice concentration   
-      flogrd(1,7)  = .false. ! Iceberg damp coeffic
+      !  G  G
+      !  R  X Grp  Param Code     Output  Parameter/Group
+      !  B  O Numb Numbr Name        Tag  Definition 
+      !  --------------------------------------------------
+      !        1                          Forcing Fields
+      !   -------------------------------------------------
+      !  T  T  1     1   DW         DPT   Water depth.
+      !  T  T  1     2   C[X,Y]     CUR   Current velocity.
+      !  T  T  1     3   UA         WND   Wind speed.
+      !  T  T  1     4   AS         AST   Air-sea temperature difference.
+      !  T  T  1     5   WLV        WLV   Water levels.
+      !  T  T  1     6   ICE        ICE   Ice concentration.
+      !  T  T  1     7   IBG        IBG   Iceberg-induced damping.
+      !  T  T  1     8   D50        D50   Median sediment grain size.
+      !  T  T  1     9   IC1        IC1   Ice thickness.
+      !  T  T  1    10   IC5        IC5   Ice flow diameter.
+      !   -------------------------------------------------
+      !        2                          Standard mean wave Parameters
+      !   -------------------------------------------------
+      !  T  T  2     1   HS         HS    Wave height.
+      !  T  T  2     2   WLM        LM    Mean wave length.
+      !  T  T  2     3   T02        T02   Mean wave period (Tm0,2).
+      !  T  T  2     4   T0M1       T0M1  Mean wave period (Tm0,-1).
+      !  T  T  2     5   T01        T01   Mean wave period (Tm0,1).
+      !  T  T  2     6   FP0        FP    Peak frequency.
+      !  T  T  2     7   THM        DIR   Mean wave direction.
+      !  T  T  2     8   THS        SPR   Mean directional spread.
+      !  T  T  2     9   THP0       DP    Peak direction.
+      !  T  T  2    10   HIG        HIG   Infragravity height
+      !  T  T  2    11   STMAXE     MXE   Max surface elev (STE)
+      !  T  T  2    12   STMAXD     MXES  St Dev of max surface elev (STE)
+      !  T  T  2    13   HMAXE      MXH   Max wave height (STE)
+      !  T  T  2    14   HCMAXE     MXHC  Max wave height from crest (STE)
+      !  T  T  2    15   HMAXD      SDMH  St Dev of MXC (STE)
+      !  T  T  2    16   HCMAXD     SDMHC St Dev of MXHC (STE)
+      !  F  T  2    17   WBT        WBT   Dominant wave breaking probability bT
+      !  F  F  2    18   FP0        TP    Peak period (from peak freq)
+      !   -------------------------------------------------
+      !        3                          Spectral Parameters (first 5)
+      !   -------------------------------------------------
+      !  F  F  3     1   EF         EF    Wave frequency spectrum
+      !  F  F  3     2   TH1M       TH1M  Mean wave direction from a1,b2
+      !  F  F  3     3   STH1M      STH1M Directional spreading from a1,b2
+      !  F  F  3     4   TH2M       TH2M  Mean wave direction from a2,b2
+      !  F  F  3     5   STH2M      STH2M Directional spreading from a2,b2
+      !  F  F  3     6   WN         WN    Wavenumber array
+      !   -------------------------------------------------
+      !        4                          Spectral Partition Parameters 
+      !   -------------------------------------------------
+      !  T  T  4     1   PHS        PHS   Partitioned wave heights.
+      !  T  T  4     2   PTP        PTP   Partitioned peak period.
+      !  T  T  4     3   PLP        PLP   Partitioned peak wave length.
+      !  T  T  4     4   PDIR       PDIR  Partitioned mean direction.
+      !  T  T  4     5   PSI        PSPR  Partitioned mean directional spread.
+      !  T  T  4     6   PWS        PWS   Partitioned wind sea fraction.
+      !  T  T  4     7   PDP        PDP   Peak wave direction of partition.
+      !  T  T  4     8   PQP        PQP   Goda peakdedness parameter of partition.
+      !  T  T  4     9   PPE        PPE   JONSWAP peak enhancement factor of partition.
+      !  T  T  4    10   PGW        PGW   Gaussian frequency width of partition.
+      !  T  T  4    11   PSW        PSW   Spectral width of partition.
+      !  T  T  4    12   PTM1       PTM10 Mean wave period (m-1,0) of partition.
+      !  T  T  4    13   PT1        PT01  Mean wave period (m0,1) of partition.
+      !  T  T  4    14   PT2        PT02  Mean wave period (m0,2) of partition.
+      !  T  T  4    15   PEP        PEP   Peak spectral density of partition.
+      !  T  T  4    16   PWST       TWS   Total wind sea fraction.
+      !  T  T  4    17   PNR        PNR   Number of partitions.
+      !   -------------------------------------------------
+      !        5                          Atmosphere-waves layer
+      !   -------------------------------------------------
+      !  T  T  5     1   UST        UST   Friction velocity.
+      !  F  T  5     2   CHARN      CHA   Charnock parameter
+      !  F  T  5     3   CGE        CGE   Energy flux
+      !  F  T  5     4   PHIAW      FAW   Air-sea energy flux
+      !  F  T  5     5   TAUWI[X,Y] TAW   Net wave-supported stress
+      !  F  T  5     6   TAUWN[X,Y] TWA   Negative part of the wave-supported stress
+      !  F  F  5     7   WHITECAP   WCC   Whitecap coverage
+      !  F  F  5     8   WHITECAP   WCF   Whitecap thickness
+      !  F  F  5     9   WHITECAP   WCH   Mean breaking height
+      !  F  F  5    10   WHITECAP   WCM   Whitecap moment
+      !  F  F  5    11   FWS        FWS   Wind sea mean period
+      !   -------------------------------------------------
+      !        6                          Wave-ocean layer 
+      !   -------------------------------------------------
+      !  F  F  6     1   S[XX,YY,XY] SXY  Radiation stresses.
+      !  F  F  6     2   TAUO[X,Y]  TWO   Wave to ocean momentum flux
+      !  F  F  6     3   BHD        BHD   Bernoulli head (J term) 
+      !  F  F  6     4   PHIOC      FOC   Wave to ocean energy flux
+      !  F  F  6     5   TUS[X,Y]   TUS   Stokes transport
+      !  F  F  6     6   USS[X,Y]   USS   Surface Stokes drift
+      !  F  F  6     7   [PR,TP]MS  P2S   Second-order sum pressure 
+      !  F  F  6     8   US3D       USF   Spectrum of surface Stokes drift
+      !  F  F  6     9   P2SMS      P2L   Micro seism  source term
+      !  F  F  6    10   TAUICE     TWI   Wave to sea ice stress
+      !  F  F  6    11   PHICE      FIC   Wave to sea ice energy flux
+      !  F  F  6    12   USSP       USP   Partitioned surface Stokes drift
+      !   -------------------------------------------------
+      !        7                          Wave-bottom layer 
+      !   -------------------------------------------------
+      !  F  F  7     1   ABA        ABR   Near bottom rms amplitides.
+      !  F  F  7     2   UBA        UBR   Near bottom rms velocities.
+      !  F  F  7     3   BEDFORMS   BED   Bedforms
+      !  F  F  7     4   PHIBBL     FBB   Energy flux due to bottom friction 
+      !  F  F  7     5   TAUBBL     TBB   Momentum flux due to bottom friction
+      !   -------------------------------------------------
+      !        8                          Spectrum parameters
+      !   -------------------------------------------------
+      !  F  F  8     1   MSS[X,Y]   MSS   Mean square slopes
+      !  F  F  8     2   MSC[X,Y]   MSC   Spectral level at high frequency tail
+      !  F  F  8     3   WL02[X,Y]  WL02  East/X North/Y mean wavelength compon
+      !  F  F  8     4   ALPXT      AXT   Correl sea surface gradients (x,t)
+      !  F  F  8     5   ALPYT      AYT   Correl sea surface gradients (y,t)
+      !  F  F  8     6   ALPXY      AXY   Correl sea surface gradients (x,y)
+      !   -------------------------------------------------
+      !        9                          Numerical diagnostics  
+      !   -------------------------------------------------
+      !  T  T  9     1   DTDYN      DTD   Average time step in integration.
+      !  T  T  9     2   FCUT       FC    Cut-off frequency.
+      !  T  T  9     3   CFLXYMAX   CFX   Max. CFL number for spatial advection. 
+      !  T  T  9     4   CFLTHMAX   CFD   Max. CFL number for theta-advection. 
+      !  F  F  9     5   CFLKMAX    CFK   Max. CFL number for k-advection. 
+      !   -------------------------------------------------
+      !        10                         User defined          
+      !   -------------------------------------------------
+      !  F  F  10    1              U1    User defined #1. (requires coding ...)
+      !  F  F  10    2              U2    User defined #1. (requires coding ...)
+      !   -------------------------------------------------
 
-      ! 2) Standard mean wave parameters
-      flogrd(2,1)  = .true.  ! Wave height         
-      flogrd(2,2)  = .false. ! Mean wave length    
-      flogrd(2,3)  = .false. ! Mean wave period(+2)
-      flogrd(2,4)  = .false. ! Mean wave period(-1)
-      flogrd(2,5)  = .false. ! Mean wave period(+1)
-      flogrd(2,6)  = .true.  ! Peak frequency      
-      flogrd(2,7)  = .false. ! Mean wave dir. a1b1 
-      flogrd(2,8)  = .false. ! Mean dir. spr. a1b1 
-      flogrd(2,9)  = .true.  ! Peak direction      
-      flogrd(2,10) = .false. ! Infragravity height
-      flogrd(2,11) = .false. ! Space-Time Max E   
-      flogrd(2,12) = .false. ! Space-Time Max Std 
-      flogrd(2,13) = .false. ! Space-Time Hmax    
-      flogrd(2,14) = .false. ! Spc-Time Hmax^crest
-      flogrd(2,15) = .false. ! STD Space-Time Hmax
-      flogrd(2,16) = .false. ! STD ST Hmax^crest  
-
-      ! 3) Frequency-dependent standard parameters
-      flogrd(3,1)  = .false. ! 1D Freq. Spectrum   
-      flogrd(3,2)  = .false. ! Mean wave dir. a1b1 
-      flogrd(3,3)  = .false. ! Mean dir. spr. a1b1 
-      flogrd(3,4)  = .false. ! Mean wave dir. a2b2 
-      flogrd(3,5)  = .false. ! Mean dir. spr. a2b2 
-      flogrd(3,6)  = .false. ! Wavenumber array    
-
-      ! 4) Spectral Partitions parameters
-      flogrd(4,1) = .false. ! Part. wave heigt    
-      flogrd(4,2) = .false. ! Part. peak period   
-      flogrd(4,3) = .false. ! Part. peak wave l.  
-      flogrd(4,4) = .false. ! Part. mean direction
-      flogrd(4,5) = .false. ! Part. dir. spread   
-      flogrd(4,6) = .false. ! Part. wind sea frac.
-      flogrd(4,7) = .false. ! Total wind sea frac.
-      flogrd(4,8) = .false. ! Number of partitions
-
-      ! 5) Atmosphere-waves layer
-      flogrd(5,1) = .false. ! Friction velocity   
-      flogrd(5,2) = .false. ! Charnock parameter  
-      flogrd(5,3) = .false. ! Energy flux         
-      flogrd(5,4) = .false. ! Wind-wave enrgy flux
-      flogrd(5,5) = .false. ! Wind-wave net mom. f
-      flogrd(5,6) = .false. ! Wind-wave neg.mom.f.
-      flogrd(5,7) = .false. ! Whitecap coverage   
-      flogrd(5,8) = .false. ! Whitecap mean thick.
-      flogrd(5,9) = .false. ! Mean breaking height
-      flogrd(5,10) = .false. ! Dominant break prob 
-
-      ! 6) Wave-ocean layer
-      flogrd(6,1) = .false. ! Radiation stresses  
-      flogrd(6,2) = .false. ! Wave-ocean mom. flux
-      flogrd(6,3) = .false. ! wave ind p Bern Head
-      flogrd(6,4) = .false. ! Wave-ocean TKE  flux
-      flogrd(6,5) = .false. ! Stokes transport    
-      flogrd(6,6) = .false. ! Stokes drift at z=0 
-      flogrd(6,7) = .false. ! 2nd order pressure  
-      flogrd(6,8) = .false. ! Stokes drft spectrum
-      flogrd(6,9) = .false. ! 2nd ord press spectr
-      flogrd(6,10) = .false. ! Wave-ice mom. flux  
-      flogrd(6,11) = .false. ! Wave-ice energy flux
-
-      ! 7) Wave-bottom layer
-      flogrd(7,1) = .false. ! Bottom rms ampl.    
-      flogrd(7,2) = .false. ! Bottom rms velocity 
-      flogrd(7,3) = .false. ! Bedform parameters  
-      flogrd(7,4) = .false. ! Energy diss. in WBBL
-      flogrd(7,5) = .false. ! Moment. loss in WBBL
-
-      ! 8) Spectrum parameters
-      flogrd(8,1) = .false. ! Mean square slopes  
-      flogrd(8,2) = .false. ! Phillips tail const
-      flogrd(8,3) = .false. ! Lx-Ly mean wvlength
-      flogrd(8,4) = .false. ! Surf grad correl XT
-      flogrd(8,5) = .false. ! Surf grad correl YT
-      flogrd(8,6) = .false. ! Surf grad correl XY
-      flogrd(8,7) = .false. ! Surface crest param
-
-      ! 9) Numerical diagnostics
-      flogrd(9,1) = .false. ! Avg. time step.     
-      flogrd(9,2) = .false. ! Cut-off freq.       
-      flogrd(9,3) = .false. ! Maximum spatial CFL 
-      flogrd(9,4) = .false. ! Maximum angular CFL 
-      flogrd(9,5) = .false. ! Maximum k advect CFL
-
-      do i = 1, nogrp
-        if(any(flogrd(i,:))) then
-          flogd(i) = .true.
-        end if
-      end do
-
-      if ( iaproc .eq. napout ) then
-         flt = .true.
-         do i=1, nogrp
-            do j = 1, noge(i)
-              if ( flogrd(i,j) ) then
-                 if ( flt ) then
-                    write (ndso,1945) idout(i,j)
-                    flt    = .false.
-                 else
-                    write (ndso,1946) idout(i,j)
-                 end if
-              end if
-            end do
-         end do
-         if ( flt ) write (ndso,1945) 'no fields defined'
-      end if
+      call w3flgrdflag(ndso,ndso,ndse,fldout,flgd, flgrd, iaproc,napout,ierr)
+      call w3flgrdflag(ndso,ndso,ndse,fldcou,flgd2,flgrd2,iaproc,napout,ierr)
 
       call shr_sys_flush(ndso)
 
@@ -726,7 +748,7 @@ CONTAINS
       ! - reads either the initfile if the run is startup or branch
       ! - constructs the filename from the casename variable and the time(:) array
       !   which is set above
-      call w3init ( 1, .false., 'ww3', nds, ntrace, odat, flogrd, flogrd2, flogd, flogd2, npts, x, y,   &
+      call w3init ( 1, .false., 'ww3', nds, ntrace, odat, flgrd, flgrd2, flgd, flgd2, npts, x, y,   &
            pnames, iprt, prtfrm, mpi_comm )
       call shr_sys_flush(ndso)
 
