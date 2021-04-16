@@ -100,7 +100,7 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
   for (const auto& g : groups) {
     EKAT_REQUIRE_MSG(sort(g)==g,
         "Error! Individual input lists must already be sorted.\n");
-    EKAT_REQUIRE_MSG(unique(g).size()==g.size(),
+    EKAT_REQUIRE_MSG(unique(sort(g)).size()==g.size(),
         "Error! Individual input lists must not contain repeated elements.\n");
 
     // Keep track of where non-empty intersections happen.

@@ -97,7 +97,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
       process_required_field(req);
     }
     for (const auto& req : atm_proc->get_computed_fields()) {
-      add_field<Required>(req);
+      add_field<Computed>(req);
     }
     for (const auto& req : atm_proc->get_required_groups()) {
       add_group<Required>(req);

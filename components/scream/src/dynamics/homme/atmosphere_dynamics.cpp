@@ -105,7 +105,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // while ps is needed for initial conditions only.
   FieldLayout scalar_3d_mid { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
   FieldIdentifier qv("qv", scalar_3d_mid, Q, dgn);
-  add_field<Required>(m_p2d_remapper->create_src_fid(qv));
+  add_field<Required>(m_p2d_remapper->create_src_fid(qv),"tracers");
 
   const int ftype = get_homme_param<int>("ftype");
   EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,

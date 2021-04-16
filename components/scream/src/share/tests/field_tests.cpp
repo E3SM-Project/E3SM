@@ -344,7 +344,7 @@ TEST_CASE("field_mgr", "") {
   field_mgr.registration_begins();
 
   // === Valid registration calls === //
-  field_mgr.register_field(FR(fid1,"group_1"));
+  field_mgr.register_field(FR(fid1,"group_1",Pack::n));
   field_mgr.register_field(FR{fid2,"group_2",16});
   field_mgr.register_field(FR{fid3,"group_4"});
   field_mgr.register_field(FR{fid3,SL{"group_1","group_2","group_3"}});
@@ -440,16 +440,17 @@ TEST_CASE("tracers_bundle", "") {
 
   FieldManager<Real> field_mgr(pg);
   field_mgr.registration_begins();
-  field_mgr.register_field(FR{qv_id,"TRACERS"});
-  field_mgr.register_field(FR{qc_id,"TRACERS"});
-  field_mgr.register_field(FR{qr_id,"TRACERS"});
+  field_mgr.register_field(FR{qv_id,"tracers"});
+  field_mgr.register_field(FR{qc_id,"tracers"});
+  field_mgr.register_field(FR{qr_id,"tracers"});
+  field_mgr.register_group(GroupRequest("tracers",grid_name,Bundling::Required));
   field_mgr.registration_ends();
 
   auto qv = field_mgr.get_field(qv_id.name());
   auto qc = field_mgr.get_field(qc_id.name());
   auto qr = field_mgr.get_field(qr_id.name());
 
-  auto group = field_mgr.get_field_group("TRACERS");
+  auto group = field_mgr.get_field_group("tracers");
   // The field_mgr should have allocated the group bundled
   REQUIRE (group.m_info->m_bundled);
 
