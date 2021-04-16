@@ -35,7 +35,7 @@ void FieldIdentifier::update_identifier () {
   // Create a verbose identifier string.
   m_identifier = m_name + "[" + m_grid_name + "]";
   if (m_layout) {
-    m_identifier += print(*m_layout);
+    m_identifier += to_string(*m_layout);
   }
   m_identifier += ") [" + m_units.get_string() + "]";
 }

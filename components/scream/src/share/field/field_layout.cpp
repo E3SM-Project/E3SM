@@ -135,7 +135,7 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
   return result;
 }
 
-std::string print (const FieldLayout& layout)
+std::string to_string (const FieldLayout& layout)
 {
   if (layout.rank()==0) {
     return "<>()";
