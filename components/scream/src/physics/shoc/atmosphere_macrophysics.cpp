@@ -49,8 +49,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   // Define fields needed in SHOC.
   // Note: shoc_main is organized by a set of 5 structures, variables below are organized
   //       using the same approach to make it easier to follow.
-  std::set<ci_string> q_names =
-    { "qc", "qv", "tke"};
 
   constexpr int ps = Spack::n;
 
