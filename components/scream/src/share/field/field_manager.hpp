@@ -119,9 +119,6 @@ protected:
   // So store GroupRequest objects during registration phase.
   std::map<std::string,std::set<GroupRequest>> m_group_requests;
 
-  // For each field, store the names of the groups it belongs to
-  std::map<ci_string,std::set<ci_string>> m_field_to_groups;
-
   // The grid where the fields in this FM live
   std::shared_ptr<const AbstractGrid> m_grid;
 };
@@ -496,14 +493,6 @@ registration_ends ()
       // Bring tracers to the front
       std::swap(*it,groups_to_bundle.front());
 
-      // // Make qv the 1st tracer
-      // auto& tracers_names = m_field_groups.at("tracers")->m_fields_names;
-      // auto qv_it = ekat::find(tracers_names,"qv");
-      // EKAT_REQUIRE_MSG (it!=tracers_names.end(),
-          // "Error! It appears 'qv' is not part of the tracers group in this Field Manager.\n"
-          // "       Grid name: " + m_grid->name() + "\n");
-      // std::swap(*qv_it,tracers_names.front());
-
       // Adding the 'fake' group G=(qv) at the front of groups_to_bundle ensures qv won't be put
       // in the middle of the tracers group. We use a highly unlikely group name, to avoid clashing
       // with a real group name. Later, after having found an global ordering for the tracers fields,
@@ -513,10 +502,6 @@ registration_ends ()
       m_field_groups.at("__qv__")->m_fields_names.push_back("qv");
     }
   }
-
-  // and any of its groups is in groups_to_bundle, put one of its groups
-  // first in groups_to_bundle, and rearrange the fields of that group so that
-  // qv comes first. This does NOT guarantee that qv will be the 1st
 
   // Do all the bundling stuff only if there are groups do bundle at all.
   if (groups_to_bundle.size()>0) {
@@ -540,6 +525,10 @@ registration_ends ()
     std::list<std::string> added_to_a_cluster;
     while (added_to_a_cluster.size()<groups_to_bundle.size()) {
       cluster_type c;
+      auto first = groups_to_bundle.begin();
+      c.push_front(*first);
+      groups_to_bundle.erase(first);
+
       for (const auto& gn : groups_to_bundle) {
         if (ekat::contains(added_to_a_cluster,gn)) {
           // This group has been added to a cluster already
@@ -571,6 +560,7 @@ registration_ends ()
       LOL_t groups_fields;
       for (const auto& gn : cluster) {
         groups_fields.push_back(m_field_groups.at(gn)->m_fields_names);
+        groups_fields.back().sort();
       }
 
       auto cluster_ordered_fields = contiguous_superset(groups_fields);
@@ -650,10 +640,18 @@ registration_ends ()
           // Note: reversing the order of the fields preserves subgroups contiguity
           cluster_ordered_fields.reverse();
         }
+
+        // Remove __qv__ from the cluster (if present)
+        auto qv_gr_it = ekat::find(cluster,"__qv__");
+        if (qv_gr_it!=cluster.end()) {
+          cluster.erase(qv_gr_it);
+        }
       }
 
       // Check if there is a group with all the fields. Notice that it is enough to check
       // if any list in the LOL has the same length as cluster_ordered_fields.
+      // If not, we will set cluster_name = $group1_name | $group2_name | ...
+      // Note: cluster_name will be the name of the field bundling all fields in the cluster's groups
       std::string cluster_name;
       for (const auto& gn : cluster) {
         // Start building cluster_name by "or-ing" all gn's.
@@ -671,26 +669,16 @@ registration_ends ()
         }
       }
 
-      // Create cluster FieldGroupInfo, if not there.
-      m_field_groups.emplace(cluster_name,std::make_shared<group_info_type>(cluster_name));
-
-      // Set the group fields in the correct order, and mark the group as bundled
-      auto& c_info = m_field_groups.at(cluster_name);
-      c_info->m_fields_names.clear();
-      c_info->m_bundled = true;
-      for (const auto& n : cluster_ordered_fields) {
-        c_info->m_fields_names.push_back(n);
-      }
-
-      // Figure out the layout of the fields in this group
+      // Figure out the layout of the fields in this cluster,
+      // and make sure they all have the same layout
       LayoutType lt = LayoutType::Invalid;
-      FieldLayout f_layout = FieldLayout::invalid();
+      std::shared_ptr<const FieldLayout> f_layout;
       for (const auto& fname : cluster_ordered_fields) {
-        auto f = m_fields.at(fname);
-        auto id = f->get_header().get_identifier();
+        const auto& f = m_fields.at(fname);
+        const auto& id = f->get_header().get_identifier();
         if (lt==LayoutType::Invalid) {
-         f_layout = id.get_layout();
-         lt = get_layout_type(f_layout.tags());
+         f_layout = id.get_layout_ptr();
+         lt = get_layout_type(f_layout->tags());
         } else {
           EKAT_REQUIRE_MSG (lt==get_layout_type(id.get_layout().tags()),
               "Error! Found a group to bundle containing fields with different layouts.\n"
@@ -707,27 +695,24 @@ registration_ends ()
       if (lt==LayoutType::Scalar2D) {
         c_layout = m_grid->get_2d_vector_layout(CMP,cluster_ordered_fields.size());
       } else {
-        c_layout = m_grid->get_3d_vector_layout(f_layout.tags().back()==LEV,CMP,cluster_ordered_fields.size());
+        c_layout = m_grid->get_3d_vector_layout(f_layout->tags().back()==LEV,CMP,cluster_ordered_fields.size());
       }
 
+      // The units for the bundled field are nondimensional, cause checking whether
+      // all fields in the bundle have the same units so we can use those is too long and pointless.
       auto nondim = ekat::units::Units::nondimensional();
 
       // Allocate cluster field
       FieldIdentifier c_fid(cluster_name,c_layout,nondim,m_grid->name());
       register_field(c_fid);
-      auto C = get_field_ptr(c_fid);
+      const auto& C = m_fields.at(c_fid.name());
 
       // Scan all fields in this cluster, get their alloc props, and make sure
-      // F can accommodate all of them. Also, make sure F can accommodate all
+      // C can accommodate all of them. Also, make sure C can accommodate all
       // pack sizes of all GroupRequest of groups in this cluster.
       auto& C_ap = C->get_header().get_alloc_properties();
-      for (const auto& fn : c_info->m_fields_names) {
-        auto f = get_field_ptr (fn);
-        // LB: Is nullptr even possible at this point? I don't think so, but let's check anyways.
-        EKAT_REQUIRE_MSG (f!=nullptr,
-            "Error! Found a group containing a field that wasn't registered.\n"
-            "       Group name: " + cluster_name + "\n"
-            "       Field name: " + fn + "\n");
+      for (const auto& fn : cluster_ordered_fields) {
+        const auto& f = m_fields.at(fn);
         C_ap.request_allocation(f->get_header().get_alloc_properties());
       }
       for (const auto& gn : cluster) {
@@ -738,17 +723,24 @@ registration_ends ()
 
       // Allocate
       C->allocate_view();
-      const auto& C_tags = C->get_header().get_identifier().get_layout().tags();
+
       // Note: as of 02/2021, idim should *always* be 1, but we store it just in case,
       //       to avoid bugs in the future.
+      const auto& C_tags = C->get_header().get_identifier().get_layout().tags();
       const int idim = std::distance(C_tags.begin(),ekat::find(C_tags,CMP));
+
+      if (auto it = ekat::contains(cluster,"__qv__")) {
+        // Erase the 'fake group' we added (to guarantee qv would be first/last in the tracers)
+        m_field_groups.erase(m_field_groups.find("__qv__"));
+        cluster.erase(ekat::find(cluster,"__qv__"));
+      }
 
       // Create all individual subfields
       for (const auto& fn : cluster_ordered_fields) {
-        const auto pos = ekat::find(c_info->m_fields_names,fn);
-        const auto idx = std::distance(c_info->m_fields_names.begin(),pos);
+        const auto pos = ekat::find(cluster_ordered_fields,fn);
+        const auto idx = std::distance(cluster_ordered_fields.begin(),pos);
 
-        auto f = get_field_ptr(fn);
+        const auto& f = m_fields.at(fn);
         const auto& fh = f->get_header();
         auto fi = C->subfield(fn,fh.get_identifier().get_units(),idim,idx);
 
@@ -758,11 +750,6 @@ registration_ends ()
 
       // Now, update the group info of all the field groups in the cluster
       for (const auto& gn : cluster) {
-        if (gn==cluster_name) {
-          // Skip overall cluster group, since we did it already
-          continue;
-        }
-
         auto& info = *m_field_groups.at(gn);
         const auto n = info.size();
 
@@ -771,7 +758,8 @@ registration_ends ()
                                         info.m_fields_names.begin(),info.m_fields_names.end());
         auto last = std::next(first,n);
 
-        // Some sanity checks
+        // Some sanity checks: info.m_fields_names should be a rearrangement of what is
+        // in cluster_odered_fields[first,last)
         EKAT_REQUIRE_MSG(first!=cluster_ordered_fields.end(),
             "Error! Could not find any field of this group in the ordered cluster.\n"
             "       Group name: " + gn + "\n");
@@ -830,7 +818,6 @@ void FieldManager<RealType>::clean_up() {
   // Clear the maps
   m_fields.clear();
   m_field_groups.clear();
-  m_field_to_groups.clear();
 
   // Reset repo state
   m_repo_state = RepoState::Clean;
