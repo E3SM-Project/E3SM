@@ -63,7 +63,6 @@ public:
 
   // Change the state of the database
   void registration_begins ();
-  void register_field (const FieldIdentifier& fid) { register_field(FieldRequest(fid)); }
   void register_field (const FieldRequest& req);
   void register_group (const GroupRequest& req);
   void registration_ends ();
