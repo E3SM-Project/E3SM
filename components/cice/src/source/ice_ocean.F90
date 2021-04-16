@@ -158,6 +158,7 @@
                                       vatm       (:,:,iblk), &   
                                       wsresp     (:,:,iblk), &
                                       tau_est    (:,:,iblk), &
+                                      ugust      (:,:,iblk), &
                                       uvel       (:,:,iblk), &   
                                       vvel       (:,:,iblk), &   
                                       wind       (:,:,iblk), &   

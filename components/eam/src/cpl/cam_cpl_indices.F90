@@ -15,6 +15,7 @@ module cam_cpl_indices
   integer :: index_a2x_Sa_v            ! bottom atm level mer wind
   integer :: index_a2x_Sa_wsresp       ! first order response of wind to stress
   integer :: index_a2x_Sa_tau_est      ! estimated stress in equilibrium with ubot/vbot
+  integer :: index_a2x_Sa_ugust        ! magnitude of gustiness at surface
   integer :: index_a2x_Sa_tbot         ! bottom atm level temp
   integer :: index_a2x_Sa_ptem         ! bottom atm level pot temp
   integer :: index_a2x_Sa_shum         ! bottom atm level spec hum
@@ -155,6 +156,7 @@ contains
     index_a2x_Sa_v          = mct_avect_indexra(a2x,'Sa_v')
     index_a2x_Sa_wsresp     = mct_avect_indexra(a2x,'Sa_wsresp', perrWith='quiet')
     index_a2x_Sa_tau_est    = mct_avect_indexra(a2x,'Sa_tau_est', perrWith='quiet')
+    index_a2x_Sa_ugust      = mct_avect_indexra(a2x,'Sa_ugust', perrWith='quiet')
     index_a2x_Sa_tbot       = mct_avect_indexra(a2x,'Sa_tbot')
     index_a2x_Sa_ptem       = mct_avect_indexra(a2x,'Sa_ptem')
     index_a2x_Sa_pbot       = mct_avect_indexra(a2x,'Sa_pbot')

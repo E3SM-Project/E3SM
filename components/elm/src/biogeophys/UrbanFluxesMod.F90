@@ -221,6 +221,7 @@ contains
          forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
          wsresp              =>   top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
          tau_est             =>   top_as%tau_est                            , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
+         ugust               =>   top_as%ugust                              , & ! Input:  [real(r8) (:)   ]  gustiness from atmosphere (m/s)
 
          wind_hgt_canyon     =>   urbanparams_vars%wind_hgt_canyon          , & ! Input:  [real(r8) (:)   ]  height above road at which wind in canyon is to be computed (m)
          eflx_traffic_factor =>   urbanparams_vars%eflx_traffic_factor      , & ! Input:  [real(r8) (:)   ]  multiplicative urban traffic factor for sensible heat flux
@@ -335,11 +336,11 @@ contains
          if (implicit_stress) then
             wind_speed0(l) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
             wind_speed_adj(l) = wind_speed0(l)
-            ur(l) = max(1.0_r8, wind_speed_adj(l))
+            ur(l) = max(1.0_r8, wind_speed_adj(l) + ugust(t))
 
             prev_tau(l) = tau_est(t)
          else
-            ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+            ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
          end if
          tau_diff(l) = 1.100_r8
 
@@ -431,7 +432,7 @@ contains
                call shr_flux_update_stress(wind_speed0(l), wsresp(t), tau_est(t), &
                     tau(l), prev_tau(l), tau_diff(l), prev_tau_diff(l), &
                     wind_speed_adj(l))
-               ur(l) = max(1.0_r8, wind_speed_adj(l))
+               ur(l) = max(1.0_r8, wind_speed_adj(l) + ugust(t))
             end if
 
             ! Canyon top wind

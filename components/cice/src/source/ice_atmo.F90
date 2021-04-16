@@ -54,6 +54,7 @@
                                       Tsf,      potT,     &
                                       uatm,     vatm,     &  
                                       wsresp,   tau_est,  &
+                                      ugust,              &
                                       uvel,     vvel,     &  
                                       wind,     zlvl,     &  
                                       Qa,       rhoa,     &
@@ -104,6 +105,7 @@
          vatm     , & ! y-direction wind speed (m/s)
          wsresp   , & ! response of atmospheric boundary layer to stress (m/s/Pa)
          tau_est  , & ! estimated boundary layer equilibrium stress (Pa)
+         ugust    , & ! gustiness from atmosphere (m/s)
          uvel     , & ! x-direction ice speed (m/s)
          vvel     , & ! y-direction ice speed (m/s)
          wind     , & ! wind speed (m/s)
@@ -229,7 +231,7 @@
             i = indxi(ij)
             j = indxj(ij)
             wind0(ij) = max(wind(i,j), 0.01_dbl_kind)
-            vmag(ij) = max(umin, wind0(ij))
+            vmag(ij) = max(umin, wind0(ij) + ugust(i,j))
 !---------- (3b) option by Andrew Roberts
 !            wind0(ij)   = sqrt( (uatm(i,j)-uvel(i,j))**2 + (vatm(i,j)-vvel(i,j))**2)
 !---------- (3b) option end
@@ -245,7 +247,7 @@
             i = indxi(ij)
             j = indxj(ij)
             wind0(ij) = max(wind(i,j), 0.01_dbl_kind)
-            vmag(ij) = max(umin, wind0(ij))
+            vmag(ij) = max(umin, wind0(ij) + ugust(i,j))
 !---------- (3b) option by Andrew Roberts
 !            wind0(ij)   = sqrt( (uatm(i,j)-uvel(i,j))**2 + (vatm(i,j)-vvel(i,j))**2)
 !---------- (3b) option end
@@ -337,7 +339,7 @@
             tau(ij) = rhoa(i,j) * ustar(ij) * rd(ij) * windit(ij)
             call shr_flux_update_stress(wind0(ij), wsresp(i,j), tau_est(i,j), &
                  tau(ij), taupr(ij), dtau(ij), dtaupr(ij), windit(ij))
-            vmagit(ij) = max(umin, windit(ij))
+            vmagit(ij) = max(umin, windit(ij) + ugust(i,j))
 #endif
 
          enddo                  ! ij

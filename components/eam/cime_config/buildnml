@@ -25,6 +25,7 @@ def buildnml(case, caseroot, compname):
 
     # Gather case parameters
     atm_flux_method     = case.get_value("ATM_FLUX_INTEGRATION_METHOD")
+    atm_gustiness       = case.get_value("ATM_SUPPLIES_GUSTINESS")
     atm_grid		= case.get_value("ATM_GRID")
     atm_ncpl		= case.get_value("ATM_NCPL")
     build_complete	= case.get_value("BUILD_COMPLETE")
@@ -190,6 +191,7 @@ def buildnml(case, caseroot, compname):
         if cam_branch_file: infile_text += " cam_branch_file = {} \n".format(cam_branch_file)
         if debug:           infile_text += " state_debug_checks = .true. \n"
         if linearize_pbl_winds: infile_text += " linearize_pbl_winds = .true. \n"
+        if atm_gustiness: infile_text += " export_gustiness = .true. \n"
 
         create_namelist_infile(case,
                                "{}/user_nl_eam{}".format(caseroot, inst_string),

@@ -3487,6 +3487,11 @@ If .true., a linearization of the response of the pbl scheme to surface stresses
 is sent to the coupler every time step, using the fields 'wsresp' and 'tau_est'.
 </entry>
 
+<entry id="export_gustiness" type="logical" category="pbl"
+       group="phys_ctl_nl" valid_values="" >
+If .true., a gustiness value will be exported to the coupler.
+</entry>
+
 
 <!-- Flags for implementing code modifications under polar project -->
 
