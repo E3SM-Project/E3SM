@@ -37,25 +37,25 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   FieldLayout scalar2d_swband_layout { {COL,SWBND}, {m_ncol,m_nswbands} };
 
   // Set required (input) fields here
-  add_required_field("p_mid" , scalar3d_layout_mid, Pa, grid->name());
-  add_required_field("pint", scalar3d_layout_int, Pa, grid->name());
-  add_required_field("T_mid" , scalar3d_layout_mid, K , grid->name());
-  add_required_field("tint" , scalar3d_layout_int, K , grid->name());
-  add_required_field("gas_vmr", gas_layout, kgkg, grid->name());
-  add_required_field("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
-  add_required_field("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name());
-  add_required_field("cos_zenith", scalar2d_layout, nondim, grid->name());
-  add_required_field("lwp", scalar3d_layout_mid, kg/m3, grid->name());
-  add_required_field("iwp", scalar3d_layout_mid, kg/m3, grid->name());
-  add_required_field("eff_radius_qc", scalar3d_layout_mid, micron, grid->name());
-  add_required_field("eff_radius_qi", scalar3d_layout_mid, micron, grid->name());
+  add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name());
+  add_field<Required>("pint", scalar3d_layout_int, Pa, grid->name());
+  add_field<Required>("T_mid" , scalar3d_layout_mid, K , grid->name());
+  add_field<Required>("tint" , scalar3d_layout_int, K , grid->name());
+  add_field<Required>("gas_vmr", gas_layout, kgkg, grid->name());
+  add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
+  add_field<Required>("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name());
+  add_field<Required>("cos_zenith", scalar2d_layout, nondim, grid->name());
+  add_field<Required>("lwp", scalar3d_layout_mid, kg/m3, grid->name());
+  add_field<Required>("iwp", scalar3d_layout_mid, kg/m3, grid->name());
+  add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name());
+  add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name());
 
   // Set computed (output) fields
-  add_computed_field("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
-  add_computed_field("SW_flux_up", scalar3d_layout_int, Wm2, grid->name());
-  add_computed_field("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name());
-  add_computed_field("LW_flux_up", scalar3d_layout_int, Wm2, grid->name());
-  add_computed_field("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
+  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
+  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid->name());
+  add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name());
+  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid->name());
+  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
 
 }  // RRTMGPRadiation::set_grids
 
@@ -152,18 +152,6 @@ void RRTMGPRadiation::run_impl (const Real /* dt */) {
 
 void RRTMGPRadiation::finalize_impl  () {
   rrtmgp::rrtmgp_finalize();
-}
-
-// Register all required and computed field in the field manager
-void RRTMGPRadiation::
-register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
-  auto& field_mgr = *field_mgrs.at("Physics");
-  for (const auto& fid: get_required_fields()) {
-    field_mgr.register_field(fid);
-  }
-  for (const auto& fid: get_computed_fields()) {
-    field_mgr.register_field(fid);
-  }
 }
 
 // Private function to check that fields are not padded

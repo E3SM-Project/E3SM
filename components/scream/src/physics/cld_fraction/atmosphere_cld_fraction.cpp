@@ -20,6 +20,7 @@ CldFraction::CldFraction (const ekat::Comm& comm, const ekat::ParameterList& par
 void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
@@ -33,18 +34,18 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   // Define the different field layouts that will be used for this process
-  using namespace ShortFieldTagsNames;
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces 
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
 
   // Set of fields used strictly as input
-  add_required_field("qi",   scalar3d_layout_mid, Q,      grid_name);
-  add_required_field("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name);
+  constexpr int ps = Pack::n;
+  add_field<Required>("qi",   scalar3d_layout_mid, Q,      grid_name,"tracers",ps);
+  add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name,ps);
 
   // Set of fields used strictly as output
-  add_computed_field("cldfrac_tot",   scalar3d_layout_mid, nondim, grid_name);
-  add_computed_field("cldfrac_ice",  scalar3d_layout_mid, nondim, grid_name);
+  add_field<Computed>("cldfrac_tot",   scalar3d_layout_mid, nondim, grid_name,ps);
+  add_field<Computed>("cldfrac_ice",  scalar3d_layout_mid, nondim, grid_name,ps);
 
   // Set of fields used as input and output
   // - There are no fields used as both input and output.
@@ -80,29 +81,6 @@ void CldFraction::run_impl (const Real dt)
 void CldFraction::finalize_impl()
 {
   // Do nothing
-}
-
-// =========================================================================================
-void CldFraction::
-register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
-  const auto& grid_name = m_cld_fraction_params.get<std::string>("Grid");
-  auto& field_mgr = *field_mgrs.at(grid_name);
-  for (const auto& fid : get_required_fields()) {
-    const auto& name = fid.name();
-    if (name == "qi") {
-      field_mgr.register_field<Pack>(fid,"TRACERS");
-    } else {
-      field_mgr.register_field<Pack>(fid);
-    }
-  }
-  for (const auto& fid : get_computed_fields()) {
-    const auto& name = fid.name();
-    if (name == "qi") {
-      field_mgr.register_field<Pack>(fid,"TRACERS");
-    } else {
-      field_mgr.register_field<Pack>(fid);
-    }
-  }
 }
 
 void CldFraction::set_required_field_impl (const Field<const Real>& f) {

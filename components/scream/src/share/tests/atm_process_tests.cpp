@@ -83,8 +83,8 @@ public:
     const auto grid = gm->get_grid(m_grid_name);
     const auto dyn_lt = grid->get_3d_scalar_layout(true);
 
-    add_required_field("Temperature tendency",dyn_lt,K/s,m_grid_name);
-    add_computed_field("Temperature",dyn_lt,K,m_grid_name);
+    add_field<Required>("Temperature tendency",dyn_lt,K/s,m_grid_name);
+    add_field<Computed>("Temperature",dyn_lt,K,m_grid_name);
   }
 };
 
@@ -105,8 +105,8 @@ public:
     const auto grid = gm->get_grid(m_grid_name);
     const auto phys_lt = grid->get_3d_scalar_layout (true);
 
-    add_required_field("Temperature",phys_lt,K,m_grid_name);
-    add_computed_field("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
+    add_field<Required>("Temperature",phys_lt,K,m_grid_name);
+    add_field<Computed>("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
   }
 };
 
@@ -127,10 +127,10 @@ public:
     const auto grid = gm->get_grid(m_grid_name);
     const auto phys_lt = grid->get_3d_scalar_layout (true);
 
-    add_required_field("Temperature",phys_lt,K,m_grid_name);
-    add_required_field("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
+    add_field<Required>("Temperature",phys_lt,K,m_grid_name);
+    add_field<Required>("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
 
-    add_computed_field("Temperature tendency",phys_lt,K/s,m_grid_name);
+    add_field<Computed>("Temperature tendency",phys_lt,K/s,m_grid_name);
   }
 };
 

@@ -54,10 +54,6 @@ public:
   void set_required_group (const FieldGroup<const Real>& group);
   void set_updated_group (const FieldGroup<Real>& group);
 
-  // Register all fields in the proper field manager(s).
-  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
-  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
-
   // --- Methods specific to AtmosphereProcessGroup --- //
   int get_num_processes () const { return m_atm_processes.size(); }
 
@@ -70,7 +66,7 @@ public:
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).
-  void process_required_field (const FieldIdentifier& fid);
+  void process_required_field (const FieldRequest& req);
   void process_required_group (const GroupRequest& req);
 
   // The initialization, run, and finalization methods

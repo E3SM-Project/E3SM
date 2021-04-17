@@ -95,7 +95,10 @@ inline std::string e2str (const FieldTag ft) {
   return name;
 }
 
-// If using tags a lot, consider adding 'using namespace ShortFieldTagsNames' locally to your function or cpp file.
+// If using tags a lot, consider adding 'using namespace ShortFieldTagsNames'
+// locally to your function or cpp file.
+// TODO: if/when we require std=c++20, this can be removed, and user can do
+//   using enum FieldTag;
 namespace ShortFieldTagsNames {
 
   constexpr auto EL   = FieldTag::Element;

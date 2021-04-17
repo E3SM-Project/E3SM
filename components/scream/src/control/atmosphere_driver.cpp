@@ -124,16 +124,29 @@ void AtmosphereDriver::create_fields()
   check_ad_status (s_procs_created | s_grids_created);
 
   // By now, the processes should have fully built the ids of their
-  // required/computed fields. Let them register them in the FM
+  // required/computed fields and groups. Let them register them in the FM
   for (auto it : m_grids_manager->get_repo()) {
     auto grid = it.second;
     m_field_mgrs[grid->name()] = std::make_shared<field_mgr_type>(grid);
     m_field_mgrs[grid->name()]->registration_begins();
   }
-  // Register required/computed fields
-  m_atm_process_group->register_fields(m_field_mgrs);
 
-  register_groups();
+  // Register required/computed fields
+  for (const auto& req : m_atm_process_group->get_required_fields()) {
+    m_field_mgrs.at(req.fid.get_grid_name())->register_field(req);
+  }
+  for (const auto& req : m_atm_process_group->get_computed_fields()) {
+    m_field_mgrs.at(req.fid.get_grid_name())->register_field(req);
+  }
+  // Register required/updated groups
+  for (const auto& req : m_atm_process_group->get_required_groups()) {
+    m_field_mgrs.at(req.grid)->register_group(req);
+  }
+  for (const auto& req : m_atm_process_group->get_updated_groups()) {
+    m_field_mgrs.at(req.grid)->register_group(req);
+  }
+
+  // Close the FM's, allocate all fields
   for (auto it : m_grids_manager->get_repo()) {
     auto grid = it.second;
     m_field_mgrs[grid->name()]->registration_ends();
@@ -199,7 +212,8 @@ initialize_fields (const util::TimeStamp& t0)
   int ifield=0;
   auto ref_fm = get_ref_grid_field_mgr();
   std::vector<std::string> ic_fields_to_copy;
-  for (auto& fid : fields_in) {
+  for (auto& req : fields_in) {
+    const auto& fid = req.fid;
     const auto& name = fid.name();
     auto f = ref_fm->get_field(fid);
     // First, check if the input file contains constant values for some of the fields
@@ -290,12 +304,14 @@ void AtmosphereDriver::initialize_atm_procs ()
   // Input fields will be handed to the processes as const
   const auto& inputs  = m_atm_process_group->get_required_fields();
   const auto& outputs = m_atm_process_group->get_computed_fields();
-  for (const auto& fid : inputs) {
+  for (const auto& req : inputs) {
+    const auto& fid = req.fid;
     auto fm = get_field_mgr(fid.get_grid_name());
     m_atm_process_group->set_required_field(fm->get_field(fid).get_const());
   }
   // Output fields are handed to the processes as writable
-  for (const auto& fid : outputs) {
+  for (const auto& req : outputs) {
+    const auto& fid = req.fid;
     auto fm = get_field_mgr(fid.get_grid_name());
     m_atm_process_group->set_computed_field(fm->get_field(fid));
   }
@@ -396,81 +412,6 @@ AtmosphereDriver::get_field_mgr (const std::string& grid_name) const {
       "Error! Request for field manager on a non-existing grid '" + grid_name + "'.\n");
 
   return m_field_mgrs.at(grid_name);
-}
-
-void AtmosphereDriver::register_groups () {
-  using GroupRequest = AtmosphereProcess::GroupRequest;
-  // Given a GroupRequest for group $group on grid $grid with pack size $ps,
-  // make sure that the fm on grid $grid contains all the fields that are
-  // in group $group on the fm on the ref grid.
-  // In other words, the group on the input grid must be a super-set of the
-  // group on the ref grid.
-  auto ref_grid = m_grids_manager->get_reference_grid();
-  auto ref_fm = m_field_mgrs.at(ref_grid->name());
-  auto has_whole_ref_grid_group_on_grid = [&](const GroupRequest& req)
-  {
-    const auto& group = req.name;
-    const auto& grid  = req.grid;
-
-    // The fm on this grid
-    auto fm = m_field_mgrs.at(grid);
-
-    // We might not need this, but if we do, create it once.
-    // We'll use it if a field is missing on a non-ref grid
-    auto r = m_grids_manager->create_remapper(ref_grid->name(),grid);
-
-    // Lambda helper fcn, that register field $name with group $group on this grid's field manager
-    // if not yet already registered
-    auto register_if_not_there = [&](const std::string& name) {
-      if (!fm->has_field(name)) {
-        // On the reference grid, we should already have all fields registered
-        EKAT_REQUIRE_MSG(grid!=m_grids_manager->get_reference_grid()->name(),
-            "Error! Somehow a field is missing on the reference grid.\n"
-            "       Field name: " + name + "\n");
-
-        // There's no copy of this field on the current grid. "Import" it from the ref one
-        // If the field does not exist on the ref grid, we're out of luck.
-        EKAT_REQUIRE_MSG (ref_fm->has_field(name),
-            "Error! Cannot import field from reference grid, since it's not present there either.\n"
-            "       Field name:  " + name + "\n"
-            "       Target grid: " + grid + "\n");
-
-        auto f_ref = ref_fm->get_field_ptr(name);
-
-        // Field $name in group $group has no copy on grid $grid.
-        // Lets take any fid in the fm for this field, and register
-        // a copy of it on grid $grid. We can do this by creating
-        // a remapper and using its capabilities.
-        const auto& ref_fid = f_ref->get_header().get_identifier();
-        auto f_units = ref_fid.get_units();
-        auto ref_layout = ref_fid.get_layout();
-        auto tgt_layout = r->create_tgt_layout(ref_layout);
-        FieldIdentifier tgt_fid(name,tgt_layout,f_units,grid);
-        fm->register_field(tgt_fid,req.pack_size,group);
-      }
-    };
-
-    // Take the group on the ref grid, and register all the fields in in
-    // in the fm of this grid.
-    auto ref_ginfo = ref_fm->get_groups_info().find(group);
-    if (ref_ginfo!=ref_fm->get_groups_info().end()) {
-      // Loop over all the names in ref_ginfo's fields names,
-      // And make sure they are present on this grid
-
-      const auto& fnames = ref_ginfo->second->m_fields_names;
-      for (const auto& name : fnames) {
-        register_if_not_there(name);
-      }
-    }
-  };
-
-  // Call the above lambda on both required and updated groups.
-  for (auto it : m_atm_process_group->get_required_groups()) {
-    has_whole_ref_grid_group_on_grid(it);
-  }
-  for (auto it : m_atm_process_group->get_updated_groups()) {
-    has_whole_ref_grid_group_on_grid(it);
-  }
 }
 
 void AtmosphereDriver::

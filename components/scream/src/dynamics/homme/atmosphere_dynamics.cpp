@@ -78,7 +78,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   FieldLayout scalar_state_3d_int { {EL,TL,GP,GP,ILEV},     {ne, NTL,    NGP,NGP,NVL+1} };
   FieldLayout vector_state_3d_mid { {EL,TL,CMP,GP,GP,LEV},  {ne, NTL,  2,NGP,NGP,NVL} };
 
-  m_dyn_fids.emplace("horiz_winds"             , FID("horiz_winds",              vector_state_3d_mid, m/s,            dgn));
+  m_dyn_fids.emplace("horiz_winds"   , FID("horiz_winds",    vector_state_3d_mid, m/s,            dgn));
   m_dyn_fids.emplace("vtheta_dp"     , FID("vtheta_dp",      scalar_state_3d_mid, K,              dgn));
   m_dyn_fids.emplace("phi_i"         , FID("phi_i",          scalar_state_3d_int, Pa*pow(m,3)/kg, dgn));
   m_dyn_fids.emplace("w_int"         , FID("w_int",          scalar_state_3d_int, m/s,            dgn));
@@ -93,18 +93,18 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("w_int"));
   m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("pseudo_density"));
 
-  // Create the std::set of required/computed fids
+  // Add inout fields to the list of required/computed fields
+  constexpr int ps = sizeof(Homme::Scalar) / sizeof(Real);
   for (int i=0; i<m_p2d_remapper->get_num_registered_fields(); ++i) {
     const auto& ref_fid = m_p2d_remapper->get_src_field_id(i);
-    add_required_field(ref_fid);
-    add_computed_field(ref_fid);
+    add_field<Updated>(ref_fid,ps);
   }
 
   // qv is needed to make sure Q is not empty (dyn needs qv to transform T<->Theta),
   // while ps is needed for initial conditions only.
   FieldLayout scalar_3d_mid { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
   FieldIdentifier qv("qv", scalar_3d_mid, Q, dgn);
-  add_required_field(m_p2d_remapper->create_src_fid(qv));
+  add_field<Required>(m_p2d_remapper->create_src_fid(qv),"tracers");
 
   const int ftype = get_homme_param<int>("ftype");
   EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,
@@ -112,7 +112,8 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
                      "       Found " + std::to_string(ftype) + " instead.\n");
 
   // Input-output groups
-  add_updated_group("tracers",grids_manager->get_reference_grid()->name());
+  add_group<Updated>("tracers",grids_manager->get_reference_grid()->name(),
+                     ps, Bundling::Required);
 }
 
 void HommeDynamics::
@@ -163,36 +164,8 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   m_p2d_remapper->registration_ends();
   m_p2d_remapper->remap(true);
 
-  // Finish homme initialization
-  // Homme::initialize_dp3d_from_ps_c();
 
   prim_init_model_f90 ();
-}
-
-void HommeDynamics::
-register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
-  auto& field_mgr = *field_mgrs.at(m_ref_grid->name());
-  // Inputs
-  for (int i=0; i<m_p2d_remapper->get_num_registered_fields(); ++i) {
-    const auto& src = m_p2d_remapper->get_src_field_id(i);
-    field_mgr.register_field(src);
-  }
-
-  // Make sure qv is registered (we need at least that one tracer, for T<->Theta conversions)
-  using namespace ShortFieldTagsNames;
-  using namespace ekat::units;
-
-  constexpr int NGP  = HOMMEXX_NP;
-  constexpr int NVL  = HOMMEXX_NUM_PHYSICAL_LEV;
-
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
-
-  const int ne = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
-  FieldLayout qv_layout { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
-  FieldIdentifier qv("qv", qv_layout, Q,  m_dyn_grid->name());
-
-  field_mgr.register_field(m_p2d_remapper->create_src_fid(qv),"tracers");
 }
 
 void HommeDynamics::run_impl (const Real dt)

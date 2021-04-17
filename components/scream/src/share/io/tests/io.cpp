@@ -208,6 +208,8 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
 {
   using namespace ShortFieldTagsNames;
   using FL = FieldLayout;
+  using FR = FieldRequest;
+  using SL = std::list<std::string>;
 
   // Create a fm
   auto fm = std::make_shared<FieldManager<Real>>(grid);
@@ -234,10 +236,10 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   // Register fields with fm
   // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
   fm->registration_begins();
-  fm->register_field(fid1,{"output"});
-  fm->register_field(fid2,{"output","restart"});
-  fm->register_field(fid3,{"output","restart"});
-  fm->register_field(fid4,Pack::n,{"output","restart"}); // Register field as packed
+  fm->register_field(FR{fid1,"output"});
+  fm->register_field(FR{fid2,SL{"output","restart"}});
+  fm->register_field(FR{fid3,SL{"output","restart"}});
+  fm->register_field(FR{fid4,SL{"output","restart"},Pack::n}); // Register field as packed
   fm->registration_ends();
 
   // Make sure that field 4 is in fact a packed field

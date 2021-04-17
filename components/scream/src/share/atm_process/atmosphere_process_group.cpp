@@ -97,13 +97,13 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
       process_required_field(req);
     }
     for (const auto& req : atm_proc->get_computed_fields()) {
-      add_computed_field(req);
+      add_field<Computed>(req);
     }
     for (const auto& req : atm_proc->get_required_groups()) {
-      add_required_group(req);
+      add_group<Required>(req);
     }
     for (const auto& req : atm_proc->get_updated_groups()) {
-      add_updated_group(req);
+      add_group<Updated>(req);
     }
   }
 }
@@ -167,31 +167,6 @@ set_updated_group (const FieldGroup<Real>& group)
   }
 }
 
-void AtmosphereProcessGroup::
-register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
-  for (int iproc=0; iproc<m_group_size; ++iproc) {
-    const auto& atm_proc = m_atm_processes[iproc];
-    atm_proc->register_fields(field_mgrs);
-
-#ifdef SCREAM_DEBUG
-    // Make sure processes are not calling methods they shouldn't on the field manager
-    for (const auto& it : field_mgrs) {
-      EKAT_REQUIRE_MSG(it.second->repository_state()==RepoState::Open,
-          "Error! Atmosphere processes are *not* allowed to modify the state of the field manager.\n");
-
-      // Check that the required fields are indeed in the FM now
-      for (const auto& id : atm_proc->get_required_fields()) {
-        EKAT_REQUIRE_MSG(it.second->has_field(id),
-            "Error! Process '" + atm_proc->name() + "' failed to register required field '" + id.get_id_string() + "'.\n");
-      }
-      for (const auto& id : atm_proc->get_computed_fields()) {
-        EKAT_REQUIRE_MSG(it.second->has_field(id),
-            "Error! Process '" + atm_proc->name() + "' failed to register computed field '" + id.get_id_string() + "'.\n");
-      }
-    }
-#endif
-  }
-}
 void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real>& f) {
   const auto& fid = f.get_header().get_identifier();
   for (auto atm_proc : m_atm_processes) {
@@ -224,39 +199,39 @@ process_required_group (const GroupRequest& req) {
       // Some previous atm proc updated this group, so it's not an 'input'
       // of the atm group as a whole. However, we might need a different
       // pack size. So, instead of adding to the required groups,
-      // we add to the computed fields. This way we don't modify the inputs
+      // we add to the updated ones. This way we don't modify the inputs
       // of the group, and still manage to communicate to the AD the pack size
       // that we need.
       // NOTE; we don't have a way to check if all the fields in the group
       //       are computed by previous processes, since we don't have
       //       the list of all fields in this group.
-      add_updated_group(req);
+      add_group<Updated>(req);
     } else {
-      add_required_group(req);
+      add_group<Required>(req);
     }
   } else {
     // In parallel schedule, the inputs of all processes are inputs of the group
-    add_required_group(req);
+    add_group<Required>(req);
   }
 }
 
 void AtmosphereProcessGroup::
-process_required_field (const FieldIdentifier& fid) {
+process_required_field (const FieldRequest& req) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
-    if (computes_field(fid)) {
+    if (computes_field(req.fid)) {
       // Some previous atm proc computes this field, so it's not an 'input'
       // of the group as a whole. However, we might need a different pack size,
       // or want to add it to a different group. So, instead of adding to
       // the required fields, we add to the computed fields. This way we
       // don't modify the inputs of the group, and still manage to communicate
       // to the AD the pack size and group affiliations that we need
-      add_computed_field(fid);
+      add_field<Computed>(req);
     } else {
-      add_required_field(fid);
+      add_field<Required>(req);
     }
   } else {
     // In parallel schedule, the inputs of all processes are inputs of the group
-    add_required_field(fid);
+    add_field<Required>(req);
   }
 }
 

@@ -4,6 +4,7 @@
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_manager.hpp"
+#include "share/field/field_request.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
 #include "share/grid/grids_manager.hpp"
@@ -18,6 +19,7 @@
 
 #include <string>
 #include <set>
+#include <type_traits>
 
 namespace scream
 {
@@ -63,36 +65,6 @@ class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess
 public:
   using TimeStamp      = util::TimeStamp;
   using ci_string      = ekat::CaseInsensitiveString;
-
-  /*
-   * A struct used to request a group of fields.
-   *
-   * Groups are simply a labels attached to a Field object (see field_tracking.hpp).
-   * They can be useful when a class need to access a certain group of fields,
-   * in a way that is agnostic to how many fields are in said group.
-   * A GroupRequest is a lightweight struct that an AP can expose if it needs a group
-   * of fields, without caring how many there are, or how they are called.
-   * A typical example is an AP that needs to advect tracers (like Dynamics does):
-   * it treats tracers agnostically, and does not really care how many there are.
-   * So the AP exposes this need as a GroupRequest. Later, it will be provided
-   * with a FieldGroup, which allows to access all the fields in the group
-   * individually, and, if the allocation permits it, as a single N+1 dimensional
-   * field. For more details about the FieldGroup struct, see field_group.hpp.
-   */
-  struct GroupRequest {
-    GroupRequest (const std::string& name_, const std::string& grid_, const int ps = 1)
-     : name(name_), grid(grid_), pack_size(ps)
-    {
-      EKAT_REQUIRE_MSG(pack_size>=1, "Error! Invalid pack size request.\n");
-    }
-
-    // Group name
-    ci_string name;
-    // Grid name
-    ci_string grid;
-    // Request an allocation that can accomodate a value type like Pack<Real,pack_size>
-    int       pack_size;
-  };
 
   virtual ~AtmosphereProcess () = default;
 
@@ -192,14 +164,10 @@ public:
     );
   }
 
-  // Register all fields in the proper field manager(s).
-  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
-  virtual void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const = 0;
-
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.
-  const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
+  const std::set<FieldRequest>& get_required_fields () const { return m_required_fields; }
+  const std::set<FieldRequest>& get_computed_fields () const { return m_computed_fields; }
 
   // If needed, an Atm Proc can claim to need/update a whole group of fields, without really knowing
   // a priori how many they are, or even what they are. Each entry of the returned set is a pair
@@ -209,8 +177,22 @@ public:
   const std::set<GroupRequest>& get_updated_groups  () const { return m_updated_groups; }
 
   // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use our util free function
-  bool requires_field (const FieldIdentifier& id) const { return ekat::contains(m_required_fields,id); }
-  bool computes_field (const FieldIdentifier& id) const { return ekat::contains(m_computed_fields,id); }
+  bool requires_field (const FieldIdentifier& id) const {
+    for (const auto& it : m_required_fields) {
+      if (it.fid==id) {
+        return true;
+      }
+    }
+    return false;
+  }
+  bool computes_field (const FieldIdentifier& id) const {
+    for (const auto& it : m_computed_fields) {
+      if (it.fid==id) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   bool requires_group (const std::string& name, const std::string& grid) const {
     for (const auto& it : m_required_groups) {
@@ -231,36 +213,92 @@ public:
 
 protected:
 
+  enum RequestType {
+    Required,
+    Computed,
+    Updated
+  };
+
   // Derived classes can used these method, so that if we change how fields/groups
   // requirement are stored (e.g., std::set -> std::list), they don't need to change
   // their implementation.
-  void add_required_field (const std::string& name, const FieldLayout& layout,
-                           const ekat::units::Units& u, const std::string& grid_name) {
-    add_required_field(FieldIdentifier(name,layout,u,grid_name));
+
+  // Field requests. Provide plenty of overloads to make it simple to add field request.
+  // E.g., provide a FID directly vs provide its ctor args; or provide groups list and
+  // no pack size vs single group and pack size.
+  template<RequestType RT>
+  void add_field (const std::string& name, const FieldLayout& layout,
+                  const ekat::units::Units& u, const std::string& grid_name,
+                  const int ps = 1)
+  { add_field<RT>(FieldIdentifier(name,layout,u,grid_name),ps); }
+
+  template<RequestType RT>
+  void add_field (const std::string& name, const FieldLayout& layout,
+                  const ekat::units::Units& u, const std::string& grid_name,
+                  const std::string& group, const int ps = 1)
+  { add_field<RT>(FieldIdentifier(name,layout,u,grid_name),group,ps); }
+
+  template<RequestType RT>
+  void add_field (const std::string& name, const FieldLayout& layout,
+                  const ekat::units::Units& u, const std::string& grid_name,
+                  const std::list<std::string>& groups, const int ps = 1)
+  { add_field<RT>(FieldIdentifier(name,layout,u,grid_name),groups,ps); }
+
+  template<RequestType RT>
+  void add_field (const FieldIdentifier& fid, const std::string& group, const int ps = 1)
+  { add_field<RT>(FieldRequest(fid,group,ps)); }
+
+  template<RequestType RT>
+  void add_field (const FieldIdentifier& fid, const std::list<std::string>& groups)
+  { add_field<RT>(FieldRequest(fid,groups)); }
+
+  template<RequestType RT>
+  void add_field (const FieldIdentifier& fid, const int ps = 1)
+  { add_field<RT>(FieldRequest(fid,ps)); }
+
+  template<RequestType RT>
+  void add_field (const FieldIdentifier& fid, const std::list<std::string>& groups, const int ps)
+  { add_field<RT>(FieldRequest(fid,groups,ps)); }
+
+  template<RequestType RT>
+  void add_field (const FieldRequest& req)
+  {
+    // Since we use C-style enum, let's avoid invalid integers casts
+    static_assert(RT==Required || RT==Computed || RT==Updated,
+                  "Error! Invalid request type in call to add_field.\n");
+
+    if (RT==Updated) {
+      add_field<Required>(req);
+      add_field<Computed>(req);
+    } else {
+      auto& fields = RT==Required ? m_required_fields : m_computed_fields;
+      fields.emplace(req);
+    }
   }
-  void add_required_field (const FieldIdentifier& fid) {
-    m_required_fields.emplace(fid);
-  }
-  void add_computed_field (const std::string& name, const FieldLayout& layout,
-                           const ekat::units::Units& u, const std::string& grid_name) {
-    add_computed_field(FieldIdentifier(name,layout,u,grid_name));
-  }
-  void add_computed_field (const FieldIdentifier& fid) {
-    m_computed_fields.emplace(fid);
-  }
-  void add_required_group (const std::string& name, const std::string& grid_name,
-                           const int pack_size = 1) {
-    add_required_group (GroupRequest(name,grid_name,pack_size));
-  }
-  void add_required_group (const GroupRequest& req) {
-    m_required_groups.emplace(req);
-  }
-  void add_updated_group (const std::string& name, const std::string& grid_name,
-                           const int pack_size = 1) {
-    add_updated_group (GroupRequest(name,grid_name,pack_size));
-  }
-  void add_updated_group (const GroupRequest& req) {
-    m_updated_groups.emplace(req);
+
+  // Group requests
+  template<RequestType RT>
+  void add_group (const std::string& name, const std::string& grid, const int ps, const Bundling b,
+                  const GroupRequest* p, const Relationship t, const std::list<std::string>& excl)
+  { add_group<RT>(GroupRequest(name,grid,ps,b,p,t,excl)); }
+
+  template<RequestType RT>
+  void add_group (const std::string& name, const std::string& grid_name,
+                  const Bundling b = Bundling::NotNeeded)
+  { add_group<RT> (GroupRequest(name,grid_name,b)); }
+
+  template<RequestType RT>
+  void add_group (const std::string& name, const std::string& grid_name,
+                  const int pack_size, const Bundling b = Bundling::NotNeeded)
+  { add_group<RT> (GroupRequest(name,grid_name,pack_size,b)); }
+
+  template<RequestType RT>
+  void add_group (const GroupRequest& req)
+  {
+    static_assert(RT==Required || RT==Updated,
+        "Error! Invalid request type in call to add_group.\n");
+    auto& groups = RT==Required ? m_required_groups : m_updated_groups;
+    groups.emplace(req);
   }
 
   // Override this method to initialize your subclass.
@@ -291,33 +329,16 @@ protected:
 
 private:
 
-  std::set<FieldIdentifier>   m_required_fields;
-  std::set<FieldIdentifier>   m_computed_fields;
+  std::set<FieldRequest>   m_required_fields;
+  std::set<FieldRequest>   m_computed_fields;
 
-  std::set<GroupRequest>      m_required_groups;
-  std::set<GroupRequest>      m_updated_groups;
+  std::set<GroupRequest>   m_required_groups;
+  std::set<GroupRequest>   m_updated_groups;
 
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.
   TimeStamp t_;
 };
-
-// In order to use GroupRequest in std sorted containers (like std::set),
-// we need to provide an overload of op< or std::less.
-inline bool operator< (const AtmosphereProcess::GroupRequest& lhs,
-                       const AtmosphereProcess::GroupRequest& rhs)
-{
-  if (lhs.name<rhs.name) {
-    return true;
-  } else if (lhs.name==rhs.name) {
-    if (lhs.grid<rhs.grid) {
-      return true;
-    } else if (lhs.grid==rhs.grid) {
-      return lhs.pack_size < rhs.pack_size;
-    }
-  }
-  return false;
-}
 
 // A short name for the factory for atmosphere processes
 // WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.

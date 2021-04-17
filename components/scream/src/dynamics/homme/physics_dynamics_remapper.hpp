@@ -24,8 +24,6 @@
 namespace scream
 {
 
-using Homme::etoi;
-
 // Performs remap from physics to dynamics grids, and viceversa
 template<typename RealType>
 class PhysicsDynamicsRemapper : public AbstractRemapper<RealType>
@@ -984,7 +982,6 @@ local_remap_fwd_2d (const MT& team, const int num_cols, const VT1 lid2elgp, cons
       } else {
         auto dyn = reshape<ScalarT,3> (dyn_ptrs(i), dyn_dims(i));
 
-        const auto tr = Kokkos::TeamThreadRange(team, num_cols);
         const auto f = [&] (const int icol) {
           const auto& elgp = Kokkos::subview(lid2elgp,p2d(icol),Kokkos::ALL());
           dyn(elgp[0],elgp[1],elgp[2]) = phys(icol);
