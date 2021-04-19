@@ -326,7 +326,7 @@ subroutine dropmixnuc( &
    real(r8), intent(in) :: cldn(pcols,pver)    ! cloud fraction
    real(r8), intent(in) :: cldo(pcols,pver)    ! cloud fraction on previous time step
    integer,  intent(in), optional :: species_class(:) ! needed for MMF
-   logical,  intent(in), optional :: do_mmf           ! if present, is called in the MMF part.
+   logical,  intent(in), optional :: do_mmf           ! if True, use modifications for MMF
 
    ! output arguments
    real(r8), intent(out) :: tendnd(pcols,pver) ! change in droplet number concentration (#/kg/s)
@@ -453,9 +453,9 @@ subroutine dropmixnuc( &
    real(r8) :: zerogas(pver)
    character*200 fieldnamegas
 
-   logical  :: use_MMF
-
    !-------------------------------------------------------------------------------
+
+   if (.not.present(do_mmf)) do_mmf = .false.
 
    sq2pi = sqrt(2._r8*pi)
 
@@ -523,14 +523,12 @@ subroutine dropmixnuc( &
       end do
    end do
 
-   call phys_getopts(use_MMF_out=use_MMF)
-
-   if ( (use_MMF .and. present(do_mmf)) .and. .not.present(species_class) ) then
+   if ( do_mmf .and. .not.present(species_class) ) then
       call endrun('ERROR: species_class not provided for MMF call to dropmixnuc')
    end if
 
 #if (defined MODAL_AERO)
-   if (use_MMF .and. present(do_mmf)) then
+   if (do_mmf) then
       rgas  => state%q
       allocate(rgascol(pver, pcnst, 2))
       allocate(coltendgas(pcols))
@@ -618,7 +616,7 @@ subroutine dropmixnuc( &
       ! In the MMF, turbulent mixing for tracer species are turned off.
       ! So the turbulent for gas species mixing are added here.
       ! (Previously, it had the turbulent mixing for aerosol species)
-      if (use_MMF .and. present(do_mmf)) then
+      if (do_mmf) then
          do m=1, pcnst
             if(species_class(m).eq.spec_class_gas) then
                rgascol(:,m,nsav) = rgas(i,:,m)
@@ -635,7 +633,7 @@ subroutine dropmixnuc( &
       tau_cld_regenerate = 3600.0_r8 * 3.0_r8 
 
       ! For MMF, set the time scale be very long to disable cloud regeneration and decay
-      if (use_MMF .and. present(do_mmf)) tau_cld_regenerate = 3600.0_r8 * 24.0_r8 * 365.0_r8
+      if (do_mmf) tau_cld_regenerate = 3600.0_r8 * 24.0_r8 * 365.0_r8
 
       ! k-loop for growing/shrinking cloud calcs .............................
       ! grow_shrink_main_k_loop: &
@@ -1077,7 +1075,7 @@ subroutine dropmixnuc( &
 
 #if (defined MODAL_AERO)
          ! turbulent mixing for gas species 
-         if (use_MMF .and. present(do_mmf)) then
+         if (do_mmf) then
             do m=1, pcnst
                if(species_class(m).eq.spec_class_gas) then
                   flxconv = 0.0_r8
@@ -1154,7 +1152,7 @@ subroutine dropmixnuc( &
 
 #ifdef MODAL_AERO
       ! Gas tendency
-      if (use_MMF .and. present(do_mmf)) then
+      if (do_mmf) then
          do m=1, pcnst
             if(species_class(m).eq.spec_class_gas) then
 #ifdef ECPP
@@ -1173,7 +1171,7 @@ subroutine dropmixnuc( &
    end do  ! overall_main_i_loop
    ! end of main loop over i/longitude ....................................
 
-   if(use_MMF .and. present(do_mmf)) then  ! called in the mmf part.
+   if(do_mmf) then  ! called in the mmf part.
         call outfld('MMF_NDROPCOL   ', ndropcol  , pcols, lchnk   )
         call outfld('MMF_NDROPSRC   ', nsource    , pcols, lchnk   )
         call outfld('MMF_NDROPMIX   ', ndropmix    , pcols, lchnk   )
@@ -1232,7 +1230,7 @@ subroutine dropmixnuc( &
       do m = 1, ntot_amode
          do l = 0, nspec_amode(m)
             mm = mam_idx(m,l)
-            if (use_MMF .and. present(do_mmf)) then
+            if (do_mmf) then
               call outfld(trim('MMF_'//fieldname(mm)),    coltend(:,mm),    pcols, lchnk)
               call outfld(trim('MMF_'//fieldname_cw(mm)), coltend_cw(:,mm), pcols, lchnk)
             else
@@ -1247,7 +1245,7 @@ subroutine dropmixnuc( &
 
 #ifdef MODAL_AERO
    ! output column-integrated Gas tendency (this should be zero)
-   if(use_MMF .and. present(do_mmf)) then
+   if (do_mmf) then
       do m=1, pcnst
          if(species_class(m).eq.spec_class_gas) then
             do i=1, ncol
