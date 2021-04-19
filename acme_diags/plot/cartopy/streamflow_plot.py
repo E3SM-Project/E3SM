@@ -358,10 +358,7 @@ def plot_seasonality_map(export, parameter):
     plt.close()
 
 
-# FIXME: C901 - 'plot_panel_annual_map' is too complex (29)
-def plot_panel_annual_map(  # noqa
-    panel_index, fig, proj, export, bias_array, panel, parameter
-):
+def plot_panel_annual_map(panel_index, fig, proj, export, bias_array, panel, parameter):
     if panel_index == 0:
         panel_type = "test"
     elif panel_index == 1:
@@ -405,74 +402,19 @@ def plot_panel_annual_map(  # noqa
     proj_function = ccrs.PlateCarree
 
     # Stream gauges
-    # `export` is the array of gauges. Each gauge has multiple fields -- e.g., lat is index 7
-    # Continuous colormap
-    colormap = plt.get_cmap("jet_r")
-    color_list = list(map(lambda index: colormap(index)[:3], range(colormap.N)))
-    if panel_type in ["test", "ref"]:
-        value_min, value_max = 1, 1e4
-        # https://matplotlib.org/3.2.1/tutorials/colors/colormapnorms.html
-        norm = matplotlib.colors.LogNorm(vmin=value_min, vmax=value_max)
-    elif panel_type == "bias":
-        if parameter.print_statements:
-            value_min = np.floor(np.min(bias_array))
-            value_max = np.ceil(np.max(bias_array))
-            print(
-                "Bias of mean annual discharge {} min={}, max={}".format(
-                    panel_type, value_min, value_max
-                )
-            )
-
-        value_min = -100
-        value_max = 100
-        norm = matplotlib.colors.Normalize()
-    else:
-        raise Exception("Invalid panel_type={}".format(panel_type))
-    for gauge, i in zip(export, range(len(export))):
-        if panel_type == "test":
-            # Test mean annual discharge
-            value = gauge[1]
-        elif panel_type == "ref":
-            # Ref mean annual discharge
-            value = gauge[0]
-        elif panel_type == "bias":
-            # Bias
-            value = bias_array[i]
-        else:
-            raise Exception("Invalid panel_type={}".format(panel_type))
-        if np.isnan(value):
-            continue
-        if value < value_min:
-            value = value_min
-        elif value > value_max:
-            value = value_max
-        if panel_type in ["test", "ref"]:
-            # Logarithmic Rescale (min-max normalization) to [-1,1] range
-            normalized_value = (np.log10(value) - np.log10(value_min)) / (
-                np.log10(value_max) - np.log10(value_min)
-            )
-        elif panel_type == "bias":
-            # Rescale (min-max normalization) to [-1,1] range
-            normalized_value = (value - value_min) / (value_max - value_min)
-        else:
-            raise Exception("Invalid panel_type={}".format(panel_type))
-        lat = gauge[7]
-        lon = gauge[8]
-
-        color = color_list[int(normalized_value * (len(color_list) - 1))]
-        # https://scitools.org.uk/iris/docs/v1.9.2/examples/General/projections_and_annotations.html
-        # Place a single marker point for each gauge.
-        plt.plot(
-            lon,
-            lat,
-            marker="o",
-            markersize=2,
-            color=color,
-            transform=proj_function(),
-        )
-        # NOTE: the "plt.annotate call" does not have a "transform=" keyword,
-        # so for this one we transform the coordinates with a Cartopy call.
-        at_x, at_y = ax.projection.transform_point(lon, lat, src_crs=proj_function())
+    color_list, value_min, value_max, norm = setup_annual_map(
+        parameter, panel_type, bias_array
+    )
+    plot_gauges_annual_map(
+        panel_type,
+        export,
+        bias_array,
+        value_min,
+        value_max,
+        color_list,
+        proj_function,
+        ax,
+    )
 
     # Full world would be aspect 360/(2*180) = 1
     ax.set_aspect((lon_east - lon_west) / (2 * (lat_north - lat_south)))
@@ -537,6 +479,83 @@ def plot_panel_annual_map(  # noqa
         cbar.ax.set_yticklabels(ticks)
     else:
         raise Exception("Invalid panel_type={}".format(panel_type))
+
+
+def setup_annual_map(parameter, panel_type, bias_array):
+    # Continuous colormap
+    colormap = plt.get_cmap("jet_r")
+    color_list = list(map(lambda index: colormap(index)[:3], range(colormap.N)))
+    if panel_type in ["test", "ref"]:
+        value_min, value_max = 1, 1e4
+        # https://matplotlib.org/3.2.1/tutorials/colors/colormapnorms.html
+        norm = matplotlib.colors.LogNorm(vmin=value_min, vmax=value_max)
+    elif panel_type == "bias":
+        if parameter.print_statements:
+            value_min = np.floor(np.min(bias_array))
+            value_max = np.ceil(np.max(bias_array))
+            print(
+                "Bias of mean annual discharge {} min={}, max={}".format(
+                    panel_type, value_min, value_max
+                )
+            )
+
+        value_min = -100
+        value_max = 100
+        norm = matplotlib.colors.Normalize()
+    else:
+        raise Exception("Invalid panel_type={}".format(panel_type))
+    return color_list, value_min, value_max, norm
+
+
+def plot_gauges_annual_map(
+    panel_type, export, bias_array, value_min, value_max, color_list, proj_function, ax
+):
+    # `export` is the array of gauges. Each gauge has multiple fields -- e.g., lat is index 7
+    for gauge, i in zip(export, range(len(export))):
+        if panel_type == "test":
+            # Test mean annual discharge
+            value = gauge[1]
+        elif panel_type == "ref":
+            # Ref mean annual discharge
+            value = gauge[0]
+        elif panel_type == "bias":
+            # Bias
+            value = bias_array[i]
+        else:
+            raise Exception("Invalid panel_type={}".format(panel_type))
+        if np.isnan(value):
+            continue
+        if value < value_min:
+            value = value_min
+        elif value > value_max:
+            value = value_max
+        if panel_type in ["test", "ref"]:
+            # Logarithmic Rescale (min-max normalization) to [-1,1] range
+            normalized_value = (np.log10(value) - np.log10(value_min)) / (
+                np.log10(value_max) - np.log10(value_min)
+            )
+        elif panel_type == "bias":
+            # Rescale (min-max normalization) to [-1,1] range
+            normalized_value = (value - value_min) / (value_max - value_min)
+        else:
+            raise Exception("Invalid panel_type={}".format(panel_type))
+        lat = gauge[7]
+        lon = gauge[8]
+
+        color = color_list[int(normalized_value * (len(color_list) - 1))]
+        # https://scitools.org.uk/iris/docs/v1.9.2/examples/General/projections_and_annotations.html
+        # Place a single marker point for each gauge.
+        plt.plot(
+            lon,
+            lat,
+            marker="o",
+            markersize=2,
+            color=color,
+            transform=proj_function(),
+        )
+        # NOTE: the "plt.annotate call" does not have a "transform=" keyword,
+        # so for this one we transform the coordinates with a Cartopy call.
+        at_x, at_y = ax.projection.transform_point(lon, lat, src_crs=proj_function())
 
 
 def plot_annual_map(export, bias, parameter):

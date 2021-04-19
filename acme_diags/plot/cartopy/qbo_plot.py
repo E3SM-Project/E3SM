@@ -121,8 +121,7 @@ def plot(period_new, parameter, test, ref):
     y = dict(axis_range=[100, 1], axis_scale="log", data=y_ref, label="hPa")
     z = dict(data=ref["qbo"].T[:, :months])
     title = "{} U 5S-5N ({})".format(ref["name"], parameter.ref_yrs)
-    # FIXME: F841 - assigned but unused
-    ax1 = plot_panel(  # noqa
+    plot_panel(
         1,
         fig,
         "contourf",
@@ -153,8 +152,7 @@ def plot(period_new, parameter, test, ref):
         label="Pressure (hPa)",
     )
     title = "QBO Amplitude \n (period = 20-40 months)"
-    # FIXME: F841 - assigned but unused
-    ax2 = plot_panel(2, fig, "line", label_size, title, x, y)  # noqa
+    plot_panel(2, fig, "line", label_size, title, x, y)
 
     # Panel 3 (Bottom)
     x = dict(
@@ -174,8 +172,7 @@ def plot(period_new, parameter, test, ref):
         label="Amplitude (m/s)",
     )
     title = "QBO Spectral Density (Eq. 18-22 hPa zonal winds)"
-    # FIXME: F841 - assigned but unused
-    ax3 = plot_panel(3, fig, "line", label_size, title, x, y)  # noqa
+    plot_panel(3, fig, "line", label_size, title, x, y)
     plt.tight_layout()
 
     # Figure title

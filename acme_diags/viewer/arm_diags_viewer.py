@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 
 from cdp.cdp_viewer import OutputViewer
 
@@ -28,8 +27,6 @@ def create_viewer(root_dir, parameters):
     # The title of the colums on the webpage.
     # Appears in the second and third columns of the bolded rows.
     cols = ["Description", "Plot", "", "", "", ""]
-    # FIXME: F841 - assigned but unused
-    image_path = os.path.join(Path(root_dir).parent, set_name)  # noqa
 
     viewer.add_page(display_name, short_name=set_name, columns=cols)
     param_dict = {}  # type: ignore

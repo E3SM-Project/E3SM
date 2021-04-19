@@ -1,13 +1,10 @@
 from __future__ import print_function
 
-import os
-
 import cdms2
 import cdutil
 import MV2
 import numpy
 
-import acme_diags
 from acme_diags.driver import utils
 from acme_diags.metrics import corr, max_cdms, mean, min_cdms, rmse
 from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
@@ -70,8 +67,6 @@ def run_diag(parameter):
     variables = parameter.variables
     seasons = parameter.seasons
     ref_name = getattr(parameter, "ref_name", "")
-    # FIXME: F841 - assigned but unused
-    regions = parameter.regions  # noqa
 
     test_data = utils.dataset.Dataset(parameter, test=True)
     ref_data = utils.dataset.Dataset(parameter, ref=True)
@@ -84,20 +79,6 @@ def run_diag(parameter):
         parameter.ref_name_yrs = utils.general.get_name_and_yrs(
             parameter, ref_data, season
         )
-
-        # Get land/ocean fraction for masking.
-        try:
-            land_frac = test_data.get_climo_variable("LANDFRAC", season)
-            ocean_frac = test_data.get_climo_variable("OCNFRAC", season)
-        except Exception:
-            mask_path = os.path.join(
-                acme_diags.INSTALL_PATH, "acme_ne30_ocean_land_mask.nc"
-            )
-            with cdms2.open(mask_path) as f:
-                # FIXME: F841 - assigned but unused (land_frac and ocean_frac)
-                land_frac = f("LANDFRAC")  # noqa
-                # FIXME: F841 - assigned but unused (land_frac and ocean_frac)
-                ocean_frac = f("OCNFRAC")  # noqa
 
         for var in variables:
             print("Variable: {}".format(var))

@@ -36,9 +36,7 @@ def run_cmd(cmd):
     Given a command, run it.
     """
     print("Using the command: {}".format(cmd))
-    # p = subprocess.Popen(cmd, shell=True)
-    # FIXME: F841 - assigned but unused
-    p = subprocess.Popen(cmd, shell=True).wait()  # noqa
+    subprocess.Popen(cmd, shell=True).wait()
     # This doesn't work: p = subprocess.Popen(cmd.split(), shell=True)
 
 

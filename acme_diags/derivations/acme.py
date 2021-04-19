@@ -361,21 +361,7 @@ def cosp_bin_sum(
     if prs_low0 is None and prs_high0 is None:
         prs_lim = "total cloud fraction"
 
-    tau_low = tau[0]
-    tau_high = tau[-1]
-
-    if tau_low0 is None and tau_high0:
-        tau_high = tau_high0
-        tau_lim = "tau <" + str(tau_high0)
-    elif tau_high0 is None and tau_low0:
-        tau_low = tau_low0
-        tau_lim = "tau >" + str(tau_low0)
-    elif tau_low0 is None and tau_high0 is None:
-        tau_lim = str(tau_low) + "< tau < " + str(tau_high)
-    else:
-        tau_low = tau_low0
-        tau_high = tau_high0
-        tau_lim = str(tau_low) + "< tau < " + str(tau_high)
+    tau_high, tau_low, tau_lim = determine_tau(tau, tau_low0, tau_high0)
 
     if cld.id == "FISCCP1_COSP":  # ISCCP model
         cld_bin = cld(cosp_prs=(prs_low, prs_high), cosp_tau=(tau_low, tau_high))
@@ -413,6 +399,28 @@ def cosp_bin_sum(
     except BaseException:
         pass
     return cld_bin_sum
+
+
+def determine_tau(
+    tau: "FileAxis", tau_low0: Optional[float], tau_high0: Optional[float]
+):
+    tau_low = tau[0]
+    tau_high = tau[-1]
+
+    if tau_low0 is None and tau_high0:
+        tau_high = tau_high0
+        tau_lim = "tau <" + str(tau_high0)
+    elif tau_high0 is None and tau_low0:
+        tau_low = tau_low0
+        tau_lim = "tau >" + str(tau_low0)
+    elif tau_low0 is None and tau_high0 is None:
+        tau_lim = str(tau_low) + "< tau < " + str(tau_high)
+    else:
+        tau_low = tau_low0
+        tau_high = tau_high0
+        tau_lim = str(tau_low) + "< tau < " + str(tau_high)
+
+    return tau_high, tau_low, tau_lim
 
 
 def cosp_histogram_standardize(cld: "FileVariable"):

@@ -50,8 +50,6 @@ def list_of_vars_in_user_file():
 
 
 parser = CoreParser()
-# FIXME: DUMMY_FILE_PATH does not exist
-# parser.add_argument("path", default=DUMMY_FILE_PATH, nargs="?")
 
 
 def list_of_vars_in_e3sm_diags():
@@ -63,9 +61,6 @@ def list_of_vars_in_e3sm_diags():
 
     # Get all of the 'variables' parameter from each file.
     vars_used = []
-    # print('hi')
-    # args = parser.parse_args()
-    # print(dir(args))
     try:
         print("something")
         parameters = get_parameters(parser)

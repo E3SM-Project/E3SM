@@ -4,7 +4,11 @@ from unittest.mock import Mock
 
 import numpy as np
 
-from acme_diags.derivations.acme import adjust_prs_val_units, determine_cloud_level
+from acme_diags.derivations.acme import (
+    adjust_prs_val_units,
+    determine_cloud_level,
+    determine_tau,
+)
 
 if TYPE_CHECKING:
     from cdms2.axis import FileAxis
@@ -77,4 +81,25 @@ class TestDetermineCloudLevel(TestCase):
     def test_returns_total_cloud_fraction(self):
         actual = determine_cloud_level(0, 5, self.low_bnds, self.high_bdns)
         expected = "total cloud fraction"
+        self.assertEqual(actual, expected)
+
+
+class TestDetermineTau(TestCase):
+    def setUp(self):
+        self.mock_file_axis: "FileAxis" = Mock()
+        self.mock_file_axis.getData.return_value = np.arange(0, 1002)
+
+    def test_low_none(self):
+        actual = determine_tau(self.mock_file_axis, None, 10)
+        expected = "tau <10"
+        self.assertEqual(actual, expected)
+
+    def test_high_none(self):
+        actual = determine_tau(self.mock_file_axis, 5, None)
+        expected = "5< tau"
+        self.assertEqual(actual, expected)
+
+    def test_low_high(self):
+        actual = determine_tau(self.mock_file_axis, 5, 10)
+        expected = "5< tau < 10"
         self.assertEqual(actual, expected)
