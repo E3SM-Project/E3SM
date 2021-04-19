@@ -65,10 +65,6 @@ module ocn_init_routines
    !--------------------------------------------------------------------
 
    public :: &
-      ocn_init_routines_compute_min_max_level, &
-      ocn_init_routines_compute_mesh_scaling, &
-      ocn_init_routines_setup_sign_and_index_fields, &
-      ocn_init_routines_vert_coord, &
       ocn_init_routines_block, &
       ocn_init_metadata
 
@@ -81,79 +77,6 @@ module ocn_init_routines
 !***********************************************************************
 
 contains
-
-!***********************************************************************
-!
-!  routine ocn_init_routines_compute_mesh_scaling
-!
-!> \brief   set up mesh scaling variables
-!> \author Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date   September 2011
-!> \details
-!>  This routine initializes meshScalingDel2 and meshScalingDel4
-!
-!-----------------------------------------------------------------------
-   subroutine ocn_init_routines_compute_mesh_scaling(meshPool, & !{{{
-                 config_hmix_scaleWithMesh, config_maxMeshDensity, &
-                 config_hmix_use_ref_cell_width, config_hmix_ref_cell_width)
-
-      type (mpas_pool_type), intent(inout) :: meshPool
-      logical, intent(in) :: config_hmix_scaleWithMesh
-      real (kind=RKIND), intent(in) :: config_maxMeshDensity
-      logical, intent(in) :: config_hmix_use_ref_cell_width
-      real (kind=RKIND), intent(in) :: config_hmix_ref_cell_width
-
-      integer :: iEdge, cell1, cell2
-      integer, pointer :: nEdges
-      integer, dimension(:,:), pointer :: cellsOnEdge
-      real (kind=RKIND) :: cellWidth
-      real (kind=RKIND), dimension(:), pointer :: meshDensity, meshScalingDel2, meshScalingDel4, meshScaling
-      real (kind=RKIND), dimension(:), pointer :: areaCell
-
-      call mpas_pool_get_array(meshPool, 'meshDensity', meshDensity)
-      call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
-      call mpas_pool_get_array(meshPool, 'meshScalingDel4', meshScalingDel4)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-
-      if (config_hmix_scaleWithMesh) then
-         if (config_hmix_use_ref_cell_width) then
-            ! Mesh scaling is set by areaCell and config_hmix_ref_cell_width
-            ! See description of config_hmix_ref_cell_width in Registry.xml for
-            ! more detail.
-            do iEdge = 1, nEdges
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-               ! Effective cell width at edge iEdge, assuming neighboring cells
-               ! are circles for this calculation.
-               cellWidth = 2.0_RKIND * sqrt((areaCell(cell1) + areaCell(cell2) ) / 2.0_RKIND / pii)
-               meshScalingDel2(iEdge) = cellWidth / config_hmix_ref_cell_width
-               meshScalingDel4(iEdge) = ( cellWidth / config_hmix_ref_cell_width )**3
-            end do
-         else
-            ! Mesh scaling is set by meshDensity. This is both confusing and
-            ! inconvenient, as the flags like config_mom_del2 need to be reset
-            ! for every resolution. It is kept for backwards compatibility, but
-            ! should become defunct.
-            do iEdge = 1, nEdges
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-               meshScalingDel2(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
-                                      / config_maxMeshDensity)**(1.0_RKIND / 4.0_RKIND)  ! goes as dc**1
-               meshScalingDel4(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
-                                      / config_maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
-            end do
-         end if
-      else
-         ! If config_hmix_scaleWithMesh is false, hmix coefficients do not vary with
-         ! cell size but remain constant across the domain.
-         meshScalingDel2(:) = 1.0_RKIND
-         meshScalingDel4(:) = 1.0_RKIND
-      end if
-
-   end subroutine ocn_init_routines_compute_mesh_scaling!}}}
 
 !***********************************************************************
 !
@@ -229,9 +152,6 @@ contains
 
       call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, scratchPool, tracersPool)
 
-      ! initialize velocities and active tracers on land to be zero.
-      areaCell(nCells+1) = -1.0e34_RKIND
-
       layerThickness(:, nCells+1) = 0.0_RKIND
 
 
@@ -266,9 +186,6 @@ contains
       ! ------------------------------------------------------------------
       ! End: Accumulating various parametrizations of the transport velocity
       ! ------------------------------------------------------------------
-
-      call ocn_init_routines_compute_mesh_scaling(meshPool, config_hmix_scaleWithMesh, config_maxMeshDensity, &
-              config_hmix_use_ref_cell_width, config_hmix_ref_cell_width)
 
       call mpas_rbf_interp_initialize(meshPool)
       call mpas_initialize_tangent_vectors(meshPool, edgeTangentVectors)
@@ -455,7 +372,9 @@ contains
    end subroutine ocn_init_add_tau_metadata_character!}}}
 
 
+!***********************************************************************
 
 end module ocn_init_routines
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker
