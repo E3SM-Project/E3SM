@@ -92,11 +92,13 @@
 
 <!-- use_sections -->
 <config_use_dynamics>true</config_use_dynamics>
+<config_use_dynamics prognostic_mode="prescribed">false</config_use_dynamics>
 <config_use_velocity_solver>true</config_use_velocity_solver>
 <config_use_advection>true</config_use_advection>
 <config_use_forcing>false</config_use_forcing>
 <config_use_column_package>true</config_use_column_package>
 <config_use_prescribed_ice>false</config_use_prescribed_ice>
+<config_use_prescribed_ice prognostic_mode="prescribed">true</config_use_prescribed_ice>
 <config_use_prescribed_ice_forcing>false</config_use_prescribed_ice_forcing>
 
 <!-- forcing -->
@@ -169,6 +171,7 @@
 <config_use_column_vertical_thermodynamics>true</config_use_column_vertical_thermodynamics>
 <config_use_column_biogeochemistry>false</config_use_column_biogeochemistry>
 <config_use_column_itd_thermodynamics>true</config_use_column_itd_thermodynamics>
+<config_use_column_itd_thermodynamics prognostic_mode="prescribed">false</config_use_column_itd_thermodynamics>
 <config_use_column_ridging>true</config_use_column_ridging>
 <config_use_column_snow_tracers>true</config_use_column_snow_tracers>
 
@@ -447,6 +450,7 @@
 
 <!-- AM_regionalStatistics -->
 <config_AM_regionalStatistics_enable>true</config_AM_regionalStatistics_enable>
+<config_AM_regionalStatistics_enable prognostic_mode="prescribed">false</config_AM_regionalStatistics_enable>
 <config_AM_regionalStatistics_compute_interval>'0000-00-01_00:00:00'</config_AM_regionalStatistics_compute_interval>
 <config_AM_regionalStatistics_output_stream>'regionalStatisticsOutput'</config_AM_regionalStatistics_output_stream>
 <config_AM_regionalStatistics_compute_on_startup>true</config_AM_regionalStatistics_compute_on_startup>
@@ -455,6 +459,7 @@
 
 <!-- AM_ridgingDiagnostics -->
 <config_AM_ridgingDiagnostics_enable>true</config_AM_ridgingDiagnostics_enable>
+<config_AM_ridgingDiagnostics_enable prognostic_mode="prescribed">false</config_AM_ridgingDiagnostics_enable>
 <config_AM_ridgingDiagnostics_compute_interval>'dt'</config_AM_ridgingDiagnostics_compute_interval>
 <config_AM_ridgingDiagnostics_output_stream>'output'</config_AM_ridgingDiagnostics_output_stream>
 <config_AM_ridgingDiagnostics_compute_on_startup>true</config_AM_ridgingDiagnostics_compute_on_startup>
@@ -470,6 +475,7 @@
 
 <!-- AM_geographicalVectors -->
 <config_AM_geographicalVectors_enable>true</config_AM_geographicalVectors_enable>
+<config_AM_geographicalVectors_enable prognostic_mode="prescribed">false</config_AM_geographicalVectors_enable>
 <config_AM_geographicalVectors_compute_interval>'dt'</config_AM_geographicalVectors_compute_interval>
 <config_AM_geographicalVectors_output_stream>'output'</config_AM_geographicalVectors_output_stream>
 <config_AM_geographicalVectors_compute_on_startup>true</config_AM_geographicalVectors_compute_on_startup>
@@ -542,6 +548,7 @@
 
 <!-- AM_timeSeriesStatsDaily -->
 <config_AM_timeSeriesStatsDaily_enable>true</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_enable prognostic_mode="prescribed">false</config_AM_timeSeriesStatsDaily_enable>
 <config_AM_timeSeriesStatsDaily_compute_on_startup>false</config_AM_timeSeriesStatsDaily_compute_on_startup>
 <config_AM_timeSeriesStatsDaily_write_on_startup>false</config_AM_timeSeriesStatsDaily_write_on_startup>
 <config_AM_timeSeriesStatsDaily_compute_interval>'dt'</config_AM_timeSeriesStatsDaily_compute_interval>
@@ -556,6 +563,7 @@
 
 <!-- AM_timeSeriesStatsMonthly -->
 <config_AM_timeSeriesStatsMonthly_enable>true</config_AM_timeSeriesStatsMonthly_enable>
+<config_AM_timeSeriesStatsMonthly_enable prognostic_mode="prescribed">false</config_AM_timeSeriesStatsMonthly_enable>
 <config_AM_timeSeriesStatsMonthly_compute_on_startup>false</config_AM_timeSeriesStatsMonthly_compute_on_startup>
 <config_AM_timeSeriesStatsMonthly_write_on_startup>false</config_AM_timeSeriesStatsMonthly_write_on_startup>
 <config_AM_timeSeriesStatsMonthly_compute_interval>'0000-00-00_01:00:00'</config_AM_timeSeriesStatsMonthly_compute_interval>
