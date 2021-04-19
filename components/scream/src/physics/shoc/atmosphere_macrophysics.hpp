@@ -30,10 +30,9 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
 
   using Spack = typename SHF::Spack;
   using IntSmallPack = typename SHF::IntSmallPack;
-  using Pack1d = typename SHF::Pack1d;
   using Smask = typename SHF::Smask;
-  using view_1d  = typename SHF::view_1d<Pack1d>;
-  using view_1d_const  = typename SHF::view_1d<const Pack1d>;
+  using view_1d  = typename SHF::view_1d<Real>;
+  using view_1d_const  = typename SHF::view_1d<const Real>;
   using view_2d  = typename SHF::view_2d<SHF::Spack>;
   using view_2d_const  = typename SHF::view_2d<const Spack>;
   using sview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
@@ -135,7 +134,7 @@ public:
         // Dry static energy
         const Spack T_mid_ik(T_mid(i,k));
         const Spack z_mid_ik(z_mid(i,k));
-        const Real  phis_i(phis(i)[0]);
+        const Real  phis_i(phis(i));
         const Smask range_mask(!isnan(T_mid_ik) && T_mid_ik>0.0 &&
                                !isnan(z_mid_ik) && z_mid_ik>0.0 &&
                                !isnan(phis_i)   && phis_i>0.0);
@@ -170,10 +169,10 @@ public:
       const int nlev_v = (nlev-1)/Spack::n;
       const int nlev_p = (nlev-1)%Spack::n;
 
-      wpthlp_sfc(i)[0] = surf_sens_flux(i)[0]/(cpair*rrho_i(i,nlev_v)[nlev_p]);
-      wprtp_sfc(i)[0]  = surf_latent_flux(i)[0]/rrho_i(i,nlev_v)[nlev_p];
-      upwp_sfc(i)[0]   = surf_u_mom_flux(i)[0]/rrho_i(i,nlev_v)[nlev_p];
-      vpwp_sfc(i)[0]   = surf_v_mom_flux(i)[0]/rrho_i(i,nlev_v)[nlev_p];
+      wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlev_v)[nlev_p]);
+      wprtp_sfc(i)  = surf_latent_flux(i)/rrho_i(i,nlev_v)[nlev_p];
+      upwp_sfc(i)   = surf_u_mom_flux(i)/rrho_i(i,nlev_v)[nlev_p];
+      vpwp_sfc(i)   = surf_v_mom_flux(i)/rrho_i(i,nlev_v)[nlev_p];
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_tracer_packs), [&] (const Int& q) {
         wtracer_sfc(i,q) = 0;

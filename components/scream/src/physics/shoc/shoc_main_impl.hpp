@@ -320,13 +320,13 @@ Int Functions<S,D>::shoc_main(
 
     auto workspace = workspace_mgr.get_workspace(team);
 
-    const Scalar host_dx_s{shoc_input.host_dx(i)[0]};
-    const Scalar host_dy_s{shoc_input.host_dy(i)[0]};
-    const Scalar wthl_sfc_s{shoc_input.wthl_sfc(i)[0]};
-    const Scalar wqw_sfc_s{shoc_input.wqw_sfc(i)[0]};
-    const Scalar uw_sfc_s{shoc_input.uw_sfc(i)[0]};
-    const Scalar vw_sfc_s{shoc_input.vw_sfc(i)[0]};
-    const Scalar phis_s{shoc_input.phis(i)[0]};
+    const Scalar host_dx_s{shoc_input.host_dx(i)};
+    const Scalar host_dy_s{shoc_input.host_dy(i)};
+    const Scalar wthl_sfc_s{shoc_input.wthl_sfc(i)};
+    const Scalar wqw_sfc_s{shoc_input.wqw_sfc(i)};
+    const Scalar uw_sfc_s{shoc_input.uw_sfc(i)};
+    const Scalar vw_sfc_s{shoc_input.vw_sfc(i)};
+    const Scalar phis_s{shoc_input.phis(i)};
     Scalar pblh_s{0};
 
     const auto zt_grid_s      = ekat::subview(shoc_input.zt_grid, i);
@@ -382,7 +382,7 @@ Int Functions<S,D>::shoc_main(
                        wthl_sec_s, wqw_sec_s, wtke_sec_s, uw_sec_s, vw_sec_s, // Diagnostic Output Variables
                        w3_s, wqls_sec_s, brunt_s, isotropy_s);                // Diagnostic Output Variables
 
-    shoc_output.pblh(i)[0] = pblh_s;
+    shoc_output.pblh(i) = pblh_s;
   });
   Kokkos::fence();
 
