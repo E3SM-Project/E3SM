@@ -204,6 +204,9 @@ contains
               write(logunit,*) subname,' error in computing atm ocn intx'
               call shr_sys_abort(subname//' ERROR in computing atm ocn intx')
             endif
+            if (iamroot_CPLID) then
+              write(logunit,*) 'iMOAB intersection between atm and ocean with id:', idintx
+            end if
 #ifdef MOABDEBUG
             wopts = CHAR(0)
             call shr_mpi_commrank( mpicom_CPLID, rank )
@@ -287,8 +290,14 @@ contains
             endif
             if (sameg_al) then
               ierr =  iMOAB_ComputePointDoFIntersection (mbaxid, mblxid, mbintxla)
+              if (iamroot_CPLID) then
+                write(logunit,*) 'iMOAB intersection between atm and land pc with id:', idintx
+              end if
             else
               ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mblxid, mbintxla)
+              if (iamroot_CPLID) then
+                write(logunit,*) 'iMOAB intersection between atm and land with id:', idintx
+              end if
             endif
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in computing atm lnd intx'
@@ -368,8 +377,14 @@ contains
 
     if (atm_pg_active ) then ! use mhpgid mesh
       ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxoa, context_id);
+      if (iamroot_CPLID) then
+        write(logunit,*) 'iMOAB graph atmpg2-intxao context: ', context_id
+      end if
     else
       ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxoa, context_id);
+      if (iamroot_CPLID) then
+        write(logunit,*) 'iMOAB graph atmnp4-intxao context: ', context_id
+      end if
     endif
     if (ierr .ne. 0) then
       write(logunit,*) subname,' error in computing coverage graph atm/ocn '
@@ -395,6 +410,11 @@ contains
       monotonicity = 0 !
       noConserve = 0
       validate = 1
+      if (iamroot_CPLID) then
+        write(logunit,*) 'launch iMOAB weights with args ', mbintxoa, wgtIdef, &
+                                                trim(dm1), orderATM, trim(dm2), orderOCN, &
+                                                monotonicity, volumetric, noConserve, validate
+      end if
       ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
                                                 trim(dm1), orderATM, trim(dm2), orderOCN, &
                                                 monotonicity, volumetric, noConserve, validate, &
@@ -402,6 +422,9 @@ contains
       if (ierr .ne. 0) then
         write(logunit,*) subname,' error in computing weights atm/ocn '
         call shr_sys_abort(subname//' ERROR in computing weights atm/ocn ')
+      endif
+      if (iamroot_CPLID) then
+        write(logunit,*) 'finish iMOAB weights in atm-ocn'
       endif
     endif ! only if atm and ocn intersect  mbintxoa >= 0
     ! compute the comm graph between phys atm and intx-atm-ocn, to be able to send directly from phys atm
@@ -429,12 +452,20 @@ contains
                 ! data from phys grid directly to atm-ocn intx , for later projection
                 ! context is the same, atm - ocn intx id !
     endif
+    if (iamroot_CPLID) then
+        write(logunit,*) 'launch iMOAB graph with args ',  &
+         mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+          typeA, typeB, atm_id, idintx
+    end if
     ierr = iMOAB_ComputeCommGraph( mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
           typeA, typeB, atm_id, idintx)
     if (ierr .ne. 0) then
       write(logunit,*) subname,' error in computing graph phys grid - atm/ocn intx '
       call shr_sys_abort(subname//' ERROR  in computing graph phys grid - atm/ocn intx ')
     endif
+    if (iamroot_CPLID) then
+       write(logunit,*) 'finish iMOAB graph in atm-land prep  '
+    end if
   end subroutine prep_atm_ocn_moab
 
   subroutine prep_atm_lnd_moab(infodata)
