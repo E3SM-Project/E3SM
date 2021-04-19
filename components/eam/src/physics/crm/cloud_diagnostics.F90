@@ -96,15 +96,12 @@ subroutine cloud_diagnostics_init()
   
   call addfld('SETLWP',  (/'lev'/), 'A','gram/m2','Prescribed liquid water path' , sampling_seq=sampling_seq)
   call addfld('LWSH',    horiz_only,'A','m','Liquid water scale height'          , sampling_seq=sampling_seq)
-  call addfld('EFFCLD',  (/'lev'/), 'A','fraction','Effective cloud fraction'    , sampling_seq=sampling_seq)
-  call addfld('EMISCLD', (/'lev'/), 'A', '1','cloud emissivity'                  , sampling_seq=sampling_seq)
 
   call cloud_cover_diags_init(sampling_seq)
 
   call add_default ('TGCLDLWP', 1, ' ')
   call add_default ('TGCLDIWP', 1, ' ')
   call add_default ('TGCLDCWP', 1, ' ')
-  if (history_verbose) call add_default ('EMISCLD', 1, ' ')
 
   return
 end subroutine cloud_diagnostics_init
@@ -166,8 +163,6 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
 
   real(r8) :: allcld_ice (pcols,pver) ! Convective cloud ice
   real(r8) :: allcld_liq (pcols,pver) ! Convective cloud liquid
-
-  real(r8) :: effcld(pcols,pver)      ! effective cloud=cld*emis
 
   logical  :: dosw,dolw
   logical  :: use_MMF
