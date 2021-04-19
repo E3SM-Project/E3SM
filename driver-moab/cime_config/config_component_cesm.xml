@@ -1,0 +1,603 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="config_compsets.xsl" ?>
+
+<entry_id version="3.0">
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have forcing and cpl desc entries.
+  -->
+  <description modifier_mode="1">
+    <desc forcing="1850"></desc>
+    <desc forcing="2000">1972-2004</desc>
+    <desc forcing="2003">2002-2003</desc>
+    <desc forcing="HIST">Historic transient </desc>
+    <desc forcing="20TR">Twentieth century transient</desc>
+    <desc forcing="4804"></desc>
+    <desc forcing="SSP119">CMIP6 SSP1-1.9 forcing</desc>
+    <desc forcing="SSP126">CMIP6 SSP1-2.6 forcing</desc>
+    <desc forcing="SSP245">CMIP6 SSP2-4.5 forcing</desc>
+    <desc forcing="SSP370">CMIP6 SSP3-7.0 forcing</desc>
+    <desc forcing="SSP434">CMIP6 SSP4-3.4 forcing</desc>
+    <desc forcing="SSP460">CMIP6 SSP4-6.0 forcing</desc>
+    <desc forcing="SSP534">CMIP6 SSP5-3.4 forcing</desc>
+    <desc forcing="SSP585">CMIP6 SSP5-8.5 forcing</desc>
+    <desc cpl="BGC[%BDRD][%BPRP]">Biogeochemistry intercomponent </desc>
+    <desc option="BDRD"> with diagnostic CO2</desc>
+    <desc option="BPRP"> with prognostic CO2 </desc>
+  </description>
+
+  <entry id="MODEL_DOI_URL">
+    <type>char</type>
+    <default_value>https://doi.org/10.5065/D67H1H0V</default_value>
+    <group>run_metadata</group>
+    <file>env_case.xml</file>
+    <desc>run DOI</desc>
+  </entry>
+
+  <entry id="DRV_THREADING">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Turns on component varying thread control in the driver.
+    Used to set the driver namelist variable "drv_threading".</desc>
+  </entry>
+
+  <entry id="INFO_TASKMAP_MODEL">
+    <type>integer</type>
+    <valid_values>0,1,2</valid_values>
+    <default_value>0</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Sets level of task-to-node mapping output for the whole model
+    (0: no output; 1: compact; 2: verbose).</desc>
+  </entry>
+
+  <entry id="INFO_TASKMAP_COMP">
+    <type>integer</type>
+    <valid_values>0,1,2</valid_values>
+    <default_value>0</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Sets level of task-to-node mapping output for supported component models
+    (0: no output; 1: compact; 2: verbose).</desc>
+  </entry>
+
+  <entry id="SAVE_TIMING">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>logical to save timing files in rundir</desc>
+  </entry>
+
+  <entry id="TPROF_TOTAL">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Determines number of times profiler is called over the model run period.
+    This sets values for tprof_option and tprof_n that determine the timing output file frequency
+    </desc>
+  </entry>
+
+  <entry id="TIMER_DETAIL">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>
+    integer indicating maximum detail level to profile. This xml
+    variable is used to set the namelist variable
+    timing_detail_limit. This namelist variable is used by perf_mod
+    (in $CIMEROOT/src/share/timing/perf_mod.F90) to turn timers off
+    and on depending on calls to the routine t_adj_detailf. If in the
+    code a statement appears like t_adj_detailf(+1), then the current
+    timer detail level is incremented by 1 and compared to the
+    time_detail_limit obtained from the namelist.  If the limit is
+    exceeded then the timer is turned off.
+    </desc>
+  </entry>
+
+  <entry id="TIMER_LEVEL">
+    <type>integer</type>
+    <default_value>12</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Maximum code stack depth of enabled timers.</desc>
+  </entry>
+
+  <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_data_archive</group>
+    <file>env_run.xml</file>
+    <desc>Logical to archive all interim restart files, not just those at eor
+    If TRUE, perform short term archiving on all interim restart files,
+    not just those at the end of the run. By default, this value is TRUE.
+    The restart files are saved under the specific component directory
+    ($DOUT_S_ROOT/$CASE/$COMPONENT/rest rather than the top-level $DOUT_S_ROOT/$CASE/rest directory).
+    Interim restart files are created using the REST_N and REST_OPTION variables.
+    This is for expert users ONLY and requires expert knowledge.
+    We will not document this further in this guide.</desc>
+  </entry>
+
+  <entry id="BFBFLAG">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>turns on coupler bit-for-bit reproducibility with varying pe counts</desc>
+  </entry>
+
+  <entry id="BARRIER_OPTION">
+    <type>char</type>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
+    <default_value>never</default_value>
+    <values match="last">
+      <value compset="_DATM.+_CLM">ndays</value>
+    </values>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      sets frequency of full model barrier (same options as STOP_OPTION) for synchronization with BARRIER_N and BARRIER_DATE
+    </desc>
+  </entry>
+
+  <entry id="CCSM_BGC">
+    <type>char</type>
+    <valid_values>none,CO2A,CO2B,CO2C</valid_values>
+    <default_value>none</default_value>
+    <values match="last">
+      <value compset="_CAM">CO2A</value>
+      <value compset="_DATM">none</value>
+      <value compset="_DATM%CPLHIST.+POP\d">CO2A</value>
+      <value compset="^OMIP_DATM%IAF.*_POP2%[^_]*ECO">CO2A</value>
+      <value compset="^OMIP_DATM%JRA.*_POP2%[^_]*ECO">CO2A</value>
+      <value compset="HIST.*_DATM.*_CLM">CO2A</value>
+      <value compset="SSP.*_DATM.*_CLM">CO2A</value>
+      <value compset="_BGC%BPRP">CO2C</value>
+      <value compset="_BGC%BDRD">CO2C</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Activates additional CO2-related fields to be exchanged between components. Possible values are:
+
+    CO2A: sets the driver namelist variable flds_co2a = .true.; this adds
+    prognostic CO2 and diagnostic CO2 at the lowest model level to be sent from
+    the atmosphere to the land and ocean.
+
+    CO2B: sets the driver namelist variable flds_co2b = .true.; this adds
+    prognostic CO2 and diagnostic CO2 at the lowest model level to be sent from
+    the atmosphere just to the land, and the surface upward flux of CO2 to be
+    sent from the land back to the atmosphere
+
+    CO2C: sets the driver namelist variable flds_co2c = .true.; this adds
+    prognostic CO2 and diagnostic CO2 at the lowest model level to be sent from
+    the atmosphere to the land and ocean, and the surface upward flux of CO2
+    to be sent from the land and the open ocean back to the atmosphere.
+
+    The namelist variables flds_co2a, flds_co2b and flds_co2c are in the
+    namelist group cpl_flds_inparm.
+    </desc>
+  </entry>
+
+  <entry id="CPL_USER_MODS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <values match="last">
+      <value/>
+    </values>
+    <group>run_component_cpl</group>
+    <file>env_case.xml</file>
+    <desc>User mods to apply to specific compset matches. </desc>
+  </entry>
+
+  <entry id="NCPL_BASE_PERIOD">
+    <type>char</type>
+    <valid_values>hour,day,year,decade</valid_values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <default_value>day</default_value>
+    <values match="last">
+      <value compset="_DLND.*_CISM\d">year</value>
+      <value compset="_MPAS"       >hour</value>
+    </values>
+    <desc>Base period associated with NCPL coupling frequency.
+    This xml variable is only used to set the driver namelist variables,
+    atm_cpl_dt, lnd_cpl_dt, ocn_cpl_dt, ice_cpl_dt, glc_cpl_dt, rof_cpl_dt, wav_cpl_dt, and esp_dt.</desc>
+  </entry>
+
+  <entry id="ATM_NCPL">
+    <type>integer</type>
+    <default_value>48</default_value>
+    <values match="last">
+      <value compset="_CAM\d+%WCBC">144</value>
+      <value compset="_CAM\d+%WCMX">288</value>
+      <value compset="_CAM\d+%WCXI">288</value>
+      <value compset="_DATM%COPYALL_NPS">72</value>
+      <value compset="_DATM.*_CLM">48</value>
+      <value compset="_DATM.*_DICE.*_POP2">4</value>
+      <value compset="_DATM.*_DICE.*_MOM6">24</value>
+      <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
+      <value compset="_DATM.*_SLND.*_CICE.*_POP2" grid="oi%tx0.1v3">144</value>
+      <value compset="_DATM.*_SLND.*_CICE.*_MOM6">24</value>
+      <value compset="_DATM.*_CICE.*_DOCN">24</value>
+      <value compset="_DATM.*_DOCN%US20">24</value>
+      <value compset="_DATM%CPLHIST.+POP\d">48</value>
+      <value compset="_DATM%CPLHIST.+MOM\d">48</value>
+      <value compset="_MPAS">1</value>
+      <value compset=".+" grid="a%0.23x0.31">96</value>
+      <value compset=".+" grid="a%ne60np4">96</value>
+      <value compset=".+" grid="a%ne60np4.pg3">96</value>
+      <value compset=".+" grid="a%ne60np4.pg4">96</value>
+      <value compset=".+" grid="a%ne120np4">192</value>
+      <value compset=".+" grid="a%ne120np4.pg2">192</value>
+      <value compset=".+" grid="a%ne120np4.pg3">192</value>
+      <value compset=".+" grid="a%ne120np4.pg4">192</value>
+      <value compset=".+" grid="a%ne240np4">384</value>
+      <value compset=".+" grid="a%ne240np4.pg2">384</value>
+      <value compset=".+" grid="a%ne240np4.pg3">384</value>
+      <value compset=".+" grid="a%ne0np4CONUS.ne30x8">384</value>
+      <value compset=".+" grid="a%ne0np4.ARCTIC.ne30x4">192</value>
+      <value compset=".+" grid="a%ne0np4.ARCTICGRIS.ne30x8">384</value>
+      <value compset=".+" grid="a%C24">48</value>
+      <value compset=".+" grid="a%C48">48</value>
+      <value compset=".+" grid="a%C96">48</value>
+      <value compset=".+" grid="a%C192">96</value>
+      <value compset=".+" grid="a%C384">192</value>
+      <value compset=".+" grid="a%T42">72</value>
+      <value compset=".+" grid="a%T85">144</value>
+      <value compset=".+" grid="a%T341">288</value>
+      <value compset=".+" grid="1x1">48</value>
+      <value compset=".+" grid="1x1_urbanc">48</value>
+      <value compset=".+" grid="1x1_mexico">24</value>
+      <value compset=".+" grid="1x1_vancou">24</value>
+      <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_DATM.*_DICE.*_POP2.*_WW3">4</value>
+      <value compset="_DATM.*_DICE.*_MOM6.*_WW3">4</value>
+      <value compset="_DATM.*_DICE.*_POP2.*_DWAV">4</value>
+      <value compset="_DATM.*_DICE.*_MOM6.*_DWAV">4</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of atm coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist atm_cpl_dt, equal to basedt/ATM_NCPL,
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+  <entry id="LND_NCPL">
+    <type>integer</type>
+    <default_value>$ATM_NCPL</default_value>
+    <values match="last">
+      <value compset="_DLND.*_CISM\d">1</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of land coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist atm_cpl_dt, equal to basedt/LND_NCPL,
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+  <entry id="ICE_NCPL">
+    <type>integer</type>
+    <default_value>$ATM_NCPL</default_value>
+    <values match="last">
+      <value compset="_DLND.*_CISM\d">1</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of ice coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist ice_cpl_dt, equal to basedt/ICE_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+  <entry id="OCN_NCPL">
+    <type>integer</type>
+    <default_value>$ATM_NCPL</default_value>
+    <values match="last">
+      <value compset="_POP2">1</value>
+      <value compset="_MOM6">24</value>
+      <value compset="_POP2" grid="oi%tx0.1v2">4</value>
+      <value compset="_POP2" grid="oi%gx1v6">24</value>
+      <value compset="_POP2" grid="oi%gx1v7">24</value>
+      <value compset="_POP2" grid="oi%tx0.1v3">48</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
+      <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
+      <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_XOCN">$ATM_NCPL</value>
+      <value compset="_SOCN">$ATM_NCPL</value>
+      <value compset="_NEMO">24</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of ocn coupling intervals per NCPL_BASE_PERIOD.
+    Thisn is used to set the driver namelist ocn_cpl_dt, equal to basedt/OCN_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+  <entry id="GLC_NCPL">
+    <type>integer</type>
+    <default_value>1</default_value>
+    <values match="last">
+      <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_SGLC">$ATM_NCPL</value>
+      <value compset="_XGLC">$ATM_NCPL</value>
+      <value compset="_MOM6">1</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of glc coupling intervals per NCPL_BASE_PERIOD.</desc>
+  </entry>
+
+  <entry id="GLC_AVG_PERIOD">
+    <type>char</type>
+    <valid_values>glc_coupling_period,yearly</valid_values>
+    <default_value>yearly</default_value>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Period at which coupler averages fields sent to GLC.
+    This supports doing the averaging to GLC less frequently than GLC is called
+    (i.e., separating the averaging frequency from the calling frequency).
+    This is useful because there are benefits to only averaging the GLC inputs
+    as frequently as they are really needed (yearly for CISM), but GLC needs to
+    still be called more frequently than that in order to support mid-year restarts.
+
+    Setting GLC_AVG_PERIOD to 'glc_coupling_period' means that the averaging is
+    done exactly when the GLC is called (governed by GLC_NCPL).
+
+    IMPORTANT: In order to restart mid-year when running with CISM, you MUST specify GLC_AVG_PERIOD = 'yearly'.
+    If using GLC_AVG_PERIOD = 'glc_coupling_period' with CISM, you can only restart on year boundaries.
+    </desc>
+  </entry>
+
+  <entry id="ROF_NCPL">
+    <type>integer</type>
+    <default_value>8</default_value>
+    <values match="last">
+      <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
+      <value compset="_DATM.*_MOM6.*_DROF">$ATM_NCPL</value>
+      <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
+      <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
+      <value compset="_DATM%CPLHIST.+POP\d">8</value>
+      <value compset="_DATM%CPLHIST.+MOM\d">8</value>
+      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
+      <value compset="_DLND.*_CISM\d">1</value>
+      <value compset="_SROF">$ATM_NCPL</value>
+      <value compset="_XROF">$ATM_NCPL</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of rof coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist rof_cpl_dt, equal to basedt/ROF_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+  <entry id="WAV_NCPL">
+    <type>integer</type>
+    <default_value>$ATM_NCPL</default_value>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of wav coupling intervals per NCPL_BASE_PERIOD.
+    This is used to set the driver namelist wav_cpl_dt, equal to basedt/WAV_NCPL
+    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
+
+
+  <!-- Logic for CPL_ALBAV should be reworked to depend on datm forcing rather
+       than compset: see https://github.com/ESMCI/cime/issues/120 -->
+  <entry id="CPL_ALBAV">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values match="last">
+      <value compset="DATM.+POP\d">TRUE</value>
+      <value compset="DATM.+MOM\d">TRUE</value>
+      <value compset="DATM.+DOCN%IAF">TRUE</value>
+      <value compset="DATM%CPLHIST.+POP\d">FALSE</value>
+      <value compset="DOCN%AQP11">TRUE</value>
+      <value compset="DATM%CPLHIST.+MOM\d">FALSE</value>
+    </values>
+    <group>run_component_cpl</group>
+    <file>env_run.xml</file>
+    <desc>
+      Only used for compsets with DATM and POP (currently C, G and J):
+      If true, compute albedos to work with daily avg SW down
+      If false (default), albedos are computed with the assumption that downward
+      solar radiation from the atm component has a diurnal cycle and zenith-angle
+      dependence. This is normally the case when using an active atm component
+      If true, albedos are computed with the assumption that downward
+      solar radiation from the atm component is a daily average quantity and
+      does not have a zenith-angle dependence. This is often the case when
+      using a data atm component. Only used for compsets with DATM and POP (currently C, G and J).
+      NOTE: This should really depend on the datm forcing and not the compset per se.
+      So, for example, whether it is set in a J compset should depend on
+      what datm forcing is used.
+    </desc>
+  </entry>
+
+  <entry id="CPL_EPBAL">
+    <type>char</type>
+    <valid_values>off,ocn</valid_values>
+    <default_value>off</default_value>
+    <values match="last">
+      <value compset="DATM.+POP\d">ocn</value>
+      <value compset="DATM%CPLHIST.+POP\d">off</value>
+    </values>
+    <group>run_component_cpl</group>
+    <file>env_run.xml</file>
+    <desc>
+      Only used for compsets with DATM and POP (currently C, G and J):
+      If ocn, ocn provides EP balance factor for precipitation.
+      Provides EP balance factor for precip for POP. A factor computed by
+      POP is applied to precipitation so that precipitation balances
+      evaporation and ocn global salinity does not drift. This is intended
+      for use when coupling POP to a DATM. Only used for C, G and J compsets.
+      Default is off
+    </desc>
+  </entry>
+
+  <entry id="CPL_SEQ_OPTION">
+    <type>char</type>
+    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2,NUOPC,NUOPC_TIGHT</valid_values>
+    <default_value>CESM1_MOD_TIGHT</default_value>
+    <values match="last">
+      <value compset="_DATM.*_DOCN%SOM"			>CESM1_MOD</value>
+      <value compset="_POP2"				>CESM1_MOD</value>
+      <value compset="_MOM6"				>RASM_OPTION1</value>
+      <value compset="_POP2" grid="oi%gx1v6"		>RASM_OPTION1</value>
+      <value compset="_POP2" grid="oi%gx1v7"		>RASM_OPTION1</value>
+      <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN"	>CESM1_MOD</value>
+      <value compset="_XATM.*_XLND.*_XICE.*_XOCN"	>CESM1_MOD</value>
+      <value compset="_SOCN"				>CESM1_MOD</value>
+      <value compset="_MPAS"				>CESM1_MOD</value>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>
+      Coupler sequencing option. This is used to set the driver namelist variable cpl_seq_option.
+      CESM1_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux
+      computation.
+      RASM_OPTION1 runs prep ocean before the ocean coupling reducing
+      most of the lags and field inconsistency but still allowing the ocean to run
+      concurrently with the ice and atmosphere.
+      RASM_OPTION2 is similar to RASM_OPTION1
+      but sequences the ice model, prep ocean and ocean model in that order.  The
+      ocean model loses some of the concurrency with the ice model.
+      CESM1_MOD_TIGHT are consistent with the old variables ocean_tight_coupling = true in the driver.
+    </desc>
+  </entry>
+
+  <entry id="AVGHIST_OPTION">
+    <type>char</type>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
+    <default_value>never</default_value>
+    <values match="last">
+      <value compset="_DOCN%IAF">nmonths</value>
+    </values>
+    <group>run_drv_history</group>
+    <file>env_run.xml</file>
+    <desc>Sets driver average history file frequency (like REST_OPTION)</desc>
+  </entry>
+
+  <entry id="AVGHIST_N">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <values match="last">
+      <value compset="_DOCN%IAF">1</value>
+    </values>
+    <group>run_drv_history</group>
+    <file>env_run.xml</file>
+    <desc>Sets driver average history file frequency (like REST_N)</desc>
+  </entry>
+
+  <entry id="AVGHIST_DATE">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <group>run_drv_history</group>
+    <file>env_run.xml</file>
+    <desc>yyyymmdd format, sets driver average history date (like REST_DATE)</desc>
+  </entry>
+
+  <entry id="BUDGETS">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values match="last">
+      <value compset="DATM.*_POP\d">TRUE</value>
+      <value compset="CAM.*_POP\d">TRUE</value>
+      <value compset="CAM.*_DOCN%SOM">TRUE</value>
+    </values>
+    <group>run_budgets</group>
+    <file>env_run.xml</file>
+    <desc>logical that turns on diagnostic budgets for driver</desc>
+  </entry>
+
+  <entry id="CCSM_CO2_PPMV">
+    <type>real</type>
+    <valid_values></valid_values>
+    <default_value>284.7</default_value>
+    <values match="last">
+      <value compset="^2000">367.0</value>
+      <value compset="DATM.*_POP2%[^_]*ECO">284.317</value>
+      <value compset="DATM.*_POP2%[^_]*ECOCESM20">284.7</value>
+    </values>
+    <group>run_co2</group>
+    <file>env_run.xml</file>
+    <desc>
+      Mechanism for setting the CO2 value in ppmv for
+      CLM if CLM_CO2_TYPE is constant or for
+      POP if OCN_CO2_TYPE is constant.
+    </desc>
+  </entry>
+
+  <entry id="FLDS_WISO">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values match="last">
+      <value compset="%WISO">TRUE</value>
+      <value compset="%ISO">TRUE</value>
+    </values>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Turn on the passing of water isotope fields through the coupler</desc>
+  </entry>
+
+  <entry id="GLC_NEC">
+    <type>integer</type>
+    <valid_values>1,3,5,10,36</valid_values>
+    <default_value>10</default_value>
+    <group>run_glc</group>
+    <file>env_run.xml</file>
+    <desc>Number of glacier elevation classes used in CLM.
+    Used by both CLM and the coupler (even if CISM is not running, and only SGLC is used).</desc>
+  </entry>
+
+  <entry id="GLC_TWO_WAY_COUPLING">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values match="last">
+      <value compset="_CLM.+CISM\d">TRUE</value>
+      <!-- Turn on two-way coupling for TG compsets - even though there are no
+           feedbacks for a TG compset, this will give us additional diagnostics -->
+      <value compset="_DLND.+CISM\d">TRUE</value>
+    </values>
+    <group>run_glc</group>
+    <file>env_run.xml</file>
+    <desc>Whether the glacier component feeds back to the rest of the system
+      This affects:
+      (1) Whether CLM updates its areas based on glacier areas sent from GLC
+      (2) Whether GLC sends fluxes (e.g., calving fluxes) to the coupler
+      Note that this is set to TRUE by default for TG compsets - even though there are
+      no feedbacks for TG compsets, this enables extra coupler diagnostics for these
+      compsets.</desc>
+  </entry>
+
+  <entry id="TFREEZE_SALTWATER_OPTION">
+    <type>char</type>
+    <valid_values>minus1p8,linear_salt,mushy</valid_values>
+    <default_value>mushy</default_value>
+    <values match="last">
+      <value compset="_MOM6">linear_salt</value>
+    </values>
+    <group>run_physics</group>
+    <file>env_run.xml</file>
+    <desc>Freezing point calculation for salt water.</desc>
+  </entry>
+
+
+</entry_id>
