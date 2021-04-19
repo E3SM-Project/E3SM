@@ -140,6 +140,7 @@
   <xs:group name="compilerVars">
     <xs:choice>
       <xs:element name="ALBANY_PATH" type="systemPath"/>
+      <xs:element name="BISICLES_PATH" type="systemPath"/>
       <xs:element name="CFLAGS" type="flagsVar"/>
       <xs:element name="CXXFLAGS" type="flagsVar"/>
       <xs:element name="CMAKE_OPTS" type="flagsVar"/>
