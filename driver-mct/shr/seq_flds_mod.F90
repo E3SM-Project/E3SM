@@ -1412,6 +1412,15 @@ contains
     attname  = 'So_ustar'
     call metadata_set(attname, longname, stdname, units)
 
+    ! Water temperature heat flux from ocean
+    call seq_flds_add(o2x_fluxes, "Faoo_h2otemp")
+    call seq_flds_add(x2a_fluxes, "Faoo_h2otemp")
+    longname = 'Water temperature heat flux from ocean'
+    stdname  = 'water_temperature_heat_flux'
+    units    = 'W m-2'
+    attname  = 'Faoo_h2otemp'
+    call metadata_set(attname, longname, stdname, units)
+
     !-----------------------------
     ! ice<->ocn only exchange
     !-----------------------------
