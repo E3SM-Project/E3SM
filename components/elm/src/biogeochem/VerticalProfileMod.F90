@@ -155,9 +155,11 @@ contains
                            cinput_rootfr(p,j) = 0._r8
                         end if
                      end do
-                     do j = 1, nlevbed
-                        cinput_rootfr(p,j) = cinput_rootfr(p,j) / rootfr_tot
-                     end do
+                     if (nlevbed < nlevdecomp) then
+                        do j = 1, nlevbed
+                           cinput_rootfr(p,j) = cinput_rootfr(p,j) / rootfr_tot
+                        end do
+                     end if
                   else
                      cinput_rootfr(p,1) = 1._r8 / dzsoi_decomp(1)
                   endif
