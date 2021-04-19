@@ -1396,8 +1396,8 @@ contains
         endif
 #endif
       endif
-      if (MPSIID .ge. 0) then  ! we are on component ocn pes
-         ierr = iMOAB_FreeSenderBuffers(mpoid, context_id)
+      if (MPSIID .ge. 0) then  ! we are on component sea ice pes
+         ierr = iMOAB_FreeSenderBuffers(MPSIID, context_id)
          if (ierr .ne. 0) then
            write(logunit,*) subname,' error in freeing buffers '
            call shr_sys_abort(subname//' ERROR in freeing buffers ')
