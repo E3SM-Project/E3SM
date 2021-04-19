@@ -1876,12 +1876,12 @@ contains
          end do
          projectedSSH(iCell) = oldSSH(iCell) - dt*div_hu_btr
       end do
-!#ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc update host(projectedSSH)
-!#else
+#else
       !$omp end do
       !$omp end parallel
-!#endif
+#endif
 
       !
       ! Compute desired thickness at new time
