@@ -1,0 +1,9 @@
+if ($USE_BISICLES eq 'TRUE') {
+    print "Setting up BISICLES namelist.\n"; }
+
+###################################
+# Namelist group: velocity_solver #
+###################################
+
+add_default($nl, 'config_velocity_solver', 'use_bisicles'=>"$USE_BISICLES");
+

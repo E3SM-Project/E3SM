@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+
+<namelist_definition>
+
+<!-- Each namelist variable is defined in an <entry> element.  The
+     content of the element is the documentation of how the variable is
+     used.  Other aspects of the variable's definition are expressed as
+     attributes of the <entry> element.  Note that it is an XML requirement
+     that the attribute values are enclosed in quotes.  The attributes are:
+
+     id
+          The variable's name.  *** N.B. *** The name must be lower case.
+          The module convert all namelist variable names to lower case
+          since Fortran is case insensitive.
+
+     type
+          An abbreviation of the fortran declaration for the variable.
+      Valid declarations are:
+
+          char*n  
+          integer
+          logical
+          real
+
+      Any of these types may be followed by a comma separated list of
+      integers enclosed in parenthesis to indicate an array.
+
+      The current namelist validation code only distinquishes between
+      string and non-string types.
+
+     input_pathname
+          Only include this attribute to indicate that the variable
+          contains the pathname of an input dataset that resides in the
+          CESM inputdata directory tree.  
+
+      The recognized values are "abs" to indicate that an absolute
+          pathname is required, or "rel:var_name" to indicate that the
+          pathname is relative and that the namelist variable "var_name"
+          contains the absolute root directory.
+
+     category
+          A category assigned for organizing the documentation.
+
+     group
+          The namelist group that the variable is declared in.
+
+     valid_values
+          This is an optional attribute that is mainly useful for variables
+          that have only a small number of allowed values.
+                                                                        -->
+
+
+<!-- velocity_solver -->
+
+<entry id="config_velocity_solver" type="char*1024"
+	category="velocity_solver" group="velocity_solver">
+Selection of the method for solving ice velocity. 'L1L2', 'FO', and 'Stokes' require compiling with external dycores. 'none' skips the calculation of velocity so the velocity field will be 0 or set to a field read from an input file.  'simple' gives a simple prescribed velocity field computed at initialization.
+
+Valid values: 'BISICLES'
+Default: Defined in namelist_defaults.xml
+</entry>
+</namelist_definition>

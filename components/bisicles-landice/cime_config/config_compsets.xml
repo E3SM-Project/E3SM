@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<compsets>
+
+  <help>
+  Compset format is explained in cime/config/e3sm/allactive/config_compsets.xml
+  or in the CIME documenation
+  </help>
+
+  <!---TG compsets -->
+
+  <compset>
+    <alias>TG_BISICLES</alias>
+    <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_BISICLES_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>BISICLES</alias>
+    <lname>RCP8_SATM_SLND_SICE_SOCN_SROF_BISICLES_SWAV</lname>
+  </compset>
+
+</compsets>
