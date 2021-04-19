@@ -72,6 +72,9 @@ OR
     parser.add_argument("--baseline-dir", default=None,
         help="Use baselines from the given directory, skip baseline creation.")
 
+    parser.add_argument("-u", "--update-expired-baselines", action="store_true",
+        help="Update baselines that appear to be expired.")
+
     parser.add_argument("-m", "--machine",
         help="Provide machine name. This is *always* required")
 
