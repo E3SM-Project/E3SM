@@ -14,7 +14,7 @@
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 
-#include "share/field/field_repository.hpp"
+#include "share/field/field_manager.hpp"
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_identifier.hpp"
@@ -32,7 +32,7 @@
  *  At construction time ALL output instances require
  *  1. an EKAT comm group and
  *  2. a EKAT parameter list
- *  3. a shared pointer to the field repository
+ *  3. a shared pointer to the field manager
  *  4. a shared pointer to the grids manager
  * 
  *  The EKAT parameter list must contain all of the top level output control information and follows the format:
@@ -92,25 +92,25 @@ public:
 
   // Constructor
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
-                   const std::shared_ptr<const FieldRepository<Real>>& repo,
-                   const std::shared_ptr<const GridsManager>& gm)
+                   const std::shared_ptr<const FieldManager<Real>>& field_mgr,
+                   const std::shared_ptr<const GridsManager>& grid_mgr)
   {
-    m_comm       = comm;
-    m_params     = params;
-    m_field_repo = repo;
-    m_gm         = gm;
+    m_comm      = comm;
+    m_params    = params;
+    m_field_mgr = field_mgr;
+    m_grid_mgr  = grid_mgr;
     m_read_restart_hist = false;
   }
   // Constructor
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
-                   const std::shared_ptr<const FieldRepository<Real>>& repo,
-                   const std::shared_ptr<const GridsManager>& gm,
+                   const std::shared_ptr<const FieldManager<Real>>& field_mgr,
+                   const std::shared_ptr<const GridsManager>& grid_mgr,
                    const bool read_restart_hist)
   {
-    m_comm       = comm;
-    m_params     = params;
-    m_field_repo = repo;
-    m_gm         = gm;
+    m_comm      = comm;
+    m_params    = params;
+    m_field_mgr = field_mgr;
+    m_grid_mgr  = grid_mgr;
     m_read_restart_hist = read_restart_hist;
   }
 
@@ -135,10 +135,10 @@ protected:
   void run_impl(const Real time, const std::string& time_str);  // Actual run routine called by outward facing "run"
   void set_restart_hist_read( const bool bval ) { m_read_restart_hist = bval; }
   // Internal variables
-  ekat::ParameterList                          m_params;
-  ekat::Comm                                   m_comm;
-  std::shared_ptr<const FieldRepository<Real>> m_field_repo;
-  std::shared_ptr<const GridsManager>          m_gm;
+  ekat::ParameterList                         m_params;
+  ekat::Comm                                  m_comm;
+  std::shared_ptr<const FieldManager<Real>>   m_field_mgr;
+  std::shared_ptr<const GridsManager>         m_grid_mgr;
   
   // Main output control data
   std::string m_casename;

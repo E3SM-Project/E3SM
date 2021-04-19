@@ -20,7 +20,9 @@ A number of options support automatic magic strings. See the help for individual
 options to see which magic strings are supported.
 """
 
-from utils import expect, check_minimum_python_version, get_current_commit
+from utils import expect, check_minimum_python_version
+from git_utils import get_current_commit
+
 check_minimum_python_version(3, 5)
 
 import argparse, sys, pathlib

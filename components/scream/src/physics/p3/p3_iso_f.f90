@@ -606,18 +606,18 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
  subroutine p3_main_f(qc,nc,qr,nr,th_atm,qv,dt,qi,qm,ni,bm,   &
       pres,dz,nc_nuceat_tend,nccn_prescribed,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_equiv_reflectivity,diag_eff_radius_qc,     &
       diag_eff_radius_qi,diag_vm_qi,diag_diam_qi,rho_qi,do_predict_nc,do_prescribed_CCN, &
-      dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,  &
-      pratot,prctot,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, vap_ice_exchange) bind(C)
+      dpres,exner,qv2qi_depos_tend, &
+      precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,  &
+      pratot,prctot,liq_ice_exchange,vap_liq_exchange, vap_ice_exchange) bind(C)
 
    use iso_c_binding
 
    ! args
-
    integer(kind=c_int), value, intent(in)  :: its, ite, kts, kte, it
    real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm
    real(kind=c_real), intent(in),  dimension(its:ite,kts:kte) :: pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, dpres, exner, cld_frac_i, cld_frac_l, cld_frac_r, inv_qc_relvar
-   real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qi, diag_vm_qi, diag_diam_qi, rho_qi, mu_c, &
-        lamc, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, pratot, prctot, liq_ice_exchange, vap_liq_exchange, vap_ice_exchange
+   real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qi, diag_vm_qi, diag_diam_qi, rho_qi, &
+        qv2qi_depos_tend, pratot, prctot, liq_ice_exchange, vap_liq_exchange, vap_ice_exchange
    real(kind=c_real), intent(out), dimension(its:ite,kts:kte+1) :: precip_liq_flux, precip_ice_flux
    real(kind=c_real), intent(out), dimension(its:ite) :: precip_liq_surf, precip_ice_surf
    logical(kind=c_bool), value, intent(in) :: do_predict_nc, do_prescribed_CCN

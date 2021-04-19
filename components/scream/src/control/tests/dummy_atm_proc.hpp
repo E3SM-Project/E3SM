@@ -24,10 +24,8 @@ public:
     m_params = params;
     m_name = m_params.get<std::string>("Sub Name");
     if (m_name=="Group to Group") {
-      m_params.set<std::string>("Grid Name","Point Grid B");
       m_dummy_type = G2G;
     } else {
-      m_params.set<std::string>("Grid Name","Point Grid A");
       m_dummy_type = (m_name=="A to BC") ? A2G : G2A;
     }
   }
@@ -53,35 +51,21 @@ public:
     const auto num_cols = m_grid->get_num_local_dofs();
     const auto num_levs = m_grid->get_num_vertical_levels();
 
-    std::vector<FieldTag> tags;
-    std::vector<int> dims;
-    if (m_grid->name()=="Point Grid A") {
-      tags = {COL,LEV};
-      dims = {num_cols, num_levs};
+    FieldLayout layout ({COL,LEV},{num_cols,num_levs});
+    // To test vector input
+    FieldLayout layout_vec ( {COL,CMP,LEV}, {num_cols,2,num_levs} );
+
+    if (m_dummy_type==A2G) {
+      add_field<Required>("A",layout,ekat::units::m,m_grid->name());
+      add_field<Computed>("B",layout,ekat::units::m,m_grid->name(),"The Group");
+      add_field<Computed>("C",layout,ekat::units::m,m_grid->name(),"The Group");
+      add_field<Required>("D",layout_vec,ekat::units::m,m_grid->name());
+      add_field<Required>("E",layout,ekat::units::m,m_grid->name());
+    } else if (m_dummy_type == G2A) {
+      add_field<Computed>("A",layout,ekat::units::m,m_grid->name());
+      add_group<Required>("The Group",m_grid->name());
     } else {
-      tags = {LEV,COL};
-      dims = {num_levs,num_cols};
-    }
-    FieldLayout layout (tags,dims);
-
-    if (m_dummy_type==A2G) {
-      m_input_fids.emplace("A",layout,ekat::units::m,m_grid->name());
-      m_output_fids.emplace("B",layout,ekat::units::m,m_grid->name());
-      m_output_fids.emplace("C",layout,ekat::units::m,m_grid->name());
-    } else if (m_dummy_type == G2A) {
-      m_output_fids.emplace("A",layout,ekat::units::m,m_grid->name());
-    }
-  }
-
-  // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repo) const {
-    if (m_dummy_type==A2G) {
-      field_repo.register_field(*m_input_fids.begin());
-      for (const auto& out : m_output_fids) {
-        field_repo.register_field(out,"The Group");
-      }
-    } else if (m_dummy_type == G2A) {
-      field_repo.register_field(*m_output_fids.begin());
+      add_group<Updated>("The Group",m_grid->name());
     }
   }
 
@@ -93,7 +77,7 @@ public:
       const auto& f = it.second;
       const auto& fid = f->get_header().get_identifier();
       m_inputs.emplace(fid.name(),*f);
-      m_input_fids.emplace(fid);
+      add_field<Required>(fid);
     }
   }
   void set_updated_group (const FieldGroup<Real>& field_group) {
@@ -103,29 +87,12 @@ public:
     for (const auto& it : field_group.m_fields) {
       const auto& f = it.second;
       const auto& fid = f->get_header().get_identifier();
-      m_inputs.emplace(fid.name(),f->get_const());
-      m_input_fids.emplace(fid);
-      m_outputs.emplace(fid.name(),*f);
-      m_output_fids.emplace(fid);
-    }
-  }
+      add_field<Required>(fid);
+      add_field<Computed>(fid);
 
-  // Providing a list of required and computed fields
-  const std::set<FieldIdentifier>&  get_required_fields () const { return m_input_fids; }
-  const std::set<FieldIdentifier>&  get_computed_fields () const { return m_output_fids; }
-  std::set<GroupRequest> get_required_groups () const {
-    std::set<GroupRequest> s;
-    if (m_dummy_type==G2A) {
-      s.insert(GroupRequest("The Group",m_grid->name()));
+      m_inputs.emplace(fid.name(),f->get_const());
+      m_outputs.emplace(fid.name(),*f);
     }
-    return s;
-  }
-  std::set<GroupRequest> get_updated_groups () const {
-    std::set<GroupRequest> s;
-    if (m_dummy_type==G2G) {
-      s.insert(GroupRequest("The Group",m_grid->name()));
-    }
-    return s;
   }
 
 protected:
@@ -148,7 +115,6 @@ public:
       const auto view_C = m_outputs["C"].get_reshaped_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-        // A to BC is on grid A: (COL,LEV)
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
 
@@ -161,12 +127,11 @@ public:
       const auto view_C = m_outputs["C"].get_reshaped_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-        // Group to Group is on grid B: (LEV,COL)
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
 
-        view_B(ilev,icol) = view_B(ilev,icol) / 2;
-        view_C(ilev,icol) = view_C(ilev,icol) / 2;
+        view_B(icol,ilev) = view_B(icol,ilev) / 2;
+        view_C(icol,ilev) = view_C(icol,ilev) / 2;
       });
     } else {
       const auto view_B = m_inputs["B"].get_reshaped_view<const Real**>();
@@ -174,7 +139,6 @@ public:
       const auto view_A = m_outputs["A"].get_reshaped_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-        // Group to A is on grid A: (COL,LEV)
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
 
@@ -196,9 +160,6 @@ protected:
   void set_computed_field_impl (const Field<Real>& f) {
     m_outputs[f.get_header().get_identifier().name()] = f;
   }
-
-  std::set<FieldIdentifier> m_input_fids;
-  std::set<FieldIdentifier> m_output_fids;
 
   std::map<std::string,Field<const Real>>   m_inputs;
   std::map<std::string,Field<      Real>>   m_outputs;

@@ -25,7 +25,7 @@ void AtmosphereOutput::init()
 
   // Gather data from grid manager:  In particular the global ids for columns assigned to this MPI rank
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with output grid! scorpio_output.hpp class only supports output on a Physics grid for now.\n");
-  auto gids_dev = m_gm->get_grid(m_grid_name)->get_dofs_gids();
+  auto gids_dev = m_grid_mgr->get_grid(m_grid_name)->get_dofs_gids();
   m_gids = Kokkos::create_mirror_view( gids_dev );
   Kokkos::deep_copy(m_gids,gids_dev); 
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
@@ -34,7 +34,7 @@ void AtmosphereOutput::init()
   MPI_Allreduce(&m_local_dofs, &m_total_dofs, 1, MPI_INT, MPI_SUM, m_comm.mpi_comm());
   EKAT_REQUIRE_MSG(m_comm.size()<=m_total_dofs,"Error, PIO interface only allows for the IO comm group size to be less than or equal to the total # of columns in grid.  Consider decreasing size of IO comm group.\n");
 
-  // Create map of fields in this output with the field_identifier in the field repository.
+  // Create map of fields in this output with the field_identifier in the field manager.
   auto& var_params = m_params.sublist("FIELDS");
   for (int var_i=0; var_i<var_params.get<Int>("Number of Fields");++var_i)
   {
@@ -66,7 +66,7 @@ void AtmosphereOutput::init()
     }
     if ( not found )
     {
-      printf("Warning! No restart history file found in rpointer file for %s, using current values in field repo\n",m_casename.c_str());
+      printf("Warning! No restart history file found in rpointer file for %s, using current values in field manager\n",m_casename.c_str());
     }
     // Register rhist file as input and copy data to local views
     ekat::ParameterList res_params("Input Parameters");
@@ -81,7 +81,7 @@ void AtmosphereOutput::init()
       f_list.set<std::string>("field "+std::to_string(fcnt),name);
       fcnt+=1;
     }
-    input_type rhist_in(m_comm,res_params,m_field_repo,m_gm);
+    input_type rhist_in(m_comm,res_params,m_field_mgr,m_grid_mgr);
     rhist_in.init();
     for (auto name : m_fields)
     {
@@ -193,7 +193,7 @@ void AtmosphereOutput::run_impl(const Real time, const std::string& time_str)
   for (auto const& name : m_fields)
   {
     // Get all the info for this field.
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_mgr->get_field(name);
     auto view_d = field.get_view();
     auto g_view = Kokkos::create_mirror_view( view_d );
     Kokkos::deep_copy(g_view, view_d);
@@ -276,11 +276,11 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
 /* 
  * Checks that the dimensions associated with a specific variable will be registered with IO file.
  * INPUT:
- *   field_repo: is a pointer to the field_repository for this simulation.
+ *   field_manager: is a pointer to the field_manager for this simulation.
  *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
  */
   using namespace scorpio;
-  auto fid = m_field_repo->get_field(name, m_grid_name).get_header().get_identifier();
+  auto fid = m_field_mgr->get_field(name).get_header().get_identifier();
   // check to see if all the dims for this field are already set to be registered.
   for (int ii=0; ii<fid.get_layout().rank(); ++ii)
   {
@@ -314,7 +314,7 @@ void AtmosphereOutput::register_views()
   // Cycle through all fields and register.
   for (auto const& name : m_fields)
   {
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_mgr->get_field(name);
     // If the "averaging type" is instant then just need a ptr to the view.
     EKAT_REQUIRE_MSG (field.get_header().get_parent().expired(), "Error! Cannot deal with subfield, for now.");
     auto view_d = field.get_view();
@@ -331,7 +331,7 @@ void AtmosphereOutput::register_variables(const std::string& filename)
   // Cycle through all fields and register.
   for (auto const& name : m_fields)
   {
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_mgr->get_field(name);
     auto& fid  = field.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
@@ -345,7 +345,7 @@ void AtmosphereOutput::register_variables(const std::string& filename)
     io_decomp_tag += "-time";  // TODO: Do we expect all vars to have a time dimension?  If not then how to trigger?  Should we register dimension variables (such as ncol and lat/lon) elsewhere in the dimension registration?  These won't have time.
     std::reverse(vec_of_dims.begin(),vec_of_dims.end()); // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO, may need to delete this line when switching to fully C++/C implementation.
     vec_of_dims.push_back("time");  //TODO: See the above comment on time.
-    register_variable(filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);  // TODO  Need to change dtype to allow for other variables.  Currently the field_repo only stores Real variables so it is not an issue, but in the future if non-Real variables are added we will want to accomodate that.
+    register_variable(filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);  // TODO  Need to change dtype to allow for other variables.  Currently the field_manager only stores Real variables so it is not an issue, but in the future if non-Real variables are added we will want to accomodate that.
   }
   // Finish by registering time as a variable.  TODO: Should this really be something registered during the reg. dimensions step? 
   register_variable(filename,"time","time",1,{"time"},  PIO_REAL,"time");
@@ -360,7 +360,7 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
   // Cycle through all fields and set dof.
   for (auto const& name : m_fields)
   {
-    auto field = m_field_repo->get_field(name, m_grid_name);
+    auto field = m_field_mgr->get_field(name);
     auto& fid  = field.get_header().get_identifier();
     // bool has_cols = true;
     Int dof_len, n_dim_len, num_cols;

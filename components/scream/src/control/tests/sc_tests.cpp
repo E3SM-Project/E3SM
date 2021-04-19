@@ -4,6 +4,7 @@
 #include <ekat/util/ekat_test_utils.hpp>
 
 #include <catch2/catch.hpp>
+#include <memory>
 
 TEST_CASE ("surface_coupling")
 {
@@ -44,8 +45,8 @@ TEST_CASE ("surface_coupling")
   // Create a grid
   auto grid = create_point_grid("my grid",ncols*comm.size(), nlevs, comm);
 
-  // Create some field ids, and register them in a field repo
-  // Note: we create two repos, so we can compare outputs with inputs
+  // Create some field ids, and register them in a field manager
+  // Note: we create two fms, so we can compare outputs with inputs
   FID s2d_id("s2d",FL{{COL},{ncols}},Pa,grid->name());
   FID s3d_id("s3d",FL{{COL,LEV},{ncols,nlevs}},Pa,grid->name());
   FID v3d_id("v3d",FL{{COL,CMP,LEV},{ncols,2,nlevs}},m/s,grid->name());
@@ -56,22 +57,23 @@ TEST_CASE ("surface_coupling")
   const int num_v3d = 1;
   const int num_fields = num_s2d+num_s3d+2*num_v3d;
 
-  // Keep two separate repos, so we can compare original and final fields.
-  FieldRepository<Real> repo_in, repo_out;
-  repo_in.registration_begins();
-  repo_in.register_field(s2d_id);
-  repo_in.register_field(s3d_id);
-  repo_in.register_field(v3d_id);
-  repo_in.registration_ends();
-  repo_out.registration_begins();
-  repo_out.register_field(s2d_id);
-  repo_out.register_field(s3d_id);
-  repo_out.register_field(v3d_id);
-  repo_out.registration_ends();
+  // Keep two separate fms, so we can compare original and final fields.
+  auto fm_in = std::make_shared<FieldManager<Real>> (grid);
+  auto fm_out = std::make_shared<FieldManager<Real>> (grid);
+  fm_in->registration_begins();
+  fm_in->register_field(s2d_id);
+  fm_in->register_field(s3d_id);
+  fm_in->register_field(v3d_id);
+  fm_in->registration_ends();
+  fm_out->registration_begins();
+  fm_out->register_field(s2d_id);
+  fm_out->register_field(s3d_id);
+  fm_out->register_field(v3d_id);
+  fm_out->registration_ends();
 
   // Create two SC objects, to import and export
-  control::SurfaceCoupling importer(grid,repo_in);
-  control::SurfaceCoupling exporter(grid,repo_out);
+  control::SurfaceCoupling importer(fm_in);
+  control::SurfaceCoupling exporter(fm_out);
 
   importer.set_num_fields(num_fields,0); // Recall that SC counts *scalar* fields, so vector3d counts as 2 fields
   exporter.set_num_fields(0,num_fields);
@@ -98,18 +100,27 @@ TEST_CASE ("surface_coupling")
   exporter.registration_ends(nullptr,raw_data);
 
   // Repeat experiment N times: fill export fields, export, import, check import fields
-  auto s2d_exp_d = repo_out.get_field(s2d_id).get_reshaped_view<Real*>();
-  auto s3d_exp_d = repo_out.get_field(s3d_id).get_reshaped_view<Real**>();
-  auto v3d_exp_d = repo_out.get_field(v3d_id).get_reshaped_view<Real***>();
-  auto s2d_imp_d = repo_in.get_field(s2d_id).get_reshaped_view<Real*>();
-  auto s3d_imp_d = repo_in.get_field(s3d_id).get_reshaped_view<Real**>();
-  auto v3d_imp_d = repo_in.get_field(v3d_id).get_reshaped_view<Real***>();
-  auto s2d_exp_h = Kokkos::create_mirror_view(s2d_exp_d);
-  auto s3d_exp_h = Kokkos::create_mirror_view(s3d_exp_d);
-  auto v3d_exp_h = Kokkos::create_mirror_view(v3d_exp_d);
-  auto s2d_imp_h = Kokkos::create_mirror_view(s2d_exp_d);
-  auto s3d_imp_h = Kokkos::create_mirror_view(s3d_exp_d);
-  auto v3d_imp_h = Kokkos::create_mirror_view(v3d_exp_d);
+  auto s2d_exp = fm_out->get_field(s2d_id);
+  auto s3d_exp = fm_out->get_field(s3d_id);
+  auto v3d_exp = fm_out->get_field(v3d_id);
+  auto s2d_imp = fm_in->get_field(s2d_id);
+  auto s3d_imp = fm_in->get_field(s3d_id);
+  auto v3d_imp = fm_in->get_field(v3d_id);
+
+  auto s2d_exp_d = s2d_exp.get_reshaped_view<Real*>();
+  auto s3d_exp_d = s3d_exp.get_reshaped_view<Real**>();
+  auto v3d_exp_d = v3d_exp.get_reshaped_view<Real***>();
+  auto s2d_imp_d = s2d_imp.get_reshaped_view<Real*>();
+  auto s3d_imp_d = s3d_imp.get_reshaped_view<Real**>();
+  auto v3d_imp_d = v3d_imp.get_reshaped_view<Real***>();
+
+  auto s2d_exp_h = s2d_exp.get_reshaped_view<Real*,Host>();
+  auto s3d_exp_h = s3d_exp.get_reshaped_view<Real**,Host>();
+  auto v3d_exp_h = v3d_exp.get_reshaped_view<Real***,Host>();
+  auto s2d_imp_h = s2d_imp.get_reshaped_view<Real*,Host>();
+  auto s3d_imp_h = s3d_imp.get_reshaped_view<Real**,Host>();
+  auto v3d_imp_h = v3d_imp.get_reshaped_view<Real***,Host>();
+
   for (int i=0; i<nruns; ++i) {
     // Fill export fields
     ekat::genRandArray(s2d_exp_d,engine,pdf);
@@ -126,12 +137,12 @@ TEST_CASE ("surface_coupling")
     importer.do_import();
 
     // Check f_imported==f_exported (on surface only)
-    Kokkos::deep_copy(s2d_exp_h,s2d_exp_h);
-    Kokkos::deep_copy(s3d_exp_h,s3d_exp_h);
-    Kokkos::deep_copy(v3d_exp_h,v3d_exp_h);
-    Kokkos::deep_copy(s2d_imp_h,s2d_imp_h);
-    Kokkos::deep_copy(s3d_imp_h,s3d_imp_h);
-    Kokkos::deep_copy(v3d_imp_h,v3d_imp_h);
+    s2d_exp.sync_to_host();
+    s3d_exp.sync_to_host();
+    v3d_exp.sync_to_host();
+    s2d_imp.sync_to_host();
+    s3d_imp.sync_to_host();
+    v3d_imp.sync_to_host();
     for (int icol=0; icol<ncols; ++icol) {
       REQUIRE (s2d_exp_h(icol)==s2d_imp_h(icol));
       REQUIRE (s3d_exp_h(icol,0)==s3d_imp_h(icol,0));

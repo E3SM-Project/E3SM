@@ -48,7 +48,7 @@ void ZMDeepConvection::set_grids(const std::shared_ptr<const GridsManager> grids
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
   FieldLayout scalar3d_layout_int { {COL,ILEV}, {nc,NVL+1} }; // Note that C++ and Fortran read array dimensions in reverse
   FieldLayout vector3d_layout_mid{ {COL,CMP,LEV}, {nc,QSZ,NVL} };
-  FieldLayout tracers_layout { {COL,VAR,LEV}, {nc,QSZ,NVL} };
+  FieldLayout tracers_layout { {COL,CMP,LEV}, {nc,QSZ,NVL} };
   FieldLayout scalar2d_layout{ {COL}, {nc} };
 
   std::vector<FieldLayout> layout_opts = {scalar3d_layout_mid, scalar3d_layout_int,
@@ -58,9 +58,9 @@ void ZMDeepConvection::set_grids(const std::shared_ptr<const GridsManager> grids
   set_grid_opts(opt_map);
 
   for ( auto i = opt_map.begin(); i != opt_map.end(); ++i) {
-    m_required_fields.emplace((i->second).name, layout_opts[((i->second).field_idx)], Q, grid->name());
+    add_required_field((i->second).name, layout_opts[((i->second).field_idx)], Q, grid->name());
     if ( (i->second).isOut == true ) {
-      m_computed_fields.emplace((i->second).name, layout_opts[((i->second).field_idx)], Q, grid->name());
+      add_computed_field((i->second).name, layout_opts[((i->second).field_idx)], Q, grid->name());
     }
   }
 
@@ -122,12 +122,14 @@ void ZMDeepConvection::finalize_impl()
   zm_finalize_f90 ();
 }
 // =========================================================================================
-void ZMDeepConvection::register_fields (FieldRepository<Real>& field_repo) const {
-   for (auto& fid : m_required_fields) {
-     field_repo.register_field(fid);
+void ZMDeepConvection::
+register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const {
+  auto& field_mgr = *field_mgrs.at("Physics");
+   for (const auto& fid : get_required_fields()) {
+     field_mgr.register_field(fid);
    }
-   for (auto& fid : m_computed_fields) {
-     field_repo.register_field(fid);
+   for (const auto& fid : get_computed_fields()) {
+     field_mgr.register_field(fid);
    }
  }
 

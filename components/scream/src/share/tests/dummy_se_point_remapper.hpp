@@ -88,7 +88,7 @@ public:
   }
 
   bool compatible_layouts (const layout_type& src,
-                           const layout_type& tgt) const {
+                           const layout_type& tgt) const override {
     return get_layout_type(src.tags())==get_layout_type(tgt.tags());
   }
 
@@ -119,9 +119,6 @@ protected:
   void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override {
     m_fields[ifield].first  = src;
     m_fields[ifield].second = tgt;
-  }
-  void do_unregister_field (const int ifield) override {
-    m_fields.erase(m_fields.begin()+ifield);
   }
   void do_registration_ends () override {
     // Do nothing

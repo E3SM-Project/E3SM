@@ -2,6 +2,12 @@
 if (NOT ${SCREAM_BASELINES_ONLY})
   include(ScreamUtils)
 
+  # Test utils
+  CreateUnitTest(utils "utils_tests.cpp" scream_share)
+
+  # Test column ops
+  CreateUnitTest(column_ops "column_ops.cpp" scream_share)
+
   # Test fields
   CreateUnitTest(field "field_tests.cpp" scream_share)
 

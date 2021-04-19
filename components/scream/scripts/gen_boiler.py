@@ -1,4 +1,5 @@
-from utils import expect, get_git_toplevel_dir
+from utils import expect
+from git_utils import get_git_toplevel_dir
 
 from collections import OrderedDict
 import pathlib, re, os

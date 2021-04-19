@@ -111,7 +111,7 @@ struct Functions
   // Converts temperature into potential temperature
   // The result is the potential temperature, units in K
   // The inputs are
-  //   Temperature, units in K
+  //   T_mid is the atmospheric temperature, units in K
   //   Exners function, unitless.  Exners function can be derived using `get_exner` defined above.
   KOKKOS_FUNCTION
   static Spack T_to_th(const Spack& T_atm, const Spack& exner, const Smask& range_mask);
@@ -132,6 +132,22 @@ struct Functions
   KOKKOS_FUNCTION
   static Spack get_dz(const Spack& zi_top, const Spack& zi_bot, const Smask& range_mask);
 
+  // Compute dry static energy (DSE).
+  // The result unit is in J/kg
+  // The inputs are
+  //   T_mid is the atmospheric temperature. Units in K.
+  //   z_mid is the geopotential height above surface at midpoints. Units in m.
+  //   surf_geopotential is the surface geopotential height. Units in m.
+  KOKKOS_FUNCTION
+  static Spack get_dse(const Spack& T_mid, const Spack& z_mid, const Real surf_geopotential, const Smask& range_mask);
+
+  // Comput virtual temperature
+  // The result unit is in K
+  // The inputs are
+  //   T_mid is the atmospheric temperature.  Units in K.
+  //   qv    is the water vapor mass mixing ratio.  Units in kg/kg
+  KOKKOS_FUNCTION
+  static Spack get_virtual_temperature(const Spack& T_mid, const Spack& qv, const Smask& range_mask);
 };
 
 } // namespace physics

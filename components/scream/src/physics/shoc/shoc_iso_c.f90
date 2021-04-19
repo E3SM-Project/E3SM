@@ -51,7 +51,7 @@ contains
   subroutine shoc_init_for_main_bfb_c(nlev, gravit, rair, rh2o, cpair, &
                                       zvir, latvap, latice, karman,pref_mid,&
                                       nbot_shoc, ntop_shoc) bind(c)
-    use shoc, only: shoc_init, npbl
+    use shoc, only: shoc_init
 
     integer(kind=c_int), value, intent(in) :: nlev ! number of levels
     integer(kind=c_int), value, intent(in) :: nbot_shoc ! Bottom level to which SHOC is applied
@@ -78,7 +78,7 @@ contains
      wtracer_sfc, num_qtracers, w_field, exner,phis, host_dse, tke, thetal,  &
      qw, u_wind, v_wind, qtracers, wthv_sec, tkh, tk, shoc_ql, shoc_cldfrac, &
      pblh, shoc_mix, isotropy, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec,  &
-     wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec, brunt, shoc_ql2) bind(C)
+     wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec, brunt, shoc_ql2, elapsed_s) bind(C)
     use shoc, only : shoc_main
 
     integer(kind=c_int), value, intent(in) :: shcol, nlev, nlevi, num_qtracers, nadv
@@ -107,12 +107,14 @@ contains
     real(kind=c_real), intent(out), dimension(shcol, nlev) :: wqls_sec, isotropy, &
          brunt,shoc_ql2
 
+    real(kind=c_real), intent(out) :: elapsed_s
+
     call shoc_main(shcol, nlev, nlevi, dtime, nadv, host_dx, host_dy, thv,   &
      zt_grid, zi_grid, pres, presi, pdel, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &
      wtracer_sfc, num_qtracers, w_field, exner, phis, host_dse, tke, thetal, &
      qw, u_wind, v_wind, qtracers, wthv_sec, tkh, tk, shoc_ql, shoc_cldfrac, &
      pblh, shoc_mix, isotropy, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec,  &
-     wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec, brunt,shoc_ql2 )
+     wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec, brunt,shoc_ql2,elapsed_s)
   end subroutine shoc_main_c
 
   subroutine shoc_use_cxx_c(arg_use_cxx) bind(C)
@@ -291,7 +293,7 @@ contains
 
   subroutine shoc_tke_c(shcol, nlev, nlevi, dtime, wthv_sec, shoc_mix, dz_zi, &
                         dz_zt, pres, u_wind, v_wind, brunt, obklen, zt_grid, &
-			zi_grid, pblh, tke, tk, tkh, isotropy) bind(C)
+                        zi_grid, pblh, tke, tk, tkh, isotropy) bind(C)
     use shoc, only: shoc_tke
 
     integer(kind=c_int), intent(in), value :: shcol
@@ -317,8 +319,8 @@ contains
     real(kind=c_real), intent(out) :: isotropy(shcol,nlev)
 
     call shoc_tke(shcol, nlev, nlevi, dtime, wthv_sec, shoc_mix, dz_zi, &
-                        dz_zt, pres, u_wind, v_wind, brunt, obklen, zt_grid, &
-			zi_grid, pblh, tke, tk, tkh, isotropy)
+         dz_zt, pres, u_wind, v_wind, brunt, obklen, zt_grid, &
+         zi_grid, pblh, tke, tk, tkh, isotropy)
 
   end subroutine shoc_tke_c
 
@@ -779,7 +781,7 @@ contains
 
   subroutine omega_terms_diag_third_shoc_moment_c(&
                           buoy_sgs2, f3, f4,&
-			  omega0, omega1, omega2) bind (C)
+                          omega0, omega1, omega2) bind (C)
     use shoc, only: omega_terms_diag_third_shoc_moment
 
     real(kind=c_real), intent(in), value :: buoy_sgs2
@@ -792,13 +794,13 @@ contains
 
     call omega_terms_diag_third_shoc_moment(&
                           buoy_sgs2, f3, f4, &
-			  omega0, omega1, omega2)
+                          omega0, omega1, omega2)
 
   end subroutine omega_terms_diag_third_shoc_moment_c
 
   subroutine x_y_terms_diag_third_shoc_moment_c(&
                           buoy_sgs2, f0, f1, f2,&
-			  x0, y0, x1, y1) bind (C)
+                          x0, y0, x1, y1) bind (C)
     use shoc, only: x_y_terms_diag_third_shoc_moment
 
     real(kind=c_real), intent(in), value :: buoy_sgs2
@@ -813,14 +815,14 @@ contains
 
     call x_y_terms_diag_third_shoc_moment(&
                           buoy_sgs2, f0, f1, f2,&
-			  x0, y0, x1, y1)
+                          x0, y0, x1, y1)
 
   end subroutine x_y_terms_diag_third_shoc_moment_c
 
   subroutine aa_terms_diag_third_shoc_moment_c(&
                           omega0, omega1, omega2,&
-			  x0, x1, y0, y1, &
-			  aa0, aa1) bind (C)
+                          x0, x1, y0, y1, &
+                          aa0, aa1) bind (C)
     use shoc, only: aa_terms_diag_third_shoc_moment
 
     real(kind=c_real), intent(in), value :: omega0
@@ -836,8 +838,8 @@ contains
 
     call aa_terms_diag_third_shoc_moment(&
                           omega0, omega1, omega2,&
-			  x0, x1, y0, y1, &
-			  aa0, aa1)
+                          x0, x1, y0, y1, &
+                          aa0, aa1)
 
   end subroutine aa_terms_diag_third_shoc_moment_c
 

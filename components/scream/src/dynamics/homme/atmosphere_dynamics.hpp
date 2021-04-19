@@ -2,6 +2,7 @@
 #define SCREAM_HOMME_DYNAMICS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 
 #include <string>
@@ -44,18 +45,12 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repo) const;
+  // Register all fields in the proper field manager(s).
+  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 
-  // Dynamics requires 'TRACERS TENDENCY', and updates 'TRACERS'.
-  void set_required_group (const FieldGroup<const Real>& group);
+  // Dynamics updates 'TRACERS'.
   void set_updated_group (const FieldGroup<Real>& group);
-
-  // Get the set of required/computed fields
-  const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }
-  std::set<GroupRequest> get_required_groups () const { return m_in_groups_req; }
-  std::set<GroupRequest> get_updated_groups () const { return m_inout_groups_req; }
 
 protected:
 
@@ -68,21 +63,24 @@ protected:
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
 
-  std::set<FieldIdentifier> m_required_fields;
-  std::set<FieldIdentifier> m_computed_fields;
-  std::set<GroupRequest>    m_in_groups_req;
-  std::set<GroupRequest>    m_inout_groups_req;
+  std::map<std::string,FieldIdentifier> m_dyn_fids;
 
-  std::map<std::string,const_field_type>  m_dyn_fields_in;
-  std::map<std::string,field_type>        m_dyn_fields_out;
+  // Fields on reference and dynamics grid
+  // NOTE: the dyn grid fields are *NOT* in the FieldManager. We still use
+  //       scream Field's (rather than, e.g., raw views) cause we want to use
+  //       the remapper infrastructure to remap from/to ref grid to/from dyn grid.
+  std::map<std::string,field_type>  m_ref_grid_fields;
+  std::map<std::string,field_type>  m_dyn_grid_fields;
+
+  // Remapper for inputs and outputs
+  std::shared_ptr<AbstractRemapper<Real>>   m_p2d_remapper;
 
   // For standalong tests, we might need the grid info later
   std::shared_ptr<const AbstractGrid>  m_dyn_grid;
+  std::shared_ptr<const AbstractGrid>  m_ref_grid;
 
   ekat::ParameterList     m_params;
   ekat::Comm              m_dynamics_comm;
-
-  bool m_first_step = true;
 };
 
 } // namespace scream

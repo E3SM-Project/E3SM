@@ -24,7 +24,14 @@ public:
                     const std::string& reference_grid);
 
   std::set<std::string> supported_grids () const { return m_valid_grid_names; }
+
+  const grid_repo_type& get_repo () const { return m_grids; }
+
 protected:
+
+  std::string get_reference_grid_name () const {
+    return m_ref_grid_name;
+  }
 
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
@@ -33,11 +40,11 @@ protected:
   void build_dynamics_grid ();
   void build_physics_grid  (const std::string& name);
 
-  const grid_repo_type& get_repo () const { return m_grids; }
-
   void build_grid_codes ();
 
   grid_repo_type  m_grids;
+
+  std::string m_ref_grid_name;
 
   // Admissible grid names
   std::set<std::string> m_valid_grid_names;

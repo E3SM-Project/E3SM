@@ -57,8 +57,10 @@ macro (CreateScorpioTarget CREATE_FLIB)
       add_subdirectory (${E3SM_EXTERNALS_DIR}/scorpio ${CMAKE_BINARY_DIR}/externals/scorpio)
       EkatDisableAllWarning(pioc)
       EkatDisableAllWarning(gptl)
-      if (CREATE_FLIB)
-        EkatDisableAllWarning(pioc)
+      # target piof is not always created by scorpio depending on CMake settings
+      # if it is created, we don't want to see warnings from it when building SCREAM
+      if (TARGET piof)
+        EkatDisableAllWarning(piof)
       endif()
     endif()
   endif ()

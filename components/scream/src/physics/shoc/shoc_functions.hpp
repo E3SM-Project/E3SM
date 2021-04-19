@@ -121,18 +121,14 @@ struct Functions
     view_2d<Spack>  thetal;
     // total water mixing ratio [kg/kg]
     view_2d<Spack>  qw;
-    // u wind component [m/s]
-    view_2d<Spack>  u_wind;
-    // v wind component [m/s]
-    view_2d<Spack>  v_wind;
+    // Vector-valued wind (u,v) [m/s]
+    view_3d<Spack>  horiz_wind;
     // buoyancy flux [K m/s]
     view_2d<Spack>  wthv_sec;
     // tracers [varies]
     view_3d<Spack>  qtracers;
     // eddy coefficient for momentum [m2/s]
     view_2d<Spack>  tk;
-    // eddy coefficent for heat [m2/s]
-    view_2d<Spack>  tkh;
     // Cloud fraction [-]
     view_2d<Spack>  shoc_cldfrac;
     // cloud liquid mixing ratio [kg/kg]
@@ -603,7 +599,6 @@ struct Functions
     const uview_1d<Spack>&       wthv_sec,
     const uview_2d<Spack>&       qtracers,
     const uview_1d<Spack>&       tk,
-    const uview_1d<Spack>&       tkh,
     const uview_1d<Spack>&       shoc_cldfrac,
     const uview_1d<Spack>&       shoc_ql,
     // Output Variables

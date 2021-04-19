@@ -3,6 +3,7 @@
 
 #include <ekat/util/ekat_string_utils.hpp>
 #include <ekat/std_meta/ekat_std_utils.hpp>
+#include <ekat/ekat_assert.hpp>
 
 #include <list>
 #include <map>
@@ -14,7 +15,7 @@ namespace scream {
  * (wrapped in a FieldGroupInfo sturct), as well as pointers to the fields.
  *
  * A group is basically a "label" attached to fields, to allow users to
- * query the repo for all fields that have such label attached. A field can
+ * query a FieldManager for all fields that have such label attached. A field can
  * belong to any number of groups, or no group at all.
  *
  * A FieldGroupInfo stores:
@@ -93,14 +94,21 @@ struct FieldGroup {
   using field_type = Field<RealType>;
   using ci_string = FieldGroupInfo::ci_string;
 
-  FieldGroup (const std::string& name, const std::string& grid)
+  FieldGroup (const std::string& name)
    : m_info (new FieldGroupInfo(name))
-   , m_grid_name(grid)
   {
     // Nothing to do here
   }
 
   FieldGroup (const FieldGroup&) = default;
+
+  const std::string& grid_name () const {
+    EKAT_REQUIRE_MSG(m_fields.size()>0,
+        "Error! Cannot establish the group grid name until fields have been added.\n");
+
+    const auto& id = m_fields.begin()->second->get_header().get_identifier();
+    return id.get_grid_name();
+  }
 
   // The fields in this group
   std::map<ci_string,std::shared_ptr<field_type>> m_fields;
@@ -111,9 +119,6 @@ struct FieldGroup {
 
   // The info of this group.
   std::shared_ptr<FieldGroupInfo>  m_info;
-
-  // The grid where these field live on
-  ci_string  m_grid_name;
 };
 
 } // namespace scream

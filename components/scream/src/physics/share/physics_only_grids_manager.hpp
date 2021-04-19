@@ -35,13 +35,17 @@ public:
   void build_grids (const std::set<std::string>& grid_names,
                     const std::string& reference_grid);
 
+  const grid_repo_type& get_repo () const { return m_grids; }
+
 protected:
+
+  std::string get_reference_grid_name () const {
+    return "Physics";
+  }
 
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const;
-
-  const grid_repo_type& get_repo () const { return m_grids; }
 
   grid_repo_type  m_grids;
 

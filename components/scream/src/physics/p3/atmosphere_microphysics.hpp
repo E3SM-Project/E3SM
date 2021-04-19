@@ -5,7 +5,7 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "physics/p3/p3_main_impl.hpp"
 #include "physics/p3/p3_functions.hpp"
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs 
+#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 
 #include <string>
 
@@ -61,12 +61,7 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repo) const;
-
   // Get the set of required/computed fields
-  const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
 
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
@@ -76,7 +71,7 @@ public:
   // This is an important step to avoid having those variables just share pointers to memory.
   // Structure to handle the local generation of data needed by p3_main in run_impl
   struct p3_preamble {
-    p3_preamble() = default; 
+    p3_preamble() = default;
     // Functor for Kokkos loop to pre-process every run step
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
@@ -90,7 +85,7 @@ public:
         const Spack oT_atm(T_atm(icol,ipack));
         const Smask oT_atm_mask(!isnan(oT_atm) and oT_atm>0.0);
         auto oth = physics_fun::T_to_th(oT_atm,oexner,oT_atm_mask);
-        th_atm(icol,ipack).set(oT_atm_mask,oth); 
+        th_atm(icol,ipack).set(oT_atm_mask,oth);
         // Cloud fraction and dz
         const Spack oast(ast(icol,ipack));
         const Smask oasti_mask(!isnan(oast) and oast>mincld);
@@ -108,13 +103,18 @@ public:
           Int ipack_p1 = (lev + 1) / Spack::n;
           Int ivec_p1  = (lev + 1) % Spack::n;
           if (lev != 0) { /* Not applicable at the very top layer */
-            cld_frac_r(icol,ipack)[ivec] = ast(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ? 
+            cld_frac_r(icol,ipack)[ivec] = ast(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ?
                                               ast(icol,ipack_m1)[ivec_m1] :
                                               cld_frac_r(icol,ipack)[ivec];
           }
           // dz is calculated as the difference between the two layer interfaces.  Note that the lower the index the higher the altitude.
           // We also want to make sure we use the top level index for assignment since dz[0] = zi[0]-zi[1], for example.
-          dz(icol,ipack)[ivec] = zi(icol,ipack)[ivec]-zi(icol,ipack_p1)[ivec_p1]; 
+          if (ipack_p1 < m_npack) {
+            dz(icol,ipack)[ivec] = zi(icol,ipack)[ivec]-zi(icol,ipack_p1)[ivec_p1];
+          }
+          else {
+            dz(icol,ipack)[ivec] = zi(icol,ipack)[ivec];
+          }
         }
         //
       }
@@ -133,7 +133,7 @@ public:
     view_2d       cld_frac_r;
     view_2d       dz;
     // Assigning local variables
-    void set_variables(const int ncol, const int npack, 
+    void set_variables(const int ncol, const int npack,
            view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_,
            view_2d exner_, view_2d th_atm_, view_2d cld_frac_l_, view_2d cld_frac_i_, view_2d cld_frac_r_, view_2d dz_
            )
@@ -160,7 +160,7 @@ public:
   // Structure to handle the generation of data needed by the rest of the model based on output from
   // p3_main.
   struct p3_postamble {
-    p3_postamble() = default; 
+    p3_postamble() = default;
     // Functor for Kokkos loop to pre-process every run step
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
@@ -172,10 +172,15 @@ public:
         auto oT = physics_fun::th_to_T(oth_atm,oexner,oth_atm_mask);
         T_atm(icol,ipack).set(oth_atm_mask,oT);
         T_prev(icol,ipack).set(oth_atm_mask,T_atm(icol,ipack));
-         // Update qv_prev
+        // Update qv_prev
         const Spack oqv(qv(icol,ipack));
         const Smask oqv_mask(!isnan(oqv) and oqv>0.0);
         qv_prev(icol,ipack).set(oqv_mask,oqv);
+        // Rescale effective radius' into microns
+        for (int ivec=0;ivec<Spack::n;ivec++) {
+          diag_eff_radius_qc(icol,ipack)[ivec] *= 1e6;
+          diag_eff_radius_qi(icol,ipack)[ivec] *= 1e6;
+        }
       } // for ipack
     } // operator
     // Local variables
@@ -186,31 +191,34 @@ public:
     view_2d       T_prev;
     view_2d       qv;
     view_2d       qv_prev;
+    view_2d       diag_eff_radius_qc;
+    view_2d       diag_eff_radius_qi;
     // Assigning local values
     void set_variables(const int ncol, const int npack,
                     view_2d th_atm_, view_2d exner_, view_2d T_atm_, view_2d T_prev_,
-                    view_2d qv_, view_2d qv_prev_
-                   )
+                    view_2d qv_, view_2d qv_prev_, view_2d diag_eff_radius_qc_, view_2d diag_eff_radius_qi_)
     {
       m_ncol  = ncol;
       m_npack = npack;
       // IN
-      th_atm = th_atm_;
-      exner  = exner_;
-      qv     = qv_;
+      th_atm      = th_atm_;
+      exner       = exner_;
+      qv          = qv_;
       // OUT
-      T_atm  = T_atm_;
-      T_prev = T_prev_;
-      qv_prev = qv_prev_;
+      T_atm              = T_atm_;
+      T_prev             = T_prev_;
+      qv_prev            = qv_prev_;
+      diag_eff_radius_qc = diag_eff_radius_qc_;
+      diag_eff_radius_qi = diag_eff_radius_qi_;
       // TODO: This is a list of variables not yet defined for post-processing, but are
       // defined in the F90 p3 interface code.  So this list will need to be checked as
       // new processes come online to make sure their requirements from p3 are being met.
       // qme, vap_liq_exchange
       // ENERGY Conservation: prec_str, snow_str
       // RAD Vars: icinc, icwnc, icimrst, icwmrst, rel, rei, dei
-      // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffrain, reffsnow  
-    } // set_variables 
-  }; // p3_preamble
+      // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffrain, reffsnow
+    } // set_variables
+  }; // p3_postamble
   /* --------------------------------------------------------------------------------------------*/
 
 protected:
@@ -224,8 +232,6 @@ protected:
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
 
-  std::set<FieldIdentifier> m_required_fields;
-  std::set<FieldIdentifier> m_computed_fields;
 
   std::map<std::string,const_field_type>  m_p3_fields_in;
   std::map<std::string,field_type>        m_p3_fields_out;
@@ -250,7 +256,7 @@ protected:
   ekat::ParameterList m_p3_params;
 
   // Keep track of field dimensions and the iteration count
-  Int m_num_cols; 
+  Int m_num_cols;
   Int m_num_levs;
   Int m_nk_pack;
 
@@ -263,7 +269,7 @@ protected:
   p3_preamble              p3_preproc;
   p3_postamble             p3_postproc;
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
-  // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs. 
+  // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs.
 
 }; // class P3Microphysics
 

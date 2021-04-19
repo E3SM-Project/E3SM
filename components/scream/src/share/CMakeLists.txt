@@ -10,6 +10,7 @@ set(SHARE_SRC
   field/field_tracking.cpp
   grid/se_grid.cpp
   grid/point_grid.cpp
+  grid/user_provided_grids_manager.cpp
   util/scream_test_session.cpp
   util/scream_time_stamp.cpp
 )

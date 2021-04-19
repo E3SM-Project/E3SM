@@ -3,7 +3,7 @@
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_repository.hpp"
+#include "share/field/field_manager.hpp"
 #include "share/field/field_positivity_check.hpp"
 #include "share/field/field_within_interval_check.hpp"
 #include "share/field/field_monotonicity_check.hpp"
@@ -13,6 +13,7 @@
 #include "share/grid/user_provided_grids_manager.hpp"
 
 #include "ekat/ekat_pack.hpp"
+#include "ekat/ekat_pack_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 
 namespace {
@@ -184,15 +185,15 @@ TEST_CASE("field", "") {
     REQUIRE(views_are_equal(f1,f2));
   }
 
-  SECTION ("set_value") {
-    std::vector<FieldTag> t1 = {COL,VAR,LEV};
+  SECTION ("deep_copy") {
+    std::vector<FieldTag> t1 = {COL,CMP,LEV};
     std::vector<int> d1 = {3,2,24};
 
     FieldIdentifier fid1("vec_3d",{t1,d1},m/s,"some_grid");
 
     Field<Real> f1(fid1);
     f1.allocate_view();
-    f1.set_value(1.0);
+    f1.deep_copy(1.0);
     f1.sync_to_host();
     auto v = f1.get_view<Host>();
     for (int i=0; i<fid1.get_layout().size(); ++i) {
@@ -202,7 +203,7 @@ TEST_CASE("field", "") {
 
   // Subfields
   SECTION ("subfield") {
-    std::vector<FieldTag> t1 = {COL,VAR,CMP,LEV};
+    std::vector<FieldTag> t1 = {COL,CMP,CMP,LEV};
     std::vector<int> d1 = {3,10,2,24};
 
     FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
@@ -237,7 +238,7 @@ TEST_CASE("field", "") {
   }
 
   SECTION ("vector_component") {
-    std::vector<FieldTag> tags_2 = {COL,VAR,LEV};
+    std::vector<FieldTag> tags_2 = {COL,CMP,LEV};
     std::vector<int> dims_2 = {3,2,24};
 
     FieldIdentifier fid_2("vec_3d",{tags_2,dims_2},m/s,"some_grid");
@@ -254,8 +255,8 @@ TEST_CASE("field", "") {
     // f0 is scalar, no vector dimension
     REQUIRE_THROWS(f0.get_component(0));
 
-    f0.set_value(1.0);
-    f1.set_value(2.0);
+    f0.deep_copy(1.0);
+    f1.deep_copy(2.0);
 
     f_vec.sync_to_host();
 
@@ -304,83 +305,70 @@ TEST_CASE("field", "") {
   }
 }
 
-TEST_CASE("field_repo", "") {
+TEST_CASE("field_mgr", "") {
   using namespace scream;
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
+  using FID = FieldIdentifier;
+  using FR  = FieldRequest;
+  using SL  = std::list<std::string>;
+  using Pack = ekat::Pack<Real,8>;
 
-  std::vector<FieldTag> tags1 = {EL, GP, GP};
-  std::vector<FieldTag> tags2 = {COL};
-  std::vector<FieldTag> tags3 = {ILEV};
-  std::vector<FieldTag> tags4 = {COL,LEV};
+  const int ncols = 4;
+  const int nlevs = 7;
 
-  std::vector<int> dims1 = {2, 3, 4};
-  std::vector<int> dims2 = {2, 3, 3};
-  std::vector<int> dims3 = {13};
-  std::vector<int> dims4 = {6};
-  std::vector<int> dims5 = {13,6};
+  std::vector<FieldTag> tags1 = {COL,LEV};
+  std::vector<FieldTag> tags2 = {EL,GP,GP};
+
+  std::vector<int> dims1 = {ncols,nlevs};
+  std::vector<int> dims2 = {2,4,4};
+  std::vector<int> dims3 = {ncols,nlevs+1};
 
   const auto km = 1000*m;
 
-  FieldIdentifier fid1("field_1", {tags1, dims1},  m/s, "grid_1");
-  FieldIdentifier fid2("field_2", {tags1, dims2},  m/s, "grid_1");
-  FieldIdentifier fid3("field_2", {tags2, dims3},  m/s, "grid_2");
-  FieldIdentifier fid4("field_2", {tags2, dims3}, km/s, "grid_1");
-  FieldIdentifier fid5("field_3", {tags2, dims3}, km/s, "grid_1");
-  FieldIdentifier fid6("field_4", {tags2, dims3}, km/s, "grid_1");
-  FieldIdentifier fid7("field_5", {tags2, dims3}, km/s, "grid_3");
-  FieldIdentifier fid8("field_5", {tags3, dims4}, km/s, "grid_3");
-  FieldIdentifier fid9("field_packed", {tags4,dims5}, km/s, "grid_3");
+  FID fid1("field_1", {tags1, dims1},  m/s, "phys");
+  FID fid2("field_2", {tags1, dims1},  m/s, "phys");
+  FID fid3("field_3", {tags1, dims1},  m/s, "phys");
 
-  FieldRepository<Real> repo;
+  FID bad1("field_1", {tags2, dims2},  m/s, "dyn");  // Bad grid
+  FID bad2("field_2", {tags1, dims1}, km/s, "phys"); // Bad units
+  FID bad3("field_2", {tags1, dims3},  m/s, "phys"); // Bad layout
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  auto pg = create_point_grid("phys",ncols*comm.size(),nlevs,comm);
+  FieldManager<Real> field_mgr(pg);
 
   // Should not be able to register fields yet
-  REQUIRE_THROWS(repo.register_field(fid1,"group_1"));
+  REQUIRE_THROWS(field_mgr.register_field(FR(fid1)));
 
-  repo.registration_begins();
-  repo.register_field(fid1,"group_1");
-  repo.register_field(fid2,"group_2");
-  repo.register_field(fid3,"group_2");
-  // Test that you can assign more than one group to a field
-  repo.register_field(fid5,{"group_3","group_5"});
-  repo.register_field(fid6,{"group_4","group_5","group_6"});
-  // Test for same field and grid name, different layout
-  repo.register_field(fid7,"group_7");
-  repo.register_field(fid8,"group_7");
-  // Test for packed field
-  using Pack         = ekat::Pack<Real,8>;
-  repo.register_field<Pack>(fid9);
-  // Should not be able to register the same field name with two different units
-  REQUIRE_THROWS(repo.register_field(fid4));
-  repo.registration_ends();
+  field_mgr.registration_begins();
+
+  // === Valid registration calls === //
+  field_mgr.register_field(FR(fid1,"group_1",Pack::n));
+  field_mgr.register_field(FR{fid2,"group_2",16});
+  field_mgr.register_field(FR{fid3,"group_4"});
+  field_mgr.register_field(FR{fid3,SL{"group_1","group_2","group_3"}});
+  field_mgr.register_field(FR{fid2,"group_4"});
+
+  // === Invalid registration calls === //
+  REQUIRE_THROWS(field_mgr.register_field(FR{bad1}));
+  REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
+  REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
+  field_mgr.registration_ends();
 
   // Should not be able to register fields anymore
-  REQUIRE_THROWS(repo.register_field(fid1,"group_1"));
+  REQUIRE_THROWS(field_mgr.register_field(FR{fid1}));
 
   // Check registration is indeed closed
-  REQUIRE (repo.repository_state()==RepoState::Closed);
-  REQUIRE (repo.size()==6);
-  REQUIRE (repo.internal_size()==8);
+  REQUIRE (field_mgr.repository_state()==RepoState::Closed);
+  REQUIRE (field_mgr.size()==3);
 
-  auto f1 = repo.get_field(fid1);
-  auto f2 = repo.get_field(fid2);
-  auto f5 = repo.get_field(fid5);
-  auto f6 = repo.get_field(fid6);
-
-  // Check that get_field with a field name and grid name as arguments returns the appropriate field
-  // Using grid_1 should return fid2 field, using grid_2 should return fid3 field, using grid_3 should throw an error.
-  // Retrieving field 5 on grid 3 should return an error since it has been defined on grid 3 with two different layouts.
-  auto f7 = repo.get_field("field_2","grid_1");
-  auto f8 = repo.get_field("field_2","grid_2");
-  REQUIRE_THROWS( repo.get_field("field_5","grid_3") );
-  REQUIRE_THROWS( repo.get_field("field_2","grid_3") );
-  REQUIRE(f7.get_header().get_identifier()==fid2);
-  REQUIRE(f7.get_header().get_identifier()!=fid3);
-  REQUIRE(f8.get_header().get_identifier()!=fid2);
-  REQUIRE(f8.get_header().get_identifier()==fid3);
-
-  // Check the two fields identifiers are indeed different
-  REQUIRE (f1.get_header().get_identifier()!=f2.get_header().get_identifier());
+  // Get all fields
+  auto f1 = field_mgr.get_field(fid1.name());
+  auto f2 = field_mgr.get_field(fid2.name());
+  auto f3 = field_mgr.get_field(fid3.name());
+  REQUIRE_THROWS(field_mgr.get_field("bad")); // Not in the field_mgr
+  REQUIRE(f1.get_header().get_identifier()==fid1);
 
   // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
   auto has_group = [](const ekat::WeakPtrSet<const FieldGroupInfo>& groups,
@@ -394,37 +382,45 @@ TEST_CASE("field_repo", "") {
   };
   REQUIRE (has_group(f1.get_header().get_tracking().get_groups_info(),"gRouP_1"));
   REQUIRE (has_group(f2.get_header().get_tracking().get_groups_info(),"Group_2"));
-  REQUIRE (has_group(f5.get_header().get_tracking().get_groups_info(),"Group_3"));
-  REQUIRE (has_group(f5.get_header().get_tracking().get_groups_info(),"Group_5"));
-  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_4"));
-  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_5"));
-  REQUIRE (has_group(f6.get_header().get_tracking().get_groups_info(),"Group_6"));
+  REQUIRE (has_group(f2.get_header().get_tracking().get_groups_info(),"Group_4"));
+  REQUIRE (has_group(f3.get_header().get_tracking().get_groups_info(),"Group_1"));
+  REQUIRE (has_group(f3.get_header().get_tracking().get_groups_info(),"Group_2"));
+  REQUIRE (has_group(f3.get_header().get_tracking().get_groups_info(),"Group_3"));
+  REQUIRE (has_group(f3.get_header().get_tracking().get_groups_info(),"Group_4"));
 
-  // Check that the groups in the repo contain the correct fields
-  REQUIRE (repo.get_groups_info().count("GROUP_1")==1);
-  REQUIRE (repo.get_groups_info().count("GRoup_2")==1);
-  REQUIRE (repo.get_groups_info().count("group_3")==1);
-  REQUIRE (repo.get_groups_info().count("groUP_4")==1);
-  REQUIRE (repo.get_groups_info().count("group_5")==1);
-  REQUIRE (repo.get_groups_info().at("group_5")->m_fields_names.size()==2);
-  REQUIRE (repo.get_groups_info().count("group_6")==1);
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_1")->m_fields_names,"Field_1"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_2")->m_fields_names,"Field_2"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_3")->m_fields_names,"Field_3"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_4")->m_fields_names,"Field_4"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_5")->m_fields_names,"Field_3"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_5")->m_fields_names,"Field_4"));
-  REQUIRE (ekat::contains(repo.get_groups_info().at("group_6")->m_fields_names,"Field_4"));
+  // Check that the groups in the field_mgr contain the correct fields
+  REQUIRE (field_mgr.get_groups_info().count("GROUP_1")==1);
+  REQUIRE (field_mgr.get_groups_info().count("GRoup_2")==1);
+  REQUIRE (field_mgr.get_groups_info().count("group_3")==1);
+  REQUIRE (field_mgr.get_groups_info().count("groUP_4")==1);
+  REQUIRE (field_mgr.get_groups_info().count("group_5")==0);
+  REQUIRE (field_mgr.get_groups_info().at("group_2")->m_fields_names.size()==2);
 
-  // Check that get_padding returns the appropriate value
-  auto f9 = repo.get_field("field_packed","grid_3");
-  REQUIRE (f9.get_header().get_alloc_properties().get_padding()==2);
+  auto g1 = field_mgr.get_groups_info().at("group_1");
+  auto g2 = field_mgr.get_groups_info().at("group_2");
+  auto g3 = field_mgr.get_groups_info().at("group_3");
+  auto g4 = field_mgr.get_groups_info().at("group_4");
+  REQUIRE (ekat::contains(g1->m_fields_names,"Field_1"));
+  REQUIRE (ekat::contains(g1->m_fields_names,"Field_3"));
+  REQUIRE (ekat::contains(g2->m_fields_names,"Field_2"));
+  REQUIRE (ekat::contains(g2->m_fields_names,"Field_3"));
+  REQUIRE (ekat::contains(g3->m_fields_names,"Field_3"));
+  REQUIRE (ekat::contains(g4->m_fields_names,"Field_2"));
+  REQUIRE (ekat::contains(g4->m_fields_names,"Field_3"));
+
+  // Check alloc props for f1 and f2 (which requested pack size > 1)
+  auto f1_padding = f1.get_header().get_alloc_properties().get_padding();
+  auto f2_padding = f2.get_header().get_alloc_properties().get_padding();
+
+  REQUIRE (f1_padding==ekat::PackInfo<Pack::n>::padding(nlevs));
+  REQUIRE (f2_padding==ekat::PackInfo<16>::padding(nlevs));
 }
 
 TEST_CASE("tracers_bundle", "") {
   using namespace scream;
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
+  using FR  = FieldRequest;
 
   const int ncols = 4;
   const int nlevs = 7;
@@ -441,30 +437,27 @@ TEST_CASE("tracers_bundle", "") {
 
   ekat::Comm comm(MPI_COMM_WORLD);
   auto pg = create_point_grid(grid_name,ncols*comm.size(),nlevs,comm);
-  auto gm = create_user_provided_grids_manager(comm,ekat::ParameterList());
-  auto upgm = std::dynamic_pointer_cast<UserProvidedGridsManager>(gm);
-  upgm->set_grid(pg);
-  upgm->set_reference_grid(grid_name);
 
-  FieldRepository<Real> repo;
-  repo.registration_begins();
-  repo.register_field(qv_id,"TRACERS");
-  repo.register_field(qc_id,"TRACERS");
-  repo.register_field(qr_id,"TRACERS");
-  repo.registration_ends(gm);
+  FieldManager<Real> field_mgr(pg);
+  field_mgr.registration_begins();
+  field_mgr.register_field(FR{qv_id,"tracers"});
+  field_mgr.register_field(FR{qc_id,"tracers"});
+  field_mgr.register_field(FR{qr_id,"tracers"});
+  field_mgr.register_group(GroupRequest("tracers",grid_name,Bundling::Required));
+  field_mgr.registration_ends();
 
-  auto qv = repo.get_field(qv_id);
-  auto qc = repo.get_field(qc_id);
-  auto qr = repo.get_field(qr_id);
+  auto qv = field_mgr.get_field(qv_id.name());
+  auto qc = field_mgr.get_field(qc_id.name());
+  auto qr = field_mgr.get_field(qr_id.name());
 
-  auto group = repo.get_field_group("TRACERS",grid_name);
-  // The repo should have allocated the group bundled
+  auto group = field_mgr.get_field_group("tracers");
+  // The field_mgr should have allocated the group bundled
   REQUIRE (group.m_info->m_bundled);
 
   const auto& Q_name = group.m_bundle->get_header().get_identifier().name();
-  auto Q = repo.get_field(Q_name,grid_name);
+  auto Q = field_mgr.get_field(Q_name);
 
-  // The bundled field in the group should match the field we get from the repo
+  // The bundled field in the group should match the field we get from the field_mgr
   REQUIRE (Q.equivalent(*group.m_bundle));
 
   // Check that Q is set as parent for all q's.
@@ -524,8 +517,111 @@ TEST_CASE("tracers_bundle", "") {
   REQUIRE (qv_ptr->equivalent(qv));
   REQUIRE (qc_ptr->equivalent(qc));
   REQUIRE (qr_ptr->equivalent(qr));
+}
 
-  upgm->clean_up();
+TEST_CASE("multiple_bundles") {
+  using namespace scream;
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+  using SL = std::list<std::string>;
+
+  const int ncols = 4;
+  const int nlevs = 7;
+
+  std::vector<FieldTag> tags = {COL,LEV};
+  std::vector<int> dims = {ncols,nlevs};
+
+  const auto nondim = Units::nondimensional();
+
+  const std::string grid_name = "physics";
+  ekat::Comm comm(MPI_COMM_WORLD);
+  auto pg = create_point_grid(grid_name,ncols*comm.size(),nlevs,comm);
+
+  FieldIdentifier a_id("a", {tags, dims}, nondim, grid_name);
+  FieldIdentifier b_id("b", {tags, dims}, nondim, grid_name);
+  FieldIdentifier c_id("c", {tags, dims}, nondim, grid_name);
+  FieldIdentifier d_id("d", {tags, dims}, nondim, grid_name);
+  FieldIdentifier e_id("e", {tags, dims}, nondim, grid_name);
+  FieldIdentifier f_id("f", {tags, dims}, nondim, grid_name);
+
+  FieldRequest a_req(a_id,"group1");
+  FieldRequest b_req(b_id,SL{"group1"});
+  FieldRequest c_req(c_id,SL{"group1","group2"});
+  FieldRequest d_req(d_id,SL{"group1","group3"});
+  FieldRequest e_req(e_id,SL{"group1","group2"});
+  FieldRequest f_req(f_id,SL{"group1","group3"});
+
+  GroupRequest g1_req ("group1",grid_name,Bundling::Required);
+  GroupRequest g2_req ("group2",grid_name,Bundling::Required);
+  // group3 = group3 + group2
+  GroupRequest g3_req ("group3",grid_name,4,Bundling::Required,&g2_req,Relationship::Child);
+  // group4 = group2
+  GroupRequest g4_req ("group4",grid_name,4,Bundling::Required,&g2_req,Relationship::Alias);
+  // group5 = group1 - {c,d}
+  GroupRequest g5_req ("group5",grid_name,4,Bundling::Preferred,&g1_req,Relationship::Parent,SL{"c","d"});
+
+  // The above group specs give the following groups:
+  // g1: [a,b,c,d,e,f]
+  // g2: [c,e]
+  // g3: [d,f,c,e]
+  // g4: [c,e]
+  // g5: [a,b,e,f]
+  // The bundling requests can be accommodated for g1-g4, but not g5.
+  // But g5 request is only 'Preferred', so the FM won't error out.
+  // The order of fields in the 'encompassing' group is {[c,e][d,f][a,b]},
+  // where [c,e] means that the order of those two fields can be anything.
+  // The 'block'-reverse of that list is also possible: {[a,b][d,f][c,e]}
+
+  FieldManager<Real> field_mgr(pg);
+  field_mgr.registration_begins();
+
+  // Register single fields
+  field_mgr.register_field(a_req);
+  field_mgr.register_field(b_req);
+  field_mgr.register_field(c_req);
+  field_mgr.register_field(d_req);
+  field_mgr.register_field(e_req);
+  field_mgr.register_field(f_req);
+
+  // Register groups
+  field_mgr.register_group(g1_req);
+  field_mgr.register_group(g2_req);
+  field_mgr.register_group(g3_req);
+  field_mgr.register_group(g4_req);
+  field_mgr.register_group(g5_req);
+
+  field_mgr.registration_ends();
+
+  auto g1 = field_mgr.get_field_group(g1_req.name);
+  auto g2 = field_mgr.get_field_group(g2_req.name);
+  auto g3 = field_mgr.get_field_group(g3_req.name);
+  auto g4 = field_mgr.get_field_group(g4_req.name);
+  auto g5 = field_mgr.get_field_group(g5_req.name);
+
+  // First 4 groups should be bundled
+  REQUIRE (g1.m_info->m_bundled);
+  REQUIRE (g2.m_info->m_bundled);
+  REQUIRE (g3.m_info->m_bundled);
+  REQUIRE (g4.m_info->m_bundled);
+  REQUIRE (not g5.m_info->m_bundled);
+
+  // Check that the order of fields in g1 is the expected one
+  const auto& fnames = g1.m_info->m_fields_names;
+  const auto& f1 = *std::next(fnames.begin(),0);
+  const auto& f2 = *std::next(fnames.begin(),1);
+  const auto& f3 = *std::next(fnames.begin(),2);
+  const auto& f4 = *std::next(fnames.begin(),3);
+  const auto& f5 = *std::next(fnames.begin(),4);
+  const auto& f6 = *std::next(fnames.begin(),5);
+  if (f1=="a" || f1=="b") {
+    REQUIRE ( ((f1=="a" && f2=="b") || (f1=="b" && f2=="a")) );
+    REQUIRE ( ((f3=="d" && f4=="f") || (f3=="f" && f4=="d")) );
+    REQUIRE ( ((f5=="c" && f6=="e") || (f5=="e" && f6=="c")) );
+  } else {
+    REQUIRE ( ((f1=="c" && f2=="e") || (f1=="e" && f2=="c")) );
+    REQUIRE ( ((f3=="d" && f4=="f") || (f3=="f" && f4=="d")) );
+    REQUIRE ( ((f5=="a" && f6=="b") || (f5=="b" && f6=="a")) );
+  }
 }
 
 TEST_CASE("field_property_check", "") {

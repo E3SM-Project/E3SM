@@ -659,7 +659,7 @@ TEST_CASE("combo_remap", "") {
   std::vector<FieldTag> v_3d_dyn_tags   = {EL,     CMP, GP, GP, LEV};
   std::vector<FieldTag> ss_3d_dyn_tags  = {EL, TL,      GP, GP, LEV};
   std::vector<FieldTag> vs_3d_dyn_tags  = {EL, TL, CMP, GP, GP, LEV};
-  std::vector<FieldTag> tr_3d_dyn_tags  = {EL,     VAR, GP, GP, LEV};
+  std::vector<FieldTag> tr_3d_dyn_tags  = {EL,     CMP, GP, GP, LEV};
 
   std::vector<FieldTag> s_2d_phys_tags  = {COL          };
   std::vector<FieldTag> v_2d_phys_tags  = {COL, CMP     };
@@ -667,7 +667,7 @@ TEST_CASE("combo_remap", "") {
   std::vector<FieldTag> v_3d_phys_tags  = {COL, CMP, LEV};
   std::vector<FieldTag> vs_3d_phys_tags = {COL, CMP, LEV};
   std::vector<FieldTag> ss_3d_phys_tags = {COL,      LEV};
-  std::vector<FieldTag> tr_3d_phys_tags = {COL, VAR, LEV};
+  std::vector<FieldTag> tr_3d_phys_tags = {COL, CMP, LEV};
 
   std::vector<int> s_2d_dyn_dims   = {nle,          np, np     };
   std::vector<int> v_2d_dyn_dims   = {nle,       2, np, np     };

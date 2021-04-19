@@ -36,7 +36,10 @@ enum class FieldTag {
   Component2,
   Component3,
   TimeLevel,
-  Variable
+  // Added for RRTMGP, TODO: Revisit this approach, is there a better way than adding more field tags?
+  Gases,
+  ShortWaveBand,
+  LongWaveBand
 };
 
 inline std::string e2str (const FieldTag ft) {
@@ -75,8 +78,15 @@ inline std::string e2str (const FieldTag ft) {
     case FieldTag::Component3:
       name = "CMP3";
       break;
-    case FieldTag::Variable:
-      name = "VAR";
+    // Added for rrtmgp - see TODO item above
+    case FieldTag::Gases:
+      name = "NGAS";
+      break;
+    case FieldTag::ShortWaveBand:
+      name = "SWBND";
+      break;
+    case FieldTag::LongWaveBand:
+      name = "LWBND";
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized field tag.");
@@ -85,20 +95,26 @@ inline std::string e2str (const FieldTag ft) {
   return name;
 }
 
-// If using tags a lot, consider adding 'using namespace ShortFieldTagsNames' locally to your function or cpp file.
+// If using tags a lot, consider adding 'using namespace ShortFieldTagsNames'
+// locally to your function or cpp file.
+// TODO: if/when we require std=c++20, this can be removed, and user can do
+//   using enum FieldTag;
 namespace ShortFieldTagsNames {
 
   constexpr auto EL   = FieldTag::Element;
   constexpr auto COL  = FieldTag::Column;
   constexpr auto GP   = FieldTag::GaussPoint;
   constexpr auto TL   = FieldTag::TimeLevel;
-  constexpr auto VAR  = FieldTag::Variable;
   constexpr auto LEV  = FieldTag::LevelMidPoint;
   constexpr auto ILEV = FieldTag::LevelInterface;
   constexpr auto CMP  = FieldTag::Component;
   constexpr auto CMP1 = FieldTag::Component1;
   constexpr auto CMP2 = FieldTag::Component2;
   constexpr auto CMP3 = FieldTag::Component3;
+  // Added for rrtmgp - see TODO item above
+  constexpr auto NGAS = FieldTag::Gases;
+  constexpr auto SWBND = FieldTag::ShortWaveBand;
+  constexpr auto LWBND = FieldTag::LongWaveBand;
 }
 
 } // namespace scream

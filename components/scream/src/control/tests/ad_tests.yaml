@@ -8,6 +8,8 @@ Initial Conditions:
   A: 1.0
   B: 2.0
   C: 3.0
+  D: [4.0, 5.0]
+  E: "A"
 
 Atmosphere Processes:
   Number of Entries: 3
@@ -16,17 +18,17 @@ Atmosphere Processes:
   Process 0:
     Process Name: Dummy
     Sub Name: A to BC
-    Grid Name: Point Grid A
+    Grid Name: Point Grid
   Process 1:
     Process Name: Dummy
     Sub Name: Group to Group
-    Grid Name: Point Grid B
+    Grid Name: Point Grid
   Process 2:
     Process Name: Dummy
     Sub Name: Group to A
-    Grid Name: Point Grid A
+    Grid Name: Point Grid
 
 Grids Manager:
   Type: User Provided
-  Reference Grid: Point Grid A
+  Reference Grid: Point Grid
 ...

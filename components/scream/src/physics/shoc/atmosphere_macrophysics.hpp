@@ -66,24 +66,16 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repo) const;
-
   // SHOC updates the 'TRACERS' group.
   void set_updated_group (const FieldGroup<Real>& group);
-
-  // Get the set of required/computed fields and groups
-  const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
-  std::set<GroupRequest> get_updated_groups () const { return m_inout_groups_req; }
 
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
   // the set of fields stored in the field manager.  A structure like this defines those operations,
   // which can then be called during run_impl in the main .cpp code.
   // Structure to handle the local generation of data needed by shoc_main in run_impl
-  struct SHOCPreamble {
-    SHOCPreamble() = default;
+  struct SHOCPreprocess {
+    SHOCPreprocess() = default;
 
     KOKKOS_INLINE_FUNCTION
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
@@ -95,6 +87,7 @@ public:
       const Real ggr = C::gravit;
 
       // Transpose and repack tracer array
+      // TODO: remove once shoc tracer traspose is implemented
       for (int k=0; k<nlev; ++k) {
         for (int q=0; q<num_tracers; ++q) {
           const int q_v = q/Spack::n;
@@ -109,40 +102,55 @@ public:
       const int nlevi_v = nlev/Spack::n;
       const int nlevi_p = nlev%Spack::n;
 
-      const auto sub_zi = ekat::subview(zi, i);
-      const auto s_zi = ekat::scalarize(sub_zi);
+      const auto sub_z_int = ekat::subview(z_int, i);
+      const auto s_z_int = ekat::scalarize(sub_z_int);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
         // Exner
-        const Spack opmid(pmid(i,k));
-        const Smask opmid_mask(!isnan(opmid) and opmid>0.0);
-        auto oexner = physics_fun::get_exner(opmid,opmid_mask);
-        exner(i,k) = oexner;
+        const Spack p_mid_ik(p_mid(i,k));
+        const Smask p_mid_mask(!isnan(p_mid_ik) and p_mid_ik>0.0);
+        auto exner_ik = physics_fun::get_exner(p_mid_ik,p_mid_mask);
+        exner(i,k) = exner_ik;
+
+        tke(i,k) = ekat::max(sp(0.004), tke(i,k));
+
+        // Tracers are updated as a group. These tracers act as seperate inputs to shoc_main
+        // and should have different output as tracer group. We make a copy and pass these to
+        // shoc_main, then copy back to tracer group in postprocessing.
+        // TODO: remove *_copy views once SHOC can request a subset of tracers.
+        tke_copy(i,k) = tke(i,k);
+        qc_copy(i,k) = qc(i,k);
+        qv_copy(i,k) = qv(i,k);
 
         // Temperature
-        qw(i,k) = shoc_qv(i,k) + shoc_ql(i,k);
+        qw(i,k) = qv(i,k) + qc(i,k);
 
-        const auto theta_zt = t(i,k)/exner(i,k);
-        thlm(i,k) = theta_zt - (latvap/cpair)*shoc_ql(i,k);
-        thv(i,k)  = theta_zt*(1 + zvir*shoc_qv(i,k) - shoc_ql(i,k));
+        const auto theta_zt = T_mid(i,k)/exner(i,k);
+        thlm(i,k) = theta_zt - (latvap/cpair)*qc(i,k);
+        thv(i,k)  = theta_zt*(1 + zvir*qv(i,k) - qc(i,k));
 
-        // TKE
-        tke_zt(i,k) = ekat::max(sp(0.004), tke_zt(i,k));
-
-        // Cloudfrac
-        cloud_frac(i,k) = alst(i,k);
+        // Dry static energy
+        const Spack T_mid_ik(T_mid(i,k));
+        const Spack z_mid_ik(z_mid(i,k));
+        const Real  phis_i(phis(i)[0]);
+        const Smask range_mask(!isnan(T_mid_ik) && T_mid_ik>0.0 &&
+                               !isnan(z_mid_ik) && z_mid_ik>0.0 &&
+                               !isnan(phis_i)   && phis_i>0.0);
+        auto dse_ik = physics_fun::get_dse(T_mid_ik,z_mid_ik,phis_i,range_mask);
+        shoc_s(i,k) = dse_ik;
 
         Spack zi_k, zi_kp1;
         auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
         auto range_pack2 = range_pack1;
         range_pack2.set(range_pack1 > nlev, 1);
-        ekat::index_and_shift<1>(s_zi, range_pack2, zi_k, zi_kp1);
+        ekat::index_and_shift<1>(s_z_int, range_pack2, zi_k, zi_kp1);
         dz(i,k).set(range_pack1 < nlev, zi_k - zi_kp1);
 
-        zt_grid(i,k) = zm(i,k) - zi(i, nlevi_v)[nlevi_p];
-        rrho(i,k) = (1/ggr)*(pdel(i,k)/dz(i,k));
+        zt_grid(i,k) = z_mid(i,k) - z_int(i, nlevi_v)[nlevi_p];
+        rrho(i,k) = (1/ggr)*(pseudo_density(i,k)/dz(i,k));
+
         wm_zt(i,k) = -1*omega(i,k)/(rrho(i,k)*ggr);
 
-        zi_grid(i,k) = zi(i,k) - zi(i, nlevi_v)[nlevi_p];
+        zi_grid(i,k) = z_int(i,k) - z_int(i, nlevi_v)[nlevi_p];
       });
       zi_grid(i,nlevi_v)[nlevi_p] = 0;
 
@@ -158,10 +166,10 @@ public:
       const int nlev_v = (nlev-1)/Spack::n;
       const int nlev_p = (nlev-1)%Spack::n;
 
-      wpthlp_sfc(i)[0] = shf(i)[0]/(cpair*rrho_i(i,nlev_v)[nlev_p]);
-      wprtp_sfc(i)[0]  = cflx(i)[0]/rrho_i(i,nlev_v)[nlev_p];
-      upwp_sfc(i)[0]   = wsx(i)[0]/rrho_i(i,nlev_v)[nlev_p];
-      vpwp_sfc(i)[0]   = wsy(i)[0]/rrho_i(i,nlev_v)[nlev_p];
+      wpthlp_sfc(i)[0] = surf_sens_flux(i)[0]/(cpair*rrho_i(i,nlev_v)[nlev_p]);
+      wprtp_sfc(i)[0]  = surf_latent_flux(i)[0]/rrho_i(i,nlev_v)[nlev_p];
+      upwp_sfc(i)[0]   = surf_u_mom_flux(i)[0]/rrho_i(i,nlev_v)[nlev_p];
+      vpwp_sfc(i)[0]   = surf_v_mom_flux(i)[0]/rrho_i(i,nlev_v)[nlev_p];
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_tracer_packs), [&] (const Int& q) {
         wtracer_sfc(i,q) = 0;
@@ -170,24 +178,25 @@ public:
 
     // Local variables
     int ncol, nlev, nlev_packs, num_tracers, num_tracer_packs;
-    view_2d_const t;
-    view_2d_const alst;
-    view_2d_const zi;
-    view_2d_const zm;
-    view_2d_const pmid;
-    view_2d_const pdel;
+    view_2d_const T_mid;
+    view_2d_const z_int;
+    view_2d_const z_mid;
+    view_2d_const p_mid;
+    view_2d_const pseudo_density;
     view_2d_const omega;
-    view_1d_const shf;
-    view_1d_const cflx;
-    view_1d_const wsx;
-    view_1d_const wsy;
-    view_2d_const shoc_qv;
+    view_1d_const phis;
+    view_1d_const surf_sens_flux;
+    view_1d_const surf_latent_flux;
+    view_1d_const surf_u_mom_flux;
+    view_1d_const surf_v_mom_flux;
+    view_2d_const qv;
+    view_2d       qv_copy;
     view_3d       Q;
-    view_2d       shoc_ql;
+    view_2d       qc;
+    view_2d       qc_copy;
     view_2d       shoc_s;
-    view_2d       tke_zt;
-    view_2d       um;
-    view_2d       vm;
+    view_2d       tke;
+    view_2d       tke_copy;
     view_2d       rrho;
     view_2d       rrho_i;
     view_2d       thv;
@@ -209,15 +218,16 @@ public:
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_tracers_,
                        const int nlev_packs_, const int num_tracer_packs_,
-                       view_2d_const t_, view_2d_const alst_, view_2d_const zi_,
-                       view_2d_const zm_, view_2d_const pmid_, view_2d_const pdel_,
+                       view_2d_const T_mid_, view_2d_const z_int_,
+                       view_2d_const z_mid_, view_2d_const p_mid_, view_2d_const pseudo_density_,
                        view_2d_const omega_,
-                       view_1d_const shf_, view_1d_const cflx_, view_1d_const wsx_, view_1d_const wsy_,
-                       view_2d_const shoc_qv_, view_3d Q_, view_2d shoc_ql_, view_2d tke_,
-                       view_2d s_, view_2d u_, view_2d v_, view_2d rrho_, view_2d rrho_i_,view_2d thv_,
-                       view_2d dz_,view_2d zt_grid_,view_2d zi_grid_, view_1d wpthlp_sfc_,
+                       view_1d_const phis_, view_1d_const surf_sens_flux_, view_1d_const surf_latent_flux_,
+                       view_1d_const surf_u_mom_flux_, view_1d_const surf_v_mom_flux_,
+                       view_2d_const qv_, view_2d qv_copy_, view_3d Q_, view_2d qc_, view_2d qc_copy_,
+                       view_2d tke_, view_2d tke_copy_, view_2d s_, view_2d rrho_, view_2d rrho_i_,
+                       view_2d thv_, view_2d dz_,view_2d zt_grid_,view_2d zi_grid_, view_1d wpthlp_sfc_,
                        view_1d wprtp_sfc_,view_1d upwp_sfc_,view_1d vpwp_sfc_, view_2d wtracer_sfc_,
-                       view_2d wm_zt_,view_2d exner_,view_2d thlm_,view_2d qw_,view_2d cloud_frac_,view_3d tracers_)
+                       view_2d wm_zt_,view_2d exner_,view_2d thlm_,view_2d qw_,view_3d tracers_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -225,25 +235,26 @@ public:
       num_tracers = num_tracers_;
       num_tracer_packs = num_tracer_packs_;
       // IN
-      t = t_;
-      alst = alst_;
-      zi = zi_;
-      zm = zm_;
-      pmid = pmid_;
-      pdel = pdel_;
+      T_mid = T_mid_;
+      z_int = z_int_;
+      z_mid = z_mid_;
+      p_mid = p_mid_;
+      pseudo_density = pseudo_density_;
       omega = omega_;
-      shf = shf_;
-      cflx = cflx_;
-      wsx = wsx_;
-      wsy = wsy_;
-      shoc_qv = shoc_qv_;
+      phis = phis_;
+      surf_sens_flux = surf_sens_flux_;
+      surf_latent_flux = surf_latent_flux_;
+      surf_u_mom_flux = surf_u_mom_flux_;
+      surf_v_mom_flux = surf_v_mom_flux_;
+      qv = qv_;
+      qv_copy = qv_copy_;
       Q = Q_;
       // OUT
-      shoc_ql = shoc_ql_;
+      qc = qc_;
+      qc_copy = qc_copy_;
       shoc_s = s_;
-      tke_zt = tke_;
-      um = u_;
-      vm = v_;
+      tke = tke_;
+      tke_copy = tke_copy_;
       rrho = rrho_;
       rrho_i = rrho_i_;
       thv = thv_;
@@ -259,10 +270,98 @@ public:
       exner = exner_;
       thlm = thlm_;
       qw = qw_;
-      cloud_frac = cloud_frac_;
       tracers = tracers_;
     } // set_variables
-  }; // SHOCPreamble
+  }; // SHOCPreprocess
+  /* --------------------------------------------------------------------------------------------*/
+
+  /*--------------------------------------------------------------------------------------------*/
+  // Structure to handle the generation of data needed by the rest of the model based on output from
+  // shoc_main.
+  struct SHOCPostprocess {
+    SHOCPostprocess() = default;
+
+    KOKKOS_INLINE_FUNCTION
+    void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
+      const int i = team.league_rank();
+
+      const Real cpair = C::Cpair;
+      const Real inv_qc_relvar_max = 10;
+      const Real inv_qc_relvar_min = 0.001;
+
+      // Transpose and repack tracer array
+      // TODO: remove once shoc tracer traspose is implemented
+      for (int k=0; k<nlev; ++k) {
+        for (int q=0; q<num_tracers; ++q) {
+          const int q_v = q/Spack::n;
+          const int q_p = q%Spack::n;
+          const int k_v = k/Spack::n;
+          const int k_p = k%Spack::n;
+
+          Q(i,q,k_v)[k_p] = tracers(i,k,q_v)[q_p];
+        }
+      }
+
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+        // Tracers were updated as a group. Copy output from seperate inputs instead
+        // of using tracer group output.
+        tke(i,k) = tke_copy(i,k);
+        qc(i,k) = qc_copy(i,k);
+        qv(i,k) = qv_copy(i,k);
+
+        cldfrac_liq(i,k) = ekat::min(cldfrac_liq(i,k), 1);
+        sgs_buoy_flux(i,k) = sgs_buoy_flux(i,k)*rrho(i,k)*cpair;
+
+        inv_qc_relvar(i,k) = 1;
+        const auto condition = (qc(i,k) != 0 && qc2(i,k) != 0);
+        inv_qc_relvar(i,k).set(condition,
+                               ekat::min(inv_qc_relvar_max,
+                                         ekat::max(inv_qc_relvar_min,
+                                                   ekat::square(qc(i,k))/qc2(i,k))));
+      });
+    } // operator
+
+    // Local variables
+    int ncol, nlev, nlev_packs, num_tracers, num_tracer_packs;
+    view_2d_const rrho;
+    view_2d qv, qc, tke;
+    view_2d_const qv_copy, qc_copy, tke_copy;
+    view_2d_const qc2;
+    view_3d Q;
+    view_3d_const tracers;
+    view_2d cldfrac_liq;
+    view_2d sgs_buoy_flux;
+    view_2d inv_qc_relvar;
+
+    // Assigning local variables
+    void set_variables(const int ncol_, const int nlev_, const int num_tracers_,
+                       const int nlev_packs_, const int num_tracer_packs_,
+                       view_2d_const rrho_,
+                       view_2d qv_, view_2d_const qv_copy_, view_2d qc_, view_2d_const qc_copy_,
+                       view_2d tke_, view_2d_const tke_copy_, view_2d_const qc2_,
+                       view_3d Q_, view_3d_const tracers_,
+                       view_2d cldfrac_liq_, view_2d sgs_buoy_flux_, view_2d inv_qc_relvar_)
+    {
+      ncol = ncol_;
+      nlev = nlev_;
+      nlev_packs = nlev_packs_;
+      num_tracers = num_tracers_;
+      num_tracer_packs = num_tracer_packs_;
+      rrho = rrho_;
+      qv = qv_;
+      qv_copy = qv_copy_;
+      qc = qc_;
+      qc_copy = qc_copy_;
+      tke = tke_;
+      tke_copy = tke_copy_;
+      qc2 = qc2_;
+      Q = Q_;
+      tracers = tracers_;
+      cldfrac_liq = cldfrac_liq_;
+      sgs_buoy_flux = sgs_buoy_flux_;
+      inv_qc_relvar = inv_qc_relvar_;
+    } // set_variables
+  }; // SHOCPostprocess
   /* --------------------------------------------------------------------------------------------*/
 
 protected:
@@ -275,10 +374,6 @@ protected:
   // Setting the fields in the atmospheric process
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
-
-  std::set<FieldIdentifier> m_required_fields;
-  std::set<FieldIdentifier> m_computed_fields;
-  std::set<GroupRequest>    m_inout_groups_req;
 
   std::map<std::string,const_field_type>  m_shoc_fields_in;
   std::map<std::string,field_type>        m_shoc_fields_out;
@@ -303,7 +398,8 @@ protected:
   SHF::SHOCHistoryOutput history_output;
 
   // Structures which compute pre/post process
-  SHOCPreamble shoc_preamble;
+  SHOCPreprocess shoc_preprocess;
+  SHOCPostprocess shoc_postprocess;
 }; // class SHOCMacrophysics
 
 } // namespace scream

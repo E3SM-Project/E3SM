@@ -16,13 +16,13 @@ from utils import expect, get_cpu_core_count, run_cmd_no_fail
 import os, sys, pathlib
 
 def get_weaver_queue():
-  out = run_cmd_no_fail("bhosts | awk '{ if($2==\"ok\" && $6==0) print $1}' | head -1")
-  if (out in ["weaver1", "weaver2", "weaver3", "weaver4", "weaver5", "weaver6", "weaver7", "weaver8"] or out==""):
-    queue = "rhel7W"
-  else:
-    queue = "dev"
+    out = run_cmd_no_fail("bhosts | awk '{ if($2==\"ok\" && $6==0) print $1}' | head -1")
+    if (out in ["weaver1", "weaver2", "weaver3", "weaver4", "weaver5", "weaver6", "weaver7", "weaver8"] or out==""):
+        queue = "rhel7W"
+    else:
+        queue = "dev"
 
-  return queue
+    return queue
     
 
 MACHINE_METADATA = {
@@ -129,7 +129,7 @@ def get_mach_env_setup_command(machine, ctest_j=None):
 
     mach_custom_env = MACHINE_METADATA[machine][0]
     ctest_j = get_mach_testing_resources(machine) if ctest_j is None else ctest_j
-    mach_custom_env.append("CTEST_PARALLEL_LEVEL={}".format(ctest_j))
+    mach_custom_env.append("export CTEST_PARALLEL_LEVEL={}".format(ctest_j))
     if not is_cuda_machine(machine):
         mach_custom_env.append("export OMP_PROC_BIND=spread")
 

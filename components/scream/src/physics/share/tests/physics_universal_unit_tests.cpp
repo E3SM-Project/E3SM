@@ -7,6 +7,7 @@
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
 
 namespace scream {
 namespace physics {
@@ -16,7 +17,7 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestUniversal
 {
 
-//-----------------------------------------------------------------------------------------------// 
+//-----------------------------------------------------------------------------------------------//
   KOKKOS_FUNCTION static void exner_tests(const Scalar& pressure, const Scalar& expected_val, int& errors){
 
     // Allow usage of universal functions
@@ -63,7 +64,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     // This function tests both the T_to_th and th_to_T universal conversion functions.
     //
     // Inputs:
-    //   T_in:    An example temperature, K. 
+    //   T_in:    An example temperature, K.
     //   pres_in: A pressure value to use for conversion, Pa.
     // Outputs:
     //   errors:  A tally of any errors that this test detects.
@@ -100,14 +101,14 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     const Spack th_temp = physics::T_to_th(T,exner,Smask(true));
     const Spack T_new   = physics::th_to_T(th_temp,exner,Smask(true));
     if (std::abs(T_new[0]-T_in)>tol) {
-      printf("T to th test: abs[ T_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",T_new,T_in,std::abs(T_new[0]-T_in),tol);
+      printf("T to th test: abs[ T_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",T_new[0],T_in,std::abs(T_new[0]-T_in),tol);
       errors++;
     }
     // and vice versa
     const Spack T_temp = physics::th_to_T(T,exner,Smask(true));
     const Spack th_new = physics::T_to_th(T_temp,exner,Smask(true));
-    if (std::abs(T_new[0]-T_in)>tol) {
-      printf("T to th test: abs[ th_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",th_new,T_in,std::abs(th_new[0]-T_in),tol);
+    if (std::abs(th_new[0]-T_in)>tol) {
+      printf("T to th test: abs[ th_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",th_new[0],T_in,std::abs(th_new[0]-T_in),tol);
       errors++;
     }
   } // T_th_conversion_test
@@ -121,7 +122,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     Real tol = 1000*eps;
 
     //========================================================
-    // Test calculation of layer thickness using get_dz 
+    // Test calculation of layer thickness using get_dz
     //========================================================
     // This function tests the function "get_dz" for a set of interface layer heights.
     //
@@ -141,12 +142,101 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       errors++;
     }
 
-  } // dz_test 
+  } // dz_test
+//-----------------------------------------------------------------------------------------------//
+  KOKKOS_FUNCTION static void dse_tests(const Scalar& temp, const Scalar& height, const Scalar surface_height, int& errors){
 
+    // Allow usage of universal functions
+    using physics = scream::physics::Functions<Scalar, Device>;
+    // Gather the test tolerance
+    static constexpr Scalar eps = C::macheps;
+    Real tol = 1000*eps;
+
+    //========================================================
+    // Test calculation of dry static energy using get_dse
+    //========================================================
+    // This function tests the function "get_dse".
+    //
+    // Inputs:
+    //   temp is the atmospheric temperature. Units in K.
+    //   height is the geopotential height above surface at midpoints. Units in m.
+    //   surface_height is the surface geopotential height. Units in m.
+    // Outputs:
+    //   errors:  A tally of any errors that this test detects.
+    //========================================================
+
+    static constexpr Scalar cp = C::CP;
+    static constexpr Scalar ggr = C::gravit;
+    const Spack T_mid(temp);
+    const Spack z_mid(height);
+    Real expected_dse = cp*temp+ggr*height+surface_height;
+    const Spack dse = physics::get_dse(T_mid, z_mid, surface_height, Smask(true));
+    if (std::abs(dse[0]-expected_dse)>tol) {
+      printf("get_dse test: abs(dse-expected_dse)=%e is larger than the tol=%e\n",std::abs(dse[0]-expected_dse),tol);
+      errors++;
+    }
+
+  } // dse_test
+//-----------------------------------------------------------------------------------------------//
+  KOKKOS_FUNCTION static void virtual_temperature_test(const Scalar& T_mid_in, const Scalar& qv_in, int& errors){
+
+    // Allow usage of universal functions
+    using physics = scream::physics::Functions<Scalar, Device>;
+    // Gather the machine epsilon for the error tolerance
+    static constexpr Scalar eps = C::macheps;
+    static constexpr Scalar ep_2 = C::ep_2;
+    Real tol = 2000*eps;
+
+    //========================================================
+    // Test calculation of virtual temperature using get_virtual_temperature
+    //========================================================
+    // This function tests the function "get_virtual_temperature".
+    //
+    // Inputs:
+    //   T_mid_in is the atmospheric temperature. Units in K.
+    //   qv_in is the atmospheric water vapor mass mixing ratio.  Units in kg/kg
+    // Outputs:
+    //   errors:  A tally of any errors that this test detects.
+    //========================================================
+    const Spack T_mid(T_mid_in);
+    const Spack qv(qv_in);
+    // Given T and qv, determine T_virt
+    const Spack T_virt = physics::get_virtual_temperature(T_mid,qv,Smask(true));
+    // Determine the expected virtual temperature
+    Real expected_T_virt = T_mid_in*(qv_in+ep_2)/(ep_2*(1.0+qv_in));
+
+    if (std::abs(T_virt[0]-expected_T_virt)>tol) {
+      printf("get_virtual_temperature test: abs(T_virt-expected_T_virt)=%e is larger than the tol=%e\n",std::abs(T_virt[0]-expected_T_virt),tol);
+      errors++;
+    }
+  
+  } // virtual_temperature_test
 //-----------------------------------------------------------------------------------------------//
   static void run()
   {
     using physics = scream::physics::Functions<Scalar, Device>;
+
+    int num_levs = 100; // Number of levels to use for tests.
+
+    // Compute random values for dse test
+    using view_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Real>;
+    view_1d temp("temp",num_levs),
+            height("height",num_levs),
+            surface_height("surface_height",num_levs),
+            qv("qv",num_levs);
+
+    std::random_device rd;
+    using rngAlg = std::mt19937_64;
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    rngAlg engine(seed);
+    using RPDF = std::uniform_real_distribution<Real>;
+    RPDF pdf(1e-3,1e3);
+
+    ekat::genRandArray(temp,engine,pdf);
+    ekat::genRandArray(height,engine,pdf);
+    ekat::genRandArray(surface_height,engine,pdf);
+    ekat::genRandArray(qv,engine,pdf);
 
     int nerr = 0;
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
@@ -158,7 +248,6 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       static constexpr Scalar rd     = C::RD;
       static constexpr Scalar inv_cp = C::INV_CP;
       static constexpr Scalar tmelt  = C::Tmelt;
-      int num_levs = 100; // Number of levels to use for tests.
 
       // Create dummy level data for testing:
       Real pres_top = 200.;
@@ -179,8 +268,12 @@ struct UnitWrap::UnitTest<D>::TestUniversal
         //   - Determine the z-layer bottom and top as being the (k+1) thick.
         //     Allow for varying interface heights by setting zi_bot equal to the sum(0,...,k).
         Real zi_bot = (pow(k,2)+k)/2.0;
-        Real zi_top = zi_bot + (k+1); 
+        Real zi_top = zi_bot + (k+1);
         dz_tests(zi_top,zi_bot,errors);
+        // DSE Test
+        dse_tests(temp(k),height(k),surface_height(k),errors);
+        // virtual temperature test
+        virtual_temperature_test(temp(k),qv(k),errors);
       }
 
     }, nerr);

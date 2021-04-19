@@ -48,7 +48,7 @@ if (Kokkos_ENABLE_CUDA)
   EkatSetNvccWrapper()
 endif()
 
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 14)
 
 if (NOT SCREAM_CIME_BUILD)
   project(SCREAM CXX Fortran)
@@ -104,6 +104,11 @@ if (Kokkos_ENABLE_CUDA)
 else()
   set(CUDA_BUILD FALSE)
 endif ()
+
+# Add CUDA as a language for CUDA builds
+if (CUDA_BUILD)
+    enable_language(CUDA)
+endif()
 
 ### Scream default configuration options
 set(DEFAULT_MAX_RANKS 4)

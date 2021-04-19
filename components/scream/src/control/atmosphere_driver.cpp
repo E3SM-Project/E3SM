@@ -28,8 +28,9 @@ namespace control {
  *     get the information needed to complete the setup of the FieldIdentifiers of their fields
  *     (both required and computed). Their field identifiers MUST be completed upon return from
  *     the 'set_grids' method.
- *  4) Register all fields from all atm procs inside the field manager (or field repo, whatever you
- *     want to call it).
+ *     Note: at this stage, atm procs that act on non-ref grid(s) should be able to create their
+ *           remappers. The AD will *not* take care of remapping inputs/outputs of the process.
+ *  4) Register all fields from all atm procs inside the field manager
  *  5) Set all the fields into the atm procs. Before this point, all the atm procs had were the
  *     FieldIdentifiers for their input/output fields. Now, we pass actual Field objects to them,
  *     where both the data (Kokkos::View) and metadata (FieldHeader) inside will be shared across
@@ -39,25 +40,14 @@ namespace control {
  *           could cheat, and cast away the const, but we can't prevent that. However, in debug builds,
  *           we store 2 copies of each field, and use the extra copy to check, at run time, that
  *           no process alters the values of any of its input fields.
- *  6) The atm procs group builds the remappers. Remappers are objects that map fields from one grid
- *     to another. Currently, we perform remappings only to/from a reference grid (set in the GM).
- *     Before calling each atm proc in the group, the AtmosphereProcessGroup (APG) class will
- *     remap all its inputs from the ref grid to the grid(s) needed by the atm proc. Similarly,
- *     upon completion of the atm proc run call, all the outputs will be remapped back to the
- *     ref grid.
+ *  6) All the atm inputs (that the AD can deduce by asking the atm proc group for the required fiedls)
+ *     are initialized, by reading values from an initial conditions netcdf file.
+ *     If an atm input is not found in the IC file, we'll error out, saving a DAG of the
+ *     atm processes, which the user can inspect (to see what's missing in the IC file).
  *  7) All the atm process are initialized. During this call, atm process are able to set up
- *     all the internal structures that they were not able to init previously.
- *  8) All the atm inputs are initialized, according to the initialization type that was
- *     specified during step 5. This MUST happen AFTER step 7, since it MIGHT depend on
- *     an atm proc being fully init-ed. On the other hand, we cannot make this happen
- *     inside step 7 (assuming a field is marked as to be init-ed by a specific atm proc),
- *     since the atm proc does not yet know if the field needs to be inited or not (we haven't
- *     yet built/parsed the atm DAG).
- *  9) We build the atm DAG, and inspect its consistency. Each input of each atm proc must be
- *     computed by some other atm proc (possibly at the previous time step) or imported by
- *     the SurfaceCoupling (if present). If some dependency is not met, the AD will error out,
- *     and store the atm DAG in a file.
- * 10) Finally, set the initial time stamp on all fields, and perform some debug structure setup.
+ *     all the internal structures that they were not able to init previously. They can also
+ *     utilize their input fields to perform initialization of some internal data structure.
+ *  8) Finally, set the initial time stamp on all fields, and perform some debug structure setup.
  *
  */
 
@@ -125,7 +115,7 @@ void AtmosphereDriver::create_grids()
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
 
-  m_ad_status |= s_procs_created;
+  m_ad_status |= s_grids_created;
 }
 
 void AtmosphereDriver::create_fields()
@@ -134,12 +124,33 @@ void AtmosphereDriver::create_fields()
   check_ad_status (s_procs_created | s_grids_created);
 
   // By now, the processes should have fully built the ids of their
-  // required/computed fields. Let them register them in the repo
-  m_field_repo = std::make_shared<FieldRepository<Real> >();
-  m_field_repo->registration_begins();
-  m_atm_process_group->register_fields(*m_field_repo);
-  register_groups();
-  m_field_repo->registration_ends(m_grids_manager);
+  // required/computed fields and groups. Let them register them in the FM
+  for (auto it : m_grids_manager->get_repo()) {
+    auto grid = it.second;
+    m_field_mgrs[grid->name()] = std::make_shared<field_mgr_type>(grid);
+    m_field_mgrs[grid->name()]->registration_begins();
+  }
+
+  // Register required/computed fields
+  for (const auto& req : m_atm_process_group->get_required_fields()) {
+    m_field_mgrs.at(req.fid.get_grid_name())->register_field(req);
+  }
+  for (const auto& req : m_atm_process_group->get_computed_fields()) {
+    m_field_mgrs.at(req.fid.get_grid_name())->register_field(req);
+  }
+  // Register required/updated groups
+  for (const auto& req : m_atm_process_group->get_required_groups()) {
+    m_field_mgrs.at(req.grid)->register_group(req);
+  }
+  for (const auto& req : m_atm_process_group->get_updated_groups()) {
+    m_field_mgrs.at(req.grid)->register_group(req);
+  }
+
+  // Close the FM's, allocate all fields
+  for (auto it : m_grids_manager->get_repo()) {
+    auto grid = it.second;
+    m_field_mgrs[grid->name()]->registration_ends();
+  }
 
   m_ad_status |= s_fields_created;
 }
@@ -155,7 +166,7 @@ void AtmosphereDriver::initialize_output_manager () {
     m_output_manager.set_params(out_params);
     m_output_manager.set_comm(m_atm_comm);
     m_output_manager.set_grids(m_grids_manager);
-    m_output_manager.set_repo(m_field_repo);
+    m_output_manager.set_field_mgr(get_ref_grid_field_mgr());
   }
   m_output_manager.init();
 
@@ -177,7 +188,7 @@ initialize_fields (const util::TimeStamp& t0)
     AtmProcDAG dag;
 
     // First, add all atm processes
-    dag.create_dag(*m_atm_process_group,m_field_repo);
+    dag.create_dag(*m_atm_process_group,get_ref_grid_field_mgr());
 
     // Then, add all surface coupling dependencies, if any
     if (m_surface_coupling) {
@@ -190,7 +201,7 @@ initialize_fields (const util::TimeStamp& t0)
   }
 
   // Figure out the list of inputs for the atmosphere.
-  auto fields_in = m_atm_process_group->get_required_fields();
+  const auto& fields_in = m_atm_process_group->get_required_fields();
 
   const auto& ic_pl = m_atm_params.sublist("Initial Conditions");
 
@@ -199,35 +210,21 @@ initialize_fields (const util::TimeStamp& t0)
   ic_reader_params.set("GRID",m_grids_manager->get_reference_grid()->name());
   auto& ic_fields = ic_reader_params.sublist("FIELDS");
   int ifield=0;
-  for (auto& fid : fields_in) {
+  auto ref_fm = get_ref_grid_field_mgr();
+  std::vector<std::string> ic_fields_to_copy;
+  for (auto& req : fields_in) {
+    const auto& fid = req.fid;
     const auto& name = fid.name();
-    auto f = m_field_repo->get_field(fid);
+    auto f = ref_fm->get_field(fid);
     // First, check if the input file contains constant values for some of the fields
     if (ic_pl.isParameter(name)) {
       // The user provided a constant value for this field. Simply use that.
-      const auto& layout = f.get_header().get_identifier().get_layout();
-
-      // For vector fields, we expect something like "fname: [val0,...,valN],
-      // where the field dim is N+1. For scalars, "fname: val". So check the
-      // field layout first, so we know what to get from the parameter list.
-      if (layout.is_vector_layout()) {
-        const auto idim = layout.get_vector_dim();
-        const auto vec_dim = layout.dim(idim);
-        const auto& values = ic_pl.get<std::vector<Real>>(name);
-        EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
-            "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
-            "       Field dimension: " + std::to_string(vec_dim) + "\n"
-            "       Array dimenions: " + std::to_string(values.size()) + "\n");
-
-        // Extract a subfield for each component. This is not "too" expensive, expecially
-        // considering that this code is executed during initialization only.
-        for (int comp=0; comp<vec_dim; ++comp) {
-          auto f_i = f.get_component(comp);
-          f_i.set_value(values[comp]);
-        }
+      if (ic_pl.isType<double>(name) or ic_pl.isType<std::vector<double>>(name)) {
+        initialize_constant_field(name, ic_pl);
+      } else if (ic_pl.isType<std::string>(name)) {
+        ic_fields_to_copy.push_back(name);
       } else {
-        const auto& value = ic_pl.get<double>(name);
-        f.set_value(value);
+        EKAT_REQUIRE_MSG (false, "ERROR: invalid assignment for variable " + name + ", only scalar double or string, or vector double arguments are allowed");
       }
     } else {
       // The field does not have a constant value, so we expect to find it in the nc file
@@ -252,14 +249,53 @@ initialize_fields (const util::TimeStamp& t0)
           "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
     }
 
-    AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,m_field_repo,m_grids_manager);
+    AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,ref_fm,m_grids_manager);
 
     ic_reader.pull_input();
+  }
+
+  // If there were any fields that needed to be copied per the input yaml file, now we copy them.
+  auto ref_grid_fm = get_ref_grid_field_mgr();
+  for (auto& name_tgt : ic_fields_to_copy) {
+    const auto& name_src = ic_pl.get<std::string>(name_tgt);
+    auto f_tgt = ref_grid_fm->get_field(name_tgt);
+    auto f_src = ref_grid_fm->get_field(name_src);
+    f_tgt.deep_copy(f_src);
   }
 
   m_current_ts = t0;
 
   m_ad_status |= s_fields_inited;
+}
+
+void AtmosphereDriver::initialize_constant_field(const std::string& name, const ekat::ParameterList& ic_pl)
+{
+  auto f = get_ref_grid_field_mgr()->get_field(name);
+  // The user provided a constant value for this field. Simply use that.
+  const auto& layout = f.get_header().get_identifier().get_layout();
+
+  // For vector fields, we expect something like "fname: [val0,...,valN],
+  // where the field dim is N+1. For scalars, "fname: val". So check the
+  // field layout first, so we know what to get from the parameter list.
+  if (layout.is_vector_layout()) {
+    const auto idim = layout.get_vector_dim();
+    const auto vec_dim = layout.dim(idim);
+    const auto& values = ic_pl.get<std::vector<double>>(name);
+    EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
+        "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
+        "       Field dimension: " + std::to_string(vec_dim) + "\n"
+        "       Array dimenions: " + std::to_string(values.size()) + "\n");
+
+    // Extract a subfield for each component. This is not "too" expensive, expecially
+    // considering that this code is executed during initialization only.
+    for (int comp=0; comp<vec_dim; ++comp) {
+      auto f_i = f.get_component(comp);
+      f_i.deep_copy(values[comp]);
+    }
+  } else {
+    const auto& value = ic_pl.get<double>(name);
+    f.deep_copy(value);
+  }
 }
 
 void AtmosphereDriver::initialize_atm_procs ()
@@ -268,20 +304,26 @@ void AtmosphereDriver::initialize_atm_procs ()
   // Input fields will be handed to the processes as const
   const auto& inputs  = m_atm_process_group->get_required_fields();
   const auto& outputs = m_atm_process_group->get_computed_fields();
-  for (const auto& id : inputs) {
-    m_atm_process_group->set_required_field(m_field_repo->get_field(id).get_const());
+  for (const auto& req : inputs) {
+    const auto& fid = req.fid;
+    auto fm = get_field_mgr(fid.get_grid_name());
+    m_atm_process_group->set_required_field(fm->get_field(fid).get_const());
   }
   // Output fields are handed to the processes as writable
-  for (const auto& id : outputs) {
-    m_atm_process_group->set_computed_field(m_field_repo->get_field(id));
+  for (const auto& req : outputs) {
+    const auto& fid = req.fid;
+    auto fm = get_field_mgr(fid.get_grid_name());
+    m_atm_process_group->set_computed_field(fm->get_field(fid));
   }
   // Set all groups of fields
   for (const auto& it : m_atm_process_group->get_required_groups()) {
-    auto group = m_field_repo->get_const_field_group(it.name,it.grid);
+    auto fm = get_field_mgr(it.grid);
+    auto group = fm->get_const_field_group(it.name);
     m_atm_process_group->set_required_group(group);
   }
   for (const auto& it : m_atm_process_group->get_updated_groups()) {
-    auto group = m_field_repo->get_field_group(it.name,it.grid);
+    auto fm = get_field_mgr(it.grid);
+    auto group = fm->get_field_group(it.name);
     m_atm_process_group->set_updated_group(group);
   }
 
@@ -289,52 +331,6 @@ void AtmosphereDriver::initialize_atm_procs ()
   m_atm_process_group->initialize(m_current_ts);
 
   m_ad_status |= s_procs_inited;
-}
-
-void AtmosphereDriver::finish_setup ()
-{
-  // Note 1: remappers should be setup *after* fields have been set in the atm processes,
-  //       just in case some atm proc sets some extra data in the field header,
-  //       that some remappers may actually need.
-  // Note 2: setup the remapper *after* atm procs are fully init-ed. This allows
-  //         dynamics to complete its initialization, which is needed by the
-  //         phys-dyn remapper (which uses homme's mpi infrastructure).
-  m_atm_process_group->setup_remappers(*m_field_repo);
-
-#ifdef SCREAM_DEBUG
-  // In debug mode, we create a bkp field repo. We'll use it for a
-  // very scrupolous check, to ensure atm procs don't update fields
-  // that they were not entitled to update.
-  m_bkp_field_repo.registration_begins();
-  for (const auto& it : *m_field_repo) {
-    for (const auto& id_field : it.second) {
-      const auto& id = id_field.first;
-      const auto& f = id_field.second;
-      const auto& groups = f.get_header().get_tracking().get_groups_names();
-      // Unfortunately, set<string> and set<CaseInsensitiveString>
-      // are unrelated types for the compiler
-      std::set<std::string> grps;
-      for (const auto& group : groups) {
-        grps.insert(group);
-      }
-      m_bkp_field_repo.register_field(id,grps);
-    }
-  }
-  m_bkp_field_repo.registration_ends();
-
-  // Deep copy the fields
-  for (const auto& it : *m_field_repo) {
-    for (const auto& id_field : it.second) {
-      const auto& id = id_field.first;
-      const auto& f  = id_field.second;
-      auto src = f.get_view();
-      auto tgt = m_bkp_field_repo.get_field(id).get_view();
-
-      Kokkos::deep_copy(tgt,src);
-    }
-  }
-  m_atm_process_group->set_field_repos(*m_field_repo,m_bkp_field_repo);
-#endif
 }
 
 void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
@@ -355,8 +351,6 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   initialize_output_manager ();
 
   initialize_atm_procs ();
-
-  finish_setup ();
 }
 
 void AtmosphereDriver::run (const Real dt) {
@@ -390,107 +384,35 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   // Finalize output streams, make sure files are closed
   m_output_manager.finalize();
 
-  m_field_repo->clean_up();
-#ifdef SCREAM_DEBUG
-  m_bkp_field_repo.clean_up();
-#endif
+  for (auto it : m_field_mgrs) {
+    it.second->clean_up();
+  }
 
   if (scorpio::is_eam_pio_subsystem_inited()) {
     scorpio::eam_pio_finalize();
   }
 }
 
-void AtmosphereDriver::register_groups () {
-  using GroupRequest = AtmosphereProcess::GroupRequest;
+AtmosphereDriver::field_mgr_ptr
+AtmosphereDriver::get_ref_grid_field_mgr () const {
+  EKAT_REQUIRE_MSG (m_ad_status & s_grids_created,
+      "Error! Field manager(s) are created *after* the grids.\n");
 
-  // Given a list of group-grid pairs (A,B), make sure there is a copy
-  // of each field in group A on grid B registered in the repo.
-  auto has_group_fields_on_grid = [&](const std::set<GroupRequest>& groups_grids) {
-    const auto& groups_info = m_field_repo->get_groups_info();
-
-    for (const auto& gg : groups_grids) {
-      const auto& group = gg.name;
-      const auto& grid = gg.grid;
-
-      // Lambda helper fcn, that register field $name with group $group on grid $grid
-      // if not yet already registered
-      auto register_if_not_there = [&](const std::string& name) {
-        EKAT_REQUIRE_MSG(m_field_repo->has_field(name),
-          "Error! Something went wrong while looking for field '" << name << "' in the repo.\n");
-        auto aliases_begin = m_field_repo->cbegin(name);
-        auto aliases_end = m_field_repo->cend(name);
-
-        // Check if a copy of this field on the right grid is already registered.
-        bool found = false;
-        for (auto it = aliases_begin; it!=aliases_end; ++it) {
-          if (it->get_grid_name()==grid) {
-            found = true;
-            break;
-          }
-        }
-
-        if (!found) {
-          // Field $name in group $group has no copy on grid $grid.
-          // Lets take any fid in the repo for this field, and register
-          // a copy of it on grid $grid. We can do this by creating
-          // a remapper and using its capabilities.
-          const auto& fid = *aliases_begin;
-          auto r = m_grids_manager->create_remapper(fid.get_grid_name(),grid);
-          auto f_units = fid.get_units();
-          auto src_layout = fid.get_layout();
-          auto tgt_layout = r->create_tgt_layout(src_layout);
-          FieldIdentifier new_fid(name,tgt_layout,f_units,grid);
-          m_field_repo->register_field(new_fid,gg.pack_size,group);
-        }
-      };
-
-      auto group_it = groups_info.find(group);
-      EKAT_REQUIRE_MSG(group_it!=groups_info.end(),
-        "Error! Group '" << group << "' not found in the repo.\n");
-
-      const auto& fnames = group_it->second->m_fields_names;
-      for (const auto& name : fnames) {
-        register_if_not_there(name);
-      }
-
-      if (group_it->second->m_bundled) {
-        // The group was allocated as a single bundled field, with each
-        // field in the group later subviewing the bundle.
-        // We need to ensure the bundle also exists on $grid
-        const auto& name = *fnames.begin();
-        const auto  f = m_field_repo->get_field(name,grid);
-        const auto& bundle_name = f.get_header().get_parent().lock()->get_identifier().name();
-        register_if_not_there(bundle_name);
-      }
-    }
-  };
-
-  // Call the above lambda on both required and updated groups.
-  has_group_fields_on_grid( m_atm_process_group->get_required_groups() );
-  has_group_fields_on_grid( m_atm_process_group->get_updated_groups() );
+  auto ref_grid = m_grids_manager->get_reference_grid();
+  return get_field_mgr(ref_grid->name());
 }
 
-#ifdef SCREAM_DEBUG
-void AtmosphereDriver::create_bkp_field_repo () {
-  m_bkp_field_repo.registration_begins();
-  for (const auto& it : *m_field_repo) {
-    for (const auto& id_field : it.second) {
-      const auto& id = id_field.first;
-      const auto& f = id_field.second;
-      const auto& groups = f.get_header().get_tracking().get_groups_names();
-      // Unfortunately, set<string> and set<CaseInsensitiveString>
-      // are unrelated types for the compiler
-      std::set<std::string> grps;
-      for (const auto& group : groups) {
-        grps.insert(group);
-      }
-      m_bkp_field_repo.register_field(id,grps);
-    }
-  }
-  m_bkp_field_repo.registration_ends();
+AtmosphereDriver::field_mgr_ptr
+AtmosphereDriver::get_field_mgr (const std::string& grid_name) const {
+  EKAT_REQUIRE_MSG (m_ad_status & s_grids_created,
+      "Error! Field manager(s) are created *after* the grids.\n");
+  // map::at would throw, but you won't know which map threw.
+  // With our own msg, we can tell you where the throw happened.
+  EKAT_REQUIRE_MSG(m_field_mgrs.find(grid_name)!=m_field_mgrs.end(),
+      "Error! Request for field manager on a non-existing grid '" + grid_name + "'.\n");
 
+  return m_field_mgrs.at(grid_name);
 }
-#endif
 
 void AtmosphereDriver::
 check_ad_status (const int flag, const bool must_be_set)

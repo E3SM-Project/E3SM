@@ -146,7 +146,11 @@ public:
 
   // Set the field to a constant value (on host or device)
   template<HostOrDevice HD = Device>
-  void set_value (const RT value);
+  void deep_copy (const RT value);
+
+  // Copy the data from one field to this field
+  template<HostOrDevice HD = Device>
+  void deep_copy (const field_type& field_src);
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -467,7 +471,60 @@ sync_to_dev () const {
 template<typename RealType>
 template<HostOrDevice HD>
 void Field<RealType>::
-set_value (const RT value) {
+deep_copy (const field_type& field_src) {
+  const auto& layout     = get_header().get_identifier().get_layout();
+  const auto& layout_src = field_src.get_header().get_identifier().get_layout();
+  EKAT_REQUIRE_MSG(layout==layout_src,
+       "ERROR: Unable to copy field " + field_src.get_header().get_identifier().name() + 
+          " to field " + get_header().get_identifier().name() + ".  Layouts don't match.");
+  const auto  rank = layout.rank();
+  // Note: we can't just do a deep copy on get_view<HD>(), since this
+  //       field might be a subfield of another. We need the reshaped view.
+  switch (rank) {
+    case 1:
+      {
+        auto v     = get_reshaped_view<RT*,HD>();
+        auto v_src = field_src.get_reshaped_view<RT*,HD>();
+        Kokkos::deep_copy(v,v_src);
+      }
+      break;
+    case 2:
+      {
+        auto v     = get_reshaped_view<RT**,HD>();
+        auto v_src = field_src.get_reshaped_view<RT**,HD>();
+        Kokkos::deep_copy(v,v_src);
+      }
+      break;
+    case 3:
+      {
+        auto v     = get_reshaped_view<RT***,HD>();
+        auto v_src = field_src.get_reshaped_view<RT***,HD>();
+        Kokkos::deep_copy(v,v_src);
+      }
+      break;
+    case 4:
+      {
+        auto v     = get_reshaped_view<RT****,HD>();
+        auto v_src = field_src.get_reshaped_view<RT****,HD>();
+        Kokkos::deep_copy(v,v_src);
+      }
+      break;
+    case 5:
+      {
+        auto v     = get_reshaped_view<RT*****,HD>();
+        auto v_src = field_src.get_reshaped_view<RT*****,HD>();
+        Kokkos::deep_copy(v,v_src);
+      }
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
+  }
+}
+
+template<typename RealType>
+template<HostOrDevice HD>
+void Field<RealType>::
+deep_copy (const RT value) {
   // Note: we can't just do a deep copy on get_view<HD>(), since this
   //       field might be a subfield of another. So check the header
   //       first, to see if we have a parent. If not, deep copy is fine.
@@ -506,8 +563,14 @@ set_value (const RT value) {
           Kokkos::deep_copy(v,value);
         }
         break;
+      case 5:
+        {
+          auto v = get_reshaped_view<RT*****,HD>();
+          Kokkos::deep_copy(v,value);
+        }
+        break;
       default:
-        EKAT_ERROR_MSG ("Error! Unsupported field rank in 'set_value'.\n");
+        EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
     }
   }
 }
