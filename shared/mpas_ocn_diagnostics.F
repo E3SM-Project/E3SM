@@ -1810,7 +1810,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, k, i, nCells
+      integer :: iEdge, iCell, k, i, nCells, kmin, kmax
 
       real (kind=RKIND) :: flux, invAreaCell1, div_hu_btr
 
@@ -1853,10 +1853,10 @@ contains
       !$acc          present(div_hu, invAreaCell, nEdgesOnCell, edgesOnCell, maxLevelEdgeTop, &
       !$acc                  layerThicknessEdge, normalVelocity, dvEdge, edgeSignOnCell, &
       !$acc                  oldSSH, projectedSSH) &
-      !$acc          private(div_hu_btr, invAreaCell1, i, iEdge, flux, k)
+      !$acc          private(div_hu_btr, invAreaCell1, i, iEdge, flux, k, kmin, kmax)
 #else
       !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k, flux, div_hu_btr)
+      !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k, flux, div_hu_btr, kmin, kmax)
 #endif
       do iCell = 1, nCells
          div_hu(:,iCell) = 0.0_RKIND
@@ -1864,8 +1864,10 @@ contains
          invAreaCell1 = invAreaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
+            kmin = minLevelEdgeBot(iEdge)
+            kmax = maxLevelEdgeTop(iEdge)
 
-            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+            do k = kmin, kmax
                flux = layerThicknessEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) &
                     * invAreaCell1
                div_hu(k,iCell) = div_hu(k,iCell) - flux
