@@ -1576,6 +1576,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
 
     ! Copy state info for input to dadadj
     ! This is a kludge so dadadj doesn't have to be reformulated for DSE
+    ! This code block is not a good example of interfacing a parameterization
     lq(:) = .FALSE.
     lq(1) = .TRUE.
     call physics_ptend_init(ptend, state%psetcols, 'dadadj', ls=.true., lq=lq)
