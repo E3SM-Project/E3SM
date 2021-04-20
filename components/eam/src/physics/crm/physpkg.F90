@@ -809,6 +809,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d, cam_out, cam_in )
   ! Purpose: Second part of atmos physics after updating of surface models
   !-----------------------------------------------------------------------------
   use physics_buffer,   only: physics_buffer_desc, pbuf_get_chunk, pbuf_deallocate, pbuf_update_tim_idx
+  use mo_lightning,     only: lightning_no_prod
   use cam_diagnostics,  only: diag_deallocate, diag_surf
   use comsrf,           only: trefmxav, trefmnav, sgh, sgh30, fsds 
   use physconst,        only: stebol, latvap
@@ -845,6 +846,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d, cam_out, cam_in )
   call t_startf ('ac_physics')
 
   nstep = get_nstep()
+
+  !-----------------------------------------------------------------------------
+  ! Lightning production of NO
+  !-----------------------------------------------------------------------------
+  call t_startf ('lightning_no_prod')
+  call lightning_no_prod( phys_state, pbuf2d,  cam_in )
+  call t_stopf ('lightning_no_prod')
 
   !-----------------------------------------------------------------------------
   ! calculate the global mean ieflx 
