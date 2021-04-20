@@ -132,7 +132,6 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   auto qc               = m_shoc_fields_out["qc"].get_reshaped_view<Spack**>();
   auto qv               = m_shoc_fields_out["qv"].get_reshaped_view<Spack**>();
   auto tke              = m_shoc_fields_out["tke"].get_reshaped_view<Spack**>();
-  auto Q                = m_shoc_fields_out["Q"].get_reshaped_view<Spack***>();
   auto cldfrac_liq      = m_shoc_fields_out["cldfrac_liq"].get_reshaped_view<Spack**>();
   auto sgs_buoy_flux    = m_shoc_fields_out["sgs_buoy_flux"].get_reshaped_view<Spack**>();
   auto inv_qc_relvar    = m_shoc_fields_out["inv_qc_relvar"].get_reshaped_view<Spack**>();
@@ -163,15 +162,11 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
           qc_copy("qc_copy",m_num_cols,nlev_packs),
           tke_copy("tke_copy",m_num_cols,nlev_packs);
 
-  // TODO: Transpose of the tracers should be handled internally in shoc,
-  //       removing this allocation.
-  view_3d tracers("tracers",m_num_cols,m_num_levs,num_tracer_packs);
-
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,nlev_packs,num_tracer_packs,T_mid,
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,T_mid,
                                 z_int,z_mid,p_mid,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
-                                surf_u_mom_flux,surf_v_mom_flux,qv,qv_copy,Q,qc,qc_copy,tke,tke_copy,
+                                surf_u_mom_flux,surf_v_mom_flux,qv,qv_copy,qc,qc_copy,tke,tke_copy,
                                 s,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
-                                wtracer_sfc,wm_zt,exner,thlm,qw,tracers);
+                                wtracer_sfc,wm_zt,exner,thlm,qw);
 
   // Input Variables:
   input.host_dx     = m_shoc_fields_in["host_dx"].get_reshaped_view<const Real*>();
@@ -198,7 +193,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   input_output.qw           = shoc_preprocess.qw;
   input_output.horiz_wind   = m_shoc_fields_out["horiz_winds"].get_reshaped_view<Spack***>();
   input_output.wthv_sec     = sgs_buoy_flux;
-  input_output.qtracers     = shoc_preprocess.tracers;
+  input_output.qtracers     = m_shoc_fields_out["Q"].get_reshaped_view<Spack***>();
   input_output.tk           = m_shoc_fields_out["eddy_diff_mom"].get_reshaped_view<Spack**>();
   input_output.shoc_cldfrac = cldfrac_liq;
   input_output.shoc_ql      = shoc_preprocess.qc_copy;
@@ -242,8 +237,8 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   history_output.wqls_sec  = wqls_sec;
   history_output.brunt     = brunt;
 
-  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,nlev_packs,num_tracer_packs,
-                                 rrho,qv,qv_copy,qc,qc_copy,tke,tke_copy,shoc_ql2,Q,tracers,
+  shoc_postprocess.set_variables(m_num_cols,m_num_levs,
+                                 rrho,qv,qv_copy,qc,qc_copy,tke,tke_copy,shoc_ql2,
                                  cldfrac_liq,sgs_buoy_flux,inv_qc_relvar);
 }
 
@@ -280,20 +275,9 @@ void SHOCMacrophysics::run_impl (const Real dt)
   hdtime = dt;
   m_nadv = ekat::impl::max(hdtime/dt,sp(1));
 
-  // shoc_main() expects 3 extra slots in qtracer array
-  // used for solving
-  // TODO: This should be handled internally (with tracer transpose)
-  Kokkos::resize(input_output.qtracers,
-                 m_num_cols,m_num_levs,ekat::npack<Spack>(m_num_tracers+3));
-
   // Run shoc main
   SHF::shoc_main(m_num_cols, m_num_levs, m_num_levs+1, m_npbl, m_nadv, m_num_tracers, dt,
                  input,input_output,output,history_output);
-
-  // Remove extra slots
-  // TODO: This should be handled internally (with tracer transpose)
-  Kokkos::resize(input_output.qtracers,
-                 m_num_cols,m_num_levs,ekat::npack<Spack>(m_num_tracers));
 
   {
     const auto nlev_packs = ekat::npack<Spack>(m_num_cols);

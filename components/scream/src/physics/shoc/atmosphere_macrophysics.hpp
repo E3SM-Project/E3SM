@@ -85,18 +85,8 @@ public:
       const Real cpair = C::Cpair;
       const Real ggr = C::gravit;
 
-      // Transpose and repack tracer array
-      // TODO: remove once shoc tracer traspose is implemented
-      for (int k=0; k<nlev; ++k) {
-        for (int q=0; q<num_tracers; ++q) {
-          const int q_v = q/Spack::n;
-          const int q_p = q%Spack::n;
-          const int k_v = k/Spack::n;
-          const int k_p = k%Spack::n;
-
-          tracers(i,k,q_v)[q_p] = Q(i,q,k_v)[k_p];
-        }
-      }
+      const int nlev_packs = ekat::npack<Spack>(nlev);
+      const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
 
       const int nlevi_v = nlev/Spack::n;
       const int nlevi_p = nlev%Spack::n;
@@ -170,13 +160,13 @@ public:
       upwp_sfc(i)   = surf_u_mom_flux(i)/rrho_i(i,nlev_v)[nlev_p];
       vpwp_sfc(i)   = surf_v_mom_flux(i)/rrho_i(i,nlev_v)[nlev_p];
 
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_tracer_packs), [&] (const Int& q) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracer_packs), [&] (const Int& q) {
         wtracer_sfc(i,q) = 0;
       });
     } // operator
 
     // Local variables
-    int ncol, nlev, nlev_packs, num_tracers, num_tracer_packs;
+    int ncol, nlev, num_qtracers;
     view_2d_const T_mid;
     view_2d_const z_int;
     view_2d_const z_mid;
@@ -190,7 +180,6 @@ public:
     view_1d_const surf_v_mom_flux;
     view_2d_const qv;
     view_2d       qv_copy;
-    view_3d       Q;
     view_2d       qc;
     view_2d       qc_copy;
     view_2d       shoc_s;
@@ -212,27 +201,23 @@ public:
     view_2d       thlm;
     view_2d       qw;
     view_2d       cloud_frac;
-    view_3d       tracers;
 
     // Assigning local variables
-    void set_variables(const int ncol_, const int nlev_, const int num_tracers_,
-                       const int nlev_packs_, const int num_tracer_packs_,
+    void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
                        view_2d_const T_mid_, view_2d_const z_int_,
                        view_2d_const z_mid_, view_2d_const p_mid_, view_2d_const pseudo_density_,
                        view_2d_const omega_,
                        view_1d_const phis_, view_1d_const surf_sens_flux_, view_1d_const surf_latent_flux_,
                        view_1d_const surf_u_mom_flux_, view_1d_const surf_v_mom_flux_,
-                       view_2d_const qv_, view_2d qv_copy_, view_3d Q_, view_2d qc_, view_2d qc_copy_,
+                       view_2d_const qv_, view_2d qv_copy_, view_2d qc_, view_2d qc_copy_,
                        view_2d tke_, view_2d tke_copy_, view_2d s_, view_2d rrho_, view_2d rrho_i_,
                        view_2d thv_, view_2d dz_,view_2d zt_grid_,view_2d zi_grid_, view_1d wpthlp_sfc_,
                        view_1d wprtp_sfc_,view_1d upwp_sfc_,view_1d vpwp_sfc_, view_2d wtracer_sfc_,
-                       view_2d wm_zt_,view_2d exner_,view_2d thlm_,view_2d qw_,view_3d tracers_)
+                       view_2d wm_zt_,view_2d exner_,view_2d thlm_,view_2d qw_)
     {
       ncol = ncol_;
       nlev = nlev_;
-      nlev_packs = nlev_packs_;
-      num_tracers = num_tracers_;
-      num_tracer_packs = num_tracer_packs_;
+      num_qtracers = num_qtracers_;
       // IN
       T_mid = T_mid_;
       z_int = z_int_;
@@ -247,7 +232,6 @@ public:
       surf_v_mom_flux = surf_v_mom_flux_;
       qv = qv_;
       qv_copy = qv_copy_;
-      Q = Q_;
       // OUT
       qc = qc_;
       qc_copy = qc_copy_;
@@ -269,7 +253,6 @@ public:
       exner = exner_;
       thlm = thlm_;
       qw = qw_;
-      tracers = tracers_;
     } // set_variables
   }; // SHOCPreprocess
   /* --------------------------------------------------------------------------------------------*/
@@ -288,19 +271,7 @@ public:
       const Real inv_qc_relvar_max = 10;
       const Real inv_qc_relvar_min = 0.001;
 
-      // Transpose and repack tracer array
-      // TODO: remove once shoc tracer traspose is implemented
-      for (int k=0; k<nlev; ++k) {
-        for (int q=0; q<num_tracers; ++q) {
-          const int q_v = q/Spack::n;
-          const int q_p = q%Spack::n;
-          const int k_v = k/Spack::n;
-          const int k_p = k%Spack::n;
-
-          Q(i,q,k_v)[k_p] = tracers(i,k,q_v)[q_p];
-        }
-      }
-
+      const int nlev_packs = ekat::npack<Spack>(nlev);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
         // Tracers were updated as a group. Copy output from seperate inputs instead
         // of using tracer group output.
@@ -321,31 +292,24 @@ public:
     } // operator
 
     // Local variables
-    int ncol, nlev, nlev_packs, num_tracers, num_tracer_packs;
+    int ncol, nlev;
     view_2d_const rrho;
     view_2d qv, qc, tke;
     view_2d_const qv_copy, qc_copy, tke_copy;
     view_2d_const qc2;
-    view_3d Q;
-    view_3d_const tracers;
     view_2d cldfrac_liq;
     view_2d sgs_buoy_flux;
     view_2d inv_qc_relvar;
 
     // Assigning local variables
-    void set_variables(const int ncol_, const int nlev_, const int num_tracers_,
-                       const int nlev_packs_, const int num_tracer_packs_,
+    void set_variables(const int ncol_, const int nlev_,
                        view_2d_const rrho_,
                        view_2d qv_, view_2d_const qv_copy_, view_2d qc_, view_2d_const qc_copy_,
                        view_2d tke_, view_2d_const tke_copy_, view_2d_const qc2_,
-                       view_3d Q_, view_3d_const tracers_,
                        view_2d cldfrac_liq_, view_2d sgs_buoy_flux_, view_2d inv_qc_relvar_)
     {
       ncol = ncol_;
       nlev = nlev_;
-      nlev_packs = nlev_packs_;
-      num_tracers = num_tracers_;
-      num_tracer_packs = num_tracer_packs_;
       rrho = rrho_;
       qv = qv_;
       qv_copy = qv_copy_;
@@ -354,8 +318,6 @@ public:
       tke = tke_;
       tke_copy = tke_copy_;
       qc2 = qc2_;
-      Q = Q_;
-      tracers = tracers_;
       cldfrac_liq = cldfrac_liq_;
       sgs_buoy_flux = sgs_buoy_flux_;
       inv_qc_relvar = inv_qc_relvar_;
