@@ -803,7 +803,7 @@ contains
                                      activeTracers, timeLevel)
             call ocn_tracer_ecosys_compute(activeTracers, tracerGroup, &
                                            forcingPool, nTracersGroup, &
-                                           nCellsOwned, latCell, &
+                                           nCellsOwned, latCell, minLevelCell, &
                                            maxLevelCell, nVertLevels, &
                                            layerThickness, zMid, &
                                            indxTemp, indxSalt, &
@@ -812,8 +812,10 @@ contains
             call ocn_tracer_ecosys_surface_flux_compute(activeTracers, &
                                            tracerGroup, forcingPool,  &
                                            nTracersGroup, nCellsOwned, &
-                                           zMid, indxTemp, indxSalt, &
-                                           tracerGroupSurfaceFlux, err)
+                                           zMid, minLevelCell, indxTemp, &
+                                           indxSalt, tracerGroupSurfaceFlux, &
+                                           err)
+                                           
          endif ! ecosys tracers
 
          !
@@ -827,16 +829,17 @@ contains
             call ocn_tracer_DMS_compute(activeTracers, tracerGroup, &
                                         nTracersGroup, ecosysTracers, &
                                         nTracersEcosys, forcingPool, &
-                                        nCellsOwned, maxLevelCell,  &
-                                        nVertLevels, layerThickness, &
-                                        indxTemp, indxSalt, &
-                                        tracerGroupTend, err)
+                                        nCellsOwned, minLevelCell, &
+                                        maxLevelCell, nVertLevels, &
+                                        layerThickness, indxTemp, &
+                                        indxSalt, tracerGroupTend, &
+                                        err)
 
             call ocn_tracer_DMS_surface_flux_compute(activeTracers, &
                                         tracerGroup, forcingPool,  &
                                         nTracersGroup, nCellsOwned, &
-                                        zMid, indxTemp, indxSalt, &
-                                        tracerGroupSurfaceFlux,  &
+                                        zMid, minLevelCell, indxTemp, &
+                                        indxSalt, tracerGroupSurfaceFlux,  &
                                         tracerGroupSurfaceFluxRemoved, err)
          endif ! DMS
 
@@ -851,8 +854,9 @@ contains
             call ocn_tracer_MacroMolecules_compute(tracerGroup, &
                                   nTracersGroup, ecosysTracers, &
                                   nTracersEcosys, forcingPool, &
-                                  nCellsOwned, maxLevelCell, &
-                                  nVertLevels, layerThickness,  &
+                                  nCellsOwned, minLevelCell, &
+                                  maxLevelCell, nVertLevels, &
+                                  layerThickness,  &
                                   tracerGroupTend, err)
 
             call ocn_tracer_MacroMolecules_surface_flux_compute( &
@@ -932,8 +936,9 @@ contains
                                      tracerGroupInteriorRestoringValue)
 
             call ocn_tracer_interior_restoring_compute(nTracersGroup, &
-                        nCellsAll, maxLevelCell, layerThickness, &
-                        tracerGroup, tracerGroupInteriorRestoringRate, &
+                        nCellsAll, minLevelCell, maxLevelCell, &
+                        layerThickness, tracerGroup, &
+                        tracerGroupInteriorRestoringRate, &
                         tracerGroupInteriorRestoringValue, &
                         tracerGroupTend, err)
 
@@ -959,8 +964,9 @@ contains
                                      tracerGroupExponentialDecayRate)
 
             call ocn_tracer_exponential_decay_compute(nTracersGroup, &
-                        nCellsAll, maxLevelCell, layerThickness, &
-                        tracerGroup, tracerGroupExponentialDecayRate, &
+                        nCellsAll, minLevelCell, maxLevelCell, &
+                        layerThickness, tracerGroup, &
+                        tracerGroupExponentialDecayRate, &
                         tracerGroupTend, err)
 
             call mpas_timer_stop("exponential decay "//groupName)
@@ -987,7 +993,8 @@ contains
                                      modifiedGroupName, &
                                      tracerGroupIdealAgeMask)
             call ocn_tracer_ideal_age_compute(nTracersGroup, nCellsAll,&
-                                      maxLevelCell, layerThickness, &
+                                      minLevelCell, maxLevelCell, &
+                                      layerThickness, &
                                       tracerGroupIdealAgeMask, &
                                       tracerGroup, tracerGroupTend, err)
 
