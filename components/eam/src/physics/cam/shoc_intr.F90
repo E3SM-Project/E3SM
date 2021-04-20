@@ -94,6 +94,23 @@ module shoc_intr
   real(r8) :: shoc_timestep = unset_r8  ! Default SHOC timestep set in namelist
   real(r8) :: dp1
   
+  real(r8) :: shoc_thl2tune = unset_r8
+  real(r8) :: shoc_qw2tune = unset_r8
+  real(r8) :: shoc_qwthl2tune = unset_r8
+  real(r8) :: shoc_w2tune = unset_r8
+  real(r8) :: shoc_length_fac = unset_r8
+  real(r8) :: shoc_c_diag_3rd_mom = unset_r8
+  real(r8) :: shoc_lambda_low = unset_r8
+  real(r8) :: shoc_lambda_high = unset_r8
+  real(r8) :: shoc_lambda_slope = unset_r8
+  real(r8) :: shoc_brunt_low = unset_r8
+  real(r8) :: shoc_Ckh = unset_r8
+  real(r8) :: shoc_Ckm = unset_r8
+  real(r8) :: shoc_Ckh_s_min = unset_r8
+  real(r8) :: shoc_Ckm_s_min = unset_r8
+  real(r8) :: shoc_Ckh_s_max = unset_r8
+  real(r8) :: shoc_Ckm_s_max = unset_r8
+
   integer :: edsclr_dim
   
   logical      :: prog_modal_aero
@@ -210,7 +227,11 @@ end function shoc_implements_cnst
     
     integer :: iunit, read_status
     
-    namelist /shocpbl_diff_nl/ shoc_timestep
+    namelist /shocpbl_diff_nl/ shoc_timestep, shoc_thl2tune, shoc_qw2tune, shoc_qwthl2tune, &
+                               shoc_w2tune, shoc_length_fac, shoc_c_diag_3rd_mom, &
+                               shoc_lambda_low, shoc_lambda_high, shoc_lambda_slope, &
+                               shoc_brunt_low, shoc_Ckh, shoc_Ckm, shoc_Ckh_s_min, &
+                               shoc_Ckm_s_min, shoc_Ckh_s_max, shoc_Ckm_s_max
     
     !  Read namelist to determine if SHOC history should be called
     if (masterproc) then
@@ -232,9 +253,25 @@ end function shoc_implements_cnst
 #ifdef SPMD
 ! Broadcast namelist variables
       call mpibcast(shoc_timestep,           1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_thl2tune,           1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_qw2tune,            1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_qwthl2tune,         1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_w2tune,             1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_length_fac,         1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_c_diag_3rd_mom,     1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_lambda_low,         1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_lambda_high,        1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_lambda_slope,       1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_brunt_low,          1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckh,                1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckm,                1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckh_s_min,          1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckm_s_min,          1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckh_s_max,          1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckm_s_max,          1,   mpir8,   0, mpicom)
 #endif
   
-  end subroutine shoc_readnl   
+  end subroutine shoc_readnl
   
   ! =============================================================================== !
   !                                                                                 !
@@ -401,8 +438,13 @@ end function shoc_implements_cnst
  
     call shoc_init( &
           pver, gravit, rair, rh2o, cpair, &
-	  zvir, latvap, latice, karman, &
-	  pref_mid, nbot_shoc, ntop_shoc )   
+          zvir, latvap, latice, karman, &
+          pref_mid, nbot_shoc, ntop_shoc, &
+          shoc_thl2tune, shoc_qw2tune, shoc_qwthl2tune, &
+          shoc_w2tune, shoc_length_fac, shoc_c_diag_3rd_mom, &
+          shoc_lambda_low, shoc_lambda_high, shoc_lambda_slope, &
+          shoc_brunt_low, shoc_Ckh, shoc_Ckm, shoc_Ckh_s_min, &
+          shoc_Ckm_s_min, shoc_Ckh_s_max, shoc_Ckm_s_max )
     
     ! --------------- !
     ! End             !

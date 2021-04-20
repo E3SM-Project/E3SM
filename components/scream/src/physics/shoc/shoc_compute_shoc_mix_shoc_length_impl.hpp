@@ -24,7 +24,7 @@ void Functions<S,D>
   const auto vk = C::Karman;
   
   // Eddy turnover timescale
-  const Scalar tscale = 300;
+  const Scalar tscale = 400;
 
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
     const Spack tkes = ekat::sqrt(tke(k));

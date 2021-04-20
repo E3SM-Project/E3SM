@@ -48,27 +48,31 @@ real(rtype) :: eps   ! rh2o/rair - 1 [-]
 real(rtype) :: vk    ! von karmann constant [-]
 
 !=========================================================
-! Private module parameters
+! Tunable parameters used in SHOC
 !=========================================================
 
-! These are adjustable tunable parameters for SHOC
-!  for certain variables and turbulent moments.
-!  All are unitless
+! Set default values, if not overwritten by namelist.
+!  All are unitless (unless units are stated)
+real(rtype) :: thl2tune = 1.0_rtype ! Temperature variance tuning factor
+real(rtype) :: qw2tune = 1.0_rtype ! Moisture variance tuning factor
+real(rtype) :: qwthl2tune = 1.0_rtype ! Temperature moisture covariance
+real(rtype) :: w2tune = 1.0_rtype ! Vertical velocity variance
+real(rtype) :: length_fac = 0.5_rtype ! Length scale factor
+real(rtype) :: c_diag_3rd_mom = 7.0_rtype ! w3 factor
+real(rtype) :: lambda_low = 0.001_rtype ! lowest value for stability correction
+real(rtype) :: lambda_high = 0.04_rtype ! highest value for stability correction
+real(rtype) :: lambda_slope = 0.65_rtype ! stability correction slope
+real(rtype) :: brunt_low = 0.02_rtype ! value to apply stability correction
+real(rtype) :: Ckh = 0.1_rtype ! Eddy diffusivity coefficient for heat
+real(rtype) :: Ckm = 0.1_rtype ! Eddy diffusivity coefficient for momentum
+real(rtype) :: Ckh_s_min = 0.1_rtype ! Stable PBL diffusivity minimum for heat
+real(rtype) :: Ckm_s_min = 0.1_rtype ! Stable PBL diffusivity minimum for momentum
+real(rtype) :: Ckh_s_max = 1.0_rtype ! Stable PBL diffusivity maximum for heat
+real(rtype) :: Ckm_s_max = 1.0_rtype ! Stable PBL diffusivity maximum for momentum
 
-! temperature variance
-real(rtype), parameter :: thl2tune=1.0_rtype
-! moisture variance
-real(rtype), parameter :: qw2tune=1.0_rtype
-! temp moisture covariance
-real(rtype), parameter :: qwthl2tune=1.0_rtype
-! vertical velocity variance
-real(rtype), parameter :: w2tune=1.0_rtype
-! third moment of vertical velocity
-real(rtype), parameter :: w3clip=1.2_rtype
-! mixing length scaling parameter
-real(rtype), parameter :: length_fac=0.5_rtype
-! coefficient for diag third moment parameters
-real(rtype), parameter :: c_diag_3rd_mom = 7.0_rtype
+!=========================================================
+! Private module parameters
+!=========================================================
 
 ! =========
 ! Below are options to activate certain features in SHOC
@@ -90,6 +94,8 @@ real(rtype), parameter :: troppres = 80000._rtype
 real(rtype), parameter :: ustar_min = 0.01_rtype
 ! PBL max depth in pressure units
 real(rtype), parameter :: pblmaxp = 4.e4_rtype
+! third moment of vertical velocity clipping factor
+real(rtype), parameter :: w3clip=1.2_rtype
 
 ! ========
 ! Set upper limits for certain SHOC quantities
@@ -122,7 +128,12 @@ contains
 subroutine shoc_init( &
          nlev, gravit, rair, rh2o, cpair, &
          zvir, latvap, latice, karman, &
-         pref_mid, nbot_shoc, ntop_shoc)
+         pref_mid, nbot_shoc, ntop_shoc, &
+         thl2tune_in, qw2tune_in, qwthl2tune_in, &
+         w2tune_in, length_fac_in, c_diag_3rd_mom_in, &
+         lambda_low_in, lambda_high_in, lambda_slope_in, &
+         brunt_low_in, Ckh_in, Ckm_in, Ckh_s_min_in, &
+         Ckm_s_min_in, Ckh_s_max_in, Ckm_s_max_in)
 
   implicit none
 
@@ -146,6 +157,24 @@ subroutine shoc_init( &
   integer, intent(in)   :: nbot_shoc ! Bottom level to which SHOC is applied
   integer, intent(in)   :: ntop_shoc ! Top level to which SHOC is applied
 
+  ! Tunable parameter factors, all unitless
+  real(rtype), intent(in), optional :: thl2tune_in ! temperature variance tuning factor
+  real(rtype), intent(in), optional :: qw2tune_in ! moisture variance
+  real(rtype), intent(in), optional :: qwthl2tune_in ! temperature moisture covariance
+  real(rtype), intent(in), optional :: w2tune_in ! vertical velocity variance
+  real(rtype), intent(in), optional :: length_fac_in ! length scale
+  real(rtype), intent(in), optional :: c_diag_3rd_mom_in ! third moment vertical velocity
+  real(rtype), intent(in), optional :: lambda_low_in ! stability correction, lowest value
+  real(rtype), intent(in), optional :: lambda_high_in ! stability correciton, highest value
+  real(rtype), intent(in), optional :: lambda_slope_in ! stability correction, slope term
+  real(rtype), intent(in), optional :: brunt_low_in ! value to apply stability correction
+  real(rtype), intent(in), optional :: Ckh_in ! eddy diffusivity coefficient for heat
+  real(rtype), intent(in), optional :: Ckm_in ! eddy diffusivity coefficient for momentum
+  real(rtype), intent(in), optional :: Ckh_s_min_in ! Stable PBL diffusivity minimum for heat
+  real(rtype), intent(in), optional :: Ckm_s_min_in ! Stable PBL diffusivity minimum for momentum
+  real(rtype), intent(in), optional :: Ckh_s_max_in ! Stable PBL diffusivity maximum for heat
+  real(rtype), intent(in), optional :: Ckm_s_max_in ! Stable PBL diffusivity maximum for momentum
+
   integer :: k
 
   ggr = gravit   ! [m/s2]
@@ -156,6 +185,25 @@ subroutine shoc_init( &
   lcond = latvap ! [J/kg]
   lice = latice  ! [J/kg]
   vk = karman    ! [-]
+
+  ! Tunable parameters, all unitless
+  !  override default values if value is present
+  if (present(thl2tune_in)) thl2tune = thl2tune_in
+  if (present(qw2tune_in)) qw2tune = qw2tune_in
+  if (present(qwthl2tune_in)) qwthl2tune = qwthl2tune_in
+  if (present(w2tune_in)) w2tune=w2tune_in
+  if (present(qw2tune_in)) length_fac=length_fac_in
+  if (present(qwthl2tune_in)) c_diag_3rd_mom=c_diag_3rd_mom_in
+  if (present(lambda_low_in)) lambda_low=lambda_low_in
+  if (present(lambda_high_in)) lambda_high=lambda_high_in
+  if (present(lambda_slope_in)) lambda_slope=lambda_slope_in
+  if (present(brunt_low_in)) brunt_low=brunt_low_in
+  if (present(Ckh_in)) Ckh=Ckh_in
+  if (present(Ckm_in)) Ckm=Ckm_in
+  if (present(Ckh_s_min_in)) Ckh_s_min=Ckh_s_min_in
+  if (present(Ckm_s_min_in)) Ckm_s_min=Ckm_s_min_in
+  if (present(Ckh_s_max_in)) Ckh_s_max=Ckh_s_max_in
+  if (present(Ckm_s_max_in)) Ckm_s_max=Ckm_s_max_in
 
    ! Limit pbl height to regions below 400 mb
    ! npbl = max number of levels (from bottom) in pbl
@@ -2005,8 +2053,10 @@ subroutine omega_terms_diag_third_shoc_moment(&
   !intent-out
   real(rtype), intent(out) :: omega0, omega1, omega2
 
-  real(rtype), parameter :: a4=2.4_rtype/(3._rtype*c_diag_3rd_mom+5._rtype)
-  real(rtype), parameter :: a5=0.6_rtype/(c_diag_3rd_mom*(3._rtype+5._rtype*c_diag_3rd_mom))
+  real(rtype) :: a4, a5
+
+  a4=2.4_rtype/(3._rtype*c_diag_3rd_mom+5._rtype)
+  a5=0.6_rtype/(c_diag_3rd_mom*(3._rtype+5._rtype*c_diag_3rd_mom))
 
   omega0 = a4 / (1._rtype - a5 * buoy_sgs2)
   omega1 = omega0/(2._rtype * c_diag_3rd_mom)
@@ -3225,10 +3275,6 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
   real(rtype) :: tscale, lambda, buoy_sgs_save
 
   !Parameters
-  real(rtype), parameter :: lambda_low   = 0.001_rtype
-  real(rtype), parameter :: lambda_high  = 0.04_rtype
-  real(rtype), parameter :: lambda_slope = 0.65_rtype
-  real(rtype), parameter :: brunt_low    = 0.02_rtype
   real(rtype), parameter :: maxiso       = 20000.0_rtype ! Return to isotropic timescale [s]
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -3310,14 +3356,6 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   ! Transition depth [m] above PBL top to allow
   ! stability diffusivities
   real(rtype), parameter :: pbl_trans = 200.0_rtype
-  ! Turbulent coefficients
-  real(rtype), parameter :: Ckh = 0.1_rtype
-  real(rtype), parameter :: Ckm = 0.1_rtype
-  ! Default eddy coefficients for stable PBL diffusivities
-  real(rtype), parameter :: Ckh_s_def = 1.0_rtype
-  real(rtype), parameter :: Ckm_s_def = 1.0_rtype
-  ! Minimum allowable value for stability diffusivities
-  real(rtype), parameter :: Ck_s_min = 0.1_rtype
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
@@ -3346,8 +3384,8 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
 
 	   ! Compute diffusivity coefficient as function of dimensionless
            !  Obukhov, given a critical value
-           Ckh_s = max(Ck_s_min,min(Ckh_s_def,z_over_L/zL_crit_val))
-           Ckm_s = max(Ck_s_min,min(Ckm_s_def,z_over_L/zL_crit_val))
+           Ckh_s = max(Ckh_s_min,min(Ckh_s_max,z_over_L/zL_crit_val))
+           Ckm_s = max(Ckm_s_min,min(Ckm_s_max,z_over_L/zL_crit_val))
 
 	   ! Compute stable PBL diffusivities
            tkh(i,k) = Ckh_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
@@ -4754,7 +4792,7 @@ subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,zt_grid,l_inf,shoc_
   real(rtype) :: tkes
 
   ! Turnover timescale [s]
-  real(rtype), parameter :: tscale = 300._rtype
+  real(rtype), parameter :: tscale = 400._rtype
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
