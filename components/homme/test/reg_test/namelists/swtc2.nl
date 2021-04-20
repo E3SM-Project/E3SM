@@ -23,7 +23,6 @@ nu= 1e-9
 nu_s= 1e-9
 hypervis_order = 2
 hypervis_subcycle = 2
-hypervis_power = 0
 mesh_file = 'mountain_10_x2.g'
 hypervis_scaling = 3.2
 /

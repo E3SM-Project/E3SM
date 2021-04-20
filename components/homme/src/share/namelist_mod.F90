@@ -912,8 +912,14 @@ endif
 
 
     ! use maximum available:
-    if (NThreads == -1) NThreads = omp_get_max_threads()
-
+    if (NThreads == -1) then
+#if defined(HORIZ_OPENMP) || defined (COLUMN_OPENMP)
+       NThreads = omp_get_max_threads()
+#else
+       NThreads = 1  
+#endif       
+    endif
+    
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
     if (NThreads > omp_get_max_threads()) then
