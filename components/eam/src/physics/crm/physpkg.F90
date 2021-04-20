@@ -1092,10 +1092,6 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
     call co2_cycle_set_ptend(state, pbuf, ptend)
     call physics_update(state, ptend, ztodt, tend)
 
-    ! add tendency from aircraft emissions
-    call co2_cycle_set_ptend(state, pbuf, ptend)
-    call physics_update(state, ptend, ztodt, tend)
-
     ! Chemistry calculation
     if (chem_is_active()) then
        call chem_timestep_tend(state, ptend, cam_in, cam_out, ztodt, pbuf,  fh2o, fsds)
