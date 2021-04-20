@@ -755,7 +755,9 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   ! Advance time information
   !-----------------------------------------------------------------------------
 
+  call t_startf ('phys_timestep_init')
   call phys_timestep_init( phys_state, cam_out, pbuf2d)
+  call t_stopf ('phys_timestep_init')
 
 #ifdef TRACER_CHECK
   call gmean_mass ('before tphysbc DRY', phys_state)
@@ -892,12 +894,10 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d, cam_out, cam_in )
   call gmean_mass ('after tphysac FV:WET)', phys_state)
 #endif
 
-  call t_startf ('physpkg_st2')
   call pbuf_deallocate(pbuf2d, 'physpkg')
 
   call pbuf_update_tim_idx()
   call diag_deallocate()
-  call t_stopf ('physpkg_st2')
 
 end subroutine phys_run2
 
@@ -1079,6 +1079,8 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   if (l_tracer_aero) then
 
+    call t_startf('adv_tracer_src_snk')
+
     call tracers_timestep_tend(state, ptend, cam_in%cflx, cam_in%landfrac, ztodt)      
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "tracers_timestep_tend", nstep, ztodt, cam_in%cflx)
@@ -1100,15 +1102,19 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
        call check_tracers_chng(state, tracerint, "chem_timestep_tend", nstep, ztodt, cam_in%cflx)
     end if ! chem_is_active
 
+    call t_stopf('adv_tracer_src_snk')
+
   end if ! l_tracer_aero
 
   !-----------------------------------------------------------------------------
   ! Vertical diffusion/pbl calculation - (pbl, free atmosphere and molecular)
   !-----------------------------------------------------------------------------
 
+  call t_startf('vertical_diffusion_tend')
   call vertical_diffusion_tend(ztodt, state, cam_in%wsx, cam_in%wsy, cam_in%shf, cam_in%cflx, &
                                surfric, obklen, ptend, ast, cam_in%landfrac, sgh30, pbuf )
   call physics_update(state, ptend, ztodt, tend)
+  call t_stopf ('vertical_diffusion_tend')
   
   obklen(:) = 0.
   surfric(:) = 0.
@@ -1118,8 +1124,10 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   if (l_rayleigh) then
 
+    call t_startf('rayleigh_friction')
     call rayleigh_friction_tend( ztodt, state, ptend)
     call physics_update(state, ptend, ztodt, tend)
+    call t_stopf('rayleigh_friction')
 
     call check_energy_chng(state, tend, "vdiff", nstep, ztodt, zero, zero, zero, zero)    
     call check_tracers_chng(state, tracerint, "vdiff", nstep, ztodt, cam_in%cflx)
@@ -1131,8 +1139,10 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   if (l_tracer_aero) then
 
+    call t_startf('aero_drydep')
     call aero_model_drydep( state, pbuf, obklen, surfric, cam_in, ztodt, cam_out, ptend )
     call physics_update(state, ptend, ztodt, tend)
+    call t_stopf('aero_drydep')
 
     ! enforce charge neutrality
     call charge_fix( ncol, state%q(:,:,:) )
@@ -1144,8 +1154,10 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   if (l_gw_drag) then
 
+    call t_startf('gw_tend')
     call gw_tend(state, sgh, pbuf, ztodt, ptend, cam_in)
     call physics_update(state, ptend, ztodt, tend)
+    call t_stopf('gw_tend')
     
     ! Check energy integrals
     call check_energy_chng(state, tend, "gwdrag", nstep, ztodt, zero, zero, zero, zero)
@@ -1241,7 +1253,6 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   use cam_history,            only: outfld, fieldname_len
   use physconst,              only: cpair, latvap, gravit, rga
   use constituents,           only: pcnst, qmin, cnst_get_ind
-  use convect_deep,           only: convect_deep_tend_2, deep_scheme_does_scav_trans
   use time_manager,           only: is_first_step, get_nstep
   use check_energy,           only: check_energy_chng, check_energy_fix, & 
                                     check_water, check_qflx, &
@@ -1608,11 +1619,12 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   ! Run the CRM 
   !-----------------------------------------------------------------------------
   crm_run_time = ztodt
+  call t_startf('crm_physics_tend')
   call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
                         species_class, crm_ecpp_output, mmf_clear_rh,       &
                         mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
-
   call physics_update(state, ptend, crm_run_time, tend)
+  call t_stopf('crm_physics_tend')
 
   call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
                          zero, mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
@@ -1625,6 +1637,8 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   lq(:) = .true.
   call physics_ptend_init(ptend, state%psetcols, 'crm - modal_aero_wateruptake_dr', lq=lq)
 
+  call t_startf('modal_aero_mmf')
+
   ! set all ptend%lq to false as they will be set in modal_aero_calcsize_sub
   ptend%lq(:) = .false.
   call modal_aero_calcsize_sub (state, ztodt, pbuf, ptend)
@@ -1634,7 +1648,10 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   ! not updated in mz_aero_wet_intr (mz_aerosols_intr.F90), but tendencies
   ! from other parts of crmclouds_aerosol_wet_intr() are still updated here.
   call physics_update (state, ptend, crm_run_time, tend)
-  call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time, zero, zero, zero, zero)
+  call t_stopf('modal_aero_mmf')
+
+  call check_energy_chng(state, tend, "modal_aero_mmf", nstep, crm_run_time, &
+                         zero, zero, zero, zero)
 
 #endif /* ECPP and MODAL_AERO */
   !-----------------------------------------------------------------------------
@@ -1697,7 +1714,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   if (l_tracer_aero) then
     if (use_ECPP) then
       ! With MMF + ECPP we can skip the conventional aerosol routines
-    else if ( .not. deep_scheme_does_scav_trans() ) then
+    else
       ! Aerosol wet chemistry determines scavenging and transformations.
       ! This is followed by convective transport of all trace species except
       ! water vapor and condensate. Scavenging needs to occur prior to
@@ -1707,21 +1724,17 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
       ! need to consider the wet deposition and water uptake for radiation
 
       ! Aerosol wet removal (including aerosol water uptake)
-       call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
+      call t_startf('aero_model_wetdep')
+      call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
               sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
               jt, maxg, ideep, lengath, species_class,           &
               cam_out, pbuf, ptend,                              & ! outputs
               clear_rh=mmf_clear_rh) ! clear air relative humidity for water uptake
       call physics_update(state, ptend, ztodt, tend)
+      call t_stopf('aero_model_wetdep')
 
-      ! ! deep convective aerosol transport
-      ! call convect_deep_tend_2( state, ptend, ztodt, pbuf, &
-      !        mu, eu, du, md, ed, dp, dsubcld, jt, maxg,    &
-      !        ideep, lengath, species_class )
-      ! call physics_update(state, ptend, ztodt, tend)
-
-      ! ! check tracer integrals
-      ! call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
+      ! check tracer integrals
+      call check_tracers_chng(state, tracerint, "aero_model_wetdep", nstep, ztodt,  zero_tracers)
 
     end if
   end if ! l_tracer_aero
