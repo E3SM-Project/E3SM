@@ -736,7 +736,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
-  call t_startf ('physpkg_st1')
   nstep = get_nstep()
 
   ! The following initialization depends on the import state (cam_in)
@@ -749,10 +748,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   call check_energy_gmean(phys_state, pbuf2d, ztodt, nstep)
   call t_stopf ('chk_en_gmean')
 
-  call t_stopf ('physpkg_st1')
-
-  call t_startf ('physpkg_st1')
-
   call pbuf_allocate(pbuf2d, 'physpkg')
   call diag_allocate()
 
@@ -761,8 +756,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   !-----------------------------------------------------------------------------
 
   call phys_timestep_init( phys_state, cam_out, pbuf2d)
-
-  call t_stopf ('physpkg_st1')
 
 #ifdef TRACER_CHECK
   call gmean_mass ('before tphysbc DRY', phys_state)
