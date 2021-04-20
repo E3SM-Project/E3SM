@@ -58,7 +58,7 @@ contains
 
 
 
-  subroutine compute_stage_value_dirk(nm1,alphadt_nm1,n0,alphadt_n0,np1,dt2,qn0,elem,hvcoord,hybrid,&
+  subroutine compute_stage_value_dirk(nm1,alphadt_nm1,n0,alphadt_n0,np1,dt2,elem,hvcoord,hybrid,&
        deriv,nets,nete,itercount,itererr,verbosity_in)
     !===================================================================================
     ! this subroutine solves a stage value equation for a DIRK method which takes the form
@@ -89,7 +89,7 @@ contains
     !
     !===================================================================================
 
-    integer, intent(in) :: nm1,n0,np1,qn0,nets,nete
+    integer, intent(in) :: nm1,n0,np1,nets,nete
     real (kind=real_kind), intent(in) :: dt2
     integer :: itercount
     real (kind=real_kind) :: itererr
@@ -541,7 +541,7 @@ contains
     real (kind=real_kind) :: norminfJ0(np,np)
 
     real (kind=real_kind) :: dt,epsie,jacerrorvec(6),minjacerr
-    integer :: k,ie,qn0,i,j
+    integer :: k,ie,i,j
     minjacerr=0
     if (hybrid%masterthread) write(iulog,*)'Running IMEX Jacobian unit test...'
     do ie=nets,nete
@@ -552,7 +552,6 @@ contains
        vtheta_dp(:,:,:) = elem(ie)%state%vtheta_dp(:,:,:,tl%n0)
        phi_i(:,:,:)         = elem(ie)%state%phinh_i(:,:,:,tl%n0)
        phis(:,:)          = elem(ie)%state%phis(:,:)
-       call TimeLevel_Qdp(tl, qsplit, qn0)
        call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,&
                pnh,exner,dpnh_dp_i,pnh_i_out=pnh_i)
 
