@@ -453,7 +453,7 @@ subroutine dropmixnuc( &
    real(r8) :: zerogas(pver)
    character*200 fieldnamegas
 
-   logical,  intent(in), optional :: do_mmf_local
+   logical :: do_mmf_local
 
    !-------------------------------------------------------------------------------
 
