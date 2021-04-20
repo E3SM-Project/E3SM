@@ -100,8 +100,6 @@ subroutine crmclouds_mixnuc_tend (state, ptend, dtime, cflx, pblht, pbuf,   &
 
   real(r8) :: qcld, qsmall
 
-  logical :: dommf=.true.                 ! value insignificant, if present, means that dropmixnuc is called the mmf part. 
-
   !!! Variables in the physics buffer:
   real(r8), pointer, dimension(:,:) :: cldn       ! cloud fractin at the current time step
   real(r8), pointer, dimension(:,:) :: cldo       ! cloud fraction at the previous time step
