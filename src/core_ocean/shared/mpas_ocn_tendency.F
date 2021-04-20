@@ -571,6 +571,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
@@ -686,11 +687,11 @@ contains
                if ( trim(groupItr % memberName) == 'ecosysTracers' ) then
                   call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
                   call ocn_tracer_ecosys_compute(activeTracers, tracerGroup, forcingPool, nTracerGroup, &
-                     nCellsSolve, latCell, maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature, &
+                     nCellsSolve, latCell, minLevelCell, maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature, &
                      indexSalinity, tracerGroupTend, err)
 
                   call ocn_tracer_ecosys_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
-                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
+                     nTracerGroup, nCellsSolve, zMid, minLevelCell, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
                endif
 
                !
@@ -701,11 +702,11 @@ contains
                   call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)
                   nTracersEcosys = size(ecosysTracers, dim=1)
                   call ocn_tracer_DMS_compute(activeTracers, tracerGroup, nTracerGroup, ecosysTracers,   &
-                     nTracersEcosys, forcingPool, nCellsSolve, maxLevelCell,  &
+                     nTracersEcosys, forcingPool, nCellsSolve, minLevelCell, maxLevelCell,  &
                      nVertLevels, layerThickness, indexTemperature, indexSalinity, tracerGroupTend, err)
 
                   call ocn_tracer_DMS_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
-                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux,  &
+                     nTracerGroup, nCellsSolve, zMid, minLevelCell, indexTemperature, indexSalinity, tracerGroupSurfaceFlux,  &
                      tracerGroupSurfaceFluxRemoved, err)
                endif
 
@@ -717,7 +718,7 @@ contains
                   call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)
                   nTracersEcosys = size(ecosysTracers, dim=1)
                   call ocn_tracer_MacroMolecules_compute(tracerGroup, nTracerGroup, ecosysTracers, nTracersEcosys, forcingPool, &
-                     nCellsSolve, maxLevelCell, nVertLevels, layerThickness,  &
+                     nCellsSolve, minLevelCell, maxLevelCell, nVertLevels, layerThickness,  &
                      tracerGroupTend, err)
 
                   call ocn_tracer_MacroMolecules_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
@@ -768,7 +769,7 @@ contains
                      modifiedGroupName = trim(groupItr % memberName) // "InteriorRestoringValue"
                      call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, trim(modifiedGroupName), &
                                               tracerGroupInteriorRestoringValue)
-                     call ocn_tracer_interior_restoring_compute(nTracerGroup, nCells, maxLevelCell, layerThickness, &
+                     call ocn_tracer_interior_restoring_compute(nTracerGroup, nCells, minLevelCell, maxLevelCell, layerThickness, &
                         tracerGroup, tracerGroupInteriorRestoringRate, tracerGroupInteriorRestoringValue, tracerGroupTend, err)
                      call mpas_timer_stop("interior_restoring_" // trim(groupItr % memberName))
                 endif
@@ -785,7 +786,7 @@ contains
                      modifiedGroupName = trim(groupItr % memberName) // "ExponentialDecayRate"
                      call mpas_pool_get_array(tracersExponentialDecayFieldsPool, trim(modifiedGroupName), &
                                               tracerGroupExponentialDecayRate)
-                     call ocn_tracer_exponential_decay_compute(nTracerGroup, nCells, maxLevelCell, layerThickness, &
+                     call ocn_tracer_exponential_decay_compute(nTracerGroup, nCells, minLevelCell, maxLevelCell, layerThickness, &
                         tracerGroup, tracerGroupExponentialDecayRate, tracerGroupTend, err)
 
                      call mpas_timer_stop("exponential decay " // trim(groupItr % memberName))
@@ -803,7 +804,7 @@ contains
                      call mpas_pool_get_subpool(forcingPool, 'tracersIdealAgeFields', tracersIdealAgeFieldsPool)
                      modifiedGroupName = trim(groupItr % memberName) // "IdealAgeMask"
                      call mpas_pool_get_array(tracersIdealAgeFieldsPool, trim(modifiedGroupName), tracerGroupIdealAgeMask)
-                     call ocn_tracer_ideal_age_compute(nTracerGroup, nCells, maxLevelCell, layerThickness, &
+                     call ocn_tracer_ideal_age_compute(nTracerGroup, nCells, minLevelCell, maxLevelCell, layerThickness, &
                           tracerGroupIdealAgeMask, tracerGroup, tracerGroupTend, err)
 
                      call mpas_timer_stop("ideal age " // trim(groupItr % memberName))
@@ -1034,6 +1035,7 @@ contains
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
@@ -1069,6 +1071,7 @@ contains
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
 
+          ! Note: changing loop limit to minLevelEdgeBot introduces non-bit-for-bit changes
           do k = 1, maxLevelEdgeTop(iEdge)
             flux = layerThickEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) * invAreaCell
             div_hu(k) = div_hu(k) - flux
@@ -1076,8 +1079,8 @@ contains
           end do
         end do
 
-        totalThickness = sum(layerThickness(1:maxLevelCell(iCell),iCell))
-        do k = 1, maxLevelCell(iCell)
+        totalThickness = sum(layerThickness(minLevelCell(iCell):maxLevelCell(iCell),iCell))
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
 
            tend_lowFreqDivergence(k,iCell) = &
               -2.0 * pii / thickness_filter_timescale_sec &

@@ -97,7 +97,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_DMS_compute(activeTracers, DMSTracers, nTracersDMS, ecosysTracers, nTracersEcosys,   &
-      forcingPool, nCellsSolve, maxLevelCell,  &
+      forcingPool, nCellsSolve, minLevelCell, maxLevelCell, &
       nVertLevels, layerThickness, indexTemperature, indexSalinity, DMSTracersTend, err)!{{{
 
       !-----------------------------------------------------------------
@@ -108,7 +108,7 @@ contains
 
       ! one dimensional arrays
       integer, dimension(:), intent(in) :: &
-         maxLevelCell
+         minLevelCell, maxLevelCell
 
       ! two dimensional arrays
       real (kind=RKIND), dimension(:,:), intent(in) :: &
@@ -172,18 +172,18 @@ contains
 
       numColumns = 1
       column = 1
-      iLevelSurface = 1
 
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
-         DMS_input%number_of_active_levels(column) = maxLevelCell(iCell)
+         iLevelSurface = minLevelCell(iCell)
+         DMS_input%number_of_active_levels(column) = maxLevelCell(iCell) - minLevelCell(iCell) + 1
 
          DMS_forcing%ShortWaveFlux_surface(column)  = shortWaveHeatFlux(iCell)
          DMS_forcing%SST(column) = activeTracers(indexTemperature,iLevelSurface,iCell)
          DMS_forcing%SSS(column) = activeTracers(indexSalinity,iLevelSurface,iCell)
 
-         do iLevel=1,maxLevelCell(iCell)
-            DMS_input%cell_thickness(iLevel,column)    = layerThickness(iLevel,iCell)*convertLengthScale
+         do iLevel=1,DMS_input%number_of_active_levels(column)
+            DMS_input%cell_thickness(iLevel,column)    = layerThickness(iLevel + minLevelCell(iCell) - 1,iCell)*convertLengthScale
 
             DMS_input%DMS_tracers(iLevel,column,DMS_indices%dms_ind)  = DMSTracers(dmsIndices%dms_ind,iLevel,iCell)
             DMS_input%DMS_tracers(iLevel,column,DMS_indices%dmsp_ind) = DMSTracers(dmsIndices%dmsp_ind,iLevel,iCell)
@@ -207,7 +207,7 @@ contains
                              DMS_output, DMS_diagnostic_fields, nVertLevels,   &
                              numColumnsMax, numColumns)
 
-         do iLevel=1,maxLevelCell(iCell)
+         do iLevel=1,DMS_input%number_of_active_levels(column)
 
             DMSTracersTend(dmsIndices%dms_ind,iLevel,iCell) = DMSTracersTend(dmsIndices%dms_ind,iLevel,iCell)   &
                + DMS_output%DMS_tendencies(iLevel,column,DMS_indices%dms_ind)*layerThickness(iLevel,iCell)
@@ -237,7 +237,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_DMS_surface_flux_compute(activeTracers, DMSTracers, forcingPool,  &
-      nTracers, nCellsSolve, zMid, indexTemperature, indexSalinity, DMSSurfaceFlux, DMSSurfaceFluxRemoved, err)!{{{
+      nTracers, nCellsSolve, zMid, minLevelCell, indexTemperature, indexSalinity, DMSSurfaceFlux, DMSSurfaceFluxRemoved, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -260,6 +260,7 @@ contains
 
       ! scalars
       integer, intent(in) :: nTracers, nCellsSolve, indexTemperature, indexSalinity
+      integer, dimension(:), intent(in) :: minLevelCell
 
       type (mpas_pool_type), intent(inout) :: forcingPool
 
@@ -349,11 +350,11 @@ contains
 
       numColumns = 1
       column = 1
-      iLevelSurface = 1
 
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
 
+         iLevelSurface = minLevelCell(iCell)
          DMS_forcing%surfacePressure(column) = atmosphericPressure(iCell)*PascalsToAtmospheres
          DMS_forcing%iceFraction(column) = iceFraction(iCell)
 !maltrud assume for now that if there is any land ice, it is all land ice

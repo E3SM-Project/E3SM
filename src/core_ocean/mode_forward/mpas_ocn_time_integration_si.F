@@ -157,7 +157,7 @@ module ocn_time_integration_si
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       ! Mesh array pointers
-      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, nEdgesOnEdge, nEdgesOnCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell, minLevelEdgeBot, maxLevelEdgeTop, nEdgesOnEdge, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgeMask, edgesOnEdge
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
@@ -492,6 +492,7 @@ module ocn_time_integration_si
                call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
 
                call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+               call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
                call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
                call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
@@ -518,7 +519,7 @@ module ocn_time_integration_si
                   cell2 = cellsOnEdge(2,iEdge)
 
                   uTemp = 0.0_RKIND  ! could put this after with uTemp(maxleveledgetop+1:nvertlevels)=0
-                  do k = 1, maxLevelEdgeTop(iEdge)
+                  do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
                      ! normalBaroclinicVelocityNew = normalBaroclinicVelocityOld + dt*(-f*normalBaroclinicVelocityPerp
                      !                             + T(u*,w*,p*) + g*grad(SSH*) )
@@ -533,17 +534,17 @@ module ocn_time_integration_si
                   ! thicknessSum is initialized outside the loop because on land boundaries
                   ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a
                   ! nonzero value to avoid a NaN.
-                  normalThicknessFluxSum = layerThickEdge(1,iEdge) * uTemp(1)
-                  thicknessSum  = layerThickEdge(1,iEdge)
+                  normalThicknessFluxSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge) * uTemp(minLevelEdgeBot(iEdge))
+                  thicknessSum  = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)
 
-                  do k = 2, maxLevelEdgeTop(iEdge)
+                  do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                      normalThicknessFluxSum = normalThicknessFluxSum + layerThickEdge(k,iEdge) * uTemp(k)
                      thicknessSum  =  thicknessSum + layerThickEdge(k,iEdge)
                   enddo
                   barotropicForcing(iEdge) = split * normalThicknessFluxSum / thicknessSum / dt
 
 
-                  do k = 1, maxLevelEdgeTop(iEdge)
+                  do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                      ! These two steps are together here:
                      !{\bf u}'_{k,n+1} = {\bf u}'_{k,n} - \Delta t {\overline {\bf G}}
                      !{\bf u}'_{k,n+1/2} = \frac{1}{2}\left({\bf u}^{'}_{k,n} +{\bf u}'_{k,n+1}\right)
@@ -2436,6 +2437,7 @@ module ocn_time_integration_si
             call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocityNew, 2)
             call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocityNew, 2)
 
+            call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
             call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
             call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
 
@@ -2469,10 +2471,10 @@ module ocn_time_integration_si
                ! thicknessSum is initialized outside the loop because on land boundaries
                ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a
                ! nonzero value to avoid a NaN.
-               normalThicknessFluxSum = layerThickEdge(1,iEdge) * uTemp(1)
-               thicknessSum  = layerThickEdge(1,iEdge)
+               normalThicknessFluxSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge) * uTemp(minLevelEdgeBot(iEdge))
+               thicknessSum  = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)
 
-               do k = 2, maxLevelEdgeTop(iEdge)
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   normalThicknessFluxSum = normalThicknessFluxSum + layerThickEdge(k,iEdge) * uTemp(k)
                   thicknessSum  =  thicknessSum + layerThickEdge(k,iEdge)
                enddo
@@ -2617,8 +2619,10 @@ module ocn_time_integration_si
             call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
             call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
+            call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
             call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
             call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+            call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
             call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
             call mpas_pool_get_array(tracersPool, 'activeTracers', tracersGroupCur, 1)
@@ -2664,7 +2668,7 @@ module ocn_time_integration_si
                !$omp do schedule(runtime) private(k, temp_h, temp, i)
                do iCell = 1, nCells
                   ! sshNew is a pointer, defined above.
-                  do k = 1, maxLevelCell(iCell)
+                  do k = minLevelCell(iCell), maxLevelCell(iCell)
 
                      ! this is h_{n+1}
                      temp_h = layerThicknessCur(k,iCell) + dt * layerThicknessTend(k,iCell)
@@ -2689,7 +2693,7 @@ module ocn_time_integration_si
                   !$omp parallel
                   !$omp do schedule(runtime) private(k, temp)
                   do iCell = 1, nCells
-                     do k = 1, maxLevelCell(iCell)
+                     do k = minLevelCell(iCell), maxLevelCell(iCell)
 
                         ! h^{hf}_{n+1} was computed in Stage 1
 
@@ -2741,7 +2745,7 @@ module ocn_time_integration_si
                !$omp parallel
                !$omp do schedule(runtime) private(k)
                do iCell = 1, nCells
-                  do k = 1, maxLevelCell(iCell)
+                  do k = minLevelCell(iCell), maxLevelCell(iCell)
                      ! this is h_{n+1}
                      layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell) + dt * layerThicknessTend(k,iCell)
                   end do
@@ -2753,7 +2757,7 @@ module ocn_time_integration_si
                   !$omp parallel
                   !$omp do schedule(runtime) private(k)
                   do iEdge = 1, nEdges
-                     do k= 1, maxLevelEdgeTop(iEdge)
+                     do k= minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                         activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) = &
                           activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) / &
                           layerThickEdge(k,iEdge)
@@ -2763,7 +2767,7 @@ module ocn_time_integration_si
 
                   !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells
-                     do k= 1, maxLevelCell(iCell)
+                     do k= minLevelCell(iCell), maxLevelCell(iCell)
                         activeTracerHorizontalAdvectionTendency(:,k,iCell) = &
                            activeTracerHorizontalAdvectionTendency(:,k,iCell) / &
                            layerThicknessNew(k,iCell)
@@ -2805,7 +2809,7 @@ module ocn_time_integration_si
                         !$omp parallel
                         !$omp do schedule(runtime) private(k)
                         do iCell = 1, nCells
-                           do k = 1, maxLevelCell(iCell)
+                           do k = minLevelCell(iCell), maxLevelCell(iCell)
                               tracersGroupNew(:,k,iCell) = (tracersGroupCur(:,k,iCell) * layerThicknessCur(k,iCell) + dt &
                                                          * tracersGroupTend(:,k,iCell) ) / layerThicknessNew(k,iCell)
                            end do
@@ -2818,7 +2822,7 @@ module ocn_time_integration_si
                            !$omp parallel
                            !$omp do schedule(runtime) private(k)
                            do iCell = 1, nCells
-                              do k = 1, maxLevelCell(iCell)
+                              do k = minLevelCell(iCell), maxLevelCell(iCell)
                                  tracersGroupNew(indexSalinity,k,iCell) = max(0.001_RKIND, tracersGroupNew(indexSalinity,k,iCell))
                               end do
                            end do
@@ -2834,7 +2838,7 @@ module ocn_time_integration_si
                   !$omp parallel
                   !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells
-                     do k = 1, maxLevelCell(iCell)
+                     do k = minLevelCell(iCell), maxLevelCell(iCell)
 
                         ! h^{hf}_{n+1} was computed in Stage 1
 
@@ -2859,7 +2863,7 @@ module ocn_time_integration_si
                !$omp parallel
                !$omp do schedule(runtime) private(k)
                do iEdge = 1, nEdges
-                  do k = 1, maxLevelEdgeTop(iEdge)
+                  do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                      normalVelocityNew(k,iEdge) = normalBarotropicVelocityNew(iEdge) + 2 * normalBaroclinicVelocityNew(k,iEdge) &
                                                 - normalBaroclinicVelocityCur(k,iEdge)
                   end do
@@ -3071,7 +3075,7 @@ module ocn_time_integration_si
       type (dm_info) :: dminfo
 
       integer :: iTracer, cell, cell1, cell2
-      integer, dimension(:), pointer :: maxLevelEdgeTop,maxLevelCell
+      integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell
       integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND) :: normalThicknessFluxSum, layerThicknessSum, layerThickEdge1
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, normalBarotropicVelocity
@@ -3140,7 +3144,9 @@ module ocn_time_integration_si
 
             call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
             call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+            call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
             call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+            call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
             call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
             call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
             call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
@@ -3167,11 +3173,11 @@ module ocn_time_integration_si
                   ! thicknessSum is initialized outside the loop because on land boundaries
                   ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a
                   ! nonzero value to avoid a NaN.
-                  layerThickEdge1 = 0.5_RKIND*( layerThickness(1,cell1) + layerThickness(1,cell2) )
-                  normalThicknessFluxSum = layerThickEdge1 * normalVelocity(1,iEdge)
+                  layerThickEdge1 = 0.5_RKIND*( layerThickness(minLevelCell(cell1),cell1) + layerThickness(minLevelCell(cell2),cell2) )
+                  normalThicknessFluxSum = layerThickEdge1 * normalVelocity(minLevelEdgeBot(iEdge),iEdge)
                   layerThicknessSum = layerThickEdge1
 
-                  do k=2, maxLevelEdgeTop(iEdge)
+                  do k=minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                      ! ocn_diagnostic_solve has not yet been called, so compute hEdge
                      ! just for this edge.
                      layerThickEdge1 = 0.5_RKIND*( layerThickness(k,cell1) + layerThickness(k,cell2) )
@@ -3184,7 +3190,7 @@ module ocn_time_integration_si
                   normalBarotropicVelocity(iEdge) = normalThicknessFluxSum / layerThicknessSum
 
                   ! normalBaroclinicVelocity(k,iEdge) = normalVelocity(k,iEdge) - normalBarotropicVelocity(iEdge)
-                  do k = 1, maxLevelEdgeTop(iEdge)
+                  do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                      normalBaroclinicVelocity(k,iEdge) = normalVelocity(k,iEdge) - normalBarotropicVelocity(iEdge)
                   enddo
 
@@ -3272,12 +3278,12 @@ module ocn_time_integration_si
                k = maxLevelCell(iCell)
                zTop(k:nVertLevels,iCell) = -bottomDepth(iCell) + layerThickness(k,iCell)
 
-               do k = maxLevelCell(iCell)-1, 1, -1
+               do k = maxLevelCell(iCell)-1, minLevelCell(iCell), -1
                   zTop(k,iCell) = zTop(k+1,iCell) + layerThickness(k  ,iCell)
                end do
 
                ! copy zTop(1,iCell) into sea-surface height array
-               sshCur(iCell) = zTop(1,iCell)
+               sshCur(iCell) = zTop(minLevelCell(iCell),iCell)
             end do
 
             tmp1 = minval(sshCur)

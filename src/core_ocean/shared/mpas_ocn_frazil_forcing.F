@@ -167,7 +167,7 @@ contains
 
       integer :: iCell, k, nCells
       integer, dimension(:), pointer :: nCellsArray
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
       real (kind=RKIND), dimension(:,:), pointer :: frazilLayerThicknessTendency
 
       err = 0
@@ -177,6 +177,7 @@ contains
       call mpas_timer_start("frazil thickness tendency")
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
 
@@ -187,7 +188,7 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
-        do k = 1, maxLevelCell(iCell)
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
           layerThicknessTend(k,iCell) = layerThicknessTend(k,iCell) + frazilLayerThicknessTendency(k,iCell)
         end do
       end do
@@ -248,7 +249,7 @@ contains
       integer, pointer :: indexTemperature
       integer, pointer :: indexSalinity
       integer, pointer, dimension(:) :: nCellsArray
-      integer, pointer, dimension(:) :: maxLevelCell
+      integer, pointer, dimension(:) :: minLevelCell, maxLevelCell
 
       real (kind=RKIND), dimension(:,:), pointer :: frazilTemperatureTendency
       real (kind=RKIND), dimension(:,:), pointer :: frazilSalinityTendency
@@ -261,6 +262,7 @@ contains
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(forcingPool, 'frazilTemperatureTendency', frazilTemperatureTendency)
       call mpas_pool_get_array(forcingPool, 'frazilSalinityTendency', frazilSalinityTendency)
@@ -272,7 +274,7 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
-        do k = 1, maxLevelCell(iCell)
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
           activeTracersTend(indexTemperature,k,iCell) = activeTracersTend(indexTemperature,k,iCell) &
                                                       + frazilTemperatureTendency(k,iCell)
           activeTracersTend(indexSalinity,k,iCell) = activeTracersTend(indexSalinity,k,iCell) + frazilSalinityTendency(k,iCell)
@@ -367,7 +369,7 @@ contains
       real (kind=RKIND), pointer, dimension(:,:)   :: layerThickness
       real (kind=RKIND), pointer, dimension(:,:,:) :: activeTracers
 
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
       integer, pointer :: indexTemperature !< index in tracers array for temperature
       integer, pointer :: indexSalinity !< index in tracers array for salinity
       integer :: kBottomFrazil  ! k index where testing for frazil begins
@@ -393,6 +395,7 @@ contains
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
       ! get mesh information
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       ! get arrays
@@ -451,7 +454,7 @@ contains
 
         ! find deepest level where frazil can be created
         kBottomFrazil=maxLevelCell(iCell)
-        do k=maxLevelCell(iCell), 1, -1
+        do k=maxLevelCell(iCell), minLevelCell(iCell), -1
           ! add the ssh so frazil can form below land ice, where the ssh is depressed
           if (-zMid(k,iCell) < -ssh(iCell) + config_frazil_maximum_depth) then
             kBottomFrazil=k
@@ -461,7 +464,7 @@ contains
 
         ! find minimum temperature between 1:kBottomFrazil
         columnTemperatureMin = 1.0e30_RKIND
-        do k=1,kBottomFrazil
+        do k=minLevelCell(iCell),kBottomFrazil
           if ( activeTracers(indexTemperature,k,iCell) < columnTemperatureMin ) then
              columnTemperatureMin = activeTracers(indexTemperature,k,iCell)
           end if
@@ -475,7 +478,7 @@ contains
         sumNewThicknessWeightedSaltContent = 0.0_RKIND
 
         ! loop from maximum depth of frazil creation to surface
-        do k = kBottomFrazil, 1, -1
+        do k = kBottomFrazil, minLevelCell(iCell), -1
 
           ! get freezing temperature
           oceanFreezingTemperature = ocn_freezing_temperature(salinity=activeTracers(indexSalinity,k,iCell), &
@@ -570,7 +573,7 @@ contains
 
           endif  ! if (freezingEnergy < 0)
 
-        enddo   ! do k=kBottom,1-1
+        enddo   ! do k=kBottom,minLevelCell,-1
 
         ! accumulate frazil mass to column total
         ! note: the accumulatedFrazilIceMass (at both time levels) is reset to zero after being sent to the coupler

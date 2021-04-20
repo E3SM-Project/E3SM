@@ -133,7 +133,7 @@ contains
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
-      integer, dimension(:), pointer :: maxLevelEdgeTop, nEdgesOnCell, maxLevelCell
+      integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, nEdgesOnCell, minLevelCell, maxLevelCell
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell, cellsOnCell
 
       real(kind=RKIND) :: tempTracer, invAreaCell1, invAreaCell2, invAreaCell, areaEdge
@@ -151,6 +151,8 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tracers, dim=1)
 
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
@@ -221,6 +223,11 @@ contains
             r_tmp = dvEdge(iEdge)/dcEdge(iEdge)
             coef = dvEdge(iEdge)
 
+            k = minLevelEdgeBot(iEdge)
+            kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
+                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))* &
+                               0.25_RKIND*(RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
+                                           RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
             k = 1
             kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
                                            RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))* &
@@ -239,12 +246,22 @@ contains
                              /(zMid(k, cell1) - zMid(k + 1, cell1)) &
                              + slopeTriadDown(k, 2, iEdge)*(tracers(iTr, k, cell2) - tracers(iTr, k + 1, cell2)) &
                              /(zMid(k, cell2) - zMid(k + 1, cell2)))
+               if (minLevelCell(cell1) < minLevelEdgeBot(iEdge)) then
+                  flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
+                               layerThicknessEdge(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 1, iEdge)* &
+                               (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell1) - tracers(iTr, minLevelEdgeBot(iEdge), cell1))/(zMid(minLevelEdgeBot(iEdge) - 1, cell1) - zMid(minLevelEdgeBot(iEdge), cell1))
+               endif
+               if (minLevelCell(cell2) < minLevelEdgeBot(iEdge)) then
+                  flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
+                               layerThicknessEdge(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 2, iEdge)* &
+                               (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell2) - tracers(iTr, minLevelEdgeBot(iEdge), cell2))/(zMid(minLevelEdgeBot(iEdge) - 1, cell2) - zMid(minLevelEdgeBot(iEdge), cell2))
+               endif
 
                redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - edgeSignOnCell(i, iCell)*flux_term2*invAreaCell
                redi_term2_edge(iTr, k, iEdge) = -flux_term2
             end do
 
-            do k = 2, maxLevelEdgeTop(iEdge) - 1
+            do k = minLevelEdgeBot(iEdge) + 1, maxLevelEdgeTop(iEdge) - 1
 
                kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
                                               RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))*0.25_RKIND* &
@@ -324,15 +341,15 @@ contains
          end do ! nEdgesOnCell(iCell)
 
          ! impose no-flux boundary conditions at top and bottom of column
-         fluxRediZTop(:, 1) = 0.0_RKIND
+         fluxRediZTop(:, 1:minLevelCell(iCell)) = 0.0_RKIND
          fluxRediZTop(:, maxLevelCell(iCell) + 1) = 0.0_RKIND
-         redi_term3_topOfCell(:, 1, iCell) = 0.0_RKIND
-         do k = 2, maxLevelCell(iCell)
+         redi_term3_topOfCell(:, 1:minLevelCell(iCell), iCell) = 0.0_RKIND
+         do k = minLevelCell(iCell) + 1, maxLevelCell(iCell)
             redi_term3_topOfCell(:, k, iCell) = fluxRediZTop(:, k) * invAreaCell
          end do
          redi_term3_topOfCell(:, maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
 
-         do k = 1, maxLevelCell(iCell)
+         do k = minLevelCell(iCell), maxLevelCell(iCell)
             do iTr = 1, nTracers
                ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
                ! 2.0 in next line is because a dot product on a C-grid
@@ -367,7 +384,7 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) private(k, iTr, tempTracer, iEdge)
       do iCell = 1, nCells
-         do k = 1, maxLevelCell(iCell)
+         do k = minLevelCell(iCell), maxLevelCell(iCell)
             do iTr = 1, ntracers
                tempTracer = tracers(iTr, k, iCell) + dt*(redi_term1(iTr, k, iCell) + redi_term2(iTr, k, iCell) + &
                                                          redi_term3(iTr, k, iCell))/layerThickness(k, iCell)
@@ -396,7 +413,7 @@ contains
       !$omp do schedule(runtime) private(invAreaCell, k, iTr, i, iEdge)
       do iCell = 1, nCells
          invAreaCell = 1.0_RKIND/areaCell(iCell)
-         do k = 1, maxLevelCell(iCell)
+         do k = minLevelCell(iCell), maxLevelCell(iCell)
             do iTr = 1, ntracers
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + redi_term1(iTr, k, iCell)
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell(iCell)*2.0_RKIND* &
@@ -409,7 +426,7 @@ contains
          do i = 1, nEdgesOnCell(iCell)
             if (cellsOnCell(i, iCell) .eq. nCellsP1) cycle
             iEdge = edgesOnCell(i, iCell)
-            do k = 1, maxLevelEdgeTop(iEdge)
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                do iTr = 1, ntracers
                   tend(iTr, k, iCell) = tend(iTr, k, iCell) + edgeSignOnCell(i, iCell)*invAreaCell*redi_term2_edge(iTr, k, iEdge)
                end do

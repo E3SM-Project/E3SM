@@ -119,7 +119,7 @@ contains
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
 
-      integer, dimension(:), pointer :: maxLevelEdgeTop, nEdgesOnCell
+      integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
 
       real (kind=RKIND) :: invAreaCell
@@ -137,6 +137,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       num_tracers = size(tracers, dim=1)
 
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
@@ -166,7 +167,7 @@ contains
 
           r_tmp = meshScalingDel2(iEdge) * eddyDiff2 * dvEdge(iEdge) / dcEdge(iEdge)
 
-          do k = 1, maxLevelEdgeTop(iEdge)
+          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             do iTracer = 1, num_tracers
               ! \kappa_2 \nabla \phi on edge
               tracer_turb_flux = tracers(iTracer, k, cell2) - tracers(iTracer, k, cell1)
