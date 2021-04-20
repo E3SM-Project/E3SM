@@ -1382,7 +1382,6 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
 
   logical :: l_bc_energy_fix, l_dry_adj, l_tracer_aero, l_st_mac, l_st_mic, l_rad
   
-  logical           :: use_MMF
   logical           :: use_ECPP
   character(len=16) :: MMF_microphysics_scheme
   real(r8)          :: crm_run_time              ! length of CRM integration
@@ -1405,7 +1404,6 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
                     ,l_st_mac_out           = l_st_mac           &
                     ,l_st_mic_out           = l_st_mic           &
                     ,l_rad_out              = l_rad              &
-                    ,use_MMF_out            = use_MMF            &
                     ,use_ECPP_out           = use_ECPP           &
                     ,MMF_microphysics_scheme_out   = MMF_microphysics_scheme )
   
@@ -1700,7 +1698,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   ! Aerosol stuff
   !-----------------------------------------------------------------------------
   if (l_tracer_aero) then
-    if (use_MMF.and.use_ECPP) then
+    if (use_ECPP) then
       ! With MMF + ECPP we can skip the conventional aerosol routines
     else if ( .not. deep_scheme_does_scav_trans() ) then
       ! Aerosol wet chemistry determines scavenging and transformations.
