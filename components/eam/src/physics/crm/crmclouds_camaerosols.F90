@@ -204,8 +204,6 @@ subroutine crmclouds_mixnuc_tend (state, ptend, dtime, cflx, pblht, pbuf,   &
     enddo 
   end do
 
-  ! call outfld('LENGC', lc, pcols, lchnk)
-
   kkvh_crm = 0._r8
   do i=1, ncol
     do k=1, pver
