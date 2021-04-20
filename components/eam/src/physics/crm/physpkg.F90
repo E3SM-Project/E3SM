@@ -149,7 +149,7 @@ subroutine phys_register
   call pbuf_add_field('FRACIS',         'physpkg',dtype_r8,(/pcols,pver,pcnst/),dummy)
 
   ! check energy package
-  call check_energy_register
+  call check_energy_register()
 
   ! register fluxes for saving across time
   if (phys_do_flux_avg()) call flux_avg_register()
@@ -182,14 +182,14 @@ subroutine phys_register
 
   call aircraft_emit_register()
 
-  call crm_physics_register
+  call crm_physics_register()
 
   ! radiation
-  call radiation_register
-  call cloud_diagnostics_register
+  call radiation_register()
+  call cloud_diagnostics_register()
 
   ! COSP
-  call cospsimulator_intr_register
+  call cospsimulator_intr_register()
 
   ! vertical diffusion
   call vertical_diffusion_register()
@@ -610,7 +610,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   
   ! wv_saturation is relatively independent of everything else and
   ! low level, so init it early. Must at least do this before radiation.
-  call wv_sat_init
+  call wv_sat_init()
 
   ! Initialize rad constituents and their properties
   call rad_cnst_init()
@@ -1059,9 +1059,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   ! emissions of aerosols and gas-phase chemistry constituents at surface
   !-----------------------------------------------------------------------------
-  if (l_tracer_aero) then
-    call chem_emissions( state, cam_in )
-  end if
+  if (l_tracer_aero) call chem_emissions( state, cam_in )
 
   !-----------------------------------------------------------------------------
   ! get nstep and zero array for energy checker
