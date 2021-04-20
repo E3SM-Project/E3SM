@@ -82,8 +82,10 @@ module TopounitDataType
   type, public :: topounit_energy_state
     real(r8), pointer :: t_rad      (:) => null() ! mean radiative temperature of land surface (K)
     real(r8), pointer :: eflx_lwrad_out_topo      (:) => null() ! Topounit level longwave radiation flux to be used in downscaling
+    real(r8), pointer :: t_grnd     (:) => null()
   contains
     procedure, public :: Init  => init_top_es
+    procedure, public :: Restart => restart_top_es
     procedure, public :: Clean => clean_top_es
   end type topounit_energy_state
 
@@ -597,8 +599,23 @@ module TopounitDataType
 
     allocate(this%t_rad   (begt:endt)) ; this%t_rad   (:) = nan
     allocate(this%eflx_lwrad_out_topo   (begt:endt)) ; this%eflx_lwrad_out_topo   (:) = nan
-    
+    allocate(this%t_grnd  (begt:endt)) ; this%t_grnd  (:) = nan    
   end subroutine init_top_es
+
+  !-----------------------------------------------------------------------
+  subroutine restart_top_es(this, bounds, ncid, flag)
+    class(topounit_energy_state) :: this
+    type(bounds_type), intent(in) :: bounds
+    type(file_desc_t), intent(inout) :: ncid
+    character(len=*), intent(in) :: flag
+
+    logical :: readvar ! determine if variable is on initial file
+
+    call restartvar(ncid=ncid, flag=flag, varname='TS_TOPO', xtype=ncd_double, &
+        dim1name='topounit', long_name='surface radiative temperature', &
+        units='K', interpinic_flag='copy', readvar=readvar, data=this%t_rad)
+
+  end subroutine restart_top_es
   
   !-----------------------------------------------------------------------
   subroutine clean_top_es(this, begt, endt)
@@ -608,6 +625,7 @@ module TopounitDataType
     
     deallocate(this%t_rad    )
     deallocate(this%eflx_lwrad_out_topo    )
+    deallocate(this%t_grnd   )
   end subroutine clean_top_es
   
 
