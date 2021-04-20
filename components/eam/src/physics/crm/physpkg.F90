@@ -1129,7 +1129,8 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
     call physics_update(state, ptend, ztodt, tend)
     call t_stopf('rayleigh_friction')
 
-    call check_energy_chng(state, tend, "vdiff", nstep, ztodt, zero, zero, zero, zero)    
+    call check_energy_chng(state, tend, "vdiff", nstep, ztodt, &
+                           cam_in%cflx(:,1), zero, zero, cam_in%shf)
     call check_tracers_chng(state, tracerint, "vdiff", nstep, ztodt, cam_in%cflx)
 
   end if ! l_rayleigh
