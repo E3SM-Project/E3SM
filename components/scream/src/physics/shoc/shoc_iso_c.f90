@@ -596,7 +596,7 @@ contains
 
   subroutine shoc_length_c(shcol, nlev, nlevi, host_dx, host_dy, &
                 zt_grid, zi_grid, dz_zt, tke, thv, brunt, &
-		shoc_mix) bind (C)
+                shoc_mix) bind (C)
     use shoc, only: shoc_length
 
     integer(kind=c_int), intent(in), value :: shcol
@@ -615,7 +615,7 @@ contains
 
     call shoc_length(shcol, nlev, nlevi, host_dx, host_dy, &
                 zt_grid, zi_grid, dz_zt, tke, thv, &
-		brunt, shoc_mix)
+                brunt, shoc_mix)
 
   end subroutine shoc_length_c
 
