@@ -65,7 +65,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_interior_restoring_compute(nTracers, nCellsSolve, maxLevelCell, layerThickness, &
+   subroutine ocn_tracer_interior_restoring_compute(nTracers, nCellsSolve, minLevelCell, maxLevelCell, layerThickness, &
                   tracers, tracersInteriorRestoringRate, tracersInteriorRestoringValue, tracer_tend, err)!{{{
 
       !-----------------------------------------------------------------
@@ -76,7 +76,7 @@ contains
 
       ! one dimensional arrays
       integer, dimension(:), intent(in) :: &
-         maxLevelCell
+         minLevelCell, maxLevelCell
 
       ! two dimensional arrays
       real (kind=RKIND), dimension(:,:), intent(in) :: &
@@ -121,7 +121,7 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) private(iLevel, iTracer)
       do iCell=1,nCellsSolve
-        do iLevel=1,maxLevelCell(iCell)
+        do iLevel=minLevelCell(iCell),maxLevelCell(iCell)
           do iTracer=1,nTracers
              tracer_tend(iTracer, iLevel, iCell) = tracer_tend(iTracer, iLevel, iCell)  - layerThickness(iLevel,iCell) &
                                                  * ( tracers(iTracer, iLevel, iCell) &

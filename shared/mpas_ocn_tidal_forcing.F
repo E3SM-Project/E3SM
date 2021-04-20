@@ -107,7 +107,7 @@ contains
 
       integer :: iCell, k, nCells
       integer, dimension(:), pointer :: nCellsArray
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
       real (kind=RKIND), dimension(:,:), pointer :: tidalLayerThicknessTendency
 
       err = 0
@@ -117,6 +117,7 @@ contains
       call mpas_timer_start("tidal thickness tendency")
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(forcingPool, 'tidalLayerThicknessTendency', &
                                              tidalLayerThicknessTendency)
@@ -128,7 +129,7 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
-        do k = 1, maxLevelCell(iCell)
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
           layerThicknessTend(k,iCell) = layerThicknessTend(k,iCell) + &
                                         tidalLayerThicknessTendency(k,iCell)
 
@@ -200,7 +201,7 @@ contains
 
       integer :: iCell, k, nCells
       integer, dimension(:), pointer :: nCellsArray
-      integer, pointer, dimension(:) :: maxLevelCell
+      integer, pointer, dimension(:) :: minLevelCell, maxLevelCell
       integer, pointer :: nVertLevels
       real (kind=RKIND) :: dt
 
@@ -225,6 +226,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'tidalBCValue', tidalBCValue)
 
       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
@@ -256,16 +258,14 @@ contains
 
         ! compute total depth for relative thickness contribution
         totalDepth = 0.0_RKIND
-        do k = 1, maxLevelCell(iCell)
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
           totalDepth = totalDepth + layerThickness(k,iCell)
         end do
 
-        do k = 1, maxLevelCell(iCell)
-          tidalLayerThicknessTendency(:,iCell) = 0.0_RKIND
-        end do
+        tidalLayerThicknessTendency(:,iCell) = 0.0_RKIND
         if (trim(config_tidal_forcing_type) == 'thickness_source') then
           ! distribute tidal forcing tendency fractionally over water column
-          do k = 1, maxLevelCell(iCell)
+          do k = minLevelCell(iCell), maxLevelCell(iCell)
             tidalLayerThicknessTendency(k,iCell) = tidalInputMask(iCell) / config_use_tidal_forcing_tau &
               * (layerThickness(k,iCell)/totalDepth) * (tidalHeight - ssh(iCell))
           end do

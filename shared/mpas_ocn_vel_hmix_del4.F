@@ -150,7 +150,7 @@ contains
       !Compute Laplacian of velocity
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(cellsOnEdge, verticesOnEdge, maxLevelEdgeTop, &
+      !$acc    present(cellsOnEdge, verticesOnEdge, minLevelEdgeBot, maxLevelEdgeTop, &
       !$acc            dvEdge, dcEdge, del2u, div, relVort) &
       !$acc    private(k, cell1, cell2, vertex1, vertex2, &
       !$acc            dcEdgeInv, dvEdgeInv)
@@ -171,7 +171,7 @@ contains
          dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
          dvEdgeInv = 1.0_RKIND / max(dvEdge(iEdge), 0.25_RKIND*dcEdge(iEdge))
 
-         do k=1,maxLevelEdgeTop(iEdge)
+         do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
             ! Compute \nabla^2 u = \nabla divergence + k \times \nabla relativeVorticity
             del2u(k,iEdge) = (div(k,cell2) - div(k,cell1))*dcEdgeInv &
                             -(relVort(k,vertex2) - relVort(k,vertex1))*&
@@ -188,7 +188,7 @@ contains
       ! Compute del2 of relative vorticity
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(edgesOnVertex, maxLevelVertexTop, dcEdge, &
+      !$acc    present(edgesOnVertex, minLevelVertexBot, maxLevelVertexTop, dcEdge, &
       !$acc            areaTriangle, edgeSignOnVertex, del2u, &
       !$acc            del2relVort) &
       !$acc    private(i, k, iEdge, areaTriInv)
@@ -201,7 +201,7 @@ contains
          areaTriInv = 1.0_RKIND/areaTriangle(iVertex)
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
-            do k = 1, maxLevelVertexTop(iVertex)
+            do k = minLevelVertexBot(iVertex), maxLevelVertexTop(iVertex)
                del2relVort(k,iVertex) = del2relVort(k,iVertex) &
                                       + edgeSignOnVertex(i,iVertex) &
                                        *dcEdge(iEdge)*del2u(k,iEdge)*areaTriInv
@@ -218,7 +218,7 @@ contains
       ! Compute del2 of divergence
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(nEdgesOnCell, edgesOnCell, maxLevelCell, dvEdge,&
+      !$acc    present(nEdgesOnCell, edgesOnCell, minLevelCell, maxLevelCell, dvEdge,&
       !$acc            edgeSignOnCell, areaCell, del2u, del2div) &
       !$acc    private(i, k, iEdge, areaCellInv)
 #else
@@ -230,7 +230,7 @@ contains
          areaCellInv = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            do k = 1, maxLevelCell(iCell)
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
                del2div(k,iCell) = del2div(k,iCell) - &
                                   edgeSignOnCell(i,iCell)*dvEdge(iEdge) &
                                  *del2u(k,iEdge)*areaCellInv
@@ -248,7 +248,7 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(cellsOnEdge, verticesOnEdge, maxLevelEdgeTop, &
+      !$acc    present(cellsOnEdge, verticesOnEdge, minLevelEdgeBot, maxLevelEdgeTop, &
       !$acc            dcEdge, dvEdge, meshScalingDel4, edgeMask, &
       !$acc            del2div, del2relVort, tend) &
       !$acc private(k, cell1, cell2, vertex1, vertex2, &
@@ -269,7 +269,7 @@ contains
          dvEdgeInv = 1.0_RKIND / dvEdge(iEdge)
          visc4 = viscDel4*meshScalingDel4(iEdge)
 
-         do k=1, maxLevelEdgeTop(iEdge)
+         do k=minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             uDiff = divFactor*(del2div(k,cell2) - del2div(k,cell1))* &
                                                           dcEdgeInv  &
                   - (del2relVort(k,vertex2) - del2relVort(k,vertex1))* &

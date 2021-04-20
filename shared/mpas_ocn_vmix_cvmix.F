@@ -364,7 +364,7 @@ contains
             ! https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/JC084iC05p02503
             ! The standard atan formulation is approximated following equation (13) of Girones et al (2012)
             ! https://doi.org/10.1109/MSP.2012.2219677
-            do k = 1,maxLevelCell(iCell)
+            do k = minLevelCell(iCell),maxLevelCell(iCell)
                x = (abs(cvmix_variables % zw_iface(k)) - config_cvmix_BryanLewis_transitionDepth) / &
                    config_cvmix_BryanLewis_transitionWidth
                vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + config_cvmix_BryanLewis_bl1 + &
@@ -375,11 +375,13 @@ contains
          endif
 
          ! fill Ri
-         RiSmoothed(1:maxLevelCell(iCell)) = RiTopOfCell(1:maxLevelCell(iCell),iCell)
+         RiSmoothed(1:minLevelCell(iCell)-1) = RiTopOfCell(minLevelCell(iCell),iCell)
+         RiSmoothed(minLevelCell(iCell):maxLevelCell(iCell)) = RiTopOfCell(minLevelCell(iCell):maxLevelCell(iCell),iCell)
          RiSmoothed(maxLevelCell(iCell)+1) = RiSmoothed(maxLevelCell(iCell))
          RiTemp(1:maxLevelCell(iCell)+1) = RiSmoothed(1:maxLevelCell(iCell)+1)
 
          ! Use a 1-2-1 filter to remove 2 dz noise in RiTopOfCell
+         ! Note: loop limits here must not be minLevelCell or non-bfb changes are introduced
          do nsmooth=1,config_cvmix_num_ri_smooth_loops
             do k=2,maxLevelCell(iCell)
                  RiSmoothed(k) = (RiTemp(k-1) + 2.0_RKIND*RiTemp(k) + RiTemp(k+1))  / 4.0_RKIND
@@ -387,7 +389,7 @@ contains
             RiTemp(1:maxLevelCell(iCell)) = RiSmoothed(1:maxLevelCell(iCell))
          enddo
 
-         cvmix_variables%ShearRichardson_iface => RiSmoothed(1:maxLevelCell(iCell)+1)
+         cvmix_variables%ShearRichardson_iface => RiSmoothed(minLevelCell(iCell):maxLevelCell(iCell)+1)
 
          endif
 
@@ -396,17 +398,17 @@ contains
                         BruntVaisalaFreqTop(minLevelCell(iCell):maxLevelCell(iCell),iCell))
          BVFSmoothed(1:minLevelCell(iCell)-1) = max(0.0_RKIND,BVFSmoothed(minLevelCell(iCell)))
          BVFSmoothed(maxLevelCell(iCell)+1) = max(0.0_RKIND,BVFSmoothed(maxLevelCell(iCell)))
-         cvmix_variables%SqrBuoyancyFreq_iface => BVFSmoothed(1:maxLevelCell(iCell)+1)
+         cvmix_variables%SqrBuoyancyFreq_iface => BVFSmoothed(minLevelCell(iCell):maxLevelCell(iCell)+1)
 
          ! fill the intent(in) KPP
          cvmix_variables % SurfaceFriction = surfaceFrictionVelocity(iCell)
          cvmix_variables % SurfaceBuoyancyForcing = surfaceBuoyancyForcing(iCell)
-         cvmix_variables % BulkRichardson_cntr => bulkRichardsonNumber(1:maxLevelCell(iCell), iCell)
+         cvmix_variables % BulkRichardson_cntr => bulkRichardsonNumber(minLevelCell(iCell):maxLevelCell(iCell), iCell)
 
          if (kpp_stage == 2) then
          if (config_use_cvmix_shear) then
 
-            do k = 1, maxLevelCell(iCell) + 1
+            do k = minLevelCell(iCell), maxLevelCell(iCell) + 1
                cvmix_variables % Mdiff_iface(k) = 0.0_RKIND
                cvmix_variables % Tdiff_iface(k) = 0.0_RKIND
             end do
@@ -418,13 +420,13 @@ contains
             ! accounted for seperately. so remove bac    kground from shear mixing values
 
             if(cvmixShearMixingChoice==cvmixShearMixingTypePP) then
-               do k = 1, maxLevelCell(iCell) + 1
+               do k = minLevelCell(iCell), maxLevelCell(iCell) + 1
                   cvmix_variables % Mdiff_iface(k) = cvmix_variables % Mdiff_iface(k) - config_cvmix_background_viscosity
                   cvmix_variables % Tdiff_iface(k) = cvmix_variables % Tdiff_iface(k) - config_cvmix_background_diffusion
                end do
             endif
 
-            do k = 1, maxLevelCell(iCell)
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
                vertViscTopOfCell(k, iCell) = vertViscTopOfCell(k, iCell) + cvmix_variables % Mdiff_iface(k)
                vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + cvmix_variables % Tdiff_iface(k)
             end do
@@ -438,8 +440,8 @@ contains
             if (config_use_cvmix_fixed_boundary_layer) then
                cvmix_variables % BoundaryLayerDepth = config_cvmix_kpp_boundary_layer_depth
                cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
-                          zw_iface = cvmix_variables%zw_iface(1:maxLevelCell(iCell)+1), &
-                          zt_cntr = cvmix_variables%zt_cntr(1:maxLevelCell(iCell)),    &
+                          zw_iface = cvmix_variables%zw_iface(minLevelCell(iCell):maxLevelCell(iCell)+1), &
+                          zt_cntr = cvmix_variables%zt_cntr(minLevelCell(iCell):maxLevelCell(iCell)),    &
                           OBL_depth = cvmix_variables % BoundaryLayerDepth )
 
             else
@@ -448,7 +450,7 @@ contains
               do k=minLevelCell(iCell),maxLevelCell(iCell)
                   Nsqr_iface(k) = BVFSmoothed(k)
               enddo
-              Nsqr_iface(1:minLevelCell(iCell)-1) = Nsqr_iface(minLevelCell(iCell))
+              Nsqr_iface(minLevelCell(iCell):minLevelCell(iCell)-1) = Nsqr_iface(minLevelCell(iCell))
               k=min(maxLevelCell(iCell)+1,nVertLevels)
               Nsqr_iface(k:maxLevelCell(iCell)+1) = Nsqr_iface(k-1)
 
@@ -507,10 +509,10 @@ contains
               ! compute the turbulent scales in order to compute the bulk Richardson number
               call cvmix_kpp_compute_turbulent_scales( &
                    sigma_coord = config_cvmix_kpp_surface_layer_extent, &
-                   OBL_depth = OBLDepths(1:maxLevelCell(iCell)), &
-                   surf_buoy_force = interfaceForcings(1:maxLevelCell(iCell)), &
+                   OBL_depth = OBLDepths(minLevelCell(iCell):maxLevelCell(iCell)), &
+                   surf_buoy_force = interfaceForcings(minLevelCell(iCell):maxLevelCell(iCell)), &
                    surf_fric_vel = cvmix_variables % SurfaceFriction, &
-                   w_s = turbulentScalarVelocityScale(1:maxLevelCell(iCell)))
+                   w_s = turbulentScalarVelocityScale(minLevelCell(iCell):maxLevelCell(iCell)))
 
               ! averaging over a surface layer assuming that BLdepth is cell bottom
               ! Build deltaVelocitySquared
@@ -558,11 +560,11 @@ contains
 !             call mpas_timer_stop('Bulk Richardson kIndexOBL loops')
 
               cvmix_variables % bulkRichardson_cntr(:) = cvmix_kpp_compute_bulk_Richardson( &
-                   zt_cntr = cvmix_variables % zt_cntr(1:maxLevelCell(iCell)), &
-                   delta_buoy_cntr = bulkRichardsonNumberBuoy(1:maxLevelCell(iCell),iCell), &
-                   delta_Vsqr_cntr = bulkRichardsonNumberShear(1:maxLevelCell(iCell),iCell), &
+                   zt_cntr = cvmix_variables % zt_cntr(minLevelCell(iCell):maxLevelCell(iCell)), &
+                   delta_buoy_cntr = bulkRichardsonNumberBuoy(minLevelCell(iCell):maxLevelCell(iCell),iCell), &
+                   delta_Vsqr_cntr = bulkRichardsonNumberShear(minLevelCell(iCell):maxLevelCell(iCell),iCell), &
                    ws_cntr = turbulentScalarVelocityScale(:), &
-                   Nsqr_iface = Nsqr_iface(1:maxLevelCell(iCell)+1), &
+                   Nsqr_iface = Nsqr_iface(minLevelCell(iCell):maxLevelCell(iCell)+1), &
                    EFactor = langmuirEnhancementFactor, &
                    LaSL = langmuirNumber, &
                    bfsfc = cvmix_variables%SurfaceBuoyancyForcing, &
@@ -572,11 +574,11 @@ contains
               ! each level of bulk Richardson is computed as if OBL resided at bottom of that level
 
               call cvmix_kpp_compute_OBL_depth(  &
-                   Ri_bulk = bulkRichardsonNumber(1:maxLevelCell(iCell),iCell), &
-                   zw_iface = cvmix_variables % zw_iface(1:maxLevelCell(iCell)+1), &
+                   Ri_bulk = bulkRichardsonNumber(minLevelCell(iCell):maxLevelCell(iCell),iCell), &
+                   zw_iface = cvmix_variables % zw_iface(minLevelCell(iCell):maxLevelCell(iCell)+1), &
                    OBL_depth = cvmix_variables % BoundaryLayerDepth, &
                    kOBL_depth = cvmix_variables % kOBL_depth, &
-                   zt_cntr = cvmix_variables % zt_cntr(1:maxLevelCell(iCell)), &
+                   zt_cntr = cvmix_variables % zt_cntr(minLevelCell(iCell):maxLevelCell(iCell)), &
                    surf_fric = cvmix_variables % SurfaceFriction, &
                    surf_buoy = cvmix_variables % SurfaceBuoyancyForcing, &
                    Coriolis = cvmix_variables % Coriolis)
@@ -587,8 +589,8 @@ contains
              if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(minLevelCell(iCell),iCell)/2.0_RKIND) then
                 cvmix_variables % BoundaryLayerDepth = layerThickness(minLevelCell(iCell),iCell)/2.0_RKIND
                 cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
-                          zw_iface = cvmix_variables%zw_iface(1:maxLevelCell(iCell)+1),&
-                          zt_cntr = cvmix_variables%zt_cntr(1:maxLevelCell(iCell)),    &
+                          zw_iface = cvmix_variables%zw_iface(minLevelCell(iCell):maxLevelCell(iCell)+1),&
+                          zt_cntr = cvmix_variables%zt_cntr(minLevelCell(iCell):maxLevelCell(iCell)),    &
                           OBL_depth = cvmix_variables % BoundaryLayerDepth )
              endif
 
@@ -597,8 +599,8 @@ contains
              if(cvmix_variables % BoundaryLayerDepth .lt. configure_cvmix_kpp_minimum_OBL_under_sea_ice) then
                 cvmix_variables % BoundaryLayerDepth = configure_cvmix_kpp_minimum_OBL_under_sea_ice
                 cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
-                          zw_iface = cvmix_variables%zw_iface(1:maxLevelCell(iCell)+1),&
-                          zt_cntr = cvmix_variables%zt_cntr(1:maxLevelCell(iCell)),    &
+                          zw_iface = cvmix_variables%zw_iface(minLevelCell(iCell):maxLevelCell(iCell)+1),&
+                          zt_cntr = cvmix_variables%zt_cntr(minLevelCell(iCell):maxLevelCell(iCell)),    &
                           OBL_depth = cvmix_variables % BoundaryLayerDepth )
              endif
              endif
@@ -607,8 +609,8 @@ contains
              if(cvmix_variables % BoundaryLayerDepth .gt. abs(cvmix_variables%zt_cntr(maxLevelCell(iCell)))) then
                 cvmix_variables % BoundaryLayerDepth = abs(cvmix_variables%zt_cntr(maxLevelCell(iCell)))
                 cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
-                          zw_iface = cvmix_variables%zw_iface(1:maxLevelCell(iCell)+1), &
-                          zt_cntr = cvmix_variables%zt_cntr(1:maxLevelCell(iCell)),    &
+                          zw_iface = cvmix_variables%zw_iface(minLevelCell(iCell):maxLevelCell(iCell)+1), &
+                          zt_cntr = cvmix_variables%zt_cntr(minLevelCell(iCell):maxLevelCell(iCell)),    &
                           OBL_depth = cvmix_variables % BoundaryLayerDepth )
 
              endif
@@ -618,7 +620,7 @@ contains
 
      if (kpp_stage == 2) then
             ! copy data into cvmix_variables
-            do k = 1, maxLevelCell(iCell) + 1
+            do k = minLevelCell(iCell), maxLevelCell(iCell) + 1
               cvmix_variables % Mdiff_iface(k) = vertViscTopOfCell(k, iCell)
               cvmix_variables % Tdiff_iface(k) = vertDiffTopOfCell(k, iCell)
             end do
@@ -628,8 +630,8 @@ contains
             boundaryLayerDepth(iCell) = min(blTemp, abs(cvmix_variables%zt_cntr(maxLevelCell(iCell))))
 
             cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
-                          zw_iface = cvmix_variables%zw_iface(1:maxLevelCell(iCell)+1), &
-                          zt_cntr = cvmix_variables%zt_cntr(1:maxLevelCell(iCell)),    &
+                          zw_iface = cvmix_variables%zw_iface(minLevelCell(iCell):maxLevelCell(iCell)+1), &
+                          zt_cntr = cvmix_variables%zt_cntr(minLevelCell(iCell):maxLevelCell(iCell)),    &
                           OBL_depth = boundaryLayerDepth(iCell) )
 
             ! update Langmuir enhancement factor
@@ -646,29 +648,29 @@ contains
 
 !           call mpas_timer_start('cvmix coeffs kpp', .false.)
             call cvmix_coeffs_kpp(                                              &
-                          Mdiff_out = cvmix_variables % Mdiff_iface(1:maxLevelCell(iCell)+1),       &
-                          Tdiff_out = cvmix_variables % Tdiff_iface(1:maxLevelCell(iCell)+1),       &
-                          Sdiff_out = cvmix_variables % Sdiff_iface(1:maxLevelCell(iCell)+1),       &
-                          zw = cvmix_variables%zw_iface(1:maxLevelCell(iCell)+1),            &
-                          zt = cvmix_variables%zt_cntr(1:maxLevelCell(iCell)),               &
-                          old_Mdiff = cvmix_variables%Mdiff_iface(1:maxLevelCell(iCell)+1),         &
-                          old_Tdiff = cvmix_variables%Tdiff_iface(1:maxLevelCell(iCell)+1),         &
-                          old_Sdiff = cvmix_variables%Sdiff_iface(1:maxLevelCell(iCell)+1),         &
+                          Mdiff_out = cvmix_variables % Mdiff_iface(minLevelCell(iCell):maxLevelCell(iCell)+1),       &
+                          Tdiff_out = cvmix_variables % Tdiff_iface(minLevelCell(iCell):maxLevelCell(iCell)+1),       &
+                          Sdiff_out = cvmix_variables % Sdiff_iface(minLevelCell(iCell):maxLevelCell(iCell)+1),       &
+                          zw = cvmix_variables%zw_iface(minLevelCell(iCell):maxLevelCell(iCell)+1),            &
+                          zt = cvmix_variables%zt_cntr(minLevelCell(iCell):maxLevelCell(iCell)),               &
+                          old_Mdiff = cvmix_variables%Mdiff_iface(minLevelCell(iCell):maxLevelCell(iCell)+1),         &
+                          old_Tdiff = cvmix_variables%Tdiff_iface(minLevelCell(iCell):maxLevelCell(iCell)+1),         &
+                          old_Sdiff = cvmix_variables%Sdiff_iface(minLevelCell(iCell):maxLevelCell(iCell)+1),         &
                           OBL_depth = boundaryLayerDepth(iCell),                   &
                           kOBL_depth = cvmix_variables%kOBL_depth,                           &
-                          Tnonlocal = cvmix_variables%kpp_Tnonlocal_iface(1:maxLevelCell(iCell)+1), &
-                          Snonlocal = cvmix_variables%kpp_Snonlocal_iface(1:maxLevelCell(iCell)+1), &
+                          Tnonlocal = cvmix_variables%kpp_Tnonlocal_iface(minLevelCell(iCell):maxLevelCell(iCell)+1), &
+                          Snonlocal = cvmix_variables%kpp_Snonlocal_iface(minLevelCell(iCell):maxLevelCell(iCell)+1), &
                           surf_fric = cvmix_variables%SurfaceFriction,                      &
                           surf_buoy = cvmix_variables%SurfaceBuoyancyForcing,               &
-                          nlev = maxLevelCell(iCell),                                  &
-                          max_nlev = nVertLevels,                                      &
+                          nlev = maxLevelCell(iCell) - minLevelCell(iCell) + 1,             &
+                          max_nlev = nVertLevels,         &
                           Langmuir_EFactor = langmuirEnhancementFactor )
 !           call mpas_timer_stop('cvmix coeffs kpp')
 
             ! intent out of BoundaryLayerDepth is boundary layer depth measured in meters and vertical index
             indexBoundaryLayerDepth(iCell) = cvmix_variables % kOBL_depth
 
-            do k = 1, maxLevelCell(iCell) + 1
+            do k = minLevelCell(iCell), maxLevelCell(iCell) + 1
                 vertViscTopOfCell(k, iCell) = cvmix_variables % Mdiff_iface(k)
                 vertDiffTopOfCell(k, iCell) = cvmix_variables % Tdiff_iface(k)
             end do

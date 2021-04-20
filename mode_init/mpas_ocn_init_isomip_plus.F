@@ -104,7 +104,7 @@ contains
       integer, pointer :: nCells, nVertLevels
       integer, pointer :: index_temperature, index_salinity, index_tracer1
 
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 
       real(kind=RKIND), dimension(:), pointer :: refBottomDepth, &
                                                  fCell, fEdge, fVertex, effectiveDensityInLandIce, xCell, &
@@ -186,6 +186,7 @@ contains
 
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
+        call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
@@ -194,7 +195,7 @@ contains
         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
 
         do iCell = 1, nCells
-          do k = 1, maxLevelCell(iCell)
+          do k = minLevelCell(iCell), maxLevelCell(iCell)
             frac = (0.0_RKIND-zMid(k, iCell))/(0.0_RKIND-config_isomip_plus_max_bottom_depth)
             activeTracers(index_temperature, k, iCell) = (1.0_RKIND - frac)*config_isomip_plus_init_top_temp &
                                                  + frac*config_isomip_plus_init_bot_temp
