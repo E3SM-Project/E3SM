@@ -49,6 +49,7 @@ module ocn_comp_mct
    use ocn_time_integration
    use ocn_time_average_coupled
    use ocn_frazil_forcing
+   use ocn_equation_of_state
    use ocn_surface_land_ice_fluxes
    use ocn_diagnostics
    use ocn_diagnostics_variables
@@ -2307,6 +2308,7 @@ contains
 
    real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
                                                filteredSSHGradientZonal, filteredSSHGradientMeridional, &
+                                               avgTotalFreshWaterTemperatureFlux, &
                                                avgCO2_gas_flux, DMSFlux, surfaceUpwardCO2Flux, &
                                                avgOceanSurfaceDIC, &
                                                avgOceanSurfaceDON, &
@@ -2322,6 +2324,8 @@ contains
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
+
+   real (kind=RKIND) :: SurfacefreezingTemp
 
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
@@ -2373,6 +2377,7 @@ contains
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
      call mpas_pool_get_array(forcingPool, 'filteredSSHGradientZonal', filteredSSHGradientZonal)
      call mpas_pool_get_array(forcingPool, 'filteredSSHGradientMeridional', filteredSSHGradientMeridional)
+     call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
      if ( frazilIceActive ) then
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
         call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
@@ -2425,6 +2430,9 @@ contains
 
        o2x_o % rAttr(index_o2x_So_dhdx, n) = filteredSSHGradientZonal(i)
        o2x_o % rAttr(index_o2x_So_dhdy, n) = filteredSSHGradientMeridional(i)
+
+       o2x_o % rAttr(index_o2x_Faoo_h2otemp, n) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
+
        if ( frazilIceActive ) then
           ! negative when frazil ice can be melted
           keepFrazil = .true.
@@ -2435,7 +2443,14 @@ contains
           end if
 
           if ( keepFrazil ) then
-             seaIceEnergy(i) = min( rho_sw * cp_sw * layerThickness(1, i) * ( -1.8_RKIND + T0_Kelvin &
+
+             ! We assume here that avgTracersSurfaceValue represents only the
+             ! top layer of the ocean.
+
+             SurfacefreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
+                 pressure=0.0_RKIND,  inLandIceCavity=.false.) 
+
+             seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( SurfacefreezingTemp + T0_Kelvin &
                              - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
              if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) seaIceEnergy(i) = 0.0_RKIND
 

@@ -1,0 +1,4 @@
+if [ `./xmlquery --value MACH` == chrysalis ]; then
+  ./xmlchange NTHRDS=1;
+  ./xmlchange FORCE_BUILD_SMP=TRUE;
+fi

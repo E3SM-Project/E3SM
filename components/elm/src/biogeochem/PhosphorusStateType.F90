@@ -9,7 +9,7 @@ module PhosphorusStateType
   use elm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
   use elm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi, zsoi
   use landunit_varcon        , only : istcrop, istsoil 
-  use elm_varctl             , only : use_nitrif_denitrif, use_vertsoilc, use_century_decomp
+  use elm_varctl             , only : use_vertsoilc, use_century_decomp
   use elm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
   use decompMod              , only : bounds_type
   use pftvarcon              , only : npcropmin, nstor
@@ -406,7 +406,6 @@ contains
     !
     ! !USES:
     use elm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
-    use elm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     !
     ! !ARGUMENTS:

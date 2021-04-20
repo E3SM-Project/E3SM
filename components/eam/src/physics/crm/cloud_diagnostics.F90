@@ -6,8 +6,7 @@ module cloud_diagnostics
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use ppgrid,        only: begchunk, endchunk, pcols, pver,pverp
   use physconst,     only: gravit
-  use cam_history,   only: outfld
-  use cam_history,   only: addfld, horiz_only, add_default
+  use cam_history,   only: outfld, addfld, horiz_only, add_default
 
   implicit none
   private

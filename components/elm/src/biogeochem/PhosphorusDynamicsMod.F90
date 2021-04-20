@@ -665,7 +665,7 @@ contains
         allocate(biochem_pmin_to_plant_vr_patch(max_comps,nlevdecomp))
     else
        allocate(biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp))
-       biochem_pmin_to_plant_patch(:) = 0._r8
+       biochem_pmin_to_plant_patch(bounds%begp:bounds%endp) = 0._r8
     end if
     biochem_pmin_to_plant_vr_patch(:,:) = 0._r8
 

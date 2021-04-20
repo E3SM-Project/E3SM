@@ -230,8 +230,8 @@ def buildnml(case, caseroot, compname):
         ic_date = '171116'
         ic_prefix = 'oRRS18to6v3'
         if ocn_ic_mode == 'spunup':
-            ic_date = '171031'
-            ic_prefix = 'oRRS18to6v3_80Layer.restartFromAnvil'
+            ic_date = '210321'
+            ic_prefix = 'oRRS18to6v3_80Layer.restartFromChrysalis'
 
     elif ocn_grid == 'oRRS15to5':
         decomp_date = '151209'
@@ -285,6 +285,40 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '210226'
             ic_prefix = 'mpaso.WC14to60E2r3.rstFromG-anvil'
+
+    elif ocn_grid == 'WCAtl12to45E2r4':
+        decomp_date = '210318'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.WCAtl12to45E2r4.210325.nc'
+        analysis_mask_file = 'WCAtl12to45E2r4_moc_masks_and_transects.nc'
+        ic_date = '210318'
+        ic_prefix = 'ocean.WCAtl12to45E2r4'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '210318'
+            ic_prefix = 'mpaso.WCAtl12to45E2r4.rstFromG-anvil'
+
+    elif ocn_grid == 'SOwISC12to60E2r4':
+        decomp_date = '210107'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.SOwISC12to60E2r4_nomask.210120.nc'
+        analysis_mask_file = 'SOwISC12to60E2r4_moc_masks_and_transects.nc'
+        ic_date = '210107'
+        ic_prefix = 'ocean.SOwISC12to60E2r4'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '210203'
+            ic_prefix = 'mpaso.SOwISC12to60E2r4.rstFromG-anvil'
+
+    elif ocn_grid == 'ECwISC30to60E2r1':
+        decomp_date = '200915'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E2r1_nomask.201221.nc'
+        analysis_mask_file = 'ECwISC30to60E2r1_mocBasinsAndTransects20210331.nc'
+        ic_date = '210413'
+        ic_prefix = 'ocean.ECwISC30to60E2r1'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '210414'
+            ic_prefix = 'mpaso.ECwISC30to60E2r1.rstFromG-anvil'
+
 
 
     #--------------------------------------------------------------------
@@ -1136,6 +1170,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="activeTracersTendML"/>')
         lines.append('    <var_array name="activeTracerVerticalAdvectionTopFlux"/>')
         lines.append('    <var_array name="activeTracerHorizontalAdvectionEdgeFlux"/>')
+        lines.append('    <var_array name="totalFreshWaterTemperatureFlux"/>')
         if ocn_iceberg == 'true':
             lines.append('    <var name="icebergHeatFlux"/>')
             lines.append('    <var name="icebergFreshWaterFlux"/>')

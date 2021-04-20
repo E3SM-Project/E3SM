@@ -231,8 +231,8 @@ def buildnml(case, caseroot, compname):
         grid_date = '170111'
         grid_prefix = 'seaice.RRS18to6v3'
         if ice_ic_mode == 'spunup':
-            grid_date = '171031'
-            grid_prefix = 'seaice.RRS18to6v3_80Layer.restartFromAnvil'
+            grid_date = '210321'
+            grid_prefix = 'seaice.RRS18to6v3_80Layer.restartFromChrysalis'
 
     elif ice_grid == 'oRRS15to5':
         decomp_date = '151209'
@@ -278,6 +278,35 @@ def buildnml(case, caseroot, compname):
         if ice_ic_mode == 'spunup':
             grid_date = '210226'
             grid_prefix = 'mpassi.WC14to60E2r3.rstFromG-anvil'
+
+    elif ice_grid == 'WCAtl12to45E2r4':
+        decomp_date = '210318'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        grid_date = '210318'
+        grid_prefix = 'seaice.WCAtl12to45E2r4'
+        if ice_ic_mode == 'spunup':
+            grid_date = '210318'
+            grid_prefix = 'mpassi.WCAtl12to45E2r4.rstFromG-anvil'
+
+    elif ice_grid == 'SOwISC12to60E2r4':
+        decomp_date = '210107'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        grid_date = '210107'
+        grid_prefix = 'seaice.SOwISC12to60E2r4'
+        data_iceberg_file += 'Iceberg_Interannual_Merino_SOwISC12to60E2r4.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '210203'
+            grid_prefix = 'mpassi.SOwISC12to60E2r4.rstFromG-anvil'
+
+    elif ice_grid == 'ECwISC30to60E2r1':
+        grid_date = '210413'
+        grid_prefix = 'seaice.ECwISC30to60E2r1'
+        decomp_date = '200916'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        data_iceberg_file += 'Iceberg_Interannual_Merino_ECwISC30to60E2r1.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '210414'
+            grid_prefix = 'mpassi.ECwISC30to60E2r1.rstFromG-anvil'
 
 
     #--------------------------------------------------------------------
@@ -619,6 +648,12 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('    <var name="xtime"/>')
         lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="earthArea"/>')
+        lines.append('    <var name="domainArea"/>')
+        lines.append('    <var name="domainFraction"/>')
+        lines.append('    <var name="totalSeaiceArea"/>')
+        lines.append('    <var name="NHSeaiceArea"/>')
+        lines.append('    <var name="SHSeaiceArea"/>')
         lines.append('    <var name="initialEnergy"/>')
         lines.append('    <var name="finalEnergy"/>')
         lines.append('    <var name="energyChange"/>')

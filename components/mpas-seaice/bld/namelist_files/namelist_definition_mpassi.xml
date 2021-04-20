@@ -307,6 +307,14 @@ Default: Defined in namelist_defaults.xml
 
 <!-- initialize -->
 
+<entry id="config_earth_radius" type="real"
+	category="initialize" group="initialize">
+Earth radius in m
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_initial_condition_type" type="char*1024"
 	category="initialize" group="initialize">
 Initial condition type for sea ice state.
@@ -514,34 +522,10 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- unit_test -->
-
-<entry id="config_perform_unit_test" type="logical"
-	category="unit_test" group="unit_test">
-If true perform a unit test.
-
-Valid values: true or false
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_unit_test_type" type="char*1024"
-	category="unit_test" group="unit_test">
-Unit test type.
-
-Valid values: 'strain rate operator', 'stress divergence operator', or 'constitutive relationship'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_unit_test_subtype" type="char*1024"
-	category="unit_test" group="unit_test">
-Unit test subtype.
-
-Valid values: ('strain rate operator'): 'all', 'zero', 'zonal', 'meridonal', 'solid_body', 'sinusoidal1', or 'sinusoidal2', (stress divergence operator): 'all', 'zero', 'const11', 'const22', 'const12', 'test1', 'test2', 'test3', or 'test4'
-Default: Defined in namelist_defaults.xml
-</entry>
+<!-- testing -->
 
 <entry id="config_use_test_ice_shelf" type="logical"
-	category="unit_test" group="unit_test">
+	category="testing" group="testing">
 If true test add a test ice shelf to the ice shelf mask.
 
 Valid values: true or false
@@ -549,7 +533,7 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_testing_system_test" type="logical"
-	category="unit_test" group="unit_test">
+	category="testing" group="testing">
 If true initialize variables that will fail the testing system tests.
 
 Valid values: true or false
@@ -591,11 +575,27 @@ Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_strain_scheme" type="char*1024"
+	category="velocity_solver" group="velocity_solver">
+Choice of stress divergence scheme to use in the velocity solver.
+
+Valid values: 'weak', or 'variational'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_constitutive_relation_type" type="char*1024"
+	category="velocity_solver" group="velocity_solver">
+Choice of constitutive relation to use in the velocity solver.
+
+Valid values: 'evp', 'evp_revised', 'linear', or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_stress_divergence_scheme" type="char*1024"
 	category="velocity_solver" group="velocity_solver">
 Choice of stress divergence scheme to use in the velocity solver.
 
-Valid values: 'weak' or 'variational'
+Valid values: 'weak', or 'variational'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -604,6 +604,14 @@ Default: Defined in namelist_defaults.xml
 Type of basis functions to use with the variational stress divergence scheme.
 
 Valid values: 'wachspress' or 'pwl'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_variational_denominator_type" type="char*1024"
+	category="velocity_solver" group="velocity_solver">
+Type of denominator in variational calculation.
+
+Valid values: 'original' or 'alternate'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -623,11 +631,19 @@ Valid values: 'trapezoidal': any positive integer, 'dunavant':1-10,12, 'fekete':
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_revised_evp" type="logical"
+<entry id="config_calc_velocity_masks" type="logical"
 	category="velocity_solver" group="velocity_solver">
-If true use the revised EVP rheology (Bouillon et al., Ocean Modelling)
+Calculate velocity masks.
 
-Valid values: true or. false.
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_average_variational_strain" type="logical"
+	category="velocity_solver" group="velocity_solver">
+Average variational strains over vertex.
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -660,6 +676,30 @@ Default: Defined in namelist_defaults.xml
 If true calculate the sea surface tilt stress assuming currents are geostrophic.
 
 Valid values: true or. false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ocean_stress_type" type="char*1024"
+	category="velocity_solver" group="velocity_solver">
+Method for calculating ocean stress.
+
+Valid values: 'linear', or 'quadratic'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_special_boundaries_velocity" type="logical"
+	category="velocity_solver" group="velocity_solver">
+Use the special boundaries velocities option.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_special_boundaries_velocity_masks" type="logical"
+	category="velocity_solver" group="velocity_solver">
+Use the special boundaries velocity mask option.
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -827,6 +867,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_snow_grain_radius" type="logical"
 	category="column_tracers" group="column_tracers">
 Use prognosed snow grain radius aging
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_special_boundaries_zero_tracers" type="logical"
+	category="column_tracers" group="column_tracers">
+Zero out tracers in given boundary cells.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
