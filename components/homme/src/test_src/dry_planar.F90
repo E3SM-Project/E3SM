@@ -199,7 +199,9 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   real(rl):: x,y,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
   real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q(1),dp    !pointwise field values
 
-  real(rl):: L, Lt, pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp)
+  real(rl):: L, Lt, pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr
+
+#ifdef MODEL_THETA_L
 
   if (hybrid%masterthread) write(iulog,*) 'initializing hot bubble'
 
@@ -222,17 +224,20 @@ Lt=p0**kappa * g / rd * kappa
   y  = elem(ie)%spherep(i,j)%lat
 
   do k=1,nlevp
-  if ( sqrt( x*x+y*y + (zi(k)-5000.0)**2 ) < 1000.0 ) then !.and. abs(zi(k)-5000.0)< 500.0 ) then
-      th0(k)=300.0
 
-!print *, 'xx+yy',x*x+y*y
+  rr = sqrt(x*x+y*y + (zi(k)-5000.0)**2)
 
+  if ( rr < 1500.0 ) then !.and. abs(zi(k)-5000.0)< 500.0 ) then
+
+!print *, 'rr/1000 and exp rr/1000', rr/1000.0, exp(-rr/1000.0)
+!      th0(k)=280.0
+!  elseif ( sqrt( rr ) <= 500.0 ) then
+      th0(k)=270.5
   else
-      th0(k) = 295.0
+      th0(k) = 270.0
   endif
 
-  L = Lt/th0(k)
-  pi(k) = ( p0**kappa - zi(k)*L)**(1.0/kappa)
+  pi(k) =  p0*( (270.0 - zi(k)*g/cp)/270.0  )**(1.0/kappa)
   enddo
 
   elem(ie)%state%ps_v(i,j,:) = pi(nlevp)
@@ -258,10 +263,15 @@ enddo
 !create hybrid coords now from the 1st column
 ai(:) = 0.0; bi(:) = 0.0
 ai(1) = pi(1)/p0
+bi(nlevp) = 1.0
 
-do k=2,nlevp
-ai(k) = zi(k)/zi(1)*ai(1)
+do k=2,nlev
+!ai(k) = zi(k)/zi(1)*ai(1)
 bi(k) = 1.0 - zi(k)/zi(1)
+
+!restore ai frop given pressure
+ai(k)=(pi(k)-bi(k)*pi(nlev))/p0
+
 enddo
 
 
@@ -285,6 +295,7 @@ hvcoord%hybm = 0.5_rl *(bi(2:nlev+1) + bi(1:nlev))
 !print *,'etam',hvcoord%etam
 !print *,'etai',hvcoord%etai
 
+!stop
 
   do ie = nets,nete
      elem(ie)%fcor(:,:) = f
@@ -293,6 +304,9 @@ hvcoord%hybm = 0.5_rl *(bi(2:nlev+1) + bi(1:nlev))
 !print *, 'geo', elem(ie)%state%phinh_i(1,1,:,1)
 
   enddo
+
+#endif
+
 
 end subroutine dry_bubble_init
 
