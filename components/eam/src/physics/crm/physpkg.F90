@@ -1595,15 +1595,13 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   !-----------------------------------------------------------------------------
   ! MMF surface flux bypass
   !-----------------------------------------------------------------------------
-      
 #if defined( MMF_FLUX_BYPASS )
+
   ! Check if LHF exceeds the total moisture content of the lowest layer
   call qneg4('TPHYSBC ', lchnk, ncol, ztodt, &
               state%q(1,pver,1), state%rpdel(1,pver), &
               cam_in%shf, cam_in%lhf, cam_in%cflx )
-#endif
 
-#if defined( MMF_FLUX_BYPASS )
   call crm_surface_flux_bypass_tend(state, cam_in, ptend)
   call physics_update(state, ptend, ztodt, tend)  
   call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
