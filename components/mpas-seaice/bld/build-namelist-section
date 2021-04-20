@@ -91,20 +91,12 @@ add_default($nl, 'config_calculate_coriolis');
 # Namelist group: use_sections #
 ################################
 
-if ($prognostic_mode eq 'prescribed') {
-        add_default($nl, 'config_use_dynamics', 'val'=>".false");
-} else {
-        add_default($nl, 'config_use_dynamics');
-}
+add_default($nl, 'config_use_dynamics');
 add_default($nl, 'config_use_velocity_solver');
 add_default($nl, 'config_use_advection');
 add_default($nl, 'config_use_forcing');
 add_default($nl, 'config_use_column_package');
-if ($prognostic_mode eq 'prescribed') {
-        add_default($nl, 'config_use_prescribed_ice', 'val'=>".true.");
-} else {
-        add_default($nl, 'config_use_prescribed_ice');
-}
+add_default($nl, 'config_use_prescribed_ice');
 add_default($nl, 'config_use_prescribed_ice_forcing');
 
 ###########################
