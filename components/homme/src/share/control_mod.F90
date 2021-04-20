@@ -85,6 +85,11 @@ module control_mod
  integer, public :: theta_advect_form = 0
  real (kind=real_kind), public :: vtheta_thresh = 100  ! threshold for virtual potential temperature minimum limiter
 
+ integer, public :: pgrad_correction  = 0   ! 1=turn on theta model pressure gradient correction
+ integer, public :: hv_ref_profiles   = 0   ! 1=turn on theta model HV reference profiles
+ integer, public :: hv_theta_correction=0   ! 1=use HV on p-surface approximation for theta
+ real (kind=real_kind), public :: hv_theta_thresh=.025d0  ! d(theta)/dp max threshold for HV correction term
+
  integer, public :: cubed_sphere_map = -1  ! -1 = chosen at run time
                                            !  0 = equi-angle Gnomonic (default)
                                            !  1 = equi-spaced Gnomonic (not yet coded)
