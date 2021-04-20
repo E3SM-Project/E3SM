@@ -1745,7 +1745,7 @@ contains
 
       ! Allocate space
       allocate (edgeAreaFractionOfCell(maxEdges,nCellsAll), STAT=ierr)
-      if (ierr /= 0) call mpas_log( &
+      if (ierr /= 0) call mpas_log_write( &
          'Error allocating edgeAreaFractionOfCell in ocn_mesh', &
           MPAS_LOG_CRIT)
 
