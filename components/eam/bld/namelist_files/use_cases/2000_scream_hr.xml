@@ -73,9 +73,6 @@
 <cld_macmic_num_steps hgrid="ne512np4" > 1 </cld_macmic_num_steps>
 <cld_macmic_num_steps hgrid="ne1024np4"> 1 </cld_macmic_num_steps>
 
-<!-- SHOC timestep -->
-<shoc_timestep>20</shoc_timestep>
-
 <!-- Prescribed aerosol options -->
 <use_hetfrz_classnuc>.false.</use_hetfrz_classnuc>
 <aerodep_flx_type>'CYCLICAL'</aerodep_flx_type>

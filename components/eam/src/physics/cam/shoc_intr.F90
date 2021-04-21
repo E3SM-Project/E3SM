@@ -689,42 +689,31 @@ end function shoc_implements_cnst
    call pbuf_get_field(pbuf, icwmrdp_idx, dp_icwmr)
    call pbuf_get_field(pbuf, cmfmc_sh_idx, cmfmc_sh)  
    
-   !  Determine SHOC time step and make it sub-step friendly
-   !  For now we want SHOC time step to be 5 min.  However, there are certain
-   !  instances when a 5 min time step will not be possible (based on 
-   !  host model time step or on macro-micro sub-stepping   
+   !  Determine SHOC time step.
    
-   dtime = shoc_timestep 
+   dtime = shoc_timestep
    
-   !  Now check to see if dtime is greater than the host model 
-   !    (or sub stepped) time step.  If it is, then simply 
-   !    set it equal to the host (or sub step) time step.  
-   !    This section is mostly to deal with small host model
-   !    time steps (or small sub-steps)
+   !  If requested SHOC timestep is < 0 then set the SHOC time step
+   !    equal to hdtime (the macrophysics/microphysics timestep).
    
-   if (dtime .gt. hdtime) then
+   if (dtime < 0._r8) then
      dtime = hdtime
    endif
    
-   !  Now check to see if SHOC time step divides evenly into
-   !    the host model time step.  If not, force it to divide evenly.
-   !    We also want it to be 5 minutes or less.  This section is
-   !    mainly for host model time steps that are not evenly divisible
-   !    by 5 minutes  
+   !  Now perform checks to determine if the requested SHOC timestep
+   !   is reasonable based on the host model time step.
    
-   if (mod(hdtime,dtime) .ne. 0) then
-     dtime = hdtime/2._r8
-     do while (dtime .gt. 300._r8) 
-       dtime = dtime/2._r8
-     end do
-   endif  
+   ! Is SHOC timestep greater than the macrophysics/microphysics timestep?
+   if (dtime .gt. hdtime) then
+     call endrun('shoc_tend_e3sm: Requested SHOC time step is greater than the macrophysics/microphysics timestep')
+   endif
    
-   !  If resulting host model time step and SHOC time step do not divide evenly
-   !    into each other, have model throw a fit.  
-
+   ! Does SHOC timestep divide evenly into the macrophysics/microphyscs timestep?
    if (mod(hdtime,dtime) .ne. 0) then
      call endrun('shoc_tend_e3sm:  SHOC time step and HOST time step NOT compatible')
-   endif      
+   endif
+
+   ! If we survived this far, then the SHOC timestep is valid.
   
    !  determine number of timesteps SHOC core should be advanced, 
    !  host time step divided by SHOC time step  

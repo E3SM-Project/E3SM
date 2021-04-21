@@ -2926,8 +2926,9 @@ Default: .false.
 <!-- SHOC timestep -->
 <entry id="shoc_timestep" type="real" category="pblrad"
        group="shocpbl_diff_nl" valid_values="" >
-SHOC timestep.
-Default: set by build-namelist
+SHOC timestep.  Setting to < 0 will set SHOC timestep equal to the
+macrophysics and microphysics timestep (i.e. dtime/cld_macmic_num_steps).
+Default: -1
 </entry>
 
 <!-- SHOC tunable parameters -->

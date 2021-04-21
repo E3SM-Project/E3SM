@@ -953,7 +953,7 @@
 <!-- SHOC_SGS -->
 <do_shoc_sgs                 > .false. </do_shoc_sgs>
 <do_shoc_sgs   shoc_sgs="1"  > .true. </do_shoc_sgs>
-<shoc_timestep               > 300.0D0 </shoc_timestep>
+<shoc_timestep               > -1 </shoc_timestep>
 <shoc_thl2tune               > 1.0D0 </shoc_thl2tune>
 <shoc_qw2tune                > 1.0D0 </shoc_qw2tune>
 <shoc_qwthl2tune             > 1.0D0 </shoc_qwthl2tune>
