@@ -425,7 +425,7 @@ contains
        do q=1,qsize
           write(iulog,102) "qv(",q,")= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
        enddo
-       write(iulog,100) "TS= ",TSmin_p,TSmax_p
+       write(iulog,100) "TBOT= ",TSmin_p,TSmax_p
        write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
        write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,'mb     '
 
