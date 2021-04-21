@@ -1307,16 +1307,16 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   real(r8) :: dlf2(pcols,pver)              ! Detraining cld H20 from shallow convections
   real(r8) :: pflx(pcols,pverp)             ! Conv rain flux thru out btm of lev
   real(r8) :: rtdt                          ! 1./ztodt
-  integer  ::lchnk                          ! chunk identifier
-  integer  ::ncol                           ! number of atmospheric columns
-  integer  ::ierr
+  integer  :: lchnk                         ! chunk identifier
+  integer  :: ncol                          ! number of atmospheric columns
+  integer  :: ierr
   integer  :: i,k,m,ihist                   ! Longitude, level, constituent indices
   integer  :: ixcldice, ixcldliq            ! constituent indices for cloud liquid and ice water.
 
   ! physics buffer fields to compute tendencies for stratiform package
   integer itim_old, ifld
-  real(r8), pointer, dimension(:,:) :: cld        ! cloud fraction
-  real(r8), pointer, dimension(:,:) :: cldo       ! old cloud fraction
+  real(r8), pointer, dimension(:,:) :: cld  ! cloud fraction
+  real(r8), pointer, dimension(:,:) :: cldo ! old cloud fraction
 
   ! physics buffer fields for total energy and mass adjustment
   real(r8), pointer, dimension(:  ) :: teout
@@ -1328,19 +1328,20 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   real(r8), pointer, dimension(:,:,:) :: fracis  ! fraction of transported species that are insoluble
 
   ! convective precipitation variables
-  real(r8),pointer :: prec_dp(:)                ! total precipitation from ZM convection
-  real(r8),pointer :: snow_dp(:)                ! snow from ZM convection
-  real(r8),pointer :: prec_sh(:)                ! total precipitation from Hack convection
-  real(r8),pointer :: snow_sh(:)                ! snow from Hack convection
+  real(r8),pointer :: prec_dp(:)             ! total precipitation from ZM convection
+  real(r8),pointer :: snow_dp(:)             ! snow from ZM convection
+  real(r8),pointer :: prec_sh(:)             ! total precipitation from Hack convection
+  real(r8),pointer :: snow_sh(:)             ! snow from Hack convection
 
   ! stratiform precipitation variables
-  real(r8),pointer :: prec_str(:)    ! sfc flux of precip from stratiform (m/s)
-  real(r8),pointer :: snow_str(:)     ! sfc flux of snow from stratiform   (m/s)
-  real(r8),pointer :: prec_pcw(:)     ! total precip from prognostic cloud scheme
-  real(r8),pointer :: snow_pcw(:)     ! snow from prognostic cloud scheme
-  real(r8),pointer :: prec_sed(:)     ! total precip from cloud sedimentation
-  real(r8),pointer :: snow_sed(:)     ! snow from cloud ice sedimentation
-  real(r8) :: sh_e_ed_ratio(pcols,pver)       ! shallow conv [ent/(ent+det)] ratio  
+  real(r8),pointer :: prec_str(:)            ! sfc flux of precip from stratiform (m/s)
+  real(r8),pointer :: snow_str(:)            ! sfc flux of snow from stratiform   (m/s)
+  real(r8),pointer :: prec_pcw(:)            ! total precip from prognostic cloud scheme
+  real(r8),pointer :: snow_pcw(:)            ! snow from prognostic cloud scheme
+  real(r8),pointer :: prec_sed(:)            ! total precip from cloud sedimentation
+  real(r8),pointer :: snow_sed(:)            ! snow from cloud ice sedimentation
+
+  real(r8) :: sh_e_ed_ratio(pcols,pver)      ! shallow conv [ent/(ent+det)] ratio  
 
   ! Local copies for substepping
   real(r8) :: prec_pcw_macmic(pcols)
@@ -1356,7 +1357,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   real(r8) :: det_ice(pcols)                 ! vertical integral of detrained ice
   real(r8) :: flx_cnd(pcols)
   real(r8) :: flx_heat(pcols)
-  type(check_tracers_data):: tracerint             ! energy integrals and cummulative boundary fluxes
+  type(check_tracers_data):: tracerint       ! energy integrals and cummulative boundary fluxes
   real(r8) :: zero_tracers(pcols,pcnst)
 
   logical   :: lq(pcnst)
