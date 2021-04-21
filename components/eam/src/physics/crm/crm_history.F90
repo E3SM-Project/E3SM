@@ -120,7 +120,7 @@ subroutine crm_history_init(species_class)
    call addfld('CRM_FLNS ',dims_crm_2D, 'A','unitless','net surface longwave fluxes at CRM grids')
    call addfld('CRM_FLNSC',dims_crm_2D, 'A','unitless','net surface clear-sky longwave fluxes at CRM grids')
    call addfld('CRM_TK   ',dims_crm_3D, 'A','m^2/s',   'Eddy viscosity from CRM')
-   call addfld('CRM_TKH  ',dims_crm_3D, 'A','m^2/s',   'Eddy viscosity from CRM')
+   call addfld('CRM_TKH  ',dims_crm_3D, 'A','m^2/s',   'Eddy conductivity/thermal diffusion from CRM')
 
    !----------------------------------------------------------------------------
    ! Aerosol optical depth
