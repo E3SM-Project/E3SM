@@ -1,0 +1,592 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<entry_id version="2.0">
+
+  <!--
+      Values to use by default for creation of DLND model dlnd namelists.
+      The element names are the same as the corresponding namelist
+      variables.  Values that depend on the model configuration use
+      attributes to express the dependency.  The recognized attributes
+      are: grid, dlnd_presaero and all configuration
+      attributes from the config_cache.xml file (with keys converted to upper-case).
+
+      strm_year_first is the first year of the stream data that will be used
+      strm_year_last  is the last  year of the stream data that will be used
+      strm_year_align is the model year that will be aligned with stream data for year_first
+
+      For cplhist forcing - the following substitutions will be made below
+      Replace any instance of the following substring indicators with the appropriate values:
+      %y    => year from the range yearfirst to yearlast
+             obtained from values of <strm_year_start> -> <strm_year_end> below
+      %ym   => year-month from the range yearfirst to yearlast with all 12 months
+             obtained from values of <strm_year_start> -> <strm_year_end> below
+      %ymd  => year-month-day from the range yearfirst to yearlast with all 12 months
+             obtained from values of <strm_year_start> -> <strm_year_end> below
+
+      For strm_datvar - the following substitutions will be made below
+      Replace any instance of the following substring indicators with the appropriate values:
+      %glc  => GLC elevation class from the range 0 to GLC_NEC,
+               obtained from the GLC_NEC xml variable
+
+      Replace any instance of $VARNAME with the xml variable value obtained from any
+      of the $CASEROOT/env*xml files
+
+     In dlnd_in,  streams namelist input has the form
+     streams = 'stream1.txt year_align year_first year_last ',
+               'stream2.txt year_align year_first year_last ',
+               ...
+               'streamN.txt year_align year_first year_last '
+
+     Currently the following streams are supported
+         lnd.cplhist
+         sno.cplhist
+
+    **** NOTE: in the value matches below, regular expressions are used ****
+         If two matches are equivalent, the FIRST one will be used
+
+	 As an example, say dlnd_mode=GLC_CPLHIST
+
+         the following will results in the CORRECT set of streams for this dlnd_mode
+             <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
+             <value dlnd_mode="CPLHIST">COPYALL</value>
+
+         the following order would result in an INCORRECT setting of streams for this datm_mode
+             <value dlnd_mode="CPLHIST">COPYALL</value>
+             <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
+  -->
+
+  <!-- ========================================================================================  -->
+  <!-- Stream file variables                                                                     -->
+  <!-- ========================================================================================  -->
+
+  <entry id="streamslist">
+    <type>char(100)</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>List of streams used for the given datm_mode.</desc>
+    <values>
+      <value dlnd_mode="NULL">NULL</value>
+      <value dlnd_mode="^CPLHIST$">lnd.cplhist</value>
+      <value dlnd_mode="CLMNLDAS">clm.nldas</value>
+      <value dlnd_mode="GLC_CPLHIST">sno.cplhist</value>
+      <value dlnd_mode="QIAN">lnd.qian</value>
+      <value dlnd_mode="GPCC">lnd.gpcc</value>
+    </values>
+  </entry>
+
+  <entry id="strm_domdir" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>Stream domain file directory.</desc>
+    <values>
+      <value>null</value>
+      <value stream="clm.nldas">$DLND_CPLHIST_DIR</value>
+      <value stream="lnd.qian">$DLND_CPLHIST_DIR</value>
+      <value stream="lnd.gpcc">$DLND_CPLHIST_DIR</value>
+    </values>
+  </entry>
+
+  <entry id="strm_domfil"  skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>Stream domain file path(s).</desc>
+    <values>
+      <value>null</value>
+      <value stream="clm.nldas">mosart_nldas_hist_1975.clm2.h1.1975-01-01-00000.nc</value>
+      <value stream="lnd.qian">QIAN.daily.1948-2004.nc</value>
+      <value stream="lnd.gpcc">GPCC.daily.nc</value>
+    </values>
+  </entry>
+
+  <entry id="strm_domvar"  skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>Stream domain variable name(s).</desc>
+    <values>
+      <value>
+        time         time
+        doml_lon     lon
+        doml_lat     lat
+        doml_aream   area
+        doml_mask    mask
+      </value>
+      <value stream="clm.nldas">
+        time     time
+        lon      lon
+        lat      lat
+        area     area
+        landfrac mask
+      </value>
+      <value stream="lnd.qian">
+        time     time
+        lon      lon
+        lat      lat
+      </value>
+      <value stream="lnd.gpcc">
+        time     time
+        lon      lon
+        lat      lat
+      </value>
+    </values>
+  </entry>
+
+  <entry id="strm_datdir"  skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>Stream data file directory.</desc>
+    <values>
+      <value>$DLND_CPLHIST_DIR</value>
+      <value stream="sno.cplhist">$DLND_CPLHIST_DIR</value>
+    </values>
+  </entry>
+
+  <entry id="strm_datfil"  skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>Stream data file path(s).</desc>
+    <values>
+      <value stream="sno.cplhist">$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc</value>
+      <value stream="clm.nldas">mosart_nldas_hist_1975.clm2.h1.1975-01-01-00000.nc</value>
+      <value stream="lnd.qian">QIAN.daily.1948-2004.nc</value>
+      <value stream="lnd.gpcc">GPCC.daily.nc</value>
+    </values>
+  </entry>
+
+  <entry id="strm_datvar"  skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>Stream data variable name(s).</desc>
+    <values>
+      <value     stream="sno.cplhist">
+        l2x1yr_glc_Sl_tsrf%glc     tsrf%glc
+        l2x1yr_glc_Sl_topo%glc     topo%glc
+        l2x1yr_glc_Flgl_qice%glc   qice%glc
+      </value>
+      <value     stream="clm.nldas">
+        QDRAI     rofsub
+        QOVER     rofsur
+      </value>
+      <value     stream="lnd.qian">
+        QDRAI     rofsub
+        QOVER     rofsur
+      </value>
+      <value     stream="lnd.gpcc">
+        QDRAI     rofsub
+        QOVER     rofsur
+      </value>
+    </values>
+  </entry>
+
+  <entry id="strm_offset"  skip_default_entry="true">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>Stream offset.</desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="strm_year_align"  skip_default_entry="true">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>Simulation year to align stream to.</desc>
+    <values>
+      <value>$DLND_CPLHIST_YR_ALIGN</value>
+      <value stream="sno.cplhist">$DLND_CPLHIST_YR_ALIGN</value>
+    </values>
+  </entry>
+
+  <entry id="strm_year_start"  skip_default_entry="true">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>First year of stream.</desc>
+    <values>
+      <value>$DLND_CPLHIST_YR_START</value>
+      <value stream="sno.cplhist">$DLND_CPLHIST_YR_START</value>
+    </values>
+  </entry>
+
+  <entry id="strm_year_end"  skip_default_entry="true">
+    <type>integer</type>
+    <category>streams</category>
+    <group>streams_file</group>
+    <desc>Last year of stream.</desc>
+    <values>
+      <value>$DLND_CPLHIST_YR_END</value>
+      <value stream="sno.cplhist">$DLND_CPLHIST_YR_END</value>
+    </values>
+  </entry>
+
+  <!-- ========================================================================================  -->
+  <!-- DLND Namelists                                                                            -->
+  <!-- ========================================================================================  -->
+
+  <!-- =========================================  -->
+  <!--- shr_strmdata_nml -->
+  <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>NULL,COPYALL</valid_values>
+    <desc>
+      datamode = "NULL"
+      NULL is always a valid option and means no data will be generated.
+      Turns off the data model as a provider of data to the coupler.  The
+      lnd_present flag will be set to false and the coupler will assume no
+      exchange of data to or from the data model.
+      dataMode = "COPYALL"
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+      Set by the DLND_MODE xml variable in env_run.xml
+    </desc>
+    <values>
+      <value dlnd_mode="NULL">NULL</value>
+      <value dlnd_mode="GLC_CPLHIST">COPYALL</value>
+      <value dlnd_mode="CPLHIST">COPYALL</value>
+      <value dlnd_mode="CLMNLDAS">COPYALL</value>
+      <value dlnd_mode="QIAN">COPYALL</value>
+      <value dlnd_mode="GPCC">COPYALL</value>
+    </values>
+  </entry>
+
+  <entry id="domainfile" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>shr_strdata_nml</group>
+    <desc>
+      spatial gridfile associated with the strdata.  grid information will
+      be read from this file and that grid will serve as the target grid
+      for all input data for this strdata input.
+    </desc>
+    <values>
+      <value>null</value>
+    </values>
+  </entry>
+
+  <entry id="fillalgo"   per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <desc>
+      array (up to 30 elements) of fill algorithms associated with the array
+      of streams.  valid options are just copy (ie. no fill), special value,
+      nearest neighbor, nearest neighbor in "i" direction, or nearest
+      neighbor in "j" direction.
+      valid values:  'copy','spval','nn','nnoni','nnonj'
+    </desc>
+    <values>
+      <value>nn</value>
+      <value dlnd_mode="CLMNLDAS">copy</value>
+    </values>
+  </entry>
+
+  <entry id="fillmask"  per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
+    <desc>
+      plays no role is fill algorithm at the present time.
+    </desc>
+    <values>
+      <value>nomask</value>
+    </values>
+  </entry>
+
+  <entry id="fillread"  per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <desc>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to read in instead of computing the
+      weights on the fly for the fill operation.  if this is set, fillalgo
+      and fillmask are ignored.
+    </desc>
+    <values>
+      <value>NOT_SET</value>
+    </values>
+  </entry>
+
+  <entry id="fillwrite"  per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <desc>
+      array (up to 30 elements)  of filenames associated with the array of
+      streams.  specifies the weights file to generate after weights are
+      computed on the fly for the fill operation.  this allows a user to
+      save and reuse a set of weights later.
+    </desc>
+    <values>
+      <value>NOT_SET</value>
+    </values>
+  </entry>
+
+  <entry id="mapmask"  per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
+    <desc>
+      array (up to 30 elements) of masking algorithms for mapping input data
+      associated with the array of streams.  valid options are map only from
+      valid src points, map only to valid destination points, ignore all
+      masks, map only from valid src points to valid destination points.
+    </desc>
+    <values>
+      <value>dstmask</value>
+    </values>
+  </entry>
+
+  <entry id="mapalgo"  per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <desc>
+      array (up to 30 elements) of fill algorithms associated with the array
+      of streams.  valid options are copy by index, set to special value,
+      nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
+      in "j" direction, or bilinear.
+      valid values: copy,spval,nn,nnoni,nnonj,bilinear
+    </desc>
+    <values>
+      <value>bilinear</value>
+    </values>
+  </entry>
+
+  <entry id="mapread"  per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <desc>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to read instead of computing
+      weights on the fly for the mapping (interpolation) operation.  if this
+      is set, mapalgo and mapmask are ignored.
+    </desc>
+    <values>
+      <value>NOT_SET</value>
+    </values>
+  </entry>
+
+  <entry id="mapwrite"  per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <desc>
+      array (up to 30 elements) of filenames associated with the array of
+      streams.  specifies the weights file to generate after weights are
+      computed on the fly for the mapping (interpolation) operation.  this
+      allows a user to save and reuse a set of weights later.
+    </desc>
+    <values>
+      <value>NOT_SET</value>
+    </values>
+  </entry>
+
+  <entry id="tintalgo"  per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>coszen,nearest,linear,lower,upper</valid_values>
+    <desc>
+      array (up to 30 elements) of time interpolation options associated with the array of
+      streams.
+      valid values: lower,upper,nearest,linear,coszen
+      lower   = Use lower time-value
+      upper   = Use upper time-value
+      nearest = Use the nearest time-value
+      linear  = Linearly interpolate between the two time-values
+      coszen  = Scale according to the cosine of the solar zenith angle (for solar)
+    </desc>
+    <values>
+      <value>linear</value>
+      <value stream="sno.cplhist">lower</value>
+    </values>
+  </entry>
+
+  <entry id="taxmode"  per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>extend,cycle,limit</valid_values>
+    <desc>
+      array of time axis modes associated with the array of streams for
+      handling data outside the specified stream time axis.
+      valid options are to cycle the data based on the first, last, and
+      align settings associated with the stream dataset, to extend the first
+      and last valid value indefinitely, or to limit the interpolated data
+      to fall only between the least and greatest valid value of the time array.
+      valid values: cycle,extend,limit
+      extend = extrapolate before and after the period by using the first or last value.
+      cycle  = cycle between the range of data
+      limit  = restrict to the period for which the data is valid
+    </desc>
+    <values>
+      <value>cycle</value>
+    </values>
+  </entry>
+
+  <entry id="readmode" per_stream_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <valid_values>single,full_file</valid_values>
+    <desc>
+      array (up to 30 elements) of reading mode associated with the array of
+      streams.  specifies the mode of reading temporal stream dataset.
+      valid options are "single" (read temporal dataset one at a time) or
+      "full_file" (read all entires of temporal dataset in a given netcdf file)
+      valid values: single,full_file
+    </desc>
+    <values>
+      <value>single</value>
+    </values>
+  </entry>
+
+  <entry id="dtlimit" per_stream_entry="true">
+    <type>real(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <desc>
+      array (up to 30 elements) of delta time ratio limits placed on the
+      time interpolation associated with the array of streams.  this real
+      value causes the model to stop if the ratio of the running maximum
+      delta time divided by the minimum delta time is greater than the
+      dtlimit for that stream.  for instance, with daily data, the delta
+      time should be exactly one day throughout the dataset and the computed
+      maximum divided by minimum delta time should always be 1.0.  for
+      monthly data, the delta time should be between 28 and 31 days and the
+      maximum ratio should be about 1.1.  the running value of the delta
+      time is computed as data is read and any wraparound or cycling is also
+      included.  this input helps trap missing data or errors in cycling.
+      to turn off trapping, set the value to 1.0e30 or something similar.
+    </desc>
+    <values>
+      <value>1.5e0</value>
+    </values>
+  </entry>
+
+  <entry id="vectors" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <desc>
+      list of paired colon delimited field names that should be treated as
+      vectors when carrying out spatial interpolation.  unlike other
+      character arrays in this namelist, this array is completely decoupled
+      from the list of streams.  this is a list of vector pairs that span
+      all input streams where different fields of the vector pair could
+      appear in different streams.
+      for example, vectors = 'u:v','taux:tauy'.
+    </desc>
+    <values>
+      <value>null</value>
+    </values>
+  </entry>
+
+  <entry id="streams"  skip_default_entry="true">
+    <type>char(30)</type>
+    <category>streams</category>
+    <group>shr_strdata_nml</group>
+    <desc>
+      character array (up to 30 elements) of stream input files.  this
+      string is actually parsed by a stream method and so the format is
+      specified by the stream module.  this string consists of a
+      "stream_input_filename year_align year_first year_last".  the
+      stream_input_filename is a stream text input file and the format and
+      options are described elsewhere.  year_align, year_first, and
+      year_last provide information about the time axis of the file and how
+      to relate the input time axis to the model time axis.
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <!-- =========================================  -->
+  <!--- dlnd_nml -->
+  <!-- =========================================  -->
+
+  <entry id="decomp">
+    <type>char</type>
+    <category>dlnd</category>
+    <group>dlnd_nml</group>
+    <valid_values>1d,root</valid_values>
+    <desc>
+      DLND Decomposition strategy
+      1d   = Vector decomposition
+      root = run only on the master task
+    </desc>
+    <values>
+      <value>1d</value>
+    </values>
+  </entry>
+
+  <entry id="restfilm">
+    <type>char</type>
+    <category>dlnd</category>
+    <group>dlnd_nml</group>
+    <desc>
+      Master restart file name for dlnd model
+    </desc>
+    <values>
+      <value>undefined</value>
+    </values>
+  </entry>
+
+  <entry id="restfils">
+    <type>char</type>
+    <category>dlnd</category>
+    <group>dlnd_nml</group>
+    <desc>
+      Stream restart file name for dlnd model, needed for branch simulations
+    </desc>
+    <values>
+      <value>undefined</value>
+    </values>
+  </entry>
+
+  <entry id="force_prognostic_true">
+    <type>logical</type>
+    <category>dlnd</category>
+    <group>dlnd_nml</group>
+    <desc>If TRUE, prognostic is forced to true.</desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="domain_fracname">
+    <type>char</type>
+    <category>dlnd</category>
+    <group>dlnd_nml</group>
+    <desc>
+      Name of the fraction field on the first stream file (i.e., the
+      file from which domain information is read.).
+      If 'null', this is unused.
+    </desc>
+    <values>
+      <value>null</value>
+      <value dlnd_mode="GLC_CPLHIST">doml_frac</value>
+    </values>
+  </entry>
+
+</entry_id>
