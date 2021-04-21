@@ -103,7 +103,7 @@ module shoc_intr
   real(r8) :: shoc_lambda_low = unset_r8
   real(r8) :: shoc_lambda_high = unset_r8
   real(r8) :: shoc_lambda_slope = unset_r8
-  real(r8) :: shoc_brunt_low = unset_r8
+  real(r8) :: shoc_lambda_thresh = unset_r8
   real(r8) :: shoc_Ckh = unset_r8
   real(r8) :: shoc_Ckm = unset_r8
   real(r8) :: shoc_Ckh_s_min = unset_r8
@@ -230,7 +230,7 @@ end function shoc_implements_cnst
     namelist /shocpbl_diff_nl/ shoc_timestep, shoc_thl2tune, shoc_qw2tune, shoc_qwthl2tune, &
                                shoc_w2tune, shoc_length_fac, shoc_c_diag_3rd_mom, &
                                shoc_lambda_low, shoc_lambda_high, shoc_lambda_slope, &
-                               shoc_brunt_low, shoc_Ckh, shoc_Ckm, shoc_Ckh_s_min, &
+                               shoc_lambda_thresh, shoc_Ckh, shoc_Ckm, shoc_Ckh_s_min, &
                                shoc_Ckm_s_min, shoc_Ckh_s_max, shoc_Ckm_s_max
     
     !  Read namelist to determine if SHOC history should be called
@@ -262,7 +262,7 @@ end function shoc_implements_cnst
       call mpibcast(shoc_lambda_low,         1,   mpir8,   0, mpicom)
       call mpibcast(shoc_lambda_high,        1,   mpir8,   0, mpicom)
       call mpibcast(shoc_lambda_slope,       1,   mpir8,   0, mpicom)
-      call mpibcast(shoc_brunt_low,          1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_lambda_thresh,      1,   mpir8,   0, mpicom)
       call mpibcast(shoc_Ckh,                1,   mpir8,   0, mpicom)
       call mpibcast(shoc_Ckm,                1,   mpir8,   0, mpicom)
       call mpibcast(shoc_Ckh_s_min,          1,   mpir8,   0, mpicom)
@@ -443,7 +443,7 @@ end function shoc_implements_cnst
           shoc_thl2tune, shoc_qw2tune, shoc_qwthl2tune, &
           shoc_w2tune, shoc_length_fac, shoc_c_diag_3rd_mom, &
           shoc_lambda_low, shoc_lambda_high, shoc_lambda_slope, &
-          shoc_brunt_low, shoc_Ckh, shoc_Ckm, shoc_Ckh_s_min, &
+          shoc_lambda_thresh, shoc_Ckh, shoc_Ckm, shoc_Ckh_s_min, &
           shoc_Ckm_s_min, shoc_Ckh_s_max, shoc_Ckm_s_max )
     
     ! --------------- !

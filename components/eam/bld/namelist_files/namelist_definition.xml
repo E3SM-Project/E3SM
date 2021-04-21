@@ -2987,7 +2987,7 @@ Controls the slope of increase of stability correction term from low to high val
 Default: set by build-namelist
 </entry>
 
-<entry id="shoc_brunt_low" type="real" category="pblrad"
+<entry id="shoc_lambda_thresh" type="real" category="pblrad"
        group="shocpbl_diff_nl" valid_values="" >
 Minimum threshold of integrated stability to increase the stability correction term.
 Default: set by build-namelist

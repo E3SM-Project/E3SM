@@ -3604,7 +3604,7 @@ if ($shoc_sgs  =~ /$TRUE/io) {
    add_default($nl, 'shoc_lambda_low');
    add_default($nl, 'shoc_lambda_high');
    add_default($nl, 'shoc_lambda_slope');
-   add_default($nl, 'shoc_brunt_low');
+   add_default($nl, 'shoc_lambda_thresh');
    add_default($nl, 'shoc_Ckh');
    add_default($nl, 'shoc_Ckm');
    add_default($nl, 'shoc_Ckh_s_min');

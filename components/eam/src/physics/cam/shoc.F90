@@ -62,7 +62,7 @@ real(rtype) :: c_diag_3rd_mom = 7.0_rtype ! w3 factor
 real(rtype) :: lambda_low = 0.001_rtype ! lowest value for stability correction
 real(rtype) :: lambda_high = 0.04_rtype ! highest value for stability correction
 real(rtype) :: lambda_slope = 0.65_rtype ! stability correction slope
-real(rtype) :: brunt_low = 0.02_rtype ! value to apply stability correction
+real(rtype) :: lambda_thresh = 0.02_rtype ! value to apply stability correction
 real(rtype) :: Ckh = 0.1_rtype ! Eddy diffusivity coefficient for heat
 real(rtype) :: Ckm = 0.1_rtype ! Eddy diffusivity coefficient for momentum
 real(rtype) :: Ckh_s_min = 0.1_rtype ! Stable PBL diffusivity minimum for heat
@@ -132,7 +132,7 @@ subroutine shoc_init( &
          thl2tune_in, qw2tune_in, qwthl2tune_in, &
          w2tune_in, length_fac_in, c_diag_3rd_mom_in, &
          lambda_low_in, lambda_high_in, lambda_slope_in, &
-         brunt_low_in, Ckh_in, Ckm_in, Ckh_s_min_in, &
+         lambda_thresh_in, Ckh_in, Ckm_in, Ckh_s_min_in, &
          Ckm_s_min_in, Ckh_s_max_in, Ckm_s_max_in)
 
   implicit none
@@ -167,7 +167,7 @@ subroutine shoc_init( &
   real(rtype), intent(in), optional :: lambda_low_in ! stability correction, lowest value
   real(rtype), intent(in), optional :: lambda_high_in ! stability correciton, highest value
   real(rtype), intent(in), optional :: lambda_slope_in ! stability correction, slope term
-  real(rtype), intent(in), optional :: brunt_low_in ! value to apply stability correction
+  real(rtype), intent(in), optional :: lambda_thresh_in ! value to apply stability correction
   real(rtype), intent(in), optional :: Ckh_in ! eddy diffusivity coefficient for heat
   real(rtype), intent(in), optional :: Ckm_in ! eddy diffusivity coefficient for momentum
   real(rtype), intent(in), optional :: Ckh_s_min_in ! Stable PBL diffusivity minimum for heat
@@ -197,7 +197,7 @@ subroutine shoc_init( &
   if (present(lambda_low_in)) lambda_low=lambda_low_in
   if (present(lambda_high_in)) lambda_high=lambda_high_in
   if (present(lambda_slope_in)) lambda_slope=lambda_slope_in
-  if (present(brunt_low_in)) brunt_low=brunt_low_in
+  if (present(lambda_thresh_in)) lambda_thresh=lambda_thresh_in
   if (present(Ckh_in)) Ckh=Ckh_in
   if (present(Ckm_in)) Ckm=Ckm_in
   if (present(Ckh_s_min_in)) Ckh_s_min=Ckh_s_min_in
@@ -3292,7 +3292,7 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
         tscale=(2.0_rtype*tke(i,k))/a_diss(i,k)
 
         ! define a damping term "lambda" based on column stability
-        lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
+        lambda=lambda_low+((brunt_int(i)/ggr)-lambda_thresh)*lambda_slope
         lambda=max(lambda_low,min(lambda_high,lambda))
 
         buoy_sgs_save=brunt(i,k)
