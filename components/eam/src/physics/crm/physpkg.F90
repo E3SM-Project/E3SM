@@ -1393,7 +1393,6 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   
   logical           :: use_ECPP
   character(len=16) :: MMF_microphysics_scheme
-  real(r8)          :: crm_run_time              ! length of CRM integration
   real(r8), dimension(pcols,pver) :: mmf_clear_rh ! CRM clear air relative humidity used for aerosol water uptake
   real(r8), dimension(pcols) :: mmf_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
   real(r8), dimension(pcols) :: mmf_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
@@ -1605,7 +1604,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
 
   call crm_surface_flux_bypass_tend(state, cam_in, ptend)
   call physics_update(state, ptend, ztodt, tend)  
-  call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
+  call check_energy_chng(state, tend, "crm_tend", nstep, ztodt,  &
                          cam_in%shf(:), zero, zero, cam_in%cflx(:,1)) 
 #endif
 
@@ -1618,15 +1617,14 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   !-----------------------------------------------------------------------------
   ! Run the CRM 
   !-----------------------------------------------------------------------------
-  crm_run_time = ztodt
   call t_startf('crm_physics_tend')
   call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
                         species_class, crm_ecpp_output, mmf_clear_rh,       &
                         mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
-  call physics_update(state, ptend, crm_run_time, tend)
+  call physics_update(state, ptend, ztodt, tend)
   call t_stopf('crm_physics_tend')
 
-  call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
+  call check_energy_chng(state, tend, "crm_tend", nstep, ztodt,  &
                          zero, mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
 
   !-----------------------------------------------------------------------------
@@ -1647,10 +1645,10 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   ! ECPP handles aerosol wet deposition, so tendency from wet depostion is 
   ! not updated in mz_aero_wet_intr (mz_aerosols_intr.F90), but tendencies
   ! from other parts of crmclouds_aerosol_wet_intr() are still updated here.
-  call physics_update (state, ptend, crm_run_time, tend)
+  call physics_update (state, ptend, ztodt, tend)
   call t_stopf('modal_aero_mmf')
 
-  call check_energy_chng(state, tend, "modal_aero_mmf", nstep, crm_run_time, &
+  call check_energy_chng(state, tend, "modal_aero_mmf", nstep, ztodt, &
                          zero, zero, zero, zero)
 
 #endif /* ECPP and MODAL_AERO */
@@ -1664,7 +1662,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
     call pbuf_get_field(pbuf, pbuf_get_index('ACLDY_CEN'), acldy_cen_tbeg)
 
     dtstep_pp = dtstep_pp_input
-    necpp = dtstep_pp/crm_run_time
+    necpp = dtstep_pp/ztodt
 
     if (nstep.ne.0 .and. mod(nstep, necpp).eq.0) then
 

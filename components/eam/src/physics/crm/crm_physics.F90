@@ -506,7 +506,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    integer lchnk                                   ! chunk identifier
    integer ncol                                    ! number of atmospheric columns
    integer nstep                                   ! time steps
-   real(r8) crm_run_time                           ! length of CRM integration
 
    ! physics buffer fields to compute tendencies for stratiform package
    real(r8), pointer, dimension(:,:) :: cld        ! cloud fraction
@@ -600,8 +599,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    crm_rotation_std    = 20. * pi/180.                 ! std deviation of normal distribution for CRM rotation [radians]
    crm_rotation_offset = 90. * pi/180. * ztodt/86400.  ! This means that a CRM should rotate 90 deg / day on average
 #endif
-
-   crm_run_time = ztodt
 
    call phys_getopts(use_ECPP_out = use_ECPP)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
@@ -1279,13 +1276,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 #endif /* ECPP */
             end do
             end do
-            ptend%q(i,m,ixnumliq)  = (ptend%q(i,m,ixnumliq) /(crm_nx*crm_ny) - state%q(i,m,ixnumliq)) /crm_run_time
-            ptend%q(i,m,ixnumice)  = (ptend%q(i,m,ixnumice) /(crm_nx*crm_ny) - state%q(i,m,ixnumice)) /crm_run_time
+            ptend%q(i,m,ixnumliq)  = (ptend%q(i,m,ixnumliq) /(crm_nx*crm_ny) - state%q(i,m,ixnumliq)) /ztodt
+            ptend%q(i,m,ixnumice)  = (ptend%q(i,m,ixnumice) /(crm_nx*crm_ny) - state%q(i,m,ixnumice)) /ztodt
 #ifdef ECPP
-            ptend%q(i,m,ixrain)    = (ptend%q(i,m,ixrain)   /(crm_nx*crm_ny) - state%q(i,m,ixrain))   /crm_run_time
-            ptend%q(i,m,ixsnow)    = (ptend%q(i,m,ixsnow)   /(crm_nx*crm_ny) - state%q(i,m,ixsnow))   /crm_run_time
-            ptend%q(i,m,ixnumrain) = (ptend%q(i,m,ixnumrain)/(crm_nx*crm_ny) - state%q(i,m,ixnumrain))/crm_run_time
-            ptend%q(i,m,ixnumsnow) = (ptend%q(i,m,ixnumsnow)/(crm_nx*crm_ny) - state%q(i,m,ixnumsnow))/crm_run_time
+            ptend%q(i,m,ixrain)    = (ptend%q(i,m,ixrain)   /(crm_nx*crm_ny) - state%q(i,m,ixrain))   /ztodt
+            ptend%q(i,m,ixsnow)    = (ptend%q(i,m,ixsnow)   /(crm_nx*crm_ny) - state%q(i,m,ixsnow))   /ztodt
+            ptend%q(i,m,ixnumrain) = (ptend%q(i,m,ixnumrain)/(crm_nx*crm_ny) - state%q(i,m,ixnumrain))/ztodt
+            ptend%q(i,m,ixnumsnow) = (ptend%q(i,m,ixnumsnow)/(crm_nx*crm_ny) - state%q(i,m,ixnumsnow))/ztodt
 #endif /* ECPP */
 
          end do
@@ -1323,9 +1320,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       end do ! i = 1,ncold
 
       mmf_qchk_prec_dp(:ncol) = prec_dp(:ncol) + (qli_hydro_after (:ncol) - &
-                                                  qli_hydro_before(:ncol))/crm_run_time/1000._r8
+                                                  qli_hydro_before(:ncol))/ztodt/1000._r8
       mmf_qchk_snow_dp(:ncol) = snow_dp(:ncol) + ( qi_hydro_after (:ncol) - &
-                                                   qi_hydro_before(:ncol))/crm_run_time/1000._r8
+                                                   qi_hydro_before(:ncol))/ztodt/1000._r8
 
       !---------------------------------------------------------------------------------------------
       ! copy clear air relative humdity for aerosol water uptake
