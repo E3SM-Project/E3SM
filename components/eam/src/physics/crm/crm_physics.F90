@@ -538,7 +538,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    integer  :: ixnumrain, ixnumsnow                ! constituent indices
    integer  :: ifld, itim                          ! pbuf field and "old time" indices
    real(r8) :: ideep_crm(pcols)                    ! gathering array for convective columns
-   logical  :: ls, lu, lv, lq(pcnst)               ! flags for updating ptend
+   logical  :: lq(pcnst)                           ! flags for initializing ptend
    logical  :: use_ECPP                            ! flag for ECPP mode
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
@@ -617,11 +617,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    !------------------------------------------------------------------------------------------------
    ! Initialize ptend
    !------------------------------------------------------------------------------------------------
-   lu = .true. 
-   lv = .true.
-   ls = .true.
    lq(:) = .true.
-   call physics_ptend_init(ptend, state%psetcols, 'crm', lu=lu, lv=lv, ls=ls, lq=lq)
+   call physics_ptend_init(ptend, state%psetcols, 'crm', lu=.true. , lv=.true. , ls=.true. , lq=lq)
    
    !------------------------------------------------------------------------------------------------
    ! Initialize CRM state (nullify pointers, allocate memory, etc)
