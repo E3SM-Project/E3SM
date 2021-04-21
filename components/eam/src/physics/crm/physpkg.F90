@@ -1025,7 +1025,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   real(r8) :: tmp_t     (pcols,pver)        ! tmp variable
   real(r8) :: ftem      (pcols,pver)        ! tmp variable
   logical  :: labort                        ! abort flag
-  logical  :: l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk
+  logical  :: l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
   lchnk = state%lchnk
@@ -1035,8 +1035,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   call phys_getopts( l_tracer_aero_out      = l_tracer_aero      &
                     ,l_vdiff_out            = l_vdiff            &
                     ,l_rayleigh_out         = l_rayleigh         &
-                    ,l_gw_drag_out          = l_gw_drag          &
-                    ,l_ac_energy_chk_out    = l_ac_energy_chk    )
+                    ,l_gw_drag_out          = l_gw_drag          )
 
   ! Adjust the surface fluxes to reduce instabilities in near sfc layer
   if (phys_do_flux_avg()) call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
@@ -1168,28 +1167,24 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   ! Energy budget checks
   !-----------------------------------------------------------------------------
-  if (l_ac_energy_chk) then
+  call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/))       
 
-    call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/))       
+  tmp_t(:ncol,:pver) = state%t(:ncol,:pver)
 
-    tmp_t(:ncol,:pver) = state%t(:ncol,:pver)
+  ! store dse after tphysac in buffer
+  do k = 1,pver
+    dtcore(:ncol,k) = state%t(:ncol,k)
+  end do
 
-    ! store dse after tphysac in buffer
-    do k = 1,pver
-      dtcore(:ncol,k) = state%t(:ncol,k)
-    end do
+  call set_dry_to_wet(state)    ! Physics had dry, dynamics wants moist
 
-    call set_dry_to_wet(state)    ! Physics had dry, dynamics wants moist
-
-    ! Scale dry mass and energy (does nothing if dycore is EUL or SLD)
-    call cnst_get_ind('CLDLIQ', ixcldliq)
-    call cnst_get_ind('CLDICE', ixcldice)
-    tmp_q     (:ncol,:pver) = state%q(:ncol,:pver,1)
-    tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
-    tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
-    call physics_dme_adjust(state, tend, qini, ztodt)
-
-  end if ! l_ac_energy_chk
+  ! Scale dry mass and energy (does nothing if dycore is EUL or SLD)
+  call cnst_get_ind('CLDLIQ', ixcldliq)
+  call cnst_get_ind('CLDICE', ixcldice)
+  tmp_q     (:ncol,:pver) = state%q(:ncol,:pver,1)
+  tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
+  tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
+  call physics_dme_adjust(state, tend, qini, ztodt)
 
   call diag_phys_tend_writeout (state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, tmp_t, qini, cldliqini, cldiceini)
 
