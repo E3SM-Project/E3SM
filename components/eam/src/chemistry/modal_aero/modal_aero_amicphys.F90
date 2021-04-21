@@ -79,8 +79,10 @@
 
   integer, parameter :: soa_mech_type_default = 1
   integer, parameter :: soa_mech_type_vbs     = 100
-  integer, parameter :: soa_mech_type = soa_mech_type_default
-  integer, parameter :: soa_mech_optaa = 1
+  !integer, parameter :: soa_mech_type = soa_mech_type_default
+  !integer, parameter :: soa_mech_optaa = 1
+  integer, public :: soa_mech_type = soa_mech_type_default
+  integer, public :: soa_mech_optaa = 1 ! parameter to public QZR
 ! controls soa treatment
 
   integer, public :: update_qaerwat = 0
@@ -102,7 +104,7 @@
   integer, parameter :: max_gas = nsoag + 1
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM )
   integer, parameter :: max_gas = nsoag + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
@@ -120,7 +122,7 @@
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
 #endif
 
-#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
+#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )|| (defined MODAL_AERO_4MODE_SOA_MOM))
   integer, parameter :: ntot_amode_extd = ntot_amode
 #else
   integer, parameter :: ntot_amode_extd = ntot_amode + 1
@@ -5693,7 +5695,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       naer = 0
 
 ! soa aerosol and condensing gas species
-#if ( defined MAM_SOA_VBS )
+#if ( defined MODAL_AERO_4MODE_SOA_MOM )
       soa_mech_type = soa_mech_type_vbs
       soa_mech_optaa = 1
       if      (nsoa == 1 .and. nsoag == 7) then
@@ -5829,6 +5831,13 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       iaer_ca = naer
       naer = naer + 1 ; name_aerpfx(naer) = 'co3'
       iaer_co3 = naer
+#endif
+
+
+#if ( defined MODAL_AERO_4MODE_MOM || MODAL_AERO_4MODE_SOA_MOM )
+      naer = naer + 1
+      name_aerpfx(naer) = 'mom'
+      iaer_mom = naer
 #endif
 
       if (ntot_amode==9) then

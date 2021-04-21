@@ -1481,9 +1481,6 @@ if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_ma
     $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
 
-if ($chem_pkg  =~ '_mam4_resus_soa_mom_soag_vbs' ) {
-    $chem_cppdefs = "$chem_cppdefs  -DMAM_SOA_VBS "
-}
 
 #-----------------------------------------------------------------------------------------------
 # Number of advected constituents
