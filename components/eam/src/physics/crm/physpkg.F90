@@ -84,7 +84,6 @@ subroutine phys_register
   !-----------------------------------------------------------------------
   use physics_buffer,           only: pbuf_init_time
   use physics_buffer,           only: pbuf_add_field, dtype_r8
-  use shr_kind_mod,             only: r8 => shr_kind_r8
   use spmd_utils,               only: masterproc
   use constituents,             only: pcnst, cnst_add, cnst_chk_dim, cnst_name
   use chemistry,                only: chem_register
@@ -953,7 +952,6 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   use physics_buffer,     only: physics_buffer_desc, pbuf_set_field, pbuf_get_index, &
                                 pbuf_get_field, pbuf_old_tim_idx
-  use shr_kind_mod,       only: r8 => shr_kind_r8
   use chemistry,          only: chem_is_active, chem_timestep_tend, chem_emissions
   use cam_diagnostics,    only: diag_phys_tend_writeout, diag_conv
   use gw_drag,            only: gw_tend
@@ -1240,7 +1238,6 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   use physics_buffer,         only: physics_buffer_desc, pbuf_get_field
   use physics_buffer,         only: pbuf_get_index, pbuf_old_tim_idx
   use physics_buffer,         only: dyn_time_lvls
-  use shr_kind_mod,           only: r8 => shr_kind_r8
   use physics_types,          only: physics_state, physics_tend, physics_ptend, &
                                     physics_ptend_init, physics_ptend_sum, &
                                     physics_state_check, physics_ptend_scale
@@ -1796,7 +1793,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   ! Purpose: The place for parameterizations to call per timestep initializations.
   !          This is used to update time interpolated fields from boundary datasets.
   !-----------------------------------------------------------------------------
-  use shr_kind_mod,        only: r8 => shr_kind_r8
   use chemistry,           only: chem_timestep_init
   use chem_surfvals,       only: chem_surfvals_set
   use physics_types,       only: physics_state
