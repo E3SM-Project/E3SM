@@ -567,6 +567,10 @@ contains
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
               + totalFreshWaterTemperatureFlux(iCell)
 
+           ! add runoff contribution for sending through coupler
+           totalFreshWaterTemperatureFlux(iCell) = totalFreshWaterTemperatureFlux(iCell) &
+              + tracersSurfaceFluxRunoff(index_temperature_flux,iCell)
+
            ! Fields with zero temperature are not accumulated. These include:
            !    snowFlux
            !    iceRunoffFlux
