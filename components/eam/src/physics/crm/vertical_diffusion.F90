@@ -465,9 +465,9 @@ end subroutine vertical_diffusion_ts_init
 !===============================================================================
 
 subroutine vertical_diffusion_tend( ztodt    , state    ,                  &
-                                        taux     , tauy     , shflx    , cflx, &
-                                        ustar    , obklen   , ptend    , &
-                                        cldn     , landfrac , sgh , pbuf) 
+                                    taux     , tauy     , shflx    , cflx, &
+                                    ustar    , obklen   , ptend    , &
+                                    cldn     , landfrac , sgh , pbuf) 
   !-----------------------------------------------------------------------------
   ! This is an interface routine for vertical diffusion
   !-----------------------------------------------------------------------------
