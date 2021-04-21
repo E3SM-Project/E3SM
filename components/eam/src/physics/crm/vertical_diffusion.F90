@@ -200,7 +200,7 @@ subroutine vertical_diffusion_init(pbuf2d)
   ! Calls initialization routines for subsidiary modules            
   !-----------------------------------------------------------------------------
   use cam_history,       only : addfld, horiz_only, add_default
-  use hb_diff,       only : init_hb_diff
+  use hb_diff,           only : init_hb_diff
   use molec_diff,        only : init_molec_diff
   use trb_mtn_stress,    only : init_tms
   use diffusion_solver,  only : init_vdiff, new_fieldlist_vdiff, vdiff_select
