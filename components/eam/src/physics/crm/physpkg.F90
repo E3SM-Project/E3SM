@@ -1191,11 +1191,11 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
 
   end if ! l_ac_energy_chk
 
-  !-----------------------------------------------------------------------------
-  !-----------------------------------------------------------------------------
-
   call diag_phys_tend_writeout (state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, tmp_t, qini, cldliqini, cldiceini)
 
+  !-----------------------------------------------------------------------------
+  ! Set the chlorine and bromine mass mixing ratios
+  !-----------------------------------------------------------------------------
   call clybry_fam_set( ncol, lchnk, map2chm, state%q, pbuf )
 
   !-----------------------------------------------------------------------------
