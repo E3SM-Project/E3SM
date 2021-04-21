@@ -1772,6 +1772,8 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   !-----------------------------------------------------------------------------
   ! Diagnostics
   !-----------------------------------------------------------------------------
+  call t_startf('tphysbc_diagnostics')
+
   if(do_aerocom_ind3) call cloud_top_aerocom(state, pbuf) 
 
   ! Diagnose the location of the tropopause
@@ -1784,6 +1786,9 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   call diag_export(cam_out)
 
   call check_tracers_fini(tracerint)
+
+  call t_stopf('tphysbc_diagnostics')
+
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
 end subroutine tphysbc
