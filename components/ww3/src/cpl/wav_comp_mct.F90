@@ -425,11 +425,11 @@ CONTAINS
       call shr_sys_flush(ndso)
 
       if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
-         write(ndso,*) 'starttype: initial'
+         if ( iaproc .eq. napout ) write(ndso,*) 'starttype: initial'
       else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
-         write(ndso,*) 'starttype: continue'
+         if ( iaproc .eq. napout ) write(ndso,*) 'starttype: continue'
       else if (trim(starttype) == trim(seq_infodata_start_type_brnch)) then
-         write(ndso,*) 'starttype: branch'
+         if ( iaproc .eq. napout ) write(ndso,*) 'starttype: branch'
       end if
       if ( iaproc == napout) then
          write(ndso,*) trim(subname),' inst_name   = ',trim(inst_name)
@@ -519,7 +519,7 @@ CONTAINS
       !--------------------------------------------------------------------
 
       iostyp = 1        ! gridded field
-      write (ndso,940) 'no dedicated output process, any file system '
+      if ( iaproc .eq. napout ) write (ndso,940) 'no dedicated output process, any file system '
       call shr_sys_flush(ndso)
 
       ! TODO - need to enable restart files in run
