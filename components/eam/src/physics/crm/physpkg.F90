@@ -5,7 +5,7 @@ module physpkg
 #ifdef SPMD
   use mpishorthand
 #endif
-    use perf_mod
+  use perf_mod
   use shr_kind_mod,            only: i8 => shr_kind_i8, r8 => shr_kind_r8
   use shr_sys_mod,             only: shr_sys_irtc
   use shr_sys_mod,             only: shr_sys_flush
