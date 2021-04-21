@@ -1764,18 +1764,10 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
                         cam_in%landfrac, landm, cam_in%icefrac, cam_in%snowhland, &
                         fsns, fsnt, flns, flnt, fsds, &
                         net_flx, is_cmip6_volc, ztodt, clear_rh=mmf_clear_rh)
-
-    ! Set net flux used by spectral dycores
-    do i=1,ncol
-      tend%flx_net(i) = net_flx(i)
-    end do
-    
-    ! For MMF, don't add radiative tendency to GCM as it was added in CRM
-    ptend%s = 0.
-
-    call physics_update(state, ptend, ztodt, tend)
-    call check_energy_chng(state, tend, "mmfradheat", nstep, ztodt, zero, zero, zero, zero) 
     call t_stopf('radiation')
+
+    ! We don't need to call physics_update or check_energy_chng for the MMF
+    ! because the radiative tendency is added within the call to crm_physics_tend
 
   end if ! l_rad
 
