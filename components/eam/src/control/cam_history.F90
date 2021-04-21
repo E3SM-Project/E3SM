@@ -1780,6 +1780,7 @@ CONTAINS
         tape(t)%hlist(f)%field%decomp_type = decomp(f,t)
         tape(t)%hlist(f)%field%numlev = tmpnumlev(f,t)
         tape(t)%hlist(f)%field%mixing_ratio = ''
+        tape(t)%hlist(f)%field%standard_name = ''
         tape(t)%hlist(f)%hwrt_prec = tmpprec(f,t)
 
         mdimcnt = count(allmdims(:,f,t) > 0)
