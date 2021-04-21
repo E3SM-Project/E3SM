@@ -2,6 +2,6 @@
 
 export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-white/bin:$PATH
 
-source ./scream/components/scream/scripts/jenkins/sandia_son_proxy
+source $JENKINS_SCRIPT_DIR/sandia_son_proxy
 
 SCREAM_MACHINE=white

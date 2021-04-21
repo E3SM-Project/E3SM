@@ -45,7 +45,7 @@ if [ $skip_testing -eq 0 ]; then
   fi
 
   # Uncomment this once pylint is available on target machines
-  if [ $test_scripts -eq 1 ]; then
+  if [[ $test_scripts == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     # JGF: I'm not sure there's much value in these dry-run comparisons
     # since we aren't changing HEADs
     ./scripts/scripts-tests -g
