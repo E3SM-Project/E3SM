@@ -42,7 +42,6 @@ real(r8), parameter :: km_inv_to_m_inv = 0.001_r8      !1/km to 1/m
 character(len=fieldname_len), pointer :: odv_names(:)  ! outfld names for visible OD
 integer  :: idx_ext_sw, idx_ssa_sw, idx_af_sw, idx_ext_lw !pbuf indices for volcanic cmip6 file
 integer  :: ihuge ! a huge integer
-real(r8) :: rhuge ! a huge real number
 !==============================================================================
 contains
 !==============================================================================
@@ -60,8 +59,7 @@ subroutine aer_rad_props_init()
 
    !----------------------------------------------------------------------------
 
-   rhuge = huge(1.0_r8)
-   ihuge = huge(1)
+   ihuge = huge(ihuge)
    
    call phys_getopts( history_aero_optics_out    = history_aero_optics, &
                       history_amwg_out           = history_amwg,    &
@@ -194,7 +192,7 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
    ! for cmip6 style volcanic file
    integer  :: trop_level(pcols), icol
    real(r8), pointer :: ext_cmip6_sw(:,:,:)
-   real(r8), target  :: rhuge_arr(nswbands,pcols,pver) 
+   real(r8) :: ext_cmip6_sw_inv_m(pcols,pver,nswbands)! short wave extinction in the units of 1/m
    
    !-----------------------------------------------------------------------------
 
@@ -231,18 +229,17 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
    !Special treatment for CMIP6 volcanic aerosols, where extinction, ssa 
    !and af are directly read from the prescribed volcanic aerosol file
 
-   !Point ext_cmip6_sw to unphysically huges values so that the code breaks if they are used for is_cmip6_volc=.false. case
+   !Point ext_cmip6_sw to null so that the code breaks if they are used for is_cmip6_volc=.false. case
    !This is done to avoid having optional arguments in modal_aero_sw call
-   rhuge_arr = rhuge
-   ext_cmip6_sw => rhuge_arr
-   trop_level = ihuge
+   ext_cmip6_sw => null()
+   trop_level(:) = ihuge
    if (is_cmip6_volc) then
       !get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
       !converting it from 1/km to 1/m 
 
       call pbuf_get_field(pbuf, idx_ext_sw, ext_cmip6_sw)
       call outfld('extinct_sw_inp',ext_cmip6_sw(:,:,idx_sw_diag), pcols, lchnk)
-      ext_cmip6_sw = ext_cmip6_sw * km_inv_to_m_inv !convert from 1/km to 1/m  
+      ext_cmip6_sw_inv_m = ext_cmip6_sw * km_inv_to_m_inv !convert from 1/km to 1/m
       
       !Find tropopause as extinction should be applied only above tropopause
       !trop_level has value for tropopause for each column
@@ -262,7 +259,7 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
 
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
-      call modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw(:,:,idx_sw_diag), trop_level, &
+      call modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw_inv_m(:,:,idx_sw_diag), trop_level, &
                          tau, tau_w, tau_w_g, tau_w_f)
    else
       tau    (1:ncol,:,:) = 0._r8
@@ -273,7 +270,7 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
 
    if (is_cmip6_volc) then
       !update tau, tau_w, tau_w_g, and tau_w_f with the read in values of extinction, ssa and asymmetry factors
-      call volcanic_cmip_sw(state, pbuf, trop_level, ext_cmip6_sw, tau, tau_w, tau_w_g, tau_w_f)
+      call volcanic_cmip_sw(state, pbuf, trop_level, ext_cmip6_sw_inv_m, tau, tau_w, tau_w_g, tau_w_f)
    endif
 
    ! Contributions from bulk aerosols.
@@ -408,6 +405,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
    integer  :: trop_level(pcols), icol, ilev_tropp, ipver
    real(r8) :: lyr_thk
    real(r8), pointer :: ext_cmip6_lw(:,:,:)
+   real(r8) :: ext_cmip6_lw_inv_m(pcols,pver,nlwbands)!long wave extinction in the units of 1/m
    !-----------------------------------------------------------------------------
 
    ncol = state%ncol
@@ -441,6 +439,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
       wrh(1:ncol,1:pver) = rhtrunc(1:ncol,1:pver) * nrh - krh(1:ncol,1:pver)       ! (-) weighting on left side values
 
    end if
+   ext_cmip6_lw => null()
    if(is_cmip6_volc) then
       !Logic:
       !Update odap_aer with the read in volcanic aerosol extinction (1/km).                                                                                    
@@ -449,7 +448,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
       !Obtain read in values for ext from the volcanic input file                                                                                              
       call pbuf_get_field(pbuf, idx_ext_lw, ext_cmip6_lw)
       call outfld('extinct_lw_inp',ext_cmip6_lw(:,:,idx_lw_diag), pcols, lchnk)
-      ext_cmip6_lw = ext_cmip6_lw * km_inv_to_m_inv  !convert from 1/km to 1/m
+      ext_cmip6_lw_inv_m = ext_cmip6_lw * km_inv_to_m_inv  !convert from 1/km to 1/m
       !Above the tropopause, the read in values from the file include both the stratospheric
       !and volcanic aerosols. Therefore, we need to zero out odap_aer above the tropopause                                                                   
       !and populate it exclusively from the read in values.
@@ -471,7 +470,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
       do icol = 1, ncol
          ilev_tropp = trop_level(icol) !tropopause level
          lyr_thk    = state%zi(icol,ilev_tropp) - state%zi(icol,ilev_tropp+1)! in meters                                                                      
-         odap_aer(icol,ilev_tropp,:) = 0.5_r8*( odap_aer(icol,ilev_tropp,:) + (lyr_thk * ext_cmip6_lw(icol,ilev_tropp,:)) )
+         odap_aer(icol,ilev_tropp,:) = 0.5_r8*( odap_aer(icol,ilev_tropp,:) + (lyr_thk * ext_cmip6_lw_inv_m(icol,ilev_tropp,:)) )
       enddo
       !As it will be more efficient for FORTRAN to loop over levels and then columns, the following loops
       !are nested keeping that in mind
@@ -480,7 +479,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
             ilev_tropp = trop_level(icol) !tropopause level
             if (ipver < ilev_tropp) then !BALLI: see if this is right!
                lyr_thk = state%zi(icol,ipver) - state%zi(icol,ipver+1)
-               odap_aer(icol,ipver,:) = lyr_thk * ext_cmip6_lw(icol,ipver,:)
+               odap_aer(icol,ipver,:) = lyr_thk * ext_cmip6_lw_inv_m(icol,ipver,:)
             endif
          enddo
       enddo
@@ -736,14 +735,14 @@ end subroutine get_volcanic_radius_rad_props
 
 !==============================================================================
 
-subroutine volcanic_cmip_sw (state, pbuf, trop_level, ext_cmip6_sw, tau, tau_w, tau_w_g, tau_w_f)
+subroutine volcanic_cmip_sw (state, pbuf, trop_level, ext_cmip6_sw_inv_m, tau, tau_w, tau_w_g, tau_w_f)
   
   !Intent-in
   type(physics_state), intent(in), target :: state
   type(physics_buffer_desc), pointer :: pbuf(:)
   
   integer,  intent(in) :: trop_level(pcols)
-  real(r8), intent(in) :: ext_cmip6_sw(pcols,pver,nswbands)
+  real(r8), intent(in) :: ext_cmip6_sw_inv_m(pcols,pver,nswbands)
 
   !Intent-inout
   real(r8), intent(inout) :: tau    (pcols,0:pver,nswbands) ! aerosol extinction optical depth
@@ -783,7 +782,7 @@ subroutine volcanic_cmip_sw (state, pbuf, trop_level, ext_cmip6_sw, tau, tau_w, 
      
      lyr_thk = state%zi(icol,ilev_tropp) - state%zi(icol,ilev_tropp+1)
      
-     ext_unitless(:)  = lyr_thk * ext_cmip6_sw(icol,ilev_tropp,:)
+     ext_unitless(:)  = lyr_thk * ext_cmip6_sw_inv_m(icol,ilev_tropp,:)
      asym_unitless(:) = af_cmip6_sw (icol,ilev_tropp,:)
      ext_ssa(:)       = ext_unitless(:) * ssa_cmip6_sw(icol,ilev_tropp,:)
      ext_ssa_asym(:)  = ext_ssa(:) * asym_unitless(:)
@@ -803,7 +802,7 @@ subroutine volcanic_cmip_sw (state, pbuf, trop_level, ext_cmip6_sw, tau, tau_w, 
            
            lyr_thk = state%zi(icol,ipver) - state%zi(icol,ipver+1)
            
-           ext_unitless(:)  = lyr_thk * ext_cmip6_sw(icol,ipver,:)
+           ext_unitless(:)  = lyr_thk * ext_cmip6_sw_inv_m(icol,ipver,:)
            asym_unitless(:) = af_cmip6_sw(icol,ipver,:)
            ext_ssa(:)       = ext_unitless(:) * ssa_cmip6_sw(icol,ipver,:)
            ext_ssa_asym(:)  = ext_ssa(:) * asym_unitless(:)
