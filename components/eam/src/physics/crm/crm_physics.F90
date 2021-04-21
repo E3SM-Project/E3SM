@@ -474,7 +474,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use phys_grid    , only: get_rlon_p, get_rlat_p, get_gcol_p  
    use spmd_utils,          only: masterproc
 
-   real(r8),                        intent(in   ) :: ztodt            ! global model time increment
+   real(r8),                        intent(in   ) :: ztodt            ! global model time increment and CRM run length
    type(physics_state),             intent(in   ) :: state            ! Global model state 
    type(physics_tend),              intent(in   ) :: tend             ! 
    type(physics_ptend),             intent(  out) :: ptend            ! output tendencies
