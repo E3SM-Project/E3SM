@@ -79,7 +79,7 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   rrtmgp::rrtmgp_initialize(gas_concs);
 }
 
-void RRTMGPRadiation::run_impl (const Real /* dt */) {
+void RRTMGPRadiation::run_impl (const Real dt) {
   // Get data from AD; RRTMGP wants YAKL views
   // TODO: how can I just keep these around without having to create every time?
   // They are just pointers, so should be able to keep them somewhere else and just associate them once?
