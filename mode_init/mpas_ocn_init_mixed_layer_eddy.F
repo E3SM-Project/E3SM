@@ -84,7 +84,7 @@ contains
       real (kind=RKIND) :: yMin, yMax, xMin, xMax, dcEdgeMin, dcEdgeMinGlobal
       real (kind=RKIND) :: yMinGlobal, yMaxGlobal, yMidGlobal, xMinGlobal, xMaxGlobal, xMidGlobal
       real (kind=RKIND) :: y1Global, y2Global
-      real (kind=RKIND) :: temperature, randomPerturbation
+      real (kind=RKIND) :: temperature, randomPerturbation, restoringRate
 
       type (block_type), pointer :: block_ptr
 
@@ -93,6 +93,7 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: verticalMeshPool
       type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: tracersInteriorRestoringFieldsPool
 
       integer :: iCell, j, k, idx, idx_mixed_layer_base
 
@@ -101,7 +102,7 @@ contains
       integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       ! Define variable pointers
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: maxLevelCell, minLevelCell
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell,refBottomDepth, refZMid, &
                                                   vertCoordMovementWeights, bottomDepth, &
                                                   fCell, fEdge, fVertex, dcEdge
@@ -109,6 +110,8 @@ contains
                                                   sensibleHeatFlux, evaporationFlux
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersInteriorRestoringValue, &
+                                                      activeTracersInteriorRestoringRate
 
       ! Define local interfaceLocations variable
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
@@ -174,6 +177,7 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+        call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
 
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
@@ -188,6 +192,7 @@ contains
         call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+        call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
         call mpas_pool_get_array(meshPool, 'fCell', fCell)
         call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
         call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
@@ -203,8 +208,16 @@ contains
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
 
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, &
+             'activeTracersInteriorRestoringRate', activeTracersInteriorRestoringRate, 1)
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, &
+             'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
+
         call ocn_mark_north_boundary(meshPool, yMaxGlobal, dcEdgeMinGlobal, iErr)
         call ocn_mark_south_boundary(meshPool, yMinGlobal, dcEdgeMinGlobal, iErr)
+
+        activeTracersInteriorRestoringRate(:,:,:) = 0.0_RKIND
+        activeTracersInteriorRestoringValue(:,:,:) = 0.0_RKIND
 
         ! Set refBottomDepth and refZMid
         do k = 1, nVertLevels
@@ -223,9 +236,6 @@ contains
         ! Set vertCoordMovementWeights
         vertCoordMovementWeights(:) = 1.0_RKIND
 
-        ! Initialize random number generator
-        call random_seed()
-
         ! Loop over cells
         do iCell = 1, nCellsSolve
            ! Set surface forcing
@@ -233,82 +243,6 @@ contains
            evaporationFlux(iCell) = config_mixed_layer_eddy_evaporation_flux
            windStressZonal(iCell) = config_mixed_layer_eddy_wind_stress_zonal
            windStressMeridional(iCell) = config_mixed_layer_eddy_wind_stress_meridional
-           ! Set debug tracer
-           if ( associated(debugTracers) ) then
-              idx = index_tracer1
-              do k = 1, nVertLevels
-                 debugTracers(idx, k, iCell) = 1.0_RKIND
-              enddo
-           end if
-
-           ! Set initial condition for temperature and salinity with an idealized front
-           if ( associated(activeTracers) ) then
-              ! Set temperature
-              if ( config_mixed_layer_eddy_two_fronts ) then
-                 y1Global = ( yMinGlobal + yMidGlobal ) * 0.5_RKIND
-                 y2Global = ( yMaxGlobal + yMidGlobal ) * 0.5_RKIND
-                 idx = index_temperature
-                 do k = nVertLevels, idx_mixed_layer_base, -1
-                    temperature = config_mixed_layer_eddy_base_temperature &
-                                + config_mixed_layer_eddy_temperature_stratification_interior &
-                                * ( refZMid(k) + config_mixed_layer_eddy_mixed_layer_depth ) &
-                                + 0.5_RKIND * config_mixed_layer_eddy_temperature_front_width &
-                                * config_mixed_layer_eddy_temperature_horizontal_gradient &
-                                * ( tanh( 2.0_RKIND * (yCell(iCell) - y1Global) / &
-                                        config_mixed_layer_eddy_temperature_front_width ) &
-                                -   tanh( 2.0_RKIND * (yCell(iCell) - y2Global) / &
-                                        config_mixed_layer_eddy_temperature_front_width ) + 1.0_RKIND )
-                    activeTracers(idx, k, iCell) = temperature
-                 end do
-                 do k = idx_mixed_layer_base-1, 1, -1
-                    temperature = config_mixed_layer_eddy_base_temperature &
-                                + config_mixed_layer_eddy_temperature_stratification_mixed_layer &
-                                * ( refZMid(k) + config_mixed_layer_eddy_mixed_layer_depth ) &
-                                + 0.5_RKIND * config_mixed_layer_eddy_temperature_front_width &
-                                * config_mixed_layer_eddy_temperature_horizontal_gradient &
-                                * ( tanh( 2.0_RKIND * (yCell(iCell) - y1Global) / &
-                                        config_mixed_layer_eddy_temperature_front_width ) &
-                                -   tanh( 2.0_RKIND * (yCell(iCell) - y2Global) / &
-                                        config_mixed_layer_eddy_temperature_front_width ) + 1.0_RKIND )
-                    activeTracers(idx, k, iCell) = temperature
-                 end do
-              else
-                 idx = index_temperature
-                 do k = nVertLevels, idx_mixed_layer_base, -1
-                    temperature = config_mixed_layer_eddy_base_temperature &
-                                + config_mixed_layer_eddy_temperature_stratification_interior &
-                                * ( refZMid(k) + config_mixed_layer_eddy_mixed_layer_depth ) &
-                                + 0.5_RKIND * config_mixed_layer_eddy_temperature_front_width &
-                                * config_mixed_layer_eddy_temperature_horizontal_gradient &
-                                * tanh( 2.0_RKIND * (yCell(iCell) - yMidGlobal) / &
-                                        config_mixed_layer_eddy_temperature_front_width )
-                    activeTracers(idx, k, iCell) = temperature
-                 end do
-                 do k = idx_mixed_layer_base-1, 1, -1
-                    temperature = config_mixed_layer_eddy_base_temperature &
-                                + config_mixed_layer_eddy_temperature_stratification_mixed_layer &
-                                * ( refZMid(k) + config_mixed_layer_eddy_mixed_layer_depth ) &
-                                + 0.5_RKIND * config_mixed_layer_eddy_temperature_front_width &
-                                * config_mixed_layer_eddy_temperature_horizontal_gradient &
-                                * tanh( 2.0_RKIND * (yCell(iCell) - yMidGlobal) / &
-                                        config_mixed_layer_eddy_temperature_front_width )
-                    activeTracers(idx, k, iCell) = temperature
-                 end do
-              end if
-
-              ! Random perturbation [0,1)
-              call random_number(randomPerturbation)
-              ! [0,1) to [-1,1)
-              randomPerturbation = 2.0_RKIND * randomPerturbation - 1.0_RKIND
-              ! Add random perturbation, constant in z
-              activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) &
-                             + config_mixed_layer_eddy_temperature_perturbation_magnitude &
-                             * randomPerturbation
-
-              ! Set salinity
-              idx = index_salinity
-              activeTracers(idx, :, iCell) = config_mixed_layer_eddy_salinity
-           end if
 
            ! Set layerThickness and restingThickness
            do k = 1, nVertLevels
@@ -316,7 +250,6 @@ contains
                                        - interfaceLocations(k) )
               restingThickness(k, iCell) = config_mixed_layer_eddy_bottom_depth * ( interfaceLocations(k+1) &
                                          - interfaceLocations(k) )
-
            end do
 
            ! Set bottomDepth
@@ -325,7 +258,135 @@ contains
            ! Set maxLevelCell
            maxLevelCell(iCell) = nVertLevels
 
+           ! Set minLevelCell
+           minLevelCell(iCell) = 1
+
+           ! Set debug tracer
+           if ( associated(debugTracers) ) then
+              idx = index_tracer1
+              do k = 1, nVertLevels
+                 debugTracers(idx, k, iCell) = 1.0_RKIND
+              enddo
+           end if
         end do
+
+        ! Set initial condition for temperature and salinity
+        if ( associated(activeTracers) ) then
+           if ( config_mixed_layer_eddy_two_fronts ) then
+              y1Global = ( yMinGlobal + yMidGlobal ) * 0.5_RKIND
+              y2Global = ( yMaxGlobal + yMidGlobal ) * 0.5_RKIND
+              ! Loop over cells
+              do iCell = 1, nCellsSolve
+                 ! Set temperature
+                 idx = index_temperature
+                 do k = nVertLevels, idx_mixed_layer_base, -1
+                    temperature = config_mixed_layer_eddy_base_temperature &
+                                + config_mixed_layer_eddy_temperature_stratification_interior &
+                                * ( refZMid(k) + config_mixed_layer_eddy_mixed_layer_depth ) &
+                                + 0.5_RKIND * config_mixed_layer_eddy_temperature_front_width &
+                                * config_mixed_layer_eddy_temperature_horizontal_gradient &
+                                * ( tanh( 2.0_RKIND * (yCell(iCell) - y1Global) / &
+                                        config_mixed_layer_eddy_temperature_front_width ) &
+                                -   tanh( 2.0_RKIND * (yCell(iCell) - y2Global) / &
+                                        config_mixed_layer_eddy_temperature_front_width ) + 1.0_RKIND )
+                    activeTracers(idx, k, iCell) = temperature
+                 end do
+                 do k = idx_mixed_layer_base-1, 1, -1
+                    temperature = config_mixed_layer_eddy_base_temperature &
+                                + config_mixed_layer_eddy_temperature_stratification_mixed_layer &
+                                * ( refZMid(k) + config_mixed_layer_eddy_mixed_layer_depth ) &
+                                + 0.5_RKIND * config_mixed_layer_eddy_temperature_front_width &
+                                * config_mixed_layer_eddy_temperature_horizontal_gradient &
+                                * ( tanh( 2.0_RKIND * (yCell(iCell) - y1Global) / &
+                                        config_mixed_layer_eddy_temperature_front_width ) &
+                                -   tanh( 2.0_RKIND * (yCell(iCell) - y2Global) / &
+                                        config_mixed_layer_eddy_temperature_front_width ) + 1.0_RKIND )
+                    activeTracers(idx, k, iCell) = temperature
+                 end do
+
+                 ! Set salinity
+                 idx = index_salinity
+                 activeTracers(idx, :, iCell) = config_mixed_layer_eddy_salinity
+              end do
+           else ! single front
+              ! Loop over cells
+              do iCell = 1, nCellsSolve
+                 ! Set temperature
+                 idx = index_temperature
+                 do k = nVertLevels, idx_mixed_layer_base, -1
+                    temperature = config_mixed_layer_eddy_base_temperature &
+                                + config_mixed_layer_eddy_temperature_stratification_interior &
+                                * ( refZMid(k) + config_mixed_layer_eddy_mixed_layer_depth ) &
+                                + 0.5_RKIND * config_mixed_layer_eddy_temperature_front_width &
+                                * config_mixed_layer_eddy_temperature_horizontal_gradient &
+                                * tanh( 2.0_RKIND * (yCell(iCell) - yMidGlobal) / &
+                                        config_mixed_layer_eddy_temperature_front_width )
+                    activeTracers(idx, k, iCell) = temperature
+                 end do
+                 do k = idx_mixed_layer_base-1, 1, -1
+                    temperature = config_mixed_layer_eddy_base_temperature &
+                                + config_mixed_layer_eddy_temperature_stratification_mixed_layer &
+                                * ( refZMid(k) + config_mixed_layer_eddy_mixed_layer_depth ) &
+                                + 0.5_RKIND * config_mixed_layer_eddy_temperature_front_width &
+                                * config_mixed_layer_eddy_temperature_horizontal_gradient &
+                                * tanh( 2.0_RKIND * (yCell(iCell) - yMidGlobal) / &
+                                        config_mixed_layer_eddy_temperature_front_width )
+                    activeTracers(idx, k, iCell) = temperature
+                 end do
+
+                 ! Set salinity
+                 idx = index_salinity
+                 activeTracers(idx, :, iCell) = config_mixed_layer_eddy_salinity
+
+                 ! Set restoring at boundaries
+                 if (yMaxGlobal-yCell(iCell) <= 3.0_RKIND*config_mixed_layer_eddy_restoring_width) then
+                    do k = 1, nVertLevels
+                       restoringRate = exp( (yCell(iCell) - yMaxGlobal) / &
+                                       config_mixed_layer_eddy_restoring_width ) * &
+                                       ( 1.0_RKIND / (config_mixed_layer_eddy_restoring_tau*86400.0_RKIND))
+                       idx = index_temperature
+                       activeTracersInteriorRestoringValue(idx, k, iCell) = activeTracers(idx, k, iCell)
+                       activeTracersInteriorRestoringRate(idx, k, iCell) = restoringRate
+                       idx = index_salinity
+                       activeTracersInteriorRestoringValue(idx, k, iCell) = activeTracers(idx, k, iCell)
+                       activeTracersInteriorRestoringRate(idx, k, iCell) = restoringRate
+                    end do
+                 end if
+
+                 if (yCell(iCell)-yMinGlobal <= 3.0_RKIND*config_mixed_layer_eddy_restoring_width) then
+                    do k = 1, nVertLevels
+                       restoringRate = exp( (yMinGlobal - yCell(iCell)) / &
+                                       config_mixed_layer_eddy_restoring_width ) * &
+                                       ( 1.0_RKIND / (config_mixed_layer_eddy_restoring_tau*86400.0_RKIND))
+                       idx = index_temperature
+                       activeTracersInteriorRestoringValue(idx, k, iCell) = activeTracers(idx, k, iCell)
+                       activeTracersInteriorRestoringRate(idx, k, iCell) = restoringRate
+                       idx = index_salinity
+                       activeTracersInteriorRestoringValue(idx, k, iCell) = activeTracers(idx, k, iCell)
+                       activeTracersInteriorRestoringRate(idx, k, iCell) = restoringRate
+                    end do
+                 end if
+              end do
+           end if
+
+           ! Add random perturbation to initial temperature
+           idx = index_temperature
+
+           ! Initialize random number generator
+           call random_seed()
+
+           ! Loop over cells
+           do iCell = 1, nCellsSolve
+              ! Random perturbation [0,1)
+              call random_number(randomPerturbation)
+              ! [0,1) to [-1,1)
+              randomPerturbation = 2.0_RKIND * randomPerturbation - 1.0_RKIND
+              ! Add random perturbation, constant in z
+              activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) &
+                             + config_mixed_layer_eddy_temperature_perturbation_magnitude &
+                             * randomPerturbation
+           end do
+        end if
 
         ! Set Coriolis parameters
         fCell(:) = config_mixed_layer_eddy_coriolis_parameter

@@ -37,12 +37,20 @@
 		/>
 		<nml_option name="config_mixed_layer_eddy_salinity" type="real" default_value="35.0" units="PSU"
 			description="Salinity of the water in the entire domain."
-			possible_values="Any real number greater than 0."
+			possible_values="Any real number larger than zero."
 		/>
 		<nml_option name="config_mixed_layer_eddy_two_fronts" type="logical" default_value=".false." units="unitless"
 			description="Logical flag that determines if the initial fields has two fronts."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_mixed_layer_eddy_restoring_width" type="real" default_value="5e3" units="m"
+			description="E-folding width of the restoring region at boundaries, only used for single front."
+			possible_values="Any real number larger than zero."
+			/>
+		<nml_option name="config_mixed_layer_eddy_restoring_tau" type="real" default_value="5.0" units="days"
+			description="Time scale for restoring at boundaries, only used for single front."
+			possible_values="Any real number larger than zero."
+			/>
 		<nml_option name="config_mixed_layer_eddy_heat_flux" type="real" default_value="0.0" units="m ^oC s^{-1}"
 			description="Surface heat flux."
 			possible_values="Any real number."
