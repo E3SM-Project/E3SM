@@ -315,6 +315,7 @@ def _ensure_pylib_impl(libname, pipname=None):
             # Use ensurepip for installing pip
             import ensurepip
             ensurepip.bootstrap(user=True)
+            stat, _, err = run_cmd("{} -m pip install --upgrade pip".format(sys.executable))
         else:
             # Other installs will use pip, so we need to ensure it's available
             ensure_pip()
