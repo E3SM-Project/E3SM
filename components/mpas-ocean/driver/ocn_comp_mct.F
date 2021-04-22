@@ -2328,6 +2328,7 @@ contains
    real (kind=RKIND) :: surfaceFreezingTemp
 
    logical, pointer :: frazilIceActive,          &
+                       config_frazil_heat_of_fusion, &
                        config_use_ecosysTracers, &
                        config_use_DMSTracers,    &
                        config_use_MacroMoleculesTracers,  &
@@ -2343,6 +2344,7 @@ contains
 
    ! get configure options
    call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
+   call mpas_pool_get_config(domain % configs, 'config_frazil_heat_of_fusion', config_frazil_heat_of_fusion)
    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
    call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
    call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers', config_use_DMSTracers)
