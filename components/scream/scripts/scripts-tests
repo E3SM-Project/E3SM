@@ -259,9 +259,9 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 ###############################################################################
 
     CMDS_TO_TEST = [
-        "test-all-scream -m $machine -b HEAD -k",
-        "test-all-scream -m $machine -b HEAD -k -t dbg",
-        "test-all-scream --baseline-dir $results -c EKAT_DISABLE_TPL_WARNINGS=ON -i -m $machine --submit --dry-run", # always dry run
+        "./test-all-scream -m $machine -b HEAD -k",
+        "./test-all-scream -m $machine -b HEAD -k -t dbg",
+        "./test-all-scream --baseline-dir $results -c EKAT_DISABLE_TPL_WARNINGS=ON -i -m $machine --submit --dry-run", # always dry run
     ]
 
     def __init__(self, *internal_args):
@@ -374,7 +374,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE1")
 
             # Re-run without reusing baselines, should force regeneration
-            cmd = self.get_cmd("SCREAM_FAKE_GIT_HEAD=FAKE3 ./test-all-scream -m $machine -b HEAD -k -t dbg -t sp".format(baseline_dir), self._machine, dry_run=False)
+            cmd = self.get_cmd("SCREAM_FAKE_GIT_HEAD=FAKE3 ./test-all-scream -m $machine -b HEAD -k -t dbg -t sp", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE3")
