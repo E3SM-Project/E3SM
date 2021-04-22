@@ -21,7 +21,7 @@ fi
 if [ $skip_testing -eq 0 ]; then
   # User did not request to skip tests. Proceed with testing.
 
-  cd $JENKINS_SCRIPT_DIR/..
+  cd $JENKINS_SCRIPT_DIR/../..
 
   source scripts/jenkins/${NODE_NAME}_setup
 
