@@ -8,6 +8,7 @@
 module control_mod
   use kinds, only : real_kind
   use physical_constants, only: dd_pi
+  use physical_constants, only: sx, sy
 
   implicit none
 
@@ -252,6 +253,12 @@ module control_mod
   real (kind=real_kind), public :: dcmip16_mu_s    = 0        ! additional uniform viscosity (scalar dynamical variables)
   real (kind=real_kind), public :: dcmip16_mu_q    = -1       ! additional uniform viscosity (scalar tracers); -1 implies it defaults to dcmip16_mu_s value
   real (kind=real_kind), public :: interp_lon0     = 0.0d0
+
+!PLANAR
+
+  real (kind=real_kind), public :: Lx, Ly !defaults are setin planar mod
+  real (kind=real_kind), private, parameter :: tol_zero=1e-10
+  public :: set_planar_defaults
 
 contains
 
@@ -616,5 +623,73 @@ contains
     if (par%masterproc .and. nerr > 0) &
          write(iulog,'(a,i2)') 'test_timestep_make_parameters_consistent nerr', nerr
   end subroutine test_timestep_make_parameters_consistent
+
+
+subroutine set_planar_defaults()
+
+!if true, most likely lx,ly,sx,sy weren't set in ctl_nl
+    if (abs(lx).le.tol_zero .and. abs(ly).le.tol_zero .and. abs(sx).le.tol_zero .and. abs(sy).le.tol_zero)then
+
+    if (test_case == "planar_dbl_vrtx") then
+      Lx = 5000.0D0 * 1000.0D0
+      Ly = 5000.0D0 * 1000.0D0
+      Sx = 0.0D0
+      Sy = 0.0D0
+    else if (test_case == "planar_hydro_gravity_wave") then
+       Lx = 6000.0D0 * 1000.0D0
+       Ly = 6000.0D0 * 1000.0D0
+       Sx = -3000.0D0 * 1000.0D0
+       Sy = -3000.0D0 * 1000.0D0
+    else if (test_case == "planar_nonhydro_gravity_wave") then
+       Lx = 300.0D0 * 1000.0D0
+       Ly = 300.0D0 * 1000.0D0
+       Sx = -150.0D0 * 1000.0D0
+       Sy = -150.0D0 * 1000.0D0
+    else if (test_case == "planar_hydro_mtn_wave") then
+       Lx = 240.0D0 * 1000.0D0
+       Ly = 240.0D0 * 1000.0D0
+       Sx = 0.0D0 * 1000.0D0
+       Sy = 0.0D0 * 1000.0D0
+    else if (test_case == "planar_nonhydro_mtn_wave") then
+       Lx = 144.0D0 * 1000.0D0
+       Ly = 144.0D0 * 1000.0D0
+       Sx = 0.0D0 * 1000.0D0
+       Sy = 0.0D0 * 1000.0D0
+    else if (test_case == "planar_schar_mtn_wave") then
+       Lx = 100.0D0 * 1000.0D0
+       Ly = 100.0D0 * 1000.0D0
+       Sx = 0.0D0 * 1000.0D0
+       Sy = 0.0D0 * 1000.0D0
+    else if (test_case == "planar_density_current" .OR. test_case == "planar_moist_density_current") then
+       Lx = 51.2D0 * 1000.0D0
+       Ly = 51.2D0 * 1000.0D0
+       Sx = -25.6D0 * 1000.0D0
+       Sy = -25.6D0 * 1000.0D0
+    else if (test_case == "planar_rising_bubble" .OR. test_case == "planar_moist_rising_bubble") then
+       Lx = 1.0D0 * 10000.0D0
+       Ly = 1.0D0 * 10000.0D0
+       Sx = -5000.0D0
+       Sy = -5000.0D0
+! THESE ARE WRONG AND NEED TO BE FIXED WHEN THESE CASES ARE ACTUALLY IMPLEMENTED....
+!else if (test_case == "planar_baroclinic_instab" .OR. test_case == "planar_moist_baroclinic_instab") then
+!       Lx = 5000.0D0 * 1000.0D0
+!       Ly = 5000.0D0 * 1000.0D0
+!       Sx = 0.0D0
+!       Sy = 0.0D0
+!    else if (test_case == "planar_tropical_cyclone") then
+!       Lx = 5000.0D0 * 1000.0D0
+!       Ly = 5000.0D0 * 1000.0D0
+!       Sx = 0.0D0
+!       Sy = 0.0D0
+!    else if (test_case == "planar_supercell") then
+!       Lx = 5000.0D0 * 1000.0D0
+!       Ly = 5000.0D0 * 1000.0D0
+!       Sx = 0.0D0
+!       Sy = 0.0D0
+
+    endif
+    endif !if lx,ly,sx,sy are not set in nl
+
+end subroutine set_planar_defaults
 
 end module control_mod
