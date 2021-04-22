@@ -277,6 +277,7 @@ module seq_diag_mct
 
   integer :: index_o2x_Faoo_h2otemp
   integer :: index_o2x_Fioo_frazil
+  integer :: index_o2x_Fioo_q
 
   integer :: index_xao_Faox_lwup
   integer :: index_xao_Faox_lat
@@ -313,6 +314,7 @@ module seq_diag_mct
   integer :: index_x2i_Faxa_rain
   integer :: index_x2i_Faxa_snow
   integer :: index_x2i_Fioo_frazil
+  integer :: index_x2i_Fioo_q
   integer :: index_x2i_Fixx_rofi
 
   integer :: index_g2x_Fogg_rofl
@@ -1336,6 +1338,7 @@ contains
     if (present(do_o2x)) then
        if (first_time) then
           index_o2x_Fioo_frazil  = mct_aVect_indexRA(o2x_o,'Fioo_frazil')
+          index_o2x_Fioo_q       = mct_aVect_indexRA(o2x_o,'Fioo_q')
           index_o2x_Faoo_h2otemp = mct_aVect_indexRA(o2x_o,'Faoo_h2otemp')
        end if
 
@@ -1346,9 +1349,9 @@ contains
           ca_i =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
           nf = f_area; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
           nf = f_wfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
+          nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Fioo_q,n)
           nf = f_hh2ot; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Faoo_h2otemp,n)
        end do
-       budg_dataL(f_hfrz,ic,ip) = -budg_dataL(f_wfrz,ic,ip) * shr_const_latice
     end if
 
     if (present(do_xao)) then
@@ -1654,6 +1657,7 @@ contains
           index_x2i_Faxa_rain   = mct_aVect_indexRA(x2i_i,'Faxa_rain')
           index_x2i_Faxa_snow   = mct_aVect_indexRA(x2i_i,'Faxa_snow')
           index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil')
+          index_x2i_Fioo_q      = mct_aVect_indexRA(x2i_i,'Fioo_q')
           index_x2i_Fixx_rofi   = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
 
           index_x2i_Faxa_rain_16O   = mct_aVect_indexRA(x2i_i,'Faxa_rain_16O', perrWith='quiet')
@@ -1685,6 +1689,8 @@ contains
 
           nf = f_wfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
+          nf = f_hfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
+               (ca_o+ca_i)*x2i_i%rAttr(index_x2i_Fioo_q,n)
           if ( flds_wiso_ice_x2i )then
              nf  = f_wrain_16O;
              budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
@@ -1710,7 +1716,6 @@ contains
        ic = c_inh_is
        budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-       budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_wfrz ,ic,ip)*shr_const_latice
 
        ic = c_ish_is
        budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
