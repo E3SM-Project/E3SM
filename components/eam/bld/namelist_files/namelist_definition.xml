@@ -2809,6 +2809,12 @@ Switch for CLUBB_SGS
 Default: FALSE
 </entry>
 
+<entry id="do_shoc_sgs" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Switch for SHOC_SGS
+Default: FALSE
+</entry>
+
 <entry id="do_aerocom_ind3" type="logical" category="conv"
        group="phys_ctl_nl" valid_values="" >
 Switch for AeroCom diagnostics
@@ -2816,7 +2822,7 @@ Default: FALSE
 </entry>
 
 <entry id="shallow_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="off,Hack,UW,CLUBB_SGS" >
+       group="phys_ctl_nl" valid_values="off,Hack,UW,CLUBB_SGS,SHOC_SGS" >
 Type of shallow convection scheme employed.  'Hack' for Hack shallow convection;
 'UW' for original McCaa UW pbl scheme, modified by Sungsu Park; 'CLUBB_SGS' for CLUBB_SGS
 Default: set by build-namelist (depends on <varname>eddy_scheme</varname>).
@@ -2917,6 +2923,13 @@ Default: .false.
 This is part of PNNL bug fixes under Polar project.It fixes the
 liq cloud fraction bug in macro and micro physics
 Default: .false.
+</entry>
+
+<!-- SHOC timestep -->
+<entry id="shoc_timestep" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+SHOC timestep.
+Default: set by build-namelist
 </entry>
 
 <entry id="clubb_cloudtop_cooling" type="logical"  category="pblrad"
