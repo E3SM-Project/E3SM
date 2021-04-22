@@ -263,7 +263,7 @@
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
 
 <!-- coupling -->
-<config_ssh_grad_relax_timescale>0.0</config_ssh_grad_relax_timescale>
+<config_ssh_grad_relax_timescale ocn_grid="EC30to60E2r2">0.0</config_ssh_grad_relax_timescale>
 <config_remove_AIS_coupler_runoff>.false.</config_remove_AIS_coupler_runoff>
 
 <!-- shortwaveRadiation -->
