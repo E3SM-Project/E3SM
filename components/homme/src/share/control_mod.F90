@@ -257,6 +257,15 @@ module control_mod
   real (kind=real_kind), public :: Lx, Ly !domain size
   real (kind=real_kind), public :: Sx, Sy !shift
   real (kind=real_kind), private, parameter :: tol_zero=1e-10 !tolerance to determine if lx,ly,sx,sy are set
+
+  real (kind=real_kind), public :: bubble_T0 = 270.0       !bubble ref state
+  real (kind=real_kind), public :: bubble_dT = 0.5         !bubble dTheta
+  real (kind=real_kind), public :: bubble_xycenter = 0.0   !bubble xy position
+  real (kind=real_kind), public :: bubble_zcenter = 200.0  !bubble z position
+  real (kind=real_kind), public :: bubble_ztop = 10000.0   !bubble z top
+  real (kind=real_kind), public :: bubble_radius = 1500.0  !bubble z top
+  logical,               public :: bubble_cosine  = .TRUE. !bubble uniform or cosine
+
   public :: set_planar_defaults
 
 contains

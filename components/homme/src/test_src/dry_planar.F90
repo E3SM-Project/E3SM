@@ -179,6 +179,10 @@ end subroutine planar_rising_bubble_init
 
 subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
+  use control_mod, only: bubble_T0, bubble_dT, bubble_xycenter, bubble_zcenter, bubble_ztop, &
+                         bubble_radius, bubble_cosine, &
+                         Lx, Ly, Sx, Sy
+
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
@@ -186,27 +190,26 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   real(rl),           intent(in)            :: d                        ! radius of perturbation
   real(rl),           intent(in)            :: f                        ! (const) Coriolis force
 
-  integer,  parameter :: zcoords = 0                                    ! we are not using z coords
-  logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
-
-  real(rl), parameter ::    &                                           !parameters needed to get eta from z
-    T0      = 270.d0,       &   ! temperature (k)
-    dT0     = 0.5d0,        &   ! perturbation
-    z0      = 2000.0d0,     &   ! bubble center in z
-    br0     = 1500.0d0,     &   ! bubble radius
-    ztop    = 10000.d0
-
   integer :: i,j,k,ie                                                   ! loopindices
-  real(rl):: x,y,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q(1),dp    !pointwise field values
-
+  real(rl):: x,y,hyam,hybm,hyai,hybi           
   real(rl):: pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr
 
 #ifdef MODEL_THETA_L
 
-  if (hybrid%masterthread) write(iulog,*) 'initializing hot bubble'
+  if (hybrid%masterthread) then
+     write(iulog,*) 'initializing hot bubble with'
+     print *, 'Lx, Ly =', Lx, Ly
+     print *, 'Sx, Sy =', Sx, Sy
+     print *, 'bubble_T0',  bubble_T0
+     print *, 'bubble_dT', bubble_dT
+     print *, 'bubble_xycenter', bubble_xycenter
+     print *, 'bubble_zcenter', bubble_zcenter
+     print *, 'bubble_ztop', bubble_ztop
+     print *, 'bubble_radius', bubble_radius
+     print *, 'bubble_cosine', bubble_cosine
+  endif
 
-  call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)
+  call get_evenly_spaced_z(zi,zm, 0.0_rl,bubble_ztop)
 
   ! set initial conditions
   do ie = nets,nete
@@ -218,22 +221,23 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
       do k=1,nlevp
 
-        rr = sqrt(x*x+y*y + (zi(k)-z0)**2)
+        rr = sqrt( (x-bubble_xycenter)   *(x-bubble_xycenter)+&
+                   (y-bubble_xycenter)   *(y-bubble_xycenter)+&
+                   (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) )
 
         !set pot. temperature on interfaces
-        if ( rr < br0 ) then 
-          !th0(k) = T0+dT0
-          th0(k) = T0 + dT0 * cos(rr*3.1415926d0 / br0 / 2.d0)         
+        if ( rr < bubble_radius ) then 
+          if (bubble_cosine) then
+            th0(k) = bubble_T0 + bubble_dT * cos(rr*dd_pi / bubble_radius / 2.d0)
+          else
+            th0(k) = bubble_T0 + bubble_dT
+          endif
 
-!print *, 'th0(k) =',th0(k)
-! rr*3.1415926d0 / br0/2.d0, &
-!cos(rr*3.1415926d0 / br0 / 2.d0)
- 
         else
-          th0(k) = T0
+          th0(k) = bubble_T0
         endif
 
-        !set interface pressure from const lapse rate, does not depend on x,y
+        !set interface pressure from const lapse rate, does not depend on x,y, or _dT
         pi(k) =  p0*( (270.0 - zi(k)*g/cp)/270.0  )**(1.0/kappa)
       enddo
 
@@ -258,8 +262,8 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   enddo !ie loop
 
   !create hybrid coords now from the 1st column
-  !note that this code should not depend on particioning,
-  !it depends on pressure whcih is init-ed in the same way for all elements/gll
+  !note that this code should not depend on partitioning
+  !it depends on pressure, whcih is init-ed in the same way for all elements/gll
   ai(:) = 0.0; bi(:) = 0.0
   ai(1) = pi(1)/p0
   bi(nlevp) = 1.0
@@ -283,15 +287,19 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   do ie = nets,nete
      elem(ie)%fcor(:,:) = f
+
+!init tracers!
+
      !sets hydro phi from theta and pressure
+     !do not call finalize, phinh_i is set here     
 !     call tests_finalize(elem(ie),hvcoord)
   enddo
 
 #else
   !not THETA_L
   !abort, no bubble for preqx
+  call abortmp('planar rising bubble does not work with preqx')
 #endif
-
 
 end subroutine dry_bubble_init
 

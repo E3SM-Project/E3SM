@@ -107,7 +107,14 @@ use physical_constants, only : dx, dy, dx_ref, dy_ref
   use control_mod, only:              &
     Lx, Ly, &
     Sx, Sy, &
-    set_planar_defaults
+    set_planar_defaults,&
+    bubble_T0, &
+    bubble_dT, &
+    bubble_xycenter, &
+    bubble_zcenter, &
+    bubble_ztop, &
+    bubble_radius, &
+    bubble_cosine
 #endif
 
 
@@ -325,7 +332,14 @@ use physical_constants, only : dx, dy, dx_ref, dy_ref
 !PLANAR
     namelist /ctl_nl/ &
       lx, ly, &
-      sx, sy
+      sx, sy, &
+      bubble_T0, &
+      bubble_dT, &
+      bubble_xycenter, &
+      bubble_zcenter, &
+      bubble_ztop, &
+      bubble_radius, &
+      bubble_cosine  
     namelist /vert_nl/        &
       vform,              &
       vfile_mid,          &
@@ -789,6 +803,17 @@ endif
     call MPI_bcast(sx     ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(sy     ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(planar_slice ,1,MPIlogical_t,par%root,par%comm,ierr)
+
+!PLANAR
+#ifndef CAM
+    call MPI_bcast(bubble_T0 ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_dT ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_xycenter,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_zcenter ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_ztop ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_radius ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_cosine ,1,MPIlogical_t,par%root,par%comm,ierr)
+#endif
 
     call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(transport_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
