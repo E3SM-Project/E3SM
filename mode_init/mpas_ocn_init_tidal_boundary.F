@@ -409,7 +409,7 @@ contains
         end if
       end do
 
-      ! check that there is some tidalInputMask
+      ! check that there is some tidalInputMask 
       if (.not. sum(tidalInputMask) > 0) then
         call mpas_log_write('Input mask for tidal case is not set!', MPAS_LOG_CRIT)
       end if
