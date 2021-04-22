@@ -125,7 +125,7 @@ class TestAllScream(object):
         print("JGF before")
         self._original_branch = get_current_branch()
         self._original_commit = get_current_commit()
-        print("JGF original branch: {}, original commit {}".format(self._original_branch, self._original_commit)
+        print("JGF original branch: {}, original commit {}".format(self._original_branch, self._original_commit))
 
         print_last_commit(git_ref=self._original_branch, dry_run=self._dry_run)
 
