@@ -1,4 +1,4 @@
-module load sems-env sems-python/3.5.2
+module load sems-env sems-python/3.5.2 sems-pylint/1.5.4/base
 
 source $JENKINS_SCRIPT_DIR/sandia_son_proxy
 
