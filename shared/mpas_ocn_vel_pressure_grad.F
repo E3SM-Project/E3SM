@@ -67,7 +67,8 @@ module ocn_vel_pressure_grad
       pGradTypeMontPot     = 3, &! Montgomery potential
       pGradTypeMontPotDens = 4, &! Montgomery potential and density
       pGradTypeJacobDens   = 5, &! Jacobian from density
-      pGradTypeJacobTS     = 6   ! Jacobian from T,S
+      pGradTypeJacobTS     = 6, &! Jacobian from T,S
+      pGradTypeConstForced = 7   ! constant forced
 
    real (kind=RKIND) :: &! precomputed constants for efficiency
       density0Inv,      &! 1/density0
@@ -98,6 +99,8 @@ contains
                                   indxT, indxS, tracers, &
                                   thermExpCoeff, salineContractCoeff, &
                                   tend, err)!{{{
+
+      implicit none
 
       !-----------------------------------------------------------------
       ! input variables
@@ -543,6 +546,30 @@ contains
          !$acc exit data delete (JacobianDxDs, JacobianTz, JacobianSz)
          deallocate(JacobianDxDs, JacobianTz, JacobianSz)
 
+      case (pGradTypeConstForced)
+
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(angleEdge,maxLevelEdgeTop, tend, edgeMask) &
+         !$acc    private(pGrad, k)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) &
+         !$omp    private(pGrad, k)
+#endif
+         do iEdge=1,nEdgesOwned
+            ! compute the pressure gradient to be applied at the edge
+            pGrad = config_zonal_ssh_grad * cos(angleEdge(iEdge)) + config_meridional_ssh_grad * sin(angleEdge(iEdge))
+
+            do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
+               tend(k,iEdge) = tend(k,iEdge) - gravity * edgeMask(k,iEdge) * pGrad
+            end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+         !$omp end parallel
+#endif
+
       case default
 
          !*** error already trapped during init
@@ -627,6 +654,10 @@ contains
       case ('Jacobian_from_TS')
          pGradType = pGradTypeJacobTS
          call mpas_log_write(' Pressure type is: Jacobian_from_TS')
+
+      case ('constant_forced')
+         pGradType = pGradTypeConstForced
+         call mpas_log_write(' Pressure type is: constant_forced')
 
       case default
          call mpas_log_write( &
