@@ -78,6 +78,7 @@ module ocn_forward_mode
    use ocn_equation_of_state
 
    use ocn_vmix
+   use ocn_vmix_gotm, only: ocn_vmix_gotm_finalize
 
    use ocn_forcing
    use ocn_time_varying_forcing
@@ -716,6 +717,8 @@ module ocn_forward_mode
       call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
 
       call ocn_analysis_finalize(domain, ierr)
+
+      call ocn_vmix_gotm_finalize(domain, ierr)
 
       call mpas_destroy_clock(domain % clock, ierr)
 
