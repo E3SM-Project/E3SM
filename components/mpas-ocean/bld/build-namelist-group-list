@@ -12,6 +12,7 @@ my @groups = qw(run_modes
                 gm_eddy_parameterization
                 rayleigh_damping
                 cvmix
+                gotm
                 forcing
                 coupling
                 shortwaveradiation
