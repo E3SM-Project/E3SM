@@ -956,6 +956,49 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- gotm -->
+
+<entry id="config_use_gotm" type="logical"
+	category="gotm" group="gotm">
+If true, use the General Ocean Turbulence Model routines to compute vertical diffusivity and viscosity
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_namelist_file" type="char*1024"
+	category="gotm" group="gotm">
+File name of GOTM turbulence namelist
+
+Valid values: gotmturb.nml
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_constant_surface_roughness_length" type="real"
+	category="gotm" group="gotm">
+The constant surface roughness length scale.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_constant_bottom_roughness_length" type="real"
+	category="gotm" group="gotm">
+The constant bottom roughness length scale.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_constant_bottom_drag_coeff" type="real"
+	category="gotm" group="gotm">
+The constant bottom drag coefficient.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- forcing -->
 
 <entry id="config_use_variable_drag" type="logical"
@@ -1469,7 +1512,7 @@ Default: Defined in namelist_defaults.xml
 	category="pressure_gradient" group="pressure_gradient">
 Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.  The sea surface height gradient (ssh_gradient) option is for barotropic, depth-averaged pressure.
 
-Valid values: 'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'
+Valid values: 'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential' or 'constant_forced'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1478,6 +1521,22 @@ Default: Defined in namelist_defaults.xml
 The weight between standard Jacobian and weighted Jacobian, $\gamma$.
 
 Valid values: any real between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zonal_ssh_grad" type="real"
+	category="pressure_gradient" group="pressure_gradient">
+The zonal (x) ssh gradient to be applied.
+
+Valid values: any real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_meridional_ssh_grad" type="real"
+	category="pressure_gradient" group="pressure_gradient">
+The meridional (y) ssh gradient to be applied.
+
+Valid values: any real
 Default: Defined in namelist_defaults.xml
 </entry>
 
