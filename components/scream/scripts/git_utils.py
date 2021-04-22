@@ -190,7 +190,7 @@ def cleanup_repo(orig_branch, orig_commit, repo=None, dry_run=False):
         toplevel_dir = get_git_toplevel_dir(repo=repo)
         run_cmd_no_fail("git checkout -- {}".format(toplevel_dir), from_dir=repo)
 
-    checkout_git_ref(orig_branch, repo=repo, dry_run=dry_run)
+    checkout_git_ref(orig_branch if orig_branch else orig_commit, repo=repo, dry_run=dry_run)
 
     # This *can* happen. test_all_scream can merge origin/master into current branch.
     # Checking out orig_branch doesn't do anything if we were on a branch (not detached
