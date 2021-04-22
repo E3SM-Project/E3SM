@@ -53,15 +53,15 @@ real(rtype) :: vk    ! von karmann constant [-]
 
 ! Set default values, if not overwritten by namelist.
 !  All are unitless (unless units are stated)
-real(rtype) :: thl2tune = 1.0_rtype ! Temperature variance tuning factor
-real(rtype) :: qw2tune = 1.0_rtype ! Moisture variance tuning factor
-real(rtype) :: qwthl2tune = 1.0_rtype ! Temperature moisture covariance
+real(rtype) :: thl2tune = 0.15_rtype ! Temperature variance tuning factor
+real(rtype) :: qw2tune = 0.15_rtype ! Moisture variance tuning factor
+real(rtype) :: qwthl2tune = 0.15_rtype ! Temperature moisture covariance
 real(rtype) :: w2tune = 1.0_rtype ! Vertical velocity variance
 real(rtype) :: length_fac = 0.5_rtype ! Length scale factor
 real(rtype) :: c_diag_3rd_mom = 7.0_rtype ! w3 factor
 real(rtype) :: lambda_low = 0.001_rtype ! lowest value for stability correction
 real(rtype) :: lambda_high = 0.04_rtype ! highest value for stability correction
-real(rtype) :: lambda_slope = 0.65_rtype ! stability correction slope
+real(rtype) :: lambda_slope = 2.65_rtype ! stability correction slope
 real(rtype) :: lambda_thresh = 0.02_rtype ! value to apply stability correction
 real(rtype) :: Ckh = 0.1_rtype ! Eddy diffusivity coefficient for heat
 real(rtype) :: Ckm = 0.1_rtype ! Eddy diffusivity coefficient for momentum

@@ -30,7 +30,7 @@ void Functions<S,D>
   //Declare constants
   static constexpr Scalar lambda_low   = 0.001;
   static constexpr Scalar lambda_high  = 0.04;
-  static constexpr Scalar lambda_slope = 0.65;
+  static constexpr Scalar lambda_slope = 2.65;
   static constexpr Scalar lambda_thresh= 0.02;
   static constexpr Scalar maxiso       = 20000; // Return to isotropic timescale [s]
 
