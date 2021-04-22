@@ -16,11 +16,11 @@
 			possible_values="Any real number."
 		/>
         <nml_option name="config_mixed_layer_eddy_temperature_stratification_mixed_layer" type="real" default_value="1e-4" units="deg C m^{-1}"
-			description="Stratification due to temperature in the mixed layer."
+			description="Vertical temperature gradient in the mixed layer."
 			possible_values="Any real number."
 		/>
         <nml_option name="config_mixed_layer_eddy_temperature_stratification_interior" type="real" default_value="1e-2" units="deg C m^{-1}"
-			description="Stratification due to temperature in the interior."
+			description="Vertical temperature gradient in the interior."
 			possible_values="Any real number."
 		/>
         <nml_option name="config_mixed_layer_eddy_temperature_horizontal_gradient" type="real" default_value="2e-5" units="deg C m^{-1}"
@@ -44,11 +44,11 @@
 			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_mixed_layer_eddy_restoring_width" type="real" default_value="5e3" units="m"
-			description="E-folding width of the restoring region at boundaries, only used for single front."
+			description="E-folding width of the restoring region at meridional boundaries, only used for single front."
 			possible_values="Any real number larger than zero."
 			/>
 		<nml_option name="config_mixed_layer_eddy_restoring_tau" type="real" default_value="5.0" units="days"
-			description="Time scale for restoring at boundaries, only used for single front."
+			description="Time scale for restoring at meridional boundaries, only used for single front."
 			possible_values="Any real number larger than zero."
 			/>
 		<nml_option name="config_mixed_layer_eddy_heat_flux" type="real" default_value="0.0" units="m ^oC s^{-1}"
@@ -60,11 +60,11 @@
 			possible_values="Any real number."
 		/>
 		<nml_option name="config_mixed_layer_eddy_wind_stress_zonal" type="real" default_value="0.0" units="Pa"
-			description="Surface Zonal Wind stress."
+			description="Surface zonal wind stress."
 			possible_values="Any real number."
 		/>
 		<nml_option name="config_mixed_layer_eddy_wind_stress_meridional" type="real" default_value="0.0" units="Pa"
-			description="Surface meridional windstress."
+			description="Surface meridional wind stress."
 			possible_values="Any real number."
 		/>
 		<nml_option name="config_mixed_layer_eddy_coriolis_parameter" type="real" default_value="1.0e-4" units="s^{-1}"
