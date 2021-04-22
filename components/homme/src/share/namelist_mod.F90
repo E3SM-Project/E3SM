@@ -15,9 +15,10 @@ module namelist_mod
   use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats, use_column_solver
 #endif
 use physical_constants, only : rearth, rrearth, DD_PI
+
+!OG is phys_const mod the best place for these?
 use physical_constants, only : scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor
-use physical_constants, only : Sx, Sy, dx, dy, dx_ref, dy_ref
-!  use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
+use physical_constants, only : dx, dy, dx_ref, dy_ref
 
   use control_mod, only : &
     MAX_STRING_LEN,&
@@ -105,6 +106,7 @@ use physical_constants, only : Sx, Sy, dx, dy, dx_ref, dy_ref
 #ifndef CAM
   use control_mod, only:              &
     Lx, Ly, &
+    Sx, Sy, &
     set_planar_defaults
 #endif
 

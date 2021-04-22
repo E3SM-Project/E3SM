@@ -8,7 +8,6 @@
 module control_mod
   use kinds, only : real_kind
   use physical_constants, only: dd_pi
-  use physical_constants, only: sx, sy
 
   implicit none
 
@@ -255,9 +254,9 @@ module control_mod
   real (kind=real_kind), public :: interp_lon0     = 0.0d0
 
 !PLANAR
-
-  real (kind=real_kind), public :: Lx, Ly !defaults are setin planar mod
-  real (kind=real_kind), private, parameter :: tol_zero=1e-10
+  real (kind=real_kind), public :: Lx, Ly !domain size
+  real (kind=real_kind), public :: Sx, Sy !shift
+  real (kind=real_kind), private, parameter :: tol_zero=1e-10 !tolerance to determine if lx,ly,sx,sy are set
   public :: set_planar_defaults
 
 contains
@@ -628,7 +627,8 @@ contains
 subroutine set_planar_defaults()
 
 !if true, most likely lx,ly,sx,sy weren't set in ctl_nl
-    if (abs(lx).le.tol_zero .and. abs(ly).le.tol_zero .and. abs(sx).le.tol_zero .and. abs(sy).le.tol_zero)then
+    if (      abs(lx).le.tol_zero .and. abs(ly).le.tol_zero &
+        .and. abs(sx).le.tol_zero .and. abs(sy).le.tol_zero )then
 
     if (test_case == "planar_dbl_vrtx") then
       Lx = 5000.0D0 * 1000.0D0

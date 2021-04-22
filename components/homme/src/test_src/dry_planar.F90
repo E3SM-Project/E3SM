@@ -18,7 +18,7 @@ module dry_planar_tests
 
   implicit none
 
-!take from physical const mod instead
+!OG take from physical const mod instead
 
   real(rl), parameter :: Rd 	= 287.0d0,	&	! Ideal gas const dry air (J kg^-1 K^1)
 				                        g	= 9.80616d0,	&	! Gravity (m s^2)
