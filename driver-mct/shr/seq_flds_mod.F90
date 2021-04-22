@@ -1456,17 +1456,6 @@ contains
     call metadata_set(attname, longname, stdname, units)
 
     if (trim(cime_model) == 'e3sm') then
-       ! Ocean melt (q<0) potential
-       call seq_flds_add(o2x_fluxes,"Fioo_meltp")
-       call seq_flds_add(x2i_fluxes,"Fioo_meltp")
-       longname = 'Ocean melt (q<0) potential'
-       stdname  = 'surface_snow_and_ice_melt_heat_flux'
-       units    = 'W m-2'
-       attname  = 'Fioo_meltp'
-       call metadata_set(attname, longname, stdname, units)
-    end if
-
-    if (trim(cime_model) == 'e3sm') then
        ! Ocean frazil production
        call seq_flds_add(o2x_fluxes,"Fioo_frazil")
        call seq_flds_add(x2i_fluxes,"Fioo_frazil")
