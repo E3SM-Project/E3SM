@@ -185,7 +185,9 @@ class TestAllScream(object):
         else:
             if self._baseline_dir == "AUTO":
                 # We treat the "AUTO" string as a request for automatic baseline dir.
-                self._baseline_dir = get_mach_baseline_root_dir(self._machine)
+                auto_dir = get_mach_baseline_root_dir(self._machine)
+                self._baseline_dir = Path(auto_dir) if auto_dir else default_baselines_root_dir
+
             else:
                 self._baseline_dir = Path(self._baseline_dir).absolute()
 
