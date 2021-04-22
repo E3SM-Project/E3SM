@@ -25,7 +25,7 @@ class TestAllScream(object):
                  submit=False, parallel=False, fast_fail=False,
                  baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
-                 integration_test="JENKINS_HOME" in os.environ, local=False, root_dir=None, work_dir=None,
+                 integration_test=False, local=False, root_dir=None, work_dir=None,
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0, update_expired_baselines=False):
     ###########################################################################
