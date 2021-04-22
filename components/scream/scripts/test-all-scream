@@ -14,7 +14,7 @@ IMPORTANT: the default behavior of this script *changes your environment*,
 from utils import check_minimum_python_version
 check_minimum_python_version(3, 4)
 
-import argparse, sys, os, pathlib
+import argparse, sys, pathlib
 
 from test_all_scream import TestAllScream
 

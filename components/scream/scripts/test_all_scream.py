@@ -8,7 +8,7 @@ from machines_specs import get_mach_compilation_resources, get_mach_testing_reso
 
 check_minimum_python_version(3, 4)
 
-import shutil
+import os, shutil
 import concurrent.futures as threading3
 import itertools
 import json
