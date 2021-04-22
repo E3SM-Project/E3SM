@@ -154,7 +154,7 @@ def checkout_git_ref(git_ref, verbose=False, repo=None, dry_run=False):
         print("Would checkout {}".format(git_ref))
     elif get_current_commit(repo=repo) != get_current_commit(repo=repo, commit=git_ref):
         expect(is_repo_clean(repo=repo), "If we need to change HEAD, then the repo must be clean before running")
-        expect(git_ref is not None, "Missing git-ref")
+        assert git_ref is not None, "Missing git-ref"
 
         run_cmd_no_fail("git checkout {}".format(git_ref), from_dir=repo)
         update_submodules(repo=repo)
