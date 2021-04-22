@@ -1934,7 +1934,7 @@ contains
            frazilProduction            = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
            call freezing_potential(freezingPotential, frazilProduction, seaSurfaceSalinity(i), &
                                    config_thermodynamics_type)
-           freezingMeltingPotential(i) = freezingPotential + min(meltingPotential,0)
+           freezingMeltingPotential(i) = freezingPotential + min(meltingPotential,0.0_RKIND)
 
         else ! non-free surface (SOM)
 
