@@ -1642,7 +1642,7 @@ contains
 !    o  swndf    -- sw: nir diffuse downward
 !    o  swvdf    -- sw: vis diffuse downward
 !    o  swnet    -- sw: net
-!    o  meltp    -- ocn melt heat  
+!    o  q        -- ocn freeze/melt heat flux
 !    o  frazil   -- ocn frazil production
 !    o  bcphidry -- Black Carbon hydrophilic dry deposition flux
 !    o  bcphodry -- Black Carbon hydrophobic dry deposition flux
@@ -1928,13 +1928,13 @@ contains
 
         if (trim(config_ocean_surface_type) == "free") then ! free surface (MPAS-O)
         
-           meltingPotential            = x2i_i % rAttr(index_x2i_Fioo_meltp, n)
+           meltingPotential            = x2i_i % rAttr(index_x2i_Fioo_q, n)
 
            ! frazil calculation
            frazilProduction            = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
            call freezing_potential(freezingPotential, frazilProduction, seaSurfaceSalinity(i), &
                                    config_thermodynamics_type)
-           freezingMeltingPotential(i) = freezingPotential + meltingPotential
+           freezingMeltingPotential(i) = freezingPotential + min(meltingPotential,0)
 
         else ! non-free surface (SOM)
 
