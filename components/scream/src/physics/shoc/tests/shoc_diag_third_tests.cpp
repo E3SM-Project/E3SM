@@ -188,13 +188,13 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     // Call the fortran implementation
     diag_third_shoc_moments(SDS);
 
-    // Verify that new result is greater in magnitude
+    // Verify that new result is greater or equal in magnitude
     //  that the result from test one
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
         if (n != 0 && n != nlevi-1){
-          REQUIRE(std::abs(SDS.w3[offset]) > std::abs(w3_test1[offset]));
+          REQUIRE(std::abs(SDS.w3[offset]) >= std::abs(w3_test1[offset]));
         }
       }
     }

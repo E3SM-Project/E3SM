@@ -2158,6 +2158,8 @@ subroutine clipping_diag_third_shoc_moments(&
   real(rtype) :: cond
   real(rtype) :: theterm
 
+  real(rtype), parameter :: w3clipdef = 0.02_rtype
+
   integer k, i
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -2175,7 +2177,7 @@ subroutine clipping_diag_third_shoc_moments(&
       theterm = w_sec_zi(i,k)
       cond = w3clip * bfb_sqrt(2._rtype * bfb_cube(theterm))
       if (w3(i,k) .lt. 0) tsign = -1._rtype
-      if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
+      if (tsign * w3(i,k) .gt. cond) w3(i,k) = w3clipdef
 
     enddo !end i loop (column loop)
   enddo ! end k loop (vertical loop)
