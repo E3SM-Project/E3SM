@@ -83,6 +83,7 @@
       <value compset="2010(?:SOI)?_EAM%CMIP6-LR_ELM">2010_CMIP6LR_control</value>
       <value compset="2010(?:SOI)?_EAM%CMIP6-HR_ELM">2010_CMIP6HR_control</value>
       <value compset="2010S_EAM.*P3" >2010_P3_control</value>
+      <value compset="2010S_EAM.*SHOC" >2010_SHOC_control</value>
       <!-- superfast chemistry compsets (use CMIP6 land configuration)-->
       <value compset="1850(?:SOI)?_EAM%AR5sf_ELM">1850_CMIP6_control</value>
       <value compset="20TR(?:SOI)?_EAM%AR5sf_ELM">20thC_CMIP6_transient</value>
