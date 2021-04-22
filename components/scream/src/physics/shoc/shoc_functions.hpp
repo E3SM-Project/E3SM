@@ -39,7 +39,6 @@ struct Functions
   using IntSmallPack = SmallPack<Int>;
   using Pack = BigPack<Scalar>;
   using Spack = SmallPack<Scalar>;
-  using Pack1d = ekat::Pack<Scalar, 1>;
 
   using Mask  = ekat::Mask<Pack::n>;
   using Smask = ekat::Mask<Spack::n>;
@@ -74,9 +73,9 @@ struct Functions
     SHOCInput() = default;
 
     // Grid spacing of host model in x direction [m]
-    view_1d<const Pack1d> host_dx;
+    view_1d<const Scalar> host_dx;
     // grid spacing of host model in y direction [m]
-    view_1d<const Pack1d> host_dy;
+    view_1d<const Scalar> host_dy;
     // heights, for thermo grid [m]
     view_2d<const Spack>  zt_grid;
     // heights, for interface grid [m]
@@ -92,19 +91,19 @@ struct Functions
     // large scale vertical velocity [m/s]
     view_2d<const Spack>  w_field;
     // Surface sensible heat flux [K m/s]
-    view_1d<const Pack1d> wthl_sfc;
+    view_1d<const Scalar> wthl_sfc;
     // Surface latent heat flux [kg/kg m/s]
-    view_1d<const Pack1d> wqw_sfc;
+    view_1d<const Scalar> wqw_sfc;
     // Surface momentum flux (u-direction) [m2/s2]
-    view_1d<const Pack1d> uw_sfc;
+    view_1d<const Scalar> uw_sfc;
     // Surface momentum flux (v-direction) [m2/s2]
-    view_1d<const Pack1d> vw_sfc;
+    view_1d<const Scalar> vw_sfc;
     // Surface flux for tracers [varies]
     view_2d<const Spack>  wtracer_sfc;
     // Exner function [-]
     view_2d<const Spack>  exner;
     // Host model surface geopotential height
-    view_1d<const Pack1d> phis;
+    view_1d<const Scalar> phis;
   };
 
   // This struct stores input/outputs views for shoc_main.
@@ -140,7 +139,7 @@ struct Functions
     SHOCOutput() = default;
 
     // planetary boundary layer depth [m]
-    view_1d<Pack1d> pblh;
+    view_1d<Scalar> pblh;
     // cloud liquid mixing ratio variance [kg^2/kg^2]
     view_2d<Spack>  shoc_ql2;
   };
