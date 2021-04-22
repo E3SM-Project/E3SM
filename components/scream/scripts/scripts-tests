@@ -383,6 +383,16 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         else:
             self.skipTest("Skipping full run")
 
+    def test_jenkins_process(self):
+        if self._full:
+            # We set PULLREQUESTNUM to block dashboard submission
+            # We set SCREAM_FAKE_AUTO to not interere with real baselines
+            cmd = self.get_cmd("SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh", self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+
+        else:
+            self.skipTest("Skipping full run")
+
 ###############################################################################
 class TestGatherAllData(TestBaseOuter.TestBase):
 ###############################################################################
