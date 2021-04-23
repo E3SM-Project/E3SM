@@ -54,8 +54,6 @@ subroutine cloud_diagnostics_init()
   ! Local Variables
   type(physics_buffer_desc), pointer :: pbuf_chunk(:)
   character(len=16) :: wpunits, sampling_seq
-  real(r8), pointer :: iciwp(:,:)   ! in-cloud cloud ice water path
-  real(r8), pointer :: iclwp(:,:)   ! in-cloud cloud liquid water path
   logical  :: history_verbose       ! produce verbose history output
   logical  :: use_MMF
   integer  :: i,k,lchnk
@@ -210,7 +208,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
     call conv_water_4rad( state, pbuf, conv_water_in_rad, allcld_liq, allcld_ice )
   else
     allcld_liq(:ncol,top_lev:pver) = state%q(:ncol,top_lev:pver,ixcldliq)  ! Grid-ave all cloud liquid
-    allcld_ice(:ncol,top_lev:pver) = state%q(:ncol,top_lev:pver,ixcldice)  !           "        ice
+    allcld_ice(:ncol,top_lev:pver) = state%q(:ncol,top_lev:pver,ixcldice)  ! Grid-ave all cloud ice
   end if
 
   ! ------------------------------------------------------------ !
