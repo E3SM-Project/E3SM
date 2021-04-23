@@ -197,6 +197,7 @@
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="CRAYPE_LINK_TYPE">static</env>
+      <env name="PERL5LIB">/global/common/cori/software/perl5/lib/perl5</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="FORT_BUFFERED">yes</env>
@@ -350,7 +351,8 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="CRAYPE_LINK_TYPE">static</env>      
+      <env name="CRAYPE_LINK_TYPE">static</env>
+      <env name="PERL5LIB">/global/common/cori/software/perl5/lib/perl5</env>      
     </environment_variables>
 
     <environment_variables mpilib="mpt">
