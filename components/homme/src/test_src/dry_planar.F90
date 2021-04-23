@@ -209,6 +209,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
      print *, 'bubble_cosine', bubble_cosine
   endif
 
+  !evenly spaced with reversed indexing, just like in homme eta coord
   call get_evenly_spaced_z(zi,zm, 0.0_rl,bubble_ztop)
 
   ! set initial conditions
@@ -288,11 +289,12 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   do ie = nets,nete
      elem(ie)%fcor(:,:) = f
 
-!init tracers!
+     elem(ie)%state%q = 0.0
+     elem(ie)%state%qdp = 0.0
 
-     !sets hydro phi from theta and pressure
      !do not call finalize, phinh_i is set here     
-!     call tests_finalize(elem(ie),hvcoord)
+     !sets hydro phi from theta and pressure
+     !call tests_finalize(elem(ie),hvcoord)
   enddo
 
 #else
