@@ -182,6 +182,7 @@
       <command name="load">git</command>
       <command name="rm">cmake</command>
       <command name="load">cmake/3.14.4</command>
+      <command name="load">perl5-extras</command>
     </modules>
   </module_system>
 
@@ -331,6 +332,7 @@
       <command name="load">git</command>
       <command name="rm">cmake</command>
       <command name="load">cmake/3.14.4</command>
+      <command name="load">perl5-extras</command>
     </modules>
 
     <!--command name="list">&gt;&amp; ml.txt</command-->
