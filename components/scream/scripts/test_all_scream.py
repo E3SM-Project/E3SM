@@ -122,10 +122,8 @@ class TestAllScream(object):
         expect(get_current_commit(), "Root dir: {}, does not appear to be a git repo".format(self._root_dir))
 
         # Print some info on the branch
-        print("JGF before")
         self._original_branch = get_current_branch()
         self._original_commit = get_current_commit()
-        print("JGF original branch: {}, original commit {}".format(self._original_branch, self._original_commit))
 
         print_last_commit(git_ref=self._original_branch, dry_run=self._dry_run)
 
