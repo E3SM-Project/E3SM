@@ -223,7 +223,7 @@ contains
          ramp,&
          t, &
          nCycles,&
-         period,lat
+         period
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -250,10 +250,6 @@ contains
          conType = tidalConstituentType(jCon)
          do iCell = 1, nCellsAll
            lon = lonCell(iCell)
-            lat = latCell(iCell)
-            latitudeFunction(iCell,1) = 3.0_RKIND*sin(lat)**2 -1.0_RKIND
-            latitudeFunction(iCell,2) = sin(2.0_RKIND*lat)
-            latitudeFunction(iCell,3) = cos(lat)**2
 
            tidalPotEta(iCell) = tidalPotEta(iCell) + &
                          ramp * tidalConstituentAmplitude(jCon) &
