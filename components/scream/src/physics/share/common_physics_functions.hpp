@@ -82,6 +82,24 @@ struct PhysicsFunctions
                                       const InputProviderQ& qv,
                                       const view_1d<ScalarT>& T_virtual);
 
+  // Compute dry static energy (DSE).
+  // The result unit is in J/kg
+  // The inputs are
+  //   T_mid is the atmospheric temperature. Units in K.
+  //   z_mid is the geopotential height above surface at midpoints. Units in m.
+  //   surf_geopotential is the surface geopotential height. Units in m.
+  template<typename ScalarT>
+  KOKKOS_FUNCTION
+  static ScalarT get_dse(const ScalarT& T_mid, const ScalarT& z_mid, const Real surf_geopotential);
+
+  template<typename ScalarT, typename InputProviderT, typename InputProviderZ>
+  KOKKOS_FUNCTION
+  static ScalarT get_dse(const MemberType& team,
+                         const InputProviderT& T_mid,
+                         const InputProviderZ& z_mid,
+                         const Real surf_geopotential,
+                         const view_1d<ScalarT>& dse);
+
 
 }; // struct PhysicsFunctions
 
