@@ -80,7 +80,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: landIceFrictionVelocity
    real (kind=RKIND), dimension(:), pointer :: topDrag
    real (kind=RKIND), dimension(:), pointer :: topDragMag
-   real (kind=RKIND), dimension(:), pointer :: rinv
+   real (kind=RKIND), dimension(:), pointer :: topographic_wave_drag_rinv
    real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers
    real (kind=RKIND), dimension(:,:), pointer :: landIceTracerTransferVelocities
 
@@ -279,7 +279,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
       call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMag)
-      call mpas_pool_get_array(diagnosticsPool, 'rinv', rinv)
+      call mpas_pool_get_array(diagnosticsPool, 'topographic_wave_drag_rinv', topographic_wave_drag_rinv)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(diagnosticsPool, 'bottomLayerShortwaveTemperatureFlux', bottomLayerShortwaveTemperatureFlux)
       call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
