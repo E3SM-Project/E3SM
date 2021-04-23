@@ -90,7 +90,7 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(inout) :: meshPool !< Input/Output: mesh information
+      type (mpas_pool_type), intent(in) :: meshPool !< Input/Output: mesh information
       type (mpas_pool_type), intent(inout) :: tracersPool !< Input/Output: tracer tendency pool
       type (mpas_pool_type), intent(inout) :: forcingPool  !< Input/Output: forcing pool holding frazil-induced tendencies
       real (kind=RKIND), dimension(:,:,:), intent(inout) ::  tracersTend

@@ -411,7 +411,7 @@ module ocn_time_integration_rk4
               call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
               call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
 
-              call ocn_tend_freq_filtered_thickness(tendPool, provisStatePool, meshPool, 1)
+              call ocn_tend_freq_filtered_thickness(tendPool, provisStatePool, 1)
               block => block % next
            end do
 
@@ -934,7 +934,7 @@ module ocn_time_integration_rk4
       endif
 
       call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, meshPool, swForcingPool, &
-                           scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
+                           dt, activeTracersOnlyIn=.false., timeLevelIn=1)
 
    end subroutine ocn_time_integrator_rk4_compute_tracer_tends!}}}
 
@@ -1011,7 +1011,7 @@ module ocn_time_integration_rk4
       endif
 
       call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, meshPool, swForcingPool, &
-                           scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
+                           dt, activeTracersOnlyIn=.false., timeLevelIn=1)
 
    end subroutine ocn_time_integrator_rk4_compute_tends!}}}
 
