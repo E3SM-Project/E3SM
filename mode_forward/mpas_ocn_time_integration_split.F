@@ -492,7 +492,7 @@ module ocn_time_integration_split
             call mpas_timer_start("se freq-filtered-thick computations")
 
             call ocn_tend_freq_filtered_thickness(tendPool, statePool, &
-                                           meshPool, stage1_tend_time)
+                                                  stage1_tend_time)
 
             call mpas_timer_stop("se freq-filtered-thick computations")
 
@@ -1491,7 +1491,7 @@ module ocn_time_integration_split
 
          call mpas_timer_start('se tracer tend', .false.)
          call ocn_tend_tracer(tendPool, statePool, forcingPool, &
-                              meshPool, swForcingPool, scratchPool, &
+                              meshPool, swForcingPool, &
                               dt, activeTracersOnly, 2)
 
          call mpas_timer_stop('se tracer tend')
