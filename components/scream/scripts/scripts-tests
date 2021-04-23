@@ -394,7 +394,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
         else:
-            self.skipTest("Skipping full run")
+            self.skipTest("Skipping jenkins test")
 
 ###############################################################################
 class TestGatherAllData(TestBaseOuter.TestBase):
