@@ -40,46 +40,8 @@ module crm_physics
    integer :: ixnumrain = -1   ! rain number index
    integer :: ixnumsnow = -1   ! snow number index
 
-   ! Physics buffer indices 
-   integer :: icwmrdp_idx     = -1 
-   integer :: rprddp_idx      = -1 
-   integer :: nevapr_dpcu_idx = -1 
-   integer :: prec_dp_idx     = -1
-   integer :: snow_dp_idx     = -1
+   ! Physics buffer indices  
    integer :: ttend_dp_idx    = -1
-   integer :: icwmrsh_idx     = -1
-   integer :: rprdsh_idx      = -1
-   integer :: rprdtot_idx     = -1
-   integer :: cldtop_idx      = -1
-   integer :: cldbot_idx      = -1
-   integer :: nevapr_shcu_idx = -1
-   integer :: prec_sh_idx     = -1
-   integer :: snow_sh_idx     = -1
-   integer :: prec_sed_idx    = -1
-   integer :: snow_sed_idx    = -1
-   integer :: prec_pcw_idx    = -1
-   integer :: snow_pcw_idx    = -1
-   integer :: cldo_idx        = -1
-   integer :: cld_idx         = -1
-   integer :: concld_idx      = -1
-   integer :: qme_idx         = -1
-   integer :: prain_idx       = -1
-   integer :: nevapr_idx      = -1
-   integer :: wsedl_idx       = -1
-   integer :: rei_idx         = -1
-   integer :: rel_idx         = -1
-   integer :: dei_idx         = -1
-   integer :: mu_idx          = -1
-   integer :: prer_evap_idx   = -1
-   integer :: lambdac_idx     = -1
-   integer :: iciwpst_idx     = -1
-   integer :: iclwpst_idx     = -1
-   integer :: des_idx         = -1
-   integer :: icswp_idx       = -1
-   integer :: cldfsnow_idx    = -1
-
-   real(r8), pointer                       :: acldy_cen_tbeg(:,:)        ! cloud fraction
-   real(r8), pointer, dimension(:,:)       :: cldo
 
 contains
 !===================================================================================================
@@ -118,6 +80,7 @@ subroutine crm_physics_register()
    logical           :: prog_modal_aero
    integer, dimension(1) :: dims_gcm_1D
    integer, dimension(2) :: dims_gcm_2D
+   integer, dimension(3) :: dims_gcm_3D
    integer, dimension(3) :: dims_crm_2D
    integer, dimension(4) :: dims_crm_3D
    integer, dimension(4) :: dims_crm_rad
@@ -131,6 +94,7 @@ subroutine crm_physics_register()
 #endif
    dims_gcm_1D  = (/pcols/)
    dims_gcm_2D  = (/pcols, pver/)
+   dims_gcm_3D  = (/pcols,pver,dyn_time_lvls/)
    dims_crm_2D  = (/pcols, crm_nx, crm_ny/)
    dims_crm_3D  = (/pcols, crm_nx, crm_ny, crm_nz/)
    dims_crm_rad = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz/)
@@ -194,115 +158,113 @@ subroutine crm_physics_register()
    !----------------------------------------------------------------------------
 
    ! CRM state 
-   call pbuf_add_field('CRM_U', 'global', dtype_r8, dims_crm_3D, idx)
-   call pbuf_add_field('CRM_V', 'global', dtype_r8, dims_crm_3D, idx)
-   call pbuf_add_field('CRM_W', 'global', dtype_r8, dims_crm_3D, idx)
-   call pbuf_add_field('CRM_T', 'global', dtype_r8, dims_crm_3D, idx)
+   call pbuf_add_field('CRM_U',        'global',dtype_r8,dims_crm_3D,idx)
+   call pbuf_add_field('CRM_V',        'global',dtype_r8,dims_crm_3D,idx)
+   call pbuf_add_field('CRM_W',        'global',dtype_r8,dims_crm_3D,idx)
+   call pbuf_add_field('CRM_T',        'global',dtype_r8,dims_crm_3D,idx)
 
    ! Radiation
-   call pbuf_add_field('CRM_T_RAD',   'physpkg', dtype_r8, dims_crm_rad, idx)
-   call pbuf_add_field('CRM_QV_RAD',  'physpkg', dtype_r8, dims_crm_rad, idx)
-   call pbuf_add_field('CRM_QC_RAD',  'physpkg', dtype_r8, dims_crm_rad, idx)
-   call pbuf_add_field('CRM_QI_RAD',  'physpkg', dtype_r8, dims_crm_rad, idx)
-   call pbuf_add_field('CRM_CLD_RAD', 'physpkg', dtype_r8, dims_crm_rad, idx)
-   call pbuf_add_field('CRM_QRAD',    'global',  dtype_r8, dims_crm_rad, idx)
-   
-   call pbuf_add_field('CLDO',  'global', dtype_r8, (/pcols, pver, dyn_time_lvls/), cldo_idx  )
-   call pbuf_add_field('CLD',   'global', dtype_r8, (/pcols, pver, dyn_time_lvls/), cld_idx)
-   call pbuf_add_field('CONCLD','global', dtype_r8, (/pcols, pver, dyn_time_lvls/), concld_idx)
-   
-   call pbuf_add_field('QME',   'physpkg',dtype_r8, (/pcols, pver/), qme_idx)
-   call pbuf_add_field('PRAIN', 'physpkg',dtype_r8, (/pcols, pver/), prain_idx)
-   call pbuf_add_field('NEVAPR',     'physpkg',dtype_r8,(/pcols,pver/), nevapr_idx)
-   call pbuf_add_field('PRER_EVAP',  'global', dtype_r8,(/pcols,pver/), prer_evap_idx)
-
-   call pbuf_add_field('WSEDL',      'physpkg',dtype_r8,(/pcols,pver/), wsedl_idx)
-
-   call pbuf_add_field('REI',     'physpkg',dtype_r8,(/pcols,pver/), rei_idx)
-   call pbuf_add_field('REL',     'physpkg',dtype_r8,(/pcols,pver/), rel_idx)
-   call pbuf_add_field('DEI',     'physpkg',dtype_r8,(/pcols,pver/), dei_idx)        ! Mitchell ice effective diameter for radiation
-   call pbuf_add_field('MU',      'physpkg',dtype_r8,(/pcols,pver/), mu_idx)         ! Size distribution shape parameter for radiation
-   call pbuf_add_field('LAMBDAC', 'physpkg',dtype_r8,(/pcols,pver/), lambdac_idx)    ! Size distribution shape parameter for radiation
-   call pbuf_add_field('ICIWPST', 'physpkg',dtype_r8,(/pcols,pver/), iciwpst_idx)    ! Stratiform only in cloud ice water path for radiation
-   call pbuf_add_field('ICLWPST', 'physpkg',dtype_r8,(/pcols,pver/), iclwpst_idx)    ! Stratiform in cloud liquid water path for radiation
-   call pbuf_add_field('DES',     'physpkg',dtype_r8,(/pcols,pver/), des_idx)        ! Snow effective diameter for radiation
-   call pbuf_add_field('ICSWP',   'physpkg',dtype_r8,(/pcols,pver/), icswp_idx)      ! In cloud snow water path for radiation
-   call pbuf_add_field('CLDFSNOW','physpkg',dtype_r8,(/pcols,pver,dyn_time_lvls/), cldfsnow_idx) ! Cloud fraction for liquid drops + snow
+   call pbuf_add_field('CRM_T_RAD',    'physpkg',dtype_r8,dims_crm_rad,idx)
+   call pbuf_add_field('CRM_QV_RAD',   'physpkg',dtype_r8,dims_crm_rad,idx)
+   call pbuf_add_field('CRM_QC_RAD',   'physpkg',dtype_r8,dims_crm_rad,idx)
+   call pbuf_add_field('CRM_QI_RAD',   'physpkg',dtype_r8,dims_crm_rad,idx)
+   call pbuf_add_field('CRM_CLD_RAD',  'physpkg',dtype_r8,dims_crm_rad,idx)
+   call pbuf_add_field('CRM_QRAD',     'global', dtype_r8,dims_crm_rad,idx)
+   call pbuf_add_field('REI',          'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Effective radius (ice)
+   call pbuf_add_field('REL',          'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Effective radius (liquid)
+   call pbuf_add_field('DEI',          'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Mitchell ice effective diameter for radiation
+   call pbuf_add_field('MU',           'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Size distribution shape parameter for radiation
+   call pbuf_add_field('LAMBDAC',      'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Size distribution shape parameter for radiation
+   call pbuf_add_field('ICIWPST',      'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Stratiform only in cloud ice water path for radiation
+   call pbuf_add_field('ICLWPST',      'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Stratiform in cloud liquid water path for radiation
+   call pbuf_add_field('DES',          'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Snow effective diameter for radiation
+   call pbuf_add_field('ICSWP',        'physpkg',dtype_r8,dims_gcm_2D,idx)  ! In cloud snow water path for radiation
+   call pbuf_add_field('CLDFSNOW',     'physpkg',dtype_r8,dims_gcm_3D,idx)  ! Cloud fraction for liquid drops + snow
+   call pbuf_add_field('CLDO',         'global', dtype_r8,dims_gcm_3D,idx)  ! "old" cloud fraction
+   call pbuf_add_field('CLD',          'global', dtype_r8,dims_gcm_3D,idx)  ! cloud fraction
+   call pbuf_add_field('CONCLD',       'global', dtype_r8,dims_gcm_3D,idx)  ! convective cloud fraction
 
    if (MMF_microphysics_scheme .eq. 'm2005') then
-      call pbuf_add_field('CRM_NC_RAD','physpkg', dtype_r8, dims_crm_rad, idx)
-      call pbuf_add_field('CRM_NI_RAD','physpkg', dtype_r8, dims_crm_rad, idx)
-      call pbuf_add_field('CRM_QS_RAD','physpkg', dtype_r8, dims_crm_rad, idx)
-      call pbuf_add_field('CRM_NS_RAD','physpkg', dtype_r8, dims_crm_rad, idx)
+      call pbuf_add_field('CRM_NC_RAD','physpkg',dtype_r8,dims_crm_rad,idx)
+      call pbuf_add_field('CRM_NI_RAD','physpkg',dtype_r8,dims_crm_rad,idx)
+      call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,idx)
+      call pbuf_add_field('CRM_NS_RAD','physpkg',dtype_r8,dims_crm_rad,idx)
 
-      call pbuf_add_field('CRM_QT', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_NC', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_QR', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_NR', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_QI', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_NI', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_QS', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_NS', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_QG', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_NG', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_QC', 'global', dtype_r8, dims_crm_3D, idx)
+      call pbuf_add_field('CRM_QT',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_NC',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_QR',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_NR',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_QI',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_NI',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_QS',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_NS',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_QG',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_NG',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_QC',    'global', dtype_r8,dims_crm_3D,idx)
 
       if (prog_modal_aero) then
-         call pbuf_add_field('RATE1_CW2PR_ST','physpkg',dtype_r8,(/pcols,pver/), idx)
+         call pbuf_add_field('RATE1_CW2PR_ST','physpkg',dtype_r8,dims_gcm_2D,idx)
       end if
 
    else
-      call pbuf_add_field('CRM_QT', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_QP', 'global', dtype_r8, dims_crm_3D, idx)
-      call pbuf_add_field('CRM_QN', 'global', dtype_r8, dims_crm_3D, idx)
+      call pbuf_add_field('CRM_QT',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_QP',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_QN',    'global', dtype_r8,dims_crm_3D,idx)
    end if
 
    ! CRM mass flux
-   call pbuf_add_field('MU_CRM', 'physpkg', dtype_r8, dims_gcm_2D, idx) ! mass flux up
-   call pbuf_add_field('MD_CRM', 'physpkg', dtype_r8, dims_gcm_2D, idx) ! mass flux down
-   call pbuf_add_field('DU_CRM', 'physpkg', dtype_r8, dims_gcm_2D, idx) ! mass detrainment from updraft
-   call pbuf_add_field('EU_CRM', 'physpkg', dtype_r8, dims_gcm_2D, idx) ! mass detrainment from updraft
-   call pbuf_add_field('ED_CRM', 'physpkg', dtype_r8, dims_gcm_2D, idx) ! mass detrainment from downdraft
+   call pbuf_add_field('MU_CRM',       'physpkg',dtype_r8,dims_gcm_2D,idx) ! mass flux up
+   call pbuf_add_field('MD_CRM',       'physpkg',dtype_r8,dims_gcm_2D,idx) ! mass flux down
+   call pbuf_add_field('DU_CRM',       'physpkg',dtype_r8,dims_gcm_2D,idx) ! mass detrainment from updraft
+   call pbuf_add_field('EU_CRM',       'physpkg',dtype_r8,dims_gcm_2D,idx) ! mass detrainment from updraft
+   call pbuf_add_field('ED_CRM',       'physpkg',dtype_r8,dims_gcm_2D,idx) ! mass detrainment from downdraft
 
-   call pbuf_add_field('JT_CRM',    'physpkg', dtype_r8, dims_gcm_1D, idx) ! index of cloud (convection) top for each column
-   call pbuf_add_field('MX_CRM',    'physpkg', dtype_r8, dims_gcm_1D, idx) ! index of cloud (convection) bottom for each column
-   call pbuf_add_field('IDEEP_CRM', 'physpkg', dtype_r8, dims_gcm_1D, idx) ! Gathering array for convective columns
+   call pbuf_add_field('JT_CRM',       'physpkg',dtype_r8,dims_gcm_1D,idx) ! index of cloud (convection) top for each column
+   call pbuf_add_field('MX_CRM',       'physpkg',dtype_r8,dims_gcm_1D,idx) ! index of cloud (convection) bottom for each column
+   call pbuf_add_field('IDEEP_CRM',    'physpkg',dtype_r8,dims_gcm_1D,idx) ! Gathering array for convective columns
 
    ! CRM turbulence
-   call pbuf_add_field('TKE_CRM', 'physpkg', dtype_r8, dims_gcm_2D, idx) ! TKE from CRM  (m2/s2)
-   call pbuf_add_field('TK_CRM',  'physpkg', dtype_r8, dims_gcm_2D, idx) ! TK from CRM (m2/s)
+   call pbuf_add_field('TKE_CRM',      'physpkg',dtype_r8,dims_gcm_2D,idx) ! TKE from CRM  (m2/s2)
+   call pbuf_add_field('TK_CRM',       'physpkg',dtype_r8,dims_gcm_2D,idx) ! TK from CRM (m2/s)
 
    ! ACLDY_CEN has to be global in the physcal buffer to be saved in the restart file
    ! total (all sub-classes) cloudy fractional area in previous time step 
-   call pbuf_add_field('ACLDY_CEN','global', dtype_r8, dims_gcm_2D, idx) 
+   call pbuf_add_field('ACLDY_CEN',    'global', dtype_r8,dims_gcm_2D,idx) 
    
    ! CRM orientation angle needs to persist across time steps
-   call pbuf_add_field('CRM_ANGLE', 'global', dtype_r8, dims_gcm_1D, idx)
+   call pbuf_add_field('CRM_ANGLE',    'global', dtype_r8,dims_gcm_1D,idx)
+
+   ! top and bottom levels of convective activity for chemistry
+   call pbuf_add_field('CLDTOP',       'physpkg',dtype_r8,(/pcols,1/),idx)
+   call pbuf_add_field('CLDBOT',       'physpkg',dtype_r8,(/pcols,1/),idx)
+
+   ! Deep convective heating for convective gravity wave source
+   if (use_gw_convect) call pbuf_add_field('TTEND_DP','physpkg',dtype_r8,dims_gcm_2D,ttend_dp_idx)
 
    !----------------------------------------------------------------------------
-   ! pbuf fields previously added by offline parameterizations
+   ! miscellaneous fields previously added by offline parameterizations
    !----------------------------------------------------------------------------
-
-   call pbuf_add_field('ICWMRDP',    'physpkg',dtype_r8,(/pcols,pver/), icwmrdp_idx)
-   call pbuf_add_field('RPRDDP',     'physpkg',dtype_r8,(/pcols,pver/), rprddp_idx)
-   call pbuf_add_field('NEVAPR_DPCU','physpkg',dtype_r8,(/pcols,pver/), nevapr_dpcu_idx)
-   call pbuf_add_field('PREC_DP',    'physpkg',dtype_r8,(/pcols/),      prec_dp_idx)
-   call pbuf_add_field('SNOW_DP',    'physpkg',dtype_r8,(/pcols/),      snow_dp_idx)
-   call pbuf_add_field('SH_FRAC',    'physpkg',dtype_r8,(/pcols,pver/), idx) 
-   call pbuf_add_field('DP_FRAC',    'physpkg',dtype_r8,(/pcols,pver/), idx) 
-   call pbuf_add_field('ICWMRSH',    'physpkg',dtype_r8,(/pcols,pver/), icwmrsh_idx )
-   call pbuf_add_field('RPRDSH',     'physpkg',dtype_r8,(/pcols,pver/), rprdsh_idx )
-   call pbuf_add_field('RPRDTOT',    'physpkg',dtype_r8,(/pcols,pver/), rprdtot_idx )
-   call pbuf_add_field('CLDTOP',     'physpkg',dtype_r8,(/pcols,1/),    cldtop_idx )
-   call pbuf_add_field('CLDBOT',     'physpkg',dtype_r8,(/pcols,1/),    cldbot_idx )
-   call pbuf_add_field('NEVAPR_SHCU','physpkg',dtype_r8,(/pcols,pver/), nevapr_shcu_idx )
-   call pbuf_add_field('PREC_SH',    'physpkg',dtype_r8,(/pcols/),      prec_sh_idx )
-   call pbuf_add_field('SNOW_SH',    'physpkg',dtype_r8,(/pcols/),      snow_sh_idx )
-   call pbuf_add_field('cush',       'global' ,dtype_r8,(/pcols,dyn_time_lvls/), idx )  
-   call pbuf_add_field('AST',        'global' ,dtype_r8,(/pcols,pver,dyn_time_lvls/), idx)
-   call pbuf_add_field('FICE',       'physpkg',dtype_r8,(/pcols,pver/), idx)
-
-   if (use_gw_convect) call pbuf_add_field('TTEND_DP','physpkg',dtype_r8,(/pcols,pver/),ttend_dp_idx)
+   call pbuf_add_field('QME',          'physpkg',dtype_r8,dims_gcm_2D,idx) ! net condensation/evaporation of cloud water
+   call pbuf_add_field('PRAIN',        'physpkg',dtype_r8,dims_gcm_2D,idx) ! total precip rate?
+   call pbuf_add_field('NEVAPR',       'physpkg',dtype_r8,dims_gcm_2D,idx) ! total precip evaporation rate (rain + snow)
+   call pbuf_add_field('PRER_EVAP',    'global' ,dtype_r8,dims_gcm_2D,idx) ! rain evaporation rate
+   call pbuf_add_field('WSEDL',        'physpkg',dtype_r8,dims_gcm_2D,idx) ! Sed. velocity of liq stratus cloud droplet [m/s]
+   call pbuf_add_field('ICWMRDP',      'physpkg',dtype_r8,dims_gcm_2D,idx) ! in-cloud deep conv water+ice mixing ratio
+   call pbuf_add_field('ICWMRSH',      'physpkg',dtype_r8,dims_gcm_2D,idx) ! in-cloud shallow conv water+ice mixing ratio
+   call pbuf_add_field('RPRDDP',       'physpkg',dtype_r8,dims_gcm_2D,idx) ! dq/dt due to deep convective rainout
+   call pbuf_add_field('RPRDSH',       'physpkg',dtype_r8,dims_gcm_2D,idx) ! dq/dt due to shallow convective rainout
+   call pbuf_add_field('RPRDTOT',      'physpkg',dtype_r8,dims_gcm_2D,idx) ! dq/dt due to total convective rainout
+   call pbuf_add_field('NEVAPR_DPCU',  'physpkg',dtype_r8,dims_gcm_2D,idx) ! evaporation of deep convective precipitation
+   call pbuf_add_field('NEVAPR_SHCU',  'physpkg',dtype_r8,dims_gcm_2D,idx) ! evaporation of shallow convective precipitation
+   call pbuf_add_field('PREC_DP',      'physpkg',dtype_r8,dims_gcm_1D,idx) ! total precip from deep convection
+   call pbuf_add_field('SNOW_DP',      'physpkg',dtype_r8,dims_gcm_1D,idx) ! snow from deep convection
+   call pbuf_add_field('PREC_SH',      'physpkg',dtype_r8,dims_gcm_1D,idx) ! total precip from shallow convection
+   call pbuf_add_field('SNOW_SH',      'physpkg',dtype_r8,dims_gcm_1D,idx) ! snow from shallow convection
+   call pbuf_add_field('SH_FRAC',      'physpkg',dtype_r8,dims_gcm_2D,idx) ! shallow cloud fraction
+   call pbuf_add_field('DP_FRAC',      'physpkg',dtype_r8,dims_gcm_2D,idx) ! deep cloud fraction
+   call pbuf_add_field('FICE',         'physpkg',dtype_r8,dims_gcm_2D,idx) ! fraction of cloud water that is ice
+   call pbuf_add_field('cush',         'global' ,dtype_r8,(/pcols,dyn_time_lvls/),idx ) !  Convective scale height
+   call pbuf_add_field('AST',          'global' ,dtype_r8,(/pcols,pver,dyn_time_lvls/),idx) ! Stratiform cloud fraction
 
    !----------------------------------------------------------------------------
    !----------------------------------------------------------------------------
@@ -392,20 +354,10 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       end do
    end if
 
-   ! Get pbuf indices
-   prec_dp_idx  = pbuf_get_index('PREC_DP')
-   snow_dp_idx  = pbuf_get_index('SNOW_DP')
-   prec_sh_idx  = pbuf_get_index('PREC_SH')
-   snow_sh_idx  = pbuf_get_index('SNOW_SH')
-   prec_sed_idx = pbuf_get_index('PREC_SED')
-   snow_sed_idx = pbuf_get_index('SNOW_SED')
-   prec_pcw_idx = pbuf_get_index('PREC_PCW')
-   snow_pcw_idx = pbuf_get_index('SNOW_PCW')
-
    ! Initialize pbuf variables
    if (is_first_step()) then
-      call pbuf_set_field(pbuf2d, cldo_idx,      0._r8)
-      call pbuf_set_field(pbuf2d, prer_evap_idx, 0._r8)
+      call pbuf_set_field(pbuf2d, pbuf_get_index('CLDO')       , 0._r8)
+      call pbuf_set_field(pbuf2d, pbuf_get_index('PRER_EVAP')  , 0._r8)
 
       call pbuf_set_field(pbuf2d, pbuf_get_index('ICWMRDP')    , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('RPRDDP')     , 0._r8)
@@ -508,14 +460,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    ! convective precipitation variables
    real(r8), pointer :: prec_dp(:)          ! total precip from deep convection (ZM)    [m/s]
    real(r8), pointer :: snow_dp(:)          ! snow from deep convection (ZM)            [m/s]
-   real(r8), pointer :: prec_sh(:)          ! total precip from shallow convection      [m/s]
-   real(r8), pointer :: snow_sh(:)          ! snow from shallow convection              [m/s]
-
-   ! stratiform precipitation variables (needed to ensure balanced water in land input)
-   real(r8), pointer :: prec_sed(:)         ! total precip from cloud sedimentation     [m/s]
-   real(r8), pointer :: snow_sed(:)         ! snow from cloud ice sedimentation         [m/s]
-   real(r8), pointer :: prec_pcw(:)         ! total precip from prognostic cloud scheme [m/s]
-   real(r8), pointer :: snow_pcw(:)         ! snow from prognostic cloud scheme         [m/s]
 
    real(r8), pointer :: ttend_dp(:,:)       ! Convective heating for gravity wave drag
 
@@ -693,7 +637,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 #endif /* MMF_ORIENT_RAND */
 
    !------------------------------------------------------------------------------------------------
-   ! Retrieve pbuf fields
+   ! Retrieve pbuf fields and constituent indices
    !------------------------------------------------------------------------------------------------
    if (MMF_microphysics_scheme .eq. 'm2005') then
       call pbuf_get_field(pbuf, pbuf_get_index('CRM_NC_RAD'), crm_rad%nc, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
@@ -709,21 +653,20 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD'),  crm_rad%qi)
    call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_rad%cld)
 
-   call pbuf_get_field(pbuf, prec_dp_idx,  prec_dp  )
-   call pbuf_get_field(pbuf, prec_sh_idx,  prec_sh  )
-   call pbuf_get_field(pbuf, snow_dp_idx,  snow_dp  )
-   call pbuf_get_field(pbuf, snow_sh_idx,  snow_sh  )
-   call pbuf_get_field(pbuf, prec_sed_idx, prec_sed )
-   call pbuf_get_field(pbuf, snow_sed_idx, snow_sed )
-   call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw )
-   call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw )
+   call pbuf_get_field(pbuf, pbuf_get_index('PREC_DP'),  prec_dp  )
+   call pbuf_get_field(pbuf, pbuf_get_index('SNOW_DP'),  snow_dp  )
 
-   !!! total clouds and precipiation - initialize here to be safe 
-   !!! WARNING - this disables aerosol scavenging!
-   ! call pbuf_set_field(pbuf, pbuf_get_index('AST'   ), 0.0_r8 )
-   ! call pbuf_set_field(pbuf, pbuf_get_index('QME'   ), 0.0_r8 )
-   ! call pbuf_set_field(pbuf, pbuf_get_index('PRAIN' ), 0.0_r8 )
-   ! call pbuf_set_field(pbuf, pbuf_get_index('NEVAPR'), 0.0_r8 )
+   prec_dp  = 0.
+   snow_dp  = 0.
+   
+   call cnst_get_ind('CLDLIQ', ixcldliq)
+   call cnst_get_ind('CLDICE', ixcldice)
+
+   ! Zero these fields to ensure balanced water in land input
+   call pbuf_set_field(pbuf, pbuf_get_index('PREC_SED'), 0._r8 )
+   call pbuf_set_field(pbuf, pbuf_get_index('SNOW_SED'), 0._r8 )
+   call pbuf_set_field(pbuf, pbuf_get_index('PREC_PCW'), 0._r8 )
+   call pbuf_set_field(pbuf, pbuf_get_index('SNOW_PCW'), 0._r8 )
 
    ! set convective rain to be zero for PRAIN already includes precipitation production from convection. 
    call pbuf_set_field(pbuf, pbuf_get_index('RPRDTOT'), 0.0_r8 )
@@ -731,19 +674,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call pbuf_set_field(pbuf, pbuf_get_index('RPRDSH' ), 0.0_r8 )
    call pbuf_set_field(pbuf, pbuf_get_index('ICWMRDP'), 0.0_r8 )
    call pbuf_set_field(pbuf, pbuf_get_index('ICWMRSH'), 0.0_r8 )
-   
-   prec_dp  = 0.
-   snow_dp  = 0.
-   prec_sh  = 0.
-   snow_sh  = 0. 
-   prec_sed = 0.
-   snow_sed = 0.
-   prec_pcw = 0
-   snow_pcw = 0.
-   
-   ! Initialize stuff:
-   call cnst_get_ind('CLDLIQ', ixcldliq)
-   call cnst_get_ind('CLDICE', ixcldice)
 
    !------------------------------------------------------------------------------------------------
    ! Retreive CRM state data from pbuf
@@ -1112,7 +1042,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       !---------------------------------------------------------------------------------------------
       ! set convective heating tendency for gravity wave drag
       !---------------------------------------------------------------------------------------------
-      ttend_dp_idx = pbuf_get_index('TTEND_DP')
       if (ttend_dp_idx > 0) then
          call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
          ttend_dp(:ncol,:pver) = ptend%s(:ncol,:pver)/cpair
