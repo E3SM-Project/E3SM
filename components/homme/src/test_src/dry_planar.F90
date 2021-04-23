@@ -239,7 +239,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
         endif
 
         !set interface pressure from const lapse rate, does not depend on x,y, or _dT
-        pi(k) =  p0*( (270.0 - zi(k)*g/cp)/270.0  )**(1.0/kappa)
+        pi(k) =  p0*( (bubble_T0 - zi(k)*g/cp)/bubble_T0  )**(1.0/kappa)
       enddo
 
       elem(ie)%state%ps_v(i,j,:) = pi(nlevp)
