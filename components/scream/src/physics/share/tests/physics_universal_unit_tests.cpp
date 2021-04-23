@@ -1,8 +1,9 @@
-
 #include "catch2/catch.hpp"
 
 #include "physics/share/physics_functions.hpp"
+#include "physics/share/common_physics_functions.hpp"
 #include "physics/share/physics_universal_impl.hpp"
+#include "physics/share/common_physics_impl.hpp"
 #include "physics_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -214,47 +215,66 @@ struct UnitWrap::UnitTest<D>::TestUniversal
 //-----------------------------------------------------------------------------------------------//
   static void run()
   {
-    constexpr int num_levs = 100; // Number of levels to use for tests.
+    using physics = scream::physics::Functions<Scalar, Device>;
+    using physicscommon = scream::physics::PhysicsFunctions<Device>;
+
+    int num_levs = 100; // Number of levels to use for tests.
+
+    static constexpr Scalar p0     = C::P0;
+    static constexpr Scalar rd     = C::RD;
+    static constexpr Scalar inv_cp = C::INV_CP;
+    static constexpr Scalar tmelt  = C::Tmelt;
 
     // Compute random values for dse test
     using view_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Real>;
     view_1d temp("temp",num_levs),
             height("height",num_levs),
             surface_height("surface_height",num_levs),
-            qv("qv",num_levs);
+            qv("qv",num_levs),
+            pressure("pressure",num_levs);
+    view_1d exner("exner",num_levs);
 
-    std::random_device rd;
+    std::random_device rdev;
     using rngAlg = std::mt19937_64;
     const unsigned int catchRngSeed = Catch::rngSeed();
-    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    const unsigned int seed = catchRngSeed==0 ? rdev() : catchRngSeed;
     rngAlg engine(seed);
     using RPDF = std::uniform_real_distribution<Real>;
     RPDF pdf(1e-3,1e3);
+    RPDF pdf_pres(0.0,p0);
 
     ekat::genRandArray(temp,engine,pdf);
     ekat::genRandArray(height,engine,pdf);
     ekat::genRandArray(surface_height,engine,pdf);
     ekat::genRandArray(qv,engine,pdf);
+    ekat::genRandArray(pressure,engine,pdf_pres);
 
     int nerr = 0;
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
-    Kokkos::parallel_reduce("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType&, int& errors) {
+    Kokkos::parallel_reduce("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
 
       errors += 0;
-
-      static constexpr Scalar p0     = C::P0;
-      static constexpr Scalar rd     = C::RD;
-      static constexpr Scalar inv_cp = C::INV_CP;
-      static constexpr Scalar tmelt  = C::Tmelt;
 
       // Create dummy level data for testing:
       Real pres_top = 200.;
       Real dp       = (p0-pres_top)/(num_levs-1);
 
       // Run tests
+      // Exner property tests:
+      // get_exner(p0) should return 1.0
+      // get_exner(0.0) should return 0.0
+      // get_exner(2*p0) should return 2**(rd/cp)
+      // get_exner(pressure) should work.
+      EKAT_REQUIRE_MSG(physicscommon::get_exner(p0)==1.0,"Error in get_exner(p0) property test");
+      EKAT_REQUIRE_MSG(physicscommon::get_exner(0.0)==0.0,"Error in get_exner(0.0) property test");
+      EKAT_REQUIRE_MSG(physicscommon::get_exner(2*p0)==pow(2.0,rd*inv_cp),"Error in get_exner(2*p0) property test");
+      EKAT_REQUIRE_MSG(physicscommon::get_exner(4.0)/physicscommon::get_exner(2.0)==pow(2.0,rd*inv_cp),"Error in get_exner(4)/get_exner(2) property test");
+      REQUIRE_NOTHROW(physicscommon::get_exner(team,pressure,exner));
       for (int k=0;k<num_levs;++k)
       {
         // Exner test
+        EKAT_REQUIRE_MSG(!isnan(exner(k)),"Error in column-wise get_exner, NaN present at lev = " + std::to_string(k) + ", pressure = " + std::to_string(pressure(k)));
+        EKAT_REQUIRE_MSG(!(exner(k)<0),"Error in column-wise get_exner, Negative value present at lev = " + std::to_string(k) + ", pressure = " + std::to_string(pressure(k)));
         //   - Pressure at level k is just k*dp, so each pressure level is dp in thickness.
         Real pres = p0 + k*dp;
         Real p_val  = pow( pres/p0, rd*inv_cp);
