@@ -111,7 +111,6 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: &
         ssh,  seaIcePressure, atmosphericPressure
-
       real (kind=RKIND), dimension(:,:), pointer :: &
         layerThickness, normalVelocity
 
@@ -2693,20 +2692,6 @@ contains
                end do
                call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
             end if
-
-            ! Test rinv
-          !!  fieldName = 'rinv'
-          !!  minValue = HUGE(minValue)
-          !!  maxValue = -HUGE(maxValue)
-          !!  call mpas_pool_get_array(diagnosticsPool, fieldName, real1DArr)
-          !!  if ( associated(real1DArr) ) then
-          !!     do iEdge = 1, nEdgesSolve
-          !!        minValue = min( minValue, real1DArr(iEdge) )
-          !!        maxValue = max( maxValue, real1DArr(iEdge) )
-          !!     end do
-          !!     call ocn_write_field_statistics(debugUnit, fieldName, minValue,maxValue)
-          !!  end if
-
 
             ! Test angleEdge
             fieldName = 'angleEdge'

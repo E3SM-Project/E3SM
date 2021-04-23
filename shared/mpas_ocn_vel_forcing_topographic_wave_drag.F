@@ -7,14 +7,14 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_vel_forcing_explicit_bottom_drag
+!  ocn_vel_forcing_topographic_wave_drag
 !
-!> \brief MPAS ocean explicit bottom drag
+!> \brief MPAS ocean topographic wave drag
 !> \author Nairita Pal
 !> \date   Oct 2020
 !> \details
 !>  This module contains the routine for computing
-!>  tendencies from explicit bottom drag.
+!>  tendencies from topographic wave drag.
 !
 !-----------------------------------------------------------------------
 
@@ -53,8 +53,8 @@ module ocn_vel_forcing_topographic_wave_drag
    !
    !--------------------------------------------------------------------
 
-   logical :: topographicWaveDragOn!!explicitBottomDragOn
-   real (kind=RKIND) :: topographicWaveDragCoeff!!explicitBottomDragCoef
+   logical :: topographicWaveDragOn
+   real (kind=RKIND) :: topographicWaveDragCoeff
 
 !***********************************************************************
 
@@ -74,7 +74,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_forcing_topographic_wave_drag_tend(normalVelocity, & !{{{
-                                     kineticEnergyCell, layerThicknessEdge, rinv, tend, err)
+                     kineticEnergyCell, layerThicknessEdge, topographic_wave_drag_rinv, &
+                     tend, err)
 
       !-----------------------------------------------------------------
       !
@@ -86,9 +87,9 @@ contains
          normalVelocity,       &!< Input: velocity
          kineticEnergyCell,    &!< Input: kinetic energy at cell
          layerThicknessEdge   !< Input: thickness at edge
-            
-        real (kind=RKIND), dimension(:), intent(in) :: rinv
-        
+
+        real (kind=RKIND), dimension(:), intent(in) :: topographic_wave_drag_rinv
+
       !-----------------------------------------------------------------
       !
       ! input/output variables
@@ -125,10 +126,11 @@ contains
         cell2 = cellsOnEdge(2,iEdge)
         k =  maxLevelEdgeTop(iEdge)
         ! topographic wave drag term:
-        ! du/dt = ... (1.0/rinv) * u
-        ! rinv is the e-folding time which is read from a file 
-        tend(k,iEdge) = tend(k,iEdge)- (topographicWaveDragCoeff/(0.5_RKIND*(rinv(cell1)+rinv(cell2))))*normalVelocity(k,iEdge) 
-       
+        ! du/dt = ... (1.0/topographic_wave_drag_rinv) * u
+        ! topographic_wave_drag_rinv is the e-folding time which is read from a file
+        tend(k,iEdge) = tend(k,iEdge) - topographicWaveDragCoeff &
+           /(0.5_RKIND*(topographic_wave_drag_rinv(cell1)+topographic_wave_drag_rinv(cell2)))*normalVelocity(k,iEdge)
+
       enddo
       !$omp end do
 

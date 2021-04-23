@@ -939,13 +939,13 @@
 					description="If true, implicit bottom drag is used on the momentum equation."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_implicit_bottom_roughness" type="logical" default_value=".false." units="unitless"
-                                        description="If true, depends on bottom roughness z0"
-                                        possible_values=".true. or .false."
-                />
 		<nml_option name="config_implicit_bottom_drag_coeff" type="real" default_value="1.0e-3" units="unitless"
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
+		/>
+		<nml_option name="config_use_implicit_bottom_roughness" type="logical" default_value=".false." units="unitless"
+					description="If true, depends on bottom roughness z0"
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_implicit_bottom_drag_variable" type="logical" default_value=".false." units="unitless"
 					description="If true, spatially-variable implicit bottom drag is used on the momentum equation."
@@ -964,13 +964,13 @@
 					possible_values="any positive real, typically 1.0e-3"
 		/>
 		<nml_option name="config_use_topographic_wave_drag" type="logical" default_value=".false." units="unitless"
-                                        description="If true, topographic wave drag is used on the momentum equation."
-                                        possible_values=".true. or .false."
-                />
-                <nml_option name="config_topographic_wave_drag_coeff" type="real" default_value="1.0e-3" units="unitless"
-                                        description="Dimensionless topographic wave drag coefficient, $c_{topo}$."
-                                        possible_values="any positive real, typically 1.0e-3"
-                />
+					description="If true, topographic wave drag is used on the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_topographic_wave_drag_coeff" type="real" default_value="5.0e-4" units="unitless"
+					description="Dimensionless topographic wave drag coefficient, $c_{topo}$."
+					possible_values="any positive real, typically 5.0e-4"
+		/>
 
 	</nml_record>
 	<nml_record name="wetting_drying" mode="init;forward">
@@ -1297,9 +1297,9 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_disable_vel_topographic_wave_drag" type="logical" default_value=".false." units="unitless"
-                                        description="Disables tendencies on the velocity field from topographic wave drag"
-                                        possible_values=".true. or .false."
-                />
+					description="Disables tendencies on the velocity field from topographic wave drag"
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_disable_vel_explicit_bottom_drag" type="logical" default_value=".false." units="unitless"
 					description="Disables tendencies on the velocity field from explicit bottom drag"
 					possible_values=".true. or .false."
@@ -1981,7 +1981,7 @@
 				filename_template="rinv_interpolated.nc"
 				runtime_format="single_file"
 				mode="forward;analysis">
-			<var name="rinv"/>
+			<var name="topographic_wave_drag_rinv"/>
 		</stream>
 
 	</streams>
@@ -2463,11 +2463,6 @@
 				description="salinity extrapolated to ocean surface"
 			/>
 		</var_array>
-                <var name="rinv" type="real" dimensions="nCells Time" units="unitless"
-                         description="wave drag coefficient or e-folding time"
-                         packages="forwardMode"
-                />
-
 		<var_array name="tracersSurfaceLayerValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
 			<var name="temperatureSurfaceLayerValue" array_group="surfaceLayerValues" units="degrees Celsius" name_in_code="temperatureSurfaceLayerValue"
 				description="potential temperature averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
@@ -2880,6 +2875,9 @@
 		/>
 		<var name="surfaceFluxAttenuationCoefficientRunoff" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of river runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
+		/>
+		<var name="topographic_wave_drag_rinv" type="real" dimensions="nCells Time" units="unitless"
+			description="wave drag coefficient or e-folding time"
 		/>
 		<!-- diagnostic fields for land-ice fluxes -->
 		<var name="landIceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^{-1}"
