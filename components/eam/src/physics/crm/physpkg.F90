@@ -1343,12 +1343,6 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
 
   real(r8) :: sh_e_ed_ratio(pcols,pver)      ! shallow conv [ent/(ent+det)] ratio  
 
-  ! Local copies for substepping
-  real(r8) :: prec_pcw_macmic(pcols)
-  real(r8) :: snow_pcw_macmic(pcols)
-  real(r8) :: prec_sed_macmic(pcols)
-  real(r8) :: snow_sed_macmic(pcols)
-
   ! energy checking variables
   real(r8) :: zero(pcols)                    ! array of zeros
   real(r8) :: rliq(pcols)                    ! vertical integral of liquid not yet in q(ixcldliq)
