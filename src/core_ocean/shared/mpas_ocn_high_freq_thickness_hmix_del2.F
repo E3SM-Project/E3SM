@@ -21,10 +21,9 @@
 module ocn_high_freq_thickness_hmix_del2
 
    use mpas_timer
-   use mpas_derived_types
-   use mpas_pool_routines
    use ocn_constants
    use ocn_config
+   use ocn_mesh
 
    implicit none
    private
@@ -63,98 +62,80 @@ contains
 !> \date    July 2013
 !> \details
 !>  This routine computes the horizontal mixing tendency for
-!>  high frequency thickness
-!>  based on current state using a Laplacian parameterization.
+!>  high frequency thickness based on current state using a 
+!>  Laplacian parameterization.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_high_freq_thickness_hmix_del2_tend(meshPool, highFreqThickness, tend_highFreqThickness, err)!{{{
+   subroutine ocn_high_freq_thickness_hmix_del2_tend(highFreqThickness,&
+                                      tend_highFreqThickness, err)!{{{
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         highFreqThickness !< Input: high frequency thickness
+         highFreqThickness       !< [in] high frequency thickness
 
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend_highFreqThickness          !< Input/Output: high freq thickness tendency
+         tend_highFreqThickness  !< [inout] high freq thickness tendency
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
 
       integer :: iCell, iEdge, cell1, cell2, i, k
-      integer, pointer :: nCells, nVertLevels
-      integer, dimension(:), pointer :: maxLevelEdgeTop, nEdgesOnCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgeMask, edgesOnCell, edgeSignOnCell
 
       real (kind=RKIND) :: invAreaCell, hhf_turb_flux, flux, r_tmp
 
       real (kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2
 
+      ! End preamble
+      !-------------
+      ! Begin code
+
+      ! Set default error flag and reeturn if not selected
+      ! Otherwise, start timer and continue
       err = 0
-
-      if(.not.config_use_highFreqThick_del2) return
-
+      if(.not. config_use_highFreqThick_del2) return
       call mpas_timer_start("thick hmix del2")
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
-      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
-
-      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
-
       !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, hhf_turb_flux, flux)
-      do iCell = 1, nCells
+      !$omp do schedule(runtime) &
+      !$omp    private(i, k, iEdge, cell1, cell2, invAreaCell, &
+      !$omp            r_tmp, hhf_turb_flux, flux)
+      do iCell = 1, nCellsAll
          invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOncell(iCell)
             iEdge = edgesOnCell(i, iCell)
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
 
-            r_tmp = meshScalingDel2(iEdge) * config_highFreqThick_del2 * dvEdge(iEdge) / dcEdge(iEdge)
+            r_tmp = meshScalingDel2(iEdge)*config_highFreqThick_del2* &
+                    dvEdge(iEdge)/dcEdge(iEdge)
 
             do k = 1, maxLevelEdgeTop(iEdge)
                ! \nabla h^{hf} on edge
-               hhf_turb_flux = highFreqThickness(k,cell2) - highFreqThickness(k,cell1)
+               hhf_turb_flux = highFreqThickness(k,cell2) - &
+                               highFreqThickness(k,cell1)
 
                ! div(\kappa_{hf} \nabla h^{hf}) at cell center
-               flux = hhf_turb_flux * edgeMask(k, iEdge) * r_tmp
+               flux = hhf_turb_flux*edgeMask(k, iEdge)*r_tmp
 
-               tend_highFreqThickness(k, iCell) = tend_highFreqThickness(k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
+               tend_highFreqThickness(k, iCell) = &
+               tend_highFreqThickness(k, iCell) - &
+                      edgeSignOnCell(i,iCell)*flux*invAreaCell
             end do
 
          end do
@@ -164,7 +145,11 @@ contains
 
       call mpas_timer_stop("thick hmix del2")
 
+   !--------------------------------------------------------------------
+
    end subroutine ocn_high_freq_thickness_hmix_del2_tend!}}}
+
+!***********************************************************************
 
 end module ocn_high_freq_thickness_hmix_del2
 
