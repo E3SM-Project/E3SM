@@ -273,7 +273,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
     bi(k) = 1.0 - zi(k)/zi(1)
 
     !restore ai frop given pressure
-    ai(k)=(pi(k)-bi(k)*pi(nlev))/p0
+    ai(k)=(pi(k)-bi(k)*pi(nlevp))/p0
   enddo
 
   hvcoord%hyai = ai
