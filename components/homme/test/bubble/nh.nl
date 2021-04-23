@@ -35,6 +35,13 @@
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   hypervis_subcycle_tom = 1
   hypervis_subcycle_q = 1
+  lx = 10000.0
+  ly = 10000.0
+  sx = -5000.0
+  sy = -5000.0
+  bubble_zcenter=2000.0
+  bubble_ztop=20000.0
+  bubble_cosine=.true.
 /
 &vert_nl
   vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
