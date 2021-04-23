@@ -35,7 +35,8 @@ CONFIG = {
     "machine"  : None,
     "compare"  : False,
     "generate" : False,
-    "full"     : False
+    "full"     : False,
+    "jenkins"  : False
 }
 
 ###############################################################################
@@ -137,9 +138,10 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
             self._compare     = CONFIG["compare"]
             self._generate    = CONFIG["generate"]
             self._full        = CONFIG["full"]
+            self._jenkins     = CONFIG["jenkins"]
 
-            if self._full:
-                expect(self._machine is not None, "Full runs require a machine")
+            if self._full or self._jenkins:
+                expect(self._machine is not None, "Full/Jenkins runs require a machine")
 
             self._results = TEST_DIR.joinpath("results")
             self._results.mkdir(parents=True, exist_ok=True) # pylint: disable=no-member
@@ -384,7 +386,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             self.skipTest("Skipping full run")
 
     def test_jenkins_process(self):
-        if self._full:
+        if self._jenkins:
             # We set PULLREQUESTNUM to block dashboard submission
             # We set SCREAM_FAKE_AUTO to not interere with real baselines
             cmd = self.get_cmd("NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
@@ -461,6 +463,9 @@ OR
     > {0} -c
     > {0} -f -m $machine
 
+    \033[1;32m# Test Jenkins script, do NOT do this from Jenkins \033[0m
+    > {0} -j -m $machine
+
 """.format(Path(args[0]).name)
 
     parser = argparse.ArgumentParser(
@@ -480,13 +485,16 @@ OR
     parser.add_argument("-f", "--full", action="store_true",
                         help="Do a full (not dry) run")
 
+    parser.add_argument("-j", "--jenkins", action="store_true",
+                        help="Test the jenkins script. Do NOT run from jenkins.")
+
     args, py_ut_args = parser.parse_known_args()
     sys.argv[1:] = py_ut_args
 
     return args
 
 ###############################################################################
-def scripts_tests(machine=None, generate=False, compare=False, full=False):
+def scripts_tests(machine=None, generate=False, compare=False, full=False, jenkins=False):
 ###############################################################################
     # Store test params in environment
     if machine:
@@ -496,6 +504,7 @@ def scripts_tests(machine=None, generate=False, compare=False, full=False):
     expect(not (generate and compare), "Cannot do generate and compare in the same run")
     CONFIG["compare"] = compare
     CONFIG["generate"] = generate
+    CONFIG["jenkins"] = jenkins
 
     if full:
         expect(machine, "Must provide a machine to do a full run")
