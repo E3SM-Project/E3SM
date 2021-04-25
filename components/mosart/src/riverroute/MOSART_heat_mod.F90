@@ -67,9 +67,6 @@ MODULE MOSART_heat_mod
             ! change of energy due to advective heat flux
             THeat%deltaM_t(iunit) = theDeltaT * (THeat%Ha_h2t(iunit)-cr_advectheat(Qsur + Qsub, THeat%Tt(iunit)))
 			
-        if(TUnit%iD0(iunit)==16511) then
-            write(unit=2110,fmt="(3(i10), 11(e20.11))") iunit, Tunit%mask(iunit), rtmCTL%mask(iunit), THeat%Tt(iunit), THeat%Tqsur(iunit), THeat%Tqsub(iunit), THeat%Hs_t(iunit), THeat%Hl_t(iunit), THeat%He_t(iunit), THeat%Hh_t(iunit), THeat%Hc_t(iunit), THeat%Ha_h2t(iunit), Qsur, Qsub          
-        end if
     end subroutine subnetworkHeat
 
     subroutine subnetworkHeat_simple(iunit, theDeltaT)
@@ -136,13 +133,6 @@ MODULE MOSART_heat_mod
             ! Their routing model is based on source-to-sink, while our model is explicitly tracing inflow from each upstream channel.
             Ha_temp = cr_advectheat(TRunoff%erin(iunit,nt_nliq)+TRunoff%erin(iunit,nt_nice)+TRunoff%erlateral(iunit,nt_nliq)+TRunoff%erlateral(iunit,nt_nice),THeat%Tr(iunit))
             THeat%deltaM_r(iunit) = theDeltaT * (THeat%Ha_lateral(iunit) + THeat%Ha_rin(iunit) - Ha_temp)
-
-        !if(iunit==100800) then
-        !    write(unit=2110,fmt="(3(i10), 10(e20.11))") iunit, Tunit%mask(iunit), rtmCTL%mask(iunit), THeat%Tr(iunit), THeat%Tqsur(iunit), THeat%Tqsub(iunit), THeat%Hs_r(iunit), THeat%Hl_r(iunit), THeat%He_r(iunit), THeat%Hh_r(iunit), THeat%Hc_r(iunit), THeat%Ha_rin(iunit), TRunoff%erin(iunit, 1)          
-        !end if
-        if(abs(THeat%Tr(iunit)) > 400._r8) then
-            write(unit=2113,fmt="(3(i10), 10(e20.11))") iunit, Tunit%mask(iunit), rtmCTL%mask(iunit), THeat%Tr(iunit), THeat%Tqsur(iunit), THeat%Tqsub(iunit), THeat%Hs_r(iunit), THeat%Hl_r(iunit), THeat%He_r(iunit), THeat%Hh_r(iunit), THeat%Hc_r(iunit), THeat%Ha_rin(iunit), TRunoff%erin(iunit, 1)          
-        end if
             
         !end if
     end subroutine mainchannelHeat
@@ -238,10 +228,6 @@ MODULE MOSART_heat_mod
         end if
         if(THeat%Tr(iunit) < 273.15_r8) then
             THeat%Tr(iunit) = 273.15_r8
-        end if
-        
-        if(abs(THeat%Tr(iunit)) > 400._r8) then
-            write(unit=1118,fmt="(i10, (e20.11))") iunit, THeat%Tr(iunit)         
         end if
         
     end subroutine mainchannelTemp
@@ -547,25 +533,7 @@ MODULE MOSART_heat_mod
                                          rtmCTL%runofflnd_nt1(IDlist(2)), rtmCTL%templand_Tchanr_nt1(IDlist(2)), rtmCTL%templand_Ttrib_nt1(IDlist(2)), &
                                          rtmCTL%runofflnd_nt1(IDlist(3)), rtmCTL%templand_Tchanr_nt1(IDlist(3)), rtmCTL%templand_Ttrib_nt1(IDlist(3)), &
                                          rtmCTL%runofflnd_nt1(IDlist(4)), rtmCTL%templand_Tchanr_nt1(IDlist(4)), rtmCTL%templand_Ttrib_nt1(IDlist(4))
-      
-      !write(unit=nio,fmt="(16(e20.11))") TRunoff%erout(IDlist(1),1), TRunoff%wr(IDlist(1),1), THeat%Tt(IDlist(1)), THeat%Tr(IDlist(1)), &
-      !                                   TRunoff%erout(IDlist(2),1), TRunoff%wr(IDlist(2),1), THeat%Tt(IDlist(2)), THeat%Tr(IDlist(2)), &
-      !                                     TRunoff%erout(IDlist(3),1), TRunoff%wr(IDlist(3),1), THeat%Tt(IDlist(3)), THeat%Tr(IDlist(3)), &
-      !                                     TRunoff%erout(IDlist(4),1), TRunoff%wr(IDlist(4),1), THeat%Tt(IDlist(4)), THeat%Tr(IDlist(4))
-      !write(unit=nio,fmt="(32(e20.11))") THeat%Hs_r(IDlist(1)), THeat%Hl_r(IDlist(1)), THeat%He_r(IDlist(1)), THeat%Hh_r(IDlist(1)), THeat%Hc_r(IDlist(1)), THeat%Ha_lateral(IDlist(1)), THeat%deltaH_r(IDlist(1)), THeat%deltaM_r(IDlist(1)), &
-      !                                   THeat%Hs_r(IDlist(2)), THeat%Hl_r(IDlist(2)), THeat%He_r(IDlist(2)), THeat%Hh_r(IDlist(2)), THeat%Hc_r(IDlist(2)), THeat%Ha_lateral(IDlist(2)), THeat%deltaH_r(IDlist(2)), THeat%deltaM_r(IDlist(2)), &
-      !                                     THeat%Hs_r(IDlist(3)), THeat%Hl_r(IDlist(3)), THeat%He_r(IDlist(3)), THeat%Hh_r(IDlist(3)), THeat%Hc_r(IDlist(3)), THeat%Ha_lateral(IDlist(3)), THeat%deltaH_r(IDlist(3)), THeat%deltaM_r(IDlist(3)), &
-      !                                     THeat%Hs_r(IDlist(4)), THeat%Hl_r(IDlist(4)), THeat%He_r(IDlist(4)), THeat%Hh_r(IDlist(4)), THeat%Hc_r(IDlist(4)), THeat%Ha_lateral(IDlist(4)), THeat%deltaH_r(IDlist(4)), THeat%deltaM_r(IDlist(4))
-      !write(unit=nio,fmt="((a10),(e20.11))") theTime, liqWater%flow(ii)
-      !write(unit=nio,fmt="((a10),6(e20.11))") theTime, liqWater%qsur(ii), liqWater%qsub(ii), liqWater%etin(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%erlateral(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%erin(ii), liqWater%flow(ii)
-      !if(liqWater%yr(ii) > 0._r8) then
-      !    write(unit=nio,fmt="((a10),6(e20.11))") theTime, liqWater%mr(ii)/liqWater%yr(ii),liqWater%yr(ii), liqWater%vr(ii), liqWater%erin(ii), liqWater%erout(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%flow(ii)
-      !else
-      !    write(unit=nio,fmt="((a10),6(e20.11))") theTime, liqWater%mr(ii)-liqWater%mr(ii),liqWater%yr(ii), liqWater%vr(ii), liqWater%erin(ii), liqWater%erout(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%flow(ii)
-      !end if
-      !write(unit=nio,fmt="((a10),7(e20.11))") theTime, liqWater%erlateral(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%wr(ii),liqWater%mr(ii), liqWater%yr(ii), liqWater%pr(ii), liqWater%rr(ii), liqWater%flow(ii)
-      !write(unit=nio,fmt="((a10),7(e20.11))") theTime, liqWater%yh(ii), liqWater%dwh(ii),liqWater%etin(ii), liqWater%vr(ii), liqWater%erin(ii), liqWater%erout(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%flow(ii)
-  
+        
   end subroutine printTest1
     
 end MODULE MOSART_heat_mod
