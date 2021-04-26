@@ -138,11 +138,59 @@ void AtmosphereDriver::create_fields()
   for (const auto& req : m_atm_process_group->get_computed_fields()) {
     m_field_mgrs.at(req.fid.get_grid_name())->register_field(req);
   }
+
   // Register required/updated groups
+  // IMPORTANT: Some FMs on non-ref grids *might* depend on the ref-grid FM.
+  //            E.g., there could be a GroupRequest gr1 that requires to be an
+  //            alias of gr2, with gr2 defined on ref grid. Most obvious case:
+  //            dyn needs a copy of group "tracers" on dyn grid. But nobody
+  //            register tracers on dyn grid, so the request has to be an alias
+  //            of "tracers" from ref grid.
+  //            To fix this, we check all the group requests. If we find a request
+  //            gr1 that has a 'relative' request gr2 (see field_request.hpp for a
+  //            definition of 'relative'), and if gr2 is on a different grid, we
+  //            make sure all the fields of the relative request are registered
+  //            on gr1.grid.
+
+  // Helper lambda to reduce code duplication
+  auto import_relative_group = [&](const GroupRequest& greq) {
+    // Given request on grid g1, with relative (alias or child) on grid g2,
+    // imports all fields of the relative from grid g2 to grid g1.
+
+    const auto& fm = m_field_mgrs.at(greq.grid);
+    const auto& rel = *greq.relative;
+    const auto& rel_fm   = m_field_mgrs.at(rel.grid);
+    const auto& rel_info = rel_fm->get_groups_info().at(rel.name);
+
+    auto r = m_grids_manager->create_remapper(rel.grid,greq.grid);
+    // Loop over all fields in group rel_name on grid rel_grid.
+    for (const auto& fname : rel_info->m_fields_names) {
+      // Get field on rel_grid
+      auto f = rel_fm->get_field_ptr(fname);
+
+      // Build a FieldRequest for the same field on greq's grid
+      auto fid = r->create_tgt_fid(f->get_header().get_identifier());
+      FieldRequest freq(fid,rel.name,rel.pack_size);
+      fm->register_field(freq);
+    }
+  };
+
   for (const auto& req : m_atm_process_group->get_required_groups()) {
+    if (req.relative!=nullptr && req.grid!=req.relative->grid) {
+      EKAT_REQUIRE_MSG (req.relative_type==Relationship::Alias || req.relative_type==Relationship::Child,
+          "Error! Linking group requests on different grids is only allowed for 'Alias' or 'Child' relatives.\n"
+          "       See field_request.hpp for more info on what that means.\n");
+      import_relative_group(req);
+    }
     m_field_mgrs.at(req.grid)->register_group(req);
   }
   for (const auto& req : m_atm_process_group->get_updated_groups()) {
+    if (req.relative!=nullptr && req.grid!=req.relative->grid) {
+      EKAT_REQUIRE_MSG (req.relative_type==Relationship::Alias || req.relative_type==Relationship::Child,
+          "Error! Linking group requests on different grids is only allowed for 'Alias' or 'Child' relatives.\n"
+          "       See field_request.hpp for more info on what that means.\n");
+      import_relative_group(req);
+    }
     m_field_mgrs.at(req.grid)->register_group(req);
   }
 
@@ -188,7 +236,7 @@ initialize_fields (const util::TimeStamp& t0)
     AtmProcDAG dag;
 
     // First, add all atm processes
-    dag.create_dag(*m_atm_process_group,get_ref_grid_field_mgr());
+    dag.create_dag(*m_atm_process_group,m_field_mgrs);
 
     // Then, add all surface coupling dependencies, if any
     if (m_surface_coupling) {
@@ -204,34 +252,41 @@ initialize_fields (const util::TimeStamp& t0)
   const auto& fields_in = m_atm_process_group->get_required_fields();
 
   const auto& ic_pl = m_atm_params.sublist("Initial Conditions");
+  const auto& ref_grid_name = m_grids_manager->get_reference_grid()->name();
 
   // Create parameter list for AtmosphereInput
   ekat::ParameterList ic_reader_params;
-  ic_reader_params.set("GRID",m_grids_manager->get_reference_grid()->name());
+  ic_reader_params.set("GRID",ref_grid_name);
   auto& ic_fields = ic_reader_params.sublist("FIELDS");
   int ifield=0;
-  auto ref_fm = get_ref_grid_field_mgr();
-  std::vector<std::string> ic_fields_to_copy;
-  for (auto& req : fields_in) {
+  std::vector<FieldIdentifier> ic_fields_to_copy;
+  for (const auto& req : fields_in) {
     const auto& fid = req.fid;
     const auto& name = fid.name();
-    auto f = ref_fm->get_field(fid);
+    const auto& fm = get_field_mgr(fid.get_grid_name());
+
+    auto f = fm->get_field(fid);
     // First, check if the input file contains constant values for some of the fields
     if (ic_pl.isParameter(name)) {
       // The user provided a constant value for this field. Simply use that.
       if (ic_pl.isType<double>(name) or ic_pl.isType<std::vector<double>>(name)) {
-        initialize_constant_field(name, ic_pl);
+        initialize_constant_field(req, ic_pl);
       } else if (ic_pl.isType<std::string>(name)) {
-        ic_fields_to_copy.push_back(name);
+        ic_fields_to_copy.push_back(req.fid);
       } else {
         EKAT_REQUIRE_MSG (false, "ERROR: invalid assignment for variable " + name + ", only scalar double or string, or vector double arguments are allowed");
       }
     } else {
       // The field does not have a constant value, so we expect to find it in the nc file
+      // A requirement for this, is that the field is on the ref grid
+      EKAT_REQUIRE_MSG (req.fid.get_grid_name()==ref_grid_name,
+          "Error! So far, only reference grid fields can be inited via Scorpio input.\n"
+          "       Ref grid name:    " + ref_grid_name + "\n"
+          "       Input field grid: " + req.fid.get_grid_name() + "\n");
+
       ic_fields.set(ekat::strint("field",ifield+1),name); 
       ++ifield;
 
-      // While at it, set the time stamp of the loaded fields to t0
     }
     f.get_header().get_tracking().update_time_stamp(t0);
   }
@@ -249,17 +304,26 @@ initialize_fields (const util::TimeStamp& t0)
           "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
     }
 
-    AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,ref_fm,m_grids_manager);
+    AtmosphereInput ic_reader(m_atm_comm,ic_reader_params,get_ref_grid_field_mgr(),m_grids_manager);
 
     ic_reader.pull_input();
   }
 
   // If there were any fields that needed to be copied per the input yaml file, now we copy them.
-  auto ref_grid_fm = get_ref_grid_field_mgr();
-  for (auto& name_tgt : ic_fields_to_copy) {
-    const auto& name_src = ic_pl.get<std::string>(name_tgt);
-    auto f_tgt = ref_grid_fm->get_field(name_tgt);
-    auto f_src = ref_grid_fm->get_field(name_src);
+  for (const auto& tgt_fid : ic_fields_to_copy) {
+    auto fm = get_field_mgr(tgt_fid.get_grid_name());
+
+    const auto& src_name = ic_pl.get<std::string>(tgt_fid.name());
+    // The target field must exist in the fm on the input field's grid
+    EKAT_REQUIRE_MSG (fm->has_field(src_name),
+        "Error! Source field for initial condition not found in the field manager.\n"
+        "       Grid name:     " + tgt_fid.get_grid_name() + "\n"
+        "       Field to init: " + tgt_fid.name() + "\n"
+        "       Source field:  " + src_name + " (NOT FOUND)\n");
+
+    // Get the two fields, and copy src to tgt
+    auto f_tgt = fm->get_field(tgt_fid.name());
+    auto f_src = fm->get_field(src_name);
     f_tgt.deep_copy(f_src);
   }
 
@@ -268,9 +332,11 @@ initialize_fields (const util::TimeStamp& t0)
   m_ad_status |= s_fields_inited;
 }
 
-void AtmosphereDriver::initialize_constant_field(const std::string& name, const ekat::ParameterList& ic_pl)
+void AtmosphereDriver::initialize_constant_field(const FieldRequest& freq, const ekat::ParameterList& ic_pl)
 {
-  auto f = get_ref_grid_field_mgr()->get_field(name);
+  const auto& name = freq.fid.name();
+  const auto& grid = freq.fid.get_grid_name();
+  auto f = get_field_mgr(grid)->get_field(name);
   // The user provided a constant value for this field. Simply use that.
   const auto& layout = f.get_header().get_identifier().get_layout();
 

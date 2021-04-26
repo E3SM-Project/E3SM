@@ -52,12 +52,20 @@ public:
   // Dynamics updates 'TRACERS'.
   void set_updated_group (const FieldGroup<Real>& group);
 
+
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
+protected:
+  void homme_pre_process (const Real dt);
+  void homme_post_process ();
+#endif
+
 protected:
 
   // These are the three main interfaces:
   void initialize_impl (const util::TimeStamp& t0);
   void run_impl        (const Real dt);
-  void finalize_impl   (/* what inputs? */);
+  void finalize_impl   ();
 
   // Setting the fields in the atmosphere process
   void set_required_field_impl (const Field<const Real>& f);

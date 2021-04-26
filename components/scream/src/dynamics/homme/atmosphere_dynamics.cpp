@@ -6,6 +6,7 @@
 #include "Context.hpp"
 #include "Dimensions.hpp"
 #include "Elements.hpp"
+#include "ElementsForcing.hpp"
 #include "EulerStepFunctor.hpp"
 #include "ExecSpaceDefs.hpp"
 #include "Hommexx_Session.hpp"
@@ -112,50 +113,83 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
                      "       Found " + std::to_string(ftype) + " instead.\n");
 
   // Input-output groups
-  add_group<Updated>("tracers",grids_manager->get_reference_grid()->name(),
-                     ps, Bundling::Required);
+  // Note: tracers_prev is tracers after the last dyn step, and is used to back out tracer tendencies.
+  //       We want it directy on the dyn grid, and must contain all fields in the tracers group.
+  //       So we create it as an 'alias' of "tracers", but on a different grid.
+  GroupRequest tracers("tracers",m_ref_grid->name(),ps, Bundling::Required);
+  GroupRequest tracers_prev("tracers_prev",m_dyn_grid->name(),ps, Bundling::Required,
+                            &tracers,Relationship::Alias);
+
+  add_group<Updated>(tracers);
+  add_group<Updated>(tracers_prev);
 }
 
 void HommeDynamics::
 set_updated_group (const FieldGroup<Real>& group)
 {
   const auto& name = group.m_info->m_group_name;
-  EKAT_REQUIRE_MSG(name=="tracers",
+  EKAT_REQUIRE_MSG(name=="tracers" || name=="tracers_prev",
     "Error! We were not expecting a field group called '" << name << "\n");
 
   EKAT_REQUIRE_MSG(not group.m_info->empty(),
-    "Error! There should be at least one tracer (qv) in the 'tracers' group.\n");
+    "Error! There should be at least one tracer (qv) in the 'tracers' and 'tracers_prev' groups.\n");
 
   EKAT_REQUIRE_MSG(group.m_info->m_bundled,
-      "Error! Homme expects a bundled field for tracers.\n");
+      "Error! Homme expects a bundled field for 'tracers' and 'tracers_prev'.\n");
 
-  // Store the big Q array
-  auto& Q_phys = m_ref_grid_fields["Q"] = *group.m_bundle;
-  auto& Q_dyn = m_dyn_grid_fields["Q"];
-  Q_dyn = Field<Real>(m_p2d_remapper->create_tgt_fid(group.m_bundle->get_header().get_identifier()));
-  Q_dyn.get_header().get_alloc_properties().request_allocation<Homme::Scalar>();
-  Q_dyn.allocate_view();
+  if (name=="tracers") {
+    // Store the big Q array
+    auto& Q_phys = m_ref_grid_fields["Q"] = *group.m_bundle;
+    auto& Q_dyn = m_dyn_grid_fields["Q"];
+    Q_dyn = Field<Real>(m_p2d_remapper->create_tgt_fid(group.m_bundle->get_header().get_identifier()));
+    Q_dyn.get_header().get_alloc_properties().request_allocation<Homme::Scalar>();
+    Q_dyn.allocate_view();
 
-  // Set Q in the remapper
-  m_p2d_remapper->register_field(Q_phys,Q_dyn);
+    // Set Q in the remapper
+    m_p2d_remapper->register_field(Q_phys,Q_dyn);
 
-  // Now that we have Q, we have the exact count for tracers,
-  // and we can use that info to setup tracers stuff in Homme
-  const int qsize = group.m_info->size();
-  auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
-  auto& tracers = Homme::Context::singleton().get<Homme::Tracers>();
-  params.qsize = qsize;
-  set_homme_param("qsize",qsize);
-  tracers.init(tracers.num_elems(),qsize);
+    // Now that we have Q, we have the exact count for tracers,
+    // and we can use that info to setup tracers stuff in Homme
+    const int qsize = group.m_info->size();
+    auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
+    auto& tracers = Homme::Context::singleton().get<Homme::Tracers>();
+    params.qsize = qsize;
+    set_homme_param("qsize",qsize);
+    tracers.init(tracers.num_elems(),qsize);
 
-  // Set the dyn grid field's view in Hommexx data structures
-  constexpr int NVL  = HOMMEXX_NUM_LEV;
-  auto Q_view = Q_dyn.template get_reshaped_view<Homme::Scalar**[NP][NP][NVL]>();
-  tracers.Q = decltype(tracers.Q)(Q_view.data(),tracers.num_elems(),qsize);
+    // Set the dyn grid field's view in Hommexx data structures
+    constexpr int NVL  = HOMMEXX_NUM_LEV;
+    auto Q_view = Q_dyn.template get_reshaped_view<Homme::Scalar**[NP][NP][NVL]>();
+    tracers.Q = decltype(tracers.Q)(Q_view.data(),tracers.num_elems(),qsize);
+  } else {
+    auto& Q_prev = m_dyn_grid_fields["Q_prev"];
+    Q_prev = *group.m_bundle;
+
+    // We can use Q_prev to store FQ once we get the 'new' Q. In particular,
+    // the run call will do the following:
+    //  1) remap Q from phys grid
+    //  2) Q_prev = (Q - Q_prev)/dt
+    //  3) run homme
+    //  4) Q_prev = Q
+
+    // Set the dyn grid field's view in Hommexx data structures
+    constexpr int NVL  = HOMMEXX_NUM_LEV;
+    const int qsize = group.m_info->size();
+    auto FQ_view = Q_prev.template get_reshaped_view<Homme::Scalar**[NP][NP][NVL]>();
+    auto& tracers = Homme::Context::singleton().get<Homme::Tracers>();
+    tracers.fq = decltype(tracers.fq)(FQ_view.data(),tracers.num_elems(),qsize);
+  }
 }
 
 void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 {
+  // Initialize Q_prev to Q
+  // Note: deep_copy will take care of checking the two layouts match
+  // TODO: do NOT do this for restart runs. Works only for initial runs.
+  const auto& Q = m_dyn_grid_fields.at("Q");
+  auto& Q_prev = m_dyn_grid_fields.at("Q_prev");
+  Q_prev.deep_copy(Q);
+
   // Print homme's parameters, so user can see whether something wasn't set right.
   ::Homme::Context::singleton().get<::Homme::SimulationParams>().print();
 
@@ -164,19 +198,23 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   m_p2d_remapper->registration_ends();
   m_p2d_remapper->remap(true);
 
-
   prim_init_model_f90 ();
 }
 
 void HommeDynamics::run_impl (const Real dt)
 {
   try {
-    // Remap inputs
-    m_p2d_remapper->remap(true);
+    // Prepare inputs for homme
+    Kokkos::fence();
+    homme_pre_process (dt);
+
     // Run hommexx
+    Kokkos::fence();
     prim_run_f90 (dt);
-    // Remap outputs
-    m_p2d_remapper->remap(false);
+
+    // Post process Homme's output, to produce what the rest of Atm expects
+    Kokkos::fence();
+    homme_post_process ();
 
     // Get a copy of the current timestamp (at the beginning of the step) and
     // advance it, updating the p3 fields.
@@ -186,9 +224,9 @@ void HommeDynamics::run_impl (const Real dt)
       it.second.get_header().get_tracking().update_time_stamp(ts);
     }
   } catch (std::exception& e) {
-    ekat::error::runtime_abort(e.what());
+    EKAT_ERROR_MSG(e.what());
   } catch (...) {
-    ekat::error::runtime_abort("Something went wrong, but we don't know what.\n");
+    EKAT_ERROR_MSG("Something went wrong, but we don't know what.\n");
   }
 }
 
@@ -271,6 +309,42 @@ void HommeDynamics::set_computed_field_impl (const Field<Real>& f) {
 
   // Add myself as provider for the field
   this->add_me_as_provider(f);
+}
+
+void HommeDynamics::homme_pre_process (const Real dt) {
+  // Remap inputs
+  m_p2d_remapper->remap(true);
+
+  // Back out tracers tendency
+  constexpr int N = sizeof(Homme::Scalar) / sizeof(Real);
+  using Pack = ekat::Pack<Real,N>;
+  auto Q = m_dyn_grid_fields.at("Q").get_reshaped_view<Pack*****>();
+  auto Q_prev = m_dyn_grid_fields.at("Q_prev").get_reshaped_view<Pack*****>();
+  constexpr int NVL = HOMMEXX_NUM_LEV;
+  const int qsize = Q.extent_int(1);
+  Kokkos::parallel_for(Kokkos::RangePolicy<>(0,Q.size()),KOKKOS_LAMBDA(const int idx) {
+    const int ie = idx / (qsize*NP*NP*NVL);
+    const int iq = (idx / (NP*NP*NVL)) % qsize;
+    const int ip = (idx / (NP*NVL)) % NP;
+    const int jp = (idx / NVL) % NP;
+    const int k  =  idx % NVL;
+
+    // Remember that q_prev is getting overwritten with fq;
+    const auto& q_prev = Q_prev(ie,iq,ip,jp,k);
+          auto& fq     = Q_prev(ie,iq,ip,jp,k);
+    const auto& q_new  = Q(ie,iq,ip,jp,k);
+
+    fq = (q_new - q_prev) / dt;
+  });
+}
+
+void HommeDynamics::homme_post_process () {
+  // Update Q_prev
+  m_dyn_grid_fields.at("Q_prev").deep_copy(m_dyn_grid_fields.at("Q"));
+  Kokkos::fence();
+
+  // Remap outputs
+  m_p2d_remapper->remap(false);
 }
 
 } // namespace scream
