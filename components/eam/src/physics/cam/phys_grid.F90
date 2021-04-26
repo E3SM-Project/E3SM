@@ -1037,7 +1037,12 @@ contains
     area_d = 0.0_r8
     wght_d = 0.0_r8
 
-    call get_horiz_grid_d(ngcols, area_d_out=area_d, wght_d_out=wght_d)
+    if (single_column .and. .not. scm_multcols) then
+      area_d = 4.0_r8*pi
+      wght_d = 4.0_r8*pi
+    else
+      call get_horiz_grid_d(ngcols, area_d_out=area_d, wght_d_out=wght_d)
+    endif
 
     if ( abs(sum(area_d) - 4.0_r8*pi) > 1.e-10_r8 .and. .not. single_column) then
        write(iulog,*) ' ERROR: sum of areas on globe does not equal 4*pi'
