@@ -94,16 +94,22 @@ struct PhysicsFunctions
 
   template<typename ScalarT, typename InputProviderT, typename InputProviderZ>
   KOKKOS_FUNCTION
-  static ScalarT get_dse(const MemberType& team,
-                         const InputProviderT& T_mid,
-                         const InputProviderZ& z_mid,
-                         const Real surf_geopotential,
-                         const view_1d<ScalarT>& dse);
+  static void get_dse(const MemberType& team,
+                      const InputProviderT& T_mid,
+                      const InputProviderZ& z_mid,
+                      const Real surf_geopotential,
+                      const view_1d<ScalarT>& dse);
 
 
 }; // struct PhysicsFunctions
 
 } // namespace physics
 } // namespace scream
+
+// If a GPU build, make all code available to the translation unit; otherwise,
+// ETI is used.
+#ifdef KOKKOS_ENABLE_CUDA
+# include "common_physics_impl.hpp"
+#endif
 
 #endif // COMMON_PHYSICS_FUNCTIONS_HPP

@@ -148,9 +148,9 @@ template<typename DeviceT>
 template<typename ScalarT, typename InputProviderT, typename InputProviderQ>
 KOKKOS_FUNCTION
 void PhysicsFunctions<DeviceT>::get_virtual_temperature(const MemberType& team,
-                                                      const InputProviderT& T_mid,
-                                                      const InputProviderQ& qv,
-                                                      const view_1d<ScalarT>& T_virtual)
+                                                        const InputProviderT& T_mid,
+                                                        const InputProviderQ& qv,
+                                                        const view_1d<ScalarT>& T_virtual)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,T_virtual.extent(0)),
                        [&] (const int k) {
@@ -158,6 +158,40 @@ void PhysicsFunctions<DeviceT>::get_virtual_temperature(const MemberType& team,
   });
 }
 
+//-----------------------------------------------------------------------------------------------//
+// Compute dry static energy (DSE).
+// The result unit is in J/kg
+// The inputs are
+//   T_mid is the atmospheric temperature. Units in K.
+//   z_mid is the geopotential height above surface at midpoints. Units in m.
+//   surf_geopotential is the surface geopotential height. Units in m.
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::get_dse(const ScalarT& T_mid, const ScalarT& z_mid, const Real surf_geopotential)
+{
+  using C = scream::physics::Constants<ScalarT>;
+  static constexpr ScalarT cp (C::CP);
+  static constexpr ScalarT ggr(C::gravit);
+
+  ScalarT dse = cp*T_mid + ggr*z_mid + surf_geopotential;
+  return dse;
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderT, typename InputProviderZ>
+KOKKOS_FUNCTION
+void PhysicsFunctions<DeviceT>::get_dse(const MemberType& team,
+                                        const InputProviderT& T_mid,
+                                        const InputProviderZ& z_mid,
+                                        const Real surf_geopotential,
+                                        const view_1d<ScalarT>& dse)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dse.extent(0)),
+                       [&] (const int k) {
+    dse(k) = get_dse(T_mid(k),z_mid(k),surf_geopotential); 
+  });
+}
 //-----------------------------------------------------------------------------------------------//
 } // namespace physics
 } // namespace scream
