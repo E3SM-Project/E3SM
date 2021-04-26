@@ -3,6 +3,7 @@ Utilities
 """
 
 import os, sys, re, signal, subprocess, site
+from importlib import import_module
 
 ###############################################################################
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
@@ -297,39 +298,40 @@ def get_cpu_core_count():
     return int(run_cmd_no_fail("cat /proc/cpuinfo | grep processor | wc -l"))
 
 ###############################################################################
-def ensure_pip():
+def _ensure_pylib_impl(libname, pipname=None):
 ###############################################################################
+    """
+    Internal method, clients should not call this directly; please use of the
+    public ensure_XXX methods. If one does not exist, we will need to evaluate
+    if we want to add a new outside dependency.
+    """
     try:
-        import pip # pylint: disable=import-error, unused-import
-
+        _ = import_module(libname)
     except ImportError:
-        import ensurepip
+        print("Detected missing {}, will attempt to install locally".format(libname))
+        pipname = pipname if pipname else libname
 
-        ensurepip.bootstrap(user=True)
+        if libname == "pip":
+            # Use ensurepip for installing pip
+            import ensurepip
+            ensurepip.bootstrap(user=True)
+        else:
+            # Other installs will use pip, so we need to ensure it's available
+            ensure_pip()
+
+            # --trusted-host may not work for ancient versions of python
+            stat, _, err = run_cmd("{} -m pip install {} --trusted-host files.pythonhosted.org --user".format(sys.executable, pipname))
+            expect(stat == 0, "Failed to install {}, cannot continue:\n{}".format(pipname, err))
 
         # needed to "rehash" available libs
         site.main() # pylint: disable=no-member
 
-        import pip # pylint: disable=import-error
+        _ = import_module(libname)
 
-###############################################################################
-def ensure_yaml():
-###############################################################################
-    try:
-        import yaml # pylint: disable=import-error, unused-import
-    except ImportError:
-        print("Detected missing pyyaml, will attempt to install locally")
-
-        ensure_pip()
-
-        # --trusted-host may not work for ancient versions of python
-        stat, _, err = run_cmd("{} -m pip install pyyaml --trusted-host files.pythonhosted.org --user".format(sys.executable))
-        expect(stat == 0, "Failed to install pyyaml, cannot continue:\n{}".format(err))
-
-        # needed to "rehash" available libs
-        site.main() # pylint: disable=no-member
-
-        import yaml # pylint: disable=import-error
+# We've accepted these outside dependencies
+def ensure_pip():    _ensure_pylib_impl("pip")
+def ensure_yaml():   _ensure_pylib_impl("yaml", pipname="pyyaml")
+def ensure_pylint(): _ensure_pylib_impl("pylint")
 
 ###############################################################################
 def multilevel_dict_change(ml_dict, keys, value):

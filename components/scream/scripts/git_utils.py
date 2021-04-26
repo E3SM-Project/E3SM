@@ -4,6 +4,8 @@ Git-related Utilities
 
 from utils import expect, run_cmd, run_cmd_no_fail
 
+import os
+
 ###############################################################################
 def get_current_branch(repo=None):
 ###############################################################################
@@ -18,7 +20,7 @@ def get_current_branch(repo=None):
     return None if output=="HEAD" else output
 
 ###############################################################################
-def get_current_commit(short=False, repo=None, tag=False, commit=None):
+def get_current_commit(short=False, repo=None, tag=False, commit="HEAD"):
 ###############################################################################
     """
     Return the sha1 of the current HEAD commit
@@ -26,10 +28,13 @@ def get_current_commit(short=False, repo=None, tag=False, commit=None):
     >>> get_current_commit() is not None
     True
     """
+    # This is for testing only
+    if "SCREAM_FAKE_GIT_HEAD" in os.environ:
+        return os.environ["SCREAM_FAKE_GIT_HEAD"]
+
     if tag:
         rc, output, err = run_cmd("git describe --tags $(git log -n1 --pretty='%h')", from_dir=repo)
     else:
-        commit = "HEAD" if commit is None else commit
         rc, output, err = run_cmd("git rev-parse {} {}".format("--short" if short else "", commit), from_dir=repo)
 
     if rc != 0:
@@ -50,23 +55,28 @@ def get_current_head(repo=None):
         return branch
 
 ###############################################################################
-def git_refs_difference (src_ref, tgt_ref, repo=None):
+def git_refs_difference (cmp_ref, head="HEAD", repo=None):
 ###############################################################################
     """
-    Return the difference in commits between src and tgg refs.
+    Return the difference in commits between cmp_ref and head.
     In particular, it returns two numbers: the number of commits
-    in src that are not in tgt, and the number of commits in tgt
-    that are not in src. The former is how much src is "ahead" of tgt,
-    while the latter is how much src is "behind" tgt.
+    in cmp_ref that are not in head, and the number of commits in head
+    that are not in cmp_ref. The former is how much head is behind cmp_ref,
+    while the latter is how much head is ahead of cmp_ref.
     """
+    if "SCREAM_FAKE_GIT_HEAD" in os.environ:
+        expect("SCREAM_FAKE_AHEAD" in os.environ,
+               "git_refs_difference cannot be used with SCREAM_FAKE_GIT_HEAD and without SCREAM_FAKE_AHEAD")
+        return 0, int(os.environ["SCREAM_FAKE_AHEAD"])
 
-    cmd = "git rev-list --left-right --count {}...{}".format(src_ref,tgt_ref)
+    cmd = "git rev-list --left-right --count {}...{}".format(cmp_ref, head)
     out = run_cmd_no_fail("{}".format(cmd), from_dir=repo)
 
-    ahead_behind = out.split()
-    expect(len(ahead_behind)==2, "Error! Something went wrong when running {}".format(cmd))
+    behind_ahead = out.split()
+    expect(len(behind_ahead)==2, "Error! Something went wrong when running {}".format(cmd))
+    behind, ahead = int(behind_ahead[0]), int(behind_ahead[1])
 
-    return ahead_behind
+    return behind, ahead
 
 ###############################################################################
 def is_repo_clean(repo=None, silent=False):
@@ -131,7 +141,7 @@ def print_last_commit(git_ref=None, repo=None, dry_run=False):
         print("Last commit on ref '{}'".format(git_ref))
     else:
         git_ref = get_current_head(repo) if git_ref is None else git_ref
-        last_commit = run_cmd_no_fail("git log {} -1 --oneline".format(git_ref), from_dir=repo)
+        last_commit = get_current_commit(commit=git_ref)
         print("Last commit on ref '{}': {}".format(git_ref, last_commit))
 
 ###############################################################################
@@ -142,18 +152,18 @@ def checkout_git_ref(git_ref, verbose=False, repo=None, dry_run=False):
     """
     if dry_run:
         print("Would checkout {}".format(git_ref))
-    elif get_current_commit() != get_current_commit(commit=git_ref):
+    elif get_current_commit(repo=repo) != get_current_commit(repo=repo, commit=git_ref):
         expect(is_repo_clean(repo=repo), "If we need to change HEAD, then the repo must be clean before running")
         expect(git_ref is not None, "Missing git-ref")
 
         run_cmd_no_fail("git checkout {}".format(git_ref), from_dir=repo)
         update_submodules(repo=repo)
-        git_commit = get_current_commit()
+        git_commit = get_current_commit(repo=repo)
         expect(is_repo_clean(repo=repo), "Something went wrong when checking out git ref '{}'".format(git_ref))
 
         if verbose:
             print("Switched to '{}' ({})".format(git_ref,git_commit))
-            print_last_commit(git_ref=git_ref)
+            print_last_commit(repo=repo, git_ref=git_ref)
 
 ###############################################################################
 def get_git_toplevel_dir(repo=None):
@@ -180,7 +190,7 @@ def cleanup_repo(orig_branch, orig_commit, repo=None, dry_run=False):
         toplevel_dir = get_git_toplevel_dir(repo=repo)
         run_cmd_no_fail("git checkout -- {}".format(toplevel_dir), from_dir=repo)
 
-    checkout_git_ref(orig_branch, repo=repo, dry_run=dry_run)
+    checkout_git_ref(orig_branch if orig_branch else orig_commit, repo=repo, dry_run=dry_run)
 
     # This *can* happen. test_all_scream can merge origin/master into current branch.
     # Checking out orig_branch doesn't do anything if we were on a branch (not detached
