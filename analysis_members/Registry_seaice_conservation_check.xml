@@ -23,6 +23,10 @@
 			description="Logical flag determining if the conservation check is written to the log file."
 			possible_values="true or false"
 		/>
+		<nml_option name="config_AM_conservationCheck_restart_stream" type="character" default_value="conservationCheckRestart" units="unitless"
+			description="Name of the restart stream the analysis member will use to initialize itself if restart is enabled."
+			possible_values="A restart stream with state of the conservation check."
+		/>
 	</nml_record>
 	<packages>
 		<package name="conservationCheckAMPKG" description="This package includes variables required for the conservationCheck analysis member."/>
@@ -255,15 +259,10 @@
 			<var name="relativeCarbonError"/>
 		</stream>
 
-		<stream name="conservationCheckRestart"
-				type="input;output"
-				filename_template="restarts/restart.AM.conservationCheck.$Y-$M-$D_$h.$m.$s.nc"
-				filename_interval="output_interval"
-				clobber_mode="replace_files"
+		<stream name="conservationCheckRestart_contents"
+				type="none"
+				filename_template="conservationCheckRestart_variables.nc"
 				packages="conservationCheckAMPKG"
-				input_interval="initial_only"
-				output_interval="stream:restart:output_interval"
-				runtime_format="single_file"
 				immutable="true">
 			<var name="performConservationPrecompute"/>
 			<var name="accumulatedSeaIceArea"/>
@@ -289,5 +288,19 @@
 			<var name="saltConsFrazilSaltFlux"/>
 			<var name="initialCarbon"/>
 			<var name="carbonConsOceanCarbonFlux"/>
+		</stream>
+
+		<stream name="conservationCheckRestart"
+				type="input;output"
+				filename_template="restarts/restart.AM.conservationCheck.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="output_interval"
+				reference_time="0000-01-01_00:00:00"
+				clobber_mode="truncate"
+				packages="conservationCheckAMPKG"
+				input_interval="initial_only"
+				output_interval="stream:restart:output_interval"
+				runtime_format="single_file"
+				immutable="true">
+			<stream name="conservationCheckRestart_contents"/>
 		</stream>
 	</streams>
