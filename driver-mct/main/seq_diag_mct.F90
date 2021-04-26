@@ -1716,11 +1716,12 @@ contains
        ic = c_inh_is
        budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+       budg_dataL(f_hfrz ,ic,ip) = -max(0.0_r8,budg_dataL(f_hfrz,ic,ip))
 
        ic = c_ish_is
        budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-       budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_wfrz ,ic,ip)*shr_const_latice
+       budg_dataL(f_hfrz ,ic,ip) = -max(0.0_r8,budg_dataL(f_hfrz,ic,ip))
     end if
 
     first_time = .false.
