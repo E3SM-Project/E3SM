@@ -370,12 +370,6 @@ struct Functions
     Scalar& pblh);
 
   KOKKOS_FUNCTION
-  static void compute_conv_time_shoc_length(
-    const Scalar& pblh,
-    Scalar&       conv_vel,
-    Scalar&       tscale);
-
-  KOKKOS_FUNCTION
   static void shoc_length(
     const MemberType&            team,
     const Int&                   nlev,
@@ -778,7 +772,6 @@ struct Functions
 # include "shoc_check_length_scale_shoc_length_impl.hpp"
 # include "shoc_diag_obklen_impl.hpp"
 # include "shoc_pblintd_cldcheck_impl.hpp"
-# include "shoc_compute_conv_time_shoc_length_impl.hpp"
 # include "shoc_length_impl.hpp"
 # include "shoc_energy_fixer_impl.hpp"
 # include "shoc_compute_shoc_vapor_impl.hpp"

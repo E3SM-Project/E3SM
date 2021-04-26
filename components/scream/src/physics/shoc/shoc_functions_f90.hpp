@@ -988,9 +988,6 @@ void compute_l_inf_shoc_length_f(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt
                                  Real *tke, Real *l_inf);
 void check_length_scale_shoc_length_f(Int nlev, Int shcol, Real* host_dx, Real* host_dy,
                                       Real* shoc_mix);
-void compute_conv_vel_shoc_length_f(Int nlev, Int shcol, Real *pblh, Real *zt_grid,
-                                    Real *dz_zt, Real *thv, Real *wthv_sec,
-                                    Real *conv_vel);
 void diag_second_moments_lbycond_f(Int shcol, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* ustar2, Real* wstar,
                                   Real* wthl_sec, Real* wqw_sec, Real* uw_sec, Real* vw_sec, Real* wtke_sec, Real* thl_sec,
                                   Real* qw_sec, Real* qwthl_sec);
