@@ -268,6 +268,10 @@
     <lname>2000_EAM%MMFXX_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
+    <alias>F-MMFOMP</alias>
+    <lname>2000_EAM%MMFOMP_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
     <alias>F-MMF1-MAML</alias>
     <lname>2000_EAM%MMF1-MAML_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
@@ -291,64 +295,64 @@
 
     <entry id="RUN_STARTDATE">
       <values>
-	<value  compset="20TR_EAM">1850-01-01</value>
-	<value  compset="AMIP_EAM">1979-01-01</value>
-	<value  compset="HIST_EAM">1850-01-01</value>
-	<value  compset="PIPD_EAM">1850-01-01</value>
-	<value  compset="7905_EAM">1979-01-01</value>
-	<value  compset="5505_EAM">1955-01-01</value>
-	<value  compset="1996_EAM\d+%WCMX">1996-01-01</value>
-	<value  compset="2000_EAM\d+%WCMX">2000-01-01</value>
-	<value  compset="2000_EAM\d+%WCXI">2000-01-01</value>
-	<value  compset="GEOS_EAM\d+%WCCM">2005-01-01</value>
-	<value  compset="GEOS_EAM\d+%WTSM">1990-01-01</value>
-	<value  compset="GEOS_EAM\d+%TMOZ">2008-01-01</value>
-	<value  compset="GEOS_EAM\d+%TBAM">2008-01-01</value>
-	<value  compset="GEOS_EAM\d+%S">2005-01-01</value>
-	<value  compset="RCP[2468]_EAM\d+">2005-01-01</value>
-	<value  compset="C2R[68]_EAM">1950-01-01</value>
-	<value  compset="C2R4_EAM">2004-01-01</value>
-	<value  compset="AR95_EAM">1995-07-18</value>
-	<value  compset="AR97_EAM">1997-06-19</value>
+  <value  compset="20TR_EAM">1850-01-01</value>
+  <value  compset="AMIP_EAM">1979-01-01</value>
+  <value  compset="HIST_EAM">1850-01-01</value>
+  <value  compset="PIPD_EAM">1850-01-01</value>
+  <value  compset="7905_EAM">1979-01-01</value>
+  <value  compset="5505_EAM">1955-01-01</value>
+  <value  compset="1996_EAM\d+%WCMX">1996-01-01</value>
+  <value  compset="2000_EAM\d+%WCMX">2000-01-01</value>
+  <value  compset="2000_EAM\d+%WCXI">2000-01-01</value>
+  <value  compset="GEOS_EAM\d+%WCCM">2005-01-01</value>
+  <value  compset="GEOS_EAM\d+%WTSM">1990-01-01</value>
+  <value  compset="GEOS_EAM\d+%TMOZ">2008-01-01</value>
+  <value  compset="GEOS_EAM\d+%TBAM">2008-01-01</value>
+  <value  compset="GEOS_EAM\d+%S">2005-01-01</value>
+  <value  compset="RCP[2468]_EAM\d+">2005-01-01</value>
+  <value  compset="C2R[68]_EAM">1950-01-01</value>
+  <value  compset="C2R4_EAM">2004-01-01</value>
+  <value  compset="AR95_EAM">1995-07-18</value>
+  <value  compset="AR97_EAM">1997-06-19</value>
       </values>
     </entry>
 
     <entry id="CALENDAR">
       <values>
-	<value  compset="GEOS_">GREGORIAN</value>
+  <value  compset="GEOS_">GREGORIAN</value>
       </values>
     </entry>
 
     <entry id="START_TOD">
       <values>
-	<value  compset="AR95_EAM">19800</value>
-	<value  compset="AR97_EAM">84585</value>
+  <value  compset="AR95_EAM">19800</value>
+  <value  compset="AR97_EAM">84585</value>
       </values>
     </entry>
 
     <entry id="STOP_OPTION">
       <values>
-	<value compset="AR95_EAM">ndays</value>
-	<value compset="AR97_EAM">ndays</value>
+  <value compset="AR95_EAM">ndays</value>
+  <value compset="AR97_EAM">ndays</value>
       </values>
     </entry>
 
     <entry id="STOP_N">
       <values>
-	<value compset="AR95_EAM">2</value>
-	<value compset="AR97_EAM">29</value>
+  <value compset="AR95_EAM">2</value>
+  <value compset="AR97_EAM">29</value>
       </values>
     </entry>
 
     <entry id="MASK_GRID">
       <values>
-	<value compset="AR97_EAM">USGS</value>
+  <value compset="AR97_EAM">USGS</value>
       </values>
     </entry>
 
     <entry id="GET_REFCASE">
       <values>
-	<value compset="AMIP_EAM">TRUE</value>
+  <value compset="AMIP_EAM">TRUE</value>
       </values>
     </entry>
 
