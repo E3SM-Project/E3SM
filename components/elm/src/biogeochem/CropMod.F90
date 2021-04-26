@@ -35,7 +35,7 @@ contains
     ! The basic equation looks like this:
     ! ETo = (0.408*delta*(Rn-G) + gamma*(900/(T+273))*u2*(es-ea))/
     !         (delta + gamma*(1+0.34*u2))
-
+    !$acc routine seq 
     ! !USES:
     use elm_varcon       , only : tfrz
 
@@ -95,10 +95,11 @@ contains
 
     ! !DESCRIPTION
     ! calculates the plant month based on the type of seasonality
-
+    !$acc routine seq 
     ! !USES:
     use pftvarcon        , only : planttemp
     use CropType          , only : tcvp, tcvt, cst
+    use SimpleMathMod  , only : MAXLOC_
     ! !ARGUMENTS:
     implicit none
     integer,  intent(in)  :: p
@@ -132,10 +133,10 @@ contains
           if (minval(temp) .lt. cst)then ! cold season exists
               plantmonth = t_m
           else                            ! no cold season
-              plantmonth = month(maxloc(p2e))
+              plantmonth = month(maxloc_(p2e))
           end if
        else                     ! precipitation seasonality
-         plantmonth = month(maxloc(p2e))
+         plantmonth = month(maxloc_(p2e))
        end if
     else if (cvt > tcvt) then   ! temperature seasonality
        plantmonth = t_m

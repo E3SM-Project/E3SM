@@ -181,6 +181,9 @@ module decompMod
   type(mct_gsMap)  ,public,target :: gsMap_col_gdc2glo
   type(mct_gsMap)  ,public,target :: gsMap_patch_gdc2glo
   type(mct_gsMap)  ,public,target :: gsMap_cohort_gdc2glo
+  
+
+ !$acc declare create(clumps(:) , procinfo )
   !------------------------------------------------------------------------------
 
 contains
@@ -272,7 +275,7 @@ contains
      !
      ! !DESCRIPTION:
      ! Determine clump bounds
-     !
+     !$acc routine seq 
      ! !ARGUMENTS:
      integer, intent(in)  :: n                ! processor clump index
      type(bounds_type), intent(out) :: bounds ! clump bounds

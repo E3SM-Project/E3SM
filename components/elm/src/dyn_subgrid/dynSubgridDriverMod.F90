@@ -47,13 +47,13 @@ module dynSubgridDriverMod
   !
   ! !PRIVATE TYPES:
   ! saved weights from before the subgrid weight updates
-  type(prior_weights_type) :: prior_weights
+  type(prior_weights_type),public :: prior_weights
 
   ! object used to update patch-level states after subgrid weight updates
-  type(patch_state_updater_type), target :: patch_state_updater
+  type(patch_state_updater_type), public,target :: patch_state_updater
 
   ! object used to update column-level states after subgrid weight updates
-  type(column_state_updater_type), target :: column_state_updater
+  type(column_state_updater_type), public, target :: column_state_updater
   !---------------------------------------------------------------------------
 
 contains
@@ -336,7 +336,7 @@ contains
     !
     ! !LOCAL VARIABLES:
 
-    character(len=*), parameter :: subname = 'dynSubgrid_wrapup_weight_changes'
+    !character(len=*), parameter :: subname = 'dynSubgrid_wrapup_weight_changes'
     !-----------------------------------------------------------------------
     associate( &
       icemask_grc => glc2lnd_vars%icemask_grc &

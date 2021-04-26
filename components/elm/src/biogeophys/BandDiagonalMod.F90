@@ -28,10 +28,11 @@ contains
     !
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
-    !
-    ! !ARGUMENTS:
+    !$acc routine seq
+    use lapack_acc_seq
+
     implicit none
-    type(bounds_type), intent(in) :: bounds                    
+    type(bounds_type), intent(in) :: bounds
     integer , intent(in)    :: lbj, ubj                        ! lbinning and ubing level indices
     integer , intent(in)    :: jtop( bounds%begc: )            ! top level for each column [col]
     integer , intent(in)    :: jbot( bounds%begc: )            ! bottom level for each column [col]
@@ -52,11 +53,11 @@ contains
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
-    SHR_ASSERT_ALL((ubound(jtop) == (/bounds%endc/)),             errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(jbot) == (/bounds%endc/)),             errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(b)    == (/bounds%endc, nband, ubj/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(r)    == (/bounds%endc, ubj/)),        errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(u)    == (/bounds%endc, ubj/)),        errMsg(__FILE__, __LINE__))
+    ! SHR_ASSERT_ALL((ubound(jtop) == (/bounds%endc/)),             errMsg(__FILE__, __LINE__))
+    ! SHR_ASSERT_ALL((ubound(jbot) == (/bounds%endc/)),             errMsg(__FILE__, __LINE__))
+    ! SHR_ASSERT_ALL((ubound(b)    == (/bounds%endc, nband, ubj/)), errMsg(__FILE__, __LINE__))
+    ! SHR_ASSERT_ALL((ubound(r)    == (/bounds%endc, ubj/)),        errMsg(__FILE__, __LINE__))
+    ! SHR_ASSERT_ALL((ubound(u)    == (/bounds%endc, ubj/)),        errMsg(__FILE__, __LINE__))
 
 
 !!$     SUBROUTINE SGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
@@ -157,8 +158,8 @@ contains
 
 
 !Set up input matrix AB
-!An m-by-n band matrix with kl subdiagonals and ku superdiagonals 
-!may be stored compactly in a two-dimensional array with 
+!An m-by-n band matrix with kl subdiagonals and ku superdiagonals
+!may be stored compactly in a two-dimensional array with
 !kl+ku+1 rows and n columns
 !AB(KL+KU+1+i-j,j) = A(i,j)
 
@@ -167,10 +168,10 @@ contains
 
        kl=(nband-1)/2
        ku=kl
-! m is the number of rows required for storage space by dgbsv
+       ! m is the number of rows required for storage space by dgbsv
        m=2*kl+ku+1
-! n is the number of levels (snow/soil)
-!scs: replace ubj with jbot
+       ! n is the number of levels (snow/soil)
+       !scs: replace ubj with jbot
        n=jbot(ci)-jtop(ci)+1
 
        allocate(ab(m,n))
@@ -188,18 +189,24 @@ contains
        allocate(ipiv(n))
        allocate(result(n))
 
-! on input result is rhs, on output result is solution vector
+       ! on input result is rhs, on output result is solution vector
        result(:)=r(ci,jtop(ci):jbot(ci))
 
-!       DGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
-       call dgbsv( n, kl, ku, 1, ab, m, ipiv, result, n, info )
+       #ifdef _OPENACC
+                 call dgbsv_oacc(n, kl, ku, 1, ab, m ,ipiv, result,n,info)
+       #else
+               ! DGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
+               call dgbsv( n, kl, ku, 1, ab, m, ipiv, result, n, info )
+       #endif
+
        u(ci,jtop(ci):jbot(ci))=result(:)
 
-       if(info /= 0) then 
+       if(info /= 0) then
+#ifndef _OPENACC
           write(iulog,*)'index: ', ci
           write(iulog,*)'n,kl,ku,m ',n,kl,ku,m
           write(iulog,*)'dgbsv info: ',ci,info
-          
+
           write(iulog,*) ''
           write(iulog,*) 'ab matrix'
           do j=1,n
@@ -208,6 +215,7 @@ contains
           enddo
           write(iulog,*) ''
           stop
+#endif
        endif
        deallocate(temp)
 

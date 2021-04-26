@@ -3,7 +3,7 @@ module GridcellDataType
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Gridcell data type allocation and initialization
-  ! -------------------------------------------------------- 
+  ! --------------------------------------------------------
   !
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_infnan_mod    , only : nan => shr_infnan_nan, assignment(=)
@@ -23,7 +23,7 @@ module GridcellDataType
   implicit none
   save
   private
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds energy state information at the gridcell level.
   !-----------------------------------------------------------------------
@@ -38,7 +38,7 @@ module GridcellDataType
     procedure, public :: Init    => grc_es_init
     procedure, public :: Clean   => grc_es_clean
   end type gridcell_energy_state
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds energy flux information at the gridcell level.
   !-----------------------------------------------------------------------
@@ -50,7 +50,7 @@ module GridcellDataType
     procedure, public :: Restart => grc_ef_restart
     procedure, public :: Clean   => grc_ef_clean
   end type gridcell_energy_flux
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds water state information at the gridcell level.
   !-----------------------------------------------------------------------
@@ -82,7 +82,7 @@ module GridcellDataType
     procedure, public :: Restart => grc_ws_restart
     procedure, public :: Clean   => grc_ws_clean
   end type gridcell_water_state
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds water flux information at the gridcell level.
   !-----------------------------------------------------------------------
@@ -101,7 +101,7 @@ module GridcellDataType
     procedure, public :: Restart => grc_wf_restart
     procedure, public :: Clean   => grc_wf_clean
   end type gridcell_water_flux
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds carbon state information at the gridcell level.
   !-----------------------------------------------------------------------
@@ -133,7 +133,7 @@ module GridcellDataType
     procedure, public :: Restart => grc_cs_restart
     procedure, public :: Clean   => grc_cs_clean
   end type gridcell_carbon_state
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds carbon flux information at the gridcell level.
   !-----------------------------------------------------------------------
@@ -163,21 +163,21 @@ module GridcellDataType
     procedure, public :: ZeroDWT => grc_cf_zerodwt
     procedure, public :: Clean   => grc_cf_clean
   end type gridcell_carbon_flux
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds nitrogen state information at the gridcell level.
   !-----------------------------------------------------------------------
   type, public :: gridcell_nitrogen_state
     real(r8), pointer :: seedn          (:) => null()   ! (gNm2) nitrogen pool for seeding new PFTs via dynamic landcover
     real(r8), pointer :: begnb          (:) => null()   ! (gNm2) nitrogen mass, beginning of time step
-    real(r8), pointer :: endnb          (:) => null()   ! (gNm2) nitrogen mass, end of time step 
+    real(r8), pointer :: endnb          (:) => null()   ! (gNm2) nitrogen mass, end of time step
     real(r8), pointer :: errnb          (:) => null()   ! (gNm2) nitrogen balance error for the timestep
 
   contains
     procedure, public :: Init    => grc_ns_init
     procedure, public :: Clean   => grc_ns_clean
   end type gridcell_nitrogen_state
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds nitrogen flux information at the gridcell level.
   !-----------------------------------------------------------------------
@@ -196,7 +196,7 @@ module GridcellDataType
     procedure, public :: ZeroDWT => grc_nf_zerodwt
     procedure, public :: Clean   => grc_nf_clean
   end type gridcell_nitrogen_flux
- 
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds phosphorus state information at the gridcell level.
   !-----------------------------------------------------------------------
@@ -209,7 +209,7 @@ module GridcellDataType
     procedure, public :: Init    => grc_ps_init
     procedure, public :: Clean   => grc_ps_clean
   end type gridcell_phosphorus_state
-  
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds phosphorus flux information at the gridcell level.
   !-----------------------------------------------------------------------
@@ -227,7 +227,7 @@ module GridcellDataType
     procedure, public :: ZeroDWT => grc_pf_zerodwt
     procedure, public :: Clean   => grc_pf_clean
   end type gridcell_phosphorus_flux
-  
+
   !-----------------------------------------------------------------------
   ! declare the public instances of gridcell-level data types
   !-----------------------------------------------------------------------
@@ -246,7 +246,9 @@ module GridcellDataType
   type(gridcell_phosphorus_state)      , public, target :: grc_ps     ! gridcell phosphorus state
   type(gridcell_phosphorus_flux)       , public, target :: grc_pf     ! gridcell phosphorus flux
   !------------------------------------------------------------------------
-
+  !$acc declare create(grc_ns, grc_ps, grc_ws, grc_pf, grc_nf, grc_cf, grc_cs )
+  !$acc declare create(c13_grc_cs,c14_grc_cs,c13_grc_cf,c14_grc_cf,grc_ef,grc_es)
+  !$acc declare create(grc_wf)
 contains
 
   !------------------------------------------------------------------------
@@ -278,7 +280,7 @@ contains
     this%heat2(begg:endg) = spval
     call hist_addfld1d (fname='GC_HEAT2',  units='J/m^2',  &
          avgflag='A', long_name='post land cover change total heat content', &
-         ptr_lnd=this%heat2, default='inactive')  
+         ptr_lnd=this%heat2, default='inactive')
 
     this%liquid_water_temp1(begg:endg) = spval
     call hist_addfld1d (fname='LIQUID_WATER_TEMP1', units='K', &
@@ -298,7 +300,7 @@ contains
     deallocate(this%liquid_water_temp1)
     deallocate(this%liquid_water_temp2)
   end subroutine grc_es_clean
-  
+
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean gridcell energy flux data structure
   !------------------------------------------------------------------------
@@ -317,7 +319,7 @@ contains
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_ef
     !-----------------------------------------------------------------------
-    this%eflx_dynbal(begg:endg) = spval 
+    this%eflx_dynbal(begg:endg) = spval
     call hist_addfld1d (fname='EFLX_DYNBAL',  units='W/m^2',  &
          avgflag='A', long_name='dynamic land cover change conversion energy flux', &
          ptr_lnd=this%eflx_dynbal)
@@ -326,7 +328,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine grc_ef_restart(this, bounds, ncid, flag)
-    ! 
+    !
     ! !DESCRIPTION:
     ! Read/Write gridcell energy flux information to/from restart file.
     !
@@ -334,9 +336,9 @@ contains
     !
     ! !ARGUMENTS:
     class(gridcell_energy_flux) :: this
-    type(bounds_type), intent(in)    :: bounds 
-    type(file_desc_t), intent(inout) :: ncid   
-    character(len=*) , intent(in)    :: flag   
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid
+    character(len=*) , intent(in)    :: flag
     !
     ! !LOCAL VARIABLES:
     logical :: readvar   ! determine if variable is on initial file
@@ -351,7 +353,7 @@ contains
     !------------------------------------------------------------------------
     deallocate(this%eflx_dynbal)
   end subroutine grc_ef_clean
-  
+
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean gridcell water state data structure
   !------------------------------------------------------------------------
@@ -395,18 +397,18 @@ contains
          ptr_lnd=this%liq1)
 
     this%liq2(begg:endg) = spval
-    call hist_addfld1d (fname='GC_LIQ2',  units='mm',  &  
-         avgflag='A', long_name='post landuse change gridcell total liq content', &              
-         ptr_lnd=this%liq2, default='inactive')     
+    call hist_addfld1d (fname='GC_LIQ2',  units='mm',  &
+         avgflag='A', long_name='post landuse change gridcell total liq content', &
+         ptr_lnd=this%liq2, default='inactive')
 
     this%ice1(begg:endg) = spval
-    call hist_addfld1d (fname='GC_ICE1',  units='mm',  &  
-         avgflag='A', long_name='initial gridcell total ice content', &              
-         ptr_lnd=this%ice1)     
+    call hist_addfld1d (fname='GC_ICE1',  units='mm',  &
+         avgflag='A', long_name='initial gridcell total ice content', &
+         ptr_lnd=this%ice1)
 
     this%ice2(begg:endg) = spval
-    call hist_addfld1d (fname='GC_ICE2',  units='mm',  &  
-         avgflag='A', long_name='post land cover change total ice content', &              
+    call hist_addfld1d (fname='GC_ICE2',  units='mm',  &
+         avgflag='A', long_name='post land cover change total ice content', &
          ptr_lnd=this%ice2, default='inactive')
 
     this%tws(begg:endg) = spval
@@ -427,7 +429,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine grc_ws_restart(this, bounds, ncid, flag)
-    ! 
+    !
     ! !DESCRIPTION:
     ! Read/Write gridcell water state information to/from restart file.
     !
@@ -435,9 +437,9 @@ contains
     !
     ! !ARGUMENTS:
     class(gridcell_water_state) :: this
-    type(bounds_type), intent(in)    :: bounds 
-    type(file_desc_t), intent(inout) :: ncid   
-    character(len=*) , intent(in)    :: flag   
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid
+    character(len=*) , intent(in)    :: flag
     !
     ! !LOCAL VARIABLES:
     logical :: readvar   ! determine if variable is on initial file
@@ -446,9 +448,9 @@ contains
          dim1name='gridcell', &
          long_name='surface watertotal water storage at the beginning of a month', units='mm', &
           interpinic_flag='interp', readvar=readvar, data=this%tws_month_beg)
-  
+
   end subroutine grc_ws_restart
-  
+
   !------------------------------------------------------------------------
   subroutine grc_ws_clean(this)
     !
@@ -493,28 +495,28 @@ contains
     ! initialize history fields for select members of grc_wf
     !-----------------------------------------------------------------------
     this%qflx_liq_dynbal(begg:endg) = spval
-    call hist_addfld1d (fname='QFLX_LIQ_DYNBAL',  units='mm/s',  &  
-         avgflag='A', long_name='liq dynamic land cover change conversion runoff flux', &              
-         ptr_lnd=this%qflx_liq_dynbal)     
+    call hist_addfld1d (fname='QFLX_LIQ_DYNBAL',  units='mm/s',  &
+         avgflag='A', long_name='liq dynamic land cover change conversion runoff flux', &
+         ptr_lnd=this%qflx_liq_dynbal)
 
     this%qflx_ice_dynbal(begg:endg) = spval
     call hist_addfld1d (fname='QFLX_ICE_DYNBAL',  units='mm/s',  &
-         avgflag='A', long_name='ice dynamic land cover change conversion runoff flux', &                                   
+         avgflag='A', long_name='ice dynamic land cover change conversion runoff flux', &
          ptr_lnd=this%qflx_ice_dynbal)
-  
+
   end subroutine grc_wf_init
 
   !------------------------------------------------------------------------
   subroutine grc_wf_restart(this, bounds, ncid, flag)
-    ! 
+    !
     ! !DESCRIPTION:
     ! Read/Write gridcell water flux information to/from restart file.
     !
     ! !ARGUMENTS:
     class(gridcell_water_flux) :: this
-    type(bounds_type), intent(in)    :: bounds 
-    type(file_desc_t), intent(inout) :: ncid   
-    character(len=*) , intent(in)    :: flag   
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid
+    character(len=*) , intent(in)    :: flag
     !
     ! !LOCAL VARIABLES:
     logical :: readvar   ! determine if variable is on initial file
@@ -544,7 +546,7 @@ contains
     ! !ARGUMENTS:
     class(gridcell_carbon_state) :: this
     integer, intent(in) :: begg,endg
-    character(len=3) , intent(in) :: carbon_type ! one of ['c12', c13','c14']    
+    character(len=3) , intent(in) :: carbon_type ! one of ['c12', c13','c14']
 
     !
     ! !LOCAL VARIABLES:
@@ -589,19 +591,19 @@ contains
           call hist_addfld1d (fname='SEEDC_GRC', units='gC/m^2', &
                avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
                ptr_gcell=this%seedc)
-       end if 
+       end if
        if (carbon_type == 'c13') then
           this%seedc(begg:endg) = spval
           call hist_addfld1d (fname='C13_SEEDC_GRC', units='gC/m^2', &
                avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
                ptr_gcell=this%seedc)
-       end if 
+       end if
        if (carbon_type == 'c14') then
           this%seedc(begg:endg) = spval
           call hist_addfld1d (fname='C14_SEEDC_GRC', units='gC/m^2', &
                avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
                ptr_gcell=this%seedc)
-       end if 
+       end if
     end if
     
     this%tcs_month_beg(begg:endg) = spval
@@ -620,7 +622,7 @@ contains
     do g = begg, endg
        this%seedc(g) = 0._r8
     end do
-    
+
   end subroutine grc_cs_init
 
   !------------------------------------------------------------------------
@@ -850,7 +852,7 @@ contains
             avgflag='A', long_name='C14 dead stem harvest to 100-yr wood product pool', &
             ptr_col=this%hrv_deadstemc_to_prod100c, default='inactive')
     endif
-    
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of grc_cf
     !-----------------------------------------------------------------------
@@ -862,9 +864,9 @@ contains
        this%cinputs(g)                   = 0._r8
        this%coutputs(g)                  = 0._r8
     end do
-    
+
   end subroutine grc_cf_init
-  
+
   !-----------------------------------------------------------------------
   subroutine grc_cf_zerodwt( this, bounds )
     !
@@ -873,7 +875,7 @@ contains
     !
     ! !ARGUMENTS:
     class(gridcell_carbon_flux)      :: this
-    type(bounds_type), intent(in)  :: bounds 
+    type(bounds_type), intent(in)  :: bounds
     !
     ! !LOCAL VARIABLES:
     integer  :: g          ! indices
@@ -941,7 +943,7 @@ contains
 
 
   end subroutine grc_ns_init
-  
+
   !------------------------------------------------------------------------
   subroutine grc_ns_clean(this)
     !
@@ -950,7 +952,7 @@ contains
     !------------------------------------------------------------------------
 
   end subroutine grc_ns_clean
-  
+
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean gridcell nitrogen flux data structure
   !------------------------------------------------------------------------
@@ -963,7 +965,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: g
     !------------------------------------------------------------------------
-    
+
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_nf
     !-----------------------------------------------------------------------
@@ -975,7 +977,7 @@ contains
     allocate(this%dwt_prod100n_gain     (begg:endg)) ; this%dwt_prod100n_gain     (:) = nan
     allocate(this%ninputs               (begg:endg)) ; this%ninputs               (:) = nan
     allocate(this%noutputs              (begg:endg)) ; this%noutputs              (:) = nan
-    
+
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_nf
     !-----------------------------------------------------------------------
@@ -1019,9 +1021,9 @@ contains
        this%ninputs(g)                   = 0._r8
        this%noutputs(g)                  = 0._r8
     end do
-    
+
   end subroutine grc_nf_init
-  
+
   !-----------------------------------------------------------------------
   subroutine grc_nf_zerodwt( this, bounds )
     !
@@ -1030,12 +1032,12 @@ contains
     !
     ! !ARGUMENTS:
     class(gridcell_nitrogen_flux)  :: this
-    type(bounds_type), intent(in)  :: bounds 
+    type(bounds_type), intent(in)  :: bounds
     !
     ! !LOCAL VARIABLES:
     integer  :: g          ! indices
     !-----------------------------------------------------------------------
-  
+
     do g = bounds%begg, bounds%endg
        this%dwt_seedn_to_leaf(g)     = 0._r8
        this%dwt_seedn_to_deadstem(g) = 0._r8
@@ -1046,16 +1048,16 @@ contains
     end do
 
   end subroutine grc_nf_zerodwt
-  
+
   !------------------------------------------------------------------------
   subroutine grc_nf_clean(this)
     !
     ! !ARGUMENTS:
     class(gridcell_nitrogen_flux) :: this
     !------------------------------------------------------------------------
-  
+
   end subroutine grc_nf_clean
-  
+
   subroutine grc_ps_init (this, begg, endg)
     !
     ! !ARGUMENTS:
@@ -1065,7 +1067,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: g
     !------------------------------------------------------------------------
-    
+
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_ps
     !-----------------------------------------------------------------------
@@ -1073,7 +1075,7 @@ contains
     allocate(this%begpb   (begg:endg)) ; this%begpb   (:) = nan
     allocate(this%endpb   (begg:endg)) ; this%endpb   (:) = nan
     allocate(this%errpb   (begg:endg)) ; this%errpb   (:) = nan
-    
+
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_ps
     !-----------------------------------------------------------------------
@@ -1089,7 +1091,7 @@ contains
        this%seedp(g) = 0._r8
     end do
 
-  
+
   end subroutine grc_ps_init
 
   !------------------------------------------------------------------------
@@ -1098,7 +1100,7 @@ contains
     ! !ARGUMENTS:
     class(gridcell_phosphorus_state) :: this
     !------------------------------------------------------------------------
-  
+
   end subroutine grc_ps_clean
 
   subroutine grc_pf_init (this, begg, endg)
@@ -1110,7 +1112,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: g
     !------------------------------------------------------------------------
-    
+
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_pf
     !-----------------------------------------------------------------------
@@ -1122,7 +1124,7 @@ contains
     allocate(this%dwt_prod100p_gain      (begg:endg))   ; this%dwt_prod100p_gain      (:) = nan
     allocate(this%pinputs                (begg:endg))   ; this%pinputs                (:) = nan
     allocate(this%poutputs               (begg:endg))   ; this%poutputs               (:) = nan
-    
+
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_pf
     !-----------------------------------------------------------------------
@@ -1166,7 +1168,7 @@ contains
        this%pinputs(g)                   = 0._r8
        this%poutputs(g)                  = 0._r8
     end do
-  
+
   end subroutine grc_pf_init
 
   !-----------------------------------------------------------------------
@@ -1177,7 +1179,7 @@ contains
     !
     ! !ARGUMENTS:
     class(gridcell_phosphorus_flux) :: this
-    type(bounds_type), intent(in)  :: bounds 
+    type(bounds_type), intent(in)  :: bounds
     !
     ! !LOCAL VARIABLES:
     integer  :: g          ! indices
@@ -1190,19 +1192,16 @@ contains
        this%dwt_prod10p_gain(g)      = 0._r8
        this%dwt_prod100p_gain(g)     = 0._r8
     end do
-  
+
   end subroutine grc_pf_zerodwt
-  
+
   !------------------------------------------------------------------------
   subroutine grc_pf_clean(this)
     !
     ! !ARGUMENTS:
     class(gridcell_phosphorus_flux) :: this
     !------------------------------------------------------------------------
-  
-  end subroutine grc_pf_clean
-  
-end module GridcellDataType
 
-  
-    
+  end subroutine grc_pf_clean
+
+end module GridcellDataType

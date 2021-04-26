@@ -24,12 +24,12 @@ module elm_varpar
   integer, parameter :: toplev_equalspace =  6
   integer            :: nlevsoi               ! number of hydrologically active soil layers
   integer            :: nlevsoifl             ! number of soil layers on input file
-  integer            :: nlevgrnd              ! number of ground layers 
+  integer            :: nlevgrnd              ! number of ground layers
                                               ! (includes lower layers that are hydrologically inactive)
   integer            :: nlevurb               ! number of urban layers
   integer            :: nlevlak               ! number of lake layers
   integer            :: nlevdecomp            ! number of biogeochemically active soil layers
-  integer            :: nlevdecomp_full       ! number of biogeochemical layers 
+  integer            :: nlevdecomp_full       ! number of biogeochemical layers
                                               ! (includes lower layers that are biogeochemically inactive)
   integer            :: nlevtrc_soil
   integer            :: nlevtrc_full
@@ -66,10 +66,10 @@ module elm_varpar
 
   ! constants for decomposition cascade
 
-  integer :: i_met_lit 
-  integer :: i_cel_lit 
-  integer :: i_lig_lit 
-  integer :: i_cwd 
+  integer :: i_met_lit
+  integer :: i_cel_lit
+  integer :: i_lig_lit
+  integer :: i_cwd
 
   integer :: ndecomp_pools
   integer :: ndecomp_cascade_transitions
@@ -92,6 +92,52 @@ module elm_varpar
   public elm_varpar_init          ! set parameters
   !
   !-----------------------------------------------------------------------
+  !$acc declare create(crop_prog)
+  !$acc declare create(maxpatch_pft)
+  !$acc declare create(ndecomp_pools)
+  !$acc declare create(ndecomp_cascade_transitions)
+  !$acc declare create(more_vertlayers)
+  !$acc declare create(nlevsno    )
+
+
+  !$acc declare copyin(nlev_equalspace  )
+  !$acc declare copyin(toplev_equalspace)
+  !$acc declare copyin(ngases     )
+  !$acc declare copyin(nlevcan    )
+  !$acc declare copyin(nvegwcs    )
+  !$acc declare copyin(numwat     )
+  !$acc declare copyin(numrad     )
+  !$acc declare copyin(ivis       )
+  !$acc declare copyin(inir       )
+  !$acc declare copyin(numsolar   )
+  !$acc declare copyin(ndst       )
+  !$acc declare copyin(dst_src_nbr)
+  !$acc declare copyin(sz_nbr     )
+  !$acc declare copyin(mxpft      )
+  !$acc declare create(nlevsoi        )
+  !$acc declare create(nlevsoifl      )
+  !$acc declare create(nlevurb        )
+  !$acc declare create(nlevlak        )
+  !$acc declare create(nlevdecomp     )
+  !$acc declare create(nlevdecomp_full)
+  !$acc declare create(nlevtrc_soil   )
+  !$acc declare create(nlevtrc_full   )
+  !$acc declare create(nlevgrnd)
+  !$acc declare create(natpft_lb  )
+  !$acc declare create(natpft_ub  )
+  !$acc declare create(natpft_size)
+  !$acc declare create(cft_lb     )
+  !$acc declare create(cft_ub     )
+  !$acc declare create(cft_size   )
+  !$acc declare create(i_met_lit  )
+  !$acc declare create(i_cel_lit  )
+  !$acc declare create(i_lig_lit  )
+  !$acc declare create(i_cwd      )
+  !$acc declare create(maxpatch_glcmec )
+  !$acc declare create(max_patch_per_col)
+  !$acc declare create(mach_eps)
+
+  !$acc declare create(nlayert)
 
 contains
 
@@ -99,7 +145,7 @@ contains
   subroutine elm_varpar_init()
     !
     ! !DESCRIPTION:
-    ! Initialize module variables 
+    ! Initialize module variables
     !
     ! !ARGUMENTS:
     implicit none
@@ -171,7 +217,7 @@ contains
        nlevdecomp      = 1
        nlevdecomp_full = 1
     end if
-    
+
     nlevtrc_full   = nlevsoi
     if(use_betr) then
       nlevtrc_soil = nlevsoi
@@ -199,7 +245,7 @@ contains
        i_cwd = 4
     end if
 
-    
+
 
 
   end subroutine elm_varpar_init

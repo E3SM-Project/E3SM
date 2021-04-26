@@ -55,6 +55,7 @@ module domainMod
   end type domain_type
 
   type(domain_type)    , public :: ldomain
+  !$acc declare create(ldomain)
   real(r8), allocatable, public :: lon1d(:), lat1d(:) ! 1d lat/lons for 2d grids
 !
 ! !PUBLIC MEMBER FUNCTIONS:

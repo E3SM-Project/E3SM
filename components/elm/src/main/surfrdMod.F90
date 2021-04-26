@@ -18,7 +18,7 @@ module surfrdMod
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
   use pio
-  use spmdMod                         
+  use spmdMod
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -49,7 +49,7 @@ contains
     !
     ! !DESCRIPTION:
     ! Read the surface dataset grid related information:
-    ! This is the first routine called by clm_initialize 
+    ! This is the first routine called by clm_initialize
     ! NO DOMAIN DECOMPOSITION  HAS BEEN SET YET
     !
     ! !USES:
@@ -57,14 +57,14 @@ contains
     !
     ! !ARGUMENTS:
     character(len=*), intent(in)    :: filename  ! grid filename
-    integer         , pointer       :: mask(:)   ! grid mask 
+    integer         , pointer       :: mask(:)   ! grid mask
     integer         , intent(out)   :: ni, nj    ! global grid sizes
     !
     ! !LOCAL VARIABLES:
     logical :: isgrid2d
     integer :: dimid,varid         ! netCDF id's
     integer :: ns                  ! size of grid on file
-    integer :: n,i,j               ! index 
+    integer :: n,i,j               ! index
     integer :: ier                 ! error status
     type(file_desc_t)  :: ncid     ! netcdf id
     type(var_desc_t)   :: vardesc  ! variable descriptor
@@ -102,7 +102,7 @@ contains
 
     if (isgrid2d) then
        allocate(idata2d(ni,nj))
-       idata2d(:,:) = 1	
+       idata2d(:,:) = 1
        call ncd_io(ncid=ncid, varname='LANDMASK', data=idata2d, flag='read', readvar=readvar)
        if (.not. readvar) then
           call ncd_io(ncid=ncid, varname='mask', data=idata2d, flag='read', readvar=readvar)
@@ -110,7 +110,7 @@ contains
        if (readvar) then
           do j = 1,nj
           do i = 1,ni
-             n = (j-1)*ni + i	
+             n = (j-1)*ni + i
              mask(n) = idata2d(i,j)
           enddo
           enddo
@@ -144,7 +144,7 @@ contains
     use elm_varctl, only : use_pflotran
     !
     ! !ARGUMENTS:
-    integer          ,intent(in)    :: begg, endg 
+    integer          ,intent(in)    :: begg, endg
     type(domain_type),intent(inout) :: ldomain   ! domain to init
     character(len=*) ,intent(in)    :: filename  ! grid filename
     character(len=*) ,optional, intent(in) :: glcfilename ! glc mask filename
@@ -159,7 +159,7 @@ contains
     integer :: dimid,varid                  ! netCDF id's
     integer :: start(1), count(1)           ! 1d lat/lon array sections
     integer :: ier,ret                      ! error status
-    logical :: readvar                      ! true => variable is on input file 
+    logical :: readvar                      ! true => variable is on input file
     logical :: isgrid2d                     ! true => file is 2d lat/lon
     logical :: istype_domain                ! true => input file is of type domain
     real(r8), allocatable :: rdata2d(:,:)   ! temporary
@@ -188,9 +188,12 @@ contains
 
     ! Determine dimensions
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
-    
+
     ! pflotran:beg-----------------------------------------------
     call ncd_inqdlen(ncid, dimid, nv, 'nv')
+    !if(not(associated(ldomain%nv))) then
+    !     allocate(ldomain%nv)
+    !end if
     if (nv>0) then
        ldomain%nv = nv
     else
@@ -203,10 +206,10 @@ contains
     call domain_init(ldomain, isgrid2d=isgrid2d, ni=ni, nj=nj, nbeg=begg, nend=endg)
 
     ! Determine type of file - old style grid file or new style domain file
-    call check_var(ncid=ncid, varname='LONGXY', vardesc=vardesc, readvar=readvar) 
+    call check_var(ncid=ncid, varname='LONGXY', vardesc=vardesc, readvar=readvar)
     if (readvar) istype_domain = .false.
 
-    call check_var(ncid=ncid, varname='xc', vardesc=vardesc, readvar=readvar) 
+    call check_var(ncid=ncid, varname='xc', vardesc=vardesc, readvar=readvar)
     if (readvar) istype_domain = .true.
 
     ! Read in area, lon, lat
@@ -217,11 +220,11 @@ contains
        ! convert from radians**2 to km**2
        ldomain%area = ldomain%area * (re**2)
        if (.not. readvar) call endrun( msg=' ERROR: area NOT on file'//errMsg(__FILE__, __LINE__))
-       
+
        call ncd_io(ncid=ncid, varname= 'xc', flag='read', data=ldomain%lonc, &
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: xc NOT on file'//errMsg(__FILE__, __LINE__))
-       
+
        call ncd_io(ncid=ncid, varname= 'yc', flag='read', data=ldomain%latc, &
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: yc NOT on file'//errMsg(__FILE__, __LINE__))
@@ -244,11 +247,11 @@ contains
        call ncd_io(ncid=ncid, varname= 'AREA', flag='read', data=ldomain%area, &
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: AREA NOT on file'//errMsg(__FILE__, __LINE__))
-       
+
        call ncd_io(ncid=ncid, varname= 'LONGXY', flag='read', data=ldomain%lonc, &
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: LONGXY NOT on file'//errMsg(__FILE__, __LINE__))
-       
+
        call ncd_io(ncid=ncid, varname= 'LATIXY', flag='read', data=ldomain%latc, &
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: LATIXY NOT on file'//errMsg(__FILE__, __LINE__))
@@ -270,7 +273,7 @@ contains
        ! pflotran:end-----------------------------------------------
     end if
 
-    
+
     ! let lat1d/lon1d data available for all grid-types, if coupled with PFLOTRAN.
     if (isgrid2d .or. use_pflotran) then
        allocate(rdata2d(ni,nj), lon1d(ni), lat1d(nj))
@@ -491,7 +494,7 @@ contains
             domain%ns,ns
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
-    
+
     beg = domain%nbeg
     end = domain%nend
 
@@ -556,7 +559,7 @@ contains
 
     !
     ! !ARGUMENTS:
-    integer,          intent(in) :: begg, endg      
+    integer,          intent(in) :: begg, endg
     type(domain_type),intent(in) :: ldomain     ! land domain
     character(len=*), intent(in) :: lfsurdat    ! surface dataset filename
     !
@@ -571,7 +574,7 @@ contains
     real(r8)          :: rmaxlon,rmaxlat      ! local min/max vars
     type(file_desc_t) :: ncid                 ! netcdf id
     logical           :: istype_domain        ! true => input file is of type domain
-    logical           :: isgrid2d             ! true => intut grid is 2d 
+    logical           :: isgrid2d             ! true => intut grid is 2d
     character(len=32) :: subname = 'surfrd_get_data'    ! subroutine name
     !-----------------------------------------------------------------------
 
@@ -599,11 +602,11 @@ contains
 
     ! Check if fsurdat grid is "close" to fatmlndfrc grid, exit if lats/lon > 0.001
 
-    call check_var(ncid=ncid, varname='xc', vardesc=vardesc, readvar=readvar) 
+    call check_var(ncid=ncid, varname='xc', vardesc=vardesc, readvar=readvar)
     if (readvar) then
        istype_domain = .true.
     else
-       call check_var(ncid=ncid, varname='LONGXY', vardesc=vardesc, readvar=readvar) 
+       call check_var(ncid=ncid, varname='LONGXY', vardesc=vardesc, readvar=readvar)
        if (readvar) then
           istype_domain = .false.
        else
@@ -655,7 +658,7 @@ contains
     ! Obtain special landunit info
 
     call surfrd_special(begg, endg, ncid, ldomain%ns)
-	
+
 	! Obtain firrig and surface/grnd irrigation fraction
     if (firrig_data) then
      call ncd_io(ncid=ncid, varname='FIRRIG', flag='read', data=ldomain%firrig, &
@@ -699,7 +702,7 @@ contains
     use UrbanParamsType , only : CheckUrban
     !
     ! !ARGUMENTS:
-    integer          , intent(in)    :: begg, endg 
+    integer          , intent(in)    :: begg, endg
     type(file_desc_t), intent(inout) :: ncid   ! netcdf id
     integer          , intent(in)    :: ns     ! domain size
     !
@@ -752,7 +755,7 @@ contains
 
     ! Read urban info
     if (nlevurb == 0) then
-      ! If PCT_URBAN is not multi-density then set pcturb to zero 
+      ! If PCT_URBAN is not multi-density then set pcturb to zero
       pcturb = 0._r8
       urban_valid(begg:endg) = .false.
       write(iulog,*)'PCT_URBAN is not multi-density, pcturb set to 0'
@@ -812,7 +815,7 @@ contains
 
        pctglc_mec_tot(:) = 0._r8
        pctspec = pctwet + pctlak + pcturb_tot + pctgla
- 
+
     endif
 
     ! Error check: glacier, lake, wetland, urban sum must be less than 100
@@ -888,7 +891,7 @@ contains
 
     call ncd_io(ncid=ncid, varname='PCT_CFT', flag='read', data=wt_cft, &
             dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: PCT_CFT NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
+    if (.not. readvar) call endrun( msg=' ERROR: PCT_CFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 
     if ( cft_size > 0 )then
        call ncd_io(ncid=ncid, varname='CONST_FERTNITRO_CFT', flag='read', data=fert_cft, &
@@ -1007,7 +1010,7 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: nl                             ! index
     integer  :: dimid,varid                    ! netCDF id's
-    integer  :: ier                            ! error status	
+    integer  :: ier                            ! error status
     integer  :: cftsize                        ! size of CFT's
     logical  :: readvar                        ! is variable on dataset
     logical  :: cft_dim_exists                 ! does the dimension 'cft' exist on the dataset?
@@ -1033,7 +1036,7 @@ contains
     wt_lunit(begg:endg,istcrop) = arrayl(begg:endg)
 
     deallocate(arrayl)
-    
+
     ! Check the file format for CFT's and handle accordingly
     call ncd_inqdid(ncid, 'cft', dimid, cft_dim_exists)
     if ( cft_dim_exists .and. create_crop_landunit ) then
@@ -1093,7 +1096,7 @@ contains
     call check_sums_equal_1(wt_nat_patch, begg, 'wt_nat_patch', subname)
 
     ! If no irrigation, merge irrigated CFTs with rainfed
-    
+
     if (crop_prog .and. .not. irrigate) then
        if (masterproc) then
           write(iulog,*) trim(subname)//' crop=.T. and irrigate=.F., so merging irrigated pfts with rainfed'

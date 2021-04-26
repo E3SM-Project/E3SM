@@ -630,14 +630,15 @@ contains
 
     do fc = 1,num_soilc
         c = filter_soilc(fc)
-
+#ifndef _OPENACC
         if(use_fates) s = alm_fates%f2hmap(ci)%hsites(c)
-
+#endif 
         biochem_pmin_vr(c,:) = 0.0_r8
         biochem_pmin_to_ecosysp_vr_col_pot(c,:) = 0._r8
         biochem_pmin_to_plant(c) = 0._r8
 
         if(use_fates) then
+#ifndef _OPENACC                
            do j = 1,nlevdecomp
               j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
               do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
@@ -658,9 +659,9 @@ contains
                  biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft)
                  biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp*(1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))
                  biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp
-
               end do
            end  do
+#endif
         else
            do j = 1,nlevdecomp
               do p = col_pp%pfti(c), col_pp%pftf(c)

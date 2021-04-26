@@ -31,9 +31,13 @@ module column_varcon
   public :: is_hydrologically_active   ! returns true if the given column type is hydrologically active
   public :: icemec_class_to_col_itype  ! convert an icemec class (1..maxpatch_glcmec) into col_pp%itype
   public :: col_itype_to_icemec_class  ! convert col_pp%itype into an icemec class (1..maxpatch_glcmec)
-
+  !$acc declare copyin(icol_roof       )
+  !$acc declare copyin(icol_sunwall    )
+  !$acc declare copyin(icol_shadewall  )
+  !$acc declare copyin(icol_road_imperv)
+  !$acc declare copyin(icol_road_perv  )
 contains
-  
+
   !-----------------------------------------------------------------------
   function is_hydrologically_active(col_itype, lun_itype) &
        result(hydrologically_active)
@@ -87,10 +91,10 @@ contains
     integer, intent(in) :: icemec_class ! icemec class, between 1 and maxpatch_glcmec
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'icemec_class_to_col_itype'
     !-----------------------------------------------------------------------
-    
+
     SHR_ASSERT((1 <= icemec_class .and. icemec_class <= maxpatch_glcmec), errMsg(__FILE__, __LINE__))
 
     col_itype = istice_mec*100 + icemec_class
@@ -112,15 +116,15 @@ contains
     integer, intent(in) :: col_itype ! col_pp%itype value for an icemec landunit
     !
     ! !LOCAL VARIABLES:
-    
-    character(len=*), parameter :: subname = 'col_itype_to_icemec_class'
+
+    !character(len=*), parameter :: subname = 'col_itype_to_icemec_class'
     !-----------------------------------------------------------------------
-    
+
     icemec_class = col_itype - istice_mec*100
 
     ! The following assertion is here to ensure that col_itype is really from an
     ! istice_mec landunit
-    SHR_ASSERT((1 <= icemec_class .and. icemec_class <= maxpatch_glcmec), errMsg(__FILE__, __LINE__))
+    !SHR_ASSERT((1 <= icemec_class .and. icemec_class <= maxpatch_glcmec), errMsg(__FILE__, __LINE__))
 
   end function col_itype_to_icemec_class
 

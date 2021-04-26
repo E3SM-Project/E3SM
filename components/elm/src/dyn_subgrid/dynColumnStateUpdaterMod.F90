@@ -313,10 +313,10 @@ contains
     logical  :: vals_input_valid(bounds%begc:bounds%endc)
     logical  :: has_prognostic_state(bounds%begc:bounds%endc)
     real(r8) :: non_conserved_mass(bounds%begg:bounds%endg)
-    character(len=:), allocatable :: err_msg
+    !character(len=:), allocatable :: err_msg
     real(r8), parameter :: conservation_tolerance = 1.e-12_r8
 
-    character(len=*), parameter :: subname = 'update_column_state_no_special_handling'
+    !character(len=*), parameter :: subname = 'update_column_state_no_special_handling'
     !-----------------------------------------------------------------------
 
 
@@ -350,8 +350,8 @@ contains
        ! Since there is no special handling in this routine, the non_conserved_mass variable
        ! should not have any accumulation. We allow for roundoff-level accumulation in case
        ! non-conserved mass is determined in a way that is prone to roundoff-level errors.
-       err_msg = subname//': ERROR: failure to conserve mass when using no special handling'
-       SHR_ASSERT_ALL(abs(non_conserved_mass(bounds%begg:bounds%endg)) < conservation_tolerance, err_msg)
+       !err_msg = subname//': ERROR: failure to conserve mass when using no special handling'
+       !SHR_ASSERT_ALL(abs(non_conserved_mass(bounds%begg:bounds%endg)) < conservation_tolerance, err_msg)
 
     end if
 
@@ -688,7 +688,7 @@ contains
     ! call to update_column_state, and then does the call to update_column_state.
     !
     ! !USES:
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
     type(column_state_updater_type), intent(in) :: this
     type(bounds_type), intent(in) :: bounds
@@ -734,6 +734,7 @@ contains
     character(len=*), parameter :: subname = 'update_column_state_with_optional_fractions'
     !-----------------------------------------------------------------------
 
+#ifndef _OPENACC
     if (present(fractional_area_old) .and. .not. present(fractional_area_new)) then
        call endrun(subname//' ERROR: If fractional_area_old is provided, then fractional_area_new must be provided, too')
     end if
@@ -741,6 +742,7 @@ contains
     if (present(fractional_area_new) .and. .not. present(fractional_area_old)) then
        call endrun(subname//' ERROR: If fractional_area_new is provided, then fractional_area_old must be provided, too')
     end if
+#endif 
 
     if (present(fractional_area_old)) then
        my_fractional_area_old(bounds%begc:bounds%endc) = fractional_area_old(bounds%begc:bounds%endc)

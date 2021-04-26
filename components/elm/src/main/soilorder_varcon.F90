@@ -50,7 +50,18 @@ module soilorder_varcon
 
   !+
   real(r8), pointer :: r_mort_soilorder(:)
+  !$acc declare create(smax(:)       )
+  !$acc declare create(ks_sorption(:))
+  !$acc declare create(r_weather(:)  )
+  !$acc declare create(r_adsorp(:)   )
+  !$acc declare create(r_desorp(:)   )
+  !$acc declare create(r_occlude(:)  )
+  !$acc declare create(k_s1_biochem(:))
+  !$acc declare create(k_s2_biochem(:))
+  !$acc declare create(k_s3_biochem(:))
+  !$acc declare create(k_s4_biochem(:))
 
+  !$acc declare create(r_mort_soilorder)
 
 
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -186,4 +197,3 @@ contains
 
 
 end module soilorder_varcon
-

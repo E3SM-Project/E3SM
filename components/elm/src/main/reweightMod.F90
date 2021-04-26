@@ -34,7 +34,7 @@ contains
     !
     ! This should be called whenever any weights change (e.g., pft weights on the column,
     ! landunit weights on the grid cell, etc.).
-    !
+    !$acc routine seq 
     ! !USES:
     use filterMod         , only : setFilters
     use subgridWeightsMod , only : set_active, check_weights

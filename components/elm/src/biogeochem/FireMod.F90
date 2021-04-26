@@ -665,7 +665,6 @@ contains
    use pftvarcon            , only: nc3crop,lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
    use elm_varpar           , only: max_patch_per_col
    use elm_varctl           , only: spinup_state, spinup_mortality_factor
-   use dynSubgridControlMod , only: get_flanduse_timeseries
    use elm_varcon           , only: secspday
    use dynSubgridControlMod , only: run_has_transient_landcover
    !

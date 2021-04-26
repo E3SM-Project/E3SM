@@ -34,19 +34,19 @@ module dynSubgridControlMod
   private :: check_namelist_consistency ! check consistency of namelist settings
   !
   ! !PRIVATE TYPES:
-  type dyn_subgrid_control_type
-     private
-     character(len=fname_len) :: flanduse_timeseries = ' ' ! transient landuse dataset
-     logical :: do_transient_pfts  = .false. ! whether to apply transient natural PFTs from dataset
-     logical :: do_transient_crops = .false. ! whether to apply transient crops from dataset
-     logical :: do_harvest         = .false. ! whether to apply harvest from dataset
+  type, public :: dyn_subgrid_control_type
+
+     character(len=256)  :: flanduse_timeseries ! transient landuse dataset
+     logical, pointer :: do_transient_pfts   ! whether to apply transient natural PFTs from dataset
+     logical,pointer :: do_transient_crops  ! whether to apply transient crops from dataset
+     logical :: do_harvest          ! whether to apply harvest from dataset
 
      ! The following is only meant for testing: Whether area changes are allowed at times
      ! other than the year boundary. This should only arise in some test configurations
      ! where we artificially create changes more frequently so that we can run short
      ! tests. This flag is only used for error-checking, not controlling any model
      ! behavior.
-     logical :: for_testing_allow_non_annual_changes = .false.
+     logical :: for_testing_allow_non_annual_changes
 
      ! The following is only meant for testing: If .true., set the dynbal water and
      ! energy fluxes to zero. This is needed in some tests where we have daily rather
@@ -54,18 +54,19 @@ module dynSubgridControlMod
      ! those tests, we end up with sensible heat fluxes of thousands of W m-2 or more,
      ! which causes CAM to blow up. However, note that setting it to true will break
      ! water and energy conservation!
-     logical :: for_testing_zero_dynbal_fluxes = .false.
+     logical :: for_testing_zero_dynbal_fluxes
 
-     logical :: initialized        = .false. ! whether this object has been initialized
+     logical  :: initialized   ! whether this object has been initialized
   end type dyn_subgrid_control_type
-  
-  type(dyn_subgrid_control_type) :: dyn_subgrid_control_inst
+
+  type(dyn_subgrid_control_type), public :: dyn_subgrid_control_inst
+  !$acc declare create(dyn_subgrid_control_inst)
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
 
 contains
-  
+
   !-----------------------------------------------------------------------
   subroutine dynSubgridControl_init( NLFilename )
     !
@@ -79,10 +80,18 @@ contains
     character(len=*), intent(in) :: NLFilename ! Namelist filename
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'dynSubgridControl_init'
     !-----------------------------------------------------------------------
-    
+    !allocate(dyn_subgrid_control_inst%initialized            )
+    !allocate(    dyn_subgrid_control_inst%flanduse_timeseries  )
+    !allocate(    dyn_subgrid_control_inst%do_transient_pfts    )
+    !allocate(    dyn_subgrid_control_inst%do_transient_crops   )
+    !allocate(    dyn_subgrid_control_inst%do_harvest           )
+    !allocate(dyn_subgrid_control_inst%for_testing_allow_non_annual_changes)
+    !allocate(dyn_subgrid_control_inst%for_testing_zero_dynbal_fluxes      )
+
+
     call read_namelist( NLFilename )
     if (masterproc) then
        call check_namelist_consistency
@@ -119,10 +128,10 @@ contains
     ! other local variables:
     integer :: nu_nml    ! unit for namelist file
     integer :: nml_error ! namelist i/o error flag
-    
+
     character(len=*), parameter :: subname = 'read_namelist'
     !-----------------------------------------------------------------------
-    
+
     namelist /dynamic_subgrid/ &
          flanduse_timeseries, &
          do_transient_pfts, &
@@ -162,13 +171,12 @@ contains
     call shr_mpi_bcast (for_testing_allow_non_annual_changes, mpicom)
     call shr_mpi_bcast (for_testing_zero_dynbal_fluxes, mpicom)
 
-    dyn_subgrid_control_inst = dyn_subgrid_control_type( &
-         flanduse_timeseries = flanduse_timeseries, &
-         do_transient_pfts = do_transient_pfts, &
-         do_transient_crops = do_transient_crops, &
-         do_harvest = do_harvest, &
-         for_testing_allow_non_annual_changes = for_testing_allow_non_annual_changes, &
-         for_testing_zero_dynbal_fluxes = for_testing_zero_dynbal_fluxes)
+    dyn_subgrid_control_inst%flanduse_timeseries = flanduse_timeseries
+    dyn_subgrid_control_inst%do_transient_pfts = do_transient_pfts
+    dyn_subgrid_control_inst%do_transient_crops = do_transient_crops
+    dyn_subgrid_control_inst%do_harvest = do_harvest
+    dyn_subgrid_control_inst%for_testing_allow_non_annual_changes = for_testing_allow_non_annual_changes
+    dyn_subgrid_control_inst%for_testing_zero_dynbal_fluxes = for_testing_zero_dynbal_fluxes
 
     if (masterproc) then
        write(iulog,*) ' '
@@ -191,10 +199,10 @@ contains
     ! !ARGUMENTS:
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'check_namelist_consistency'
     !-----------------------------------------------------------------------
-    
+
     if (dyn_subgrid_control_inst%flanduse_timeseries == ' ') then
        if (dyn_subgrid_control_inst%do_transient_pfts) then
           write(iulog,*) 'ERROR: do_transient_pfts can only be true if you are running with'
@@ -262,8 +270,8 @@ contains
     ! !DESCRIPTION:
     ! Return the value of the do_transient_pfts control flag
     !-----------------------------------------------------------------------
-    
-    SHR_ASSERT(dyn_subgrid_control_inst%initialized, errMsg(sourcefile, __LINE__))
+    !$acc routine seq 
+    !SHR_ASSERT(dyn_subgrid_control_inst%initialized, errMsg(sourcefile, __LINE__))
 
     get_do_transient_pfts = dyn_subgrid_control_inst%do_transient_pfts
 
@@ -274,9 +282,7 @@ contains
     ! !DESCRIPTION:
     ! Return the value of the do_transient_crops control flag
     !-----------------------------------------------------------------------
-    
-    SHR_ASSERT(dyn_subgrid_control_inst%initialized, errMsg(sourcefile, __LINE__))
-
+    !$acc routine seq 
     get_do_transient_crops = dyn_subgrid_control_inst%do_transient_crops
 
   end function get_do_transient_crops
@@ -286,10 +292,10 @@ contains
     ! !DESCRIPTION:
     ! Returns true if any aspects of prescribed transient landcover are enabled
     !-----------------------------------------------------------------------
-
+    !$acc routine seq
     run_has_transient_landcover = &
-         (get_do_transient_pfts() .or. &
-         get_do_transient_crops())
+         (dyn_subgrid_control_inst%do_transient_pfts .or. &
+         dyn_subgrid_control_inst%do_transient_crops)
   end function run_has_transient_landcover
 
   !-----------------------------------------------------------------------
@@ -297,8 +303,7 @@ contains
     ! !DESCRIPTION:
     ! Return the value of the do_harvest control flag
     !-----------------------------------------------------------------------
-    
-    SHR_ASSERT(dyn_subgrid_control_inst%initialized, errMsg(sourcefile, __LINE__))
+    !$acc routine seq 
 
     get_do_harvest = dyn_subgrid_control_inst%do_harvest
 
@@ -312,8 +317,7 @@ contains
     ! year boundary. (This should typically only be true for testing.) (This only
     ! controls error-checking, not any operation of the code.)
     !-----------------------------------------------------------------------
-
-    SHR_ASSERT(dyn_subgrid_control_inst%initialized, errMsg(sourcefile, __LINE__))
+    !$acc routine seq 
 
     get_for_testing_allow_non_annual_changes = dyn_subgrid_control_inst%for_testing_allow_non_annual_changes
 
@@ -321,7 +325,7 @@ contains
 
   !-----------------------------------------------------------------------
   logical function get_for_testing_zero_dynbal_fluxes()
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Return true if the user has requested to set the dynbal water and energy fluxes to
     ! zero. This should typically only be true for testing: This is needed in some tests
@@ -330,8 +334,6 @@ contains
     ! of W m-2 or more, which causes CAM to blow up. However, note that setting it to
     ! true will break water and energy conservation!
     ! -----------------------------------------------------------------------
-
-    SHR_ASSERT(dyn_subgrid_control_inst%initialized, errMsg(sourcefile, __LINE__))
 
     get_for_testing_zero_dynbal_fluxes = dyn_subgrid_control_inst%for_testing_zero_dynbal_fluxes
 

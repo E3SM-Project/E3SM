@@ -109,6 +109,7 @@ module filterMod
   ! before this variable was added (i.e., when there was only a single group of filters).
   !
   type(clumpfilter), allocatable, public :: filter_inactive_and_active(:)
+  !$acc declare create(filter(:), filter_inactive_and_active(:) )
   !
   public allocFilters   ! allocate memory for filters
   public setFilters     ! set filters
@@ -222,17 +223,15 @@ contains
 
   !------------------------------------------------------------------------
   subroutine setFilters(bounds, icemask_grc)
-    !
+    !$acc routine seq 
     ! !DESCRIPTION:
-    ! Set CLM filters.
+    ! Set ELM filters.
     use decompMod , only : BOUNDS_LEVEL_CLUMP
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in) :: bounds  
     real(r8)          , intent(in) :: icemask_grc( bounds%begg: ) ! ice sheet grid coverage mask [gridcell]
     !------------------------------------------------------------------------
-
-    SHR_ASSERT(bounds%level == BOUNDS_LEVEL_CLUMP, errMsg(__FILE__, __LINE__))
 
     call setFiltersOneGroup(bounds, &
          filter, include_inactive = .false., &
@@ -260,12 +259,12 @@ contains
   subroutine setFiltersOneGroup(bounds, this_filter, include_inactive, icemask_grc )
     !
     ! !DESCRIPTION:
-    ! Set CLM filters for one group of filters.
+    ! Set ELM filters for one group of filters.
     !
     ! "Standard" filters only include active points. However, this routine can be used to set
     ! alternative filters that also apply over inactive points, by setting include_inactive =
     ! .true.
-    !
+    !$acc routine seq 
     ! !USES:
     use decompMod , only : BOUNDS_LEVEL_CLUMP
     use pftvarcon , only : npcropmin
@@ -287,9 +286,6 @@ contains
     integer :: f, fn       ! general indices
     integer :: g           !gridcell index
     !------------------------------------------------------------------------
-
-    SHR_ASSERT(bounds%level == BOUNDS_LEVEL_CLUMP, errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(icemask_grc) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
 
     nc = bounds%clump_index
 

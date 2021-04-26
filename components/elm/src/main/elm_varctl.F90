@@ -449,7 +449,7 @@ module elm_varctl
   !$acc declare copyin(pf_tmode     )
   !$acc declare copyin(pf_frzmode   )
   !$acc declare copyin(initth_pf2clm)
-  !$acc declare copyin(pf_clmnstep0 )
+  !$acc declare copyin(pf_elmnstep0 )
 
   ! cpl_bypass
    character(len=fname_len), public :: metdata_type   = ' '    ! metdata type for CPL_BYPASS mode

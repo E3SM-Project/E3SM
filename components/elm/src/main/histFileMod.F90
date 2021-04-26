@@ -228,6 +228,7 @@ module histFileMod
   ! History tape: an array of history_tape entities (only active fields)
   !
   type (history_tape), public :: tape(max_tapes)       ! array history tapes
+  !$acc declare create(elmptr_rs, elmptr_ra)
   !
   ! Namelist input
   !

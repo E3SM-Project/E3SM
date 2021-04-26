@@ -1124,14 +1124,14 @@ contains
          call Compute_EffecRootFrac_And_VertTranSink_Default(bounds, &
                num_filterc,filterc, soilstate_inst)
       end if
-
+#ifndef _OPENACC 
       if (num_hydrologyc /= num_filterc_tot) then
           write(iulog,*) 'The total number of columns flagged to root water uptake'
           write(iulog,*) 'did not match the total number calculated'
           write(iulog,*) 'This is likely a problem with the interpretation of column/lu filters.'
           call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
-
+#endif
 
       return
    end subroutine Compute_EffecRootFrac_And_VertTranSink

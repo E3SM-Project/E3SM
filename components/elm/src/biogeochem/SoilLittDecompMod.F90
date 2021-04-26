@@ -43,7 +43,7 @@ module SoilLittDecompMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
 
-   public :: readSoilLittDecompParams
+  public :: readSoilLittDecompParams
   public :: SoilLittDecompAlloc
   ! pflotran
   public :: SoilLittDecompAlloc2
@@ -106,7 +106,6 @@ contains
     !-----------------------------------------------------------------------------
 
     ! !USES:
-!    use AllocationMod , only: CNAllocation
       !$acc routine seq
     use AllocationMod , only: Allocation2_ResolveNPLimit ! Phase-2 of CNAllocation
     !
@@ -120,7 +119,6 @@ contains
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
-    ! add phosphorus --
 !    type(crop_type)          , intent(in)    :: crop_vars
     real(r8),   intent(in)    :: dtime
     !
@@ -656,11 +654,11 @@ contains
          )
 
       ! set time steps
-            !------------------------------------------------------------------
-            ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
-            !------------------------------------------------------------------
-            smin_nh4_to_plant_vr_loc(:,:) = 0._r8
-            smin_no3_to_plant_vr_loc(:,:) = 0._r8
+      !------------------------------------------------------------------
+      ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
+      !------------------------------------------------------------------
+      smin_nh4_to_plant_vr_loc(:,:) = 0._r8
+      smin_no3_to_plant_vr_loc(:,:) = 0._r8
 
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
@@ -812,13 +810,15 @@ contains
   !-------------------------------------------------------------------------------------------------
   !
   subroutine CNvariables_nan4pf (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-  !
-  !DESCRIPTION:
-  !  CN variables not available from PFLOTRAN, some of which may be output and may cause issues,
-  !  if not properly set.
-  !
-  !USES:
+    !
+    !DESCRIPTION:
+    !  CN variables not available from PFLOTRAN, some of which may be output and may cause issues,
+    !  if not properly set.
+    !
+    !USES:
     !$acc routine seq
+    use VegetationDataType, only : veg_ps_SetValues, veg_pf_setvalues
+    use ColumnDataType   , only : col_ps_setvalues, col_pf_setvalues
     use elm_varctl   , only: carbon_only, carbonnitrogen_only
     use elm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
    !
@@ -857,11 +857,11 @@ contains
 
    ! pflotran not yet support phosphous cycle
    if ( carbon_only .or.  carbonnitrogen_only  ) then
-      call veg_ps%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call col_ps%SetValues(num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
+      !call veg_ps_setvalues(this=veg_ps,num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
+      !call col_ps_setvalues(this=col_ps,num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
 
-      call veg_pf%setvalues( num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call col_pf%setvalues( num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
+      !call veg_pf_setvalues(this=veg_pf, num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
+      !call col_pf_setvalues(this=col_pf, num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
    end if
 
   end associate
