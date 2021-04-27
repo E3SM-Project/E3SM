@@ -39,9 +39,6 @@ void Functions<S,D>::update_prognostics_implicit(
   const uview_1d<Spack>&       u_wind,
   const uview_1d<Spack>&       v_wind)
 {
-  const int num_wind_transpose_packs = ekat::npack<Spack>(2);
-  const int num_qtracers_transpose_packs = ekat::npack<Spack>(num_qtracers+3);
-
   const auto nlev_v  = (nlev-1)/Spack::n;
   const auto nlev_p  = (nlev-1)%Spack::n;
   const auto nlevi_v = (nlevi-1)/Spack::n;
@@ -67,16 +64,20 @@ void Functions<S,D>::update_prognostics_implicit(
   auto d  = Kokkos::subview(d_workspace,  Kokkos::make_pair(0,nlev));
 
   // 2d allocations for solver RHS
+  const int num_wind_transpose_packs = ekat::npack<Spack>(2);
+  const int num_qtracers_transpose_packs = ekat::npack<Spack>(num_qtracers+3);
+
   const int n_wind_slots = num_wind_transpose_packs*Spack::n;
   const int n_trac_slots = num_qtracers_transpose_packs*Spack::n;
+
   const auto wind_slot    = workspace.template take_macro_block<Scalar>("wind_slot",n_wind_slots);
   const auto tracers_slot = workspace.template take_macro_block<Scalar>("tracers_slot",n_trac_slots);
 
   // Reshape 2d views
   const auto wind_transpose     = uview_2d<Spack>(reinterpret_cast<Spack*>(wind_slot.data()),
-                                                  nlev,ekat::npack<Spack>(2));
+                                                  nlev, num_wind_transpose_packs);
   const auto qtracers_transpose = uview_2d<Spack>(reinterpret_cast<Spack*>(tracers_slot.data()),
-                                                  nlev,ekat::npack<Spack>(num_qtracers+3));
+                                                  nlev, num_qtracers_transpose_packs);
 
   // linearly interpolate tkh, tk, and air density onto the interface grids
   linear_interp(team,zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,0);
