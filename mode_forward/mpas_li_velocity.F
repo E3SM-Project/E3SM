@@ -910,7 +910,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
 
       type (field1dReal), pointer :: meanFlowParamAVar
-      real, dimension(:), pointer :: meanFlowParamA
+      real (kind=RKIND), dimension(:), pointer :: meanFlowParamA
 
       integer, pointer :: nVertLevels
       integer, pointer :: nCells
