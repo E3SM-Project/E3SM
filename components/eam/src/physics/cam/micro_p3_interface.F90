@@ -1037,6 +1037,10 @@ end subroutine micro_p3_readnl
 
     ! COMPUTE GEOMETRIC THICKNESS OF GRID & CONVERT T TO POTENTIAL TEMPERATURE
     !==============
+    ! TODO: Create a general function to calculate Exner's formula that can be
+    ! used by all parameterizations, such as P3 and SHOC.
+    ! This would take a bit more work, so we have decided to delay this task
+    ! until a later stage of code cleanup.
     inv_exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
     do icol = 1,ncol
        do k = 1,pver

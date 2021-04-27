@@ -737,6 +737,8 @@ end function shoc_implements_cnst
    where(state1%q(:ncol,:pver,ixcldice) .gt. minqn) &
        newfice(:ncol,:pver) = state1%q(:ncol,:pver,ixcldice)/(state1%q(:ncol,:pver,ixcldliq)+state1%q(:ncol,:pver,ixcldice))  
        
+   ! TODO: Create a general function to calculate Exner's formula - see full
+   ! comment in micro_p3_interface.F90
    do k=1,pver
      do i=1,ncol
        inv_exner(i,k) = 1._r8/((state1%pmid(i,k)/p0_shoc)**(rair/cpair))
