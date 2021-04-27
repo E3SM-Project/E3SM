@@ -113,7 +113,8 @@ use physical_constants, only : dx, dy, dx_ref, dy_ref
     bubble_xycenter, &
     bubble_zcenter, &
     bubble_ztop, &
-    bubble_radius, &
+    bubble_xyradius, &
+    bubble_zradius, &
     bubble_cosine
 #endif
 
@@ -338,7 +339,8 @@ use physical_constants, only : dx, dy, dx_ref, dy_ref
       bubble_xycenter, &
       bubble_zcenter, &
       bubble_ztop, &
-      bubble_radius, &
+      bubble_xyradius, &
+      bubble_zradius, &
       bubble_cosine  
     namelist /vert_nl/        &
       vform,              &
@@ -811,7 +813,8 @@ endif
     call MPI_bcast(bubble_xycenter,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(bubble_zcenter ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(bubble_ztop ,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(bubble_radius ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_xyradius ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_zradius ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(bubble_cosine ,1,MPIlogical_t,par%root,par%comm,ierr)
 #endif
 

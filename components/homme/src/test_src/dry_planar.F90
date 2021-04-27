@@ -180,7 +180,7 @@ end subroutine planar_rising_bubble_init
 subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   use control_mod, only: bubble_T0, bubble_dT, bubble_xycenter, bubble_zcenter, bubble_ztop, &
-                         bubble_radius, bubble_cosine, &
+                         bubble_xyradius,bubble_zradius, bubble_cosine, &
                          Lx, Ly, Sx, Sy
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
@@ -191,7 +191,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   real(rl),           intent(in)            :: f                        ! (const) Coriolis force
 
   integer :: i,j,k,ie                                                   ! loopindices
-  real(rl):: x,y,hyam,hybm,hyai,hybi           
+  real(rl):: x,y,one           
   real(rl):: pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr
 
 #ifdef MODEL_THETA_L
@@ -205,12 +205,21 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
      print *, 'bubble_xycenter', bubble_xycenter
      print *, 'bubble_zcenter', bubble_zcenter
      print *, 'bubble_ztop', bubble_ztop
-     print *, 'bubble_radius', bubble_radius
+     print *, 'bubble_xyradius', bubble_xyradius
+     print *, 'bubble_zradius', bubble_zradius
      print *, 'bubble_cosine', bubble_cosine
   endif
 
+  one = 1.0
+
   !evenly spaced with reversed indexing, just like in homme eta coord
   call get_evenly_spaced_z(zi,zm, 0.0_rl,bubble_ztop)
+
+  !get pressure on interfaces
+  do k=1,nlevp
+    !set interface pressure from const lapse rate, does not depend on x,y, or _dT
+    pi(k) =  p0*( (bubble_T0 - zi(k)*g/cp)/bubble_T0  )**(1.0/kappa)
+  enddo
 
   ! set initial conditions
   do ie = nets,nete
@@ -222,14 +231,14 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
       do k=1,nlevp
 
-        rr = sqrt( (x-bubble_xycenter)   *(x-bubble_xycenter)+&
-                   (y-bubble_xycenter)   *(y-bubble_xycenter)+&
-                   (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) )
+        rr =sqrt( (x-bubble_xycenter)   *(x-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
+                  (y-bubble_xycenter)   *(y-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
+                  (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) / bubble_zradius / bubble_zradius    )
 
         !set pot. temperature on interfaces
-        if ( rr < bubble_radius ) then 
+        if ( rr < one ) then 
           if (bubble_cosine) then
-            th0(k) = bubble_T0 + bubble_dT * cos(rr*dd_pi / bubble_radius / 2.d0)
+            th0(k) = bubble_T0 + bubble_dT * cos(rr*dd_pi / 2.d0)
           else
             th0(k) = bubble_T0 + bubble_dT
           endif
@@ -238,8 +247,6 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
           th0(k) = bubble_T0
         endif
 
-        !set interface pressure from const lapse rate, does not depend on x,y, or _dT
-        pi(k) =  p0*( (bubble_T0 - zi(k)*g/cp)/bubble_T0  )**(1.0/kappa)
       enddo
 
       elem(ie)%state%ps_v(i,j,:) = pi(nlevp)
@@ -278,6 +285,11 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   hvcoord%hyai = ai
   hvcoord%hybi = bi
+
+!do k=1,nlevp
+!print *, 'k,a,b', k,ai(k),bi(k)
+!enddo
+!stop
 
   !set : hyam hybm 
   hvcoord%hyam = 0.5_rl *(ai(2:nlev+1) + ai(1:nlev))

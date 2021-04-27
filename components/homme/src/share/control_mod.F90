@@ -261,9 +261,10 @@ module control_mod
   real (kind=real_kind), public :: bubble_T0 = 270.0       !bubble ref state
   real (kind=real_kind), public :: bubble_dT = 0.5         !bubble dTheta
   real (kind=real_kind), public :: bubble_xycenter = 0.0   !bubble xy position
-  real (kind=real_kind), public :: bubble_zcenter = 2000.0  !bubble z position
+  real (kind=real_kind), public :: bubble_zcenter = 2000.0 !bubble z position
   real (kind=real_kind), public :: bubble_ztop = 10000.0   !bubble z top
-  real (kind=real_kind), public :: bubble_radius = 1500.0  !bubble z top
+  real (kind=real_kind), public :: bubble_xyradius = 1500.0!bubble radius along x or y axis
+  real (kind=real_kind), public :: bubble_zradius = 1500.0 !bubble radius along z axis
   logical,               public :: bubble_cosine  = .TRUE. !bubble uniform or cosine
 
   public :: set_planar_defaults
