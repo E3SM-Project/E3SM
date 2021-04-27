@@ -11,6 +11,10 @@ namespace scream {
         // proper units. I.e., pressure at level interfaces should be in Pa,
         // fluxes in W m-2, Cpair in J kg-1 K-1, gravit in m s-2. This will give
         // heating in units of K s-1.
+        // TODO: we should probably update this to use the pseudo-density dp instead
+        // of approximating dp by differencing the level interface pressures.
+        // We are leaving this for the time being for consistency with SCREAMv0,
+        // from which this code was directly ported.
         template <class T, int myMem, int myStyle> void compute_heating_rate (
                 yakl::Array<T,2,myMem,myStyle> const &flux_up, yakl::Array<T,2,myMem,myStyle> const &flux_dn, 
                 yakl::Array<T,2,myMem,myStyle> const &plev   , yakl::Array<T,2,myMem,myStyle> &heating_rate
