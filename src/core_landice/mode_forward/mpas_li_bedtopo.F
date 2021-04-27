@@ -158,7 +158,7 @@ subroutine li_bedtopo_solve(domain, err)
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      
+
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
 
       !-----------------------------------------------------------------
@@ -204,7 +204,7 @@ subroutine li_bedtopo_solve(domain, err)
             call mpas_pool_get_array(meshPool, 'deltat', deltat)
             call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
             call mpas_pool_get_array(geometryPool, 'upliftRate', upliftRate)
-            
+
             bedTopography(:) = bedTopography(:) + upliftRate(:) * deltat
 
             call li_update_geometry(geometryPool)
