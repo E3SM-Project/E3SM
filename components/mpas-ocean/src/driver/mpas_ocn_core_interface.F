@@ -156,6 +156,7 @@ module ocn_core_interface
       logical, pointer :: config_use_freq_filtered_thickness
       logical, pointer :: config_use_frazil_ice_formation
       logical, pointer :: config_use_tidal_forcing
+      logical, pointer :: config_use_self_attraction_loading
       logical, pointer :: config_use_tidal_potential_forcing
       logical, pointer :: config_use_topographic_wave_drag
       logical, pointer :: config_use_GM
@@ -321,6 +322,8 @@ module ocn_core_interface
       if (config_use_tidal_potential_forcing) then
          tidalPotentialForcingPKGActive = .true.
       end if
+      ! Set self-attraction and loading, dependent on tidal potential forcing
+      call mpas_pool_get_config(configPool, 'config_use_self_attraction_loading', config_use_self_attraction_loading)
 
       !
       ! test for use of vegetation drag, vegetationDragPKGActive

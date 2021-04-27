@@ -87,6 +87,8 @@ module ocn_time_integration_split
       numTSIterations, &! number of outer timestep iterations
       nBtrSubcycles     ! number of barotropic subcycles
 
+   integer :: ssh_sal_on
+
    real (kind=RKIND) :: &
       useVelocityCorrection,&! mask for velocity correction
       splitFact          ! mask for terms in split or unsplit cases
@@ -565,8 +567,8 @@ module ocn_time_integration_split
          !$acc update host(vertAleTransportTop)
 #endif
 
-         call ocn_tend_vel(tendPool, statePool, forcingPool, &
-                           stage1_tend_time, dt)
+         call ocn_tend_vel(domain, tendPool, statePool, forcingPool, &
+                           stage1_tend_time, domain % dminfo, dt)
 
          call mpas_timer_stop('se bcl vel tend')
 
@@ -826,7 +828,10 @@ module ocn_time_integration_split
                         sshSubcycleCurWithTides(iCell) = &
                                  sshSubcycleCur(iCell) - &
                               tidalPotentialEta(iCell) - &
-                              config_self_attraction_and_loading_beta* &
+                              !!!!!!!!!!!!!!!! note config flag here is not set
+                              !correctly in init for tidal !!!!!!!!!
+                           ssh_sal_on * ssh_sal(iCell) - &
+                           (1 - ssh_sal_on) * config_self_attraction_and_loading_beta* &
                                  sshSubcycleCur(iCell)
                      end do
 
@@ -1020,7 +1025,6 @@ module ocn_time_integration_split
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                ! Barotropic subcycle: VELOCITY CORRECTOR STEP
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
                do BtrCorIter = 1, config_n_btr_cor_iter
                   uPerpTime = newBtrSubcycleTime
 
@@ -1061,13 +1065,15 @@ module ocn_time_integration_split
                         sshSubcycleCurWithTides(iCell) = &
                                  sshSubcycleCur(iCell) - &
                               tidalPotentialEta(iCell) - &
-                           config_self_attraction_and_loading_beta* &
+                           ssh_sal_on * ssh_sal(iCell) - &
+                           (1 - ssh_sal_on) * config_self_attraction_and_loading_beta* &
                                  sshSubcycleCur(iCell)
 
                         sshSubcycleNewWithTides(iCell) = &
                                  sshSubcycleNew(iCell) - &
                               tidalPotentialEta(iCell) - &
-                           config_self_attraction_and_loading_beta* &
+                           ssh_sal_on * ssh_sal(iCell) - &
+                           (1 - ssh_sal_on) * config_self_attraction_and_loading_beta* &
                                  sshSubcycleNew(iCell)
                      end do
 
@@ -2309,6 +2315,12 @@ module ocn_time_integration_split
                                                      subcycleGroupName)
 
       !-----------------------------------------------------------------
+      if (config_use_self_attraction_loading) then
+         ! set ssh_sal_on to 1
+         ssh_sal_on = 1
+      else
+         ssh_sal_on = 0
+      endif
 
    end subroutine ocn_time_integration_split_init!}}}
 

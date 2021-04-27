@@ -68,6 +68,7 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), dimension(:), pointer :: gradSSH
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
+   real (kind=RKIND), dimension(:), pointer :: ssh_sal
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -233,6 +234,7 @@ contains
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
+
       if (config_use_topographic_wave_drag) then
          call mpas_pool_get_array(diagnosticsPool, 'topographic_wave_drag', topographic_wave_drag)
       end if
@@ -339,6 +341,12 @@ contains
          call mpas_pool_get_array(diagnosticsPool, &
                   'topographic_wave_drag', &
                    topographic_wave_drag)
+      end if
+
+      if (config_use_self_attraction_loading) then
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'ssh_sal', &
+                   ssh_sal)
       end if
 
       if ( trim(config_ocean_run_mode) == 'init' .or. &
@@ -631,6 +639,9 @@ contains
       if (config_use_topographic_wave_drag) then
          !$acc enter data copyin(topographic_wave_drag)
       end if
+      if (config_use_self_attraction_loading) then
+         !$acc enter data copyin(ssh_sal)
+      end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc enter data copyin(                          &
          !$acc                   rx1Edge,                  &
@@ -867,6 +878,9 @@ contains
       end if
       if (config_use_topographic_wave_drag) then
          !$acc exit data delete(topographic_wave_drag)
+      end if
+      if (config_use_self_attraction_loading) then
+         !$acc exit data delete(ssh_sal)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc exit data delete(                           &
@@ -1188,6 +1202,9 @@ contains
       end if
       if ( config_use_activeTracers_surface_restoring ) then
          nullify(salinitySurfaceRestoringTendency)
+      end if
+      if ( config_use_self_attraction_loading ) then
+         nullify(ssh_sal)
       end if
       if ( trim(config_time_integrator) == 'split_implicit' ) then
          nullify(SIvec_r0,              &

@@ -758,6 +758,36 @@
 					possible_values="Any positive real number."
 		/>
 	</nml_record>
+	<nml_record name="self_attraction_loading" mode="forward">
+		<nml_option name="config_use_self_attraction_loading" type="logical" default_value=".false." units="unitless"
+					description="Controls if self-attraction and loading is applied to ssh"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_load_Love_file" type="character" default_value="loveDat.txt" units="unitless"
+					description="Location of the file containing the load Love numbers"
+					possible_values="Any file name string"
+		/>
+		<nml_option name="config_mpas_to_grid_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"
+					description="Location of the file containing the interpolation weights for transformation from the MPAS mesh to a Gaussian Grid."
+					possible_values="Any file name string"
+		/>
+		<nml_option name="config_grid_to_mpas_weights_file" type="character" default_value="grid_to_mpas.nc" units="unitless"
+					description="Location of the file containing the interpolation weights for transformation from a Gaussian Grid to the MPAS mesh."
+					possible_values="Any file name string"
+		/>
+	<nml_option name="config_self_attraction_loading_compute_interval" type="character" default_value="0000-00-00_00:30:00" units="unitless"
+					description="Interval for computing full SAL."
+					possible_values="'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<nml_option name="config_nLatitude" type="integer" default_value="128" units="unitless"
+					description="Numer of latitude points in the Gaussian Grid."
+					possible_values="Any positive integer value."
+		/>
+		<nml_option name="config_nLongitude" type="integer" default_value="256" units="unitless"
+					description="Numer of longitude points in the Gaussian Grid."
+					possible_values="Any positive integer value."
+		/>
+	</nml_record>
 	<nml_record name="tidal_potential_forcing" mode="forward">
 		<nml_option name="config_use_tidal_potential_forcing" type="logical" default_value=".false." units="unitless"
 					description="Controls if tidal potential forcing is used."
@@ -1456,6 +1486,7 @@
 			<var name="fEdge"/>
 			<var name="fVertex"/>
 			<var name="fCell"/>
+			<var name="bed_elevation"/>
 		</stream>
 
 		<stream name="output_init"
@@ -2239,6 +2270,9 @@
 		/>
 		<var name="fCell" type="real" dimensions="nCells" units="s^{-1}"
 			 description="Coriolis parameter at cell centers."
+		/>
+		<var name="bed_elevation" type="real" dimensions="nCells" units="m"
+			 description="Depth of the bottom of the ocean. Given as negative distance from sea level. Used as input to replace topography input file."
 		/>
 		<var name="bottomDepth" type="real" dimensions="nCells" units="m"
 			 description="Depth of the bottom of the ocean. Given as a positive distance from sea level."
@@ -3050,6 +3084,10 @@
 		<var name="SIvec_y0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
+		/>
+		<var name="ssh_sal" type="real" dimensions="nCells Time" units="m"
+			description="sea surface height perturbation from self-attraction and loading"
+			packages="tidalPotentialForcingPKG"
 		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
