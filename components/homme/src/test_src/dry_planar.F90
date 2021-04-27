@@ -221,6 +221,31 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
     pi(k) =  p0*( (bubble_T0 - zi(k)*g/cp)/bubble_T0  )**(1.0/kappa)
   enddo
 
+  !create hybrid coords now from pi
+  !note that this code should not depend on partitioning
+  !it depends on ref pressure profile, whcih is init-ed in the same way for all elements/gll
+  ai(:) = 0.0; bi(:) = 0.0
+  ai(1) = pi(1)/p0
+  bi(nlevp) = 1.0
+
+  do k=2,nlev
+    bi(k) = 1.0 - zi(k)/zi(1)
+
+    !restore ai frop given pressure
+    ai(k)=(pi(k)-bi(k)*pi(nlevp))/p0
+  enddo
+
+  hvcoord%hyai = ai
+  hvcoord%hybi = bi
+
+  !set : hyam hybm 
+  hvcoord%hyam = 0.5_rl *(ai(2:nlev+1) + ai(1:nlev))
+  hvcoord%hybm = 0.5_rl *(bi(2:nlev+1) + bi(1:nlev))
+
+  !  call set_layer_locations: sets  etam, etai, dp0, checks that Am=ai/2+ai/2
+  call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+
+
   ! set initial conditions
   do ie = nets,nete
     do j=1,np; do i=1,np
@@ -269,34 +294,6 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
     enddo; enddo !i,j loop
   enddo !ie loop
 
-  !create hybrid coords now from the 1st column
-  !note that this code should not depend on partitioning
-  !it depends on pressure, whcih is init-ed in the same way for all elements/gll
-  ai(:) = 0.0; bi(:) = 0.0
-  ai(1) = pi(1)/p0
-  bi(nlevp) = 1.0
-
-  do k=2,nlev
-    bi(k) = 1.0 - zi(k)/zi(1)
-
-    !restore ai frop given pressure
-    ai(k)=(pi(k)-bi(k)*pi(nlevp))/p0
-  enddo
-
-  hvcoord%hyai = ai
-  hvcoord%hybi = bi
-
-!do k=1,nlevp
-!print *, 'k,a,b', k,ai(k),bi(k)
-!enddo
-!stop
-
-  !set : hyam hybm 
-  hvcoord%hyam = 0.5_rl *(ai(2:nlev+1) + ai(1:nlev))
-  hvcoord%hybm = 0.5_rl *(bi(2:nlev+1) + bi(1:nlev))
-
-  !  call set_layer_locations: sets  etam, etai, dp0, checks that Am=ai/2+ai/2
-  call set_layer_locations(hvcoord, .true., hybrid%masterthread)
 
   do ie = nets,nete
      elem(ie)%fcor(:,:) = f
