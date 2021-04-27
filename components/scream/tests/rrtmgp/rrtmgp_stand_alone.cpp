@@ -149,7 +149,7 @@ namespace scream {
         ad.run(300.0);
 
         // Dumb check to verify that we did indeed update temperature
-        REQUIRE(t_lay(1,1) != T_mid0(1,1));
+        REQUIRE(t_lay.createHostCopy()(1,1) != T_mid0.createHostCopy()(1,1));
         T_mid0.deallocate();
 
         // Check values; need to get fluxes from field manager first
