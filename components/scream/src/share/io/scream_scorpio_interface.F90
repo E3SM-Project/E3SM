@@ -576,6 +576,9 @@ contains
       pio_iotype     = shr_pio_getiotype(atm_id)
       pio_rearranger = shr_pio_getrearranger(atm_id)
     else
+#else
+      ! Just for removing unused dummy warnings
+      if (.false.) print *, atm_id, local
 #endif
       allocate(pio_subsystem)
       stride         = 1

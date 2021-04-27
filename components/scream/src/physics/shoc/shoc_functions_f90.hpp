@@ -455,7 +455,7 @@ struct AaTermsDiagThirdShocMomentData {
 
 struct F0ToF5DiagThirdShocMomentData {
   // Inputs
-  Real thedz, thedz2, bet2, iso, isosqrd, wthl_sec, wthl_sec_kc, wthl_sec_kb, thl_sec, thl_sec_kc, thl_sec_kb, w_sec, w_sec_kc, w_sec_zi, tke, tke_kc;
+  Real thedz, thedz2, bet2, iso, isosqrd, wthl_sec, wthl_sec_kc, wthl_sec_kb, thl_sec_kc, thl_sec_kb, w_sec, w_sec_kc, w_sec_zi, tke, tke_kc;
 
   // Outputs
   Real f0, f1, f2, f3, f4, f5;
