@@ -1349,7 +1349,7 @@ contains
           ca_i =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
           nf = f_area; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
           nf = f_wfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
-          nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Fioo_q,n)
+          nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
           nf = f_hh2ot; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Faoo_h2otemp,n)
        end do
     end if
@@ -1690,7 +1690,7 @@ contains
           nf = f_wfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
           nf = f_hfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
-               (ca_o+ca_i)*x2i_i%rAttr(index_x2i_Fioo_q,n)
+               (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
           if ( flds_wiso_ice_x2i )then
              nf  = f_wrain_16O;
              budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
@@ -1716,12 +1716,12 @@ contains
        ic = c_inh_is
        budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-       budg_dataL(f_hfrz ,ic,ip) = -max(0.0_r8,budg_dataL(f_hfrz,ic,ip))
+       budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_hfrz,ic,ip)
 
        ic = c_ish_is
        budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-       budg_dataL(f_hfrz ,ic,ip) = -max(0.0_r8,budg_dataL(f_hfrz,ic,ip))
+       budg_dataL(f_hfrz ,ic,ip) = -budg_dataL(f_hfrz,ic,ip)
     end if
 
     first_time = .false.
