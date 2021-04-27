@@ -193,7 +193,7 @@ contains
 
       call MPAS_pool_get_config(domain % configs, "config_earth_radius", earthRadius)
 
-      call MPAS_pool_get_dimension(domain % blockList % dimensions, "nHemispheres", nHemispheres)
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
       nSums = nHemispheres * nVars
 
       allocate(sumArray(nSums))
@@ -206,8 +206,8 @@ contains
 
          call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
 
-         call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAM", conservationCheckAMPool)
-         call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAreaAM", conservationCheckAreaAMPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "conservationCheckAM", conservationCheckAMPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "conservationCheckAreaAM", conservationCheckAreaAMPool)
          call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
 
          call MPAS_pool_get_array(conservationCheckAMPool, "cellInHemisphere", cellInHemisphere)
@@ -566,7 +566,7 @@ contains
       call MPAS_pool_get_config(domain % configs, "config_AM_conservationCheck_write_to_logfile", &
                                                    config_AM_conservationCheck_write_to_logfile)
 
-      call MPAS_pool_get_dimension(domain % blockList % dimensions, "nHemispheres", nHemispheres)
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
       nSums = nHemispheres * nVars
 
       allocate(sumArray(nSums))
@@ -781,7 +781,7 @@ contains
 
       err = 0
 
-      call MPAS_pool_get_config(domain % blockList % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
+      call MPAS_pool_get_config(domain % blocklist % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
       if (config_calc_surface_temperature) then
          nVars = 9
       else
@@ -796,7 +796,7 @@ contains
       ! Net heat flux to ice
       !-------------------------------------------------------------
 
-      call MPAS_pool_get_dimension(domain % blockList % dimensions, "nHemispheres", nHemispheres)
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
       nSums = nHemispheres * nVars
 
       allocate(sumArray(nSums))
@@ -1175,7 +1175,7 @@ contains
       ! Net mass flux to ice
       !-------------------------------------------------------------
 
-      call MPAS_pool_get_dimension(domain % blockList % dimensions, "nHemispheres", nHemispheres)
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
       nSums = nHemispheres * nVars
 
       allocate(sumArray(nSums))
@@ -1472,7 +1472,7 @@ contains
       ! Net salt flux to ice
       !-------------------------------------------------------------
 
-      call MPAS_pool_get_dimension(domain % blockList % dimensions, "nHemispheres", nHemispheres)
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
       nSums = nHemispheres * nVars
 
       allocate(sumArray(nSums))
@@ -1728,7 +1728,7 @@ contains
       ! Net carbon flux to ice
       !-------------------------------------------------------------
 
-      call MPAS_pool_get_dimension(domain % blockList % dimensions, "nHemispheres", nHemispheres)
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
       nSums = nHemispheres * nVars
 
       allocate(sumArray(nSums))
@@ -1923,7 +1923,7 @@ contains
       real(kind=RKIND), dimension(:), allocatable :: &
            energy
 
-      call MPAS_pool_get_dimension(domain % blockList % dimensions, "nHemispheres", nHemispheres)
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
 
       allocate(energy(nHemispheres))
       energy(:) = 0.0_RKIND
@@ -2064,7 +2064,7 @@ contains
       real(kind=RKIND), dimension(:), allocatable :: &
            mass
 
-      call MPAS_pool_get_dimension(domain % blockList % dimensions, "nHemispheres", nHemispheres)
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
 
       allocate(mass(nHemispheres))
       mass(:) = 0.0_RKIND
@@ -2199,7 +2199,7 @@ contains
       real(kind=RKIND), dimension(:), allocatable :: &
            salt
 
-      call MPAS_pool_get_dimension(domain % blockList % dimensions, "nHemispheres", nHemispheres)
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
 
       allocate(salt(nHemispheres))
       salt(:) = 0.0_RKIND
@@ -2293,7 +2293,7 @@ contains
       real(kind=RKIND), dimension(:), allocatable :: &
            carbon
 
-      call MPAS_pool_get_dimension(domain % blockList % dimensions, "nHemispheres", nHemispheres)
+      call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nHemispheres", nHemispheres)
 
       allocate(carbon(nHemispheres))
       carbon(:) = 0.0_RKIND
