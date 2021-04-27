@@ -236,6 +236,31 @@ void PhysicsFunctions<DeviceT>::get_dz(const MemberType& team,
   });
 }
 //-----------------------------------------------------------------------------------------------//
+// Determines the vertical layer interface height from the vertical layer thicknesses:
+//   z_int = int_0^z(dz)
+// where
+//   dz             is the vertical layer thickness, m
+// Note: because this function does an integral it cannot be run just on a single level.  It requires
+// the full column wise integration.
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderZ>
+KOKKOS_FUNCTION
+void PhysicsFunctions<DeviceT>::get_z_int(const MemberType& team, 
+                                          const InputProviderZ& dz,
+                                          const view_1d<ScalarT>& z_int)
+{
+  using column_ops  = ColumnOps<DeviceT,ScalarT,1>;
+  using pack_type = typename column_ops::pack_type;
+  // Use the column ops scan function.  Note, we set FromTop to false so that we scan from the true bottom
+  // of the column to the top.
+  const bool FromTop = false;
+  int num_levs = z_int.extent(0)-1;
+  ScalarT zbot = 0.0;
+  auto dz_lam    = [&](const int k)->pack_type { return dz(k); };
+  auto z_int_lam = [&](const int k)->view_1d<pack_type> { return z_int(k); };
+  column_ops::column_scan<FromTop>(team,num_levs,dz_lam,z_int_lam,zbot);
+}
+//-----------------------------------------------------------------------------------------------//
 } // namespace physics
 } // namespace scream
 

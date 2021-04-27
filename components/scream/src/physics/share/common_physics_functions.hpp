@@ -2,6 +2,7 @@
 #define COMMON_PHYSICS_FUNCTIONS_HPP
 
 #include "physics_constants.hpp"
+#include "share/util/scream_column_ops.hpp"
 
 namespace scream {
 namespace physics {
@@ -119,6 +120,20 @@ struct PhysicsFunctions
                      const InputProviderT& T_mid,
                      const InputProviderQ& qv,
                      const view_1d<ScalarT>& dz);
+
+  // Determine the geopotential height of level interfaces
+  // The result is z_int, units in m
+  // The input is
+  //   dz the vertical level thickness, m
+  // Note: Only applicable over an entire column due to the need to integrate over dz.
+  template<typename ScalarT, typename InputProviderZ>
+  KOKKOS_FUNCTION
+  static void get_z_int(const MemberType& team, 
+                     const InputProviderZ& dz,
+                     const view_1d<ScalarT>& z_int);
+
+
+
 }; // struct PhysicsFunctions
 
 } // namespace physics

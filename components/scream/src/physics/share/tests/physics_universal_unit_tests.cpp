@@ -235,13 +235,15 @@ struct UnitWrap::UnitTest<D>::TestUniversal
             surface_height("surface_height",1),
             qv("qv",num_levs),
             pressure("pressure",num_levs),
-            psuedo_density("psuedo_density",num_levs);
+            psuedo_density("psuedo_density",num_levs),
+            dz_for_testing("dz_for_testing",num_levs);
     view_1d exner("exner",num_levs),
             theta("theta",num_levs),
             T_mid("T_mid",num_levs),
             T_virtual("T_virtual",num_levs),
             dse("dse",num_levs),
-            dz("dz",num_levs);
+            dz("dz",num_levs),
+            z_int("z_int",num_levs+1);
 
     std::random_device rdev;
     using rngAlg = std::mt19937_64;
@@ -326,6 +328,12 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       EKAT_KERNEL_REQUIRE_MSG(physicscommon::get_dz(100.0,p0,0.0,1e-5)==0.0,"");
       EKAT_KERNEL_REQUIRE_MSG(physicscommon::get_dz(p0,p0,1.0,0.0)==Rd/ggr,"");
       EKAT_KERNEL_REQUIRE_MSG(physicscommon::get_dz(ggr,Rd,100.0,0.0)==100.0,"");
+      // z_int property tests
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_levs), [&] (const int k)
+      {
+        dz_for_testing(k) = k+1;
+      });
+      physicscommon::get_z_int(team,dz_for_testing,z_int);
 
 //ASD      for (int k=0;k<num_levs;++k)
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_levs), [&] (const int k)
