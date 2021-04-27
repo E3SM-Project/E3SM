@@ -2542,7 +2542,7 @@ module li_calving
            config_ice_density,            & ! ice density
            config_ocean_density             ! ocean density
 
-      real, dimension(:), pointer :: principalStrainRateRatio
+      real (kind=RKIND), dimension(:), pointer :: principalStrainRateRatio
 
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: deltat !< time step (s)
