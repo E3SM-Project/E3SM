@@ -263,7 +263,7 @@ module li_iceshelf_melt
       endif
 
       ! Simple options handled here
-      if (trim(config_basal_mass_bal_float) == 'none') then 
+      if (trim(config_basal_mass_bal_float) == 'none') then
 
          ! Zero entire field
 
@@ -309,7 +309,7 @@ module li_iceshelf_melt
 
          return ! do not enter block loop below - we are done here
       endif
-    
+
       ! block loop
       block => domain % blocklist
       do while (associated(block))
@@ -1230,7 +1230,7 @@ module li_iceshelf_melt
 !> https://agupubs-onlinelibrary-wiley-com.lanl.idm.oclc.org/doi/full/10.1002/2016GL068784
 !> Melt parameterization of the form:
 !> melt_rate = (A * h * q_sg^alpha + B) * TF^beta
-!> where TF is local thermal forcing at each grid cell, h is water depth at ice front  
+!> where TF is local thermal forcing at each grid cell, h is water depth at ice front
 !> q_sg is subglacial water glux in m/day. Default values A = 3e-4, alpha = 0.39, B = 0.15
 !> beta=1.18
 !-----------------------------------------------------------------------
@@ -1238,13 +1238,13 @@ module li_iceshelf_melt
 
     subroutine grounded_face_melt_ismip6(domain, err)
 
-      use li_calving  
+      use li_calving
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: &
          domain          !< Input/Output: domain object
- 
+
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
@@ -1274,15 +1274,15 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: addTFocean ! adjust ocean thermal forcing
       real (kind=RKIND), pointer :: config_uniform_face_melt_rate
       character(len=StrKIND), pointer :: config_front_mass_bal_grounded
-      real (kind=RKIND), parameter :: secPerDay = 86400.0
-      real (kind=RKIND), parameter :: rhow = 1000.0 ! subglacial runoff density
+      real (kind=RKIND), parameter :: secPerDay = 86400.0_RKIND
+      real (kind=RKIND), parameter :: rhow = 1000.0_RKIND ! subglacial runoff density
       real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed
-      real (kind=RKIND), dimension(:), allocatable :: faceMeltSpeedVertAvg !vertically averaged faceMeltSpeed 
+      real (kind=RKIND), dimension(:), allocatable :: faceMeltSpeedVertAvg !vertically averaged faceMeltSpeed
                                                                 !to pass to  li_apply_front_ablation_velocity,
                                                                 !because faceMeltSpeed is only below water-line
       integer :: err_tmp
       logical :: applyToFloating, applyToGrounded, applyToGroundingLine
-       
+
       err = 0
       call mpas_log_write('Starting face melt routine')
 
@@ -1294,7 +1294,7 @@ module li_iceshelf_melt
       ! Get sea level, bedTopography, ice density
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', seaLevel)
-      
+
       ! Get melt parameters
       call mpas_pool_get_config(liConfigs, 'config_beta_ocean_thermal_forcing', betaTF)
       call mpas_pool_get_config(liConfigs, 'config_alpha_subglacial_discharge', alphaSubglacial)
@@ -1303,7 +1303,7 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_add_ocean_thermal_forcing', addTFocean)
       call mpas_pool_get_config(liConfigs, 'config_uniform_face_melt_rate', config_uniform_face_melt_rate)
       call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
-      
+
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -1313,9 +1313,9 @@ module li_iceshelf_melt
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
          ! Get ISMIP6 forcing fields
-         call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean) 
+         call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean)
          call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
-        
+
          ! Get mesh and geometry arrays
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
@@ -1329,30 +1329,30 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
 
-         faceMeltSpeed(:) = 0.0_RKIND 
+         faceMeltSpeed(:) = 0.0_RKIND
          allocate(faceMeltSpeedVertAvg(nCells+1))
          faceMeltSpeedVertAvg(:) = 0.0_RKIND
 
        ! Calculate face melting for each cell
          do iCell = 1, nCellsSolve
-            
+
             if ( bedTopography(iCell) < 0.0_RKIND ) then
                 waterDepth = seaLevel - bedTopography(iCell)
             else
-                waterDepth = 0.0
+                waterDepth = 0.0_RKIND
             endif
-           
-            if (trim(config_front_mass_bal_grounded) == 'ismip6') then                
+
+            if (trim(config_front_mass_bal_grounded) == 'ismip6') then
                 ! Calculate ice front melt rate at each cell
                faceMeltSpeed(iCell) = (aSubglacial * waterDepth * & ! m s^-1
                          (ismip6Runoff(iCell) / rhow * secPerDay)**alphaSubglacial &
                          + B) *  max(0.0_RKIND, TFocean(iCell) + addTFocean)**betaTF / secPerDay
-            elseif (trim(config_front_mass_bal_grounded) == 'uniform') then   
+            elseif (trim(config_front_mass_bal_grounded) == 'uniform') then
                    faceMeltSpeed(iCell) = config_uniform_face_melt_rate
             endif
 
          enddo
-        
+
          where ( (thickness > 0.0_RKIND) .and. (lowerSurface < 0.0_RKIND) )
                faceMeltSpeedVertAvg(:) = faceMeltSpeed(:) * abs(lowerSurface(:)) / thickness(:)
          end where

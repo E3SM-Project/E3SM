@@ -867,7 +867,7 @@ contains
    subroutine calculate_strain_rates_and_stresses(meshPool, geometryPool, thermalPool, scratchPool, velocityPool, err)
 
       use li_setup
-      use li_diagnostic_vars 
+      use li_diagnostic_vars
 
       !-----------------------------------------------------------------
       ! input variables

@@ -163,7 +163,7 @@ module li_core_interface
          ismip6GroundedFaceMeltActive=.true.
          call mpas_log_write("The 'ismip6GroundedFaceMelt' package and assocated variables have been enabled because " // &
                "'config_front_mass_bal_grounded' is set to 'ismip6'")
-      endif 
+      endif
 
       if ((trim(config_thermal_solver) == 'temperature') .or. (trim(config_thermal_solver) == 'enthalpy')) then
          thermalActive = .true.

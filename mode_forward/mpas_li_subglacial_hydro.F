@@ -814,7 +814,7 @@ module li_subglacial_hydro
       ! hydropotential gradients and unstable channel growth.
       ! We also want to do this at marine margins because otherwise the offshore topography can create a barrier to flow,
       ! but that is unrealistic.
-      ! So for all boundaries of the hydro system, the hydropotential at the margin should be determined by the geometry 
+      ! So for all boundaries of the hydro system, the hydropotential at the margin should be determined by the geometry
       ! at the edge of the cell in a 1-sided sense
       do iEdge = 1, nEdges
          if ( (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge))) .or. &
@@ -1876,7 +1876,7 @@ module li_subglacial_hydro
 !> \date    02 June 2020
 !> \details
 !>  This routine calculates effective pressure assuming a perfect hydrologic
-!>  connection with the ocean.  It can be used as a simple alternative to the 
+!>  connection with the ocean.  It can be used as a simple alternative to the
 !>  full subglacial hydrology.
 !-----------------------------------------------------------------------
    subroutine ocean_connection_N(domain)
@@ -1904,7 +1904,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), pointer :: rhoi, rhoo
- 
+
       ! Calculate N assuming perfect ocean connection
       call mpas_log_write('Calculating N assuming perfect ocean connection.')
 
