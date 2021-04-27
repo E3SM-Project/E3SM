@@ -74,10 +74,10 @@ void Functions<S,D>::update_prognostics_implicit(
   const auto tracers_slot = workspace.template take_macro_block<Scalar>("tracers_slot",n_trac_slots);
 
   // Reshape 2d views
-  const auto wind_transpose     = uview_2d<Spack>(reinterpret_cast<Spack*>(wind_slot.data()),
-                                                  nlev, num_wind_transpose_packs);
-  const auto qtracers_transpose = uview_2d<Spack>(reinterpret_cast<Spack*>(tracers_slot.data()),
-                                                  nlev, num_qtracers_transpose_packs);
+  const auto wind_rhs     = uview_2d<Spack>(reinterpret_cast<Spack*>(wind_slot.data()),
+                                            nlev, num_wind_transpose_packs);
+  const auto qtracers_rhs  = uview_2d<Spack>(reinterpret_cast<Spack*>(tracers_slot.data()),
+                                            nlev, num_qtracers_transpose_packs);
 
   // linearly interpolate tkh, tk, and air density onto the interface grids
   linear_interp(team,zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,0);
@@ -132,21 +132,22 @@ void Functions<S,D>::update_prognostics_implicit(
     });
   }
 
-  // Store RHS values in X1 and tracer for 1st and 2nd solve respectively
+  // Store RHS values in wind_rhs and qtracers_rhs for 1st and 2nd solve respectively
   team.team_barrier();
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
     const int k_v = k/Spack::n;
     const int k_p = k%Spack::n;
 
-    wind_transpose(k,0/Spack::n)[0%Spack::n] = u_wind(k_v)[k_p];
-    wind_transpose(k,1/Spack::n)[1%Spack::n] = v_wind(k_v)[k_p];
+    wind_rhs(k,0/Spack::n)[0%Spack::n] = u_wind(k_v)[k_p];
+    wind_rhs(k,1/Spack::n)[1%Spack::n] = v_wind(k_v)[k_p];
 
+    // The rhs version of the tracers is the transpose of the input/output layout
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
-      qtracers_transpose(k, q/Spack::n)[q%Spack::n] = qtracers(q,k_v)[k_p];
+      qtracers_rhs(k, q/Spack::n)[q%Spack::n] = qtracers(q,k_v)[k_p];
     });
-    qtracers_transpose(k, num_qtracers/Spack::n)[num_qtracers%Spack::n]         = thetal(k_v)[k_p];
-    qtracers_transpose(k, (num_qtracers+1)/Spack::n)[(num_qtracers+1)%Spack::n] = qw(k_v)[k_p];
-    qtracers_transpose(k, (num_qtracers+2)/Spack::n)[(num_qtracers+2)%Spack::n] = tke(k_v)[k_p];
+    qtracers_rhs(k, num_qtracers/Spack::n)[num_qtracers%Spack::n]         = thetal(k_v)[k_p];
+    qtracers_rhs(k, (num_qtracers+1)/Spack::n)[(num_qtracers+1)%Spack::n] = qw(k_v)[k_p];
+    qtracers_rhs(k, (num_qtracers+2)/Spack::n)[(num_qtracers+2)%Spack::n] = tke(k_v)[k_p];
   });
 
   // march u_wind and v_wind one step forward using implicit solver
@@ -156,7 +157,7 @@ void Functions<S,D>::update_prognostics_implicit(
 
     // Solve
     team.team_barrier();
-    vd_shoc_solve(team, du, dl, d, wind_transpose);
+    vd_shoc_solve(team, du, dl, d, wind_rhs);
   }
 
   // march temperature, total water, tke,and tracers one step forward using implicit solver
@@ -168,7 +169,7 @@ void Functions<S,D>::update_prognostics_implicit(
 
     // Solve
     team.team_barrier();
-    vd_shoc_solve(team, du, dl, d, qtracers_transpose);
+    vd_shoc_solve(team, du, dl, d, qtracers_rhs);
   }
 
   // Copy RHS values from X1 and X2
@@ -177,15 +178,16 @@ void Functions<S,D>::update_prognostics_implicit(
     const int k_v = k/Spack::n;
     const int k_p = k%Spack::n;
 
-    u_wind(k_v)[k_p] = wind_transpose(k,0/Spack::n)[0%Spack::n];
-    v_wind(k_v)[k_p] = wind_transpose(k,1/Spack::n)[1%Spack::n];
+    u_wind(k_v)[k_p] = wind_rhs(k,0/Spack::n)[0%Spack::n];
+    v_wind(k_v)[k_p] = wind_rhs(k,1/Spack::n)[1%Spack::n];
 
+    // Transpose tracers back to  input/output layout
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
-      qtracers(q,k_v)[k_p] = qtracers_transpose(k, q/Spack::n)[q%Spack::n];
+      qtracers(q,k_v)[k_p] = qtracers_rhs(k, q/Spack::n)[q%Spack::n];
     });
-    thetal(k_v)[k_p] = qtracers_transpose(k, num_qtracers/Spack::n)[num_qtracers%Spack::n];
-    qw(k_v)[k_p]     = qtracers_transpose(k, (num_qtracers+1)/Spack::n)[(num_qtracers+1)%Spack::n];
-    tke(k_v)[k_p]    = qtracers_transpose(k, (num_qtracers+2)/Spack::n)[(num_qtracers+2)%Spack::n];
+    thetal(k_v)[k_p] = qtracers_rhs(k, num_qtracers/Spack::n)[num_qtracers%Spack::n];
+    qw(k_v)[k_p]     = qtracers_rhs(k, (num_qtracers+1)/Spack::n)[(num_qtracers+1)%Spack::n];
+    tke(k_v)[k_p]    = qtracers_rhs(k, (num_qtracers+2)/Spack::n)[(num_qtracers+2)%Spack::n];
   });
 
 
