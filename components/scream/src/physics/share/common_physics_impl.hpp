@@ -193,6 +193,49 @@ void PhysicsFunctions<DeviceT>::get_dse(const MemberType& team,
   });
 }
 //-----------------------------------------------------------------------------------------------//
+// Determines the vertical layer thickness using the equation of state:
+//   dz = - (-psuedo_density)*Rd*T_virtual / (p_mid*g)
+//     note the extra negative sign because the psuedo_density in the model is measured in the positive direction.
+// where
+//   dz             is the vertical layer thickness, m
+//   psuedo_density is the pressure level thickness, Pa
+//   T_virtual      is the virtual temperature - calculated using a separate function from this suite, K
+//   p_mid          is the avgerage atmosphere pressure over the level, Pa
+//   g              is the graviational constant, m s-2
+//   Rd             is the universal gas constant for dry air, J/kg/K
+//   T_mid          is the atmospheric temperature, K - needed for T_virtual
+//   qv             is the water vapor mass mixing ratio, kg/kg - needed for T_virtual
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::get_dz(const ScalarT& psuedo_density, const ScalarT& p_mid, const ScalarT& T_mid, const ScalarT& qv)
+{
+  using C = scream::physics::Constants<ScalarT>;
+  static constexpr ScalarT Rd  (C::RD);
+  static constexpr ScalarT ggr (C::gravit);
+  // Need to first back out virtual temperature
+  ScalarT T_virtual = get_virtual_temperature(T_mid,qv);
+  // Now can back out the vertical layer thickness
+  ScalarT dz = psuedo_density*Rd*T_virtual / (p_mid*ggr);
+  return dz;
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderPD, typename InputProviderP, typename InputProviderT, typename InputProviderQ>
+KOKKOS_FUNCTION
+void PhysicsFunctions<DeviceT>::get_dz(const MemberType& team, 
+                                       const InputProviderPD& psuedo_density,
+                                       const InputProviderP& p_mid,
+                                       const InputProviderT& T_mid,
+                                       const InputProviderQ& qv,
+                                       const view_1d<ScalarT>& dz)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dz.extent(0)),
+                       [&] (const int k) {
+    dz(k) = get_dz(psuedo_density(k),p_mid(k),T_mid(k),qv(k)); 
+  });
+}
+//-----------------------------------------------------------------------------------------------//
 } // namespace physics
 } // namespace scream
 

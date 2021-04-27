@@ -100,7 +100,25 @@ struct PhysicsFunctions
                       const Real surf_geopotential,
                       const view_1d<ScalarT>& dse);
 
+  // Determine the physical thickness of a vertical layer
+  // The result is dz, units in m
+  // The inputs are
+  //   psuedo_density is the pressure level thickness, Pa
+  //   p_mid          is the avgerage atmosphere pressure over the level, Pa
+  //   T_mid          is the atmospheric temperature, K - needed for T_virtual
+  //   qv             is the water vapor mass mixing ratio, kg/kg - needed for T_virtual
+  template<typename ScalarT>
+  KOKKOS_FUNCTION
+  static ScalarT get_dz(const ScalarT& psuedo_density, const ScalarT& p_mid, const ScalarT& T_mid, const ScalarT& qv);
 
+  template<typename ScalarT, typename InputProviderPD, typename InputProviderP, typename InputProviderT, typename InputProviderQ>
+  KOKKOS_FUNCTION
+  static void get_dz(const MemberType& team, 
+                     const InputProviderPD& psuedo_density,
+                     const InputProviderP& p_mid,
+                     const InputProviderT& T_mid,
+                     const InputProviderQ& qv,
+                     const view_1d<ScalarT>& dz);
 }; // struct PhysicsFunctions
 
 } // namespace physics
