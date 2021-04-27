@@ -105,7 +105,7 @@ module li_calving
       type (mpas_pool_type), pointer :: scratchPool
 
       ! calving-relevant config options
-      character (len=StrKIND), pointer :: config_calving 
+      character (len=StrKIND), pointer :: config_calving
       logical, pointer :: config_print_calving_info, config_data_calving
       real(kind=RKIND), pointer :: config_calving_timescale
 
@@ -238,7 +238,7 @@ module li_calving
          err = 1
 
       endif
-      
+
       ! now also remove any icebergs
       call remove_icebergs(domain)
 
@@ -1463,7 +1463,7 @@ module li_calving
 !> \brief Apply calving law based on von Mises stress to grounded marine margins
 !> \author Trevor Hillebrand
 !> \date   April 2020
-!> \details Uses the calving law described by Morlighem et al. (2016): 
+!> \details Uses the calving law described by Morlighem et al. (2016):
 !> "Modeling of Store Gletscher’s calving dynamics, West Greenland, in response
 !> to ocean thermal forcing" to calculate calvingVelocity at grounded tidewater
 !glacier margins
@@ -1499,8 +1499,8 @@ module li_calving
       real (kind=RKIND), pointer :: config_grounded_von_Mises_threshold_stress, &
                                     config_floating_von_Mises_threshold_stress, &
                                     config_flowLawExponent
-      logical, pointer :: config_use_Albany_flowA_eqn_for_vM 
-      real (kind=RKIND), dimension(:), pointer :: eMax, eMin, & 
+      logical, pointer :: config_use_Albany_flowA_eqn_for_vM
+      real (kind=RKIND), dimension(:), pointer :: eMax, eMin, &
                                         calvingVelocity, thickness, &
                                         xvelmean, yvelmean, calvingThickness
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA, &
@@ -1508,7 +1508,7 @@ module li_calving
       real (kind=RKIND), pointer :: config_default_flowParamA
       integer, pointer :: nCells
       integer, dimension(:), pointer :: cellMask
-      real (kind=RKIND), dimension(:), pointer :: vonMisesStress       
+      real (kind=RKIND), dimension(:), pointer :: vonMisesStress
       logical :: applyToGrounded, applyToFloating, applyToGroundingLine
 
       err = 0
@@ -1517,9 +1517,11 @@ module li_calving
       applyToGrounded = .true.
       applyToFloating = .true.
       applyToGroundingLine = .false.
-      
-      call mpas_pool_get_config(liConfigs, 'config_grounded_von_Mises_threshold_stress', config_grounded_von_Mises_threshold_stress)
-      call mpas_pool_get_config(liConfigs, 'config_floating_von_Mises_threshold_stress', config_floating_von_Mises_threshold_stress)
+
+      call mpas_pool_get_config(liConfigs, 'config_grounded_von_Mises_threshold_stress', &
+              config_grounded_von_Mises_threshold_stress)
+      call mpas_pool_get_config(liConfigs, 'config_floating_von_Mises_threshold_stress', &
+              config_floating_von_Mises_threshold_stress)
 
       if ( config_grounded_von_Mises_threshold_stress <=  0.0_RKIND ) then
          call mpas_log_write("config_grounded_von_Mises_threshold_stress must be >0.0", MPAS_LOG_ERR)
@@ -1553,21 +1555,21 @@ module li_calving
           call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
           call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
           call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity) 
+          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
           call mpas_pool_get_array(geometryPool, 'thickness', thickness)
           call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-          
+
           vonMisesStress(:) = 0.0_RKIND
 
           ! get flowParamA from MPAS or use Albany-like equation
           if ( config_use_Albany_flowA_eqn_for_vM ) then
           !calculate Albany-type flowParamA
-             call mpas_log_write("config_use_Albany_flowA_eqn_for_vM not yet supported", MPAS_LOG_ERR) 
+             call mpas_log_write("config_use_Albany_flowA_eqn_for_vM not yet supported", MPAS_LOG_ERR)
              err = 1
           else
              call li_calculate_flowParamA(meshPool, temperature, thickness,flowParamA,err) ! Get MPAS flowParamA
           endif
-    
+
          !Using a depth-averaged ice viscosity parameter B_depthAvg
          !=sum(layerThickness(:,iCell) *
          !flowParamA(:,iCell)**(-1.0_RKIND/config_flowLawExponent), dim=1) /
@@ -1581,8 +1583,8 @@ module li_calving
                               flowParamA(:,iCell)**(-1.0_RKIND/config_flowLawExponent),dim=1) / &
                               thickness(iCell) * ( 0.5_RKIND * ( (max(0.0_RKIND, eMax(iCell)))**2.0_RKIND + &
                               (max(0.0_RKIND, eMin(iCell)))**2.0_RKIND) )**(1.0_RKIND / (2.0_RKIND * config_flowLawExponent))
-             endif 
-        
+             endif
+
              ! Calculate calving velocity for grounded cells at marine margin
              if ( .not. li_mask_is_floating_ice(cellMask(iCell)) ) then
                 calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND) * &
@@ -1590,7 +1592,7 @@ module li_calving
              ! If config_floating_von_Mises_threshold_stress is not 0.0, calculate
              ! calvingVelocity. If config_floating_von_Mises_threshold_stress is
              ! 0.0, remove floating ice in loop below.
-             elseif ( li_mask_is_floating_ice(cellMask(iCell)) .and. config_floating_von_Mises_threshold_stress .ne. 0.0_RKIND) then
+             elseif (li_mask_is_floating_ice(cellMask(iCell)) .and. config_floating_von_Mises_threshold_stress .ne. 0.0_RKIND) then
                 calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2 + yvelmean(iCell)**2) * &
                                          vonMisesStress(iCell) / config_floating_von_Mises_threshold_stress
              endif
@@ -1626,7 +1628,7 @@ module li_calving
                     nGroundedNeighbors = 0
                     do iNeighbor = 1, nEdgesOnCell(iCell)
                        jCell = cellsOnCell(iNeighbor, iCell)
-                       if ( li_mask_is_grounded_ice(cellMask(jCell)) ) then 
+                       if ( li_mask_is_grounded_ice(cellMask(jCell)) ) then
                            nGroundedNeighbors = nGroundedNeighbors + 1
                        endif
                     enddo
@@ -1637,7 +1639,7 @@ module li_calving
              enddo
           endif
 
-             
+
           ! === apply calving ===
           thickness(:) = thickness(:) - calvingThickness(:)
 
@@ -1648,11 +1650,11 @@ module li_calving
           call remove_small_islands(meshPool, geometryPool)
 
           block => block % next
- 
+
       enddo ! associated(block)
 
    end subroutine von_Mises_calving
- 
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !    routine li_apply_front_ablation_velocity
@@ -1691,7 +1693,7 @@ module li_calving
 !> which are set by the calling routine.
 !> If applyToGrounded = .true., ablation is applied to grounded marine margin cells, which do not have dynamic ice shelf neighbors
 !> If applyToGroundingLine = .true., ablation is applied to grounding line, regardless of whether there is an ice shelf or not.
-!> If there in dynamic floating ice, ablation is applied to the floating cell adjacent to grounding line; 
+!> If there in dynamic floating ice, ablation is applied to the floating cell adjacent to grounding line;
 !> otherwise it is applied to the last grounded cell.
 !> If applyToFloating = .true., ablation is applied to dynamic floating margin cells
 !> The output of this routine is calvingThickness or faceMeltingThickness, which then needs to be applied to thickness
@@ -1699,7 +1701,8 @@ module li_calving
 !> after the call and before applying ablation.
 !-----------------------------------------------------------------------
 
-   subroutine li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, ablationThickness, ablationVelocity, applyToGrounded, applyToFloating, applyToGroundingLine, domain, err)
+   subroutine li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, ablationThickness, ablationVelocity, &
+                   applyToGrounded, applyToFloating, applyToGroundingLine, domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -1758,7 +1761,7 @@ module li_calving
       real(kind=RKIND) :: ablateLengthCell, ablateLengthEdge
       real(kind=RKIND), dimension(6) :: localInfo, globalInfo
       real(kind=RKIND) :: edgeLengthScaling
-      real(kind=RKIND), parameter :: ablationSmallThk = 1.0e-8 ! in meters, a small thickness threshold
+      real(kind=RKIND), parameter :: ablationSmallThk = 1.0e-8_RKIND ! in meters, a small thickness threshold
       integer :: err_tmp
 
       err = 0
@@ -2077,7 +2080,7 @@ module li_calving
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'unablatedVolumeNonDynCell')
       call mpas_timer_stop("halo updates")
-      !call mpas_log_write("Done calculating calving for non-dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal1/))
+      !call mpas_log_write("Done calculating calving for nondynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal1/))
 
 
 
@@ -2087,7 +2090,8 @@ module li_calving
       ! 2a1. for grounded dynamic margins, don't use the thickness there because it may be unrealistically thin due to ablation
       ! from previous time steps.  Instead copy forward the thickness from the row cells behind.
       do iCell = 1, nCells
-         if (frontAblationMask(iCell)>0 .and. li_mask_is_margin(cellMask(iCell)) .and. li_mask_is_grounded_ice(cellMask(iCell))) then
+         if (frontAblationMask(iCell)>0 .and. li_mask_is_margin(cellMask(iCell)) .and. &
+                 li_mask_is_grounded_ice(cellMask(iCell))) then
             thkSum = 0.0_RKIND
             thkCount = 0
             do iNeighbor = 1, nEdgesOnCell(iCell)
@@ -2303,7 +2307,7 @@ module li_calving
 !
 !    routine damagecalving
 !
-!> \brief Calve ice from the calving front based on the Bassis-Ma (2015) damage theory. 
+!> \brief Calve ice from the calving front based on the Bassis-Ma (2015) damage theory.
 !> We can use two options: "calving_rate" or "threshold".
 !> If we use "calving_rate", the calving front retreats by removing ice at a speed of k * damage,
 !> where k is a calving parameter. If we use "threshold", the ice at the calving front will be completely
@@ -2311,7 +2315,7 @@ module li_calving
 !> \author Tong Zhang
 !> \date   May. 2019
 !> \details Connect calving with the damage model
-!> Bassis, Jeremy N., and Y. Ma. "Evolution of basal crevasses links ice shelf stability to ocean forcing." 
+!> Bassis, Jeremy N., and Y. Ma. "Evolution of basal crevasses links ice shelf stability to ocean forcing."
 !> Earth and Planetary Science Letters 409 (2015): 203-211.
 
 !-----------------------------------------------------------------------
@@ -2616,17 +2620,18 @@ module li_calving
          if (thickness(iCell) == 0.0_RKIND) then
              damageSource(iCell) = 0.0_RKIND
          else
-             damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*eMax(iCell)-floatingBasalMassBal(iCell)/config_ice_density/thickness(iCell)
+             damageSource(iCell) = nstar(iCell) * (1.0_RKIND - s0(iCell)) * eMax(iCell) - floatingBasalMassBal(iCell) &
+                     / config_ice_density / thickness(iCell)
              ! RHS of equation 26 from Bassis and Ma (2015, EPSL, 409, C). Note that the last set of terms after the minus sign,
-             ! mdot / rho_i / H, differs from the mdot/H in the paper because our mdot has units of kg/m^2/s and to convert that back
-             ! to the right units (1/sec) you need to multiply by a factor of m^2/kg (1/rho_i * 1/H gives that factor).
+             ! mdot / rho_i / H, differs from the mdot/H in the paper because our mdot has units of kg/m^2/s and to convert that
+             ! back to the right units (1/sec) you need to multiply by a factor of m^2/kg (1/rho_i * 1/H gives that factor).
          endif
          enddo
 
          !! Commented out lines immediately below here are for use with manufacured experiments
-         !ddamagedt(:) = damageSource(:)*damage(:) - 0.44/2.0 * (uReconstructX(1,:)/1000.0*(1+epsmax(:)*seconds)*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
-         !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
-         !ddamagedt(:) = damageSource(:)*damage(:) - 0.44/2.0 * (uReconstructX(1,:)/1000.0*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
+         !ddamagedt(:) = damageSource(:)*damage(:) - 0.44/2.0 * (uReconstructX(1,:)/1000.0*(1+epsmax(:)*seconds)* &
+         ! exp(-uReconstructX(1,:)*seconds/1000.0) + damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
+         !ddamagedt(:) = damageSource(:)*damage(:) - 0.44/2.0 * (uReconstructX(1,:)/1000.0*exp(-uReconstructX(1,:)*seconds/1000.0)+&
          !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
 
          ddamagedt(:) = damageSource(:) * damage(:)
@@ -2637,8 +2642,8 @@ module li_calving
              if (thickness(iCell) == 0.0_RKIND) then
                  damageNye(iCell) = 0.0_RKIND
              else
-                 damageNye(iCell) = (2.0+principalStrainRateRatio(iCell)) * tauMax(iCell) / &
-                         (gravity*(config_ocean_density-config_ice_density)*thickness(iCell))
+                 damageNye(iCell) = (2.0_RKIND + principalStrainRateRatio(iCell)) * tauMax(iCell) / &
+                         (gravity * (config_ocean_density - config_ice_density) * thickness(iCell))
              endif
          enddo
 
@@ -2757,8 +2762,8 @@ module li_calving
 !
 !> \author Tong Zhang
 !> \date   Oct. 2019
-!> \details This routine finalizes the damage calculation after advection by several ways: 1) set the damage at grounding line using
-!>          an extrapolation method or an Nye method.
+!> \details This routine finalizes the damage calculation after advection by several ways: 1) set the damage at grounding line
+!>          using an extrapolation method or an Nye method.
 !>          2) preserve the damage to the original value before advection if it exceeds some large number
 !>          (config_damage_preserve_threshold). For example, if config_damage_preserve_threshold = 0.5,
 !>          then the localtions with damage > 0.5 on the ice shelf will not heal.
@@ -3040,16 +3045,16 @@ module li_calving
 
             ! Now calved away the neighboring cells if the damage is also > the threshold value
             ! I choose to disable this section (i.e., no recursive calving) -- TZ
-            !TODO: a flood fill algorithm might be needed for this threshold method in the future 
+            !TODO: a flood fill algorithm might be needed for this threshold method in the future
             !do iNeighbor = 1, nEdgesOnCell(iCell)
             !   jCell = cellsOnCell(iNeighbor, iCell)
             !   if (li_mask_is_floating_ice(cellMask(jCell)) .and. li_mask_is_dynamic_ice(cellMask(jCell)) &
-            !           .and. (.not. li_mask_is_dynamic_margin(jCell)) .and. (damage(jCell) .gt. config_damage_calving_threshold)) then
+            !      .and. (.not. li_mask_is_dynamic_margin(jCell)) .and. (damage(jCell) .gt. config_damage_calving_threshold)) then
             !      removeVolumeHere = cellVolume(jCell)
                      ! < how much we want to remove here
             !      calvingThickness(jCell) = removeVolumeHere / areaCell(jCell)
                      ! < apply to the field that will be used in thickness units
-            !      cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere 
+            !      cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere
                      ! update accounting on cell volume
             !   endif
             !enddo
