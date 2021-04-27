@@ -77,7 +77,7 @@ contains
 
    subroutine ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
                                    surfaceStress, kineticEnergyCell, &
-                                   layerThicknessEdge, topographic_wave_drag_rinv, tend, err)!{{{
+                                   layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -90,8 +90,7 @@ contains
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          sfcFlxAttCoeff, &!< [in] attenuation coefficient for sfc fluxes
-         surfaceStress,  &!< [in] surface stress at edges
-         topographic_wave_drag_rinv !< [in] wave drag coefficient
+         surfaceStress    !< [in] surface stress at edges
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -129,7 +128,7 @@ contains
       err = ior(err, err1)
 
       call ocn_vel_forcing_topographic_wave_drag_tend(normalVelocity, &
-        kineticEnergyCell, layerThicknessEdge, topographic_wave_drag_rinv, tend, err1)
+                   tend, err1)
 
       err = ior(err, err1)
    !--------------------------------------------------------------------
