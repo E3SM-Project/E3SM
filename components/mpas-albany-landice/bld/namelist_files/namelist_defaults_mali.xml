@@ -54,7 +54,7 @@
 <config_thermal_solver>'none'</config_thermal_solver>
 <config_thermal_calculate_bmb>.true.</config_thermal_calculate_bmb>
 <config_temperature_init>'file'</config_temperature_init>
-<config_thermal_thickness>1.0</config_thermal_thickness>
+<config_thermal_thickness>0.0</config_thermal_thickness>
 <config_surface_air_temperature_source>'file'</config_surface_air_temperature_source>
 <config_surface_air_temperature_value>273.15</config_surface_air_temperature_value>
 <config_surface_air_temperature_lapse_rate>0.01</config_surface_air_temperature_lapse_rate>
