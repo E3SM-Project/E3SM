@@ -26,6 +26,7 @@ module ocn_vel_forcing_topographic_wave_drag
 
    use ocn_constants
    use ocn_mesh
+   use ocn_diagnostics_variables
    use ocn_forcing
 
    implicit none
@@ -74,7 +75,6 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_forcing_topographic_wave_drag_tend(normalVelocity, & !{{{
-                     kineticEnergyCell, layerThicknessEdge, topographic_wave_drag_rinv, &
                      tend, err)
 
       !-----------------------------------------------------------------
@@ -84,11 +84,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity,       &!< Input: velocity
-         kineticEnergyCell,    &!< Input: kinetic energy at cell
-         layerThicknessEdge   !< Input: thickness at edge
-
-        real (kind=RKIND), dimension(:), intent(in) :: topographic_wave_drag_rinv
+         normalVelocity   !< Input: velocity
 
       !-----------------------------------------------------------------
       !
@@ -113,28 +109,28 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, k, cell1, cell2
+      integer :: iEdge, k
 
       err = 0
       if ( .not. topographicWaveDragOn ) return
 
-      call mpas_timer_start('vel topographic drag')
+      call mpas_timer_start('vel topographic wave drag')
 
-      !$omp do schedule(runtime) private(k, cell1, cell2)
+      !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdgesOwned
-        cell1 = cellsOnEdge(1,iEdge)
-        cell2 = cellsOnEdge(2,iEdge)
         k =  maxLevelEdgeTop(iEdge)
         ! topographic wave drag term:
-        ! du/dt = ... (1.0/topographic_wave_drag_rinv) * u
-        ! topographic_wave_drag_rinv is the e-folding time which is read from a file
-        tend(k,iEdge) = tend(k,iEdge) - topographicWaveDragCoeff &
-           /(0.5_RKIND*(topographic_wave_drag_rinv(cell1)+topographic_wave_drag_rinv(cell2)))*normalVelocity(k,iEdge)
-
+        ! du/dt = ... 1/rinv * u
+        ! rinv is the e-folding time use in HyCOM. Here
+        ! topographic_wave_drag = 1/rinv
+        if (k>0) then
+          tend(k,iEdge) = tend(k,iEdge) - topographicWaveDragCoeff &
+             * topographic_wave_drag(iEdge) * normalVelocity(k,iEdge)
+        endif
       enddo
       !$omp end do
 
-      call mpas_timer_stop('vel topographic drag')
+      call mpas_timer_stop('vel topographic wave drag')
 
    !--------------------------------------------------------------------
 

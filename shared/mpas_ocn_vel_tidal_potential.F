@@ -250,7 +250,6 @@ contains
          conType = tidalConstituentType(jCon)
          do iCell = 1, nCellsAll
            lon = lonCell(iCell)
-
            tidalPotEta(iCell) = tidalPotEta(iCell) + &
                          ramp * tidalConstituentAmplitude(jCon) &
                               * tidalConstituentNodalAmplitude(jCon) &
@@ -308,7 +307,9 @@ contains
       type (block_type), pointer :: block_ptr 
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: meshPool
+      integer, pointer :: nCells
       integer, pointer :: nTidalPotentialConstituents
+      real (kind=RKIND), dimension(:), pointer :: latCell
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -333,8 +334,16 @@ contains
          !*** eventually replace with allocated module private vars
 
          block_ptr => domain % blocklist
+
          call mpas_pool_get_subpool(block_ptr%structs, 'forcing', &
                                                       forcingPool)
+
+         call mpas_pool_get_subpool(block_ptr%structs, 'mesh', &
+                                                      meshPool)
+
+         call mpas_pool_get_dimension(block_ptr % dimensions, 'nCells', nCells)
+
+         call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
          call mpas_pool_get_array(forcingPool, 'tidalPotentialEta', &
                                                 tidalPotEta)
@@ -370,7 +379,7 @@ contains
          call mpas_set_time(refTime, &
                dateTimeString=config_tidal_potential_reference_time)
 
-         do iCell = 1,nCellsAll
+         do iCell = 1,nCells
             tidalPotEta(iCell) = 0.0_RKIND
          end do
 
@@ -429,7 +438,7 @@ contains
                                        tidalConstituentType, &
                                        err)
 
-         do iCell = 1,nCellsAll
+         do iCell = 1,nCells
             lat = latCell(iCell)
             latitudeFunction(iCell,1) = 3.0_RKIND*sin(lat)**2 -1.0_RKIND 
             latitudeFunction(iCell,2) = sin(2.0_RKIND*lat)
