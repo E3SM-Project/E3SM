@@ -343,7 +343,7 @@ contains
   !==========================================================================================!
 
   SUBROUTINE p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, &
-       pres, dpres, dz, nc_nuceat_tend, nccn_prescribed, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, &
+       pres, dpres, dz, nc_nuceat_tend, nccn_prescribed, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, &
        inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion,  &
        t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, &
        qc, nc, qr, nr, &
@@ -358,7 +358,7 @@ contains
     logical(btype), intent(in) :: do_predict_nc
     real(rtype), intent(in) :: dt
 
-    real(rtype), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, &
+    real(rtype), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, &
          inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, nccn_prescribed
 
     real(rtype), intent(inout), dimension(kts:kte) :: t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, &
@@ -400,7 +400,7 @@ contains
       !--- apply mass clipping if mass is sufficiently small
       !    (implying all mass is expected to evaporate/sublimate in one time step)
           qv(k) = qv(k) + qc(k)
-          th_atm(k) = th_atm(k) - exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
+          th_atm(k) = th_atm(k) - inv_exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
           qc(k) = 0._rtype
           nc(k) = 0._rtype
        else
@@ -420,7 +420,7 @@ contains
 
        if (qr(k).lt.qsmall) then
           qv(k) = qv(k) + qr(k)
-          th_atm(k) = th_atm(k) - exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp
+          th_atm(k) = th_atm(k) - inv_exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp
           qr(k) = 0._rtype
           nr(k) = 0._rtype
        else
@@ -430,7 +430,7 @@ contains
        if (qi(k).lt.qsmall .or. (qi(k).lt.1.e-8_rtype .and.             &
             qv_supersat_i(k).lt.-0.1_rtype)) then
           qv(k) = qv(k) + qi(k)
-          th_atm(k) = th_atm(k) - exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp
+          th_atm(k) = th_atm(k) - inv_exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp
           qi(k) = 0._rtype
           ni(k) = 0._rtype
           qm(k) = 0._rtype
@@ -442,14 +442,14 @@ contains
        if (qi(k).ge.qsmall .and. qi(k).lt.1.e-8_rtype .and.             &
             t_atm(k).ge.T_zerodegc) then
           qr(k) = qr(k) + qi(k)
-          th_atm(k) = th_atm(k) - exner(k)*qi(k)*latent_heat_fusion(k)*inv_cp
+          th_atm(k) = th_atm(k) - inv_exner(k)*qi(k)*latent_heat_fusion(k)*inv_cp
           qi(k) = 0._rtype
           ni(k) = 0._rtype
           qm(k) = 0._rtype
           bm(k) = 0._rtype
        endif
 
-       t_atm(k) = th_atm(k) * inv_exner(k)
+       t_atm(k) = th_atm(k) * exner(k)
 
        call calculate_incloud_mixingratios(qc(k),qr(k),qi(k),qm(k),nc(k),nr(k),ni(k),bm(k), &
             inv_cld_frac_l(k),inv_cld_frac_i(k),inv_cld_frac_r(k), &
@@ -460,7 +460,7 @@ contains
   END SUBROUTINE p3_main_part1
 
   SUBROUTINE p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, &
-       pres, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, &
+       pres, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, &
        inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
        t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofaci, acn, qv, th_atm, qc, nc, qr, nr, qi, ni, &
        qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, &
@@ -476,7 +476,7 @@ contains
     logical(btype), intent(in) :: do_predict_nc, do_prescribed_CCN
     real(rtype), intent(in) :: dt, inv_dt
 
-    real(rtype), intent(in), dimension(kts:kte) :: pres, exner, inv_cld_frac_l,  &
+    real(rtype), intent(in), dimension(kts:kte) :: pres, inv_exner, inv_cld_frac_l,  &
          inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev
 
     real(rtype), intent(inout), dimension(kts:kte) :: t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofaci, acn,        &
@@ -815,7 +815,7 @@ contains
 
       call prevent_ice_overdepletion(pres(k), t_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qidep, qi2qv_sublim_tend)
 
-      call ice_supersat_conservation(qidep,qinuc,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/exner(k),dt, &
+      call ice_supersat_conservation(qidep,qinuc,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/inv_exner(k),dt, &
            qi2qv_sublim_tend, qr2qv_evap_tend)
 
       ! cloud
@@ -846,14 +846,14 @@ contains
            nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, &
            qrcol, nr_collect_tend,  qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, nr_ice_shed_tend, &
            qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qidep, qinuc, ni_nucleat_tend, ni_selfcollect_tend, &
-           ni_sublim_tend, qiberg, exner(k), latent_heat_sublim(k), latent_heat_fusion(k), &
+           ni_sublim_tend, qiberg, inv_exner(k), latent_heat_sublim(k), latent_heat_fusion(k), &
            do_predict_nc, log_wetgrowth, dt, nmltratio, rho_qm_cloud, &
            th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k), nc(k), qr(k), nr(k) )
 
       !-- warm-phase only processes:
       call update_prognostic_liquid(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, &
            nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend,           &
-           do_predict_nc, do_prescribed_CCN, inv_rho(k), exner(k), latent_heat_vapor(k), dt,                     &
+           do_predict_nc, do_prescribed_CCN, inv_rho(k), inv_exner(k), latent_heat_vapor(k), dt,                     &
            th_atm(k), qv(k), qc(k), nc(k), qr(k), nr(k))
 
       !==
@@ -869,7 +869,7 @@ contains
       ! clipping for small hydrometeor values
       if (qc(k).lt.qsmall) then
          qv(k) = qv(k) + qc(k)
-         th_atm(k) = th_atm(k) - exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
+         th_atm(k) = th_atm(k) - inv_exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
          qc(k) = 0._rtype
          nc(k) = 0._rtype
       else
@@ -878,7 +878,7 @@ contains
 
       if (qr(k).lt.qsmall) then
          qv(k) = qv(k) + qr(k)
-         th_atm(k) = th_atm(k) - exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp
+         th_atm(k) = th_atm(k) - inv_exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp
          qr(k) = 0._rtype
          nr(k) = 0._rtype
       else
@@ -887,7 +887,7 @@ contains
 
       if (qi(k).lt.qsmall) then
          qv(k) = qv(k) + qi(k)
-         th_atm(k) = th_atm(k) - exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp
+         th_atm(k) = th_atm(k) - inv_exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp
          qi(k) = 0._rtype
          ni(k) = 0._rtype
          qm(k) = 0._rtype
@@ -952,7 +952,7 @@ contains
  END SUBROUTINE p3_main_part2
 
  subroutine p3_main_part3(kts, kte, kbot, ktop, kdir, &
-      exner, cld_frac_l, cld_frac_r, cld_frac_i, &
+      inv_exner, cld_frac_l, cld_frac_r, cld_frac_i, &
       rho, inv_rho, rhofaci, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
       ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc)
@@ -963,7 +963,7 @@ contains
 
    integer, intent(in) :: kts, kte, kbot, ktop, kdir
 
-   real(rtype), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r, cld_frac_i
+   real(rtype), intent(in), dimension(kts:kte) :: inv_exner, cld_frac_l, cld_frac_r, cld_frac_i
 
    real(rtype), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
         qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
@@ -1004,7 +1004,7 @@ contains
          nc(k) = nc_incld*cld_frac_l(k) !limiters in dsd2 may change nc_incld. Enforcing consistency here.
       else
          qv(k) = qv(k)+qc(k)
-         th_atm(k) = th_atm(k)-exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
+         th_atm(k) = th_atm(k)-inv_exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
          vap_liq_exchange(k) = vap_liq_exchange(k) - qc(k)
          qc(k) = 0._rtype
          nc(k) = 0._rtype
@@ -1025,7 +1025,7 @@ contains
          ze_rain(k) = max(ze_rain(k),1.e-22_rtype)
       else
          qv(k) = qv(k)+qr(k)
-         th_atm(k) = th_atm(k)-exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp
+         th_atm(k) = th_atm(k)-inv_exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp
          vap_liq_exchange(k) = vap_liq_exchange(k) - qr(k)
          qr(k) = 0._rtype
          nr(k) = 0._rtype
@@ -1091,7 +1091,7 @@ contains
       else
 
          qv(k) = qv(k) + qi(k)
-         th_atm(k) = th_atm(k) - exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp
+         th_atm(k) = th_atm(k) - inv_exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp
          qi(k) = 0._rtype
          ni(k) = 0._rtype
          qm(k) = 0._rtype
@@ -1118,7 +1118,7 @@ contains
   SUBROUTINE p3_main(qc,nc,qr,nr,th_atm,qv,dt,qi,qm,ni,bm,   &
        pres,dz,nc_nuceat_tend,nccn_prescribed,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_eff_radius_qc,     &
        diag_eff_radius_qi,rho_qi,do_predict_nc, do_prescribed_CCN, &
-       dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,  &
+       dpres,inv_exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,  &
        p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
        vap_ice_exchange,qv_prev,t_prev,col_location &
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -1179,7 +1179,7 @@ contains
     logical(btype), intent(in)                           :: do_predict_nc ! .T. (.F.) for prediction (specification) of Nc
 
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: dpres       ! pressure thickness               Pa
-    real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: exner      ! Exner expression
+    real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: inv_exner      ! Exner expression
 
     ! OUTPUT for PBUF variables used by other parameterizations
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: qv2qi_depos_tend    ! qitend due to deposition/sublimation
@@ -1241,7 +1241,7 @@ contains
 
     real(rtype), dimension(its:ite,kts:kte)      :: inv_dz,inv_rho,ze_ice,ze_rain,prec,rho,       &
          rhofacr,rhofaci,acn,latent_heat_sublim,latent_heat_vapor,latent_heat_fusion,qv_sat_l,qv_sat_i,qv_supersat_i,       &
-         tmparr1,inv_exner
+         tmparr1,exner
 
     ! -- scalar locals -- !
 
@@ -1316,8 +1316,8 @@ contains
     lamc = 0.0_rtype
     ! AaronDonahue added exner term to replace all instances of th_atm(i,k)/t(i,k), since th_atm(i,k) is updated but t_atm(i,k) is not, and this was
     ! causing energy conservation errors.
-    inv_exner = 1._rtype/exner        !inverse of Exner expression, used when converting potential temp to temp
-    t_atm       = th_atm    *inv_exner    !compute temperature from theta (value at beginning of microphysics step)
+    exner = 1._rtype/inv_exner        !inverse of Exner expression, used when converting potential temp to temp
+    t_atm       = th_atm * exner    !compute temperature from theta (value at beginning of microphysics step)
     qv      = max(qv,0._rtype)        !clip water vapor to prevent negative values passed in (beginning of microphysics)
     ! AaronDonahue added this load of latent heat to be consistent with E3SM, since the inconsistentcy was causing water conservation errors.
     call get_latent_heat(its,ite,kts,kte,latent_heat_vapor,latent_heat_sublim,latent_heat_fusion)
@@ -1346,7 +1346,7 @@ contains
 !      if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100,col_location)
 
        call p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, &
-            pres(i,:), dpres(i,:), dz(i,:), nc_nuceat_tend(i,:), nccn_prescribed(i,:), exner(i,:), inv_exner(i,:), &
+            pres(i,:), dpres(i,:), dz(i,:), nc_nuceat_tend(i,:), nccn_prescribed(i,:), inv_exner(i,:), exner(i,:), &
             inv_cld_frac_l(i,:), inv_cld_frac_i(i,:), inv_cld_frac_r(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:), latent_heat_fusion(i,:), &
             t_atm(i,:), rho(i,:), inv_rho(i,:), qv_sat_l(i,:), qv_sat_i(i,:), qv_supersat_i(i,:), rhofacr(i,:), &
             rhofaci(i,:), acn(i,:), qv(i,:), th_atm(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), &
@@ -1355,7 +1355,7 @@ contains
             ni_incld(i,:), bm_incld(i,:), is_nucleat_possible, is_hydromet_present)
 
 !      if (debug_ON) then
-!         tmparr1(i,:) = th_atm(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
+!         tmparr1(i,:) = th_atm(i,:)*exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
 !         call check_values(qv,tmparr1,i,it,debug_ABORT,200,col_location)
 !      endif
 
@@ -1363,7 +1363,7 @@ contains
        if (.not. (is_nucleat_possible .or. is_hydromet_present)) goto 333
 
        call p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, &
-            pres(i,:), exner(i,:), &
+            pres(i,:), inv_exner(i,:), &
             inv_cld_frac_l(i,:), inv_cld_frac_i(i,:), inv_cld_frac_r(i,:), ni_activated(i,:), inv_qc_relvar(i,:), &
             cld_frac_i(i,:), cld_frac_l(i,:), cld_frac_r(i,:), qv_prev(i,:), t_prev(i,:), &
             t_atm(i,:), rho(i,:), inv_rho(i,:), qv_sat_l(i,:), &
@@ -1390,7 +1390,7 @@ contains
        !      (This is not done above simply for efficiency purposes.)
 
        !      if (debug_ON) then
-       !         tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
+       !         tmparr1(i,:) = th(i,:)*exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
        !         call check_values(qv,tmparr1,i,it,debug_ABORT,300,col_location)
        !      endif
 
@@ -1436,14 +1436,14 @@ contains
        !.......................................
        ! homogeneous freezing of cloud and rain
 
-       call homogeneous_freezing(kts,kte,ktop,kbot,kdir,t_atm(i,:),exner(i,:),latent_heat_fusion(i,:),  &
+       call homogeneous_freezing(kts,kte,ktop,kbot,kdir,t_atm(i,:),inv_exner(i,:),latent_heat_fusion(i,:),  &
          qc(i,:),nc(i,:),qr(i,:),nr(i,:),qi(i,:),ni(i,:),qm(i,:),bm(i,:),th_atm(i,:))
 
        !...................................................
        ! final checks to ensure consistency of mass/number
        ! and compute diagnostic fields for output
        call p3_main_part3(kts, kte, kbot, ktop, kdir, &
-            exner(i,:), cld_frac_l(i,:), cld_frac_r(i,:), cld_frac_i(i,:), &
+            inv_exner(i,:), cld_frac_l(i,:), cld_frac_r(i,:), cld_frac_i(i,:), &
             rho(i,:), inv_rho(i,:), rhofaci(i,:), qv(i,:), th_atm(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qi(i,:), ni(i,:), &
             qm(i,:), bm(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:), &
             mu_c(i,:), nu(i,:), lamc(i,:), mu_r(i,:), lamr(i,:), vap_liq_exchange(i,:), &
@@ -1463,7 +1463,7 @@ contains
 333    continue
 
        if (debug_ON) then
-          tmparr1(i,:) = th_atm(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
+          tmparr1(i,:) = th_atm(i,:)*exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
           call check_values(qv(i,:),tmparr1(i,:),kts,kte,it,debug_ABORT,900,col_location(i,:))
        endif
 
@@ -3050,7 +3050,7 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
    nc_collect_tend,nc2ni_immers_freeze_tend,ncshdc,    &
    qrcol,nr_collect_tend,qr2qi_immers_freeze_tend,nr2ni_immers_freeze_tend,nr_ice_shed_tend,    &
    qi2qr_melt_tend,ni2nr_melt_tend,qi2qv_sublim_tend,qidep,qinuc,ni_nucleat_tend,ni_selfcollect_tend,ni_sublim_tend,qiberg,    &
-   exner,latent_heat_sublim,latent_heat_fusion,    &
+   inv_exner,latent_heat_sublim,latent_heat_fusion,    &
    do_predict_nc,log_wetgrowth,dt,nmltratio,rho_qm_cloud,    &
    th_atm,qv,qi,ni,qm,bm,qc,nc,qr,nr)
 
@@ -3079,7 +3079,7 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
    real(rtype), intent(in) :: ni_selfcollect_tend
    real(rtype), intent(in) :: ni_sublim_tend
    real(rtype), intent(in) :: qiberg
-   real(rtype), intent(in) :: exner
+   real(rtype), intent(in) :: inv_exner
    real(rtype), intent(in) :: latent_heat_fusion
    real(rtype), intent(in) :: latent_heat_sublim
 
@@ -3153,13 +3153,13 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
 
    qv = qv + (-qidep+qi2qv_sublim_tend-qinuc)*dt
 
-   th_atm = th_atm + exner*((qidep-qi2qv_sublim_tend+qinuc)*latent_heat_sublim*inv_cp +(qrcol+qccol+   &
+   th_atm = th_atm + inv_exner*((qidep-qi2qv_sublim_tend+qinuc)*latent_heat_sublim*inv_cp +(qrcol+qccol+   &
        qc2qi_hetero_freeze_tend+qr2qi_immers_freeze_tend-qi2qr_melt_tend+qiberg)* latent_heat_fusion*inv_cp)*dt
 end subroutine update_prognostic_ice
 
 subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoconv_tend,nc2nr_autoconv_tend, &
      ncautr,nc_selfcollect_tend, qr2qv_evap_tend,nr_evap_tend,nr_selfcollect_tend,         &
-    do_predict_nc, do_prescribed_CCN, inv_rho,exner,latent_heat_vapor,dt,                                      &
+    do_predict_nc, do_prescribed_CCN, inv_rho,inv_exner,latent_heat_vapor,dt,                                      &
     th_atm,qv,qc,nc,qr,nr)
 
    !-- warm-phase only processes:
@@ -3178,7 +3178,7 @@ subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoc
 
    logical(btype), intent(in) :: do_predict_nc, do_prescribed_CCN
    real(rtype), intent(in) :: inv_rho
-   real(rtype), intent(in) :: exner
+   real(rtype), intent(in) :: inv_exner
    real(rtype), intent(in) :: latent_heat_vapor
    real(rtype), intent(in) :: dt
 
@@ -3204,7 +3204,7 @@ subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoc
    endif
 
    qv = qv + qr2qv_evap_tend*dt
-   th_atm = th_atm + exner*(-qr2qv_evap_tend*latent_heat_vapor*    &
+   th_atm = th_atm + inv_exner*(-qr2qv_evap_tend*latent_heat_vapor*    &
         inv_cp)*dt
 
 end subroutine update_prognostic_liquid
@@ -4073,7 +4073,7 @@ subroutine calc_first_order_upwind_step(kts, kte, kdir, kbot, k_qxtop, dt_sub, r
 
 end subroutine calc_first_order_upwind_step
 
-subroutine homogeneous_freezing(kts,kte,ktop,kbot,kdir,t_atm,exner,latent_heat_fusion,    &
+subroutine homogeneous_freezing(kts,kte,ktop,kbot,kdir,t_atm,inv_exner,latent_heat_fusion,    &
    qc,nc,qr,nr,qi,ni,qm,bm,th_atm)
 
    !.......................................
@@ -4083,7 +4083,7 @@ subroutine homogeneous_freezing(kts,kte,ktop,kbot,kdir,t_atm,exner,latent_heat_f
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
    real(rtype), intent(in), dimension(kts:kte) :: t_atm
-   real(rtype), intent(in), dimension(kts:kte) :: exner
+   real(rtype), intent(in), dimension(kts:kte) :: inv_exner
    real(rtype), intent(in), dimension(kts:kte) :: latent_heat_fusion
 
    real(rtype), intent(inout), dimension(kts:kte) :: qc
@@ -4110,7 +4110,7 @@ subroutine homogeneous_freezing(kts,kte,ktop,kbot,kdir,t_atm,exner,latent_heat_f
          qi(k) = qi(k) + Q_nuc
          bm(k) = bm(k) + Q_nuc*inv_rho_rimeMax
          ni(k) = ni(k) + N_nuc
-         th_atm(k) = th_atm(k) + exner(k)*Q_nuc*latent_heat_fusion(k)*inv_cp
+         th_atm(k) = th_atm(k) + inv_exner(k)*Q_nuc*latent_heat_fusion(k)*inv_cp
          qc(k) = 0._rtype
          nc(k) = 0._rtype
 
@@ -4124,7 +4124,7 @@ subroutine homogeneous_freezing(kts,kte,ktop,kbot,kdir,t_atm,exner,latent_heat_f
          qi(k) = qi(k) + Q_nuc
          bm(k) = bm(k) + Q_nuc*inv_rho_rimeMax
          ni(k) = ni(k) + N_nuc
-         th_atm(k) = th_atm(k) + exner(k)*Q_nuc*latent_heat_fusion(k)*inv_cp
+         th_atm(k) = th_atm(k) + inv_exner(k)*Q_nuc*latent_heat_fusion(k)*inv_cp
          qr(k) = 0._rtype
          nr(k) = 0._rtype
       endif
