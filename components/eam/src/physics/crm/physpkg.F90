@@ -41,16 +41,6 @@ module physpkg
   integer :: cldiceini_idx        = 0
   integer :: static_ener_ac_idx   = 0
   integer :: water_vap_ac_idx     = 0
-  integer :: prec_str_idx         = 0
-  integer :: snow_str_idx         = 0
-  integer :: prec_sed_idx         = 0
-  integer :: snow_sed_idx         = 0
-  integer :: prec_pcw_idx         = 0
-  integer :: snow_pcw_idx         = 0
-  integer :: prec_dp_idx          = 0
-  integer :: snow_dp_idx          = 0
-  integer :: prec_sh_idx          = 0
-  integer :: snow_sh_idx          = 0
   integer :: species_class(pcnst) = -1 
 
   save
@@ -141,10 +131,6 @@ subroutine phys_register
   call pbuf_add_field('static_ener_ac', 'global', dtype_r8,(/pcols/), static_ener_ac_idx)
   call pbuf_add_field('water_vap_ac',   'global', dtype_r8,(/pcols/), water_vap_ac_idx)
   call pbuf_add_field('vmag_gust',      'global', dtype_r8,(/pcols/), dummy)
-  call pbuf_add_field('PREC_PCW',       'physpkg',dtype_r8,(/pcols/), prec_pcw_idx)
-  call pbuf_add_field('SNOW_PCW',       'physpkg',dtype_r8,(/pcols/), snow_pcw_idx)
-  call pbuf_add_field('PREC_SED',       'physpkg',dtype_r8,(/pcols/), prec_sed_idx)
-  call pbuf_add_field('SNOW_SED',       'physpkg',dtype_r8,(/pcols/), snow_sed_idx)
   call pbuf_add_field('FRACIS',         'physpkg',dtype_r8,(/pcols,pver,pcnst/),dummy)
 
   ! check energy package
@@ -665,11 +651,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   call tropopause_init()
 
   if(do_aerocom_ind3) call output_aerocom_aie_init()
-
-  prec_dp_idx  = pbuf_get_index('PREC_DP')
-  snow_dp_idx  = pbuf_get_index('SNOW_DP')
-  prec_sh_idx  = pbuf_get_index('PREC_SH')
-  snow_sh_idx  = pbuf_get_index('SNOW_SH')
 
   call phys_getopts(prog_modal_aero_out=prog_modal_aero)
 
@@ -1327,20 +1308,6 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   real(r8), pointer, dimension(:,:) :: dtcore
   real(r8), pointer, dimension(:,:,:) :: fracis  ! fraction of transported species that are insoluble
 
-  ! convective precipitation variables
-  real(r8),pointer :: prec_dp(:)             ! total precipitation from ZM convection
-  real(r8),pointer :: snow_dp(:)             ! snow from ZM convection
-  real(r8),pointer :: prec_sh(:)             ! total precipitation from Hack convection
-  real(r8),pointer :: snow_sh(:)             ! snow from Hack convection
-
-  ! stratiform precipitation variables
-  real(r8),pointer :: prec_str(:)            ! sfc flux of precip from stratiform (m/s)
-  real(r8),pointer :: snow_str(:)            ! sfc flux of snow from stratiform   (m/s)
-  real(r8),pointer :: prec_pcw(:)            ! total precip from prognostic cloud scheme
-  real(r8),pointer :: snow_pcw(:)            ! snow from prognostic cloud scheme
-  real(r8),pointer :: prec_sed(:)            ! total precip from cloud sedimentation
-  real(r8),pointer :: snow_sed(:)            ! snow from cloud ice sedimentation
-
   real(r8) :: sh_e_ed_ratio(pcols,pver)      ! shallow conv [ent/(ent+det)] ratio  
 
   ! energy checking variables
@@ -1896,3 +1863,4 @@ end subroutine add_fld_default_calls
 !===================================================================================================
 
 end module physpkg
+                                                                                                                                                                                                                                                                                                                            

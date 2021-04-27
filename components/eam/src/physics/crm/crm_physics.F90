@@ -260,6 +260,10 @@ subroutine crm_physics_register()
    call pbuf_add_field('SNOW_DP',      'physpkg',dtype_r8,dims_gcm_1D,idx) ! snow from deep convection
    call pbuf_add_field('PREC_SH',      'physpkg',dtype_r8,dims_gcm_1D,idx) ! total precip from shallow convection
    call pbuf_add_field('SNOW_SH',      'physpkg',dtype_r8,dims_gcm_1D,idx) ! snow from shallow convection
+   call pbuf_add_field('PREC_PCW',     'physpkg', dtype_r8,dims_gcm_1D,idx) ! total precip from "prognostic cloud scheme" (stratiform)
+   call pbuf_add_field('SNOW_PCW',     'physpkg', dtype_r8,dims_gcm_1D,idx) ! snow from "prognostic cloud scheme" (stratiform)
+   call pbuf_add_field('PREC_SED',     'physpkg', dtype_r8,dims_gcm_1D,idx) ! total precip from cloud sedimentation
+   call pbuf_add_field('SNOW_SED',     'physpkg', dtype_r8,dims_gcm_1D,idx) ! snow from cloud sedimentation
    call pbuf_add_field('SH_FRAC',      'physpkg',dtype_r8,dims_gcm_2D,idx) ! shallow cloud fraction
    call pbuf_add_field('DP_FRAC',      'physpkg',dtype_r8,dims_gcm_2D,idx) ! deep cloud fraction
    call pbuf_add_field('FICE',         'physpkg',dtype_r8,dims_gcm_2D,idx) ! fraction of cloud water that is ice
@@ -383,6 +387,11 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       call pbuf_set_field(pbuf2d, pbuf_get_index('FICE')       , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('REL')        , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('REI')        , 0._r8)
+
+      call pbuf_set_field(pbuf2d, pbuf_get_index('PREC_PCW')   , 0._r8)
+      call pbuf_set_field(pbuf2d, pbuf_get_index('SNOW_PCW')   , 0._r8)
+      call pbuf_set_field(pbuf2d, pbuf_get_index('PREC_SED')   , 0._r8)
+      call pbuf_set_field(pbuf2d, pbuf_get_index('SNOW_SED')   , 0._r8)
 
       if (use_gw_convect) call pbuf_set_field(pbuf2d, pbuf_get_index('TTEND_DP')   , 0._r8)
       
@@ -667,6 +676,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call pbuf_set_field(pbuf, pbuf_get_index('SNOW_SED'), 0._r8 )
    call pbuf_set_field(pbuf, pbuf_get_index('PREC_PCW'), 0._r8 )
    call pbuf_set_field(pbuf, pbuf_get_index('SNOW_PCW'), 0._r8 )
+   call pbuf_set_field(pbuf, pbuf_get_index('PREC_SH'),  0._r8)
+   call pbuf_set_field(pbuf, pbuf_get_index('SNOW_SH'),  0._r8)
 
    ! set convective rain to be zero for PRAIN already includes precipitation production from convection. 
    call pbuf_set_field(pbuf, pbuf_get_index('RPRDTOT'), 0.0_r8 )
@@ -1081,8 +1092,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ! can be done using pbuf_set_field without making an extra pointer for 
       ! cld, but I do not think we would be able to zero-out the rest of cld 
       ! beyond pcols that way.
-      !call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
-      !cld(:,:) = 0
       cld(1:ncol,1:pver) = crm_output%cld(1:ncol,1:pver)
 
       ! There is no separate convective and stratiform precip for CRM,
@@ -1576,4 +1585,4 @@ end subroutine m2005_effradius
 !==================================================================================================
 !==================================================================================================
 
-end module crm_physics
+end module crm_phys
