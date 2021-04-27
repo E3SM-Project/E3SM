@@ -172,7 +172,7 @@ void Functions<S,D>::update_prognostics_implicit(
     vd_shoc_solve(team, du, dl, d, qtracers_rhs);
   }
 
-  // Copy RHS values from X1 and X2
+  // Copy RHS values back into output variables
   team.team_barrier();
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
     const int k_v = k/Spack::n;
