@@ -209,14 +209,12 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       printf("get_virtual_temperature test: abs(T_virt-expected_T_virt)=%e is larger than the tol=%e\n",std::abs(T_virt[0]-expected_T_virt),tol);
       errors++;
     }
-  
+
   } // virtual_temperature_test
 //-----------------------------------------------------------------------------------------------//
   static void run()
   {
-    using physics = scream::physics::Functions<Scalar, Device>;
-
-    int num_levs = 100; // Number of levels to use for tests.
+    constexpr int num_levs = 100; // Number of levels to use for tests.
 
     // Compute random values for dse test
     using view_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Real>;

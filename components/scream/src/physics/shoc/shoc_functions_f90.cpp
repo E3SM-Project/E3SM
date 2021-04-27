@@ -145,7 +145,7 @@ void fterms_input_for_diag_third_shoc_moment_c(Real dz_zi, Real dz_zt, Real dz_z
                                     Real *isosqrd, Real *buoy_sgs2, Real *bet2);
 void f0_to_f5_diag_third_shoc_moment_c(Real thedz, Real thedz2, Real bet2, Real iso,
                                     Real isosqrd, Real wthl_sec, Real wthl_sec_kc,
-                                    Real wthl_sec_kb, Real thl_sec, Real thl_sec_kc,
+                                    Real wthl_sec_kb, Real thl_sec_kc,
                                     Real thl_sec_kb, Real w_sec, Real w_sec_kc, Real w_sec_zi,
                                     Real tke, Real tke_kc, Real *f0, Real *f1,
                                     Real *f2, Real *f3, Real *f4, Real *f5);
@@ -549,7 +549,7 @@ void aa_terms_diag_third_shoc_moment(AaTermsDiagThirdShocMomentData& d)
 void f0_to_f5_diag_third_shoc_moment(F0ToF5DiagThirdShocMomentData& d)
 {
   shoc_init(1, true); // single level function
-  f0_to_f5_diag_third_shoc_moment_c(d.thedz, d.thedz2, d.bet2, d.iso, d.isosqrd, d.wthl_sec, d.wthl_sec_kc, d.wthl_sec_kb, d.thl_sec, d.thl_sec_kc, d.thl_sec_kb, d.w_sec, d.w_sec_kc, d.w_sec_zi, d.tke, d.tke_kc, &d.f0, &d.f1, &d.f2, &d.f3, &d.f4, &d.f5);
+  f0_to_f5_diag_third_shoc_moment_c(d.thedz, d.thedz2, d.bet2, d.iso, d.isosqrd, d.wthl_sec, d.wthl_sec_kc, d.wthl_sec_kb, d.thl_sec_kc, d.thl_sec_kb, d.w_sec, d.w_sec_kc, d.w_sec_zi, d.tke, d.tke_kc, &d.f0, &d.f1, &d.f2, &d.f3, &d.f4, &d.f5);
 }
 
 void omega_terms_diag_third_shoc_moment(OmegaTermsDiagThirdShocMomentData& d)

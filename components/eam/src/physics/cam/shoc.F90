@@ -1878,7 +1878,7 @@ subroutine compute_diag_third_shoc_moment(&
         call f0_to_f5_diag_third_shoc_moment(&
              thedz, thedz2, bet2, iso, isosqrd, &                 ! Input
              wthl_sec (i,k), wthl_sec(i,kc), wthl_sec(i,kb), &    ! Input
-             thl_sec(i,k), thl_sec(i,kc), thl_sec(i,kb), &        ! Input
+             thl_sec(i,kc), thl_sec(i,kb), &                      ! Input
              w_sec(i,k), w_sec(i,kc), w_sec_zi(i,k), &            ! Input
              tke(i,k), tke(i,kc), &                               ! Input
              f0, f1, f2, f3, f4, f5)                              ! Output
@@ -1941,7 +1941,7 @@ end subroutine fterms_input_for_diag_third_shoc_moment
 subroutine f0_to_f5_diag_third_shoc_moment(&
      thedz, thedz2, bet2, iso, isosqrd, &    ! Input
      wthl_sec, wthl_sec_kc, wthl_sec_kb, &   ! Input
-     thl_sec, thl_sec_kc, thl_sec_kb, &      ! Input
+     thl_sec_kc, thl_sec_kb, &      ! Input
      w_sec, w_sec_kc,w_sec_zi, &             ! Input
      tke, tke_kc, &                          ! Input
      f0, f1, f2, f3, f4, f5)                 ! Output
@@ -1953,7 +1953,7 @@ subroutine f0_to_f5_diag_third_shoc_moment(&
   !intent-ins
   real(rtype), intent(in) :: thedz, thedz2, bet2, iso, isosqrd
   real(rtype), intent(in) :: wthl_sec, wthl_sec_kc, wthl_sec_kb
-  real(rtype), intent(in) :: thl_sec, thl_sec_kc, thl_sec_kb
+  real(rtype), intent(in) :: thl_sec_kc, thl_sec_kb
   real(rtype), intent(in) :: w_sec, w_sec_kc, w_sec_zi, tke, tke_kc
 
   !intent-out

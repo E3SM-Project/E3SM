@@ -759,7 +759,7 @@ contains
   subroutine f0_to_f5_diag_third_shoc_moment_c(&
                           thedz, thedz2, bet2, iso, isosqrd, &
                           wthl_sec, wthl_sec_kc, wthl_sec_kb, &
-                          thl_sec, thl_sec_kc, thl_sec_kb, &
+                          thl_sec_kc, thl_sec_kb, &
                           w_sec, w_sec_kc,w_sec_zi, &
                           tke, tke_kc, &
                           f0, f1, f2, f3, f4, f5) bind (C)
@@ -773,7 +773,6 @@ contains
     real(kind=c_real), intent(in), value :: wthl_sec
     real(kind=c_real), intent(in), value :: wthl_sec_kc
     real(kind=c_real), intent(in), value :: wthl_sec_kb
-    real(kind=c_real), intent(in), value :: thl_sec
     real(kind=c_real), intent(in), value :: thl_sec_kc
     real(kind=c_real), intent(in), value :: thl_sec_kb
     real(kind=c_real), intent(in), value :: w_sec
@@ -792,7 +791,7 @@ contains
     call f0_to_f5_diag_third_shoc_moment(&
                           thedz, thedz2, bet2, iso, isosqrd, &
                           wthl_sec, wthl_sec_kc, wthl_sec_kb, &
-                          thl_sec, thl_sec_kc, thl_sec_kb, &
+                          thl_sec_kc, thl_sec_kb, &
                           w_sec, w_sec_kc,w_sec_zi, &
                           tke, tke_kc, &
                           f0, f1, f2, f3, f4, f5)
