@@ -296,10 +296,18 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
       do k=1,nlevp
 
+        if (planar_slice .eqv. .true.) then
+        !no y dependence
+        rr =sqrt( (x-bubble_xycenter)   *(x-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
+                  (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) / bubble_zradius / bubble_zradius    )
+
+        else
+
         rr =sqrt( (x-bubble_xycenter)   *(x-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
                   (y-bubble_xycenter)   *(y-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
                   (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) / bubble_zradius / bubble_zradius    )
-
+        endif
+      
         !set pot. temperature on interfaces
         if ( rr < one ) then 
           if (bubble_cosine) then
