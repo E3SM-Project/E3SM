@@ -558,9 +558,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     ###############################################################################
         test_dir = self.get_test_dir(self._baseline_dir, test)
 
-        # First, create baseline directory for this test. If existing, nuke the content
-        self.create_tests_dirs(test_dir, True)
-
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
         cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
 
@@ -604,6 +601,9 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         print("###############################################################################")
         print("Generating baselines for ref {}".format(self._baseline_ref))
         print("###############################################################################")
+
+        # First, create baseline directory for this test. If existing, nuke the content
+        self.create_tests_dirs(self._baseline_dir, True)
 
         commit = get_current_commit(commit=self._baseline_ref)
 
