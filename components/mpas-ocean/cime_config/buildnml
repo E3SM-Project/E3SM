@@ -1101,6 +1101,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="longWaveHeatFluxDown"/>')
         lines.append('    <var name="seaIceHeatFlux"/>')
         lines.append('    <var name="shortWaveHeatFlux"/>')
+        lines.append('    <var name="frazilTemperatureTendency"/>')
         lines.append('    <var name="evaporationFlux"/>')
         lines.append('    <var name="seaIceSalinityFlux"/>')
         lines.append('    <var name="seaIceFreshWaterFlux"/>')
