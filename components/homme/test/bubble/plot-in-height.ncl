@@ -13,8 +13,8 @@ print("frame is "+tt)
 
 gg=9.80616
 P0=100000.0
-ztop=10000.0
-numz=200
+ztop=1500.0
+numz=400
 
 
 
@@ -117,15 +117,21 @@ end do
   res                          =  True
   res@tiMainString             = "frame="+tostring(tt)+" "+fili   ;-- title string
 
-  cmap = read_colormap_file("MPL_GnBu")      ;-- read the color map
+;  cmap = read_colormap_file("MPL_GnBu")      ;-- read the color map
+  cmap = read_colormap_file("cmocean_haline")      ;-- read the color map
 
   res@cnFillOn                 =  True       ;-- turn on color fill
-  res@cnFillPalette            = cmap(::-1,:)
+;  res@cnFillPalette            = cmap(::-1,:)
+  res@cnFillPalette            = cmap(::1,:)
   res@cnLineLabelsOn           =  False      ;-- turns off contour line labels
   res@cnInfoLabelOn            =  False      ;-- turns off contour info label
   res@lbOrientation            = "vertical"  ;-- vertical label bar
 ;  res@tiYAxisString            =  var@long_name+"  [hPa]"
- 
+  res@cnLinesOn                = False 
+
+  res@cnMaxLevelCount      = 30
+  res@cnLevelSelectionMode = "EqualSpacedLevels" ; equally spaced contour levels
+
   res@sfXArray                 =  lon_t(selectedcols)      ;-- uses lon_t as plot x-axis
 ;  res@sfYArray                 =  lev_t/100  ;-- uses lev_t in hPa as plot y-axis
   res@sfYArray                 =  zvals  ;-- uses lev_t in hPa as plot y-axis
