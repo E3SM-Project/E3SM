@@ -224,6 +224,9 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   !create hybrid coords now from pi
   !note that this code should not depend on partitioning
   !it depends on ref pressure profile, whcih is init-ed in the same way for all elements/gll
+
+#if 0
+  !almost pure pressure
   ai(:) = 0.0; bi(:) = 0.0
   ai(1) = pi(1)/p0
   bi(nlevp) = 1.0
@@ -231,6 +234,20 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   do k=2,nlevp
     bi(k) = pi(k)/pi(nlevp)
   enddo
+#else
+  !old version, hybrid
+  ai(:) = 0.0; bi(:) = 0.0
+  ai(1) = pi(1)/p0
+  bi(nlevp) = 1.0
+
+  do k=2,nlev
+    bi(k) = 1.0 - zi(k)/zi(1)
+
+    !restore ai frop given pressure
+    ai(k)=(pi(k)-bi(k)*pi(nlevp))/p0
+  enddo
+#endif
+
 
   hvcoord%hyai = ai
   hvcoord%hybi = bi
