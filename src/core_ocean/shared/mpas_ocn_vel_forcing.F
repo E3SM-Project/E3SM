@@ -26,6 +26,7 @@ module ocn_vel_forcing
    use ocn_constants
    use ocn_vel_forcing_surface_stress
    use ocn_vel_forcing_explicit_bottom_drag
+   use ocn_vel_forcing_topographic_wave_drag
 
    implicit none
    private
@@ -126,6 +127,10 @@ contains
                    kineticEnergyCell, layerThicknessEdge, tend, err1)
       err = ior(err, err1)
 
+      call ocn_vel_forcing_topographic_wave_drag_tend(normalVelocity, &
+                   tend, err1)
+
+      err = ior(err, err1)
    !--------------------------------------------------------------------
 
    end subroutine ocn_vel_forcing_tend!}}}
@@ -177,6 +182,14 @@ contains
       if (err2 /= 0) then
          call mpas_log_write( &
             'vel_forcing_init encountered error in bot drag init', &
+             MPAS_LOG_ERR)
+         err = err2
+      endif
+
+      call ocn_vel_forcing_topographic_wave_drag_init(err2)
+      if (err2 /= 0) then
+         call mpas_log_write( &
+            'vel_forcing_init encountered error in topographic wave drag', &
              MPAS_LOG_ERR)
          err = err2
       endif
