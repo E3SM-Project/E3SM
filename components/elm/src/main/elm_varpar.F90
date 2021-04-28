@@ -33,7 +33,7 @@ module elm_varpar
   integer            :: nlevtrc_soil
   integer            :: nlevtrc_full
   
-  integer, parameter :: nlevsno     =   5     ! maximum number of snow layers
+  integer            :: nlevsno               ! maximum number of snow layers
   integer, parameter :: ngases      =   3     ! CH4, O2, & CO2
   integer, parameter :: nlevcan     =   1     ! number of leaf layers in canopy layer
   integer, parameter :: nvegwcs     =   4     ! number of vegetation water conductance segments
@@ -154,6 +154,12 @@ contains
     if (use_vichydro) then
        nlayert     =  nlayer + (nlevgrnd -nlevsoi)
     endif
+
+    if (.not. use_extrasnowlayers) then
+       nlevsno     =  5     ! maximum number of snow layers
+    else
+       nlevsno     =  16    ! maximum number of snow layers (for firn model)
+    end if
 
     ! here is a switch to set the number of soil levels for the biogeochemistry calculations.
     ! currently it works on either a single level or on nlevsoi and nlevgrnd levels
