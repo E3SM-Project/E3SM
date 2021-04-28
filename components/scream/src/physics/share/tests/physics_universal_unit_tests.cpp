@@ -46,6 +46,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
             theta("theta",num_levs),
             T_mid("T_mid",num_levs),
             T_virtual("T_virtual",num_levs),
+            T_mid_from_virt("T_mid_from_virt",num_levs),
             dse("dse",num_levs),
             dz("dz",num_levs),
             z_int("z_int",num_levs+1);
@@ -115,10 +116,20 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       // Virtual temperature property tests
       // T_virt(T=0) = 0.0
       // T_virt(T=T0,qv=0) = T0
+      // T(T_virt=0) = 0.0
+      // T(T_virt=T0,qv=0) = T0
+      // T_virt(T=T0) = T0
+      // T(T_virt=T0) = T0
       // get_virtual_temperature(temperature,qv) should work
+      // get_temperature_from_virtual_temperature should work
       EKAT_KERNEL_REQUIRE(physicscommon::get_virtual_temperature(0.0,1e-6)==0.0);
       EKAT_KERNEL_REQUIRE(physicscommon::get_virtual_temperature(100.0,0.0)==100.0);
+      EKAT_KERNEL_REQUIRE(physicscommon::get_temperature_from_virtual_temperature(0.0,1e-6)==0.0);
+      EKAT_KERNEL_REQUIRE(physicscommon::get_temperature_from_virtual_temperature(100.0,0.0)==100.0);
+      EKAT_KERNEL_REQUIRE(physicscommon::get_virtual_temperature(physicscommon::get_temperature_from_virtual_temperature(100.0,1.0),1.0)==100.0); 
+      EKAT_KERNEL_REQUIRE(physicscommon::get_temperature_from_virtual_temperature(physicscommon::get_virtual_temperature(100.0,1.0),1.0)==100.0);
       physicscommon::get_virtual_temperature(team,temperature,qv,T_virtual);
+      physicscommon::get_temperature_from_virtual_temperature(team,T_virtual,qv,T_mid_from_virt);
       // DSE property tests
       // dse(T=0.0, z=0.0) = surf_geopotential
       // dse(T=1/cp, z=1/gravity) = surf_potential+2

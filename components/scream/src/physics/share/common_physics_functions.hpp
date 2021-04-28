@@ -67,6 +67,22 @@ struct PhysicsFunctions
                                const InputProviderP& p_mid,
                                const view_1d<ScalarT>& T_mid);
 
+  // Compute temperature from virtual temperature
+  // The result unit is in K
+  // The inputs are
+  //   T_mid is the atmospheric temperature.  Units in K.
+  //   qv    is the water vapor mass mixing ratio.  Units in kg/kg
+  template<typename ScalarT>
+  KOKKOS_FUNCTION
+  static ScalarT get_temperature_from_virtual_temperature(const ScalarT& T_virtual, const ScalarT& qv);
+
+  template<typename ScalarT, typename InputProviderT, typename InputProviderQ>
+  KOKKOS_FUNCTION
+  static void get_temperature_from_virtual_temperature(const MemberType& team,
+                                                       const InputProviderT& T_virtual,
+                                                       const InputProviderQ& qv,
+                                                       const view_1d<ScalarT>& T_mid);
+
   // Compute virtual temperature
   // The result unit is in K
   // The inputs are

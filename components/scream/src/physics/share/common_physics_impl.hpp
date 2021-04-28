@@ -122,6 +122,38 @@ void PhysicsFunctions<DeviceT>::get_T_from_theta(const MemberType& team,
     T_mid(k) = get_T_from_theta(theta(k),p_mid(k)); 
   });
 }
+//-----------------------------------------------------------------------------------------------//
+  // Compute temperature from virtual temperature
+  // The result unit is in K
+  // The inputs are
+  //   T_virtual is the virtual temperature.  Units in K.
+  //   qv        is the water vapor mass mixing ratio.  Units in kg/kg
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::get_temperature_from_virtual_temperature(const ScalarT& T_virtual, const ScalarT& qv)
+{
+  using C = scream::physics::Constants<ScalarT>;
+  static constexpr ScalarT ep_2(C::ep_2);
+  ScalarT T_mid = T_virtual*(ep_2*(1.0+qv))/(qv+ep_2);
+  // Return T_mid
+  return T_mid;
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderT, typename InputProviderQ>
+KOKKOS_FUNCTION
+void PhysicsFunctions<DeviceT>::get_temperature_from_virtual_temperature(const MemberType& team,
+                                                                         const InputProviderT& T_virtual,
+                                                                         const InputProviderQ& qv,
+                                                                         const view_1d<ScalarT>& T_mid)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,T_mid.extent(0)),
+                       [&] (const int k) {
+    T_mid(k) = get_temperature_from_virtual_temperature(T_virtual(k),qv(k)); 
+  });
+}
+
 
 //-----------------------------------------------------------------------------------------------//
   // Compute virtual temperature
