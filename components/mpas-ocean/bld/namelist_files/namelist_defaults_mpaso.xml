@@ -255,6 +255,13 @@
 <config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
 
+<!-- gotm -->
+<config_use_gotm>.false.</config_use_gotm>
+<config_gotm_namelist_file>'gotmturb.nml'</config_gotm_namelist_file>
+<config_gotm_constant_surface_roughness_length>0.02</config_gotm_constant_surface_roughness_length>
+<config_gotm_constant_bottom_roughness_length>0.0015</config_gotm_constant_bottom_roughness_length>
+<config_gotm_constant_bottom_drag_coeff>1.e-3</config_gotm_constant_bottom_drag_coeff>
+
 <!-- forcing -->
 <config_use_variable_drag>.false.</config_use_variable_drag>
 <config_use_bulk_wind_stress>.true.</config_use_bulk_wind_stress>
@@ -356,6 +363,8 @@
 <!-- pressure_gradient -->
 <config_pressure_gradient_type>'Jacobian_from_TS'</config_pressure_gradient_type>
 <config_common_level_weight>0.5</config_common_level_weight>
+<config_zonal_ssh_grad>0.0</config_zonal_ssh_grad>
+<config_meridional_ssh_grad>0.0</config_meridional_ssh_grad>
 
 <!-- eos -->
 <config_eos_type>'jm'</config_eos_type>

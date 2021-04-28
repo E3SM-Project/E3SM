@@ -2325,7 +2325,7 @@ contains
                                                  avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
 
-   real (kind=RKIND) :: SurfacefreezingTemp
+   real (kind=RKIND) :: surfaceFreezingTemp
 
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
@@ -2444,21 +2444,31 @@ contains
 
           if ( keepFrazil ) then
 
-             ! We assume here that avgTracersSurfaceValue represents only the
-             ! top layer of the ocean.
+             ! Calculate energy associated with frazil mass transfer to sea ice if frazil has accumulated
+             if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) then
 
-             SurfacefreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
+              seaIceEnergy(i) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion 
+
+             ! Otherwise calculate the melt potential where avgTracersSurfaceValue represents only the
+             ! top layer of the ocean
+             else
+
+              surfaceFreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
                  pressure=0.0_RKIND,  inLandIceCavity=.false.) 
 
-             seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( SurfacefreezingTemp + T0_Kelvin &
-                             - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
-             if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) seaIceEnergy(i) = 0.0_RKIND
+              seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( surfaceFreezingTemp + T0_Kelvin &
+                              - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
 
-             o2x_o % rAttr(index_o2x_Fioo_meltp, n)  = seaIceEnergy(i) / ocn_cpl_dt
+             end if
+
+             o2x_o % rAttr(index_o2x_Fioo_q, n)  = seaIceEnergy(i) / ocn_cpl_dt
              o2x_o % rAttr(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+
           else
-             o2x_o % rAttr(index_o2x_Fioo_meltp, n)  = 0.0_RKIND
+
+             o2x_o % rAttr(index_o2x_Fioo_q, n)  = 0.0_RKIND
              o2x_o % rAttr(index_o2x_Fioo_frazil, n) = 0.0_RKIND
+
           end if
 
           ! Reset SeaIce Energy and Accumulated Frazil Ice

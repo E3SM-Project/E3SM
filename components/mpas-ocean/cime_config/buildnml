@@ -56,13 +56,6 @@ def buildnml(case, caseroot, compname):
     if not os.path.isdir(mpasoconf_dir): os.mkdir(mpasoconf_dir)
 
     #--------------------------------------------------------------------
-    # MPAS-O with active BGC fails bfb restart with more than 1 thread
-    # DO NOT run with ocean bgc turned on with more than 1 thread
-    #--------------------------------------------------------------------
-    expect(nthrds_ocn == 1 or ocn_bgc == 'no_bgc',
-           " ERROR mpas-o buildnml: ocn bgc cannot be run with more than 1 thread\n")
-
-    #--------------------------------------------------------------------
     # Determine if initial conditions are spunup, from compset
     #--------------------------------------------------------------------
     ocn_ic_mode = 'default'
