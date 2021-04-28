@@ -44,7 +44,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     // Allocate memory for test outputs
     view_1d exner("exner",num_levs),
             theta("theta",num_levs),
-            T_mid("T_mid",num_levs),
+            T_mid_from_pot("T_mid_from_pot",num_levs),
             T_virtual("T_virtual",num_levs),
             T_mid_from_virt("T_mid_from_virt",num_levs),
             dse("dse",num_levs),
@@ -112,7 +112,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       EKAT_KERNEL_REQUIRE(physicscommon::get_T_from_theta(physicscommon::get_theta_from_T(100.0,1.0),1.0)==100.0); 
       EKAT_KERNEL_REQUIRE(physicscommon::get_theta_from_T(physicscommon::get_T_from_theta(100.0,1.0),1.0)==100.0);
       physicscommon::get_theta_from_T(team,temperature,pressure,theta);
-      physicscommon::get_T_from_theta(team,theta,pressure,T_mid);
+      physicscommon::get_T_from_theta(team,theta,pressure,T_mid_from_pot);
       // Virtual temperature property tests
       // T_virt(T=0) = 0.0
       // T_virt(T=T0,qv=0) = T0
@@ -154,7 +154,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       {
         // T and TH conversion TEST
         EKAT_KERNEL_REQUIRE(theta(k)==physicscommon::get_theta_from_T(temperature(k),pressure(k)));
-        EKAT_KERNEL_REQUIRE(T_mid(k)==physicscommon::get_T_from_theta(theta(k),pressure(k)));
+        EKAT_KERNEL_REQUIRE(T_mid_from_pot(k)==physicscommon::get_T_from_theta(theta(k),pressure(k)));
         // virtual temperature test
         EKAT_KERNEL_REQUIRE(T_virtual(k)==physicscommon::get_virtual_temperature(temperature(k),qv(k)));
       });  // Kokkos parallel_for k=1,num_levs
@@ -162,14 +162,55 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     }, nerr); // Kokkos parallel_reduce "test_universal_physics"
 
     Kokkos::fence();
-    auto z_int_host = Kokkos::create_mirror(z_int);
-    Kokkos::deep_copy(z_int_host,z_int);
+    auto exner_host           = Kokkos::create_mirror(exner);
+    auto theta_host           = Kokkos::create_mirror(theta);
+    auto T_mid_from_pot_host  = Kokkos::create_mirror(T_mid_from_pot);
+    auto T_virtual_host       = Kokkos::create_mirror(T_virtual);
+    auto T_mid_from_virt_host = Kokkos::create_mirror(T_mid_from_virt);
+    auto dse_host             = Kokkos::create_mirror(dse);
+    auto z_int_host           = Kokkos::create_mirror(z_int);
+    auto dz_host              = Kokkos::create_mirror(dz);
+    Kokkos::deep_copy(exner_host           , exner);
+    Kokkos::deep_copy(theta_host           , theta);
+    Kokkos::deep_copy(T_mid_from_pot_host  , T_mid_from_pot);
+    Kokkos::deep_copy(T_virtual_host       , T_virtual);
+    Kokkos::deep_copy(T_mid_from_virt_host , T_mid_from_virt);
+    Kokkos::deep_copy(dse_host             , dse);
+    Kokkos::deep_copy(z_int_host           , z_int);
+    Kokkos::deep_copy(dz_host              , dz);
     //Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_levs+1), [&] (const int k)
     for(int k=0;k<num_levs;k++)
     {
+      // Make sure all columnwise results don't contain any obvious errors:
+      // exner
+      EKAT_REQUIRE(!isnan(exner_host(k)));
+      EKAT_REQUIRE(!(exner_host(k)<0));
+      // potential temperature
+      EKAT_REQUIRE(!isnan(theta_host(k)));
+      EKAT_REQUIRE(!(theta_host(k)<0));
+      // temperature from potential temperature
+      EKAT_REQUIRE(!isnan(T_mid_from_pot_host(k)));
+      EKAT_REQUIRE(!(T_mid_from_pot_host(k)<0));
+      // virtual temperature
+      EKAT_REQUIRE(!isnan(T_virtual_host(k)));
+      EKAT_REQUIRE(!(T_virtual_host(k)<0));
+      // temperature from virtual temperature
+      EKAT_REQUIRE(!isnan(T_mid_from_virt_host(k)));
+      EKAT_REQUIRE(!(T_mid_from_virt_host(k)<0));
+      // DSE
+      EKAT_REQUIRE(!isnan(dse_host(k)));
+      EKAT_REQUIRE(!(dse_host(k)<0));
+      // DSE
+      EKAT_REQUIRE(!isnan(dz_host(k)));
+      EKAT_REQUIRE(!(dz_host(k)<0));
+      // dz
+      EKAT_REQUIRE(!isnan(dz_host(k)));
+      EKAT_REQUIRE(!(dz_host(k)<=0));
+      // z_int
       const auto k_bwd = num_levs-k;
-      std::string z_int_err_msg = "Error at level k,k_bwd=" + std::to_string(k) + "," + std::to_string(k_bwd) + "; z_int(k_bwd) = " + std::to_string(z_int_host(k_bwd));
-      EKAT_KERNEL_REQUIRE_MSG(z_int_host(k_bwd)==k*(k+1)/2,z_int_err_msg.c_str());
+      EKAT_REQUIRE(z_int_host(k_bwd)==k*(k+1)/2);
+      EKAT_REQUIRE(!isnan(z_int_host(k)));
+      EKAT_REQUIRE(!(z_int_host(k)<0));
     }
 
     REQUIRE(nerr == 0);

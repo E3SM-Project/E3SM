@@ -33,9 +33,6 @@ ScalarT PhysicsFunctions<DeviceT>::get_exner(const ScalarT& p_mid)
   static constexpr ScalarT inv_cp(C::INV_CP);
 
   ScalarT exner = pow( p_mid/p0, rd*inv_cp );
-  // Simple check to make sure no obvious errors occurred
-  EKAT_REQUIRE_MSG(!isnan(exner),"Error in get_exner, exner(p = " + std::to_string(p_mid) + ") = NaN"); 
-  EKAT_REQUIRE_MSG(!(exner<0),   "Error in get_exner, exner(p = " + std::to_string(p_mid) + ") = " + std::to_string(exner) + " < 0");
   // Return exner 
   return exner;
 }
@@ -67,9 +64,6 @@ ScalarT PhysicsFunctions<DeviceT>::get_theta_from_T(const ScalarT& T_mid, const 
 {
   ScalarT exner = get_exner(p_mid);
   ScalarT theta = T_mid/exner;
-  // Simple check to make sure no obvious errors occurred
-  EKAT_REQUIRE_MSG(!isnan(theta),"Error in get_theta_from_T, theta(T = " + std::to_string(T_mid) + ", p = " + std::to_string(p_mid) + ") = NaN"); 
-  EKAT_REQUIRE_MSG(!(theta<0),"Error in get_theta_from_T, theta(T = " + std::to_string(T_mid) + ", p = " + std::to_string(p_mid) + ") = " + std::to_string(theta) + " < 0"); 
   // Return theta
   return theta;
 }
@@ -102,9 +96,6 @@ ScalarT PhysicsFunctions<DeviceT>::get_T_from_theta(const ScalarT& theta, const 
 {
   ScalarT exner = get_exner(p_mid);
   ScalarT T_mid = theta*exner;
-  // Simple check to make sure no obvious errors occurred
-  EKAT_REQUIRE_MSG(!isnan(T_mid),"Error in get_T_from_theta, T(theta = " + std::to_string(theta) + ", p = " + std::to_string(p_mid) + ") = NaN"); 
-  EKAT_REQUIRE_MSG(!(T_mid<0),"Error in get_T_from_theta, T(theta = " + std::to_string(theta) + ", p = " + std::to_string(p_mid) + ") = " + std::to_string(T_mid) + " < 0"); 
   // Return T
   return T_mid;
 }
@@ -169,9 +160,6 @@ ScalarT PhysicsFunctions<DeviceT>::get_virtual_temperature(const ScalarT& T_mid,
   using C = scream::physics::Constants<ScalarT>;
   static constexpr ScalarT ep_2(C::ep_2);
   ScalarT T_virtual = T_mid*(qv+ep_2)/(ep_2*(1.0+qv));
-  // Simple check to make sure no obvious errors occurred
-  EKAT_REQUIRE_MSG(!isnan(T_virtual),"Error in get_virtual_temperature, T_virtual(T = " + std::to_string(T_mid) + ", qv = " + std::to_string(qv) + ") = NaN"); 
-  EKAT_REQUIRE_MSG(!(T_virtual<0),"Error in get_virtual_temperature, T_virtual(T = " + std::to_string(T_mid) + ", qc = " + std::to_string(qv) + ") = " + std::to_string(T_virtual) + " < 0");
   // Return T_virtual
   return T_virtual;
 }
