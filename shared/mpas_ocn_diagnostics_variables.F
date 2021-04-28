@@ -234,200 +234,354 @@ contains
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
-      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-      call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
-      call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
-      call mpas_pool_get_array(diagnosticsPool, 'circulation', circulation)
-      call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity)
-      call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell)
-      call mpas_pool_get_array(diagnosticsPool, 'normalizedPlanetaryVorticityEdge', normPlanetVortEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityEdge', normRelVortEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityCell', normalizedRelativeVorticityCell)
-      call mpas_pool_get_array(diagnosticsPool, 'density', density)
-      call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
-      call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
-      call mpas_pool_get_array(diagnosticsPool, 'montgomeryPotential', montgomeryPotential)
-      call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',thermExpCoeff)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', salineContractCoeff)
-      call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
-      call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThickEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
-      call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
-      call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
-      call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', vertGMBolusVelocityTop)
-      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
-      call mpas_pool_get_array(diagnosticsPool, 'gradSSHX', gradSSHX)
-      call mpas_pool_get_array(diagnosticsPool, 'gradSSHY', gradSSHY)
-      call mpas_pool_get_array(diagnosticsPool, 'gradSSHZ', gradSSHZ)
-      call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
-      call mpas_pool_get_array(diagnosticsPool, 'RiTopOfEdge', RiTopOfEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'pressureAdjustedSSH', pressureAdjustedSSH)
-
-      call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
-      call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceLayerValue', tracersSurfaceLayerValue)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
-
-      call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', sfcFlxAttCoeff)
-      call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficientRunoff', surfaceFluxAttenuationCoefficientRunoff)
-
-      call mpas_pool_get_array(diagnosticsPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
-      call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMag)
-      call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
-      call mpas_pool_get_array(diagnosticsPool, 'bottomLayerShortwaveTemperatureFlux', bottomLayerShortwaveTemperatureFlux)
-      call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
-
       if (config_use_topographic_wave_drag) then
          call mpas_pool_get_array(diagnosticsPool, 'topographic_wave_drag', topographic_wave_drag)
       end if
 
-      !
-      ! set pointers for fields related forcing at ocean surface
-      !
-      call mpas_pool_get_array(diagnosticsPool, 'surfaceBuoyancyForcing', surfaceBuoyancyForcing)
-      call mpas_pool_get_array(diagnosticsPool, 'surfaceFrictionVelocity', surfaceFrictionVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'surfacePressure', surfacePressure)
-
-      call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
-      call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerTemperature', indexBLT)
-      call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerSalinity', indexBLS)
-
-      call mpas_pool_get_array(diagnosticsPool, 'transportVelocityX', transportVelocityX)
-      call mpas_pool_get_array(diagnosticsPool, 'transportVelocityY', transportVelocityY)
-      call mpas_pool_get_array(diagnosticsPool, 'transportVelocityZ', transportVelocityZ)
-      call mpas_pool_get_array(diagnosticsPool, 'transportVelocityZonal', transportVelocityZonal)
-      call mpas_pool_get_array(diagnosticsPool, 'transportVelocityMeridional', transportVelocityMeridional)
-
-      call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityX', GMBolusVelocityX)
-      call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityY', GMBolusVelocityY)
-      call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZ', GMBolusVelocityZ)
-      call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal', GMBolusVelocityZonal)
-      call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', GMBolusVelocityMeridional)
-
-      call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncX', GMStreamFuncX)
-      call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncY', GMStreamFuncY)
-      call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZ', GMStreamFuncZ)
-      call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZonal', GMStreamFuncZonal)
-      call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncMeridional', GMStreamFuncMeridional)
-
-      if(jenkinsOn .or. hollandJenkinsOn) then
-        call mpas_pool_get_array(diagnosticsPool, 'landIceTracerTransferVelocities', landIceTracerTransferVelocities)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceHeatTransferVelocity', indexHeatTrans)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceSaltTransferVelocity', indexSaltTrans)
+      if ( trim(config_ocean_run_mode) == 'forward' ) then
+         call mpas_pool_get_array(diagnosticsPool, 'wettingVelocity', &
+                   wettingVelocity)
+         call mpas_pool_get_field(diagnosticsPool, 'wettingVelocity', &
+                   wettingVelocityField)
       end if
 
-      call mpas_pool_get_array(diagnosticsPool, 'rx1Edge', rx1Edge, 1)
-      call mpas_pool_get_array(diagnosticsPool, 'rx1Cell', rx1Cell, 1)
-      call mpas_pool_get_array(diagnosticsPool, 'rx1MaxEdge', rx1MaxEdge, 1)
-      call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', rx1MaxCell, 1)
+      if ( config_use_GM ) then
+         call mpas_pool_get_array(diagnosticsPool, 'RediKappa', &
+                   RediKappa)
+         call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', &
+                   RediKappaScaling)
+         call mpas_pool_get_array(diagnosticsPool, 'RediKappaSfcTaper', &
+                   RediKappaSfcTaper)
+         call mpas_pool_get_array(diagnosticsPool, 'rediLimiterCount', &
+                   rediLimiterCount)
 
-      call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max, 1)
-      call mpas_pool_get_array(diagnosticsPool, 'globalVerticalStretchMax', globalVerticalStretchMax, 1)
-      call mpas_pool_get_array(diagnosticsPool, 'globalVerticalStretchMin', globalVerticalStretchMin, 1)
+         call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa',  &
+                   gmBolusKappa)
+         call mpas_pool_get_array(diagnosticsPool, 'gmKappaScaling', &
+                   gmKappaScaling)
+         call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', &
+                   gmResolutionTaper)
+      end if
 
-      call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
-      call mpas_pool_get_array(diagnosticsPool, 'verticalStretch', verticalStretch, 1)
-      call mpas_pool_get_field(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMaskField, 1)
-      call mpas_pool_get_field(diagnosticsPool, 'verticalStretch', verticalStretchField, 1)
+      if ( config_compute_active_tracer_budgets ) then
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'activeTracerSurfaceFluxTendency', &
+                   activeTracerSurfaceFluxTendency)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'temperatureShortWaveTendency', &
+                   temperatureShortWaveTendency)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'activeTracerNonLocalTendency', &
+                   activeTracerNonLocalTendency)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'activeTracerHorMixTendency', &
+                   activeTracerHorMixTendency)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'activeTracerVerticalAdvectionTopFlux', &
+                   activeTracerVerticalAdvectionTopFlux)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'activeTracerHorizontalAdvectionEdgeFlux', &
+                   activeTracerHorizontalAdvectionEdgeFlux)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'activeTracerHorizontalAdvectionTendency', &
+                   activeTracerHorizontalAdvectionTendency)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'activeTracerVerticalAdvectionTendency',  &
+                   activeTracerVerticalAdvectionTendency)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'activeTracerVertMixTendency', &
+                   activeTracerVertMixTendency)
+      end if
 
-      call mpas_pool_get_array(diagnosticsPool, 'modifyLandIcePressureMask', modifyLandIcePressureMask)
+      if ( config_use_activeTracers_surface_restoring ) then
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'salinitySurfaceRestoringTendency', &
+                   salinitySurfaceRestoringTendency)
+      end if
 
-      call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityY', velocityY)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityZ', velocityZ)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+      ! Retrieve pointers for configurations where land_ice_flux_mode is enabled
+      if ( trim(config_land_ice_flux_mode) /= 'off' ) then
+         call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
+         call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMag)
+         call mpas_pool_get_dimension(diagnosticsPool, &
+                   'index_landIceBoundaryLayerTemperature', indexBLT)
+         call mpas_pool_get_dimension(diagnosticsPool, &
+                   'index_landIceBoundaryLayerSalinity', indexBLS)
+         call mpas_pool_get_dimension(diagnosticsPool, &
+                   'index_landIceHeatTransferVelocity', indexHeatTrans)
+         call mpas_pool_get_dimension(diagnosticsPool, &
+                   'index_landIceSaltTransferVelocity', indexSaltTrans)
+         call mpas_pool_get_array(diagnosticsPool, &
+                   'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
+         call mpas_pool_get_array(diagnosticsPool, &
+                   'landIceTracerTransferVelocities', &
+                    landIceTracerTransferVelocities)
+         call mpas_pool_get_array(diagnosticsPool, &
+                   'landIceFrictionVelocity', landIceFrictionVelocity)
+      end if
 
-      call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
+      if ( trim(config_ocean_run_mode) == 'init' ) then
+         call mpas_pool_get_array(diagnosticsPool, 'rx1Edge', rx1Edge, 1)
+         call mpas_pool_get_array(diagnosticsPool, 'rx1Cell', rx1Cell, 1)
+         call mpas_pool_get_array(diagnosticsPool, 'rx1MaxEdge', rx1MaxEdge, 1)
+         call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', &
+                   smoothingMask, 1)
+         call mpas_pool_get_array(diagnosticsPool, 'verticalStretch', &
+                   verticalStretch, 1)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'globalVerticalStretchMax', &
+                   globalVerticalStretchMax, 1)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'globalVerticalStretchMin', &
+                   globalVerticalStretchMin, 1)
+      end if
 
-      call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
-      call mpas_pool_get_array(diagnosticsPool, 'gmKappaScaling', gmKappaScaling)
-      call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', RediKappaScaling)
-      call mpas_pool_get_array(diagnosticsPool, 'RediKappaSfcTaper', RediKappaSfcTaper)
-      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
-      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
-      call mpas_pool_get_array(diagnosticsPool, 'k33', k33)
-      call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', gmStreamFuncTopOfCell)
-      call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
+      if ( trim(config_ocean_run_mode) == 'init' .or. &
+                config_AM_debugDiagnostics_enable ) then
+         call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', &
+                   rx1MaxCell, 1)
+         call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', &
+                   globalRx1Max, 1)
+      end if
 
-      call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
+      if ( trim(config_ocean_run_mode) == 'forward' .or. &
+           trim(config_ocean_run_mode) == 'analysis' ) then
+         call mpas_pool_get_array(diagnosticsPool, 'k33', k33)
 
-      call mpas_pool_get_array(diagnosticsPool, 'viscosity', viscosity)
-      call mpas_pool_get_array(diagnosticsPool, 'wettingVelocity', wettingVelocity)
-      call mpas_pool_get_field(diagnosticsPool, 'wettingVelocity', wettingVelocityField)
+         call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
+         call mpas_pool_get_array(diagnosticsPool, 'gradSSHX', gradSSHX)
+         call mpas_pool_get_array(diagnosticsPool, 'gradSSHY', gradSSHY)
+         call mpas_pool_get_array(diagnosticsPool, 'gradSSHZ', gradSSHZ)
+         call mpas_pool_get_array(diagnosticsPool, 'gradSSHZonal', &
+                   gradSSHZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'gradSSHMeridional', &
+                   gradSSHMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'SSHGradient', SSHGradient)
 
-      !
-      ! set pointers for viscosity/diffusivity and initialize to zero
-      !
-      call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', vertViscTopOfCell)
-      call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'viscosity', viscosity)
+         call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
+         call mpas_pool_get_array(diagnosticsPool, 'circulation', circulation)
 
-      call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumber', bulkRichardsonNumber)
-      call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
-      call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepthSmooth', boundaryLayerDepthSmooth)
-      call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberBuoy',bulkRichardsonNumberBuoy)
-      call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberShear',bulkRichardsonNumberShear)
-      call mpas_pool_get_array(diagnosticsPool, 'indexBoundaryLayerDepth',indexBoundaryLayerDepth)
-      call mpas_pool_get_array(diagnosticsPool, 'edgeAreaFractionOfCell', edgeAreaFractionOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityY', velocityY)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZ', velocityZ)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', &
+                   velocityMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', &
+                   velocityZonal)
 
-      call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
-      call mpas_pool_get_dimension(diagnosticsPool, 'index_vertNonLocalFluxTemp', index_vertNonLocalFluxTemp)
+         call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'RiTopOfEdge', RiTopOfEdge)
 
-      call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
-      call mpas_pool_get_array(diagnosticsPool, 'rediLimiterCount', rediLimiterCount)
-      if (config_compute_active_tracer_budgets) then
-         call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
-         call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
-         call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
-         call mpas_pool_get_array(diagnosticsPool,'activeTracerHorMixTendency',activeTracerHorMixTendency)
-      endif
+         call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', &
+                   slopeTriadUp)
+         call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', &
+                   slopeTriadDown)
 
-      call mpas_pool_get_array(diagnosticsPool,         &
-             'activeTracerVerticalAdvectionTopFlux',    &
-              activeTracerVerticalAdvectionTopFlux)
-      call mpas_pool_get_array(diagnosticsPool,         &
-             'activeTracerHorizontalAdvectionEdgeFlux', &
-              activeTracerHorizontalAdvectionEdgeFlux)
-      call mpas_pool_get_array(diagnosticsPool,         &
-             'activeTracerHorizontalAdvectionTendency', &
-              activeTracerHorizontalAdvectionTendency)
-      call mpas_pool_get_array(diagnosticsPool,         &
-             'activeTracerVerticalAdvectionTendency',   &
-              activeTracerVerticalAdvectionTendency)
+         ! GM-related fields
+         call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', &
+                   cGMphaseSpeed)
+         call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', &
+                   gmStreamFuncTopOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', &
+                   gmStreamFuncTopOfEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncX', &
+                   GMStreamFuncX)
+         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncY', &
+                   GMStreamFuncY)
+         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZ', &
+                   GMStreamFuncZ)
+         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZonal', &
+                   GMStreamFuncZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncMeridional', &
+                   GMStreamFuncMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityX', &
+                   GMBolusVelocityX)
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityY', &
+                   GMBolusVelocityY)
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZ', &
+                   GMBolusVelocityZ)
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal', &
+                   GMBolusVelocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', &
+                   GMBolusVelocityMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', &
+                   normalGMBolusVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', &
+                   vertGMBolusVelocityTop)
+
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', &
+                   layerThickEdge)
+
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'normalizedRelativeVorticityEdge', &
+                   normRelVortEdge)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'normalizedPlanetaryVorticityEdge', &
+                   normPlanetVortEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', &
+                   relativeVorticity)
+         call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', &
+                   relativeVorticityCell)
+
+         call mpas_pool_get_array(diagnosticsPool, 'surfaceVelocity', &
+                   surfaceVelocity)
+
+         call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', &
+                   vertVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', &
+                   vertNonLocalFlux)
+         call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', &
+                   vertViscTopOfEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', &
+                   vertViscTopOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', &
+                   vertDiffTopOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', &
+                   vertAleTransportTop)
+         call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', &
+                   vertTransportVelocityTop)
+
+         call mpas_pool_get_array(diagnosticsPool, 'barotropicForcing', &
+                   barotropicForcing)
+         call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', &
+                   kineticEnergyCell)
+
+         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityX', &
+                   transportVelocityX)
+         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityY', &
+                   transportVelocityY)
+         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityZ', &
+                   transportVelocityZ)
+         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityZonal', &
+                   transportVelocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'transportVelocityMeridional', &
+                   transportVelocityMeridional)
+
+         call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', &
+                   tangentialVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'montgomeryPotential', &
+                   montgomeryPotential)
+         call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', &
+                   BruntVaisalaFreqTop)
+
+         call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumber', &
+                   bulkRichardsonNumber)
+         call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberBuoy',&
+                   bulkRichardsonNumberBuoy)
+         call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberShear',&
+                   bulkRichardsonNumberShear)
+
+         ! set pointers for fields related forcing at ocean surface
+         call mpas_pool_get_array(diagnosticsPool, 'surfaceBuoyancyForcing', &
+                   surfaceBuoyancyForcing)
+         call mpas_pool_get_array(diagnosticsPool, 'surfaceFrictionVelocity', &
+                   surfaceFrictionVelocity)
+
+         call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', &
+                   barotropicThicknessFlux)
+
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'normalTransportVelocity', &
+                   normalTransportVelocity)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'normalVelocitySurfaceLayer', &
+                   normalVelocitySurfaceLayer)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'penetrativeTemperatureFluxOBL', &
+                   penetrativeTemperatureFluxOBL)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'normalizedRelativeVorticityCell', &
+                   normalizedRelativeVorticityCell)
+
+         call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceLayerValue', &
+                   tracersSurfaceLayerValue)
+
+         ! Set pointer for index variables
+         call mpas_pool_get_dimension(diagnosticsPool, &
+                  'index_surfaceVelocityZonal', &
+                   indexSurfaceVelocityZonal)
+         call mpas_pool_get_dimension(diagnosticsPool, &
+                  'index_surfaceVelocityMeridional', &
+                   indexSurfaceVelocityMeridional)
+         call mpas_pool_get_dimension(diagnosticsPool, &
+                  'index_vertNonLocalFluxTemp', &
+                   index_vertNonLocalFluxTemp)
+         call mpas_pool_get_dimension(diagnosticsPool, &
+                  'index_SSHGradientMeridional', &
+                   indexSSHGradientMeridional)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'indexSurfaceLayerDepth', &
+                   indexSurfaceLayerDepth)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'indexBoundaryLayerDepth', &
+                   indexBoundaryLayerDepth)
+         call mpas_pool_get_dimension(diagnosticsPool, &
+                  'index_SSHGradientZonal', &
+                   indexSSHGradientZonal)
+      end if
+
       call mpas_pool_get_array(diagnosticsPool, &
-         'activeTracerVertMixTendency',activeTracerVertMixTendency)
-
-      call mpas_pool_get_array(diagnosticsPool, "daysSinceStartOfSim", daysSinceStartOfSim)
+               "daysSinceStartOfSim", &
+                daysSinceStartOfSim)
       call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
-      call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime',simulationStartTime)
+      call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime', &
+                simulationStartTime)
 
-      call mpas_pool_get_array(diagnosticsPool,'salinitySurfaceRestoringTendency',salinitySurfaceRestoringTendency)
-
-      call mpas_pool_get_array(diagnosticsPool, 'surfaceVelocity', surfaceVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'gradSSHZonal', gradSSHZonal)
-      call mpas_pool_get_array(diagnosticsPool, 'gradSSHMeridional', gradSSHMeridional)
-
-      call mpas_pool_get_array(diagnosticsPool, 'barotropicForcing', barotropicForcing)
-      call mpas_pool_get_array(diagnosticsPool, 'barotropicCoriolisTerm', barotropicCoriolisTerm)
-      call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
-
-      call mpas_pool_get_array(diagnosticsPool, 'SSHGradient', SSHGradient)
-
-      call mpas_pool_get_dimension(diagnosticsPool, 'index_surfaceVelocityZonal', indexSurfaceVelocityZonal)
-      call mpas_pool_get_dimension(diagnosticsPool, 'index_surfaceVelocityMeridional', indexSurfaceVelocityMeridional)
-      call mpas_pool_get_dimension(diagnosticsPool, 'index_SSHGradientZonal', indexSSHGradientZonal)
-      call mpas_pool_get_dimension(diagnosticsPool, 'index_SSHGradientMeridional', indexSSHGradientMeridional)
-
+      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+      call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
+      call mpas_pool_get_array(diagnosticsPool, 'density', density)
+      call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
+      call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', &
+                displacedDensity)
+      call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', &
+                potentialDensity)
+      call mpas_pool_get_array(diagnosticsPool, &
+               'inSituThermalExpansionCoeff', &
+                thermExpCoeff)
+      call mpas_pool_get_array(diagnosticsPool, &
+               'inSituSalineContractionCoeff', &
+                salineContractCoeff)
+      call mpas_pool_get_array(diagnosticsPool, &
+               'pressureAdjustedSSH', &
+                pressureAdjustedSSH)
+      call mpas_pool_get_array(diagnosticsPool, &
+               'tracersSurfaceValue', &
+                tracersSurfaceValue)
+      call mpas_pool_get_array(diagnosticsPool, &
+               'surfaceFluxAttenuationCoefficient', &
+                sfcFlxAttCoeff)
+      call mpas_pool_get_array(diagnosticsPool, &
+               'surfaceFluxAttenuationCoefficientRunoff', &
+                surfaceFluxAttenuationCoefficientRunoff)
+      call mpas_pool_get_array(diagnosticsPool, &
+               'boundaryLayerDepth', &
+                boundaryLayerDepth)
+      call mpas_pool_get_array(diagnosticsPool, &
+               'boundaryLayerDepthSmooth', &
+                boundaryLayerDepthSmooth)
+      call mpas_pool_get_array(diagnosticsPool, &
+               'edgeAreaFractionOfCell', &
+                edgeAreaFractionOfCell)
+      call mpas_pool_get_array(diagnosticsPool, 'barotropicCoriolisTerm', &
+                barotropicCoriolisTerm)
       call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
       call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)
       call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
-      call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', gmResolutionTaper)
+      call mpas_pool_get_array(diagnosticsPool, &
+               'bottomLayerShortwaveTemperatureFlux', &
+                bottomLayerShortwaveTemperatureFlux)
+      call mpas_pool_get_field(diagnosticsPool, 'rx1InitSmoothingMask', &
+                smoothingMaskField, 1)
+      call mpas_pool_get_field(diagnosticsPool, 'verticalStretch', &
+                verticalStretchField, 1)
+      call mpas_pool_get_array(diagnosticsPool, &
+               'modifyLandIcePressureMask', &
+                modifyLandIcePressureMask)
+      call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
+      call mpas_pool_get_array(diagnosticsPool, 'surfacePressure', &
+                surfacePressure)
 
       ! Semi-implicit Array Pointer retrievals
       if (trim(config_time_integrator) == 'semi_implicit') then
