@@ -42,6 +42,9 @@ SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
 #SET(ENV{OMPI_CXX} "/global/cscratch1/sd/ndk/wacmy/m54-apr16/components/homme/../../externals/kokkos/bin/nvcc_wrapper" CACHE FILEPATH "")
 #SET(ENV{OMPI_CXX} "/global/cscratch1/sd/ndk/wacmy/m54-apr16/components/homme/../../externals/kokkos/bin/nvcc_wrapper")
 #message("ndk ENV{OMPI_CXX}=$ENV{OMPI_CXX}")
+# ndk -- also need to change default host_compiler in externals/kokkos/bin/nvcc_wrapper which can be done via:
+#setenv NVCC_WRAPPER_DEFAULT_COMPILER "pgc++"
+
 
 #SET(E3SM_KOKKOS_PATH "$KOKKOS_DIR" CACHE BOOL "")
 #SET(E3SM_KOKKOS_PATH "/usr/common/software/sles15_cgpu/kokkos/3.2.00" CACHE BOOL "")
