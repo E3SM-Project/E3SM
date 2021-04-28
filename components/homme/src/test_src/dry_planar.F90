@@ -9,6 +9,7 @@ module dry_planar_tests
   use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
   use parallel_mod,         only: abortmp
   use element_ops,          only: set_state, set_state_i, tests_finalize
+  use eos,                  only: phi_from_eos
   use kinds,                only: rl=>real_kind, iulog
   use physical_constants,   only : dd_pi
   use dcmip12_wrapper, only : set_tracers, get_evenly_spaced_z, get_evenly_spaced_p, set_hybrid_coefficients, pressure_thickness
@@ -218,7 +219,12 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   !get pressure on interfaces
   do k=1,nlevp
     !set interface pressure from const lapse rate, does not depend on x,y, or _dT
+    !this formula assumes ideal hy balance and ideal thermodynamics, not exactly consistent with
+    !the dycore, that is why we reset zi from EOS below
     pi(k) =  p0*( (bubble_T0 - zi(k)*g/cp)/bubble_T0  )**(1.0/kappa)
+  enddo
+  do k=1,nlev
+    dpm(k)=(pi(k+1)-pi(k))
   enddo
 
   !create hybrid coords now from pi
@@ -242,12 +248,10 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   do k=2,nlev
     bi(k) = 1.0 - zi(k)/zi(1)
-
     !restore ai frop given pressure
     ai(k)=(pi(k)-bi(k)*pi(nlevp))/p0
   enddo
 #endif
-
 
   hvcoord%hyai = ai
   hvcoord%hybi = bi
@@ -258,6 +262,28 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   !  call set_layer_locations: sets  etam, etai, dp0, checks that Am=ai/2+ai/2
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+
+
+  !reset z to the discrete hydro balance
+  !if one wants to keep z levels exactly evenly spaced instead
+  !they would have to compute p (hydro) and dp3d from the discrete EOS
+  !via iteration (?) 
+  !whole init-ed element is needed to call phi from EOS
+  do j=1,np; do i=1,np
+    elem(1)%state%phis(i,j) = 0.0
+    elem(1)%state%dp3d(i,j,1:nlev,1) = dpm(1:nlev)
+    elem(1)%state%vtheta_dp(i,j,1:nlev,1) = bubble_T0*dpm(1:nlev)
+  enddo; enddo
+
+  call phi_from_eos(hvcoord,elem(1)%state%phis,elem(1)%state%vtheta_dp(:,:,:,1),&
+       elem(1)%state%dp3d(:,:,:,1),elem(1)%state%phinh_i(:,:,:,1))
+
+  !reset zi array
+  zi(1:nlevp) = elem(1)%state%phinh_i(1,1,1:nlevp,1)/g !<- i,j,k,tl
+
+  !if needed,
+  !reset zm to be an average as it is consistent with Taylor2020 eqn (30)
+  !but zm is not used below, so, not done
 
 
   ! set initial conditions
@@ -295,7 +321,6 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
       do k=1,nlev
         !set pottemp, dp, other state vars on midlevels
         th0m(k)=(th0(k)+th0(k+1))/2.0
-        dpm(k)=(pi(k+1)-pi(k))
 
         elem(ie)%state%dp3d(i,j,k,:)   = dpm(k)
       
@@ -315,8 +340,8 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
      elem(ie)%state%q = 0.0
      elem(ie)%state%qdp = 0.0
 
-     !do not call finalize, phinh_i is set here     
      !sets hydro phi from theta and pressure
+     !checks for hydrostatic balance after that, saves a state
      !call tests_finalize(elem(ie),hvcoord)
   enddo
 
