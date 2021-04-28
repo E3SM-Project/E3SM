@@ -177,12 +177,6 @@ integer :: &
    cmeliq_idx,         &
    accre_enhan_idx
 
-! Fields for UNICON
-integer :: &
-     am_evp_st_idx,      &! Evaporation area of stratiform precipitation
-     evprain_st_idx,     &! Evaporation rate of stratiform rain [kg/kg/s]. >= 0.
-     evpsnow_st_idx       ! Evaporation rate of stratiform snow [kg/kg/s]. >= 0.
-
 ! Fields needed as inputs to COSP
 integer :: &
      ls_mrprc_idx,    ls_mrsnw_idx,    &
@@ -498,11 +492,6 @@ subroutine micro_mg_cam_register
   call pbuf_add_field('CC_ni',    'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), cc_ni_idx)
   call pbuf_add_field('CC_qlst',  'global',  dtype_r8, (/pcols,pver,dyn_time_lvls/), cc_qlst_idx)
 
-  ! Fields for UNICON
-  call pbuf_add_field('am_evp_st',  'global', dtype_r8, (/pcols,pver/), am_evp_st_idx)
-  call pbuf_add_field('evprain_st', 'global', dtype_r8, (/pcols,pver/), evprain_st_idx)
-  call pbuf_add_field('evpsnow_st', 'global', dtype_r8, (/pcols,pver/), evpsnow_st_idx)
-
   ! Register subcolumn pbuf fields
   if (use_subcol_microp) then
     ! Global pbuf fields
@@ -765,7 +754,7 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('EVAPPREC', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling precip'                   )
    call addfld ('EVAPSNOW', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling snow'                     )
    call addfld ('HPROGCLD', (/ 'lev' /), 'A', 'W/kg'    , 'Heating from prognostic clouds'                          )
-   call addfld ('FICE', (/ 'lev' /), 'A', 'fraction', 'Fractional ice content within cloud'                     )
+   call addfld ('FICE', (/ 'lev' /), 'A', '1', 'Fractional ice content within cloud'                     )
    call addfld ('ICWMRST', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-stratus water mixing ratio'                )
    call addfld ('ICIMRST', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-stratus ice mixing ratio'                  )
 
@@ -826,7 +815,7 @@ subroutine micro_mg_cam_init(pbuf2d)
    ! This is provided as an example on how to write out subcolumn output
    ! NOTE -- only 'I' should be used for sub-column fields as subc-columns could shift from time-step to time-step
    if (use_subcol_microp) then
-      call addfld('FICE_SCOL', (/'psubcols','lev     '/), 'I', 'fraction', &
+      call addfld('FICE_SCOL', (/'psubcols','lev     '/), 'I', '1', &
            'Sub-column fractional ice content within cloud', flag_xyfill=.true., fill_value=1.e30_r8)
    end if
 
@@ -836,8 +825,8 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('AREL', (/ 'lev' /), 'A', 'Micron', 'Average droplet effective radius'                        )
    call addfld ('AREI', (/ 'lev' /), 'A', 'Micron', 'Average ice effective radius'                            )
    ! Frequency arrays for above
-   call addfld ('FREQL', (/ 'lev' /), 'A', 'fraction', 'Fractional occurrence of liquid'                          )
-   call addfld ('FREQI', (/ 'lev' /), 'A', 'fraction', 'Fractional occurrence of ice'                             )
+   call addfld ('FREQL', (/ 'lev' /), 'A', '1', 'Fractional occurrence of liquid'                          )
+   call addfld ('FREQI', (/ 'lev' /), 'A', '1', 'Fractional occurrence of ice'                             )
 
    ! Average cloud top particle size and number (liq, ice) and frequency
    call addfld ('ACTREL', horiz_only,    'A', 'Micron', 'Average Cloud Top droplet effective radius'              )
@@ -892,8 +881,8 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('ANSNOW',(/ 'lev' /), 'A','m-3','Average snow number conc'         )
    call addfld ('ADRAIN',(/ 'lev' /), 'A','Micron','Average rain effective Diameter'         )
    call addfld ('ADSNOW',(/ 'lev' /), 'A','Micron','Average snow effective Diameter'         )
-   call addfld ('FREQR',(/ 'lev' /), 'A','fraction','Fractional occurrence of rain'       )
-   call addfld ('FREQS',(/ 'lev' /), 'A','fraction','Fractional occurrence of snow'       )
+   call addfld ('FREQR',(/ 'lev' /), 'A','1','Fractional occurrence of rain'       )
+   call addfld ('FREQS',(/ 'lev' /), 'A','1','Fractional occurrence of snow'       )
 
    ! precipitation efficiency & other diagnostic fields
    call addfld('PE'    ,       horiz_only, 'A', '1', 'Stratiform Precipitation Efficiency  (precip/cmeliq)' )
@@ -1050,9 +1039,6 @@ subroutine micro_mg_cam_init(pbuf2d)
       call pbuf_set_field(pbuf2d, acnum_idx,  0)
       call pbuf_set_field(pbuf2d, relvar_idx, 2._r8)
       call pbuf_set_field(pbuf2d, accre_enhan_idx, micro_mg_accre_enhan_fac)
-      call pbuf_set_field(pbuf2d, am_evp_st_idx,  0._r8)
-      call pbuf_set_field(pbuf2d, evprain_st_idx, 0._r8)
-      call pbuf_set_field(pbuf2d, evpsnow_st_idx, 0._r8)
       call pbuf_set_field(pbuf2d, prer_evap_idx,  0._r8)
 
       if (qrain_idx > 0)   call pbuf_set_field(pbuf2d, qrain_idx, 0._r8)
@@ -1114,9 +1100,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: npccn(:,:)     ! liquid activation number tendency
    real(r8), pointer :: rndst(:,:,:)
    real(r8), pointer :: nacon(:,:,:)
-   real(r8), pointer :: am_evp_st_grid(:,:)    ! Evaporation area of stratiform precipitation. 0<= am_evp_st <=1.
-   real(r8), pointer :: evprain_st_grid(:,:)   ! Evaporation rate of stratiform rain [kg/kg/s]
-   real(r8), pointer :: evpsnow_st_grid(:,:)   ! Evaporation rate of stratiform snow [kg/kg/s]
 
    real(r8), pointer :: prec_str(:)          ! [Total] Sfc flux of precip from stratiform [ m/s ]
    real(r8), pointer :: snow_str(:)          ! [Total] Sfc flux of snow from stratiform   [ m/s ]
@@ -1158,7 +1141,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    real(r8), target :: prect(state%psetcols)
    real(r8), target :: preci(state%psetcols)
-   real(r8), target :: am_evp_st(state%psetcols,pver)  ! Area over which precip evaporates
    real(r8), target :: evapsnow(state%psetcols,pver)   ! Local evaporation of snow
    real(r8), target :: prodsnow(state%psetcols,pver)   ! Local production of snow
    real(r8), target :: cmeice(state%psetcols,pver)     ! Rate of cond-evap of ice within the cloud
@@ -1285,7 +1267,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), allocatable, target :: packed_prect(:)
    real(r8), allocatable, target :: packed_preci(:)
    real(r8), allocatable, target :: packed_nevapr(:,:)
-   real(r8), allocatable, target :: packed_am_evp_st(:,:)
    real(r8), allocatable, target :: packed_evapsnow(:,:)
    real(r8), allocatable, target :: packed_prain(:,:)
    real(r8), allocatable, target :: packed_prodsnow(:,:)
@@ -1744,14 +1725,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call pbuf_get_field(pbuf, acnum_idx,       acnum_grid)
    call pbuf_get_field(pbuf, cmeliq_idx,      cmeliq_grid)
    call pbuf_get_field(pbuf, ast_idx,         ast_grid, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-
-   call pbuf_get_field(pbuf, evprain_st_idx,  evprain_st_grid)
-   call pbuf_get_field(pbuf, evpsnow_st_idx,  evpsnow_st_grid)
-
-   ! Only MG 1 defines this field so far.
-   if (micro_mg_version == 1 .and. micro_mg_sub_version == 0) then
-      call pbuf_get_field(pbuf, am_evp_st_idx,   am_evp_st_grid)
-   end if
    
    !-------------------------------------------------------------------------------------
    ! Microphysics assumes 'liquid stratus frac = ice stratus frac
@@ -1859,9 +1832,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call post_proc%add_field(p(umr), p(packed_umr))
       allocate(packed_ums(mgncol,nlev))
       call post_proc%add_field(p(ums), p(packed_ums))
-   else if (micro_mg_sub_version == 0) then
-      allocate(packed_am_evp_st(mgncol,nlev))
-      call post_proc%add_field(p(am_evp_st), p(packed_am_evp_st))
    end if
 
    allocate(packed_prect(mgncol))
@@ -2131,7 +2101,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  packed_icecldf, packed_rate1ord_cw2pr_st, packed_naai, packed_npccn,                 &
                  packed_rndst, packed_nacon, packed_tlat, packed_qvlat, packed_qctend,                &
                  packed_qitend, packed_nctend, packed_nitend, packed_rel, rel_fn_dum,      &
-                 packed_rei, packed_prect, packed_preci, packed_nevapr, packed_evapsnow, packed_am_evp_st, &
+                 packed_rei, packed_prect, packed_preci, packed_nevapr, packed_evapsnow, &
                  packed_prain, packed_prodsnow, packed_cmeout, packed_dei, packed_mu,                &
                  packed_lambdac, packed_qsout, packed_des, packed_rflx, packed_sflx,                 &
                  packed_qrout, reff_rain_dum, reff_snow_dum, packed_qcsevap, packed_qisevap,   &
@@ -2145,7 +2115,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  packed_ncai, packed_ncal, packed_qrout2, packed_qsout2, packed_nrout2,              &
                  packed_nsout2, drout_dum, dsout2_dum, packed_freqs,packed_freqr,            &
                  packed_nfice, packed_prer_evap, do_cldice, errstring,                      &
-		 packed_tnd_qsnow, packed_tnd_nsnow, packed_re_ice,             &
+                 packed_tnd_qsnow, packed_tnd_nsnow, packed_re_ice,             &
                  packed_frzimm, packed_frzcnt, packed_frzdep)
             call t_stopf('micro_mg_tend1')
 
@@ -2491,11 +2461,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call subcol_field_avg(qme,       ngrdcol, lchnk, qme_grid)
       call subcol_field_avg(nevapr,    ngrdcol, lchnk, nevapr_grid)
       call subcol_field_avg(prain,     ngrdcol, lchnk, prain_grid)
-      call subcol_field_avg(evapsnow,  ngrdcol, lchnk, evpsnow_st_grid)
-
-      if (micro_mg_version == 1 .and. micro_mg_sub_version == 0) then
-         call subcol_field_avg(am_evp_st, ngrdcol, lchnk, am_evp_st_grid)
-      end if
 
       ! Average fields which are not in pbuf
       call subcol_field_avg(qrout,     ngrdcol, lchnk, qrout_grid)
@@ -2559,11 +2524,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       nevapr_grid     => nevapr
       prain_grid      => prain
 
-      if (micro_mg_version == 1 .and. micro_mg_sub_version == 0) then
-         am_evp_st_grid  = am_evp_st
-      end if
-
-      evpsnow_st_grid = evapsnow
       qrout_grid      = qrout
       qsout_grid      = qsout
       nsout_grid      = nsout
@@ -2958,15 +2918,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
             fcti_grid(i)  = icecldf_grid(i,k)
             exit
          end if
-      end do
-   end do
-
-   ! Evaporation of stratiform precipitation fields for UNICON
-   evprain_st_grid(:ngrdcol,:pver) = nevapr_grid(:ngrdcol,:pver) - evpsnow_st_grid(:ngrdcol,:pver)
-   do k = top_lev, pver
-      do i = 1, ngrdcol
-         evprain_st_grid(i,k) = max(evprain_st_grid(i,k), 0._r8)
-         evpsnow_st_grid(i,k) = max(evpsnow_st_grid(i,k), 0._r8)
       end do
    end do
 

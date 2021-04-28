@@ -25,11 +25,11 @@ subroutine cloud_cover_diags_init(sampling_seq)
   character(len=*), intent(in) :: sampling_seq
   logical :: history_amwg         ! output the variables used by the AMWG diag package
 
-  call addfld ('CLOUD',(/ 'lev' /), 'A','fraction','Cloud fraction'                        , sampling_seq=sampling_seq)
-  call addfld ('CLDTOT',horiz_only,    'A','fraction','Vertically-integrated total cloud'     , sampling_seq=sampling_seq)
-  call addfld ('CLDLOW',horiz_only,    'A','fraction','Vertically-integrated low cloud'       , sampling_seq=sampling_seq)
-  call addfld ('CLDMED',horiz_only,    'A','fraction','Vertically-integrated mid-level cloud' , sampling_seq=sampling_seq)
-  call addfld ('CLDHGH',horiz_only,    'A','fraction','Vertically-integrated high cloud'      , sampling_seq=sampling_seq)
+  call addfld ('CLOUD',(/ 'lev' /), 'A','1','Cloud fraction'                        , sampling_seq=sampling_seq)
+  call addfld ('CLDTOT',horiz_only,    'A','1','Vertically-integrated total cloud'     , sampling_seq=sampling_seq)
+  call addfld ('CLDLOW',horiz_only,    'A','1','Vertically-integrated low cloud'       , sampling_seq=sampling_seq)
+  call addfld ('CLDMED',horiz_only,    'A','1','Vertically-integrated mid-level cloud' , sampling_seq=sampling_seq)
+  call addfld ('CLDHGH',horiz_only,    'A','1','Vertically-integrated high cloud'      , sampling_seq=sampling_seq)
 
   ! determine the add_default fields
   call phys_getopts(history_amwg_out           = history_amwg  )

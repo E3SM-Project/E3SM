@@ -255,14 +255,21 @@ contains
        call ch4_vars%restart(bounds, ncid, flag='define')
     end if
 
+
+    if (use_cn .or. use_fates) then
+        call cnstate_vars%Restart(bounds, ncid, flag='define')
+        call col_cs%Restart(bounds, ncid, flag='define', carbon_type='c12', &
+              cnstate_vars=cnstate_vars)
+        call col_cf%Restart(bounds, ncid, flag='define')
+        call col_ns%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
+        call col_nf%Restart(bounds, ncid, flag='define')
+        call col_ps%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
+        call col_pf%Restart(bounds, ncid, flag='define')
+    end if
+    
     if (use_cn) then
-
-       call cnstate_vars%Restart(bounds, ncid, flag='define')
-
-       call col_cs%Restart(bounds, ncid, flag='define', carbon_type='c12', &
-               cnstate_vars=cnstate_vars)
        call veg_cs%Restart(bounds, ncid, flag='define', carbon_type='c12', &
-               cnstate_vars=cnstate_vars)
+            cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_col_cs%Restart(bounds, ncid, flag='define', carbon_type='c13', &
                c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
@@ -275,47 +282,16 @@ contains
           call c14_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
                c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
        end if
-
-       call col_cf%Restart(bounds, ncid, flag='define')
        call veg_cf%Restart(bounds, ncid, flag='define')
-       
-       call col_ns%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
        call veg_ns%Restart(bounds, ncid, flag='define')
-
-       call col_nf%Restart(bounds, ncid, flag='define')
        call veg_nf%Restart(bounds, ncid, flag='define')
-
-       call col_ps%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
        call veg_ps%Restart(bounds, ncid, flag='define')
-
-       call col_pf%Restart(bounds, ncid, flag='define')
        call veg_pf%Restart(bounds, ncid, flag='define')
-
        call crop_vars%Restart(bounds, ncid, flag='define')
-
     end if
 
-    if (use_fates) then
-       call cnstate_vars%Restart(bounds, ncid, flag='define')
-       call col_cs%restart(bounds, ncid, flag='define', carbon_type='c12', &
-               cnstate_vars=cnstate_vars)
-       call veg_cs%restart(bounds, ncid, flag='define', carbon_type='c12', &
-               cnstate_vars=cnstate_vars)
-       if (use_c13) then
-          call c13_col_cs%restart(bounds, ncid, flag='define', carbon_type='c13', &
-               c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
-          call c13_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c13', &
-               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
-       end if
-       if (use_c14) then
-          call c14_col_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
-               c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
-          call c14_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
-               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
-       end if
-       call col_cf%Restart(bounds, ncid, flag='define')
-       call veg_cf%Restart(bounds, ncid, flag='define')
 
+    if (use_fates) then
        call alm_fates%restart(bounds, ncid, flag='define',  &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars, &
@@ -408,72 +384,47 @@ contains
        call ch4_vars%restart(  bounds, ncid, flag='write' )
     end if
 
+    if (use_cn .or. use_fates) then
+        call cnstate_vars%Restart(bounds, ncid, flag='write')
+        call col_cs%restart(bounds, ncid, flag='write', &
+              carbon_type='c12', cnstate_vars=cnstate_vars)
+        call col_cf%Restart(bounds, ncid, flag='write')
+        call col_ns%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
+        call col_nf%Restart(bounds, ncid, flag='write')
+        call col_ps%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
+        call col_pf%Restart(bounds, ncid, flag='write')
+    end if
+   
     if (use_cn) then
-       call cnstate_vars%Restart(bounds, ncid, flag='write')
-       call col_cs%restart(bounds, ncid, flag='write', &
-            carbon_type='c12', cnstate_vars=cnstate_vars)
        call veg_cs%restart(bounds, ncid, flag='write', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_col_cs%restart(bounds, ncid, flag='write', &
                c12_carbonstate_vars=col_cs, carbon_type='c13', &
-	            cnstate_vars=cnstate_vars)
+               cnstate_vars=cnstate_vars)
           call c13_veg_cs%restart(bounds, ncid, flag='write', &
                c12_veg_cs=veg_cs, carbon_type='c13', &
-	            cnstate_vars=cnstate_vars)
+               cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
           call c14_col_cs%restart(bounds, ncid, flag='write', &
                c12_carbonstate_vars=col_cs, carbon_type='c14', &
-	            cnstate_vars=cnstate_vars )
+               cnstate_vars=cnstate_vars )
           call c14_veg_cs%restart(bounds, ncid, flag='write', &
                c12_veg_cs=veg_cs, carbon_type='c14', &
-	            cnstate_vars=cnstate_vars )
+               cnstate_vars=cnstate_vars )
        end if
-
-       call col_cf%Restart(bounds, ncid, flag='write')
        call veg_cf%Restart(bounds, ncid, flag='write')
-
-       call col_ns%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
        call veg_ns%Restart(bounds, ncid, flag='write')
-
-       call col_nf%Restart(bounds, ncid, flag='write')
        call veg_nf%Restart(bounds, ncid, flag='write')
-
-       call col_ps%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
        call veg_ps%Restart(bounds, ncid, flag='write')
-
-       call col_pf%Restart(bounds, ncid, flag='write')
        call veg_pf%Restart(bounds, ncid, flag='write')
-
        call crop_vars%Restart(bounds, ncid, flag='write')
     end if
 
-    if (use_fates) then
-       call cnstate_vars%Restart(bounds, ncid, flag='write')
-       call col_cs%restart(bounds, ncid, flag='write', &
-            carbon_type='c12', cnstate_vars=cnstate_vars)
-       call veg_cs%restart(bounds, ncid, flag='write', &
-            carbon_type='c12', cnstate_vars=cnstate_vars)
-       if (use_c13) then
-          call c13_col_cs%restart(bounds, ncid, flag='write', &
-               c12_carbonstate_vars=col_cs, carbon_type='c13', &
-	            cnstate_vars=cnstate_vars)
-          call c13_veg_cs%restart(bounds, ncid, flag='write', &
-               c12_veg_cs=veg_cs, carbon_type='c13', &
-	            cnstate_vars=cnstate_vars)
-       end if
-       if (use_c14) then
-          call col_cs%restart(bounds, ncid, flag='write', &
-               c12_carbonstate_vars=col_cs, carbon_type='c14', &
-	            cnstate_vars=cnstate_vars )
-          call veg_cs%restart(bounds, ncid, flag='write', &
-               c12_veg_cs=veg_cs, carbon_type='c14', &
-	            cnstate_vars=cnstate_vars )
-       end if
-       call col_cf%Restart(bounds, ncid, flag='write')
-       call veg_cf%Restart(bounds, ncid, flag='write')
 
+
+    if (use_fates) then
        call alm_fates%restart(bounds, ncid, flag='write',  &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars, &
@@ -666,72 +617,45 @@ contains
        call ch4_vars%restart(  bounds, ncid, flag='read' )
     end if
 
+    if (use_cn .or. use_fates) then
+        call cnstate_vars%Restart(bounds, ncid, flag='read')
+        call col_cs%restart(bounds, ncid, flag='read', &
+              carbon_type='c12', cnstate_vars=cnstate_vars)
+        call col_cf%Restart(bounds, ncid, flag='read')
+        call col_ns%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
+        call col_nf%Restart(bounds, ncid, flag='read')
+        call col_ps%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
+        call col_pf%Restart(bounds, ncid, flag='read')
+    end if
+   
     if (use_cn) then
-       call cnstate_vars%Restart(bounds, ncid, flag='read')
-       call col_cs%restart(bounds, ncid, flag='read', &
-            carbon_type='c12', cnstate_vars=cnstate_vars)
        call veg_cs%restart(bounds, ncid, flag='read', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_col_cs%restart(bounds, ncid, flag='read', &
                c12_carbonstate_vars=col_cs, carbon_type='c13', &
-	            cnstate_vars=cnstate_vars)
+               cnstate_vars=cnstate_vars)
           call c13_veg_cs%restart(bounds, ncid, flag='read', &
                c12_veg_cs=veg_cs, carbon_type='c13', &
-	            cnstate_vars=cnstate_vars)
+               cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
           call c14_col_cs%restart(bounds, ncid, flag='read', &
                c12_carbonstate_vars=col_cs, carbon_type='c14', &
-	            cnstate_vars=cnstate_vars)
+               cnstate_vars=cnstate_vars)
           call c14_veg_cs%restart(bounds, ncid, flag='read', &
                c12_veg_cs=veg_cs, carbon_type='c14', &
-	            cnstate_vars=cnstate_vars)
+               cnstate_vars=cnstate_vars)
        end if
-
-       call col_cf%Restart(bounds, ncid, flag='read')
        call veg_cf%Restart(bounds, ncid, flag='read')
-
-       call col_ns%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
        call veg_ns%Restart(bounds, ncid, flag='read')
-
-       call col_nf%Restart(bounds, ncid, flag='read')
        call veg_nf%Restart(bounds, ncid, flag='read')
-
-       call col_ps%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
        call veg_ps%Restart(bounds, ncid, flag='read')
-
-       call col_pf%Restart(bounds, ncid, flag='read')
        call veg_pf%Restart(bounds, ncid, flag='read')
-
        call crop_vars%Restart(bounds, ncid, flag='read')
     end if
 
     if (use_fates) then
-       call cnstate_vars%Restart(bounds, ncid, flag='read')
-       call col_cs%restart(bounds, ncid, flag='read', &
-             carbon_type='c12', cnstate_vars=cnstate_vars)
-       call veg_cs%restart(bounds, ncid, flag='read', &
-             carbon_type='c12', cnstate_vars=cnstate_vars)
-       if (use_c13) then
-          call c13_col_cs%restart(bounds, ncid, flag='read', &
-                c12_carbonstate_vars=col_cs, carbon_type='c13', &
-                cnstate_vars=cnstate_vars)
-          call c13_veg_cs%restart(bounds, ncid, flag='read', &
-                c12_veg_cs=veg_cs, carbon_type='c13', &
-                cnstate_vars=cnstate_vars)
-       end if
-       if (use_c14) then
-          call c14_col_cs%restart(bounds, ncid, flag='read', &
-               c12_carbonstate_vars=col_cs, carbon_type='c14', &
-	            cnstate_vars=cnstate_vars)
-          call c14_veg_cs%restart(bounds, ncid, flag='read', &
-               c12_veg_cs=veg_cs, carbon_type='c14', &
-	            cnstate_vars=cnstate_vars)
-       end if
-       call col_cf%Restart(bounds, ncid, flag='read')
-       call veg_cf%Restart(bounds, ncid, flag='read')
-
        call alm_fates%restart(bounds, ncid, flag='read',  &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars, &

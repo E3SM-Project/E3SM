@@ -65,7 +65,7 @@
 
         do i = 1,nubc
 
-           call cnst_get_ind( specifier(i), vid, abort=.false. )
+           call cnst_get_ind( specifier(i), vid, abrtf=.false. )
            if( vid > 0 ) then
               if( cnst_fixed_ubc(vid) ) then
                  ii = ii+1
@@ -155,13 +155,13 @@
         !	... special section to set h2o and ch4 ub concentrations
         !--------------------------------------------------------
         mmr(:ncol,1) = cnst_mw(1)*h2o_ubc_vmr/mw_dry(:ncol)
-        call cnst_get_ind( 'CH4', m, abort=.false. )
+        call cnst_get_ind( 'CH4', m, abrtf=.false. )
         if( m > 0 ) then
            mmr(:ncol,m) = cnst_mw(m)*ch4_ubc_vmr/mw_dry(:ncol)
         end if
 
 #ifdef TGCM_DIAGS
-        call cnst_get_ind( 'H2', m, abort=.false. )
+        call cnst_get_ind( 'H2', m, abrtf=.false. )
         if( m > 0 ) then
            write(iulog,*) 'set_ub_vals: diagnostics for chunk = ',lchunk
            write(iulog,*) 'last,next,dels = ',last,next,dels

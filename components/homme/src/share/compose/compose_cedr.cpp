@@ -5018,6 +5018,8 @@ struct InputParser {
 # endif
 #endif
 
+typedef Kokkos::DefaultHostExecutionSpace ComposeDefaultExecutionSpace;
+
 namespace homme {
 namespace compose {
 
@@ -5134,8 +5136,8 @@ class QLT : public cedr::qlt::QLT<ES> {
 
   static Int solve (const Int nlev, const VerticalLevelsData& vld,
                     const Real& tot_mass) {
-    solve(nlev, vld.ones.data(), tot_mass, vld.lo.data(), vld.hi.data(),
-          vld.mass.data(), vld.wrk.data());    
+    return solve(nlev, vld.ones.data(), tot_mass, vld.lo.data(), vld.hi.data(),
+                 vld.mass.data(), vld.wrk.data());    
   }
 
   static Int solve_unittest () {
@@ -5834,7 +5836,7 @@ private:
 
 struct CDR {
   typedef std::shared_ptr<CDR> Ptr;
-  typedef compose::QLT<Kokkos::DefaultExecutionSpace> QLTT;
+  typedef compose::QLT<ComposeDefaultExecutionSpace> QLTT;
   typedef compose::CAAS CAAST;
 
   struct Alg {

@@ -82,7 +82,7 @@
 !----------------------------------------------------------------------
 !	... do we have no with a fixed ubc ?
 !----------------------------------------------------------------------
-      call cnst_get_ind( 'NO', ndx_no, abort=.false. )
+      call cnst_get_ind( 'NO', ndx_no, abrtf=.false. )
       if( ndx_no > 0 ) then
          if( .not. cnst_fixed_ubc(ndx_no) ) then
             return
