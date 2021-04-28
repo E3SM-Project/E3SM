@@ -362,7 +362,7 @@ protected:
 
       team_parallel_scan(team,num_mid_levels,
                          [&](const int k, ScalarT& accumulator, const bool last) {
-        accumulator += dx_m(k)[0];
+        accumulator += dx_m(k);
         if (last) {
           x_i(k+1) = s0 + accumulator;
         }

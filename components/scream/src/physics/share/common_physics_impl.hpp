@@ -249,16 +249,14 @@ void PhysicsFunctions<DeviceT>::get_z_int(const MemberType& team,
                                           const InputProviderZ& dz,
                                           const view_1d<ScalarT>& z_int)
 {
-  using column_ops  = ColumnOps<DeviceT,ScalarT,1>;
-  using pack_type = typename column_ops::pack_type;
+  using column_ops  = ColumnOps<DeviceT,ScalarT>;
+  using pack_type = typename ekat::Pack<ScalarT,1>;
   // Use the column ops scan function.  Note, we set FromTop to false so that we scan from the true bottom
   // of the column to the top.
-  const bool FromTop = false;
+  constexpr bool FromTop = false;
   int num_levs = z_int.extent(0)-1;
   ScalarT zbot = 0.0;
-  auto dz_lam    = [&](const int k)->pack_type { return dz(k); };
-  auto z_int_lam = [&](const int k)->view_1d<pack_type> { return z_int(k); };
-  column_ops::column_scan<FromTop>(team,num_levs,dz_lam,z_int_lam,zbot);
+  column_ops::column_scan<FromTop>(team,num_levs,dz,z_int,zbot);
 }
 //-----------------------------------------------------------------------------------------------//
 } // namespace physics

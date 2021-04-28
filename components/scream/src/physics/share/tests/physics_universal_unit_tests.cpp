@@ -113,38 +113,38 @@ struct UnitWrap::UnitTest<D>::TestUniversal
 //ASD      errors++;
 //ASD    }
 //ASD  } // T_th_conversion_test
-//-----------------------------------------------------------------------------------------------//
-  KOKKOS_FUNCTION static void dz_tests(const Scalar& zi_top, const Scalar& zi_bot, int& errors){
-
-    // Allow usage of universal functions
-    using physics = scream::physics::Functions<Scalar, Device>;
-    // Gather the test tolerance
-    static constexpr Scalar eps = C::macheps;
-    Real tol = 1000*eps;
-
-    //========================================================
-    // Test calculation of layer thickness using get_dz
-    //========================================================
-    // This function tests the function "get_dz" for a set of interface layer heights.
-    //
-    // Inputs:
-    //   zi_top: The above surface height of the top of the verical layer, m.
-    //   zi_bot: The above surface height of the bottom of the verical layer, m.
-    // Outputs:
-    //   errors:  A tally of any errors that this test detects.
-    //========================================================
-
-    const Spack z_top(zi_top);
-    const Spack z_bot(zi_bot);
-    Real expected_dz = zi_top-zi_bot;
-    const Spack dz = physics::get_dz(z_top, z_bot, Smask(true));
-    if (std::abs(dz[0]-expected_dz)>tol) {
-      printf("get_dz test: abs(dz-expected_dz)=%e is larger than the tol=%e\n",std::abs(dz[0]-expected_dz),tol);
-      errors++;
-    }
-
-  } // dz_test
-//-----------------------------------------------------------------------------------------------//
+//ASD//-----------------------------------------------------------------------------------------------//
+//ASD  KOKKOS_FUNCTION static void dz_tests(const Scalar& zi_top, const Scalar& zi_bot, int& errors){
+//ASD
+//ASD    // Allow usage of universal functions
+//ASD    using physics = scream::physics::Functions<Scalar, Device>;
+//ASD    // Gather the test tolerance
+//ASD    static constexpr Scalar eps = C::macheps;
+//ASD    Real tol = 1000*eps;
+//ASD
+//ASD    //========================================================
+//ASD    // Test calculation of layer thickness using get_dz
+//ASD    //========================================================
+//ASD    // This function tests the function "get_dz" for a set of interface layer heights.
+//ASD    //
+//ASD    // Inputs:
+//ASD    //   zi_top: The above surface height of the top of the verical layer, m.
+//ASD    //   zi_bot: The above surface height of the bottom of the verical layer, m.
+//ASD    // Outputs:
+//ASD    //   errors:  A tally of any errors that this test detects.
+//ASD    //========================================================
+//ASD
+//ASD    const Spack z_top(zi_top);
+//ASD    const Spack z_bot(zi_bot);
+//ASD    Real expected_dz = zi_top-zi_bot;
+//ASD    const Spack dz = physics::get_dz(z_top, z_bot, Smask(true));
+//ASD    if (std::abs(dz[0]-expected_dz)>tol) {
+//ASD      printf("get_dz test: abs(dz-expected_dz)=%e is larger than the tol=%e\n",std::abs(dz[0]-expected_dz),tol);
+//ASD      errors++;
+//ASD    }
+//ASD
+//ASD  } // dz_test
+//ASD//-----------------------------------------------------------------------------------------------//
 //ASD  KOKKOS_FUNCTION static void dse_tests(const Scalar& temp, const Scalar& height, const Scalar surface_height, int& errors){
 //ASD
 //ASD    // Allow usage of universal functions
@@ -265,6 +265,12 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     ekat::genRandArray(qv,engine,pdf_qv);
     ekat::genRandArray(pressure,engine,pdf_pres);
     ekat::genRandArray(psuedo_density,engine,pdf_dp);
+    auto dz_for_testing_host = Kokkos::create_mirror(dz_for_testing);
+    for (int k = 0;k<num_levs;k++)
+    {
+      dz_for_testing_host(k) = num_levs-k;
+    }
+    Kokkos::deep_copy(dz_for_testing,dz_for_testing_host);
 
     int nerr = 0;
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
@@ -329,12 +335,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       EKAT_KERNEL_REQUIRE_MSG(physicscommon::get_dz(p0,p0,1.0,0.0)==Rd/ggr,"");
       EKAT_KERNEL_REQUIRE_MSG(physicscommon::get_dz(ggr,Rd,100.0,0.0)==100.0,"");
       // z_int property tests
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_levs), [&] (const int k)
-      {
-        dz_for_testing(k) = k+1;
-      });
       physicscommon::get_z_int(team,dz_for_testing,z_int);
-
 //ASD      for (int k=0;k<num_levs;++k)
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_levs), [&] (const int k)
       {
@@ -363,9 +364,9 @@ struct UnitWrap::UnitTest<D>::TestUniversal
         // DZ Test
         //   - Determine the z-layer bottom and top as being the (k+1) thick.
         //     Allow for varying interface heights by setting zi_bot equal to the sum(0,...,k).
-        Real zi_bot = (pow(k,2)+k)/2.0;
-        Real zi_top = zi_bot + (k+1);
-        dz_tests(zi_top,zi_bot,errors);
+//ASD        Real zi_bot = (pow(k,2)+k)/2.0;
+//ASD        Real zi_top = zi_bot + (k+1);
+//ASD        dz_tests(zi_top,zi_bot,errors);
         // DSE Test
 //ASD        dse_tests(temperature(k),height(k),surface_height(k),errors);
       });  // Kokkos parallel_for k=1,num_levs
@@ -373,6 +374,16 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     }, nerr); // Kokkos parallel_reduce "test_universal_physics"
 
     Kokkos::fence();
+    auto z_int_host = Kokkos::create_mirror(z_int);
+    Kokkos::deep_copy(z_int_host,z_int);
+    //Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_levs+1), [&] (const int k)
+    for(int k=0;k<num_levs;k++)
+    {
+      const auto k_bwd = num_levs-k;
+      std::string z_int_err_msg = "Error at level k,k_bwd=" + std::to_string(k) + "," + std::to_string(k_bwd) + "; z_int(k_bwd) = " + std::to_string(z_int_host(k_bwd));
+      EKAT_KERNEL_REQUIRE_MSG(z_int_host(k_bwd)==k*(k+1)/2,z_int_err_msg.c_str());
+    }
+
     REQUIRE(nerr == 0);
 
   } // run
