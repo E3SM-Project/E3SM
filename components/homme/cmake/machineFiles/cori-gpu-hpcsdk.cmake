@@ -16,9 +16,8 @@ SET(WITH_PNETCDF FALSE CACHE FILEPATH "")
 
 SET(USE_QUEUING FALSE CACHE BOOL "")
 
-SET(ENABLE_CUDA FALSE CACHE BOOL "")
+SET(ENABLE_CUDA TRUE CACHE BOOL "")
 
-#SET(BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
 SET(HOMME_ENABLE_COMPOSE FALSE CACHE BOOL "")
 
@@ -30,24 +29,20 @@ SET(Kokkos_ENABLE_OPENMP OFF CACHE BOOL "")
 SET(Kokkos_ENABLE_CUDA ON CACHE BOOL "")
 SET(Kokkos_ENABLE_CUDA_LAMBDA ON CACHE BOOL "")
 SET(Kokkos_ARCH_VOLTA70 ON CACHE BOOL "")
-#SET(Kokkos_ARCH_SKX ON CACHE BOOL "") # ndk -- not sure why it didn't like this on as well pgc++-Error-Unknown switch: -mtune=skylake-avx512
-#SET(Kokkos_ENABLE_CUDA_UVM ON CACHE BOOL "") #ndk -- get build error when I tried UVM
+#SET(Kokkos_ARCH_SKX ON CACHE BOOL "") # not sure why it didn't like this on as well pgc++-Error-Unknown switch: -mtune=skylake-avx512
+#SET(Kokkos_ENABLE_CUDA_UVM ON CACHE BOOL "") # get build error when I tried UVM
 SET(Kokkos_ENABLE_EXPLICIT_INSTANTIATION OFF CACHE BOOL "")
-SET(Kokkos_ENABLE_CUDA_ARCH_LINKING OFF CACHE BOOL "") #ndk -- need this to get around link error with fortran (-arch=sm_70) 
+SET(Kokkos_ENABLE_CUDA_ARCH_LINKING OFF CACHE BOOL "") # need this to get around link error with fortran (-arch=sm_70) 
 
 SET(CMAKE_C_COMPILER "mpicc" CACHE STRING "")
 SET(CMAKE_Fortran_COMPILER "mpifort" CACHE STRING "")
 SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
-# ndk -- need to set OMPI_CXX env variable, but can't seem to set it here
-#SET(ENV{OMPI_CXX} "/global/cscratch1/sd/ndk/wacmy/m54-apr16/components/homme/../../externals/kokkos/bin/nvcc_wrapper" CACHE FILEPATH "")
-#SET(ENV{OMPI_CXX} "/global/cscratch1/sd/ndk/wacmy/m54-apr16/components/homme/../../externals/kokkos/bin/nvcc_wrapper")
-#message("ndk ENV{OMPI_CXX}=$ENV{OMPI_CXX}")
-# ndk -- also need to change default host_compiler in externals/kokkos/bin/nvcc_wrapper which can be done via:
-#setenv NVCC_WRAPPER_DEFAULT_COMPILER "pgc++"
+# Note: need to set OMPI_CXX env variable and perhaps NVCC_WRAPPER_DEFAULT_COMPILER
 
-
-#SET(E3SM_KOKKOS_PATH "$KOKKOS_DIR" CACHE BOOL "")
+# To try using a different kokkos (such as module)
+#SET(E3SM_KOKKOS_PATH "$ENV{KOKKOS_DIR}" CACHE BOOL "")
 #SET(E3SM_KOKKOS_PATH "/usr/common/software/sles15_cgpu/kokkos/3.2.00" CACHE BOOL "")
+#message("using E3SM_KOKKOS_PATH=$E3SM_KOKKOS_PATH")
 
 SET(ENABLE_OPENMP OFF CACHE BOOL "")
 SET(ENABLE_COLUMN_OPENMP OFF CACHE BOOL "")
