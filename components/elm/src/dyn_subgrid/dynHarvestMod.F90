@@ -26,6 +26,7 @@ module dynHarvestMod
   use VegetationType        , only : veg_pp                
   use VegetationDataType    , only : veg_cs, veg_cf, veg_ns, veg_nf  
   use VegetationDataType    , only : veg_ps, veg_pf  
+  use topounit_varcon      , only : max_topounits
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -53,7 +54,7 @@ module dynHarvestMod
   
   type(dyn_var_time_uninterp_type) :: harvest_vars(num_harvest_vars)   ! value of each harvest variable
 
-  real(r8) , allocatable   :: harvest(:) ! harvest rates
+  real(r8) , allocatable   :: harvest(:,:) ! harvest rates
   logical                  :: do_harvest ! whether we're in a period when we should do harvest
   !---------------------------------------------------------------------------
 
@@ -80,6 +81,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: varnum     ! counter for harvest variables
+    integer :: harvest_shape(2)  ! harvest shape TKT
     integer :: num_points ! number of spatial points
     integer :: ier        ! error code
     
@@ -88,7 +90,7 @@ contains
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-    allocate(harvest(bounds%begg:bounds%endg),stat=ier)
+    allocate(harvest(bounds%begg:bounds%endg,max_topounits),stat=ier) !TKT
     if (ier /= 0) then
        call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, __LINE__))
     end if
@@ -98,12 +100,14 @@ contains
     
     ! Get initial harvest data
     if (use_cn) then
-       num_points = (bounds%endg - bounds%begg + 1)
+       num_points = (bounds%endg - bounds%begg + 1)  !TKT
+       harvest_shape = [num_points, max_topounits]       ! TKT
        do varnum = 1, num_harvest_vars
           harvest_vars(varnum) = dyn_var_time_uninterp_type( &
                dyn_file=dynHarvest_file, varname=harvest_varnames(varnum), &
                dim1name=grlnd, conversion_factor=1.0_r8, &
-               do_check_sums_equal_1=.false., data_shape=[num_points])
+               do_check_sums_equal_1=.false., data_shape=harvest_shape)
+               !do_check_sums_equal_1=.false., data_shape=[num_points])  !TKT
        end do
        call dynHarvest_interp(bounds)
     end if
@@ -132,7 +136,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer               :: varnum       ! counter for harvest variables
-    real(r8), allocatable :: this_data(:) ! data for a single harvest variable
+    real(r8), allocatable :: this_data(:,:) ! data for a single harvest variable
 
     character(len=*), parameter :: subname = 'dynHarvest_interp'
     !-----------------------------------------------------------------------
@@ -145,7 +149,7 @@ contains
 
     ! Get total harvest for this time step
     if (use_cn) then
-       harvest(bounds%begg:bounds%endg) = 0._r8
+       harvest(bounds%begg:bounds%endg,:) = 0._r8    !TKT
 
        if (dynHarvest_file%time_info%is_before_time_series()) then
           ! Turn off harvest before the start of the harvest time series
@@ -155,11 +159,11 @@ contains
           ! means that harvest rates will be maintained at the rate given in the last
           ! year of the file for all years past the end of this specified time series.
           do_harvest = .true.
-          allocate(this_data(bounds%begg:bounds%endg))
+          allocate(this_data(bounds%begg:bounds%endg,max_topounits))   !TKT
           do varnum = 1, num_harvest_vars
              call harvest_vars(varnum)%get_current_data(this_data)
-             harvest(bounds%begg:bounds%endg) = harvest(bounds%begg:bounds%endg) + &
-                                                this_data(bounds%begg:bounds%endg)
+             harvest(bounds%begg:bounds%endg,:) = harvest(bounds%begg:bounds%endg,:) + &    !TKT
+                                                this_data(bounds%begg:bounds%endg,:)      !TKT
           end do
           deallocate(this_data)
        end if
@@ -178,6 +182,7 @@ contains
     use pftvarcon       , only : noveg, nbrdlf_evr_shrub, pprodharv10
     use elm_varcon      , only : secspday
     use clm_time_manager, only : get_days_per_year
+    use GridcellType   , only : grc_pp
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -188,6 +193,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: p                         ! patch index
+    integer :: t,ti,topi                 ! topounit indices TKT
     integer :: g                         ! gridcell index
     integer :: fp                        ! patch filter index
     real(r8):: am                        ! rate for fractional harvest mortality (1/yr)
@@ -341,6 +347,9 @@ contains
    do fp = 1,num_soilp
       p = filter_soilp(fp)
       g = pgridcell(p)
+      t = veg_pp%topounit(p)
+      topi = grc_pp%topi(g)
+      ti = t - topi + 1
       
       ! If this is a tree pft, then
       ! get the annual harvest "mortality" rate (am) from harvest array
@@ -348,7 +357,7 @@ contains
       if (ivt(p) > noveg .and. ivt(p) < nbrdlf_evr_shrub) then
 
          if (do_harvest) then
-            am = harvest(g)
+            am = harvest(g,ti)
             m  = am/(days_per_year * secspday)
          else
             m = 0._r8

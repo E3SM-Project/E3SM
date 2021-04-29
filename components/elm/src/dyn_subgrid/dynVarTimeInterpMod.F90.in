@@ -37,9 +37,10 @@ module dynVarTimeInterpMod
      integer :: time_index_upper  ! current time_index_upper curresponding to data_at_tupper
    contains
      generic :: get_current_data => &      ! Get the current value of the data
-          get_current_data_1d, get_current_data_2d
+          get_current_data_1d, get_current_data_2d, get_current_data_3d
      procedure :: get_current_data_1d  ! Get the current value of the data, for a 1-d variable
      procedure :: get_current_data_2d  ! Get the current value of the data, for a 2-d variable
+     procedure :: get_current_data_3d  ! Get the current value of the data, for a 3-d variable
      procedure :: read_data_if_needed  ! Read the next time slice of data, if necessary
   end type dyn_var_time_interp_type
 
@@ -109,7 +110,7 @@ contains
   ! The following specific procedures are NOT actually public, but they can be accessed
   ! via the generic type-bound procedure, get_current_data
 
-  ! DIMS 1,2
+  ! DIMS 1,2,3
   !-----------------------------------------------------------------------
   subroutine get_current_data_{DIMS}d(this, cur_data)
     !

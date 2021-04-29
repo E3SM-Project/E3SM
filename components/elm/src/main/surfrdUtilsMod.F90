@@ -29,7 +29,7 @@ module surfrdUtilsMod
 contains
   
   !-----------------------------------------------------------------------
-  subroutine check_sums_equal_1_3d(arr, lb, name, caller,ntpu)
+  subroutine check_sums_equal_1_3d(arr, lb, name, caller)
     !
     ! !DESCRIPTION:
     ! Confirm that sum(arr(n,:)) == 1 for all n. If this isn't true for any n, abort with a message.
@@ -42,11 +42,11 @@ contains
     real(r8)        , intent(in) :: arr(lb:,:,:)   ! array to check
     character(len=*), intent(in) :: name         ! name of array
     character(len=*), intent(in) :: caller       ! identifier of caller, for more meaningful error messages
-    integer,          intent(in) :: ntpu(:)                  ! Actual number of topounit per grid
+    !integer,          intent(in) :: ntpu(:)                  ! Actual number of topounit per grid
     !
     ! !LOCAL VARIABLES:
     logical :: found
-    integer :: nl, t, tm, ti
+    integer :: nl, t, tm
     integer :: nindx
     integer :: tindx
     real(r8), parameter :: eps = 1.e-14_r8
@@ -55,18 +55,15 @@ contains
     found = .false.
 
     do nl = lbound(arr, 1), ubound(arr, 1)
-       ti = (nl - lbound(arr, 1)) + 1
-       if (.not. has_topounit) then
-          tm = max_topounits          
-       else
-          tm = ntpu(ti)
-       end if
+       tm = max_topounits          
        do t = 1, tm
-          if (abs(sum(arr(nl,t,:)) - 1._r8) > eps) then
-             found = .true.
-             nindx = nl
-             tindx = t
-            exit
+          if (arr(nl,t,1) >=0._r8) then        ! Check sum only if topounit is valid
+             if (abs(sum(arr(nl,t,:)) - 1._r8) > eps) then
+                found = .true.
+                nindx = nl
+                tindx = t
+                exit
+             end if
           end if
        end do
     end do
@@ -258,6 +255,8 @@ contains
     use elm_varctl , only : irrigate
     use elm_varpar , only : cft_lb, cft_ub, cft_size
     use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoelmpft
+    use topounit_varcon      , only : max_topounits   ! TKT
+    use GridcellType   , only : grc_pp                ! TKT
     !
     ! !ARGUMENTS:
 
@@ -268,14 +267,15 @@ contains
 
     ! Weight and fertilizer of each CFT in each grid cell; dimensioned [g, cft_lb:cft_ub]
     ! This array is modified in-place
-    real(r8), intent(inout) :: wt_cft(begg:, cft_lb:)
-    real(r8), intent(inout) :: fert_cft(begg:, cft_lb:)
+    real(r8), intent(inout) :: wt_cft(begg:,1:, cft_lb:)  !TKT
+    real(r8), intent(inout) :: fert_cft(begg:,1:, cft_lb:)  !TKT
 
     logical, intent(in) :: verbose  ! If true, print some extra information
     !
     ! !LOCAL VARIABLES:
-    integer :: g
+    integer :: g, t,t2                       ! TKT
     integer :: m
+    !integer, allocatable :: ntpu(:)                       ! To store number of topounits per grid TKT
     real(r8) :: wt_cft_to
     real(r8) :: wt_cft_from
     real(r8) :: wt_cft_merge
@@ -283,7 +283,7 @@ contains
     character(len=*), parameter :: subname = 'collapse_crop_types'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(wt_cft) == (/endg, cft_ub/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(wt_cft) == (/endg,max_topounits, cft_ub/)), errMsg(__FILE__, __LINE__))    ! TKT
 
     if (cft_size <= 0) then
        call endrun(msg = subname//' can only be called if cft_size > 0' // &
@@ -293,13 +293,14 @@ contains
     ! ------------------------------------------------------------------------
     ! If not using irrigation, merge irrigated CFTs into rainfed CFTs
     ! ------------------------------------------------------------------------
-
+    !allocate(ntpu(begg:endg))  
     if (.not. irrigate) then
        if (verbose .and. masterproc) then
           write(iulog,*) trim(subname)//' crop=.T. and irrigate=.F., so merging irrigated pfts with rainfed'
        end if
-
+       
        do g = begg, endg
+          !ntpu(g) = grc_pp%ntopounits(g)
           ! Left Hand Side: merged rainfed+irrigated crop pfts from nc3crop to
           !                 npcropmax-1, stride 2
           ! Right Hand Side: rainfed crop pfts from nc3crop to npcropmax-1,
@@ -307,12 +308,16 @@ contains
           ! plus             irrigated crop pfts from nc3irrig to npcropmax,
           !                  stride 2
           ! where stride 2 means "every other"
-          wt_cft(g, nc3crop:npcropmax-1:2) = &
-               wt_cft(g, nc3crop:npcropmax-1:2) + wt_cft(g, nc3irrig:npcropmax:2)
-          wt_cft(g, nc3irrig:npcropmax:2)  = 0._r8
+          do t = grc_pp%topi(g), grc_pp%topf(g)    ! TKT
+             t2 = t - grc_pp%topi(g) + 1
+          
+             wt_cft(g,t2, nc3crop:npcropmax-1:2) = &
+               wt_cft(g,t2, nc3crop:npcropmax-1:2) + wt_cft(g,t2, nc3irrig:npcropmax:2)     ! TKT
+             wt_cft(g,t2, nc3irrig:npcropmax:2)  = 0._r8   
+          end do                                                                            ! TKT
        end do
 
-       call check_sums_equal_1_2d(wt_cft, begg, 'wt_cft', subname//': irrigation')
+       call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname//': irrigation')    ! TKT
     end if
 
     ! ------------------------------------------------------------------------
@@ -326,23 +331,27 @@ contains
     end if
 
     do g = begg, endg
-       do m = 1, npcropmax
-          if (m /= mergetoelmpft(m)) then
-             wt_cft_to                   = wt_cft(g, mergetoelmpft(m))
-             wt_cft_from                 = wt_cft(g, m)
-             wt_cft_merge                = wt_cft_to + wt_cft_from
-             wt_cft(g, mergetoelmpft(m)) = wt_cft_merge
-             wt_cft(g, m)                = 0._r8
-             if (wt_cft_merge > 0._r8) then
-                fert_cft(g,mergetoelmpft(m)) = (wt_cft_to * fert_cft(g,mergetoelmpft(m)) + &
-                                                wt_cft_from * fert_cft(g,m)) / wt_cft_merge
+       !ntpu(g) = grc_pp%ntopounits(g)
+       do t = grc_pp%topi(g), grc_pp%topf(g)    ! TKT
+          t2 = t - grc_pp%topi(g) + 1
+          do m = 1, npcropmax
+             if (m /= mergetoelmpft(m)) then
+                wt_cft_to                   = wt_cft(g,t2, mergetoelmpft(m))
+                wt_cft_from                 = wt_cft(g,t2, m)
+                wt_cft_merge                = wt_cft_to + wt_cft_from
+                wt_cft(g,t2, mergetoelmpft(m)) = wt_cft_merge
+                wt_cft(g,t2, m)                = 0._r8
+                if (wt_cft_merge > 0._r8) then
+                   fert_cft(g,t2,mergetoelmpft(m)) = (wt_cft_to * fert_cft(g,t2,mergetoelmpft(m)) + &
+                                                   wt_cft_from * fert_cft(g,t2,m)) / wt_cft_merge
+                end if
              end if
-          end if
+          end do
        end do
     end do
 
-    call check_sums_equal_1_2d(wt_cft, begg, 'wt_cft', subname//': mergetoelmpft')
-
+    call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname//': mergetoelmpft')   ! TKT
+    !deallocate(ntpu)
   end subroutine collapse_crop_types
 
 end module surfrdUtilsMod

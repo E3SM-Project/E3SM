@@ -36,7 +36,6 @@ module GridcellType
      integer , pointer :: topi         (:) => null() ! beginning topographic unit index for each gridcell
      integer , pointer :: topf         (:) => null() ! ending topographic unit index for each gridcell
      integer , pointer :: ntopounits   (:) => null() ! number of topographic units for each gridcell calculated from topi and topf
-     integer , pointer :: ntopounits2   (:) => null() ! number of topographic units for each gridcell read from surface data input
      integer , pointer :: lndi         (:) => null() ! beginning landunit index for each gridcell
      integer , pointer :: lndf         (:) => null() ! ending landunit index for each gridcell
      integer , pointer :: nlandunits   (:) => null() ! number of landunits for each gridcell
@@ -94,8 +93,7 @@ contains
 
     allocate(this%topi      (begg:endg)) ; this%topi      (:) = ispval
     allocate(this%topf      (begg:endg)) ; this%topf      (:) = ispval
-    allocate(this%ntopounits(begg:endg)) ; this%ntopounits(:) = ispval
-    allocate(this%ntopounits2(begg:endg)) ; this%ntopounits2(:) = ispval
+    allocate(this%ntopounits(begg:endg)) ; this%ntopounits(:) = 1      ! Default number of topounits per grid is 1
     allocate(this%lndi      (begg:endg)) ; this%lndi      (:) = ispval
     allocate(this%lndf      (begg:endg)) ; this%lndf      (:) = ispval
     allocate(this%nlandunits(begg:endg)) ; this%nlandunits(:) = ispval
@@ -137,7 +135,6 @@ contains
     deallocate(this%topi             )
     deallocate(this%topf             )
     deallocate(this%ntopounits       )
-    deallocate(this%ntopounits2       )
     deallocate(this%lndi             )
     deallocate(this%lndf             )
     deallocate(this%nlandunits       )
