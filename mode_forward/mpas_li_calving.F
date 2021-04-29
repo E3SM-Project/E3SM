@@ -3011,9 +3011,8 @@ module li_calving
       end where
 
       call flood_fill(seedMask, growMask, domain)
-      ! The calving volume needs to be distributed in three ways:
-      ! 1. We need to first remove any "thin" ice in front of this cell
-      ! 2. Then we remove ice from this cell if damage > threshold
+
+      ! Remove ice from flood-filled mask, and any neighboring non-dynamic ice
       do iCell = 1, nCells
          if ( seedMask(iCell) == 1 ) then
             ! First remove ice from "thin" neighbors
@@ -3026,24 +3025,6 @@ module li_calving
             enddo
 
             calvingThickness(iCell) = thickness(iCell)
-            ! < apply to the field that will be used in thickness units
-
-            ! Now calved away the neighboring cells if the damage is also > the threshold value
-            ! I choose to disable this section (i.e., no recursive calving) -- TZ
-            !TODO: a flood fill algorithm might be needed for this threshold method in the future
-            !do iNeighbor = 1, nEdgesOnCell(iCell)
-            !   jCell = cellsOnCell(iNeighbor, iCell)
-            !   if (li_mask_is_floating_ice(cellMask(jCell)) .and. li_mask_is_dynamic_ice(cellMask(jCell)) &
-            !      .and. (.not. li_mask_is_dynamic_margin(jCell)) .and. (damage(jCell) .gt. config_damage_calving_threshold)) then
-            !      removeVolumeHere = cellVolume(jCell)
-                     ! < how much we want to remove here
-            !      calvingThickness(jCell) = removeVolumeHere / areaCell(jCell)
-                     ! < apply to the field that will be used in thickness units
-            !      cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere
-                     ! update accounting on cell volume
-            !   endif
-            !enddo
-
          endif ! if cell is calving margin
 
       enddo ! cell loop
