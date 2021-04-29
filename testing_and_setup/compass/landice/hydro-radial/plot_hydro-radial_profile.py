@@ -22,19 +22,18 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 
 if not options.filename:
-	print("No filename provided. Using output.nc.")
-        options.filename = "output.nc"
+   print("No filename provided. Using output.nc.")
+   options.filename = "output.nc"
 
 if not options.time:
-	print("No time provided. Using time -1.")
-        time_slice = -1
+   print("No time provided. Using time -1.")
+   time_slice = -1
 else:
-        time_slice = int(options.time)
+   time_slice = int(options.time)
 
 
 
 f = netCDF4.Dataset(options.filename,'r')
-#xtime = f.variables['xtime'][:]
 xCell = f.variables['xCell'][:]
 yCell = f.variables['yCell'][:]
 xEdge = f.variables['xEdge'][:]
@@ -50,11 +49,9 @@ closing = f.variables['closingRate'][time_slice,:]
 melt = f.variables['basalMeltInput'][time_slice,:]
 sliding = f.variables['basalSpeed'][time_slice,:]
 days = f.variables['daysSinceStart'][:]
-xtime = f.variables['xtime'][:]
 
-print("Total number of time levels={}".format(len(days))
+print("Total number of time levels={}".format(len(days)))
 print("Using time slice {}, which is year {}".format(time_slice, days[time_slice]/365.0))
-print("xtime=" + ''.join(xtime[time_slice,:]))
 
 print("Attempting to read thickness field from landice_grid.nc.")
 fin = netCDF4.Dataset("landice_grid.nc",'r')
@@ -71,20 +68,40 @@ x = xCell[ind]/1000.0
 print("start plotting.")
 
 fig = plt.figure(1, facecolor='w')
+
+# import exact solution
+try:
+   fnameSoln = 'near_exact_solution_r_P_W.txt'
+   soln = np.loadtxt(fnameSoln, delimiter=',')
+   rsoln = soln[:,0]/1000.0
+   Psoln = soln[:,1]/1.0e5
+   Wsoln = soln[:,2]
+except:
+   print("Unable to load exact solution.  Continuing without it.")
+   rsoln = 0.0
+   Psoln = 0.0
+   Wsoln = 0.0
+
 # water thickness
 ax1 = fig.add_subplot(121)
+plt.plot(rsoln, Wsoln, 'k-', label='W exact')
 #plt.plot(x, H[ind]*917.0*9.81/1.0e5, '.-')
-plt.plot(x, h[ind], '.-')
+plt.plot(x, h[ind], 'r.--', label='W model')
 plt.xlabel('X-position (km)')
 plt.ylabel('water depth (m)')
+plt.legend()
+plt.plot([5.0, 5.0], [0.0, 1.0], ':k')
 plt.grid(True)
 
 # water pressure
 ax = fig.add_subplot(122, sharex=ax1)
-plt.plot(x, H[ind]*910.0*9.80616 / 1.0e5, '.-')
-plt.plot(x, P[ind] / 1.0e5, '.--')
+plt.plot(x, H[ind]*910.0*9.80616 / 1.0e5, 'g:', label='P_o')
+plt.plot(rsoln, Psoln, 'k-', label='P_w exact')
+plt.plot(x, P[ind] / 1.0e5, 'r.--', label='P_w model')
 plt.xlabel('X-position (km)')
 plt.ylabel('water pressure (bar)')
+plt.legend()
+plt.plot([5.0, 5.0], [0.0, 45.0], ':k')
 plt.grid(True)
 
 

@@ -8,11 +8,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys
 from netCDF4 import Dataset as NetCDFFile
 import numpy as np
+from matplotlib import pyplot as plt
 
 # Parse options
 from optparse import OptionParser
 parser = OptionParser()
-parser.add_option("-f", "--file", dest="filename", type='string', help="file to setup dome", metavar="FILE")
+parser.add_option("-f", "--file", dest="filename", type='string', help="file to set up", metavar="FILE")
+parser.add_option("-i", "--ic", dest="ic", type='string', help="initial condition type: zero, exact", default="zero", metavar="TYPE")
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'
@@ -69,6 +71,7 @@ R1   = 5.0e3;            # m     onset of sliding
 L = 0.9 * R0;            # m     actual margin location
 #L = 0.92 * R0;            # m     actual margin location
 
+
 thickness[0, r<R0] = h0 * (1.0 - (r[r<R0] / R0)**2)
 thickness[0, r>L] = 0.0
 
@@ -94,14 +97,38 @@ gridfile.variables['uReconstructX'][0,:,-1] = velo
 gridfile.variables['uReconstructX'][0,thickness[0,:]==0.0,:] = 0.0
 
 # IC on thickness
-gridfile.variables['waterThickness'][0,:] = 0.0
-gridfile.variables['waterThickness'][0,:] = 0.01  # set some small initial value to keep adaptive time stepper from taking a huge time step initially
+#gridfile.variables['waterThickness'][0,:] = 0.0
+if options.ic == 'zero':
+   print("Using 'zero' option for initial condition.")
+   gridfile.variables['waterThickness'][0,:] = 0.01  # set some small initial value to keep adaptive time stepper from taking a huge time step initially
+elif options.ic == 'exact':
+   print("Using 'exact' option for initial condition.")
+   # import exact solution
+   fnameSoln = 'near_exact_solution_r_P_W.txt'
+   soln = np.loadtxt(fnameSoln, delimiter=',')
+   rsoln = soln[:,0]
+   Psoln = soln[:,1]
+   Wsoln = soln[:,2]
+
+   Wmpas = np.interp(r, rsoln, Wsoln) # apply exact solution
+   Wmpas[np.isnan(Wmpas)] = 0.0
+   gridfile.variables['waterThickness'][0,:] = Wmpas
+else:
+   sys.exit("ERROR: unknown initial condition type specified.")
 #gridfile.variables['waterThickness'][0,:] = (r-R1)/R0 * 0.05  # set some arbitrary but small linear profile
 #gridfile.variables['waterThickness'][0,gridfile.v0;            % m     actual margin location# zero negative values
 #gridfile.variables['waterThickness'][0,:] = 0.
 
 
-gridfile.variables['waterPressure'][0,:] = 0.0
+# IC on water pressure
+if options.ic == 'zero':
+   gridfile.variables['waterPressure'][0,:] = 0.0
+elif options.ic == 'exact':
+   Pmpas = np.interp(r, rsoln, Psoln) # apply exact solution
+   Pmpas[np.isnan(Pmpas)] = 0.0
+   gridfile.variables['waterPressure'][0,:] = Pmpas
+else:
+   sys.exit("ERROR: unknown initial condition type specified.")
 
 gridfile.close()
 
