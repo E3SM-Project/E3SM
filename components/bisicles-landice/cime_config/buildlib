@@ -7,7 +7,7 @@ my $component_dir = "glc";
 my $component_driver = "glc_cesm_driver_bisicles";
 my $mali_component_driver = "glc_cesm_driver";
 my $core = "landice";
-my $esm = "E3SM";
+my $esm = "ACME";
 
 
 
