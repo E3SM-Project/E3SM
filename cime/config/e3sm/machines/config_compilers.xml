@@ -1198,7 +1198,7 @@ for mct, etc.
 
 <compiler MACH="cori-knl" COMPILER="intel">
   <ALBANY_PATH>/global/cfs/cdirs/e3sm/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
-  <BISICLES_PATH>$ENV{HOME}/Cori/BISICLES/E3SM-interface/E3SM_interface/libintel</BISICLES_PATH>
+  <BISICLES_PATH>$ENV{HOME}/Cori/E3SM/BISICLES/E3SM-interface/libintel</BISICLES_PATH>
   <CFLAGS>
     <append MPILIB="impi"> -axMIC-AVX512 -xCORE-AVX2 </append>
   </CFLAGS>
