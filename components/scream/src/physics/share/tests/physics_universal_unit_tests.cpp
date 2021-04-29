@@ -22,6 +22,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
   {
     using physicscommon = scream::PhysicsFunctions<Device>;
 
+    using Spack = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
+
     int num_levs = 100; // Number of levels to use for tests.
 
     static constexpr Scalar p0     = C::P0;
@@ -31,6 +33,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     static constexpr Scalar ggr    = C::gravit;
 
     using view_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Real>;
+    using sview_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Spack>;
+    const Int nk_pack = ekat::npack<Spack>(num_levs);
     // Compute random values for tests
     view_1d temperature("temperature",num_levs),
             height("height",num_levs),
@@ -39,6 +43,12 @@ struct UnitWrap::UnitTest<D>::TestUniversal
             pressure("pressure",num_levs),
             psuedo_density("psuedo_density",num_levs),
             dz_for_testing("dz_for_testing",num_levs);
+    sview_1d temperature_packed("temperature",num_levs),
+             height_packed("height",num_levs),
+             qv_packed("qv",num_levs),
+             pressure_packed("pressure",num_levs),
+             psuedo_density_packed("psuedo_density",num_levs),
+             dz_for_testing_packed("dz_for_testing",num_levs);
     // Allocate memory for test outputs
     view_1d exner("exner",num_levs),
             theta("theta",num_levs),
@@ -48,6 +58,14 @@ struct UnitWrap::UnitTest<D>::TestUniversal
             dse("dse",num_levs),
             dz("dz",num_levs),
             z_int("z_int",num_levs+1);
+    sview_1d exner_packed("exner",num_levs),
+             theta_packed("theta",num_levs),
+             T_mid_from_pot_packed("T_mid_from_pot",num_levs),
+             T_virtual_packed("T_virtual",num_levs),
+             T_mid_from_virt_packed("T_mid_from_virt",num_levs),
+             dse_packed("dse",num_levs),
+             dz_packed("dz",num_levs),
+             z_int_packed("z_int",num_levs+1);
 
     // Construct random input data
     std::random_device rdev;
@@ -70,6 +88,12 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     ekat::genRandArray(pressure,engine,pdf_pres);
     ekat::genRandArray(psuedo_density,engine,pdf_dp);
 
+    ekat::genRandArray(temperature_packed,engine,pdf_temp);
+    ekat::genRandArray(height_packed,engine,pdf_height);
+    ekat::genRandArray(qv_packed,engine,pdf_qv);
+    ekat::genRandArray(pressure_packed,engine,pdf_pres);
+    ekat::genRandArray(psuedo_density_packed,engine,pdf_dp);
+
     // Construct a simple set of `dz` values for testing the z_int function
     auto dz_for_testing_host = Kokkos::create_mirror(dz_for_testing);
     for (int k = 0;k<num_levs;k++)
@@ -90,12 +114,13 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       // get_exner(p0) should return 1.0
       // get_exner(0.0) should return 0.0
       // get_exner(2*p0) should return 2**(Rd/cp)
-      // get_exner(pressure) should work.
+      // get_exner(pressure) should work for Real and for Spack.
       EKAT_KERNEL_REQUIRE(physicscommon::get_exner(p0)==1.0);
       EKAT_KERNEL_REQUIRE(physicscommon::get_exner(0.0)==0.0);
       EKAT_KERNEL_REQUIRE(physicscommon::get_exner(2*p0)==pow(2.0,Rd*inv_cp));
       EKAT_KERNEL_REQUIRE(physicscommon::get_exner(4.0)/physicscommon::get_exner(2.0)==pow(2.0,Rd*inv_cp));
       physicscommon::get_exner(team,pressure,exner);
+      physicscommon::get_exner(team,pressure_packed,exner_packed);
       // Potential temperature property tests
       // theta=T when p=p0
       // theta(T=0) = 0
@@ -103,7 +128,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       // T(theta(T0)) = T0
       // theta(T(theta0)) = theta0
       // get_theta_from_T(T,pressure) should work
-      // get_T_from_theta(theta,pressure) should work
+      // get_T_from_theta(theta,pressure) should work for Real and for Spack
       EKAT_KERNEL_REQUIRE(physicscommon::get_theta_from_T(100.0,p0)==100.0);
       EKAT_KERNEL_REQUIRE(physicscommon::get_theta_from_T(0.0,1.0)==0.0);
       EKAT_KERNEL_REQUIRE(physicscommon::get_T_from_theta(0.0,1.0)==0.0);
@@ -111,6 +136,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       EKAT_KERNEL_REQUIRE(physicscommon::get_theta_from_T(physicscommon::get_T_from_theta(100.0,1.0),1.0)==100.0);
       physicscommon::get_theta_from_T(team,temperature,pressure,theta);
       physicscommon::get_T_from_theta(team,theta,pressure,T_mid_from_pot);
+      physicscommon::get_theta_from_T(team,temperature_packed,pressure_packed,theta_packed);
+      physicscommon::get_T_from_theta(team,theta_packed,pressure_packed,T_mid_from_pot_packed);
       // Virtual temperature property tests
       // T_virt(T=0) = 0.0
       // T_virt(T=T0,qv=0) = T0
@@ -118,8 +145,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       // T(T_virt=T0,qv=0) = T0
       // T_virt(T=T0) = T0
       // T(T_virt=T0) = T0
-      // get_virtual_temperature(temperature,qv) should work
-      // get_temperature_from_virtual_temperature should work
+      // get_virtual_temperature(temperature,qv) should work for Real and for Spack
+      // get_temperature_from_virtual_temperature should work for Real and for Spack
       EKAT_KERNEL_REQUIRE(physicscommon::get_virtual_temperature(0.0,1e-6)==0.0);
       EKAT_KERNEL_REQUIRE(physicscommon::get_virtual_temperature(100.0,0.0)==100.0);
       EKAT_KERNEL_REQUIRE(physicscommon::get_temperature_from_virtual_temperature(0.0,1e-6)==0.0);
@@ -128,26 +155,32 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       EKAT_KERNEL_REQUIRE(physicscommon::get_temperature_from_virtual_temperature(physicscommon::get_virtual_temperature(100.0,1.0),1.0)==100.0);
       physicscommon::get_virtual_temperature(team,temperature,qv,T_virtual);
       physicscommon::get_temperature_from_virtual_temperature(team,T_virtual,qv,T_mid_from_virt);
+      physicscommon::get_virtual_temperature(team,temperature_packed,qv_packed,T_virtual_packed);
+      physicscommon::get_temperature_from_virtual_temperature(team,T_virtual_packed,qv_packed,T_mid_from_virt_packed);
       // DSE property tests
       // dse(T=0.0, z=0.0) = surf_geopotential
       // dse(T=1/cp, z=1/gravity) = surf_potential+2
-      // get_dse should work
+      // get_dse should work for Real and for Spack
       EKAT_KERNEL_REQUIRE(physicscommon::get_dse(0.0,0.0,10.0)==10.0);
       EKAT_KERNEL_REQUIRE(physicscommon::get_dse(inv_cp,1.0/ggr,0.0)==2.0);
       physicscommon::get_dse(team,temperature,height,surface_height(0),dse);
+      physicscommon::get_dse(team,temperature_packed,height_packed,surface_height(0),dse_packed);
       // DZ tests
-      // get_dz should work
       // dz(psuedo_density=0) = 0
       // dz(T=0) = 0
       // dz(psuedo_density=p0,p_mid=p0,T=1.0,qv=0) = Rd/ggr
       // dz(psuedo_density=ggr,p_mid=Rd,T=T0,qv=0) = T0
-      physicscommon::get_dz(team,psuedo_density,pressure,temperature,qv,dz);
+      // get_dz should work for Real and for Spack
       EKAT_KERNEL_REQUIRE(physicscommon::get_dz(0.0,p0,100.0,1e-5)==0.0);
       EKAT_KERNEL_REQUIRE(physicscommon::get_dz(100.0,p0,0.0,1e-5)==0.0);
       EKAT_KERNEL_REQUIRE(physicscommon::get_dz(p0,p0,1.0,0.0)==Rd/ggr);
       EKAT_KERNEL_REQUIRE(physicscommon::get_dz(ggr,Rd,100.0,0.0)==100.0);
+      physicscommon::get_dz(team,psuedo_density,pressure,temperature,qv,dz);
+      physicscommon::get_dz(team,psuedo_density_packed,pressure_packed,temperature_packed,qv_packed,dz_packed);
       // z_int property tests
+      // get_z_int should work for Real and for Spack
       physicscommon::get_z_int(team,dz_for_testing,z_int);
+      physicscommon::get_z_int(team,dz_for_testing_packed,z_int_packed);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_levs), [&] (const int k)
       {
         // T and TH conversion TEST

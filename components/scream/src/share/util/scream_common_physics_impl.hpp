@@ -25,10 +25,10 @@ template<typename ScalarT>
 KOKKOS_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::get_exner(const ScalarT& p_mid)
 {
-  using C = scream::physics::Constants<ScalarT>;
-  static constexpr ScalarT p0(C::P0);
-  static constexpr ScalarT rd(C::RD);
-  static constexpr ScalarT inv_cp(C::INV_CP);
+  using C = scream::physics::Constants<Real>;
+  static const ScalarT p0(C::P0);
+  static const ScalarT rd(C::RD);
+  static const ScalarT inv_cp(C::INV_CP);
 
   ScalarT exner = pow( p_mid/p0, rd*inv_cp );
   // Return exner 
@@ -122,8 +122,8 @@ template<typename ScalarT>
 KOKKOS_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::get_temperature_from_virtual_temperature(const ScalarT& T_virtual, const ScalarT& qv)
 {
-  using C = scream::physics::Constants<ScalarT>;
-  static constexpr ScalarT ep_2(C::ep_2);
+  using C = scream::physics::Constants<Real>;
+  static const ScalarT ep_2(C::ep_2);
   ScalarT T_mid = T_virtual*(ep_2*(1.0+qv))/(qv+ep_2);
   // Return T_mid
   return T_mid;
@@ -155,8 +155,8 @@ template<typename ScalarT>
 KOKKOS_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::get_virtual_temperature(const ScalarT& T_mid, const ScalarT& qv)
 {
-  using C = scream::physics::Constants<ScalarT>;
-  static constexpr ScalarT ep_2(C::ep_2);
+  using C = scream::physics::Constants<Real>;
+  static const ScalarT ep_2(C::ep_2);
   ScalarT T_virtual = T_mid*(qv+ep_2)/(ep_2*(1.0+qv));
   // Return T_virtual
   return T_virtual;
@@ -188,9 +188,9 @@ template<typename ScalarT>
 KOKKOS_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::get_dse(const ScalarT& T_mid, const ScalarT& z_mid, const Real surf_geopotential)
 {
-  using C = scream::physics::Constants<ScalarT>;
-  static constexpr ScalarT cp (C::CP);
-  static constexpr ScalarT ggr(C::gravit);
+  using C = scream::physics::Constants<Real>;
+  static const ScalarT cp (C::CP);
+  static const ScalarT ggr(C::gravit);
 
   ScalarT dse = cp*T_mid + ggr*z_mid + surf_geopotential;
   return dse;
@@ -228,9 +228,9 @@ template<typename ScalarT>
 KOKKOS_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::get_dz(const ScalarT& psuedo_density, const ScalarT& p_mid, const ScalarT& T_mid, const ScalarT& qv)
 {
-  using C = scream::physics::Constants<ScalarT>;
-  static constexpr ScalarT Rd  (C::RD);
-  static constexpr ScalarT ggr (C::gravit);
+  using C = scream::physics::Constants<Real>;
+  static const ScalarT Rd  (C::RD);
+  static const ScalarT ggr (C::gravit);
   // Need to first back out virtual temperature
   ScalarT T_virtual = get_virtual_temperature(T_mid,qv);
   // Now can back out the vertical layer thickness
