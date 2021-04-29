@@ -1,8 +1,13 @@
 # CMake initial cache file for Cori gpu nodes (named cori-gpu -- small testbed with V100's and SKX cpus)
 
-SET(NETCDF_DIR $ENV{NETCDF_DIR} CACHE FILEPATH "")
-SET(PNETCDF_DIR $ENV{PARALLEL_NETCDF_DIR} CACHE FILEPATH "")
+# NCDIR/NFDIR are set with module load hdf5-parallel/1.10.5 zlib netcdf-c netcdf-fortran
+SET(NETCDF_DIR $ENV{NCDIR} CACHE FILEPATH "")
+#SET(PNETCDF_DIR $ENV{PARALLEL_NETCDF_DIR} CACHE FILEPATH "")
 SET(HDF5_DIR $ENV{HDF5_DIR} CACHE FILEPATH "")
+
+#for scorpio
+SET (NetCDF_C_PATH $ENV{NCDIR} CACHE FILEPATH "")
+SET (NetCDF_Fortran_PATH $ENV{NFDIR} CACHE FILEPATH "")
 
 SET(BUILD_HOMME_WITHOUT_PIOLIBRARY TRUE CACHE BOOL "")
 
