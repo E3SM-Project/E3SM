@@ -2965,65 +2965,28 @@ module li_calving
       ! local variables
       !-----------------------------------------------------------------
       real (kind=RKIND), dimension(:), pointer :: calvingThickness !< Output: the applied calving rate as a thickness
-      real (kind=RKIND), dimension(:), pointer :: thickness, damage, bedTopography
-      integer, dimension(:), pointer :: groundedMarineMarginMask
+      real (kind=RKIND), dimension(:), pointer :: thickness, damage
       real(kind=RKIND), pointer :: config_damage_calving_threshold
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:), pointer :: cellMask
       integer, pointer :: nCells
-      integer :: iCell, iNeighbor, jCell, iEdge
-      integer :: nEmptyNeighbors
-      real (kind=RKIND), pointer :: config_sea_level
+      integer :: iCell, iNeighbor, jCell
 
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
 
       ! get fields
-      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
       call mpas_pool_get_array(geometryPool, 'damage', damage)
-      call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
 
       calvingThickness(:) = 0.0_RKIND
-
-      groundedMarineMarginMask(:) = 0
-      do iCell = 1, nCells
-         ! Define marine marginal cells as those that are (1) at the ice
-         ! margin, (2) have at least one neighboring cell without ice, (3) contain
-         ! grounded ice, and (4) have bed topography below sea level.
-         ! OR is adjacent to an inactive floating margin cell
-
-         ! Check if neighboring cells contain ice and have bed topo below sea level
-         nEmptyNeighbors = 0
-         do iEdge = 1, nEdgesOnCell(iCell)
-           iNeighbor = cellsOnCell(iEdge, iCell)
-           if ( (((thickness(iNeighbor) == 0.0_RKIND) &
-              .and. bedTopography(iNeighbor) < config_sea_level)) &
-              .or. ((li_mask_is_floating_ice(cellMask(iNeighbor)) &
-              .and. li_mask_is_margin(cellMask(iNeighbor)) &
-              .and. (.not. li_mask_is_dynamic_ice(cellMask(iNeighbor)))))) then
-               nEmptyNeighbors = nEmptyNeighbors + 1
-           endif
-         enddo
-
-         if ( nEmptyNeighbors > 0 &
-           .and. li_mask_is_grounded_ice(cellMask(iCell)) &
-           .and. bedTopography(iCell) < config_sea_level &
-           .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
-
-            groundedMarineMarginMask(iCell) = 1
-         else
-            groundedMarineMarginMask(iCell) = 0
-         endif
-      enddo
 
       ! The calving volume needs to be distributed in three ways:
       ! 1. We need to first remove any "thin" ice in front of this cell
