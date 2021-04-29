@@ -2426,7 +2426,7 @@ module li_calving
                                               domain=domain, err=err_tmp)
              err = ior(err, err_tmp)
          elseif (trim(config_damage_calving_method) == 'threshold') then
-             call apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, err_tmp)
+             call apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, domain, err_tmp)
              err = ior(err, err_tmp)
          else
              call mpas_log_write("Unknown value for config_damage_calving_method was specified!", MPAS_LOG_ERR)
@@ -2937,14 +2937,13 @@ module li_calving
 !    routine apply_calving_damage_threshold
 !
 !> \brief Calve any ice that is damaged beyond a specified threshold
-!> \author Tong Zhang, Matt Hoffman
-!> \date   Nov. 2020, March 2021
+!> \author Tong Zhang, Matt Hoffman, Trevor Hillebrand
+!> \date   Nov. 2020, March 2021, April 2021
 !> \details This routine specified floating ice to be calved wherever the damage
 !> value exceeds a specified threshold, assuming the ice is connected to the calving
 !> front.
 !-----------------------------------------------------------------------
-   subroutine apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, err)
-
+   subroutine apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, domain, err)
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -2954,6 +2953,7 @@ module li_calving
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain          !< Input/Output: domain object
       type (mpas_pool_type), pointer, intent(inout) :: geometryPool !< Input: geometry pool
 
       !-----------------------------------------------------------------
@@ -2964,6 +2964,9 @@ module li_calving
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
+      type (field1dInteger), pointer :: seedMaskField
+      type (field1dInteger), pointer :: growMaskField
+      integer, dimension(:), pointer :: seedMask, growMask !masks to pass to flood-fill routine
       real (kind=RKIND), dimension(:), pointer :: calvingThickness !< Output: the applied calving rate as a thickness
       real (kind=RKIND), dimension(:), pointer :: thickness, damage
       real(kind=RKIND), pointer :: config_damage_calving_threshold
@@ -2985,17 +2988,34 @@ module li_calving
       call mpas_pool_get_array(geometryPool, 'damage', damage)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      ! Allocate scratch fields for flood-fill
+      call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
+      call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
+      seedMask => seedMaskField % array
+      seedMask(:) = 0
+
+      call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
+      call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
+      growMask => growMaskField % array
+      growMask(:) = 0
 
       calvingThickness(:) = 0.0_RKIND
 
+      ! define seed and grow masks for flood fill.
+      where ( li_mask_is_dynamic_margin(cellMask) .and. (damage .ge. config_damage_calving_threshold) )
+              seedMask = 1
+      end where
+
+      where ( seedMask == 0 .and. (damage .ge. config_damage_calving_threshold) )
+              growMask = 1
+      end where
+
+      call flood_fill(seedMask, growMask, domain)
       ! The calving volume needs to be distributed in three ways:
       ! 1. We need to first remove any "thin" ice in front of this cell
       ! 2. Then we remove ice from this cell if damage > threshold
       do iCell = 1, nCells
-         if ( (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) & ! floating dynamic
-              .and. li_mask_is_margin(cellMask(iCell)) &
-              .and. (damage(iCell) .ge. config_damage_calving_threshold)) then
-
+         if ( seedMask(iCell) == 1 ) then
             ! First remove ice from "thin" neighbors
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
@@ -3027,6 +3047,9 @@ module li_calving
          endif ! if cell is calving margin
 
       enddo ! cell loop
+      ! deallocate scratch fields used for flood fill
+      call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
+      call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
 
    end subroutine apply_calving_damage_threshold
 
