@@ -6,7 +6,7 @@ amr.maxLevel = 2   # finest level allowed in simulation
 
 main.constitutiveRelation = L1L2
 
-# main.poutBaseName = petscOut
+main.poutBaseName = bisiclesOut
 
 main.domain_size = 160000.0 160000.0 160000.0 
 
@@ -51,7 +51,7 @@ amr.cc_iceberg_detection = 1
 
 amr.plot_interval = 1  
 amr.write_dHDt = 1 
-amr.plot_prefix = stream.L1L2.0032.petsc.
+amr.plot_prefix = stream.
 amr.write_solver_rhs = 0
 amr.write_divuh = 1
 amr.check_interval = 1
