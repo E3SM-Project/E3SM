@@ -19,6 +19,7 @@ module dyncropFileMod
   use LandunitType          , only : lun_pp
   use ColumnType            , only : col_pp
   use VegetationType        , only : veg_pp
+  use topounit_varcon      , only : max_topounits
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -61,8 +62,9 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: num_points     ! number of spatial points
-    integer :: wtcft_shape(2) ! shape of the wtcft data
-    integer :: fertcft_shape(2) ! shape of the fertcft data
+    integer :: wtcrop_shape(2) ! Shape of hte wtcrop data   TKT
+    integer :: wtcft_shape(3) ! shape of the wtcft data      TKT
+    integer :: fertcft_shape(3) ! shape of the fertcft data    TKT
     character(len=*), parameter :: subname = 'dyncrop_init'
     !-----------------------------------------------------------------------
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
@@ -85,17 +87,19 @@ contains
     ! wtcft to be of type dyn_var_time_interp_type (rather than
     ! dyn_var_time_uninterp_type), and change the following constructors to construct
     ! variables of dyn_var_time_interp_type. That's all you need to do.
-    num_points = (bounds%endg - bounds%begg + 1)
+    num_points = (bounds%endg - bounds%begg + 1)     ! TKT
+    wtcrop_shape = [num_points, max_topounits]       ! TKT
     wtcrop = dyn_var_time_uninterp_type( &
          dyn_file = dyncrop_file, varname=crop_varname, &
          dim1name=grlnd, conversion_factor=100._r8, &
-         do_check_sums_equal_1=.false., data_shape=[num_points])
-    wtcft_shape = [num_points, cft_size]
+         do_check_sums_equal_1=.false., data_shape=wtcrop_shape)         ! TKT
+        ! do_check_sums_equal_1=.false., data_shape=[num_points])        ! TKT
+    wtcft_shape = [num_points,max_topounits, cft_size]                   ! TKT
     wtcft = dyn_var_time_uninterp_type( &
          dyn_file = dyncrop_file, varname=cft_varname, &
          dim1name=grlnd, conversion_factor=100._r8, &
          do_check_sums_equal_1=.true., data_shape=wtcft_shape)
-    fertcft_shape = [num_points, cft_size]
+    fertcft_shape = [num_points,max_topounits, cft_size]                     ! TKT
     fertcft = dyn_var_time_uninterp_type( &
          dyn_file = dyncrop_file, varname=fert_varname, &
          dim1name=grlnd, conversion_factor=1._r8, &
@@ -124,16 +128,17 @@ contains
     use surfrdUtilsMod    , only : collapse_crop_types
     use subgridWeightsMod , only : set_landunit_weight
     use subgridWeightsMod , only : get_landunit_weight
+    use GridcellType      , only : grc_pp
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  ! proc-level bounds
     type(crop_type), intent(in) :: crop_inst  ! crop instance for updating annual fertilizer
     !
     ! !LOCAL VARIABLES:
-    integer               :: m,p,c,l,g      ! indices
-    real(r8), allocatable :: wtcrop_cur(:)  ! current weight of the crop landunit
-    real(r8), allocatable :: wtcft_cur(:,:) ! current cft weights
-    real(r8), allocatable :: fertcft_cur(:,:) ! current cft fertilizer
+    integer               :: m,p,c,l,g,t,t2,ti,topi      ! indices  TKT
+    real(r8), allocatable :: wtcrop_cur(:,:)  ! current weight of the crop landunit TKT
+    real(r8), allocatable :: wtcft_cur(:,:,:) ! current cft weights  TKT
+    real(r8), allocatable :: fertcft_cur(:,:,:) ! current cft fertilizer TKT
     logical , allocatable :: col_set(:)     ! whether we have set the weight for each column
     character(len=*), parameter :: subname = 'dyncrop_interp'
     !-----------------------------------------------------------------------
@@ -143,10 +148,13 @@ contains
     call dyncrop_file%time_info%set_current_year()
 
     ! Set new landunit area
-    allocate(wtcrop_cur(bounds%begg:bounds%endg))
+    allocate(wtcrop_cur(bounds%begg:bounds%endg,max_topounits))    !TKT
     call wtcrop%get_current_data(wtcrop_cur)
-    do g = bounds%begg, bounds%endg
-       call set_landunit_weight(g, istcrop, wtcrop_cur(g))
+    do g = bounds%begg, bounds%endg         ! TKT
+       do t = grc_pp%topi(g), grc_pp%topf(g)    ! TKT added to allow variable number of topounits per grid
+          t2 = t - grc_pp%topi(g) + 1
+          call set_landunit_weight(t, istcrop, wtcrop_cur(g,t2))    ! TKT
+       end do
     end do
     deallocate(wtcrop_cur)
 
@@ -154,10 +162,10 @@ contains
     !
     ! Assumes that memory has been allocated for all CFTs on the crop landunit, and that
     ! each crop is on its own column.
-    allocate(wtcft_cur(bounds%begg:bounds%endg, cft_lb:cft_ub))
+    allocate(wtcft_cur(bounds%begg:bounds%endg,max_topounits, cft_lb:cft_ub))  ! TKT
     call wtcft%get_current_data(wtcft_cur)
 
-    allocate(fertcft_cur(bounds%begg:bounds%endg, cft_lb:cft_ub))
+    allocate(fertcft_cur(bounds%begg:bounds%endg,max_topounits, cft_lb:cft_ub))  ! TKT
     call fertcft%get_current_data(fertcft_cur)
 
     call collapse_crop_types(wtcft_cur, fertcft_cur, bounds%begg, bounds%endg, verbose = .false.)
@@ -169,6 +177,9 @@ contains
        g = veg_pp%gridcell(p)
        l = veg_pp%landunit(p)
        c = veg_pp%column(p)
+       t = veg_pp%topounit(p)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
 
        if (lun_pp%itype(l) == istcrop) then
           m = veg_pp%itype(p)
@@ -180,9 +191,9 @@ contains
              write(iulog,*) 'This may happen if there are multiple crops on a single column.'
              call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(sourcefile, __LINE__))
           end if
-          col_pp%wtlunit(c) = wtcft_cur(g,m)
+          col_pp%wtlunit(c) = wtcft_cur(g,ti,m)
           if (use_crop) then
-            crop_inst%fertnitro_patch(p) = fertcft_cur(g,m)
+            crop_inst%fertnitro_patch(p) = fertcft_cur(g,ti,m)
           end if
           col_set(c) = .true.
        end if

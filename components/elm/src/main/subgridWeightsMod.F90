@@ -125,10 +125,10 @@ module subgridWeightsMod
   ! !PRIVATE TYPES:
   type subgrid_weights_diagnostics_type
      ! This type contains diagnostics on subgrid weights, for output to the history file
-     real(r8), pointer :: pct_landunit(:,:)  ! % of each landunit on the grid cell [begg:endg, 1:max_lunit]
-     real(r8), pointer :: pct_nat_pft(:,:)   ! % of each pft, as % of landunit [begg:endg, natpft_lb:natpft_ub]
-     real(r8), pointer :: pct_cft(:,:)       ! % of each crop functional type, as % of landunit [begg:endg, cft_lb:cft_ub]
-     real(r8), pointer :: pct_glc_mec(:,:)   ! % of each glacier elevation class, as % of landunit [begg:endg, 1:maxpatch_glcmec]
+     real(r8), pointer :: pct_landunit(:,:)  ! % of each landunit on the topounit [begt:endt,1:max_lunit] TKT
+     real(r8), pointer :: pct_nat_pft(:,:)   ! % of each pft, as % of landunit [begt:endt,natpft_lb:natpft_ub]
+     real(r8), pointer :: pct_cft(:,:)       ! % of each crop functional type, as % of landunit [begt:endt,cft_lb:cft_ub]
+     real(r8), pointer :: pct_glc_mec(:,:)   ! % of each glacier elevation class, as % of landunit [begt:endt,1:maxpatch_glcmec]
   end type subgrid_weights_diagnostics_type
      
   type(subgrid_weights_diagnostics_type) :: subgrid_weights_diagnostics
@@ -176,13 +176,13 @@ contains
     ! Note that, because these variables are output to the history file, it appears that
     ! their lower bounds need to start at 1 (e.g., 1:natpft_size rather than
     ! natpft_lb:natpft_ub)
-    allocate(subgrid_weights_diagnostics%pct_landunit(bounds%begg:bounds%endg, 1:max_lunit))
+    allocate(subgrid_weights_diagnostics%pct_landunit(bounds%begt:bounds%endt,1:max_lunit))
     subgrid_weights_diagnostics%pct_landunit(:,:) = nan
-    allocate(subgrid_weights_diagnostics%pct_nat_pft(bounds%begg:bounds%endg, 1:natpft_size))
+    allocate(subgrid_weights_diagnostics%pct_nat_pft(bounds%begt:bounds%endt,1:natpft_size))
     subgrid_weights_diagnostics%pct_nat_pft(:,:) = nan
-    allocate(subgrid_weights_diagnostics%pct_cft(bounds%begg:bounds%endg, 1:cft_size))
+    allocate(subgrid_weights_diagnostics%pct_cft(bounds%begt:bounds%endt,1:cft_size))
     subgrid_weights_diagnostics%pct_cft(:,:) = nan
-    allocate(subgrid_weights_diagnostics%pct_glc_mec(bounds%begg:bounds%endg, 1:maxpatch_glcmec))
+    allocate(subgrid_weights_diagnostics%pct_glc_mec(bounds%begt:bounds%endt,1:maxpatch_glcmec))
     subgrid_weights_diagnostics%pct_glc_mec(:,:) = nan
 
     ! ------------------------------------------------------------------------
@@ -190,23 +190,23 @@ contains
     ! ------------------------------------------------------------------------
 
     call hist_addfld2d (fname='PCT_LANDUNIT', units='%', type2d='ltype', &
-         avgflag='A', long_name='% of each landunit on grid cell', &
-         ptr_lnd=subgrid_weights_diagnostics%pct_landunit)
+         avgflag='A', long_name='% of each landunit on topounit', &
+         ptr_topo=subgrid_weights_diagnostics%pct_landunit)
 
     call hist_addfld2d (fname='PCT_NAT_PFT', units='%', type2d='natpft', &
          avgflag='A', long_name='% of each PFT on the natural vegetation (i.e., soil) landunit', &
-         ptr_lnd=subgrid_weights_diagnostics%pct_nat_pft)
+         ptr_topo=subgrid_weights_diagnostics%pct_nat_pft)
 
     if (cft_size > 0) then
        call hist_addfld2d (fname='PCT_CFT', units='%', type2d='cft', &
             avgflag='A', long_name='% of each crop on the crop landunit', &
-            ptr_lnd=subgrid_weights_diagnostics%pct_cft)
+            ptr_topo=subgrid_weights_diagnostics%pct_cft)
     end if
 
     if (maxpatch_glcmec > 0) then
        call hist_addfld2d (fname='PCT_GLC_MEC', units='%', type2d='glc_nec', &
             avgflag='A', long_name='% of each GLC elevation class on the glc_mec landunit', &
-            ptr_lnd=subgrid_weights_diagnostics%pct_glc_mec)
+            ptr_topo=subgrid_weights_diagnostics%pct_glc_mec)
     end if
 
 
@@ -857,18 +857,21 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: g, l  ! grid cell & landunit indices
+    integer :: g, l,t,ti,topi  ! grid cell & landunit indices
     integer :: ltype ! landunit type
     
     character(len=*), parameter :: subname = 'set_pct_landunit_diagnostics'
     !-----------------------------------------------------------------------
 
-    subgrid_weights_diagnostics%pct_landunit(bounds%begg:bounds%endg, :) = 0._r8
+    subgrid_weights_diagnostics%pct_landunit(bounds%begt:bounds%endt,:) = 0._r8
     
     do l = bounds%begl, bounds%endl
        g = lun_pp%gridcell(l)
+       t = lun_pp%topounit(l)
+       !topi = grc_pp%topi(g)
+       !ti = t - topi + 1
        ltype = lun_pp%itype(l)
-       subgrid_weights_diagnostics%pct_landunit(g, ltype) = lun_pp%wtgcell(l) * 100._r8
+       subgrid_weights_diagnostics%pct_landunit(t,ltype) = lun_pp%wttopounit(l) * 100._r8  !lun_pp%wtgcell(l) * 100._r8 TKT
     end do
 
   end subroutine set_pct_landunit_diagnostics
@@ -895,21 +898,24 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: c,l,g          ! indices
+    integer :: c,l,g,t,ti,topi          ! indices
     integer :: icemec_class   ! icemec class (1..maxpatch_glcmec)
     
     character(len=*), parameter :: subname = 'set_pct_glc_mec_diagnostics'
     !-----------------------------------------------------------------------
     
     if (maxpatch_glcmec > 0) then
-       subgrid_weights_diagnostics%pct_glc_mec(bounds%begg:bounds%endg, :) = 0._r8
+       subgrid_weights_diagnostics%pct_glc_mec(bounds%begt:bounds%endt,:) = 0._r8
     
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
           l = col_pp%landunit(c)
+          t = col_pp%topounit(c)
+          !topi = grc_pp%topi(g)
+          !ti = t - topi + 1
           if (lun_pp%itype(l) == istice_mec) then
              icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
-             subgrid_weights_diagnostics%pct_glc_mec(g, icemec_class) = col_pp%wtlunit(c) * 100._r8
+             subgrid_weights_diagnostics%pct_glc_mec(t, icemec_class) = col_pp%wtlunit(c) * 100._r8
           end if
        end do
     end if
@@ -930,31 +936,34 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: p,l,g           ! indices
+    integer :: p,l,g,t,ti,topi           ! indices
     integer :: ptype           ! pft itype
     integer :: ptype_1indexing ! pft itype, translated into 1-indexing for the given landunit type
     
     character(len=*), parameter :: subname = 'set_pct_pft_diagnostics'
     !-----------------------------------------------------------------------
     
-    subgrid_weights_diagnostics%pct_nat_pft(bounds%begg:bounds%endg, :) = 0._r8
+    subgrid_weights_diagnostics%pct_nat_pft(bounds%begt:bounds%endt,:) = 0._r8
 
     ! Note that pct_cft will be 0-size if cft_size is 0 (which can happen if we don't
     ! have a crop landunit). But it doesn't hurt to have this line setting all elements
     ! to 0, and doing this always allows us to avoid extra logic which could be a
     ! maintenance problem.
-    subgrid_weights_diagnostics%pct_cft(bounds%begg:bounds%endg, :) = 0._r8
+    subgrid_weights_diagnostics%pct_cft(bounds%begt:bounds%endt,:) = 0._r8
     
     do p = bounds%begp,bounds%endp
        g = veg_pp%gridcell(p)
        l = veg_pp%landunit(p)
+       t = veg_pp%topounit(p)
+       !topi = grc_pp%topi(g)
+       !ti = t - topi + 1
        ptype = veg_pp%itype(p)
        if (lun_pp%itype(l) == istsoil) then
           ptype_1indexing = ptype + (1 - natpft_lb)
-          subgrid_weights_diagnostics%pct_nat_pft(g, ptype_1indexing) = veg_pp%wtlunit(p) * 100._r8
+          subgrid_weights_diagnostics%pct_nat_pft(t, ptype_1indexing) = veg_pp%wtlunit(p) * 100._r8
        else if (lun_pp%itype(l) == istcrop) then
           ptype_1indexing = ptype + (1 - cft_lb)
-          subgrid_weights_diagnostics%pct_cft(g, ptype_1indexing) = veg_pp%wtlunit(p) * 100._r8
+          subgrid_weights_diagnostics%pct_cft(t, ptype_1indexing) = veg_pp%wtlunit(p) * 100._r8
        end if
     end do
 

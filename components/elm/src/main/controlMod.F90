@@ -50,6 +50,7 @@ module controlMod
   use elm_varctl              , only: startdate_add_temperature, startdate_add_co2
   use elm_varctl              , only: add_temperature, add_co2
   use elm_varctl              , only: const_climate_hist
+  !use elm_varctl              , only: use_downscaling_to_tpu, precip_downscaling
  !
   ! !PUBLIC TYPES:
   implicit none
@@ -294,8 +295,8 @@ contains
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
 	
-	namelist /clm_inparm/use_downscaling_to_topounit
-    namelist /clm_inparm/precip_downscaling_method
+	namelist /elm_inparm/ & 
+    use_downscaling_to_tpu, precip_downscaling
 
     namelist /elm_inparm/ &
          use_erosion, ero_ccycle
@@ -425,7 +426,7 @@ contains
           call endrun(msg=' ERROR: ero_ccycle = .true. requires erosion model active.'//&
             errMsg(__FILE__, __LINE__))
        end if
-       
+
        if (use_lch4 .and. use_vertsoilc) then 
           anoxia = .true.
        else
@@ -815,7 +816,11 @@ contains
 
     ! PETSc-based thermal model
     call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
-
+    
+    ! Downscaling of atmospheric forcing to topounits
+    call mpi_bcast (use_downscaling_to_tpu, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (precip_downscaling, len(precip_downscaling), MPI_CHARACTER, 0, mpicom, ier)
+    
     ! soil erosion
     call mpi_bcast (use_erosion, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (ero_ccycle , 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -876,11 +881,11 @@ contains
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
     write(iulog,*) '    use_betr = ', use_betr
+    write(iulog,*) '    use_downscaling_to_tpu = ', use_downscaling_to_tpu
+    write(iulog,*) '    precip_downscaling = ', precip_downscaling
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
-    write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)
-    write(iulog,*) '    use_downscaling_to_topounit = ', use_downscaling_to_topounit
-    write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method
+    write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)    
     if (fsurdat == ' ') then
        write(iulog,*) '   fsurdat, surface dataset not set'
     else

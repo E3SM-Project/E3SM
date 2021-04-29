@@ -26,7 +26,7 @@ contains
     !
     ! !USES:
     use elm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
-                                 metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file, use_downscaling_to_topounit
+                                 metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file, use_downscaling_to_tpu
     use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn
     use elm_varctl       , only: startdate_add_temperature, startdate_add_co2
     use elm_varcon       , only: rair, o2_molar_const, c13ratio
@@ -1105,7 +1105,10 @@ contains
        
        !set the topounit-level atmospheric state and flux forcings
        !      call downscale_atmo_state_to_topounit(g, i, x2l)
-       if (use_downscaling_to_topounit) then	   
+       if (use_downscaling_to_tpu) then
+	     if (masterproc) then
+             write(iulog,*) 'use_downscaling_to_tpu = ', use_downscaling_to_tpu
+         endif
          call downscale_grd_to_topounit(g, i, x2l, lnd2atm_vars)
        else
          do topo = grc_pp%topi(g), grc_pp%topf(g)

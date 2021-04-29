@@ -1821,10 +1821,22 @@ Runtime flag to turn on/off variable soil thickness.
 <!-- Namelist options for downscaling from grid to topounit                                              -->
 <!-- ========================================================================================  -->
 
-<entry id="use_downscaling_to_topounit" type="logical" category="default_settings"
-        group="clm_inparm" valid_values="">
-Runtime flag to turn on/off downscaling from grid to topounit.
-</entry
+<entry id="use_downscaling_to_tpu" 
+       type="logical" 
+       category="physics"
+       group="elm_inparm"
+       valid_values=".true.,.false." 
+       value=".false.">
+Runtime flag to turn on/off downscaling of atmosphric forcing from grid to topounit.
+</entry>
+<entry id="precip_downscaling" 
+       type="char*32" 
+       category="physics"
+       group="elm_inparm"       
+       valid_values="ERMM,FNM"
+       value="ERMM" >
+Flag to switch between precipitation downscaling methods. 
+</entry>
 
 <!-- ========================================================================================  -->
 <!-- Namelist options for performing water and energy budgets                                  -->

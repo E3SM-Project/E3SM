@@ -342,8 +342,8 @@ module elm_varctl
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
   logical, public :: use_var_soil_thick  = .false.
-  logical, public :: use_downscaling_to_topounit  = .false.
-  character(len=32), public :: precip_downscaling_method  = 'ERMM' ! Precip downscaling method values can be ERMM or FNM
+  logical, public :: use_downscaling_to_tpu  = .false.
+  character(len=32), public :: precip_downscaling  = 'ERMM' ! Precip downscaling method values can be ERMM or FNM
 
   !----------------------------------------------------------
   ! VSFM switches
