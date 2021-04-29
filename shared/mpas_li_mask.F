@@ -200,14 +200,24 @@ contains
       integer, dimension(:), pointer :: cellMask
       real(KIND=RKIND), dimension(:), pointer :: thickness
       logical, pointer :: config_do_restart
+      integer, pointer :: config_num_halos, config_number_of_blocks
+      integer :: err_tmp
 
       err = 0
+      err_tmp = 0
 
       ! Assign pointers and variables
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask, timeLevel=1)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(liConfigs, 'config_num_halos', config_num_halos)
+
+      if (config_num_halos < 3) then
+         call mpas_log_write("MALI requires that config_num_halos >= 3.  (edgeMask calculations require it.)", MPAS_LOG_ERR)
+         err_tmp = 1
+      endif
+      err = ior(err,err_tmp)
 
       if (config_do_restart .eqv. .false.) then  ! We only want to set this bit of the mask when a new simulation starts,
                                                  ! but not during a restart.
