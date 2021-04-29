@@ -1,7 +1,7 @@
 #ifndef COMMON_PHYSICS_FUNCTIONS_HPP
 #define COMMON_PHYSICS_FUNCTIONS_HPP
 
-#include "physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
 #include "share/util/scream_column_ops.hpp"
 
 namespace scream {

@@ -1,8 +1,8 @@
 #ifndef COMMON_PHYSICS_IMPL_HPP
 #define COMMON_PHYSICS_IMPL_HPP
 
-#include "common_physics_functions.hpp"
-#include "physics_constants.hpp"
+#include "share/util/scream_common_physics_functions.hpp"
+#include "physics/share/physics_constants.hpp"
 
 namespace scream {
 namespace physics {

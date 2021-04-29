@@ -1,9 +1,9 @@
 #include "catch2/catch.hpp"
 
 #include "physics/share/physics_functions.hpp"
-#include "physics/share/common_physics_functions.hpp"
+#include "share/util/scream_common_physics_functions.hpp"
 #include "physics/share/physics_universal_impl.hpp"
-#include "physics/share/common_physics_impl.hpp"
+#include "share/util/scream_common_physics_impl.hpp"
 #include "physics_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
