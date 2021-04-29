@@ -150,8 +150,8 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       ! Check for configuration options that are incompatible with external velocity solver conventions
-      if (config_num_halos < 2) then
-         call mpas_log_write("External velocity solvers require that config_num_halos >= 2", MPAS_LOG_ERR)
+      if (config_num_halos < 3) then
+         call mpas_log_write("External velocity solvers require that config_num_halos >= 3", MPAS_LOG_ERR)
          err_tmp = 1
       endif
       err = ior(err,err_tmp)
