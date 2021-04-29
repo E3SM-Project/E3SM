@@ -1058,8 +1058,8 @@
 <cldfrc_ice phys="default" >.true.</cldfrc_ice>
 
 <cldfrc_rhminl                                                        > 0.900D0 </cldfrc_rhminl>
-<cldfrc_rhminl                   phys="cam5" microphys="p3"          > 0.950D0 </cldfrc_rhminl>
-<cldfrc_rhminl                   phys="default" microphys="mg2"          > 0.950D0 </cldfrc_rhminl>
+<cldfrc_rhminl                   phys="default" microphys="p3"        > 0.950D0 </cldfrc_rhminl>
+<cldfrc_rhminl                   phys="default" microphys="mg2"       > 0.950D0 </cldfrc_rhminl>
 
 <cldfrc_rhminl_adj_land                                               > 0.100D0 </cldfrc_rhminl_adj_land>
 
@@ -1118,7 +1118,7 @@
 
 <!-- zm conv -->
 <zmconv_c0_lnd                                                        > 0.0030D0 </zmconv_c0_lnd>
-<zmconv_c0_lnd  microphys="p3"  clubb_sgs="1"    phys="cam5"         > 0.0075D0 </zmconv_c0_lnd>
+<zmconv_c0_lnd  microphys="p3"  clubb_sgs="1"    phys="default"       > 0.0075D0 </zmconv_c0_lnd>
 <zmconv_c0_ocn                                                        > 0.0030D0 </zmconv_c0_ocn>
 
 <zmconv_tau			                                                      > 3600</zmconv_tau>
