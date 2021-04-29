@@ -195,12 +195,16 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   real(rl),           intent(in)            :: d                        ! radius of perturbation
   real(rl),           intent(in)            :: f                        ! (const) Coriolis force
 
-  integer :: i,j,k,ie                                                   ! loopindices
+  integer :: i,j,k,ie,ii
   real(rl):: x,y,one,two,offset
   real(rl):: pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr, &
              qi_s(nlevp), Ti(nlevp), qi(nlevp)
 
 #ifdef MODEL_THETA_L
+
+  if (qsize < 3 .and. bubble_moist) then
+    call abortmp('planar moist bubble requires at least 3 tracers')
+  endif
 
   if (hybrid%masterthread) then
      write(iulog,*) 'initializing hot bubble with'
@@ -351,8 +355,10 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
         elem(ie)%state%vtheta_dp(i,j,k,:) = dpm(k)*th0m(k)
 
+        if (bubble_moist) then
         elem(ie)%state%Q(i,j,k,1) =   ( qi(k) + qi(k+1) ) / two        
         elem(ie)%state%Qdp(i,j,k,1,:) = dpm(k) * elem(ie)%state%Q(i,j,k,1)
+        end if
       enddo !k loop
 
     enddo; enddo !i,j loop
@@ -360,12 +366,18 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
 !    real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)                 ! Tracer concentration               6
 !    real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2) 
+  if (bubble_moist) then
+     ii=2
+  else 
+     ii=1
+  endif
+
   do ie = nets,nete
      elem(ie)%fcor(:,:) = f
 
      !all but vapor
-     elem(ie)%state%Q(:,:,:,2:qsize) = 0.0
-     elem(ie)%state%Qdp(:,:,:,2:qsize,:) = 0.0
+     elem(ie)%state%Q(:,:,:,ii:qsize) = 0.0
+     elem(ie)%state%Qdp(:,:,:,ii:qsize,:) = 0.0
 
      !sets hydro phi from theta and pressure, checks for hydrostatic balance after that, saves a state
      !call tests_finalize(elem(ie),hvcoord)

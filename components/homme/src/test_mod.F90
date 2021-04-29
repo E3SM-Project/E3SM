@@ -4,7 +4,7 @@
 
 module test_mod
 
-use control_mod,    only: test_case, sub_case, dt_remap_factor, runtype
+use control_mod,    only: test_case, sub_case, dt_remap_factor, runtype, bubble_moist
 use dimensions_mod, only: np, nlev, nlevp, qsize
 use derivative_mod, only: derivative_t, gradient_sphere
 use element_mod,    only: element_t
@@ -237,7 +237,7 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 
     ! this is for kessler physics only, if other physics is required, see
     ! how dcmip2016_test1_forcing is done
-    case('planar_rising_bubble');  call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+    case('planar_rising_bubble');  if (bubble_moist) call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     case('held_suarez0');
        do ie=nets,nete
