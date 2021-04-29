@@ -84,9 +84,8 @@ module mpassi_cpl_indices
   integer :: index_x2i_Faxa_swndf      ! sw: nir diffuse downward
   integer :: index_x2i_Faxa_swvdf      ! sw: vis diffuse downward
   integer :: index_x2i_Faxa_swnet      ! sw: net
-  integer :: index_x2i_Fioo_meltp      ! ocn melt heat  
-  integer :: index_x2i_Fioo_frazil     ! ocn frazil ice formation 
   integer :: index_x2i_Fioo_q          ! ocn freezing melting potential
+  integer :: index_x2i_Fioo_frazil     ! ocn frazil ice formation 
   integer :: index_x2i_Faxa_bcphidry   ! flux: Black Carbon hydrophilic dry deposition
   integer :: index_x2i_Faxa_bcphodry   ! flux: Black Carbon hydrophobic dry deposition
   integer :: index_x2i_Faxa_bcphiwet   ! flux: Black Carbon hydrophilic wet deposition
@@ -211,9 +210,8 @@ contains
     index_x2i_Faxa_swvdr    = mct_avect_indexra(x2i,'Faxa_swvdr')
     index_x2i_Faxa_swndf    = mct_avect_indexra(x2i,'Faxa_swndf')
     index_x2i_Faxa_swvdf    = mct_avect_indexra(x2i,'Faxa_swvdf')
-    index_x2i_Fioo_meltp    = mct_avect_indexra(x2i,'Fioo_meltp')
-    index_x2i_Fioo_frazil   = mct_avect_indexra(x2i,'Fioo_frazil')
     index_x2i_Fioo_q        = mct_avect_indexra(x2i,'Fioo_q')
+    index_x2i_Fioo_frazil   = mct_avect_indexra(x2i,'Fioo_frazil')
     index_x2i_Faxa_bcphidry = mct_avect_indexra(x2i,'Faxa_bcphidry')
     index_x2i_Faxa_bcphodry = mct_avect_indexra(x2i,'Faxa_bcphodry')
     index_x2i_Faxa_bcphiwet = mct_avect_indexra(x2i,'Faxa_bcphiwet')

@@ -187,14 +187,13 @@ end subroutine radiation_readnl
 
 !================================================================================================
 
-subroutine radiation_defaultopts(iradsw_out, iradlw_out, iradae_out, irad_always_out, spectralflux_out, use_rad_dt_cosz_out) !BSINGH- Added use_rad_dt_cosz_out for slr insolation calc.
+subroutine radiation_defaultopts(iradsw_out, iradlw_out, irad_always_out, spectralflux_out, use_rad_dt_cosz_out) !BSINGH- Added use_rad_dt_cosz_out for slr insolation calc.
 !----------------------------------------------------------------------- 
 ! Purpose: Return default runtime options
 !-----------------------------------------------------------------------
 
    integer, intent(out), optional :: iradsw_out
    integer, intent(out), optional :: iradlw_out
-   integer, intent(out), optional :: iradae_out
    integer, intent(out), optional :: irad_always_out
    logical, intent(out), optional :: spectralflux_out
    logical, intent(out), optional :: use_rad_dt_cosz_out
@@ -203,7 +202,6 @@ subroutine radiation_defaultopts(iradsw_out, iradlw_out, iradae_out, irad_always
 
    if ( present(iradsw_out) )      iradsw_out = iradsw
    if ( present(iradlw_out) )      iradlw_out = iradlw
-   if ( present(iradae_out) )      iradae_out = -999
    if ( present(irad_always_out) ) irad_always_out = irad_always
    if ( present(spectralflux_out) ) spectralflux_out = spectralflux
    if ( present(use_rad_dt_cosz_out) ) use_rad_dt_cosz_out = use_rad_dt_cosz
@@ -212,7 +210,7 @@ end subroutine radiation_defaultopts
 
 !================================================================================================
 
-subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
+subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, &
    irad_always_in, spectralflux_in, use_rad_dt_cosz_in)!BSINGH- Added use_rad_dt_cosz_out for slr insolation calc.
 !----------------------------------------------------------------------- 
 ! Purpose: Set runtime options
@@ -226,7 +224,6 @@ subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
    integer, intent(in)           :: nhtfrq          ! output frequency of primary history file
    integer, intent(in), optional :: iradsw_in
    integer, intent(in), optional :: iradlw_in
-   integer, intent(in), optional :: iradae_in
    integer, intent(in), optional :: irad_always_in
    logical, intent(in), optional :: spectralflux_in
    logical, intent(in), optional :: use_rad_dt_cosz_in
@@ -234,12 +231,10 @@ subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
    ! Local
    integer :: ntspdy   ! no. timesteps per day
    integer :: nhtfrq1  ! local copy of input arg nhtfrq
-   integer :: iradae   ! not used by RRTMG
 !-----------------------------------------------------------------------
 
    if ( present(iradsw_in) )      iradsw = iradsw_in
    if ( present(iradlw_in) )      iradlw = iradlw_in
-   if ( present(iradae_in) )      iradae = iradae_in
    if ( present(irad_always_in) ) irad_always = irad_always_in
    if ( present(spectralflux_in) ) spectralflux = spectralflux_in
    if ( present(use_rad_dt_cosz_in) ) use_rad_dt_cosz = use_rad_dt_cosz_in
@@ -249,30 +244,23 @@ subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
    if (iradlw      < 0) iradlw      = nint((-iradlw     *3600._r8)/dtime)
    if (irad_always < 0) irad_always = nint((-irad_always*3600._r8)/dtime)
 
-   ! Has user specified iradae?
-   if (iradae /= -999) then
-      call endrun('radiation_setopts: iradae not used by RRTMG.')
-   end if
-
 end subroutine radiation_setopts
 
 !===============================================================================
 
-subroutine radiation_get(iradsw_out, iradlw_out, iradae_out, irad_always_out, spectralflux_out)
+subroutine radiation_get(iradsw_out, iradlw_out, irad_always_out, spectralflux_out)
 !----------------------------------------------------------------------- 
 ! Purpose: Provide access to private module data.  (This should be eliminated.)
 !-----------------------------------------------------------------------
 
    integer, intent(out), optional :: iradsw_out
    integer, intent(out), optional :: iradlw_out
-   integer, intent(out), optional :: iradae_out
    integer, intent(out), optional :: irad_always_out
    logical, intent(out), optional :: spectralflux_out
    !-----------------------------------------------------------------------
 
    if ( present(iradsw_out) )      iradsw_out = iradsw
    if ( present(iradlw_out) )      iradlw_out = iradlw
-   if ( present(iradae_out) )      iradae_out = -999
    if ( present(irad_always_out) ) irad_always_out = irad_always
    if ( present(spectralflux_out) ) spectralflux_out = spectralflux_out
 
@@ -327,10 +315,6 @@ function radiation_do(op, timestep)
                     .or. (mod(nstep-1,iradlw) == 0  .and.  nstep /= 1) &
                     .or. nstep <= irad_always
 
-   case ('aeres') ! write absorptivity/emissivity to restart file this timestep?
-      ! for RRTMG there is no abs/ems restart file
-      radiation_do = .false.
-         
    case default
       call endrun('radiation_do: unknown operation:'//op)
 
@@ -602,7 +586,8 @@ end function radiation_nextsw_cday
        if (active_calls(icall)) then
 
           call addfld('SOLIN'//diag(icall),  horiz_only,     'A',   'W/m2', 'Solar insolation', &
-                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                      sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                      standard_name='toa_incoming_shortwave_flux')
           call addfld('SOLL'//diag(icall),  horiz_only,     'A',    'W/m2', 'Solar downward near infrared direct  to surface',&
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('SOLS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Solar downward visible direct  to surface', &
@@ -622,11 +607,13 @@ end function radiation_nextsw_cday
           call addfld('FSNTOA'//diag(icall),  horiz_only,     'A',  'W/m2', 'Net solar flux at top of atmosphere', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSUTOA'//diag(icall),  horiz_only,     'A',  'W/m2', 'Upwelling solar flux at top of atmosphere', &
-                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                      sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                      standard_name='toa_outgoing_shortwave_flux')
           call addfld('FSNTOAC'//diag(icall),  horiz_only,     'A', 'W/m2', 'Clearsky net solar flux at top of atmosphere', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSUTOAC'//diag(icall),  horiz_only,     'A',  'W/m2', 'Clearsky upwelling solar flux at top of atmosphere', &
-                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.,&
+                      standard_name='toa_outgoing_shortwave_flux_assuming_clear_sky')
           call addfld('FSN200'//diag(icall),  horiz_only,     'A',  'W/m2', 'Net shortwave flux at 200 mb', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSN200C'//diag(icall),  horiz_only,     'A', 'W/m2', 'Clearsky net shortwave flux at 200 mb', &
@@ -636,9 +623,11 @@ end function radiation_nextsw_cday
           call addfld('FSNSC'//diag(icall),  horiz_only,     'A',   'W/m2', 'Clearsky net solar flux at surface', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSDSC'//diag(icall),  horiz_only,     'A',   'W/m2', 'Clearsky downwelling solar flux at surface', &
-                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                      sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                      standard_name= 'surface_downwelling_shortwave_flux_in_air_assuming_clear_sky')
           call addfld('FSDS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Downwelling solar flux at surface', &
-                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                      sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                      standard_name='surface_downwelling_shortwave_flux_in_air')
           call addfld('FUS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave upward flux', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FDS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave downward flux', &
@@ -657,7 +646,8 @@ end function radiation_nextsw_cday
                       'Net near-infrared flux (>= 0.7 microns) at top of atmosphere', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld ('SWCF'//diag(icall),  horiz_only,     'A',   'W/m2', 'Shortwave cloud forcing', &
-                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                       sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                       standard_name='toa_shortwave_cloud_radiative_effect')
 
           if (history_amwg) then
              call add_default('SOLIN'//diag(icall),   1, ' ')
@@ -698,7 +688,8 @@ end function radiation_nextsw_cday
           call addfld('QRLC'//diag(icall),  (/ 'lev' /), 'A',    'K/s', 'Clearsky longwave heating rate', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLDS'//diag(icall), horiz_only,    'A',    'W/m2', 'Downwelling longwave flux at surface', &
-                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                      sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                      standard_name='surface_downwelling_longwave_flux_in_air')
           call addfld('FLDSC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky Downwelling longwave flux at surface', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLNS'//diag(icall), horiz_only,    'A',    'W/m2', 'Net longwave flux at surface', &
@@ -708,11 +699,13 @@ end function radiation_nextsw_cday
           call addfld('FLUT'//diag(icall), horiz_only,    'A',    'W/m2', 'Upwelling longwave flux at top of model', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLUTC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky upwelling longwave flux at top of model', &
-                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                      sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                      standard_name='toa_outgoing_longwave_flux_assuming_clear_sky')
           call addfld('FLNTC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky net longwave flux at top of model', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('LWCF'//diag(icall), horiz_only,    'A',    'W/m2', 'Longwave cloud forcing', &
-                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+                      sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                      standard_name='toa_longwave_cloud_radiative_effect')
           call addfld('FLN200'//diag(icall), horiz_only,    'A',  'W/m2', 'Net longwave flux at 200 mb', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLN200C'//diag(icall), horiz_only,    'A', 'W/m2', 'Clearsky net longwave flux at 200 mb', &

@@ -28,7 +28,6 @@ use constituents,    only: pcnst, readtrace
 use tracers,         only: tracers_flag
 use time_manager,    only: dtime
 use filenames,       only: ncdata, bnd_topo, &
-                           absems_data, &
                            caseid, &
                            brnch_retain_casename
 use dycore,          only: dycore_is
@@ -63,8 +62,6 @@ character(len=SHR_KIND_CL), private :: nlfilename = 'atm_in' ! Namelist filename
 !
 ! bnd_topo             Path and filename of topography dataset
 ! 
-! absems_data          Dataset with absorption and emissivity factors.
-!
 ! dtime = nnnn,        Model time step in seconds. Default is dycore dependent.
 ! 
 ! nlvdry = nn,         Number of layers over which to do dry
@@ -238,7 +235,6 @@ contains
    use subcol,              only: subcol_readnl
    use cloud_fraction,      only: cldfrc_readnl
    use cldfrc2m,            only: cldfrc2m_readnl
-   use unicon_cam,          only: unicon_cam_readnl
    use cldwat,              only: cldwat_readnl
    use zm_conv,             only: zmconv_readnl
    use hk_conv,             only: hkconv_readnl
@@ -307,7 +303,6 @@ contains
    !            it is not supported.
    namelist /cam_inparm/ ncdata, bnd_topo, &
                      cam_branch_file  , &
-                     absems_data, &
                      dtime, &
                      nlvdry,  &
                      pertlim ,&
@@ -495,7 +490,6 @@ contains
    call subcol_readnl(nlfilename)
    call cldfrc_readnl(nlfilename)
    call cldfrc2m_readnl(nlfilename)
-   call unicon_cam_readnl(nlfilename)
    call zmconv_readnl(nlfilename)
    call cldwat_readnl(nlfilename)
    call hkconv_readnl(nlfilename)
@@ -549,7 +543,6 @@ contains
          write(iulog,*) 'Initial dataset is: ',trim(ncdata)
       end if
       write(iulog,*)'Topography dataset is: ', trim(bnd_topo)
-      write(iulog,*)'Time-invariant (absorption/emissivity) factor dataset is: ', trim(absems_data)
 
       ! Type of run
       write(iulog,*)'Run type flag (NSREST) 0=initial, 1=restart, 3=branch ',nsrest
@@ -649,7 +642,6 @@ subroutine distnl
    call mpibcast (ctitle  ,len(ctitle),mpichar,0,mpicom)
    call mpibcast (ncdata  ,len(ncdata) ,mpichar,0,mpicom)
    call mpibcast (bnd_topo  ,len(bnd_topo) ,mpichar,0,mpicom)
-   call mpibcast (absems_data,len(absems_data),mpichar,0,mpicom)
    call mpibcast (cam_branch_file  ,len(cam_branch_file) ,mpichar,0,mpicom)
 
    call mpibcast (indirect     , 1 ,mpilog, 0,mpicom)

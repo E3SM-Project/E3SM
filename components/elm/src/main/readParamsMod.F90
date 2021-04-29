@@ -5,7 +5,7 @@ module readParamsMod
   ! Read parameters
   ! module used to read parameters for individual modules
   !
-  use elm_varctl   , only: use_cn, use_century_decomp, use_nitrif_denitrif
+  use elm_varctl   , only: use_cn, use_century_decomp
   use elm_varctl   , only: use_lch4, use_fates
   implicit none
   save
@@ -139,9 +139,7 @@ contains
             call readDecompCNParams(ncid)
          end if
        
-         if (use_nitrif_denitrif) then
-            call readNitrifDenitrifParams(ncid)
-         end if
+         call readNitrifDenitrifParams(ncid)
 
          call readSoilLittVertTranspParams(ncid)
        
@@ -149,6 +147,7 @@ contains
             call readCH4Params (ncid)
          end if
       endif
+      call readNitrogenDynamicsParams (ncid)
     end if
 
     if (use_cn) then
@@ -158,7 +157,6 @@ contains
          call readPhenolParams(ncid)
        endif
        call readMaintenanceRespParams (ncid)
-       call readNitrogenDynamicsParams (ncid)
        if(is_active_betr_bgc)then
          call readCNGapMortBeTRParams (ncid)
        else

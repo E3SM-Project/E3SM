@@ -98,18 +98,6 @@ integer, parameter, public :: nrh = 1000
 integer, parameter, public :: idx_lw_diag = 7 ! index to (H20 window) LW band
 integer, parameter, public :: rrtmg_lw_cloudsim_band = 6  ! rrtmg band for 10.5 micron
 
-! These can go away when old camrt disappears
-! Index of volc. cnt. abs. 0500--0650 cm-1
-integer, public, parameter :: idx_LW_0500_0650=3
-! Index of volc. cnt. abs. 0650--0800 cm-1
-integer, public, parameter :: idx_LW_0650_0800=4
-! Index of volc. cnt. abs. 0800--1000 cm-1
-integer, public, parameter :: idx_LW_0800_1000=5
-! Index of volc. cnt. abs. 1000--1200 cm-1
-integer, public, parameter :: idx_LW_1000_1200=6
-! Index of volc. cnt. abs. 1200--2000 cm-1
-integer, public, parameter :: idx_LW_1200_2000=7
-
 ! GASES TREATED BY RADIATION (line spectrae)
 
 ! gasses required by radiation

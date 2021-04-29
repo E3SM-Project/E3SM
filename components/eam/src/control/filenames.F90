@@ -21,9 +21,6 @@ public interpret_filename_spec                  ! Interpret a filename specifier
 
 character(shr_kind_cl), public :: ncdata = 'ncdata'       ! full pathname for initial dataset
 character(shr_kind_cl), public :: bnd_topo = 'bnd_topo'   ! full pathname for topography dataset
-
-character(shr_kind_cl), public :: absems_data = 'absems_data' ! full pathname for time-invariant absorption dataset
-
 character(shr_kind_cl), public :: caseid = ' '  ! Case identifier
 character(shr_kind_cl), public :: hostname = ' '  ! hostname
 character(shr_kind_cl), public :: username = ' '  ! username

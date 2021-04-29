@@ -2017,10 +2017,6 @@ endif
   end subroutine GhostVunpackfull
 
 
-
-
-
-
   ! =========================================
   !
   !> @brief Pack edges of v into an edge buffer for boundary exchange.
@@ -2049,13 +2045,6 @@ endif
 
     integer :: k,l,l_local,is
 
-    if(.not. threadsafe) then
-#if ( defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
-       threadsafe=.true.
-    end if
-
     do l_local=1,desc%actual_neigh_edges
        l=desc%loc2buf(l_local)
        is = desc%putmapP_ghost(l)
@@ -2080,7 +2069,7 @@ endif
     type (Ghostbuffer3D_t),intent(inout)  :: edge
     integer,               intent(in)     :: vlyr
     integer,               intent(in)     :: nc
-    real (kind=real_kind), intent(out)    :: v(nc,nc,vlyr,*)
+    real (kind=real_kind), intent(out)    :: v(:,:,:,:)
     integer,               intent(in)     :: kptr
     type (EdgeDescriptor_t),intent(in)    :: desc
     integer(kind=int_kind),intent(in)     :: GlobalId
@@ -2088,38 +2077,23 @@ endif
 
     integer :: k,l,n,is,m,pid,gid
 
-    threadsafe=.false.
-
     m=0
     gid = GlobalID
     do n=1,desc%actual_neigh_edges+1
        pid = desc%globalID(desc%loc2buf((m+1)))
        if (m==desc%actual_neigh_edges .OR. pid < gid) then
           gid = -1
-          v(:,:,:,n) = u(:,:,:)
+          v(:nc,:nc,:vlyr,n) = u(:,:,:)
        else
           m = m+1
           l = desc%loc2buf(m)
           is = desc%getmapP_ghost(l)
           do k=1,vlyr
-             v(:,:,k,n) = edge%buf(:,:,kptr+k,is) 
+             v(:nc,:nc,k,n) = edge%buf(:,:,kptr+k,is) 
           enddo
        end if
     end do
-
-
   end subroutine GhostVunpack_unoriented
-
-
-
-
-
-
-
-
-
-
-
 
   ! =========================================
   ! initGhostBuffer3d:
@@ -2161,12 +2135,7 @@ endif
     allocate(ghost%receive(np,(nhc+1),nlyr,nbuf))
     ghost%buf=0
     ghost%receive=0
-
-    
-    
-
   end subroutine initGhostBuffer3d
-
 
 
   ! =================================================================================

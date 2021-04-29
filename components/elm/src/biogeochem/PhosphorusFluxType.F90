@@ -7,7 +7,7 @@ module PhosphorusFluxType
   use elm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
   use elm_varcon             , only : spval, ispval, dzsoi_decomp
   use decompMod              , only : bounds_type
-  use elm_varctl             , only : use_nitrif_denitrif, use_vertsoilc
+  use elm_varctl             , only : use_vertsoilc
   use CNDecompCascadeConType , only : decomp_cascade_con
   use abortutils             , only : endrun
   use LandunitType           , only : lun_pp                
@@ -560,7 +560,6 @@ contains
     !
     ! !USES:
     use elm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
-    use elm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use pftvarcon     , only: npcropmin
     ! pflotran

@@ -169,7 +169,7 @@ contains
          allocate(drydep_indices(ndrydep))
 
     do m = 1,ndrydep
-       call cnst_get_ind ( drydep_list(m), id, abort=.false. )
+       call cnst_get_ind ( drydep_list(m), id, abrtf=.false. )
        if (id>0) then
           drydep_indices(m) = id
        else
@@ -181,7 +181,7 @@ contains
        endif
     enddo
     do m = 1,nwetdep
-       call cnst_get_ind ( wetdep_list(m), id, abort=.false. )
+       call cnst_get_ind ( wetdep_list(m), id, abrtf=.false. )
        if (id>0) then
           wetdep_indices(m) = id
        else

@@ -182,6 +182,16 @@ add_default($nl, 'config_cvmix_kpp_use_theory_wave');
 add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
 add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
 
+########################
+# Namelist group: gotm #
+########################
+
+add_default($nl, 'config_use_gotm');
+add_default($nl, 'config_gotm_namelist_file');
+add_default($nl, 'config_gotm_constant_surface_roughness_length');
+add_default($nl, 'config_gotm_constant_bottom_roughness_length');
+add_default($nl, 'config_gotm_constant_bottom_drag_coeff');
+
 ###########################
 # Namelist group: forcing #
 ###########################
@@ -206,6 +216,7 @@ add_default($nl, 'config_remove_AIS_coupler_runoff');
 add_default($nl, 'config_sw_absorption_type');
 add_default($nl, 'config_jerlov_water_type');
 add_default($nl, 'config_surface_buoyancy_depth');
+add_default($nl, 'config_enable_shortwave_energy_fixer');
 
 ###########################################
 # Namelist group: tidal_potential_forcing #
@@ -292,6 +303,8 @@ add_default($nl, 'config_density0');
 
 add_default($nl, 'config_pressure_gradient_type');
 add_default($nl, 'config_common_level_weight');
+add_default($nl, 'config_zonal_ssh_grad');
+add_default($nl, 'config_meridional_ssh_grad');
 
 #######################
 # Namelist group: eos #
@@ -317,6 +330,12 @@ add_default($nl, 'config_eos_linear_beta');
 add_default($nl, 'config_eos_linear_Tref');
 add_default($nl, 'config_eos_linear_Sref');
 add_default($nl, 'config_eos_linear_densityref');
+
+##############################
+# Namelist group: eos_wright #
+##############################
+
+add_default($nl, 'config_eos_wright_ref_pressure');
 
 ########################################
 # Namelist group: split_timestep_share #
@@ -413,6 +432,12 @@ add_default($nl, 'config_read_nearest_restart');
 add_default($nl, 'config_conduct_tests');
 add_default($nl, 'config_test_tensors');
 add_default($nl, 'config_tensor_test_function');
+
+#########################################
+# Namelist group: init_mode_vert_levels #
+#########################################
+
+add_default($nl, 'config_vert_levels');
 
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
