@@ -13,7 +13,7 @@ module lnd_disagg_forc
   use shr_megan_mod  , only : shr_megan_mechcomps_n
   use elm_varpar     , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use elm_varcon     , only : rair, grav, cpair, hfus, tfrz, spval
-  use elm_varctl     , only : iulog, use_c13, use_cn, use_lch4, iulog, precip_downscaling_method
+  use elm_varctl     , only : iulog, use_c13, use_cn, use_lch4, iulog, precip_downscaling
   use elm_cpl_indices
   use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
   use abortutils     , only : endrun
@@ -79,10 +79,12 @@ contains
 	
     ! temporaries for topo downscaling
     real(r8) :: rain_g, snow_g
-    real(r8) :: mxElv              ! Maximum elevation value per grid
+    real(r8) :: mxElv              ! Maximum elevation value per grid    
     real(r8) :: uovern_t           ! Froude Number
     real(r8) :: grdElv             ! Grid elevation
     real(r8) :: topoElv            ! Topounit elevation
+    real(r8) :: max_tpuElv         ! Maximum topounit elevation for calculating elevation range
+    real(r8) :: min_tpuElv         ! Minimum topounit elevation for calculating elevation range
     real(r8) :: crnt_temp_t             ! Current downscaled topounit temperature
     real(r8) :: temp_r             ! Temporary topounit rainfall
     real(r8) :: temp_s             ! Temporary topounit snowfall
@@ -114,8 +116,12 @@ contains
     real(r8) :: deltaS              ! Temporary deltaSnow
     real(r8) :: sum_of_hrise        ! Sum of height rise of air parcel of all subgrids of a grid
     real(r8) :: hrise               ! Temporary height rise
+    real(r8) :: elvrnge             ! Elevation range between lowest and highest tpu
+    integer :: elv_flag             ! Elevation flag to trac grids with +ve grid elevation and -ve tpu elevation
 
     integer :: uaflag = 0
+    integer :: precip_dwn = 0         ! Used to turn on/off the downscaling of precipitation  0 = on; 1 = off
+    integer :: other_forcing_dwn = 0  ! Used to turn on/off the downscaling of other forcing  0 = on; 1 = off
 
     character(len=*), parameter :: subname = 'downscale_grd_to_topounit'
     !----------------------------------------------------------------------------------------
@@ -158,73 +164,140 @@ contains
     Ta_th2 = 275.15_r8 ! Middle threshold for rain/snow partitioning
     Ta_th3 = 275.65_r8 ! Highest threshold for rain/snow partitioning
     tmp_Snow_frc = 0._r8   ! Snow fraction
-	
+    elv_flag = 0
+	elvrnge = 0.
+    max_tpuElv = 0.
+    min_tpuElv = 0.
     if (numt_pg > 1) then          !downscaling is done only if a grid has more than 1 topounits 
-       if (precip_downscaling_method == 'FNM') then
+       if (precip_downscaling == 'FNM') then
           allocate(deltaRain(numt_pg))
           deltaRain(:) = 0._r8
           allocate(deltaSnow(numt_pg))
           deltaSnow(:) = 0._r8
           hrise = 0.
        end if
-    
-       do t = grc_pp%topi(g), grc_pp%topf(g)
-       !do t = 1, numt_pg                                 !loop through the valid topounits only  
+       
+       ! calculate elevation range and track grids with +ve elevation but have -ve tpu elevation
+       max_tpuElv = -100000.0
+       min_tpuElv = 100000.0
+       do t = grc_pp%topi(g), grc_pp%topf(g)  ! Check occurence of grid elevation is +ve while tpu elevation is -ve
+          topoElv  = top_pp%elevation(t)
+           if (topoElv > max_tpuElv) then 
+              max_tpuElv = topoElv
+           end if
+           if (topoElv < min_tpuElv) then 
+              min_tpuElv = topoElv
+           end if
+       end do
+       elvrnge = max_tpuElv - min_tpuElv
+       !write(iulog,*) ' elvrnge = ', elvrnge
+       !write(iulog,*) ' max_tpuElv = ', max_tpuElv
+       !write(iulog,*) ' min_tpuElv = ', min_tpuElv
+       !write(iulog,*) ' top_pp%elevation(t) = ', top_pp%elevation(t)
+       !write(iulog,*) ' grdElv = ', grdElv
+       
+       do t = grc_pp%topi(g), grc_pp%topf(g)       
           t2 = t - grc_pp%topi(g) + 1
           topoElv  = top_pp%elevation(t)             ! Topounit sfc elevation  
           
           ! Downscale precipitation
-          if (mxElv == 0.) then  ! avoid dividing by 0
+          if (mxElv == 0. .or. precip_dwn == 1) then  ! avoid dividing by 0
              top_af%rain(t) = rain_g
              top_af%snow(t) = snow_g
           else
-             if (precip_downscaling_method == 'FNM') then
+             if (precip_downscaling == 'FNM') then
                 call downscale_precip_to_topounit_FNM(mxElv,uovern_t,grdElv,topoElv,rain_g,snow_g,deltaR,deltaS,hrise) !Use FNM method
                 deltaRain(t2) = deltaR 
                 deltaSnow(t2) = deltaS             
                 sum_of_hrise = sum_of_hrise + hrise              
              else
-                call downscale_precip_to_topounit_ERMM(t,mxElv,grdElv,topoElv,rain_g, snow_g) ! Use ERMM method
+                call downscale_precip_to_topounit_ERMM(t,mxElv,grdElv,topoElv,rain_g, snow_g,elv_flag,elvrnge) ! Use ERMM method                
              end if
-          end if   
-                    
-          ! Downscale other fluxes
-          call downscale_atmo_state_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)
-          call downscale_longwave_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)
-          top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
-          top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
-          top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
-          
-          sum_qbot_g = sum_qbot_g + top_pp%wtgcell(t)*top_as%qbot(t)
-          sum_wtsq_g = sum_wtsq_g + top_pp%wtgcell(t)
-                
-          ! assign the state forcing fields derived from other inputs
-          ! Horizontal windspeed (m/s)
-          top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
-         ! partial pressure of oxygen (Pa)
-          top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
-         ! air density (kg/m**3) - uses a temporary calculation
-         ! of water vapor pressure (Pa)
-          vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
-          top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
-          top_af%solad(t,2) = x2l(index_x2l_Faxa_swndr,i)
-          top_af%solad(t,1) = x2l(index_x2l_Faxa_swvdr,i)
-          top_af%solai(t,2) = x2l(index_x2l_Faxa_swndf,i)
-          top_af%solai(t,1) = x2l(index_x2l_Faxa_swvdf,i)
-         ! derived flux forcings
-          top_af%solar(t) = top_af%solad(t,2) + top_af%solad(t,1) + &
-          top_af%solai(t,2) + top_af%solai(t,1)
+          end if 
+          !!if (masterproc) then  ! TKT debugging
+          !      write(iulog,*) ' top_af%rain(t) = ', top_af%rain(t)
+          !      write(iulog,*) ' top_af%snow(t) = ', top_af%snow(t)
+          !      write(iulog,*) ' mxElv =  ', mxElv
+          !      write(iulog,*) ' numt_pg =  ', numt_pg
+          ! !end if
 
-         ! Keep track of the gridcell-level weighted sum for later normalization.
-         !
-         ! This gridcell-level weighted sum just includes points for which we do the
-         ! downscaling (e.g., glc_mec points). Thus the contributing weights
-         ! generally do not add to 1. So to do the normalization properly, we also
-         ! need to keep track of the weights that have contributed to this sum.
-          sum_lwrad_g = sum_lwrad_g + top_pp%wtgcell(t)*top_af%lwrad(t)
-          sum_wtslw_g = sum_wtslw_g + top_pp%wtgcell(t)
+          ! Downscale other fluxes
+          if (other_forcing_dwn == 1) then  ! flag to turn on or off downscaling of other forcing
+             top_af%rain(t) = rain_g 
+             top_af%snow(t) = snow_g 
+             top_af%lwrad(t) = x2l(index_x2l_faxa_lwdn,i)       	  
+             ! Update top_as
+             top_as%tbot(t)    = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
+             top_as%thbot(t)   = x2l(index_x2l_Sa_ptem,i)      ! forc_thxy Atm state K
+             top_as%pbot(t)    = x2l(index_x2l_Sa_pbot,i)      ! ptcmxy    Atm state Pa
+             top_as%qbot(t)    = x2l(index_x2l_Sa_shum,i)      ! forc_qxy  Atm state kg/kg
+             top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
+             top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
+             top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
+		 
+             ! assign the state forcing fields derived from other inputs
+             ! Horizontal windspeed (m/s)
+             top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
+             ! Relative humidity (percent)
+             if (top_as%tbot(t) > SHR_CONST_TKFRZ) then
+                e = esatw(tdc(top_as%tbot(t)))
+             else
+                e = esati(tdc(top_as%tbot(t)))
+             end if
+             qvsat = 0.622_r8*e / (top_as%pbot(t) - 0.378_r8*e)
+             top_as%rhbot(t) = 100.0_r8*(top_as%qbot(t) / qvsat)
+             ! partial pressure of oxygen (Pa)
+             top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
+             ! air density (kg/m**3) - uses a temporary calculation
+             ! of water vapor pressure (Pa)
+             vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
+             top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
+
+             top_af%solad(t,2) = x2l(index_x2l_Faxa_swndr,i)
+             top_af%solad(t,1) = x2l(index_x2l_Faxa_swvdr,i)
+             top_af%solai(t,2) = x2l(index_x2l_Faxa_swndf,i)
+             top_af%solai(t,1) = x2l(index_x2l_Faxa_swvdf,i)
+             ! derived flux forcings
+             top_af%solar(t) = top_af%solad(t,2) + top_af%solad(t,1) + &
+       		       top_af%solai(t,2) + top_af%solai(t,1)
+          else
+             call downscale_atmo_state_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)
+             call downscale_longwave_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)
+             top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
+             top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
+             top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
+          
+             sum_qbot_g = sum_qbot_g + top_pp%wtgcell(t)*top_as%qbot(t)
+             sum_wtsq_g = sum_wtsq_g + top_pp%wtgcell(t)
+                
+             ! assign the state forcing fields derived from other inputs
+             ! Horizontal windspeed (m/s)
+             top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
+             ! partial pressure of oxygen (Pa)
+             top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
+             ! air density (kg/m**3) - uses a temporary calculation
+             ! of water vapor pressure (Pa)
+             vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
+             top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
+             top_af%solad(t,2) = x2l(index_x2l_Faxa_swndr,i)
+             top_af%solad(t,1) = x2l(index_x2l_Faxa_swvdr,i)
+             top_af%solai(t,2) = x2l(index_x2l_Faxa_swndf,i)
+             top_af%solai(t,1) = x2l(index_x2l_Faxa_swvdf,i)
+            ! derived flux forcings
+             top_af%solar(t) = top_af%solad(t,2) + top_af%solad(t,1) + &
+             top_af%solai(t,2) + top_af%solai(t,1)
+
+            ! Keep track of the gridcell-level weighted sum for later normalization.
+            !
+            ! This gridcell-level weighted sum just includes points for which we do the
+            ! downscaling (e.g., glc_mec points). Thus the contributing weights
+            ! generally do not add to 1. So to do the normalization properly, we also
+            ! need to keep track of the weights that have contributed to this sum.
+             sum_lwrad_g = sum_lwrad_g + top_pp%wtgcell(t)*top_af%lwrad(t)
+             sum_wtslw_g = sum_wtslw_g + top_pp%wtgcell(t)
+          end if 
        end do
-       if (precip_downscaling_method == 'FNM') then
+       if (precip_downscaling == 'FNM') then
           do t = grc_pp%topi(g), grc_pp%topf(g)
              t2 = t - grc_pp%topi(g) + 1
              if (mxElv == 0.) then  ! avoid dividing by 0
@@ -260,9 +333,26 @@ contains
             else   ! crnt_temp_t <= Ta_th1 ==> all snow
                 temp_s = top_af%snow(t) + top_af%rain(t)
                 temp_r = 0._r8                
+            
+            end if
+            
             top_af%rain(t) = temp_r
             top_af%snow(t) = temp_s
-            end if
+            !if (top_af%rain(t) > 1000.0 .or. top_af%snow(t) > 1000.0) then 
+            !    write(iulog,*) 'WARNING too large tpu precipitation: top_af%rain(t) + top_af%snow(t) = ', (top_af%rain(t) + top_af%snow(t)) 
+            !    write(iulog,*) ' top_af%rain(t)2 = ', top_af%rain(t)
+            !    write(iulog,*) ' top_af%snow(t)2 = ', top_af%snow(t)
+            !    write(iulog,*) ' temp_r = ', temp_r
+            !    write(iulog,*) ' temp_s = ', temp_s
+            !    write(iulog,*) ' top_as%tbot(t) = ', top_as%tbot(t)
+            !    write(iulog,*) ' mxElv =  ', mxElv
+            !    write(iulog,*) ' topElv =  ',top_pp%elevation(t)
+            !    write(iulog,*) ' grdElv =  ',grdElv
+            !    write(iulog,*) ' numt_pg =  ', numt_pg
+            !    write(iulog,*) ' rain_g =  ', rain_g
+            !    write(iulog,*) ' snow_g =  ', snow_g
+            !end if
+            
        end do
 
     else !grid has a single topounit
@@ -270,8 +360,7 @@ contains
        t = grc_pp%topi(g)
        top_af%rain(t) = rain_g 
        top_af%snow(t) = snow_g 
-       top_af%lwrad(t) = x2l(index_x2l_faxa_lwdn,i)
-			  
+       top_af%lwrad(t) = x2l(index_x2l_faxa_lwdn,i)       	  
        ! Update top_as
        top_as%tbot(t)    = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
        top_as%thbot(t)   = x2l(index_x2l_Sa_ptem,i)      ! forc_thxy Atm state K
@@ -581,14 +670,16 @@ contains
   
   !-------------------------------------------------------
   ! Downscale precipitation from grid to topounit using ERMM method
-  subroutine downscale_precip_to_topounit_ERMM(t,mxElv,grdElv,topoElv,rain_g, snow_g) 
+  subroutine downscale_precip_to_topounit_ERMM(t,mxElv,grdElv,topoElv,rain_g, snow_g,elv_flag,elvrnge) 
    
     ! !ARGUMENTS:
     real(r8) :: rain_g, snow_g
     real(r8) :: mxElv              ! Maximum elevation value per grid
     real(r8) :: grdElv             ! Grid elevation
     real(r8) :: topoElv            ! Topounit elevation    
-    integer, intent(in)    :: t
+    real(r8) :: elvrnge            ! Elevation range 
+    integer :: elv_flag
+    integer, intent(in)    :: t    
     
     ! !LOCAL VARIABLES:
     real(r8) :: r
@@ -599,36 +690,46 @@ contains
     character(len=*), parameter :: subname = 'downscale_precip_to_topounit_ERMM'
     !--------------------------------------------------------------------------------------
 
-    if (mxElv < 0) then
-       mxEl = abs(mxElv) ! avoid the situation where -ve r can force lower areas more rain than higher elevation areas.
-       topoEl = abs(topoElv)
-       grdEl = abs(grdElv)
-    else 
-       mxEl = mxElv ! avoid the situation where -ve r can force lower areas more rain than higher elevation areas.
-       topoEl = topoElv
-       grdEl = grdElv
-    end if
-    
+    topoEl = topoElv
+    grdEl = grdElv
     r = 0.  
     r = topoEl - grdEl
+    if (mxElv <= 0.0 .or. mxElv < elvrnge) then  ! Use elvrnge to downscale grid precipitation across the topounits
+       if (rain_g < 0.0) then
+           write(iulog,*) 'WARNING negative grid level rainfall = ', rain_g
+           top_af%rain(t) = 0.
+        else if (elvrnge == 0.0) then  !flat topography
+           top_af%rain(t) = rain_g
+        else
+           top_af%rain(t) = rain_g + (rain_g*(r/elvrnge))
+        end if
+        if (snow_g < 0.0) then
+           write(iulog,*) 'WARNING negative grid level snowfall = ', snow_g
+           top_af%snow(t) = 0.
+        else if (elvrnge == 0.0) then  !flat topography
+           top_af%snow(t) = snow_g
+        else
+           top_af%snow(t) = snow_g + (snow_g*(r/elvrnge))
+        end if    
+    else  ! mxElv > 0.0
+        top_af%rain(t) = rain_g + (rain_g*(r/mxElv))
+        top_af%snow(t) = snow_g + (snow_g*(r/mxElv))
+    end if 
 
-    if (mxElv == 0) then  ! avoid dividing by 0
-       top_af%rain(t) = rain_g
-       top_af%snow(t) = snow_g
-    else
-       if (rain_g < 0) then
-          top_af%rain(t) = 0.          
-       else
-          top_af%rain(t) = rain_g + (rain_g*(r/mxElv))
-       end if
-
-       if (snow_g < 0) then
-          top_af%snow(t) = 0. 
-       else
-          top_af%snow(t) = snow_g + (snow_g*(r/mxElv))
-       end if
-
-    end if
+    if (top_af%rain(t) < 0.0 .or. top_af%snow(t) < 0.0) then 
+        write(iulog,*) 'WARNING negative tpu precipitation: top_af%rain(t) + top_af%snow(t) = ', (top_af%rain(t) + top_af%snow(t)) 
+        write(iulog,*) ' top_af%rain(t) = ', top_af%rain(t)
+        write(iulog,*) ' top_af%snow(t) = ', top_af%snow(t)
+        write(iulog,*) ' mxElv =  ', mxElv
+        write(iulog,*) ' grdEl =  ', grdEl
+        write(iulog,*) ' topoEl =  ', topoEl
+        write(iulog,*) ' elvrnge =  ', elvrnge
+        write(iulog,*) ' r =  ', r
+        write(iulog,*) ' rain_g =  ', rain_g
+        write(iulog,*) ' snow_g =  ', snow_g
+        write(iulog,*) ' (rain_g*(r/mxElv)) =  ', (rain_g*(r/mxElv))
+        write(iulog,*) ' (snow_g*(r/mxElv)) =  ', (snow_g*(r/mxElv))         
+     end if
 
   end subroutine downscale_precip_to_topounit_ERMM  
   

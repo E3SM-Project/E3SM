@@ -56,7 +56,7 @@ contains
     character(len=256)    :: locfn             ! local filename
     real(r8) ,pointer     :: std (:)           ! read in - topo_std 
     real(r8) ,pointer     :: tslope (:)        ! read in - topo_slope 
-    real(r8) ,pointer     :: hslp_p10 (:,:)    ! read in - hillslope slope percentiles
+    real(r8) ,pointer     :: hslp_p10 (:,:,:)    ! read in - hillslope slope percentiles
     real(r8) ,pointer     :: dtb (:,:)           ! read in - DTB
     real(r8)              :: beddep            ! temporary
     integer               :: nlevbed           ! temporary
@@ -576,7 +576,7 @@ contains
       deallocate(std)
 
       if (use_erosion) then
-         allocate(hslp_p10(bounds%begg:bounds%endg,nlevslp))
+         allocate(hslp_p10(bounds%begg:bounds%endg,1:max_topounits,nlevslp))
          call ncd_io(ncid=ncid, varname='SLP_P10', flag='read', data=hslp_p10, dim1name=grlnd, readvar=readvar)
          if (.not. readvar) then
             call shr_sys_abort(' ERROR: hillslope slope percentiles NOT on surfdata file'//&
@@ -584,7 +584,10 @@ contains
          end if
          do c = begc,endc
             g = col_pp%gridcell(c)
-            col_pp%hslp_p10(c,:) = hslp_p10(g,:)
+            t = col_pp%topounit(c)
+            topi = grc_pp%topi(g)
+            ti = t - topi + 1
+            col_pp%hslp_p10(c,:) = hslp_p10(g,ti,:)
          end do
          deallocate(hslp_p10)
       else

@@ -695,7 +695,8 @@ contains
 
     call ncd_pio_closefile(ncid)
 
-    call check_sums_equal_1_3d(wt_lunit, begg, 'wt_lunit', subname,ldomain%num_tunits_per_grd)
+    !call check_sums_equal_1_3d(wt_lunit, begg, 'wt_lunit', subname,ldomain%num_tunits_per_grd)
+    call check_sums_equal_1_3d(wt_lunit, begg, 'wt_lunit', subname)
 
     if ( masterproc )then
        write(iulog,*) 'Successfully read surface boundary data'
@@ -826,7 +827,8 @@ contains
        if (.not. readvar) call endrun( msg=' ERROR: PCT_GLC_MEC NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 
        wt_glc_mec(:,:,:) = wt_glc_mec(:,:,:) / 100._r8
-       call check_sums_equal_1_3d(wt_glc_mec, begg, 'wt_glc_mec', subname,ntpu)
+       !call check_sums_equal_1_3d(wt_glc_mec, begg, 'wt_glc_mec', subname,ntpu)
+       call check_sums_equal_1_3d(wt_glc_mec, begg, 'wt_glc_mec', subname)
 
        call ncd_io(ncid=ncid, varname='TOPO_GLC_MEC',  flag='read', data=topo_glc_mec, &
             dim1name=grlnd, readvar=readvar)
@@ -920,7 +922,7 @@ contains
     real(r8),pointer :: array2D(:,:,:)              ! local array
     character(len=32) :: subname = 'surfrd_cftformat'! subroutine name
 !-----------------------------------------------------------------------
-    SHR_ASSERT_ALL((lbound(wt_cft) == (/begg,max_topounits, cft_lb/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((lbound(wt_cft) == (/begg,1, cft_lb/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(wt_cft, dim=1) == (/endg/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(wt_cft, dim=3) >= (/cftsize+1-cft_lb/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(wt_nat_patch) >= (/endg,max_topounits,natpft_size-1+natpft_lb/)), errMsg(__FILE__, __LINE__))
@@ -1129,12 +1131,14 @@ contains
 
     if (cft_size > 0) then
        wt_cft(begg:endg,:,:) = wt_cft(begg:endg,:,:) / 100._r8
-       call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname,ntpu)
+       !call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname,ntpu)
+       call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname)
     end if
     wt_lunit(begg:endg,:,istsoil) = wt_lunit(begg:endg,:,istsoil) / 100._r8
     wt_lunit(begg:endg,:,istcrop) = wt_lunit(begg:endg,:,istcrop) / 100._r8
     wt_nat_patch(begg:endg,:,:)   = wt_nat_patch(begg:endg,:,:) / 100._r8
-    call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname,ntpu)
+    !call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname,ntpu)
+    call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname)
 
     ! If no irrigation, merge irrigated CFTs with rainfed
     
@@ -1163,7 +1167,8 @@ contains
           end do
        end do
 
-       call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname,ntpu)
+       !call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname,ntpu)
+       call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname)
     end if
 
   end subroutine surfrd_veg_all
