@@ -442,6 +442,7 @@ add_default($nl, 'config_use_glp');
 add_default($nl, 'config_beta_thawed_only');
 add_default($nl, 'config_unrealistic_velocity');
 add_default($nl, 'config_nonconvergence_error');
+add_default($nl, 'config_effective_pressure_max');
 
 #############################
 # Namelist group: advection #
@@ -458,6 +459,12 @@ if ($MALI_DYNAMIC eq 'TRUE') {
     add_default($nl, 'config_tracer_advection', 'val'=>"none");
 }
 
+##############################
+# Namelist group: solidearth #
+##############################
+
+add_default($nl, 'config_uplift_method');
+
 ###########################
 # Namelist group: calving #
 ###########################
@@ -467,15 +474,30 @@ if ($MALI_DYNAMIC eq 'TRUE') {
 } else {
     add_default($nl, 'config_calving', 'val'=>"none");
 }
+add_default($nl, 'config_use_Albany_flowA_eqn_for_vM');
 add_default($nl, 'config_calving_topography');
 add_default($nl, 'config_calving_thickness');
 add_default($nl, 'config_calving_eigencalving_parameter_source');
 add_default($nl, 'config_calving_eigencalving_parameter_scalar_value');
+add_default($nl, 'config_calving_specified_source');
+add_default($nl, 'config_calving_velocity_const');
 add_default($nl, 'config_data_calving');
 add_default($nl, 'config_calving_timescale');
 add_default($nl, 'config_restore_calving_front');
 add_default($nl, 'config_remove_icebergs');
 add_default($nl, 'config_remove_small_islands');
+add_default($nl, 'config_grounded_von_Mises_threshold_stress');
+add_default($nl, 'config_floating_von_Mises_threshold_stress');
+add_default($nl, 'config_finalize_damage_after_advection');
+add_default($nl, 'config_preserve_damage');
+add_default($nl, 'config_calculate_damage');
+add_default($nl, 'config_damage_preserve_threshold');
+add_default($nl, 'config_damage_calving_threshold');
+add_default($nl, 'config_damage_stiffness_min');
+add_default($nl, 'config_damage_rheology_coupling');
+add_default($nl, 'config_damage_gl_setting');
+add_default($nl, 'config_damage_calving_method');
+add_default($nl, 'config_damagecalvingParameter');
 
 ##################################
 # Namelist group: thermal_solver #
@@ -515,6 +537,13 @@ add_default($nl, 'config_temperature_profile_variability_amplitude');
 add_default($nl, 'config_temperature_profile_variability_period');
 add_default($nl, 'config_temperature_profile_variability_phase');
 add_default($nl, 'config_temperature_profile_GL_depth_fraction');
+add_default($nl, 'config_front_mass_bal_grounded');
+add_default($nl, 'config_beta_ocean_thermal_forcing');
+add_default($nl, 'config_add_ocean_thermal_forcing');
+add_default($nl, 'config_alpha_subglacial_discharge');
+add_default($nl, 'config_subglacial_discharge_coefficient');
+add_default($nl, 'config_subglacial_discharge_intercept');
+add_default($nl, 'config_uniform_face_melt_rate');
 
 #######################################
 # Namelist group: physical_parameters #
@@ -596,6 +625,7 @@ add_default($nl, 'config_print_velocity_cleanup_details');
 ####################################
 
 add_default($nl, 'config_SGH');
+add_default($nl, 'config_ocean_connection_N');
 add_default($nl, 'config_SGH_adaptive_timestep_fraction');
 add_default($nl, 'config_SGH_max_adaptive_timestep');
 add_default($nl, 'config_SGH_tangent_slope_calculation');
@@ -604,12 +634,12 @@ add_default($nl, 'config_SGH_alpha');
 add_default($nl, 'config_SGH_beta');
 add_default($nl, 'config_SGH_conduc_coeff');
 add_default($nl, 'config_SGH_till_drainage');
+add_default($nl, 'config_SGH_till_max');
 add_default($nl, 'config_SGH_advection');
 add_default($nl, 'config_SGH_bed_roughness');
 add_default($nl, 'config_SGH_bed_roughness_max');
 add_default($nl, 'config_SGH_creep_coefficient');
 add_default($nl, 'config_SGH_englacial_porosity');
-add_default($nl, 'config_SGH_till_max');
 add_default($nl, 'config_SGH_chnl_active');
 add_default($nl, 'config_SGH_chnl_include_DCFL');
 add_default($nl, 'config_SGH_chnl_alpha');
@@ -649,6 +679,7 @@ add_default($nl, 'config_AM_regionalStats_write_on_startup');
 
 my @groups = qw(velocity_solver
                 advection
+                solidearth
                 calving
                 thermal_solver
                 iceshelf_melt
