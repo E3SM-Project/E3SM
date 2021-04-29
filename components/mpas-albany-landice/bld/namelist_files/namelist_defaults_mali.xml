@@ -129,7 +129,7 @@
 <config_write_albany_ascii_mesh>.false.</config_write_albany_ascii_mesh>
 
 <!-- decomposition -->
-<config_num_halos>2</config_num_halos>
+<config_num_halos>3</config_num_halos>
 <config_block_decomp_file_prefix>'mpasli.graph.info.part.'</config_block_decomp_file_prefix>
 <config_number_of_blocks>0</config_number_of_blocks>
 <config_explicit_proc_decomp>.false.</config_explicit_proc_decomp>
