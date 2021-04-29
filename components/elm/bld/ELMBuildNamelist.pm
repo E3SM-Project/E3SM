@@ -1829,6 +1829,7 @@ sub process_namelist_inline_logic {
   setup_logic_irrigate($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_start_type($nl_flags, $nl);
   setup_logic_delta_time($opts, $nl_flags, $definition, $defaults, $nl);
+  setup_logic_do_budgets($opts, $nl_flags, $definition, $defaults, $nl);
   setup_logic_decomp_performance($opts->{'test'}, $nl_flags, $definition, $defaults, $nl);
   setup_logic_snow($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_glacier($opts, $nl_flags, $definition, $defaults, $nl,  $envxml_ref, $physv);
@@ -2074,6 +2075,19 @@ sub setup_logic_delta_time {
   }
 }
 
+#-------------------------------------------------------------------------------
+
+sub setup_logic_do_budgets {
+  my ($opts, $nl_flags, $definition, $defaults, $nl) = @_;
+
+    my $do_budgets = $defaults->get_value('do_budgets');
+    if ( ! defined($do_budgets)  ) {
+      # default to .false. if not set in namelist_defaults.xml
+      add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'do_budgets', 'val'=>".false.");
+    } else {
+      add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'do_budgets', 'val'=>"$do_budgets");
+    }
+}
 #-------------------------------------------------------------------------------
 
 sub setup_logic_decomp_performance {
