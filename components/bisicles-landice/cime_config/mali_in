@@ -4,12 +4,11 @@
  config_flowparama_calculation = 'constant'
  config_sia_tangent_slope_calculation = 'from_vertex_barycentric'
  config_simple_velocity_type = 'uniform'
- config_unrealistic_velocity = 0.01592356685
  config_use_glp = .false.
- config_velocity_solver = 'none'
+ config_velocity_solver = 'sia'
 /
 &advection
- config_thickness_advection = 'none'
+ config_thickness_advection = 'fo'
  config_tracer_advection = 'none'
 /
 &calving
@@ -20,46 +19,29 @@
  config_calving_timescale = 0.0
  config_calving_topography = -500.0
  config_data_calving = .false.
- config_remove_icebergs = .false.
- config_remove_small_islands = .false.
  config_restore_calving_front = .true.
 /
 &thermal_solver
  config_basal_heat_flux_source = 'file'
  config_basal_heat_flux_value = 0.0
- config_max_water_fraction = 1.0e-2
- config_surface_air_temperature_lapse_rate = 0.01
- config_surface_air_temperature_source = 'file'
- config_surface_air_temperature_value = 273.15
- config_temp_diffusive_factor = 1.0e-5
- config_temperature_init = 'file'
- config_thermal_calculate_bmb = .true.
- config_thermal_solver = 'none'
- config_thermal_thickness = 1.0
-/
-&iceshelf_melt
  config_basal_mass_bal_float = 'file'
  config_basal_mass_bal_seroussi_amplitude = 0.0
  config_basal_mass_bal_seroussi_period = 1.0
  config_basal_mass_bal_seroussi_phase = 0.0
  config_bmlt_float_flux = 0.0
  config_bmlt_float_xlimit = 0.0
- config_temperature_profile_draft_slope = 1.0e-2
- config_temperature_profile_gl_depth_fraction = 0.25
- config_temperature_profile_melt_scale_factor = 6.0
- config_temperature_profile_plume_thickness = 30.0
- config_temperature_profile_sill_elevation = -700.0
- config_temperature_profile_thermocline_lower_depth = -600.0
- config_temperature_profile_thermocline_lower_temp = 1.2
- config_temperature_profile_thermocline_upper_depth = -200.0
- config_temperature_profile_thermocline_upper_temp = -1.0
- config_temperature_profile_variability_amplitude = 0.0
- config_temperature_profile_variability_period = 1.0
- config_temperature_profile_variability_phase = 0.0
+ config_surface_air_temperature_lapse_rate = 0.01
+ config_surface_air_temperature_source = 'file'
+ config_surface_air_temperature_value = 273.15
+ config_temperature_init = 'file'
+ config_thermal_calculate_bmb = .true.
+ config_thermal_solver = 'none'
+ config_thermal_thickness = 1.0
 /
 &physical_parameters
  config_default_flowparama = 3.1709792e-24
  config_dynamic_thickness = 10.0
+ config_enhancementfactor = 1.0
  config_flowlawexponent = 3.0
  config_ice_density = 910.0
  config_ocean_density = 1028.0
@@ -93,7 +75,7 @@
  config_year_digits = 4
 /
 &decomposition
- config_block_decomp_file_prefix = '/home/lugosi/users/ligocki/projects/acme/cesm-inputdata/glc/mpasli/mpas.ais20km/mpasli.graph.info.150910.part.'
+ config_block_decomp_file_prefix = '/global/cfs/cdirs/e3sm/inputdata/glc/mpasli/mpas.ais20km/mpasli.graph.info.150910.part.'
  config_explicit_proc_decomp = .false.
  config_num_halos = 2
  config_number_of_blocks = 0
