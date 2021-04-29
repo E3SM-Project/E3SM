@@ -73,6 +73,10 @@ template<typename V> SLMM_KIF Int len (const V& v)
 template<typename T> inline Int len (const std::vector<T>& v)
 { return static_cast<Int>(v.size()); }
 
+struct Geometry {
+  enum Type { sphere = 0, plane = 1 };
+};
+
 struct Basis {
   Int np, monotone_type;
   Basis () : np(0), monotone_type(-1) {} // invalid values

@@ -18,9 +18,11 @@ using Ints = Kokkos::View<Int*, ES>;
 // in addition, cubed_sphere_map=0.
 template <typename ES>
 struct SphereToRef {
-  void init (const Int cubed_sphere_map, const Int nelem_global,
-             const typename Ints<ES>::const_type& lid2facenum) {
+  void init (const Geometry::Type geometry, const Int cubed_sphere_map, const Real length_scale,
+             const Int nelem_global, const typename Ints<ES>::const_type& lid2facenum) {
+    geometry_ = geometry;
     cubed_sphere_map_ = cubed_sphere_map;
+    length_scale_ = length_scale;
     lid2facenum_ = lid2facenum;
     nelem_global_ = nelem_global;
     ne_ = static_cast<Int>(std::round(std::sqrt((nelem_global / 6))));
@@ -44,10 +46,15 @@ struct SphereToRef {
     const Int max_its = 10,
     const Real tol = 1e2*std::numeric_limits<Real>::epsilon()) const
   {
-    if (cubed_sphere_map_ == 2)
-      siqk::sqr::calc_sphere_to_ref(m.p, slice(m.e, m.tgt_elem), q, a, b,
-                                    info, max_its, tol);
-    else {
+    if (cubed_sphere_map_ == 2) {
+      // Tolerance is absolute, so multiply the rel tol by the length scale.
+      if (geometry_ == Geometry::Type::sphere)
+        siqk::sqr::calc_sphere_to_ref(m.p, slice(m.e, m.tgt_elem), q, a, b,
+                                      info, max_its, tol*length_scale_);
+      else
+        siqk::sqr::calc_plane_to_ref(m.p, slice(m.e, m.tgt_elem), q, a, b,
+                                     info, max_its, tol*length_scale_);
+    } else {
       const Int face = lid2facenum_(ie); //assume: ie corresponds to m.tgt_elem.
       map_sphere_coord_to_face_coord(face-1, q[0], q[1], q[2], a, b);
       a = map_face_coord_to_cell_ref_coord(a);
@@ -69,6 +76,8 @@ struct SphereToRef {
   }
 
 private:
+  Geometry::Type geometry_;
+  Real length_scale_;
   Int ne_, nelem_global_, cubed_sphere_map_;
   typename Ints<ES>::const_type lid2facenum_;
 
@@ -145,16 +154,24 @@ struct Advecter {
   };
 
   Advecter (const Int np, const Int nelem, const Int transport_alg,
-            const Int cubed_sphere_map, const Int nearest_point_permitted_lev_bdy)
+            const Int cubed_sphere_map, const Geometry::Type geometry,
+            const Int nearest_point_permitted_lev_bdy)
     : alg_(Alg::convert(transport_alg)),
       np_(np), np2_(np*np), np4_(np2_*np2_),
-      cubed_sphere_map_(cubed_sphere_map),
+      cubed_sphere_map_(geometry == Geometry::Type::plane ? 2 : cubed_sphere_map),
+      geometry_(geometry),
       tq_order_(alg_ == Alg::qos ? 14 : 12),
       nearest_point_permitted_lev_bdy_(nearest_point_permitted_lev_bdy)
   {
     slmm_throw_if(cubed_sphere_map == 0 && Alg::is_cisl(alg_),
                   "When cubed_sphere_map = 0, SLMM supports only ISL methods.");
     local_mesh_h_ = LocalMeshesH("local_mesh_h_", nelem);
+  }
+
+  void init_plane (Real Sx, Real Sy, Real Lx, Real Ly) {
+    slmm_assert(geometry_ == Geometry::Type::plane);
+    plane.Sx = Sx; plane.Sy = Sy;
+    plane.Lx = Lx; plane.Ly = Ly;
   }
 
   void fill_nearest_points_if_needed();
@@ -171,6 +188,9 @@ struct Advecter {
   bool is_cisl () const { return Alg::is_cisl(alg_); }
 
   Int cubed_sphere_map () const { return cubed_sphere_map_; }
+  Geometry::Type geometry () const { return geometry_; }
+  bool is_sphere () const { return geometry_ == Geometry::Type::sphere; }
+  const Plane& get_plane () const { return plane; }
   const Ints<DES>& lid2facenum () const { return lid2facenum_; }
 
   // nelem_global is used only if cubed_sphere_map = 0, to deduce ne in
@@ -221,6 +241,7 @@ struct Advecter {
 private:
   const typename Alg::Enum alg_;
   const Int np_, np2_, np4_, cubed_sphere_map_;
+  Geometry::Type geometry_;
   LocalMeshesH local_mesh_h_;
   LocalMeshesD local_mesh_d_;
   typename LocalMeshesD::HostMirror local_mesh_m_; // handle managed allocs
@@ -232,6 +253,7 @@ private:
   Ints<HES> lid2facenum_h_;
   Ints<DES> lid2facenum_;
   SphereToRef<DES> s2r_;
+  Plane plane;
 };
 
 template <typename MT>
@@ -247,6 +269,7 @@ void Advecter<MT>
     ncell = corners.extent_int(2),
     N = nvert*ncell;
   auto& m = local_mesh_h_(ie);
+  m.geometry = geometry_;
   typedef LocalMesh<HES> LM;
   m.p = typename LM::RealArray("p", N);
   m.e = typename LM::IntArray("e", ncell, nvert);
@@ -256,14 +279,23 @@ void Advecter<MT>
         m.p(k,j) = corners(j,vi,ci);
       m.e(ci,vi) = k;
     }
-  fill_normals<siqk::SphereGeometry>(m);
+  fill_normals(m);
   m.tgt_elem = slmm::get_src_cell(m, p_inside);
-  slmm_assert(m.tgt_elem >= 0 &&
-              m.tgt_elem < ncell);
+  slmm_assert(m.tgt_elem >= 0 && m.tgt_elem < ncell);
+  if (geometry_ == Geometry::Type::plane) {
+    // Shift local coords here for checks.
+    make_continuous(plane, m);
+  }
 }
 
 template <typename MT>
 void Advecter<MT>::fill_nearest_points_if_needed () {
+  if (geometry_ == Geometry::Type::plane) {
+    // Shift local coords again after halo expansion. make_continuous is
+    // idempotent, so there is no harm in calling it twice even when not needed.
+    for (Int ie = 0; ie < local_mesh_h_.extent_int(0); ++ie)
+      make_continuous(plane, local_mesh_h_(ie));
+  }
   if (nearest_point_permitted_lev_bdy_ >= 0)
     for (Int ie = 0; ie < local_mesh_h_.extent_int(0); ++ie)
       nearest_point::fill_perim(local_mesh_h_(ie));

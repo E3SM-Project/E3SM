@@ -882,11 +882,6 @@ if (topology == "plane" .and. mesh_file /= "none") then
   call abortmp("RRM grids not yet supported for plane")
 end if
 
-if (topology == "plane" .and. transport_alg /= 0) then
-  call abortmp("SL advection not yet supported for plane")
-end if
-
-
     if (ne /=0 .or. ne_x /=0 .or. ne_y /=0) then
     if (mesh_file /= "none" .and. mesh_file /= "/dev/null") then
       write (*,*) "namelist_mod: mesh_file:",trim(mesh_file), &

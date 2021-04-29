@@ -1,9 +1,77 @@
 #include "compose_slmm_departure_point.hpp"
 
 namespace slmm {
+
+void fill_normals (LocalMesh<ko::MachineTraits::HES>& m) {
+  if (m.geometry == Geometry::Type::plane) {
+#ifndef NDEBUG
+    {
+      // In principle the plane could be embedded in a general orientation in 3D
+      // space. In practice, it's sensibly implemented in Homme as || to the x-y
+      // plane. Be sure of that here.
+      const Int n = nslices(m.p);
+      for (Int i = 0; i < n; ++i) assert(m.p(i,2) == 0);
+    }
+#endif
+    // Following the assumption above, be sure the third component is 0 since
+    // PlaneGeometry::fill_normals won't write to it.
+    const Int n = nslices(m.nml);
+    for (Int i = 0; i < n; ++i) m.nml(i,2) = 0;
+    fill_normals<siqk::PlaneGeometry>(m);
+  } else
+    fill_normals<siqk::SphereGeometry>(m);
+}
+
+// Modify m.p so that the elements surrounding the target element have
+// continuous rather than periodic coordinate values.
+void make_continuous (const Plane& p, LocalMesh<ko::MachineTraits::HES>& m) {
+  slmm_assert(m.tgt_elem >= 0 && m.tgt_elem <= nslices(m.e));
+  const auto tcell = slice(m.e, m.tgt_elem);
+  // Geometric center of cell.
+  const auto getctr = [&] (const Int ie, Real ctr[3]) {
+    const auto cell = slice(m.e, ie);
+    for (Int d = 0; d < 3; ++d) ctr[d] = 0;
+    for (Int i = 0; i < 4; ++i)
+      for (Int d = 0; d < 3; ++d)
+        ctr[d] += m.p(cell[i],d);
+    for (Int d = 0; d < 3; ++d) ctr[d] /= 4;
+  };
+  Real tctr[3];
+  getctr(m.tgt_elem, tctr);
+  // Distance using cell center.
+  const auto dist = [&] (const Int ie, const Real dx, const Real dy) {
+    Real ctr[3];
+    getctr(ie, ctr);
+    Real dist = 0;
+    Real trans[3] = {dx, dy, 0};
+    for (Int d = 0; d < 3; ++d) dist += siqk::square(ctr[d] + trans[d] - tctr[d]);
+    return std::sqrt(dist);
+  };
+  // Translate cell dim d by delta.
+  const auto translate = [&] (const Int ie, const Int d, const Real delta) {
+    const auto cell = slice(m.e, ie);
+    for (Int i = 0; i < 4; ++i)
+      m.p(cell[i],d) += delta;
+  };
+  const Int ncell = nslices(m.e);
+  for (Int ie = 0; ie < ncell; ++ie) {
+    if (ie == m.tgt_elem) continue;
+    // Find the distance-minimizing translation, including 0 translation.
+    Real min_dist = 1e20, mdx = 0, mdy = 0;
+    for (const Real dx : {-p.Lx, 0.0, p.Lx})
+      for (const Real dy : {-p.Ly, 0.0, p.Ly}) {
+        const Real d = dist(ie, dx, dy);
+        if (d < min_dist) { min_dist = d; mdx = dx; mdy = dy; }
+      }
+    // Apply the translation.
+    translate(ie, 0, mdx);
+    translate(ie, 1, mdy);
+  }
+}
+
 namespace nearest_point {
 
-Int test_canpoa () {
+Int test_canpoa (const bool sphere) {
   Int nerr = 0;
   using geo = siqk::SphereGeometry;
   Real p0[] = {-0.5,0.5,0}, p1[] = {0.1,0.8,0}, nml[] = {0,0,-1};
@@ -16,7 +84,7 @@ Int test_canpoa () {
   geo::copy(correct[2], p1);
   for (Int i = 0; i < 3; ++i) {
     Real nr[3];
-    nearest_point::calc_approx_nearest_point_on_arc(p0, p1, nml, points[i], nr);
+    nearest_point::calc_approx_nearest_point_on_arc(p0, p1, nml, points[i], nr, sphere);
     Real d[3];
     geo::axpbyz(1, nr, -1, correct[i], d);
     if (std::sqrt(geo::norm2(d)) > 10*std::numeric_limits<Real>::epsilon())
@@ -26,7 +94,7 @@ Int test_canpoa () {
 }
 
 template <typename ES>
-Int test_calc (const LocalMesh<ES>& m, const Int& tgt_ic) {
+Int test_calc (const LocalMesh<ES>& m, const Int& tgt_ic, const Real length_scale) {
   Int nerr = 0;
   // If a point is on the perim, then calc should return it as the nearest
   // point.
@@ -34,24 +102,24 @@ Int test_calc (const LocalMesh<ES>& m, const Int& tgt_ic) {
   for (Int k = 0; k < np_perim; ++k) {
     const auto p0 = slice(m.p, m.perimp(k));
     const auto p1 = slice(m.p, m.perimp((k+1) % np_perim));
-    const auto L = calc_dist(p0, p1);
+    const auto L = 1e2*length_scale;
+    const auto tol = std::numeric_limits<Real>::epsilon()*L;
     Real v[3];
     for (Int d = 0; d < 3; ++d) v[d] = p0[d];
     calc(m, v);
-    if (calc_dist(p0, v) > std::numeric_limits<Real>::epsilon() / L) ++nerr;
+    if (calc_dist(p0, v) > tol) ++nerr;
     Real on[3];
     siqk::SphereGeometry::combine(p0, p1, 0.4, on);
-    siqk::SphereGeometry::normalize(on);
+    if (m.is_sphere()) siqk::SphereGeometry::normalize(on);
     for (Int d = 0; d < 3; ++d) v[d] = on[d];
     calc(m, v);
-    if (calc_dist(on, v) > 1e2*std::numeric_limits<Real>::epsilon() / L) ++nerr;
+    if (calc_dist(on, v) > tol) ++nerr;
   }
   return nerr;
 }
 
-template <typename ES>
+template <typename geo, typename ES>
 Int test_fill_perim (const LocalMesh<ES>& m, const Int& tgt_ic) {
-  using geo = siqk::SphereGeometry;
   Int nerr = 0;
   const auto tgt_cell = slice(m.e, tgt_ic);
   const Int np_perim = len(m.perimp);
@@ -78,8 +146,8 @@ Int test_fill_perim (const LocalMesh<ES>& m, const Int& tgt_ic) {
       // Normal orthogonal to edge?
       if (std::abs(dot) > 1e2*std::numeric_limits<Real>::epsilon()/L) ++nerr;
       // Oriented inwards?
-      Real outward[3];
-      geo::cross(p1, p0, outward);
+      Real outward[3] = {0};
+      geo::edge_normal(p1, p0, outward);
       if (geo::dot(nml, outward) >= 0) ++nerr;
     }
   }
@@ -87,7 +155,8 @@ Int test_fill_perim (const LocalMesh<ES>& m, const Int& tgt_ic) {
 }
 } // namespace nearest_point
 
-Int unittest (LocalMesh<ko::MachineTraits::HES>& m, const Int tgt_elem) {
+Int unittest (LocalMesh<ko::MachineTraits::HES>& m, const Int tgt_elem,
+              const Real length_scale) {
   Int nerr = 0, ne = 0;
   const Int nc = len(m.e);
   for (Int ic = 0; ic < nc; ++ic) {
@@ -110,16 +179,27 @@ Int unittest (LocalMesh<ko::MachineTraits::HES>& m, const Int tgt_elem) {
   }
   if (ne) pr("slmm::unittest: get_src_cell failed");
   nerr += ne;
-  ne = nearest_point::test_canpoa();
+  ne = nearest_point::test_canpoa(true);
+  if (ne) pr("slmm::unittest: test_canpoa sphere failed");
   nerr += ne;
-  if (ne) pr("slmm::unittest: test_canpoa failed");
+  ne = nearest_point::test_canpoa(false);
+  if (ne) pr("slmm::unittest: test_canpoa plane failed");
+  nerr += ne;
   {
     nearest_point::fill_perim(m);
-    ne = nearest_point::test_fill_perim(m, tgt_elem);
+    if (m.is_sphere())
+      ne = nearest_point::test_fill_perim<siqk::SphereGeometry>(m, tgt_elem);
+    else
+      ne = nearest_point::test_fill_perim<siqk::PlaneGeometry>(m, tgt_elem);
     if (ne) pr("slmm::unittest: test_fill_perim failed");
     nerr += ne;
-    ne = nearest_point::test_calc(m, tgt_elem);
+    ne = nearest_point::test_calc(m, tgt_elem, length_scale);
     if (ne) pr("slmm::unittest: test_calc failed");
+    nerr += ne;
+  }
+  {
+    ne = siqk::sqr::test::test_sphere_to_ref(m.p, m.e, m.is_sphere());
+    if (ne) pr("slmm::unittest: siqk::sqr::test::test_sphere_to_ref failed");
     nerr += ne;
   }
   return nerr;

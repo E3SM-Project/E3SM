@@ -5,7 +5,6 @@
 module sl_advection
   use kinds, only              : real_kind, int_kind
   use dimensions_mod, only     : nlev, nlevp, np, qsize, qsize_d
-  use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use derivative_mod, only     : derivative_t, gradient_sphere, divergence_sphere
   use element_mod, only        : element_t
   use hybvcoord_mod, only      : hvcoord_t
@@ -30,6 +29,7 @@ module sl_advection
 
   type (cartesian3D_t), allocatable :: dep_points_all(:,:,:,:) ! (np,np,nlev,nelemd)
   real(kind=real_kind), dimension(:,:,:,:,:), allocatable :: minq, maxq ! (np,np,nlev,qsize,nelemd)
+  logical :: is_sphere
 
   ! For use in make_positive.
   real(kind=real_kind) :: dp_tol
@@ -37,7 +37,7 @@ module sl_advection
   public :: prim_advec_tracers_remap_ALE, sl_init1, sl_vertically_remap_tracers, sl_unittest
 
   ! For testing
-  public :: calc_trajectory, dep_points_all
+  public :: calc_trajectory, dep_points_all, sphere2cart
 
   ! For C++
   public :: sl_get_params
@@ -65,12 +65,28 @@ contains
     independent_time_steps = dt_remap_factor < dt_tracer_factor
   end subroutine sl_parse_transport_alg
 
+  subroutine sphere2cart(sphere, cart)
+    use coordinate_systems_mod, only: spherical_polar_t, cartesian3D_t, change_coordinates
+
+    type (spherical_polar_t), intent(in) :: sphere
+    type (cartesian3D_t), intent(out) :: cart
+
+    if (is_sphere) then
+       cart = change_coordinates(sphere)
+    else
+       ! See conventions established in planar_mod::coordinates_atomic.
+       cart%x = sphere%lon
+       cart%y = sphere%lat
+       cart%z = 0
+    end if
+  end subroutine sphere2cart
+
   subroutine sl_init1(par, elem)
     use interpolate_mod,        only : interpolate_tracers_init
     use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, cubed_sphere_map, &
-         nu_q, semi_lagrange_hv_q, semi_lagrange_cdr_check
+         nu_q, semi_lagrange_hv_q, semi_lagrange_cdr_check, geometry
     use element_state,          only : timelevels
-    use coordinate_systems_mod, only : cartesian3D_t, change_coordinates
+    use coordinate_systems_mod, only : cartesian3D_t
     use perf_mod, only: t_startf, t_stopf
     use kinds, only: iulog
 
@@ -86,20 +102,21 @@ contains
        call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test, independent_time_steps)
        if (par%masterproc .and. nu_q > 0 .and. semi_lagrange_hv_q > 0) &
             write(iulog,*) 'COMPOSE> use HV; nu_q, all:', nu_q, semi_lagrange_hv_q
+       is_sphere = trim(geometry) /= 'plane'
        nslots = nlev*qsize
        ! Technically a memory leak, but the array persists for the entire
        ! run, so not a big deal for now.
        allocate(dep_points_all(np,np,nlev,size(elem)))
        do ie = 1, size(elem)
           ! Provide a point inside the target element.
-          pinside = change_coordinates(elem(ie)%spherep(2,2))
+          call sphere2cart(elem(ie)%spherep(2,2), pinside)
           num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
           call slmm_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors, &
                pinside, size(elem(ie)%desc%neigh_corners,2))
           if (sl_test) then
              do j = 1,np
                 do i = 1,np
-                   pinside = change_coordinates(elem(ie)%spherep(i,j))
+                   call sphere2cart(elem(ie)%spherep(i,j), pinside)
                    call slmm_check_ref2sphere(ie, pinside)
                 end do
              end do
@@ -118,13 +135,13 @@ contains
   end subroutine sl_init1
 
   subroutine sl_get_params(nu_q_out, hv_scaling, hv_q, hv_subcycle_q, limiter_option_out, &
-       cdr_check) bind(c)
+       cdr_check, geometry_type) bind(c)
     use control_mod, only: semi_lagrange_hv_q, hypervis_subcycle_q, semi_lagrange_cdr_check, &
-         hypervis_power, nu_q, hypervis_scaling, limiter_option
+         hypervis_power, nu_q, hypervis_scaling, limiter_option, geometry
     use iso_c_binding, only: c_int, c_double
 
     real(c_double), intent(out) :: nu_q_out, hv_scaling
-    integer(c_int), intent(out) :: hv_q, hv_subcycle_q, limiter_option_out, cdr_check
+    integer(c_int), intent(out) :: hv_q, hv_subcycle_q, limiter_option_out, cdr_check, geometry_type
 
     nu_q_out = nu_q
     hv_scaling = hypervis_scaling
@@ -133,6 +150,8 @@ contains
     limiter_option_out = limiter_option
     cdr_check = 0
     if (semi_lagrange_cdr_check) cdr_check = 1
+    geometry_type = 0 ! sphere
+    if (trim(geometry) == "plane") geometry_type = 1
 
     ! Assert some things.
     if (nu_q > 0 .and. hv_q > 0 .and. hypervis_power /= 0) &
@@ -326,7 +345,7 @@ contains
 #endif
        do k = 1, nlev
           call ALE_departure_from_gll(dep_points_all(:,:,k,ie), &
-               elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt, normalize=.true.)
+               elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt, normalize=is_sphere)
        end do
     end do
     call t_stopf('SLMM_v2x')
@@ -483,8 +502,8 @@ contains
   ! OUTPUT:
   !-----------------------------------------------------------------------------------!
   subroutine ALE_departure_from_gll(acart, vstar, elem, dt, normalize)
-    use physical_constants,     only : rearth
-    use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t, change_coordinates
+    use physical_constants,     only : scale_factor
+    use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t
     use time_mod,               only : timelevel_t
     use element_mod,            only : element_t
     use kinds,                  only : real_kind
@@ -492,7 +511,7 @@ contains
 
     implicit none
 
-    type(cartesian3D_t)     ,intent(out)  :: acart(np,np)
+    type (cartesian3D_t)    ,intent(out)  :: acart(np,np)
     real (kind=real_kind)   ,intent(in)   :: vstar(np,np,2)
     type (element_t)        ,intent(in)   :: elem
     real (kind=real_kind)   ,intent(in)   :: dt
@@ -514,10 +533,10 @@ contains
     ! crude, 1st order accurate approximation.  to be improved
     do i=1,np
        do j=1,np
-          acart(i,j) = change_coordinates(elem%spherep(i,j)) 
-          acart(i,j)%x = acart(i,j)%x - dt*uxyz(i,j,1)/rearth
-          acart(i,j)%y = acart(i,j)%y - dt*uxyz(i,j,2)/rearth
-          acart(i,j)%z = acart(i,j)%z - dt*uxyz(i,j,3)/rearth
+          call sphere2cart(elem%spherep(i,j), acart(i,j))
+          acart(i,j)%x = acart(i,j)%x - dt*uxyz(i,j,1)/scale_factor
+          acart(i,j)%y = acart(i,j)%y - dt*uxyz(i,j,2)/scale_factor
+          acart(i,j)%z = acart(i,j)%z - dt*uxyz(i,j,3)/scale_factor
           if (normalize) then
              norm = sqrt(acart(i,j)%x*acart(i,j)%x + acart(i,j)%y*acart(i,j)%y + &
                   acart(i,j)%z*acart(i,j)%z)

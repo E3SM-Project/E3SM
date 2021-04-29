@@ -147,9 +147,10 @@ static HommeIslMpi::Advecter::Ptr g_advecter;
 
 void slmm_init (const Int np, const Int nelem, const Int nelemd,
                 const Int transport_alg, const Int cubed_sphere_map,
-                const Int sl_nearest_point_lev, const Int* lid2facenum) {
+                const slmm::Geometry::Type geometry, const Int sl_nearest_point_lev,
+                const Int* lid2facenum) {
   g_advecter = std::make_shared<HommeIslMpi::Advecter>(
-    np, nelemd, transport_alg, cubed_sphere_map, sl_nearest_point_lev);
+    np, nelemd, transport_alg, cubed_sphere_map, geometry, sl_nearest_point_lev);
   g_advecter->init_meta_data(nelem, lid2facenum);
 }
 } // namespace homme
@@ -198,12 +199,14 @@ int slmm_unittest () {
   int nerr = 0, ne;
   {
     ne = 0;
+    const auto& p = homme::g_advecter->get_plane();
+    const homme::Real length_scale
+      = homme::g_advecter->is_sphere() ? 1 : std::max(p.Lx, p.Ly);
     for (int i = 0; i < homme::g_advecter->nelem(); ++i) {
       auto& m = homme::g_advecter->local_mesh_host(i);
-      ne += slmm::unittest(m, m.tgt_elem);
+      ne += slmm::unittest(m, m.tgt_elem, length_scale);
     }
-    if (ne)
-      fprintf(stderr, "FAIL slmm::unittest returned %d\n", ne);
+    if (ne) fprintf(stderr, "FAIL slmm::unittest returned %d\n", ne);
     nerr += ne;
   }
   amb::dev_fin_threads();
@@ -288,7 +291,7 @@ void kokkos_finalize () {
 void slmm_init_impl (
   homme::Int fcomm, homme::Int transport_alg, homme::Int np,
   homme::Int nlev, homme::Int qsize, homme::Int qsized, homme::Int nelem,
-  homme::Int nelemd, homme::Int cubed_sphere_map,
+  homme::Int nelemd, homme::Int cubed_sphere_map, homme::Int geometry,
   const homme::Int* lid2gid, const homme::Int* lid2facenum,
   const homme::Int* nbr_id_rank, const homme::Int* nirptr,
   homme::Int sl_nearest_point_lev, homme::Int, homme::Int, homme::Int,
@@ -296,6 +299,7 @@ void slmm_init_impl (
 {
   amb::dev_init_threads();
   homme::slmm_init(np, nelem, nelemd, transport_alg, cubed_sphere_map,
+                   static_cast<slmm::Geometry::Type>(geometry),
                    sl_nearest_point_lev - 1, lid2facenum);
   slmm_throw_if(homme::g_advecter->is_cisl(), "CISL code was removed.");
   const auto p = homme::mpi::make_parallel(MPI_Comm_f2c(fcomm));
@@ -316,6 +320,11 @@ void slmm_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
   for (const auto e : homme::g_csl_mpi->recvsz) r += e;
   *sendsz = s;
   *recvsz = r;
+}
+
+void slmm_init_plane (homme::Real Sx, homme::Real Sy, homme::Real Lx, homme::Real Ly) {
+  slmm_assert(homme::g_advecter);
+  homme::g_advecter->init_plane(Sx, Sy, Lx, Ly);
 }
 
 void slmm_set_bufs (homme::Real* sendbuf, homme::Real* recvbuf,

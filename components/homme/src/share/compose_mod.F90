@@ -4,9 +4,9 @@ module compose_mod
 
   logical :: compose_h2d = .false., compose_d2h = .false.
   logical, private :: control_kokkos_init_and_fin = .true.
-
+  
   interface
-
+     
 #ifdef HOMME_ENABLE_COMPOSE
      subroutine kokkos_init() bind(c)
      end subroutine kokkos_init
@@ -31,15 +31,20 @@ module compose_mod
      end subroutine cedr_init_impl
 
      subroutine slmm_init_impl(comm, transport_alg, np, nlev, qsize, qsize_d, &
-          nelem, nelemd, cubed_sphere_map, lid2gid, lid2facenum, nbr_id_rank, nirptr, &
+          nelem, nelemd, cubed_sphere_map, geometry, lid2gid, lid2facenum, nbr_id_rank, nirptr, &
           sl_nearest_point_lev, lid2gid_sz, lid2facenum_sz, nbr_id_rank_sz, nirptr_sz) bind(c)
        use iso_c_binding, only: c_int
        integer(kind=c_int), value, intent(in) :: comm, transport_alg, np, nlev, qsize, qsize_d, &
-            nelem, nelemd, cubed_sphere_map, sl_nearest_point_lev, lid2gid_sz, lid2facenum_sz, &
-            nbr_id_rank_sz, nirptr_sz
+            nelem, nelemd, cubed_sphere_map, geometry, sl_nearest_point_lev, lid2gid_sz, &
+            lid2facenum_sz, nbr_id_rank_sz, nirptr_sz
        integer(kind=c_int), intent(in) :: lid2gid(lid2gid_sz), lid2facenum(lid2facenum_sz), &
             nbr_id_rank(nbr_id_rank_sz), nirptr(nirptr_sz)
      end subroutine slmm_init_impl
+
+     subroutine slmm_init_plane(Sx, Sy, Lx, Ly) bind(c)
+       use iso_c_binding, only: c_double
+       real(kind=c_double), value, intent(in) :: Sx, Sy, Lx, Ly
+     end subroutine slmm_init_plane
 
      subroutine cedr_query_bufsz(sendsz, recvsz) bind(c)
        use iso_c_binding, only: c_int
@@ -224,11 +229,12 @@ contains
   subroutine compose_init(par, elem, GridVertex, init_kokkos)
     use iso_c_binding, only: c_bool
     use parallel_mod, only: parallel_t, abortmp
-    use dimensions_mod, only: np, nlev, qsize, qsize_d, nelem, nelemd
+    use dimensions_mod, only: np, nlev, qsize, qsize_d, nelem, nelemd, ne_x, ne_y
     use element_mod, only: element_t
     use gridgraph_mod, only: GridVertex_t
     use control_mod, only: semi_lagrange_cdr_alg, transport_alg, cubed_sphere_map, &
-         semi_lagrange_nearest_point_lev, dt_remap_factor, dt_tracer_factor
+         semi_lagrange_nearest_point_lev, dt_remap_factor, dt_tracer_factor, geometry
+    use physical_constants, only: Sx, Sy, Lx, Ly
     use scalable_grid_init_mod, only: sgi_is_initialized, sgi_get_rank2sfc, &
          sgi_gid2igv
     use perf_mod, only: t_startf, t_stopf
@@ -243,7 +249,7 @@ contains
          ! These are for non-scalable grid initialization, still used for RRM.
          sc2gci(:), sc2rank(:)        ! space curve index -> (GID, rank)
     integer :: lid2gid(nelemd), lid2facenum(nelemd)
-    integer :: i, j, k, sfc, gid, igv, sc
+    integer :: i, j, k, sfc, gid, igv, sc, geometry_type
     ! To map SFC index to IDs and ranks
     logical(kind=c_bool) :: use_sgi, owned, independent_time_steps, hard_zero
     integer, allocatable :: owned_ids(:)
@@ -263,8 +269,18 @@ contains
 
     independent_time_steps = dt_remap_factor < dt_tracer_factor
 
-    if (.true. .or. &
-         semi_lagrange_cdr_alg == 2 .or. semi_lagrange_cdr_alg == 20 .or. &
+    geometry_type = 0 ! sphere
+    if (trim(geometry) == "plane") then
+       geometry_type = 1
+       if (min(ne_x, ne_y) < 5) then
+          ! If we really want to, we can support ne := min(ne_x, ne_y) >= 3 just
+          ! by setting halo = 1 if ne < 5. But for now that's not important,
+          ! support ne no less than 5.
+          call abortmp('SL transport for planar geometry does not support min(ne_x, ne_y) < 5.')
+       end if
+    end if
+
+    if ( semi_lagrange_cdr_alg == 2 .or. semi_lagrange_cdr_alg == 20 .or. &
          semi_lagrange_cdr_alg == 21) then
        if (use_sgi) then
           call sgi_get_rank2sfc(rank2sfc)
@@ -340,9 +356,10 @@ contains
        end do
        nirptr(nelemd+1) = k - 1
        call slmm_init_impl(par%comm, transport_alg, np, nlev, qsize, qsize_d, &
-            nelem, nelemd, cubed_sphere_map, lid2gid, lid2facenum, &
+            nelem, nelemd, cubed_sphere_map, geometry_type, lid2gid, lid2facenum, &
             nbr_id_rank, nirptr, semi_lagrange_nearest_point_lev, &
             size(lid2gid), size(lid2facenum), size(nbr_id_rank), size(nirptr))
+       if (geometry_type == 1) call slmm_init_plane(Sx, Sy, Lx, Ly)
        deallocate(nbr_id_rank, nirptr)
     end if
     call t_stopf('compose_init')

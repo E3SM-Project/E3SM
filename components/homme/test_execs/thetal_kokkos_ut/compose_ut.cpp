@@ -36,7 +36,7 @@ extern char** hommexx_catch2_argv;
 extern "C" {
   void init_compose_f90(int ne, const Real* hyai, const Real* hybi, const Real* hyam,
                         const Real* hybm, Real ps0, Real* dvv, Real* mp, int qsize,
-                        int hv_q, int limiter_option, bool cdr_check);
+                        int hv_q, int limiter_option, bool cdr_check, bool is_sphere);
   void init_geometry_f90();
   void cleanup_compose_f90();
   void run_compose_standalone_test_f90(int* nmax, Real* eval);
@@ -101,7 +101,7 @@ void fill (Random& r, const V& a,
 
 struct Session {
   int ne, hv_q;
-  bool cdr_check;
+  bool cdr_check, is_sphere;
   HybridVCoord h;
   Random r;
   std::shared_ptr<Elements> e;
@@ -116,6 +116,7 @@ struct Session {
 
     assert(QSIZE_D >= 4);
     parse_command_line();
+    assert(is_sphere); // planar isn't available in Hxx yet
 
     auto& c = Context::singleton();
 
@@ -141,7 +142,8 @@ struct Session {
     auto& ref_FE = c.create<ReferenceElement>();
     std::vector<Real> dvv(NP*NP), mp(NP*NP);
     init_compose_f90(ne, hyai.data(), hybi.data(), &hyam(0)[0], &hybm(0)[0], h.ps0,
-                     dvv.data(), mp.data(), qsize, hv_q, p.limiter_option, cdr_check);
+                     dvv.data(), mp.data(), qsize, hv_q, p.limiter_option, cdr_check,
+                     is_sphere);
     ref_FE.init_mass(mp.data());
     ref_FE.init_deriv(dvv.data());
 
@@ -204,6 +206,7 @@ private:
     qsize = QSIZE_D;
     hv_q = 1;
     cdr_check = false;
+    is_sphere = true;
     bool ok = true;
     int i;
     for (i = 0; i < hommexx_catch2_argc; ++i) {
@@ -219,6 +222,8 @@ private:
         hv_q = std::atoi(hommexx_catch2_argv[++i]);
       } else if (tok == "-cdrcheck") {
         cdr_check = true;
+      } else if (tok == "-planar") {
+        is_sphere = false;
       }
     }
     ne = std::max(2, std::min(128, ne));

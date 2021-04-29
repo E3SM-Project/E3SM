@@ -64,10 +64,22 @@ SLMM_KF ko::EnableIfOnGpu<MT> throw_on_sci_error (
   ko::abort("throw_on_sci_error");
 }
 
+// See comments before 'step' in compose_slmm_islmpi.hpp re: continuous and
+// periodic coordinate values.
+SLMM_KF static void
+continuous2periodic (const slmm::Plane& p, Real* x) {
+  if (     x[0] < p.Sx       ) x[0] += p.Lx;
+  else if (x[0] > p.Sx + p.Lx) x[0] -= p.Lx;
+  if (     x[1] < p.Sy       ) x[1] += p.Ly;
+  else if (x[1] > p.Sy + p.Ly) x[1] -= p.Ly;
+}
+
 // Find where each departure point is.
 template <typename MT>
 void analyze_dep_points (IslMpi<MT>& cm, const Int& nets, const Int& nete,
                          const DepPoints<MT>& dep_points) {
+  const auto is_sphere = cm.advecter->is_sphere();
+  const auto& plane = cm.advecter->get_plane();
 #ifdef COMPOSE_PORT
   const auto myrank = cm.p->rank();
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
@@ -110,6 +122,8 @@ void analyze_dep_points (IslMpi<MT>& cm, const Int& nets, const Int& nete,
         ko::atomic_increment(static_cast<volatile Int*>(&bla(ri,lidi,lev).xptr));
         ko::atomic_increment(static_cast<volatile Int*>(&nx_in_rank(ri)));
       }
+      // Change to periodic for use in next phase.
+      if ( ! is_sphere) continuous2periodic(plane, &dep_points(tci,lev,k,0));
     };
     ko::fence();
     ko::parallel_for(ko::RangePolicy<typename MT::DES>(0, (nete - nets + 1)*nlev*np2), f);
@@ -194,6 +208,7 @@ void analyze_dep_points (IslMpi<MT>& cm, const Int& nets, const Int& nete,
         if (horiz_openmp) omp_unset_lock(lock);
 #endif
       }
+      if ( ! is_sphere) continuous2periodic(plane, &dep_points(tci,lev,k,0));
     };
     ko::fence();
     ko::parallel_for(

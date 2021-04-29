@@ -650,9 +650,28 @@ template <typename MT>
 void copy_q(IslMpi<MT>& cm, const Int& nets,
             const QExtrema<MT>& q_min, const QExtrema<MT>& q_max);
 
-/* dep_points is const in principle, but if lev <=
-   semi_lagrange_nearest_point_lev, a departure point may be altered if the
-   winds take it outside of the comm halo.
+/* Take a semi-Lagrangian step, excluding property preservation.
+     dep_points is const in principle, but if
+       lev <= semi_lagrange_nearest_point_lev,
+   a departure point may be altered if the winds take it outside of the comm
+   halo.
+     This code was originally developed for the unit sphere. Later, we modified
+   it to handle a doubly-periodic plane || to the x-y plane. As a result, in a
+   number of spots in the code, one sees the word 'sphere', such as
+   SphereToRef::calc_sphere_to_ref, but in fact the class and routine may handle
+   the plane, as well.
+     For the plane, one must account for periodicity in the coordinate values.
+   We refer to 'periodic' and 'continuous' values. Periodic values are those
+   that are within the plane's bounds. Continuous can be out of bounds but,
+   together with other coordinate values in a patch, form a continuous function.
+   LocalMesh::p is initialized to have continuous coordinate values anchored at
+   LocalMesh::tgt_elem, which itself has periodic values.
+     The departure points that are input to 'step' should have continuous
+   coordinate values. That is, if a departure point advects outside of the
+   plane's bounds, the values should stay as such. Impl reason: get_src_cell
+   operates using LocalMesh, so it naturally wants the departure points to have
+   continuous values to match the patch values.
+     Once that calculation is done, dep_points is changed to periodic values.
 */
 template <typename MT = ko::MachineTraits>
 void step(

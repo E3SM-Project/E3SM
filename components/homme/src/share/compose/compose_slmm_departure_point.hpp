@@ -5,6 +5,9 @@
 
 namespace slmm {
 
+// Plane dimensions for planar doubly-periodic domain.
+struct Plane { Real Sx, Sy, Lx, Ly; };
+
 /* A local mesh is described by the following arrays:
        p: 3 x #nodes, the array of vertices.
        e: max(#verts) x #elems, the array of element base-0 indices.
@@ -26,6 +29,7 @@ struct LocalMesh {
   using Ints = ko::View<Int*, ES>;
 
   // Local mesh data.
+  Geometry::Type geometry;
   RealArray p, nml;
   IntArray e, en;
 
@@ -36,6 +40,8 @@ struct LocalMesh {
 
   // Index of the target element in this local mesh.
   Int tgt_elem;
+
+  SLMM_KIF bool is_sphere () const { return geometry == Geometry::Type::sphere; }
 };
 
 // Inward-oriented normal. In practice, we want to form high-quality normals
@@ -70,6 +76,12 @@ void fill_normals (LocalMesh<ko::MachineTraits::HES>& m) {
   m.nml = nml;
 }
 
+void fill_normals(LocalMesh<ko::MachineTraits::HES>& m);
+
+// For doubly-periodic planar mesh, make the local mesh patch's vertices
+// continuous in space, anchored at m.tgt_elem.
+void make_continuous(const Plane& p, LocalMesh<ko::MachineTraits::HES>& m);
+
 template <typename ESD, typename ESS>
 void deep_copy (LocalMesh<ESD>& d, const LocalMesh<ESS>& s) {
   siqk::resize_and_copy(d.p, s.p);
@@ -92,22 +104,29 @@ bool is_inside (const LocalMesh<ES>& m,
   assert(szslice(m.e) == ne);
   assert(szslice(m.en) == ne);
   bool inside = true;
-  for (Int ie = 0; ie < ne; ++ie)
+  for (Int ie = 0; ie < ne; ++ie) {
+    // We can use SphereGeometry here regardless of plane or sphere because the
+    // third component is 0; see comments in fill_normals.
     if (siqk::SphereGeometry::dot_c_amb(slice(m.nml, celln[ie]),
                                         v, slice(m.p, cell[ie]))
         < -atol) {
       inside = false;
       break;
     }
+  }
   return inside;
 }
 
-// Both cubed_sphere_map=0 and cubed_sphere_map=2 can use this
-// method. (cubed_sphere_map=1 is not impl'ed in Homme.) This method is natural
-// for cubed_sphere_map=2, so RRM works automatically. cubed_sphere_map=0 is
-// supported in Homme only for regular cubed-sphere meshes, not RRM; in that
-// case, edges are great arcs, so again this impl works. In contrast,
-// calc_sphere_to_ref has to be specialized on cubed_sphere_map.
+// Both cubed_sphere_map=0 and cubed_sphere_map=2 can use this method.
+// (cubed_sphere_map=1 is not impl'ed in Homme.)
+//   This method is natural for cubed_sphere_map=2, so RRM works automatically.
+//   cubed_sphere_map=0 is supported in Homme only for regular cubed-sphere
+// meshes, not RRM; in that case, edges are great arcs, so again this impl
+// works.
+//   In contrast, calc_sphere_to_ref has to be specialized on cubed_sphere_map.
+//   In the case of planar geometry, this method again works because the only
+// difference is in the edge normals. The SphereGeometry linear algebra below
+// works because the third component is 0; see the comments in fill_normals.
 template <typename ES> SLMM_KF
 int get_src_cell (const LocalMesh<ES>& m, // Local mesh.
                   const Real* v, // 3D Cartesian point.
@@ -126,7 +145,7 @@ int get_src_cell (const LocalMesh<ES>& m, // Local mesh.
         const int ic = my_ic == -1 ? 0 : my_ic;
         const auto cell = slice(m.e, ic);
         Real d[3];
-        siqk::SphereGeometry::axpbyz(1, slice(m.p, cell[1]),
+        siqk::SphereGeometry::axpbyz( 1, slice(m.p, cell[1]),
                                      -1, slice(m.p, cell[0]),
                                      d);
         const Real L = std::sqrt(siqk::SphereGeometry::norm2(d));
@@ -255,15 +274,22 @@ void fill_perim (LocalMesh<ES>& m) {
 
 template <typename V3> SLMM_KF
 void calc_approx_nearest_point_on_arc (
-  const V3& p0, const V3& p1, const V3& nml, const Real* point, Real* nearest)
+  const V3& p0, const V3& p1, const V3& nml, const Real* point, Real* nearest,
+  const bool sphere)
 {
-  // Approximation is to project point onto the plane of the arc, then to
+  // The approximation is to project point onto the plane of the arc, then to
   // normalize to the arc. If point is on the arc, then nearest = point, as
   // desired.
   using geo = siqk::SphereGeometry;
-  const auto dot = geo::dot(point, nml);
-  for (Int d = 0; d < 3; ++d) nearest[d] = point[d] - dot*nml[d];
-  geo::normalize(nearest);
+  if (sphere) {
+    const auto dot = geo::dot(point, nml);
+    for (Int d = 0; d < 3; ++d) nearest[d] = point[d] - dot*nml[d];
+    geo::normalize(nearest);
+  } else {
+    Real dot = 0;
+    for (Int d = 0; d < 3; ++d) dot += (point[d] - p0[d])*nml[d];
+    for (Int d = 0; d < 3; ++d) nearest[d] = point[d] - dot*nml[d];
+  }
   // If this initial value for nearest is outside of the arc, then 'nearest' is
   // set to the nearer of p0 and p1.
   //   Find the nearest point on line in parameterized coord alpha. alpha is in
@@ -281,13 +307,14 @@ template <typename ES> SLMM_KF
 void calc (const LocalMesh<ES>& m, Real* v) {
   using geo = siqk::SphereGeometry;
   const Int nedge = m.perimp.size();
+  const bool sphere = m.is_sphere();
   const auto canpoa = [&] (const Int& ie, Real* vn) {
     calc_approx_nearest_point_on_arc(slice(m.p, m.perimp(ie)),
                                      slice(m.p, m.perimp((ie+1) % nedge)),
                                      slice(m.nml, m.perimnml(ie)),
-                                     v, vn);
+                                     v, vn, sphere);
   };
-  Real min_dist2 = 100;
+  Real min_dist2 = 1e20;
   Int min_ie = -1;
   for (Int ie = 0; ie < nedge; ++ie) {
     Real vn[3];
@@ -308,7 +335,8 @@ void calc (const LocalMesh<ES>& m, Real* v) {
 }
 } // namespace nearest_point
 
-Int unittest(LocalMesh<ko::MachineTraits::HES>& m, const Int tgt_elem);
+Int unittest(LocalMesh<ko::MachineTraits::HES>& m, const Int tgt_elem,
+             const Real length_scale = 1);
 
 std::string to_string(const LocalMesh<ko::MachineTraits::HES>& m);
 

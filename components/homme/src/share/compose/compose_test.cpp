@@ -138,16 +138,21 @@ void InitialCondition
 struct StandaloneTracersTester {
   typedef std::shared_ptr<StandaloneTracersTester> Ptr;
 
+  struct Plane { Real Sx, Sy, Lx, Ly; };
+
   const Int np, nlev, qsize, qsize_d, nelemd, testno;
+  const bool is_sphere;
+  const Plane plane;
 
   // testno is 0 for the 2D transport test, 1 for 3D. Right now, the 3D test is
   // not actually a valid test; it's used just to create w values for BFB
   // comparison of F90 and C++ trajectory impls. Eventually, it might duplicate
   // test_src/dcmip2012_test1_conv.F90.
   StandaloneTracersTester (Int np_, Int nlev_, Int qsize_, Int qsize_d_,
-                           Int nelemd_, Int testno_)
+                           Int nelemd_, Int testno_, Int geometry_,
+                           Real Sx, Real Sy, Real Lx, Real Ly)
     : np(np_), nlev(nlev_), qsize(qsize_), qsize_d(qsize_d_), nelemd(nelemd_),
-      testno(testno_)
+      testno(testno_), is_sphere(geometry_ == 0), plane{Sx, Sy, Lx, Ly}
   {}
 
   void fill_uniform_density (const Int ie, Real* rdp) const {
@@ -164,7 +169,20 @@ struct StandaloneTracersTester {
       for (Int k = 0; k < nlev; ++k)
         for (Int j = 0; j < np; ++j)
           for (Int i = 0; i < np; ++i) {
-            Real lat = p_elem(2,i,j), lon = p_elem(1,i,j);
+            Real lat, lon;
+            if (is_sphere) {
+              lat = p_elem(2,i,j);
+              lon = p_elem(1,i,j);
+            } else {
+#             pragma message "do proper ICs"
+              // To get something reasonable quickly, map (x,y) to (lon,lat).
+              // rp_elem is still the spherical_polar_t data structure, and
+              // plane geometry convention is to fill lon with x, lat with y,
+              // and set r to 0.
+              assert(p_elem(0,i,j) == 0); // check that the convention still holds
+              lon = 2*M_PI*((p_elem(1,i,j) - plane.Sx)/plane.Lx);
+              lat = M_PI*((p_elem(2,i,j) - plane.Sy)/plane.Ly - 0.5);
+            }
             offset_latlon(nlev, k, lat, lon);
             InitialCondition::init(get_ic(qsize,k,q), 1, &lat, &lon, &qdp(i,j,k,q));
             if (rdp)
@@ -175,18 +193,33 @@ struct StandaloneTracersTester {
   void fill_v (const Int ie, const Real* rp_elem, const Real t, Real* rv) const {
     const homme::FA3<const Real> p_elem(rp_elem, 3, np, np);
     const homme::FA4<Real> v(rv, np, np, 2, nlev);
-    NonDivergentWindField f;
-    for (Int k = 0; k < nlev; ++k)
-      for (Int j = 0; j < np; ++j)
-        for (Int i = 0; i < np; ++i) {
-          Real lat = p_elem(2,i,j), lon = p_elem(1,i,j);
-          offset_latlon(nlev, k, lat, lon);
-          const Real latlon[] = {lat, lon};
-          Real uv[2];
-          f.eval(t, latlon, uv);
-          v(i,j,0,k) = uv[0];
-          v(i,j,1,k) = uv[1];
-        }
+    if (is_sphere) {
+      NonDivergentWindField f;
+      for (Int k = 0; k < nlev; ++k)
+        for (Int j = 0; j < np; ++j)
+          for (Int i = 0; i < np; ++i) {
+            Real lat = p_elem(2,i,j), lon = p_elem(1,i,j);
+            offset_latlon(nlev, k, lat, lon);
+            const Real latlon[] = {lat, lon};
+            Real uv[2];
+            f.eval(t, latlon, uv);
+            v(i,j,0,k) = uv[0];
+            v(i,j,1,k) = uv[1];
+          }
+    } else {
+      const Real f = 1.0/day2sec(12);
+      for (Int k = 0; k < nlev; ++k)
+        for (Int j = 0; j < np; ++j)
+          for (Int i = 0; i < np; ++i) {
+#if 1
+            v(i,j,0,k) =  2.0*f*plane.Lx;
+            v(i,j,1,k) = -1.0*f*plane.Ly;
+#else
+            v(i,j,0,k) = 0;
+            v(i,j,1,k) = 0;
+#endif
+          }
+    }
   }
 
   // Error data.
@@ -308,14 +341,16 @@ extern "C" void compose_unittest () {
 }
 
 extern "C" void compose_stt_init (
-  Int np, Int nlev, Int qsize, Int qsize_d, Int nelemd, Int testno)
+  Int np, Int nlev, Int qsize, Int qsize_d, Int nelemd, Int testno,
+  // Data used only if geometry = 1 (plane); 0 is sphere.
+  Int geometry, Real Sx, Real Sy, Real Lx, Real Ly)
 {
 #ifdef COMPOSE_HORIZ_OPENMP
 # pragma omp barrier
 # pragma omp master
 #endif
   g_stt = std::make_shared<StandaloneTracersTester>(
-    np, nlev, qsize, qsize_d, nelemd, testno);
+    np, nlev, qsize, qsize_d, nelemd, testno, geometry, Sx, Sy, Lx, Ly);
 #ifdef COMPOSE_HORIZ_OPENMP
 # pragma omp barrier
 #endif

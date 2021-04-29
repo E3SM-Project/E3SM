@@ -12,9 +12,12 @@ interface
    subroutine compose_unittest() bind(c)
    end subroutine compose_unittest
 
-   subroutine compose_stt_init(np, nlev, qsize, qsize_d, nelemd, testno) bind(c)
-     use iso_c_binding, only: c_int
-     integer (kind=c_int), value, intent(in) :: np, nlev, qsize, qsize_d, nelemd, testno
+   subroutine compose_stt_init(np, nlev, qsize, qsize_d, nelemd, testno, &
+        geometry, Sx, Sy, Lx, Ly) bind(c)
+     use iso_c_binding, only: c_int, c_double
+     integer (kind=c_int), value, intent(in) :: np, nlev, qsize, qsize_d, nelemd, &
+          testno, geometry
+     real (kind=c_double), value, intent(in) :: Sx, Sy, Lx, Ly
    end subroutine compose_stt_init
 
    subroutine compose_stt_fill_uniform_density(ie, np1, dp3d, dp) bind(c)
@@ -180,7 +183,8 @@ contains
     use derivative_mod, only: derivative_t, derivinit
     use dimensions_mod, only: ne, np, nlev, qsize, qsize_d, nelemd
     use coordinate_systems_mod, only: spherical_polar_t
-    use control_mod, only: qsplit, statefreq, se_fv_phys_remap_alg
+    use control_mod, only: qsplit, statefreq, se_fv_phys_remap_alg, geometry
+    use physical_constants, only: Sx, Sy, Lx, Ly
     use time_mod, only: nmax
     use hybvcoord_mod, only: hvcoord_t
     use perf_mod
@@ -202,7 +206,7 @@ contains
     real (kind=real_kind), parameter :: twelve_days = 3600.d0 * 24 * 12
 
     type (timelevel_t) :: tl
-    integer :: nsteps, n0_qdp, np1_qdp, ie, i, j
+    integer :: nsteps, n0_qdp, np1_qdp, ie, i, j, geometry_type
     real (kind=real_kind) :: dt, tprev, t, unused((nlev+1)*qsize)
 
     if (se_fv_phys_remap_alg == -1) then
@@ -213,10 +217,13 @@ contains
 
 #ifdef HOMME_ENABLE_COMPOSE  
     call t_startf('compose_stt')
+    geometry_type = 0 ! sphere
+    if (trim(geometry) == "plane") geometry_type = 1
     ! Set up time stepping and initialize q and density.
     call timelevel_init_default(tl)
     call timelevel_qdp(tl, qsplit, np1_qdp, n0_qdp)
-    call compose_stt_init(np, nlev, qsize, qsize_d, nelemd, 0)
+    call compose_stt_init(np, nlev, qsize, qsize_d, nelemd, 0, &
+         geometry_type, Sx, Sy, Lx, Ly)
     do ie = nets, nete
        call compose_stt_fill_uniform_density(ie, tl%np1, elem(ie)%state%dp3d, &
             elem(ie)%derived%dp)

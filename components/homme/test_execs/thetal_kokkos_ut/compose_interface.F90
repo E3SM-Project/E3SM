@@ -8,7 +8,7 @@ module compose_interface
 contains
 
   subroutine init_compose_f90(ne, hyai, hybi, hyam, hybm, ps0, dvv, mp, qsize_in, hv_q, &
-       lim, cdr_check) bind(c)
+       lim, cdr_check, is_sphere) bind(c)
     use hybvcoord_mod, only: set_layer_locations
     use thetal_test_interface, only: init_f90
     use theta_f2c_mod, only: init_elements_c
@@ -27,9 +27,11 @@ contains
     integer (c_int), value, intent(in) :: ne, qsize_in, hv_q, lim
     real (real_kind), value, intent(in) :: ps0
     real (real_kind), intent(out) :: dvv(np,np), mp(np,np)
-    logical (c_bool), value, intent(in) :: cdr_check
+    logical (c_bool), value, intent(in) :: cdr_check, is_sphere
 
     integer :: ie
+
+    if (is_sphere) print *, "NOT IMPL'ED YET"
 
     transport_alg = 12
     semi_lagrange_cdr_alg = 30
@@ -67,7 +69,8 @@ contains
   end subroutine init_compose_f90
 
   subroutine init_geometry_f90() bind(c)
-    use coordinate_systems_mod, only: change_coordinates, cartesian3D_t
+    use coordinate_systems_mod, only: cartesian3D_t
+    use sl_advection, only: sphere2cart
     use theta_f2c_mod, only: init_elements_2d_c, init_geopotential_c
 
     real (real_kind), target, dimension(np,np)     :: elem_mp, elem_fcor, elem_spheremp, &
@@ -109,7 +112,7 @@ contains
       elem_vec_sph2cart = elem(ie)%vec_sphere2cart
       do j = 1,np
          do i = 1,np
-            sphere_cart = change_coordinates(elem(ie)%spherep(i,j))
+            call sphere2cart(elem(ie)%spherep(i,j), sphere_cart)
             sphere_cart_vec(1,i,j) = sphere_cart%x
             sphere_cart_vec(2,i,j) = sphere_cart%y
             sphere_cart_vec(3,i,j) = sphere_cart%z
@@ -169,7 +172,8 @@ contains
 
   subroutine run_trajectory_f90(t0, t1, independent_time_steps, dep, dprecon) bind(c)
     use time_mod, only: timelevel_t, timelevel_init_default
-    use control_mod, only: qsplit
+    use control_mod, only: qsplit, geometry
+    use physical_constants, only: Sx, Sy, Lx, Ly
     use hybrid_mod, only: hybrid_t, hybrid_create
     use thetal_test_interface, only: deriv, hvcoord
     use compose_test_mod, only: compose_stt_init, compose_stt_fill_v, compose_stt_clear, &
@@ -183,13 +187,15 @@ contains
     type (timelevel_t) :: tl
     type (hybrid_t) :: hybrid
     real(real_kind) :: dt
-    integer :: ie, i, j, k, testno
+    integer :: ie, i, j, k, testno, geometry_type
     logical :: its
 
     call timelevel_init_default(tl)
     testno = 0
-    if (independent_time_steps) testno = 1
-    call compose_stt_init(np, nlev, qsize, qsize_d, nelemd, testno)
+    geometry_type = 0 ! sphere
+    if (trim(geometry) == "plane") geometry_type = 1
+    call compose_stt_init(np, nlev, qsize, qsize_d, nelemd, testno, &
+         geometry_type, Sx, Sy, Lx, Ly)
     do ie = 1, nelemd
        call compose_stt_fill_uniform_density(ie, tl%np1, elem(ie)%state%dp3d, &
             elem(ie)%derived%dp)

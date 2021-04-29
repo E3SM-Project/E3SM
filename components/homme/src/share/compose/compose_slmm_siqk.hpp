@@ -180,6 +180,52 @@ T sign (const T& a) { return a > 0 ? 1 : (a < 0 ? -1 : 0); }
 //#include "siqk_quadrature.hpp"
 
 namespace siqk {
+// Vectors and points are 2D. Thus, if you're working on planes in 3D, project
+// to a 2D space before calling these.
+struct PlaneGeometry {
+  template <typename V> KOKKOS_INLINE_FUNCTION
+  static void scale (const Real& a, V v) {
+    v[0] *= a; v[1] *= a;
+  }
+  template <typename CVA, typename CVB> KOKKOS_INLINE_FUNCTION
+  static Real dot (const CVA a, const CVB b) {
+    return a[0]*b[0] + a[1]*b[1];
+  }
+  template <typename CV> KOKKOS_INLINE_FUNCTION
+  static Real dot_c_amb (const CV c, const CV a, const CV b) {
+    return c[0]*(a[0] - b[0]) + c[1]*(a[1] - b[1]);
+  }
+  template <typename CV, typename V> KOKKOS_INLINE_FUNCTION
+  static void combine (const CV u, const CV v, const Real& a, V x) {
+    const Real& oma = 1 - a;
+    x[0] = oma*u[0] + a*v[0];
+    x[1] = oma*u[1] + a*v[1];
+  }
+  template <typename CV, typename V> KOKKOS_INLINE_FUNCTION
+  static void axpy (const Real& a, const CV x, V y) {
+    y[0] += a*x[0];
+    y[1] += a*x[1];
+  }
+  template <typename CV> KOKKOS_INLINE_FUNCTION
+  static Real norm2 (const CV v) {
+    return dot(v, v);
+  }
+  template <typename V> KOKKOS_INLINE_FUNCTION
+  static void normalize (V v) {
+    scale(1.0/std::sqrt(norm2(v)), v);
+  }
+  template <typename CV, typename V> KOKKOS_INLINE_FUNCTION
+  static void edge_normal (const CV e1, const CV e2, V en) {
+    en[0] = e1[1] - e2[1];
+    en[1] = e2[0] - e1[0];
+    normalize(en);
+  }
+  template <typename CV> KOKKOS_INLINE_FUNCTION
+  static bool inside (const CV v, const CV e1, const CV en) {
+    return dot_c_amb(en, v, e1) >= 0;
+  }
+};
+
 // All inputs and outputs are relative to the unit-radius sphere. Vectors and
 // points are 3D.
 struct SphereGeometry {
@@ -235,13 +281,11 @@ struct SphereGeometry {
     x[1] = oma*u[1] + a*v[1];
     x[2] = oma*u[2] + a*v[2];
   }
-
   template <typename CV, typename V> KOKKOS_INLINE_FUNCTION
   static void edge_normal (const CV a, const CV b, V en) {
     cross(a, b, en);
     normalize(en);
   }
-
   // Is v inside the line anchored at a with inward-facing normal n?
   template <typename CVV, typename CVA, typename CVN> KOKKOS_INLINE_FUNCTION
   static bool inside (const CVV v, const CVA a, const CVN n) {
@@ -309,11 +353,12 @@ void calc_ref_to_bilinear (const ConstVec3sT& p, const Quad& e,
 template <typename ConstVec3sT, typename Quad>
 KOKKOS_INLINE_FUNCTION
 void calc_residual (const ConstVec3sT& p, const Quad& e, const Real a,
-                    const Real b, const Real q[3], Real r[3]) {
+                    const Real b, const Real q[3], Real r[3],
+                    const bool sphere = true) {
   calc_ref_to_bilinear(p, e, a, b, r);
-  const Real rnorm = std::sqrt(SphereGeometry::norm2(r));
+  const Real rnorm = sphere ? std::sqrt(SphereGeometry::norm2(r)) : 1;
   for (Int i = 0; i < 3; ++i)
-    r[i] = r[i]/rnorm - q[i];  
+    r[i] = r[i]/rnorm - q[i];
 }
 
 // Compute the Jacobian matrix of the residual function: Jacobian(ref square ->
@@ -324,7 +369,7 @@ void calc_residual (const ConstVec3sT& p, const Quad& e, const Real a,
 template <typename ConstVec3sT, typename Quad>
 KOKKOS_INLINE_FUNCTION
 void calc_Jacobian (const ConstVec3sT& p, const Quad& e, Real a, Real b,
-                    Real J[6]) {
+                    Real J[6], const bool sphere = true) {
   a = 0.5*(a + 1);
   b = 0.5*(b + 1);  
   Real r[3];
@@ -335,6 +380,7 @@ void calc_Jacobian (const ConstVec3sT& p, const Quad& e, Real a, Real b,
     J[  i] = t1*b + t2;
     J[3+i] = t1*a + t3;
   }
+  if ( ! sphere) return;
   Real rtJ[2] = {0};
   for (Int j = 0; j < 2; ++j) {
     const Real* const Jj = J + 3*j;
@@ -404,7 +450,7 @@ void calc_sphere_to_ref (
   Info* const info = nullptr,
   // Max number of iterations before returning with failure.
   const Int max_its = 10,
-  // Tolerance for Newton iteration.
+  // Absolute tolerance for Newton iteration.
   const Real tol = 1e2*std::numeric_limits<Real>::epsilon())
 {
   const Real tol2 = square(tol);
@@ -428,6 +474,68 @@ void calc_sphere_to_ref (
   }
 }
 
+template <typename ConstVec3sT, typename Quad>
+KOKKOS_INLINE_FUNCTION
+void calc_ref_to_plane (
+  // The quad containing the point.
+  const ConstVec3sT& p, const Quad& e,
+  // (a,b) in [-1,1]
+  const Real a, const Real b,
+  // The point on the plane.
+  Real q[3])
+{
+  impl::calc_ref_to_bilinear(p, e, a, b, q);
+}
+
+template <typename ConstVec3sT, typename Quad>
+KOKKOS_INLINE_FUNCTION
+void calc_plane_to_ref (
+  // The quad containing the point.
+  const ConstVec3sT& p, const Quad& e,
+  // The point on the plane.
+  const Real q[3],
+  // (a,b) in [-1,1]
+  Real& a, Real& b,
+  // Optional info output.
+  Info* const info = nullptr,
+  // Max number of iterations before returning with failure.
+  const Int max_its = 10,
+  // Absolute tolerance for Newton iteration.
+  const Real tol = 1e2*std::numeric_limits<Real>::epsilon())
+{
+  const Real tol2 = square(tol);
+  Real rnorm2 = 1;
+  a = b = 0;
+  if (q[2] == 0) {
+    // Init assuming a quad in the x-y plane on an axis-aligned, regular grid.
+    for (Int d = 0; d < 2; ++d) {
+      // One of the two edges is 0 and the other the one we want if the
+      // assumption holds.
+      const Real den = std::max(std::abs(p(e[1], d) - p(e[0], d)),
+                                std::abs(p(e[2], d) - p(e[1], d)));
+      if (den == 0) continue;
+      const Real ref = 2*(std::abs(q[d] - p(e[0], d))/den) - 1;
+      if (d == 0) a = ref; else b = ref;
+    }
+  }
+  Int it = 0;
+  for (it = 1; it <= max_its; ++it) { // Newton's method.
+    Real r[3], J[6];
+    impl::calc_residual(p, e, a, b, q, r, false);
+    rnorm2 = SphereGeometry::norm2(r);
+    if (rnorm2 <= tol2) break;
+    impl::calc_Jacobian(p, e, a, b, J, false);
+    Real dx[2];
+    impl::solve_Jxr(J, r, dx);
+    a -= dx[0];
+    b -= dx[1];
+  }
+  if (info) {
+    info->success = rnorm2 <= tol2;
+    info->n_iterations = it;
+  }
+}
+
 // Ref coords, packed (x,y), CCW, starting from (-1,-1).
 KOKKOS_INLINE_FUNCTION
 const Real* get_ref_vertices () {
@@ -436,96 +544,14 @@ const Real* get_ref_vertices () {
 }
 
 namespace test {
-struct Info {
-  Int sum_nits, max_nits, nfails;
-};
-
-class TestSphereToRefKernel {
-  const Real a_test[9] = {-0.1, -1e-16, 0, 1e-15, 0.1, 0.7, 1, 1-1e-14, 1.1};
-  const Int n_a_test = sizeof(a_test)/sizeof(*a_test);
-
-  const Real tol_;
-  mutable ConstVec3s p_;
-  mutable ConstIdxs e_;
-
-public:
-  typedef Info value_type;
-
-  TestSphereToRefKernel (const ConstVec3s::HostMirror& p_hm,
-                         const ConstIdxs::HostMirror& e_hm,
-                         const Real tol = 1e1*std::numeric_limits<Real>::epsilon())
-    : tol_(tol)
-  {
-    { Vec3s p; resize_and_copy(p, p_hm); p_ = p; }
-    { Idxs e; resize_and_copy(e, e_hm); e_ = e; }
-  }
-
-  Int n () const { return nslices(e_)*square(n_a_test); }
-  const Real& tol () const { return tol_; }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (const Int k, value_type& jinfo) const {
-    const Int
-      ei = k / square(n_a_test),
-      ij = k % square(n_a_test),
-      i = ij / n_a_test,
-      j = ij % n_a_test;
-    const Real a_t = a_test[i], b_t = a_test[j];
-    Real q[3];
-    sqr::calc_ref_to_sphere(p_, slice(e_, ei), a_t, b_t, q);
-    Real a, b;
-    sqr::Info info;
-    sqr::calc_sphere_to_ref(p_, slice(e_, ei), q, a, b, &info, 100, tol_);
-    const Real err = std::sqrt(square(a_t - a) + square(b_t - b));
-    // tol is on dx, not (a,b), so adjust slightly.
-    if ( ! info.success || err > 1e4*tol_) {
-      jinfo.nfails++;
-      printf("calc_sphere_to_ref ei %d i %d j %d: nits %d re %1.1e\n",
-             ei, i, j, info.n_iterations, err);
-    }
-    jinfo.sum_nits += info.n_iterations;
-    jinfo.max_nits = max(jinfo.max_nits, info.n_iterations);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void init (value_type& info) {
-    info.sum_nits = 0;
-    info.max_nits = 0;
-    info.nfails = 0;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void join (volatile value_type& dst, volatile value_type const& src) const {
-    dst.max_nits = max(dst.max_nits, src.max_nits);
-    dst.sum_nits += src.sum_nits;
-    dst.nfails += src.nfails;
-  }
-};
-
-inline Int test_sphere_to_ref (const ConstVec3s::HostMirror& p,
-                               const ConstIdxs::HostMirror& e) {
-  TestSphereToRefKernel k(p, e);
-  Info info;
-  ko::parallel_reduce(k.n(), k, info);
-  return info.nfails;
-}
+Int test_sphere_to_ref(const ConstVec3s::HostMirror& p,
+                       const ConstIdxs::HostMirror& e,
+                       const bool sphere = true);
 } // namespace test
 } // namespace sqr
 } // namespace siqk
 
 #endif // INCLUDE_SIQK_SQR_HPP
-
-// Unit tests.
-#include <limits>
-
-//#include "siqk.hpp"
-namespace siqk {
-
-#ifdef SLMM_MAIN
-# define INSTANTIATE_PLANE
-#endif
-
-} // namespace siqk
 
 //> end SIQK
 

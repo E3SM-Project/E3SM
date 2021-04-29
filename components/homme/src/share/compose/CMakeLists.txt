@@ -17,6 +17,7 @@ add_library (${COMPOSE_LIBRARY}
   compose_cedr.cpp
   compose_slmm.cpp
   compose_slmm_util.cpp
+  compose_slmm_siqk.cpp
   compose_slmm_departure_point.cpp
   compose_slmm_advecter.cpp
   compose_slmm_islmpi.cpp

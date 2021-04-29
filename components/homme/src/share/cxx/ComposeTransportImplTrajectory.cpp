@@ -433,7 +433,8 @@ void ComposeTransportImpl::calc_trajectory (const int np1, const Real dt) {
     const int packn = this->packn;
     const int num_phys_lev = this->num_phys_lev;
     const auto m_sphere_cart = geo.m_sphere_cart;
-    const auto rearth = PhysicalConstants::rearth;
+    //todo get scale_factor into PhysicalConstants
+    const auto scale_factor = m_data.geometry_type == 1 ? 1 : PhysicalConstants::rearth;
     const auto m_dep_pts = m_data.dep_pts;
     const auto calc_departure_point = KOKKOS_LAMBDA (const MT& team) {
       KernelVariables kv(team, m_tu_ne);
@@ -443,12 +444,12 @@ void ComposeTransportImpl::calc_trajectory (const int np1, const Real dt) {
       const auto sphere_cart = Homme::subview(m_sphere_cart, ie);
       const auto dep_pts = Homme::subview(m_dep_pts, ie);
       const auto f = [&] (const int i, const int j, const int k) {
-        // dp = p1 - dt v/rearth
+        // dp = p1 - dt v/scale_factor
         Scalar dp[3], r = 0;
         for (int d = 0; d < 3; ++d) {
           const auto vel_cart = (vec_sphere2cart(0,d,i,j)*vstar(0,i,j,k) +
                                  vec_sphere2cart(1,d,i,j)*vstar(1,i,j,k));
-          dp[d] = sphere_cart(i,j,d) - dt*vel_cart/rearth;
+          dp[d] = sphere_cart(i,j,d) - dt*vel_cart/scale_factor;
         }
         const auto r2 = square(dp[0]) + square(dp[1]) + square(dp[2]);
         // Pack -> scalar storage.
