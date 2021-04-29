@@ -182,6 +182,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   use control_mod, only: bubble_T0, bubble_dT, bubble_xycenter, bubble_zcenter, bubble_ztop, &
                          bubble_xyradius,bubble_zradius, bubble_cosine, &
+                         bubble_moist, &
                          Lx, Ly, Sx, Sy
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
@@ -192,7 +193,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   real(rl),           intent(in)            :: f                        ! (const) Coriolis force
 
   integer :: i,j,k,ie                                                   ! loopindices
-  real(rl):: x,y,one           
+  real(rl):: x,y,one, offset
   real(rl):: pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr
 
 #ifdef MODEL_THETA_L
@@ -209,6 +210,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
      print *, 'bubble_xyradius', bubble_xyradius
      print *, 'bubble_zradius', bubble_zradius
      print *, 'bubble_cosine', bubble_cosine
+     print *, 'bubble_moist', bubble_moist
   endif
 
   one = 1.0
@@ -234,8 +236,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 #if 0
   !almost pure pressure
   ai(:) = 0.0; bi(:) = 0.0
-  ai(1) = pi(1)/p0
-  bi(nlevp) = 1.0
+  ai(1) = pi(1)/p0; bi(nlevp) = 1.0
 
   do k=2,nlevp
     bi(k) = pi(k)/pi(nlevp)
@@ -243,8 +244,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 #else
   !old version, hybrid
   ai(:) = 0.0; bi(:) = 0.0
-  ai(1) = pi(1)/p0
-  bi(nlevp) = 1.0
+  ai(1) = pi(1)/p0;  bi(nlevp) = 1.0
 
   do k=2,nlev
     bi(k) = 1.0 - zi(k)/zi(1)
@@ -253,8 +253,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   enddo
 #endif
 
-  hvcoord%hyai = ai
-  hvcoord%hybi = bi
+  hvcoord%hyai = ai; hvcoord%hybi = bi
 
   !set : hyam hybm 
   hvcoord%hyam = 0.5_rl *(ai(2:nlev+1) + ai(1:nlev))
@@ -262,7 +261,6 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   !  call set_layer_locations: sets  etam, etai, dp0, checks that Am=ai/2+ai/2
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
-
 
   !reset z to the discrete hydro balance
   !if one wants to keep z levels exactly evenly spaced instead
@@ -291,40 +289,36 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
     do j=1,np; do i=1,np
 
       ! get horizontal coordinates at column i,j
-      x  = elem(ie)%spherep(i,j)%lon
-      y  = elem(ie)%spherep(i,j)%lat
+      x  = elem(ie)%spherep(i,j)%lon; y  = elem(ie)%spherep(i,j)%lat
 
       do k=1,nlevp
 
         if (planar_slice .eqv. .true.) then
         !no y dependence
-        rr =sqrt( (x-bubble_xycenter)   *(x-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
-                  (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) / bubble_zradius / bubble_zradius    )
-
+          rr =sqrt( (x-bubble_xycenter)   *(x-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
+                    (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) / bubble_zradius / bubble_zradius    )
         else
-
-        rr =sqrt( (x-bubble_xycenter)   *(x-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
-                  (y-bubble_xycenter)   *(y-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
-                  (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) / bubble_zradius / bubble_zradius    )
+          rr =sqrt( (x-bubble_xycenter)   *(x-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
+                    (y-bubble_xycenter)   *(y-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
+                    (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) / bubble_zradius / bubble_zradius    )
         endif
       
         !set pot. temperature on interfaces
         if ( rr < one ) then 
           if (bubble_cosine) then
-            th0(k) = bubble_T0 + bubble_dT * cos(rr*dd_pi / 2.d0)
+            offset = cos(rr*dd_pi / 2.d0)
+            th0(k) = bubble_T0 + bubble_dT * offset
           else
             th0(k) = bubble_T0 + bubble_dT
           endif
-
         else
           th0(k) = bubble_T0
         endif
 
-      enddo
+      enddo ! k loop
 
       elem(ie)%state%ps_v(i,j,:) = pi(nlevp)
-      elem(ie)%state%v = 0.0
-      elem(ie)%state%w_i= 0.0
+      elem(ie)%state%v = 0.0; elem(ie)%state%w_i= 0.0
 
       do k=1,nlev
         !set pottemp, dp, other state vars on midlevels
@@ -341,15 +335,13 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
     enddo; enddo !i,j loop
   enddo !ie loop
 
-
   do ie = nets,nete
      elem(ie)%fcor(:,:) = f
 
      elem(ie)%state%q = 0.0
      elem(ie)%state%qdp = 0.0
 
-     !sets hydro phi from theta and pressure
-     !checks for hydrostatic balance after that, saves a state
+     !sets hydro phi from theta and pressure, checks for hydrostatic balance after that, saves a state
      !call tests_finalize(elem(ie),hvcoord)
   enddo
 

@@ -266,6 +266,7 @@ module control_mod
   real (kind=real_kind), public :: bubble_xyradius = 1500.0!bubble radius along x or y axis
   real (kind=real_kind), public :: bubble_zradius = 1500.0 !bubble radius along z axis
   logical,               public :: bubble_cosine  = .TRUE. !bubble uniform or cosine
+  logical,               public :: bubble_moist  = .FALSE. ! 
 
   public :: set_planar_defaults
 
@@ -635,6 +636,8 @@ contains
 
 
 subroutine set_planar_defaults()
+ 
+!since defaults here depend on test, they cannot be set before ctl_nl is read, unlike some other parameters, bubble_*, etc.        
 
 !if true, most likely lx,ly,sx,sy weren't set in ctl_nl
     if (      abs(lx).le.tol_zero .and. abs(ly).le.tol_zero &
