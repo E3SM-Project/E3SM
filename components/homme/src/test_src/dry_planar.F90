@@ -27,6 +27,9 @@ module dry_planar_tests
                                 p0	= 100000.d0, &! reference pressure (Pa)
                                 kappa   = Rd/cp
 
+  real(rl), parameter :: bubble_const1=3.8, bubble_const2=17.27, bubble_const3=273.0, bubble_const4=36.0
+
+
   real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
   real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
   real(rl):: ztop
@@ -193,8 +196,9 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   real(rl),           intent(in)            :: f                        ! (const) Coriolis force
 
   integer :: i,j,k,ie                                                   ! loopindices
-  real(rl):: x,y,one, offset
-  real(rl):: pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr
+  real(rl):: x,y,one,two,offset
+  real(rl):: pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr, &
+             qi_s(nlevp), Ti(nlevp), qi(nlevp)
 
 #ifdef MODEL_THETA_L
 
@@ -214,6 +218,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   endif
 
   one = 1.0
+  two = 2.0
 
   !evenly spaced with reversed indexing, just like in homme eta coord
   call get_evenly_spaced_z(zi,zm, 0.0_rl,bubble_ztop)
@@ -223,7 +228,8 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
     !set interface pressure from const lapse rate, does not depend on x,y, or _dT
     !this formula assumes ideal hy balance and ideal thermodynamics, not exactly consistent with
     !the dycore, that is why we reset zi from EOS below
-    pi(k) =  p0*( (bubble_T0 - zi(k)*g/cp)/bubble_T0  )**(1.0/kappa)
+    Ti(k) = bubble_T0 - zi(k)*g/cp
+    pi(k) =  p0*( Ti(k)/bubble_T0  )**(one/kappa)
   enddo
   do k=1,nlev
     dpm(k)=(pi(k+1)-pi(k))
@@ -236,7 +242,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 #if 0
   !almost pure pressure
   ai(:) = 0.0; bi(:) = 0.0
-  ai(1) = pi(1)/p0; bi(nlevp) = 1.0
+  ai(1) = pi(1)/p0; bi(nlevp) = one
 
   do k=2,nlevp
     bi(k) = pi(k)/pi(nlevp)
@@ -244,7 +250,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 #else
   !old version, hybrid
   ai(:) = 0.0; bi(:) = 0.0
-  ai(1) = pi(1)/p0;  bi(nlevp) = 1.0
+  ai(1) = pi(1)/p0;  bi(nlevp) = one
 
   do k=2,nlev
     bi(k) = 1.0 - zi(k)/zi(1)
@@ -278,11 +284,14 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   !reset zi array
   zi(1:nlevp) = elem(1)%state%phinh_i(1,1,1:nlevp,1)/g !<- i,j,k,tl
-
   !if needed,
   !reset zm to be an average as it is consistent with Taylor2020 eqn (30)
   !but zm is not used below, so, not done
 
+  !build specific humidity at saturation qs as in dcmip2016-kessler
+  do k=1,nlevp
+     qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
+  enddo
 
   ! set initial conditions
   do ie = nets,nete
@@ -305,14 +314,25 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
       
         !set pot. temperature on interfaces
         if ( rr < one ) then 
+
+          qi(k) = 0.9  * qi_s(k)
+
           if (bubble_cosine) then
-            offset = cos(rr*dd_pi / 2.d0)
+            offset = cos(rr*dd_pi / two)
             th0(k) = bubble_T0 + bubble_dT * offset
+
+            ! q = Rel Humidity * qs
+            ! relative humidity = offset, or offset*, say, 0.9?
+            qi(k) = offset * qi(k)
           else
             th0(k) = bubble_T0 + bubble_dT
           endif
+
         else
+
           th0(k) = bubble_T0
+          qi(k) = 0.0
+
         endif
 
       enddo ! k loop
@@ -322,7 +342,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
       do k=1,nlev
         !set pottemp, dp, other state vars on midlevels
-        th0m(k)=(th0(k)+th0(k+1))/2.0
+        th0m(k)=(th0(k)+th0(k+1))/ two
 
         elem(ie)%state%dp3d(i,j,k,:)   = dpm(k)
       
@@ -330,16 +350,22 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
         elem(ie)%state%phinh_i(i,j,k,:) = zi(k)*g
 
         elem(ie)%state%vtheta_dp(i,j,k,:) = dpm(k)*th0m(k)
+
+        elem(ie)%state%Q(i,j,k,1) =   ( qi(k) + qi(k+1) ) / two        
+        elem(ie)%state%Qdp(i,j,k,1,:) = dpm(k) * elem(ie)%state%Q(i,j,k,1)
       enddo !k loop
 
     enddo; enddo !i,j loop
   enddo !ie loop
 
+!    real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)                 ! Tracer concentration               6
+!    real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2) 
   do ie = nets,nete
      elem(ie)%fcor(:,:) = f
 
-     elem(ie)%state%q = 0.0
-     elem(ie)%state%qdp = 0.0
+     !all but vapor
+     elem(ie)%state%Q(:,:,:,2:qsize) = 0.0
+     elem(ie)%state%Qdp(:,:,:,2:qsize,:) = 0.0
 
      !sets hydro phi from theta and pressure, checks for hydrostatic balance after that, saves a state
      !call tests_finalize(elem(ie),hvcoord)
