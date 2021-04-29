@@ -5,7 +5,6 @@
 #include "share/util/scream_column_ops.hpp"
 
 namespace scream {
-namespace physics {
 
 template <typename DeviceT>
 struct PhysicsFunctions
@@ -152,7 +151,6 @@ struct PhysicsFunctions
 
 }; // struct PhysicsFunctions
 
-} // namespace physics
 } // namespace scream
 
 // If a GPU build, make all code available to the translation unit; otherwise,

@@ -1,6 +1,5 @@
 #include "catch2/catch.hpp"
 
-#include "physics/share/physics_functions.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "physics/share/physics_universal_impl.hpp"
 #include "share/util/scream_common_physics_impl.hpp"
@@ -21,8 +20,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
 //-----------------------------------------------------------------------------------------------//
   static void run()
   {
-    using physics = scream::physics::Functions<Scalar, Device>;
-    using physicscommon = scream::physics::PhysicsFunctions<Device>;
+    using physicscommon = scream::PhysicsFunctions<Device>;
 
     int num_levs = 100; // Number of levels to use for tests.
 

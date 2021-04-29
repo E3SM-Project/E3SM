@@ -5,8 +5,6 @@
 #include "physics/share/physics_constants.hpp"
 
 namespace scream {
-namespace physics {
-
   
 //-----------------------------------------------------------------------------------------------//
 // Applies Exners Function which follows:
@@ -279,7 +277,6 @@ void PhysicsFunctions<DeviceT>::get_z_int(const MemberType& team,
   column_ops::column_scan<FromTop>(team,num_levs,dz,z_int,zbot);
 }
 //-----------------------------------------------------------------------------------------------//
-} // namespace physics
 } // namespace scream
 
 #endif // COMMON_PHYSICS_IMPL_HPP
