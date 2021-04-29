@@ -64,6 +64,7 @@ module li_velocity_external
       subroutine velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, &
          config_default_flowParamA, &
          config_flowLawExponent, config_dynamic_thickness, iceMeltingPointPressureDependence, &
+         config_thermal_thickness, &
          li_mask_ValueDynamicIce, li_mask_ValueIce, config_use_glp) &
          bind(C, name="velocity_solver_set_parameters")
 
@@ -72,7 +73,8 @@ module li_velocity_external
          INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce
          REAL(C_DOUBLE) :: config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, &
                            config_flowLawExponent, config_dynamic_thickness, gravity, &
-                           iceMeltingPointPressureDependence
+                           iceMeltingPointPressureDependence, &
+                           config_thermal_thickness
          LOGICAL(C_BOOL) :: config_use_glp
       end subroutine velocity_solver_set_parameters
 
@@ -148,8 +150,8 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       ! Check for configuration options that are incompatible with external velocity solver conventions
-      if (config_num_halos < 2) then
-         call mpas_log_write("External velocity solvers require that config_num_halos >= 2", MPAS_LOG_ERR)
+      if (config_num_halos < 3) then
+         call mpas_log_write("External velocity solvers require that config_num_halos >= 3", MPAS_LOG_ERR)
          err_tmp = 1
       endif
       err = ior(err,err_tmp)
@@ -261,7 +263,7 @@ contains
       real (kind=RKIND), pointer :: radius
       type (field1DInteger), pointer :: indexToCellIDField, indexToEdgeIDField, indexToVertexIDField
       real (kind=RKIND), pointer :: config_ice_density, config_ocean_density,  config_sea_level, config_default_flowParamA, &
-                                    config_flowLawExponent, config_dynamic_thickness
+                                    config_thermal_thickness, config_flowLawExponent, config_dynamic_thickness
       logical, pointer :: config_use_glp
 
       ! halo exchange arrays
@@ -352,6 +354,7 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA)
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
+      call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
       call mpas_pool_get_config(liConfigs, 'config_use_glp', config_use_glp)
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
@@ -359,6 +362,7 @@ contains
          config_default_flowParamA, &
          config_flowLawExponent, config_dynamic_thickness, &
          iceMeltingPointPressureDependence, &
+         config_thermal_thickness, &
          li_mask_ValueAlbanyActive, li_mask_ValueIce, &
          logical(config_use_glp, KIND=1) )
 
@@ -446,6 +450,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: temperature
       real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:), pointer :: effectivePressureLimited
       real (kind=RKIND), dimension(:), pointer :: muFriction
       real (kind=RKIND), pointer :: deltat
       integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask
@@ -455,14 +460,17 @@ contains
       logical, pointer :: config_output_external_velocity_solver_data
       logical, pointer :: config_nonconvergence_error
       real (kind=RKIND), pointer :: config_ice_density
+      real (kind=RKIND), pointer :: config_effective_pressure_max
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
       integer, pointer :: nEdges
+      integer, pointer :: nCells
       integer, pointer :: nVertLevels
       integer, pointer :: timestepNumber
       type (field2dReal), pointer :: dissipationVertexField
       real (kind=RKIND), dimension(:,:), pointer :: heatDissipation  ! on cells
       integer :: iEdge
+      integer :: iCell
       real(kind=RKIND), parameter :: secondsInYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
          !< The value of seconds in a year assumed by external dycores
       integer, target :: err_tmp
@@ -478,12 +486,14 @@ contains
          config_output_external_velocity_solver_data)
       call mpas_pool_get_config(liConfigs, 'config_nonconvergence_error', config_nonconvergence_error)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_effective_pressure_max', config_effective_pressure_max)
 
       ! Mesh variables
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
       call mpas_pool_get_array(meshPool, 'timestepNumber', timestepNumber)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       ! Geometry variables
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -515,11 +525,18 @@ contains
 
       ! Hydro variables
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+      call mpas_pool_get_array(velocityPool, 'effectivePressureLimited', effectivePressureLimited)
 
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       ! Capture Albany output
       call interface_redirect_stdout(timestepNumber)
 #endif
+
+      ! Create version of effectivePressure field with limits applied
+      do iCell = 1, nCells
+         effectivePressureLimited(iCell) = max(0.0_RKIND, effectivePressure(iCell)) ! Never pass a negative N
+         effectivePressureLimited(iCell) = min(config_effective_pressure_max, effectivePressureLimited(iCell))
+      enddo
 
       ! ==================================================================
       ! External dycore calls to be made only when vertex mask changes
@@ -581,7 +598,7 @@ contains
           err_albany => err_tmp
           call velocity_solver_solve_FO(bedTopography, lowerSurface, thickness, &
                 betaSolve, sfcMassBal, temperature, stiffnessFactor, &
-                effectivePressure, muFriction, &
+                effectivePressureLimited, muFriction, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, drivingStressVert, dissipationVertexField % array, uReconstructX, uReconstructY, &  ! return values
                 deltat, err_albany)  ! return values

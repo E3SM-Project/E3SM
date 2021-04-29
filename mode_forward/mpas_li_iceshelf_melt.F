@@ -48,7 +48,7 @@ module li_iceshelf_melt
    !
    !--------------------------------------------------------------------
 
-   public :: li_basal_melt_floating_ice
+   public :: li_basal_melt_floating_ice, li_face_melt_grounded_ice
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +60,86 @@ module li_iceshelf_melt
    contains
 !***********************************************************************
 
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine li_face_melt_grounded_ice
+!
+!> \brief MPAS land ice solver for face melt of grounded ice
+!> \author Trevor Hillebrand
+!> \date   February 2021
+!> \details
+!>  This routine computes face melting for floating ice.
+!>  The following options are supported:
+!>  (1) Do nothing (config_front_mass_bal_grounded = 'none')
+!>  (2) Prescribed uniform face melt speed (config_front_mass_bal_grounded = 'uniform')
+!>  (3) Face melt speed as in ISMIP6 (config_front_mass_bal_grounded = 'ismip6')
+
+!-----------------------------------------------------------------------
+
+   subroutine li_face_melt_grounded_ice(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      type (block_type), pointer :: block
+
+      type (mpas_pool_type), pointer :: geometryPool
+      character(len=StrKIND), pointer :: &
+           config_front_mass_bal_grounded ! option for submarine mass balance
+                                          ! at grounded glacier front
+      real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed, faceMeltingThickness
+      integer :: err_tmp
+
+      err = 0
+      err_tmp = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
+
+      if ( trim(config_front_mass_bal_grounded) == 'ismip6' &
+          .or. trim(config_front_mass_bal_grounded) == 'uniform' ) then
+         call grounded_face_melt_ismip6(domain, err_tmp)
+         err = ior(err, err_tmp)
+      elseif ( trim(config_front_mass_bal_grounded) == 'none' ) then
+         ! Zero entire field
+
+         ! block loop
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
+            call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
+
+            faceMeltSpeed(:) = 0.0_RKIND
+            faceMeltingThickness(:) = 0.0_RKIND
+
+            block => block % next
+         enddo   ! associated(block)
+      else
+         call mpas_log_write('Unknown option selected for config_front_mass_bal_grounded:' // &
+                             trim(config_front_mass_bal_grounded), MPAS_LOG_ERR)
+         err = ior(err, 1)
+      endif
+
+   end subroutine li_face_melt_grounded_ice
+!-----------------------------------------------------------------------
+!||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||r
 !
 !  !  routine li_basal_melt_floating_ice
 !
@@ -113,6 +192,10 @@ module li_iceshelf_melt
 
       character(len=StrKIND), pointer :: &
            config_basal_mass_bal_float ! option for basal mass balance of floating ice
+
+      character(len=StrKIND), pointer :: &
+           config_front_mass_bal_grounded ! option for submarine mass balance
+                                          ! at grounded glacier front
 
       real(kind=RKIND), pointer :: &
            config_thermal_thickness, & ! minimum thickness (m) for temperature calculations
@@ -171,6 +254,7 @@ module li_iceshelf_melt
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
+      call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
 
       if (config_print_thermal_info) then
@@ -1130,6 +1214,179 @@ module li_iceshelf_melt
 
     end subroutine iceshelf_melt_ismip6
 !-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine grounded_face_melt_ismip6
+!
+!> \brief Calculate grounded glacier submarine melt rate using parameterization from ISMIP6
+!> \author Trevor Hillebrand
+!> \date   April 2020
+!> \details
+!> http://www.climate-cryosphere.org/wiki/index.php?title=ISMIP6-Projections-Greenland
+!> https://www.the-cryosphere.net/14/985/2020/tc-14-985-2020.pdf
+!> https://agupubs-onlinelibrary-wiley-com.lanl.idm.oclc.org/doi/full/10.1002/2016GL068784
+!> Melt parameterization of the form:
+!> melt_rate = (A * h * q_sg^alpha + B) * TF^beta
+!> where TF is local thermal forcing at each grid cell, h is water depth at ice front
+!> q_sg is subglacial water glux in m/day. Default values A = 3e-4, alpha = 0.39, B = 0.15
+!> beta=1.18
+!-----------------------------------------------------------------------
+
+
+    subroutine grounded_face_melt_ismip6(domain, err)
+
+      use li_calving
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: iCell, iNeighbor, iEdge, nEmptyNeighbors
+      real (kind=RKIND), pointer :: rhoi
+      integer, pointer :: nCells, nCellsSolve
+      integer, dimension(:,:), pointer :: cellsOnCell, edgesOnCell
+      real (kind=RKIND) :: waterDepth
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, velocityPool
+      real (kind=RKIND), pointer :: seaLevel
+      real (kind=RKIND), dimension(:), pointer :: thickness, faceMeltingThickness
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: lowerSurface
+      real (kind=RKIND), dimension(:), pointer :: TFocean, ismip6Runoff
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      integer, dimension(:), pointer :: cellMask, edgeMask, nEdgesOnCell
+      real (kind=RKIND), pointer :: aSubglacial ! param A
+      real (kind=RKIND), pointer :: alphaSubglacial ! param alpha
+      real (kind=RKIND), pointer :: B ! param B
+      real (kind=RKIND), pointer :: betaTF ! param beta
+      real (kind=RKIND), pointer :: addTFocean ! adjust ocean thermal forcing
+      real (kind=RKIND), pointer :: config_uniform_face_melt_rate
+      character(len=StrKIND), pointer :: config_front_mass_bal_grounded
+      real (kind=RKIND), parameter :: secPerDay = 86400.0_RKIND
+      real (kind=RKIND), parameter :: rhow = 1000.0_RKIND ! subglacial runoff density
+      real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed
+      real (kind=RKIND), dimension(:), allocatable :: faceMeltSpeedVertAvg !vertically averaged faceMeltSpeed
+                                                                !to pass to  li_apply_front_ablation_velocity,
+                                                                !because faceMeltSpeed is only below water-line
+      integer :: err_tmp
+      logical :: applyToFloating, applyToGrounded, applyToGroundingLine
+
+      err = 0
+      call mpas_log_write('Starting face melt routine')
+
+      ! Define logicals for call to li_apply_front_ablation_velocity
+      applyToFloating = .false. ! if true, only apply to floating ice
+      applyToGrounded = .false.  ! if true, only apply to grounded
+      applyToGroundingLine = .true. ! if true, apply at grounding line
+
+      ! Get sea level, bedTopography, ice density
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', seaLevel)
+
+      ! Get melt parameters
+      call mpas_pool_get_config(liConfigs, 'config_beta_ocean_thermal_forcing', betaTF)
+      call mpas_pool_get_config(liConfigs, 'config_alpha_subglacial_discharge', alphaSubglacial)
+      call mpas_pool_get_config(liConfigs, 'config_subglacial_discharge_coefficient', aSubglacial)
+      call mpas_pool_get_config(liConfigs, 'config_subglacial_discharge_intercept', B)
+      call mpas_pool_get_config(liConfigs, 'config_add_ocean_thermal_forcing', addTFocean)
+      call mpas_pool_get_config(liConfigs, 'config_uniform_face_melt_rate', config_uniform_face_melt_rate)
+      call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+         ! Get ISMIP6 forcing fields
+         call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean)
+         call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
+
+         ! Get mesh and geometry arrays
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
+         call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
+
+         faceMeltSpeed(:) = 0.0_RKIND
+         allocate(faceMeltSpeedVertAvg(nCells+1))
+         faceMeltSpeedVertAvg(:) = 0.0_RKIND
+
+       ! Calculate face melting for each cell
+         do iCell = 1, nCellsSolve
+
+            if ( bedTopography(iCell) < 0.0_RKIND ) then
+                waterDepth = seaLevel - bedTopography(iCell)
+            else
+                waterDepth = 0.0_RKIND
+            endif
+
+            if (trim(config_front_mass_bal_grounded) == 'ismip6') then
+                ! Calculate ice front melt rate at each cell
+               faceMeltSpeed(iCell) = (aSubglacial * waterDepth * & ! m s^-1
+                         (ismip6Runoff(iCell) / rhow * secPerDay)**alphaSubglacial &
+                         + B) *  max(0.0_RKIND, TFocean(iCell) + addTFocean)**betaTF / secPerDay
+            elseif (trim(config_front_mass_bal_grounded) == 'uniform') then
+                   faceMeltSpeed(iCell) = config_uniform_face_melt_rate
+            endif
+
+         enddo
+
+         where ( (thickness > 0.0_RKIND) .and. (lowerSurface < 0.0_RKIND) )
+               faceMeltSpeedVertAvg(:) = faceMeltSpeed(:) * abs(lowerSurface(:)) / thickness(:)
+         end where
+
+         call mpas_log_write("calling li_apply_front_ablation_velocity from grounded_face_melt_ismip6")
+         ! Distribute melt among neighbors
+         call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, &
+                                            faceMeltingThickness, faceMeltSpeedVertAvg, applyToGrounded, &
+                                            applyToFloating, applyToGroundingLine, domain, err)
+
+
+         ! Update halos on calvingThickness or faceMeltingThickness before applying it.
+         ! Testing seemed to indicate this is not necessary, but I don't understand
+         ! why not, so leaving it.
+         ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'faceMeltingThickness')
+         call mpas_timer_stop("halo updates")
+
+         ! Apply facemelt: open the Ark
+         thickness(:) = thickness(:) - faceMeltingThickness(:)
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         block => block % next
+      enddo    ! associated(block)
+
+    deallocate(faceMeltSpeedVertAvg)
+
+    end subroutine grounded_face_melt_ismip6
+!-----------------------------------------------------------------------
+
 
   !***********************************************************************
   end module li_iceshelf_melt

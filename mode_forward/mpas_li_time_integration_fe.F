@@ -29,7 +29,7 @@ module li_time_integration_fe
    use mpas_log
 
    use li_advection
-   use li_calving, only: li_calve_ice, li_restore_calving_front
+   use li_calving, only: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_finalize_damage_after_advection
    use li_thermal, only: li_thermal_solver
    use li_iceshelf_melt
    use li_diagnostic_vars
@@ -80,6 +80,7 @@ module li_time_integration_fe
 
       use li_subglacial_hydro
       use li_velocity
+      use li_bedtopo
 
       !-----------------------------------------------------------------
       ! input variables
@@ -104,10 +105,14 @@ module li_time_integration_fe
       integer :: err_tmp
 
       logical, pointer :: config_restore_calving_front
+      logical, pointer :: config_calculate_damage
+      logical, pointer :: config_finalize_damage_after_advection
 
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
+      call mpas_pool_get_config(liConfigs, 'config_calculate_damage',config_calculate_damage)
+      call mpas_pool_get_config(liConfigs, 'config_finalize_damage_after_advection',config_finalize_damage_after_advection)
 
 ! === Prepare for advection (including CFL checks) ===========
 ! This has to come first currently, because it sets the time step!
@@ -115,6 +120,13 @@ module li_time_integration_fe
       call prepare_advection(domain, err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop("advection prep")
+
+!TODO: Determine whether grounded melting should in fact be called first
+! === Face melting for grounded ice ===========
+      call mpas_timer_start("face melting for grounded ice")
+      call li_face_melt_grounded_ice(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("face melting for grounded ice")
 
 ! === Basal melting for floating ice ===========
       call mpas_timer_start("basal melting for floating ice")
@@ -128,11 +140,27 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("vertical therm")
 
+! === calculate damage ===========
+      if (config_calculate_damage) then
+          call mpas_timer_start("damage")
+          call li_calculate_damage(domain, err_tmp)
+          err = ior(err, err_tmp)
+          call mpas_timer_stop("damage")
+      endif
+
 ! === Compute new state for prognostic variables ==================================
       call mpas_timer_start("advect thickness and tracers")
       call advection_solver(domain, err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop("advect thickness and tracers")
+
+! === finalize damage after advection ===========
+      if (config_finalize_damage_after_advection) then
+          call mpas_timer_start("finalize damage")
+          call li_finalize_damage_after_advection(domain, err_tmp)
+          err = ior(err, err_tmp)
+          call mpas_timer_stop("finalize damage")
+      endif
 
 ! === Update subglacial hydrology  ===========
 ! It's not clear where the best place to call this should be.
@@ -168,6 +196,13 @@ module li_time_integration_fe
       call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
       call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
       call mpas_timer_stop("halo updates")
+
+! === Update bed topo =====================
+! It's not clear when the best time to do this is.
+! Seems cleaner to do it either before or after all of the time evolution of the ice
+! is complete.  Putting it after.
+      call li_bedtopo_solve(domain, err=err_tmp)
+      err = ior(err, err_tmp)
 
 ! === Solve Velocity =====================
       ! During time-stepping, we always solveVelo
@@ -247,6 +282,7 @@ module li_time_integration_fe
 
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerNormalVelocity
+      integer, dimension(:), pointer :: edgeMask
 
       logical, pointer :: config_print_thickness_advection_info
       logical, pointer :: config_adaptive_timestep
@@ -307,6 +343,11 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
 
       if (trim(config_thickness_advection) == 'none') then
+         if (config_adaptive_timestep) then
+            call mpas_log_write("Adaptive time stepper cannot be used when config_thickness_advection is set to 'none'", &
+                    MPAS_LOG_ERR)
+            err = ior(err,1)
+         endif
          return ! skip this routine
       endif
 
@@ -329,6 +370,7 @@ module li_time_integration_fe
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
          call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
          call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
 
          ! compute normal velocities and advective CFL limit for this block
@@ -336,6 +378,7 @@ module li_time_integration_fe
          call li_layer_normal_velocity( &
               meshPool,               &
               normalVelocity,         &
+              edgeMask,               &
               layerNormalVelocity,    &
               allowableAdvecDt,       &
               err_tmp)
