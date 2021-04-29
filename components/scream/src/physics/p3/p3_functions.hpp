@@ -138,7 +138,7 @@ struct Functions
     // Pressure thickness [Pa]
     view_2d<const Spack> dpres;
     // Exner expression
-    view_2d<const Spack> exner;
+    view_2d<const Spack> inv_exner;
     // qv from previous step [kg/kg]
     view_2d<const Spack> qv_prev;
     // T from previous step [K]
@@ -451,7 +451,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void homogeneous_freezing(
     const uview_1d<const Spack>& T_atm,
-    const uview_1d<const Spack>& exner,
+    const uview_1d<const Spack>& inv_exner,
     const uview_1d<const Spack>& latent_heat_fusion,
     const MemberType& team,
     const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir,
@@ -597,7 +597,7 @@ struct Functions
     const Spack& qr2qi_collect_tend,  const Spack& nr_collect_tend,  const Spack& qr2qi_immers_freeze_tend, const Spack& nr2ni_immers_freeze_tend,
     const Spack& nr_ice_shed_tend, const Spack& qi2qr_melt_tend,  const Spack& ni2nr_melt_tend,  const Spack& qi2qv_sublim_tend,
     const Spack& qv2qi_vapdep_tend,  const Spack& qv2qi_nucleat_tend,  const Spack& ni_nucleat_tend,  const Spack& ni_selfcollect_tend,
-    const Spack& ni_sublim_tend,  const Spack& qc2qi_berg_tend, const Spack& exner,  const Spack& latent_heat_sublim,
+    const Spack& ni_sublim_tend,  const Spack& qc2qi_berg_tend, const Spack& inv_exner,  const Spack& latent_heat_sublim,
     const Spack& latent_heat_fusion,    const bool do_predict_nc, const Smask& log_wetgrowth, const Scalar dt,
     const Scalar& nmltratio, const Spack& rho_qm_cloud, Spack& th_atm, Spack& qv, Spack& qi,
     Spack& ni, Spack& qm, Spack& bm, Spack& qc,  Spack& nc, Spack& qr, Spack& nr,
@@ -682,7 +682,7 @@ struct Functions
   static void update_prognostic_liquid(const Spack& qc2qr_accret_tend, const Spack& nc_accret_tend,
     const Spack& qc2qr_autoconv_tend,const Spack& nc2nr_autoconv_tend, const Spack& ncautr,
     const Spack& nc_selfcollect_tend, const Spack& qr2qv_evap_tend, const Spack& nr_evap_tend, const Spack& nr_selfcollect_tend,
-    const bool do_predict_nc, const bool do_prescribed_CCN, const Spack& inv_rho, const Spack& exner, const Spack& latent_heat_vapor,
+    const bool do_predict_nc, const bool do_prescribed_CCN, const Spack& inv_rho, const Spack& inv_exner, const Spack& latent_heat_vapor,
     const Scalar dt, Spack& th_atm, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
     const Smask& context = Smask(true));
 
@@ -761,7 +761,7 @@ struct Functions
     const uview_1d<const Spack>& cld_frac_i,
     const uview_1d<const Spack>& cld_frac_l,
     const uview_1d<const Spack>& cld_frac_r,
-    const uview_1d<const Spack>& exner,
+    const uview_1d<const Spack>& inv_exner,
     const uview_1d<const Spack>& th_atm,
     const uview_1d<const Spack>& dz,
     const uview_1d<Spack>& diag_equiv_reflectivity,
@@ -772,7 +772,7 @@ struct Functions
     const uview_1d<Spack>& inv_cld_frac_i,
     const uview_1d<Spack>& inv_cld_frac_l,
     const uview_1d<Spack>& inv_cld_frac_r,
-    const uview_1d<Spack>& inv_exner,
+    const uview_1d<Spack>& exner,
     const uview_1d<Spack>& T_atm,
     const uview_1d<Spack>& qv,
     const uview_1d<Spack>& inv_dz,
@@ -792,8 +792,8 @@ struct Functions
     const uview_1d<const Spack>& dz,
     const uview_1d<const Spack>& nc_nuceat_tend,
     const uview_1d<const Spack>& nccn_prescribed,
-    const uview_1d<const Spack>& exner,
     const uview_1d<const Spack>& inv_exner,
+    const uview_1d<const Spack>& exner,
     const uview_1d<const Spack>& inv_cld_frac_l,
     const uview_1d<const Spack>& inv_cld_frac_i,
     const uview_1d<const Spack>& inv_cld_frac_r,
@@ -846,8 +846,8 @@ struct Functions
     const uview_1d<const Spack>& dpres,
     const uview_1d<const Spack>& dz,
     const uview_1d<const Spack>& nc_nuceat_tend,
-    const uview_1d<const Spack>& exner,
     const uview_1d<const Spack>& inv_exner,
+    const uview_1d<const Spack>& exner,
     const uview_1d<const Spack>& inv_cld_frac_l,
     const uview_1d<const Spack>& inv_cld_frac_i,
     const uview_1d<const Spack>& inv_cld_frac_r,
@@ -915,7 +915,7 @@ struct Functions
     const Int& nk_pack,
     const view_dnu_table& dnu,
     const view_ice_table& ice_table_vals,
-    const uview_1d<const Spack>& exner,
+    const uview_1d<const Spack>& inv_exner,
     const uview_1d<const Spack>& cld_frac_l,
     const uview_1d<const Spack>& cld_frac_r,
     const uview_1d<const Spack>& cld_frac_i,

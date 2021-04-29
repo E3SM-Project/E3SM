@@ -18,7 +18,7 @@ extern "C" {
                  Real* dz, Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar,
                  Int it, Real* precip_liq_surf, Real* precip_ice_surf, Int its,
                  Int ite, Int kts, Int kte, Real* diag_eff_radius_qc, Real* diag_eff_radius_qi,
-                 Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* exner,
+                 Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* inv_exner,
                  Real* qv2qi_depos_tend,
                  Real* precip_liq_flux, Real* precip_ice_flux, // 1 extra column size
                  Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
@@ -56,7 +56,7 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   ni_activated    = Array2("activated nuclei concentration, kg-1", ncol, nlev);
   inv_qc_relvar   = Array2("Assumed SGS 1/(var(qc)/mean(qc)), kg2/kg2", ncol, nlev);
   dpres           = Array2("pressure thickness, Pa", ncol, nlev);
-  exner           = Array2("Exner expression", ncol, nlev);
+  inv_exner       = Array2("Exner expression", ncol, nlev);
   // Out
   precip_liq_surf    = Array1("precipitation rate, liquid  m/s", ncol);
   precip_ice_surf    = Array1("precipitation rate, solid   m/s", ncol);
@@ -91,7 +91,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(nc); fdipb(qr); fdipb(nr); fdipb(qi); fdipb(ni);
   fdipb(qm); fdipb(bm); fdipb(precip_liq_surf); fdipb(precip_ice_surf);
   fdipb(diag_eff_radius_qc); fdipb(diag_eff_radius_qi); fdipb(rho_qi);
-  fdipb(dpres); fdipb(exner); fdipb(qv2qi_depos_tend); 
+  fdipb(dpres); fdipb(inv_exner); fdipb(qv2qi_depos_tend); 
   fdipb(precip_liq_flux); fdipb(precip_ice_flux);
   fdipb(cld_frac_r); fdipb(cld_frac_l); fdipb(cld_frac_i);
   fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);
@@ -133,7 +133,7 @@ Int p3_main (const FortranData& d, bool use_fortran) {
               d.pres.data(), d.dz.data(), d.nc_nuceat_tend.data(), d.nccn_prescribed.data(), d.ni_activated.data(), d.inv_qc_relvar.data(),
               d.it, d.precip_liq_surf.data(), d.precip_ice_surf.data(), 1, d.ncol, 1, d.nlev,
               d.diag_eff_radius_qc.data(), d.diag_eff_radius_qi.data(), d.rho_qi.data(),
-              d.do_predict_nc, d.do_prescribed_CCN, d.dpres.data(), d.exner.data(), d.qv2qi_depos_tend.data(),
+              d.do_predict_nc, d.do_prescribed_CCN, d.dpres.data(), d.inv_exner.data(), d.qv2qi_depos_tend.data(),
               d.precip_liq_flux.data(), d.precip_ice_flux.data(), d.cld_frac_r.data(), d.cld_frac_l.data(), d.cld_frac_i.data(),
               d.liq_ice_exchange.data(), d.vap_liq_exchange.data(),d.vap_ice_exchange.data(),d.qv_prev.data(),d.t_prev.data(), &elapsed_s);
     return static_cast<Int>(elapsed_s * 1000000);
@@ -145,7 +145,7 @@ Int p3_main (const FortranData& d, bool use_fortran) {
                      d.ni_activated.data(), d.inv_qc_relvar.data(), d.it, d.precip_liq_surf.data(),
                      d.precip_ice_surf.data(), 1, d.ncol, 1, d.nlev, d.diag_eff_radius_qc.data(),
                      d.diag_eff_radius_qi.data(), d.rho_qi.data(), d.do_predict_nc, d.do_prescribed_CCN,
-                     d.dpres.data(), d.exner.data(), d.qv2qi_depos_tend.data(),
+                     d.dpres.data(), d.inv_exner.data(), d.qv2qi_depos_tend.data(),
                      d.precip_liq_flux.data(), d.precip_ice_flux.data(),
                      d.cld_frac_r.data(), d.cld_frac_l.data(), d.cld_frac_i.data(),
                      d.liq_ice_exchange.data(), d.vap_liq_exchange.data(),
