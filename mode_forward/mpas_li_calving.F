@@ -1704,6 +1704,8 @@ module li_calving
    subroutine li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, ablationThickness, ablationVelocity, &
                    applyToGrounded, applyToFloating, applyToGroundingLine, domain, err)
 
+      use ieee_arithmetic, only : ieee_is_nan
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -2222,7 +2224,7 @@ module li_calving
                if (iCell <= nCellsSolve) ablationSubtotal3 = ablationSubtotal3 + ablationThickness(iCell)
             endif
          endif
-         if (isnan(areaCell(iCell))) then
+         if (ieee_is_nan(calvingThickness(iCell))) then
             call mpas_log_write("NaN detected in calvingThickness at cell $i", MPAS_LOG_ERR, intArgs=(/iCell/))
             err_tmp = 1
             err = ior(err, err_tmp)
