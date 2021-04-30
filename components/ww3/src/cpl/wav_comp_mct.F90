@@ -169,7 +169,7 @@
       use w3iopomd, only:
       use w3iogomd, only: w3flgrdflag
       use w3timemd, only: stme21 
-      use w3cesmmd, only : casename, initfile, rstwr, runtype, histwr, outfreq
+      use w3cesmmd, only : casename, initfile, rstwr, runtype
       use w3cesmmd, only : inst_index, inst_name, inst_suffix
 
       use esmf
@@ -300,7 +300,7 @@ CONTAINS
       DATA IDSTR  / 'LEV', 'CUR', 'WND', 'ICE', 'DT0', 'DT1', 'DT2',  &
                     'MOV' /
 
-      namelist /ww3_inparm/ initfile, outfreq, stafile, fldout, fldcou
+      namelist /ww3_inparm/ initfile, stafile, fldout, fldcou
 
       !--------------------------------------------------------------------
       ! Initialize mpi
@@ -510,7 +510,6 @@ CONTAINS
          call shr_file_freeUnit( unitn )
       end if
       call shr_mpi_bcast(initfile, mpi_comm)
-      call shr_mpi_bcast(outfreq, mpi_comm)
       call shr_mpi_bcast(stafile, mpi_comm)
       call shr_mpi_bcast(fldout, mpi_comm)
       call shr_mpi_bcast(fldcou, mpi_comm)
@@ -555,8 +554,6 @@ CONTAINS
 
       ! QL, 160823, initialize flag for restart
       rstwr = .false.
-      ! QL, 160601, initialize flag for history file
-      histwr = .false.
       ! QL, 160601, get coupling interval
       call seq_timemgr_eclockgetdata(eclock, dtime=dtime_sync )
 
@@ -887,14 +884,6 @@ CONTAINS
 
       call seq_timemgr_EClockGetData( EClock, prev_ymd=ymd, prev_tod=tod )
 
-      ! QL, 171107, output every outfreq hours
-      if (outfreq .gt. 0 .and. mod(hh, outfreq) .eq. 0 ) then
-          histwr = .true.
-      else
-          histwr = seq_timemgr_historyAlarmIsOn(EClock)
-      end if
-
-
       hh = tod/3600
       mm = (tod - (hh * 3600))/60
       ss = tod - (hh*3600) - (mm*60)
@@ -904,8 +893,6 @@ CONTAINS
 
       time = time0
 
-      ! QL, 150823, set flag for writing restart file
-      rstwr = seq_timemgr_RestartAlarmIsOn(EClock)
 
       !--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       ! 7.  Model with input
@@ -1037,16 +1024,9 @@ CONTAINS
 
       ! 7.b Run the wave model for the given interval
 
-      !      write(stdout,*) 'wrm tcx7'
-      !      call shr_sys_flush(stdout)
-      !      call mpi_barrier(mpi_comm,ierr)
-      !      write(stdout,*) 'wrm tcx7a'
-      !      call shr_sys_flush(stdout)
-
       call w3wave ( 1, odat, timen )
 
       ! copy ww3 data to coupling datatype
-      ! QL, 150612, copy enhancement factor, uStokes, vStokes to coupler
 
       call w3xyrtn(nseal,USSX(1:nseal),USSY(1:nseal),AnglDL)
       do jsea=1, nseal
@@ -1062,9 +1042,6 @@ CONTAINS
           endif
       enddo
 
-      !      write(stdout,*) 'wrm tcx8'
-      !      call shr_sys_flush(stdout)
-
       !----------------------------------------------------------------------------
       ! Reset shr logging to original values
       !----------------------------------------------------------------------------
@@ -1072,12 +1049,8 @@ CONTAINS
       call shr_file_setLogLevel(shrloglev)
       call shr_sys_flush(stdout)
 
-      ! write(stdout,*) 'wrm tcx9'
-      ! call shr_sys_flush(stdout)
+      rstwr = seq_timemgr_RestartAlarmIsOn(EClock)
 
-      ! TODO Put in gptl timer calls
-
-      ! Formats
 
     END SUBROUTINE WAV_RUN_MCT
 
