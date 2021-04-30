@@ -110,6 +110,7 @@ module li_calving
       real(kind=RKIND), pointer :: config_calving_timescale
 
       integer, pointer :: nCells
+      integer, pointer :: config_number_of_blocks
 
       real (kind=RKIND), pointer :: deltat  !< time step (s)
 
@@ -142,7 +143,7 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_calving_timescale', config_calving_timescale)
       call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
       call mpas_pool_get_config(liConfigs, 'config_data_calving', config_data_calving)
-
+      call mpas_pool_get_config(liConfigs, 'config_number_of_blocks', config_number_of_blocks)
       if (trim(config_calving) == 'none') then
          return ! do nothing
       endif
@@ -213,7 +214,12 @@ module li_calving
          err = ior(err, err_tmp)
 
       elseif (trim(config_calving) == 'damagecalving') then
-
+          ! Does not currently support multiple blocks per processor.
+          if (config_number_of_blocks /= 0) then
+             call mpas_log_write("External velocity solvers require that config_number_of_blocks=0", MPAS_LOG_ERR)
+             err_tmp = 1
+          endif
+         err = ior(err,err_tmp)
          call damage_calving(domain, err_tmp)
          err = ior(err, err_tmp)
 
