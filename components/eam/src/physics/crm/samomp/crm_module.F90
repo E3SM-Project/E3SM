@@ -45,6 +45,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                 crm_input, crm_state, crm_rad,  &
                 crm_ecpp_output, crm_output, crm_clear_rh, &
                 latitude0, longitude0, gcolp, igstep, &
+                use_VT, VT_wn_max, &
                 use_crm_accel_in, crm_accel_factor_in, crm_accel_uv_in)
   !-----------------------------------------------------------------------------------------------
   !-----------------------------------------------------------------------------------------------
@@ -93,6 +94,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   real(crm_rknd), intent(in) :: longitude0(:)
   integer       , intent(in) :: igstep
   integer       , intent(in) :: gcolp(:)
+  logical       , intent(in) :: use_VT
+  integer       , intent(in) :: VT_wn_max
   logical       , intent(in) :: use_crm_accel_in
   real(crm_rknd), intent(in) :: crm_accel_factor_in
   logical       , intent(in) :: crm_accel_uv_in
@@ -322,6 +325,17 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   !\--------------------------------------------------------------
   ! Execute code starts here...
   !/
+
+  ! Variance transport not yet implemented in OpenMP, so abort if someone tries
+  ! to run with it
+  if (use_VT) then
+#ifdef MMF_STANDALONE
+     write(0,*) 'Variance transport not supported for OpenMP build.'
+     stop
+#else
+     call endrun('Variance transport not supported for OpenMP build.')
+#endif
+  end if
 
   use_crm_accel    = use_crm_accel_in   
   crm_accel_factor = crm_accel_factor_in
