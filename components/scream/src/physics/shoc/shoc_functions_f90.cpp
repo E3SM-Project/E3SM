@@ -2269,22 +2269,29 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
     v_wind_d(temp_2d_d[12]);
 
   view_3d
-    tracer_d(temp_3d_d[0]);
-
-  // update_prognostics_implicit() expects 3 extra tracer slots
-  Kokkos::resize(tracer_d,
-                 shcol,nlev,ekat::npack<Spack>(num_tracer+3));
+    tracer_f90_d(temp_3d_d[0]);
 
   // Local variables
   const Int nlev_packs = ekat::npack<Spack>(nlev);
   const Int nlevi_packs = ekat::npack<Spack>(nlevi);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
-  view_3d
-    X1_d("X1",shcol,nlev,ekat::npack<Spack>(2));
+  // CXX version of shoc qtracers is the transpose of the fortran version.
+  view_3d tracer_cxx_d("",shcol,num_tracer,nlev_packs);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int i = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_tracer), [&] (const Int& q) {
+        tracer_cxx_d(i,q,k/Spack::n)[k%Spack::n] = tracer_f90_d(i,k,q/Spack::n)[q%Spack::n];
+      });
+    });
+  });
 
   // Local variable workspace
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, 8, policy);
+  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
+  const int n_trac_slots = ekat::npack<Spack>(num_tracer+3)*Spack::n;
+  const int tmp_var_size = 8+n_wind_slots+n_trac_slots;
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlevi_packs, tmp_var_size, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
@@ -2304,32 +2311,36 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
     const auto tk_s = ekat::subview(tk_d, i);
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto wtracer_sfc_s = ekat::subview(wtracer_sfc_d, i);
-    const auto X1_s = Kokkos::subview(X1_d, i, Kokkos::ALL(), Kokkos::ALL());
     const auto thetal_s = ekat::subview(thetal_d, i);
     const auto qw_s = ekat::subview(qw_d, i);
     const auto u_wind_s = ekat::subview(u_wind_d, i);
     const auto v_wind_s = ekat::subview(v_wind_d, i);
     const auto tke_s = ekat::subview(tke_d, i);
-    const auto tracer_s = Kokkos::subview(tracer_d, i, Kokkos::ALL(), Kokkos::ALL());
+    const auto tracer_s = Kokkos::subview(tracer_cxx_d, i, Kokkos::ALL(), Kokkos::ALL());
 
     SHF::update_prognostics_implicit(team, nlev, nlevi, num_tracer, dtime,
                                      dz_zt_s, dz_zi_s, rho_zt_s, zt_grid_s,
                                      zi_grid_s, tk_s, tkh_s, uw_sfc_s, vw_sfc_s,
                                      wthl_sfc_s, wqw_sfc_s, wtracer_sfc_s,
                                      workspace,
-                                     X1_s,
                                      thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s);
   });
 
-  // Remove extra tracer slots
-  Kokkos::resize(tracer_d,
-                 shcol,nlev,ekat::npack<Spack>(num_tracer));
+  // Transpose tracers
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int i = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_tracer), [&] (const Int& q) {
+        tracer_f90_d(i,k,q/Spack::n)[q%Spack::n] = tracer_cxx_d(i,q,k/Spack::n)[k%Spack::n];
+      });
+    });
+  });
 
   // Sync back to host
   std::vector<view_2d> inout_views_2d = {thetal_d, qw_d, u_wind_d, v_wind_d, tke_d};
   ekat::device_to_host({thetal, qw, u_wind, v_wind, tke}, shcol, nlev, inout_views_2d, true);
 
-  std::vector<view_3d> inout_views = {tracer_d};
+  std::vector<view_3d> inout_views = {tracer_f90_d};
   ekat::device_to_host({tracer}, shcol, nlev, num_tracer, inout_views, true);
 }
 
@@ -2906,28 +2917,27 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
     isotropy_d    (temp_2d_d[index_counter++]);
 
   view_3d
-    qtracers_d(temp_3d_d[0]);
+    qtracers_f90_d(temp_3d_d[0]);
 
-  // Add temporary slots for solving
-  Kokkos::resize(qtracers_d,
-                 shcol,nlev,ekat::npack<Spack>(num_qtracers+3));
-
-  // shoc_main treats u/v_wind as 1 array.
+  // shoc_main treats u/v_wind as 1 array and
+  // CXX version of shoc qtracers is the transpose of the fortran version..
   const auto nlev_packs = ekat::npack<Spack>(nlev);
   view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
+  view_3d qtracers_cxx_d("qtracers",shcol,num_qtracers,nlev_packs);
 
-  // Copy wind into single view
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
+      const int k_v = k/Spack::n;
+      const int k_p = k%Spack::n;
 
-    const auto u_wind_s = ekat::subview(u_wind_d, i);
-    const auto v_wind_s = ekat::subview(v_wind_d, i);
-    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+      horiz_wind_d(i,0,k_v)[k_p] = u_wind_d(i,k_v)[k_p];
+      horiz_wind_d(i,1,k_v)[k_p] = v_wind_d(i,k_v)[k_p];
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-      horiz_wind_s(0,k) = u_wind_s(k);
-      horiz_wind_s(1,k) = v_wind_s(k);
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
+        qtracers_cxx_d(i,q,k_v)[k_p] = qtracers_f90_d(i,k,q/Spack::n)[q%Spack::n];
+      });
     });
   });
 
@@ -2937,7 +2947,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                              w_field_d, wthl_sfc_d,    wqw_sfc_d, uw_sfc_d,
                              vw_sfc_d,  wtracer_sfc_d, exner_d,   phis_d};
   SHF::SHOCInputOutput shoc_input_output{host_dse_d,   tke_d,      thetal_d,       qw_d,
-                                         horiz_wind_d, wthv_sec_d, qtracers_d,
+                                         horiz_wind_d, wthv_sec_d, qtracers_cxx_d,
                                          tk_d,         shoc_cldfrac_d, shoc_ql_d};
   SHF::SHOCOutput shoc_output{pblh_d, shoc_ql2_d};
   SHF::SHOCHistoryOutput shoc_history_output{shoc_mix_d,  w_sec_d,    thl_sec_d, qw_sec_d,
@@ -2948,24 +2958,22 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
   const auto elapsed_microsec = SHF::shoc_main(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
                                                shoc_input, shoc_input_output, shoc_output, shoc_history_output);
 
-  // Copy wind back into separate views
+  // Copy wind back into separate views and
+  // Transpose tracers
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
+      const int k_v = k/Spack::n;
+      const int k_p = k%Spack::n;
 
-    const auto u_wind_s = ekat::subview(u_wind_d, i);
-    const auto v_wind_s = ekat::subview(v_wind_d, i);
-    const auto horiz_wind_s = Kokkos::subview(horiz_wind_d,i,Kokkos::ALL(),Kokkos::ALL());
+      u_wind_d(i,k_v)[k_p] = horiz_wind_d(i,0,k_v)[k_p];
+      v_wind_d(i,k_v)[k_p] = horiz_wind_d(i,1,k_v)[k_p];
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-      u_wind_s(k) = horiz_wind_s(0,k);
-      v_wind_s(k) = horiz_wind_s(1,k);
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
+        qtracers_f90_d(i,k,q/Spack::n)[q%Spack::n] = qtracers_cxx_d(i,q,k_v)[k_p];
+      });
     });
   });
-
-  // Remove temporary slots
-  Kokkos::resize(qtracers_d,
-                 shcol,nlev,ekat::npack<Spack>(num_qtracers));
-
 
   // Sync back to host
   // 1d
@@ -3000,7 +3008,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
   ekat::device_to_host(ptr_array_2d_out, dim1_2d_out, dim2_2d_out, out_views_2d, true);
 
   // 3d
-  std::vector<view_3d> out_views_3d = {qtracers_d};
+  std::vector<view_3d> out_views_3d = {qtracers_f90_d};
   ekat::device_to_host({qtracers}, shcol, nlev, num_qtracers, out_views_3d, true);
 
   return elapsed_microsec;
