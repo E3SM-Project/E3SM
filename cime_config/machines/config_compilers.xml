@@ -1945,7 +1945,7 @@ flags should be captured within MPAS CMake files.
     <append> -DARCH_MIC_KNL </append>
   </CPPDEFS>
   <FFLAGS>
-    <base>-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf_use_svml=true</base>
+    <base>-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml=true</base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fp-speculation=off</append>
     <append> -DHAVE_ERF_INTRINSICS </append>
   </FFLAGS>
