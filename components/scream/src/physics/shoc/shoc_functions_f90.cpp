@@ -2151,7 +2151,7 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
     v_wind_d(temp_2d_d[12]);
 
   view_3d
-    tracer_f90_d(temp_3d_d[0]);
+    qtracers_f90_d(temp_3d_d[0]);
 
   // Local variables
   const Int nlev_packs = ekat::npack<Spack>(nlev);
@@ -2159,12 +2159,17 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
   // CXX version of shoc qtracers is the transpose of the fortran version.
-  view_3d tracer_cxx_d("",shcol,num_tracer,nlev_packs);
+  view_3d qtracers_cxx_d("",shcol,num_tracer,nlev_packs);
+
+  // scalarize each view
+  const auto qtracers_cxx_d_s = ekat::scalarize(qtracers_cxx_d);
+  const auto qtracers_f90_d_s = ekat::scalarize(qtracers_f90_d);
+
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int i = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_tracer), [&] (const Int& q) {
-        tracer_cxx_d(i,q,k/Spack::n)[k%Spack::n] = tracer_f90_d(i,k,q/Spack::n)[q%Spack::n];
+        qtracers_cxx_d_s(i,q,k) = qtracers_f90_d_s(i,k,q);
       });
     });
   });
@@ -2198,7 +2203,7 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
     const auto u_wind_s = ekat::subview(u_wind_d, i);
     const auto v_wind_s = ekat::subview(v_wind_d, i);
     const auto tke_s = ekat::subview(tke_d, i);
-    const auto tracer_s = Kokkos::subview(tracer_cxx_d, i, Kokkos::ALL(), Kokkos::ALL());
+    const auto tracer_s = Kokkos::subview(qtracers_cxx_d, i, Kokkos::ALL(), Kokkos::ALL());
 
     SHF::update_prognostics_implicit(team, nlev, nlevi, num_tracer, dtime,
                                      dz_zt_s, dz_zi_s, rho_zt_s, zt_grid_s,
@@ -2213,7 +2218,7 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
     const int i = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_tracer), [&] (const Int& q) {
-        tracer_f90_d(i,k,q/Spack::n)[q%Spack::n] = tracer_cxx_d(i,q,k/Spack::n)[k%Spack::n];
+        qtracers_f90_d_s(i,k,q) = qtracers_cxx_d_s(i,q,k);
       });
     });
   });
@@ -2222,7 +2227,7 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
   std::vector<view_2d> inout_views_2d = {thetal_d, qw_d, u_wind_d, v_wind_d, tke_d};
   ekat::device_to_host({thetal, qw, u_wind, v_wind, tke}, shcol, nlev, inout_views_2d, true);
 
-  std::vector<view_3d> inout_views = {tracer_f90_d};
+  std::vector<view_3d> inout_views = {qtracers_f90_d};
   ekat::device_to_host({tracer}, shcol, nlev, num_tracer, inout_views, true);
 }
 
@@ -2807,18 +2812,22 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
   view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
   view_3d qtracers_cxx_d("qtracers",shcol,num_qtracers,nlev_packs);
 
+  // scalarize each view
+  const auto u_wind_d_s = ekat::scalarize(u_wind_d);
+  const auto v_wind_d_s = ekat::scalarize(v_wind_d);
+  const auto horiz_wind_d_s = ekat::scalarize(horiz_wind_d);
+  const auto qtracers_cxx_d_s = ekat::scalarize(qtracers_cxx_d);
+  const auto qtracers_f90_d_s = ekat::scalarize(qtracers_f90_d);
+
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
-      const int k_v = k/Spack::n;
-      const int k_p = k%Spack::n;
-
-      horiz_wind_d(i,0,k_v)[k_p] = u_wind_d(i,k_v)[k_p];
-      horiz_wind_d(i,1,k_v)[k_p] = v_wind_d(i,k_v)[k_p];
+      horiz_wind_d_s(i,0,k) = u_wind_d_s(i,k);
+      horiz_wind_d_s(i,1,k) = v_wind_d_s(i,k);
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
-        qtracers_cxx_d(i,q,k_v)[k_p] = qtracers_f90_d(i,k,q/Spack::n)[q%Spack::n];
+        qtracers_cxx_d_s(i,q,k) = qtracers_f90_d_s(i,k,q);
       });
     });
   });
@@ -2852,14 +2861,11 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
-      const int k_v = k/Spack::n;
-      const int k_p = k%Spack::n;
-
-      u_wind_d(i,k_v)[k_p] = horiz_wind_d(i,0,k_v)[k_p];
-      v_wind_d(i,k_v)[k_p] = horiz_wind_d(i,1,k_v)[k_p];
+      u_wind_d_s(i,k) = horiz_wind_d_s(i,0,k);
+      v_wind_d_s(i,k) = horiz_wind_d_s(i,1,k);
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
-        qtracers_f90_d(i,k,q/Spack::n)[q%Spack::n] = qtracers_cxx_d(i,q,k_v)[k_p];
+        qtracers_f90_d_s(i,k,q) = qtracers_cxx_d_s(i,q,k);
       });
     });
   });
