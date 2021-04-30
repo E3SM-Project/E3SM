@@ -1229,7 +1229,7 @@ end function bfb_expm1
        diag_eff_radius_qi,rho_qi,do_predict_nc, do_prescribed_CCN, &
        dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,rflx,sflx,cflx,cld_frac_r,cld_frac_l,cld_frac_i,  &
        p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
-       vap_ice_exchange,qv_prev,t_prev,col_location &
+       vap_ice_exchange,qv_prev,t_prev,col_location,diag_equiv_reflectivity &
 #ifdef SCREAM_CONFIG_IS_CMAKE
        ,elapsed_s &
 #endif
@@ -1318,6 +1318,7 @@ end function bfb_expm1
     real(rtype), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out ! micro physics tendencies
     real(rtype), intent(in),    dimension(its:ite,3)            :: col_location
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: inv_qc_relvar
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_equiv_reflectivity  ! equivalent reflectivity [dBZ]
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
     real(rtype), optional, intent(out) :: elapsed_s ! duration of main loop in seconds
@@ -1328,7 +1329,6 @@ end function bfb_expm1
     !
 
     ! These outputs are no longer provided by p3_main.
-    real(rtype), dimension(its:ite,kts:kte) :: diag_equiv_reflectivity  ! equivalent reflectivity          dBZ
     real(rtype), dimension(its:ite,kts:kte) :: diag_vm_qi ! mass-weighted fall speed of ice  m s-1
     real(rtype), dimension(its:ite,kts:kte) :: diag_diam_qi  ! mean diameter of ice             m
     real(rtype), dimension(its:ite,kts:kte) :: pratot   ! accretion of cloud by rain
