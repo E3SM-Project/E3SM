@@ -1733,16 +1733,6 @@
       <mask>wQU100</mask>
     </model_grid>
 
-    <model_grid alias="T62_wDE4" compset="_WW3">
-      <grid name="atm">T62</grid>
-      <grid name="lnd">null</grid>
-      <grid name="ocnice">null</grid>
-      <grid name="rof">null</grid>
-      <grid name="glc">null</grid>
-      <grid name="wav">wDE4</grid>
-      <mask>gx1v6</mask>
-    </model_grid>
-
     <model_grid alias="CFSv2_wQU225EC60to30" compset="_WW3">
       <grid name="atm">CFSv2</grid>
       <grid name="lnd">null</grid>
@@ -1763,13 +1753,13 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="T62_oEC60to30v3_wQU100" compset="_WW3">
+    <model_grid alias="T62_oEC60to30v3_wQU225EC60to30" compset="_WW3">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
       <grid name="ocnice">oEC60to30v3</grid>
       <grid name="rof">rx1</grid>
       <grid name="glc">null</grid>
-      <grid name="wav">wQU100</grid>
+      <grid name="wav">wQU225EC60to30</grid>
       <mask>oEC60to30v3</mask>
     </model_grid>
 
@@ -2785,14 +2775,6 @@
       <ny>1</ny>
       <file grid="wav">$DIN_LOC_ROOT/share/domains/domain.ocn.wQU225EC60to30.210413.nc</file>
       <desc>WW3 unstructured QU 225km global grid with EC60to30 coastlines</desc>
-    </domain>
-
-    <domain name="wDE4">
-      <nx>98182</nx>
-      <ny>1</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_wDE4.200611.nc</file>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_wDE4.200611.nc</file>
-      <desc>WW3 unstructured global grid with 4km refinement in Deleware Bay</desc>
     </domain>
 
     <!-- RRM grids -->
@@ -4048,8 +4030,14 @@
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_wQU100_bilin.20210202.nc</map>
     </gridmap>
 
-    <gridmap atm_grid="T62" wav_grid="wDE4">
-      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_wDE4_blin.20200611.nc</map>
+    <gridmap atm_grid="T62" wav_grid="wQU225EC60to30">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_T62_TO_wQU225EC60to30_blin.20210428.nc</map>
+    </gridmap>
+
+    <gridmap ocn_grid="oEC60to30v3" wav_grid="wQU225EC60to30">
+      <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_wQU225EC60to30_TO_oEC60to30v3_blin.20210428.nc</map>
+      <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_oEC60to30v3_TO_wQU225EC60to30_blin.20210428.nc</map>
+      <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_oEC60to30v3_TO_wQU225EC60to30_blin.20210428.nc</map>
     </gridmap>
 
     <gridmap atm_grid="CFSv2" wav_grid="wQU225EC60to30">
