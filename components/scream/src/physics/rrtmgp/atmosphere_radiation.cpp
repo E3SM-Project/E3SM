@@ -40,6 +40,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Set required (input) fields here
   add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name());
   add_field<Required>("pint", scalar3d_layout_int, Pa, grid->name());
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name());
   add_field<Required>("tint" , scalar3d_layout_int, K , grid->name());
   add_field<Required>("gas_vmr", gas_layout, kgkg, grid->name());
   add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
@@ -85,6 +86,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   // Get device views
   auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_reshaped_view<const Real**>();
   auto d_pint = m_rrtmgp_fields_in.at("pint").get_reshaped_view<const Real**>();
+  auto d_pdel = m_rrtmgp_fields_in.at("pseudo_density").get_reshaped_view<const Real**>();
   auto d_tint = m_rrtmgp_fields_in.at("tint").get_reshaped_view<const Real**>();
   auto d_gas_vmr = m_rrtmgp_fields_in.at("gas_vmr").get_reshaped_view<const Real***>();
   auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("surf_alb_direct").get_reshaped_view<const Real**>();
@@ -105,6 +107,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay  ("p_lay", const_cast<Real*>(d_pmid.data()), m_ncol, m_nlay);
   yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay  ("t_lay", const_cast<Real*>(d_tmid.data()), m_ncol, m_nlay);
   yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev  ("p_lev",const_cast<Real*>(d_pint.data()), m_ncol, m_nlay+1);
+  yakl::Array<double,2,memDevice,yakl::styleFortran> p_del  ("p_del"   ,const_cast<Real*>(d_pdel.data()), m_ncol, m_nlay);
   yakl::Array<double,2,memDevice,yakl::styleFortran> t_lev  ("t_lev",const_cast<Real*>(d_tint.data()), m_ncol, m_nlay+1);
   yakl::Array<double,3,memDevice,yakl::styleFortran> gas_vmr("gas_vmr",const_cast<Real*>(d_gas_vmr.data()), m_ncol, m_nlay, m_ngas);
   yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dir("surf_alb_direct",const_cast<Real*>(d_sfc_alb_dir.data()), m_ncol, m_nswbands);
@@ -155,10 +158,10 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto lw_heating  = real2d("lw_heating", m_ncol, m_nlay);
   auto rad_heating = real2d("rad_heating", m_ncol, m_nlay);
   rrtmgp::compute_heating_rate(
-    sw_flux_up, sw_flux_dn, p_lev, sw_heating
+    sw_flux_up, sw_flux_dn, p_del, sw_heating
   );
   rrtmgp::compute_heating_rate(
-    lw_flux_up, lw_flux_dn, p_lev, lw_heating
+    lw_flux_up, lw_flux_dn, p_del, lw_heating
   );
   parallel_for(Bounds<2>(m_nlay,m_ncol), YAKL_LAMBDA(int ilay, int icol) {
     rad_heating(icol,ilay) = sw_heating(icol,ilay) + lw_heating(icol,ilay);

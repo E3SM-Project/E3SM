@@ -17,7 +17,7 @@ namespace scream {
         // from which this code was directly ported.
         template <class T, int myMem, int myStyle> void compute_heating_rate (
                 yakl::Array<T,2,myMem,myStyle> const &flux_up, yakl::Array<T,2,myMem,myStyle> const &flux_dn, 
-                yakl::Array<T,2,myMem,myStyle> const &plev   , yakl::Array<T,2,myMem,myStyle> &heating_rate
+                yakl::Array<T,2,myMem,myStyle> const &dp     , yakl::Array<T,2,myMem,myStyle> &heating_rate
             ) {
             using physconst = scream::physics::Constants<Real>;
             auto ncol = flux_up.dimension[0];
@@ -26,7 +26,7 @@ namespace scream {
                 heating_rate(icol,ilay) = (
                     flux_up(icol,ilay+1) - flux_up(icol,ilay) - 
                     flux_dn(icol,ilay+1) + flux_dn(icol,ilay)
-                ) * physconst::gravit / (physconst::Cpair * (plev(icol,ilay+1) - plev(icol,ilay)));
+                ) * physconst::gravit / (physconst::Cpair * dp(icol,ilay));
             });
         }
     }

@@ -96,6 +96,7 @@ namespace scream {
         auto d_pmid = field_mgr.get_field("p_mid").get_reshaped_view<Real**>();
         auto d_tmid = field_mgr.get_field("T_mid").get_reshaped_view<Real**>();
         auto d_pint = field_mgr.get_field("pint").get_reshaped_view<Real**>();
+        auto d_pdel = field_mgr.get_field("pseudo_density").get_reshaped_view<Real**>();
         auto d_tint = field_mgr.get_field("tint").get_reshaped_view<Real**>();
         auto d_sfc_alb_dir = field_mgr.get_field("surf_alb_direct").get_reshaped_view<Real**>();
         auto d_sfc_alb_dif = field_mgr.get_field("surf_alb_diffuse").get_reshaped_view<Real**>();
@@ -107,6 +108,7 @@ namespace scream {
         auto d_gas_vmr = field_mgr.get_field("gas_vmr").get_reshaped_view<Real***>();
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay("p_lay", d_pmid.data(), ncol, nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay("t_lay", d_tmid.data(), ncol, nlay);
+        yakl::Array<double,2,memDevice,yakl::styleFortran> p_del("p_del", d_pdel.data(), ncol, nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev("p_lev", d_pint.data(), ncol, nlay+1);
         yakl::Array<double,2,memDevice,yakl::styleFortran> t_lev("t_lev", d_tint.data(), ncol, nlay+1);
         yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dir("sfc_alb_dir", d_sfc_alb_dir.data(), ncol, nswbands);
@@ -117,6 +119,11 @@ namespace scream {
         yakl::Array<double,2,memDevice,yakl::styleFortran> rei("rei", d_rei.data(), ncol, nlay);
         yakl::Array<double,1,memDevice,yakl::styleFortran> mu0("mu0", d_mu0.data(), ncol);
         yakl::Array<double,3,memDevice,yakl::styleFortran> gas_vmr("gas_vmr", d_gas_vmr.data(), ncol, nlay, ngas);
+
+        // Need to calculate a dummy pseudo_density for our test problem
+        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            p_del(icol,ilay) = abs(p_lev(icol,ilay+1) - p_lev(icol,ilay));
+        });
 
         // Read in dummy Garand atmosphere; if this were an actual model simulation,
         // these would be passed as inputs to the driver
