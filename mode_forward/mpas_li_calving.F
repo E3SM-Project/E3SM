@@ -2222,7 +2222,7 @@ module li_calving
                if (iCell <= nCellsSolve) ablationSubtotal3 = ablationSubtotal3 + ablationThickness(iCell)
             endif
          endif
-         if (isnan(areaCell(iCell))) then
+         if (calvingThickness(iCell) /= calvingThickness(iCell)) then
             call mpas_log_write("NaN detected in calvingThickness at cell $i", MPAS_LOG_ERR, intArgs=(/iCell/))
             err_tmp = 1
             err = ior(err, err_tmp)
