@@ -1801,7 +1801,7 @@ contains
       call mpas_pool_get_field(forcingPool, 'removedRiverRunoffFlux', removedRiverRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'removedIceRunoffFlux', removedIceRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'waveStokesDriftZonal', waveStokesDriftZonalField)
-      call mpas_pool_get_field(forcingPool, 'waveStokesDriftMeridional', waveStokesDriftMeridinalField)
+      call mpas_pool_get_field(forcingPool, 'waveStokesDriftMeridional', waveStokesDriftMeridionalField)
 
       call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
       call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
