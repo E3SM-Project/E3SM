@@ -213,6 +213,8 @@
       integer,save :: stdout
       integer,save :: odat(40)
 
+      real,allocatable,save :: AnglDL(:)
+
       include "mpif.h"
 !--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 CONTAINS
@@ -518,7 +520,7 @@ CONTAINS
       ! Define output type and fields
       !--------------------------------------------------------------------
 
-      iostyp = 1        ! gridded field
+      iostyp = 2        ! gridded field
       if ( iaproc .eq. napout ) write (ndso,940) 'no dedicated output process, any file system '
       call shr_sys_flush(ndso)
 
@@ -536,6 +538,7 @@ CONTAINS
       !                    11-15 Id. for OTYPE = 3; track point output.
       !                    16-20 Id. for OTYPE = 4; restart files.
       !                    21-25 Id. for OTYPE = 5; boundary data.
+      !                    26-30 Id. for OTYPE = 6; partitioned data.
       !                    31-35 Id. for OTYPE = 7; coupling data.
       !                    36-40 Id. for OTYPE = 8; second restart file
       ! FLGRD   L.A.   I   Flags for gridded output.
@@ -758,6 +761,13 @@ CONTAINS
       dtcfl  = real(dtime_sync) / 2. !checked by adrean
       dtcfli = real(dtime_sync)      !checked by adrean
       dtmin  = real(dtime_sync) / 12 !checked by adrean
+
+      ! Localize AnglDL 
+      allocate(AnglDL(nseal))
+      do jsea = 1,nseal
+        isea = iaproc + (jsea-1)*naproc
+        AnglDL(jsea) = AnglD(isea)
+      enddo
 
       call mpi_barrier ( mpi_comm, ierr )
 
@@ -1038,14 +1048,14 @@ CONTAINS
       ! copy ww3 data to coupling datatype
       ! QL, 150612, copy enhancement factor, uStokes, vStokes to coupler
 
-      call w3xyrtn(NX*NY,USSX,USSY,AnglD)
+      call w3xyrtn(nseal,USSX(1:nseal),USSY(1:nseal),AnglDL)
       do jsea=1, nseal
          isea = iaproc + (jsea-1)*naproc
          IX  = MAPSF(ISEA,1)
          IY  = MAPSF(ISEA,2)
          if (MAPSTA(IY,IX) .eq. 1) then
-             w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = USSX(ISEA)
-             w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = USSY(ISEA)
+             w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = USSX(jsea)
+             w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = USSY(jsea)
           else
              w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = 0.0
              w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = 0.0
