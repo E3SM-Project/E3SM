@@ -36,6 +36,7 @@ def buildnml(case, caseroot, compname):
     ocn_iceberg       = case.get_value("MPASO_ICEBERG")
     ocn_ismf          = case.get_value("MPASO_ISMF")
     ocn_bgc           = case.get_value("MPASO_BGC")
+    ocn_wave          = case.get_value("MPASO_WAVE")
     ocn_co2_type      = case.get_value("OCN_CO2_TYPE")
     atm_co2_const_val = case.get_value("CCSM_CO2_PPMV")
     ice_bgc           = case.get_value("MPASI_BGC")
@@ -356,6 +357,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -ocn_iceberg '{}'".format(ocn_iceberg)
         sysmod += " -ocn_ismf '{}'".format(ocn_ismf)
         sysmod += " -ocn_bgc '{}'".format(ocn_bgc)
+        sysmod += " -ocn_wave '{}'".format(ocn_wave)
         sysmod += " -ocn_co2_type '{}'".format(ocn_co2_type)
         sysmod += " -atm_co2_const_val '{}'".format(atm_co2_const_val)
         sysmod += " -ice_bgc '{}'".format(ice_bgc)
@@ -786,6 +788,9 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="iceFluxFeDissolved"/>')
             lines.append('    <var name="iceFluxDOC"/>')
             lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
+        if ocn_wave:
+            lines.append('    <var name="waveStokesDriftZonal"/>')
+            lines.append('    <var name="waveStokesDriftMeridional"/>')
 
         lines.append('</stream>')
         lines.append('')

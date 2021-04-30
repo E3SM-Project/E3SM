@@ -1105,6 +1105,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_use_active_wave" type="logical"
+	category="cvmix" group="cvmix">
+Flag for use of active WAVEWATCH III coupling to calculate the Langmuir number and enhancement factor
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_cvmix_kpp_langmuir_mixing_opt" type="char*1024"
 	category="cvmix" group="cvmix">
 Option of Langmuir enhanced mixing parameterization

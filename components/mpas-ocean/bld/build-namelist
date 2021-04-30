@@ -61,6 +61,7 @@ OPTIONS
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
      -ocn_bgc              ocean BGC configuration
+     -ocn_wave             ocean wave coupling flag
      -ocn_co2_type         how atm co2 is set within MPASO
      -atm_co2_const_val    value of atm co2 if ocn_co2_type = constant
      -ice_bgc              check for coupling with sea ice BGC
@@ -111,6 +112,7 @@ my %opts = ( help          => 0,
              decomp_prefix => undef,
              date_stamp    => undef,
              ocn_bgc       => undef,
+             ocn_wave      => undef,
              ocn_co2_type      => undef,
              atm_co2_const_val => undef,
              ice_bgc       => undef,
@@ -135,6 +137,7 @@ GetOptions(
     "decomp_prefix=s" => \$opts{'decomp_prefix'},
     "date_stamp=s"    => \$opts{'date_stamp'},
     "ocn_bgc=s"       => \$opts{'ocn_bgc'},
+    "ocn_wave=s"      => \$opts{'ocn_wave'},
     "ocn_co2_type=s"      => \$opts{'ocn_co2_type'},
     "atm_co2_const_val=s" => \$opts{'atm_co2_const_val'},
     "ice_bgc=s"       => \$opts{'ice_bgc'},
@@ -176,6 +179,7 @@ my $OCN_ISMF      = $opts{'ocn_ismf'};
 my $decomp_prefix = $opts{'decomp_prefix'};
 my $date_stamp    = $opts{'date_stamp'};
 my $ocn_bgc       = $opts{'ocn_bgc'};
+my $ocn_wave      = $opts{'ocn_wave'};
 my $ocn_co2_type      = $opts{'ocn_co2_type'};
 my $atm_co2_const_val = $opts{'atm_co2_const_val'};
 my $ice_bgc       = $opts{'ice_bgc'};
@@ -665,7 +669,12 @@ add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
 add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
 add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
-add_default($nl, 'config_cvmix_kpp_use_theory_wave');
+if ($ocn_wave eq 'true' ) {
+	add_default($nl, 'config_cvmix_kpp_use_theory_wave', 'val'=>'.false.');
+	add_default($nl, 'config_cvmix_kpp_use_active_wave', 'val'=>'.true.');
+} else {
+	add_default($nl, 'config_cvmix_kpp_use_theory_wave');
+}
 add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
 add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
 
