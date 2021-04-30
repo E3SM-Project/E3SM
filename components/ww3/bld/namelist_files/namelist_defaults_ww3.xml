@@ -14,7 +14,7 @@ attributes to express the dependency.
 <initfile>"/home/ccsm-data/inputdata/wav/ww3/restart.ww3.v6"</initfile>
 <stafile>"/lcrc/group/acme/data/inputdata/wav/ww3/stations.txt"</stafile>
 <outfreq>1</outfreq>
-<fldout>"WND HS FP DP"</fldout>
+<fldout>"WND HS FP DP USS"</fldout>
 <fldcou>"USS"</fldcou>
 
 
