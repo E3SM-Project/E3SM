@@ -22,8 +22,6 @@ use constituents,     only: pcnst, cnst_name, cnst_get_ind
 
 use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 
-use shr_log_mod ,     only: errMsg => shr_log_errMsg
-
 #ifdef MODAL_AERO
 
 use modal_aero_data, only: ntot_amode, numptr_amode, modename_amode
