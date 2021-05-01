@@ -110,11 +110,12 @@ def qflxconvert_units(var):
     return var
 
 
-def qflx_convert_to_lhflx(qflx):
+def qflx_convert_to_lhflx(var):
     # QFLX units: kg/((m^2)*s)
     # Multiply by the latent heat of condensation/vaporization (in J/kg)
     # kg/((m^2)*s) * J/kg = J/((m^2)*s) = (W*s)/((m^2)*s) = W/(m^2)
-    return qflx * 2.5e6
+    var.units = "W/m2"
+    return var * 2.5e6
 
 
 def pminuse_convert_units(var):
