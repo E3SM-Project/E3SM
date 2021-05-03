@@ -888,6 +888,7 @@ endif
     use_moisture = ( moisture /= "dry") 
     if (qsize<1) use_moisture = .false.  
 
+    if(par%masterproc) print *, "use moisure:", use_moisture
 
 
     ! use maximum available:
