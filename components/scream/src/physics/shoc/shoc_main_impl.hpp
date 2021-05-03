@@ -87,7 +87,6 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                phis,
   // Workspace/Local Variables
   const Workspace&             workspace,
-  const uview_2d<Spack>&       X1,
   // Input/Output Variables
   const uview_1d<Spack>&       host_dse,
   const uview_1d<Spack>&       tke,
@@ -201,7 +200,7 @@ void Functions<S,D>::shoc_main_internal(
                                 dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
                                 vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
                                 workspace,                                  // Workspace
-                                X1,thetal,qw,qtracers,tke,u_wind,v_wind);   // Input/Output
+                                thetal,qw,qtracers,tke,u_wind,v_wind);   // Input/Output
 
     // Diagnose the second order moments
     diag_second_shoc_moments(team,nlev,nlevi,thetal,qw,u_wind,v_wind,   // Input
@@ -304,12 +303,11 @@ Int Functions<S,D>::shoc_main(
   const auto nlev_packs = ekat::npack<Spack>(nlev);
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
 
-  view_3d<Spack>
-    X1_d("X1",shcol,nlev,ekat::npack<Spack>(2));
-
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
 
-  ekat::WorkspaceManager<Spack, Device> workspace_mgr(nlevi_packs, 13, policy);
+  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
+  const int n_trac_slots = ekat::npack<Spack>(num_qtracers+3)*Spack::n;
+  ekat::WorkspaceManager<Spack, Device> workspace_mgr(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
 
   // Start timer
   auto start = std::chrono::steady_clock::now();
@@ -364,7 +362,6 @@ Int Functions<S,D>::shoc_main(
 
     const auto u_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, i, 0, Kokkos::ALL());
     const auto v_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, i, 1, Kokkos::ALL());
-    const auto X1_s       = Kokkos::subview(X1_d, i, Kokkos::ALL(), Kokkos::ALL());
     const auto qtracers_s = Kokkos::subview(shoc_input_output.qtracers, i, Kokkos::ALL(), Kokkos::ALL());
 
     shoc_main_internal(team, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
@@ -373,7 +370,6 @@ Int Functions<S,D>::shoc_main(
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
                        wtracer_sfc_s, exner_s, phis_s,                        // Input
                        workspace,                                             // Workspace
-                       X1_s,                                                  // Local variable
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
                        wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
                        shoc_ql_s,                                             // Input/Output

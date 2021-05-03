@@ -10,6 +10,7 @@
 #include "z0_est.h"
 #include "accelerate_crm.h"
 #include "setperturb.h"
+#include "crm_variance_transport.h"
 
 void pre_timeloop();
 

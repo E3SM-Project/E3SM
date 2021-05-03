@@ -18,7 +18,7 @@ module dynSubgridAdjustmentsMod
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use decompMod              , only : bounds_type
   use elm_varpar             , only : ndecomp_pools, nlevdecomp
-  use elm_varctl             , only : use_crop, use_nitrif_denitrif
+  use elm_varctl             , only : use_crop
   use elm_varcon             , only : dzsoi_decomp
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
   use dynColumnStateUpdaterMod, only : column_state_updater_type
@@ -975,19 +975,18 @@ contains
            col_ns%dyn_nbal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
-       if (use_nitrif_denitrif) then
-           call column_state_updater%update_column_state_no_special_handling( &
-                bounds      = bounds                          , &
-                clump_index = clump_index                     , &
-                var         = col_ns%smin_nh4_vr(begc:endc, j) , &
-                adjustment  = adjustment_one_level(begc:endc))
-
-           call column_state_updater%update_column_state_no_special_handling( &
-                bounds      = bounds                          , &
-                clump_index = clump_index                     , &
-                var         = col_ns%smin_no3_vr(begc:endc, j) , &
-                adjustment  = adjustment_one_level(begc:endc))
-       end if
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds                          , &
+            clump_index = clump_index                     , &
+            var         = col_ns%smin_nh4_vr(begc:endc, j) , &
+            adjustment  = adjustment_one_level(begc:endc))
+       
+       call column_state_updater%update_column_state_no_special_handling( &
+            bounds      = bounds                          , &
+            clump_index = clump_index                     , &
+            var         = col_ns%smin_no3_vr(begc:endc, j) , &
+            adjustment  = adjustment_one_level(begc:endc))
+        
     end do
 
     call column_state_updater%update_column_state_no_special_handling( &

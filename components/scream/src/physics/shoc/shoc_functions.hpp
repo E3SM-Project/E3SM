@@ -438,7 +438,6 @@ struct Functions
     const Scalar&                wqw_sfc,
     const uview_1d<const Spack>& wtracer_sfc,
     const Workspace&             workspace,
-    const uview_2d<Spack>&       X1,
     const uview_1d<Spack>&       thetal,
     const uview_1d<Spack>&       qw,
     const uview_2d<Spack>&       tracer,
@@ -579,9 +578,8 @@ struct Functions
     const uview_1d<const Spack>& wtracer_sfc,
     const uview_1d<const Spack>& exner,
     const Scalar&                phis,
-    // Local Workspace/Variables
+    // Local Workspace
     const Workspace&             workspace,
-    const uview_2d<Spack>&       X1,
     // Input/Output Variables
     const uview_1d<Spack>&       host_dse,
     const uview_1d<Spack>&       tke,

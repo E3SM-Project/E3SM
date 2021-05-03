@@ -175,7 +175,7 @@ contains
     begc = bounds%begc; endc = bounds%endc
 
     this%coszen_col(begc:endc) = spval
-    call hist_addfld1d (fname='COSZEN', units='none', &
+    call hist_addfld1d (fname='COSZEN', units='1', &
          avgflag='A', long_name='cosine of solar zenith angle', &
          ptr_col=this%coszen_col, default='inactive')
 
@@ -286,7 +286,7 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='coszen', xtype=ncd_double,  & 
          dim1name='column', &
-         long_name='cosine of solar zenith angle', units='unitless', &
+         long_name='cosine of solar zenith angle', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%coszen_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='albd', xtype=ncd_double,  & 

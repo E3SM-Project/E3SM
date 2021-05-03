@@ -31,7 +31,7 @@ module cloud_diagnostics
    integer :: dei_idx, mu_idx, lambda_idx, iciwp_idx, iclwp_idx, cld_idx  ! index into pbuf for cloud fields
    integer :: ixcldice, ixcldliq, rei_idx, rel_idx
 
-   logical :: do_cld_diag, p3_clouds, mg_clouds, rk_clouds, camrt_rad
+   logical :: do_cld_diag, p3_clouds, mg_clouds, rk_clouds
    integer :: conv_water_in_rad
    
    integer :: cicewp_idx = -1
@@ -56,7 +56,6 @@ contains
     character(len=16) :: rad_pkg, microp_pgk
 
     call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pgk)
-    camrt_rad = rad_pkg .eq. 'camrt'
     rk_clouds = microp_pgk == 'RK'
     mg_clouds = microp_pgk == 'MG'
     p3_clouds = microp_pgk == 'P3'
@@ -154,11 +153,13 @@ contains
     call addfld ('GCLDLWP',(/ 'lev' /), 'A',wpunits,'Grid-box cloud water path'             , &
          sampling_seq=sampling_seq)
     call addfld ('TGCLDCWP',horiz_only,    'A',wpunits,'Total grid-box cloud water path (liquid and ice)', &
-         sampling_seq=sampling_seq)
+         sampling_seq=sampling_seq, standard_name='atmosphere_mass_content_of_cloud_condensed_water')
+
     call addfld ('TGCLDLWP',horiz_only,    'A',wpunits,'Total grid-box cloud liquid water path', &
-         sampling_seq=sampling_seq)
+         sampling_seq=sampling_seq, standard_name='atmosphere_mass_content_of_cloud_liquid_water')
+
     call addfld ('TGCLDIWP',horiz_only,    'A',wpunits,'Total grid-box cloud ice water path'   , &
-         sampling_seq=sampling_seq)
+         sampling_seq=sampling_seq, standard_name='atmosphere_mass_content_of_cloud_ice')
     
     if(mg_clouds.or.p3_clouds) then
        call addfld ('lambda_cloud',(/ 'lev' /),'I','1/meter','lambda in cloud')
@@ -173,14 +174,8 @@ contains
 
     call addfld ('SETLWP',(/ 'lev' /), 'A','gram/m2','Prescribed liquid water path'          , sampling_seq=sampling_seq)
     call addfld ('LWSH',horiz_only,    'A','m','Liquid water scale height'             , sampling_seq=sampling_seq)
-
     call addfld ('EFFCLD',(/ 'lev' /), 'A','fraction','Effective cloud fraction'              , sampling_seq=sampling_seq)
-
-    if (camrt_rad) then
-       call addfld ('EMIS', (/ 'lev' /), 'A', '1','cloud emissivity'                      , sampling_seq=sampling_seq)
-    else
-       call addfld ('EMISCLD', (/ 'lev' /), 'A', '1','cloud emissivity'                      , sampling_seq=sampling_seq)
-    endif
+    call addfld ('EMISCLD', (/ 'lev' /), 'A', '1','cloud emissivity'                      , sampling_seq=sampling_seq)
 
     call cloud_cover_diags_init(sampling_seq)
 
@@ -189,11 +184,7 @@ contains
        call add_default ('TGCLDLWP', 1, ' ')
        call add_default ('TGCLDIWP', 1, ' ')
        call add_default ('TGCLDCWP', 1, ' ')
-       if (camrt_rad) then
-           call add_default ('EMIS', 1, ' ')
-       else
-           if (history_verbose) call add_default ('EMISCLD', 1, ' ')
-       endif
+       if (history_verbose) call add_default ('EMISCLD', 1, ' ')
     endif
 
     return
@@ -427,10 +418,8 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
 ! Determine parameters for maximum/random overlap
     call cldovrlap(lchnk, ncol, state%pint, cld, nmxrgn, pmxrgn)
 
-! Cloud cover diagnostics (done in radiation_tend for camrt)
-    if (.not.camrt_rad) then
-       call cloud_cover_diags_out(lchnk, ncol, cld, state%pmid, nmxrgn, pmxrgn )
-    endif
+! Cloud cover diagnostics
+    call cloud_cover_diags_out(lchnk, ncol, cld, state%pmid, nmxrgn, pmxrgn )
     
     tgicewp(:ncol) = 0._r8
     tgliqwp(:ncol) = 0._r8
@@ -457,11 +446,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
        end do
        
        call outfld('EFFCLD'  ,effcld , pcols,lchnk)
-       if (camrt_rad) then
-          call outfld('EMIS' ,cldemis, pcols,lchnk)
-       else
-          call outfld('EMISCLD' ,cldemis, pcols,lchnk)
-       endif
+       call outfld('EMISCLD' ,cldemis, pcols,lchnk)
 
     else if (mg_clouds .or. p3_clouds) then
 

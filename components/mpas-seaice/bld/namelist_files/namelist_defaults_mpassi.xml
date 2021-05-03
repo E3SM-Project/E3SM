@@ -26,6 +26,9 @@
 <config_dt ice_grid="oARRM60to6">900.0</config_dt>
 <config_dt ice_grid="EC30to60E2r2">1800.0</config_dt>
 <config_dt ice_grid="WC14to60E2r3">1800.0</config_dt>
+<config_dt ice_grid="WCAtl12to45E2r4">1800.0</config_dt>
+<config_dt ice_grid="SOwISC12to60E2r4">1800.0</config_dt>
+<config_dt ice_grid="ECwISC30to60E2r1">1800.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -65,6 +68,7 @@
 <config_nSnowLayers>5</config_nSnowLayers>
 
 <!-- initialize -->
+<config_earth_radius>6371229.0</config_earth_radius>
 <config_initial_condition_type>'cice_default'</config_initial_condition_type>
 <config_initial_ice_area>1.0</config_initial_ice_area>
 <config_initial_ice_volume>1.0</config_initial_ice_volume>
@@ -72,10 +76,14 @@
 <config_initial_latitude_north>70.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oEC60to30v3wLI">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="ECwISC30to60E1r2">75.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="SOwISC12to60E2r4">85.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="ECwISC30to60E2r1">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_south>-60.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oEC60to30v3wLI">-75.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="ECwISC30to60E1r2">-75.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="SOwISC12to60E2r4">-85.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="ECwISC30to60E2r1">-75.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_velocity_type>'uniform'</config_initial_velocity_type>
 <config_initial_uvelocity>0.0</config_initial_uvelocity>
@@ -84,11 +92,13 @@
 
 <!-- use_sections -->
 <config_use_dynamics>true</config_use_dynamics>
+<config_use_dynamics prognostic_mode="prescribed">false</config_use_dynamics>
 <config_use_velocity_solver>true</config_use_velocity_solver>
 <config_use_advection>true</config_use_advection>
 <config_use_forcing>false</config_use_forcing>
 <config_use_column_package>true</config_use_column_package>
 <config_use_prescribed_ice>false</config_use_prescribed_ice>
+<config_use_prescribed_ice prognostic_mode="prescribed">true</config_use_prescribed_ice>
 <config_use_prescribed_ice_forcing>false</config_use_prescribed_ice_forcing>
 
 <!-- forcing -->
@@ -101,10 +111,7 @@
 <config_update_ocean_fluxes>true</config_update_ocean_fluxes>
 <config_include_pond_freshwater_feedback>false</config_include_pond_freshwater_feedback>
 
-<!-- unit_test -->
-<config_perform_unit_test>false</config_perform_unit_test>
-<config_unit_test_type>''</config_unit_test_type>
-<config_unit_test_subtype>''</config_unit_test_subtype>
+<!-- testing -->
 <config_use_test_ice_shelf>false</config_use_test_ice_shelf>
 <config_testing_system_test>false</config_testing_system_test>
 
@@ -129,18 +136,28 @@
 <config_dynamics_subcycle_number ice_grid="oARRM60to6">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="EC30to60E2r2">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="WC14to60E2r3">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="WCAtl12to45E2r4">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="SOwISC12to60E2r4">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="ECwISC30to60E2r1">1</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
+<config_strain_scheme>'variational'</config_strain_scheme>
+<config_constitutive_relation_type>'evp'</config_constitutive_relation_type>
 <config_stress_divergence_scheme>'variational'</config_stress_divergence_scheme>
 <config_variational_basis>'wachspress'</config_variational_basis>
+<config_variational_denominator_type>'original'</config_variational_denominator_type>
 <config_wachspress_integration_type>'dunavant'</config_wachspress_integration_type>
 <config_wachspress_integration_order>8</config_wachspress_integration_order>
-<config_revised_evp>false</config_revised_evp>
+<config_calc_velocity_masks>true</config_calc_velocity_masks>
+<config_average_variational_strain>false</config_average_variational_strain>
 <config_use_air_stress>true</config_use_air_stress>
 <config_use_ocean_stress>true</config_use_ocean_stress>
 <config_use_surface_tilt>true</config_use_surface_tilt>
 <config_geostrophic_surface_tilt>false</config_geostrophic_surface_tilt>
+<config_ocean_stress_type>'quadratic'</config_ocean_stress_type>
+<config_use_special_boundaries_velocity>false</config_use_special_boundaries_velocity>
+<config_use_special_boundaries_velocity_masks>false</config_use_special_boundaries_velocity_masks>
 
 <!-- advection -->
 <config_advection_type>'incremental_remap'</config_advection_type>
@@ -154,6 +171,7 @@
 <config_use_column_vertical_thermodynamics>true</config_use_column_vertical_thermodynamics>
 <config_use_column_biogeochemistry>false</config_use_column_biogeochemistry>
 <config_use_column_itd_thermodynamics>true</config_use_column_itd_thermodynamics>
+<config_use_column_itd_thermodynamics prognostic_mode="prescribed">false</config_use_column_itd_thermodynamics>
 <config_use_column_ridging>true</config_use_column_ridging>
 <config_use_column_snow_tracers>true</config_use_column_snow_tracers>
 
@@ -167,6 +185,7 @@
 <config_use_aerosols>false</config_use_aerosols>
 <config_use_effective_snow_density>true</config_use_effective_snow_density>
 <config_use_snow_grain_radius>true</config_use_snow_grain_radius>
+<config_use_special_boundaries_zero_tracers>false</config_use_special_boundaries_zero_tracers>
 
 <!-- biogeochemistry -->
 <config_use_brine>false</config_use_brine>
@@ -377,9 +396,15 @@
 <config_use_form_drag>false</config_use_form_drag>
 <config_use_high_frequency_coupling>true</config_use_high_frequency_coupling>
 <config_use_high_frequency_coupling ice_grid="WC14to60E2r3">false</config_use_high_frequency_coupling>
+<config_use_high_frequency_coupling ice_grid="WCAtl12to45E2r4">false</config_use_high_frequency_coupling>
+<config_use_high_frequency_coupling ice_grid="SOwISC12to60E2r4">false</config_use_high_frequency_coupling>
+<config_use_high_frequency_coupling ice_grid="ECwISC30to60E2r1">false</config_use_high_frequency_coupling>
 <config_use_high_frequency_coupling ice_grid="EC30to60E2r2">false</config_use_high_frequency_coupling>
 <config_boundary_layer_iteration_number>10</config_boundary_layer_iteration_number>
 <config_boundary_layer_iteration_number ice_grid="WC14to60E2r3">5</config_boundary_layer_iteration_number>
+<config_boundary_layer_iteration_number ice_grid="WCAtl12to45E2r4">5</config_boundary_layer_iteration_number>
+<config_boundary_layer_iteration_number ice_grid="SOwISC12to60E2r4">5</config_boundary_layer_iteration_number>
+<config_boundary_layer_iteration_number ice_grid="ECwISC30to60E2r1">5</config_boundary_layer_iteration_number>
 <config_boundary_layer_iteration_number ice_grid="EC30to60E2r2">5</config_boundary_layer_iteration_number>
 
 <!-- ocean -->
@@ -425,6 +450,7 @@
 
 <!-- AM_regionalStatistics -->
 <config_AM_regionalStatistics_enable>true</config_AM_regionalStatistics_enable>
+<config_AM_regionalStatistics_enable prognostic_mode="prescribed">false</config_AM_regionalStatistics_enable>
 <config_AM_regionalStatistics_compute_interval>'0000-00-01_00:00:00'</config_AM_regionalStatistics_compute_interval>
 <config_AM_regionalStatistics_output_stream>'regionalStatisticsOutput'</config_AM_regionalStatistics_output_stream>
 <config_AM_regionalStatistics_compute_on_startup>true</config_AM_regionalStatistics_compute_on_startup>
@@ -433,6 +459,7 @@
 
 <!-- AM_ridgingDiagnostics -->
 <config_AM_ridgingDiagnostics_enable>true</config_AM_ridgingDiagnostics_enable>
+<config_AM_ridgingDiagnostics_enable prognostic_mode="prescribed">false</config_AM_ridgingDiagnostics_enable>
 <config_AM_ridgingDiagnostics_compute_interval>'dt'</config_AM_ridgingDiagnostics_compute_interval>
 <config_AM_ridgingDiagnostics_output_stream>'output'</config_AM_ridgingDiagnostics_output_stream>
 <config_AM_ridgingDiagnostics_compute_on_startup>true</config_AM_ridgingDiagnostics_compute_on_startup>
@@ -448,6 +475,7 @@
 
 <!-- AM_geographicalVectors -->
 <config_AM_geographicalVectors_enable>true</config_AM_geographicalVectors_enable>
+<config_AM_geographicalVectors_enable prognostic_mode="prescribed">false</config_AM_geographicalVectors_enable>
 <config_AM_geographicalVectors_compute_interval>'dt'</config_AM_geographicalVectors_compute_interval>
 <config_AM_geographicalVectors_output_stream>'output'</config_AM_geographicalVectors_output_stream>
 <config_AM_geographicalVectors_compute_on_startup>true</config_AM_geographicalVectors_compute_on_startup>
@@ -520,6 +548,7 @@
 
 <!-- AM_timeSeriesStatsDaily -->
 <config_AM_timeSeriesStatsDaily_enable>true</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_enable prognostic_mode="prescribed">false</config_AM_timeSeriesStatsDaily_enable>
 <config_AM_timeSeriesStatsDaily_compute_on_startup>false</config_AM_timeSeriesStatsDaily_compute_on_startup>
 <config_AM_timeSeriesStatsDaily_write_on_startup>false</config_AM_timeSeriesStatsDaily_write_on_startup>
 <config_AM_timeSeriesStatsDaily_compute_interval>'dt'</config_AM_timeSeriesStatsDaily_compute_interval>
@@ -534,6 +563,7 @@
 
 <!-- AM_timeSeriesStatsMonthly -->
 <config_AM_timeSeriesStatsMonthly_enable>true</config_AM_timeSeriesStatsMonthly_enable>
+<config_AM_timeSeriesStatsMonthly_enable prognostic_mode="prescribed">false</config_AM_timeSeriesStatsMonthly_enable>
 <config_AM_timeSeriesStatsMonthly_compute_on_startup>false</config_AM_timeSeriesStatsMonthly_compute_on_startup>
 <config_AM_timeSeriesStatsMonthly_write_on_startup>false</config_AM_timeSeriesStatsMonthly_write_on_startup>
 <config_AM_timeSeriesStatsMonthly_compute_interval>'0000-00-00_01:00:00'</config_AM_timeSeriesStatsMonthly_compute_interval>

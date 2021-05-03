@@ -23,7 +23,6 @@ def get_weaver_queue():
         queue = "dev"
 
     return queue
-    
 
 MACHINE_METADATA = {
     "melvin"   : (["module purge", "module load sems-env", "module load sems-gcc/7.3.0 sems-openmpi/1.10.1 sems-gcc/7.3.0 sems-git/2.10.1 sems-cmake/3.12.2 sems-python/3.5.2"],

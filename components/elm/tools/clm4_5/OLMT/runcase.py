@@ -1131,10 +1131,6 @@ for i in range(1,int(options.ninst)+1):
             output.write(" use_century_decomp = .true.\n")
         if (options.no_dynroot):
             output.write(" use_dynroot = .false.\n")
-        if (options.bulk_denitrif):
-            output.write(" use_nitrif_denitrif = .false.\n")
-        else:
-            output.write(" use_nitrif_denitrif = .true.\n")
         if (options.CH4 or (not options.bulk_denitrif)):
             output.write(" use_lch4 = .true.\n")
         if (options.nofire):

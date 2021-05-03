@@ -106,6 +106,8 @@ module advance_clubb_core_module
     ipdf_pre_post_advance_fields = 3   ! Call both before and after advancing
                                        ! predictive fields
 
+  public :: ipdf_post_advance_fields
+
   private ! Default Scope
 
   contains

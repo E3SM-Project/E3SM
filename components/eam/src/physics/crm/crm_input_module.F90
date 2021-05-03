@@ -42,6 +42,9 @@ module crm_input_module
       real(crm_rknd), allocatable :: vl_esmt(:,:)        ! input v for ESMT
 #endif
 
+      real(crm_rknd), allocatable :: t_vt (:,:)      ! CRM input of variance used for forcing tendency
+      real(crm_rknd), allocatable :: q_vt (:,:)      ! CRM input of variance used for forcing tendency
+
    contains
       procedure, public :: initialize=>crm_input_initialize
       procedure, public :: finalize=>crm_input_finalize
@@ -113,6 +116,11 @@ contains
       if (.not. allocated(this%vl_esmt))  allocate(this%vl_esmt(ncrms,nlev))
 #endif
 
+      if (.not. allocated(this%t_vt)) allocate(this%t_vt(ncrms,nlev))
+      if (.not. allocated(this%q_vt)) allocate(this%q_vt(ncrms,nlev))
+      call prefetch(this%t_vt)
+      call prefetch(this%q_vt)
+
       ! Initialize
       this%zmid = 0
       this%zint = 0
@@ -144,6 +152,9 @@ contains
       this%ul_esmt = 0
       this%vl_esmt = 0
 #endif
+
+      this%t_vt = 0
+      this%q_vt = 0
 
    end subroutine crm_input_initialize
    !------------------------------------------------------------------------------------------------
@@ -183,6 +194,9 @@ contains
       deallocate(this%ul_esmt)
       deallocate(this%vl_esmt)
 #endif
+
+      deallocate(this%t_vt)
+      deallocate(this%q_vt)
 
    end subroutine crm_input_finalize 
 

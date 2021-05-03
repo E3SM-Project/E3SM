@@ -335,7 +335,7 @@ contains
     ! snow layer existed by running the snow averaging routine on a field whose value is 1
     ! everywhere
     data2dptr => this%snow_layer_unity_col(:,-nlevsno+1:0)
-    call hist_addfld2d (fname='SNO_EXISTENCE', units='unitless', type2d='levsno', &
+    call hist_addfld2d (fname='SNO_EXISTENCE', units='1', type2d='levsno', &
          avgflag='A', long_name='Fraction of averaging period for which each snow layer existed', &
          ptr_col=data2dptr, no_snow_behavior=no_snow_zero, default='inactive')
 
