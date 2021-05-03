@@ -2613,6 +2613,7 @@ contains
       character (len=StrKIND), pointer :: charAtt
       real (kind=RKIND), pointer :: realAtt
       character (len=StrKIND) :: histAtt
+      character (len=StrKIND) :: caseid, model_version
 
       integer :: local_ierr
 
@@ -2630,6 +2631,11 @@ contains
           write(histAtt, '(A,I6,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       end if
      
+      call seq_infodata_GetData(infodata,case_name=caseid,model_version=model_version)
+
+      !Add E3SM run specific variables to MPAS output files
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'case', trim(caseid))
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'source_id', trim(model_version))
 
       call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius)
