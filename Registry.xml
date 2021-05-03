@@ -943,6 +943,10 @@
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
+		<nml_option name="config_use_implicit_bottom_roughness" type="logical" default_value=".false." units="unitless"
+					description="If true, depends on bottom roughness z0"
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_use_implicit_bottom_drag_variable" type="logical" default_value=".false." units="unitless"
 					description="If true, spatially-variable implicit bottom drag is used on the momentum equation."
 					possible_values=".true. or .false."
@@ -959,6 +963,15 @@
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
+		<nml_option name="config_use_topographic_wave_drag" type="logical" default_value=".false." units="unitless"
+					description="If true, topographic wave drag is used on the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_topographic_wave_drag_coeff" type="real" default_value="5.0e-4" units="unitless"
+					description="Dimensionless topographic wave drag coefficient, $c_{topo}$."
+					possible_values="any positive real, typically 5.0e-4"
+		/>
+
 	</nml_record>
 	<nml_record name="wetting_drying" mode="init;forward">
 		<nml_option name="config_use_wetting_drying" type="logical" default_value=".false." units="unitless"
@@ -1283,6 +1296,10 @@
 					description="Disables tendencies on the velocity field from horizontal surface stresses (e.g. wind stress and top drag)."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_disable_vel_topographic_wave_drag" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the velocity field from topographic wave drag"
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_disable_vel_explicit_bottom_drag" type="logical" default_value=".false." units="unitless"
 					description="Disables tendencies on the velocity field from explicit bottom drag"
 					possible_values=".true. or .false."
@@ -1372,6 +1389,7 @@
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
 		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
 		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
+		<package name="topographicWaveDragPKG" description="This package controls variables required for topographic wave drag"/>
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
 	</packages>
 
@@ -1956,6 +1974,15 @@
 				mode="forward;analysis">
 
 			<var name="pointCellGlobalID"/>
+		</stream>
+
+		<stream name="topographic_wave_drag"
+				type="input"
+				input_interval="initial_only"
+				filename_template="topographic_wave_drag.nc"
+				runtime_format="single_file"
+				mode="forward;analysis">
+			<var name="topographic_wave_drag"/>
 		</stream>
 
 	</streams>
@@ -2849,6 +2876,10 @@
 		/>
 		<var name="surfaceFluxAttenuationCoefficientRunoff" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of river runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
+		/>
+		<var name="topographic_wave_drag" type="real" dimensions="nEdges" units="unitless"
+			description="wave drag coefficient or 1/(rinv) where rinv is the e-folding time used in HyCOM"
+			packages="topographicWaveDragPKG"
 		/>
 		<!-- diagnostic fields for land-ice fluxes -->
 		<var name="landIceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^{-1}"

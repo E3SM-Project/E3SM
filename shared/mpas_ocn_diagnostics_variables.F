@@ -80,6 +80,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: landIceFrictionVelocity
    real (kind=RKIND), dimension(:), pointer :: topDrag
    real (kind=RKIND), dimension(:), pointer :: topDragMag
+   real (kind=RKIND), dimension(:), pointer :: topographic_wave_drag
    real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers
    real (kind=RKIND), dimension(:,:), pointer :: landIceTracerTransferVelocities
 
@@ -281,6 +282,10 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(diagnosticsPool, 'bottomLayerShortwaveTemperatureFlux', bottomLayerShortwaveTemperatureFlux)
       call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
+
+      if (config_use_topographic_wave_drag) then
+         call mpas_pool_get_array(diagnosticsPool, 'topographic_wave_drag', topographic_wave_drag)
+      end if
 
       !
       ! set pointers for fields related forcing at ocean surface
