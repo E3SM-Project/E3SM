@@ -196,6 +196,7 @@ contains
     character(len=StrKIND) :: iotype
     logical :: streamsExists
     integer :: mesh_iotype
+    character(len=strKIND) :: caseid
 
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
@@ -518,6 +519,10 @@ contains
                               domain % packages, domain % blocklist % allStructs)
 
     call add_stream_attributes(domain)
+
+    ! add E3SM stream attributes to MPAS output files
+    call seq_infodata_GetData(infodata, case_name=caseid)
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'caseid', trim(caseid))
 
     ! Setup all immutable streams for the core
     ierr = domain % core % setup_immutable_streams(domain % streamManager)
