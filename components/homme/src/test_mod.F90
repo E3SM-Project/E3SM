@@ -237,7 +237,8 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 
     ! this is for kessler physics only, if other physics is required, see
     ! how dcmip2016_test1_forcing is done
-    case('planar_rising_bubble');  if (bubble_moist) call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+    case('planar_rising_bubble');  
+            if (bubble_moist) call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     case('held_suarez0');
        do ie=nets,nete
@@ -246,21 +247,7 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 
   endselect
 
-!for ftype3 we scale tendencies by dp
-  if(ftype == 3) then
-    !initialize dp3d from ps
-    do ie=nets,nete
-      do k=1,nlev
-        dp(:,:)= ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
-        elem(ie)%derived%FT(:,:,k) = elem(ie)%derived%FT(:,:,k) * dp(:,:)
-        elem(ie)%derived%FM(:,:,1,k) = elem(ie)%derived%FM(:,:,1,k) * dp(:,:)
-        elem(ie)%derived%FM(:,:,2,k) = elem(ie)%derived%FM(:,:,2,k) * dp(:,:)
-      enddo
-    enddo
-  endif
-    
-end subroutine
+end subroutine compute_test_forcing
 
 
   !_____________________________________________________________________
