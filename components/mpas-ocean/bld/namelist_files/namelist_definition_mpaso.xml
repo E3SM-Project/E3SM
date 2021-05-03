@@ -1462,6 +1462,14 @@ Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_implicit_bottom_roughness" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, depends on bottom roughness z0
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_implicit_bottom_drag_variable" type="logical"
 	category="bottom_drag" group="bottom_drag">
 If true, spatially-variable implicit bottom drag is used on the momentum equation.
@@ -1491,6 +1499,22 @@ Default: Defined in namelist_defaults.xml
 Dimensionless bottom drag coefficient, $c_{drag}$.
 
 Valid values: any positive real, typically 1.0e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_topographic_wave_drag" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, topographic wave drag is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_topographic_wave_drag_coeff" type="real"
+	category="bottom_drag" group="bottom_drag">
+Dimensionless topographic wave drag coefficient, $c_{topo}$.
+
+Valid values: any positive real, typically 5.0e-4
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2066,6 +2090,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_disable_vel_surface_stress" type="logical"
 	category="debug" group="debug">
 Disables tendencies on the velocity field from horizontal surface stresses (e.g. wind stress and top drag).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_disable_vel_topographic_wave_drag" type="logical"
+	category="debug" group="debug">
+Disables tendencies on the velocity field from topographic wave drag
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

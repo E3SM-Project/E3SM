@@ -352,10 +352,13 @@
 <!-- bottom_drag -->
 <config_use_implicit_bottom_drag>.true.</config_use_implicit_bottom_drag>
 <config_implicit_bottom_drag_coeff>1.0e-3</config_implicit_bottom_drag_coeff>
+<config_use_implicit_bottom_roughness>.false.</config_use_implicit_bottom_roughness>
 <config_use_implicit_bottom_drag_variable>.false.</config_use_implicit_bottom_drag_variable>
 <config_use_implicit_bottom_drag_variable_mannings>.false.</config_use_implicit_bottom_drag_variable_mannings>
 <config_use_explicit_bottom_drag>.false.</config_use_explicit_bottom_drag>
 <config_explicit_bottom_drag_coeff>1.0e-3</config_explicit_bottom_drag_coeff>
+<config_use_topographic_wave_drag>.false.</config_use_topographic_wave_drag>
+<config_topographic_wave_drag_coeff>5.0e-4</config_topographic_wave_drag_coeff>
 
 <!-- ocean_constants -->
 <config_density0>1026.0</config_density0>
@@ -474,6 +477,7 @@
 <config_disable_vel_pgrad>.false.</config_disable_vel_pgrad>
 <config_disable_vel_hmix>.false.</config_disable_vel_hmix>
 <config_disable_vel_surface_stress>.false.</config_disable_vel_surface_stress>
+<config_disable_vel_topographic_wave_drag>.false.</config_disable_vel_topographic_wave_drag>
 <config_disable_vel_explicit_bottom_drag>.false.</config_disable_vel_explicit_bottom_drag>
 <config_disable_vel_vmix>.false.</config_disable_vel_vmix>
 <config_disable_vel_vadv>.false.</config_disable_vel_vadv>
