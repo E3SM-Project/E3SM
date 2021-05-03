@@ -1390,7 +1390,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal',floatingBasalMassBal)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
-         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
+!         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
          !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
 
          do i = 1, nCellsSolve
