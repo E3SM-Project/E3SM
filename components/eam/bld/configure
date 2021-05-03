@@ -278,7 +278,7 @@ OPTIONS
      -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 ].
      -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols
      -crm_adv           CRM advection scheme [MPDATA | UM5]
-     -crm <model>       CRM model [sam | samxx]
+     -crm <model>       CRM model [sam | samomp | samxx]
      -use_MAML          use multiple atmosphere and multiple land version of MMF
 EOF
 }
@@ -1736,6 +1736,8 @@ if (defined $opts{'use_MMF'}) {
     my $crm = $cfg_ref->get('crm');
     if    ($crm eq 'sam') {
         $cfg_cppdefs .= " -DMMF_SAM "
+    } elsif ($crm eq 'samomp') {
+        $cfg_cppdefs .= " -DMMF_SAMOMP"
     } elsif ($crm eq 'samxx') {
         $cfg_cppdefs .= " -DMMF_SAMXX "
     }
@@ -2523,6 +2525,31 @@ sub write_filepath
               print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
           }
 
+        } elsif ($crm eq 'samomp') {
+          #####################################################
+          ## -crm samomp will GLOB directories for CMake
+          ######################################################
+          print $fh "$camsrcdir/eam/src/physics/crm/samomp\n";
+          #
+          # microphysics
+          my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+          if ($MMF_microphysics_scheme eq 'sam1mom') {
+              print $fh "$camsrcdir/eam/src/physics/crm/samomp/MICRO_SAM1MOM\n";
+          } elsif ($MMF_microphysics_scheme eq 'm2005') {
+              print $fh "$camsrcdir/eam/src/physics/crm/samomp/MICRO_M2005\n";
+          }
+
+          # turbulence closure
+          print $fh "$camsrcdir/eam/src/physics/crm/samomp/SGS_TKE\n";
+
+          # advection scheme
+          my $crm_adv = $cfg_ref->get('crm_adv');
+          if ($crm_adv eq 'UM5') {
+              print $fh "$camsrcdir/eam/src/physics/crm/samomp/ADV_UM5\n";
+          } else {
+              print $fh "$camsrcdir/eam/src/physics/crm/samomp/ADV_MPDATA\n";
+          }
+                              
         } elsif ($crm eq 'samxx') {
           #####################################################
           ## -crm samxx will add_subdirectory in CMake rather
