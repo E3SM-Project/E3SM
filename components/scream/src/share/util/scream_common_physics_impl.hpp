@@ -263,17 +263,16 @@ void PhysicsFunctions<DeviceT>::get_dz(const MemberType& team,
 template<typename DeviceT>
 template<typename ScalarT, typename InputProviderZ>
 KOKKOS_FUNCTION
-void PhysicsFunctions<DeviceT>::get_z_int(const MemberType& team, 
+void PhysicsFunctions<DeviceT>::get_z_int(const MemberType& team,
+                                          const int num_levs, 
                                           const InputProviderZ& dz,
                                           const view_1d<ScalarT>& z_int)
 {
-  using column_ops  = ColumnOps<DeviceT,ScalarT>;
-  using pack_type = typename ekat::Pack<ScalarT,1>;
+  using column_ops  = ColumnOps<DeviceT,Real>;
   // Use the column ops scan function.  Note, we set FromTop to false so that we scan from the true bottom
   // of the column to the top.
   constexpr bool FromTop = false;
-  int num_levs = z_int.extent(0)-1;
-  ScalarT zbot = 0.0;
+  Real zbot = 0.0; // TODO: question, is it true zbot is actually always 0?  What about topography?
   column_ops::column_scan<FromTop>(team,num_levs,dz,z_int,zbot);
 }
 //-----------------------------------------------------------------------------------------------//

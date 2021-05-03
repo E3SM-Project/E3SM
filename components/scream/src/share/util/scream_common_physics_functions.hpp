@@ -143,9 +143,10 @@ struct PhysicsFunctions
   // Note: Only applicable over an entire column due to the need to integrate over dz.
   template<typename ScalarT, typename InputProviderZ>
   KOKKOS_FUNCTION
-  static void get_z_int(const MemberType& team, 
-                     const InputProviderZ& dz,
-                     const view_1d<ScalarT>& z_int);
+  static void get_z_int(const MemberType& team,
+                        const int num_levs, 
+                        const InputProviderZ& dz,
+                        const view_1d<ScalarT>& z_int);
 
 
 
