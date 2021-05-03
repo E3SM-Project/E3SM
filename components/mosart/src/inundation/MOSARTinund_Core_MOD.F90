@@ -411,7 +411,10 @@ MODULE MOSARTinund_Core_MOD
           TRunoff%wr_exchg( iu ) = TRunoff%wr( iu, 1 )
           TRunoff%yr_exchg( iu ) = TRunoff%yr( iu, 1 )
           TRunoff%wf_exchg( iu ) = TRunoff%wf_ini( iu )
-          TRunoff%hf_exchg( iu ) = TRunoff%hf_ini( iu )          
+          TRunoff%hf_exchg( iu ) = TRunoff%hf_ini( iu )
+          TRunoff%ff_fp( iu ) = TRunoff%ff_ini ( iu )
+          TRunoff%fa_fp( iu ) = TUnit%area(iu) * TUnit%frac(iu) * TRunoff%ff_fp(iu)
+          TRunoff%ff_unit( iu ) = TRunoff%ffunit_ini( iu )
           TRunoff%netchange( iu ) = 0._r8
         end if    ! if ( the channel water level is higher than the floodplain water level, or on the contrary )
       end if      ! if ( TUnit%mask( iu ) .gt. 0 )
