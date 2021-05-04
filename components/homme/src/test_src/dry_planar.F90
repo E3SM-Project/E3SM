@@ -198,7 +198,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   integer :: i,j,k,ie,ii
   real(rl):: x,y,one,two,offset
   real(rl):: pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr, &
-             qi_s(nlevp), qm_s(nlev), Ti(nlevp), qi(nlevp), ri(nlevp)
+             qi_s(nlevp), qm_s(nlev), Ti(nlevp), qi(nlevp), ri(nlevp), rm_s(nlev)
 
 #ifdef MODEL_THETA_L
 
@@ -273,17 +273,22 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   !  call set_layer_locations: sets  etam, etai, dp0, checks that Am=ai/2+ai/2
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
 
-  !build specific humidity at saturation qs as in dcmip2016-kessler
-  do k=1,nlevp
-     qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
+  if (bubble_moist) then
+    !build specific humidity at saturation qs as in dcmip2016-kessler
+    do k=1,nlevp
+       qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
 !CE function     
-!   real tc = temp - 273.15;
-!   return 610.94 * exp( 17.625*tc / (243.04+tc) );
-!   qi_s(k)  = 610.94 * exp( 17.625*(Ti(k) - 273.15) / (Ti(k)-273.15 + 243.04  ) )
-  enddo
+!      real tc = temp - 273.15;
+!      return 610.94 * exp( 17.625*tc / (243.04+tc) );
+!      qi_s(k)  = 610.94 * exp( 17.625*(Ti(k) - 273.15) / (Ti(k)-273.15 + 243.04  ) )
+    enddo
+  else
+     qi_s(1:nlevp) = 0.0
+  endif
 
   do k=1,nlev
     qm_s(k)=(qi_s(k+1)+qi_s(k)) / two
+    rm_s(k) = Rgas + (Rwater_vapor - Rgas)*qm_s(k)
   enddo
 
   !reset z to the discrete hydro balance
@@ -294,9 +299,9 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   do j=1,np; do i=1,np
     elem(1)%state%phis(i,j) = 0.0
     elem(1)%state%dp3d(i,j,1:nlev,1) = dpm(1:nlev)
-    elem(1)%state%vtheta_dp(i,j,1:nlev,1) = bubble_T0*dpm(1:nlev)
-    elem(1)%state%Q(i,j,1:nlev,1) = qm_s(1:nlev)
-    elem(1)%state%qdp(i,j,1:nlev,1,1) = dpm(1:nlev) * qm_s(1:nlev)
+
+    !theta_v = Rstar / R  * theta
+    elem(1)%state%vtheta_dp(i,j,1:nlev,1) =  bubble_T0 * rm_s(1:nlev) / Rgas * dpm(1:nlev)
   enddo; enddo
 
   call phi_from_eos(hvcoord,elem(1)%state%phis,elem(1)%state%vtheta_dp(:,:,:,1),&
