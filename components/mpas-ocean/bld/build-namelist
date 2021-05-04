@@ -755,10 +755,13 @@ add_default($nl, 'config_monotonic');
 
 add_default($nl, 'config_use_implicit_bottom_drag');
 add_default($nl, 'config_implicit_bottom_drag_coeff');
+add_default($nl, 'config_use_implicit_bottom_roughness');
 add_default($nl, 'config_use_implicit_bottom_drag_variable');
 add_default($nl, 'config_use_implicit_bottom_drag_variable_mannings');
 add_default($nl, 'config_use_explicit_bottom_drag');
 add_default($nl, 'config_explicit_bottom_drag_coeff');
+add_default($nl, 'config_use_topographic_wave_drag');
+add_default($nl, 'config_topographic_wave_drag_coeff');
 
 ###################################
 # Namelist group: ocean_constants #
@@ -882,6 +885,7 @@ add_default($nl, 'config_disable_vel_coriolis');
 add_default($nl, 'config_disable_vel_pgrad');
 add_default($nl, 'config_disable_vel_hmix');
 add_default($nl, 'config_disable_vel_surface_stress');
+add_default($nl, 'config_disable_vel_topographic_wave_drag');
 add_default($nl, 'config_disable_vel_explicit_bottom_drag');
 add_default($nl, 'config_disable_vel_vmix');
 add_default($nl, 'config_disable_vel_vadv');
