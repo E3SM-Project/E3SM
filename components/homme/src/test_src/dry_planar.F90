@@ -11,7 +11,7 @@ module dry_planar_tests
   use element_ops,          only: set_state, set_state_i, tests_finalize
   use eos,                  only: phi_from_eos
   use kinds,                only: rl=>real_kind, iulog
-  use physical_constants,   only : dd_pi
+  use physical_constants,   only : dd_pi, rgas, rwater_vapor
   use dcmip12_wrapper, only : set_tracers, get_evenly_spaced_z, get_evenly_spaced_p, set_hybrid_coefficients, pressure_thickness
   use dimensions_mod,       only: np, nlev, nlevp, qsize, qsize_d, nelemd
   use element_state,        only: nt=>timelevels
@@ -198,7 +198,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   integer :: i,j,k,ie,ii
   real(rl):: x,y,one,two,offset
   real(rl):: pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr, &
-             qi_s(nlevp), Ti(nlevp), qi(nlevp)
+             qi_s(nlevp), Ti(nlevp), qi(nlevp), ri(nlevp)
 
 #ifdef MODEL_THETA_L
 
@@ -294,7 +294,15 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   !build specific humidity at saturation qs as in dcmip2016-kessler
   do k=1,nlevp
-     qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
+!     qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
+!   real tc = temp - 273.15;
+!   return 610.94 * exp( 17.625*tc / (243.04+tc) );
+
+
+   
+    qi_s(k)  = 610.94 * exp( 17.625*(Ti(k) - 273.15) / (Ti(k)-273.15 + 243.04  ) )
+
+
   enddo
 
   ! set initial conditions
@@ -319,7 +327,8 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
         !set pot. temperature on interfaces
         if ( rr < one ) then 
 
-          qi(k) = 0.9  * qi_s(k)
+          qi(k) = 0.8
+          !qi(k) = 0.2 * qi_s(k)
 
           if (bubble_cosine) then
             offset = cos(rr*dd_pi / two)
@@ -327,7 +336,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
             ! q = Rel Humidity * qs
             ! relative humidity = offset, or offset*, say, 0.9?
-            qi(k) = offset * qi(k)
+            !qi(k) = offset * qi(k)
           else
             th0(k) = bubble_T0 + bubble_dT
           endif
@@ -335,9 +344,12 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
         else
 
           th0(k) = bubble_T0
-          qi(k) = 0.0
+          qi(k) = 0.2 !*qi_s(k)
 
         endif
+
+!R_star(:,:,k) =(Rgas + (Rwater_vapor - Rgas)*Q(:,:,k))
+        ri(k) = Rgas + (Rwater_vapor - Rgas)*qi(k)
 
       enddo ! k loop
 
@@ -346,7 +358,8 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
       do k=1,nlev
         !set pottemp, dp, other state vars on midlevels
-        th0m(k)=(th0(k)+th0(k+1))/ two
+        !th0m(k)=(th0(k)+th0(k+1))/ two
+        th0m(k)=(th0(k)*ri(k)+th0(k+1)*ri(k+1))/ two /rgas
 
         elem(ie)%state%dp3d(i,j,k,:)   = dpm(k)
       
