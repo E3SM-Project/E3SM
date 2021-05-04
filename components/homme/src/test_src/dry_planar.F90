@@ -198,7 +198,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   integer :: i,j,k,ie,ii
   real(rl):: x,y,one,two,offset
   real(rl):: pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr, &
-             qi_s(nlevp), Ti(nlevp), qi(nlevp), ri(nlevp)
+             qi_s(nlevp), qm_s(nlev), Ti(nlevp), qi(nlevp), ri(nlevp)
 
 #ifdef MODEL_THETA_L
 
@@ -272,6 +272,19 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   !  call set_layer_locations: sets  etam, etai, dp0, checks that Am=ai/2+ai/2
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
 
+  !build specific humidity at saturation qs as in dcmip2016-kessler
+  do k=1,nlevp
+     qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
+!CE function     
+!   real tc = temp - 273.15;
+!   return 610.94 * exp( 17.625*tc / (243.04+tc) );
+!   qi_s(k)  = 610.94 * exp( 17.625*(Ti(k) - 273.15) / (Ti(k)-273.15 + 243.04  ) )
+  enddo
+
+  do k=1,nlev
+    qm_s(k)=(qi_s(k+1)+qi_s(k)) / two
+  enddo
+
   !reset z to the discrete hydro balance
   !if one wants to keep z levels exactly evenly spaced instead
   !they would have to compute p (hydro) and dp3d from the discrete EOS
@@ -281,6 +294,8 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
     elem(1)%state%phis(i,j) = 0.0
     elem(1)%state%dp3d(i,j,1:nlev,1) = dpm(1:nlev)
     elem(1)%state%vtheta_dp(i,j,1:nlev,1) = bubble_T0*dpm(1:nlev)
+    elem(1)%state%Q(i,j,1:nlev,1) = qm_s(1:nlev)
+    elem(1)%state%qdp(i,j,1:nlev,1,1) = dpm(1:nlev) * qm_s(1:nlev)
   enddo; enddo
 
   call phi_from_eos(hvcoord,elem(1)%state%phis,elem(1)%state%vtheta_dp(:,:,:,1),&
@@ -292,15 +307,6 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   !reset zm to be an average as it is consistent with Taylor2020 eqn (30)
   !but zm is not used below, so, not done
 
-  !build specific humidity at saturation qs as in dcmip2016-kessler
-  do k=1,nlevp
-     qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
-!   real tc = temp - 273.15;
-!   return 610.94 * exp( 17.625*tc / (243.04+tc) );
-!   qi_s(k)  = 610.94 * exp( 17.625*(Ti(k) - 273.15) / (Ti(k)-273.15 + 243.04  ) )
-
-
-  enddo
 
   ! set initial conditions
   do ie = nets,nete
@@ -324,7 +330,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
         !set pot. temperature on interfaces
         if ( rr < one ) then 
 
-          qi(k) = 0.6
+          qi(k) = 0.2
           !qi(k) = 1.0 * qi_s(k)
 
           if (bubble_cosine) then
@@ -341,8 +347,8 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
         else
 
           th0(k) = bubble_T0
-          qi(k) = 0.00002 !*qi_s(k) 0.002 works with 0.3 inside the bubble
-          !qi(k) = qi_s(k) does not work with  qi=0.3
+          !qi(k) = 0.00002 !*qi_s(k) 0.002 works with 0.3 inside the bubble
+          qi(k) = qi_s(k)  !does not work with  qi=0.3
 
         endif
 
