@@ -294,13 +294,10 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   !build specific humidity at saturation qs as in dcmip2016-kessler
   do k=1,nlevp
-!     qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
+     qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
 !   real tc = temp - 273.15;
 !   return 610.94 * exp( 17.625*tc / (243.04+tc) );
-
-
-   
-    qi_s(k)  = 610.94 * exp( 17.625*(Ti(k) - 273.15) / (Ti(k)-273.15 + 243.04  ) )
+!   qi_s(k)  = 610.94 * exp( 17.625*(Ti(k) - 273.15) / (Ti(k)-273.15 + 243.04  ) )
 
 
   enddo
@@ -327,8 +324,8 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
         !set pot. temperature on interfaces
         if ( rr < one ) then 
 
-          qi(k) = 0.8
-          !qi(k) = 0.2 * qi_s(k)
+          qi(k) = 0.6
+          !qi(k) = 1.0 * qi_s(k)
 
           if (bubble_cosine) then
             offset = cos(rr*dd_pi / two)
@@ -336,7 +333,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
             ! q = Rel Humidity * qs
             ! relative humidity = offset, or offset*, say, 0.9?
-            !qi(k) = offset * qi(k)
+            qi(k) = offset * qi(k)
           else
             th0(k) = bubble_T0 + bubble_dT
           endif
@@ -344,7 +341,8 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
         else
 
           th0(k) = bubble_T0
-          qi(k) = 0.2 !*qi_s(k)
+          qi(k) = 0.00002 !*qi_s(k) 0.002 works with 0.3 inside the bubble
+          !qi(k) = qi_s(k) does not work with  qi=0.3
 
         endif
 
