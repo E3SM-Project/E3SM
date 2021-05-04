@@ -14,6 +14,9 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   # Test grids
   CreateUnitTest(grid "grid_tests.cpp" scream_share)
 
+  # Test common physics functions
+  CreateUnitTest(common_physics "physics_universal_unit_tests.cpp" scream_share THREAD 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
+
   # Test atmosphere processes
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/atm_process_tests.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/atm_process_tests.yaml COPYONLY)

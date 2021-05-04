@@ -17,133 +17,164 @@ struct PhysicsFunctions
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
 
-  //--------------------------------------------------------------------//
-  //  Functions
-  //--------------------------------------------------------------------//
-
-  // Computes exner function
-  // The result is exners formula, and is dimensionless
-  // The input is mid-level pressure, and has units of Pa
+//-----------------------------------------------------------------------------------------------//
+//                                          Functions                                            //
+//-----------------------------------------------------------------------------------------------//
+// Applies Exners Function which follows:
+//   Exner = (P/P0)^(Rd/Cp),
+// where,
+//   P  is the pressure at this location, [Pa]
+//   P0 is a reference pressure, [Pa]
+//   Rd is the gas constant, [J/K]
+//   Cp is heat capacity of dry air, [J/K]
+// All universal constants, P0, Rd, and Cp, are defined in physics_constants.hpp
+// Note: Another experssion for Exner is,
+//   Exner = T/th
+// where,
+//   T  is the temperature, [K]
+//   th is the potential temperature, [K]
   template<typename ScalarT>
   KOKKOS_FUNCTION
-  static ScalarT get_exner(const ScalarT& p_mid);
+  static ScalarT exner_function(const ScalarT& p_mid);
 
   template<typename ScalarT, typename InputProviderP>
   KOKKOS_FUNCTION
-  static void get_exner(const MemberType& team,
+  static void exner_function(const MemberType& team,
                         const InputProviderP& p_mid, 
                         const view_1d<ScalarT>& exner);
 
-  // Converts temperature into potential temperature
-  // The result is the potential temperature, units in K
-  // The inputs are
-  //   T_mid is the atmospheric temperature, units in K
-  //   p_mid is the atmospheric pressure, units in Pa.  p_mid is used in Exners function using `get_exner` defined above.
+//-----------------------------------------------------------------------------------------------//
+// Converts temperature to potential temperature using Exners function:
+//   theta = T_atm/exner(p_mid),
+// where
+//   theta  is the potential temperature, [K]
+//   T_mid  is the temperature, [K]
+//   p_mid  is the pressure, [Pa].  Used for exners formula, see definition above, unitless
   template<typename ScalarT>
   KOKKOS_FUNCTION
-  static ScalarT get_theta_from_T(const ScalarT& T_mid, const ScalarT& p_mid);
+  static ScalarT calculate_theta_from_T(const ScalarT& T_mid, const ScalarT& p_mid);
 
   template<typename ScalarT, typename InputProviderT, typename InputProviderP>
   KOKKOS_FUNCTION
-  static void get_theta_from_T(const MemberType& team,
+  static void calculate_theta_from_T(const MemberType& team,
                                const InputProviderT& T_mid,
                                const InputProviderP& p_mid,
                                const view_1d<ScalarT>& theta);
 
-  // Converts potential temperature into temperature
-  // The result is the temperature, units in K
-  // The inputs are
-  //   theta is the potential temperature, units in K
-  //   p_mid is the atmospheric pressure, units in Pa.  p_mid is used in Exners function using `get_exner` defined above.
+//-----------------------------------------------------------------------------------------------//
+// Converts potential temperature to temperature using Exners function:
+//   T_mid = theta*exner(p_mid),
+// where
+//   theta  is the potential temperature, [K]
+//   T_mid  is the temperature, [K]
+//   p_mid  is the pressure, [Pa].  Used for exners formula, see definition above, unitless
   template<typename ScalarT>
   KOKKOS_FUNCTION
-  static ScalarT get_T_from_theta(const ScalarT& theta, const ScalarT& p_mid);
+  static ScalarT calculate_T_from_theta(const ScalarT& theta, const ScalarT& p_mid);
 
   template<typename ScalarT, typename InputProviderT, typename InputProviderP>
   KOKKOS_FUNCTION
-  static void get_T_from_theta(const MemberType& team,
+  static void calculate_T_from_theta(const MemberType& team,
                                const InputProviderT& theta,
                                const InputProviderP& p_mid,
                                const view_1d<ScalarT>& T_mid);
 
-  // Compute temperature from virtual temperature
-  // The result unit is in K
-  // The inputs are
-  //   T_mid is the atmospheric temperature.  Units in K.
-  //   qv    is the water vapor mass mixing ratio.  Units in kg/kg
+//-----------------------------------------------------------------------------------------------//
+// Compute temperature from virtual temperature
+//   T_mid = T_virtual * (ep_2*(1+qv)/(qv+ep_2)
+// where
+//   ep_2      is ratio of molecular mass of water to the molecular mass of dry air 
+//   T_virtual is the virtual temperature.  Units in [K].
+//   qv        is the water vapor mass mixing ratio.  Units in [kg/kg]
+//   T_mid     is the atmospheric temperature.  Units in [K].
   template<typename ScalarT>
   KOKKOS_FUNCTION
-  static ScalarT get_temperature_from_virtual_temperature(const ScalarT& T_virtual, const ScalarT& qv);
+  static ScalarT calculate_temperature_from_virtual_temperature(const ScalarT& T_virtual, const ScalarT& qv);
 
   template<typename ScalarT, typename InputProviderT, typename InputProviderQ>
   KOKKOS_FUNCTION
-  static void get_temperature_from_virtual_temperature(const MemberType& team,
+  static void calculate_temperature_from_virtual_temperature(const MemberType& team,
                                                        const InputProviderT& T_virtual,
                                                        const InputProviderQ& qv,
                                                        const view_1d<ScalarT>& T_mid);
 
-  // Compute virtual temperature
-  // The result unit is in K
-  // The inputs are
-  //   T_mid is the atmospheric temperature.  Units in K.
-  //   qv    is the water vapor mass mixing ratio.  Units in kg/kg
+//-----------------------------------------------------------------------------------------------//
+// Compute virtual temperature
+//   T_virtual = T_mid * (qv+ep_2)/(qv+1)
+// where
+//   ep_2      is ratio of molecular mass of water to the molecular mass of dry air 
+//   T_mid is the atmospheric temperature.  Units in [K].
+//   qv    is the water vapor mass mixing ratio.  Units in [kg/kg]
+//   T_virtual is the virtual temperature.  Units in [K].
   template<typename ScalarT>
   KOKKOS_FUNCTION
-  static ScalarT get_virtual_temperature(const ScalarT& T_mid, const ScalarT& qv);
+  static ScalarT calculate_virtual_temperature(const ScalarT& T_mid, const ScalarT& qv);
 
   template<typename ScalarT, typename InputProviderT, typename InputProviderQ>
   KOKKOS_FUNCTION
-  static void get_virtual_temperature(const MemberType& team,
+  static void calculate_virtual_temperature(const MemberType& team,
                                       const InputProviderT& T_mid,
                                       const InputProviderQ& qv,
                                       const view_1d<ScalarT>& T_virtual);
 
-  // Compute dry static energy (DSE).
-  // The result unit is in J/kg
-  // The inputs are
-  //   T_mid is the atmospheric temperature. Units in K.
-  //   z_mid is the geopotential height above surface at midpoints. Units in m.
-  //   surf_geopotential is the surface geopotential height. Units in m.
+//-----------------------------------------------------------------------------------------------//
+// Compute dry static energy (DSE).
+//   DSE = Cp*T_mid + ggr*z_mid + surf_geopotential
+// where
+//   Cp    is the heat constant of air at constant pressure [J/kg]
+//   ggr   is the gravitational constant [m s-2] 
+//   T_mid is the atmospheric temperature. Units in [K].
+//   z_mid is the geopotential height above surface at midpoints. Units in [m].
+//   surf_geopotential is the surface geopotential height. Units in [m].
+//   DSE   is the dry static energy.  Units in [J/kg]
   template<typename ScalarT>
   KOKKOS_FUNCTION
-  static ScalarT get_dse(const ScalarT& T_mid, const ScalarT& z_mid, const Real surf_geopotential);
+  static ScalarT calculate_dse(const ScalarT& T_mid, const ScalarT& z_mid, const Real surf_geopotential);
 
   template<typename ScalarT, typename InputProviderT, typename InputProviderZ>
   KOKKOS_FUNCTION
-  static void get_dse(const MemberType& team,
+  static void calculate_dse(const MemberType& team,
                       const InputProviderT& T_mid,
                       const InputProviderZ& z_mid,
                       const Real surf_geopotential,
                       const view_1d<ScalarT>& dse);
 
-  // Determine the physical thickness of a vertical layer
-  // The result is dz, units in m
-  // The inputs are
-  //   psuedo_density is the pressure level thickness, Pa
-  //   p_mid          is the avgerage atmosphere pressure over the level, Pa
-  //   T_mid          is the atmospheric temperature, K - needed for T_virtual
-  //   qv             is the water vapor mass mixing ratio, kg/kg - needed for T_virtual
+//-----------------------------------------------------------------------------------------------//
+// Determines the vertical layer thickness using the equation of state:
+//   dz = - (-pseudo_density)*Rd*T_virtual / (p_mid*g)
+//     note the extra negative sign because the pseudo_density in the model is measured in the positive direction.
+// where
+//   dz             is the vertical layer thickness, [m]
+//   pseudo_density is the pressure level thickness, [Pa]
+//   T_virtual      is the virtual temperature - calculated using a separate function from this suite, [K]
+//   p_mid          is the avgerage atmosphere pressure over the level, [Pa]
+//   g              is the graviational constant, [m s-2]
+//   Rd             is the universal gas constant for dry air, [J/kg/K]
+//   T_mid          is the atmospheric temperature, [K] - needed for T_virtual
+//   qv             is the water vapor mass mixing ratio, [kg/kg] - needed for T_virtual
   template<typename ScalarT>
   KOKKOS_FUNCTION
-  static ScalarT get_dz(const ScalarT& psuedo_density, const ScalarT& p_mid, const ScalarT& T_mid, const ScalarT& qv);
+  static ScalarT calculate_dz(const ScalarT& pseudo_density, const ScalarT& p_mid, const ScalarT& T_mid, const ScalarT& qv);
 
   template<typename ScalarT, typename InputProviderPD, typename InputProviderP, typename InputProviderT, typename InputProviderQ>
   KOKKOS_FUNCTION
-  static void get_dz(const MemberType& team, 
-                     const InputProviderPD& psuedo_density,
+  static void calculate_dz(const MemberType& team, 
+                     const InputProviderPD& pseudo_density,
                      const InputProviderP& p_mid,
                      const InputProviderT& T_mid,
                      const InputProviderQ& qv,
                      const view_1d<ScalarT>& dz);
 
-  // Determine the geopotential height of level interfaces
-  // The result is z_int, units in m
-  // The input is
-  //   dz the vertical level thickness, m
-  // Note: Only applicable over an entire column due to the need to integrate over dz.
+//-----------------------------------------------------------------------------------------------//
+// Determines the vertical layer interface height from the vertical layer thicknesses:
+//   z_int = int_0^z(dz)
+// where
+//   dz             is the vertical layer thickness, [m]
+// Note: because this function does an integral it cannot be run just on a single level.  It requires
+// the full column wise integration.
   template<typename ScalarT, typename InputProviderZ>
   KOKKOS_FUNCTION
-  static void get_z_int(const MemberType& team,
+  static void calculate_z_int(const MemberType& team,
                         const int num_levs, 
                         const InputProviderZ& dz,
                         const view_1d<ScalarT>& z_int);
