@@ -1104,9 +1104,9 @@ contains
        !set the topounit-level atmospheric state and flux forcings
        !      call downscale_atmo_state_to_topounit(g, i, x2l)
        if (use_downscaling_to_tpu) then
-	  if (masterproc) then
-             write(iulog,*) 'use_downscaling_to_tpu = ', use_downscaling_to_tpu
-         endif
+	  !if (masterproc) then
+      !       write(iulog,*) 'use_downscaling_to_tpu = ', use_downscaling_to_tpu
+      !   endif
          call downscale_grd_to_topounit(g, i, x2l, lnd2atm_vars)
        else
          do topo = grc_pp%topi(g), grc_pp%topf(g)
