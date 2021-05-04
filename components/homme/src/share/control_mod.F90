@@ -267,6 +267,7 @@ module control_mod
   real (kind=real_kind), public :: bubble_zradius = 1500.0 !bubble radius along z axis
   logical,               public :: bubble_cosine  = .TRUE. !bubble uniform or cosine
   logical,               public :: bubble_moist  = .FALSE. ! 
+  real (kind=real_kind), public :: bubble_moist_dq = 0.2   !bubble dQ parameter
 
   public :: set_planar_defaults
 

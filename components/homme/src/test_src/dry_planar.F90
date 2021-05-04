@@ -185,7 +185,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   use control_mod, only: bubble_T0, bubble_dT, bubble_xycenter, bubble_zcenter, bubble_ztop, &
                          bubble_xyradius,bubble_zradius, bubble_cosine, &
-                         bubble_moist, &
+                         bubble_moist, bubble_moist_dq, &
                          Lx, Ly, Sx, Sy
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
@@ -219,6 +219,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
      print *, 'bubble_zradius', bubble_zradius
      print *, 'bubble_cosine', bubble_cosine
      print *, 'bubble_moist', bubble_moist
+     print *, 'bubble_moist_dq', bubble_moist_dq
   endif
 
   one = 1.0
@@ -233,7 +234,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
     !this formula assumes ideal hy balance and ideal thermodynamics, not exactly consistent with
     !the dycore, that is why we reset zi from EOS below
     Ti(k) = bubble_T0 - zi(k)*g/cp
-    pi(k) =  p0*( Ti(k)/bubble_T0  )**(one/kappa)
+    pi(k) = p0*( Ti(k)/bubble_T0  )**(one/kappa)
   enddo
   do k=1,nlev
     dpm(k)=(pi(k+1)-pi(k))
@@ -330,8 +331,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
         !set pot. temperature on interfaces
         if ( rr < one ) then 
 
-          qi(k) = 0.2
-          !qi(k) = 1.0 * qi_s(k)
+          qi(k) = bubble_moist_dq ! qi_s in many forms did not work
 
           if (bubble_cosine) then
             offset = cos(rr*dd_pi / two)
@@ -341,18 +341,19 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
             ! relative humidity = offset, or offset*, say, 0.9?
             qi(k) = offset * qi(k)
           else
+            ! qi is set above to const
             th0(k) = bubble_T0 + bubble_dT
           endif
 
         else
 
+          !set to reference profile
           th0(k) = bubble_T0
-          !qi(k) = 0.00002 !*qi_s(k) 0.002 works with 0.3 inside the bubble
-          qi(k) = qi_s(k)  !does not work with  qi=0.3
+          qi(k) = qi_s(k)  
 
         endif
 
-!R_star(:,:,k) =(Rgas + (Rwater_vapor - Rgas)*Q(:,:,k))
+        !R_star(:,:,k) =(Rgas + (Rwater_vapor - Rgas)*Q(:,:,k))
         ri(k) = Rgas + (Rwater_vapor - Rgas)*qi(k)
 
       enddo ! k loop
