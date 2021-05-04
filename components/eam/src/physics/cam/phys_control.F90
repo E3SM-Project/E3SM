@@ -320,7 +320,7 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('phys_setopts: illegal value of shallow_scheme')
    endif
    if (.not. (eddy_scheme .eq. 'HB' .or. eddy_scheme .eq. 'HBR' .or. eddy_scheme .eq. 'diag_TKE' .or. &
-              eddy_scheme .eq. 'CLUBB_SGS' .or. eddy_scheme .eq. 'CLUBB_SGS') ) then
+              eddy_scheme .eq. 'CLUBB_SGS' .or. eddy_scheme .eq. 'SHOC_SGS') ) then
       write(iulog,*)'phys_setopts: illegal value of eddy_scheme:', eddy_scheme
       call endrun('phys_setopts: illegal value of eddy_scheme')
    endif
