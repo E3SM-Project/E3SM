@@ -181,9 +181,6 @@ do_Cooper_inP3 = .false.
 <cld_macmic_num_steps hgrid="ne30np4"  > 6 </cld_macmic_num_steps>     
 <cld_macmic_num_steps hgrid="ne120np4" > 6 </cld_macmic_num_steps>
 
-<!-- SHOC timestep -->
-<!--shoc_timestep> 20 </shoc_timestep-->
-<shoc_timestep> 150.0D0 </shoc_timestep>
 
 <!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
 <chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>

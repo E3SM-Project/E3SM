@@ -805,7 +805,23 @@
 <!-- SHOC_SGS -->
 <do_shoc_sgs                 > .false. </do_shoc_sgs>
 <do_shoc_sgs   shoc_sgs="1"  > .true. </do_shoc_sgs>
-<shoc_timestep               > 300.0D0 </shoc_timestep>
+<shoc_timestep               > -1 </shoc_timestep>
+<shoc_thl2tune               > 0.15D0 </shoc_thl2tune>
+<shoc_qw2tune                > 0.15D0 </shoc_qw2tune>
+<shoc_qwthl2tune             > 0.15D0 </shoc_qwthl2tune>
+<shoc_w2tune                 > 1.0D0 </shoc_w2tune>
+<shoc_length_fac             > 0.5D0 </shoc_length_fac>
+<shoc_c_diag_3rd_mom         > 7.0D0 </shoc_c_diag_3rd_mom>
+<shoc_lambda_low             > 0.001D0 </shoc_lambda_low>
+<shoc_lambda_high            > 0.04D0 </shoc_lambda_high>
+<shoc_lambda_slope           > 2.65D0 </shoc_lambda_slope>
+<shoc_lambda_thresh          > 0.02D0 </shoc_lambda_thresh>
+<shoc_Ckh                    > 0.1D0 </shoc_Ckh>
+<shoc_Ckm                    > 0.1D0 </shoc_Ckm>
+<shoc_Ckh_s_min              > 0.1D0 </shoc_Ckh_s_min>
+<shoc_Ckm_s_min              > 0.1D0 </shoc_Ckm_s_min>
+<shoc_Ckh_s_max              > 1.0D0 </shoc_Ckh_s_max>
+<shoc_Ckm_s_max              > 1.0D0 </shoc_Ckm_s_max>
 
 <!-- CLUBB options -->
 <clubb_rainevap_turb                              > .false. </clubb_rainevap_turb>
