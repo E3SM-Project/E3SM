@@ -2774,7 +2774,7 @@ contains
    subroutine datetime(cdate, ctime)
 !
 ! !DESCRIPTION:
-! Calculate freezing potential for a cell
+! Calculate current date and time for metadata history 
 !
 ! !USES:
 
