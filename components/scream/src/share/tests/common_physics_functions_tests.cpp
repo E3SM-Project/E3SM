@@ -100,11 +100,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
             dz_for_testing(reinterpret_cast<Real*>(dz_for_testing_packed.data()),num_levs);
 
     // Run tests
-    int nerr = 0;
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
-    Kokkos::parallel_reduce("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
-
-      errors += 0;
+    Kokkos::parallel_for("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team) {
 
       // Run tests
       // Exner property tests:
@@ -187,7 +184,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       physicscommon::calculate_z_int(team,num_levs,dz_for_testing,z_int);
       physicscommon::calculate_z_int(team,num_levs,dz_for_testing_packed,z_int_packed);
 
-    }, nerr); // Kokkos parallel_reduce "test_universal_physics"
+    }); // Kokkos parallel_for "test_universal_physics"
 
     Kokkos::fence();
     auto exner_host           = Kokkos::create_mirror(exner);
@@ -264,8 +261,6 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       EKAT_REQUIRE(!(z_int_host(k)<0));
     }
 
-    REQUIRE(nerr == 0);
-
   } // run
 }; // end of TestUniversal struct
 
@@ -275,7 +270,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
 
 namespace{
 
-TEST_CASE("physics_universal_test", "[physics_universal_test]"){
+TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
   scream::physics::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUniversal::run();
 
  } // TEST_CASE
