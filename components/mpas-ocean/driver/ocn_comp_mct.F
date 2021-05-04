@@ -1086,14 +1086,15 @@ contains
          call mpas_pool_get_config(domain % configs, 'config_ssh_grad_relax_timescale', &
                                                       config_ssh_grad_relax_timescale)
          if (config_ssh_grad_relax_timescale < real(ocn_cpl_dt,RKIND)) then
-            timeFilterFactor = 1.0_RKIND
+            filteredSSHGradientZonal = avgSSHGradient(index_avgZonalSSHGradient, :)
+            filteredSSHGradientMeridional = avgSSHGradient(index_avgMeridionalSSHGradient, :)
          else
             timeFilterFactor = real(ocn_cpl_dt,RKIND) / config_ssh_grad_relax_timescale
+            filteredSSHGradientZonal = filteredSSHGradientZonal * (1.0_RKIND - timeFilterFactor) + &
+                 avgSSHGradient(index_avgZonalSSHGradient, :) * timeFilterFactor
+            filteredSSHGradientMeridional = filteredSSHGradientMeridional * (1.0_RKIND - timeFilterFactor) + &
+                 avgSSHGradient(index_avgMeridionalSSHGradient, :) * timeFilterFactor
          endif
-         filteredSSHGradientZonal = filteredSSHGradientZonal * (1.0_RKIND - timeFilterFactor) + &
-              avgSSHGradient(index_avgZonalSSHGradient, :) * timeFilterFactor
-         filteredSSHGradientMeridional = filteredSSHGradientMeridional * (1.0_RKIND - timeFilterFactor) + &
-              avgSSHGradient(index_avgMeridionalSSHGradient, :) * timeFilterFactor
          block_ptr => block_ptr % next
       end do
 
