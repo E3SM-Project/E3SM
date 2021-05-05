@@ -634,6 +634,8 @@ end subroutine micro_p3_readnl
    call addfld('liq_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to liquid phase to/from frozen phase')
    call addfld('vap_liq_exchange_clubb',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to vapor to liquid phase in CLUBB')
    call addfld('diag_equiv_reflectivity',  (/ 'lev' /), 'A', 'dBz', 'Equivalent reflectivity (rain + ice)')
+   call addfld('diag_ze_rain',      (/ 'lev' /), 'A', 'dBz', 'Equivalent reflectivity rain ')
+   call addfld('diag_ze_ice',      (/ 'lev' /), 'A', 'dBz', 'Equivalent reflectivity ice ')
 
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
@@ -675,6 +677,8 @@ end subroutine micro_p3_readnl
       call add_default('liq_ice_exchange',  1, ' ')
       call add_default('vap_liq_exchange_clubb',  1, ' ')
       call add_default('diag_equiv_reflectivity',  1, ' ')
+      call add_default('diag_ze_rain',  1, ' ')
+      call add_default('diag_ze_ice',  1, ' ')
 
       ! Microphysics tendencies
       ! warm-phase process rates
@@ -966,7 +970,7 @@ end subroutine micro_p3_readnl
     real(rtype), dimension(pcols,pver) :: liq_ice_exchange ! sum of liq-ice phase change tendenices
     real(rtype), dimension(pcols,pver) :: vap_liq_exchange ! sum of vap-liq phase change tendenices
     real(rtype), dimension(pcols,pver) :: vap_ice_exchange ! sum of vap-ice phase change tendenices
-    real(rtype), dimension(pcols,pver) :: diag_equiv_reflectivity ! equivalent reflectivity [dBz]
+    real(rtype), dimension(pcols,pver) :: diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice ! equivalent reflectivity [dBz]
 
     !Prescribed CCN concentration
     real(rtype), dimension(pcols,pver) :: nccn_prescribed
@@ -1311,7 +1315,8 @@ end subroutine micro_p3_readnl
          qv_prev(its:ite,kts:kte),         & ! IN  qv at end of prev p3_main call   kg kg-1
          t_prev(its:ite,kts:kte),          & ! IN  t at end of prev p3_main call    K
          col_location(its:ite,:3),         & ! IN column locations
-         diag_equiv_reflectivity(its:ite,kts:kte) & !OUT equivalent reflectivity (rain + ice) [dBz]
+         diag_equiv_reflectivity(its:ite,kts:kte), & ! OUT equivalent reflectivity (rain + ice) [dBz]
+         diag_ze_rain(its:ite,kts:kte),diag_ze_ice(its:ite,kts:kte) & ! OUT rain / ice reflectivity [dBz]
          )
 
     p3_main_outputs(:,:,:) = -999._rtype
@@ -1634,6 +1639,8 @@ end subroutine micro_p3_readnl
    call outfld('liq_ice_exchange',       liq_ice_exchange,      pcols, lchnk)
    call outfld('vap_liq_exchange_clubb', cmeliq,                pcols, lchnk)
    call outfld('diag_equiv_reflectivity', diag_equiv_reflectivity, pcols, lchnk)
+   call outfld('diag_ze_rain', diag_ze_rain, pcols, lchnk)
+   call outfld('diag_ze_ice',  diag_ze_ice, pcols, lchnk)
 
    ! +++ Precipitation flux 
    call outfld('precip_liq_flux',    precip_liq_flux(:,:), pcols, lchnk)
