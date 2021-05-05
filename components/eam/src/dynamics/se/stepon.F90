@@ -149,6 +149,8 @@ subroutine stepon_init(dyn_in, dyn_out )
   call addfld('DYN_OMEGA',(/ 'lev' /), 'A', 'Pa/s', 'Vertical Velocity',      gridname='GLL' )
   call addfld('DYN_PS'   ,horiz_only,  'A', 'Pa',   'Surface pressure',       gridname='GLL')
 
+  call addfld('DYN_PTTEND',(/ 'lev' /), 'A', 'K/s', 'Physics temperature forcing (dyn grid)', gridname='GLL')
+
 end subroutine stepon_init
 
 !-----------------------------------------------------------------------
@@ -432,6 +434,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call outfld('DYN_Q'     ,dyn_in%elem(ie)%state%Q(:,:,:,1)       ,npsq,ie)
       call outfld('DYN_U'     ,dyn_in%elem(ie)%state%V(:,:,1,:,tl_f)  ,npsq,ie)
       call outfld('DYN_V'     ,dyn_in%elem(ie)%state%V(:,:,2,:,tl_f)  ,npsq,ie)
+
+      call outfld('DYN_PTTEND',dyn_in%elem(ie)%derived%FT(:,:,:)      ,npsq,ie)
 
       ! at this point in the code we are on floating lagrangian levels
       ! need to compute ps for output
