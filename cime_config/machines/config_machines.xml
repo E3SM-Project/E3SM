@@ -1169,12 +1169,12 @@
         <command name="load">intel-mkl/2020.4.304-g2qaxzf</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
-        <command name="load">openmpi/4.0.4-hpcx-cy5n3ft</command>
-        <command name="load">hdf5/1.8.16-m3bsibs</command>
-        <command name="load">netcdf-c/4.4.1-7ejgpdm</command>
-        <command name="load">netcdf-cxx/4.2-sag6n3x</command>
-        <command name="load">netcdf-fortran/4.4.4-sjzkwoc</command>
-        <command name="load">parallel-netcdf/1.11.0-l362p2g</command>
+        <command name="load">openmpi/4.1.1-qiqkjbu</command>
+        <command name="load">hdf5/1.8.16-35xugty</command>
+        <command name="load">netcdf-c/4.4.1-2vngykq</command>
+        <command name="load">netcdf-cxx/4.2-gzago6i</command>
+        <command name="load">netcdf-fortran/4.4.4-2kddbib</command>
+        <command name="load">parallel-netcdf/1.11.0-go65een</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-tkzvizk</command>
@@ -1189,12 +1189,12 @@
         <command name="load">intel-mkl/2020.4.304-n3b5fye</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
-        <command name="load">openmpi/4.0.4-hpcx-hghvhj5</command>
-        <command name="load">hdf5/1.10.7-sbsigon</command>
-        <command name="load">netcdf-c/4.7.4-a4uk6zy</command>
-        <command name="load">netcdf-cxx/4.2-fz347dw</command>
-        <command name="load">netcdf-fortran/4.5.3-i5ah7u2</command>
-        <command name="load">parallel-netcdf/1.12.1-e7w4x32</command>
+        <command name="load">openmpi/4.1.1-73gbwq4</command>
+        <command name="load">hdf5/1.8.16-dqjdy2d</command>
+        <command name="load">netcdf-c/4.4.1-y6dun2a</command>
+        <command name="load">netcdf-cxx/4.2-vwlvgn6</command>
+        <command name="load">netcdf-fortran/4.4.4-4lnfxki</command>
+        <command name="load">parallel-netcdf/1.11.0-3x2favk</command>
       </modules>
       <modules compiler="gnu" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-jdih7h5</command>
@@ -1232,9 +1232,6 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
-    </environment_variables>
-    <environment_variables mpilib="openmpi">
-      <env name="UCX_TLS">sm,ud</env>
     </environment_variables>
   </machine>
 
