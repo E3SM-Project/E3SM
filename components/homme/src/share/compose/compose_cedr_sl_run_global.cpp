@@ -63,28 +63,28 @@ void run_global (CDR<MT>& cdr, CDRT* cedr_cdr_p,
   cedr_assert(np_ <= 4);
   
 #ifdef COMPOSE_PORT
-  const auto q_min = unmanaged(ta.q_min);
-  const auto q_max = unmanaged(ta.q_max);
+  const auto& q_min = ta.q_min;
+  const auto& q_max = ta.q_max;
 #else
   const QExtremaH<MT>      q_min(q_min_r, ta.nelemd, ta.qsize, ta.nlev, ta.np2);
   const QExtremaHConst<MT> q_max(q_max_r, ta.nelemd, ta.qsize, ta.nlev, ta.np2);
 #endif
   const auto np1 = ta.np1;
   const auto n0_qdp = ta.n0_qdp;
-  const auto spheremp = unmanaged(ta.spheremp);
-  const auto dp3d_c = unmanaged(ta.dp3d);
-  const auto qdp_p = unmanaged(ta.qdp);
-  const auto q_c = unmanaged(ta.q);
+  const auto& spheremp = ta.spheremp;
+  const auto& dp3d_c = ta.dp3d;
+  const auto& qdp_p = ta.qdp;
+  const auto& q_c = ta.q;
 
   const Int nsublev = cdr.nsublev;
   const Int nsuplev = cdr.nsuplev;
-  const auto nonnegs = unmanaged(cdr.nonneg);
+  const auto rank = cdr.p->rank();
   const auto cdr_over_super_levels = cdr.cdr_over_super_levels;
   const auto caas_in_suplev = cdr.caas_in_suplev;
-  const auto ie2lci = unmanaged(cdr.ie2lci);
-  const auto ie2gci = unmanaged(cdr.ie2gci);
-  const auto rank = cdr.p->rank();
-  const AUTO_REF cedr_cdr = *cedr_cdr_p;
+  const auto& nonnegs = cdr.nonneg;
+  const auto& ie2lci = cdr.ie2lci;
+  const auto& ie2gci = cdr.ie2gci;
+  const auto& cedr_cdr = *cedr_cdr_p;
   if (cedr::impl::OnGpu<typename MT::DES>::value) {
     const Int n = ta.nelemd*nlev*qsize*np2;
     ko::View<Real*> q_min_1d(q_min.data(), n);
@@ -92,13 +92,26 @@ void run_global (CDR<MT>& cdr, CDRT* cedr_cdr_p,
                      COMPOSE_LAMBDA (const Int& idx)
                      { q_min_1d(idx) = ko::max<Real>(q_min_1d(idx), 0); });
   }
+  // Loop differently due to performance diff on CPU.
+#ifdef COMPOSE_PORT
   const auto f = COMPOSE_LAMBDA (const Int& idx) {
     const Int ie = nets + idx/(nsuplev*qsize);
     const Int q = (idx / nsuplev) % qsize;
     const Int spli = idx % nsuplev;
+#else
+  for (Int ie = nets; ie <= nete; ++ie) {
+#endif
+    const auto spheremp1 = subview_ie(ie, spheremp);
+    const auto dp3d_c1 = subview_ie(ie, dp3d_c);
+    const auto qdp_p1 = subview_ie(ie, qdp_p);
+    const auto q_c1 = subview_ie(ie, q_c);
+#ifndef COMPOSE_PORT
+    for (Int q = 0; q < qsize; ++q)
+    for (Int spli = 0; spli < cdr.nsuplev; ++spli) {
+#endif
     const Int k0 = nsublev*spli;
-    const bool nonneg = nonnegs[q];
     const Int ti = cdr_over_super_levels ? q : spli*qsize + q;
+    const bool nonneg = nonnegs[q];
     Real Qm = 0, Qm_min = 0, Qm_max = 0, Qm_prev = 0, rhom = 0, volume = 0;
     Int ie_idx;
     if (caas_in_suplev)
@@ -119,15 +132,17 @@ void run_global (CDR<MT>& cdr, CDRT* cedr_cdr_p,
       }
       if (k < nlev) {
         for (Int g = 0; g < np2; ++g) {
-          volume += spheremp(ie,g);
-          const Real rhomij = dp3d_c(ie,np1,g,k) * spheremp(ie,g);
+          const auto smp = spheremp1(g);
+          volume += smp;
+          const Real rhomij = dp3d_c1(np1,g,k) * smp;
           rhom += rhomij;
-          Qm += q_c(ie,q,g,k) * rhomij;
+          Qm += q_c1(q,g,k) * rhomij;
+          auto& q_min_val = idx_qext(q_min,ie,q,g,k);
           if ( ! cedr::impl::OnGpu<typename MT::DES>::value && nonneg)
-            idx_qext(q_min,ie,q,g,k) = ko::max<Real>(idx_qext(q_min,ie,q,g,k), 0);
-          Qm_min += idx_qext(q_min,ie,q,g,k) * rhomij;
+            q_min_val = ko::max<Real>(q_min_val, 0);
+          Qm_min += q_min_val * rhomij;
           Qm_max += idx_qext(q_max,ie,q,g,k) * rhomij;
-          Qm_prev += qdp_p(ie,n0_qdp,q,g,k) * spheremp(ie,g);
+          Qm_prev += qdp_p1(n0_qdp,q,g,k) * smp;
         }
       }
       const bool write = ! caas_in_suplev || sbli == nsublev-1;
@@ -145,9 +160,13 @@ void run_global (CDR<MT>& cdr, CDRT* cedr_cdr_p,
                                        ti, sbli, lci, k, n0_qdp, np1, qdp_p, dp3d_c);
       }
     }
+#ifdef COMPOSE_PORT
   };
   ko::fence();
   ko::parallel_for(ko::RangePolicy<typename MT::DES>(0, (nete - nets + 1)*nsuplev*qsize), f);
+#else
+  }}
+#endif
 }
 
 template <typename MT>

@@ -84,8 +84,8 @@ void analyze_dep_points (IslMpi<MT>& cm, const Int& nets, const Int& nete,
   const auto myrank = cm.p->rank();
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
   const Int np2 = cm.np2, nlev = cm.nlev;
-  const auto ed_d = cm.ed_d;
-  const auto own_dep_mask = cm.own_dep_mask;
+  const auto& ed_d = cm.ed_d;
+  const auto& own_dep_mask = cm.own_dep_mask;
   cm.bla.zero();
   cm.nx_in_lid.zero();
   cm.nx_in_rank.zero();
@@ -93,12 +93,12 @@ void analyze_dep_points (IslMpi<MT>& cm, const Int& nets, const Int& nete,
   {
     const Int nearest_point_permitted_lev_bdy =
       cm.advecter->nearest_point_permitted_lev_bdy();
-    const auto local_meshes = cm.advecter->local_meshes();
-    const auto ed_d = cm.ed_d;
-    const auto nx_in_lid = cm.nx_in_lid;
-    const auto bla = cm.bla;
-    const auto nx_in_rank = cm.nx_in_rank;
-    const auto f = KOKKOS_LAMBDA (const Int& ki) {
+    const auto& local_meshes = cm.advecter->local_meshes();
+    const auto& ed_d = cm.ed_d;
+    const auto& nx_in_lid = cm.nx_in_lid;
+    const auto& bla = cm.bla;
+    const auto& nx_in_rank = cm.nx_in_rank;
+    const auto f = COMPOSE_LAMBDA (const Int& ki) {
       const Int tci = nets + ki/(nlev*np2);
       const Int   k = (ki/nlev) % np2;
       const Int lev = ki % nlev;
@@ -129,8 +129,8 @@ void analyze_dep_points (IslMpi<MT>& cm, const Int& nets, const Int& nete,
     ko::parallel_for(ko::RangePolicy<typename MT::DES>(0, (nete - nets + 1)*nlev*np2), f);
   }
   {
-    const auto own_dep_list = cm.own_dep_list;
-    const auto f = KOKKOS_LAMBDA (const Int ki, Int& slot, const bool fin) {
+    const auto& own_dep_list = cm.own_dep_list;
+    const auto f = COMPOSE_LAMBDA (const Int ki, Int& slot, const bool fin) {
       const Int tci = nets + ki/(nlev*np2);
       const Int   k = (ki/nlev) % np2;
       const Int lev = ki % nlev;

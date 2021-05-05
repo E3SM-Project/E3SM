@@ -6,13 +6,13 @@ namespace islmpi {
 template <Int np, typename MT>
 void calc_q_extrema (IslMpi<MT>& cm, const Int& nets, const Int& nete) {
 #ifdef COMPOSE_PORT
-  const auto qdp = cm.tracer_arrays->qdp;
-  const auto qtl = cm.tracer_arrays->n0_qdp;
-  const auto dp = cm.tracer_arrays->dp;
-  const auto q = cm.tracer_arrays->q;
-  const auto ed_d = cm.ed_d;
+  const auto& qdp = cm.tracer_arrays->qdp;
+  const auto& qtl = cm.tracer_arrays->n0_qdp;
+  const auto& dp = cm.tracer_arrays->dp;
+  const auto& q = cm.tracer_arrays->q;
+  const auto& ed_d = cm.ed_d;
   const Int qsize = cm.qsize, nlev = cm.nlev;
-  const auto f = KOKKOS_LAMBDA (const Int& it) {
+  const auto f = COMPOSE_LAMBDA (const Int& it) {
     const Int tci = nets + it/(qsize*nlev);
     const Int iq = (it/nlev) % qsize;
     const Int lev = it % nlev;

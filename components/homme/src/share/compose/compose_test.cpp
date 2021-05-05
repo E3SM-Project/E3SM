@@ -174,7 +174,6 @@ struct StandaloneTracersTester {
               lat = p_elem(2,i,j);
               lon = p_elem(1,i,j);
             } else {
-#             pragma message "do proper ICs"
               // To get something reasonable quickly, map (x,y) to (lon,lat).
               // rp_elem is still the spherical_polar_t data structure, and
               // plane geometry convention is to fill lon with x, lat with y,

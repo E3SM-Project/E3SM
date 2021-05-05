@@ -511,8 +511,8 @@ void calc_plane_to_ref (
     for (Int d = 0; d < 2; ++d) {
       // One of the two edges is 0 and the other the one we want if the
       // assumption holds.
-      const Real den = std::max(std::abs(p(e[1], d) - p(e[0], d)),
-                                std::abs(p(e[2], d) - p(e[1], d)));
+      const Real den = siqk::max(std::abs(p(e[1], d) - p(e[0], d)),
+                                 std::abs(p(e[2], d) - p(e[1], d)));
       if (den == 0) continue;
       const Real ref = 2*(std::abs(q[d] - p(e[0], d))/den) - 1;
       if (d == 0) a = ref; else b = ref;

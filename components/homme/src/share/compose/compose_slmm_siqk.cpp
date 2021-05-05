@@ -47,8 +47,8 @@ public:
     else         sqr::calc_ref_to_plane (p_, cell, a_t, b_t, q);
     Real length_scale = 0;
     for (Int i = 0; i < 4; ++i)
-      length_scale = std::max(length_scale,
-                              SphereGeometry::norm2(slice(p_, cell[i])));
+      length_scale = siqk::max(length_scale,
+                               SphereGeometry::norm2(slice(p_, cell[i])));
     length_scale = std::sqrt(length_scale);
     Real a, b;
     sqr::Info info;

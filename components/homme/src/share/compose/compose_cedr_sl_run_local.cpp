@@ -6,25 +6,34 @@ namespace homme {
 namespace sl {
 
 template <int np_,
-          typename CV2, typename CV4, typename CV5, typename QV5,
-          typename V4, typename V5>
-COMPOSE_FUNCTION
+          typename CV1, typename CV3,
+          typename QV4, typename CQV4,
+          typename V3, typename V4>
+COMPOSE_INLINE_FUNCTION
 void solve_local (const Int ie, const Int k, const Int q,
                   const Int np1, const Int n1_qdp, const Int np,
                   const bool scalar_bounds, const Int limiter_option,
-                  const CV2& spheremp, const CV4& dp3d_c,
-                  const QV5& q_min, const CV5& q_max,
-                  const Real Qm, V5& qdp_c, V4& q_c) {
+                  const CV1& spheremp, const CV3& dp3d_c,
+                  const QV4& q_min, const CQV4& q_max,
+                  const Real Qm, V4& qdp_c, V3& q_c) {
   cedr_kernel_assert(np == np_);
   static const Int np2 = np_*np_;
 
   Real wa[np2], qlo[np2], qhi[np2], y[np2], x[np2];
   Real rhom = 0;
+#ifndef COMPOSE_PORT
+  const Real* const dp3d_c1 = &dp3d_c(np1,0,k);
+  const Real* const spheremp1 = &spheremp(0);
+#endif
   for (Int g = 0; g < np2; ++g) {
-    const Real rhomij = dp3d_c(ie,np1,g,k) * spheremp(ie,g);
+#ifdef COMPOSE_PORT
+    const Real rhomij = dp3d_c(np1,g,k) * spheremp(g);
+#else
+    const Real rhomij = dp3d_c1[g] * spheremp1[g];
+#endif
     rhom += rhomij;
     wa[g] = rhomij;
-    y[g] = q_c(ie,q,g,k);
+    y[g] = q_c(q,g,k);
     x[g] = y[g];
   }
 
@@ -47,10 +56,19 @@ void solve_local (const Int ie, const Int k, const Int q,
       cedr::local::caas(np2, wa, Qm, qlo, qhi, y, x);
     }
   } else {
+#ifdef COMPOSE_PORT
     for (Int g = 0; g < np2; ++g) {
       qlo[g] = idx_qext(q_min,ie,q,g,k);
       qhi[g] = idx_qext(q_max,ie,q,g,k);
     }
+#else
+    const Real* const q_min1 = &q_min(ie,q,k,0);
+    const Real* const q_max1 = &q_max(ie,q,k,0);
+    for (Int g = 0; g < np2; ++g) {
+      qlo[g] = q_min1[g];
+      qhi[g] = q_max1[g];
+    }
+#endif
     for (Int trial = 0; trial < 3; ++trial) {
       int info;
       if (limiter_option == 8) {
@@ -67,7 +85,7 @@ void solve_local (const Int ie, const Int k, const Int q,
           qhi_s = ko::max(qhi_s, qhi[i]);
         }
         for (Int i = 0; i < np2; ++i)
-          x[i] = ko::max(qlo_s, cedr::impl::min(qhi_s, x[i]));
+          x[i] = ko::max(qlo_s, ko::min(qhi_s, x[i]));
       }
       if (info == 0 || trial == 1) break;
       switch (trial) {
@@ -88,11 +106,21 @@ void solve_local (const Int ie, const Int k, const Int q,
       }
     }
   }
-        
+
+#ifdef COMPOSE_PORT
   for (Int g = 0; g < np2; ++g) {
-    q_c(ie,q,g,k) = x[g];
-    qdp_c(ie,n1_qdp,q,g,k) = q_c(ie,q,g,k) * dp3d_c(ie,np1,g,k);
+    q_c(q,g,k) = x[g];
+    qdp_c(n1_qdp,q,g,k) = x[g] * dp3d_c(np1,g,k);
   }
+#else
+  Real* const q_c1 = &q_c(q,0,k);
+  Real* const qdp_c1 = &qdp_c(n1_qdp,q,0,k);
+  for (Int g = 0; g < np2; ++g) {
+    const Real xg = x[g];
+    q_c1[g] = xg;
+    qdp_c1[g] = xg * dp3d_c1[g];
+  }
+#endif
 }
 
 COMPOSE_FUNCTION
@@ -139,10 +167,9 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
   cedr_assert(ta.np == np_);
   static const Int np = np_, np2 = np_*np_;
   const Int nlev = ta.nlev, qsize = ta.qsize, nlevwrem = cdr.nsuplev*cdr.nsublev;
-
 #ifdef COMPOSE_PORT
-  const auto q_min = unmanaged(ta.q_min);
-  const auto q_max = unmanaged(ta.q_max);
+  const auto& q_min = ta.q_min;
+  const auto& q_max = ta.q_max;
 #else
   const QExtremaH<ko::MachineTraits>
     q_min(q_min_r, ta.nelemd, ta.qsize, ta.nlev, np2);
@@ -151,21 +178,33 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
 #endif
   const auto np1 = ta.np1;
   const auto n1_qdp = ta.n1_qdp;
-  const auto spheremp = unmanaged(ta.spheremp);
-  const auto dp3d_c = unmanaged(ta.dp3d);
-  const auto qdp_c = unmanaged(ta.qdp);
-  const auto q_c = unmanaged(ta.q);
-
+  const auto& spheremp = ta.spheremp;
+  const auto& dp3d_c = ta.dp3d;
+  const auto& qdp_c = ta.qdp;
+  const auto& q_c = ta.q;
   const Int nsublev = cdr.nsublev;
   const Int nsuplev = cdr.nsuplev;
   const auto cdr_over_super_levels = cdr.cdr_over_super_levels;
   const auto caas_in_suplev = cdr.caas_in_suplev;
-  const auto ie2lci = unmanaged(cdr.ie2lci);
-  const AUTO_REF cedr_cdr = *cedr_cdr_p;
+  const auto& cedr_cdr = *cedr_cdr_p;
+  const auto& ie2lci = cdr.ie2lci;
+  // Loop differently due to performance diff on CPU.
+#ifdef COMPOSE_PORT
   const auto f = COMPOSE_LAMBDA (const Int& idx) {
     const Int ie = nets + idx/(nsuplev*qsize);
     const Int q = (idx / nsuplev) % qsize;
     const Int spli = idx % nsuplev;
+#else
+  for (Int ie = nets; ie <= nete; ++ie) {
+#endif
+    const auto spheremp1 = subview_ie(ie, spheremp);
+    const auto dp3d_c1 = subview_ie(ie, dp3d_c);
+    const auto qdp_c1 = subview_ie(ie, qdp_c);
+    const auto q_c1 = subview_ie(ie, q_c);
+#ifndef COMPOSE_PORT
+    for (Int q = 0; q < qsize; ++q)
+    for (Int spli = 0; spli < nsuplev; ++spli) {
+#endif
     const Int k0 = nsublev*spli;
     const Int ti = cdr_over_super_levels ? q : spli*qsize + q;
     if (caas_in_suplev) {
@@ -224,7 +263,7 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
         const Int k = k0 + i;
         solve_local<np_>(ie, k, q, np1, n1_qdp, np,
                          scalar_bounds, limiter_option,
-                         spheremp, dp3d_c, q_min, q_max, Qm[i], qdp_c, q_c);
+                         spheremp1, dp3d_c1, q_min, q_max, Qm[i], qdp_c1, q_c1);
       }
     } else {
       for (Int sbli = 0; sbli < nsublev; ++sbli) {
@@ -237,13 +276,16 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
         const Real Qm = cedr_cdr.get_Qm(lci, ti);
         solve_local<np_>(ie, k, q, np1, n1_qdp, np,
                          scalar_bounds, limiter_option,
-                         spheremp, dp3d_c, q_min, q_max, Qm, qdp_c, q_c);
+                         spheremp1, dp3d_c1, q_min, q_max, Qm, qdp_c1, q_c1);
       }
     }
+#ifdef COMPOSE_PORT
   };
   ko::fence();
-  { Timer t("03_run_local");
-    ko::parallel_for(ko::RangePolicy<typename MT::DES>(0, (nete - nets + 1)*nsuplev*qsize), f); }
+  ko::parallel_for(ko::RangePolicy<typename MT::DES>(0, (nete - nets + 1)*nsuplev*qsize), f);
+#else
+  }}
+#endif
 }
 
 template <typename MT>

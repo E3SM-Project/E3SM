@@ -29,11 +29,12 @@ void homme_parallel_for (const Int& beg, const Int& end, const Func& f) {
 
 void CAAS::reduce_locally_horiz_omp () {
   const bool user_reduces = user_reducer_ != nullptr;
+  cedr_assert(user_reduces); // assumption in Homme
   ConstExceptGnu Int nt = probs_.size(), nlclcells = nlclcells_;
 
-  const auto probs = probs_;
-  const auto send = send_;
-  const auto d = d_;
+  const auto& probs = probs_;
+  const auto& send = send_;
+  const auto& d = d_;
   const Int n_accum_in_place = user_reducer_->n_accum_in_place();
   const Int nlclaccum = nlclcells / n_accum_in_place;
   const auto calc_Qm_clip = COMPOSE_LAMBDA (const Int& j) {
@@ -69,10 +70,9 @@ void CAAS::reduce_locally_horiz_omp () {
 }
 
 void CAAS::finish_locally_horiz_omp () {
-  using ESU = cedr::impl::ExeSpaceUtils<Kokkos::Serial>;
   ConstExceptGnu Int nt = probs_.size(), nlclcells = nlclcells_;
-  const auto recv = recv_;
-  const auto d = d_;
+  const auto& recv = recv_;
+  const auto& d = d_;
   const auto adjust_Qm = COMPOSE_LAMBDA (const Int& k) {
     const auto os = (k+1)*nlclcells;
     const auto Qm_clip_sum = recv(     k);

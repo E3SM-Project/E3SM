@@ -109,6 +109,7 @@ template <typename MT> using EnableIfDiffSpace
 // decr's the shared pointer count. Thus, we must carefully always obtain
 // unmanaged Views to avoid the thread-unsafe ref-counting.
 
+#ifdef COMPOSE_PORT
 template <typename View> View unmanaged (
   const View& s, typename std::enable_if<View::rank_dynamic == 1>::type* = 0)
 { return View(s.data(), s.extent(0)); }
@@ -124,12 +125,10 @@ template <typename View> View unmanaged (
 template <typename View> View unmanaged (
   const View& s, typename std::enable_if<View::rank_dynamic == 5>::type* = 0)
 { return View(s.data(), s.extent(0), s.extent(1), s.extent(2), s.extent(3), s.extent(4)); }
-
-// For more complicated objects, use the following definitions.
-#ifdef COMPOSE_PORT
-# define AUTO_REF auto
 #else
-# define AUTO_REF auto&
+template <typename View> const View& unmanaged (
+  const View& s, typename std::enable_if<View::rank_dynamic>::type* = 0)
+{ return s; }
 #endif
 
 // Copy by ref if not Cuda build.

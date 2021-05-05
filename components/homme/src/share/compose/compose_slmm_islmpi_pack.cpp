@@ -59,18 +59,18 @@ template <typename MT>
 void pack_dep_points_sendbuf_pass1_scan (IslMpi<MT>& cm) {
   ko::fence();
   deep_copy(cm.nx_in_rank_h, cm.nx_in_rank);
-  const auto sendbufs = cm.sendbuf;
-  const auto lid_on_ranks = cm.lid_on_rank;
-  const auto nx_in_rank = cm.nx_in_rank;
-  const auto nx_in_lids = cm.nx_in_lid;
-  const auto x_bulkdata_offset = cm.x_bulkdata_offset;
-  const auto sendcounts = cm.sendcount;
-  const auto blas = cm.bla;
+  const auto& sendbufs = cm.sendbuf;
+  const auto& lid_on_ranks = cm.lid_on_rank;
+  const auto& nx_in_rank = cm.nx_in_rank;
+  const auto& nx_in_lids = cm.nx_in_lid;
+  const auto& x_bulkdata_offset = cm.x_bulkdata_offset;
+  const auto& sendcounts = cm.sendcount;
+  const auto& blas = cm.bla;
   const auto nlev = cm.nlev;
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
   for (Int ri = 0; ri < nrmtrank; ++ri) {
     const Int lid_on_rank_n = cm.lid_on_rank_h(ri).n();
-    const auto f = KOKKOS_LAMBDA (const int idx, Accum& a, const bool fin) {
+    const auto f = COMPOSE_LAMBDA (const int idx, Accum& a, const bool fin) {
       auto&& sendbuf = sendbufs(ri);
       if (idx == 0) {
         const auto cnt = setbuf(sendbuf, 0, 0, 0, fin);
@@ -105,7 +105,7 @@ void pack_dep_points_sendbuf_pass1_scan (IslMpi<MT>& cm) {
     };
     Accum a;
     ko::parallel_scan(ko::RangePolicy<typename MT::DES>(0, lid_on_rank_n*nlev), f, a);
-    const auto g = KOKKOS_LAMBDA (const int) {
+    const auto g = COMPOSE_LAMBDA (const int) {
       auto&& sendbuf = sendbufs(ri);
       setbuf(sendbuf, 0, a.mos /* offset to x bulk data */, nx_in_rank(ri));
       x_bulkdata_offset(ri) = a.mos;
@@ -238,11 +238,11 @@ void pack_dep_points_sendbuf_pass2 (IslMpi<MT>& cm, const DepPoints<MT>& dep_poi
   }
   {
     const Int np2 = cm.np2, nlev = cm.nlev, qsize = cm.qsize;
-    const auto ed_d = cm.ed_d.unmanaged();
-    const auto mylid_with_comm_d = cm.mylid_with_comm_d.unmanaged();
-    const auto sendbuf = cm.sendbuf.unmanaged();
-    const auto x_bulkdata_offset = cm.x_bulkdata_offset.unmanaged();
-    const auto bla = cm.bla.unmanaged();
+    const auto& ed_d = cm.ed_d;
+    const auto& mylid_with_comm_d = cm.mylid_with_comm_d;
+    const auto& sendbuf = cm.sendbuf;
+    const auto& x_bulkdata_offset = cm.x_bulkdata_offset;
+    const auto& bla = cm.bla;
 #ifdef COMPOSE_HORIZ_OPENMP
     const auto horiz_openmp = cm.horiz_openmp;
     const auto& ri_lidi_locks = cm.ri_lidi_locks;

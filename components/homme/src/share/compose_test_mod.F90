@@ -241,6 +241,7 @@ contains
        print *, 'COMPOSE> nsteps', nsteps
     end if
     dt = twelve_days / nsteps
+    call t_barrierf('compose_stt_step_start_barrier', hybrid%par%comm)
     call t_startf('compose_stt_step')
     do i = 1, nsteps
        compose_h2d = i == 1
@@ -259,6 +260,7 @@ contains
           call print_software_statistics(hybrid, nets, nete)
        end if
     end do
+    call t_barrierf('compose_stt_step_stop_barrier', hybrid%par%comm)
     call t_stopf('compose_stt_step')
     ! Record final q values.
     call compose_stt_begin_record()
