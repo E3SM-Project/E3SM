@@ -143,7 +143,7 @@
       <value compset="_EAM%SCREAM-HR">-phys cam5 -shoc_sgs -microphys p3 -chem none -nlev 128 -rad rrtmgp -bc_dep_to_snow_updates</value>
 
       <!-- Doubly Periodic SCREAM -->
-      <value compset="AR97_EAM%DPSCREAM">-phys cam5 -scam -dpcrm_mode -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem none</value>
+      <value compset="AR97_EAM%DPSCREAM">-phys default -scam -dpcrm_mode -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem none</value>
 
       <!-- Aquaplanet -->
       <value compset="_EAM%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
