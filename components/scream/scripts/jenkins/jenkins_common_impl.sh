@@ -6,14 +6,18 @@ IFS=';' read -r -a labels <<< "$PR_LABELS";
 # default values
 skip_testing=0
 test_scripts=0
+test_cime=0
 if [ ${#labels[@]} -gt 0 ]; then
   # We do have some labels. Look for some supported ones.
   for label in "${labels[@]}"
   do
-    if [ "$label" == "CI: Integrate Without Testing" ]; then
+    if [ "$label" == "AT: Integrate Without Testing" ]; then
       skip_testing=1
     elif [ "$label" == "scripts" ]; then
       test_scripts=1
+    fi
+    elif [ "$label" == "CIME" ]; then
+      test_cime=1
     fi
   done
 fi
@@ -44,7 +48,7 @@ if [ $skip_testing -eq 0 ]; then
     ./scripts/gather-all-data "./scripts/test-all-scream -t valg --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
   fi
 
-  # Uncomment this once pylint is available on target machines
+  # scripts-tests is pretty expensive, so we limit this testing to mappy
   if [[ $test_scripts == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
     # JGF: I'm not sure there's much value in these dry-run comparisons
     # since we aren't changing HEADs
@@ -54,6 +58,12 @@ if [ $skip_testing -eq 0 ]; then
     ./scripts/scripts-tests -f -m $SCREAM_MACHINE
   fi
 
+  # Run SCREAM CIME suite
+  if [[ $test_cime == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
+    module switch sems-python/2.7.9 # this should only be needed until the next CIME update
+    ../../cime/scripts/create_test e3sm_scream -c -b master
+  fi
+
 else
-  echo "Tests were skipped, since the Github label 'CI: Integrate Without Testing' was found.\n"
+  echo "Tests were skipped, since the Github label 'AT: Integrate Without Testing' was found.\n"
 fi
