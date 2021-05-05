@@ -219,6 +219,7 @@ IF(${BUILD_HOMME_THETA})
   ADD_SUBDIRECTORY(theta-l-nlev200-native)
   ADD_SUBDIRECTORY(theta-l-nlev256-native)
   ADD_SUBDIRECTORY(theta-l-nlev300-native)
+  ADD_SUBDIRECTORY(theta-l-nlev600-native)
 ENDIF()
 
 IF (${BUILD_HOMME_THETA_KOKKOS})
