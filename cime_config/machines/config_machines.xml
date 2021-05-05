@@ -1725,6 +1725,9 @@
       <env name="OMP_PLACES">threads</env>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 
 <machine MACH="jlse-iris">
