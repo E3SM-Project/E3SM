@@ -252,7 +252,6 @@ struct Functions
     const Int&                   nlev,
     const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& brunt,
-    const Scalar&                tscale,
     const uview_1d<const Spack>& zt_grid,
     const Scalar&                l_inf,
     const uview_1d<Spack>&       shoc_mix);
@@ -353,17 +352,6 @@ struct Functions
     const uview_1d<Spack>& shoc_mix);
 
   KOKKOS_FUNCTION
-  static void compute_conv_vel_shoc_length(
-    const MemberType&            team,
-    const Int&                   nlev,
-    const Scalar&                pblh,
-    const uview_1d<const Spack>& zt_grid,
-    const uview_1d<const Spack>& dz_zt,
-    const uview_1d<const Spack>& thv,
-    const uview_1d<const Spack>& wthv_sec,
-    Scalar&                      conv_vel);
-
-  KOKKOS_FUNCTION
   static void shoc_diag_obklen(
     const Scalar& uw_sfc,
     const Scalar& vw_sfc,
@@ -382,24 +370,16 @@ struct Functions
     Scalar& pblh);
 
   KOKKOS_FUNCTION
-  static void compute_conv_time_shoc_length(
-    const Scalar& pblh,
-    Scalar&       conv_vel,
-    Scalar&       tscale);
-
-  KOKKOS_FUNCTION
   static void shoc_length(
     const MemberType&            team,
     const Int&                   nlev,
     const Int&                   nlevi,
     const Scalar&                host_dx,
     const Scalar&                host_dy,
-    const Scalar&                pblh,
-    const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& zt_grid,
     const uview_1d<const Spack>& zi_grid,
     const uview_1d<const Spack>& dz_zt,
-    const uview_1d<const Spack>& wthv_sec,
+    const uview_1d<const Spack>& tke,    
     const uview_1d<const Spack>& thv,
     const Workspace&             workspace,
     const uview_1d<Spack>&       brunt,
@@ -788,10 +768,8 @@ struct Functions
 # include "shoc_compute_brunt_shoc_length_impl.hpp"
 # include "shoc_compute_l_inf_shoc_length_impl.hpp"
 # include "shoc_check_length_scale_shoc_length_impl.hpp"
-# include "shoc_compute_conv_vel_shoc_length_impl.hpp"
 # include "shoc_diag_obklen_impl.hpp"
 # include "shoc_pblintd_cldcheck_impl.hpp"
-# include "shoc_compute_conv_time_shoc_length_impl.hpp"
 # include "shoc_length_impl.hpp"
 # include "shoc_energy_fixer_impl.hpp"
 # include "shoc_compute_shoc_vapor_impl.hpp"

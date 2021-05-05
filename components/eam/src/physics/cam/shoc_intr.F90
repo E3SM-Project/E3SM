@@ -94,6 +94,23 @@ module shoc_intr
   real(r8) :: shoc_timestep = unset_r8  ! Default SHOC timestep set in namelist
   real(r8) :: dp1
   
+  real(r8) :: shoc_thl2tune = unset_r8
+  real(r8) :: shoc_qw2tune = unset_r8
+  real(r8) :: shoc_qwthl2tune = unset_r8
+  real(r8) :: shoc_w2tune = unset_r8
+  real(r8) :: shoc_length_fac = unset_r8
+  real(r8) :: shoc_c_diag_3rd_mom = unset_r8
+  real(r8) :: shoc_lambda_low = unset_r8
+  real(r8) :: shoc_lambda_high = unset_r8
+  real(r8) :: shoc_lambda_slope = unset_r8
+  real(r8) :: shoc_lambda_thresh = unset_r8
+  real(r8) :: shoc_Ckh = unset_r8
+  real(r8) :: shoc_Ckm = unset_r8
+  real(r8) :: shoc_Ckh_s_min = unset_r8
+  real(r8) :: shoc_Ckm_s_min = unset_r8
+  real(r8) :: shoc_Ckh_s_max = unset_r8
+  real(r8) :: shoc_Ckm_s_max = unset_r8
+
   integer :: edsclr_dim
   
   logical      :: prog_modal_aero
@@ -210,7 +227,11 @@ end function shoc_implements_cnst
     
     integer :: iunit, read_status
     
-    namelist /shocpbl_diff_nl/ shoc_timestep
+    namelist /shocpbl_diff_nl/ shoc_timestep, shoc_thl2tune, shoc_qw2tune, shoc_qwthl2tune, &
+                               shoc_w2tune, shoc_length_fac, shoc_c_diag_3rd_mom, &
+                               shoc_lambda_low, shoc_lambda_high, shoc_lambda_slope, &
+                               shoc_lambda_thresh, shoc_Ckh, shoc_Ckm, shoc_Ckh_s_min, &
+                               shoc_Ckm_s_min, shoc_Ckh_s_max, shoc_Ckm_s_max
     
     !  Read namelist to determine if SHOC history should be called
     if (masterproc) then
@@ -232,9 +253,25 @@ end function shoc_implements_cnst
 #ifdef SPMD
 ! Broadcast namelist variables
       call mpibcast(shoc_timestep,           1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_thl2tune,           1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_qw2tune,            1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_qwthl2tune,         1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_w2tune,             1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_length_fac,         1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_c_diag_3rd_mom,     1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_lambda_low,         1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_lambda_high,        1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_lambda_slope,       1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_lambda_thresh,      1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckh,                1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckm,                1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckh_s_min,          1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckm_s_min,          1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckh_s_max,          1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckm_s_max,          1,   mpir8,   0, mpicom)
 #endif
   
-  end subroutine shoc_readnl   
+  end subroutine shoc_readnl
   
   ! =============================================================================== !
   !                                                                                 !
@@ -401,8 +438,13 @@ end function shoc_implements_cnst
  
     call shoc_init( &
           pver, gravit, rair, rh2o, cpair, &
-	  zvir, latvap, latice, karman, &
-	  pref_mid, nbot_shoc, ntop_shoc )   
+          zvir, latvap, latice, karman, &
+          pref_mid, nbot_shoc, ntop_shoc, &
+          shoc_thl2tune, shoc_qw2tune, shoc_qwthl2tune, &
+          shoc_w2tune, shoc_length_fac, shoc_c_diag_3rd_mom, &
+          shoc_lambda_low, shoc_lambda_high, shoc_lambda_slope, &
+          shoc_lambda_thresh, shoc_Ckh, shoc_Ckm, shoc_Ckh_s_min, &
+          shoc_Ckm_s_min, shoc_Ckh_s_max, shoc_Ckm_s_max )
     
     ! --------------- !
     ! End             !
@@ -647,42 +689,31 @@ end function shoc_implements_cnst
    call pbuf_get_field(pbuf, icwmrdp_idx, dp_icwmr)
    call pbuf_get_field(pbuf, cmfmc_sh_idx, cmfmc_sh)  
    
-   !  Determine SHOC time step and make it sub-step friendly
-   !  For now we want SHOC time step to be 5 min.  However, there are certain
-   !  instances when a 5 min time step will not be possible (based on 
-   !  host model time step or on macro-micro sub-stepping   
+   !  Determine SHOC time step.
    
-   dtime = shoc_timestep 
+   dtime = shoc_timestep
    
-   !  Now check to see if dtime is greater than the host model 
-   !    (or sub stepped) time step.  If it is, then simply 
-   !    set it equal to the host (or sub step) time step.  
-   !    This section is mostly to deal with small host model
-   !    time steps (or small sub-steps)
+   !  If requested SHOC timestep is < 0 then set the SHOC time step
+   !    equal to hdtime (the macrophysics/microphysics timestep).
    
-   if (dtime .gt. hdtime) then
+   if (dtime < 0._r8) then
      dtime = hdtime
    endif
    
-   !  Now check to see if SHOC time step divides evenly into
-   !    the host model time step.  If not, force it to divide evenly.
-   !    We also want it to be 5 minutes or less.  This section is
-   !    mainly for host model time steps that are not evenly divisible
-   !    by 5 minutes  
+   !  Now perform checks to determine if the requested SHOC timestep
+   !   is reasonable based on the host model time step.
    
-   if (mod(hdtime,dtime) .ne. 0) then
-     dtime = hdtime/2._r8
-     do while (dtime .gt. 300._r8) 
-       dtime = dtime/2._r8
-     end do
-   endif  
+   ! Is SHOC timestep greater than the macrophysics/microphysics timestep?
+   if (dtime .gt. hdtime) then
+     call endrun('shoc_tend_e3sm: Requested SHOC time step is greater than the macrophysics/microphysics timestep')
+   endif
    
-   !  If resulting host model time step and SHOC time step do not divide evenly
-   !    into each other, have model throw a fit.  
-
+   ! Does SHOC timestep divide evenly into the macrophysics/microphyscs timestep?
    if (mod(hdtime,dtime) .ne. 0) then
      call endrun('shoc_tend_e3sm:  SHOC time step and HOST time step NOT compatible')
-   endif      
+   endif
+
+   ! If we survived this far, then the SHOC timestep is valid.
   
    !  determine number of timesteps SHOC core should be advanced, 
    !  host time step divided by SHOC time step  

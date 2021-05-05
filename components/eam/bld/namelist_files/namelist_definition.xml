@@ -2945,7 +2945,106 @@ Default: .false.
 <!-- SHOC timestep -->
 <entry id="shoc_timestep" type="real" category="pblrad"
        group="shocpbl_diff_nl" valid_values="" >
-SHOC timestep.
+SHOC timestep.  Setting to < 0 will set SHOC timestep equal to the
+macrophysics and microphysics timestep (i.e. dtime/cld_macmic_num_steps).
+Default: -1
+</entry>
+
+<!-- SHOC tunable parameters -->
+<entry id="shoc_thl2tune" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Temperature variance tuning factor.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_qw2tune" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Moisture variance tuning factor.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_qwthl2tune" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Temperature moisture covariance tuning factor.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_w2tune" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Vertical velocity variance tuning factor.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_length_fac" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Length scale tuning factor.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_c_diag_3rd_mom" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Third moment vertical velocity tuning factor.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_lambda_low" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Lowest allowable value for stability correction for isotropic timescale.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_lambda_high" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Higest allowable value for stability correction for isotropic timescale.
+Should be set to value equal to or greater than lambda_low.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_lambda_slope" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Controls the slope of increase of stability correction term from low to high values.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_lambda_thresh" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Minimum threshold of integrated stability to increase the stability correction term.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_Ckh" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Coefficient for eddy diffusivity of heat.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_Ckm" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Coefficient for eddy diffusivity of momentum.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_Ckh_s_min" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Minimum allowable value for coefficient for eddy diffusivity for heat for stable boundary layers.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_Ckh_s_max" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Maximum allowable value for coefficient for eddy diffusivity for heat for stable boundary layers.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_Ckm_s_min" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Minimum allowable value for coefficient for eddy diffusivity for momentum for stable boundary layers.
+Default: set by build-namelist
+</entry>
+
+<entry id="shoc_Ckm_s_max" type="real" category="pblrad"
+       group="shocpbl_diff_nl" valid_values="" >
+Maximum allowable value for coefficient for eddy diffusivity for momentum for stable boundary layers.
 Default: set by build-namelist
 </entry>
 

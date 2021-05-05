@@ -30,8 +30,8 @@ void Functions<S,D>
   //Declare constants
   static constexpr Scalar lambda_low   = 0.001;
   static constexpr Scalar lambda_high  = 0.04;
-  static constexpr Scalar lambda_slope = 0.65;
-  static constexpr Scalar brunt_low    = 0.02;
+  static constexpr Scalar lambda_slope = 2.65;
+  static constexpr Scalar lambda_thresh= 0.02;
   static constexpr Scalar maxiso       = 20000; // Return to isotropic timescale [s]
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
@@ -42,7 +42,7 @@ void Functions<S,D>
       const Spack tscale = 2*tke(k)/a_diss(k);
 
       // define a damping term "lambda" based on column stability
-      Spack lambda(lambda_low + ((brunt_int/ggr)-brunt_low)*lambda_slope);
+      Spack lambda(lambda_low + ((brunt_int/ggr)-lambda_thresh)*lambda_slope);
       lambda = ekat::max(Spack(lambda_low),ekat::min(Spack(lambda_high),lambda));
 
       const Spack buoy_sgs_save = brunt(k);

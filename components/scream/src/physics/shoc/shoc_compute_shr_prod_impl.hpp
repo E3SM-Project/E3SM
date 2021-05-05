@@ -23,6 +23,9 @@ void Functions<S,D>
   const uview_1d<const Spack>& v_wind,
   const uview_1d<Spack>&       sterm)
 {
+  // Turbulent coefficient
+  const Scalar Ck_sh = 0.1;
+
   const Int nlev_pack = ekat::npack<Spack>(nlev);
 
   //scalarize so that we can use shift to compute the differece  ( x(k-1) - x )
@@ -45,7 +48,7 @@ void Functions<S,D>
     const Spack v_grad(range_pack1 > 0 && range_pack1 < nlev, grid_dz*(v_up_grid - v_grid));
 
     //compute shear production
-    sterm(k)           = u_grad*u_grad+v_grad*v_grad;
+    sterm(k)           = Ck_sh*(u_grad*u_grad+v_grad*v_grad);
   });
   /*
    * Set lower and upper boundary for shear production
