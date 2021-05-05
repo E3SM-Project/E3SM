@@ -2232,19 +2232,19 @@ flags should be captured within MPAS CMake files.
 <!-- CRL  Add new compiler "oneapi-ifort" for "jlse" machine configuration -->
 <compiler COMPILER="oneapi-ifort">
   <FFLAGS>
-    <base>-convert big_endian -assume byterecl -assume realloc_lhs -fp-model consistent</base>
+    <base>-convert big_endian -assume byterecl -traceback -assume realloc_lhs -fp-model consistent</base>
     <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
   </FFLAGS>
   <CFLAGS>
-    <base> -fp-model precise -std=gnu99 </base>
+    <base> -fp-model precise -std=gnu99 -traceback </base>
     <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
   <CXXFLAGS>
-    <base> -std=c++14 -fp-model source </base>
+    <base> -std=c++14 -fp-model source -traceback </base>
     <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE"> -O0 -g </append>
