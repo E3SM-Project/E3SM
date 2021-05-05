@@ -1,0 +1,369 @@
+#---------------------------------------------------------------------
+# Platform specific macros for csm_share unit tests
+#------------------------------------------------------------------------
+# Set up special characters
+null  :=
+
+.SUFFIXES: .F90 .c .o
+
+# Cancel rule to make *.o from *.mod
+%.o : %.mod
+
+# Defines to use everywhere
+
+cpre = $(null)-WF,-D$(null)
+CPPDEF := -DESMF_3 -D_NETCDF
+
+ifeq ($(ESMF_3),TRUE)
+   CPPDEF += -DESMF_3
+endif
+
+ifneq ($(SPMD),TRUE)
+   CPPDEF += -D_MPISERIAL
+endif
+
+LD := $(FC)
+
+
+CPPDEF    += -DSEQ_ESMF -DNOPERF
+# For linking with external ESMF
+# If ESMF_BLD is defined then set ESMF_MOD and ESMF_LIB based on it
+ifneq ($(ESMF_BLD),$(null))
+  ESMF_BOPT := g
+  ESMF_MOD   = $(ESMF_BLD)/mod/mod$(ESMF_BOPT)/$(ESMF_ARCH)
+  ESMF_LIB   = $(ESMF_BLD)/lib/lib$(ESMF_BOPT)/$(ESMF_ARCH)
+else
+  ESMF_MOD  := .
+  ESMF_LIB  := .
+endif
+
+# Determine platform
+UNAMES := $(shell uname -s)
+
+.F90.o:
+	$(FC) -c $(FFLAGS) $<
+.c.o:
+	$(CC) -c $(CFLAGS) $<
+
+#------------------------------------------------------------------------
+# Linux
+#------------------------------------------------------------------------
+
+ifeq ($(UNAMES),Linux)
+
+ifeq ($(FC),f77)
+  FC := pgfortran
+endif
+
+CFLAGS      :=
+LDFLAGS     :=
+ifeq ($(FC),pgfortran)
+   CPPDEF      += -DLINUX -DFORTRAN_UNDERSCORE_ -DCPRPGI
+   ifeq ($(INC_MPI),$(null))
+      INC_MPI    := /usr/local/mpich-1.2.7p1-pgi-pgcc-pghf-6.1-3/include
+   endif
+   ifeq ($(LIB_MPI),$(null))
+      LIB_MPI    := /usr/local/mpich-1.2.7p1-pgi-pgcc-pghf-6.1-3/lib
+   endif
+   ifeq ($(INC_NETCDF),$(null))
+      INC_NETCDF := /usr/local/netcdf-3.6.1-pgi-hpf-cc-6.1-6/include
+   endif
+   ifeq ($(LIB_NETCDF),$(null))
+      LIB_NETCDF := /usr/local/netcdf-3.6.1-pgi-hpf-cc-6.1-6/lib
+   endif
+   CC         := pgcc
+   ifeq ($(SPMD),TRUE)
+      ESMF_ARCH  := Linux.pgi.32.mpich.default
+   else
+      ESMF_ARCH  := Linux.pgi.32.mpiuni.default
+   endif
+   F90FLAGS     := -Mfree
+   FFLAGS       := $(CPPFLAGS) $(CPPDEF) $(F90FLAGS) -Mrecursive -Mdalign \
+		   -Mextend $(cpp_path) -I$(INC_NETCDF) \
+		   -g -Mbounds -I$(INC_MPI)
+   ifneq ($(FLTTRAP),FALSE)
+      FFLAGS    += -Ktrap=fp
+   endif
+   LDFLAGS      += -Bstatic
+endif
+ifeq ($(FC),nagfor)
+   CPPDEF      += -DLINUX -DFORTRAN_UNDERSCORE_ -DCPRNAG
+   ifeq ($(INC_MPI),$(null))
+      INC_MPI    := /home/santos/mpich-gcc-nag/include
+   endif
+   ifeq ($(LIB_MPI),$(null))
+      LIB_MPI    := /home/santos/mpich-gcc-nag/lib
+   endif
+   ifeq ($(INC_NETCDF),$(null))
+      INC_NETCDF := /usr/local/netcdf-gcc-nag/include
+   endif
+   ifeq ($(LIB_NETCDF),$(null))
+      LIB_NETCDF := /usr/local/netcdf-gcc-nag/lib
+   endif
+   CC         := gcc
+   ifeq ($(SPMD),TRUE)
+      ESMF_ARCH  := Linux.pgi.32.mpich.default
+   else
+      ESMF_ARCH  := Linux.pgi.32.mpiuni.default
+   endif
+   FFLAGS       := $(CPPFLAGS) $(CPPDEF) $(F90FLAGS) \
+                   $(cpp_path) -I$(INC_NETCDF) \
+		   -g -I$(INC_MPI)
+   FFLAGS += -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_reduce,mpi_allreduce
+   ifeq ($(FLTTRAP),FALSE)
+      FFLAGS    += -ieee=full
+   endif
+endif
+ifeq ($(FC),pathf90)
+   CPPDEF      += -DLINUX -DFORTRAN_UNDERSCORE_
+   CC         := pathcc
+   ifeq ($(SPMD),TRUE)
+      ESMF_ARCH  := Linux..pathscale.32.mpich.default
+   else
+      ESMF_ARCH  := Linux.pathscale.32.mpiuni.default
+   endif
+   FFLAGS       := $(CPPFLAGS) $(CPPDEF) $(F90FLAGS) \
+		   $(cpp_path) -I$(INC_NETCDF) \
+		   -g -extend_source -ftpp -fno-second-underscore
+endif
+ifeq ($(FC),ftn)
+   CPPDEF      += -DLINUX -DFORTRAN_UNDERSCORE_
+   CC         := pathcc
+   ifeq ($(SPMD),TRUE)
+      ESMF_ARCH  := Linux..pathscale.32.mpich.default
+   else
+      ESMF_ARCH  := Linux.pathscale.32.mpiuni.default
+   endif
+   FFLAGS       := $(CPPFLAGS) $(CPPDEF) $(F90FLAGS) \
+		   $(cpp_path) -I$(INC_NETCDF) \
+		   -g -extend_source -ftpp -fno-second-underscore
+endif
+ifeq ($(FC),ifort)
+   CPPDEF      += -DLINUX -DFORTRAN_UNDERSCORE_ -DCPRINTEL
+   CC         := icc
+   ifeq ($(INC_MPI),$(null))
+      INC_MPI    := /usr/local/mpich-intel/include
+   endif
+   ifeq ($(LIB_MPI),$(null))
+      LIB_MPI    := /usr/local/mpich-intel/lib
+   endif
+   ifeq ($(INC_NETCDF),$(null))
+      INC_NETCDF := /usr/local/netcdf-intel/include
+   endif
+   ifeq ($(LIB_NETCDF),$(null))
+      LIB_NETCDF := /usr/local/netcdf-intel/lib
+   endif
+   ifeq ($(SPMD),TRUE)
+      ESMF_ARCH  := Linux.ifort.32.mpich.default
+   else
+      ESMF_ARCH  := Linux.ifort.32.mpiuni.default
+   endif
+   FFLAGS       := $(CPPFLAGS) $(CPPDEF) $(F90FLAGS) \
+		   $(cpp_path) -I$(INC_NETCDF) \
+		   -m64 -ftz -g -fp-model precise -convert big_endian -assume byterecl -traceback -CB
+   CFLAGS      += -m64 -ftz -v
+   LDFLAGS     += -m64
+endif
+ifeq ($(FC),gfortran)
+  CPPDEF      += -DLINUX -DFORTRAN_SAME -DCPRGNU
+  CC       := cc
+  FFLAGS   := -fno-underscoring $(CPPDEF) $(cpp_path) -I$(INC_NETCDF) \
+          $(FPPFLAGS) -g -fbounds-check -fno-range-check -m64
+  CFLAGS   += -m64
+  LDFLAGS  += -static -m64 -ffpe-trap=invalid,zero,overflow -fno-range-check
+  ifneq ($(FLTTRAP),FALSE)
+     LDFLAGS  += -ffpe-trap=invalid,zero,overflow
+     FFLAGS   += -ffpe-trap=invalid,zero,overflow
+  endif
+endif
+ifeq ($(FC),g95)
+  CPPDEF      += -DFORTRAN_SAME
+  CC       := gcc
+  FFLAGS   := -fno-underscoring $(CPPDEF) $(cpp_path) -I$(INC_NETCDF) \
+          $(FPPFLAGS) -g -fbounds-check -m64 -ffree-line-length-huge
+  CFLAGS   += -m64
+  LDFLAGS  += -fstatic -m64
+  ifneq ($(FLTTRAP),FALSE)
+     LDFLAGS  += -ffpe-trap=invalid,zero,overflow
+     FFLAGS   += -ffpe-trap=invalid,zero,overflow
+  endif
+endif
+ifeq ($(FC),xlf2003_r)
+  CPPDEF += -DLINUX -DFORTRAN_SAME -DCPRIBM
+  AIX_CPPDEF := $(patsubst -D%,$(cpre)%,$(CPPDEF))
+  FPPFLAGS := -WF,-P,$(AIX_CPPDEF)
+  ESMF_ARCH := AIX.default.64.mpiuni.default
+  ifeq ($(INC_NETCDF),$(null))
+     INC_NETCDF := /soft/libraries/netcdf/4.2.1.1/cnk-xl/V1R2M0-20130417/include
+  endif
+  ifeq ($(LIB_NETCDF),$(null))
+     LIB_NETCDF := /soft/libraries/netcdf/4.2.1.1/cnk-xl/V1R2M0-20130417/lib
+  endif
+  FREEFLAGS  := -qsuffix=f=f90:cpp=F90
+  FFLAGS   := $(FREEFLAGS) $(cpp_path)  -I$(INC_NETCDF) -I$(LIB_NETCDF) $(FPPFLAGS) \
+	  -qarch=auto -qspillsize=2500 \
+	  -g -qfullpath -q64 -C -d
+  CC         := cc_r
+  CFLAGS     += -O2 -q64
+  LDFLAGS    += -q64 -L/bgsys/drivers/ppcfloor/comm/lib -Wl,--relax -Wl,--allow-multiple-definition -qfullpath
+  ifneq ($(FLTTRAP),FALSE)
+     FFLAGS   += -qinitauto=FF911299 -qflttrap=ov:zero:inv:en -qhalt=w
+  endif
+  ifeq ($(SPMD),TRUE)
+    LDFLAGS    += -lmpi_r
+  endif
+  ifeq ($(SMP),TRUE)
+    FFLAGS  += -qsmp=omp:noopt
+    LDFLAGS += -qsmp=omp:noopt
+  endif
+
+endif
+LDFLAGS     += -L$(LIB_NETCDF) -lnetcdf
+ifeq ($(SPMD),TRUE)
+   LDFLAGS      += -L$(LIB_MPI) -lmpich
+endif
+CFLAGS      += $(cpp_path) $(CPPDEF)
+LD           := $(FC)
+ARFLAGS := ru
+RANLIB     :=  echo
+
+# For linking with external ESMF
+ifneq ($(ESMF_BLD),$(null))
+   FFLAGS    += -M$(ESMF_BLD)/mod/mod$(ESMF_BOPT)/$(ESMF_ARCH) -M.
+endif
+
+#.F90.o:
+#	$(FC) $(CPPFLAGS) $<
+#	$(FC) $(F90FLAGS) $*.f
+
+endif
+#------------------------------------------------------------------------
+# AIX
+#------------------------------------------------------------------------
+ifeq ($(UNAMES),AIX)
+
+ifeq ($(SPMD),TRUE)
+   FC := mpxlf90_r
+   ESMF_ARCH := AIX.default.64.mpi.default
+else
+   FC := xlf90_r
+   ESMF_ARCH := AIX.default.64.mpiuni.default
+endif
+CPPDEF      += -DFORTRAN_SAME -DCPRIBM
+AIX_CPPDEF := $(patsubst -D%,$(cpre)%,$(CPPDEF))
+FPPFLAGS := -WF,-P,-DAIX $(AIX_CPPDEF)
+FREEFLAGS  := -qsuffix=f=f90:cpp=F90
+FFLAGS   := $(FREEFLAGS) $(cpp_path)  -I$(INC_NETCDF) -I$(LIB_NETCDF) $(FPPFLAGS) \
+	-qarch=auto -qspillsize=2500 \
+	-g -qfullpath -q64 -C -d
+CC         := mpcc_r
+CFLAGS     := $(cpp_path) -O2 $(CPPDEF) -q64
+LDFLAGS    := -L$(LIB_NETCDF) -lnetcdf -q64 -lmassv
+LD := $(FC)
+ifneq ($(FLTTRAP),FALSE)
+   FFLAGS   += -qinitauto=FF911299 -qflttrap=ov:zero:inv:en -qhalt=w
+endif
+ifeq ($(FC),mpxlf90_r)
+  LDFLAGS    += -lmpi_r
+endif
+ifeq ($(SMP),TRUE)
+  FFLAGS  += -qsmp=omp:noopt
+  LDFLAGS += -qsmp=omp:noopt
+endif
+ARFLAGS := -X 64 ru
+RANLIB     := ranlib
+
+endif
+
+#------------------------------------------------------------------------
+# Darwin
+#------------------------------------------------------------------------
+ifeq ($(UNAMES),Darwin)
+
+CC := gcc
+LDFLAGS    := -g -L$(LIB_NETCDF) -lnetcdf -lSystemStubs
+
+ifeq ($(FC),ifort)
+   CPPDEF      += -DLINUX -DFORTRAN_UNDERSCORE_
+   CC         := icc
+   ifeq ($(INC_MPI),$(null))
+      INC_MPI    := /usr/local/mpich-intel/include
+   endif
+   ifeq ($(LIB_MPI),$(null))
+      LIB_MPI    := /usr/local/mpich-intel/lib
+   endif
+   ifeq ($(INC_NETCDF),$(null))
+      INC_NETCDF := /usr/local/netcdf-intel/include
+   endif
+   ifeq ($(LIB_NETCDF),$(null))
+      LIB_NETCDF := /usr/local/netcdf-intel/lib
+   endif
+   ifeq ($(SPMD),TRUE)
+      ESMF_ARCH  := Linux.ifort.32.mpich.default
+   else
+      ESMF_ARCH  := Linux.ifort.32.mpiuni.default
+   endif
+   FFLAGS       := $(CPPFLAGS) $(CPPDEF) $(F90FLAGS) \
+		   $(cpp_path) -I$(INC_NETCDF) \
+		   -m64 -ftz -g -fp-model precise -convert big_endian -assume byterecl -traceback -CB
+   CFLAGS      += -m64 -ftz -v
+   LDFLAGS     += -m64
+   gptl.o: gptl.c
+	  $(CC) -c -I/usr/include/machine $(CFLAGS) $<
+endif
+ifeq ($(FC),g95)
+  ifeq ($(SPMD),TRUE)
+    ESMF_ARCH := Darwin.g95.32.mpich.default
+  else
+    ESMF_ARCH := Darwin.g95.32.mpiuni.default
+  endif
+  FFLAGS   := -fno-underscoring $(CPPDEF) $(cpp_path) -I$(INC_NETCDF) \
+          $(FPPFLAGS) -g -fbounds-check -fstatic -ffree-line-length-huge -ffree-form \
+          -ftrace=full
+endif
+ifeq ($(FC),gfortran)
+  ifeq ($(SPMD),TRUE)
+    ESMF_ARCH := Darwin.gfortran.32.mpich.default
+  else
+    ESMF_ARCH := Darwin.gfortran.32.mpiuni.default
+  endif
+  FFLAGS   := -fno-underscoring $(CPPDEF) $(cpp_path) -I$(INC_NETCDF) \
+          $(FPPFLAGS) -g -fbounds-check -fno-range-check
+  ifneq ($(FLTTRAP),FALSE)
+     LDFLAGS  += -ffpe-trap=invalid,zero,overflow
+     FFLAGS   += -ffpe-trap=invalid,zero,overflow
+  endif
+  LDFLAGS += -static
+endif
+CFLAGS     := $(cpp_path) -O2 $(CPPDEF) \
+	    -I/Developer/SDKs/MacOSX10.4.0.sdk/usr/include/malloc -I/usr/include -I/usr/include/malloc
+ARFLAGS := ru
+RANLIB     := ranlib
+LD := $(FC)
+
+# For linking with MPICH
+ifeq ($(SPMD),TRUE)
+   LDFLAGS  += -lmpich
+   LD       := mpif90
+endif
+LDFLAGS    += -lSystemStubs_profile
+
+# For linking with external ESMF
+ifneq ($(ESMF_BLD),$(null))
+   LDFLAGS    += -lgcc_s.1.0 -lSystemStubs_debug
+endif
+
+endif
+
+#------------------------------------------------------------------------
+# End of platform specific
+#------------------------------------------------------------------------
+# For linking with external ESMF
+ifneq ($(ESMF_BLD),$(null))
+  include $(ESMF_BLD)/lib/esmf.mk
+  LDFLAGS += $(ESMF_F90LINKRPATHS) $(ESMF_F90LINKPATHS) $(ESMF_F90ESMFLINKLIBS) $(ESMF_CXXLINKLIBS)
+  FFLAGS  += $(ESMF_F90COMPILEPATHS)
+  LD      := $(ESMF_F90LINKER)
+endif
+
+RM := rm
