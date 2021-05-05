@@ -484,7 +484,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
    real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
-               out_v(npsq,nlev), out_psv(npsq)  , out_gridx(npsq), out_gridy(npsq)
+               out_v(npsq,nlev), out_psv(npsq)  , out_gridx(np,np), out_gridy(np,np)
    real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
    real(r8), parameter :: fac = 1000._r8     
    type(cam_out_t),     intent(inout) :: cam_out(:) ! Output from CAM to surface
@@ -536,12 +536,8 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    if (dp_crm) then
 
      do ie=1,nelemd
-       do j=1,np
-         do i=1,np
-           out_gridx(i+(j-1)*np) = dyn_in%elem(ie)%spherep(i,j)%lat
-           out_gridy(i+(j-1)*np) = dyn_in%elem(ie)%spherep(i,j)%lon
-         enddo
-       enddo
+       out_gridx(:,:) = dyn_in%elem(ie)%spherep(:,:)%lat
+       out_gridy(:,:) = dyn_in%elem(ie)%spherep(:,:)%lat
        call outfld('crm_grid_x', out_gridx, npsq, ie)
        call outfld('crm_grid_y', out_gridy, npsq, ie)
      enddo
