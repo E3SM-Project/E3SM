@@ -2229,6 +2229,67 @@ flags should be captured within MPAS CMake files.
   </CXXFLAGS>
 </compiler>
 
+<!-- CRL  Add new compiler "oneapi-ifort" for "jlse" machine configuration -->
+<compiler COMPILER="oneapi-ifort">
+  <FFLAGS>
+    <base>-convert big_endian -assume byterecl -assume realloc_lhs -fp-model consistent</base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
+  </FFLAGS>
+  <CFLAGS>
+    <base> -fp-model precise -std=gnu99 </base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+  </CFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++14 -fp-model source </base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+  </CXXFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -fixed -132 </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -free </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <!-- CRL begin modifications to use OneAPI classic compilers -->
+  <MPIFC>mpiifort</MPIFC>
+  <MPICC>mpiicc</MPICC>
+  <MPICXX>mpiicpc</MPICXX>
+  <SCC>icc</SCC>
+  <SCXX>icpc</SCXX>
+  <SFC>ifort</SFC>
+  <!-- CRL begin modifications to use OneAPI classic compilers -->
+  <LDFLAGS>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+  </LDFLAGS>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib -mkl</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nc-config --libs}</append>
+  </SLIBS>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+</compiler>
+<!-- CRL  End of "oneapi-ifort" compiler -->
+
 <compiler MACH="jlse" COMPILER="intel">
   <CONFIG_ARGS>
     <base> --host=Linux </base>

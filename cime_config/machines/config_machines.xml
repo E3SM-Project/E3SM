@@ -1615,7 +1615,7 @@
     <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu</COMPILERS>
+    <COMPILERS>intel,gnu,oneapi-ifort</COMPILERS>
     <MPILIBS>impi,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/home/azamat/e3sm/inputdata</DIN_LOC_ROOT>
@@ -1629,7 +1629,7 @@
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="impi">
       <executable>mpirun</executable>
@@ -1661,9 +1661,15 @@
         <command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">oneapi</command>
+	<command name="load">oneapi/2021.04.30.001</command>
+      </modules>
+      <modules compiler="oneapi-ifort">
+	<command name="load">oneapi/2021.04.30.001</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
+	<command name="load">mpi</command>
+      </modules>
+      <modules compiler="oneapi-ifort" mpilib="impi">
 	<command name="load">mpi</command>
       </modules>
       <modules compiler="gnu">
@@ -1677,6 +1683,10 @@
       <env name="PATH">/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="impi">
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
+    </environment_variables>
+    <environment_variables compiler="oneapi-ifort" mpilib="impi">
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
       <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
     </environment_variables>
