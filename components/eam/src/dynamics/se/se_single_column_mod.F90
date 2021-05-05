@@ -445,8 +445,10 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
 
   ! Now apply the nudging tendency for each variable
   do ie=1,nelemd_todo
+#ifdef MODEL_THETA_L
     ! Get updated Rstar to convert to density weighted potential temperature
     call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
+#endif
     do j=1,np_todo
       do i=1,np_todo
         do k=1,nlev
