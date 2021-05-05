@@ -40,7 +40,7 @@ real(rl):: tau
 real(rl), parameter :: rh2o    = 461.5d0,            &                  ! Gas constant for water vapor (J/kg/K)
                        Mvap    = (Rwater_vapor/Rgas) - 1.d0             ! Constant for virtual temp. calc. (~0.608)
 
-real(rl) :: sample_period  = 60.0_rl
+real(rl) :: sample_period  = 2.0_rl
 real(rl) :: rad2dg = 180.0_rl/pi
 
 type :: PhysgridData_t
@@ -355,7 +355,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   enddo
 
-  sample_period = 60.0 ! sec
+  sample_period = 1 ! 60 orig sec
 end subroutine
 
 !_______________________________________________________________________
@@ -399,7 +399,9 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
     pmin_ps    = parallelMin(min_ps,   hybrid)
 
     if (hybrid%masterthread) then
-      print *,"time=",time_at(tl%nstep)," pmax_w (m/s)=",pmax_w," pmax_precl (mm/day)=",pmax_precl*(1000.0)*(24.0*3600)," pmin_ps (Pa)=",pmin_ps
+      print *,"time=",time_at(tl%nstep)," pmax_w (m/s)=",pmax_w
+      print *,"time=",time_at(tl%nstep)," pmax_precl (mm/day)=",pmax_precl*(1000.0)*(24.0*3600)
+      print *,"time=",time_at(tl%nstep)," pmin_ps (Pa)=",pmin_ps
 
       open(unit=10,file=w_filename,form="formatted",position="append")
         write(10,'(99E24.15)') pmax_w
