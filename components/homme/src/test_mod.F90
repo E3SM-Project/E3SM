@@ -87,7 +87,8 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('planar_hydro_mtn_wave');
     case('planar_nonhydro_mtn_wave');
     case('planar_schar_mtn_wave');
-    case('planar_rising_bubble'); call dcmip2016_init();
+    case('planar_rising_bubble');
+           if (bubble_moist) call dcmip2016_init();
     case('planar_density_current');
     case('planar_baroclinic_instab');
     case('planar_moist_rising_bubble');

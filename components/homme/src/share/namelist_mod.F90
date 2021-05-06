@@ -529,10 +529,17 @@ call set_planar_defaults()
 
 !checks on planar tests
 if (test_case(1:7)=="planar_") then
+
 !check on Lx, Ly
 if(lx .le. 0.d0 .or. ly .le. 0.d0) then
 call abortmp('for planar tests, planar_lx and planar_ly should be >0')
 endif
+
+!forcing q1=0 if bubble is dry
+if (.not. bubble_moist) then
+   bubble_moist_dq = 0.0
+endif
+
 endif
 
 
