@@ -2602,7 +2602,6 @@ contains
       ! add a shortened version.
 !     call MPAS_stream_mgr_add_att(domain % streamManager, 'history', domain % history)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'history', histAtt)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'source', domain % core % source)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'Conventions', domain % core % Conventions)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'parent_id', domain % parent_id)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'mesh_spec', domain % mesh_spec)

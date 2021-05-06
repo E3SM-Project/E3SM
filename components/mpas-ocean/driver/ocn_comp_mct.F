@@ -2674,7 +2674,6 @@ contains
       call MPAS_stream_mgr_add_att(domain % streamManager, 'core_name', domain % core % coreName)
       ! DWJ 10/01/2014: Eventually add the real history attribute, for now (due to length restrictions)
       ! add a shortened version.
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'source', domain % core % source)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'parent_id', domain % parent_id)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'mesh_spec', domain % mesh_spec)
 
