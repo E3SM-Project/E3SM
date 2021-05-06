@@ -16,7 +16,7 @@ module dynSubgridAdjustmentsMod
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use decompMod              , only : bounds_type
   use elm_varpar             , only : ndecomp_pools, nlevdecomp
-  use elm_varctl             , only : use_crop, use_nitrif_denitrif
+  use elm_varctl             , only : use_crop
   use elm_varcon             , only : dzsoi_decomp
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
   use dynPatchStateUpdaterMod, only : update_patch_state, update_patch_state_partition_flux_by_type

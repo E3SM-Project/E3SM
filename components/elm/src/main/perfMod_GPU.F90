@@ -7,7 +7,7 @@ module perfMod_GPU
 
 contains
 
-  subroutine  t_startGPU(event)
+  subroutine  t_start_lnd(event)
 
     character(len=64), intent(in) :: event
 
@@ -15,9 +15,9 @@ contains
       call t_startf(trim(event))
 #endif
 
-  end subroutine t_startGPU
+  end subroutine t_start_lnd
 
-  subroutine  t_stopGPU(event)
+  subroutine  t_stop_lnd(event)
 
     character(len=64), intent(in) :: event
 
@@ -25,7 +25,7 @@ contains
       call t_stopf(trim(event))
 #endif
 
-end subroutine t_stopGPU
+end subroutine t_stop_lnd
 
 
 end module perfMod_GPU

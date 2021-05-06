@@ -798,11 +798,11 @@ contains
 
     ! Solve the system
     event = 'SoilTempBandDiag'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     call BandDiagonal(bounds, -nlevsno, nlevgrnd, jtop(begc:endc), jbot(begc:endc), &
          num_filter, filter, nband, bmatrix(begc:endc, :, :), &
          rvector(begc:endc, :), tvector(begc:endc, :))
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
   end associate
 
@@ -858,7 +858,7 @@ contains
     character(len=64) :: event
     !-----------------------------------------------------------------------
     event = 'SoilThermProp'
-    call t_startGPU( event )
+    call t_start_lnd( event )
 
     associate(                                                 &
          snl          =>    col_pp%snl                       , & ! Input:  [integer  (:)   ]  number of snow layers
@@ -1039,7 +1039,7 @@ contains
             end if
          end do
       end do
-      call t_stopGPU( event )
+      call t_stop_lnd( event )
 
     end associate
 
@@ -1083,7 +1083,7 @@ contains
     character(len=64) :: event 
     !-----------------------------------------------------------------------
     event = 'PhaseChangeH2osfc'
-    call t_startGPU( event )
+    call t_start_lnd( event )
 
     associate(                                                                   &
          snl                       =>    col_pp%snl                               , & ! Input:  [integer  (:)   ] number of snow layers
@@ -1252,7 +1252,7 @@ contains
             endif
          endif
       enddo
-      call t_stopGPU( event )
+      call t_stop_lnd( event )
 
     end associate
 
@@ -1310,7 +1310,7 @@ contains
     character(len=64) :: event 
     !-----------------------------------------------------------------------
     event = 'PhaseChangebeta'
-    call t_startGPU( event )
+    call t_start_lnd( event )
 
     associate(                                                        &
          snl              =>    col_pp%snl                             , & ! Input:  [integer  (:)   ] number of snow layers
@@ -1637,7 +1637,7 @@ contains
          end if
       end do
 
-      call t_stopGPU( event )
+      call t_stop_lnd( event )
       do j = -nlevsno+1,0
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)

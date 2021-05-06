@@ -165,7 +165,7 @@ contains
 
          dtime = dtime_mod
       event = 'bgp2_loop_1'
-      call t_startGPU(event)
+      call t_start_lnd(event)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          j = col_pp%snl(c)+1
@@ -242,9 +242,9 @@ contains
          end do
       end do
 
-      call t_stopGPU(event)
+      call t_stop_lnd(event)
       event = 'bgp2_loop_2'
-      call t_startGPU(event)
+      call t_start_lnd(event)
       ! Calculate ratio for rescaling pft-level fluxes to meet availability
 
       do fc = 1,num_nolakec
@@ -362,10 +362,10 @@ contains
          eflx_lh_grnd(p)   = qflx_evap_soi(p) * htvp(c)
 
       end do
-      call t_stopGPU(event)
+      call t_stop_lnd(event)
 
       event = 'bgp2_loop_3'
-      call t_startGPU(event)
+      call t_start_lnd(event)
       ! Soil Energy balance check
 
       do fp = 1,num_nolakep
@@ -403,10 +403,10 @@ contains
             end if
          end do
       end do
-      call t_stopGPU(event)
+      call t_stop_lnd(event)
 
       event = 'bgp2_loop_4'
-      call t_startGPU(event)
+      call t_start_lnd(event)
       ! Outgoing long-wave radiation from vegetation + ground
       ! For conservation we put the increase of ground longwave to outgoing
       ! For urban patches, ulrad=0 and (1-fracveg_nosno)=1, and eflx_lwrad_out and eflx_lwrad_net
@@ -450,7 +450,7 @@ contains
       call p2c(bounds, num_nolakec, filter_nolakec, &
            errsoi_patch(bounds%begp:bounds%endp), &
            errsoi_col(bounds%begc:bounds%endc))
-      call t_stopGPU(event)
+      call t_stop_lnd(event)
 
     end associate
 

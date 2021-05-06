@@ -385,12 +385,12 @@ contains
       ! for available soil mineral N resource.
       ! in addition, calculate fpi_vr, fpi_p_vr, & fgp
       event = 'CNAllocation - phase-2'
-      call t_startGPU(event)
+      call t_start_lnd(event)
       call Allocation2_ResolveNPLimit(bounds,                     &
                num_soilc, filter_soilc, num_soilp, filter_soilp,    &
                cnstate_vars,                                        &
                soilstate_vars, dtime)
-      call t_stopGPU(event)
+      call t_stop_lnd(event)
 
 
       ! column loop to calculate actual immobilization and decomp rates, following
@@ -764,12 +764,12 @@ contains
       ! phase-3 Allocation for plants
       if(.not.use_fates)then
         event = 'CNAllocation - phase-3'
-        call t_startGPU(event)
+        call t_start_lnd(event)
         call Allocation3_PlantCNPAlloc (bounds                      , &
                   num_soilc, filter_soilc, num_soilp, filter_soilp    , &
                   canopystate_vars                                    , &
                   cnstate_vars, crop_vars, dt)
-        call t_stopGPU(event)
+        call t_stop_lnd(event)
       end if
       !------------------------------------------------------------------
 

@@ -154,35 +154,35 @@ contains
 
     ! only do if ed is off
     event = 'PhosphorusWeathering'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     call PhosphorusWeathering(num_soilc, filter_soilc, &
          cnstate_vars, dt)
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
     event = 'PhosphorusAdsportion'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     call PhosphorusAdsportion(num_soilc, filter_soilc, &
          cnstate_vars, dt)
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
     event = 'PhosphorusDesoprtion'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     call PhosphorusDesoprtion(num_soilc, filter_soilc, &
          cnstate_vars, dt)
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
     event = 'PhosphorusOcclusion'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     call PhosphorusOcclusion(num_soilc, filter_soilc, &
          cnstate_vars, dt)
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
     if (.not. nu_com_phosphatase) then
       event = 'PhosphorusBiochemMin'
-       call t_startGPU(event)
+       call t_start_lnd(event)
        call PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
             cnstate_vars, dt)
-       call t_stopGPU(event)
+       call t_stop_lnd(event)
     else
       ! nu_com_phosphatase is true
       !call t_startf('PhosphorusBiochemMin')
@@ -201,18 +201,18 @@ contains
        !-----------------------------------------------------------------------
 
     event = 'CNUpdate3'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp,dt)
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
     event = 'PUpdate3'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     call PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
         cnstate_vars, dt)
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
     event = 'CNPsum'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp  )
 
     call col_cf_summary_for_ch4(col_cf,bounds, num_soilc, filter_soilc)
@@ -263,7 +263,7 @@ contains
     call col_pf_Summary(col_pf,bounds, num_soilc, filter_soilc)
     call col_ps_Summary(col_ps,bounds, num_soilc, filter_soilc)
 
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
   end subroutine EcosystemDynLeaching
 
@@ -333,7 +333,7 @@ contains
     ! --------------------------------------------------
 
     event = 'CNZero'
-    call t_startGPU(event)
+    call t_start_lnd(event)
 
     if(.not.use_fates) then
        call veg_cf_SetValues(veg_cf, num_soilp, filter_soilp, 0._r8)
@@ -353,34 +353,34 @@ contains
     call col_nf_SetValues(col_nf,num_soilc, filter_soilc, 0._r8)
     call col_pf_SetValues(col_pf,num_soilc, filter_soilc, 0._r8)
 
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
     ! --------------------------------------------------
     ! Nitrogen Deposition, Fixation and Respiration, phosphorus dynamics
     ! --------------------------------------------------
 
     event = 'CNDeposition'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     call NitrogenDeposition(bounds, &
          atm2lnd_vars, dt )
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
     event = 'CNFixation'
     if ( (.not. nu_com_nfix) .or. use_fates) then
-      call t_startGPU(event)
+      call t_start_lnd(event)
        call NitrogenFixation( num_soilc, filter_soilc, dayspyr)
-       call t_stopGPU(event)
+       call t_stop_lnd(event)
     else
        ! nu_com_nfix is true
-       call t_startGPU(event)
+       call t_start_lnd(event)
        call NitrogenFixation_balance( num_soilc, filter_soilc, cnstate_vars )
-       call t_stopGPU(event)
+       call t_stop_lnd(event)
     end if
 
    if(.not.use_fates)then
 
        event = 'MaintenanceResp'
-       call t_startGPU(event)
+       call t_start_lnd(event)
        if (crop_prog) then
           call NitrogenFert(bounds, num_soilc,filter_soilc )
 
@@ -390,7 +390,7 @@ contains
        ! This is auto-trophic respiration, thus don't call this for FATES
        call MaintenanceResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             canopystate_vars, soilstate_vars,  photosyns_vars )
-       call t_stopGPU(event)
+       call t_stop_lnd(event)
 
     end if
 
@@ -399,22 +399,22 @@ contains
        ! for P competition purpose, calculate P fluxes that will potentially increase solution P pool
        ! then competitors take up solution P
        event ='PhosphorusWeathering'
-       call t_startGPU(event)
+       call t_start_lnd(event)
        call PhosphorusWeathering(num_soilc, filter_soilc, cnstate_vars, dt)
-       call t_stopGPU(event)
+       call t_stop_lnd(event)
 
        event = 'PhosphorusBiochemMin'
        if (.not. nu_com_phosphatase) then
-           call t_startGPU(event)
+           call t_start_lnd(event)
            call PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
                 cnstate_vars, dt)
-           call t_stopGPU(event)
+           call t_stop_lnd(event)
        else
            ! nu_com_phosphatase is true
-           call t_startGPU(event)
+           call t_start_lnd(event)
            call PhosphorusBiochemMin_balance(bounds,num_soilc, filter_soilc, &
                 cnstate_vars, dt)
-           call t_stopGPU(event)
+           call t_stop_lnd(event)
        end if
     end if
 
@@ -423,9 +423,9 @@ contains
     ! --------------------------------------------------
 
     event = 'PhosphorusDeposition'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     call PhosphorusDeposition(bounds,  atm2lnd_vars )
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
     !-------------------------------------------------------------------------------------------------
     ! plfotran: 'decomp_rate_constants' must be calculated before entering "clm_interface"
@@ -450,12 +450,12 @@ contains
     if(.not.use_fates)then
 
        event = 'CNAllocation - phase-1'
-       call t_startGPU(event)
+       call t_start_lnd(event)
        call Allocation1_PlantNPDemand (bounds                             , &
                 num_soilc, filter_soilc, num_soilp, filter_soilp            , &
                 photosyns_vars, crop_vars, canopystate_vars, cnstate_vars   , &
                dt, year )
-       call t_stopGPU(event)
+       call t_stop_lnd(event)
     end if
 
 
@@ -537,7 +537,7 @@ contains
     ! Call the main CN routines
 
     event = 'SoilLittDecompAlloc'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     !----------------------------------------------------------------
     if(.not.use_elm_interface) then
        ! directly run elm-bgc
@@ -552,7 +552,7 @@ contains
     call t_stopf('SoilLittDecompAlloc')
 
     event = 'SoilLittDecompAlloc2'
-    call t_startGPU(event)
+    call t_start_lnd(event)
     !----------------------------------------------------------------
     ! SoilLittDecompAlloc2 is called by both elm-bgc & pflotran
     ! pflotran: call 'SoilLittDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
@@ -562,7 +562,7 @@ contains
              cnstate_vars, ch4_vars,                  &
              crop_vars, atm2lnd_vars,                 &
              dt )
-    call t_stopGPU(event)
+    call t_stop_lnd(event)
 
     !----------------------------------------------------------------
 
@@ -577,21 +577,21 @@ contains
         ! litterfall timestep in deciduous systems
 
         event = 'Phenology'
-        call t_startGPU(event)
+        call t_start_lnd(event)
         call Phenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
              num_pcropp, filter_pcropp, doalb, atm2lnd_vars, &
              crop_vars, canopystate_vars, soilstate_vars, &
              cnstate_vars )
-        call t_stopGPU(event)
+        call t_stop_lnd(event)
 
         !--------------------------------------------
         ! Growth respiration
         !--------------------------------------------
 
         event = 'GrowthResp'
-        call t_startGPU(event)
+        call t_start_lnd(event)
         call GrowthResp(num_soilp, filter_soilp )
-        call t_stopGPU(event)
+        call t_stop_lnd(event)
 
         call veg_cf_summary_rr(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, col_cf)
         if(use_c13) then
@@ -608,12 +608,12 @@ contains
 
         if( use_dynroot ) then
             event = 'RootDynamics'
-            call t_startGPU(event)
+            call t_start_lnd(event)
 
             call RootDynamics(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                   canopystate_vars,   &
                   cnstate_vars, crop_vars, energyflux_vars, soilstate_vars)
-            call t_stopGPU(event)
+            call t_stop_lnd(event)
         end if
 
         !--------------------------------------------
@@ -621,7 +621,7 @@ contains
         !--------------------------------------------
 
        event = 'CNUpdate0'
-       call t_startGPU(event)
+       call t_start_lnd(event)
        call CarbonStateUpdate0(num_soilp, filter_soilp,veg_cs,veg_cf, dt)
        if ( use_c13 ) then
           call CarbonStateUpdate0(num_soilp, filter_soilp,veg_cs,veg_cf, dt)
@@ -629,30 +629,30 @@ contains
        if ( use_c14 ) then
           call CarbonStateUpdate0(num_soilp, filter_soilp,veg_cs,veg_cf ,dt)
        end if
-       call t_stopGPU(event)
+       call t_stop_lnd(event)
 
         !--------------------------------------------
         if(use_pheno_flux_limiter)then
           event = 'phenology_flux_limiter'
-          call t_startGPU(event)
+          call t_start_lnd(event)
           call phenology_flux_limiter(bounds, num_soilc, filter_soilc,&
             num_soilp, filter_soilp, crop_vars, cnstate_vars,  &
             veg_cf, veg_cs, &
             c13_veg_cf, c13_veg_cs, &
             c14_veg_cf, c14_veg_cs, &
             veg_nf, veg_ns, veg_pf, veg_ps)
-          call t_stopGPU(event)
+          call t_stop_lnd(event)
         endif
         event = 'CNLitterToColumn'
-        call t_startGPU(event)
+        call t_start_lnd(event)
         call CNLitterToColumn(num_soilp, filter_soilp, cnstate_vars )
-        call t_stopGPU(event)
+        call t_stop_lnd(event)
 
         !--------------------------------------------
         ! Update1
         !--------------------------------------------
         event = 'CNUpdate1'
-        call t_startGPU(event)
+        call t_start_lnd(event)
 
         if ( use_c13 ) then
           call CarbonIsoFlux1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -665,6 +665,7 @@ contains
                cnstate_vars , &
                isotope=c14, isocol_cs=c14_col_cs, isoveg_cs=c14_veg_cs, isocol_cf=c14_col_cf, isoveg_cf=c14_veg_cf)
          end if
+         call t_stop_lnd(event) 
 
     end if  ! if(.not.use_fates)
 
@@ -677,6 +678,9 @@ contains
        ! Transfer fates litter fluxes into ELM source arrays
        call alm_fates%UpdateLitterFluxes(bounds)
     end if
+    
+   event = 'CNUpdate1'
+   call t_start_lnd(event)
 
    call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
          crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
@@ -697,26 +701,26 @@ contains
         cnstate_vars, dt)
 
 
-   call t_stopGPU(event)
+   call t_stop_lnd(event)
 
    event = 'SoilLittVertTransp'
-   call t_startGPU(event)
+   call t_start_lnd(event)
    call SoilLittVertTransp(bounds, &
             num_soilc, filter_soilc, &
             canopystate_vars, cnstate_vars )
-       call t_stopGPU(event)
+       call t_stop_lnd(event)
    if(.not.use_fates)then
        event = 'CNGapMortality'
-       call t_startGPU(event)
+       call t_start_lnd(event)
        call GapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp,&
                               cnstate_vars )
-       call t_stopGPU(event)
+       call t_stop_lnd(event)
 
        !--------------------------------------------
        ! Update2
        !--------------------------------------------
        event = 'CNUpdate2'
-       call t_startGPU(event)
+       call t_start_lnd(event)
 
        if ( use_c13 ) then
            call CarbonIsoFlux2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -796,15 +800,15 @@ contains
             cnstate_vars)
 
 
-       call t_stopGPU(event)
+       call t_stop_lnd(event)
 
    end if
 
    if ( use_erosion ) then
        event = 'ErosionFluxes'
-       call t_startGPU(event)
+       call t_start_lnd(event)
        call ErosionFluxes(bounds, num_soilc, filter_soilc, soilstate_vars, sedflux_vars )
-       call t_stopGPU(event)
+       call t_stop_lnd(event)
    end if
 
    !--------------------------------------------
