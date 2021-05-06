@@ -346,10 +346,12 @@ contains
       end if
 
     !for SPA
-      call pbuf_add_field('ATBLM', 'global', dtype_r8, (/pcols,pverp,nlwbands,12/), aer_tau_bnd_lw_mon_idx)
-      call pbuf_add_field('ATBSM', 'global', dtype_r8, (/pcols,pverp,nswbands,12/), aer_tau_bnd_sw_mon_idx)
-      call pbuf_add_field('ASBSM', 'global', dtype_r8, (/pcols,pverp,nswbands,12/), aer_ssa_bnd_sw_mon_idx)
-      call pbuf_add_field('AABSM', 'global', dtype_r8, (/pcols,pverp,nswbands,12/), aer_asm_bnd_sw_mon_idx)
+      if (do_SPA_optics) then
+         call pbuf_add_field('ATBLM', 'global', dtype_r8, (/pcols,pverp,nlwbands,12/), aer_tau_bnd_lw_mon_idx)
+         call pbuf_add_field('ATBSM', 'global', dtype_r8, (/pcols,pverp,nswbands,12/), aer_tau_bnd_sw_mon_idx)
+         call pbuf_add_field('ASBSM', 'global', dtype_r8, (/pcols,pverp,nswbands,12/), aer_ssa_bnd_sw_mon_idx)
+         call pbuf_add_field('AABSM', 'global', dtype_r8, (/pcols,pverp,nswbands,12/), aer_asm_bnd_sw_mon_idx)
+      end if
 
    end subroutine radiation_register
 

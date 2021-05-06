@@ -295,7 +295,9 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('QV_PREV',     'global',dtype_r8,(/pcols,pver/), qv_prev_idx)
    call pbuf_add_field('T_PREV',      'global',dtype_r8,(/pcols,pver/), t_prev_idx)
  !! for prescribed CCN
-   call pbuf_add_field('MON_CCN',  'global', dtype_r8,(/pcols,pver,12/),mon_ccn_idx)
+   if (do_prescribed_CCN) then
+      call pbuf_add_field('MON_CCN',  'global', dtype_r8,(/pcols,pver,12/),mon_ccn_idx)
+   end if
 
    if (masterproc) write(iulog,'(A20)') '    P3 register finished'
   end subroutine micro_p3_register
