@@ -1256,7 +1256,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 !    write(iulog,'(A,2I6)')'PJC, phys_run2: begchunk,endchunk =',begchunk,endchunk
 
 
-!!!$OMP PARALLEL DO PRIVATE (C, beg_count, NCOL, phys_buffer_chunk, end_count, sysclock_rate, sysclock_max, chunk_cost)
+!$OMP PARALLEL DO PRIVATE (C, beg_count, NCOL, phys_buffer_chunk, end_count, sysclock_rate, sysclock_max, chunk_cost)
     do c=begchunk,endchunk
 
        call system_clock(count=beg_count)

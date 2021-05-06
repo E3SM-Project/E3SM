@@ -906,7 +906,7 @@ end function chem_is_active
     use aero_model,            only : aero_model_init
     use mo_setsox,             only : sox_inti
     use constituents,          only : sflxnam
-
+    use UCI_cloudJ_interface,  only : cloudJ_init
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     type(physics_state), intent(in):: phys_state(begchunk:endchunk)
 
@@ -1030,6 +1030,8 @@ end function chem_is_active
                                  ymd = chlorine_loading_fixed_ymd, &
                                  tod = chlorine_loading_fixed_tod )
 
+     call cloudJ_init()     ! Initialize Cloud-J (aka Fast-J)
+     
      if ( chem_is('waccm_mozart') .or. chem_is('waccm_mozart_mam3') ) then
         call init_cfc11star(pbuf2d)
      endif

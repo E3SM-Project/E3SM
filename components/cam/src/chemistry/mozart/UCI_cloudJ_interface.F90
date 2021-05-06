@@ -40,17 +40,116 @@ module UCI_cloudJ_interface
 ! use pio
 ! use cam_pio_utils,only : cam_pio_openfile
 
+  USE FJX_CMN_MOD
+  
   implicit none
   private
+
+
+!!!  Variables common to this module
+  logical, parameter          :: LPRTJ  = .FALSE. !Turn On/off diagnostic output to atm.log and fort.7
+  logical, parameter          :: LPRTJ7 = .FALSE. !Turn On/off diagnostic to fort.7 (which only makes sense if run on a single CPU).
+  character*6,  dimension(JVN_)  ::  TITLJXX
+  integer                     :: JVNU,ANU,L1U
+  integer                     :: NJXX
+
+
+  integer ::  ox_ndx, o3_ndx, o3_inv_ndx, o3rad_ndx    ! O3 related indicies into concentration arrays
+  integer ::  ch4_ndx, inv_ndx_ch4          ! CH4 index into concentration arrays
+  integer ::  inv_ndx_M, inv_ndx_h2o        ! index in invariants array of airmass
+  real(r8)::  CH4_SURF                      ! Surface concentration of CH4 (vmr)
+
+  ! flag for the source used  (1=advection_array, 2=invariants_array, 3=surface_concentration)
+  integer ::  CH4_source_flag      ! CH4 
+
+
 
 !---------------------------------------------------------------------------------
 ! Public interfaces
 !---------------------------------------------------------------------------------
-  public :: cloudJ_interface
+  public :: cloudj_init, cloudJ_interface
  
 !================================================================================================
 contains
-!================================================================================================
+
+!---------------------------------------------------------------------------------
+! cloudJ_init routine
+!---------------------------------------------------------------------------------
+
+subroutine cloudJ_init()  !pmid, pint, zmid, zint, rlats, rlons, ncol)
+
+  USE FJX_INIT_MOD
+
+!  real(r8), intent(in)    :: pmid(pcols,pver)             ! midpoint pressure (Pa)
+!  real(r8), intent(in)    :: pint(pcols,pver+1)           ! interface pressures (Pa)
+!  real(r8), intent(in)    :: zmid(ncol,pver)              ! midpoint height (m)
+!  real(r8), intent(in)    :: zint(ncol,pver+1)            ! interface geopotential in km
+!  real(r8), intent(in)    :: rlats(ncol), rlons(ncol)     ! lats and longs (radians)
+
+  
+  ANU = AN_     ! max # FJX aerosols in layer
+  JVNU = JVN_   ! max # of J-values.  Currently set in UCI_fjx_cmn_mod.f90.  Can it be set by E3SM?
+  L1U = L1_     ! model levels +1
+
+!!! Fast-J sets the number of atmospheric levels via the LPAR
+!!! parameter in the FJX_CMN_MOD module. This must be consistent with
+!!! E3SM.  The easiest solution is to just abort if the # of levels
+!!! are inconsistent.   [PJC]
+  IF ( pver .NE. LPAR ) THEN
+     write (iulog,*) 'cloudj_interface: #E3SM_atm_levels = pver =',pver,',  LPAR =',LPAR
+     write (iulog,*) 'cloudj_interface: LPAR may need to be modified to match model levels.'
+     call endrun('cloudj_interface: ERROR. # of model layers in E3SM and Cloud-J are different.')
+  ENDIF
+     
+!!! Determine tracer indicies within concentration arrays
+    o3_ndx     = get_spc_ndx( 'O3' )
+    if (LPRTJ) write(iulog,'(a,i3)')'FAST-JX: o3_ndx =',o3_ndx
+
+    ch4_ndx     = get_spc_ndx( 'CH4' )
+    CH4_source_flag = 1
+    if (LPRTJ) write(iulog,'(a,i3)')'FAST-JX: ch4_ndx =',ch4_ndx
+    if (ch4_ndx < 0) then
+       CH4_source_flag = 2
+       if (LPRTJ) write(iulog,'(a)')'Prognostic tracer for CH4 is not available.  Trying invariant field...'
+       inv_ndx_ch4 = get_inv_ndx( 'CH4' )
+       inv_ndx_M   = get_inv_ndx( 'M' )
+       if (LPRTJ) write(iulog,'(a,2i3)')'FAST-JX: inv_ndx_ch4, inv_ndx_M =',inv_ndx_ch4,inv_ndx_M
+       if ( (inv_ndx_ch4 < 0)  .OR. (inv_ndx_M < 0) ) then
+       CH4_source_flag = 3
+          if (LPRTJ) write(iulog,'(a)')'Invariant fields needed for CH4 are not available.  Trying surface concentration...'
+          CH4_surf = chem_surfvals_get('CH4VMR')
+          if (LPRTJ) write(iulog,'(a,E12.3)') 'FAST-JX: Set CH4 to surface value.  CH4_surf(vmr) =',CH4_surf
+       endif
+    endif
+    if (LPRTJ) write(iulog,'(a,i3)')'FAST-JX: CH4_source_flag =',CH4_source_flag
+
+    inv_ndx_h2o = get_inv_ndx( 'H2O' )
+
+    !-----------------------------------------------------------------------
+    !---read in & store all fast-JX data:   single call at set up
+    !-----------------------------------------------------------------------
+    
+    !!!  JVNU passed in to INIT_FJX
+    !!!  NJXX passed back from INIT_FJX. Number of species to calculate J-values for.
+    !!!  TITLJXX passed back from INIT_FJX.  
+
+!!!    !$omp master
+    call INIT_FJX (TITLJXX,JVNU,NJXX)
+!!!    !$omp end master          
+!!!    !$omp barrier                                                                                                                               
+    !  if (LPRTJ) write(iulog,'(a)')     'FAST-JX: NOTE: number of E3SM photolysis reactions will usually be similar to the number of entries in the j2j data file.' 
+    if (LPRTJ) write(iulog,'(a,2i5)') 'FAST-JX: phtcnt, NRATJ =',phtcnt, NRATJ
+
+    IF ( phtcnt .NE. NRATJ ) then
+     !NOTE: The UCI-CTM may be able to handle cases in which the j2j file doesn't match the mechanism exactly. However, for E3SM, the current requirement is that the j2j file much match the chemical mechanism. 
+       call endrun('The number of photolysis reaction specified in j2j file must be the same as thenumber of photolysis reactions in E3SM chemical mechanism.')  ! The lack of spaces before 'number' is needed to line-break properly.
+    endif
+
+    !     open (77,file='tables/atmos_PTClds.dat',status='old',SHARED) !UNIX
+
+end subroutine cloudJ_init
+
+  
 !---------------------------------------------------------------------------------
 ! cloudJ_interface routine
 !---------------------------------------------------------------------------------
@@ -61,9 +160,7 @@ subroutine cloudJ_interface(photos, vmr, invariants, temper, cwat, cldfr, &
  !                           dt_diag, fracday, &
                  ncol, lchnk)
      
-  USE FJX_CMN_MOD
   USE FJX_SUB_MOD
-  USE FJX_INIT_MOD
   USE CLD_SUB_MOD, ONLY : CLOUD_JX
   USE OSA_SUB_MOD
   
@@ -93,21 +190,9 @@ subroutine cloudJ_interface(photos, vmr, invariants, temper, cwat, cldfr, &
 !     real(r8), intent(out)   :: dt_diag(pcols,8)             ! od diagnostics
 !     real(r8), intent(out)   :: fracday(pcols)               ! fraction of day
      
-  integer ::  ox_ndx, o3_ndx, o3_inv_ndx, o3rad_ndx    ! O3 related indicies into concentration arrays
-  integer ::  ch4_ndx, inv_ndx_ch4          ! CH4 index into concentration arrays
-  integer ::  inv_ndx_M, inv_ndx_h2o        ! index in invariants array of airmass
-  real(r8)::  CH4_SURF                      ! Surface concentration of CH4 (vmr)
-
-  ! flag for the source used  (1=advection_array, 2=invariants_array, 3=surface_concentration)
-  integer ::  CH4_source_flag      ! CH4             !
-
-
   !---------------key params in/out of CLOUD_J-------------------------
-  logical, parameter          :: LPRTJ  = .FALSE. !Turn On/off diagnostic output to atm.log and fort.7
-  logical, parameter          :: LPRTJ7 = .FALSE. !Turn On/off diagnostic to fort.7 (which only makes sense if run on a single CPU).
   logical                     :: LDARK
   integer                     :: IRAN
-  integer                     :: JVNU,ANU,L1U
   integer                     :: NICA,JCOUNT
   integer                     :: JP
   real*8                      :: U0,SZA,SOLF
@@ -135,17 +220,12 @@ subroutine cloudJ_interface(photos, vmr, invariants, temper, cwat, cldfr, &
   real*8, dimension(LWEPAR) :: CLDFRW,CLDIWCW,CLDLWCW
   real*8  SCALEH,CF,PMID_UCI,PDEL,ZDEL,ICWC,F1
   integer I,J,K,L,N
-  integer LTOP, NJXX,JP04,JP09
-  character*6,  dimension(JVN_)  ::  TITLJXX
+  integer LTOP,JP04,JP09
   character*11, dimension(4)     ::  TITJX
   real*8 VJOSA(L2_,2),VJSTD(L2_,2)
   
-!     integer, dimension(10) ::  &
-!          SZAscan = [ 0, 30, 60, 80, 86, 88, 90, 92, 94, 96]
-
   integer :: column_number
   integer :: level_number
-!    integer, parameter :: num_E3SM_atm_levels = 57   ! PJC: this will need to be changed to get from E3SM.
   integer, parameter :: cloud_freezing_temperature = 273 !PJC: temperature below which cloud is assumed to be ice
 
 
@@ -163,68 +243,10 @@ subroutine cloudJ_interface(photos, vmr, invariants, temper, cwat, cldfr, &
      write(iulog,'(A,i3,A,i3,A,i6)') '*** CloudJ_interface, iam =',iam,'   ncol =',ncol,'   lchnk =',lchnk    !pjc
      call shr_sys_flush(iulog)   ! pjc: flush buffer to iulog
   endif
-  
-  ANU = AN_     ! max # FJX aerosols in layer
-  JVNU = JVN_   ! max # of J-values.  Currently set in UCI_fjx_cmn_mod.f90.  Can it be set by E3SM?
-  L1U = L1_     ! model levels +1
-  
      
-!!! Fast-J sets the number of atmospheric levels via the LPAR
-!!! parameter in the FJX_CMN_MOD module. This must be consistent with
-!!! E3SM.  The easiest solution is to just abort if the # of levels
-!!! are inconsistent.   [PJC]
-     
-  IF ( pver .NE. LPAR ) THEN
-     write (iulog,*) 'cloudj_interface: #E3SM_atm_levels = pver =',pver,',  LPAR =',LPAR
-     write (iulog,*) 'cloudj_interface: LPAR may need to be modified to match model levels.'
-     call endrun('cloudj_interface: ERROR. # of model layers in E3SM and Cloud-J are different.')
-  ENDIF
 
-!!! Determine tracer indicies within concentration arrays
-    o3_ndx     = get_spc_ndx( 'O3' )
-    if (LPRTJ) write(iulog,'(a,i3)')'FAST-JX: o3_ndx =',o3_ndx
-
-    ch4_ndx     = get_spc_ndx( 'CH4' )
-    CH4_source_flag = 1
-    if (LPRTJ) write(iulog,'(a,i3)')'FAST-JX: ch4_ndx =',ch4_ndx
-    if (ch4_ndx < 0) then
-       CH4_source_flag = 2
-       if (LPRTJ) write(iulog,'(a)')'Prognostic tracer for CH4 is not available.  Trying invariant field...'
-       inv_ndx_ch4 = get_inv_ndx( 'CH4' )
-       inv_ndx_M   = get_inv_ndx( 'M' )
-       if (LPRTJ) write(iulog,'(a,2i3)')'FAST-JX: inv_ndx_ch4, inv_ndx_M =',inv_ndx_ch4,inv_ndx_M
-       if ( (inv_ndx_ch4 < 0)  .OR. (inv_ndx_M < 0) ) then
-       CH4_source_flag = 3
-          if (LPRTJ) write(iulog,'(a)')'Invariant fields needed for CH4 are not available.  Trying surface concentration...'
-          CH4_surf = chem_surfvals_get('CH4VMR')
-          if (LPRTJ) write(iulog,'(a,E12.3)') 'FAST-JX: Set CH4 to surface value.  CH4_surf(vmr) =',CH4_surf
-       endif
-    endif
-    if (LPRTJ) write(iulog,'(a,i3)')'FAST-JX: CH4_source_flag =',CH4_source_flag
-
-    inv_ndx_h2o = get_inv_ndx( 'H2O' )
 
 !-----------------------------------------------------------------------
-!---read in & store all fast-JX data:   single call at set up
-!-----------------------------------------------------------------------
-
-!!!  JVNU passed in to INIT_FJX
-!!!  NJXX passed back from INIT_FJX. Number of species to calculate J-values for.
-!!!  TITLJXX passed back from INIT_FJX.  
-
-  call INIT_FJX (TITLJXX,JVNU,NJXX)
-
-!  if (LPRTJ) write(iulog,'(a)')     'FAST-JX: NOTE: number of E3SM photolysis reactions will usually be similar to the number of entries in the j2j data file.' 
-  if (LPRTJ) write(iulog,'(a,2i5)') 'FAST-JX: phtcnt, NRATJ =',phtcnt, NRATJ
-
-  IF ( phtcnt .NE. NRATJ ) then
-     !NOTE: The UCI-CTM may be able to handle cases in which the j2j file doesn't match the mechanism exactly. However, for E3SM, the current requirement is that the j2j file much match the chemical mechanism. 
-     call endrun('The number of photolysis reaction specified in j2j file must be the same as thenumber of photolysis reactions in E3SM chemical mechanism.')  ! The lack of spaces before 'number' is needed to line-break properly.
-  endif
-!-----------------------------------------------------------------------
-!  IF (LPRTJ) WRITE (iulog,*) '*** PJC: After INIT_FJX ***'    ! comment this out when editing is complete
-!--P, T, Cld & Aersl profiles, simple test input case
-!     open (77,file='tables/atmos_PTClds.dat',status='old',SHARED) !UNIX
 
   DO column_number=1,ncol    !!!! Loop over columns in chunk
      if (LPRTJ) then
