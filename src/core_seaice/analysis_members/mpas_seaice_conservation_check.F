@@ -486,10 +486,12 @@ contains
          call mpas_log_write('===================================================================================')
       endif
 
-      ! set precompute to happen next timestep
-      call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAM", conservationCheckAMPool)
-      call MPAS_pool_get_array(conservationCheckAMPool, "performConservationPrecompute", performConservationPrecompute)
-      performConservationPrecompute = 1
+      ! set precompute to happen next timestep after output
+      if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, "conservationCheckOutput", ierr=ierr)) then
+         call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckAM", conservationCheckAMPool)
+         call MPAS_pool_get_array(conservationCheckAMPool, "performConservationPrecompute", performConservationPrecompute)
+         performConservationPrecompute = 1
+      endif
 
    end subroutine seaice_compute_conservation_check!}}}
 
