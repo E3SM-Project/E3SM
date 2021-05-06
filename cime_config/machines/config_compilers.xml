@@ -1755,7 +1755,6 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 -qstrict -Q </append>
     <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
-    <append DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en </append>
     <append> -qzerosize -qfree=f90 -qxlf2003=polymorphic</append>
     <append> -qspillsize=2500 -qextname=flush </append>
     <append COMP_NAME="cice" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
