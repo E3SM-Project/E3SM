@@ -728,7 +728,7 @@ contains
 
       ! Begin stability iteration
       event = 'can_iter'
-      call t_startGPU(event)
+      call t_start_lnd(event)
       ITERATION : do while (itlef <= itmax .and. fn > 0)
 
          ! Determine friction velocity, and potential temperature and humidity
@@ -1122,7 +1122,7 @@ contains
          end if
 
       end do ITERATION     ! End stability iteration
-      call t_stopGPU(event)
+      call t_stop_lnd(event)
 
       fn = fnorig
       filterp(1:fn) = fporig(1:fn)

@@ -10,7 +10,6 @@ module TridiagonalMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: Tridiagonal
-  public :: Tridiagonal_SoilLittVertTransp
   public :: trisim
   interface Tridiagonal
     module procedure Tridiagonal_sr
