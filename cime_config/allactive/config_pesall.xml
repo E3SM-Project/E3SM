@@ -10099,7 +10099,7 @@
         </rootpe>
       </pes>      
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="T">
-        <comment> cmod016b64x1 s=2.3 </comment>
+        <comment> cmod016b64x1 s=2.8 </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -10127,17 +10127,46 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>      
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="S">
-        <comment> cmod043b64x1 s=5.9 </comment>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="XS">
+        <comment> cmod040c64x1 s=5.6 </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
-          <ntasks_atm>2112</ntasks_atm>
-          <ntasks_lnd>512</ntasks_lnd>
-          <ntasks_rof>1600</ntasks_rof>
-          <ntasks_ice>2080</ntasks_ice>
+          <ntasks_atm>1920</ntasks_atm>
+          <ntasks_lnd>1920</ntasks_lnd>
+          <ntasks_rof>1920</ntasks_rof>
+          <ntasks_ice>1920</ntasks_ice>
           <ntasks_ocn>640</ntasks_ocn>
-          <ntasks_cpl>2112</ntasks_cpl>
+          <ntasks_cpl>1920</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>1920</rootpe_ocn>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>      
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="S">
+        <comment> cmod060d64x1 s=8.0 </comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>2944</ntasks_atm>
+          <ntasks_lnd>512</ntasks_lnd>
+          <ntasks_rof>2048</ntasks_rof>
+          <ntasks_ice>2880</ntasks_ice>
+          <ntasks_ocn>880</ntasks_ocn>
+          <ntasks_cpl>2944</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -10152,21 +10181,21 @@
           <rootpe_lnd>0</rootpe_lnd>
           <rootpe_rof>512</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>2112</rootpe_ocn>
+          <rootpe_ocn>2944</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>      
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
-        <comment> cmod077v64x1 s=9.6 </comment>
+        <comment> cmod080c64x1 s=10.1 </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
-          <ntasks_atm>3648</ntasks_atm>
-          <ntasks_lnd>1024</ntasks_lnd>
-          <ntasks_rof>2624</ntasks_rof>
-          <ntasks_ice>3600</ntasks_ice>
+          <ntasks_atm>3840</ntasks_atm>
+          <ntasks_lnd>3840</ntasks_lnd>
+          <ntasks_rof>3840</ntasks_rof>
+          <ntasks_ice>3840</ntasks_ice>
           <ntasks_ocn>1280</ntasks_ocn>
-          <ntasks_cpl>3648</ntasks_cpl>
+          <ntasks_cpl>3840</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -10179,14 +10208,14 @@
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
           <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>1024</rootpe_rof>
+          <rootpe_rof>0</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>3648</rootpe_ocn>
+          <rootpe_ocn>3840</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>      
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="L">
-        <comment> cmod101a64x1 s=11.5 </comment>
+        <comment> cmod100b64x1 s=12.3 </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -10194,7 +10223,7 @@
           <ntasks_lnd>448</ntasks_lnd>
           <ntasks_rof>2048</ntasks_rof>
           <ntasks_ice>4400</ntasks_ice>
-          <ntasks_ocn>1600</ntasks_ocn>
+          <ntasks_ocn>1536</ntasks_ocn>
           <ntasks_cpl>4864</ntasks_cpl>
         </ntasks>
         <nthrds>
