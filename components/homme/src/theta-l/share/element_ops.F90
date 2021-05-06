@@ -158,6 +158,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
       field = elem%state%phinh_i(:,:,1:nlevp,nt)
     case('mu_i');
       call get_dpnh_dp_i(elem,field,hvcoord,nt)
+    case('pnh_i');
+      call get_nonhydro_pressure_i(elem,field,hvcoord,nt)
     case default
       print *,'name = ',trim(name)
       call abortmp('ERROR: get_field_i name not supported in this model')
@@ -310,7 +312,25 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
     call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
          elem%state%dp3d(:,:,:,nt),elem%state%phinh_i(:,:,:,nt),&
-         pnh,exner,dpnh_dp_i)
+         pnh,exner,dpnh_dp_i,caller="get_nonhydro_pressire")
+
+  end subroutine
+
+
+  subroutine get_nonhydro_pressure_i(elem,pnh_i,hvcoord,nt)
+    implicit none
+    
+    type (element_t),       intent(in)  :: elem
+    real (kind=real_kind),  intent(out) :: pnh_i(np,np,nlevp)
+    type (hvcoord_t),       intent(in)  :: hvcoord
+    integer,                intent(in)  :: nt
+    
+    real (kind=real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
+    real (kind=real_kind), dimension(np,np,nlev) :: pnh,exner
+
+    call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+         elem%state%dp3d(:,:,:,nt),elem%state%phinh_i(:,:,:,nt),&
+         pnh,exner,dpnh_dp_i,pnh_i,"get_nonhydro_pressure_i")
 
   end subroutine
 
