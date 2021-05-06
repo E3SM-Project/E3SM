@@ -1618,7 +1618,7 @@ contains
        call MPAS_stream_mgr_add_att(domain % streamManager, 'source', 'E3SM MPAS-Albany-Landice Model')
        call MPAS_stream_mgr_add_att(domain % streamManager, 'source_id', trim(model_version))
        call MPAS_stream_mgr_add_att(domain % streamManager, 'product', 'model-output')
-       call MPAS_stream_mgr_add_att(domain % streamManager, 'realm', 'landice')
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'realm', 'landIce')
        call MPAS_stream_mgr_add_att(domain % streamManager, 'case', trim(caseid))
        call MPAS_stream_mgr_add_att(domain % streamManager, 'username', trim(username))
        call MPAS_stream_mgr_add_att(domain % streamManager, 'hostname', trim(hostname))
