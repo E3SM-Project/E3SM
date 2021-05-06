@@ -180,6 +180,7 @@
         <command name="load">git</command>
         <command name="rm">cmake</command>
         <command name="load">cmake/3.14.4</command>
+	<command name="load">perl5-extras</command>
       </modules>
     </module_system>
 
@@ -332,6 +333,7 @@
         <command name="load">git</command>
         <command name="rm">cmake</command>
         <command name="load">cmake/3.14.4</command>
+	<command name="load">perl5-extras</command>
       </modules>
 
       <!--command name="list">&gt;&amp; ml.txt</command-->
@@ -350,7 +352,7 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="CRAYPE_LINK_TYPE">static</env>      
+      <env name="CRAYPE_LINK_TYPE">static</env>
     </environment_variables>
 
     <environment_variables mpilib="mpt">
