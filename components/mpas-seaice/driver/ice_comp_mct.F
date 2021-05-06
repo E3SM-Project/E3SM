@@ -196,6 +196,14 @@ contains
     character(len=StrKIND) :: iotype
     logical :: streamsExists
     integer :: mesh_iotype
+    character(len=strKIND) :: caseid
+    character(len=strKIND) :: model_version
+    character(len=strKIND) :: username
+    character(len=strKIND) :: hostname
+    character(len=strKIND) :: institution
+    character(len=strKIND) :: curdate
+    character(len=strKIND) :: curtime
+    character(len=strKIND) :: history
 
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
@@ -517,7 +525,41 @@ contains
     call MPAS_stream_mgr_init(domain % streamManager, domain % ioContext, domain % clock, domain % blocklist % allFields, &
                               domain % packages, domain % blocklist % allStructs)
 
+    ! add E3SM stream attributes to MPAS output files
+    call seq_infodata_GetData(infodata, case_name=caseid, model_version=model_version, username=username, hostname=hostname)
+    institution = &
+         'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); &
+         &ANL (Argonne National Laboratory, Argonne, IL 60439, USA); &
+         &BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); &
+         &LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); &
+         &LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); &
+         &ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
+         &PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
+         &SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
+         &Mailing address: LLNL Climate Program, c/o David C. Bader, &
+         &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA'
+    call datetime(curdate, curtime)
+    history = 'created on ' // trim(curdate) // ' ' // trim(curtime)
+
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'case', trim(caseid))
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'source_id', trim(model_version))
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'realm', 'seaIce')
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'product', 'model-output')
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'title', 'MPAS-Seaice History file information')
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'source', 'E3SM Sea Ice Model')
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'institution',trim(institution))
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'institution_id', 'E3SM-Project')
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', 'e3sm-data-support@listserv.llnl.gov')
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'username', trim(username))
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'hostname', trim(hostname))
+
+    ! Other attributes
     call add_stream_attributes(domain)
+
+    ! overwrite MPAS attributes
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'history', trim(history))
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'Conventions', 'CF-1.7')
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'git_version', trim(model_version))
 
     ! Setup all immutable streams for the core
     ierr = domain % core % setup_immutable_streams(domain % streamManager)
@@ -2560,7 +2602,6 @@ contains
       ! add a shortened version.
 !     call MPAS_stream_mgr_add_att(domain % streamManager, 'history', domain % history)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'history', histAtt)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'source', domain % core % source)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'Conventions', domain % core % Conventions)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'parent_id', domain % parent_id)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'mesh_spec', domain % mesh_spec)
@@ -2722,6 +2763,57 @@ contains
 !EOC
 
    end subroutine freezing_potential!}}}
+
+!***********************************************************************
+!BOP
+!
+! !IROUTINE: datetime
+!
+! !INTERFACE:
+   subroutine datetime(cdate, ctime)
+!
+! !DESCRIPTION:
+! Calculate current date and time for metadata history 
+!
+! !USES:
+
+! !INPUT PARAMETERS:
+      character(len=*), intent(out) :: cdate
+      character(len=*), intent(out) :: ctime
+
+! !OUTPUT PARAMETERS:
+!EOP
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+      character(len=strKIND) :: date
+      character(len=strKIND) :: time
+      character(len=strKIND) :: zone
+      integer, dimension(8) :: values
+
+      call date_and_time (date, time, zone, values)
+
+      cdate = ""
+      cdate(1:2) = date(5:6)
+      cdate(3:3) = '/'
+      cdate(4:5) = date(7:8)
+      cdate(6:6) = '/'
+      cdate(7:8) = date(3:4)
+
+      ctime = ""
+      ctime(1:2) = time(1:2)
+      ctime(3:3) = ':'
+      ctime(4:5) = time(3:4)
+      ctime(6:6) = ':'
+      ctime(7:8) = time(5:6)
+
+!-----------------------------------------------------------------------
+!EOC
+
+   end subroutine datetime!}}}
+
 
 end module ice_comp_mct
 
