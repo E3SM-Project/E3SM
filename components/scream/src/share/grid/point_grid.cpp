@@ -1,4 +1,6 @@
 #include "share/grid/point_grid.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "../../physics/share/physics_constants.hpp"
 
 #include <numeric>
 
@@ -120,6 +122,35 @@ create_point_grid (const std::string& grid_name,
   Kokkos::deep_copy(dofs_gids,h_dofs_gids);
 
   grid->set_dofs(dofs_gids);
+
+  using device_type       = DefaultDevice;
+  using kokkos_types      = KokkosTypes<device_type>;
+  using geo_view_type     = kokkos_types::view_1d<double>;
+  using KT = KokkosTypes<DefaultDevice>;
+
+  // Store cell area, longitude, and latitude in geometry data.
+  // For  longitude and latitude, set values to NaN since they
+  // are currently not required from any application using PointGrid
+  geo_view_type area("area", num_global_cols);
+  geo_view_type lon ("lon",  num_global_cols);
+  geo_view_type lat ("lat",  num_global_cols);
+
+  // Estimate cell area for a uniform grid by taking the surface area
+  // of the earth divided by the number of columns
+  const double rearth    = 6.376e6;
+  const double pi        = scream::physics::Constants<double>::Pi;
+  const Real   cell_area = 4*pi*rearth*rearth/num_global_cols;
+
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_global_cols, num_vertical_lev);
+  Kokkos::parallel_for("area_loop", policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int i = team.league_rank();
+    area(i) = cell_area;
+    lon(i) = std::nan("");
+    lat(i) = std::nan("");
+  });
+  grid->set_geometry_data("area", area);
+  grid->set_geometry_data("lon",  lon);
+  grid->set_geometry_data("lat",  lat);
 
   return grid;
 }

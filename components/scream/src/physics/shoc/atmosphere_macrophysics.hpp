@@ -149,6 +149,9 @@ public:
       const int nlev_v = (nlev-1)/Spack::n;
       const int nlev_p = (nlev-1)%Spack::n;
 
+      host_dx(i) = sqrt(area(i));
+      host_dy(i) = host_dx(i);
+
       wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlev_v)[nlev_p]);
       wprtp_sfc(i)  = surf_latent_flux(i)/rrho_i(i,nlev_v)[nlev_p];
       upwp_sfc(i)   = surf_u_mom_flux(i)/rrho_i(i,nlev_v)[nlev_p];
@@ -161,6 +164,7 @@ public:
 
     // Local variables
     int ncol, nlev, num_qtracers;
+    view_1d_const area;
     view_2d_const T_mid;
     view_2d_const z_int;
     view_2d_const z_mid;
@@ -174,6 +178,8 @@ public:
     view_1d_const surf_v_mom_flux;
     view_2d_const qv;
     view_2d       qv_copy;
+    view_1d       host_dx;
+    view_1d       host_dy;
     view_2d       qc;
     view_2d       qc_copy;
     view_2d       shoc_s;
@@ -198,13 +204,15 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
+                       const view_1d_const& area_,
                        const view_2d_const& T_mid_, const view_2d_const& z_int_,
                        const view_2d_const& z_mid_, const view_2d_const& p_mid_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
                        const view_1d_const& surf_u_mom_flux_, const view_1d_const& surf_v_mom_flux_,
                        const view_2d_const& qv_, const view_2d& qv_copy_, const view_2d& qc_, const view_2d& qc_copy_,
-                       const view_2d& tke_, const view_2d& tke_copy_, const view_2d& s_, const view_2d& rrho_, const view_2d& rrho_i_,
+                       const view_2d& tke_, const view_2d& tke_copy_, const view_1d& dx_, const view_1d& dy_,
+                       const view_2d& s_, const view_2d& rrho_, const view_2d& rrho_i_,
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
                        const view_2d& wm_zt_,const view_2d& exner_,const view_2d& thlm_,const view_2d& qw_)
@@ -213,6 +221,7 @@ public:
       nlev = nlev_;
       num_qtracers = num_qtracers_;
       // IN
+      area = area_;
       T_mid = T_mid_;
       z_int = z_int_;
       z_mid = z_mid_;
@@ -232,6 +241,8 @@ public:
       shoc_s = s_;
       tke = tke_;
       tke_copy = tke_copy_;
+      host_dx = dx_;
+      host_dy = dy_;
       rrho = rrho_;
       rrho_i = rrho_i_;
       thv = thv_;
@@ -345,6 +356,8 @@ protected:
   Int m_nadv;
   Int m_num_tracers;
   Int hdtime;
+
+  KokkosTypes<DefaultDevice>::view_1d<double> m_cell_area;
 
   // Store the structures for each arguement to shoc_main;
   SHF::SHOCInput input;
