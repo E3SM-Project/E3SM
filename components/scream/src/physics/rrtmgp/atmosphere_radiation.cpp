@@ -1,6 +1,7 @@
 #include "ekat/ekat_assert.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
+#include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL/YAKL.h"
 
@@ -39,7 +40,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Set required (input) fields here
   add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name());
   add_field<Required>("pint", scalar3d_layout_int, Pa, grid->name());
-  add_field<Required>("T_mid" , scalar3d_layout_mid, K , grid->name());
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name());
   add_field<Required>("tint" , scalar3d_layout_int, K , grid->name());
   add_field<Required>("gas_vmr", gas_layout, kgkg, grid->name());
   add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
@@ -51,6 +52,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name());
 
   // Set computed (output) fields
+  add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid->name());
   add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
   add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid->name());
   add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name());
@@ -77,14 +79,14 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   rrtmgp::rrtmgp_initialize(gas_concs);
 }
 
-void RRTMGPRadiation::run_impl (const Real /* dt */) {
+void RRTMGPRadiation::run_impl (const Real dt) {
   // Get data from AD; RRTMGP wants YAKL views
   // TODO: how can I just keep these around without having to create every time?
   // They are just pointers, so should be able to keep them somewhere else and just associate them once?
   // Get device views
   auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_reshaped_view<const Real**>();
   auto d_pint = m_rrtmgp_fields_in.at("pint").get_reshaped_view<const Real**>();
-  auto d_tmid = m_rrtmgp_fields_in.at("T_mid").get_reshaped_view<const Real**>();
+  auto d_pdel = m_rrtmgp_fields_in.at("pseudo_density").get_reshaped_view<const Real**>();
   auto d_tint = m_rrtmgp_fields_in.at("tint").get_reshaped_view<const Real**>();
   auto d_gas_vmr = m_rrtmgp_fields_in.at("gas_vmr").get_reshaped_view<const Real***>();
   auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("surf_alb_direct").get_reshaped_view<const Real**>();
@@ -94,6 +96,7 @@ void RRTMGPRadiation::run_impl (const Real /* dt */) {
   auto d_iwp = m_rrtmgp_fields_in.at("iwp").get_reshaped_view<const Real**>();
   auto d_rel = m_rrtmgp_fields_in.at("eff_radius_qc").get_reshaped_view<const Real**>();
   auto d_rei = m_rrtmgp_fields_in.at("eff_radius_qi").get_reshaped_view<const Real**>();
+  auto d_tmid = m_rrtmgp_fields_out.at("T_mid").get_reshaped_view<Real**>();
   auto d_sw_flux_up = m_rrtmgp_fields_out.at("SW_flux_up").get_reshaped_view<Real**>();
   auto d_sw_flux_dn = m_rrtmgp_fields_out.at("SW_flux_dn").get_reshaped_view<Real**>();
   auto d_sw_flux_dn_dir = m_rrtmgp_fields_out.at("SW_flux_dn_dir").get_reshaped_view<Real**>();
@@ -104,6 +107,7 @@ void RRTMGPRadiation::run_impl (const Real /* dt */) {
   yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay  ("p_lay", const_cast<Real*>(d_pmid.data()), m_ncol, m_nlay);
   yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay  ("t_lay", const_cast<Real*>(d_tmid.data()), m_ncol, m_nlay);
   yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev  ("p_lev",const_cast<Real*>(d_pint.data()), m_ncol, m_nlay+1);
+  yakl::Array<double,2,memDevice,yakl::styleFortran> p_del  ("p_del"   ,const_cast<Real*>(d_pdel.data()), m_ncol, m_nlay);
   yakl::Array<double,2,memDevice,yakl::styleFortran> t_lev  ("t_lev",const_cast<Real*>(d_tint.data()), m_ncol, m_nlay+1);
   yakl::Array<double,3,memDevice,yakl::styleFortran> gas_vmr("gas_vmr",const_cast<Real*>(d_gas_vmr.data()), m_ncol, m_nlay, m_ngas);
   yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dir("surf_alb_direct",const_cast<Real*>(d_sfc_alb_dir.data()), m_ncol, m_nswbands);
@@ -148,6 +152,22 @@ void RRTMGPRadiation::run_impl (const Real /* dt */) {
     sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
     lw_flux_up, lw_flux_dn
   );
+
+  // Compute and apply heating rates
+  auto sw_heating  = real2d("sw_heating", m_ncol, m_nlay);
+  auto lw_heating  = real2d("lw_heating", m_ncol, m_nlay);
+  auto rad_heating = real2d("rad_heating", m_ncol, m_nlay);
+  rrtmgp::compute_heating_rate(
+    sw_flux_up, sw_flux_dn, p_del, sw_heating
+  );
+  rrtmgp::compute_heating_rate(
+    lw_flux_up, lw_flux_dn, p_del, lw_heating
+  );
+  parallel_for(Bounds<2>(m_nlay,m_ncol), YAKL_LAMBDA(int ilay, int icol) {
+    rad_heating(icol,ilay) = sw_heating(icol,ilay) + lw_heating(icol,ilay);
+    t_lay(icol,ilay) = t_lay(icol,ilay) + rad_heating(icol,ilay) * dt;
+  });
+
 }
 
 void RRTMGPRadiation::finalize_impl  () {
