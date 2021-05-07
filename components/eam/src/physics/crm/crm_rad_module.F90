@@ -8,6 +8,7 @@ module crm_rad_module
    ! update the radiation in the future, should we choose to put the radiation
    ! calculations on the CRM.
    use params_kind, only: crm_rknd, r8
+   use openacc_utils
 
    implicit none
 
@@ -36,18 +37,19 @@ contains
 
    !------------------------------------------------------------------------------------------------
    ! Type-bound procedures for crm_rad_type
-   subroutine crm_rad_initialize(rad,ncrms)
+   subroutine crm_rad_initialize(rad, ncrms, crm_nx_rad, crm_ny_rad, crm_nz)
       class(crm_rad_type), intent(inout) :: rad
+      integer, intent(in) :: ncrms, crm_nx_rad, crm_ny_rad, crm_nz
 
-      if (.not. allocated(rad%qrad]))        allocate(rad%qrad       (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (.not. allocated(rad%temperature])) allocate(rad%temperature(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (.not. allocated(rad%qv]))          allocate(rad%qv         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (.not. allocated(rad%qi]))          allocate(rad%qi         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (.not. allocated(rad%cld]))         allocate(rad%cld        (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (.not. allocated(rad%nc]))          allocate(rad%nc         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (.not. allocated(rad%ni]))          allocate(rad%ni         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (.not. allocated(rad%qs]))          allocate(rad%qs         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (.not. allocated(rad%ns]))          allocate(rad%ns         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%qrad))        allocate(rad%qrad       (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%temperature)) allocate(rad%temperature(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%qv))          allocate(rad%qv         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%qi))          allocate(rad%qi         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%cld))         allocate(rad%cld        (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%nc))          allocate(rad%nc         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%ni))          allocate(rad%ni         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%qs))          allocate(rad%qs         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%ns))          allocate(rad%ns         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
 
       call prefetch(rad%qrad)
       call prefetch(rad%temperature)
@@ -74,16 +76,16 @@ contains
    subroutine crm_rad_finalize(rad)
       class(crm_rad_type), intent(inout) :: rad
 
-      deallocate(rad%qrad(ncrms,nlev))
-      deallocate(rad%temperature(ncrms,nlev))
-      deallocate(rad%qv(ncrms,nlev))
-      deallocate(rad%qi(ncrms,nlev))
-      deallocate(rad%cld(ncrms,nlev))
+      deallocate(rad%qrad)
+      deallocate(rad%temperature)
+      deallocate(rad%qv)
+      deallocate(rad%qi)
+      deallocate(rad%cld)
 
-      deallocate(rad%nc(ncrms,nlev))
-      deallocate(rad%ni(ncrms,nlev))
-      deallocate(rad%qs(ncrms,nlev))
-      deallocate(rad%ns(ncrms,nlev))
+      deallocate(rad%nc)
+      deallocate(rad%ni)
+      deallocate(rad%qs)
+      deallocate(rad%ns)
 
    end subroutine crm_rad_finalize
    !------------------------------------------------------------------------------------------------

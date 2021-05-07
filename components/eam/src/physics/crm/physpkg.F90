@@ -696,7 +696,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   use time_manager,     only: get_nstep
   use cam_diagnostics,  only: diag_allocate, diag_physvar_ic
   use check_energy,     only: check_energy_gmean
-  use physics_buffer,   only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate
+  use physics_buffer,   only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate, pbuf_old_tim_idx, pbuf_get_index
   use comsrf,           only: fsns, fsnt, flns, sgh, sgh30, flnt, landm, fsds
   use cam_abortutils,   only: endrun
 
@@ -732,12 +732,12 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   logical           :: use_ECPP
   character(len=16) :: MMF_microphysics_scheme
   real(r8), pointer, dimension(:,:) :: mmf_clear_rh
-  real(r8), dimension(pcols) :: mmf_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
-  real(r8), dimension(pcols) :: mmf_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
-  real(r8), dimension(pcols) :: mmf_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
+  real(r8), dimension(begchunk:endchunk,pcols) :: mmf_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
+  real(r8), dimension(begchunk:endchunk,pcols) :: mmf_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
+  real(r8), dimension(begchunk:endchunk,pcols) :: mmf_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
   type(crm_ecpp_output_type) :: crm_ecpp_output   ! CRM output data for ECPP calculations
 
-  integer  :: itim_old                      ! pbuf time index
+  integer  :: itim_old, cldo_idx, cld_idx   ! pbuf indices  
   real(r8), pointer, dimension(:,:) :: cld  ! cloud fraction
   real(r8), pointer, dimension(:,:) :: cldo ! old cloud fraction
   !-----------------------------------------------------------------------------
@@ -777,6 +777,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   call t_startf ('bc_physics')
   call t_startf ('bc_physics1')
 
+!$OMP PARALLEL DO PRIVATE (C, beg_count, phys_buffer_chunk, end_count, chunk_cost)
   do c=begchunk, endchunk
 
     beg_count = shr_sys_irtc(irtc_rate)
@@ -802,29 +803,32 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   call t_stopf ('bc_physics1')
 
 
-  
+  !-----------------------------------------------------------------------------
+  ! CRM physics
+  !-----------------------------------------------------------------------------  
 ! #if defined( ECPP )
 !   call phys_getopts( use_ECPP_out = use_ECPP )
 !   if (use_ECPP) call crm_ecpp_output%initialize(pcols,pver)
 ! #endif
-  ! call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
-  ! mmf_clear_rh(1:ncol,1:pver) = 0._r8
   call t_startf('crm_physics_tend')
   call crm_physics_tend(ztodt, phys_state, phys_tend, ptend, pbuf2d, cam_in, cam_out,    &
-                        species_class, crm_ecpp_output, mmf_clear_rh,       &
+                        species_class, crm_ecpp_output,       &
                         mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux )
   do c=begchunk, endchunk
     call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
   end do
   call t_stopf('crm_physics_tend')
 
-  ! save old CRM cloud fraction - w/o CRM, this is done in cldwat2m.F90
-  itim_old = pbuf_old_tim_idx()
-  do c=begchunk, endchunk
-    call pbuf_get_field(pbuf2d(c),pbuf_get_index('CLDO'),cldo,start=(/1,1,itim_old/),kount=(/pcols,pver,1/))
-    call pbuf_get_field(pbuf2d(c),pbuf_get_index('CLD') ,cld ,start=(/1,1,itim_old/),kount=(/pcols,pver,1/))
-    cldo(1:ncol,1:pver) = cld(1:ncol,1:pver)
-  end do
+  ! ! save old CRM cloud fraction - w/o CRM, this is done in cldwat2m.F90
+  ! itim_old = pbuf_old_tim_idx()
+  ! cldo_idx = pbuf_get_index('CLDO')
+  ! cld_idx  = pbuf_get_index('CLD')
+  ! do c=begchunk, endchunk
+  !   phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
+  !   call pbuf_get_field( phys_buffer_chunk, cldo_idx, cldo, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+  !   call pbuf_get_field( phys_buffer_chunk, cld_idx , cld , start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+  !   cldo(1:state(c)%ncol,1:pver) = cld(1:state(c)%ncol,1:pver)
+  ! end do
 
   !-----------------------------------------------------------------------------
   ! Physics tendency before coupler - Phase 2 - radiation and diagnostics
