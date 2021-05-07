@@ -15,7 +15,6 @@ if [ ${#labels[@]} -gt 0 ]; then
       skip_testing=1
     elif [ "$label" == "scripts" ]; then
       test_scripts=1
-    fi
     elif [ "$label" == "CIME" ]; then
       test_cime=1
     fi
