@@ -534,8 +534,7 @@ contains
 
             ! INTERF-TODO: WE HAVE NOT FILTERED OUT FATES SITES ON INACTIVE COLUMNS.. YET
             ! NEED A RUN-TIME ROUTINE THAT CLEARS AND REWRITES THE SITE LIST
-
-            if ( (lun_pp%itype(l) == istsoil) .and. (col_pp%active(c)) ) then
+            if ( lun_pp%itype(l) == istsoil ) then
                s = s + 1
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
@@ -547,7 +546,7 @@ contains
             endif
             
          enddo
-         
+
          if(debug)then
             write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
          end if
@@ -719,12 +718,6 @@ contains
 
       !-----------------------------------------------------------------------
 
-
-      if (masterproc) then
-         write(iulog, *) 'FATES dynamics start'
-      end if
-
-      
       nc = bounds_clump%clump_index
 
       ! ---------------------------------------------------------------------------------
@@ -834,7 +827,8 @@ contains
                                               this%fates(nc)%sites) 
 
       if (masterproc) then
-         write(iulog, *) 'FATES dynamics complete'
+         write(iulog, *) 'clm: leaving ED model', bounds_clump%begg, &
+                                                  bounds_clump%endg
       end if
 
       
@@ -1019,15 +1013,14 @@ contains
        ! variables is to inform patch%wtcol(p).  wt_ed is imposed on wtcol,
        ! but only for FATES columns.
 
+       veg_pp%is_veg(bounds_clump%begp:bounds_clump%endp)        = .false.
+       veg_pp%is_bareground(bounds_clump%begp:bounds_clump%endp) = .false.
+       veg_pp%wt_ed(bounds_clump%begp:bounds_clump%endp)         = 0.0_r8
+
        do s = 1,this%fates(nc)%nsites
           
           c = this%f2hmap(nc)%fcolumn(s)
 
-          veg_pp%is_veg(col_pp%pfti(c):col_pp%pftf(c))        = .false.
-          veg_pp%is_bareground(col_pp%pfti(c):col_pp%pftf(c)) = .false.
-          veg_pp%wt_ed(col_pp%pfti(c):col_pp%pftf(c))         = 0.0_r8
-
-          
           ! Other modules may have AI's we only flush values
           ! that are on the naturally vegetated columns
           elai(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
