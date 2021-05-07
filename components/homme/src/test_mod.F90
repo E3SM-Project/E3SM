@@ -96,6 +96,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('planar_moist_baroclinic_instab');
     case('planar_tropical_cyclone');
     case('planar_supercell');
+           call dcmip2016_init();
     case default;               call abortmp('unrecognized test case')
   endselect
 
