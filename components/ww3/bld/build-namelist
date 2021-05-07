@@ -295,9 +295,9 @@ if ($print>=2) {
 ####################################
 
 if ($NML_TYPE eq "ww3") {
-    add_default($nl, 'initfile');
     add_default($nl, 'stafile', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/stations.txt'");
-    add_default($nl, 'outfreq');
+    add_default($nl, 'pnt_out_freq');
+    add_default($nl, 'grd_out_freq');
     add_default($nl, 'fldout');
     add_default($nl, 'fldcou');
 }

@@ -149,7 +149,10 @@
 ! 10. Source code :
 !
 !/ ------------------------------------------------------------------- /
-      use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, nx, ny, nseal, mapsf, mapsta, x0, y0, sx, sy, w3nmod, w3setg, AnglD
+      use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, &
+                          nx, ny, nseal, mapsf, mapsta, x0, y0, sx, sy, &
+                          w3nmod, w3setg, AnglD, &
+                          sig, nk
       use w3wdatmd, only: time, w3ndat, w3setw
       use w3adatmd, only: ussx, ussy, w3naux, w3seta, sxx, sxy, syy !SB, lamult
       use w3idatmd, only: inflags1, w3seti, w3ninp
@@ -159,7 +162,8 @@
       USE W3IDATMD, ONLY: TLN, WLEV
       USE W3IDATMD, ONLY: !SB, HML   ! QL, 150525, mixing layer depth
       use w3odatmd, only: w3nout, w3seto, naproc, iaproc, napout, naperr,             &
-                          nogrp, ngrpp, noge, idout, fnmpre, iostyp, notype
+                          nogrp, ngrpp, noge, idout, fnmpre, iostyp, notype, flout, &
+                          fnmpre, ifile4
       use w3servmd, only: w3xyrtn
 !/
       use w3initmd, only: w3init 
@@ -167,6 +171,7 @@
       use w3gridmd, only: w3grid
 !/
       use w3iopomd, only:
+      use w3iorsmd, only: w3iors
       use w3iogomd, only: w3flgrdflag
       use w3timemd, only: stme21 
       use w3cesmmd, only : casename, initfile, rstwr, runtype
@@ -212,6 +217,7 @@
 
       integer,save :: stdout
       integer,save :: odat(40)
+      integer,save :: nds(13)
 
       real,allocatable,save :: AnglDL(:)
 
@@ -255,7 +261,6 @@ CONTAINS
       integer :: stop_ymd          ! stop date (yyyymmdd)
       integer :: stop_tod          ! stop time of day (sec)
       integer :: ix, iy
-      integer :: iproc
 
       character(CL)            :: starttype
       type(mct_gsmap), pointer :: gsmap
@@ -263,21 +268,26 @@ CONTAINS
       type(seq_infodata_type), pointer :: infodata   ! input init object
 
       integer             :: unitn            ! namelist unit number
-      integer             :: ndso, ndse, nds(13), ntrace(2), time0(2)
+      integer             :: ndso, ndse, ntrace(2), time0(2)
+      integer             :: nu
+      integer             :: iproc
       integer             :: timen(2), nh(4), iprt(6)
       integer             :: i,j,npts
       integer             :: ierr
       integer             :: jsea,isea
+      integer             :: pnt_out_freq, grd_out_freq
       real                :: a(nhmax,4)
       real, allocatable   :: x(:), y(:)
       logical             :: flgrd(nogrp,ngrpp), flgrd2(nogrp,ngrpp)
       logical             :: flgd(nogrp), flgd2(nogrp)
       logical             :: prtfrm, flt
+      logical             :: exists
       character(len=*),parameter :: subname = '(wav_init_mct)'
 
       character(len=3)    :: idstr(8), idtst
       character(len=10)   :: pn
       character(len=13)   :: idflds(8)
+      character(len=15)   :: restart_timestamp
       character(len=20)   :: strng
       character(len=23)   :: dtme21
       character(len=30)   :: idotyp(6)
@@ -300,7 +310,7 @@ CONTAINS
       DATA IDSTR  / 'LEV', 'CUR', 'WND', 'ICE', 'DT0', 'DT1', 'DT2',  &
                     'MOV' /
 
-      namelist /ww3_inparm/ initfile, stafile, fldout, fldcou
+      namelist /ww3_inparm/ stafile, fldout, fldcou, pnt_out_freq, grd_out_freq
 
       !--------------------------------------------------------------------
       ! Initialize mpi
@@ -312,15 +322,16 @@ CONTAINS
       inst_index  = seq_comm_inst(compid)
       inst_suffix = seq_comm_suffix(compid)
       call ww3_cpl_indices_set()
+
     
       !--------------------------------------------------------------------
       ! Initialize WW3 grid
       !--------------------------------------------------------------------
 
       call mpi_barrier ( mpi_comm, ierr )
-      
       call mpi_comm_rank(mpi_comm, iproc, ierr)
-      if ( iproc .eq. 1 ) then
+      
+      if ( iproc .eq. 0 ) then
         call w3grid
       endif
 
@@ -330,12 +341,12 @@ CONTAINS
       ! Set up data structures
       !--------------------------------------------------------------------
       
-      if ( iproc .ne. 1) then
+      if ( iproc .ne. 0) then
         call w3nmod ( 1, 6, 6 ) ! this is called for iproc = 1 in w3grid
       endif
       call w3ndat (    6, 6 )
       call w3naux (    6, 6 )
-      if ( iproc .ne. 1 ) then
+      if ( iproc .ne. 0 ) then
         call w3nout (    6, 6 ) ! this is called for iproc = 1 in w3grid
       end if
       call w3ninp (    6, 6 )
@@ -349,6 +360,7 @@ CONTAINS
       call mpi_comm_size(mpi_comm, naproc, ierr)
       call mpi_comm_rank(mpi_comm, iaproc, ierr)
       iaproc = iaproc + 1
+
 
       !--------------------------------------------------------------------
       ! Initialize run type
@@ -459,13 +471,12 @@ CONTAINS
       if ( iaproc .eq. napout ) write (ndso,930)
       call shr_sys_flush(ndso)
 
-      ! QL, 150525, initial run or restart run
-      if ( runtype .eq. "initial") then
-         call seq_timemgr_EClockGetData(EClock, &
-              start_ymd=start_ymd, start_tod=start_tod)
+      if ( runtype == "continue" .or. runtype == "branch") then      
+        call seq_timemgr_EClockGetData(EClock, &
+             curr_ymd=start_ymd, curr_tod=start_tod)
       else
-         call seq_timemgr_EClockGetData(EClock, &
-              curr_ymd=start_ymd, curr_tod=start_tod)
+        call seq_timemgr_EClockGetData(EClock, &
+             start_ymd=start_ymd, start_tod=start_tod)
       endif
 
       hh = start_tod/3600
@@ -491,6 +502,36 @@ CONTAINS
       time = time0
 
       !--------------------------------------------------------------------
+      ! Handle restart
+      !--------------------------------------------------------------------
+
+      if ( runtype == "continue" .or. runtype == "branch") then
+         if (iaproc == napout) then
+
+                inquire(file='rpointer.wav',exist=exists)
+                if (.not.exists) then 
+                   write(ndso,*) ' ERROR: rpointer file does not exist'
+                   call shr_sys_abort(' wav ERROR: rpointer file missing')
+                endif
+
+                nu = shr_file_getUnit()
+                open(unit=nu,file='rpointer.wav')
+                read(nu,*) restart_timestamp
+                close(nu)
+                call shr_file_freeUnit(nu)
+
+                inquire(file=trim(restart_timestamp)//'.restart.ww3',exist=exists)
+                if (.not.exists) then 
+                   write(ndso,*) ' ERROR: ww3 restart file does not exist'
+                   call shr_sys_abort(' wav ERROR: restart file missing')
+                endif
+         endif 
+
+         call shr_mpi_bcast(restart_timestamp,mpi_comm)
+      endif
+      call shr_sys_flush(ndso)
+
+      !--------------------------------------------------------------------
       ! Read namelist (set initfile in w3cesmmd)
       !--------------------------------------------------------------------
       if ( iaproc .eq. napout ) then
@@ -509,10 +550,11 @@ CONTAINS
          close( unitn )
          call shr_file_freeUnit( unitn )
       end if
-      call shr_mpi_bcast(initfile, mpi_comm)
       call shr_mpi_bcast(stafile, mpi_comm)
       call shr_mpi_bcast(fldout, mpi_comm)
       call shr_mpi_bcast(fldcou, mpi_comm)
+      call shr_mpi_bcast(pnt_out_freq, mpi_comm)
+      call shr_mpi_bcast(grd_out_freq, mpi_comm)
 
 
       !--------------------------------------------------------------------
@@ -560,21 +602,21 @@ CONTAINS
       ! Gridded fields
       odat(1) = time(1)     ! YYYYMMDD for first output
       odat(2) = time(2)     ! HHMMSS for first output
-      odat(3) = dtime_sync  ! output interval in sec ! changed by Adrean
+      odat(3) = grd_out_freq  ! output interval in sec ! changed by Adrean
       odat(4) = 99990101    ! YYYYMMDD for last output
       odat(5) = 0           ! HHMMSS for last output
 
       ! Point output
       odat(6) = time(1)     ! YYYYMMDD for first output
       odat(7) = time(2)     ! HHMMSS for first output
-      odat(8) = dtime_sync  ! output interval in sec 
+      odat(8) = pnt_out_freq    ! output interval in sec 
       odat(9) = 99990101    ! YYYYMMDD for last output
       odat(10) = 0          ! HHMMSS for last output
 
       ! Restart files
       odat(16) = time(1)    ! YYYYMMDD for first output
       odat(17) = time(2)    ! HHMMSS for first output
-      odat(18) = 86400*5    ! output interval in sec
+      odat(18) = dtime_sync ! output interval in sec (dummy for initialization)
       odat(19) = 99990101   ! YYYYMMDD for last output
       odat(20) = 0          ! HHMMSS for last output
 
@@ -750,6 +792,14 @@ CONTAINS
       !   which is set above
       call w3init ( 1, .false., 'ww3', nds, ntrace, odat, flgrd, flgrd2, flgd, flgd2, npts, x, y,   &
            pnames, iprt, prtfrm, mpi_comm )
+
+      if ( runtype == "continue" .or. runtype == "branch") then
+        ifile4 = 0
+        fnmpre = './'//restart_timestamp//'.'
+        CALL W3IORS ( 'READ', NDS(6), SIG(NK), 1)
+        fnmpre = './'
+      endif
+
       call shr_sys_flush(ndso)
 
       ! overwrite dt values with variables from coupler
@@ -758,6 +808,9 @@ CONTAINS
       dtcfl  = real(dtime_sync) / 2. !checked by adrean
       dtcfli = real(dtime_sync)      !checked by adrean
       dtmin  = real(dtime_sync) / 12 !checked by adrean
+
+      ! overwrite restart output values
+      flout(4) = .false.
 
       ! Localize AnglDL 
       allocate(AnglDL(nseal))
@@ -857,14 +910,17 @@ CONTAINS
       integer :: n,jsea,isea
       integer :: mpi_comm
       integer :: gindex
+      integer :: nu
       integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
       type(mct_aVect) :: x2w0
       type(mct_gsmap),pointer :: gsmap
       real :: def_value
       real, dimension(:), allocatable :: cx, cy 
       real, dimension(:), allocatable :: wx, wy 
+      real :: xxx
 
       character(len=*),parameter :: subname = '(wav_run_mct)'
+      character(15) :: restart_date
 
       !----------------------------------------------------------------------------
       ! Reset shr logging to my log file
@@ -1049,7 +1105,20 @@ CONTAINS
       call shr_file_setLogLevel(shrloglev)
       call shr_sys_flush(stdout)
 
-      rstwr = seq_timemgr_RestartAlarmIsOn(EClock)
+      !----------------------------------------------------------------------------
+      ! Restart file output 
+      !----------------------------------------------------------------------------
+      if (seq_timemgr_RestartAlarmIsOn(EClock)) then
+        if (iaproc == 1) then
+          write(restart_date,"(i8.8,'.'i6.6)") time(1),time(2)
+          nu = shr_file_getUnit()
+          open(nu,file='rpointer.wav',form='formatted')
+          write(nu,'(a)') restart_date
+          close(nu)
+          call shr_file_freeUnit(nu)        
+        endif
+        CALL W3IORS ('HOT', NDS(6), XXX, 1, .TRUE. )
+      endif
 
 
     END SUBROUTINE WAV_RUN_MCT

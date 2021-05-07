@@ -8,14 +8,6 @@
 <!-- WAVEWATCHIII Namelist -->
 <!-- ========================================================================================  -->
 
-<entry id="initfile" 
-       type="char*1024" 
-       category="ww3_inparm"
-       group="ww3_inparm" 
-       valid_values="" >
-WaveWatchIII restart file
-</entry>
-
 <entry id="stafile" 
        type="char*1024" 
        category="ww3_inparm"
@@ -24,12 +16,20 @@ WaveWatchIII restart file
 WaveWatchIII station output file
 </entry>
 
-<entry id="outfreq" 
+<entry id="pnt_out_freq" 
        type="integer" 
        category="ww3_inparm"
        group="ww3_inparm" 
        valid_values="" >
-WaveWatchIII coupling frequency
+WaveWatchIII point output frequency
+</entry>
+
+<entry id="grd_out_freq" 
+       type="integer" 
+       category="ww3_inparm"
+       group="ww3_inparm" 
+       valid_values="" >
+WaveWatchIII gridded output frequency
 </entry>
 
 <entry id="fldout" 
