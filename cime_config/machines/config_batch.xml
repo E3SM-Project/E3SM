@@ -280,6 +280,9 @@
     </batch_system>
 
     <batch_system MACH="chrysalis" type="slurm" >
+      <directives>
+        <directive> --switches=$SHELL{echo "(`./xmlquery --value NUM_NODES` + 19) / 20" |bc}</directive>
+      </directives>
       <queues>
 	<queue walltimemax="48:00:00" strict="true" nodemin="1" nodemax="492">compute</queue>
 	<queue walltimemax="04:00:00" strict="true" nodemin="1" nodemax="20" default="true">debug</queue>
