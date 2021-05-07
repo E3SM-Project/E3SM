@@ -1588,6 +1588,9 @@ contains
       character (len=StrKIND), pointer :: charAtt
       real (kind=RKIND), pointer :: realAtt
       character (len=StrKIND) :: histAtt
+      character (len=StrKIND) :: caseid, model_version, hostname, username, &
+                                 timeString
+      character (len=8) :: curdate, curtime
 
       integer :: local_ierr
 
@@ -1605,6 +1608,40 @@ contains
           write(histAtt, '(A,I6,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       end if
 
+      call seq_infodata_GetData(infodata,case_name=caseid, &
+                                 model_version=model_version, &
+                                 username=username, &
+                                 hostname=hostname)
+
+       !Add E3SM run specific variables to MPAS output files
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'title', 'MPAS-Albany-Landice output file information')
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'source', 'E3SM MPAS-Albany-Landice Model')
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'source_id', trim(model_version))
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'product', 'model-output')
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'realm', 'landIce')
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'case', trim(caseid))
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'username', trim(username))
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'hostname', trim(hostname))
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'git_version', trim(model_version))
+       call datetime(curdate, curtime)
+       timeString = 'created on ' // curdate // ' ' // curtime
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'history', trim(timeString))
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'Conventions', 'CF-1.7')
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'institution_id', 'E3SM-Project')
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'institution', &
+           'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); &
+           &ANL (Argonne National Laboratory, Argonne, IL 60439, USA); &
+           &BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); &
+           &LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); &
+           &LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); &
+           &ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
+           &PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
+           &SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
+           &Mailing address: LLNL Climate Program, c/o David C. Bader, &
+           &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
+       call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', &
+           'e3sm-data-support@listserv.llnl.gov')
+
 
       call MPAS_stream_mgr_add_att(stream_manager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius)
@@ -1612,13 +1649,8 @@ contains
       call MPAS_stream_mgr_add_att(stream_manager, 'core_name', domain % core % coreName)
       ! DWJ 10/01/2014: Eventually add the real history attribute, for now (due to length restrictions)
       ! add a shortened version.
-!     call MPAS_stream_mgr_add_att(stream_manager, 'history', domain % history)
-      call MPAS_stream_mgr_add_att(stream_manager, 'history', histAtt)
-      call MPAS_stream_mgr_add_att(stream_manager, 'source', domain % core % source)
-      call MPAS_stream_mgr_add_att(stream_manager, 'Conventions', domain % core % conventions)
       call MPAS_stream_mgr_add_att(stream_manager, 'parent_id', domain % parent_id)
       call MPAS_stream_mgr_add_att(stream_manager, 'mesh_spec', domain % mesh_spec)
-      call MPAS_stream_mgr_add_att(stream_manager, 'git_version', domain % core % git_version)
 
       call mpas_pool_begin_iteration(domain % configs)
 
@@ -1649,6 +1681,28 @@ contains
 
    end subroutine add_stream_attributes!}}}
 
+   subroutine datetime(cdate, ctime)!{{{
+
+       implicit none
+
+       character, intent(out) :: cdate*8, ctime*8
+
+       integer, dimension(8) :: values
+       character :: date*8, time*10, zone*5
+
+       call date_and_time (date, time, zone, values)
+       cdate(1:2) = date(5:6)
+       cdate(3:3) = '/'
+       cdate(4:5) = date(7:8)
+       cdate(6:6) = '/'
+       cdate(7:8) = date(3:4)
+       ctime(1:2) = time(1:2)
+       ctime(3:3) = ':'
+       ctime(4:5) = time(3:4)
+       ctime(6:6) = ':'
+       ctime(7:8) = time(5:6)
+
+    end subroutine datetime!}}}
 
 end module glc_comp_mct
 
