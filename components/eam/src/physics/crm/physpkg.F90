@@ -700,6 +700,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   use comsrf,           only: fsns, fsnt, flns, sgh, sgh30, flnt, landm, fsds
   use cam_abortutils,   only: endrun
 
+  use crm_physics,            only: crm_physics_tend
+  use crm_ecpp_output_module, only: crm_ecpp_output_type
   !-----------------------------------------------------------------------------
   ! Interface arguments
   !-----------------------------------------------------------------------------
@@ -724,6 +726,20 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   integer(i8) :: irtc_rate                     ! irtc clock rate
   real(r8)    :: chunk_cost                    ! measured cost per chunk
   type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
+
+  ! stuff for calling crm_physics_tend
+  type(physics_ptend), dimension(begchunk:endchunk) :: ptend ! indivdual parameterization tendencies
+  logical           :: use_ECPP
+  character(len=16) :: MMF_microphysics_scheme
+  real(r8), pointer, dimension(:,:) :: mmf_clear_rh
+  real(r8), dimension(pcols) :: mmf_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
+  real(r8), dimension(pcols) :: mmf_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
+  real(r8), dimension(pcols) :: mmf_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
+  type(crm_ecpp_output_type) :: crm_ecpp_output   ! CRM output data for ECPP calculations
+
+  integer  :: itim_old                      ! pbuf time index
+  real(r8), pointer, dimension(:,:) :: cld  ! cloud fraction
+  real(r8), pointer, dimension(:,:) :: cldo ! old cloud fraction
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
   nstep = get_nstep()
@@ -784,6 +800,31 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   end do
 
   call t_stopf ('bc_physics1')
+
+
+  
+! #if defined( ECPP )
+!   call phys_getopts( use_ECPP_out = use_ECPP )
+!   if (use_ECPP) call crm_ecpp_output%initialize(pcols,pver)
+! #endif
+  ! call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
+  ! mmf_clear_rh(1:ncol,1:pver) = 0._r8
+  call t_startf('crm_physics_tend')
+  call crm_physics_tend(ztodt, phys_state, phys_tend, ptend, pbuf2d, cam_in, cam_out,    &
+                        species_class, crm_ecpp_output, mmf_clear_rh,       &
+                        mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux )
+  do c=begchunk, endchunk
+    call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
+  end do
+  call t_stopf('crm_physics_tend')
+
+  ! save old CRM cloud fraction - w/o CRM, this is done in cldwat2m.F90
+  itim_old = pbuf_old_tim_idx()
+  do c=begchunk, endchunk
+    call pbuf_get_field(pbuf2d(c),pbuf_get_index('CLDO'),cldo,start=(/1,1,itim_old/),kount=(/pcols,pver,1/))
+    call pbuf_get_field(pbuf2d(c),pbuf_get_index('CLD') ,cld ,start=(/1,1,itim_old/),kount=(/pcols,pver,1/))
+    cldo(1:ncol,1:pver) = cld(1:ncol,1:pver)
+  end do
 
   !-----------------------------------------------------------------------------
   ! Physics tendency before coupler - Phase 2 - radiation and diagnostics
@@ -1579,105 +1620,105 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   !-----------------------------------------------------------------------------
   ! Initialize variabale for ECPP data
   !-----------------------------------------------------------------------------
-#if defined( ECPP )
-  if (use_ECPP) call crm_ecpp_output%initialize(pcols,pver)
-#endif
+! #if defined( ECPP )
+!   if (use_ECPP) call crm_ecpp_output%initialize(pcols,pver)
+! #endif
   !-----------------------------------------------------------------------------
   ! Run the CRM 
   !-----------------------------------------------------------------------------
-  call t_startf('crm_physics_tend')
-  call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
-                        species_class, crm_ecpp_output, mmf_clear_rh,       &
-                        mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
-  call physics_update(state, ptend, ztodt, tend)
-  call t_stopf('crm_physics_tend')
+  ! call t_startf('crm_physics_tend')
+  ! call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
+  !                       species_class, crm_ecpp_output, mmf_clear_rh,       &
+  !                       mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
+  ! call physics_update(state, ptend, ztodt, tend)
+  ! call t_stopf('crm_physics_tend')
 
-  call check_energy_chng(state, tend, "crm_tend", nstep, ztodt,  &
-                         zero, mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
+  ! call check_energy_chng(state, tend, "crm_tend", nstep, ztodt,  &
+  !                        zero, mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
 
   !-----------------------------------------------------------------------------
   ! Modal aerosol wet radius for radiative calculation
   !-----------------------------------------------------------------------------
-#if defined( ECPP ) && defined(MODAL_AERO)
-  ! temporarily turn on all lq, so it is allocated
-  lq(:) = .true.
-  call physics_ptend_init(ptend, state%psetcols, 'crm - modal_aero_wateruptake_dr', lq=lq)
+! #if defined( ECPP ) && defined(MODAL_AERO)
+!   ! temporarily turn on all lq, so it is allocated
+!   lq(:) = .true.
+!   call physics_ptend_init(ptend, state%psetcols, 'crm - modal_aero_wateruptake_dr', lq=lq)
 
-  call t_startf('modal_aero_mmf')
+!   call t_startf('modal_aero_mmf')
 
-  ! set all ptend%lq to false as they will be set in modal_aero_calcsize_sub
-  ptend%lq(:) = .false.
-  call modal_aero_calcsize_sub (state, ztodt, pbuf, ptend)
-  call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=mmf_clear_rh)
+!   ! set all ptend%lq to false as they will be set in modal_aero_calcsize_sub
+!   ptend%lq(:) = .false.
+!   call modal_aero_calcsize_sub (state, ztodt, pbuf, ptend)
+!   call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=mmf_clear_rh)
 
-  ! ECPP handles aerosol wet deposition, so tendency from wet depostion is 
-  ! not updated in mz_aero_wet_intr (mz_aerosols_intr.F90), but tendencies
-  ! from other parts of crmclouds_aerosol_wet_intr() are still updated here.
-  call physics_update (state, ptend, ztodt, tend)
-  call t_stopf('modal_aero_mmf')
+!   ! ECPP handles aerosol wet deposition, so tendency from wet depostion is 
+!   ! not updated in mz_aero_wet_intr (mz_aerosols_intr.F90), but tendencies
+!   ! from other parts of crmclouds_aerosol_wet_intr() are still updated here.
+!   call physics_update (state, ptend, ztodt, tend)
+!   call t_stopf('modal_aero_mmf')
 
-  call check_energy_chng(state, tend, "modal_aero_mmf", nstep, ztodt, &
-                         zero, zero, zero, zero)
+!   call check_energy_chng(state, tend, "modal_aero_mmf", nstep, ztodt, &
+!                          zero, zero, zero, zero)
 
-#endif /* ECPP and MODAL_AERO */
+! #endif /* ECPP and MODAL_AERO */
   !-----------------------------------------------------------------------------
   ! ECPP - Explicit-Cloud Parameterized-Pollutant
   !-----------------------------------------------------------------------------
-#if defined( ECPP )
-  if (use_ECPP) then
+! #if defined( ECPP )
+!   if (use_ECPP) then
 
-    call pbuf_get_field(pbuf, pbuf_get_index('pblh'), pblh)
-    call pbuf_get_field(pbuf, pbuf_get_index('ACLDY_CEN'), acldy_cen_tbeg)
+!     call pbuf_get_field(pbuf, pbuf_get_index('pblh'), pblh)
+!     call pbuf_get_field(pbuf, pbuf_get_index('ACLDY_CEN'), acldy_cen_tbeg)
 
-    dtstep_pp = dtstep_pp_input
-    necpp = dtstep_pp/ztodt
+!     dtstep_pp = dtstep_pp_input
+!     necpp = dtstep_pp/ztodt
 
-    if (nstep.ne.0 .and. mod(nstep, necpp).eq.0) then
+!     if (nstep.ne.0 .and. mod(nstep, necpp).eq.0) then
 
-      ! aerosol tendency from droplet activation and mixing
-      ! cldo and cldn are set to be the same in crmclouds_mixnuc_tend,
-      ! So only turbulence mixing is done here.
-      call t_startf('crmclouds_mixnuc')
-      call crmclouds_mixnuc_tend(state, ptend, dtstep_pp,           &
-                                 cam_in%cflx, pblh, pbuf,           &
-                                 crm_ecpp_output%wwqui_cen,         &
-                                 crm_ecpp_output%wwqui_cloudy_cen,  &
-                                 crm_ecpp_output%wwqui_bnd,         &
-                                 crm_ecpp_output%wwqui_cloudy_bnd,  &
-                                 species_class)
-      call physics_update(state, ptend, dtstep_pp, tend)
-      call t_stopf('crmclouds_mixnuc')
+!       ! aerosol tendency from droplet activation and mixing
+!       ! cldo and cldn are set to be the same in crmclouds_mixnuc_tend,
+!       ! So only turbulence mixing is done here.
+!       call t_startf('crmclouds_mixnuc')
+!       call crmclouds_mixnuc_tend(state, ptend, dtstep_pp,           &
+!                                  cam_in%cflx, pblh, pbuf,           &
+!                                  crm_ecpp_output%wwqui_cen,         &
+!                                  crm_ecpp_output%wwqui_cloudy_cen,  &
+!                                  crm_ecpp_output%wwqui_bnd,         &
+!                                  crm_ecpp_output%wwqui_cloudy_bnd,  &
+!                                  species_class)
+!       call physics_update(state, ptend, dtstep_pp, tend)
+!       call t_stopf('crmclouds_mixnuc')
 
-      ! ECPP interface
-      call t_startf('ecpp')
-      call parampollu_driver2(state, ptend, pbuf, dtstep_pp, dtstep_pp,   &
-                              crm_ecpp_output%acen,       crm_ecpp_output%abnd,         &
-                              crm_ecpp_output%acen_tf,    crm_ecpp_output%abnd_tf,      &
-                              crm_ecpp_output%massflxbnd, crm_ecpp_output%rhcen,        &
-                              crm_ecpp_output%qcloudcen,  crm_ecpp_output%qlsinkcen,    &
-                              crm_ecpp_output%precrcen,   crm_ecpp_output%precsolidcen, &
-                              acldy_cen_tbeg)
-      call physics_update(state, ptend, dtstep_pp, tend)
-      call t_stopf ('ecpp')
+!       ! ECPP interface
+!       call t_startf('ecpp')
+!       call parampollu_driver2(state, ptend, pbuf, dtstep_pp, dtstep_pp,   &
+!                               crm_ecpp_output%acen,       crm_ecpp_output%abnd,         &
+!                               crm_ecpp_output%acen_tf,    crm_ecpp_output%abnd_tf,      &
+!                               crm_ecpp_output%massflxbnd, crm_ecpp_output%rhcen,        &
+!                               crm_ecpp_output%qcloudcen,  crm_ecpp_output%qlsinkcen,    &
+!                               crm_ecpp_output%precrcen,   crm_ecpp_output%precsolidcen, &
+!                               acldy_cen_tbeg)
+!       call physics_update(state, ptend, dtstep_pp, tend)
+!       call t_stopf ('ecpp')
 
-    end if ! nstep.ne.0 .and. mod(nstep, necpp).eq.0
+!     end if ! nstep.ne.0 .and. mod(nstep, necpp).eq.0
 
-    call crm_ecpp_output%finalize()
+!     call crm_ecpp_output%finalize()
 
-  end if ! use_ECPP
-#endif /* ECPP */
+!   end if ! use_ECPP
+! #endif /* ECPP */
   !-----------------------------------------------------------------------------
   ! save old CRM cloud fraction - w/o CRM, this is done in cldwat2m.F90
   !-----------------------------------------------------------------------------
-  call pbuf_get_field(pbuf,pbuf_get_index('CLDO'),cldo,start=(/1,1,itim_old/),kount=(/pcols,pver,1/))
-  call pbuf_get_field(pbuf,pbuf_get_index('CLD') ,cld ,start=(/1,1,itim_old/),kount=(/pcols,pver,1/))
+  ! call pbuf_get_field(pbuf,pbuf_get_index('CLDO'),cldo,start=(/1,1,itim_old/),kount=(/pcols,pver,1/))
+  ! call pbuf_get_field(pbuf,pbuf_get_index('CLD') ,cld ,start=(/1,1,itim_old/),kount=(/pcols,pver,1/))
 
-  cldo(1:ncol,1:pver) = cld(1:ncol,1:pver)
+  ! cldo(1:ncol,1:pver) = cld(1:ncol,1:pver)
 
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
 
-  call check_tracers_fini(tracerint)
+  ! call check_tracers_fini(tracerint)
 
   ! call pbuf_set_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
 

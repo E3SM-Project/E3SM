@@ -43,7 +43,9 @@ use setparm_mod, only : setparm
 contains
 
 subroutine crm(lchnk, ncrms, dt_gl, plev,       &
-                crm_input, crm_state, crm_rad,  &
+                crm_input, crm_state, &
+                crm_rad_qrad, crm_rad_temperature, &
+                crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, &
                 crm_ecpp_output, crm_output, crm_clear_rh, &
                 latitude0, longitude0, gcolp, igstep, &
                 use_VT, VT_wn_max, &
@@ -88,7 +90,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(r8), intent(in   ) :: dt_gl                            ! global model's time step
     type(crm_input_type),      intent(in   ) :: crm_input
     type(crm_state_type),      intent(inout) :: crm_state
-    type(crm_rad_type), target,intent(inout) :: crm_rad
+    ! type(crm_rad_type), target,intent(inout) :: crm_rad
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_temperature
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_qv         
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_qc         
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_qi         
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_cld        
+    real(crm_rknd), dimension(ncrms,crm_nx_rad,crm_ny_rad,crm_nz), intent(inout) :: crm_rad_qrad       
     type(crm_ecpp_output_type),intent(inout) :: crm_ecpp_output
     type(crm_output_type), target, intent(inout) :: crm_output
     real(r8), dimension(ncrms,nzm), intent(  out) :: crm_clear_rh
@@ -159,12 +167,12 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
     real(r8), allocatable :: crm_clear_rh_cnt(:,:) ! counter for clear air relative humidity
 
-    real(crm_rknd), pointer :: crm_rad_temperature  (:,:,:,:)
-    real(crm_rknd), pointer :: crm_rad_qv           (:,:,:,:)
-    real(crm_rknd), pointer :: crm_rad_qc           (:,:,:,:)
-    real(crm_rknd), pointer :: crm_rad_qi           (:,:,:,:)
-    real(crm_rknd), pointer :: crm_rad_cld          (:,:,:,:)
-    real(crm_rknd), pointer :: crm_rad_qrad         (:,:,:,:)
+    ! real(crm_rknd), pointer :: crm_rad_temperature  (:,:,:,:)
+    ! real(crm_rknd), pointer :: crm_rad_qv           (:,:,:,:)
+    ! real(crm_rknd), pointer :: crm_rad_qc           (:,:,:,:)
+    ! real(crm_rknd), pointer :: crm_rad_qi           (:,:,:,:)
+    ! real(crm_rknd), pointer :: crm_rad_cld          (:,:,:,:)
+    ! real(crm_rknd), pointer :: crm_rad_qrad         (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_u_wind     (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_v_wind     (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_w_wind     (:,:,:,:)
@@ -252,12 +260,12 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif
   if (use_VT) call allocate_VT(ncrms)
 
-  crm_rad_temperature => crm_rad%temperature(1:ncrms,:,:,:)
-  crm_rad_qv          => crm_rad%qv         (1:ncrms,:,:,:)
-  crm_rad_qc          => crm_rad%qc         (1:ncrms,:,:,:)
-  crm_rad_qi          => crm_rad%qi         (1:ncrms,:,:,:)
-  crm_rad_cld         => crm_rad%cld        (1:ncrms,:,:,:)
-  crm_rad_qrad        => crm_rad%qrad       (1:ncrms,:,:,:)
+  ! crm_rad_temperature => crm_rad%temperature(1:ncrms,:,:,:)
+  ! crm_rad_qv          => crm_rad%qv         (1:ncrms,:,:,:)
+  ! crm_rad_qc          => crm_rad%qc         (1:ncrms,:,:,:)
+  ! crm_rad_qi          => crm_rad%qi         (1:ncrms,:,:,:)
+  ! crm_rad_cld         => crm_rad%cld        (1:ncrms,:,:,:)
+  ! crm_rad_qrad        => crm_rad%qrad       (1:ncrms,:,:,:)
 
   crm_state_u_wind      => crm_state%u_wind     (1:ncrms,:,:,:)
   crm_state_v_wind      => crm_state%v_wind     (1:ncrms,:,:,:)
