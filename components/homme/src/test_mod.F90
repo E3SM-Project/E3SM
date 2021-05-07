@@ -242,6 +242,9 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
     case('planar_rising_bubble');  
             if (bubble_moist) call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
+    case('planar_supercell');   
+            call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+
     case('held_suarez0');
        do ie=nets,nete
           call hs_forcing(elem(ie),hvcoord,nt,ntQ,dt)
