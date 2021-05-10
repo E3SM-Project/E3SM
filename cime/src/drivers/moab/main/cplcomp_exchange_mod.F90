@@ -20,6 +20,8 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : sameg_al ! same grid atm lnd, and land is point cloud
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
+  use seq_comm_mct, only : mrofid, mbrxid  !  rof on comp pes and on coupler pes
+
   use shr_mpi_mod,  only: shr_mpi_max
   use dimensions_mod, only : np     ! for atmosphere
 
@@ -1005,7 +1007,8 @@ contains
     integer, external        :: iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph
     integer                  :: ierr, context_id
     character*32             :: appname, outfile, wopts, tagnameProj
-    integer                  :: maxMH, maxMPO, maxMLID, maxMSID ! max pids for moab apps atm, ocn, lnd, sea-ice
+       ! max pids for moab apps atm,   ocn,    lnd,    sea-ice,  runoff
+    integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID
     integer                  :: tagtype, numco,  tagindex, partMethod
     integer                  :: rank, ent_type
     integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
@@ -1043,6 +1046,7 @@ contains
     call shr_mpi_max(mpoid, maxMPO, mpicom_join, all=.true.)
     call shr_mpi_max(mlnid, maxMLID, mpicom_join, all=.true.)
     call shr_mpi_max(MPSIID, maxMSID, mpicom_join, all=.true.)
+    call shr_mpi_max(mrofid, maxMRID, mpicom_join, all=.true.) ! ROF/MOSART/RIVER
     if (seq_comm_iamroot(CPLID) ) then
        write(logunit, *) "MOAB coupling:  maxMH: ", maxMH, " maxMPO: ", maxMPO, &
           " maxMLID: ", maxMLID
@@ -1302,6 +1306,7 @@ contains
           vgids = rank
           ent_type = 0 ! vertex type
           ierr = iMOAB_SetIntTagStorage ( mblxid, tagname, nverts(1) , ent_type, vgids)
+          deallocate(vgids)
         endif
         outfile = 'recLand.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
@@ -1406,6 +1411,70 @@ contains
 ! end copy from ocean code
     endif
 
+    ! runoff
+    if (comp%oneletterid == 'r'  .and. maxMRID /= -1) then
+      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (rof)
+        !  send mesh to coupler
+#ifdef MOAB_HAVE_ZOLTAN
+        partMethod = 2  !  RCB for point cloud
+#endif
+        ierr = iMOAB_SendMesh(mrofid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+        if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in sending rof mesh '
+           call shr_sys_abort(subname//' ERROR in sending rof mesh ')
+        endif
+
+      endif
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+        appname = "COUPLE_ROF"//CHAR(0)
+        ! migrated mesh gets another app id, moab rof to coupler (mbrxid)
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, mbrxid)
+        if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in registering coupler land '
+           call shr_sys_abort(subname//' ERROR in registering coupler land')
+        endif
+        ierr = iMOAB_ReceiveMesh(mbrxid, mpicom_join, mpigrp_old, id_old)
+        if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in receiving coupler rof mesh'
+           call shr_sys_abort(subname//' ERROR in receiving coupler rof mesh')
+         endif
+
+#ifdef MOABDEBUG
+
+        !there are no shared entities, but we will set a special partition tag, in order to see the
+        ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+        tagname='partition'//CHAR(0)
+        tagtype = 0  ! dense, integer
+        numco = 1 !  one value per cell
+        ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_GetMeshInfo(mbrxid, nverts, nelem, nblocks, nsbc, ndbc)
+        allocate(vgids(nverts(1)))
+        vgids = rank
+        ent_type = 0 ! vertex type
+        ierr = iMOAB_SetIntTagStorage ( mbrxid, tagname, nverts(1) , ent_type, vgids)
+        deallocate(vgids)
+        outfile = 'recRof.h5m'//CHAR(0)
+        wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+!       write out the mesh file to disk
+        ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing rof coupler mesh'
+          call shr_sys_abort(subname//' ERROR in writing rof coupler mesh')
+        endif
+#endif
+      endif
+      if (mrofid .ge. 0) then  ! we are on component rof pes
+         ierr = iMOAB_FreeSenderBuffers(mrofid, context_id)
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in freeing buffers'
+           call shr_sys_abort(subname//' ERROR in freeing buffers')
+        endif
+      endif
+    endif
+    ! end copy from land
   end subroutine cplcomp_moab_Init
 
 end module cplcomp_exchange_mod
