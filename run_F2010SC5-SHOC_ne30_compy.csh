@@ -11,11 +11,11 @@ set echo
 ###===================================================================
 
 ### BASIC INFO ABOUT RUN
-set job_name       = Phase1_experiment
+set job_name       = Phase1_experiment_v2
 set compset        = F2010SC5-SHOC
 set resolution     = ne30pg2_r05_oECv3
 set machine        = compy
-set walltime       = 14:30:00
+set walltime       = 16:30:00
 setenv project       e3sm
 
 ### SOURCE CODE OPTIONS
@@ -68,9 +68,9 @@ set short_term_archive_root_dir = ${e3sm_simulations_dir}/${case_name}/archive
 #set num_resubmits    = 0
 
 set stop_units       = nmonth
-set stop_num         = 60
+set stop_num         = 72
 set restart_units    = nmonth
-set restart_num      = 3
+set restart_num      = 4
 set num_resubmits    = 0
 
 set do_short_term_archiving      = false
@@ -1001,6 +1001,8 @@ cat <<EOF >> user_nl_eam
  fincl4 = 'PRECT','TMQ' ! h3 hourly
 
  history_budget = .true.
+
+ shoc_lambda_thresh = 0.035D0
 
 EOF
 
