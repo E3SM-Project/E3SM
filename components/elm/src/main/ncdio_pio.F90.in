@@ -25,7 +25,7 @@ module ncdio_pio
   use perf_mod       , only : t_startf, t_stopf
   use fileutils      , only : getavu, relavu
   use mct_mod        , only : mct_gsMap, mct_gsMap_lsize, mct_gsMap_gsize, mct_gsMap_orderedPoints
-  use pio            , only : file_desc_t, io_desc_t, iosystem_desc_t, pio_64bit_offset
+  use pio            , only : file_desc_t, io_desc_t, iosystem_desc_t, pio_64bit_offset, pio_64bit_data
   use pio            , only : pio_bcast_error, pio_char, pio_clobber, pio_closefile, pio_createfile, pio_def_dim
   use pio            , only : pio_def_var, pio_double, pio_enddef, pio_get_att, pio_get_var, pio_global, pio_initdecomp
   use pio            , only : pio_inq_att, pio_inq_dimid, pio_inq_dimlen, pio_inq_dimname, pio_inq_vardimid, pio_inq_varid
@@ -255,7 +255,8 @@ contains
        end if
     end if
 
-    ierr = pio_createfile(pio_subsystem, file, my_io_type, fname, ior(PIO_CLOBBER,PIO_64BIT_OFFSET))
+!   ierr = pio_createfile(pio_subsystem, file, my_io_type, fname, ior(PIO_CLOBBER,PIO_64BIT_OFFSET))
+    ierr = pio_createfile(pio_subsystem, file, my_io_type, fname, ior(PIO_CLOBBER,PIO_64BIT_DATA))
 
     if(ierr/= PIO_NOERR) then
        call shr_sys_abort( ' ncd_pio_createfile ERROR: Failed to open file to write: '//trim(fname))
