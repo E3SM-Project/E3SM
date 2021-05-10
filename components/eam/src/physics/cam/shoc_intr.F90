@@ -551,7 +551,7 @@ end function shoc_implements_cnst
    real(r8) :: rcm_in(pcols,pver)
    real(r8) :: cloudfrac_shoc(pcols,pver)
    real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
-   real(r8) :: exner(pcols,pver)
+   real(r8) :: inv_exner(pcols,pver)
    real(r8) :: thlm(pcols,pver)
    real(r8) :: um(pcols,pver)
    real(r8) :: vm(pcols,pver)
@@ -737,9 +737,11 @@ end function shoc_implements_cnst
    where(state1%q(:ncol,:pver,ixcldice) .gt. minqn) &
        newfice(:ncol,:pver) = state1%q(:ncol,:pver,ixcldice)/(state1%q(:ncol,:pver,ixcldliq)+state1%q(:ncol,:pver,ixcldice))  
        
+   ! TODO: Create a general function to calculate Exner's formula - see full
+   ! comment in micro_p3_interface.F90
    do k=1,pver
      do i=1,ncol
-       exner(i,k) = 1._r8/((state1%pmid(i,k)/p0_shoc)**(rair/cpair))
+       inv_exner(i,k) = 1._r8/((state1%pmid(i,k)/p0_shoc)**(rair/cpair))
      enddo
    enddo       
        
@@ -755,8 +757,8 @@ end function shoc_implements_cnst
        um(i,k) = state1%u(i,k)
        vm(i,k) = state1%v(i,k)
        
-       thlm(i,k) = state1%t(i,k)*exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
-       thv(i,k) = state1%t(i,k)*exner(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)-state1%q(i,k,ixcldliq)) 
+       thlm(i,k) = state1%t(i,k)*inv_exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
+       thv(i,k) = state1%t(i,k)*inv_exner(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)-state1%q(i,k,ixcldliq)) 
  
        tke_zt(i,k) = max(tke_tol,state1%q(i,k,ixtke))
        
@@ -831,7 +833,7 @@ end function shoc_implements_cnst
         zt_g(:ncol,:), zi_g(:ncol,:), state%pmid(:ncol,:pver), state%pint(:ncol,:pverp), state1%pdel(:ncol,:pver),& ! Input
 	wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
 	wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
-	exner(:ncol,:),state1%phis(:ncol), & ! Input
+	inv_exner(:ncol,:),state1%phis(:ncol), & ! Input
 	shoc_s(:ncol,:), tke_zt(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
 	um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
 	wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), & ! Input/Output

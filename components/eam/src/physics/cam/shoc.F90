@@ -230,7 +230,7 @@ subroutine shoc_main ( &
      zt_grid,zi_grid,pres,presi,pdel,&    ! Input
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
      wtracer_sfc,num_qtracers,w_field, &  ! Input
-     exner,phis, &                        ! Input
+     inv_exner,phis, &                        ! Input
      host_dse, tke, thetal, qw, &         ! Input/Output
      u_wind, v_wind,qtracers,&            ! Input/Output
      wthv_sec,tkh,tk,&                    ! Input/Output
@@ -295,7 +295,7 @@ subroutine shoc_main ( &
   ! Surface flux for tracers [varies]
   real(rtype), intent(in) :: wtracer_sfc(shcol,num_qtracers)
   ! Exner function [-]
-  real(rtype), intent(in) :: exner(shcol,nlev)
+  real(rtype), intent(in) :: inv_exner(shcol,nlev)
   ! Host model surface geopotential height
   real(rtype), intent(in) :: phis(shcol)
 
@@ -411,7 +411,7 @@ subroutine shoc_main ( &
                      zt_grid,zi_grid,pres,presi,pdel,&       ! Input
                      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &    ! Input
                      wtracer_sfc,num_qtracers,w_field, &     ! Input
-                     exner,phis, &                           ! Input
+                     inv_exner,phis, &                           ! Input
                      host_dse, tke, thetal, qw, &            ! Input/Output
                      u_wind, v_wind,qtracers,&               ! Input/Output
                      wthv_sec,tkh,tk,&                       ! Input/Output
@@ -547,7 +547,7 @@ subroutine shoc_main ( &
   !  temperature
   call update_host_dse(&
      shcol,nlev,thetal,&                   ! Input
-     shoc_ql,exner,zt_grid,phis,&          ! Input
+     shoc_ql,inv_exner,zt_grid,phis,&          ! Input
      host_dse)                             ! Output
 
   call shoc_energy_integrals(&             ! Input
@@ -3749,7 +3749,7 @@ end subroutine shoc_energy_integrals
 
 subroutine update_host_dse(&
          shcol,nlev,thlm,&                 ! Input
-         shoc_ql,exner,zt_grid,phis,&      ! Input
+         shoc_ql,inv_exner,zt_grid,phis,&      ! Input
          host_dse)                         ! Output
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -3767,8 +3767,8 @@ subroutine update_host_dse(&
   real(rtype), intent(in) :: thlm(shcol,nlev)
   ! cloud liquid water mixing ratio [kg/kg]
   real(rtype), intent(in) :: shoc_ql(shcol,nlev)
-  ! exner function [-]
-  real(rtype), intent(in) :: exner(shcol,nlev)
+  ! inverse of exner function [-]
+  real(rtype), intent(in) :: inv_exner(shcol,nlev)
   ! heights at mid point [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! surface geopotential height of host model [m]
@@ -3786,7 +3786,7 @@ subroutine update_host_dse(&
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call update_host_dse_f(shcol,nlev,thlm,shoc_ql,exner,zt_grid,phis, &  ! Input
+      call update_host_dse_f(shcol,nlev,thlm,shoc_ql,inv_exner,zt_grid,phis, &  ! Input
            host_dse)                              ! Input/Output)
       return
    endif
@@ -3794,7 +3794,7 @@ subroutine update_host_dse(&
 
   do k=1,nlev
     do i=1,shcol
-      temp = (thlm(i,k)+(lcond/cp)*shoc_ql(i,k))/exner(i,k)
+      temp = (thlm(i,k)+(lcond/cp)*shoc_ql(i,k))/inv_exner(i,k)
       host_dse(i,k) = cp*temp+ggr*zt_grid(i,k)+phis(i)
     enddo
   enddo

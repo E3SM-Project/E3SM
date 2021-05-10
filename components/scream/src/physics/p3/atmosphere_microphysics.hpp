@@ -80,7 +80,7 @@ public:
         const Spack opmid(pmid(icol,ipack));
         const Smask opmid_mask(!isnan(opmid) and opmid>0.0);
         auto oexner = physics_fun::get_exner(opmid,opmid_mask);
-        exner(icol,ipack).set(opmid_mask,oexner);
+        inv_exner(icol,ipack).set(opmid_mask,1.0/oexner);
         // Potential temperature
         const Spack oT_atm(T_atm(icol,ipack));
         const Smask oT_atm_mask(!isnan(oT_atm) and oT_atm>0.0);
@@ -126,7 +126,7 @@ public:
     view_2d       T_atm;
     view_2d_const ast;
     view_2d_const zi;
-    view_2d       exner;
+    view_2d       inv_exner;
     view_2d       th_atm;
     view_2d       cld_frac_l;
     view_2d       cld_frac_i;
@@ -135,7 +135,7 @@ public:
     // Assigning local variables
     void set_variables(const int ncol, const int npack,
            view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_,
-           view_2d exner_, view_2d th_atm_, view_2d cld_frac_l_, view_2d cld_frac_i_, view_2d cld_frac_r_, view_2d dz_
+           view_2d inv_exner_, view_2d th_atm_, view_2d cld_frac_l_, view_2d cld_frac_i_, view_2d cld_frac_r_, view_2d dz_
            )
     {
       m_ncol = ncol;
@@ -146,7 +146,7 @@ public:
       ast = ast_;
       zi = zi_;
       // OUT
-      exner = exner_;
+      inv_exner = inv_exner_;
       th_atm = th_atm_;
       cld_frac_l = cld_frac_l_;
       cld_frac_i = cld_frac_i_;
@@ -166,7 +166,9 @@ public:
     void operator()(const int icol) const {
       for (int ipack=0;ipack<m_npack;ipack++) {
         // Update the atmospheric temperature and the previous temperature.
-        const Spack oexner(exner(icol,ipack));
+        const Spack opmid(pmid(icol,ipack));
+        const Smask opmid_mask(!isnan(opmid) and opmid>0.0);
+        auto oexner = physics_fun::get_exner(opmid,opmid_mask);
         const Spack oth_atm(th_atm(icol,ipack));
         const Smask oth_atm_mask(!isnan(oth_atm) and oth_atm>0.0);
         auto oT = physics_fun::th_to_T(oth_atm,oexner,oth_atm_mask);
@@ -186,7 +188,7 @@ public:
     // Local variables
     int m_ncol, m_npack;
     view_2d       T_atm;
-    view_2d       exner;
+    view_2d_const pmid;
     view_2d       th_atm;
     view_2d       T_prev;
     view_2d       qv;
@@ -195,14 +197,14 @@ public:
     view_2d       diag_eff_radius_qi;
     // Assigning local values
     void set_variables(const int ncol, const int npack,
-                    view_2d th_atm_, view_2d exner_, view_2d T_atm_, view_2d T_prev_,
+                    view_2d th_atm_, view_2d_const pmid_, view_2d T_atm_, view_2d T_prev_,
                     view_2d qv_, view_2d qv_prev_, view_2d diag_eff_radius_qc_, view_2d diag_eff_radius_qi_)
     {
       m_ncol  = ncol;
       m_npack = npack;
       // IN
       th_atm      = th_atm_;
-      exner       = exner_;
+      pmid        = pmid_;
       qv          = qv_;
       // OUT
       T_atm              = T_atm_;
