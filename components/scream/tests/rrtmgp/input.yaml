@@ -20,10 +20,10 @@ Grids Manager:
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
   p_mid: 0.0
-  pint: 0.0
+  p_int: 0.0
   pseudo_density: 0.0
   T_mid: 0.0
-  tint: 0.0
+  t_int: 0.0
   gas_vmr: 0.0
   surf_alb_direct: 0.0
   surf_alb_diffuse: 0.0
@@ -32,5 +32,4 @@ Initial Conditions:
   iwp: 0.0
   eff_radius_qc: 0.0
   eff_radius_qi: 0.0
-#  Initial Conditions File: rad_standalone_ne4_pg2.nc  #TODO, put this into a separate stand_alone test in a future PR
 ...
