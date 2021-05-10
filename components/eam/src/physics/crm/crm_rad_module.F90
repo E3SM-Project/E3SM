@@ -44,8 +44,10 @@ contains
       if (.not. allocated(rad%qrad))        allocate(rad%qrad       (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       if (.not. allocated(rad%temperature)) allocate(rad%temperature(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       if (.not. allocated(rad%qv))          allocate(rad%qv         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%qc))          allocate(rad%qc         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       if (.not. allocated(rad%qi))          allocate(rad%qi         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       if (.not. allocated(rad%cld))         allocate(rad%cld        (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      
       if (.not. allocated(rad%nc))          allocate(rad%nc         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       if (.not. allocated(rad%ni))          allocate(rad%ni         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       if (.not. allocated(rad%qs))          allocate(rad%qs         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
@@ -54,8 +56,10 @@ contains
       call prefetch(rad%qrad)
       call prefetch(rad%temperature)
       call prefetch(rad%qv)
+      call prefetch(rad%qc)
       call prefetch(rad%qi)
       call prefetch(rad%cld)
+
       call prefetch(rad%nc)
       call prefetch(rad%ni)
       call prefetch(rad%qs)
@@ -64,8 +68,10 @@ contains
       rad%qrad           = 0
       rad%temperature    = 0
       rad%qv             = 0
+      rad%qc             = 0
       rad%qi             = 0
       rad%cld            = 0
+
       rad%nc             = 0
       rad%ni             = 0
       rad%qs             = 0
@@ -79,6 +85,7 @@ contains
       deallocate(rad%qrad)
       deallocate(rad%temperature)
       deallocate(rad%qv)
+      deallocate(rad%qc)
       deallocate(rad%qi)
       deallocate(rad%cld)
 
