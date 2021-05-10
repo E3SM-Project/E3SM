@@ -50,8 +50,10 @@ subroutine microp_driver_readnl(nlfile)
    select case (microp_scheme)
    case ('MG')
       call micro_mg_cam_readnl(nlfile)
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_readnl:: unrecognized microp_scheme')
@@ -68,8 +70,10 @@ subroutine microp_driver_register
    select case (microp_scheme)
    case ('MG')
       call micro_mg_cam_register()
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_register:: unrecognized microp_scheme')
@@ -96,8 +100,10 @@ function microp_driver_implements_cnst(name)
    select case (microp_scheme)
    case ('MG')
       microp_driver_implements_cnst = micro_mg_cam_implements_cnst(name)
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_implements_cnst:: unrecognized microp_scheme')
@@ -120,8 +126,10 @@ subroutine microp_driver_init_cnst(name, q, gcid)
    select case (microp_scheme)
    case ('MG')
       call micro_mg_cam_init_cnst(name, q, gcid)
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_init_cnst:: unrecognized microp_scheme')
@@ -141,8 +149,10 @@ subroutine microp_driver_init(pbuf2d)
    select case (microp_scheme)
    case ('MG')
       call micro_mg_cam_init(pbuf2d)
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_init:: unrecognized microp_scheme')
@@ -182,8 +192,10 @@ subroutine microp_driver_tend(state, ptend, dtime, pbuf)
       call t_startf('microp_mg_cam_tend')
       call micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call t_stopf('microp_mg_cam_tend')
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_tend:: unrecognized microp_scheme')

@@ -3527,7 +3527,9 @@ my $eddy_scheme = $nl->get_value('eddy_scheme');
 # Need to strip the quotes to use as a value for attribute matching.
 $eddy_scheme =~ s/['"]//g;                                           #"'
 add_default($nl, 'shallow_scheme', 'eddy_scheme'=>$eddy_scheme);
-add_default($nl, 'srf_flux_avg', 'eddy_scheme'=>$eddy_scheme);
+
+# Surface flux smoothing to reduce instability
+add_default($nl, 'srf_flux_avg');
 
 #BSINGH - Flag splitting for code modifications by PNNL under polar project
 add_default($nl, 'resus_fix');
