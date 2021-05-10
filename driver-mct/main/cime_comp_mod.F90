@@ -451,8 +451,11 @@ module cime_comp_mod
   logical  :: areafact_samegrid      ! areafact samegrid flag
   logical  :: single_column          ! scm mode logical
   logical  :: iop_mode               ! iop mode logical
+  logical  :: scm_multcols           ! scm mode over multiple columns logical
   real(r8) :: scmlon                 ! single column lon
   real(r8) :: scmlat                 ! single column lat
+  integer  :: scm_nx                 ! points in x direction for SCM functionality
+  integer  :: scm_ny                 ! points in y direction for SCM functionality
   logical  :: aqua_planet            ! aqua planet mode
   real(r8) :: nextsw_cday            ! radiation control
   logical  :: atm_aero               ! atm provides aerosol data
@@ -1113,6 +1116,9 @@ contains
          esp_present=esp_present                   , &
          iac_present=iac_present                   , &
          single_column=single_column               , &
+         scm_multcols=scm_multcols                 , &
+         scm_nx=scm_nx                             , &
+         scm_ny=scm_ny                             , &
          iop_mode=iop_mode                         , &
          aqua_planet=aqua_planet                   , &
          cpl_seq_option=cpl_seq_option             , &
@@ -1329,6 +1335,7 @@ contains
        call seq_comm_getinfo(OCNID(ens1), mpicom=mpicom_OCNID)
 
        call shr_scam_checkSurface(scmlon, scmlat, &
+            scm_multcols,scm_nx,scm_ny,           &
             iop_mode,                             &
             OCNID(ens1), mpicom_OCNID,            &
             lnd_present=lnd_present,              &

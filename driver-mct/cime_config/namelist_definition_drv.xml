@@ -1484,17 +1484,46 @@
     </values>
   </entry>
 
-  <entry id="iop_mode" modify_via_xml="IOP_MODE">
+  <entry id="scm_multcols" modify_via_xml="PTS_MULTCOLS_MODE">
     <type>logical</type>
     <category>seq_infodata_inparm</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      turns on Intensive Observation Period (IOP) mode, a planet covered
-      with homogenous surface and forced identically with a forcing file,
-      set by IOP_MODE in env_case.xml, default: false
+      Uses SCM functionality for multiple columns. Specifically, it takes the column
+      on the globe intended to be run in SCM mode, but propogates that point (i.e.
+      meaning surface type and properties etc.) to multiple columns, as defined by the
+      user.  All columns are then forced identically according to the Intensive Observation
+      Period (IOP) file, which is typically required to run in SCM mode.  This option
+      originally implemented to support running a doubly periodic cloud resolving model, but
+      could be used for other applications.
+      set by PTS_MULTCOLS_MODE in env_case.xml, default: false
     </desc>
     <values>
-      <value>$IOP_MODE</value>
+      <value>$PTS_MULTCOLS_MODE</value>
+    </values>
+  </entry>
+
+  <entry id="scm_nx" modify_via_xml="PTS_NX">
+    <type>integer</type>
+    <category>seq_infodata_inparm</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      number of points in x direction when using SCM functionality for multiple columns
+    </desc>
+    <values>
+      <value>$PTS_NX</value>
+    </values>
+  </entry>
+
+  <entry id="scm_ny" modify_via_xml="PTS_NY">
+    <type>integer</type>
+    <category>seq_infodata_inparm</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      number of points in Y direction when using SCM functionality for multiple columns
+    </desc>
+    <values>
+      <value>$PTS_NY</value>
     </values>
   </entry>
 
