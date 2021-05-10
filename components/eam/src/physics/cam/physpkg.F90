@@ -144,6 +144,7 @@ subroutine phys_register
     use prescribed_ozone,   only: prescribed_ozone_register
     use prescribed_volcaero,only: prescribed_volcaero_register
     use prescribed_aero,    only: prescribed_aero_register
+    use read_spa_data,      only: read_spa_data_register
     use prescribed_ghg,     only: prescribed_ghg_register
     use sslt_rebin,         only: sslt_rebin_register
     use aoa_tracers,        only: aoa_tracers_register
@@ -274,6 +275,7 @@ subroutine phys_register
        call prescribed_volcaero_register()
        call prescribed_ozone_register()
        call prescribed_aero_register()
+       call read_spa_data_register()
        call prescribed_ghg_register()
        call sslt_rebin_register
 
@@ -683,6 +685,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use prescribed_ozone,   only: prescribed_ozone_init
     use prescribed_ghg,     only: prescribed_ghg_init
     use prescribed_aero,    only: prescribed_aero_init
+    use read_spa_data,      only: read_spa_data_init
     use seasalt_model,      only: init_ocean_data, has_mam_mom
     use aerodep_flx,        only: aerodep_flx_init
     use aircraft_emit,      only: aircraft_emit_init
@@ -809,6 +812,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call prescribed_ozone_init()
     call prescribed_ghg_init()
     call prescribed_aero_init()
+    call read_spa_data_init()
     call aerodep_flx_init()
     call aircraft_emit_init(phys_state,pbuf2d)
     !when is_cmip6_volc is true ,cmip6 style volcanic file is read
@@ -2756,6 +2760,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use prescribed_ozone,    only: prescribed_ozone_adv
   use prescribed_ghg,      only: prescribed_ghg_adv
   use prescribed_aero,     only: prescribed_aero_adv
+  use read_spa_data,       only: read_spa_data_adv
   use aerodep_flx,         only: aerodep_flx_adv
   use aircraft_emit,       only: aircraft_emit_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
@@ -2785,6 +2790,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   call prescribed_ozone_adv(phys_state, pbuf2d)
   call prescribed_ghg_adv(phys_state, pbuf2d)
   call prescribed_aero_adv(phys_state, pbuf2d)
+  call read_spa_data_adv(phys_state, pbuf2d)
   call aircraft_emit_adv(phys_state, pbuf2d)
   call prescribed_volcaero_adv(phys_state, pbuf2d)
 
