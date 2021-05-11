@@ -192,7 +192,7 @@ subroutine shoc_init( &
   if (present(qw2tune_in)) qw2tune = qw2tune_in
   if (present(qwthl2tune_in)) qwthl2tune = qwthl2tune_in
   if (present(w2tune_in)) w2tune=w2tune_in
-  if (present(qw2tune_in)) length_fac=length_fac_in
+  if (present(length_fac_in)) length_fac=length_fac_in
   if (present(qwthl2tune_in)) c_diag_3rd_mom=c_diag_3rd_mom_in
   if (present(lambda_low_in)) lambda_low=lambda_low_in
   if (present(lambda_high_in)) lambda_high=lambda_high_in
