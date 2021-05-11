@@ -375,6 +375,13 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE2")
             test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE1")
 
+            # Re-run reusing some baselines and expiring others
+            cmd = self.get_cmd("SCREAM_FAKE_AHEAD=1 SCREAM_FAKE_GIT_HEAD=FAKE2 ./test-all-scream -m $machine --baseline-dir={} -b HEAD -k -t dbg -t sp -u".format(baseline_dir), self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+
+            test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE2")
+            test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE2")
+
             # Re-run without reusing baselines, should force regeneration
             cmd = self.get_cmd("SCREAM_FAKE_GIT_HEAD=FAKE3 ./test-all-scream -m $machine -b HEAD -k -t dbg -t sp", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
