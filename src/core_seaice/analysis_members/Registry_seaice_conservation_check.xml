@@ -105,6 +105,9 @@
 		<var name="energyConsLatentHeat" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
+		<var name="energyConsLatentHeat2" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
 	</var_struct>
 	<var_struct name="conservationCheckMassAM" time_levs="1" packages="conservationCheckAMPKG">
 		<var name="initialMass" type="real" dimensions="nHemispheres Time" units="kg"
