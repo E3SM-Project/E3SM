@@ -7134,6 +7134,9 @@ contains
        block,            &
        abortFlag)
 
+    use seaice_constants, only: &
+         seaicePuny
+
     integer, intent(in) :: &
          nCellsSolve       !< Input: number of locally owned cells to be updated
 
@@ -7465,13 +7468,16 @@ contains
 
              do iCell = 1, nCellsSolve
                 do iCat = 1, nCategories
-                   if (thisTracer % array2D(iCat,iCell) < 0.0_RKIND) then
+                   if (thisTracer % array2D(iCat,iCell) < -seaicePuny*seaicePuny) then
                       call mpas_log_write('IR: Negative mass in IR: iCat, iCell, global iCell, value: $i $i $i $r', &
                            messageType=MPAS_LOG_ERR, &
                            intArgs=(/iCat, iCell, indexToCellID(iCell)/), &
                            realArgs=(/thisTracer % array2D(iCat,iCell)/))
                       abortFlag = .true.
                       return
+                   else if (thisTracer % array2D(iCat,iCell) >= -seaicePuny*seaicePuny .and. &
+                            thisTracer % array2D(iCat,iCell) < 0.0_RKIND) then
+                      thisTracer % array2D(iCat,iCell) = 0.0_RKIND
                    endif
                 enddo
              enddo
@@ -7481,13 +7487,16 @@ contains
              do iCell = 1, nCellsSolve
                 do iCat = 1, nCategories
                    do iLayer = 1, nLayers
-                      if (thisTracer % array3D(iLayer,iCat,iCell) < 0.0_RKIND) then
+                      if (thisTracer % array3D(iLayer,iCat,iCell) < -seaicePuny*seaicePuny) then
                          call mpas_log_write('IR: Negative mass in IR: iLayer, iCat, iCell, global iCell, value: $i $i $i $i $r', &
                               messageType=MPAS_LOG_ERR, &
                               intArgs=(/iLayer, iCat, iCell, indexToCellID(iCell)/), &
                               realArgs=(/thisTracer % array3D(iLayer,iCat,iCell)/))
                          abortFlag = .true.
                          return
+                      else if (thisTracer % array3D(iLayer,iCat,iCell) >= -seaicePuny*seaicePuny .and. &
+                               thisTracer % array3D(iLayer,iCat,iCell) < 0.0_RKIND) then
+                         thisTracer % array3D(iLayer,iCat,iCell) = 0.0_RKIND
                       endif
                    enddo
                 enddo
