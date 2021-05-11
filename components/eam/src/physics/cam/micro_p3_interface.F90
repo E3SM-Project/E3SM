@@ -93,6 +93,7 @@ module micro_p3_interface
       qv_prev_idx,        &
       t_prev_idx,         &
       accre_enhan_idx,    &
+      ccn3_idx,           &
       mon_ccn_idx         !Needed for prescribed CCN option         
 
 
@@ -419,6 +420,9 @@ end subroutine micro_p3_readnl
     snow_sed_idx = pbuf_get_index('SNOW_SED') !! from physpkg 
     prec_pcw_idx = pbuf_get_index('PREC_PCW') !! from physpkg 
     snow_pcw_idx = pbuf_get_index('SNOW_PCW') !! from physpkg 
+
+    !BSINGH- Get indices for SPA treatment
+    ccn3_idx = pbuf_get_index('CCN3')
 
     call p3_init(micro_p3_lookup_dir,micro_p3_tableversion)
 
@@ -960,6 +964,7 @@ end subroutine micro_p3_readnl
     real(rtype), parameter :: dcon   = 25.e-6_rtype         ! Convective size distribution effective radius (um)
     real(rtype), parameter :: mucon  = 5.3_rtype            ! Convective size distribution shape parameter
     real(rtype), parameter :: deicon = 50._rtype            ! Convective ice effective diameter (um)
+    real(rtype), pointer :: ccn_trcdat(:,:) !BSINGH - receive ccn values in this variable
 
     call t_startf('micro_p3_tend_init')
  
@@ -1129,6 +1134,15 @@ end subroutine micro_p3_readnl
       p3_main_inputs(1,k,17) = relvar(1,k)
     end do
     p3_main_inputs(1,pver+1,5) = state%zi(1,pver+1)
+
+    !-------------------------------------------------------------
+    !BSINGH - demonstrating a way to use tracer data read in data:
+    ! THIS SHOULD BE REPLACED!!!
+    !-------------------------------------------------------------
+
+    !BSINGH - Get CCN from tracer_data read in file:
+    call pbuf_get_field(pbuf, ccn3_idx, ccn_trcdat) ! now you can use ccn_trcdat anywhere in this code
+
 
     !read in prescribed CCN if log_prescribeCCN is true
     if (do_prescribed_CCN) call get_prescribed_CCN(nccn_prescribed,micro_p3_lookup_dir,its,ite,kts,kte,pbuf,lchnk)
