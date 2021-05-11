@@ -15,7 +15,7 @@ type(trfile)         :: spa_file
 logical              :: rmv_file = .false.
 
 !fields to read from the file
-character(len=16), parameter :: pbuf_names(59) = &
+character(len=16), parameter :: pbuf_names(58) = &
      [ 'AER_G_SW_0   ', 'AER_G_SW_1   ', 'AER_G_SW_2   ', 'AER_G_SW_3   ', 'AER_G_SW_4   ', &
        'AER_G_SW_5   ', 'AER_G_SW_6   ', 'AER_G_SW_7   ', 'AER_G_SW_8   ', 'AER_G_SW_9   ', &
        'AER_G_SW_10  ', 'AER_G_SW_11  ', 'AER_G_SW_12  ', 'AER_G_SW_13  ', &
@@ -28,10 +28,10 @@ character(len=16), parameter :: pbuf_names(59) = &
        'AER_TAU_LW_15', &
        'AER_TAU_SW_0 ', 'AER_TAU_SW_1 ', 'AER_TAU_SW_2 ', 'AER_TAU_SW_3 ', 'AER_TAU_SW_4 ', &
        'AER_TAU_SW_5 ', 'AER_TAU_SW_6 ', 'AER_TAU_SW_7 ', 'AER_TAU_SW_8 ', 'AER_TAU_SW_9 ', &
-       'AER_TAU_SW_10', 'AER_TAU_SW_11', 'AER_TAU_SW_12','AER_TAU_SW_13', &
+       'AER_TAU_SW_10', 'AER_TAU_SW_11', 'AER_TAU_SW_13', &
        'CCN3         ']
 
-character(len=16), parameter :: specifier(59) = pbuf_names(59)
+character(len=16), parameter :: specifier(58) = pbuf_names(58)
 
 
 contains
@@ -58,11 +58,8 @@ contains
     allocate (spa_file%in_pbuf(size(specifier)))
     spa_file%in_pbuf(:) = .true.
 
-!    call trcdata_init( specifier, 'unfied_SPA_file_lat_lon.nc', '', '/compyfs/sing201/lat_lon', spa_fields, spa_file, &
-!         rmv_file, 1, 0, 0, 'CYCLICAL')
-    call trcdata_init( specifier, 'unfied_SPA_file_lat_lon.nc', '', '/global/cscratch1/sd/bsingh/users/hassan', spa_fields, spa_file, &
+    call trcdata_init( specifier, 'unfied_SPA_file_lat_lon.nc', '', '/compyfs/sing201/lat_lon', spa_fields, spa_file, &
          rmv_file, 1, 0, 0, 'CYCLICAL')
-
 
   end subroutine read_spa_data_init
 

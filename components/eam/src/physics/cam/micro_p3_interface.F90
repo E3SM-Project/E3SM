@@ -1145,11 +1145,7 @@ end subroutine micro_p3_readnl
 
 
     !read in prescribed CCN if log_prescribeCCN is true
-!    if (do_prescribed_CCN) call get_prescribed_CCN(nccn_prescribed,micro_p3_lookup_dir,its,ite,kts,kte,pbuf,lchnk)
-    !swap old spa method with Baldwinder's:
-    if (do_prescribed_CCN) then
-       nccn_prescribed = ccn_trcdat
-    end if
+    if (do_prescribed_CCN) call get_prescribed_CCN(nccn_prescribed,micro_p3_lookup_dir,its,ite,kts,kte,pbuf,lchnk)
 
     ! CALL P3
     !==============
