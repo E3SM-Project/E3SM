@@ -1,5 +1,7 @@
 module read_spa_data
 
+!BSINGH - I didn't add any comments here due to time constrain but I will add comments later
+
 use tracer_data
 
 implicit none
@@ -13,7 +15,24 @@ type(trfile)         :: spa_file
 logical              :: rmv_file = .false.
 
 !fields to read from the file
-character(len=16), parameter :: pbuf_names(1) = (/'AER_G_SW_band1  '/)
+character(len=16), parameter :: pbuf_names(58) = &
+     [ 'AER_G_SW_0   ', 'AER_G_SW_1   ', 'AER_G_SW_2   ', 'AER_G_SW_3   ', 'AER_G_SW_4   ', &
+       'AER_G_SW_5   ', 'AER_G_SW_6   ', 'AER_G_SW_7   ', 'AER_G_SW_8   ', 'AER_G_SW_9   ', &
+       'AER_G_SW_10  ', 'AER_G_SW_11  ', 'AER_G_SW_12  ', 'AER_G_SW_13  ', &
+       'AER_SSA_SW_0 ', 'AER_SSA_SW_1 ', 'AER_SSA_SW_2 ', 'AER_SSA_SW_3 ', 'AER_SSA_SW_4 ', &
+       'AER_SSA_SW_5 ', 'AER_SSA_SW_6 ', 'AER_SSA_SW_7 ', 'AER_SSA_SW_8 ', 'AER_SSA_SW_9 ', &
+       'AER_SSA_SW_10', 'AER_SSA_SW_11', 'AER_SSA_SW_12', 'AER_SSA_SW_13', &
+       'AER_TAU_LW_0 ', 'AER_TAU_LW_1 ', 'AER_TAU_LW_2 ', 'AER_TAU_LW_3 ', 'AER_TAU_LW_4 ', &
+       'AER_TAU_LW_5 ', 'AER_TAU_LW_6 ', 'AER_TAU_LW_7 ', 'AER_TAU_LW_8 ', 'AER_TAU_LW_9 ', &
+       'AER_TAU_LW_10', 'AER_TAU_LW_11', 'AER_TAU_LW_12', 'AER_TAU_LW_13', 'AER_TAU_LW_14', &
+       'AER_TAU_LW_15', &
+       'AER_TAU_SW_0 ', 'AER_TAU_SW_1 ', 'AER_TAU_SW_2 ', 'AER_TAU_SW_3 ', 'AER_TAU_SW_4 ', &
+       'AER_TAU_SW_5 ', 'AER_TAU_SW_6 ', 'AER_TAU_SW_7 ', 'AER_TAU_SW_8 ', 'AER_TAU_SW_9 ', &
+       'AER_TAU_SW_10', 'AER_TAU_SW_11', 'AER_TAU_SW_13', &
+       'CCN3         ']
+
+character(len=16), parameter :: specifier(58) = pbuf_names(58)
+
 
 contains
 
@@ -35,21 +54,19 @@ contains
 
   subroutine read_spa_data_init
 
-    character(len=32)  :: specifier(1)
-
-    specifier(1) = 'AER_G_SW_band1'
-
     !Tracer data routine init
     allocate (spa_file%in_pbuf(size(specifier)))
     spa_file%in_pbuf(:) = .true.
 
-    call trcdata_init( specifier, 'bsingh_spa_file_lat_lon_11.nc', '', '/compyfs/sing201/lat_lon', spa_fields, spa_file, &
+    call trcdata_init( specifier, 'unfied_SPA_file_lat_lon.nc', '', '/compyfs/sing201/lat_lon', spa_fields, spa_file, &
          rmv_file, 1, 0, 0, 'CYCLICAL')
 
   end subroutine read_spa_data_init
 
+
   subroutine read_spa_data_adv( state, pbuf2d )
 
+    !advance fields in time and interpolate (space and time)
     use tracer_data,  only : advance_trcdata
     use physics_types,only : physics_state
     use ppgrid,       only : begchunk, endchunk
@@ -69,4 +86,5 @@ contains
 
 
   end subroutine read_spa_data_adv
+
 end module read_spa_data
