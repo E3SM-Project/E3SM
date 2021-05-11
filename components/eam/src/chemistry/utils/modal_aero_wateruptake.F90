@@ -23,7 +23,9 @@ save
 
 public :: &
    modal_aero_wateruptake_init, &
-   modal_aero_wateruptake_dr
+   modal_aero_wateruptake_dr, &
+   modal_aero_kohler
+
 
 public :: modal_aero_wateruptake_reg
 

@@ -792,8 +792,6 @@
 <use_MMF    use_MMF="1"   > .true. </use_MMF>
 <use_ECPP                 > .false.</use_ECPP>
 <use_ECPP   use_ECPP="1"  > .true. </use_ECPP>
-<use_MAML                 > .false.</use_MAML>
-<use_MAML   use_MAML="1"  > .true. </use_MAML>
 <use_MMF_VT               > .false.</use_MMF_VT>
 <use_MMF_VT use_MMF_VT="1"> .true. </use_MMF_VT>
 <MMF_VT_wn_max            > 0      </MMF_VT_wn_max>
@@ -806,6 +804,7 @@
 <microp_scheme microphys="mg1">  MG</microp_scheme>
 <microp_scheme microphys="mg1.5">MG</microp_scheme>
 <microp_scheme microphys="mg2">  MG</microp_scheme>
+<microp_scheme use_MMF="1">     off</microp_scheme>
 
 <micro_mg_version     microphys="mg1">    1          </micro_mg_version>
 <micro_mg_sub_version microphys="mg1">    0          </micro_mg_sub_version>
@@ -839,6 +838,9 @@
 <micro_nicons         microphys="mg2">  0.1D6       </micro_nicons>
 <micro_mincdnc        microphys="mg2">  -999.       </micro_mincdnc>
 
+<!-- special defaults for MMF, which now sets all other physics scheme options to "off" -->
+<micro_mincdnc        use_MMF="1">  -999.       </micro_mincdnc>
+
 <rrtmg_temp_fix                      > .false.      </rrtmg_temp_fix>
 
 <micro_mg_precip_frac_method                  >  max_overlap </micro_mg_precip_frac_method>
@@ -870,6 +872,7 @@
 <macrop_scheme macrophys="rk"        >rk</macrop_scheme>
 <macrop_scheme macrophys="park"      >park</macrop_scheme>
 <macrop_scheme macrophys="clubb_sgs" >CLUBB_SGS</macrop_scheme>
+<macrop_scheme use_MMF="1"           >off</macrop_scheme>
 
 <!-- Vertical limit on troposphere cloud physics -->
 
@@ -978,24 +981,24 @@
 <!-- Deep convection scheme -->
 <deep_scheme>ZM</deep_scheme>
 <deep_scheme clubb_do_deep="1" >CLUBB_SGS</deep_scheme>
+<deep_scheme use_MMF="1"       >off      </deep_scheme>
 
 <!-- PBL scheme -->
 <eddy_scheme pbl="uw"             >diag_TKE </eddy_scheme>
 <eddy_scheme pbl="hb"             >HB       </eddy_scheme>
 <eddy_scheme pbl="hbr"            >HBR      </eddy_scheme>
 <eddy_scheme pbl="clubb_sgs"      >CLUBB_SGS</eddy_scheme>
+<eddy_scheme use_MMF="1"          >off      </eddy_scheme>
 
 <shallow_scheme pbl="uw"          >UW       </shallow_scheme>
 <shallow_scheme pbl="hb"          >Hack     </shallow_scheme>
 <shallow_scheme pbl="hbr"         >Hack     </shallow_scheme>
 <shallow_scheme pbl="clubb_sgs"   >CLUBB_SGS</shallow_scheme>
+<shallow_scheme use_MMF="1"       >off      </shallow_scheme>
 
 <!-- Surface flux averaging -->
-<srf_flux_avg eddy_scheme="HB"       >0</srf_flux_avg>
-<srf_flux_avg eddy_scheme="HBR"      >0</srf_flux_avg>
-<srf_flux_avg eddy_scheme="diag_TKE" >0</srf_flux_avg>
-<srf_flux_avg eddy_scheme="CLUBB_SGS">0</srf_flux_avg>
-<srf_flux_avg use_MMF="1"            >0</srf_flux_avg>
+<srf_flux_avg             >0</srf_flux_avg>
+<srf_flux_avg use_MMF="1" >1</srf_flux_avg>
 
 <!-- MMF CRM mean state acceleration -->
 <use_crm_accel    use_MMF="0">.false.</use_crm_accel>
@@ -1307,6 +1310,12 @@
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_enax4v1"   > 2 </hypervis_subcycle>
 
 
+<!-- Modifications for MMF, which uses a shorter physics time step for stability (20 min for ne4, ne30)-->
+<dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </dt_tracer_factor>
+<hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </hypervis_subcycle_q>
+
+<dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </dt_tracer_factor>
+<hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </hypervis_subcycle_q>
 
 
 <!-- ================================================================== -->
@@ -1592,6 +1601,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 
 <!-- Ice nucleation mods-->
 <use_hetfrz_classnuc phys="default">.true.</use_hetfrz_classnuc>
+<use_hetfrz_classnuc MMF_microphysics_scheme="sam1mom">.false.</use_hetfrz_classnuc>
 <use_preexisting_ice phys="default">.false.</use_preexisting_ice>
 <hist_hetfrz_classnuc phys="default">.false.</hist_hetfrz_classnuc>
 <micro_mg_dcs_tdep phys="default">.true.</micro_mg_dcs_tdep>
@@ -1625,6 +1635,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <zmconv_ke phys="default" dyn="se"> 5.0E-6      </zmconv_ke>
 <cldfrc2m_rhmaxi phys="default" clubb_sgs="1" clubb_do_deep="0"> 1.05D0    </cldfrc2m_rhmaxi>
 <do_tms phys="default"> .false.   </do_tms>
+<do_tms phys="default" use_MMF="1"> .true.   </do_tms>
 <n_so4_monolayers_pcage phys="default"> 8.0D0     </n_so4_monolayers_pcage>
 <zmconv_tiedke_add phys="default"> 0.8D0     </zmconv_tiedke_add>
 <zmconv_cape_cin phys="default"> 1         </zmconv_cape_cin>
