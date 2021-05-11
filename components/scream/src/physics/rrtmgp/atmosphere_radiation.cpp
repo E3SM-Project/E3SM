@@ -7,6 +7,10 @@
 
 namespace scream {
 
+  using KT = KokkosTypes<DefaultDevice>;
+  using ExeSpace = KT::ExeSpace;
+  using MemberType = KT::MemberType;
+
 RRTMGPRadiation::RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params) 
   : AtmosphereProcess::AtmosphereProcess(), m_rrtmgp_comm (comm), m_rrtmgp_params (params) {
 }  // RRTMGPRadiation::RRTMGPRadiation
@@ -80,10 +84,7 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
 }
 
 void RRTMGPRadiation::run_impl (const Real dt) {
-  // Get data from AD; RRTMGP wants YAKL views
-  // TODO: how can I just keep these around without having to create every time?
-  // They are just pointers, so should be able to keep them somewhere else and just associate them once?
-  // Get device views
+  // Get data from the FieldManager
   auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_reshaped_view<const Real**>();
   auto d_pint = m_rrtmgp_fields_in.at("p_int").get_reshaped_view<const Real**>();
   auto d_pdel = m_rrtmgp_fields_in.at("pseudo_density").get_reshaped_view<const Real**>();
@@ -103,25 +104,60 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_lw_flux_up = m_rrtmgp_fields_out.at("LW_flux_up").get_reshaped_view<Real**>();
   auto d_lw_flux_dn = m_rrtmgp_fields_out.at("LW_flux_dn").get_reshaped_view<Real**>();
 
-  // Map to YAKL
-  yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay  ("p_lay", const_cast<Real*>(d_pmid.data()), m_ncol, m_nlay);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay  ("t_lay", const_cast<Real*>(d_tmid.data()), m_ncol, m_nlay);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev  ("p_lev",const_cast<Real*>(d_pint.data()), m_ncol, m_nlay+1);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> p_del  ("p_del"   ,const_cast<Real*>(d_pdel.data()), m_ncol, m_nlay);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> t_lev  ("t_lev",const_cast<Real*>(d_tint.data()), m_ncol, m_nlay+1);
-  yakl::Array<double,3,memDevice,yakl::styleFortran> gas_vmr("gas_vmr",const_cast<Real*>(d_gas_vmr.data()), m_ncol, m_nlay, m_ngas);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dir("surf_alb_direct",const_cast<Real*>(d_sfc_alb_dir.data()), m_ncol, m_nswbands);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dif("surf_alb_diffuse",const_cast<Real*>(d_sfc_alb_dif.data()), m_ncol, m_nswbands);
-  yakl::Array<double,1,memDevice,yakl::styleFortran> mu0("cos_zenith",const_cast<Real*>(d_mu0.data()), m_ncol);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> lwp("lwp",const_cast<Real*>(d_lwp.data()), m_ncol, m_nlay);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> iwp("iwp",const_cast<Real*>(d_iwp.data()), m_ncol, m_nlay);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> rel("eff_radius_qc",const_cast<Real*>(d_rel.data()), m_ncol, m_nlay);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> rei("eff_radius_qi",const_cast<Real*>(d_rei.data()), m_ncol, m_nlay);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_up("SW_flux_up", d_sw_flux_up.data(), m_ncol, m_nlay+1);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn("SW_flux_dn", d_sw_flux_dn.data(), m_ncol, m_nlay+1);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn_dir("SW_flux_dn_dir", d_sw_flux_dn_dir.data(), m_ncol, m_nlay+1);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_up("LW_flux_up", d_lw_flux_up.data(), m_ncol, m_nlay+1);
-  yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_dn("LW_flux_dn", d_lw_flux_dn.data(), m_ncol, m_nlay+1);
+  // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
+  // as the fastest index. For this reason we must copy the data.
+  auto p_lay = real2d("p_lay", m_ncol, m_nlay);
+  auto t_lay = real2d("t_lay", m_ncol, m_nlay);
+  auto p_lev = real2d("p_lev", m_ncol, m_nlay+1);
+  auto p_del = real2d ("p_del", m_ncol, m_nlay);
+  auto t_lev = real2d ("t_lev", m_ncol, m_nlay+1);
+  auto gas_vmr = real3d("gas_vmr", m_ncol, m_nlay, m_ngas);
+  auto sfc_alb_dir = real2d("surf_alb_direct", m_ncol, m_nswbands);
+  auto sfc_alb_dif = real2d("surf_alb_diffuse", m_ncol, m_nswbands);
+  auto mu0 = real1d("cos_zenith", m_ncol);
+  auto lwp = real2d("lwp", m_ncol, m_nlay);
+  auto iwp = real2d("iwp", m_ncol, m_nlay);
+  auto rel = real2d("eff_radius_qc", m_ncol, m_nlay);
+  auto rei = real2d("eff_radius_qi", m_ncol, m_nlay);
+  auto sw_flux_up = real2d("SW_flux_up", m_ncol, m_nlay+1);
+  auto sw_flux_dn = real2d("SW_flux_dn", m_ncol, m_nlay+1);
+  auto sw_flux_dn_dir = real2d("SW_flux_dn_dir", m_ncol, m_nlay+1);
+  auto lw_flux_up = real2d("LW_flux_up", m_ncol, m_nlay+1);
+  auto lw_flux_dn = real2d("LW_flux_dn", m_ncol, m_nlay+1);
+
+  // Copy data from the FieldManager to the YAKL arrays
+  {
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+
+      mu0(i+1) = d_mu0(i);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlay), [&] (const int& k) {
+        p_lay(i+1,k+1) = d_pmid(i,k);
+        t_lay(i+1,k+1) = d_tmid(i,k);
+        p_del(i+1,k+1) = d_pdel(i,k);
+        lwp(i+1,k+1)   = d_lwp(i,k);
+        iwp(i+1,k+1)   = d_iwp(i,k);
+        rel(i+1,k+1)   = d_rel(i,k);
+        rei(i+1,k+1)   = d_rei(i,k);
+        p_lev(i+1,k+1) = d_pint(i,k);
+        t_lev(i+1,k+1) = d_tint(i,k);
+
+        Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, m_ngas), [&] (const int& g) {
+          gas_vmr(i+1,k+1,g+1) = d_gas_vmr(i,k,g);
+        });
+      });
+
+      p_lev(i+1,m_nlay+1) = d_pint(i,m_nlay);
+      t_lev(i+1,m_nlay+1) = d_tint(i,m_nlay);
+
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nswbands), [&] (const int& k) {
+        sfc_alb_dir(i+1,k+1) = d_sfc_alb_dir(i,k);
+        sfc_alb_dif(i+1,k+1) = d_sfc_alb_dif(i,k);
+      });
+    });
+  }
+  Kokkos::fence();
 
   // Make GasConcs from gas_vmr and gas_names
   // TODO: only allocate at initialization and 
@@ -144,7 +180,8 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   }
 
   // Run RRTMGP driver
-  rrtmgp::rrtmgp_main( 
+  rrtmgp::rrtmgp_main(
+    m_ncol, m_nlay,
     p_lay, t_lay, p_lev, t_lev,
     gas_concs,
     sfc_alb_dir, sfc_alb_dif, mu0,
@@ -168,21 +205,27 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     t_lay(icol,ilay) = t_lay(icol,ilay) + rad_heating(icol,ilay) * dt;
   });
 
+  // Copy ouput data back to FieldManager
+  {
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlay+1), [&] (const int& k) {
+        if (k < m_nlay) d_tmid(i,k) = t_lay(i+1,k+1);
+
+        d_sw_flux_up(i,k)     = sw_flux_up(i+1,k+1);
+        d_sw_flux_dn(i,k)     = sw_flux_dn(i+1,k+1);
+        d_sw_flux_dn_dir(i,k) = sw_flux_dn_dir(i+1,k+1);
+        d_lw_flux_up(i,k)     = lw_flux_up(i+1,k+1);
+        d_lw_flux_dn(i,k)     = lw_flux_dn(i+1,k+1);
+      });
+    });
+  }
 }
 
 void RRTMGPRadiation::finalize_impl  () {
   rrtmgp::rrtmgp_finalize();
-}
-
-// Private function to check that fields are not padded
-void RRTMGPRadiation::require_unpadded(const Field<const Real>& f) {
-  const auto& fid = f.get_header().get_identifier();
-  const auto& layout = fid.get_layout();
-  auto v = f.get_view();
-  EKAT_REQUIRE_MSG (
-      static_cast<size_t>(layout.size()) == v.size(), 
-      "ERROR: field " << fid.name() << " was padded (to allow packing), but currently RRTMGP does not work with padded views."
-  );
 }
 
 void RRTMGPRadiation::set_required_field_impl(const Field<const Real>& f) {
@@ -193,10 +236,6 @@ void RRTMGPRadiation::set_required_field_impl(const Field<const Real>& f) {
 
   // Add myself as customer to the field
   add_me_as_customer(f);
-
-  // Check to make sure that fields are not padded because we are not 
-  // sure how to handle that with RRTMGP yet
-  require_unpadded(f);
 }
 
 void RRTMGPRadiation::set_computed_field_impl(const Field<      Real>& f) {
@@ -207,10 +246,6 @@ void RRTMGPRadiation::set_computed_field_impl(const Field<      Real>& f) {
 
   // Add myself as provider for the field
   add_me_as_provider(f);
-
-  // Check to make sure that fields are not padded because we are not 
-  // sure how to handle that with RRTMGP yet
-  require_unpadded(f);
 }
 
 }  // namespace scream

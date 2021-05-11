@@ -97,7 +97,8 @@ int main(int argc, char** argv) {
     // Run RRTMGP code on dummy atmosphere
     std::cout << "Run RRTMGP...\n";
     scream::rrtmgp::rrtmgp_main(
-            p_lay, t_lay, p_lev, t_lev, gas_concs, 
+            ncol, nlay,
+            p_lay, t_lay, p_lev, t_lev, gas_concs,
             sfc_alb_dir, sfc_alb_dif, mu0,
             lwp, iwp, rel, rei,
             sw_flux_up, sw_flux_dn, sw_flux_dir,
