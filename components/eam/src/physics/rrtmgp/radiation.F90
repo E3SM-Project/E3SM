@@ -204,7 +204,7 @@ module radiation
 
    !needed for SPA
    integer :: aer_tau_bnd_lw_mon_idx, aer_tau_bnd_sw_mon_idx,&
-              aer_ssa_bnd_sw_mon_idx, aer_asm_bnd_sw_mon_idx
+              aer_ssa_bnd_sw_mon_idx, aer_asm_bnd_sw_mon_idx 
 
    !============================================================================
 
@@ -462,7 +462,7 @@ contains
 
       write(mon_str,*) month_int
 
-      !assign base_file_name the name of the CCN file being used
+      !assign base_file_name the name of the CCN file being used 
       base_file_name = "spa_file_"
 
       mon_str = adjustl(mon_str)
@@ -520,7 +520,7 @@ contains
       ! where this subroutine is called, physics_state has not subset for a
       ! specific chunk (i.e., state is a vector of all chunks, indexed by lchnk)
       type(physics_state), intent(in) :: state(:)
-
+   
       type(physics_buffer_desc), pointer :: pbuf(:,:)
 
       integer :: icall, nmodes
@@ -982,22 +982,22 @@ contains
             call get_aerosol_optical_property_from_file(month,'AER_TAU_LW','lwband',nlwbands,aerosol_optical_property_lw(:,:,:,month,:))
          end do
          call pbuf_set_field(pbuf,aer_tau_bnd_lw_mon_idx,aerosol_optical_property_lw)
-         do month = 1,12
+         do month = 1,12 
             call get_aerosol_optical_property_from_file(month,'AER_TAU_SW','swband',nswbands,aerosol_optical_property_sw(:,:,:,month,:))
          end do
          call pbuf_set_field(pbuf,aer_tau_bnd_sw_mon_idx,aerosol_optical_property_sw)
          do month = 1,12
             call get_aerosol_optical_property_from_file(month,'AER_SSA_SW','swband',nswbands,aerosol_optical_property_sw(:,:,:,month,:))
          end do
-         call pbuf_set_field(pbuf,aer_ssa_bnd_sw_mon_idx,aerosol_optical_property_sw)
+         call pbuf_set_field(pbuf,aer_ssa_bnd_sw_mon_idx,aerosol_optical_property_sw)   
          do month = 1,12
             call get_aerosol_optical_property_from_file(month,'AER_G_SW','swband',nswbands,aerosol_optical_property_sw(:,:,:,month,:))
-         end do
+         end do 
          call pbuf_set_field(pbuf,aer_asm_bnd_sw_mon_idx,aerosol_optical_property_sw)
          deallocate(aerosol_optical_property_lw)
          deallocate(aerosol_optical_property_sw)
 
-      endif
+      end if
 
    end subroutine radiation_init
 
@@ -1311,7 +1311,7 @@ contains
       ! Zero-array for cloud properties if not diagnosed by microphysics
       real(r8), target, dimension(pcols,pver) :: zeros
       real(r8), dimension(pcols,pver) :: c_cldf  ! Combined cloud/snow fraction
-
+ 
       !needed for SPA
       integer :: year, month, day, tod, next_month
       real(r8) :: fraction_of_month
@@ -1323,7 +1323,7 @@ contains
       real(r8), dimension(12):: days_per_month
       !fill days_per_month, SPA doesn't recognize leap year, note that
       !days_per_month is also independently defined in micro_p3_interface
-      days_per_month = (/31,28,31,30,31,30,31,31,30,31,30,31/)
+      days_per_month = (/31,28,31,30,31,30,31,31,30,31,30,31/) 
 
       !----------------------------------------------------------------------
 
@@ -1495,7 +1495,7 @@ contains
                      aer_tau_bnd_sw = aer_tau_bnd_sw_mon(:,:,:,month)*(1-fraction_of_month) + aer_tau_bnd_sw_mon(:,:,:,next_month)*(fraction_of_month)
                      aer_ssa_bnd_sw = aer_ssa_bnd_sw_mon(:,:,:,month)*(1-fraction_of_month) + aer_ssa_bnd_sw_mon(:,:,:,next_month)*(fraction_of_month)
                      aer_asm_bnd_sw = aer_asm_bnd_sw_mon(:,:,:,month)*(1-fraction_of_month) + aer_asm_bnd_sw_mon(:,:,:,next_month)*(fraction_of_month)
-
+ 
                   else
 
                      call set_aerosol_optics_sw( &
