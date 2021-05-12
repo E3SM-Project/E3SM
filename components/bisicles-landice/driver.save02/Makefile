@@ -1,16 +1,13 @@
 .SUFFIXES: .F .o
 
 OBJS = glc_comp_mct.o \
-       glc_communicator.o \
        glc_cpl_indices.o \
        glc_mct_vars.o \
        glc_import_export.o
 
 all: $(OBJS)
 
-glc_comp_mct.o: glc_communicator.o glc_cpl_indices.o glc_mct_vars.o glc_import_export.o
-
-glc_communicator.o:
+glc_comp_mct.o: glc_cpl_indices.o glc_mct_vars.o glc_import_export.o
 
 glc_cpl_indices.o:
 
