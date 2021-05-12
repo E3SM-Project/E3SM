@@ -38,8 +38,6 @@ if (NOT ${SCREAM_BASELINES_ONLY})
 
     # Copy RRTMGP initial condition to local data directory
     FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-    CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/rad_standalone_ne4_pg2.nc
-                   ${CMAKE_CURRENT_BINARY_DIR}/rad_standalone_ne4_pg2.nc COPYONLY)
 
     # Copy RRTMGP absorption coefficient lookup tables to local data directory
     CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
@@ -52,6 +50,4 @@ if (NOT ${SCREAM_BASELINES_ONLY})
                    ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
     CONFIGURE_FILE(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
                    ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-    CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/rad_standalone_ne4_pg2.nc
-                   ${CMAKE_CURRENT_BINARY_DIR}/rad_standalone_ne4_pg2.nc COPYONLY)
 endif()

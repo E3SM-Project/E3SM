@@ -53,23 +53,23 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   constexpr int ps = Spack::n;
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
-  add_field<Required>("pref_mid",         pref_mid_layout,     Pa,     grid_name, ps);
-  add_field<Required>("zi",               scalar3d_layout_int, m,      grid_name, ps);
-  add_field<Required>("zm",               scalar3d_layout_mid, K,      grid_name, ps);
-  add_field<Required>("omega",            scalar3d_layout_mid, K,      grid_name, ps);
-  add_field<Required>("surf_sens_flux",   scalar2d_layout_col, K,      grid_name, ps);
-  add_field<Required>("surf_latent_flux", scalar2d_layout_col, K,      grid_name, ps);
-  add_field<Required>("surf_u_mom_flux",  scalar2d_layout_col, K,      grid_name, ps);
-  add_field<Required>("surf_v_mom_flux",  scalar2d_layout_col, K,      grid_name, ps);
+  add_field<Required>("pref_mid",         pref_mid_layout,     Pa,      grid_name, ps);
+  add_field<Required>("z_int",            scalar3d_layout_int, m,       grid_name, ps);
+  add_field<Required>("z_mid",            scalar3d_layout_mid, m,       grid_name, ps);
+  add_field<Required>("omega",            scalar3d_layout_mid, Pa/s,    grid_name, ps);
+  add_field<Required>("surf_sens_flux",   scalar2d_layout_col, W/(m*m), grid_name, ps);
+  add_field<Required>("surf_latent_flux", scalar2d_layout_col, W/(m*m), grid_name, ps);
+  add_field<Required>("surf_u_mom_flux",  scalar2d_layout_col, N/(m*m), grid_name, ps);
+  add_field<Required>("surf_v_mom_flux",  scalar2d_layout_col, N/(m*m), grid_name, ps);
 
-  add_field<Updated> ("T_mid",            scalar3d_layout_mid, nondim, grid_name, ps);
-  add_field<Updated> ("qv",               scalar3d_layout_mid, Qunit,  grid_name, "tracers", ps);
+  add_field<Updated> ("T_mid",            scalar3d_layout_mid, K,       grid_name, ps);
+  add_field<Updated> ("qv",               scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
 
   // Input variables
   add_field<Required>("host_dx",        scalar2d_layout_col, m,  grid_name, ps);
   add_field<Required>("host_dy",        scalar2d_layout_col, m,  grid_name, ps);
   add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
-  add_field<Required>("pint",           scalar3d_layout_int, Pa, grid_name, ps);
+  add_field<Required>("p_int",          scalar3d_layout_int, Pa, grid_name, ps);
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name, ps);
   add_field<Required>("phis",           scalar2d_layout_col, m,  grid_name, ps);
 
@@ -79,7 +79,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Updated>("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name, ps);
   add_field<Updated>("eddy_diff_mom", scalar3d_layout_mid, (m*m)/s,     grid_name, ps);
   add_field<Updated>("qc",            scalar3d_layout_mid, Qunit,       grid_name, "tracers", ps);
-  add_field<Updated>("cldfrac_liq",   scalar3d_layout_mid, Pa,          grid_name, ps);
+  add_field<Updated>("cldfrac_liq",   scalar3d_layout_mid, nondim,      grid_name, ps);
 
   // Output variables
   add_field<Computed>("pbl_height",    scalar2d_layout_col, m,           grid_name, ps);
@@ -120,8 +120,8 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
   auto T_mid            = m_shoc_fields_out["T_mid"].get_reshaped_view<Spack**>();
-  auto z_int            = m_shoc_fields_in["zi"].get_reshaped_view<const Spack**>();
-  auto z_mid            = m_shoc_fields_in["zm"].get_reshaped_view<const Spack**>();
+  auto z_int            = m_shoc_fields_in["z_int"].get_reshaped_view<const Spack**>();
+  auto z_mid            = m_shoc_fields_in["z_mid"].get_reshaped_view<const Spack**>();
   auto p_mid            = m_shoc_fields_in["p_mid"].get_reshaped_view<const Spack**>();
   auto pseudo_density   = m_shoc_fields_in["pseudo_density"].get_reshaped_view<const Spack**>();
   auto omega            = m_shoc_fields_in["omega"].get_reshaped_view<const Spack**>();
@@ -174,7 +174,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   input.zt_grid     = shoc_preprocess.zt_grid;
   input.zi_grid     = shoc_preprocess.zi_grid;
   input.pres        = p_mid;
-  input.presi       = m_shoc_fields_in["pint"].get_reshaped_view<const Spack**>();
+  input.presi       = m_shoc_fields_in["p_int"].get_reshaped_view<const Spack**>();
   input.pdel        = pseudo_density;
   input.thv         = shoc_preprocess.thv;
   input.w_field     = shoc_preprocess.wm_zt;

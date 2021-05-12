@@ -39,9 +39,9 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   // Set required (input) fields here
   add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name());
-  add_field<Required>("pint", scalar3d_layout_int, Pa, grid->name());
+  add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name());
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name());
-  add_field<Required>("tint" , scalar3d_layout_int, K , grid->name());
+  add_field<Required>("t_int" , scalar3d_layout_int, K , grid->name());
   add_field<Required>("gas_vmr", gas_layout, kgkg, grid->name());
   add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
   add_field<Required>("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name());
@@ -85,9 +85,9 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   // They are just pointers, so should be able to keep them somewhere else and just associate them once?
   // Get device views
   auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_reshaped_view<const Real**>();
-  auto d_pint = m_rrtmgp_fields_in.at("pint").get_reshaped_view<const Real**>();
+  auto d_pint = m_rrtmgp_fields_in.at("p_int").get_reshaped_view<const Real**>();
   auto d_pdel = m_rrtmgp_fields_in.at("pseudo_density").get_reshaped_view<const Real**>();
-  auto d_tint = m_rrtmgp_fields_in.at("tint").get_reshaped_view<const Real**>();
+  auto d_tint = m_rrtmgp_fields_in.at("t_int").get_reshaped_view<const Real**>();
   auto d_gas_vmr = m_rrtmgp_fields_in.at("gas_vmr").get_reshaped_view<const Real***>();
   auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("surf_alb_direct").get_reshaped_view<const Real**>();
   auto d_sfc_alb_dif = m_rrtmgp_fields_in.at("surf_alb_diffuse").get_reshaped_view<const Real**>();

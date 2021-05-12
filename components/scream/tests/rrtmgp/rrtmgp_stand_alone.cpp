@@ -95,9 +95,9 @@ namespace scream {
         // Grab reshaped views from the field manager and wrap pointers in yakl arrays
         auto d_pmid = field_mgr.get_field("p_mid").get_reshaped_view<Real**>();
         auto d_tmid = field_mgr.get_field("T_mid").get_reshaped_view<Real**>();
-        auto d_pint = field_mgr.get_field("pint").get_reshaped_view<Real**>();
+        auto d_pint = field_mgr.get_field("p_int").get_reshaped_view<Real**>();
         auto d_pdel = field_mgr.get_field("pseudo_density").get_reshaped_view<Real**>();
-        auto d_tint = field_mgr.get_field("tint").get_reshaped_view<Real**>();
+        auto d_tint = field_mgr.get_field("t_int").get_reshaped_view<Real**>();
         auto d_sfc_alb_dir = field_mgr.get_field("surf_alb_direct").get_reshaped_view<Real**>();
         auto d_sfc_alb_dif = field_mgr.get_field("surf_alb_diffuse").get_reshaped_view<Real**>();
         auto d_lwp = field_mgr.get_field("lwp").get_reshaped_view<Real**>();
