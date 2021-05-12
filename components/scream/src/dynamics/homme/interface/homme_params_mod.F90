@@ -96,7 +96,7 @@ module homme_params_mod
 contains
 
   subroutine init_params_f90 (nl_fname_c) bind(c)
-    use iso_c_binding,     only: c_ptr, c_f_pointer
+    use iso_c_binding,     only: c_ptr, c_f_pointer, C_NULL_CHAR
     use shr_file_mod,      only: getunit=>shr_file_getUnit, freeunit=>shr_file_freeUnit
     use homme_context_mod, only: is_parallel_inited, is_params_inited, &
                                  par
@@ -106,8 +106,9 @@ contains
     type (c_ptr), intent(in) :: nl_fname_c
 
     ! Locals
-    character(len=256), pointer :: nl_fname
-    integer :: ierr, unitn, se_ftype
+    character(len=256), pointer :: nl_fname_ptr
+    character(len=256) :: nl_fname
+    integer :: ierr, unitn, se_ftype, str_len
     real(kind=real_kind) :: dt_max
     character(len=MAX_FILE_LEN) :: mesh_file ! Unused in SCREAM
 
@@ -189,8 +190,10 @@ contains
 
     ! Open namelist file
     unitn = getunit()
-    call c_f_pointer(nl_fname_c,nl_fname)
-    open( unitn, file=trim(nl_fname), status='old' )
+    call c_f_pointer(nl_fname_c,nl_fname_ptr)
+    str_len = index(nl_fname_ptr, C_NULL_CHAR) - 1
+    nl_fname = trim(nl_fname_ptr(1:str_len))
+    open( unitn, file=nl_fname, status='old' )
 
     ! Parse all namelist sections
     read (unit=unitn,nml=ctl_nl,iostat=ierr)
