@@ -697,18 +697,6 @@ end subroutine micro_p3_readnl
       end if
    end if
 
-   if (do_prescribed_CCN) then !intialize mon_ccn_1-12
-
-      allocate(ccn_values(pcols,pver,12,begchunk:endchunk))
-      do month = 1,12 
-         call get_prescribed_CCN_from_file(micro_p3_lookup_dir,month,ccn_values(:,:,month,:))
-      end do
-      call pbuf_set_field(pbuf2d, mon_ccn_idx, ccn_values)
-
-      deallocate(ccn_values)
-
-   endif
-
   end subroutine micro_p3_init
 
   !================================================================================================
@@ -1135,19 +1123,8 @@ end subroutine micro_p3_readnl
     end do
     p3_main_inputs(1,pver+1,5) = state%zi(1,pver+1)
 
-    !-------------------------------------------------------------
-    !BSINGH - demonstrating a way to use tracer data read in data:
-    ! THIS SHOULD BE REPLACED!!!
-    !-------------------------------------------------------------
-
-    !BSINGH - Get CCN from tracer_data read in file:
-    call pbuf_get_field(pbuf, ccn3_idx, ccn_trcdat) ! now you can use ccn_trcdat anywhere in this code
-
-
-    !read in prescribed CCN if log_prescribeCCN is true
-!    if (do_prescribed_CCN) call get_prescribed_CCN(nccn_prescribed,micro_p3_lookup_dir,its,ite,kts,kte,pbuf,lchnk)
-    !swap old spa method with Baldwinder's:
     if (do_prescribed_CCN) then
+       call pbuf_get_field(pbuf, ccn3_idx, ccn_trcdat) ! now you can use ccn_trcdat anywhere in this code
        nccn_prescribed = ccn_trcdat
     end if
 
