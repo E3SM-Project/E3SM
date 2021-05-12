@@ -49,7 +49,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine dyn_veg_cs_Adjustments(        &
-       bounds, l,c,p,                       &
+       l,c,p,                       &
        prior_weights,                       &
        patch_state_updater,                 &
        dwt_leafc_seed,                      &
@@ -76,7 +76,6 @@ contains
     use ComputeSeedMod   , only : ComputeSeedAmounts
     !
     ! !ARGUMENTS:
-    type(bounds_type)              , intent(in)    :: bounds
     integer           , value      , intent(in)    :: l, c, p
     type(prior_weights_type)       , intent(in)    :: prior_weights
     type(patch_state_updater_type) , intent(in)    :: patch_state_updater
@@ -484,7 +483,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine dyn_veg_ns_Adjustments(  &
-       bounds,l,c,p,                  &
+       l,c,p,                  &
        prior_weights,                 &
        patch_state_updater,           &
        dwt_leafn_seed,                &
@@ -512,7 +511,6 @@ contains
     use ComputeSeedMod   , only : ComputeSeedAmounts
     !
     ! !ARGUMENTS:
-    type(bounds_type)              , intent(in)    :: bounds
     integer           , value      , intent(in)    :: l, c, p
     type(prior_weights_type)       , intent(in)    :: prior_weights
     type(patch_state_updater_type) , intent(in)    :: patch_state_updater
@@ -930,7 +928,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine dyn_veg_ps_Adjustments(        &
-       bounds,l,c,p,                              &
+       l,c,p,                              &
        prior_weights,                       &
        patch_state_updater,                 &
        dwt_leafp_seed,                      &
@@ -957,7 +955,6 @@ contains
     use ComputeSeedMod   , only : ComputeSeedAmounts
     !
     ! !ARGUMENTS:
-    type(bounds_type)                , intent(in)    :: bounds
     integer,  value                  , intent(in)    :: l,c,p
     type(prior_weights_type)         , intent(in)    :: prior_weights
     type(patch_state_updater_type)   , intent(in)    :: patch_state_updater
