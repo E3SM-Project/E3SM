@@ -15,15 +15,13 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestUniversal
 {
-
 //-----------------------------------------------------------------------------------------------//
-  static void run()
+  template<typename ScalarT, typename DeviceT>
+  static void run_impl()
   {
-    using physicscommon      = scream::PhysicsFunctions<Device>;
-
-    using Spack = ekat::Pack<Scalar,SCREAM_SMALL_PACK_SIZE>;
-
-    int num_levs = 100; // Number of levels to use for tests.
+    using physicscommon  = scream::PhysicsFunctions<Device>;
+    using view_1d        = ekat::KokkosTypes<DefaultDevice>::view_1d<ScalarT>;
+    using scalar_view_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Scalar>;
 
     static constexpr Scalar p0     = C::P0;
     static constexpr Scalar Rd     = C::RD;
@@ -32,43 +30,33 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     static constexpr Scalar ggr    = C::gravit;
     static constexpr Scalar test_tol = C::macheps*1e3;
 
-    using view_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Scalar>;
-    using sview_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Spack>;
-    const Int num_pack = ekat::npack<Spack>(num_levs);
-    const Int num_pack_int = ekat::npack<Spack>(num_levs+1);
-    // Compute random values for tests
-    sview_1d temperature_packed("temperature",num_pack),
-             height_packed("height",num_pack),
-             qv_packed("qv",num_pack),
-             pressure_packed("pressure",num_pack),
-             pseudo_density_packed("pseudo_density",num_pack),
-             dz_for_testing_packed("dz_for_testing",num_pack);
-    view_1d surface_height("surface_height",1);
-    // Allocate memory for test outputs
-    view_1d exner("exner",num_levs),
-            theta("theta",num_levs),
-            T_mid_from_pot("T_mid_from_pot",num_levs),
-            T_virtual("T_virtual",num_levs),
-            T_mid_from_virt("T_mid_from_virt",num_levs),
-            dse("dse",num_levs),
-            dz("dz",num_levs),
-            z_int("z_int",num_levs+1);
-    sview_1d exner_packed("exner",num_pack),
-             theta_packed("theta",num_pack),
-             T_mid_from_pot_packed("T_mid_from_pot",num_pack),
-             T_virtual_packed("T_virtual",num_pack),
-             T_mid_from_virt_packed("T_mid_from_virt",num_pack),
-             dse_packed("dse",num_pack),
-             dz_packed("dz",num_pack),
-             z_int_packed("z_int",num_pack_int);
+    const int num_levs = 100; // Number of levels to use for tests.
+    const Int num_pack = ekat::npack<ScalarT>(num_levs);
+    const Int num_pack_int = ekat::npack<ScalarT>(num_levs+1);
 
+    // Compute random values for tests
+    view_1d        temperature("temperature",num_pack),
+                   height("height",num_pack),
+                   qv("qv",num_pack),
+                   pressure("pressure",num_pack),
+                   pseudo_density("pseudo_density",num_pack),
+                   dz_for_testing("dz_for_testing",num_pack);
+    scalar_view_1d surface_height("surface_height",1);
+    view_1d        exner("exner",num_pack),
+                   theta("theta",num_pack),
+                   T_mid_from_pot("T_mid_from_pot",num_pack),
+                   T_virtual("T_virtual",num_pack),
+                   T_mid_from_virt("T_mid_from_virt",num_pack),
+                   dse("dse",num_pack),
+                   dz("dz",num_pack),
+                   z_int("z_int",num_pack_int);
     // Construct random input data
     std::random_device rdev;
     using rngAlg = std::mt19937_64;
     const unsigned int catchRngSeed = Catch::rngSeed();
     const unsigned int seed = catchRngSeed==0 ? rdev() : catchRngSeed;
     // Print seed to screen to trace tests that fail.
-    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+    std::cout << "  - seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
     rngAlg engine(seed);
     using RPDF = std::uniform_real_distribution<Scalar>;
     RPDF pdf_qv(1e-3,1e3),
@@ -78,29 +66,22 @@ struct UnitWrap::UnitTest<D>::TestUniversal
          pdf_height(0.0,1e5),
          pdf_surface(100.0,400.0);
 
-    ekat::genRandArray(temperature_packed,engine,pdf_temp);
-    ekat::genRandArray(height_packed,engine,pdf_height);
+    ekat::genRandArray(temperature,engine,pdf_temp);
+    ekat::genRandArray(height,engine,pdf_height);
     ekat::genRandArray(surface_height,engine,pdf_surface);
-    ekat::genRandArray(qv_packed,engine,pdf_qv);
-    ekat::genRandArray(pressure_packed,engine,pdf_pres);
-    ekat::genRandArray(pseudo_density_packed,engine,pdf_dp);
+    ekat::genRandArray(qv,engine,pdf_qv);
+    ekat::genRandArray(pressure,engine,pdf_pres);
+    ekat::genRandArray(pseudo_density,engine,pdf_dp);
 
     // Construct a simple set of `dz` values for testing the z_int function
-    auto dz_for_testing_host = Kokkos::create_mirror_view(ekat::scalarize(dz_for_testing_packed));
+    auto dz_for_testing_host = Kokkos::create_mirror_view(ekat::scalarize(dz_for_testing));
     for (int k = 0;k<num_levs;k++)
     {
       dz_for_testing_host[k] = num_levs-k;
     }
-    Kokkos::deep_copy(dz_for_testing_packed,dz_for_testing_host);
+    Kokkos::deep_copy(dz_for_testing,dz_for_testing_host);
 
-    view_1d temperature(reinterpret_cast<Scalar*>(temperature_packed.data()),num_levs),
-            height(reinterpret_cast<Scalar*>(height_packed.data()),num_levs),
-            qv(reinterpret_cast<Scalar*>(qv_packed.data()),num_levs),
-            pressure(reinterpret_cast<Scalar*>(pressure_packed.data()),num_levs),
-            pseudo_density(reinterpret_cast<Scalar*>(pseudo_density_packed.data()),num_levs),
-            dz_for_testing(reinterpret_cast<Scalar*>(dz_for_testing_packed.data()),num_levs);
-
-    // Run tests using Scalars
+    // Run tests using single values
     Scalar t_result, T0, z0, ztest, ptest, dp0, qv0;
     // Exner property tests:
     // exner_function(p0) should return 1.0
@@ -157,45 +138,35 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     REQUIRE(physicscommon::calculate_dz(dp0,ptest,T0,qv0)==Rd/ggr);
     dp0=ggr; ptest=Rd; T0=100.0; qv0=0.0;
     REQUIRE(physicscommon::calculate_dz(dp0,ptest,T0,qv0)==T0);
-    
     // Run tests on full views
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_for("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team) {
       // Constants used in testing (necessary to ensure SP build works)
       // Exner property tests:
-      // exner_function(pressure) should work for Scalar and for Spack.
       physicscommon::exner_function(team,pressure,exner);
-      physicscommon::exner_function(team,pressure_packed,exner_packed);
       // Potential temperature property tests
       // calculate_theta_from_T(T,pressure) should work
-      // calculate_T_from_theta(theta,pressure) should work for Scalar and for Spack
       physicscommon::calculate_theta_from_T(team,temperature,pressure,theta);
       physicscommon::calculate_T_from_theta(team,theta,pressure,T_mid_from_pot);
-      physicscommon::calculate_theta_from_T(team,temperature_packed,pressure_packed,theta_packed);
-      physicscommon::calculate_T_from_theta(team,theta_packed,pressure_packed,T_mid_from_pot_packed);
       // Virtual temperature property tests
-      // calculate_virtual_temperature(temperature,qv) should work for Scalar and for Spack
-      // calculate_temperature_from_virtual_temperature should work for Scalar and for Spack
+      // calculate_virtual_temperature(temperature,qv) should work 
+      // calculate_temperature_from_virtual_temperature should work 
       physicscommon::calculate_virtual_temperature(team,temperature,qv,T_virtual);
       physicscommon::calculate_temperature_from_virtual_temperature(team,T_virtual,qv,T_mid_from_virt);
-      physicscommon::calculate_virtual_temperature(team,temperature_packed,qv_packed,T_virtual_packed);
-      physicscommon::calculate_temperature_from_virtual_temperature(team,T_virtual_packed,qv_packed,T_mid_from_virt_packed);
       // DSE property tests
-      // calculate_dse should work for Scalar and for Spack
+      // calculate_dse should work
       physicscommon::calculate_dse(team,temperature,height,surface_height(0),dse);
-      physicscommon::calculate_dse(team,temperature_packed,height_packed,surface_height(0),dse_packed);
       // DZ tests
-      // calculate_dz should work for Scalar and for Spack
+      // calculate_dz should work
       physicscommon::calculate_dz(team,pseudo_density,pressure,temperature,qv,dz);
-      physicscommon::calculate_dz(team,pseudo_density_packed,pressure_packed,temperature_packed,qv_packed,dz_packed);
       // z_int property tests
-      // calculate_z_int should work for Scalar and for Spack
+      // calculate_z_int should work
       physicscommon::calculate_z_int(team,num_levs,dz_for_testing,z_int);
-      physicscommon::calculate_z_int(team,num_levs,dz_for_testing_packed,z_int_packed);
-
     }); // Kokkos parallel_for "test_universal_physics"
-
     Kokkos::fence();
+
+    // Check the properties of the full view outputi
+    // - map to host view
     auto exner_host           = Kokkos::create_mirror_view(exner);
     auto theta_host           = Kokkos::create_mirror_view(theta);
     auto T_mid_from_pot_host  = Kokkos::create_mirror_view(T_mid_from_pot);
@@ -207,16 +178,6 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     auto temperature_host     = Kokkos::create_mirror_view(temperature);
     auto pressure_host        = Kokkos::create_mirror_view(pressure);
     auto qv_host              = Kokkos::create_mirror_view(qv);
-
-    auto exner_pack_host           = Kokkos::create_mirror_view(exner_packed);
-    auto theta_pack_host           = Kokkos::create_mirror_view(theta_packed);
-    auto T_mid_from_pot_pack_host  = Kokkos::create_mirror_view(T_mid_from_pot_packed);
-    auto T_virtual_pack_host       = Kokkos::create_mirror_view(T_virtual_packed);
-    auto T_mid_from_virt_pack_host = Kokkos::create_mirror_view(T_mid_from_virt_packed);
-    auto dse_pack_host             = Kokkos::create_mirror_view(dse_packed);
-    auto z_int_pack_host           = Kokkos::create_mirror_view(z_int_packed);
-    auto dz_pack_host              = Kokkos::create_mirror_view(dz_packed);
-
     Kokkos::deep_copy(exner_host           , exner);
     Kokkos::deep_copy(theta_host           , theta);
     Kokkos::deep_copy(T_mid_from_pot_host  , T_mid_from_pot);
@@ -228,60 +189,73 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     Kokkos::deep_copy(temperature_host     , temperature);
     Kokkos::deep_copy(pressure_host        , pressure);
     Kokkos::deep_copy(qv_host              , qv);
-
-    Kokkos::deep_copy(exner_pack_host           , exner_packed);
-    Kokkos::deep_copy(theta_pack_host           , theta_packed);
-    Kokkos::deep_copy(T_mid_from_pot_pack_host  , T_mid_from_pot_packed);
-    Kokkos::deep_copy(T_virtual_pack_host       , T_virtual_packed);
-    Kokkos::deep_copy(T_mid_from_virt_pack_host , T_mid_from_virt_packed);
-    Kokkos::deep_copy(dse_pack_host             , dse_packed);
-    Kokkos::deep_copy(z_int_pack_host           , z_int_packed);
-    Kokkos::deep_copy(dz_pack_host              , dz_packed);
-    //Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_levs+1), [&] (const int k)
-    for(int k=0;k<num_levs;k++)
+    // Now check for all levels
+    for(int k=0;k<num_pack;k++)
     {
-     int ipack = k / Spack::n;
-     int ivec  = k % Spack::n;
+      const auto range_pack = ekat::range<ScalarT>(k*ScalarT::n);
+      const auto range_mask = range_pack < num_levs;
       // Make sure all columnwise results don't contain any obvious errors:
       // exner
-      REQUIRE(exner_host(k)==exner_pack_host(ipack)[ivec]);
-      REQUIRE(!isnan(exner_host(k)));
-      REQUIRE(!(exner_host(k)<0));
+      REQUIRE( !((isnan(exner_host(k)) && range_mask).any()) );
+      REQUIRE( !(((exner_host(k)<0) && range_mask).any()) );
       // potential temperature
-      REQUIRE(theta_host(k)==theta_pack_host(ipack)[ivec]);
-      REQUIRE(!isnan(theta_host(k)));
-      REQUIRE(!(theta_host(k)<0));
-      REQUIRE(theta_host(k)==physicscommon::calculate_theta_from_T(temperature_host(k),pressure_host(k)));
+      REQUIRE( !((isnan(theta_host(k)) && range_mask).any()) );
+      REQUIRE( !(((theta_host(k)<0) && range_mask).any()) );
+      {
+        auto theta_from_t = physicscommon::calculate_theta_from_T(temperature_host(k),pressure_host(k));
+        auto test_theta_from_t = !(theta_host(k)==theta_from_t) && range_mask;
+        REQUIRE( !(test_theta_from_t.any()) );
+      }
       // temperature from potential temperature
-      REQUIRE(T_mid_from_pot_host(k)==T_mid_from_pot_pack_host(ipack)[ivec]);
-      REQUIRE(!isnan(T_mid_from_pot_host(k)));
-      REQUIRE(!(T_mid_from_pot_host(k)<0));
-      REQUIRE(T_mid_from_pot_host(k)==physicscommon::calculate_T_from_theta(theta_host(k),pressure_host(k)));
+      REQUIRE( !((isnan(T_mid_from_pot_host(k)) && range_mask).any()) );
+      REQUIRE( !(((T_mid_from_pot_host(k)<0) && range_mask).any()) );
+      {
+        auto t_from_theta = physicscommon::calculate_T_from_theta(theta_host(k),pressure_host(k));
+        auto test_t_from_theta = !(T_mid_from_pot_host(k)==t_from_theta) && range_mask;
+        REQUIRE( !(test_t_from_theta.any()) );
+      }
       // virtual temperature
-      REQUIRE(std::abs(T_virtual_host(k)-T_virtual_pack_host(ipack)[ivec])<test_tol);
-      REQUIRE(!isnan(T_virtual_host(k)));
-      REQUIRE(!(T_virtual_host(k)<0));
-      REQUIRE(T_virtual_host(k)==physicscommon::calculate_virtual_temperature(temperature_host(k),qv_host(k)));
+      REQUIRE( !((isnan(T_virtual_host(k)) && range_mask).any()) );
+      REQUIRE( !(((T_virtual_host(k)<0) && range_mask).any()) );
+      {
+        auto virt_temp = physicscommon::calculate_virtual_temperature(temperature_host(k),qv_host(k));
+        auto test_virt_temp = !( T_virtual_host(k)==virt_temp ) && range_mask;
+        REQUIRE( !(test_virt_temp.any()) );
+      }
       // temperature from virtual temperature
-      REQUIRE(std::abs(T_mid_from_virt_host(k)-T_mid_from_virt_pack_host(ipack)[ivec])<test_tol);
-      REQUIRE(!isnan(T_mid_from_virt_host(k)));
-      REQUIRE(!(T_mid_from_virt_host(k)<0));
+      REQUIRE( !((isnan(T_mid_from_virt_host(k)) && range_mask).any()) );
+      REQUIRE( !(((T_mid_from_virt_host(k)<0) && range_mask).any()) );
       // DSE
-      REQUIRE(dse_host(k)==dse_pack_host(ipack)[ivec]);
-      REQUIRE(!isnan(dse_host(k)));
-      REQUIRE(!(dse_host(k)<0));
+      REQUIRE( !((isnan(dse_host(k)) && range_mask).any()) );
+      REQUIRE( !(((dse_host(k)<0) && range_mask).any()) );
       // dz
-      REQUIRE(std::abs(dz_host(k)-dz_pack_host(ipack)[ivec])<test_tol);
-      REQUIRE(!isnan(dz_host(k)));
-      REQUIRE(!(dz_host(k)<=0));
+      REQUIRE( !((isnan(dz_host(k)) && range_mask).any()) );
+      REQUIRE( !(((dz_host(k)<=0) && range_mask).any()) );
       // z_int
-      REQUIRE(z_int_host(k)==z_int_pack_host(ipack)[ivec]);
-      const auto k_bwd = num_levs-k;
-      REQUIRE(z_int_host(k_bwd)==k*(k+1)/2);
-      REQUIRE(!isnan(z_int_host(k)));
-      REQUIRE(!(z_int_host(k)<0));
+//TO-FIX      for (int i=0;i<Spack::n;i++) {
+//TO-FIX        Int lev = k*Spack::n + i;  // Determine the level at this pack/vec location.
+//TO-FIX        const auto lev_bwd = num_levs-lev;
+//TO-FIX        Int ipack = lev_bwd / Spack::n;
+//TO-FIX        Int ivec  = lev_bwd % Spack::n;
+//TO-FIX        REQUIRE( z_int_host(ipack)[ivec]==lev*(lev+1)/2);
+//TO-FIX      }
+      REQUIRE( !((isnan(z_int_host(k)) && range_mask).any()) );
+      REQUIRE( !(((z_int_host(k)<0) && range_mask).any()) );
     }
+  } // run_impl()
 
+//-----------------------------------------------------------------------------------------------//
+  static void run()
+  {
+    // Run tests for different pack size types
+    // Note, we print to screen the test type so it can be easily matched with the seed used for
+    // randomization within the test.
+    printf("Testing Scalar: packsize=1\n");
+    run_impl<ekat::Pack<Scalar,1>,Device>();
+    printf("Testing SMALL_PACK: packsize=%d\n",SCREAM_SMALL_PACK_SIZE);
+    run_impl<ekat::Pack<Scalar,SCREAM_SMALL_PACK_SIZE>,Device>();
+    printf("Testing PACK: packsize=%d\n",SCREAM_PACK_SIZE);
+    run_impl<ekat::Pack<Scalar,SCREAM_PACK_SIZE>,Device>();
   } // run
 }; // end of TestUniversal struct
 
