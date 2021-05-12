@@ -20,7 +20,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
   static void run()
   {
     using physicscommon      = scream::PhysicsFunctions<Device>;
-    using physicscommon_host = scream::PhysicsFunctions<HostDevice>;
+    using physicscommon = scream::PhysicsFunctions<HostDevice>;
 
     using Spack = ekat::Pack<Scalar,SCREAM_SMALL_PACK_SIZE>;
 
@@ -31,7 +31,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     static constexpr Scalar inv_cp = C::INV_CP;
     static constexpr Scalar tmelt  = C::Tmelt;
     static constexpr Scalar ggr    = C::gravit;
-    static constexpr Scalar test_tol = C::macheps*1e2;
+    static constexpr Scalar test_tol = C::macheps*1e3;
 
     using view_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Scalar>;
     using sview_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Spack>;
@@ -68,6 +68,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     using rngAlg = std::mt19937_64;
     const unsigned int catchRngSeed = Catch::rngSeed();
     const unsigned int seed = catchRngSeed==0 ? rdev() : catchRngSeed;
+    // Print seed to screen to trace tests that fail.
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
     rngAlg engine(seed);
     using RPDF = std::uniform_real_distribution<Scalar>;
     RPDF pdf_qv(1e-3,1e3),
@@ -85,12 +87,10 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     ekat::genRandArray(pseudo_density_packed,engine,pdf_dp);
 
     // Construct a simple set of `dz` values for testing the z_int function
-    auto dz_for_testing_host = Kokkos::create_mirror(dz_for_testing_packed);
+    auto dz_for_testing_host = Kokkos::create_mirror_view(ekat::scalarize(dz_for_testing_packed));
     for (int k = 0;k<num_levs;k++)
     {
-      int ipack = k / Spack::n;
-      int ivec  = k % Spack::n;
-      dz_for_testing_host(ipack)[ivec] = num_levs-k;
+      dz_for_testing_host[k] = num_levs-k;
     }
     Kokkos::deep_copy(dz_for_testing_packed,dz_for_testing_host);
 
@@ -108,13 +108,11 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     // exner_function(0.0) should return 0.0
     // exner_function(2*p0) should return 2**(Rd/cp)
     ptest = p0;
-    REQUIRE(physicscommon_host::exner_function(ptest)==1.0);
+    REQUIRE(physicscommon::exner_function(ptest)==1.0);
     ptest = 0.0;
-    REQUIRE(physicscommon_host::exner_function(ptest)==0.0);
-    ptest = 2*p0; t_result = pow(2.0,Rd*inv_cp);
-    REQUIRE(physicscommon_host::exner_function(ptest)==t_result);
+    REQUIRE(physicscommon::exner_function(ptest)==0.0);
     ptest = 4.0; t_result = pow(2.0,Rd*inv_cp);
-    REQUIRE(std::abs(physicscommon_host::exner_function(ptest)/physicscommon::exner_function(ptest/2)-t_result)<test_tol);
+    REQUIRE(std::abs(physicscommon::exner_function(ptest)/physicscommon::exner_function(ptest/2)-t_result)<test_tol);
     // Potential temperature property tests
     // theta=T when p=p0
     // theta(T=0) = 0
@@ -122,11 +120,11 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     // T(theta(T0)) = T0
     // theta(T(theta0)) = theta0
     T0 = 100.0;
-    REQUIRE(physicscommon_host::calculate_theta_from_T(T0,p0)==T0);
-    REQUIRE(physicscommon_host::calculate_theta_from_T(0.0,1.0)==0.0);
-    REQUIRE(physicscommon_host::calculate_T_from_theta(0.0,1.0)==0.0);
-    REQUIRE(physicscommon_host::calculate_T_from_theta(physicscommon::calculate_theta_from_T(100.0,1.0),1.0)==100.0); 
-    REQUIRE(physicscommon_host::calculate_theta_from_T(physicscommon::calculate_T_from_theta(100.0,1.0),1.0)==100.0);
+    REQUIRE(physicscommon::calculate_theta_from_T(T0,p0)==T0);
+    REQUIRE(physicscommon::calculate_theta_from_T(0.0,1.0)==0.0);
+    REQUIRE(physicscommon::calculate_T_from_theta(0.0,1.0)==0.0);
+    REQUIRE(physicscommon::calculate_T_from_theta(physicscommon::calculate_theta_from_T(100.0,1.0),1.0)==100.0); 
+    REQUIRE(physicscommon::calculate_theta_from_T(physicscommon::calculate_T_from_theta(100.0,1.0),1.0)==100.0);
     // Virtual temperature property tests
     // T_virt(T=0) = 0.0
     // T_virt(T=T0,qv=0) = T0
@@ -134,32 +132,32 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     // T(T_virt=T0,qv=0) = T0
     // T_virt(T=T0) = T0
     // T(T_virt=T0) = T0
-    REQUIRE(physicscommon_host::calculate_virtual_temperature(0.0,1e-6)==0.0);
-    REQUIRE(physicscommon_host::calculate_virtual_temperature(100.0,0.0)==100.0);
-    REQUIRE(physicscommon_host::calculate_temperature_from_virtual_temperature(0.0,1e-6)==0.0);
-    REQUIRE(physicscommon_host::calculate_temperature_from_virtual_temperature(100.0,0.0)==100.0);
-    REQUIRE(physicscommon_host::calculate_virtual_temperature(physicscommon::calculate_temperature_from_virtual_temperature(100.0,1.0),1.0)==100.0); 
-    REQUIRE(physicscommon_host::calculate_temperature_from_virtual_temperature(physicscommon::calculate_virtual_temperature(100.0,1.0),1.0)==100.0);
+    REQUIRE(physicscommon::calculate_virtual_temperature(0.0,1e-6)==0.0);
+    REQUIRE(physicscommon::calculate_virtual_temperature(100.0,0.0)==100.0);
+    REQUIRE(physicscommon::calculate_temperature_from_virtual_temperature(0.0,1e-6)==0.0);
+    REQUIRE(physicscommon::calculate_temperature_from_virtual_temperature(100.0,0.0)==100.0);
+    REQUIRE(physicscommon::calculate_virtual_temperature(physicscommon::calculate_temperature_from_virtual_temperature(100.0,1.0),1.0)==100.0); 
+    REQUIRE(physicscommon::calculate_temperature_from_virtual_temperature(physicscommon::calculate_virtual_temperature(100.0,1.0),1.0)==100.0);
     // DSE property tests
     // calculate_dse(T=0.0, z=0.0) = surf_geopotential
     // calculate_dse(T=1/cp, z=1/gravity) = surf_potential+2
     T0=0.0; ztest=0.0; z0=10.0;
-    REQUIRE(physicscommon_host::calculate_dse(T0,ztest,z0)==10.0);
+    REQUIRE(physicscommon::calculate_dse(T0,ztest,z0)==10.0);
     T0=inv_cp; ztest=1.0/ggr; z0=0.0;
-    REQUIRE(physicscommon_host::calculate_dse(T0,ztest,z0)==z0+2.0);
+    REQUIRE(physicscommon::calculate_dse(T0,ztest,z0)==z0+2.0);
     // DZ tests
     // calculate_dz(pseudo_density=0) = 0
     // calculate_dz(T=0) = 0
     // calculate_dz(pseudo_density=p0,p_mid=p0,T=1.0,qv=0) = Rd/ggr
     // calculate_dz(pseudo_density=ggr,p_mid=Rd,T=T0,qv=0) = T0
     dp0=0.0; ptest=p0; T0=100.0; qv0=1e-5;
-    REQUIRE(physicscommon_host::calculate_dz(dp0,ptest,T0,qv0)==0.0);
+    REQUIRE(physicscommon::calculate_dz(dp0,ptest,T0,qv0)==0.0);
     dp0=100.0; ptest=p0; T0=0.0; qv0=1e-5;
-    REQUIRE(physicscommon_host::calculate_dz(dp0,ptest,T0,qv0)==0.0);
+    REQUIRE(physicscommon::calculate_dz(dp0,ptest,T0,qv0)==0.0);
     dp0=p0; ptest=p0; T0=1.0; qv0=0.0;
-    REQUIRE(physicscommon_host::calculate_dz(dp0,ptest,T0,qv0)==Rd/ggr);
+    REQUIRE(physicscommon::calculate_dz(dp0,ptest,T0,qv0)==Rd/ggr);
     dp0=ggr; ptest=Rd; T0=100.0; qv0=0.0;
-    REQUIRE(physicscommon_host::calculate_dz(dp0,ptest,T0,qv0)==T0);
+    REQUIRE(physicscommon::calculate_dz(dp0,ptest,T0,qv0)==T0);
     
     // Run tests on full views
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
@@ -183,14 +181,6 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       physicscommon::calculate_temperature_from_virtual_temperature(team,T_virtual,qv,T_mid_from_virt);
       physicscommon::calculate_virtual_temperature(team,temperature_packed,qv_packed,T_virtual_packed);
       physicscommon::calculate_temperature_from_virtual_temperature(team,T_virtual_packed,qv_packed,T_mid_from_virt_packed);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_levs), [&] (const int k)
-      {
-        // T and TH conversion TEST
-        EKAT_KERNEL_REQUIRE(theta(k)==physicscommon::calculate_theta_from_T(temperature(k),pressure(k)));
-        EKAT_KERNEL_REQUIRE(T_mid_from_pot(k)==physicscommon::calculate_T_from_theta(theta(k),pressure(k)));
-        // virtual temperature test
-        EKAT_KERNEL_REQUIRE(T_virtual(k)==physicscommon::calculate_virtual_temperature(temperature(k),qv(k)));
-      });  // Kokkos parallel_for k=1,num_levs
       // DSE property tests
       // calculate_dse should work for Scalar and for Spack
       physicscommon::calculate_dse(team,temperature,height,surface_height(0),dse);
@@ -207,22 +197,27 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     }); // Kokkos parallel_for "test_universal_physics"
 
     Kokkos::fence();
-    auto exner_host           = Kokkos::create_mirror(exner);
-    auto theta_host           = Kokkos::create_mirror(theta);
-    auto T_mid_from_pot_host  = Kokkos::create_mirror(T_mid_from_pot);
-    auto T_virtual_host       = Kokkos::create_mirror(T_virtual);
-    auto T_mid_from_virt_host = Kokkos::create_mirror(T_mid_from_virt);
-    auto dse_host             = Kokkos::create_mirror(dse);
-    auto z_int_host           = Kokkos::create_mirror(z_int);
-    auto dz_host              = Kokkos::create_mirror(dz);
-    auto exner_pack_host           = Kokkos::create_mirror(exner_packed);
-    auto theta_pack_host           = Kokkos::create_mirror(theta_packed);
-    auto T_mid_from_pot_pack_host  = Kokkos::create_mirror(T_mid_from_pot_packed);
-    auto T_virtual_pack_host       = Kokkos::create_mirror(T_virtual_packed);
-    auto T_mid_from_virt_pack_host = Kokkos::create_mirror(T_mid_from_virt_packed);
-    auto dse_pack_host             = Kokkos::create_mirror(dse_packed);
-    auto z_int_pack_host           = Kokkos::create_mirror(z_int_packed);
-    auto dz_pack_host              = Kokkos::create_mirror(dz_packed);
+    auto exner_host           = Kokkos::create_mirror_view(exner);
+    auto theta_host           = Kokkos::create_mirror_view(theta);
+    auto T_mid_from_pot_host  = Kokkos::create_mirror_view(T_mid_from_pot);
+    auto T_virtual_host       = Kokkos::create_mirror_view(T_virtual);
+    auto T_mid_from_virt_host = Kokkos::create_mirror_view(T_mid_from_virt);
+    auto dse_host             = Kokkos::create_mirror_view(dse);
+    auto z_int_host           = Kokkos::create_mirror_view(z_int);
+    auto dz_host              = Kokkos::create_mirror_view(dz);
+    auto temperature_host     = Kokkos::create_mirror_view(temperature);
+    auto pressure_host        = Kokkos::create_mirror_view(pressure);
+    auto qv_host              = Kokkos::create_mirror_view(qv);
+
+    auto exner_pack_host           = Kokkos::create_mirror_view(exner_packed);
+    auto theta_pack_host           = Kokkos::create_mirror_view(theta_packed);
+    auto T_mid_from_pot_pack_host  = Kokkos::create_mirror_view(T_mid_from_pot_packed);
+    auto T_virtual_pack_host       = Kokkos::create_mirror_view(T_virtual_packed);
+    auto T_mid_from_virt_pack_host = Kokkos::create_mirror_view(T_mid_from_virt_packed);
+    auto dse_pack_host             = Kokkos::create_mirror_view(dse_packed);
+    auto z_int_pack_host           = Kokkos::create_mirror_view(z_int_packed);
+    auto dz_pack_host              = Kokkos::create_mirror_view(dz_packed);
+
     Kokkos::deep_copy(exner_host           , exner);
     Kokkos::deep_copy(theta_host           , theta);
     Kokkos::deep_copy(T_mid_from_pot_host  , T_mid_from_pot);
@@ -231,6 +226,10 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     Kokkos::deep_copy(dse_host             , dse);
     Kokkos::deep_copy(z_int_host           , z_int);
     Kokkos::deep_copy(dz_host              , dz);
+    Kokkos::deep_copy(temperature_host     , temperature);
+    Kokkos::deep_copy(pressure_host        , pressure);
+    Kokkos::deep_copy(qv_host              , qv);
+
     Kokkos::deep_copy(exner_pack_host           , exner_packed);
     Kokkos::deep_copy(theta_pack_host           , theta_packed);
     Kokkos::deep_copy(T_mid_from_pot_pack_host  , T_mid_from_pot_packed);
@@ -253,16 +252,19 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       REQUIRE(theta_host(k)==theta_pack_host(ipack)[ivec]);
       REQUIRE(!isnan(theta_host(k)));
       REQUIRE(!(theta_host(k)<0));
+      REQUIRE(theta_host(k)==physicscommon::calculate_theta_from_T(temperature_host(k),pressure_host(k)));
       // temperature from potential temperature
       REQUIRE(T_mid_from_pot_host(k)==T_mid_from_pot_pack_host(ipack)[ivec]);
       REQUIRE(!isnan(T_mid_from_pot_host(k)));
       REQUIRE(!(T_mid_from_pot_host(k)<0));
+      REQUIRE(T_mid_from_pot_host(k)==physicscommon::calculate_T_from_theta(theta_host(k),pressure_host(k)));
       // virtual temperature
-//      REQUIRE(T_virtual_host(k)==T_virtual_pack_host(ipack)[ivec]);
+      REQUIRE(std::abs(T_virtual_host(k)-T_virtual_pack_host(ipack)[ivec])<test_tol);
       REQUIRE(!isnan(T_virtual_host(k)));
       REQUIRE(!(T_virtual_host(k)<0));
+      REQUIRE(T_virtual_host(k)==physicscommon::calculate_virtual_temperature(temperature_host(k),qv_host(k)));
       // temperature from virtual temperature
-//      REQUIRE(T_mid_from_virt_host(k)==T_mid_from_virt_pack_host(ipack)[ivec]);
+      REQUIRE(std::abs(T_mid_from_virt_host(k)-T_mid_from_virt_pack_host(ipack)[ivec])<test_tol);
       REQUIRE(!isnan(T_mid_from_virt_host(k)));
       REQUIRE(!(T_mid_from_virt_host(k)<0));
       // DSE
@@ -270,7 +272,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       REQUIRE(!isnan(dse_host(k)));
       REQUIRE(!(dse_host(k)<0));
       // dz
-//      REQUIRE(dz_host(k)==dz_pack_host(ipack)[ivec]);
+      REQUIRE(std::abs(dz_host(k)-dz_pack_host(ipack)[ivec])<test_tol);
       REQUIRE(!isnan(dz_host(k)));
       REQUIRE(!(dz_host(k)<=0));
       // z_int
