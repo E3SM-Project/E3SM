@@ -20,7 +20,6 @@ struct UnitWrap::UnitTest<D>::TestUniversal
   static void run()
   {
     using physicscommon      = scream::PhysicsFunctions<Device>;
-    using physicscommon = scream::PhysicsFunctions<HostDevice>;
 
     using Spack = ekat::Pack<Scalar,SCREAM_SMALL_PACK_SIZE>;
 
