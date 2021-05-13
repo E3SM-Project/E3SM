@@ -213,23 +213,6 @@ module seq_comm_mct
 
   logical :: seq_comm_mct_initialized = .false.  ! whether this module has been initialized
 
-  integer, external :: iMOAB_InitializeFortran
-  integer, public :: mhid, mhfid, mpoid, mlnid ! homme, homme fine, ocean, land moab ids
-  integer, public :: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
-  logical, public :: atm_pg_active = .false.  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
-  integer, public :: mphaid   ! iMOAB id for atm phys grid, on atm pes
-  integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
-  integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
-  integer, public :: mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
-  integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
-  logical, public :: sameg_al ! same grid atm and land; used throughout, initialized in lnd_init
-  integer, public :: mbintxla ! iMOAB id for intx mesh between land and atmosphere
-  integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
-  integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
-  integer, public :: mrofid   ! iMOAB id of moab rof app
-
-  integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
-
   !=======================================================================
 contains
   !======================================================================
@@ -606,31 +589,6 @@ contains
     endif
 
     call mct_world_init(ncomps, DRIVER_COMM, comms, comps)
-
-    ierr = iMOAB_InitializeFortran()
-    if (ierr /= 0) then
-       write(logunit,*) trim(subname),' ERROR initialize MOAB '
-    endif
-#ifdef MOABDDD
-!   write the global_mype , for easier debugging with ddd
-!   will never use ddd for more than 10 processes
-    if (global_mype .le. 10) then
-       write(logunit,*) trim(subname), ' global_mype=', global_mype
-    endif
-#endif
-    mhid = -1     ! iMOAB id for atm comp, coarse mesh
-    mhfid = -1    ! iMOAB id for atm, fine mesh
-    mpoid = -1    ! iMOAB id for ocn comp
-    mlnid = -1    ! iMOAB id for land comp
-    mphaid = -1   ! iMOAB id for phys grid on atm pes
-    mbaxid = -1 ! iMOAB id for atm migrated mesh to coupler pes
-    mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
-    mbintxoa = -1 ! iMOAB id for atm intx with mpas ocean
-    mblxid = -1   ! iMOAB id for land on coupler pes
-    mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes
-    mpsiid = -1   ! iMOAB for sea-ice
-    mbixid = -1   ! iMOAB for sea-ice migrated to coupler
-    num_moab_exports = 0 ! mostly used in debugging
 
     deallocate(comps,comms)
 

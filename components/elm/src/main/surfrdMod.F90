@@ -20,7 +20,7 @@ module surfrdMod
   use pio
 #ifdef HAVE_MOAB
   use mct_mod         , only : mct_gsMap
-  use decompMod       , only : get_clmlevel_gsmap
+  use decompMod       , only : get_elmlevel_gsmap
   ! use spmdMod         , only : iam  ! rank on the land communicator
 #endif
   use spmdMod                         
@@ -253,7 +253,7 @@ contains
 #ifdef HAVE_MOAB
        ! read xv and yv anyway
        if (ldomain%nv>=3 ) then
-          call get_clmlevel_gsmap (grlnd, gsMap)
+          call get_elmlevel_gsmap (grlnd, gsMap)
           allocate(rdata3d(nv,ni,nj))  ! transpose from c, as this is fortran
           vname = 'xv'
           ! this should be improved in a distributed read, that does not use full grid ni * nj * nv 720*360*4*8 ~ 8Mb
