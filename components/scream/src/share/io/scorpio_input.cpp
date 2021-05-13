@@ -1,5 +1,7 @@
 #include "share/io/scorpio_input.hpp"
 
+#include <numeric>
+
 namespace scream
 {
 
@@ -36,7 +38,7 @@ pull_input(const std::string& filename, const std::string& var_name,
     data_length *= dim;
   }
 
-  std::vector<Int> var_dof = get_var_dof(data_length, has_columns);
+  std::vector<Int> var_dof = get_var_dof_offsets(data_length, has_columns);
   set_dof(filename,var_name,var_dof.size(),var_dof.data());
   set_decomp(filename);
   grid_read_data_array(filename,var_name,dim_lens,data_length,padding,data);
@@ -283,7 +285,7 @@ void AtmosphereInput::set_degrees_of_freedom()
     // of "global input indices" for this field and this rank. For every column (i.e. gid)
     // the PIO indices would be (gid * n_dim_len),...,( (gid+1)*n_dim_len - 1).
     const bool has_col_tag = fid.get_layout().has_tag(COL);
-    std::vector<Int> var_dof = get_var_dof(fid.get_layout().size(), has_col_tag);
+    std::vector<Int> var_dof = get_var_dof_offsets(fid.get_layout().size(), has_col_tag);
     set_dof(m_filename,name,var_dof.size(),var_dof.data());
     m_dofs_sizes.emplace(std::make_pair(name,var_dof.size()));
   }
@@ -297,32 +299,32 @@ void AtmosphereInput::set_degrees_of_freedom()
 } // set_degrees_of_freedom
 
 /* ---------------------------------------------------------- */
-std::vector<Int> AtmosphereInput::get_var_dof(const int dof_len, const bool has_cols)
+std::vector<Int> AtmosphereInput::get_var_dof_offsets(const int dof_len, const bool has_cols)
 {
-  std::vector<Int> var_dof;
-  int num_cols;
+  std::vector<Int> var_dof(dof_len);
 
-  // Gather the column degrees of freedom for this variable
-  // Total number of values represented by this rank for this field is given by the dof_len.
-  // For a SCREAM Physics grid, only the total number of columns is decomposed over MPI ranks.
-  // The global id (gid) is stored here as gids_host. Thus, for this field, the total number
-  // of dof's in the other dimensions (i.e. levels) can be found by taking the quotient of
-  // dof_len and the length of gids_host.
+  // Gather the offsets of the dofs of this variable w.r.t. the *global* array.
+  // These are not the dofs global ids (which are just labels, and can be whatever,
+  // and in fact are not even contiguous when Homme generates the dof gids).
+  // So, if the returned vector is {2,3,4,5}, it means that the 4 dofs on this rank
+  // correspond to the 3rd,4th,5th, and 6th dofs globally.
   if (has_cols) {
-    num_cols = m_gids_host.size();
-  } else {
-    // This field is not defined over columns
-    // TODO, when we allow for dynamics mesh this check will need to be adjusted for the element tag as well.
-    num_cols = 1;
-  } 
+    const int num_cols = m_gids_host.size();
 
-  // Determine the individual index locations for each degree of freedom.
-  Int n_dim_len = dof_len/num_cols;
-  for (int ii=0;ii<num_cols;++ii) {
-    for (int jj=0;jj<n_dim_len;++jj) {
-      var_dof.push_back(m_gids_host(ii)*n_dim_len + jj);
-    }
-  }
+    // Note: col_size might be *larger* than the number of vertical levels, or even smalle.
+    //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
+    Int col_size = dof_len/num_cols;
+
+    // Compute the number of columns owned by all previous ranks.
+    Int offset = 0;
+    m_comm.scan_sum(&num_cols,&offset,1);
+
+    // Compute offsets of all my dofs
+    std::iota(var_dof.begin(), var_dof.end(), offset*col_size);
+  } else {
+    // This field is *not* defined over columns, so it is not partitioned.
+    std::iota(var_dof.begin(),var_dof.end(),0);
+  } 
 
   return var_dof; 
 }
