@@ -192,7 +192,7 @@
 	<var name="initialCarbon"/>
 	<var name="finalCarbon"/>
 	<var name="carbonChange"/>
-	<var name="accumulatedOceanCarbonFlux"/>
+	<var name="carbonConsOceanCarbonFlux"/>
 	<var name="netCarbonFlux"/>
 	<var name="relativeCarbonError"/>
 	<var name="absoluteCarbonError"/>
