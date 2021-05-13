@@ -150,11 +150,11 @@
 !
 !/ ------------------------------------------------------------------- /
       use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, &
-                          nx, ny, nseal, mapsf, mapsta, x0, y0, sx, sy, &
+                          nx, ny, nsea, nseal, mapsf, mapsta, mapst2, x0, y0, sx, sy, &
                           w3nmod, w3setg, AnglD, &
-                          sig, nk
-      use w3wdatmd, only: time, w3ndat, w3setw
-      use w3adatmd, only: ussx, ussy, w3naux, w3seta, sxx, sxy, syy !SB, lamult
+                          sig, nk, zb, dmin
+      use w3wdatmd, only: time, w3ndat, w3setw, wlv, va
+      use w3adatmd, only: ussx, ussy, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn !SB, lamult
       use w3idatmd, only: inflags1, w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
@@ -165,6 +165,8 @@
                           nogrp, ngrpp, noge, idout, fnmpre, iostyp, notype, flout, &
                           fnmpre, ifile4
       use w3servmd, only: w3xyrtn
+      use w3parall, only: init_get_isea
+      use w3dispmd, only: wavnu1
 !/
       use w3initmd, only: w3init 
       use w3wavemd, only: w3wave 
@@ -261,6 +263,7 @@ CONTAINS
       integer :: stop_ymd          ! stop date (yyyymmdd)
       integer :: stop_tod          ! stop time of day (sec)
       integer :: ix, iy
+      integer :: is, ik
 
       character(CL)            :: starttype
       type(mct_gsmap), pointer :: gsmap
@@ -276,6 +279,7 @@ CONTAINS
       integer             :: ierr
       integer             :: jsea,isea
       integer             :: pnt_out_freq, grd_out_freq
+      integer, allocatable:: maptst(:,:)
       real                :: a(nhmax,4)
       real, allocatable   :: x(:), y(:)
       logical             :: flgrd(nogrp,ngrpp), flgrd2(nogrp,ngrpp)
@@ -283,6 +287,8 @@ CONTAINS
       logical             :: prtfrm, flt
       logical             :: exists
       character(len=*),parameter :: subname = '(wav_init_mct)'
+      real                :: wlveff
+      real                :: depth
 
       character(len=3)    :: idstr(8), idtst
       character(len=10)   :: pn
@@ -794,10 +800,50 @@ CONTAINS
            pnames, iprt, prtfrm, mpi_comm )
 
       if ( runtype == "continue" .or. runtype == "branch") then
-        ifile4 = 0
-        fnmpre = './'//restart_timestamp//'.'
+        ifile4 = 0                                   ! reset file counter
+        fnmpre = './'//restart_timestamp//'.'        ! add restart timestamp to file name prefix
+
         CALL W3IORS ( 'READ', NDS(6), SIG(NK), 1)
-        fnmpre = './'
+
+        fnmpre = './'                                ! reset file name frefix to default value
+        fliwnd = .false.                             ! prevent initialization to fetch-limited spectra
+        flcold = .false.                             ! prevent inttialization of DTDYN and FCUT
+
+        ALLOCATE(MAPTST(NY,NX))
+        MAPTST = MAPSTA
+        MAPTST = MOD(MAPST2/2,2)
+
+        DO ISEA=1, NSEA 
+          IX = MAPSF(ISEA,1)
+          IY = MAPSF(ISEA,2)
+          WLVeff=WLV(ISEA)
+          DW(ISEA) = MAX ( 0. , WLVeff-ZB(ISEA) )
+          IF ( WLVeff-ZB(ISEA) .LE.0. ) THEN 
+            MAPTST(IY,IX) = 1
+            MAPSTA(IY,IX) = -ABS(MAPSTA(IY,IX))
+          END IF
+        END DO
+        DO JSEA=1, NSEAL
+          CALL INIT_GET_ISEA(ISEA, JSEA)
+          WLVeff=WLV(ISEA)
+          DW(ISEA) = MAX ( 0. , WLVeff-ZB(ISEA) )
+          IF ( WLVeff-ZB(ISEA) .LE.0. ) THEN 
+            VA(:,JSEA) = 0. 
+          END IF
+        END DO
+
+      DO IS=0, NSEA 
+        IF (IS.GT.0) THEN 
+          DEPTH  = MAX ( DMIN , DW(IS) )
+        ELSE 
+          DEPTH = DMIN 
+          END IF 
+        DO IK=0, NK+1 
+!         Calculate wavenumbers and group velocities.
+          CALL WAVNU1(SIG(IK),DEPTH,WN(IK,IS),CG(IK,IS))
+          END DO
+        END DO
+      
       endif
 
       call shr_sys_flush(ndso)
