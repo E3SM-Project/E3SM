@@ -259,6 +259,7 @@ contains
    use prescribed_ozone,    only: prescribed_ozone_readnl
    use prescribed_aero,     only: prescribed_aero_readnl
    use prescribed_ghg,      only: prescribed_ghg_readnl
+   use read_spa_data,       only: spa_readnl
    use aircraft_emit,       only: aircraft_emit_readnl
    use cospsimulator_intr,  only: cospsimulator_intr_readnl
    use sat_hist,            only: sat_hist_readnl
@@ -511,6 +512,7 @@ contains
    call aerodep_flx_readnl(nlfilename)
    call prescribed_ozone_readnl(nlfilename)
    call prescribed_aero_readnl(nlfilename)
+   call spa_readnl(nlfilename)
    call prescribed_ghg_readnl(nlfilename)
    call co2_cycle_readnl(nlfilename)
    call aircraft_emit_readnl(nlfilename)

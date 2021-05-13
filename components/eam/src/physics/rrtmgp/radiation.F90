@@ -22,6 +22,7 @@ module radiation
       get_sw_spectral_midpoints, get_lw_spectral_midpoints, &
       rrtmg_to_rrtmgp_swbands
    use physconst, only: cpair, cappa
+   use read_spa_data,    only: is_spa_active, aer_asm_sw_names, aer_ssa_sw_names, aer_tau_sw_names, aer_tau_lw_names
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -111,14 +112,6 @@ module radiation
    ! zeroes out the aerosol optical properties if False
    logical :: do_aerosol_rad = .true.
 
-   ! Logical to indicate if aerosol optical properties are read in directly from
-   ! input file i.e., SPA:
-   logical :: do_SPA_optics = .false.
-
-   character(len=16), parameter :: unset_str = 'UNSET'
-
-   character(len=128) :: SPA_lookup_dir     = unset_str ! location of SPA input files
-
    ! Value for prescribing an invariant solar constant (i.e. total solar
    ! irradiance at TOA). Used for idealized experiments such as RCE.
    ! Disabled when value is less than 0.
@@ -205,29 +198,6 @@ module radiation
    !needed for SPA
    integer :: aer_tau_bnd_lw_idx(nlwbands), aer_tau_bnd_sw_idx(nswbands),&
               aer_ssa_bnd_sw_idx(nswbands), aer_asm_bnd_sw_idx(nswbands)
-   !array of SPA pbuf indices
-   character(len=16), parameter :: aer_asm_sw_names(14) = &
-     [ 'AER_G_SW_0   ', 'AER_G_SW_1   ', 'AER_G_SW_2   ', 'AER_G_SW_3   ', 'AER_G_SW_4   ', &
-       'AER_G_SW_5   ', 'AER_G_SW_6   ', 'AER_G_SW_7   ', 'AER_G_SW_8   ', 'AER_G_SW_9   ', &
-       'AER_G_SW_10  ', 'AER_G_SW_11  ', 'AER_G_SW_12  ', 'AER_G_SW_13  ']
-   character(len=16), parameter :: specifier_1(14) = aer_asm_sw_names(14) 
-   character(len=16), parameter :: aer_ssa_sw_names(14) = &
-       ['AER_SSA_SW_0 ', 'AER_SSA_SW_1 ', 'AER_SSA_SW_2 ', 'AER_SSA_SW_3 ', 'AER_SSA_SW_4 ', &
-       'AER_SSA_SW_5 ', 'AER_SSA_SW_6 ', 'AER_SSA_SW_7 ', 'AER_SSA_SW_8 ', 'AER_SSA_SW_9 ', &
-       'AER_SSA_SW_10', 'AER_SSA_SW_11', 'AER_SSA_SW_12', 'AER_SSA_SW_13'] 
-   character(len=16), parameter :: specifier_2(14) = aer_ssa_sw_names(14)
-   character(len=16), parameter :: aer_tau_sw_names(14) = &
-       ['AER_TAU_SW_0 ', 'AER_TAU_SW_1 ', 'AER_TAU_SW_2 ', 'AER_TAU_SW_3 ', 'AER_TAU_SW_4 ', &
-       'AER_TAU_SW_5 ', 'AER_TAU_SW_6 ', 'AER_TAU_SW_7 ', 'AER_TAU_SW_8 ', 'AER_TAU_SW_9 ', &
-       'AER_TAU_SW_10', 'AER_TAU_SW_11', 'AER_TAU_SW_12','AER_TAU_SW_13']
-   character(len=16), parameter :: specifier_3(14) = aer_tau_sw_names(14)
-   character(len=16), parameter :: aer_tau_lw_names(16) = &
-       ['AER_TAU_LW_0 ', 'AER_TAU_LW_1 ', 'AER_TAU_LW_2 ', 'AER_TAU_LW_3 ', 'AER_TAU_LW_4 ', &
-       'AER_TAU_LW_5 ', 'AER_TAU_LW_6 ', 'AER_TAU_LW_7 ', 'AER_TAU_LW_8 ', 'AER_TAU_LW_9 ', &
-       'AER_TAU_LW_10', 'AER_TAU_LW_11', 'AER_TAU_LW_12', 'AER_TAU_LW_13', 'AER_TAU_LW_14', &
-       'AER_TAU_LW_15'] 
-   character(len=16), parameter :: specifier_4(16) = aer_tau_lw_names(16)
-
    !============================================================================
 
 contains
@@ -264,8 +234,8 @@ contains
                               use_rad_dt_cosz, spectralflux,   &
                               do_aerosol_rad,                  &
                               fixed_total_solar_irradiance,    &
-                              rrtmgp_enable_temperature_warnings,&
-                              do_SPA_optics, SPA_lookup_dir
+                              rrtmgp_enable_temperature_warnings
+
 
       ! Read the namelist, only if called from master process
       ! TODO: better documentation and cleaner logic here?
@@ -295,8 +265,6 @@ contains
       call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(fixed_total_solar_irradiance, 1, mpi_real8, mstrid, mpicom, ierr)
       call mpibcast(rrtmgp_enable_temperature_warnings, 1, mpi_logical, mstrid, mpicom, ierr)
-      call mpibcast(do_SPA_optics, 1, mpi_logical, mstrid, mpicom, ierr)
-      call mpibcast(SPA_lookup_dir, cl, mpi_character, mstrid, mpicom, ierr)
 #endif
 
       ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
@@ -453,53 +421,6 @@ contains
 
    end function radiation_nextsw_cday
 
-   !================================================================================================
-
-   subroutine get_aerosol_optical_property_from_file(month_int,aerosol_optical_property_str,band_identifier,nbands,aerosol_optical_property)
-      use pio,            only: file_desc_t, pio_nowrite
-      use cam_pio_utils,    only: cam_pio_openfile,cam_pio_closefile
-      use cam_grid_support, only: cam_grid_check,cam_grid_id,cam_grid_get_dim_names
-      use ncdio_atm,       only: infld
-      use time_manager,   only: get_curr_date
-      use cam_logfile,     only: iulog
-
-      integer, intent(in) :: month_int, nbands !nbands is either nswbands or nlwbands
-      character*(*), intent(in) :: aerosol_optical_property_str, band_identifier
-      real(r8), intent(inout) :: aerosol_optical_property(pcols,pver,nbands,begchunk:endchunk)
-
-     !internal variables
-      character(len=100) :: base_file_name, optics_lookup_dir
-      character(len=500) :: filename
-      character(len=20) :: dim1name, dim2name
-      character(len=20) :: mon_str
-      type(file_desc_t) :: nccn_ncid
-      integer :: year, month, day, tod, next_month, grid_id
-      logical :: found = .false.
-
-      write(mon_str,*) month_int
-
-      !assign base_file_name the name of the CCN file being used 
-      base_file_name = "spa_file_"
-
-      mon_str = adjustl(mon_str)
-
-     !retrieve the name of the relevant file by combining base file name !with
-     !!month and full file path:
-      filename = trim(SPA_lookup_dir)//'/'//trim(base_file_name)//trim(mon_str)//'.nc'
-
-      grid_id = cam_grid_id('physgrid')
-
-      call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
-
-      call cam_pio_openfile(nccn_ncid,filename,PIO_NOWRITE)
-
-      call infld(aerosol_optical_property_str,nccn_ncid,dim1name,'lev',band_identifier,1,pcols,1,pver,1,nbands,begchunk,endchunk,&
-           aerosol_optical_property, found, gridname='physgrid')
-
-      call cam_pio_closefile(nccn_ncid)
-
-    end subroutine get_aerosol_optical_property_from_file
-
    subroutine radiation_init(state,pbuf)
    !-------------------------------------------------------------------------------
    ! Purpose: Initialize the radiation parameterization and add fields to the
@@ -536,7 +457,7 @@ contains
       ! where this subroutine is called, physics_state has not subset for a
       ! specific chunk (i.e., state is a vector of all chunks, indexed by lchnk)
       type(physics_state), intent(in) :: state(:)
-   
+
       type(physics_buffer_desc), pointer :: pbuf(:,:)
 
       integer :: icall, nmodes
@@ -988,15 +909,21 @@ contains
                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
       endif
 
-      if (do_SPA_optics) then !initialize SPA
+      !Set default values for the indices requied to get fields from SPA PBUF fields
+      aer_tau_bnd_sw_idx(:) = -1
+      aer_ssa_bnd_sw_idx(:) = -1
+      aer_asm_bnd_sw_idx(:) = -1
+      aer_tau_bnd_lw_idx(:) = -1
 
-         do band_index = 0,nswbands
+      if (is_spa_active) then !initialize SPA
+         !Get PBUF indices for SPA fields
+         do band_index = 1,nswbands !short wave
             aer_tau_bnd_sw_idx(band_index) = pbuf_get_index(aer_tau_sw_names(band_index))
-            aer_ssa_bnd_sw_idx(band_index) = pbuf_get_index(aer_ssa_sw_names(band_index))  
+            aer_ssa_bnd_sw_idx(band_index) = pbuf_get_index(aer_ssa_sw_names(band_index))
             aer_asm_bnd_sw_idx(band_index) = pbuf_get_index(aer_asm_sw_names(band_index))
          end do
-   
-         do band_index = 0,nlwbands
+
+         do band_index = 1,nlwbands !long wave
             aer_tau_bnd_lw_idx(band_index) = pbuf_get_index(aer_tau_lw_names(band_index))
          end do
 
@@ -1314,7 +1241,7 @@ contains
       ! Zero-array for cloud properties if not diagnosed by microphysics
       real(r8), target, dimension(pcols,pver) :: zeros
       real(r8), dimension(pcols,pver) :: c_cldf  ! Combined cloud/snow fraction
- 
+
       !needed for SPA
       integer :: year, month, day, tod, next_month
       integer :: band_index
@@ -1469,21 +1396,21 @@ contains
                   aer_tau_bnd_sw = 0._r8
                   aer_ssa_bnd_sw = 0._r8
                   aer_asm_bnd_sw = 0._r8
-                  if (do_SPA_optics) then
-
-                     do band_index = 0,nswbands 
-                        call pbuf_get_field(pbuf,aer_tau_bnd_sw_idx(band_index), aerosol_optical_property) 
+                  !if SPA is active, grab fields read in from the input file and stored in PBUF
+                  if (is_spa_active) then
+                     do band_index = 1, nswbands
+                        call pbuf_get_field(pbuf, aer_tau_bnd_sw_idx(band_index), aerosol_optical_property)
                         aer_tau_bnd_sw(:,:,band_index) = aerosol_optical_property
-                        nullify(aerosol_optical_property) 
-                        call pbuf_get_field(pbuf,aer_ssa_bnd_sw_idx(band_index), aerosol_optical_property)
-                        aer_ssa_bnd_sw(:,:,band_index) = aerosol_optical_property 
-                        nullify(aerosol_optical_property) 
-                        call pbuf_get_field(pbuf,aer_asm_bnd_sw_idx(band_index), aerosol_optical_property)
+                        nullify(aerosol_optical_property)
+                        call pbuf_get_field(pbuf, aer_ssa_bnd_sw_idx(band_index), aerosol_optical_property)
+                        aer_ssa_bnd_sw(:,:,band_index) = aerosol_optical_property
+                        nullify(aerosol_optical_property)
+                        call pbuf_get_field(pbuf, aer_asm_bnd_sw_idx(band_index), aerosol_optical_property)
                         aer_asm_bnd_sw(:,:,band_index) = aerosol_optical_property
                         nullify(aerosol_optical_property)
                      end do
-                       
-                  else
+
+                  else ! use default optics
 
                      call set_aerosol_optics_sw( &
                           icall, dt, state, pbuf, &
@@ -1585,13 +1512,14 @@ contains
                if (do_aerosol_rad) then
                   call t_startf('rad_aer_optics_lw')
                   aer_tau_bnd_lw = 0._r8
-                 if (do_SPA_optics) then
-                     do band_index = 0,nlwbands
-                        call pbuf_get_field(pbuf,aer_tau_bnd_lw_idx(band_index), aerosol_optical_property) 
+                 !if SPA is active, use SPA fields from PBUF
+                 if (is_spa_active) then
+                     do band_index = 1, nlwbands
+                        call pbuf_get_field(pbuf,aer_tau_bnd_lw_idx(band_index), aerosol_optical_property)
                         aer_tau_bnd_lw(:,:,band_index) = aerosol_optical_property
                         nullify(aerosol_optical_property)
                      end do
-                  else
+                  else! default optics
                      call aer_rad_props_lw(is_cmip6_volc, icall, dt, state, pbuf, aer_tau_bnd_lw)
                   end if
                   call t_stopf('rad_aer_optics_lw')
