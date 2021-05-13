@@ -140,7 +140,7 @@ create_point_grid (const std::string& grid_name,
   // of the earth divided by the number of columns
   const double rearth    = C::r_earth;
   const double pi        = C::Pi;
-  const Real   cell_area = 4*pi*rearth*rearth/num_global_cols;
+  const double cell_area = 4*pi*rearth*rearth/num_global_cols;
 
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_global_cols, num_vertical_lev);
   Kokkos::parallel_for("area_loop", policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
