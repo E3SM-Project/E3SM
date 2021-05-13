@@ -11,6 +11,7 @@
 [submodule "components/mpas-source"]
 	path = components/mpas-source
 	url = git@github.com:sarich/MPAS-Model.git
+	branch = moab-links-r2
 [submodule "externals/kokkos"]
 	path = externals/kokkos
 	url = git@github.com:E3SM-Project/kokkos.git

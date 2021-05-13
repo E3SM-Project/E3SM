@@ -33,6 +33,7 @@ SET(TOOL_SRCS_F90
   ${SRC_DIR}/restart_io_mod.F90
   ${SRC_DIR}/surfaces_mod.F90
   ${SRC_DIR}/test_mod.F90
+  ${SRC_DIR}/semoab_mod.F90 # should probably check for moab first
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
   ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
@@ -41,6 +42,7 @@ SET(TOOL_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_const_mod.F90 
   ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
 )
+
 
 # Make SRCS global so the tests can access it
 SET(EXEC_SOURCES ${TOOL_SRCS_F90})
