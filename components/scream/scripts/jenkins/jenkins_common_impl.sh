@@ -28,8 +28,10 @@ if [ $skip_testing -eq 0 ]; then
 
   source scripts/jenkins/${NODE_NAME}_setup
 
-  git config --global user.email "jenkins@ignore.com"
-  git config --global user.name "Jenkins Jenkins"
+  if [[ "$(whoami)" == "e3sm-jenkins" ]]; then
+      git config --local user.email "jenkins@ignore.com"
+      git config --local user.name "Jenkins Jenkins"
+  fi
 
   SUBMIT="--submit"
   if [ -n "$PULLREQUESTNUM" ]; then
