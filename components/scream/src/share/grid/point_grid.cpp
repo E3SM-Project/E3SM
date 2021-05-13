@@ -126,7 +126,8 @@ create_point_grid (const std::string& grid_name,
   using device_type       = DefaultDevice;
   using kokkos_types      = KokkosTypes<device_type>;
   using geo_view_type     = kokkos_types::view_1d<double>;
-  using KT = KokkosTypes<DefaultDevice>;
+  using KT                = KokkosTypes<DefaultDevice>;
+  using C                 = scream::physics::Constants<double>;
 
   // Store cell area, longitude, and latitude in geometry data.
   // For  longitude and latitude, set values to NaN since they
@@ -137,8 +138,8 @@ create_point_grid (const std::string& grid_name,
 
   // Estimate cell area for a uniform grid by taking the surface area
   // of the earth divided by the number of columns
-  const double rearth    = 6.376e6;
-  const double pi        = scream::physics::Constants<double>::Pi;
+  const double rearth    = C::r_earth;
+  const double pi        = C::Pi;
   const Real   cell_area = 4*pi*rearth*rearth/num_global_cols;
 
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_global_cols, num_vertical_lev);
