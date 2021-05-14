@@ -1,5 +1,7 @@
 #include "share/io/scorpio_output.hpp"
 
+#include <numeric>
+
 namespace scream
 {
 
@@ -26,11 +28,11 @@ void AtmosphereOutput::init()
   // Gather data from grid manager:  In particular the global ids for columns assigned to this MPI rank
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with output grid! scorpio_output.hpp class only supports output on a Physics grid for now.\n");
   auto gids_dev = m_grid_mgr->get_grid(m_grid_name)->get_dofs_gids();
-  m_gids = Kokkos::create_mirror_view( gids_dev );
-  Kokkos::deep_copy(m_gids,gids_dev); 
+  m_gids_host = Kokkos::create_mirror_view( gids_dev );
+  Kokkos::deep_copy(m_gids_host,gids_dev); 
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
   // int total_dofs;
-  m_local_dofs = m_gids.size();
+  m_local_dofs = m_gids_host.size();
   MPI_Allreduce(&m_local_dofs, &m_total_dofs, 1, MPI_INT, MPI_SUM, m_comm.mpi_comm());
   EKAT_REQUIRE_MSG(m_comm.size()<=m_total_dofs,"Error, PIO interface only allows for the IO comm group size to be less than or equal to the total # of columns in grid.  Consider decreasing size of IO comm group.\n");
 
@@ -352,47 +354,52 @@ void AtmosphereOutput::register_variables(const std::string& filename)
   if (m_is_restart_hist) { register_variable(filename,"avg_count","avg_count",1,{"cnt"}, PIO_REAL, "cnt"); }
 } // register_variables
 /* ---------------------------------------------------------- */
+std::vector<Int> AtmosphereOutput::get_var_dof_offsets(const int dof_len, const bool has_cols)
+{
+  std::vector<Int> var_dof(dof_len);
+
+  // Gather the offsets of the dofs of this variable w.r.t. the *global* array.
+  // These are not the dofs global ids (which are just labels, and can be whatever,
+  // and in fact are not even contiguous when Homme generates the dof gids).
+  // So, if the returned vector is {2,3,4,5}, it means that the 4 dofs on this rank
+  // correspond to the 3rd,4th,5th, and 6th dofs globally.
+  if (has_cols) {
+    const int num_cols = m_gids_host.size();
+
+    // Note: col_size might be *larger* than the number of vertical levels, or even smalle.
+    //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
+    Int col_size = dof_len/num_cols;
+
+    // Compute the number of columns owned by all previous ranks.
+    Int offset = 0;
+    m_comm.scan_sum(&num_cols,&offset,1);
+
+    // Compute offsets of all my dofs
+    std::iota(var_dof.begin(), var_dof.end(), offset*col_size);
+  } else {
+    // This field is *not* defined over columns, so it is not partitioned.
+    std::iota(var_dof.begin(),var_dof.end(),0);
+  } 
+
+  return var_dof; 
+}
+/* ---------------------------------------------------------- */
 void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
 {
-  using namespace scream;
-  using namespace scream::scorpio;
+  using namespace scorpio;
+  using namespace ShortFieldTagsNames;
 
   // Cycle through all fields and set dof.
   for (auto const& name : m_fields)
   {
     auto field = m_field_mgr->get_field(name);
     auto& fid  = field.get_header().get_identifier();
-    // bool has_cols = true;
-    Int dof_len, n_dim_len, num_cols;
-    // Total number of values represented by this rank for this field is given by the field_layout size.
-    dof_len = fid.get_layout().size();
-    // For a SCREAM Physics grid, only the total number of columns is decomposed over MPI ranks.  The global id (gid)
-    // is stored here as m_gids.  Thus, for this field, the total number of dof's in the other dimensions (i.e. levels)
-    // can be found by taking the quotient of dof_len and the length of m_gids.
-    if (fid.get_layout().has_tag(FieldTag::Column))
-    {
-      num_cols = m_gids.size();
-    } else {
-      // This field is not defined over columns
-      // TODO, when we allow for dynamics mesh this check will need to be adjusted for the element tag as well.
-      num_cols = 1;
-      // has_cols = false;
-    }
-    n_dim_len = dof_len/num_cols;
     // Given dof_len and n_dim_len it should be possible to create an integer array of "global output indices" for this
     // field and this rank. For every column (i.e. gid) the PIO indices would be (gid * n_dim_len),...,( (gid+1)*n_dim_len - 1).
-    std::vector<Int> var_dof(dof_len);
-    Int dof_it = 0;
-    for (int ii=0;ii<num_cols;++ii)
-    {
-      for (int jj=0;jj<n_dim_len;++jj)
-      {
-        var_dof[dof_it] =  m_gids(ii)*n_dim_len + jj;
-        ++dof_it;
-      }
-    }
-    set_dof(filename,name,dof_len,var_dof.data());
-    m_dofs.emplace(std::make_pair(name,dof_len));
+    const bool has_col_tag = fid.get_layout().has_tag(COL);
+    std::vector<Int> var_dof = get_var_dof_offsets(fid.get_layout().size(), has_col_tag);
+    set_dof(filename,name,var_dof.size(),var_dof.data());
+    m_dofs.emplace(std::make_pair(name,var_dof.size()));
   }
   // Set degree of freedom for "time"
   set_dof(filename,"time",0,0);
@@ -401,7 +408,6 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
     set_dof(filename,"avg_count",1,var_dof); 
    }
   /* TODO: 
-   * Adjust DOF to accomodate packing for fields 
    * Gather DOF info directly from grid manager
   */
 } // set_degrees_of_freedom

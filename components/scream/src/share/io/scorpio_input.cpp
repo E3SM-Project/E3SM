@@ -328,5 +328,6 @@ std::vector<Int> AtmosphereInput::get_var_dof_offsets(const int dof_len, const b
 
   return var_dof; 
 }
+/* ---------------------------------------------------------- */
 
 } // namespace scream
