@@ -342,13 +342,13 @@ struct EddyDiffusivitiesData : public PhysicsTestData {
 struct ShocLengthData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev, nlevi;
-  Real *host_dx, *host_dy, *pblh, *tke, *zt_grid, *zi_grid, *dz_zt, *dz_zi, *thetal, *wthv_sec, *thv;
+  Real *host_dx, *host_dy, *tke, *zt_grid, *zi_grid, *dz_zt, *thv;
 
   // Outputs
   Real *brunt, *shoc_mix;
 
   ShocLengthData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy, &pblh }, { &tke, &zt_grid, &dz_zt, &thetal, &wthv_sec, &thv, &brunt, &shoc_mix }, { &zi_grid, &dz_zi }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy }, { &zt_grid, &dz_zt, &tke, &thv, &brunt, &shoc_mix }, { &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
   PTD_STD_DEF(ShocLengthData, 3, shcol, nlev, nlevi);
 };
@@ -379,20 +379,6 @@ struct ComputeLInfShocLengthData : public PhysicsTestData {
     PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &zt_grid, &dz_zt, &tke }, { &l_inf }}), shcol(shcol_), nlev(nlev_) {}
 
   PTD_STD_DEF(ComputeLInfShocLengthData, 2, shcol, nlev);
-};
-
-struct ComputeConvVelShocLengthData : public PhysicsTestData {
-  // Inputs
-  Int shcol, nlev;
-  Real *pblh, *zt_grid, *dz_zt, *thv, *wthv_sec;
-
-  // Inputs/Outputs
-  Real *conv_vel;
-
-  ComputeConvVelShocLengthData(Int shcol_, Int nlev_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh, &conv_vel }, { &zt_grid, &dz_zt, &thv, &wthv_sec }}), shcol(shcol_), nlev(nlev_) {}
-
-  PTD_STD_DEF(ComputeConvVelShocLengthData, 2, shcol, nlev);
 };
 
 struct ComputeConvTimeShocLengthData : public PhysicsTestData {
@@ -927,8 +913,6 @@ void eddy_diffusivities                             (EddyDiffusivitiesData& d);
 void shoc_length                                    (ShocLengthData& d);
 void compute_brunt_shoc_length                      (ComputeBruntShocLengthData& d);
 void compute_l_inf_shoc_length                      (ComputeLInfShocLengthData& d);
-void compute_conv_vel_shoc_length                   (ComputeConvVelShocLengthData& d);
-void compute_conv_time_shoc_length                  (ComputeConvTimeShocLengthData& d);
 void compute_shoc_mix_shoc_length                   (ComputeShocMixShocLengthData& d);
 void check_length_scale_shoc_length                 (CheckLengthScaleShocLengthData& d);
 void fterms_input_for_diag_third_shoc_moment        (FtermsInputForDiagThirdShocMomentData& d);
@@ -990,7 +974,7 @@ void compute_diag_third_shoc_moment_f(Int shcol, Int nlev, Int nlevi, Real* w_se
                                       Real* w3);
 void shoc_pblintd_init_pot_f(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
 void compute_shoc_mix_shoc_length_f(Int nlev, Int shcol, Real* tke, Real* brunt,
-                                    Real* tscale, Real* zt_grid, Real* l_inf, Real* shoc_mix);
+                                    Real* zt_grid, Real* l_inf, Real* shoc_mix);
 void check_tke_f(Int shcol, Int nlev, Real* tke);
 void linear_interp_f(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, Int ncol, Real minthresh);
 void clipping_diag_third_shoc_moments_f(Int nlevi, Int shcol, Real *w_sec_zi,
@@ -1004,9 +988,6 @@ void compute_l_inf_shoc_length_f(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt
                                  Real *tke, Real *l_inf);
 void check_length_scale_shoc_length_f(Int nlev, Int shcol, Real* host_dx, Real* host_dy,
                                       Real* shoc_mix);
-void compute_conv_vel_shoc_length_f(Int nlev, Int shcol, Real *pblh, Real *zt_grid,
-                                    Real *dz_zt, Real *thv, Real *wthv_sec,
-                                    Real *conv_vel);
 void diag_second_moments_lbycond_f(Int shcol, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* ustar2, Real* wstar,
                                   Real* wthl_sec, Real* wqw_sec, Real* uw_sec, Real* vw_sec, Real* wtke_sec, Real* thl_sec,
                                   Real* qw_sec, Real* qwthl_sec);
@@ -1020,11 +1001,9 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
 void shoc_diag_obklen_f(Int shcol, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, Real* wqw_sfc,
                         Real* thl_sfc, Real* cldliq_sfc, Real* qv_sfc, Real* ustar, Real* kbfs, Real* obklen);
 void shoc_pblintd_cldcheck_f(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cldn, Real* pblh);
-void compute_conv_time_shoc_length_f(Int shcol, Real *pblh, Real *conv_vel,
-                                     Real *tscale);
 void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_wind, Real* v_wind, Real* sterm);
-void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy, Real* pblh, Real* tke,
-                   Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* dz_zi, Real* wthv_sec, Real*thetal,
+void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
+                   Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* tke,
                    Real* thv, Real*brunt, Real* shoc_mix);
 void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* zt_grid,
                          Real* zi_grid, Real* se_b, Real* ke_b, Real* wv_b, Real* wl_b,

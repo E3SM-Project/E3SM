@@ -29,7 +29,8 @@
 <dtime dyn="sld"                   >3600</dtime>
 
 <!-- Initial conditions -->
-<ncdata           hgrid="64x128"    nlev="72"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_64x128_L72_c031210.nc</ncdata>
+<ncdata          hgrid="64x128"   nlev="72"             ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_64x128_L72_c031210.nc</ncdata>
+<ncdata dyn="se" hgrid="ne4np4"   nlev="128"            ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L128_20200205.nc</ncdata>
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160909.nc</ncdata>
 <ncdata dyn="se" hgrid="ne4np4"   nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_0000-01-01_ne4np4_L30_c161102.nc</ncdata>
 <ncdata dyn="se" hgrid="ne11np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne11np4_L72_c160622.nc</ncdata>
@@ -771,7 +772,23 @@
 <!-- SHOC_SGS -->
 <do_shoc_sgs                 > .false. </do_shoc_sgs>
 <do_shoc_sgs   shoc_sgs="1"  > .true. </do_shoc_sgs>
-<shoc_timestep               > 300.0D0 </shoc_timestep>
+<shoc_timestep               > -1 </shoc_timestep>
+<shoc_thl2tune               > 0.15D0 </shoc_thl2tune>
+<shoc_qw2tune                > 0.15D0 </shoc_qw2tune>
+<shoc_qwthl2tune             > 0.15D0 </shoc_qwthl2tune>
+<shoc_w2tune                 > 1.0D0 </shoc_w2tune>
+<shoc_length_fac             > 0.5D0 </shoc_length_fac>
+<shoc_c_diag_3rd_mom         > 7.0D0 </shoc_c_diag_3rd_mom>
+<shoc_lambda_low             > 0.001D0 </shoc_lambda_low>
+<shoc_lambda_high            > 0.04D0 </shoc_lambda_high>
+<shoc_lambda_slope           > 2.65D0 </shoc_lambda_slope>
+<shoc_lambda_thresh          > 0.02D0 </shoc_lambda_thresh>
+<shoc_Ckh                    > 0.1D0 </shoc_Ckh>
+<shoc_Ckm                    > 0.1D0 </shoc_Ckm>
+<shoc_Ckh_s_min              > 0.1D0 </shoc_Ckh_s_min>
+<shoc_Ckm_s_min              > 0.1D0 </shoc_Ckm_s_min>
+<shoc_Ckh_s_max              > 1.0D0 </shoc_Ckh_s_max>
+<shoc_Ckm_s_max              > 1.0D0 </shoc_Ckm_s_max>
 
 <!-- CLUBB options -->
 <clubb_rainevap_turb                              > .false. </clubb_rainevap_turb>
@@ -1119,7 +1136,9 @@
 <!-- zm conv -->
 <zmconv_c0_lnd                                                        > 0.0030D0 </zmconv_c0_lnd>
 <zmconv_c0_lnd  microphys="p3"  clubb_sgs="1"    phys="default"       > 0.0075D0 </zmconv_c0_lnd>
+<zmconv_c0_lnd                  hgrid="ne120np4" phys="default"       > 0.0035D0 </zmconv_c0_lnd>
 <zmconv_c0_ocn                                                        > 0.0030D0 </zmconv_c0_ocn>
+<zmconv_c0_ocn                  hgrid="ne120np4" phys="default"       > 0.0035D0 </zmconv_c0_ocn>
 
 <zmconv_tau			                                                      > 3600</zmconv_tau>
 <zmconv_alfa			                                                      > 0.1</zmconv_alfa>

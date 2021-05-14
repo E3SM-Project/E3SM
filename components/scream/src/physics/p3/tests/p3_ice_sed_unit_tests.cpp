@@ -217,7 +217,7 @@ static void run_bfb_homogeneous_freezing()
   // Get data from cxx
   for (auto& d : hfds_cxx) {
     homogeneous_freezing_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
-                           d.T_atm, d.exner, d.latent_heat_fusion,
+                           d.T_atm, d.inv_exner, d.latent_heat_fusion,
                            d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.th_atm);
   }
 

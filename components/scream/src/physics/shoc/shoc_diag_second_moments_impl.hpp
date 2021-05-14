@@ -31,13 +31,13 @@ void Functions<S,D>::diag_second_moments(
   //  u, v, TKE, and tracers are computed here as well as the
   //  correlation of qw and thetal.
 
-  const auto thl2tune = 1;
+  const auto thl2tune = 0.15;
 
   // moisture variance
-  const auto qw2tune = 1;
+  const auto qw2tune = 0.15;
 
   // temp moisture covariance
-  const auto qwthl2tune = 1;
+  const auto qwthl2tune = 0.15;
 
   // vertical velocity variance
   const auto w2tune = 1;

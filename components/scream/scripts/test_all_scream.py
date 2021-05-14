@@ -602,9 +602,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         print("Generating baselines for ref {}".format(self._baseline_ref))
         print("###############################################################################")
 
-        # First, create baseline directory for this test. If existing, nuke the content
-        self.create_tests_dirs(self._baseline_dir, True)
-
         commit = get_current_commit(commit=self._baseline_ref)
 
         # Switch to the baseline commit

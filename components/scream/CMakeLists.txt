@@ -306,6 +306,8 @@ add_custom_target(baseline_cxx)
 add_subdirectory(src)
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
+  include(BuildCprnc)
+  BuildCprnc()
 endif()
 
 # Generate scream_config.h and scream_config.f

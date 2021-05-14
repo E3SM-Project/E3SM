@@ -67,7 +67,7 @@ def git_refs_difference (cmp_ref, head="HEAD", repo=None):
     if "SCREAM_FAKE_GIT_HEAD" in os.environ:
         expect("SCREAM_FAKE_AHEAD" in os.environ,
                "git_refs_difference cannot be used with SCREAM_FAKE_GIT_HEAD and without SCREAM_FAKE_AHEAD")
-        return 0, int(os.environ["SCREAM_FAKE_AHEAD"])
+        return 0, 0 if cmp_ref == head else int(os.environ["SCREAM_FAKE_AHEAD"])
 
     cmd = "git rev-list --left-right --count {}...{}".format(cmp_ref, head)
     out = run_cmd_no_fail("{}".format(cmd), from_dir=repo)

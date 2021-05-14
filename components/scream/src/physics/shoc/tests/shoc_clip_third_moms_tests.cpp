@@ -85,17 +85,13 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
     clipping_diag_third_shoc_moments(SDS);
 
     // Check the result
-    // For large values of w3, verify that the result has been
-    //  reduced and is of the same sign
+    // For large values of w3, verify that the result has been reduced
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
         if (abs(w3_in[n]) > 1000){
           REQUIRE(abs(SDS.w3[offset]) < abs(w3_in[n]));
-          if (w3_in[n] < 0){
-            REQUIRE(SDS.w3[offset] < 0);
-          }
         }
 
       }

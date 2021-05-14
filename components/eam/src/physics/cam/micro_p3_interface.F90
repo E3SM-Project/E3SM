@@ -762,7 +762,7 @@ end subroutine micro_p3_readnl
     real(rtype) :: qv2qi_depos_tend(pcols,pver)
     real(rtype) :: precip_liq_flux(pcols,pver+1)     !grid-box average rain flux (kg m^-2s^-1) pverp
     real(rtype) :: precip_ice_flux(pcols,pver+1)     !grid-box average ice/snow flux (kg m^-2s^-1) pverp
-    real(rtype) :: exner(pcols,pver)      !exner formula for converting between potential and normal temp
+    real(rtype) :: inv_exner(pcols,pver)       !inverse exner formula for converting between potential and normal temp
     real(rtype) :: cld_frac_r(pcols,pver)      !rain cloud fraction
     real(rtype) :: cld_frac_l(pcols,pver)      !liquid cloud fraction
     real(rtype) :: cld_frac_i(pcols,pver)      !ice cloud fraction
@@ -930,13 +930,17 @@ end subroutine micro_p3_readnl
 
     ! COMPUTE GEOMETRIC THICKNESS OF GRID & CONVERT T TO POTENTIAL TEMPERATURE
     !==============
-    exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
+    ! TODO: Create a general function to calculate Exner's formula that can be
+    ! used by all parameterizations, such as P3 and SHOC.
+    ! This would take a bit more work, so we have decided to delay this task
+    ! until a later stage of code cleanup.
+    inv_exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
     do icol = 1,ncol
        do k = 1,pver
 ! Note: dz is calculated in the opposite direction that pdel is calculated,
 ! thus when considering any dp/dz calculation we must also change the sign.
           dz(icol,k) = state%zi(icol,k) - state%zi(icol,k+1)
-          th(icol,k)  = state%t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp) 
+          th(icol,k)  = state%t(icol,k)*inv_exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp) 
        end do
     end do
 
@@ -1073,7 +1077,7 @@ end subroutine micro_p3_readnl
          do_prescribed_CCN,           & ! IN
          ! AaronDonahue new stuff
          state%pdel(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
-         exner(its:ite,kts:kte),      & ! IN exner values
+         inv_exner(its:ite,kts:kte),      & ! IN exner values
          qv2qi_depos_tend(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice 
          precip_total_tend(its:ite,kts:kte),      & ! OUT Total precipitation (rain + snow)
          nevapr(its:ite,kts:kte),     & ! OUT evaporation of total precipitation (rain + snow)
@@ -1140,7 +1144,7 @@ end subroutine micro_p3_readnl
 
     !BACK OUT TENDENCIES FROM STATE CHANGES
     !=============
-    temp(:ncol,:pver) = th(:ncol,:pver)/exner(:ncol,:pver) 
+    temp(:ncol,:pver) = th(:ncol,:pver)/inv_exner(:ncol,:pver) 
     ptend%s(:ncol,:pver)           = cpair*( temp(:ncol,:pver) - state%t(:ncol,:pver) )/dtime 
     ptend%q(:ncol,:pver,1)         = ( max(0._rtype,qv(:ncol,:pver)     ) - state%q(:ncol,:pver,1)         )/dtime
     ptend%q(:ncol,:pver,ixcldliq)  = ( max(0._rtype,cldliq(:ncol,:pver) ) - state%q(:ncol,:pver,ixcldliq)  )/dtime

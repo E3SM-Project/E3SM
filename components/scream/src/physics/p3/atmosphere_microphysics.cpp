@@ -37,7 +37,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   auto Q = kg/kg;
   Q.set_string("kg/kg");
   Units nondim(0,0,0,0,0,0,0);
-  auto mm = m/1000;
+  auto micron = m / 1000000;
 
   const auto& grid_name = m_p3_params.get<std::string>("Grid");
   auto grid = grids_manager->get_grid(grid_name);
@@ -60,7 +60,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   // These variables are needed by the interface, but not actually passed to p3_main. 
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
   add_field<Required>("p_mid",       scalar3d_layout_mid, Pa,     grid_name, ps);
-  add_field<Required>("zi",          scalar3d_layout_int, m,      grid_name, ps);
+  add_field<Required>("z_int",       scalar3d_layout_int, m,      grid_name, ps);
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
@@ -76,21 +76,21 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
-  add_field<Required>("nc_activated",       scalar3d_layout_mid, nondim,   grid_name, ps);
+  add_field<Required>("nc_activated",       scalar3d_layout_mid, 1/kg,     grid_name, ps);
   add_field<Required>("ni_activated",       scalar3d_layout_mid, 1/kg,     grid_name, ps);
-  add_field<Required>("inv_qc_relvar",      scalar3d_layout_mid, nondim,   grid_name, ps);
+  add_field<Required>("inv_qc_relvar",      scalar3d_layout_mid, Q*Q,      grid_name, ps);
   add_field<Required>("pseudo_density",     scalar3d_layout_mid, Pa,       grid_name, ps);
   add_field<Updated> ("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name, ps);
   add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps);
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
-  add_field<Computed>("eff_radius_qc",      scalar3d_layout_mid, m,        grid_name, ps);
-  add_field<Computed>("eff_radius_qi",      scalar3d_layout_mid, m,        grid_name, ps);
+  add_field<Computed>("eff_radius_qc",      scalar3d_layout_mid, micron, grid_name, ps);
+  add_field<Computed>("eff_radius_qi",      scalar3d_layout_mid, micron, grid_name, ps);
 
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
-  add_field<Computed>("micro_liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name, ps);
-  add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name, ps);
-  add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Computed>("micro_liq_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
+  add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, Q, grid_name, ps);
+  add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
 
 }
 
@@ -109,8 +109,8 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   auto pmid  = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();
   auto T_atm = m_p3_fields_out["T_mid"].get_reshaped_view<Pack**>();
   auto ast   = m_p3_fields_in["cldfrac_tot"].get_reshaped_view<const Pack**>();
-  auto zi    = m_p3_fields_in["zi"].get_reshaped_view<const Pack**>();
-  view_2d exner("exner",m_num_cols,nk_pack);
+  auto zi    = m_p3_fields_in["z_int"].get_reshaped_view<const Pack**>();
+  view_2d inv_exner("inv_exner",m_num_cols,nk_pack);
   view_2d th_atm("th_atm",m_num_cols,nk_pack);
   view_2d cld_frac_l("cld_frac_l",m_num_cols,nk_pack);
   view_2d cld_frac_i("cld_frac_i",m_num_cols,nk_pack);
@@ -118,7 +118,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   view_2d dz("dz",m_num_cols,nk_pack);
   // -- Set values for the post-amble structure
   p3_preproc.set_variables(m_num_cols,nk_pack,pmid,T_atm,ast,zi,
-                        exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
+                        inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
   // --Prognostic State Variables:
   prog_state.qc     = m_p3_fields_out["qc"].get_reshaped_view<Pack**>();
   prog_state.nc     = m_p3_fields_out["nc"].get_reshaped_view<Pack**>();
@@ -145,7 +145,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   diag_inputs.cld_frac_i      = p3_preproc.cld_frac_i;
   diag_inputs.cld_frac_r      = p3_preproc.cld_frac_r;
   diag_inputs.dz              = p3_preproc.dz;
-  diag_inputs.exner           = p3_preproc.exner;
+  diag_inputs.inv_exner       = p3_preproc.inv_exner;
   // --Diagnostic Outputs
   view_1d precip_liq_surf("precip_liq_surf",m_num_cols);
   view_1d precip_ice_surf("precip_ice_surf",m_num_cols);
@@ -179,7 +179,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   history_only.vap_liq_exchange = m_p3_fields_out["micro_vap_liq_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_ice_exchange = m_p3_fields_out["micro_vap_ice_exchange"].get_reshaped_view<Pack**>();
   // -- Set values for the post-amble structure
-  p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,p3_preproc.exner,T_atm,t_prev,prog_state.qv,qv_prev,
+  p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,prog_state.qv,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
 }
 
@@ -200,12 +200,6 @@ void P3Microphysics::run_impl (const Real dt)
   for (auto& it : m_p3_fields_out) {
     it.second.sync_to_dev();
   }
-
-  // Gather views needed to pre-process local variables.
-  auto T_atm  = m_p3_fields_out["T_mid"].get_reshaped_view<Pack**>();
-  auto ast    = m_p3_fields_in["cldfrac_tot"].get_reshaped_view<const Pack**>();
-  auto zi     = m_p3_fields_in["zi"].get_reshaped_view<const Pack**>();
-  auto pmid   = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();
 
   // Assign values to local arrays used by P3, these are now stored in p3_loc.
   Kokkos::parallel_for(

@@ -41,8 +41,6 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
     static constexpr Real brunt_cons = 0.001;
     // Define the assymptoic length [m]
     static constexpr Real l_inf = 100;
-    // Define the overturning timescale [s]
-    static constexpr Real tscale = 300;
     // Define the heights on the zt grid [m]
     static constexpr Real zt_grid[nlev] = {5000, 3000, 2000, 1000, 500};
 
@@ -57,7 +55,6 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       SDS.l_inf[s] = l_inf;
-      SDS.tscale[s] = tscale;
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
@@ -74,7 +71,6 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
     // Be sure that relevant variables are greater than zero
     for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.l_inf[s] > 0);
-      REQUIRE(SDS.tscale[s] > 0);
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         REQUIRE(SDS.tke[offset] > 0);
@@ -155,7 +151,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
       // expects data in fortran layout
       compute_shoc_mix_shoc_length_f(d.nlev, d.shcol,
                                      d.tke, d.brunt,
-                                     d.tscale, d.zt_grid,
+                                     d.zt_grid,
                                      d.l_inf, d.shoc_mix);
       d.transpose<ekat::TransposeDirection::f2c>();
     }

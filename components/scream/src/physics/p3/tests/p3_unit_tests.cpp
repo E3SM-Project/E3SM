@@ -601,7 +601,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
       // Init pack inputs
       Spack qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend, 
             qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, 
-            ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, qc2qi_berg_tend, exner, latent_heat_fusion, latent_heat_sublim,
+            ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, qc2qi_berg_tend, inv_exner, latent_heat_fusion, latent_heat_sublim,
             rho_qm_cloud, th_atm, qv, qc, nc, qr, nr, qi, ni, qm, bm;
       Scalar dt;
       bool do_predict_nc;
@@ -632,7 +632,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
         ni_selfcollect_tend[s]  = pupidc_device(vs).ni_selfcollect_tend;
         ni_sublim_tend[s]  = pupidc_device(vs).ni_sublim_tend;
         qc2qi_berg_tend[s] = pupidc_device(vs).qc2qi_berg_tend;
-        exner[s]  = pupidc_device(vs).exner;
+        inv_exner[s]  = pupidc_device(vs).inv_exner;
         latent_heat_fusion[s]    = pupidc_device(vs).latent_heat_fusion;
         latent_heat_sublim[s]   = pupidc_device(vs).latent_heat_sublim;
 
@@ -654,7 +654,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
       Functions::update_prognostic_ice(qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend,ncshdc,
                                        qr2qi_collect_tend,   nr_collect_tend,  qr2qi_immers_freeze_tend,  nr2ni_immers_freeze_tend,  nr_ice_shed_tend,
                                        qi2qr_melt_tend,  ni2nr_melt_tend,  qi2qv_sublim_tend,  qv2qi_vapdep_tend,  qv2qi_nucleat_tend,  ni_nucleat_tend,
-                                       ni_selfcollect_tend,  ni_sublim_tend,  qc2qi_berg_tend,  exner,  latent_heat_sublim,  latent_heat_fusion,
+                                       ni_selfcollect_tend,  ni_sublim_tend,  qc2qi_berg_tend,  inv_exner,  latent_heat_sublim,  latent_heat_fusion,
                                        do_predict_nc, log_wetgrowth,  dt,  pupidc_device(0).nmltratio,
                                        rho_qm_cloud, th_atm, qv, qi, ni, qm,
                                        bm, qc, nc, qr, nr);
@@ -908,7 +908,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
 
       // Init pack inputs
       Spack qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, inv_rho,
-        exner, latent_heat_vapor, th_atm, qv, qc, nc, qr, nr;
+        inv_exner, latent_heat_vapor, th_atm, qv, qc, nc, qr, nr;
       bool do_predict_nc, do_prescribed_CCN;
       Scalar dt;
 
@@ -928,7 +928,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
         nr_evap_tend[s]          = pupldc_device(vs).nr_evap_tend;
         nr_selfcollect_tend[s]   = pupldc_device(vs).nr_selfcollect_tend;
         inv_rho[s]               = pupldc_device(vs).inv_rho;
-        exner[s]                 = pupldc_device(vs).exner;
+        inv_exner[s]                 = pupldc_device(vs).inv_exner;
         latent_heat_vapor[s]     = pupldc_device(vs).latent_heat_vapor;
 
         th_atm[s]  = pupldc_device(vs).th_atm;
@@ -940,7 +940,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
       }
 
       Functions::update_prognostic_liquid(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend,
-                                          qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, do_predict_nc, do_prescribed_CCN, inv_rho, exner,
+                                          qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, do_predict_nc, do_prescribed_CCN, inv_rho, inv_exner,
                                           latent_heat_vapor, dt, th_atm, qv, qc, nc, qr, nr);
 
       // Copy results back into views
@@ -958,7 +958,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
         pupldc_device(vs).nr_evap_tend          = nr_evap_tend[s];
         pupldc_device(vs).nr_selfcollect_tend   = nr_selfcollect_tend[s];
         pupldc_device(vs).inv_rho               = inv_rho[s];
-        pupldc_device(vs).exner                 = exner[s];
+        pupldc_device(vs).inv_exner                 = inv_exner[s];
         pupldc_device(vs).latent_heat_vapor     = latent_heat_vapor[s];
 
         pupldc_device(vs).th_atm  = th_atm[s];

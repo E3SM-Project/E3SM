@@ -83,9 +83,6 @@
 <cld_macmic_num_steps hgrid="ne512np4" > 1 </cld_macmic_num_steps>
 <cld_macmic_num_steps hgrid="ne1024np4"> 1 </cld_macmic_num_steps>
 
-<!-- SHOC timestep -->
-<shoc_timestep> 20 </shoc_timestep>
-
 <!-- Energy fixer options -->
 <ieflx_opt  > 0     </ieflx_opt>
 

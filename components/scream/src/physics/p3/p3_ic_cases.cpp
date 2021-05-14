@@ -49,8 +49,8 @@ FortranData::Ptr make_mixed (const Int ncol) {
     for (k = 0; k < nk; ++k) d.pres(i,k) = 100 + 1e5/double(nk)*k;
     // dpres is actually an input variable, but needed here to compute theta.
     for (k = 0; k < nk; ++k) d.dpres(i,k) = 1e5/double(nk);
-    // exner is actually an input variable, but needed here to compute theta.
-    for (k = 0; k < nk; ++k) d.exner(i,k) = std::pow((1e5/d.pres(i,k)), (287.15/1005.0));
+    // inv_exner is actually an input variable, but needed here to compute theta.
+    for (k = 0; k < nk; ++k) d.inv_exner(i,k) = std::pow((1e5/d.pres(i,k)), (287.15/1005.0));
     // cloud fraction is an input variable, just set to 1 everywhere
     for (k = 0; k < nk; ++k) d.cld_frac_i(i,k) = 1.0;
     for (k = 0; k < nk; ++k) d.cld_frac_l(i,k) = 1.0;

@@ -37,11 +37,12 @@ void Functions<S,D>::eddy_diffusivities(
   // Turbulent coefficients
   const Scalar Ckh = 0.1;
   const Scalar Ckm = 0.1;
-  // Default eddy coefficients for stable PBL diffusivities
-  const Scalar Ckh_s_def = 1;
-  const Scalar Ckm_s_def = 1;
+  // Maximum eddy coefficients for stable PBL diffusivities
+  const Scalar Ckh_s_max = 1;
+  const Scalar Ckm_s_max = 1;
   // Minimum allowable value for stability diffusivities
-  const Scalar Ck_s_min = 0.1;
+  const Scalar Ckh_s_min = 0.1;
+  const Scalar Ckm_s_min = 0.1;
 
   // zt_grid at nlev
   const Scalar zt_grid_1d = zt_grid((nlev-1)/Spack::n)[(nlev-1)%Spack::n];
@@ -54,11 +55,11 @@ void Functions<S,D>::eddy_diffusivities(
 
     // Compute diffusivity coefficient as function of dimensionless Obukhov,
     // given a critical value
-    const Scalar Ckh_s = ekat::impl::max(Ck_s_min,
-                                         ekat::impl::min(Ckh_s_def,
+    const Scalar Ckh_s = ekat::impl::max(Ckh_s_min,
+                                         ekat::impl::min(Ckh_s_max,
                                                          z_over_L/zL_crit_val));
-    const Scalar Ckm_s = ekat::impl::max(Ck_s_min,
-                                         ekat::impl::min(Ckm_s_def,
+    const Scalar Ckm_s = ekat::impl::max(Ckm_s_min,
+                                         ekat::impl::min(Ckm_s_max,
                                                          z_over_L/zL_crit_val));
 
     // If surface layer is stable, based on near surface dimensionless Monin-Obukov
