@@ -29,6 +29,9 @@ dependencies:
   # Documentation
   - sphinx=3.5.1
   - sphinx_rtd_theme=0.5.1
+  # Need to pin docutils because 0.17 has a bug with unordered lists
+  # https://github.com/readthedocs/sphinx_rtd_theme/issues/1115
+  - docutils=0.16
   ## Used when converting Jupyter notebooks to import to Sphinx
   - nbconvert=6.0.7
   - pandoc=2.11.4
