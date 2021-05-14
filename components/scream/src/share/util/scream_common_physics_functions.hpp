@@ -188,7 +188,7 @@ struct PhysicsFunctions
 // If a GPU build, make all code available to the translation unit; otherwise,
 // ETI is used.
 #ifdef KOKKOS_ENABLE_CUDA
-# include "common_physics_impl.hpp"
+# include "scream_common_physics_impl.hpp"
 #endif
 
 #endif // COMMON_PHYSICS_FUNCTIONS_HPP
