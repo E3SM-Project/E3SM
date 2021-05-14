@@ -28,16 +28,17 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using C            = physics::Constants<Real>;
   using KT           = ekat::KokkosTypes<DefaultDevice>;
 
-  using Spack = typename SHF::Spack;
-  using IntSmallPack = typename SHF::IntSmallPack;
-  using Smask = typename SHF::Smask;
-  using view_1d  = typename SHF::view_1d<Real>;
-  using view_1d_const  = typename SHF::view_1d<const Real>;
-  using view_2d  = typename SHF::view_2d<SHF::Spack>;
-  using view_2d_const  = typename SHF::view_2d<const Spack>;
-  using sview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
-  using view_3d = typename SHF::view_3d<Spack>;
-  using view_3d_const = typename SHF::view_3d<const Spack>;
+  using Spack                = typename SHF::Spack;
+  using IntSmallPack         = typename SHF::IntSmallPack;
+  using Smask                = typename SHF::Smask;
+  using view_1d              = typename SHF::view_1d<Real>;
+  using view_1d_const        = typename SHF::view_1d<const Real>;
+  using view_1d_const_double = typename SHF::view_1d<const double>;
+  using view_2d              = typename SHF::view_2d<SHF::Spack>;
+  using view_2d_const        = typename SHF::view_2d<const Spack>;
+  using sview_2d             = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
+  using view_3d              = typename SHF::view_3d<Spack>;
+  using view_3d_const        = typename SHF::view_3d<const Spack>;
 
 public:
   using field_type       = Field<      Real>;
@@ -164,43 +165,43 @@ public:
 
     // Local variables
     int ncol, nlev, num_qtracers;
-    view_1d_const area;
-    view_2d_const T_mid;
-    view_2d_const z_int;
-    view_2d_const z_mid;
-    view_2d_const p_mid;
-    view_2d_const pseudo_density;
-    view_2d_const omega;
-    view_1d_const phis;
-    view_1d_const surf_sens_flux;
-    view_1d_const surf_latent_flux;
-    view_1d_const surf_u_mom_flux;
-    view_1d_const surf_v_mom_flux;
-    view_2d_const qv;
-    view_2d       qv_copy;
-    view_1d       host_dx;
-    view_1d       host_dy;
-    view_2d       qc;
-    view_2d       qc_copy;
-    view_2d       shoc_s;
-    view_2d       tke;
-    view_2d       tke_copy;
-    view_2d       rrho;
-    view_2d       rrho_i;
-    view_2d       thv;
-    view_2d       dz;
-    view_2d       zt_grid;
-    view_2d       zi_grid;
-    view_1d       wpthlp_sfc;
-    view_1d       wprtp_sfc;
-    view_1d       upwp_sfc;
-    view_1d       vpwp_sfc;
-    view_2d       wtracer_sfc;
-    view_2d       wm_zt;
-    view_2d       exner;
-    view_2d       thlm;
-    view_2d       qw;
-    view_2d       cloud_frac;
+    view_1d_const_double area;
+    view_2d_const        T_mid;
+    view_2d_const        z_int;
+    view_2d_const        z_mid;
+    view_2d_const        p_mid;
+    view_2d_const        pseudo_density;
+    view_2d_const        omega;
+    view_1d_const        phis;
+    view_1d_const        surf_sens_flux;
+    view_1d_const        surf_latent_flux;
+    view_1d_const        surf_u_mom_flux;
+    view_1d_const        surf_v_mom_flux;
+    view_2d_const        qv;
+    view_2d              qv_copy;
+    view_1d              host_dx;
+    view_1d              host_dy;
+    view_2d              qc;
+    view_2d              qc_copy;
+    view_2d              shoc_s;
+    view_2d              tke;
+    view_2d              tke_copy;
+    view_2d              rrho;
+    view_2d              rrho_i;
+    view_2d              thv;
+    view_2d              dz;
+    view_2d              zt_grid;
+    view_2d              zi_grid;
+    view_1d              wpthlp_sfc;
+    view_1d              wprtp_sfc;
+    view_1d              upwp_sfc;
+    view_1d              vpwp_sfc;
+    view_2d              wtracer_sfc;
+    view_2d              wm_zt;
+    view_2d              exner;
+    view_2d              thlm;
+    view_2d              qw;
+    view_2d              cloud_frac;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
