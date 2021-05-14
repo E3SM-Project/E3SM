@@ -132,15 +132,15 @@ create_point_grid (const std::string& grid_name,
   // Store cell area, longitude, and latitude in geometry data.
   // For  longitude and latitude, set values to NaN since they
   // are currently not required from any application using PointGrid
-  geo_view_type area("area", num_global_cols);
-  geo_view_type lon ("lon",  num_global_cols);
-  geo_view_type lat ("lat",  num_global_cols);
+  geo_view_type area("area", num_my_cols);
+  geo_view_type lon ("lon",  num_my_cols);
+  geo_view_type lat ("lat",  num_my_cols);
 
   // Estimate cell area for a uniform grid by taking the surface area
   // of the earth divided by the number of columns
   const double rearth    = C::r_earth;
   const double pi        = C::Pi;
-  const double cell_area = 4*pi*rearth*rearth/num_global_cols;
+  const double cell_area = 4*pi*rearth*rearth/num_my_cols;
 
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_global_cols, num_vertical_lev);
   Kokkos::parallel_for("area_loop", policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
