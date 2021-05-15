@@ -10,6 +10,8 @@ module mo_chm_diags
   use cam_history,  only : fieldname_len
   use mo_jeuv,      only : neuv
   use gas_wetdep_opts,only : gas_wetdep_method
+  use cam_logfile,   only : iulog
+  use spmd_utils,    only : masterproc
 
   implicit none
   private
@@ -83,6 +85,7 @@ contains
     logical :: history_aerosol      ! Output the MAM aerosol tendencies
     logical :: history_amwg         ! output the variables used by the AMWG diag package
     logical :: history_verbose      ! produce verbose history output
+    logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
     integer :: bulkaero_species(20)
 
     !-----------------------------------------------------------------------
@@ -90,7 +93,14 @@ contains
     call phys_getopts( history_aerosol_out = history_aerosol, &
                        history_amwg_out    = history_amwg,  &
                        history_verbose_out = history_verbose,  &
-                       cam_chempkg_out     = chempkg   )
+                       cam_chempkg_out     = chempkg, &
+                       history_gaschmbudget_out = history_gaschmbudget)
+
+    if (masterproc) then
+      if (history_gaschmbudget) then
+        write(iulog,*) 'chm_diags_inti: history_gaschmbudget = ', history_gaschmbudget
+      end if
+    end if
 
     id_bry     = get_spc_ndx( 'BRY' )
     id_cly     = get_spc_ndx( 'CLY' )
@@ -410,11 +420,13 @@ contains
 
     logical :: history_aerosol      ! output aerosol variables
     logical :: history_verbose      ! produce verbose history output
+    logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
 
     !-----------------------------------------------------------------------
 
     call phys_getopts( history_aerosol_out = history_aerosol, &
-                       history_verbose_out = history_verbose )
+                       history_verbose_out = history_verbose, &
+                       history_gaschmbudget_out = history_gaschmbudget)
     !--------------------------------------------------------------------
     !	... "diagnostic" groups
     !--------------------------------------------------------------------
