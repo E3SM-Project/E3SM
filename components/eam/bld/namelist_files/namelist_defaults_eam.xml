@@ -1455,6 +1455,7 @@
 <history_waccm>                .false.  </history_waccm>
 <history_waccm waccm_phys="1"> .true.   </history_waccm>
 <history_clubb>      .false.   </history_clubb>
+<history_gaschmbudget>         .false.  </history_gaschmbudget>
 
 <!-- BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag -->
 <fix_g1_err_ndrop>             .false.  </fix_g1_err_ndrop>
