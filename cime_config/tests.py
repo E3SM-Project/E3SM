@@ -161,10 +161,9 @@ _TESTS = {
             "SMS_Ld2.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFOMP",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-cbool",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFOMP.eam-cbool",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP.eam-cbool",
             )
         },
 
