@@ -2821,8 +2821,8 @@
         <arg name="nthreads">-X 1 -E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
         <arg name="num_rs">--nrs $ENV{NUM_RS}</arg>
         <arg name="rs_per_node">--rs_per_host $ENV{RS_PER_NODE}</arg>
-        <arg name="tasks_per_rs">--tasks_per_rs $SHELL{echo "{{ tasks_per_node }}/$RS_PER_NODE"|bc}</arg>
-        <arg name="distribute">-d plane:$SHELL{echo "{{ tasks_per_node }}/$RS_PER_NODE"|bc}</arg>
+        <arg name="tasks_per_rs">--tasks_per_rs $SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
+        <arg name="distribute">-d plane:$SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
         <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
         <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
         <arg name="bind">--bind packed:smt:$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</arg>
@@ -2973,8 +2973,8 @@
         <arg name="nthreads">-X 1 -E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
         <arg name="num_rs">--nrs $ENV{NUM_RS}</arg>
         <arg name="rs_per_node">--rs_per_host $ENV{RS_PER_NODE}</arg>
-        <arg name="tasks_per_rs">--tasks_per_rs $SHELL{echo "{{ tasks_per_node }}/$RS_PER_NODE"|bc}</arg>
-        <arg name="distribute">-d plane:$SHELL{echo "{{ tasks_per_node }}/$RS_PER_NODE"|bc}</arg>
+        <arg name="tasks_per_rs">--tasks_per_rs $SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
+        <arg name="distribute">-d plane:$SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
         <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
         <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
         <arg name="bind">--bind packed:smt:$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</arg>
