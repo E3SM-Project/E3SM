@@ -228,7 +228,7 @@ contains
     use cam_control_mod,   only : lambm0, eccen, mvelpp, obliqr
     use mo_strato_rates,   only : has_strato_chem
     use short_lived_species,only: set_short_lived_species,get_short_lived_species
-    use mo_chm_diags,      only : chm_diags, het_diags
+    use mo_chm_diags,      only : chm_diags, het_diags, gaschmmass_diags
     use perf_mod,          only : t_startf, t_stopf
     use mo_tracname,       only : solsym
     use physconst,         only : gravit
@@ -387,8 +387,13 @@ contains
 
     ! flags for MMF configuration
     logical :: use_MMF, use_ECPP
+
+    ! output gas chemistry tracer concentrations and tendencies
+    logical :: history_gaschmbudget
+
     call phys_getopts (use_MMF_out = use_MMF)
     call phys_getopts (use_ECPP_out  = use_ECPP )
+    call phys_getopts( history_gaschmbudget_out = history_gaschmbudget )
 
     call t_startf('chemdr_init')
 
@@ -757,7 +762,14 @@ contains
 
     vmr0(:ncol,:,:) = vmr(:ncol,:,:) ! mixing ratios before chemistry changes
 
+    ! calculate dry air mass for diagnostics
+
     call t_stopf('chemdr_init')
+
+    if ( history_gaschmbudget ) then
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, 'B')
+    endif
 
     !=======================================================================
     !        ... Call the class solution algorithms
@@ -861,11 +873,20 @@ contains
        call lin_strat_sfcsink(ncol, lchnk, vmr, xsfc, delt,   pdel(:ncol,:) )
     end if
 
+    if ( history_gaschmbudget ) then
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, 'L')
+    endif
 
     !-----------------------------------------------------------------------      
     !         ... Check for negative values and reset to zero
     !-----------------------------------------------------------------------      
     call negtrc( 'After chemistry ', vmr, ncol )
+
+    if ( history_gaschmbudget ) then
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, 'N')
+    endif
 
     !-----------------------------------------------------------------------      
     !         ... Set upper boundary mmr values
