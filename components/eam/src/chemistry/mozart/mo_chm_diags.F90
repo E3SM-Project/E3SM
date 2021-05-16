@@ -19,6 +19,7 @@ module mo_chm_diags
   public :: chm_diags_inti
   public :: chm_diags
   public :: het_diags
+  public :: gaschmmass_diags
 
   integer :: id_n,id_no,id_no2,id_no3,id_n2o5,id_hno3,id_ho2no2,id_clono2,id_brono2
   integer :: id_cl,id_clo,id_hocl,id_cl2,id_cl2o2,id_oclo,id_hcl,id_brcl
@@ -97,10 +98,10 @@ contains
                        history_gaschmbudget_out = history_gaschmbudget)
 
     if (masterproc) then
-      if (history_gaschmbudget) then
-        write(iulog,*) 'chm_diags_inti: history_gaschmbudget = ', history_gaschmbudget
-      end if
-    end if
+       if (history_gaschmbudget) then
+          write(iulog,*) 'chm_diags_inti: history_gaschmbudget = ', history_gaschmbudget
+       endif
+    endif
 
     id_bry     = get_spc_ndx( 'BRY' )
     id_cly     = get_spc_ndx( 'CLY' )
@@ -298,6 +299,11 @@ contains
        else
           call addfld( spc_name, (/ 'lev' /), 'A', 'mol/mol', trim(attr)//' concentration')
           call addfld( trim(spc_name)//'_SRF', horiz_only, 'A', 'mol/mol', trim(attr)//" in bottom layer")
+          if (history_gaschmbudget) then
+             call addfld( trim(spc_name)//'_MSB', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration before gas chem solver')
+             call addfld( trim(spc_name)//'_MSL', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after Linoz')
+             call addfld( trim(spc_name)//'_MSN', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after setting negative numbers to zero')
+          endif
        endif
 
        if ((m /= id_cly) .and. (m /= id_bry)) then
@@ -308,6 +314,13 @@ contains
           endif 
           if (history_amwg) then
              call add_default( trim(spc_name)//'_SRF', 1, ' ' )
+          endif
+          if ( .not. any( aer_species == m ) ) then
+             if (history_gaschmbudget) then
+                call add_default( trim(spc_name)//'_MSB', 1, ' ' )
+                call add_default( trim(spc_name)//'_MSL', 1, ' ' )
+                call add_default( trim(spc_name)//'_MSN', 1, ' ' )
+             endif
           endif
        endif
 
@@ -341,6 +354,11 @@ contains
     call addfld( 'MASS', (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
     call addfld( 'DRYMASS', (/ 'lev' /), 'A', 'kg', 'dry air mass of grid box' )
     call addfld( 'AREA', horiz_only,    'A', 'm2', 'area of grid box' )
+
+    if (history_gaschmbudget) then
+       call add_default( 'AREA', 1, ' ' )
+       call add_default( 'DRYMASS', 1, ' ' )
+    endif
 
     call addfld( 'WD_NOY', horiz_only, 'A', 'kg/s', 'NOy wet deposition' )
     call addfld( 'DF_NOY', horiz_only, 'I', 'kg/m2/s', 'NOy dry deposition flux ' )
@@ -420,13 +438,11 @@ contains
 
     logical :: history_aerosol      ! output aerosol variables
     logical :: history_verbose      ! produce verbose history output
-    logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
 
     !-----------------------------------------------------------------------
 
     call phys_getopts( history_aerosol_out = history_aerosol, &
-                       history_verbose_out = history_verbose, &
-                       history_gaschmbudget_out = history_gaschmbudget)
+                       history_verbose_out = history_verbose )
     !--------------------------------------------------------------------
     !	... "diagnostic" groups
     !--------------------------------------------------------------------
@@ -817,5 +833,75 @@ contains
     endif
 
   end subroutine het_diags
+
+  subroutine gaschmmass_diags( lchnk, ncol, vmr, pdeldry, mbar, flag )
+    !--------------------------------------------------------------------
+    !	... utility routine to output gas chemistry tracer concentrations
+    !--------------------------------------------------------------------
+    
+    use cam_history,  only : outfld
+    use phys_grid,    only : get_area_all_p
+    use phys_control, only : phys_getopts
+    
+    implicit none
+
+    !--------------------------------------------------------------------
+    !	... dummy arguments
+    !--------------------------------------------------------------------
+    integer,  intent(in)  :: lchnk
+    integer,  intent(in)  :: ncol
+    real(r8), intent(in)  :: vmr(ncol,pver,gas_pcnst)
+    real(r8), intent(in)  :: pdeldry(ncol,pver)
+    real(r8), intent(in)  :: mbar(ncol,pver)
+    character(len=*), intent(in)  :: flag ! flag for diagnostic output locations
+
+    !--------------------------------------------------------------------
+    !	... local variables
+    !--------------------------------------------------------------------
+    integer     :: i,j,k, m, n
+    real(r8)    :: wrk(ncol,pver)
+    real(r8)    :: qmass(ncol,pver,gas_pcnst)  ! tracer concentration in kg/m2
+    
+    real(r8) :: area(ncol), drymass(ncol,pver)
+
+    logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+
+    !-----------------------------------------------------------------------
+
+    call phys_getopts( history_gaschmbudget_out = history_gaschmbudget )
+
+    if ( .not. history_gaschmbudget ) return
+
+    call get_area_all_p(lchnk, ncol, area)
+    area = area * rearth**2
+
+    do k = 1,pver
+       drymass(:ncol,k) = pdeldry(:ncol,k) * area(:ncol) * rgrav
+    enddo
+
+    do m = 1,gas_pcnst
+       
+       if ( .not. any( aer_species == m ) ) then
+          !call outfld( solsym(m), vmr(:ncol,:,m), ncol ,lchnk )
+          !call outfld( trim(solsym(m))//'_SRF', vmr(:ncol,pver,m), ncol ,lchnk )
+          if( adv_mass(m) /= 0._r8 ) then
+             do k = 1,pver
+                qmass(:ncol,k,m) = adv_mass(m)*vmr(:ncol,k,m)/mbar(:ncol,k) &
+                                  *drymass(:ncol,k)/area(:ncol)
+             end do
+          end if
+          call outfld( trim(solsym(m))//'_MS'//flag, qmass(:ncol,:,m), ncol ,lchnk )
+       endif
+
+       !do k=1,pver
+       !   do i=1,ncol
+       !      net_chem(i,k) = mmr_tend(i,k,m) * mass(i,k) 
+       !   end do
+       !end do
+       !call outfld( dtchem_name(m), net_chem(:ncol,:), ncol, lchnk )
+
+    enddo
+
+  end subroutine gaschmmass_diags
 
 end module mo_chm_diags
