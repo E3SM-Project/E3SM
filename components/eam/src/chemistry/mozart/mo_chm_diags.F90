@@ -357,7 +357,6 @@ contains
 
     if (history_gaschmbudget) then
        call add_default( 'AREA', 1, ' ' )
-       call add_default( 'DRYMASS', 1, ' ' )
     endif
 
     call addfld( 'WD_NOY', horiz_only, 'A', 'kg/s', 'NOy wet deposition' )
