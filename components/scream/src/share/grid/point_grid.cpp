@@ -142,7 +142,7 @@ create_point_grid (const std::string& grid_name,
   const double pi        = C::Pi;
   const double cell_area = 4*pi*rearth*rearth/num_my_cols;
 
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_global_cols, num_vertical_lev);
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_my_cols, num_vertical_lev);
   Kokkos::parallel_for("area_loop", policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
     area(i) = cell_area;
