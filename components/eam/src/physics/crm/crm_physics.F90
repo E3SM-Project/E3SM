@@ -55,7 +55,7 @@ module crm_physics
    integer :: crm_rad_idx_qi   = -1
    integer :: crm_rad_idx_cld  = -1
    integer :: crm_rad_idx_qrad = -1
-   
+
    integer :: crm_rad_idx_nc   = -1
    integer :: crm_rad_idx_ni   = -1
    integer :: crm_rad_idx_qs   = -1
@@ -536,10 +536,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(r8), pointer, dimension(:,:) :: qrs        ! shortwave radiative heating rate
    real(r8), pointer, dimension(:,:) :: qrl        ! shortwave radiative heating rate
 
-   ! real(r8), dimension(pcols) :: qli_hydro_before  ! column-integraetd rain + snow + graupel 
-   ! real(r8), dimension(pcols) ::  qi_hydro_before  ! column-integrated snow water + graupel water
-   ! real(r8), dimension(pcols) :: qli_hydro_after   ! column-integraetd rain + snow + graupel 
-   ! real(r8), dimension(pcols) ::  qi_hydro_after   ! column-integrated snow water + graupel water
+   real(r8), dimension(begchunk:endchunk,pcols) :: qli_hydro_before  ! column-integraetd rain + snow + graupel 
+   real(r8), dimension(begchunk:endchunk,pcols) ::  qi_hydro_before  ! column-integrated snow water + graupel water
+   real(r8), dimension(begchunk:endchunk,pcols) :: qli_hydro_after   ! column-integraetd rain + snow + graupel 
+   real(r8), dimension(begchunk:endchunk,pcols) ::  qi_hydro_after   ! column-integrated snow water + graupel water
+
    real(r8) :: sfactor                             ! used to determine precip type for sam1mom
 
    integer  :: i, icrm, icol, k, m, ii, jj, c      ! loop iterators
@@ -917,34 +918,35 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          !------------------------------------------------------------------------------------------
          ! calculate total water before calling crm - used for check_energy_chng() after CRM
          !------------------------------------------------------------------------------------------
-         ! do i = 1,ncol
+         do i = 1,ncol
+            icrm = ncol_sum + i
 
-         !    qli_hydro_before(i) = 0.0_r8
-         !    qi_hydro_before(i) = 0.0_r8
+            qli_hydro_before(c,i) = 0.0_r8
+            qi_hydro_before(c,i) = 0.0_r8
 
-         !    do m = 1,crm_nz
-         !       k = pver-m+1
-         !       dp_g = state%pdel(i,k)/gravit
-         !       do jj = 1,crm_ny
-         !          do ii = 1,crm_nx
-         !             if (MMF_microphysics_scheme .eq. 'm2005') then
-         !                qli_hydro_before(i) = qli_hydro_before(i)+(crm_state%qr(i,ii,jj,m)+ &
-         !                                                           crm_state%qs(i,ii,jj,m)+ &
-         !                                                           crm_state%qg(i,ii,jj,m)) * dp_g
-         !                qi_hydro_before(i)  =  qi_hydro_before(i)+(crm_state%qs(i,ii,jj,m)+ &
-         !                                                           crm_state%qg(i,ii,jj,m)) * dp_g
-         !             else if (MMF_microphysics_scheme .eq. 'sam1mom') then
-         !                sfactor = max(0._r8,min(1._r8,(crm_state%temperature(i,ii,jj,m)-268.16)*1./(283.16-268.16)))
-         !                qli_hydro_before(i) = qli_hydro_before(i)+crm_state%qp(i,ii,jj,m) * dp_g
-         !                qi_hydro_before(i)  =  qi_hydro_before(i)+crm_state%qp(i,ii,jj,m) * (1-sfactor) * dp_g
-         !             end if ! MMF_microphysics_scheme
-         !          end do ! ii
-         !       end do ! jj
-         !    end do ! m
+            do m = 1,crm_nz
+               k = pver-m+1
+               dp_g = state(c)%pdel(i,k)/gravit
+               do jj = 1,crm_ny
+                  do ii = 1,crm_nx
+                     if (MMF_microphysics_scheme .eq. 'm2005') then
+                        qli_hydro_before(c,i) = qli_hydro_before(c,i)+(crm_state%qr(icrm,ii,jj,m)+ &
+                                                                       crm_state%qs(icrm,ii,jj,m)+ &
+                                                                       crm_state%qg(icrm,ii,jj,m)) * dp_g
+                        qi_hydro_before(c,i)  =  qi_hydro_before(c,i)+(crm_state%qs(icrm,ii,jj,m)+ &
+                                                                       crm_state%qg(icrm,ii,jj,m)) * dp_g
+                     else if (MMF_microphysics_scheme .eq. 'sam1mom') then
+                        sfactor = max(0._r8,min(1._r8,(crm_state%temperature(icrm,ii,jj,m)-268.16)*1./(283.16-268.16)))
+                        qli_hydro_before(c,i) = qli_hydro_before(c,i)+crm_state%qp(icrm,ii,jj,m) * dp_g
+                        qi_hydro_before(c,i)  =  qi_hydro_before(c,i)+crm_state%qp(icrm,ii,jj,m) * (1-sfactor) * dp_g
+                     end if ! MMF_microphysics_scheme
+                  end do ! ii
+               end do ! jj
+            end do ! m
 
-         !    qli_hydro_before(i) = qli_hydro_before(i)/(crm_nx*crm_ny)
-         !    qi_hydro_before(i)  =  qi_hydro_before(i)/(crm_nx*crm_ny)
-         ! end do ! i = 1,ncol
+            qli_hydro_before(c,i) = qli_hydro_before(c,i)/(crm_nx*crm_ny)
+            qi_hydro_before(c,i)  =  qi_hydro_before(c,i)/(crm_nx*crm_ny)
+         end do ! i = 1,ncol
 
          !------------------------------------------------------------------------------------------
          ! Set CRM inputs
@@ -1188,13 +1190,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          ! be zero in the CRM, So add radiation tendencies to these levels 
          ptend(c)%s(1:ncol, 1:pver-crm_nz+2) = qrs(1:ncol,1:pver-crm_nz+2) + qrl(1:ncol,1:pver-crm_nz+2)
 
-         ! ! This will be used to check energy conservation
-         ! mmf_rad_flux(:ncol) = 0.0_r8
-         ! do k = 1,pver
-         !    do i = 1,ncol
-         !       mmf_rad_flux(i) = mmf_rad_flux(i) + ( qrs(i,k) + qrl(i,k) ) * state%pdel(i,k)/gravit
-         !    end do
-         ! end do
+         ! This will be used to check energy conservation
+         mmf_rad_flux(c,:ncol) = 0.0_r8
+         do k = 1,pver
+            do i = 1,ncol
+               mmf_rad_flux(c,i) = mmf_rad_flux(c,i) + ( qrs(i,k) + qrl(i,k) ) * state(c)%pdel(i,k)/gravit
+            end do
+         end do
 
          !------------------------------------------------------------------------------------------
          ! CRM cloud/precip output
@@ -1395,36 +1397,38 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          !------------------------------------------------------------------------------------------
          ! calculate column integrated water for energy check
          !------------------------------------------------------------------------------------------
-         ! do i = 1,ncol
-         !    qli_hydro_after(i) = 0.0_r8
-         !    qi_hydro_after(i) = 0.0_r8
-         !    do m = 1,crm_nz
-         !       k = pver-m+1
-         !       dp_g = state%pdel(i,k)/gravit
-         !       do jj = 1,crm_ny
-         !          do ii = 1,crm_nx
-         !             if(MMF_microphysics_scheme .eq. 'm2005') then
-         !                qli_hydro_after(i) = qli_hydro_after(i)+(crm_state%qr(i,ii,jj,m)+ &
-         !                                                         crm_state%qs(i,ii,jj,m)+ &
-         !                                                         crm_state%qg(i,ii,jj,m)) * dp_g
-         !                qi_hydro_after(i)  =  qi_hydro_after(i)+(crm_state%qs(i,ii,jj,m)+ &
-         !                                                         crm_state%qg(i,ii,jj,m)) * dp_g
-         !             else if(MMF_microphysics_scheme .eq. 'sam1mom') then 
-         !                sfactor = max(0._r8,min(1._r8,(crm_state%temperature(i,ii,jj,m)-268.16)*1./(283.16-268.16)))
-         !                qli_hydro_after(i) = qli_hydro_after(i)+crm_state%qp(i,ii,jj,m) * dp_g
-         !                qi_hydro_after(i)  =  qi_hydro_after(i)+crm_state%qp(i,ii,jj,m) * (1-sfactor) * dp_g
-         !             end if ! MMF_microphysics_scheme
-         !          end do ! ii
-         !       end do ! jj
-         !    end do ! m = 1,crm_nz
-         !    qli_hydro_after(i) = qli_hydro_after(i)/(crm_nx*crm_ny)
-         !    qi_hydro_after(i)  =  qi_hydro_after(i)/(crm_nx*crm_ny)
-         ! end do ! i = 1,ncold
+         call pbuf_get_field(pbuf_chunk, prec_dp_idx,  prec_dp  )
+         call pbuf_get_field(pbuf_chunk, snow_dp_idx,  snow_dp  )
+         do i = 1,ncol
+            icrm = ncol_sum + i
+            qli_hydro_after(c,i) = 0.0_r8
+            qi_hydro_after(c,i) = 0.0_r8
+            do m = 1,crm_nz
+               k = pver-m+1
+               dp_g = state(c)%pdel(i,k)/gravit
+               do jj = 1,crm_ny
+                  do ii = 1,crm_nx
+                     if(MMF_microphysics_scheme .eq. 'm2005') then
+                        qli_hydro_after(c,i) = qli_hydro_after(c,i)+(crm_state%qr(icrm,ii,jj,m)+ &
+                                                                     crm_state%qs(icrm,ii,jj,m)+ &
+                                                                     crm_state%qg(icrm,ii,jj,m)) * dp_g
+                        qi_hydro_after(c,i)  =  qi_hydro_after(c,i)+(crm_state%qs(icrm,ii,jj,m)+ &
+                                                                     crm_state%qg(icrm,ii,jj,m)) * dp_g
+                     else if(MMF_microphysics_scheme .eq. 'sam1mom') then 
+                        sfactor = max(0._r8,min(1._r8,(crm_state%temperature(i,ii,jj,m)-268.16)*1./(283.16-268.16)))
+                        qli_hydro_after(c,i) = qli_hydro_after(c,i)+crm_state%qp(icrm,ii,jj,m) * dp_g
+                        qi_hydro_after(c,i)  =  qi_hydro_after(c,i)+crm_state%qp(icrm,ii,jj,m) * (1-sfactor) * dp_g
+                     end if ! MMF_microphysics_scheme
+                  end do ! ii
+               end do ! jj
+            end do ! m = 1,crm_nz
+            qli_hydro_after(c,i) = qli_hydro_after(c,i)/(crm_nx*crm_ny)
+            qi_hydro_after(c,i)  =  qi_hydro_after(c,i)/(crm_nx*crm_ny)
 
-         ! mmf_qchk_prec_dp(:ncol) = prec_dp(:ncol) + (qli_hydro_after (:ncol) - &
-         !                                             qli_hydro_before(:ncol))/ztodt/1000._r8
-         ! mmf_qchk_snow_dp(:ncol) = snow_dp(:ncol) + ( qi_hydro_after (:ncol) - &
-         !                                              qi_hydro_before(:ncol))/ztodt/1000._r8
+            mmf_qchk_prec_dp(c,i) = prec_dp(i) + (qli_hydro_after(c,i) - qli_hydro_before(c,i))/ztodt/1000._r8
+            mmf_qchk_snow_dp(c,i) = snow_dp(i) + ( qi_hydro_after(c,i) -  qi_hydro_before(c,i))/ztodt/1000._r8
+
+         end do ! i = 1,ncold
 
          !------------------------------------------------------------------------------------------
          ! copy clear air relative humdity for aerosol water uptake

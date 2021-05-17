@@ -699,7 +699,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   use physics_buffer,   only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate, pbuf_old_tim_idx, pbuf_get_index
   use comsrf,           only: fsns, fsnt, flns, sgh, sgh30, flnt, landm, fsds
   use cam_abortutils,   only: endrun
-
+  use check_energy,           only: check_energy_chng
   use crm_physics,            only: crm_physics_tend
   use crm_ecpp_output_module, only: crm_ecpp_output_type
   !-----------------------------------------------------------------------------
@@ -718,6 +718,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   integer :: c                                 ! indices
   integer :: ncol                              ! number of columns
   integer :: nstep                             ! current timestep number
+  real(r8):: zero(pcols)                       ! array of zeros
 #if (! defined SPMD)
   integer :: mpicom = 0
 #endif
@@ -742,6 +743,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   real(r8), pointer, dimension(:,:) :: cldo ! old cloud fraction
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
+  zero = 0._r8
   nstep = get_nstep()
 
   ! The following initialization depends on the import state (cam_in)
@@ -818,6 +820,11 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
   end do
   call t_stopf('crm_physics_tend')
+
+  do c=begchunk, endchunk
+    call check_energy_chng(phys_state(c), phys_tend(c), "crm_tend", nstep, ztodt, zero, &
+                           mmf_qchk_prec_dp(c,:), mmf_qchk_snow_dp(c,:), mmf_rad_flux(c,:))
+  end do
 
   ! ! save old CRM cloud fraction - w/o CRM, this is done in cldwat2m.F90
   ! itim_old = pbuf_old_tim_idx()
