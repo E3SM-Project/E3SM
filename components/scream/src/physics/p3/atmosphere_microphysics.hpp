@@ -88,9 +88,9 @@ public:
         th_atm(icol,ipack).set(oT_atm_mask,oth);
         // Cloud fraction
         // Set minimum cloud fraction - avoids division by zero
-        cld_frac_l(icol,ipack).set(Smask(true),mincld);
-        cld_frac_i(icol,ipack).set(Smask(true),mincld);
-        cld_frac_r(icol,ipack).set(Smask(true),mincld);
+        cld_frac_l(icol,ipack) = mincld;
+        cld_frac_i(icol,ipack) = mincld;
+        cld_frac_r(icol,ipack) = mincld;
         // Update cloud fractions based on the total cloud fraction
         const Spack oast(ast(icol,ipack));
         const Smask oasti_mask(!isnan(oast) and oast>mincld);
