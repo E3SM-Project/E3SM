@@ -1237,7 +1237,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       !---------------------------------------------------------------------------------------------
       ! put rad data back in pbuf
       !---------------------------------------------------------------------------------------------
-
       call pbuf_get_field(pbuf, crm_rad_idx_t,    crm_rad_tmp_temperature)
       call pbuf_get_field(pbuf, crm_rad_idx_qv,   crm_rad_tmp_qv)
       call pbuf_get_field(pbuf, crm_rad_idx_qc,   crm_rad_tmp_qc)
