@@ -1,0 +1,26 @@
+<driver_script name="setup_MISMIP.py">
+        <case name="10000m">
+                <step executable="./setup_test.py" quiet="false" pre_message="\n\n===== Setting up 10000m" post_message="====== 10000m complete\n\n"/>
+        </case>
+
+        <case name="5000m">
+                <step executable="./setup_test.py" quiet="false" pre_message="\n\n===== Setting up 5000m" post_message="===== 5000m complete\n\n"/>
+        </case>
+
+        <case name="2000m">
+                <step executable="./setup_test.py" quiet="false" pre_message="\n\n===== Setting up 2000m" post_message="===== 2000m complete\n\n"/>
+        </case>
+
+        <case name="1000m">
+                <step executable="./setup_test.py" quiet="false" pre_message="\n\n===== Setting up 1000m" post_message="===== 1000m complete\n\n"/>
+        </case>
+
+        <case name="500m">
+                <step executable="./setup_test.py" quiet="false" pre_message="\n\n===== Setting up 500m" post_message="===== 500m complete\n\n"/>
+        </case>
+
+        <case name="250m">
+                <step executable="./setup_test.py" quiet="false" pre_message="\n\n===== Setting up 250m" post_message="===== 250m complete\n\n"/>
+        </case>
+</driver_script>
+

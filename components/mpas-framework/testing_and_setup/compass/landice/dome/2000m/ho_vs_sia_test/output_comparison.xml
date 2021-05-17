@@ -1,0 +1,9 @@
+<template>
+        <validation>
+                <compare_fields>
+                        <!-- 6.3419584e-7 = 20 m/yr is a reasonable RMS value but RMS not an option currently -->
+                        <field name="normalVelocity" l2_norm="5.0e-04"/>  <!-- This value set by trial and error -->
+                </compare_fields>
+        </validation>
+</template>
+
