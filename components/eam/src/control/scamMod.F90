@@ -503,7 +503,7 @@ subroutine scam_clm_default_opts( pftfile_out, srffile_out, inifile_out )
    srffile_out = lsmsurffile
 end subroutine scam_clm_default_opts
 
-subroutine setiopupdate
+subroutine setiopupdate(override_init)
 
 !-----------------------------------------------------------------------
 !   
@@ -521,6 +521,8 @@ subroutine setiopupdate
 
 !------------------------------Locals-----------------------------------
 
+   logical, optional, intent(in) :: override_init
+
    integer NCID,i
    integer tsec_varID, time_dimID
    integer, allocatable :: tsec(:)
@@ -532,12 +534,23 @@ subroutine setiopupdate
    integer :: ncsec,ncdate                      ! current time of day,date
    integer :: yr, mon, day                      ! year, month, and day component
    integer :: start_ymd,start_tod
-   logical :: doiter
+   logical :: doiter, override
    save tsec, ntime, bdate
    save last_date, last_sec
 !------------------------------------------------------------------------------
 
-   if ( get_nstep() .eq. 0 .or. is_first_restart_step()) then
+   ! If this is a restart then the initialization and main section of this
+   !   subroutine both need to be called, thus develop a flag to instruct
+   !   to skip the initialization part when this subroutine is called for
+   !   a second.
+   ! NOTE: this subroutine will be refactored into two separate subroutines
+   !   ahead of the DP-SCREAM cpp conversion to avoid this goofy behavior.
+   override = .false.
+   if (present(override_init)) then
+     override = override_init
+   endif
+
+   if ( (get_nstep() .eq. 0 .or. is_first_restart_step()) .and. .not. override ) then
 !     
 !     Open  IOP dataset
 !     
@@ -637,6 +650,7 @@ subroutine setiopupdate
       doiopupdate = .false.
       iopTimeIdx = iopTimeIdx
       doiter=.true.
+
       do while(doiter)
         call timemgr_time_inc(bdate, 0, next_date, next_sec,inc_s=tsec(iopTimeIdx+1))
         if (ncdate .gt. next_date .or. (ncdate .eq. next_date &

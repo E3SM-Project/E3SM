@@ -18,7 +18,7 @@ module stepon
    use physics_types,  only: physics_state, physics_tend
    use dyn_comp,       only: dyn_import_t, dyn_export_t
    use perf_mod,       only: t_startf, t_stopf, t_barrierf
-   use time_manager,   only: get_step_size
+   use time_manager,   only: get_step_size, is_first_restart_step
 ! from SE
    use derivative_mod, only: derivinit, derivative_t
    use viscosity_mod, only : compute_zeta_C0, compute_div_C0
@@ -206,15 +206,28 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    
   ! Determine whether it is time for an IOP update;
   ! doiopupdate set to true if model time step > next available IOP 
-  
-  if (use_iop .and. .not. is_last_step()) then
+
+  if (use_iop) then
     if (masterproc) call setiopupdate
-  end if
+    if (masterproc .and. is_first_restart_step() ) call setiopupdate(override_init=.true.)
+  end if 
   
   if (single_column) then
+
+    ! If first restart step then ensure that IOP data is read
+    if (is_first_restart_step()) then
+      iop_update_phase1 = .false.
+      call scm_setinitial(elem)
+      if (masterproc) call readiopdata( iop_update_phase1,hyam,hybm )
+      call scm_broadcast()
+    endif
+
     iop_update_phase1 = .true. 
-    if (doiopupdate .and. masterproc) call readiopdata( iop_update_phase1,hyam,hybm )
+    if ((is_first_restart_step() .or. doiopupdate) .and. masterproc) then
+      call readiopdata( iop_update_phase1,hyam,hybm )
+    endif
     call scm_broadcast()
+
     if (.not. dp_crm) call scm_setfield(elem,iop_update_phase1)
   endif
   
@@ -537,7 +550,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 
      do ie=1,nelemd
        out_gridx(:,:) = dyn_in%elem(ie)%spherep(:,:)%lat
-       out_gridy(:,:) = dyn_in%elem(ie)%spherep(:,:)%lat
+       out_gridy(:,:) = dyn_in%elem(ie)%spherep(:,:)%lon
        call outfld('crm_grid_x', out_gridx, npsq, ie)
        call outfld('crm_grid_y', out_gridy, npsq, ie)
      enddo
