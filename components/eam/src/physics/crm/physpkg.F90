@@ -717,6 +717,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   !-----------------------------------------------------------------------------
   integer :: c                                 ! indices
   integer :: ncol                              ! number of columns
+  integer :: ncrms                             ! total number of CRMs in current task
   integer :: nstep                             ! current timestep number
   real(r8):: zero(pcols)                       ! array of zeros
 #if (! defined SPMD)
@@ -808,10 +809,15 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   !-----------------------------------------------------------------------------
   ! CRM physics
   !-----------------------------------------------------------------------------  
-! #if defined( ECPP )
-!   call phys_getopts( use_ECPP_out = use_ECPP )
-!   if (use_ECPP) call crm_ecpp_output%initialize(pcols,pver)
-! #endif
+#if defined( ECPP )
+  ncrms = 0
+  do c=begchunk, endchunk
+    ncrms = ncrms + get_ncols_p(c)
+  end do
+  call phys_getopts( use_ECPP_out = use_ECPP )
+  if (use_ECPP) call crm_ecpp_output%initialize(ncrms,pver)
+#endif
+
   call t_startf('crm_physics_tend')
   call crm_physics_tend(ztodt, phys_state, phys_tend, ptend, pbuf2d, cam_in, cam_out,    &
                         species_class, crm_ecpp_output,       &
