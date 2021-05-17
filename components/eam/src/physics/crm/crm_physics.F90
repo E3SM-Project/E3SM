@@ -831,12 +831,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             m = pver-k+1
             do i = 1,ncol
                icrm = ncol_sum + i
-               ! crm_rad%qrad         (icrm,:,:,k) = 0.
-               ! crm_rad%temperature  (icrm,:,:,k) = state(c)%t(i,m)
-               ! crm_rad%qv           (icrm,:,:,k) = state(c)%q(i,m,1)
-               ! crm_rad%qc           (icrm,:,:,k) = 0.
-               ! crm_rad%qi           (icrm,:,:,k) = 0.
-               ! crm_rad%cld          (icrm,:,:,k) = 0.
                crm_rad_tmp_qrad        (i,:,:,k) = 0.
                crm_rad_tmp_temperature (i,:,:,k) = state(c)%t(i,m)
                crm_rad_tmp_qv          (i,:,:,k) = state(c)%q(i,m,1)
@@ -845,10 +839,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_rad_tmp_cld         (i,:,:,k) = 0.
 #ifdef m2005
                if (MMF_microphysics_scheme .eq. 'm2005') then
-                  ! crm_rad%nc (icrm,:,:,k) = 0.0
-                  ! crm_rad%ni (icrm,:,:,k) = 0.0       
-                  ! crm_rad%qs (icrm,:,:,k) = 0.0
-                  ! crm_rad%ns (icrm,:,:,k) = 0.0
                   crm_rad_tmp_nc(i,:,:,k) = 0.0
                   crm_rad_tmp_ni(i,:,:,k) = 0.0
                   crm_rad_tmp_qs(i,:,:,k) = 0.0
@@ -1093,6 +1083,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_input, crm_state, &
                crm_rad%qrad, crm_rad%temperature, &
                crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, &
+#ifdef m2005
+               crm_rad%nc, crm_rad%ni, crm_rad%qs, crm_rad%ns, &
+#endif
                crm_ecpp_output, crm_output, crm_clear_rh, &
                latitude0, longitude0, gcolp, igstep, &
                use_MMF_VT_tmp, MMF_VT_wn_max, &
