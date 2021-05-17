@@ -1,0 +1,110 @@
+	<nml_record name="tidal_boundary" mode="init" configuration="tidal_boundary">
+		<nml_option name="config_tidal_boundary_vert_levels" type="integer" default_value="100" units="unitless"
+			description="Number of vertical levels in tidal_boundary test case. Typical values are 40 and 100."
+			possible_values="Any positive integer number greater than 0."
+		/>
+		<nml_option name="config_tidal_boundary_min_vert_levels" type="integer" default_value="10" units="unitless"
+			description="Number of vertical levels where zstar coordinates transition to sigma."
+			possible_values="Any positive integer number greater than 0."
+		/>
+		<nml_option name="config_tidal_boundary_layer_type" type="character" default_value="zstar" units="unitless"
+			description="Vertical coordinate to be used."
+			possible_values="'zstar', 'sigma', 'hybrid'"
+		/>
+		<nml_option name="config_tidal_boundary_right_bottom_depth" type="real" default_value="10.0" units="m"
+			description="Depth of the bottom of the ocean in northern-most end."
+			possible_values="Any positive real value greater than 0."
+		/>
+		<nml_option name="config_tidal_start_dry" type="logical" default_value="false" units="m"
+			description="Logical to determine if channel should be started dry."
+			possible_values="True or False"
+		/>
+		<nml_option name="config_tidal_boundary_use_distances" type="logical" default_value="true" units="m"
+			description="Logical to determine if channel dimensions should to specific values."
+			possible_values="True or False"
+		/>
+		<nml_option name="config_tidal_boundary_left_value" type="real" default_value="0.0" units="m"
+			description="Coordinate of the southern-most end."
+			possible_values="Any positive real value greater than or equal to 0."
+		/>
+		<nml_option name="config_tidal_boundary_right_value" type="real" default_value="25.0e3" units="m"
+			description="Coordinate of the northern-most end."
+			possible_values="Any positive real value greater than or equal to 0."
+		/>
+		<nml_option name="config_tidal_boundary_left_bottom_depth" type="real" default_value="10.0" units="m"
+			description="Depth of the bottom of the ocean in southern-most end."
+			possible_values="Any positive real value greater than 0."
+		/>
+		<nml_option name="config_tidal_boundary_salinity" type="real" default_value="35.0" units="PSU"
+			description="Salinity of the water in the entire domain."
+			possible_values="Any real number greater than 0."
+		/>
+		<nml_option name="config_tidal_boundary_domain_temperature" type="real" default_value="20.0" units="deg C"
+			description="Temperature of water outside of the plug."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_tidal_boundary_plug_temperature" type="real" default_value="20.0" units="deg C"
+			description="Temperature of water in plug."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_tidal_boundary_plug_width_frac" type="real" default_value="0.10" units="fraction"
+			description="Fraction of the domain the plug should take up initially. Only in the y direction."
+			possible_values="Any real number between 0 and 1."
+		/>
+		<nml_option name="config_tidal_forcing_left_Cd_or_n" type="real" default_value="1.0e-3" units="unitless"
+			description="Bottom drag of left side of the boundary."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_tidal_forcing_right_Cd_or_n" type="real" default_value="1.0e-3" units="unitless"
+			description="Bottom drag of right side of the boundary."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_use_idealized_transect" type="logical" default_value="false" units=""
+			description="Logical to determine if idealized tidal flat profile is defined."
+			possible_values="True or False"
+		/>
+		<nml_option name="config_idealized_transect_Lshore" type="real" default_value="0.6" units=""
+			description="Ratio of shore length in the idealized coastal profile."
+			possible_values="Any positive real value between 0 and 1."
+		/>
+		<nml_option name="config_idealized_transect_Sshore" type="real" default_value="0.001" units=""
+			description="Shore slope."
+			possible_values="Any positive real value, should be a small value."
+		/>
+		<nml_option name="config_idealized_transect_Lcoast" type="real" default_value="0.3" units=""
+			description="Ratio of coast length in the idealized coastal profile"
+			possible_values="Any positive real value between 0 and 1."
+		/>
+		<nml_option name="config_idealized_transect_Scoast" type="real" default_value="0.001" units=""
+			description="Coast slope."
+			possible_values="Any positive real value."
+		/>
+		<nml_option name="config_idealized_transect_Lmarsh" type="real" default_value="0.1" units=""
+			description="Ratio of marsh length in the idealized coastal profile."
+			possible_values="Lmarsh=1-Lshore-Lcoast; any positive real value between 0 and 1."
+		/>
+		<nml_option name="config_idealized_transect_Smarsh" type="real" default_value="0.0" units=""
+			description="Marsh slope"
+			possible_values="Any real value, can be negative"
+		/>
+		<nml_option name="config_idealized_transect_roughness" type="real" default_value="0.025" units=""
+			description="Bottom roughness (Cd or Manning roughness) at non-vegetated region"
+			possible_values="Any real value, can be negative"
+		/>
+		<nml_option name="config_idealized_transect_roughness_marsh" type="real" default_value="0.075" units=""
+			description="Bottom roughness (Cd or Manning roughness) at vegetated region"
+			possible_values="Any real value, can be negative"
+		/>
+		<nml_option name="config_idealized_vegetation_diameter" type="real" default_value="0.05" units="m"
+					description="Constant vegetation diameter for idealized transect case"
+					possible_values="Any non-negative real value"
+		/>
+		<nml_option name="config_idealized_vegetation_height" type="real" default_value="0.2" units="m"
+					description="Constant vegetation height for idealized transect case"
+					possible_values="Any non-negative real value "
+		/>
+    <nml_option name="config_idealized_vegetation_density" type="real" default_value="1000" units="m^{-2}"
+					description="Constant vegetation density for indealized transect case"
+					possible_values="Any non-negative real value"
+		/>
+	</nml_record>
