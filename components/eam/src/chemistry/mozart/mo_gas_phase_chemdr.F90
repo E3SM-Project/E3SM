@@ -11,6 +11,7 @@ module mo_gas_phase_chemdr
   use spmd_utils,       only : iam
   use phys_control,     only : phys_getopts
   use cam_logfile,      only : iulog
+  use mo_constants,     only : rgrav, rearth
 
   implicit none
   save
@@ -211,7 +212,7 @@ contains
     use seq_drydep_mod,    only : DD_XLND, DD_XATM, DD_TABL, drydep_method
     use mo_fstrat,         only : set_fstrat_vals, set_fstrat_h2o
     use mo_flbc,           only : flbc_set
-    use phys_grid,         only : get_rlat_all_p, get_rlon_all_p, get_lat_all_p, get_lon_all_p
+    use phys_grid,         only : get_rlat_all_p, get_rlon_all_p, get_lat_all_p, get_lon_all_p, get_area_all_p
     use mo_mean_mass,      only : set_mean_mass
     use cam_history,       only : outfld
     use wv_saturation,     only : qsat
@@ -239,6 +240,7 @@ contains
     use rate_diags,        only : rate_diags_calc
     use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri
     use orbit,             only : zenith
+
 !
 ! LINOZ
 !
@@ -390,6 +392,8 @@ contains
 
     ! output gas chemistry tracer concentrations and tendencies
     logical :: history_gaschmbudget
+    real(r8) :: area(ncol)                     ! grid box area, m2
+    real(r8) :: drymass(ncol,pver)             ! dry air mass of each box, kg
 
     call phys_getopts (use_MMF_out = use_MMF)
     call phys_getopts (use_ECPP_out  = use_ECPP )
@@ -763,6 +767,12 @@ contains
     vmr0(:ncol,:,:) = vmr(:ncol,:,:) ! mixing ratios before chemistry changes
 
     ! calculate dry air mass for diagnostics
+    call get_area_all_p(lchnk, ncol, area)
+    area = area * rearth**2
+
+    do k = 1,pver
+       drymass(:ncol,k) = pdeldry(:ncol,k) * area(:ncol) * rgrav
+    enddo
 
     call t_stopf('chemdr_init')
 
