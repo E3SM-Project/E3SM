@@ -373,7 +373,7 @@ contains
 
   end subroutine chm_diags_inti
 
-  subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pdel, pbuf )
+  subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pdel, pdeldry, pbuf )
     !--------------------------------------------------------------------
     !	... utility routine to output chemistry diagnostic variables
     !--------------------------------------------------------------------
@@ -408,6 +408,7 @@ contains
     real(r8), intent(in)  :: depflx(ncol, gas_pcnst)
     real(r8), intent(in)  :: mmr_tend(ncol,pver,gas_pcnst)
     real(r8), intent(in)  :: pdel(ncol,pver)
+    real(r8), intent(in)  :: pdeldry(ncol,pver)
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     !--------------------------------------------------------------------
@@ -422,7 +423,7 @@ contains
     real(r8), dimension(ncol,pver) :: mmr_noy, mmr_sox, mmr_nhx, net_chem
     real(r8), dimension(ncol)      :: df_noy, df_sox, df_nhx
 
-    real(r8) :: area(ncol), mass(ncol,pver)
+    real(r8) :: area(ncol), mass(ncol,pver), drymass(ncol,pver)
     real(r8) :: wgt
     character(len=16) :: spc_name
     real(r8), pointer :: fldcw(:,:)  !working pointer to extract data from pbuf for sum of mass for aerosol classes
@@ -480,10 +481,12 @@ contains
 
     do k = 1,pver
        mass(:ncol,k) = pdel(:ncol,k) * area(:ncol) * rgrav
+       drymass(:ncol,k) = pdeldry(:ncol,k) * area(:ncol) * rgrav
     enddo
 
     call outfld( 'AREA', area(:ncol),   ncol, lchnk )
     call outfld( 'MASS', mass(:ncol,:), ncol, lchnk )
+    call outfld( 'DRYMASS', drymass(:ncol,:), ncol, lchnk )
 
     ! convert ozone from mol/mol to DU
     wrk(:ncol,:) = pdel(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/air_molwgt/DUfac*1.e3_r8
