@@ -86,12 +86,18 @@ public:
         const Smask oT_atm_mask(!isnan(oT_atm) and oT_atm>0.0);
         auto oth = physics_fun::T_to_th(oT_atm,oexner,oT_atm_mask);
         th_atm(icol,ipack).set(oT_atm_mask,oth);
-        // Cloud fraction and dz
+        // Cloud fraction
+        // Set minimum cloud fraction - avoids division by zero
+        cld_frac_l(icol,ipack).set(Smask(true),mincld);
+        cld_frac_i(icol,ipack).set(Smask(true),mincld);
+        cld_frac_r(icol,ipack).set(Smask(true),mincld);
+        // Update cloud fractions based on the total cloud fraction
         const Spack oast(ast(icol,ipack));
         const Smask oasti_mask(!isnan(oast) and oast>mincld);
         cld_frac_l(icol,ipack).set(oasti_mask,oast);
         cld_frac_i(icol,ipack).set(oasti_mask,oast);
         cld_frac_r(icol,ipack).set(oasti_mask,oast);
+        // DZ and update rain cloud fraction given neighboring levels.
         for (int ivec=0;ivec<Spack::n;ivec++)
         {
           // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top to bottom and determine if the rain fraction needs to
