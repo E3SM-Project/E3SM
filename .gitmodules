@@ -1,3 +1,0 @@
-[submodule "src/core_ocean/gotm"]
-	path = src/core_ocean/gotm
-	url = https://github.com/E3SM-Project/GOTMcode.git
