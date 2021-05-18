@@ -899,17 +899,14 @@ contains
     real(r8):: sum_ndemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
     real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
 
-    integer :: nlimit(bounds%begc:bounds%endc,0:nlevdecomp)          !flag for N limitation
     real(r8):: residual_sminn_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: residual_sminn(bounds%begc:bounds%endc)
-    integer :: nlimit_no3(bounds%begc:bounds%endc,0:nlevdecomp)      !flag for NO3 limitation
-    integer :: nlimit_nh4(bounds%begc:bounds%endc,0:nlevdecomp)      !flag for NH4 limitation
     real(r8):: residual_plant_ndemand(bounds%begc:bounds%endc)
 
     !! Local P variables
     real(r8):: sum_pdemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column P demand (gN/m3/s) at a given level
     real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
-    integer :: plimit(bounds%begc:bounds%endc,0:nlevdecomp)          !flag for P limitation
+
     real(r8):: residual_sminp_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: residual_sminp(bounds%begc:bounds%endc)
     real(r8):: residual_plant_pdemand(bounds%begc:bounds%endc)
@@ -1075,7 +1072,6 @@ contains
                   if (sum_nh4_demand(c,j)*dt < smin_nh4_vr(c,j)) then
                      ! NH4 availability is not limiting immobilization or plant
                      ! uptake, and all can proceed at their potential rates
-                     nlimit_nh4(c,j) = 0
                      fpi_nh4_vr(c,j) = 1.0_r8
                      actual_immob_nh4_vr(c,j) = potential_immob_vr(c,j)
                      smin_nh4_to_plant_vr(c,j) = plant_ndemand_col(c) * nuptake_prof(c,j)
@@ -1087,7 +1083,6 @@ contains
                      ! NH4 availability can not satisfy the sum of immobilization, nitrification, and
                      ! plant growth demands, so these three demands compete for available
                      ! soil mineral NH4 resource.
-                     nlimit_nh4(c,j) = 1
                      if (sum_nh4_demand(c,j) > 0.0_r8 .and. smin_nh4_vr(c,j) > 0.0_r8 &
                           .and. sum_nh4_demand_scaled(c,j) > 0.0_r8) then
                         actual_immob_nh4_vr(c,j) = min((smin_nh4_vr(c,j)/dt)*(potential_immob_vr(c,j)* &
@@ -1121,7 +1116,6 @@ contains
                   if (sum_no3_demand(c,j)*dt < smin_no3_vr(c,j)) then
                      ! NO3 availability is not limiting immobilization or plant
                      ! uptake, and all can proceed at their potential rates
-                     nlimit_no3(c,j) = 1
                      fpi_no3_vr(c,j) = 1.0_r8 -  fpi_nh4_vr(c,j)
                      actual_immob_no3_vr(c,j) = (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))
                      smin_no3_to_plant_vr(c,j) = (plant_ndemand_col(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))
@@ -1133,7 +1127,6 @@ contains
                      ! NO3 availability can not satisfy the sum of immobilization, denitrification, and
                      ! plant growth demands, so these three demands compete for available
                      ! soil mineral NO3 resource.
-                     nlimit_no3(c,j) = 1
                      if (sum_no3_demand(c,j) > 0.0_r8 .and. smin_no3_vr(c,j) > 0.0_r8 &
                           .and. sum_no3_demand_scaled(c,j) > 0.0_r8) then
                         actual_immob_no3_vr(c,j) = min((smin_no3_vr(c,j)/dt)*((potential_immob_vr(c,j)- &
@@ -1245,7 +1238,6 @@ contains
                   if (sum_nh4_demand_vr(c,j)*dt < smin_nh4_vr(c,j)) then
                      ! NH4 availability is not limiting immobilization or plant
                      ! uptake, and all can proceed at their potential rates
-                     nlimit_nh4(c,j) = 0
                      fpi_nh4_vr(c,j) = 1.0_r8
                      actual_immob_nh4_vr(c,j) = potential_immob_vr(c,j)
                      smin_nh4_to_plant_vr(c,j) = col_plant_nh4demand_vr(c,j)
@@ -1257,7 +1249,6 @@ contains
                      ! NH4 availability can not satisfy the sum of immobilization, nitrification, and
                      ! plant growth demands, so these three demands compete for available
                      ! soil mineral NH4 resource.
-                     nlimit_nh4(c,j) = 1
                      if (sum_nh4_demand_vr(c,j) > 0.0_r8 .and. smin_nh4_vr(c,j) > 0.0_r8  &
                           .and. sum_nh4_demand_scaled(c,j) > 0.0_r8) then
                         actual_immob_nh4_vr(c,j) = min((smin_nh4_vr(c,j)/dt)*(potential_immob_vr(c,j)* &
@@ -1297,7 +1288,6 @@ contains
                   if (sum_no3_demand_vr(c,j)*dt < smin_no3_vr(c,j)) then
                      ! NO3 availability is not limiting immobilization or plant
                      ! uptake, and all can proceed at their potential rates
-                     nlimit_no3(c,j) = 0
                      fpi_no3_vr(c,j) = 1.0_r8 -  fpi_nh4_vr(c,j)
                      actual_immob_no3_vr(c,j) = (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))
                      smin_no3_to_plant_vr(c,j) = col_plant_no3demand_vr(c,j)
@@ -1309,7 +1299,6 @@ contains
                      ! NO3 availability can not satisfy the sum of immobilization, denitrification, and
                      ! plant growth demands, so these three demands compete for available
                      ! soil mineral NO3 resource.
-                     nlimit_no3(c,j) = 1
                      if (sum_no3_demand_vr(c,j) > 0.0_r8 .and. smin_no3_vr(c,j) > 0.0_r8 &
                           .and. sum_no3_demand_scaled(c,j) > 0.0_r8) then
                         actual_immob_no3_vr(c,j) = min((smin_no3_vr(c,j)/dt)*((potential_immob_vr(c,j)- &
@@ -1349,9 +1338,7 @@ contains
 
                ! eliminate any N limitation, when carbon only or carbon phosphorus only is set.
                if (  carbon_only .or.  carbonphosphorus_only ) then
-                  nlimit(c,j) = 0
                   if ( fpi_no3_vr(c,j) + fpi_nh4_vr(c,j) < 1._r8 ) then
-                     nlimit(c,j) = 1
                      fpi_vr(c,j) = 1._r8
                      fpi_nh4_vr(c,j) = 1.0_r8 - fpi_no3_vr(c,j)
                      supplement_to_sminn_vr(c,j) = (potential_immob_vr(c,j) - actual_immob_no3_vr(c,j)) - actual_immob_nh4_vr(c,j)
@@ -1361,7 +1348,6 @@ contains
 
                   if (nu_com .eq. 'RD') then
                      if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < plant_ndemand_col(c)*nuptake_prof(c,j) ) then
-                        nlimit(c,j) = 1
                         supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
                              (plant_ndemand_col(c)*nuptake_prof(c,j) - smin_no3_to_plant_vr(c,j)) - smin_nh4_to_plant_vr(c,j)  ! use old values
                         ! update to new values that satisfy demand
@@ -1373,7 +1359,6 @@ contains
                   else ! 'ECA' or 'MIC' modeOB
 
                      if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < col_plant_ndemand_vr(c,j)) then
-                        nlimit(c,j) = 1
                         supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
                              (col_plant_nh4demand_vr(c,j) + col_plant_no3demand_vr(c,j) - smin_no3_to_plant_vr(c,j)) &
                              - smin_nh4_to_plant_vr(c,j)
@@ -1414,14 +1399,12 @@ contains
 
                      ! P availability is not limiting immobilization or plant
                      ! uptake, and both can proceed at their potential rates
-                     plimit(c,j) = 0
                      fpi_p_vr(c,j) = 1.0_r8
                      actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
                      sminp_to_plant_vr(c,j) = plant_pdemand_col(c) * puptake_prof(c,j)
 
                   else if ( carbon_only  .or.  carbonnitrogen_only  ) then !.or. &
 
-                     plimit(c,j) = 1
                      fpi_p_vr(c,j) = 1.0_r8
                      actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
                      sminp_to_plant_vr(c,j) =  plant_pdemand_col(c) * puptake_prof(c,j)
@@ -1432,7 +1415,6 @@ contains
                      ! plant growth demands, so these two demands compete for
                      ! available soil mineral solution P resource.
 
-                     plimit(c,j) = 1
                      if (sum_pdemand_vr(c,j) > 0.0_r8 .and. solutionp_vr(c,j) >0._r8) then
                         actual_immob_p_vr(c,j) = (solutionp_vr(c,j)/dt)*(potential_immob_p_vr(c,j) / sum_pdemand_vr(c,j))
                      else
@@ -1541,7 +1523,6 @@ contains
                      ! P availability is not limiting immobilization or plant
                      ! uptake, and both can proceed at their potential rates
 
-                     plimit(c,j) = 0
                      fpi_p_vr(c,j) = 1.0_r8
                      actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
                      sminp_to_plant_vr(c,j) = col_plant_pdemand_vr(c,j)
@@ -1549,7 +1530,6 @@ contains
 
                   else if (  carbon_only .or. carbonnitrogen_only ) then !.or. &
 
-                     plimit(c,j) = 1
                      fpi_p_vr(c,j) = 1.0_r8
                      actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
                      sminp_to_plant_vr(c,j) =  col_plant_pdemand_vr(c,j)
@@ -1561,7 +1541,6 @@ contains
                      ! P availability can not satisfy the sum of immobilization and
                      ! plant growth demands, so these two demands compete for
                      ! available soil mineral solution P resource.
-                     plimit(c,j) = 1
                      if (sum_pdemand_vr(c,j) > 0.0_r8 .and. solutionp_vr(c,j) >0._r8 .and. sum_pdemand_scaled(c,j) > 0.0_r8) then
                         if (nu_com .eq. 'ECA') sminp_to_plant_vr(c,j) = min(solutionp_vr(c,j)/dt * &
                              col_plant_pdemand_vr(c,j)/ sum_pdemand_scaled(c,j),col_plant_pdemand_vr(c,j))
@@ -1591,18 +1570,6 @@ contains
 
          !!!  resolving N limitation vs. P limitation for decomposition
          !!!  update (1) actual immobilization for N and P (2) sminn_to_plant and sminp_to_plant
-
-         do j = 1, nlevdecomp
-            do fc=1,num_soilc
-               c = filter_soilc(fc)
-               if (nlimit_nh4(c,j) == 0 .and. nlimit_no3(c,j) == 0) then
-                  nlimit(c,j) = 0
-               else
-                  nlimit(c,j) = 1
-               end if
-            end do
-         end do
-
 
          if( .not.carbonphosphorus_only.and. .not.carbonnitrogen_only&
               .and. .not.carbon_only )then
