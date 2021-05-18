@@ -50,10 +50,10 @@ module crm_physics
    integer :: crm_cld_rad_idx  = -1
    integer :: crm_qrad_idx     = -1
 
-   integer :: crm_rad_idx_nc   = -1
-   integer :: crm_rad_idx_ni   = -1
-   integer :: crm_rad_idx_qs   = -1
-   integer :: crm_rad_idx_ns   = -1
+   integer :: crm_nc_rad_idx   = -1
+   integer :: crm_ni_rad_idx   = -1
+   integer :: crm_qs_rad_idx   = -1
+   integer :: crm_ns_rad_idx   = -1
 
 contains
 !===================================================================================================
@@ -198,10 +198,10 @@ subroutine crm_physics_register()
    call pbuf_add_field('CONCLD',       'global', dtype_r8,dims_gcm_3D,idx)  ! convective cloud fraction
 
    if (MMF_microphysics_scheme .eq. 'm2005') then
-      call pbuf_add_field('CRM_NC_RAD','physpkg',dtype_r8,dims_crm_rad,crm_rad_idx_nc)
-      call pbuf_add_field('CRM_NI_RAD','physpkg',dtype_r8,dims_crm_rad,crm_rad_idx_ni)
-      call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_rad_idx_qs)
-      call pbuf_add_field('CRM_NS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_rad_idx_ns)
+      call pbuf_add_field('CRM_NC_RAD','physpkg',dtype_r8,dims_crm_rad,crm_nc_rad_idx)
+      call pbuf_add_field('CRM_NI_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ni_rad_idx)
+      call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_qs_rad_idx)
+      call pbuf_add_field('CRM_NS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ns_rad_idx)
 
       call pbuf_add_field('CRM_QT',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_NC',    'global', dtype_r8,dims_crm_3D,idx)
@@ -381,10 +381,10 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       call pbuf_set_field(pbuf2d, crm_cld_rad_idx,0._r8)
       call pbuf_set_field(pbuf2d, crm_qrad_idx,   0._r8)
       if (MMF_microphysics_scheme .eq. 'm2005') then
-         call pbuf_set_field(pbuf2d, crm_rad_idx_nc,0._r8)
-         call pbuf_set_field(pbuf2d, crm_rad_idx_ni,0._r8)
-         call pbuf_set_field(pbuf2d, crm_rad_idx_qs,0._r8)
-         call pbuf_set_field(pbuf2d, crm_rad_idx_ns,0._r8)
+         call pbuf_set_field(pbuf2d, crm_nc_rad_idx,0._r8)
+         call pbuf_set_field(pbuf2d, crm_ni_rad_idx,0._r8)
+         call pbuf_set_field(pbuf2d, crm_qs_rad_idx,0._r8)
+         call pbuf_set_field(pbuf2d, crm_ns_rad_idx,0._r8)
       end if
 
       call pbuf_set_field(pbuf2d, pbuf_get_index('CLDO')       , 0._r8)
@@ -795,10 +795,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       call pbuf_get_field(pbuf, crm_cld_rad_idx,crm_cld_rad)
       call pbuf_get_field(pbuf, crm_qrad_idx,   crm_qrad)
       if (MMF_microphysics_scheme .eq. 'm2005') then
-         call pbuf_get_field(pbuf, crm_rad_idx_nc,crm_nc_rad)
-         call pbuf_get_field(pbuf, crm_rad_idx_ni,crm_ni_rad)
-         call pbuf_get_field(pbuf, crm_rad_idx_qs,crm_qs_rad)
-         call pbuf_get_field(pbuf, crm_rad_idx_ns,crm_ns_rad)
+         call pbuf_get_field(pbuf, crm_nc_rad_idx,crm_nc_rad)
+         call pbuf_get_field(pbuf, crm_ni_rad_idx,crm_ni_rad)
+         call pbuf_get_field(pbuf, crm_qs_rad_idx,crm_qs_rad)
+         call pbuf_get_field(pbuf, crm_ns_rad_idx,crm_ns_rad)
       end if
       do k = 1,crm_nz
          m = pver-k+1
@@ -1245,10 +1245,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       call pbuf_get_field(pbuf, crm_qrad_idx,   crm_qrad)
 
       if (MMF_microphysics_scheme .eq. 'm2005') then
-         call pbuf_get_field(pbuf, crm_rad_idx_nc, crm_nc_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
-         call pbuf_get_field(pbuf, crm_rad_idx_ni, crm_ni_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
-         call pbuf_get_field(pbuf, crm_rad_idx_qs, crm_qs_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
-         call pbuf_get_field(pbuf, crm_rad_idx_ns, crm_ns_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+         call pbuf_get_field(pbuf, crm_nc_rad_idx, crm_nc_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+         call pbuf_get_field(pbuf, crm_ni_rad_idx, crm_ni_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+         call pbuf_get_field(pbuf, crm_qs_rad_idx, crm_qs_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+         call pbuf_get_field(pbuf, crm_ns_rad_idx, crm_ns_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
       end if
 
       do i = 1,ncol
