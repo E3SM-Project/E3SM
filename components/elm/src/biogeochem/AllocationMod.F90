@@ -96,14 +96,11 @@ module AllocationMod
   real(r8)              :: dayscrecover         !number of days to recover negative cpool
   real(r8), allocatable :: arepr(:)             !reproduction allocation coefficient
   real(r8), allocatable :: aroot(:)             !root allocation coefficient
-  real(r8), allocatable :: col_plant_ndemand(:) !column-level plant N demand
-  real(r8), allocatable :: col_plant_pdemand(:) !column-level plant P demand
+
   !$acc declare create(bdnr                )
   !$acc declare create(dayscrecover        )
   !$acc declare create(arepr(:)            )
   !$acc declare create(aroot(:)            )
-  !$acc declare create(col_plant_ndemand(:))
-  !$acc declare create(col_plant_pdemand(:))
 
   logical :: crop_supln  = .false.    !Prognostic crop receives supplemental Nitrogen
 
@@ -226,8 +223,6 @@ contains
        allocate(arepr(bounds%begp:bounds%endp)); arepr(bounds%begp : bounds%endp) = nan
        allocate(aroot(bounds%begp:bounds%endp)); aroot(bounds%begp : bounds%endp) = nan
     end if
-    allocate(col_plant_ndemand(bounds%begc:bounds%endc)); col_plant_ndemand(bounds%begc : bounds%endc) = nan
-    allocate(col_plant_pdemand(bounds%begc:bounds%endc)); col_plant_pdemand(bounds%begc : bounds%endc) = nan
     allocate(decompmicc(bounds%begc:bounds%endc,1:nlevdecomp)); decompmicc(bounds%begc:bounds%endc,1:nlevdecomp) = nan
 
     ! set time steps
@@ -815,12 +810,12 @@ contains
       ! now use the p2c routine to get the column-averaged plant_ndemand
       call p2c(bounds, num_soilc, filter_soilc, &
            plant_ndemand(bounds%begp:bounds%endp), &
-           col_plant_ndemand(bounds%begc:bounds%endc))
+           plant_ndemand_col(bounds%begc:bounds%endc))
 
       !!! add phosphorus
       call p2c(bounds, num_soilc, filter_soilc, &
            plant_pdemand(bounds%begp:bounds%endp), &
-           col_plant_pdemand(bounds%begc:bounds%endc))
+           plant_pdemand_col(bounds%begc:bounds%endc))
 
    !!! Starting resolving N limitation
       !! new subroutines to calculate nuptake_prof & puptake_prof
@@ -828,13 +823,6 @@ contains
          call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
          call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, puptake_prof)
       end if
-
-      !! flux_type%var = local var, used in Allocation2
-      do fc=1, num_soilc
-            c = filter_soilc(fc)
-            plant_ndemand_col(c) = col_plant_ndemand(c)
-            plant_pdemand_col(c) = col_plant_pdemand(c)
-      end do
 
       ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
       if (use_elm_interface.and.use_pflotran .and. pf_cmode) then
@@ -1045,13 +1033,6 @@ contains
          )
       if (nu_com .eq. 'RD') then ! 'RD' : relative demand approach
 
-         !local var = flux_type%var
-         do fc=1, num_soilc
-            c = filter_soilc(fc)
-            col_plant_ndemand(c) = plant_ndemand_col(c)
-            col_plant_pdemand(c) = plant_pdemand_col(c)
-         end do
-
          ! Starting resolving N/P limitation
          ! calculate nuptake & puptake profile
          call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
@@ -1088,8 +1069,8 @@ contains
                   p = col_pp%pfti(c) ! compet_plant_nh4(col_pp%pfti(c) : col_pp%pftf(c)) are all the same for RD mode
 
                   !  first compete for nh4
-                  sum_nh4_demand(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j) + potential_immob_vr(c,j) + pot_f_nit_vr(c,j)
-                  sum_nh4_demand_scaled(c,j) = col_plant_ndemand(c)* nuptake_prof(c,j) * compet_plant_nh4(p) + &
+                  sum_nh4_demand(c,j) = plant_ndemand_col(c) * nuptake_prof(c,j) + potential_immob_vr(c,j) + pot_f_nit_vr(c,j)
+                  sum_nh4_demand_scaled(c,j) = plant_ndemand_col(c)* nuptake_prof(c,j) * compet_plant_nh4(p) + &
                        potential_immob_vr(c,j)*compet_decomp_nh4 + pot_f_nit_vr(c,j)*compet_nit
                   if (sum_nh4_demand(c,j)*dt < smin_nh4_vr(c,j)) then
                      ! NH4 availability is not limiting immobilization or plant
@@ -1097,7 +1078,7 @@ contains
                      nlimit_nh4(c,j) = 0
                      fpi_nh4_vr(c,j) = 1.0_r8
                      actual_immob_nh4_vr(c,j) = potential_immob_vr(c,j)
-                     smin_nh4_to_plant_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+                     smin_nh4_to_plant_vr(c,j) = plant_ndemand_col(c) * nuptake_prof(c,j)
 
                      f_nit_vr(c,j) = pot_f_nit_vr(c,j)
 
@@ -1111,9 +1092,9 @@ contains
                           .and. sum_nh4_demand_scaled(c,j) > 0.0_r8) then
                         actual_immob_nh4_vr(c,j) = min((smin_nh4_vr(c,j)/dt)*(potential_immob_vr(c,j)* &
                              compet_decomp_nh4 / sum_nh4_demand_scaled(c,j)), potential_immob_vr(c,j))
-                        smin_nh4_to_plant_vr(c,j) = min((smin_nh4_vr(c,j)/dt)*(col_plant_ndemand(c)* &
+                        smin_nh4_to_plant_vr(c,j) = min((smin_nh4_vr(c,j)/dt)*(plant_ndemand_col(c)* &
                              nuptake_prof(c,j)*compet_plant_nh4(p) / sum_nh4_demand_scaled(c,j)), &
-                             col_plant_ndemand(c)*nuptake_prof(c,j))
+                             plant_ndemand_col(c)*nuptake_prof(c,j))
                         f_nit_vr(c,j) =  min((smin_nh4_vr(c,j)/dt)*(pot_f_nit_vr(c,j)*compet_nit / &
                              sum_nh4_demand_scaled(c,j)), pot_f_nit_vr(c,j))
                      else
@@ -1131,9 +1112,9 @@ contains
                   end if
 
                   ! next compete for no3
-                  sum_no3_demand(c,j) = (col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j)) + &
+                  sum_no3_demand(c,j) = (plant_ndemand_col(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j)) + &
                        (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j)) + pot_f_denit_vr(c,j)
-                  sum_no3_demand_scaled(c,j) = (col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))&
+                  sum_no3_demand_scaled(c,j) = (plant_ndemand_col(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))&
                        *compet_plant_no3(p) + (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))*compet_decomp_no3 &
                        + pot_f_denit_vr(c,j)*compet_denit
 
@@ -1143,7 +1124,7 @@ contains
                      nlimit_no3(c,j) = 1
                      fpi_no3_vr(c,j) = 1.0_r8 -  fpi_nh4_vr(c,j)
                      actual_immob_no3_vr(c,j) = (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))
-                     smin_no3_to_plant_vr(c,j) = (col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))
+                     smin_no3_to_plant_vr(c,j) = (plant_ndemand_col(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))
 
                      f_denit_vr(c,j) = pot_f_denit_vr(c,j)
 
@@ -1158,9 +1139,9 @@ contains
                         actual_immob_no3_vr(c,j) = min((smin_no3_vr(c,j)/dt)*((potential_immob_vr(c,j)- &
                              actual_immob_nh4_vr(c,j))*compet_decomp_no3 / sum_no3_demand_scaled(c,j)), &
                              potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))
-                        smin_no3_to_plant_vr(c,j) = min((smin_no3_vr(c,j)/dt)*((col_plant_ndemand(c)* &
+                        smin_no3_to_plant_vr(c,j) = min((smin_no3_vr(c,j)/dt)*((plant_ndemand_col(c)* &
                              nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))*compet_plant_no3(p) / sum_no3_demand_scaled(c,j)), &
-                             col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))
+                             plant_ndemand_col(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))
                         f_denit_vr(c,j) =  min((smin_no3_vr(c,j)/dt)*(pot_f_denit_vr(c,j)*compet_denit / &
                              sum_no3_demand_scaled(c,j)), pot_f_denit_vr(c,j))
                      else
@@ -1379,17 +1360,17 @@ contains
                   end if
 
                   if (nu_com .eq. 'RD') then
-                     if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < col_plant_ndemand(c)*nuptake_prof(c,j) ) then
+                     if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < plant_ndemand_col(c)*nuptake_prof(c,j) ) then
                         nlimit(c,j) = 1
                         supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
-                             (col_plant_ndemand(c)*nuptake_prof(c,j) - smin_no3_to_plant_vr(c,j)) - smin_nh4_to_plant_vr(c,j)  ! use old values
+                             (plant_ndemand_col(c)*nuptake_prof(c,j) - smin_no3_to_plant_vr(c,j)) - smin_nh4_to_plant_vr(c,j)  ! use old values
                         ! update to new values that satisfy demand
-                        smin_nh4_to_plant_vr(c,j) = col_plant_ndemand(c)*nuptake_prof(c,j) - smin_no3_to_plant_vr(c,j)
+                        smin_nh4_to_plant_vr(c,j) = plant_ndemand_col(c)*nuptake_prof(c,j) - smin_no3_to_plant_vr(c,j)
                      end if
 
                      sminn_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j)
 
-                  else ! 'ECA' or 'MIC' mode
+                  else ! 'ECA' or 'MIC' modeOB
 
                      if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < col_plant_ndemand_vr(c,j)) then
                         nlimit(c,j) = 1
@@ -1421,7 +1402,7 @@ contains
             do j = 1, nlevdecomp
                do fc=1,num_soilc
                   c = filter_soilc(fc)
-                  sum_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j) + potential_immob_p_vr(c,j)
+                  sum_pdemand_vr(c,j) = plant_pdemand_col(c) * puptake_prof(c,j) + potential_immob_p_vr(c,j)
                end do
             end do
 
@@ -1436,14 +1417,14 @@ contains
                      plimit(c,j) = 0
                      fpi_p_vr(c,j) = 1.0_r8
                      actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
-                     sminp_to_plant_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+                     sminp_to_plant_vr(c,j) = plant_pdemand_col(c) * puptake_prof(c,j)
 
                   else if ( carbon_only  .or.  carbonnitrogen_only  ) then !.or. &
 
                      plimit(c,j) = 1
                      fpi_p_vr(c,j) = 1.0_r8
                      actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
-                     sminp_to_plant_vr(c,j) =  col_plant_pdemand(c) * puptake_prof(c,j)
+                     sminp_to_plant_vr(c,j) =  plant_pdemand_col(c) * puptake_prof(c,j)
                      supplement_to_sminp_vr(c,j) = sum_pdemand_vr(c,j) - (solutionp_vr(c,j)/dt)
 
                   else
@@ -1755,14 +1736,14 @@ contains
          if (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
             do fc=1,num_soilc
                c = filter_soilc(fc)
-               col_plant_ndemand(c) = 0._r8
-               col_plant_pdemand(c) = 0._r8
+               plant_ndemand_col(c) = 0._r8
+               plant_pdemand_col(c) = 0._r8
             end do
             do j = 1, nlevdecomp
                do fc=1,num_soilc
                   c = filter_soilc(fc)
-                  col_plant_ndemand(c) = col_plant_ndemand(c) + col_plant_ndemand_vr(c,j) * dzsoi_decomp(j)
-                  col_plant_pdemand(c) = col_plant_pdemand(c) + col_plant_pdemand_vr(c,j) * dzsoi_decomp(j)
+                  plant_ndemand_col(c) = plant_ndemand_col(c) + col_plant_ndemand_vr(c,j) * dzsoi_decomp(j)
+                  plant_pdemand_col(c) = plant_pdemand_col(c) + col_plant_pdemand_vr(c,j) * dzsoi_decomp(j)
                end do
             end do
             do fp=1,num_soilp
@@ -1835,8 +1816,8 @@ contains
             c = filter_soilc(fc)
             ! calculate the fraction of potential growth that can be
             ! acheived with the N available to plants
-            if (col_plant_ndemand(c) > 0.0_r8) then
-               fpg(c) = sminn_to_plant(c) / col_plant_ndemand(c)
+            if (plant_ndemand_col(c) > 0.0_r8) then
+               fpg(c) = sminn_to_plant(c) / plant_ndemand_col(c)
             else
                fpg(c) = 1._r8
             end if
@@ -1853,8 +1834,8 @@ contains
             c = filter_soilc(fc)
             ! calculate the fraction of potential growth that can be
             ! acheived with the P available to plants
-            if (col_plant_pdemand(c) > 0.0_r8) then
-               fpg_p(c) = sminp_to_plant(c) / col_plant_pdemand(c)
+            if (plant_pdemand_col(c) > 0.0_r8) then
+               fpg_p(c) = sminp_to_plant(c) / plant_pdemand_col(c)
             else
                fpg_p(c) = 1.0_r8
             end if
