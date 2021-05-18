@@ -246,8 +246,8 @@ void PhysicsFunctions<DeviceT>::calculate_z_int(const MemberType& team,
   // Use the column ops scan function.  Note, we set FromTop to false so that we scan from the true bottom
   // of the column to the top.
   constexpr bool FromTop = false;
-  Real zbot = 0.0; // TODO: question, is it true zbot is actually always 0?  What about topography?
-  column_ops::column_scan<FromTop>(team,num_levs,dz,z_int,zbot);
+  const Real zbot = 0.0; // TODO: question, is it true zbot is actually always 0?  What about topography?
+  column_ops::template column_scan<FromTop>(team,num_levs,dz,z_int,zbot);
 }
 //-----------------------------------------------------------------------------------------------//
 } // namespace scream
