@@ -43,12 +43,12 @@ module crm_physics
    ! Physics buffer indices  
    integer :: ttend_dp_idx    = -1
 
-   integer :: crm_rad_idx_t    = -1
-   integer :: crm_rad_idx_qv   = -1
-   integer :: crm_rad_idx_qc   = -1
-   integer :: crm_rad_idx_qi   = -1
-   integer :: crm_rad_idx_cld  = -1
-   integer :: crm_rad_idx_qrad = -1
+   integer :: crm_t_rad_idx    = -1
+   integer :: crm_qv_rad_idx   = -1
+   integer :: crm_qc_rad_idx   = -1
+   integer :: crm_qi_rad_idx   = -1
+   integer :: crm_cld_rad_idx  = -1
+   integer :: crm_qrad_idx     = -1
 
    integer :: crm_rad_idx_nc   = -1
    integer :: crm_rad_idx_ni   = -1
@@ -176,12 +176,12 @@ subroutine crm_physics_register()
    call pbuf_add_field('CRM_T',        'global',dtype_r8,dims_crm_3D,idx)
 
    ! Radiation
-   call pbuf_add_field('CRM_T_RAD',    'physpkg',dtype_r8,dims_crm_rad,crm_rad_idx_t)
-   call pbuf_add_field('CRM_QV_RAD',   'physpkg',dtype_r8,dims_crm_rad,crm_rad_idx_qv)
-   call pbuf_add_field('CRM_QC_RAD',   'physpkg',dtype_r8,dims_crm_rad,crm_rad_idx_qc)
-   call pbuf_add_field('CRM_QI_RAD',   'physpkg',dtype_r8,dims_crm_rad,crm_rad_idx_qi)
-   call pbuf_add_field('CRM_CLD_RAD',  'physpkg',dtype_r8,dims_crm_rad,crm_rad_idx_cld)
-   call pbuf_add_field('CRM_QRAD',     'global', dtype_r8,dims_crm_rad,crm_rad_idx_qrad)
+   call pbuf_add_field('CRM_T_RAD',    'physpkg',dtype_r8,dims_crm_rad,crm_t_rad_idx)
+   call pbuf_add_field('CRM_QV_RAD',   'physpkg',dtype_r8,dims_crm_rad,crm_qv_rad_idx)
+   call pbuf_add_field('CRM_QC_RAD',   'physpkg',dtype_r8,dims_crm_rad,crm_qc_rad_idx)
+   call pbuf_add_field('CRM_QI_RAD',   'physpkg',dtype_r8,dims_crm_rad,crm_qi_rad_idx)
+   call pbuf_add_field('CRM_CLD_RAD',  'physpkg',dtype_r8,dims_crm_rad,crm_cld_rad_idx)
+   call pbuf_add_field('CRM_QRAD',     'global', dtype_r8,dims_crm_rad,crm_qrad_idx)
 
    call pbuf_add_field('REI',          'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Effective radius (ice)
    call pbuf_add_field('REL',          'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Effective radius (liquid)
@@ -374,12 +374,12 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    ! Initialize pbuf variables
    if (is_first_step()) then
 
-      call pbuf_set_field(pbuf2d, crm_rad_idx_t,   0._r8)
-      call pbuf_set_field(pbuf2d, crm_rad_idx_qv,  0._r8)
-      call pbuf_set_field(pbuf2d, crm_rad_idx_qc,  0._r8)
-      call pbuf_set_field(pbuf2d, crm_rad_idx_qi,  0._r8)
-      call pbuf_set_field(pbuf2d, crm_rad_idx_cld, 0._r8)
-      call pbuf_set_field(pbuf2d, crm_rad_idx_qrad,0._r8)
+      call pbuf_set_field(pbuf2d, crm_t_rad_idx,  0._r8)
+      call pbuf_set_field(pbuf2d, crm_qv_rad_idx, 0._r8)
+      call pbuf_set_field(pbuf2d, crm_qc_rad_idx, 0._r8)
+      call pbuf_set_field(pbuf2d, crm_qi_rad_idx, 0._r8)
+      call pbuf_set_field(pbuf2d, crm_cld_rad_idx,0._r8)
+      call pbuf_set_field(pbuf2d, crm_qrad_idx,   0._r8)
       if (MMF_microphysics_scheme .eq. 'm2005') then
          call pbuf_set_field(pbuf2d, crm_rad_idx_nc,0._r8)
          call pbuf_set_field(pbuf2d, crm_rad_idx_ni,0._r8)
@@ -591,16 +591,16 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    integer                     :: idx_vt_t, idx_vt_q  ! variance transport constituent indices
 
    ! pointers for crm_rad data on pbuf
-   real(crm_rknd), pointer :: crm_rad_tmp_qrad(:,:,:,:) ! rad heating
-   real(crm_rknd), pointer :: crm_rad_tmp_temperature(:,:,:,:) ! rad temperature
-   real(crm_rknd), pointer :: crm_rad_tmp_qv (:,:,:,:) ! rad vapor
-   real(crm_rknd), pointer :: crm_rad_tmp_qc (:,:,:,:) ! rad cloud water
-   real(crm_rknd), pointer :: crm_rad_tmp_qi (:,:,:,:) ! rad cloud ice
-   real(crm_rknd), pointer :: crm_rad_tmp_cld(:,:,:,:) ! rad cloud fraction
-   real(crm_rknd), pointer :: crm_rad_tmp_nc(:,:,:,:) ! rad cloud droplet number (#/kg)
-   real(crm_rknd), pointer :: crm_rad_tmp_ni(:,:,:,:) ! rad cloud ice crystal number (#/kg)
-   real(crm_rknd), pointer :: crm_rad_tmp_qs(:,:,:,:) ! rad cloud snow (kg/kg)
-   real(crm_rknd), pointer :: crm_rad_tmp_ns(:,:,:,:) ! rad cloud snow crystal number (#/kg)
+   real(crm_rknd), pointer :: crm_qrad   (:,:,:,:) ! rad heating
+   real(crm_rknd), pointer :: crm_t_rad  (:,:,:,:) ! rad temperature
+   real(crm_rknd), pointer :: crm_qv_rad (:,:,:,:) ! rad vapor
+   real(crm_rknd), pointer :: crm_qc_rad (:,:,:,:) ! rad cloud water
+   real(crm_rknd), pointer :: crm_qi_rad (:,:,:,:) ! rad cloud ice
+   real(crm_rknd), pointer :: crm_cld_rad(:,:,:,:) ! rad cloud fraction
+   real(crm_rknd), pointer :: crm_nc_rad (:,:,:,:) ! rad cloud droplet number (#/kg)
+   real(crm_rknd), pointer :: crm_ni_rad (:,:,:,:) ! rad cloud ice crystal number (#/kg)
+   real(crm_rknd), pointer :: crm_qs_rad (:,:,:,:) ! rad cloud snow (kg/kg)
+   real(crm_rknd), pointer :: crm_ns_rad (:,:,:,:) ! rad cloud snow crystal number (#/kg)
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -688,8 +688,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    !------------------------------------------------------------------------------------------------
    ! Retrieve pbuf fields and constituent indices
    !------------------------------------------------------------------------------------------------
-   call pbuf_get_field(pbuf, pbuf_get_index('CRM_QRAD'),    crm_rad_tmp_qrad)
-   crm_rad%qrad(:,:,:,:) = crm_rad_tmp_qrad(:,:,:,:)
+   call pbuf_get_field(pbuf, pbuf_get_index('CRM_QRAD'),    crm_qrad)
+   crm_rad%qrad(:,:,:,:) = crm_qrad(:,:,:,:)
 
    call pbuf_get_field(pbuf, pbuf_get_index('PREC_DP'),  prec_dp  )
    call pbuf_get_field(pbuf, pbuf_get_index('SNOW_DP'),  snow_dp  )
@@ -788,32 +788,32 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       end do
 
       ! Initialize CRM radiation variables
-      call pbuf_get_field(pbuf, crm_rad_idx_t,    crm_rad_tmp_temperature)
-      call pbuf_get_field(pbuf, crm_rad_idx_qv,   crm_rad_tmp_qv)
-      call pbuf_get_field(pbuf, crm_rad_idx_qc,   crm_rad_tmp_qc)
-      call pbuf_get_field(pbuf, crm_rad_idx_qi,   crm_rad_tmp_qi)
-      call pbuf_get_field(pbuf, crm_rad_idx_cld,  crm_rad_tmp_cld)
-      call pbuf_get_field(pbuf, crm_rad_idx_qrad, crm_rad_tmp_qrad)
+      call pbuf_get_field(pbuf, crm_t_rad_idx,  crm_t_rad)
+      call pbuf_get_field(pbuf, crm_qv_rad_idx, crm_qv_rad)
+      call pbuf_get_field(pbuf, crm_qc_rad_idx, crm_qc_rad)
+      call pbuf_get_field(pbuf, crm_qi_rad_idx, crm_qi_rad)
+      call pbuf_get_field(pbuf, crm_cld_rad_idx,crm_cld_rad)
+      call pbuf_get_field(pbuf, crm_qrad_idx,   crm_qrad)
       if (MMF_microphysics_scheme .eq. 'm2005') then
-         call pbuf_get_field(pbuf, crm_rad_idx_nc, crm_rad_tmp_nc)
-         call pbuf_get_field(pbuf, crm_rad_idx_ni, crm_rad_tmp_ni)
-         call pbuf_get_field(pbuf, crm_rad_idx_qs, crm_rad_tmp_qs)
-         call pbuf_get_field(pbuf, crm_rad_idx_ns, crm_rad_tmp_ns)
+         call pbuf_get_field(pbuf, crm_rad_idx_nc,crm_nc_rad)
+         call pbuf_get_field(pbuf, crm_rad_idx_ni,crm_ni_rad)
+         call pbuf_get_field(pbuf, crm_rad_idx_qs,crm_qs_rad)
+         call pbuf_get_field(pbuf, crm_rad_idx_ns,crm_ns_rad)
       end if
       do k = 1,crm_nz
          m = pver-k+1
          do i = 1,ncol
-            crm_rad_tmp_qrad        (i,:,:,k) = 0.
-            crm_rad_tmp_temperature (i,:,:,k) = state%t(i,m)
-            crm_rad_tmp_qv          (i,:,:,k) = state%q(i,m,1)
-            crm_rad_tmp_qc          (i,:,:,k) = 0.
-            crm_rad_tmp_qi          (i,:,:,k) = 0.
-            crm_rad_tmp_cld         (i,:,:,k) = 0.
+            crm_qrad   (i,:,:,k) = 0.
+            crm_t_rad  (i,:,:,k) = state%t(i,m)
+            crm_qv_rad (i,:,:,k) = state%q(i,m,1)
+            crm_qc_rad (i,:,:,k) = 0.
+            crm_qi_rad (i,:,:,k) = 0.
+            crm_cld_rad(i,:,:,k) = 0.
             if (MMF_microphysics_scheme .eq. 'm2005') then
-               crm_rad_tmp_nc(i,:,:,k) = 0.0
-               crm_rad_tmp_ni(i,:,:,k) = 0.0
-               crm_rad_tmp_qs(i,:,:,k) = 0.0
-               crm_rad_tmp_ns(i,:,:,k) = 0.0
+               crm_nc_rad(i,:,:,k) = 0.0
+               crm_ni_rad(i,:,:,k) = 0.0
+               crm_qs_rad(i,:,:,k) = 0.0
+               crm_ns_rad(i,:,:,k) = 0.0
             end if
          end do
       end do
@@ -1237,32 +1237,32 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       !---------------------------------------------------------------------------------------------
       ! put rad data back in pbuf
       !---------------------------------------------------------------------------------------------
-      call pbuf_get_field(pbuf, crm_rad_idx_t,    crm_rad_tmp_temperature)
-      call pbuf_get_field(pbuf, crm_rad_idx_qv,   crm_rad_tmp_qv)
-      call pbuf_get_field(pbuf, crm_rad_idx_qc,   crm_rad_tmp_qc)
-      call pbuf_get_field(pbuf, crm_rad_idx_qi,   crm_rad_tmp_qi)
-      call pbuf_get_field(pbuf, crm_rad_idx_cld,  crm_rad_tmp_cld)
-      call pbuf_get_field(pbuf, crm_rad_idx_qrad, crm_rad_tmp_qrad)
+      call pbuf_get_field(pbuf, crm_t_rad_idx,  crm_t_rad)
+      call pbuf_get_field(pbuf, crm_qv_rad_idx, crm_qv_rad)
+      call pbuf_get_field(pbuf, crm_qc_rad_idx, crm_qc_rad)
+      call pbuf_get_field(pbuf, crm_qi_rad_idx, crm_qi_rad)
+      call pbuf_get_field(pbuf, crm_cld_rad_idx,crm_cld_rad)
+      call pbuf_get_field(pbuf, crm_qrad_idx,   crm_qrad)
 
       if (MMF_microphysics_scheme .eq. 'm2005') then
-         call pbuf_get_field(pbuf, crm_rad_idx_nc, crm_rad_tmp_nc, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
-         call pbuf_get_field(pbuf, crm_rad_idx_ni, crm_rad_tmp_ni, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
-         call pbuf_get_field(pbuf, crm_rad_idx_qs, crm_rad_tmp_qs, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
-         call pbuf_get_field(pbuf, crm_rad_idx_ns, crm_rad_tmp_ns, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+         call pbuf_get_field(pbuf, crm_rad_idx_nc, crm_nc_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+         call pbuf_get_field(pbuf, crm_rad_idx_ni, crm_ni_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+         call pbuf_get_field(pbuf, crm_rad_idx_qs, crm_qs_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+         call pbuf_get_field(pbuf, crm_rad_idx_ns, crm_ns_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
       end if
 
       do i = 1,ncol
-         crm_rad_tmp_qrad       (i,:,:,:) = crm_rad%qrad       (i,:,:,:)
-         crm_rad_tmp_temperature(i,:,:,:) = crm_rad%temperature(i,:,:,:)
-         crm_rad_tmp_qv         (i,:,:,:) = crm_rad%qv         (i,:,:,:)
-         crm_rad_tmp_qc         (i,:,:,:) = crm_rad%qc         (i,:,:,:)
-         crm_rad_tmp_qi         (i,:,:,:) = crm_rad%qi         (i,:,:,:)
-         crm_rad_tmp_cld        (i,:,:,:) = crm_rad%cld        (i,:,:,:)
+         crm_qrad     (i,:,:,:) = crm_rad%qrad       (i,:,:,:)
+         crm_t_rad    (i,:,:,:) = crm_rad%temperature(i,:,:,:)
+         crm_qv_rad   (i,:,:,:) = crm_rad%qv         (i,:,:,:)
+         crm_qc_rad   (i,:,:,:) = crm_rad%qc         (i,:,:,:)
+         crm_qi_rad   (i,:,:,:) = crm_rad%qi         (i,:,:,:)
+         crm_cld_rad  (i,:,:,:) = crm_rad%cld        (i,:,:,:)
          if (MMF_microphysics_scheme .eq. 'm2005') then
-            crm_rad_tmp_nc      (i,:,:,:) = crm_rad%nc         (i,:,:,:)
-            crm_rad_tmp_ni      (i,:,:,:) = crm_rad%ni         (i,:,:,:)
-            crm_rad_tmp_qs      (i,:,:,:) = crm_rad%qs         (i,:,:,:)
-            crm_rad_tmp_ns      (i,:,:,:) = crm_rad%ns         (i,:,:,:)
+            crm_nc_rad(i,:,:,:) = crm_rad%nc         (i,:,:,:)
+            crm_ni_rad(i,:,:,:) = crm_rad%ni         (i,:,:,:)
+            crm_qs_rad(i,:,:,:) = crm_rad%qs         (i,:,:,:)
+            crm_ns_rad(i,:,:,:) = crm_rad%ns         (i,:,:,:)
          end if
       end do
 
