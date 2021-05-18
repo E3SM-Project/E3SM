@@ -1,1 +1,4 @@
 ./xmlchange NTHRDS=1
+if [ `./xmlquery --value COMPILER` == ibm ]; then
+  ./xmlchange --append CAM_CONFIG_OPTS='-cppdefs -DUSE_CBOOL'
+fi
