@@ -1,0 +1,66 @@
+	<nml_record name="hurricane" mode="init" configuration="hurricane">
+		<nml_option name="config_hurricane_vert_levels" type="integer" default_value="3" units="m"
+			description="Number of vertical levels for hurricane."
+			possible_values="Any positive integer number greater than 2."
+		/>
+		<nml_option name="config_hurricane_min_depth" type="real" default_value="10.0" units="m"
+			description="Minimum depth for hurricane mesh bathymetry."
+			possible_values="Any positive real number greater than 0."
+		/>
+		<nml_option name="config_hurricane_max_depth" type="real" default_value="60.0" units="m"
+			description="Maximum depth for hurricane mesh bathymetry."
+			possible_values="Any positive real number greater than 0."
+		/>
+		<nml_option name="config_hurricane_gaussian_hump_amplitude" type="real" default_value="1.0" units="m"
+			description="Amplitude of gaussian wave."
+			possible_values="Any positive real number greater than 0."
+		/>
+		<nml_option name="config_hurricane_use_gaussian_hump" type="logical" default_value="false" units="unitless"
+			description="Use of idealized gaussian hump 'hurricane' initial condition."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_hurricane_gaussian_lon_center" type="real" default_value="286.0" units="degrees"
+			description="Longitude of center of gaussian wave."
+			possible_values="Any real number between 0.0 and 360.0."
+		/>
+		<nml_option name="config_hurricane_gaussian_lat_center" type="real" default_value="38.0" units="degrees"
+			description="Latitude of center of gaussian wave."
+			possible_values="Any real number between -90.0 and 90.0."
+		/>
+		<nml_option name="config_hurricane_gaussian_width" type="real" default_value="1.0" units="degrees"
+			description="Width scale of gaussian wave."
+			possible_values="Any real number greater than 0.0"
+		/>
+		<nml_option name="config_hurricane_gaussian_amplitude" type="real" default_value="1.0" units="m"
+			description="Amplitude of gaussian wave."
+			possible_values="Any real number greater than 0.0"
+		/>
+		<nml_option name="config_hurricane_gaussian_slr_amp" type="real" default_value="0.0" units="m"
+			description="Amplitude of sea level rise."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_hurricane_land_z_limit" type="real" default_value="-2.0" units="m"
+			description="Vertical elevation corresponding to increased drag on land (bottom depth positive)."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_hurricane_marsh_z_limit" type="real" default_value="2.0" units="m"
+			description="Vertical elevation corresponding to increased drag on marsh (bottom depth positive)."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_hurricane_land_drag" type="real" default_value="0.1" units="non-dimensional or Manning's n"
+			description="Value of land drag for either Cd or Manning's n above config_land_z_limit."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_hurricane_marsh_drag" type="real" default_value="0.05" units="non-dimensional or Manning's n"
+			description="Value of marsh drag between config_marsh_z_limit and config_land_z_limit for either Cd or Manning's n."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_hurricane_channel_drag" type="real" default_value="0.02" units="non-dimensional or Manning's n"
+			description="Value of channel drag below config_marsh_z_limit for either Cd or Manning's n."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_hurricane_sea_level_rise_adjustment" type="real" default_value="0.00" units="m"
+			description="Crude factor to account for sea level rise. This is uniformly added to the bathymetric depth."
+			possible_values="Any real number."
+		/>
+	</nml_record>

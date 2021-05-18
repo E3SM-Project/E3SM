@@ -1,0 +1,175 @@
+<streams>
+
+<immutable_stream name="basicmesh"
+                  type="none"
+                  filename_template="not-to-be-used.nc"/>
+
+<immutable_stream name="input"
+                  type="input"
+                  filename_template="../forcing/ais2km_100yr_spinup.nc"
+                  input_interval="initial_only"/>
+
+<immutable_stream name="restart"
+                  type="input;output"
+                  filename_template="restarts/restart.$Y-$M-$D.nc"
+                  filename_interval="output_interval"
+                  precision="double"
+                  clobber_mode="truncate"
+                  input_interval="initial_only"
+                  reference_time="1950-01-01_00:00:00"
+                  output_interval="0001-00-00_00:00:00"/>
+
+<stream name="regionsInput" 
+	type="input"
+        mode="forward;analysis"
+        filename_template="../forcing/regionMasks.nc"
+        input_interval="initial_only"
+        runtime_format="single_file">
+        <var name="regionCellMasks"/> 
+
+</stream>
+
+<stream name="ismip6" 
+	type="input"
+        mode="forward;analysis"
+        filename_template="../forcing/TF_CCSM4_8.5_1995-2100.nc"
+    input_interval="0001-00-00_00:00:00"
+    record_interval="0001-00-00_00:00:00"
+                  reference_time="1950-01-01_00:00:00"
+        runtime_format="single_file">
+        <var name="ismip6shelfMelt_3dThermalForcing"/> 
+        <var name="ismip6shelfMelt_zOcean"/> 
+</stream>
+<stream name="ismip6_init" 
+	type="input"
+        mode="forward;analysis"
+        filename_template="../forcing/TF_CCSM4_8.5_1995-2100.nc"
+    input_interval="initial_only"
+        runtime_format="single_file">
+        <var name="ismip6shelfMelt_3dThermalForcing"/> 
+        <var name="ismip6shelfMelt_zOcean"/> 
+</stream>
+
+
+
+<stream name="ismip6_2" 
+	type="input"
+        mode="forward;analysis"
+        filename_template="../forcing/ismip6_basins_gamma0_deltaT_nonlocal_median.nc"
+        input_interval="initial_only"
+        runtime_format="single_file">
+        <var name="ismip6shelfMelt_deltaT"/>
+        <var name="ismip6shelfMelt_basin"/> 
+        <var name="ismip6shelfMelt_gamma0"/> 
+</stream>
+
+<stream name="ismip6_3" 
+	type="input"
+        mode="forward;analysis"
+        filename_template="../forcing/ismip6shelfMelt_offset_CCSM4_8.5_2015.nc"
+        input_interval="initial_only"
+        runtime_format="single_file">
+        <var name="ismip6shelfMelt_offset"/> 
+</stream>
+
+
+
+<stream name="ismip6_smb" 
+	type="input"
+        mode="forward;analysis"
+        filename_template="../forcing/SMB_CCSM4_8.5_1995-2100.nc"
+    input_interval="0001-00-00_00:00:00"
+    record_interval="0001-00-00_00:00:00"
+                  reference_time="1950-01-01_00:00:00"
+        runtime_format="single_file">
+        <var name="sfcMassBal"/> 
+</stream>
+
+<stream name="output"
+        type="output"
+        filename_template="output/output.$Y.nc"
+        filename_interval="0001-00-00_00:00:00"
+        precision="double"
+                  reference_time="1950-01-01_00:00:00"
+        clobber_mode="truncate"
+        output_interval="0001-00-00_00:00:00">
+    <var name="xtime"/>
+    <var name="deltat"/>
+    <var name="daysSinceStart"/>
+    <var name="thickness"/>
+    <var name="bedTopography"/>
+    <var name="lowerSurface"/>
+    <var name="upperSurface"/>
+    <var name="uReconstructX"/>
+    <var name="uReconstructY"/>
+    <var name="cellMask"/>
+    <var name="edgeMask"/>
+
+</stream>
+
+
+<stream name="outputFL"
+         type="output"
+         filename_template="FL_outputs/outputFL.$Y.nc"
+         filename_interval="0001-00-00_00:00:00"
+         precision="double"
+                  reference_time="1950-01-01_00:00:00"
+         clobber_mode="truncate"
+         output_interval="0000-00-01_00:00:00">
+
+    <var name="xtime"/>
+    <var name="deltat"/>
+    <var name="daysSinceStart"/>
+    <var name="sfcMassBalApplied"/>
+    <var name="basalMassBal"/>
+    <var name="floatingBasalMassBal"/>
+    <var name="dHdt"/>
+    <var name="calvingThickness"/>
+    <var name="fluxAcrossGroundingLine"/>
+    <var name="edgeMask"/>
+    <var name="cellMask"/>
+</stream>
+
+<stream name="globalStatsOutput"
+        type="output"
+        filename_template="output/globalStats.nc"
+        filename_interval="none"
+        clobber_mode="overwrite"
+                  reference_time="1950-01-01_00:00:00"
+        output_interval="0000-00-00_01:00:00"
+        packages="globalStatsAMPKG"
+        runtime_format="single_file">
+
+    <stream name="globalStatsOutput"/>
+    <var name="xtime"/>
+    <var name="daysSinceStart"/>
+    <var name="deltat"/>
+    <var name="allowableDtACFL"/>
+    <var name="allowableDtDCFL"/>
+    <var_struct name="globalStatsAM"/>
+
+</stream>
+
+<stream name="regionalStatsOutput"
+        type="output"
+        filename_template="output/regionalStats.nc"
+        filename_interval="none"
+        clobber_mode="overwrite"
+                  reference_time="1950-01-01_00:00:00"
+        output_interval="0000-00-00_01:00:00"
+        packages="regionalStatsAMPKG"
+        runtime_format="single_file">
+
+    <stream name="regionalStatsOutput"/>
+    <var_struct name="regionalStatsAM"/>
+    <var name="xtime"/>
+    <var name="daysSinceStart"/>
+    <var name="deltat"/>
+    <var name="allowableDtACFL"/>
+    <var name="allowableDtDCFL"/>
+
+</stream>
+
+</streams>
+
+

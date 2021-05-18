@@ -1,0 +1,33 @@
+	<nml_record name="AM_temperatures">
+		<nml_option name="config_AM_temperatures_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member temperatures is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_temperatures_compute_interval" type="character" default_value="dt" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_temperatures_output_stream" type="character" default_value="output" units="unitless"
+			description="Name of the stream that the temperatures analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_temperatures_compute_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_temperatures_write_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+	</nml_record>
+	<packages>
+		<package name="temperaturesAMPKG" description="This package includes variables required for the temperatures analysis member."/>
+	</packages>
+	<var_struct name="temperaturesAM" time_levs="1" packages="temperaturesAMPKG">
+		<var name="iceTemperature" type="real" dimensions="nIceLayers nCategories nCells Time" units="degrees C"
+			description="Ice layer temperature"
+		/>
+		<var name="snowTemperature" type="real" dimensions="nSnowLayers nCategories nCells Time" units="degrees C"
+			description="snow layer temperature"
+		/>
+	</var_struct>

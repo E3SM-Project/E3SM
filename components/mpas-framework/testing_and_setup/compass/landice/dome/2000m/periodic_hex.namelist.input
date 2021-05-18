@@ -1,0 +1,8 @@
+&periodic_grid
+   nx = 30,
+   ny = 34,
+   dc = 2000.,
+   nVertLevels = 1,
+   nTracers = 1,
+   nproc = 1
+/

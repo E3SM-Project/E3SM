@@ -1,0 +1,15 @@
+<driver_script name="setup_and_run_enthalpy_benchmark_A.py">
+        <case name="setup_mesh">
+                <step executable="./setup_mesh.py" quiet="false" pre_message=" * Running setup_mesh step" post_message="     Complete"/>
+        </case>
+        <case name="run_model">
+                <step executable="./run_model.py" quiet="false" pre_message=" * Running run_model step" post_message="     Complete"/>
+        </case>
+        <validation>
+                <!-- For now, just compare the output file to itself, so that it can be used for regression testing.  Ideally it would be compared against the analytical solution. -->
+                <compare_fields file1="run_model/output3.nc" file2="run_model/output3.nc">
+                        <template file="output_comparison.xml" path_base="script_test_dir"/>
+                </compare_fields>
+        </validation>        
+</driver_script>
+

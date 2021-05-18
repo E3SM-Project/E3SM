@@ -1,0 +1,80 @@
+# Ignore Files in the MPAS Direcory
+
+# All pre-processed Fortran files in MPAS specific directories
+src/core_*/Registry_processed.xml
+src/core_*/*.f90
+src/framework/*.f90
+src/driver/*.f90
+src/operators/*.f90
+
+# All object files
+*.o
+*~
+
+# All mod files
+*.mod
+
+# All libraries
+*.a
+
+# Executables
+*_model
+build_tables
+
+# NetCDF Files
+*.nc
+
+# Restart timestamp file
+restart_timestamp
+
+# Graph files and partition files
+*.info
+*.info.part.*
+
+# Error, Output, and Abort log files
+*.out
+*.err
+*.abort
+
+# Text files (For statistical output from ocean model)
+*.txt
+
+# Directories with individual .gitignore files are:
+# src/external (Externals might have a different compilation method)
+# src/inc (Include files don't exist until build time. But directory needs to exist.)
+# src/core_atmosphere (Directory to include object files from physics in the atmosphere core library.)
+
+# Ignore WRF Physics Files
+*.TBL
+*DATA*
+
+# Ignore MPAS core build files.
+.mpas_core_*
+
+# Ignore all runtime config files
+namelist.*
+streams.*
+stream_list.*
+
+# Intermediate files that may be produced by Intel compilers
+*.i
+*.i90
+
+src/core_*/inc
+
+# Pyton bytecode
+*.pyc
+
+# Images
+*.png
+
+# Matlab variable files
+*.mat
+
+# Jigsaw output files
+*.jig
+*.log
+*.msh
+
+# Editor recovery files
+*.swp
