@@ -38,8 +38,13 @@ contains
    !------------------------------------------------------------------------------------------------
    ! Type-bound procedures for crm_rad_type
    subroutine crm_rad_initialize(rad, ncrms, crm_nx_rad, crm_ny_rad, crm_nz)
+      use phys_control, only: phys_getopts
       class(crm_rad_type), intent(inout) :: rad
-      integer, intent(in) :: ncrms, crm_nx_rad, crm_ny_rad, crm_nz
+      integer,             intent(in   ) :: ncrms, crm_nx_rad, crm_ny_rad, crm_nz
+
+      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
+
+      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
       if (.not. allocated(rad%qrad))        allocate(rad%qrad       (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       if (.not. allocated(rad%temperature)) allocate(rad%temperature(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
@@ -48,11 +53,6 @@ contains
       if (.not. allocated(rad%qi))          allocate(rad%qi         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       if (.not. allocated(rad%cld))         allocate(rad%cld        (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       
-      if (.not. allocated(rad%nc))          allocate(rad%nc         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (.not. allocated(rad%ni))          allocate(rad%ni         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (.not. allocated(rad%qs))          allocate(rad%qs         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (.not. allocated(rad%ns))          allocate(rad%ns         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-
       call prefetch(rad%qrad)
       call prefetch(rad%temperature)
       call prefetch(rad%qv)
@@ -60,27 +60,39 @@ contains
       call prefetch(rad%qi)
       call prefetch(rad%cld)
 
-      call prefetch(rad%nc)
-      call prefetch(rad%ni)
-      call prefetch(rad%qs)
-      call prefetch(rad%ns)
+      rad%qrad        = 0
+      rad%temperature = 0
+      rad%qv          = 0
+      rad%qc          = 0
+      rad%qi          = 0
+      rad%cld         = 0
 
-      rad%qrad           = 0
-      rad%temperature    = 0
-      rad%qv             = 0
-      rad%qc             = 0
-      rad%qi             = 0
-      rad%cld            = 0
-
-      rad%nc             = 0
-      rad%ni             = 0
-      rad%qs             = 0
-      rad%ns             = 0
+      if (MMF_microphysics_scheme .eq. 'm2005') then
+         if (.not. allocated(rad%nc)) allocate(rad%nc(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+         if (.not. allocated(rad%ni)) allocate(rad%ni(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+         if (.not. allocated(rad%qs)) allocate(rad%qs(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+         if (.not. allocated(rad%ns)) allocate(rad%ns(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      
+         call prefetch(rad%nc)
+         call prefetch(rad%ni)
+         call prefetch(rad%qs)
+         call prefetch(rad%ns)
+      
+         rad%nc = 0
+         rad%ni = 0
+         rad%qs = 0
+         rad%ns = 0
+      end if
 
    end subroutine crm_rad_initialize
    !------------------------------------------------------------------------------------------------
    subroutine crm_rad_finalize(rad)
+      use phys_control, only: phys_getopts
       class(crm_rad_type), intent(inout) :: rad
+
+      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
+
+      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
       if (allocated(rad%qrad))        deallocate(rad%qrad)
       if (allocated(rad%temperature)) deallocate(rad%temperature)
@@ -89,10 +101,12 @@ contains
       if (allocated(rad%qi))          deallocate(rad%qi)
       if (allocated(rad%cld))         deallocate(rad%cld)
 
-      if (allocated(rad%nc)           deallocate(rad%nc)
-      if (allocated(rad%ni)           deallocate(rad%ni)
-      if (allocated(rad%qs)           deallocate(rad%qs)
-      if (allocated(rad%ns)           deallocate(rad%ns)
+      if (MMF_microphysics_scheme .eq. 'm2005') then
+         if (allocated(rad%nc)        deallocate(rad%nc)
+         if (allocated(rad%ni)        deallocate(rad%ni)
+         if (allocated(rad%qs)        deallocate(rad%qs)
+         if (allocated(rad%ns)        deallocate(rad%ns)
+      end if
 
    end subroutine crm_rad_finalize
    !------------------------------------------------------------------------------------------------
