@@ -3660,6 +3660,7 @@
 		<var name="seaSurfaceSalinity"			type="real"	dimensions="nCells Time"		name_in_code="seaSurfaceSalinity"		default_value="34.0"/>
 		<var name="seaFreezingTemperature"		type="real"	dimensions="nCells Time"		name_in_code="seaFreezingTemperature"/>
 		<var name="freezingMeltingPotential"		type="real"	dimensions="nCells Time"		name_in_code="freezingMeltingPotential"/>
+		<var name="frazilMassAdjust"		        type="real"	dimensions="nCells Time"		name_in_code="frazilMassAdjust"/>
 		<var name="uOceanVelocity"			type="real"	dimensions="nCells Time"		name_in_code="uOceanVelocity"/>
 		<var name="vOceanVelocity"			type="real"	dimensions="nCells Time"		name_in_code="vOceanVelocity"/>
 		<var name="seaSurfaceTiltU"			type="real"	dimensions="nCells Time"		name_in_code="seaSurfaceTiltU"/>

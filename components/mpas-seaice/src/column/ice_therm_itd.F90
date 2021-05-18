@@ -1237,7 +1237,7 @@
          do k = 1, nilyr
             Sprofile(k) = Si0new
          enddo
-         Ti = min(liquidus_temperature_mush(Si0new/phi_init), -p1)
+         Ti = liquidus_temperature_mush(Si0new/phi_init)
          qi0new = enthalpy_mush(Ti, Si0new)
       else
          do k = 1, nilyr
