@@ -82,17 +82,17 @@ contains
    subroutine crm_rad_finalize(rad)
       class(crm_rad_type), intent(inout) :: rad
 
-      deallocate(rad%qrad)
-      deallocate(rad%temperature)
-      deallocate(rad%qv)
-      deallocate(rad%qc)
-      deallocate(rad%qi)
-      deallocate(rad%cld)
+      if (allocated(rad%qrad))        deallocate(rad%qrad)
+      if (allocated(rad%temperature)) deallocate(rad%temperature)
+      if (allocated(rad%qv))          deallocate(rad%qv)
+      if (allocated(rad%qc))          deallocate(rad%qc)
+      if (allocated(rad%qi))          deallocate(rad%qi)
+      if (allocated(rad%cld))         deallocate(rad%cld)
 
-      deallocate(rad%nc)
-      deallocate(rad%ni)
-      deallocate(rad%qs)
-      deallocate(rad%ns)
+      if (allocated(rad%nc)           deallocate(rad%nc)
+      if (allocated(rad%ni)           deallocate(rad%ni)
+      if (allocated(rad%qs)           deallocate(rad%qs)
+      if (allocated(rad%ns)           deallocate(rad%ns)
 
    end subroutine crm_rad_finalize
    !------------------------------------------------------------------------------------------------
