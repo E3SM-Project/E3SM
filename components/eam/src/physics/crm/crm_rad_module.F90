@@ -102,10 +102,10 @@ contains
       if (allocated(rad%cld))         deallocate(rad%cld)
 
       if (MMF_microphysics_scheme .eq. 'm2005') then
-         if (allocated(rad%nc)        deallocate(rad%nc)
-         if (allocated(rad%ni)        deallocate(rad%ni)
-         if (allocated(rad%qs)        deallocate(rad%qs)
-         if (allocated(rad%ns)        deallocate(rad%ns)
+         if (allocated(rad%nc))       deallocate(rad%nc)
+         if (allocated(rad%ni))       deallocate(rad%ni)
+         if (allocated(rad%qs))       deallocate(rad%qs)
+         if (allocated(rad%ns))       deallocate(rad%ns)
       end if
 
    end subroutine crm_rad_finalize
