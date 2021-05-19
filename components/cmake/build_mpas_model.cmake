@@ -33,7 +33,7 @@ function(build_mpas_models)
   set(CIMESRC_PATH "../cime/src")
 
   if (CORES)
-    add_subdirectory("mpas-source/src")
+    add_subdirectory("mpas-framework/src")
   endif()
 
 endfunction(build_mpas_models)

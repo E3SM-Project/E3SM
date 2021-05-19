@@ -1,0 +1,30 @@
+To set up a suite of runs:
+
+1. Run standard compass set up script to create an instance of the test case, e.g.:
+./setup_testcase.py -f general.config.landice.mjh -n 37 --work_dir /net/scratch1/mhoffman/mpas-testing/
+
+2. Run the set up script that is created from the work_dir location, e.g.:
+cd /net/scratch1/mhoffman/mpas-testing/landice/Thwaites_variability/standard_resolution/standard_configuration
+./setup_thwaites_testcase.py
+
+Steps 1 and 2 are done primarily to keep this under version control, including the creation of the namelist and streams files.
+
+3. To generate and run a suite of simulations within variability parameter space, use the script setup_many_runs.sh
+which is symlinked into your work_dir location.  Be sure to manually adjust the variables at the top!
+
+4. After runs complete (or during their execution), use the compare_variability_runs.py script to plot results.
+
+
+
+
+To set up the fixed resolution tests:
+
+* symlink the desired AIS input dataset into this directory.  Probably one or both of:
+/usr/projects/climate/mhoffman/AIS_IC_data/ais14to4/ais14to4km.20160713.nc
+/usr/projects/climate/mhoffman/AIS_IC_data/ais30to1/ais30to1.20160713.nc
+You need to set this line uniform_resolution/resolution_testing_configuration/config_setup_experiments.xml to the version you want to use:
+ <add_link source_path="script_configuration_dir" source="ais14to4km.20160713.nc" dest="ais_input_data.nc"/>
+* setup test case:
+   38: -o landice -c Thwaites_variability -r uniform_resolution -t resolution_testing_configuration
+* run the script in the workdir: ./setup_test.py
+* to change the resolution, copy the desired resolution over the top of namelist.input in uniform_resolution/resolution_testing_configuration/  (note re-running things will clobber a previous setup, so you should rename that dir accordingly

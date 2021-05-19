@@ -1,0 +1,114 @@
+<streams>
+
+<immutable_stream name="basicmesh"
+                  type="none"
+                  filename_template="not-to-be-used.nc"/>
+
+<immutable_stream name="input"
+                  type="input"
+                  filename_template="landice_grid.nc"
+                  input_interval="initial_only"/>
+
+<immutable_stream name="restart"
+                  type="input;output"
+                  filename_template="restart.$Y-$M-$D_$h.$m.$s.nc"
+                  filename_interval="output_interval"
+                  precision="double"
+                  clobber_mode="replace_files"
+                  input_interval="initial_only"
+                  reference_time="0000-01-01_00:00:00"
+                  output_interval="0050-00-00_00:00:00"/>
+
+<stream name="forcing"
+    filename_template="ais20km_smb_bmb_forcing_100years.nc"
+    input_interval="0001-00-00_00:00:00"
+    record_interval="0001-00-00_00:00:00"
+    filename_interval="none"
+    reference_time="0000-01-01_00:00:00"
+    type="input">
+    <!--
+    <var name="sfcMassBal"/>
+    -->
+    <var name="floatingBasalMassBal"/>
+</stream>
+
+<stream name="regionsInput" 
+	type="input"
+        mode="forward;analysis"
+        filename_template="regionMasks.nc"
+        input_interval="initial_only"
+        runtime_format="single_file">
+        <var name="regionCellMasks"/> 
+
+</stream>
+
+<stream name="globalStatsOutput" 
+        type="output"
+        filename_template="globalStats.nc"
+        filename_interval="none"
+        clobber_mode="truncate"
+        reference_time="0000-01-01_00:00:00"
+        output_interval="0000-00-00_01:00:00"
+        packages="globalStatsAMPKG"
+        runtime_format="single_file">
+
+    <stream name="globalStatsOutput"/>
+    <var name="xtime"/>
+    <var name="daysSinceStart"/>
+    <var name="deltat"/>
+    <var name="allowableDtACFL"/>
+    <var name="allowableDtDCFL"/>
+    <var_struct name="globalStatsAM"/>
+
+</stream>
+
+<stream name="regionalStatsOutput" 
+        type="output"
+        filename_template="regionalStats.nc"
+        filename_interval="none"
+        clobber_mode="truncate"
+        reference_time="0000-01-01_00:00:00"
+        output_interval="0000-00-00_01:00:00"
+        packages="regionalStatsAMPKG"
+        runtime_format="single_file">
+
+    <stream name="regionalStatsOutput"/>
+    <var_struct name="regionalStatsAM"/>
+    <var name="xtime"/>
+    <var name="daysSinceStart"/>
+    <var name="deltat"/>
+    <var name="allowableDtACFL"/>
+    <var name="allowableDtDCFL"/>
+
+</stream>
+
+<stream name="output"
+        type="output"
+        filename_template="output.nc"
+        filename_interval="none"
+        precision="double"
+        reference_time="0000-01-01_00:00:00"
+        clobber_mode="replace_files"
+        output_interval="0000-00-00_01:00:00">
+
+    <stream name="basicmesh"/>
+    <var name="xtime"/>
+    <var name="thickness"/>
+    <var name="bedTopography"/>
+    <var name="lowerSurface"/>
+    <var name="upperSurface"/>
+    <var name="surfaceSpeed"/>
+    <var name="dHdt"/>
+    <var name="floatingBasalMassBal"/>
+    <var name="sfcMassBal"/>
+    <var name="cellMask"/>
+    <var name="eMax"/>
+    <var name="eMin"/>
+    <var name="calvingVelocity"/>
+    <var name="calvingThickness"/>
+
+</stream>
+
+</streams>
+
+

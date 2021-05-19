@@ -26,7 +26,7 @@ function(build_model COMP_CLASS COMP_NAME)
   endif()
 
   if (COMP_NAME STREQUAL "cpl")
-    list(APPEND INCLDIR "${EXEROOT}/cmake-bld/mpas-source/src")
+    list(APPEND INCLDIR "${EXEROOT}/cmake-bld/mpas-framework/src")
     foreach(ITEM IN LISTS COMP_CLASSES)
       list(APPEND INCLDIR "${EXEROOT}/cmake-bld/cmake/${ITEM}")
     endforeach()

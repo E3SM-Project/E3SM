@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<config case="setup_mesh">
+
+        <run_script name="setup_mesh.py">
+
+                <!-- make base mesh -->
+                <step executable="planar_hex" pre_message="\n\n### Creating periodic_hex mesh\n\n" post_message="\n\n### periodic_hex mesh creation complete\n\n">
+                        <argument flag="--nx">64</argument>
+                        <argument flag="--ny">74</argument>
+                        <argument flag="--dc">25000.0</argument>
+                </step>
+
+                <!-- run though mesh converter to make sure MPAS compliant -->
+                <step executable="MpasMeshConverter.x" pre_message="\n\n### Creating MPAS mesh\n\n" post_message="\n\n### MPAS mesh creation complete\n\n">
+                        <argument flag="">grid.nc</argument>
+                        <argument flag="">mpas_grid.nc</argument>
+                </step>
+
+                <!-- run though mesh converter to make sure MPAS compliant -->
+                <step executable="define_cullMask.py" >
+                        <argument flag="-f">mpas_grid.nc</argument>
+                        <argument flag="-m">radius</argument>
+                        <argument flag="-d">750.0</argument>
+                </step>
+
+                <!-- cull cells -->
+                <step executable="MpasCellCuller.x" >
+                        <argument flag="">mpas_grid.nc</argument>
+                        <argument flag="">culled_grid.nc</argument>
+                </step>
+
+                <!-- run though mesh converter to make sure MPAS compliant -->
+                <step executable="MpasMeshConverter.x" pre_message="\n\n### Creating MPAS mesh\n\n" post_message="\n\n### MPAS mesh creation complete\n\n">
+                        <argument flag="">culled_grid.nc</argument>
+                        <argument flag="">mpas_grid2.nc</argument>
+                </step>
+
+                <!-- Convert from basic MPAS mesh to MPASLI mesh -->
+                <step executable="create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
+                        <argument flag="-i">mpas_grid2.nc</argument>
+                        <argument flag="-o">landice_grid.nc</argument>
+                        <argument flag="-l">10</argument>
+                        <argument flag="--thermal"></argument>
+                        <argument flag="--beta"></argument>
+                </step>
+
+                <!-- Set up needed graph file -->
+                <step executable="gpmetis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                        <argument flag="graph.info">4</argument>
+                </step>
+
+        </run_script>
+
+</config>
+
