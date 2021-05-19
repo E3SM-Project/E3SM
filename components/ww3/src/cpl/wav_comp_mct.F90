@@ -150,7 +150,7 @@
 !
 !/ ------------------------------------------------------------------- /
       use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, &
-                          nx, ny, nsea, nseal, mapsf, mapsta, mapst2, x0, y0, sx, sy, &
+                          nx, ny, nsea, nseal, mapsf, mapfs, mapsta, mapst2, x0, y0, sx, sy, &
                           w3nmod, w3setg, AnglD, &
                           sig, nk, zb, dmin
       use w3wdatmd, only: time, w3ndat, w3setw, wlv, va
@@ -167,6 +167,7 @@
       use w3servmd, only: w3xyrtn
       use w3parall, only: init_get_isea
       use w3dispmd, only: wavnu1
+      use w3triamd, only: SETUGIOBP
 !/
       use w3initmd, only: w3init 
       use w3wavemd, only: w3wave 
@@ -264,11 +265,13 @@ CONTAINS
       integer :: stop_tod          ! stop time of day (sec)
       integer :: ix, iy
       integer :: is, ik
+      integer :: gindex
 
       character(CL)            :: starttype
       type(mct_gsmap), pointer :: gsmap
       type(mct_ggrid), pointer :: dom
       type(seq_infodata_type), pointer :: infodata   ! input init object
+      type(mct_aVect) :: x2w0
 
       integer             :: unitn            ! namelist unit number
       integer             :: ndso, ndse, ntrace(2), time0(2)
@@ -461,11 +464,11 @@ CONTAINS
       !--------------------------------------------------------------------
 
       inflags1 = .false.
-      ! QL, 150525, flags for passing variables from coupler to ww3,
-      !             lev, curr, wind, ice and mixing layer depth on
-      inflags1(1:5) = .true.
-!      inflags1(1:4) = .true.   !changed by Adrean (lev,curr,wind,ice on)
-!      inflags1(3:4) = .true.   !changed by Adrean (wind,ice on)
+
+      inflags1(1) = .true. ! water levels
+      inflags1(2) = .true. ! currents
+      inflags1(3) = .true. ! winds
+      inflags1(4) = .true. ! ice concentration
 
       !--------------------------------------------------------------------
       ! Set time frame
@@ -622,7 +625,7 @@ CONTAINS
       ! Restart files
       odat(16) = time(1)    ! YYYYMMDD for first output
       odat(17) = time(2)    ! HHMMSS for first output
-      odat(18) = dtime_sync ! output interval in sec (dummy for initialization)
+      odat(18) = dtime_sync ! output interval in sec (dummy for MPI initialization in w3init)
       odat(19) = 99990101   ! YYYYMMDD for last output
       odat(20) = 0          ! HHMMSS for last output
 
@@ -799,52 +802,6 @@ CONTAINS
       call w3init ( 1, .false., 'ww3', nds, ntrace, odat, flgrd, flgrd2, flgd, flgd2, npts, x, y,   &
            pnames, iprt, prtfrm, mpi_comm )
 
-      if ( runtype == "continue" .or. runtype == "branch") then
-        ifile4 = 0                                   ! reset file counter
-        fnmpre = './'//restart_timestamp//'.'        ! add restart timestamp to file name prefix
-
-        CALL W3IORS ( 'READ', NDS(6), SIG(NK), 1)
-
-        fnmpre = './'                                ! reset file name frefix to default value
-        fliwnd = .false.                             ! prevent initialization to fetch-limited spectra
-        flcold = .false.                             ! prevent inttialization of DTDYN and FCUT
-
-        ALLOCATE(MAPTST(NY,NX))
-        MAPTST = MAPSTA
-        MAPTST = MOD(MAPST2/2,2)
-
-        DO ISEA=1, NSEA 
-          IX = MAPSF(ISEA,1)
-          IY = MAPSF(ISEA,2)
-          WLVeff=WLV(ISEA)
-          DW(ISEA) = MAX ( 0. , WLVeff-ZB(ISEA) )
-          IF ( WLVeff-ZB(ISEA) .LE.0. ) THEN 
-            MAPTST(IY,IX) = 1
-            MAPSTA(IY,IX) = -ABS(MAPSTA(IY,IX))
-          END IF
-        END DO
-        DO JSEA=1, NSEAL
-          CALL INIT_GET_ISEA(ISEA, JSEA)
-          WLVeff=WLV(ISEA)
-          DW(ISEA) = MAX ( 0. , WLVeff-ZB(ISEA) )
-          IF ( WLVeff-ZB(ISEA) .LE.0. ) THEN 
-            VA(:,JSEA) = 0. 
-          END IF
-        END DO
-
-      DO IS=0, NSEA 
-        IF (IS.GT.0) THEN 
-          DEPTH  = MAX ( DMIN , DW(IS) )
-        ELSE 
-          DEPTH = DMIN 
-          END IF 
-        DO IK=0, NK+1 
-!         Calculate wavenumbers and group velocities.
-          CALL WAVNU1(SIG(IK),DEPTH,WN(IK,IS),CG(IK,IS))
-          END DO
-        END DO
-      
-      endif
 
       call shr_sys_flush(ndso)
 
@@ -910,6 +867,80 @@ CONTAINS
       call shr_file_setlogunit (shrlogunit)
       call shr_file_setloglevel(shrloglev)
 
+      !--------------------------------------------------------------------
+      ! Restart 
+      !--------------------------------------------------------------------
+
+      if ( runtype == "continue" .or. runtype == "branch") then
+        ifile4 = 0                                   ! reset file counter
+        fnmpre = './'//restart_timestamp//'.'        ! add restart timestamp to file name prefix
+
+        ALLOCATE(MAPTST(NY,NX))
+        MAPTST = MAPSTA
+
+        CALL W3IORS ( 'READ', NDS(6), SIG(NK), 1)
+
+        fnmpre = './'                                ! reset file name frefix to default value
+        fliwnd = .false.                             ! prevent initialization to fetch-limited spectra
+        flcold = .false.                             ! prevent inttialization of DTDYN and FCUT
+
+        ! Compare MAPSTA from grid and restart
+        DO IX=1, NX
+          DO IY=1, NY
+            IF ( ABS(MAPSTA(IY,IX)).EQ.2 .OR.                           &    
+                 ABS(MAPTST(IY,IX)).EQ.2 ) THEN 
+                MAPSTA(IY,IX) = SIGN ( MAPTST(IY,IX) , MAPSTA(IY,IX) )
+            END IF
+          END DO
+        END DO
+        MAPTST = MOD(MAPST2/2,2)
+        MAPST2 = MAPST2 - 2*MAPTST
+  
+        ! Calculate depth
+        DO ISEA=1, NSEA 
+          IX = MAPSF(ISEA,1)
+          IY = MAPSF(ISEA,2)
+
+          WLVeff=WLV(ISEA)
+          DW(ISEA) = MAX ( 0. , WLVeff-ZB(ISEA) )
+          IF ( WLVeff-ZB(ISEA) .LE.0. ) THEN 
+            MAPTST(IY,IX) = 1
+            MAPSTA(IY,IX) = -ABS(MAPSTA(IY,IX))
+          END IF
+        END DO
+
+        DO JSEA=1, NSEAL
+          CALL INIT_GET_ISEA(ISEA, JSEA)
+          WLVeff=WLV(ISEA)
+          DW(ISEA) = MAX ( 0. , WLVeff-ZB(ISEA) )
+          IF ( WLVeff-ZB(ISEA) .LE.0. ) THEN 
+            VA(:,JSEA) = 0. 
+          END IF
+        END DO
+
+        MAPST2 = MAPST2 + 2*MAPTST
+        DEALLOCATE(MAPTST)
+
+        ! Fill wavenumber and group velocity arrays 
+        DO IS=0, NSEA 
+          IF (IS.GT.0) THEN 
+            DEPTH  = MAX ( DMIN , DW(IS) )
+          ELSE 
+            DEPTH = DMIN 
+          END IF 
+          DO IK=0, NK+1 
+            CALL WAVNU1(SIG(IK),DEPTH,WN(IK,IS),CG(IK,IS))
+          END DO
+        END DO
+
+        DW(0) = 0.
+
+        CALL SETUGIOBP
+
+        call mpi_barrier ( mpi_comm, ierr )
+      
+      endif
+
 
 900   FORMAT (/15X,'      *** WAVEWATCH III Program shell ***      '/ &
                15X,'==============================================='/)
@@ -949,7 +980,7 @@ CONTAINS
       !/ ------------------------------------------------------------------- /
       !/ Local parameters
 
-      integer :: time0(2), timen(2), ierr, i, j, ix, iy
+      integer :: time0(2), timen(2), ierr, i, j, ix, iy, ik
       integer :: ymd              ! current year-month-day
       integer :: tod              ! current time of day (sec)
       integer :: hh,mm,ss
@@ -964,6 +995,7 @@ CONTAINS
       real, dimension(:), allocatable :: cx, cy 
       real, dimension(:), allocatable :: wx, wy 
       real :: xxx
+      real :: wlveff, depth
 
       character(len=*),parameter :: subname = '(wav_run_mct)'
       character(15) :: restart_date
@@ -1047,10 +1079,10 @@ CONTAINS
       call mct_aVect_bcast(x2w0,0,mpi_comm)
  
       if (inflags1(2)) then 
-        allocate(wx(NX*NY), wy(NX*NY))
+        allocate(cx(NX*NY), cy(NX*NY))
       endif
       if (inflags1(3)) then
-        allocate(cx(NX*NY), cy(NX*NY))
+        allocate(wx(NX*NY), wy(NX*NY))
       endif
 
       gindex = 0
@@ -1092,6 +1124,20 @@ CONTAINS
 
          if (inflags1(1)) then
             WLEV(IX,IY) = x2w0%rattr(index_x2w_so_ssh,gindex)
+
+            ! Fill wavenumber and group velocity arrays
+            ISEA = MAPFS(IY,IX)
+            WLV(ISEA) = WLEV(IX,IY)
+            WLVeff=WLV(ISEA)
+            DW(ISEA) = MAX ( 0. , WLVeff-ZB(ISEA) )
+            IF (ISEA.GT.0) THEN 
+              DEPTH  = MAX ( DMIN , DW(ISEA) )
+            ELSE 
+              DEPTH = DMIN 
+            END IF 
+            DO IK=0, NK+1 
+              CALL WAVNU1(SIG(IK),DEPTH,WN(IK,ISEA),CG(IK,ISEA))
+            END DO
          endif
 
          if (inflags1(2)) then
@@ -1106,8 +1152,8 @@ CONTAINS
             WXN(IX,IY)  = WX0(IX,IY)
             WY0(IX,IY)  = WY(gindex) 
             WYN(IX,IY)  = WY0(IX,IY)
-            DT0(IX,IY)  = x2w0%rattr(index_x2w_sa_tbot,gindex) - x2w0%rattr(index_x2w_so_t,gindex)
-            DTN(IX,IY)  = DT0(IX,IY)
+            !DT0(IX,IY)  = x2w0%rattr(index_x2w_sa_tbot,gindex) - x2w0%rattr(index_x2w_so_t,gindex)
+            !DTN(IX,IY)  = DT0(IX,IY)
          endif
 
          if (inflags1(4)) then
