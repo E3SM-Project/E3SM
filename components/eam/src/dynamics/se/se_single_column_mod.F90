@@ -221,14 +221,10 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     endif
 #endif
 
-    call forecast(begchunk,elem(ie)%state%ps_v(i,j,t1),&
-           elem(ie)%state%ps_v(i,j,t1),forecast_ps,forecast_u,&
-           elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
-           forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
-           elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
-           temperature(i,j,:),temperature(i,j,:),&
-           forecast_q,stateQin2,stateQin1,dt,temp_tend,dummy2,dummy2,&
-           stateQin_qfcst,p(i,j,:),stateQin1,1)
+    call forecast(begchunk,elem(ie)%state%ps_v(i,j,t1),&             ! In
+       elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,2,:,t1),&   ! In
+       temperature(i,j,:),stateQin1(:,:),dt,temp_tend,&              ! In
+       forecast_t,forecast_q,forecast_u,forecast_v)                  ! Out
 
     elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
 
