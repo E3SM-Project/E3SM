@@ -56,6 +56,9 @@ program driver
   integer(8) :: t1, t2, tr
   integer :: ierr
 
+  logical :: use_MMF_VT                    ! flag for MMF variance transport
+  integer :: MMF_VT_wn_max                 ! wavenumber cutoff for filtered variance transport
+
 #if HAVE_MPI
   call mpi_init(ierr)
   call mpi_comm_size(mpi_comm_world,nranks,ierr)
@@ -211,9 +214,14 @@ program driver
     call system_clock(t1)
   endif
 
+  use_MMF_VT = .false.
+  MMF_VT_wn_max = 0
+
   ! Run the code
   call crm(1 , ncrms, dt_gl(1), plev, crm_input, crm_state, crm_rad, crm_ecpp_output, crm_output, crm_clear_rh, &
-           lat0, long0, gcolp, 2, .true., 2.D0, .true.)
+           lat0, long0, gcolp, 2, &
+           use_MMF_VT, MMF_VT_wn_max, &
+           .true., 2.D0, .true.)
 
 
 #if HAVE_MPI
