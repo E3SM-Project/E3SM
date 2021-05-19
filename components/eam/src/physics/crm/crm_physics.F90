@@ -863,7 +863,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       call pbuf_set_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
 
       ! Set clear air RH to zero on first step
-      call pbuf_get_field(pbuf_chunk, mmf_clear_rh_idx, mmf_clear_rh )
+      call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
       mmf_clear_rh(1:ncol,1:pver) = 0
 
    else  ! not is_first_step
