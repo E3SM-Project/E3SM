@@ -688,7 +688,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    !------------------------------------------------------------------------------------------------
    ! Retrieve pbuf fields and constituent indices
    !------------------------------------------------------------------------------------------------
-   call pbuf_get_field(pbuf, pbuf_get_index('CRM_QRAD'),    crm_qrad)
+   call pbuf_get_field(pbuf, crm_qrad_idx,    crm_qrad)
    crm_rad%qrad(1:ncol,:,:,:) = crm_qrad(1:ncol,:,:,:)
 
    call pbuf_get_field(pbuf, pbuf_get_index('PREC_DP'),  prec_dp  )
