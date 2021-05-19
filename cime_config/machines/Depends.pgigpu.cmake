@@ -40,7 +40,7 @@ set(FILES_NEED_OPENACC_FLAGS
   eam/src/physics/crm/sam/boundaries.F90
   eam/src/physics/crm/sam/coriolis.F90
   eam/src/physics/crm/sam/crmtracers.F90
-  eam/src/physics/crm/sam/crm_ecpp_output_module.F90
+  eam/src/physics/crm/crm_ecpp_output_module.F90
   eam/src/physics/crm/crm_input_module.F90
   eam/src/physics/crm/sam/crm_surface.F90
   eam/src/physics/crm/crm_output_module.F90
