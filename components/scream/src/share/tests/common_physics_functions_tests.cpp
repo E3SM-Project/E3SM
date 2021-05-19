@@ -3,7 +3,6 @@
 #include "physics/share/physics_constants.hpp"
 
 #include "share/util/scream_common_physics_functions.hpp"
-#include "share/util/scream_common_physics_impl.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
@@ -22,6 +21,7 @@ struct ChecksHelpers {
   }
   static bool approx_equal (const ScalarT lhs, const ScalarT rhs, 
                             const int k, const ScalarT tol) {
+    using std::abs;
     return not ( k<NumLevels && abs(lhs-rhs)>=tol );
   }
   static bool approx_equal (const ScalarT computed, const ScalarT expected, const ScalarT tol) {
@@ -49,7 +49,6 @@ struct ChecksHelpers<ekat::Pack<T,N>,NumLevels> {
     return (range_mask && abs(lhs-rhs)>=tol).none();
   }
   static bool approx_equal (const ScalarT& computed, const ScalarT& expected, const T tol) {
-    using std::abs;
     return (abs(computed-expected)/abs(expected) < tol).all();
   }
 };
