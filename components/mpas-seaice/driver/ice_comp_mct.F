@@ -439,8 +439,16 @@ contains
 
     else if (runtype == "continue" .or. runtype == "branch") then ! Restart run or branch run
 
-        ! Turn on restart
+        ! Turn on restarts
         call mpas_pool_get_config(domain % configs, "config_do_restart", tempLogicalConfig)
+        tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_hbrine", tempLogicalConfig)
+        tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_snow_density", tempLogicalConfig)
+        tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_snow_grain_radius", tempLogicalConfig)
+        tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_zsalinity", tempLogicalConfig)
         tempLogicalConfig = .true.
 
         ! Set start time to be read from file

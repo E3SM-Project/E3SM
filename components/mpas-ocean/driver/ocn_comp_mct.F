@@ -763,7 +763,7 @@ contains
     endif
 
     ! Setup clock for initial runs
-    if ( runtype == 'continue' ) then
+    if (runtype == "continue" .or. runtype == "branch" ) then
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
