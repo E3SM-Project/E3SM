@@ -7,6 +7,8 @@ module crm_ecpp_output_module
    private
 
    public crm_ecpp_output_type
+   public crm_ecpp_output_initialize
+   public crm_ecpp_output_finalize
 
    !------------------------------------------------------------------------------------------------
    type crm_ecpp_output_type
@@ -32,22 +34,15 @@ module crm_ecpp_output_module
       real(crm_rknd), allocatable :: wwqui_bnd          (:,:)  ! vert velocity variance in quiescent class (m2/s2) at layer boundary
       real(crm_rknd), allocatable :: wwqui_cloudy_cen   (:,:)  ! vert velocity variance in quiescent and cloudy class (m2/s2) at layer center
       real(crm_rknd), allocatable :: wwqui_cloudy_bnd   (:,:)  ! vert velocity variance in quiescent and cloudy class (m2/s2) at layer boundary
-#if defined( ECPP )
-   contains
-      procedure, public :: initialize=>crm_ecpp_initialize
-      procedure, public :: finalize=>crm_ecpp_finalize
-#endif /* ECPP */
    end type crm_ecpp_output_type
    !------------------------------------------------------------------------------------------------
 
 contains
 
-#if defined( ECPP )
-
    !------------------------------------------------------------------------------------------------
-   subroutine crm_ecpp_initialize(this, ncol, nlev)
+   subroutine crm_ecpp_output_initialize(this, ncol, nlev)
       use ecppvars, only: NCLASS_CL, ncls_ecpp_in, NCLASS_PR
-      class(crm_ecpp_output_type), intent(inout) :: this
+      type(crm_ecpp_output_type), intent(inout) :: this
       integer, intent(in) :: ncol, nlev
       if (.not.allocated(this%acen            )) allocate(this%acen            (ncol,nlev,NCLASS_CL,ncls_ecpp_in,NCLASS_PR) )
       if (.not.allocated(this%acen_tf         )) allocate(this%acen_tf         (ncol,nlev,NCLASS_CL,ncls_ecpp_in,NCLASS_PR) )
@@ -70,34 +65,32 @@ contains
       if (.not.allocated(this%wdownthresh_bnd )) allocate(this%wdownthresh_bnd (ncol,nlev+1) )
       if (.not.allocated(this%wwqui_bnd       )) allocate(this%wwqui_bnd       (ncol,nlev+1) )
       if (.not.allocated(this%wwqui_cloudy_bnd)) allocate(this%wwqui_cloudy_bnd(ncol,nlev+1) )
-   end subroutine crm_ecpp_initialize
+   end subroutine crm_ecpp_output_initialize
    !------------------------------------------------------------------------------------------------
-   subroutine crm_ecpp_finalize(this)
-      class(crm_ecpp_output_type), intent(inout) :: this
-      deallocate(this%acen            )
-      deallocate(this%acen_tf         )
-      deallocate(this%rhcen           )
-      deallocate(this%qcloudcen       )
-      deallocate(this%qicecen         )
-      deallocate(this%qlsinkcen       )
-      deallocate(this%precrcen        )
-      deallocate(this%precsolidcen    )
-      deallocate(this%qlsink_afcen    )
-      deallocate(this%qlsink_bfcen    )
-      deallocate(this%qlsink_avgcen   )
-      deallocate(this%praincen        )
-      deallocate(this%abnd            )
-      deallocate(this%abnd_tf         )
-      deallocate(this%massflxbnd      )
-      deallocate(this%wupthresh_bnd   )
-      deallocate(this%wdownthresh_bnd )
-      deallocate(this%wwqui_cen       )
-      deallocate(this%wwqui_cloudy_cen)
-      deallocate(this%wwqui_bnd       )
-      deallocate(this%wwqui_cloudy_bnd)
-   end subroutine crm_ecpp_finalize
+   subroutine crm_ecpp_output_finalize(this)
+      type(crm_ecpp_output_type), intent(inout) :: this
+      if (allocated(this%acen            )) deallocate(this%acen            )
+      if (allocated(this%acen_tf         )) deallocate(this%acen_tf         )
+      if (allocated(this%rhcen           )) deallocate(this%rhcen           )
+      if (allocated(this%qcloudcen       )) deallocate(this%qcloudcen       )
+      if (allocated(this%qicecen         )) deallocate(this%qicecen         )
+      if (allocated(this%qlsinkcen       )) deallocate(this%qlsinkcen       )
+      if (allocated(this%precrcen        )) deallocate(this%precrcen        )
+      if (allocated(this%precsolidcen    )) deallocate(this%precsolidcen    )
+      if (allocated(this%qlsink_afcen    )) deallocate(this%qlsink_afcen    )
+      if (allocated(this%qlsink_bfcen    )) deallocate(this%qlsink_bfcen    )
+      if (allocated(this%qlsink_avgcen   )) deallocate(this%qlsink_avgcen   )
+      if (allocated(this%praincen        )) deallocate(this%praincen        )
+      if (allocated(this%abnd            )) deallocate(this%abnd            )
+      if (allocated(this%abnd_tf         )) deallocate(this%abnd_tf         )
+      if (allocated(this%massflxbnd      )) deallocate(this%massflxbnd      )
+      if (allocated(this%wupthresh_bnd   )) deallocate(this%wupthresh_bnd   )
+      if (allocated(this%wdownthresh_bnd )) deallocate(this%wdownthresh_bnd )
+      if (allocated(this%wwqui_cen       )) deallocate(this%wwqui_cen       )
+      if (allocated(this%wwqui_cloudy_cen)) deallocate(this%wwqui_cloudy_cen)
+      if (allocated(this%wwqui_bnd       )) deallocate(this%wwqui_bnd       )
+      if (allocated(this%wwqui_cloudy_bnd)) deallocate(this%wwqui_cloudy_bnd)
+   end subroutine crm_ecpp_output_finalize
    !------------------------------------------------------------------------------------------------
-
-#endif /* ECPP */
 
 end module crm_ecpp_output_module
