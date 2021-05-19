@@ -1,273 +1,327 @@
 #include "catch2/catch.hpp"
 
+#include "physics/share/physics_constants.hpp"
+
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util/scream_common_physics_impl.hpp"
-#include "physics/share/tests/physics_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 
-namespace scream {
-namespace physics {
-namespace unit_test {
-
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestUniversal
-{
-//-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT, typename DeviceT>
-  static void run_impl()
-  {
-    using physicscommon  = scream::PhysicsFunctions<Device>;
-    using view_1d        = ekat::KokkosTypes<DefaultDevice>::view_1d<ScalarT>;
-    using scalar_view_1d = ekat::KokkosTypes<DefaultDevice>::view_1d<Scalar>;
-
-    static constexpr Scalar p0     = C::P0;
-    static constexpr Scalar Rd     = C::RD;
-    static constexpr Scalar inv_cp = C::INV_CP;
-    static constexpr Scalar tmelt  = C::Tmelt;
-    static constexpr Scalar ggr    = C::gravit;
-    static constexpr Scalar test_tol = C::macheps*1e3;
-
-    const int num_levs = 100; // Number of levels to use for tests.
-    const Int num_pack = ekat::npack<ScalarT>(num_levs);
-    const Int num_pack_int = ekat::npack<ScalarT>(num_levs+1);
-
-    // Compute random values for tests
-    view_1d        temperature("temperature",num_pack),
-                   height("height",num_pack),
-                   qv("qv",num_pack),
-                   pressure("pressure",num_pack),
-                   pseudo_density("pseudo_density",num_pack),
-                   dz_for_testing("dz_for_testing",num_pack);
-    scalar_view_1d surface_height("surface_height",1);
-    view_1d        exner("exner",num_pack),
-                   theta("theta",num_pack),
-                   T_mid_from_pot("T_mid_from_pot",num_pack),
-                   T_virtual("T_virtual",num_pack),
-                   T_mid_from_virt("T_mid_from_virt",num_pack),
-                   dse("dse",num_pack),
-                   dz("dz",num_pack),
-                   z_int("z_int",num_pack_int);
-    // Construct random input data
-    std::random_device rdev;
-    using rngAlg = std::mt19937_64;
-    const unsigned int catchRngSeed = Catch::rngSeed();
-    const unsigned int seed = catchRngSeed==0 ? rdev() : catchRngSeed;
-    // Print seed to screen to trace tests that fail.
-    std::cout << "  - seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
-    rngAlg engine(seed);
-    using RPDF = std::uniform_real_distribution<Scalar>;
-    RPDF pdf_qv(1e-3,1e3),
-         pdf_dp(1.0,100.0),
-         pdf_pres(0.0,p0),
-         pdf_temp(200.0,400.0),
-         pdf_height(0.0,1e5),
-         pdf_surface(100.0,400.0);
-
-    ekat::genRandArray(temperature,engine,pdf_temp);
-    ekat::genRandArray(height,engine,pdf_height);
-    ekat::genRandArray(surface_height,engine,pdf_surface);
-    ekat::genRandArray(qv,engine,pdf_qv);
-    ekat::genRandArray(pressure,engine,pdf_pres);
-    ekat::genRandArray(pseudo_density,engine,pdf_dp);
-
-    // Construct a simple set of `dz` values for testing the z_int function
-    auto dz_for_testing_host = Kokkos::create_mirror_view(ekat::scalarize(dz_for_testing));
-    for (int k = 0;k<num_levs;k++)
-    {
-      dz_for_testing_host[k] = num_levs-k;
-    }
-    Kokkos::deep_copy(dz_for_testing,dz_for_testing_host);
-
-    // Run tests using single values
-    Scalar t_result, T0, z0, ztest, ptest, dp0, qv0;
-    // Exner property tests:
-    // exner_function(p0) should return 1.0
-    // exner_function(0.0) should return 0.0
-    // exner_function(2*p0) should return 2**(Rd/cp)
-    ptest = p0;
-    REQUIRE(physicscommon::exner_function(ptest)==1.0);
-    ptest = 0.0;
-    REQUIRE(physicscommon::exner_function(ptest)==0.0);
-    ptest = 4.0; t_result = pow(2.0,Rd*inv_cp);
-    REQUIRE(std::abs(physicscommon::exner_function(ptest)/physicscommon::exner_function(ptest/2)-t_result)<test_tol);
-    // Potential temperature property tests
-    // theta=T when p=p0
-    // theta(T=0) = 0
-    // T(theta=0) = 0
-    // T(theta(T0)) = T0
-    // theta(T(theta0)) = theta0
-    T0 = 100.0;
-    REQUIRE(physicscommon::calculate_theta_from_T(T0,p0)==T0);
-    REQUIRE(physicscommon::calculate_theta_from_T(0.0,1.0)==0.0);
-    REQUIRE(physicscommon::calculate_T_from_theta(0.0,1.0)==0.0);
-    REQUIRE(physicscommon::calculate_T_from_theta(physicscommon::calculate_theta_from_T(100.0,1.0),1.0)==100.0); 
-    REQUIRE(physicscommon::calculate_theta_from_T(physicscommon::calculate_T_from_theta(100.0,1.0),1.0)==100.0);
-    // Virtual temperature property tests
-    // T_virt(T=0) = 0.0
-    // T_virt(T=T0,qv=0) = T0
-    // T(T_virt=0) = 0.0
-    // T(T_virt=T0,qv=0) = T0
-    // T_virt(T=T0) = T0
-    // T(T_virt=T0) = T0
-    REQUIRE(physicscommon::calculate_virtual_temperature(0.0,1e-6)==0.0);
-    REQUIRE(physicscommon::calculate_virtual_temperature(100.0,0.0)==100.0);
-    REQUIRE(physicscommon::calculate_temperature_from_virtual_temperature(0.0,1e-6)==0.0);
-    REQUIRE(physicscommon::calculate_temperature_from_virtual_temperature(100.0,0.0)==100.0);
-    REQUIRE(physicscommon::calculate_virtual_temperature(physicscommon::calculate_temperature_from_virtual_temperature(100.0,1.0),1.0)==100.0); 
-    REQUIRE(physicscommon::calculate_temperature_from_virtual_temperature(physicscommon::calculate_virtual_temperature(100.0,1.0),1.0)==100.0);
-    // DSE property tests
-    // calculate_dse(T=0.0, z=0.0) = surf_geopotential
-    // calculate_dse(T=1/cp, z=1/gravity) = surf_potential+2
-    T0=0.0; ztest=0.0; z0=10.0;
-    REQUIRE(physicscommon::calculate_dse(T0,ztest,z0)==10.0);
-    T0=inv_cp; ztest=1.0/ggr; z0=0.0;
-    REQUIRE(physicscommon::calculate_dse(T0,ztest,z0)==z0+2.0);
-    // DZ tests
-    // calculate_dz(pseudo_density=0) = 0
-    // calculate_dz(T=0) = 0
-    // calculate_dz(pseudo_density=p0,p_mid=p0,T=1.0,qv=0) = Rd/ggr
-    // calculate_dz(pseudo_density=ggr,p_mid=Rd,T=T0,qv=0) = T0
-    dp0=0.0; ptest=p0; T0=100.0; qv0=1e-5;
-    REQUIRE(physicscommon::calculate_dz(dp0,ptest,T0,qv0)==0.0);
-    dp0=100.0; ptest=p0; T0=0.0; qv0=1e-5;
-    REQUIRE(physicscommon::calculate_dz(dp0,ptest,T0,qv0)==0.0);
-    dp0=p0; ptest=p0; T0=1.0; qv0=0.0;
-    REQUIRE(physicscommon::calculate_dz(dp0,ptest,T0,qv0)==Rd/ggr);
-    dp0=ggr; ptest=Rd; T0=100.0; qv0=0.0;
-    REQUIRE(physicscommon::calculate_dz(dp0,ptest,T0,qv0)==T0);
-    // Run tests on full views
-    TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
-    Kokkos::parallel_for("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team) {
-      // Constants used in testing (necessary to ensure SP build works)
-      // Exner property tests:
-      physicscommon::exner_function(team,pressure,exner);
-      // Potential temperature property tests
-      // calculate_theta_from_T(T,pressure) should work
-      physicscommon::calculate_theta_from_T(team,temperature,pressure,theta);
-      physicscommon::calculate_T_from_theta(team,theta,pressure,T_mid_from_pot);
-      // Virtual temperature property tests
-      // calculate_virtual_temperature(temperature,qv) should work 
-      // calculate_temperature_from_virtual_temperature should work 
-      physicscommon::calculate_virtual_temperature(team,temperature,qv,T_virtual);
-      physicscommon::calculate_temperature_from_virtual_temperature(team,T_virtual,qv,T_mid_from_virt);
-      // DSE property tests
-      // calculate_dse should work
-      physicscommon::calculate_dse(team,temperature,height,surface_height(0),dse);
-      // DZ tests
-      // calculate_dz should work
-      physicscommon::calculate_dz(team,pseudo_density,pressure,temperature,qv,dz);
-      // z_int property tests
-      // calculate_z_int should work
-      physicscommon::calculate_z_int(team,num_levs,dz_for_testing,z_int);
-    }); // Kokkos parallel_for "test_universal_physics"
-    Kokkos::fence();
-
-    // Check the properties of the full view outputi
-    // - map to host view
-    auto exner_host           = Kokkos::create_mirror_view(exner);
-    auto theta_host           = Kokkos::create_mirror_view(theta);
-    auto T_mid_from_pot_host  = Kokkos::create_mirror_view(T_mid_from_pot);
-    auto T_virtual_host       = Kokkos::create_mirror_view(T_virtual);
-    auto T_mid_from_virt_host = Kokkos::create_mirror_view(T_mid_from_virt);
-    auto dse_host             = Kokkos::create_mirror_view(dse);
-    auto z_int_host           = Kokkos::create_mirror_view(z_int);
-    auto dz_host              = Kokkos::create_mirror_view(dz);
-    auto temperature_host     = Kokkos::create_mirror_view(temperature);
-    auto pressure_host        = Kokkos::create_mirror_view(pressure);
-    auto qv_host              = Kokkos::create_mirror_view(qv);
-    Kokkos::deep_copy(exner_host           , exner);
-    Kokkos::deep_copy(theta_host           , theta);
-    Kokkos::deep_copy(T_mid_from_pot_host  , T_mid_from_pot);
-    Kokkos::deep_copy(T_virtual_host       , T_virtual);
-    Kokkos::deep_copy(T_mid_from_virt_host , T_mid_from_virt);
-    Kokkos::deep_copy(dse_host             , dse);
-    Kokkos::deep_copy(z_int_host           , z_int);
-    Kokkos::deep_copy(dz_host              , dz);
-    Kokkos::deep_copy(temperature_host     , temperature);
-    Kokkos::deep_copy(pressure_host        , pressure);
-    Kokkos::deep_copy(qv_host              , qv);
-    // Now check for all levels
-    for(int k=0;k<num_pack;k++)
-    {
-      const auto range_pack = ekat::range<ScalarT>(k*ScalarT::n);
-      const auto range_mask = range_pack < num_levs;
-      // Make sure all columnwise results don't contain any obvious errors:
-      // exner
-      REQUIRE( !((isnan(exner_host(k)) && range_mask).any()) );
-      REQUIRE( !(((exner_host(k)<0) && range_mask).any()) );
-      // potential temperature
-      REQUIRE( !((isnan(theta_host(k)) && range_mask).any()) );
-      REQUIRE( !(((theta_host(k)<0) && range_mask).any()) );
-      {
-        auto theta_from_t = physicscommon::calculate_theta_from_T(temperature_host(k),pressure_host(k));
-        auto test_theta_from_t = !(theta_host(k)==theta_from_t) && range_mask;
-        REQUIRE( !(test_theta_from_t.any()) );
-      }
-      // temperature from potential temperature
-      REQUIRE( !((isnan(T_mid_from_pot_host(k)) && range_mask).any()) );
-      REQUIRE( !(((T_mid_from_pot_host(k)<0) && range_mask).any()) );
-      {
-        auto t_from_theta = physicscommon::calculate_T_from_theta(theta_host(k),pressure_host(k));
-        auto test_t_from_theta = !(T_mid_from_pot_host(k)==t_from_theta) && range_mask;
-        REQUIRE( !(test_t_from_theta.any()) );
-      }
-      // virtual temperature
-      REQUIRE( !((isnan(T_virtual_host(k)) && range_mask).any()) );
-      REQUIRE( !(((T_virtual_host(k)<0) && range_mask).any()) );
-      {
-        auto virt_temp = physicscommon::calculate_virtual_temperature(temperature_host(k),qv_host(k));
-        auto test_virt_temp = !( T_virtual_host(k)==virt_temp ) && range_mask;
-        REQUIRE( !(test_virt_temp.any()) );
-      }
-      // temperature from virtual temperature
-      REQUIRE( !((isnan(T_mid_from_virt_host(k)) && range_mask).any()) );
-      REQUIRE( !(((T_mid_from_virt_host(k)<0) && range_mask).any()) );
-      // DSE
-      REQUIRE( !((isnan(dse_host(k)) && range_mask).any()) );
-      REQUIRE( !(((dse_host(k)<0) && range_mask).any()) );
-      // dz
-      REQUIRE( !((isnan(dz_host(k)) && range_mask).any()) );
-      REQUIRE( !(((dz_host(k)<=0) && range_mask).any()) );
-      // z_int
-//TO-FIX      for (int i=0;i<Spack::n;i++) {
-//TO-FIX        Int lev = k*Spack::n + i;  // Determine the level at this pack/vec location.
-//TO-FIX        const auto lev_bwd = num_levs-lev;
-//TO-FIX        Int ipack = lev_bwd / Spack::n;
-//TO-FIX        Int ivec  = lev_bwd % Spack::n;
-//TO-FIX        REQUIRE( z_int_host(ipack)[ivec]==lev*(lev+1)/2);
-//TO-FIX      }
-      REQUIRE( !((isnan(z_int_host(k)) && range_mask).any()) );
-      REQUIRE( !(((z_int_host(k)<0) && range_mask).any()) );
-    }
-  } // run_impl()
-
-//-----------------------------------------------------------------------------------------------//
-  static void run()
-  {
-    // Run tests for different pack size types
-    // Note, we print to screen the test type so it can be easily matched with the seed used for
-    // randomization within the test.
-    printf("Testing Scalar: packsize=1\n");
-    run_impl<ekat::Pack<Scalar,1>,Device>();
-    printf("Testing SMALL_PACK: packsize=%d\n",SCREAM_SMALL_PACK_SIZE);
-    run_impl<ekat::Pack<Scalar,SCREAM_SMALL_PACK_SIZE>,Device>();
-    printf("Testing PACK: packsize=%d\n",SCREAM_PACK_SIZE);
-    run_impl<ekat::Pack<Scalar,SCREAM_PACK_SIZE>,Device>();
-  } // run
-}; // end of TestUniversal struct
-
-} // namespace unit_test
-} // namespace physics
-} // namespace scream
-
 namespace{
 
-TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
-  scream::physics::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUniversal::run();
+template<typename ScalarT, int NumLevels>
+struct ChecksHelpers {
 
- } // TEST_CASE
+  static bool is_non_negative (const ScalarT& s, const int k) {
+    return not ( k<NumLevels && (s<0 || isnan(s)) );
+  }
+  static bool equal (const ScalarT& lhs, const ScalarT& rhs) {
+    return lhs==rhs;
+  }
+  static bool approx_equal (const ScalarT lhs, const ScalarT rhs, 
+                            const int k, const ScalarT tol) {
+    return not ( k<NumLevels && abs(lhs-rhs)>=tol );
+  }
+  static bool approx_equal (const ScalarT computed, const ScalarT expected, const ScalarT tol) {
+    using std::abs;
+    return abs(computed-expected)/abs(expected) < tol;
+  }
+};
+
+template<typename T, int N, int NumLevels>
+struct ChecksHelpers<ekat::Pack<T,N>,NumLevels> {
+  using ScalarT = ekat::Pack<T,N>;
+
+  static bool is_non_negative (const ScalarT& s, const int k) {
+    const auto range = ekat::range<ScalarT>(k*N);
+    const auto range_mask = range < NumLevels;
+    return ( range_mask && (s<0 || isnan(s) ) ).none();
+  }
+  static bool equal (const ScalarT& lhs, const ScalarT& rhs) {
+    return (lhs==rhs).all();
+  }
+  static bool approx_equal (const ScalarT& lhs, const ScalarT& rhs,
+                            const int k, const T tol) {
+    const auto range = ekat::range<ScalarT>(k*N);
+    const auto range_mask = range < NumLevels;
+    return (range_mask && abs(lhs-rhs)>=tol).none();
+  }
+  static bool approx_equal (const ScalarT& computed, const ScalarT& expected, const T tol) {
+    using std::abs;
+    return (abs(computed-expected)/abs(expected) < tol).all();
+  }
+};
+
+// Helper function. Create Mirror View and Deep-Copy (CMVDC)
+template<typename ViewT>
+auto cmvdc (const ViewT& v_d) -> typename ViewT::HostMirror {
+  auto v_h = Kokkos::create_mirror_view(v_d);
+  Kokkos::deep_copy(v_h,v_d);
+  return v_h;
+}
+
+//-----------------------------------------------------------------------------------------------//
+template<typename ScalarT, typename DeviceT>
+void run(std::mt19937_64& engine)
+{
+  using STraits    = ekat::ScalarTraits<ScalarT>;
+  using RealType   = typename STraits::scalar_type;
+
+  using PF         = scream::PhysicsFunctions<DeviceT>;
+  using PC         = scream::physics::Constants<RealType>;
+
+  using KT         = ekat::KokkosTypes<DeviceT>;
+  using ExecSpace  = typename KT::ExeSpace;
+  using TeamPolicy = typename KT::TeamPolicy;
+  using MemberType = typename KT::MemberType;
+  using view_1d    = typename KT::template view_1d<ScalarT>;
+  using rview_1d   = typename KT::template view_1d<RealType>;
+
+  static constexpr auto Rd       = PC::RD;
+  static constexpr auto inv_cp   = PC::INV_CP;
+  static constexpr auto g        = PC::gravit;
+  static constexpr auto test_tol = PC::macheps*1e3;
+
+  constexpr int pack_size = sizeof(ScalarT) / sizeof(RealType);
+  using pack_info = ekat::PackInfo<pack_size>;
+
+  constexpr int num_levs = 100; // Number of levels to use for tests.
+  const     int num_mid_packs = pack_info::num_packs(num_levs);
+  const     int num_int_packs = pack_info::num_packs(num_levs+1);
+
+  using Check = ChecksHelpers<ScalarT,num_levs>;
+
+  // Input (randomized) views
+  view_1d temperature("temperature",num_mid_packs),
+          height("height",num_mid_packs),
+          qv("qv",num_mid_packs),
+          pressure("pressure",num_mid_packs),
+          pseudo_density("pseudo_density",num_mid_packs),
+          dz_for_testing("dz_for_testing",num_mid_packs);
+  // Output views
+  view_1d exner("exner",num_mid_packs),
+          theta("theta",num_mid_packs),
+          T_from_Theta("T_from_Theta",num_mid_packs),
+          Tv("T_virtual",num_mid_packs),
+          T_from_Tv("T_from_T_virtual",num_mid_packs),
+          dse("dse",num_mid_packs),
+          dz("dz",num_mid_packs),
+          z_int("z_int",num_int_packs);
+
+  auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
+    return rview_1d(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
+  };
+  auto hview_as_real = [&] (const typename view_1d::HostMirror& v) -> typename rview_1d::HostMirror {
+    return typename rview_1d::HostMirror(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
+  };
+
+  // Construct random input data
+  using RPDF = std::uniform_real_distribution<RealType>;
+  RPDF pdf_qv(1e-3,1e3),
+       pdf_dp(1.0,100.0),
+       pdf_pres(0.0,PC::P0),
+       pdf_temp(200.0,400.0),
+       pdf_height(0.0,1e5),
+       pdf_surface(100.0,400.0);
+
+  ekat::genRandArray(dview_as_real(temperature),   engine,pdf_temp);
+  ekat::genRandArray(dview_as_real(height),        engine,pdf_height);
+  ekat::genRandArray(dview_as_real(qv),            engine,pdf_qv);
+  ekat::genRandArray(dview_as_real(pressure),      engine,pdf_pres);
+  ekat::genRandArray(dview_as_real(pseudo_density),engine,pdf_dp);
+
+  // Construct a simple set of `dz` values for testing the z_int function
+  auto dz_for_testing_host = Kokkos::create_mirror_view(dz_for_testing);
+  auto dz_real_host = hview_as_real(dz_for_testing_host);
+  for (int k = 0; k<num_mid_packs*pack_size; ++k) {
+    dz_real_host[k] = num_levs-k;
+  }
+  Kokkos::deep_copy(dz_for_testing,dz_for_testing_host);
+
+  // ---- Single-scalar functions tests ---- //
+
+  const ScalarT p0   = PC::P0;
+  const ScalarT zero = 0.0;
+  const ScalarT one  = 1.0;
+
+  ScalarT p, T0, theta0, tmp, qv0, dp0;
+  RealType surf_height;
+
+  // Exner property tests:
+  //  - exner_function(p0) should return 1.0
+  //  - exner_function(0.0) should return 0.0
+  //  - exner_function(2*x) should return 2**(Rd/cp)*exner_function(x)
+  REQUIRE( Check::equal(PF::exner_function(p0),one) );
+  REQUIRE( Check::equal(PF::exner_function(zero),zero) );
+
+  p = pdf_pres(engine);
+  const auto exner1 = PF::exner_function(p);
+  const auto exner2 = PF::exner_function(p/2);
+  const auto factor = pow(2.0,Rd*inv_cp);
+  REQUIRE( Check::approx_equal(exner1,factor*exner2,test_tol) );
+
+  // Potential temperature property tests:
+  //  - theta=T when p=p0
+  //  - theta(T=0) = 0
+  //  - T(theta=0) = 0
+  //  - T(theta(T0)) = T0  (in exact arithmetic)
+  //  - theta(T(theta0)) = theta0 (in exact arithmetic)
+  //  - T_from_theta ant theta_from_T are one the inverse of the other (up to roundoff errors)
+  T0     = pdf_temp(engine);
+  theta0 = pdf_temp(engine);
+  p      = pdf_pres(engine);
+  REQUIRE( Check::equal(PF::calculate_theta_from_T(T0,p0),T0) );
+  REQUIRE( Check::equal(PF::calculate_theta_from_T(zero,p),zero) );
+  REQUIRE( Check::equal(PF::calculate_T_from_theta(theta0,p0),theta0) );
+  REQUIRE( Check::equal(PF::calculate_T_from_theta(zero,p),zero) );
+  REQUIRE( Check::approx_equal(PF::calculate_T_from_theta(PF::calculate_theta_from_T(T0,p),p),T0,test_tol) );
+  REQUIRE( Check::approx_equal(PF::calculate_theta_from_T(PF::calculate_T_from_theta(theta0,p),p),theta0,test_tol) );
+
+  // Virtual temperature property tests:
+  //  - T_virt(T=0) = 0.0
+  //  - T_virt(T=T0,qv=0) = T0
+  //  - T(T_virt=0) = 0.0
+  //  - T(T_virt=T0,qv=0) = T0
+  //  - T_virt(T=T0) = T0
+  //  - T(T_virt=T0) = T0
+  //  - T_from_Tvirt and Tvirt_from_T are one the inverse of the other (up to roundoff errors)
+  qv0 = pdf_qv(engine);
+  T0  = pdf_temp(engine);
+  REQUIRE( Check::equal(PF::calculate_virtual_temperature(zero,qv0),zero) );
+  REQUIRE( Check::equal(PF::calculate_virtual_temperature(T0,zero),T0) );
+  REQUIRE( Check::equal(PF::calculate_temperature_from_virtual_temperature(zero,qv0),zero) );
+  REQUIRE( Check::equal(PF::calculate_temperature_from_virtual_temperature(T0,zero),T0) );
+
+  tmp = PF::calculate_temperature_from_virtual_temperature(T0,qv0);
+  REQUIRE( Check::approx_equal(PF::calculate_virtual_temperature(tmp,qv0),T0,test_tol) );
+  tmp = PF::calculate_virtual_temperature(T0,qv0);
+  REQUIRE( Check::approx_equal(PF::calculate_temperature_from_virtual_temperature(tmp,qv0),T0,test_tol) );
+
+  // DSE property tests:
+  //  - calculate_dse(T=0.0, z=0.0) = surf_height
+  //  - calculate_dse(T=1/cp, z=1/gravity) = surf_height+2
+  surf_height = pdf_surface(engine);
+  REQUIRE( Check::equal(PF::calculate_dse(zero,zero,surf_height),ScalarT(surf_height)) );
+  REQUIRE( Check::equal(PF::calculate_dse(ScalarT(inv_cp),ScalarT(1/g),surf_height),ScalarT(surf_height+2.0)) );
+
+  // DZ property tests:
+  //  - calculate_dz(pseudo_density=0) = 0
+  //  - calculate_dz(T=0) = 0
+  //  - calculate_dz(pseudo_density=p0,p_mid=p0,T=1.0,qv=0) = Rd/g
+  //  - calculate_dz(pseudo_density=g,p_mid=Rd,T=T0,qv=0) = T0
+  p = pdf_pres(engine);
+  T0 = pdf_temp(engine);
+  qv0 = pdf_qv(engine);
+  dp0 = pdf_dp(engine);
+  REQUIRE( Check::equal(PF::calculate_dz(zero,p,T0,qv0),zero) );
+  REQUIRE( Check::equal(PF::calculate_dz(dp0,p,zero,qv0),zero) );
+  REQUIRE( Check::equal(PF::calculate_dz(ScalarT(p0),ScalarT(p0),one,zero),ScalarT(Rd/g)) );
+  REQUIRE( Check::approx_equal(PF::calculate_dz(ScalarT(g),ScalarT(Rd),T0,zero),T0,test_tol) );
+
+  // --------- Run tests on full columns of data ----------- //
+  TeamPolicy policy(ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(1, 1));
+  Kokkos::parallel_for("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team) {
+
+    // Compute exner(p)
+    PF::exner_function(team,pressure,exner);
+
+    // Compute theta(T), and T(theta(T))
+    PF::calculate_theta_from_T(team,temperature,pressure,theta);
+    PF::calculate_T_from_theta(team,theta,pressure,T_from_Theta);
+
+    // Compute Tv(T,qv), and T(Tv(T,qv),qv)
+    PF::calculate_virtual_temperature(team,temperature,qv,Tv);
+    PF::calculate_temperature_from_virtual_temperature(team,Tv,qv,T_from_Tv);
+
+    // Compute dse(T,z,z_surf)
+    PF::calculate_dse(team,temperature,height,surf_height,dse);
+
+    // Compute dz(dp,p,T,qv)
+    PF::calculate_dz(team,pseudo_density,pressure,temperature,qv,dz);
+
+    // Compute z_int(dz,z_surf)
+    PF::calculate_z_int(team,num_levs,dz_for_testing,surf_height,z_int);
+  }); // Kokkos parallel_for "test_universal_physics"
+  Kokkos::fence();
+
+  // Deep copy to host, and check the properties of the full view outputi
+  auto temperature_host     = cmvdc(temperature);
+  auto theta_host           = cmvdc(theta);
+  auto pressure_host        = cmvdc(pressure);
+  auto qv_host              = cmvdc(qv);
+
+  auto exner_host           = cmvdc(exner);
+  auto T_from_Theta_host    = cmvdc(T_from_Theta);
+  auto Tv_host              = cmvdc(Tv);
+  auto T_from_Tv_host       = cmvdc(T_from_Tv);
+  auto dse_host             = cmvdc(dse);
+  auto z_int_host           = cmvdc(z_int);
+  auto dz_host              = cmvdc(dz);
+
+  for (int k=0; k<num_mid_packs; ++k) {
+
+    // Make sure all results don't contain invalid numbers
+    REQUIRE( Check::is_non_negative(exner_host(k),k) );
+    REQUIRE( Check::is_non_negative(theta_host(k),k) );
+    REQUIRE( Check::is_non_negative(T_from_Theta_host(k),k) );
+    REQUIRE( Check::is_non_negative(T_from_Tv_host(k),k) );
+    REQUIRE( Check::is_non_negative(Tv_host(k),k) );
+    REQUIRE( Check::is_non_negative(dz_host(k),k) );
+    REQUIRE( Check::is_non_negative(z_int_host(k),k) );
+    REQUIRE( Check::is_non_negative(dse_host(k),k) );
+
+    // Check T(Theta(T))==T (up to roundoff tolerance)
+    REQUIRE ( Check::approx_equal(T_from_Theta_host(k),temperature_host(k),k,test_tol) );
+
+    // Check T(T_virtual(T))==T (up to roundoff tolerance)
+    REQUIRE ( Check::approx_equal(T_from_Tv_host(k),temperature_host(k),k,test_tol) );
+  }
+} // run()
+
+TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
+  // Run tests for both Real and Pack, and for (potentially) different pack sizes
+  using scream::Real;
+  using Device = scream::DefaultDevice;
+
+  constexpr int num_runs = 5;
+
+  std::random_device rdev;
+  using rngAlg = std::mt19937_64;
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rdev() : catchRngSeed;
+  // Print seed to screen to trace tests that fail.
+  std::cout << " -> Random number generator seed:: " << seed << "\n";
+  if (catchRngSeed==0) {
+    std::cout << "    Note: catch rng seed was 0 (default). We interpret that as a request to pick a random seed.\n"
+                 "    To reproduce a previous run, use --rng-seed N to provide the rng seed.\n\n";
+  }
+  std::cout << " -> Nnumber of randomized runs: " << num_runs << "\n\n";
+  rngAlg engine(seed);
+
+  printf(" -> Testing Real scalar type...");
+  for (int irun=0; irun<num_runs; ++irun) {
+    run<Real,Device>(engine);
+  }
+  printf("ok!\n");
+
+  printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_SMALL_PACK_SIZE);
+  for (int irun=0; irun<num_runs; ++irun) {
+    run<ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>,Device>(engine);
+  }
+  printf("ok!\n");
+
+  if (SCREAM_PACK_SIZE!=SCREAM_SMALL_PACK_SIZE) {
+    printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
+    for (int irun=0; irun<num_runs; ++irun) {
+      run<ekat::Pack<Real,SCREAM_PACK_SIZE>,Device>(engine);
+    }
+    printf("ok!\n");
+  }
+
+  printf("\n");
+
+} // TEST_CASE
 
 } // namespace

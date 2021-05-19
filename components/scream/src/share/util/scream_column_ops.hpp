@@ -68,6 +68,7 @@ public:
   }
 
   template<typename ScalarT>
+  KOKKOS_FUNCTION
   static constexpr int pack_size () {
     return sizeof(ScalarT) / sizeof(scalar_type);
   }

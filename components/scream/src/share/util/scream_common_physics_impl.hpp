@@ -1,11 +1,11 @@
-#ifndef COMMON_PHYSICS_IMPL_HPP
-#define COMMON_PHYSICS_IMPL_HPP
+#ifndef SCREAM_COMMON_PHYSICS_IMPL_HPP
+#define SCREAM_COMMON_PHYSICS_IMPL_HPP
 
 #include "share/util/scream_common_physics_functions.hpp"
 #include "physics/share/physics_constants.hpp"
 
 namespace scream {
-  
+
 //-----------------------------------------------------------------------------------------------//
 // Computes exner function
 // The result is exners formula, and is [dimensionless]
@@ -16,9 +16,10 @@ KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::exner_function(const ScalarT& pressure)
 {
   using C = scream::physics::Constants<Real>;
-  static const ScalarT p0(C::P0);
-  static const ScalarT rd(C::RD);
-  static const ScalarT inv_cp(C::INV_CP);
+
+  static constexpr auto p0 = C::P0;
+  static constexpr auto rd = C::RD;
+  static constexpr auto inv_cp = C::INV_CP;
 
   return pow( pressure/p0, rd*inv_cp );
 }
@@ -27,12 +28,12 @@ template<typename DeviceT>
 template<typename ScalarT, typename InputProviderP>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::exner_function(const MemberType& team,
-                                               const InputProviderP& pressure, 
+                                               const InputProviderP& pressure,
                                                const view_1d<ScalarT>& exner)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,exner.extent(0)),
                        [&] (const int k) {
-    exner(k) = exner_function(pressure(k)); 
+    exner(k) = exner_function(pressure(k));
   });
 }
 
@@ -47,23 +48,22 @@ template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::calculate_theta_from_T(const ScalarT& temperature, const ScalarT& pressure)
 {
-  ScalarT exner = exner_function(pressure);
-  ScalarT theta = temperature/exner;
-  // Return theta
-  return theta;
+  // Theta = T/exner;
+  return temperature/exner_function(pressure);
 }
+
 // For operations on a full column at a time:
 template<typename DeviceT>
 template<typename ScalarT, typename InputProviderT, typename InputProviderP>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_theta_from_T(const MemberType& team,
-                                                 const InputProviderT& temperature,
-                                                 const InputProviderP& pressure,
-                                                 const view_1d<ScalarT>& theta)
+                                                       const InputProviderT& temperature,
+                                                       const InputProviderP& pressure,
+                                                       const view_1d<ScalarT>& theta)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,theta.extent(0)),
                        [&] (const int k) {
-    theta(k) = calculate_theta_from_T(temperature(k),pressure(k)); 
+    theta(k) = calculate_theta_from_T(temperature(k),pressure(k));
   });
 }
 
@@ -78,23 +78,22 @@ template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::calculate_T_from_theta(const ScalarT& theta, const ScalarT& pressure)
 {
-  ScalarT exner = exner_function(pressure);
-  ScalarT temperature = theta*exner;
-  // Return T
-  return temperature;
+  // T = Theta*exner
+  return theta*exner_function(pressure);
 }
+
 // For operations on a full column at a time:
 template<typename DeviceT>
 template<typename ScalarT, typename InputProviderT, typename InputProviderP>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_T_from_theta(const MemberType& team,
-                                                 const InputProviderT& theta,
-                                                 const InputProviderP& pressure,
-                                                 const view_1d<ScalarT>& temperature)
+                                                       const InputProviderT& theta,
+                                                       const InputProviderP& pressure,
+                                                       const view_1d<ScalarT>& temperature)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,temperature.extent(0)),
                        [&] (const int k) {
-    temperature(k) = calculate_T_from_theta(theta(k),pressure(k)); 
+    temperature(k) = calculate_T_from_theta(theta(k),pressure(k));
   });
 }
 //-----------------------------------------------------------------------------------------------//
@@ -106,24 +105,27 @@ void PhysicsFunctions<DeviceT>::calculate_T_from_theta(const MemberType& team,
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
-ScalarT PhysicsFunctions<DeviceT>::calculate_temperature_from_virtual_temperature(const ScalarT& T_virtual, const ScalarT& qv)
+ScalarT PhysicsFunctions<DeviceT>::
+calculate_temperature_from_virtual_temperature(const ScalarT& T_virtual, const ScalarT& qv)
 {
   using C = scream::physics::Constants<Real>;
-  static const ScalarT ep_2(C::ep_2);
-  return T_virtual*(ep_2*(1.0+qv))/(qv+ep_2);
+
+  static constexpr auto ep_2 = C::ep_2;
+  return T_virtual*((ep_2*(1.0+qv))/(qv+ep_2));
 }
 
 template<typename DeviceT>
 template<typename ScalarT, typename InputProviderT, typename InputProviderQ>
 KOKKOS_INLINE_FUNCTION
-void PhysicsFunctions<DeviceT>::calculate_temperature_from_virtual_temperature(const MemberType& team,
-                                                                         const InputProviderT& T_virtual,
-                                                                         const InputProviderQ& qv,
-                                                                         const view_1d<ScalarT>& temperature)
+void PhysicsFunctions<DeviceT>::
+calculate_temperature_from_virtual_temperature(const MemberType& team,
+                                               const InputProviderT& T_virtual,
+                                               const InputProviderQ& qv,
+                                               const view_1d<ScalarT>& temperature)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,temperature.extent(0)),
                        [&] (const int k) {
-    temperature(k) = calculate_temperature_from_virtual_temperature(T_virtual(k),qv(k)); 
+    temperature(k) = calculate_temperature_from_virtual_temperature(T_virtual(k),qv(k));
   });
 }
 
@@ -140,21 +142,23 @@ KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::calculate_virtual_temperature(const ScalarT& temperature, const ScalarT& qv)
 {
   using C = scream::physics::Constants<Real>;
-  static const ScalarT ep_2(C::ep_2);
-  return temperature*(qv+ep_2)/(ep_2*(1.0+qv));
+
+  static constexpr auto ep_2 = C::ep_2;
+  return temperature*((qv+ep_2)/(ep_2*(1.0+qv)));
 }
 
 template<typename DeviceT>
 template<typename ScalarT, typename InputProviderT, typename InputProviderQ>
 KOKKOS_INLINE_FUNCTION
-void PhysicsFunctions<DeviceT>::calculate_virtual_temperature(const MemberType& team,
-                                                        const InputProviderT& temperature,
-                                                        const InputProviderQ& qv,
-                                                        const view_1d<ScalarT>& T_virtual)
+void PhysicsFunctions<DeviceT>::
+calculate_virtual_temperature(const MemberType& team,
+                              const InputProviderT& temperature,
+                              const InputProviderQ& qv,
+                              const view_1d<ScalarT>& T_virtual)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,T_virtual.extent(0)),
                        [&] (const int k) {
-    T_virtual(k) = calculate_virtual_temperature(temperature(k),qv(k)); 
+    T_virtual(k) = calculate_virtual_temperature(temperature(k),qv(k));
   });
 }
 
@@ -168,27 +172,29 @@ void PhysicsFunctions<DeviceT>::calculate_virtual_temperature(const MemberType& 
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
-ScalarT PhysicsFunctions<DeviceT>::calculate_dse(const ScalarT& temperature, const ScalarT& z, const Real surf_geopotential)
+ScalarT PhysicsFunctions<DeviceT>::
+calculate_dse(const ScalarT& temperature, const ScalarT& z, const Real surf_geopotential)
 {
   using C = scream::physics::Constants<Real>;
-  static const ScalarT cp (C::CP);
-  static const ScalarT ggr(C::gravit);
 
-  return cp*temperature + ggr*z + surf_geopotential;
+  static constexpr auto cp = C::CP;
+  static constexpr auto g  = C::gravit;
+
+  return cp*temperature + g*z + surf_geopotential;
 }
 
 template<typename DeviceT>
 template<typename ScalarT, typename InputProviderT, typename InputProviderZ>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_dse(const MemberType& team,
-                                        const InputProviderT& temperature,
-                                        const InputProviderZ& z,
-                                        const Real surf_geopotential,
-                                        const view_1d<ScalarT>& dse)
+                                              const InputProviderT& temperature,
+                                              const InputProviderZ& z,
+                                              const Real surf_geopotential,
+                                              const view_1d<ScalarT>& dse)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dse.extent(0)),
                        [&] (const int k) {
-    dse(k) = calculate_dse(temperature(k),z(k),surf_geopotential); 
+    dse(k) = calculate_dse(temperature(k),z(k),surf_geopotential);
   });
 }
 //-----------------------------------------------------------------------------------------------//
@@ -202,54 +208,58 @@ void PhysicsFunctions<DeviceT>::calculate_dse(const MemberType& team,
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
-ScalarT PhysicsFunctions<DeviceT>::calculate_dz(const ScalarT& pseudo_density, const ScalarT& p_mid, const ScalarT& T_mid, const ScalarT& qv)
+ScalarT PhysicsFunctions<DeviceT>::
+calculate_dz(const ScalarT& pseudo_density, const ScalarT& p_mid, const ScalarT& T_mid, const ScalarT& qv)
 {
+  // dz = pseudo_density*T_v*R/(p*g)
   using C = scream::physics::Constants<Real>;
-  static const ScalarT Rd  (C::RD);
-  static const ScalarT ggr (C::gravit);
-  // Need to first back out virtual temperature
-  ScalarT T_virtual = calculate_virtual_temperature(T_mid,qv);
-  // Now can back out the vertical layer thickness
-  return pseudo_density*Rd*T_virtual / (p_mid*ggr);
+
+  const ScalarT& T_virtual = calculate_virtual_temperature(T_mid,qv);
+
+  static constexpr auto rd = C::RD;
+  static constexpr auto g  = C::gravit;
+  return (rd/g)*pseudo_density*T_virtual / p_mid;
 }
 
 template<typename DeviceT>
-template<typename ScalarT, typename InputProviderPD, typename InputProviderP, typename InputProviderT, typename InputProviderQ>
+template<typename ScalarT,
+         typename InputProviderPD, typename InputProviderP,
+         typename InputProviderT,  typename InputProviderQ>
 KOKKOS_INLINE_FUNCTION
-void PhysicsFunctions<DeviceT>::calculate_dz(const MemberType& team, 
-                                       const InputProviderPD& pseudo_density,
-                                       const InputProviderP& p_mid,
-                                       const InputProviderT& T_mid,
-                                       const InputProviderQ& qv,
-                                       const view_1d<ScalarT>& dz)
+void PhysicsFunctions<DeviceT>::calculate_dz(const MemberType& team,
+                                             const InputProviderPD& pseudo_density,
+                                             const InputProviderP& p_mid,
+                                             const InputProviderT& T_mid,
+                                             const InputProviderQ& qv,
+                                             const view_1d<ScalarT>& dz)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dz.extent(0)),
                        [&] (const int k) {
-    dz(k) = calculate_dz(pseudo_density(k),p_mid(k),T_mid(k),qv(k)); 
+    dz(k) = calculate_dz(pseudo_density(k),p_mid(k),T_mid(k),qv(k));
   });
 }
 //-----------------------------------------------------------------------------------------------//
 // Determine the geopotential height of level interfaces
 // The result is z_int, units in [m]
-// The input is
+// The inputs are
 //   dz the vertical level thickness, [m]
+//   z_surf: the surface elevation [m]
 // Note: Only applicable over an entire column due to the need to integrate over dz.
 template<typename DeviceT>
 template<typename ScalarT, typename InputProviderZ>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_z_int(const MemberType& team,
-                                          const int num_levs, 
-                                          const InputProviderZ& dz,
-                                          const view_1d<ScalarT>& z_int)
+                                                const int num_levs,
+                                                const InputProviderZ& dz,
+                                                const Real z_surf,
+                                                const view_1d<ScalarT>& z_int)
 {
   using column_ops  = ColumnOps<DeviceT,Real>;
-  // Use the column ops scan function.  Note, we set FromTop to false so that we scan from the true bottom
-  // of the column to the top.
+  // Note, we set FromTop to false since we are prescribing the *bottom* elevation.
   constexpr bool FromTop = false;
-  const Real zbot = 0.0; // TODO: question, is it true zbot is actually always 0?  What about topography?
-  column_ops::template column_scan<FromTop>(team,num_levs,dz,z_int,zbot);
+  column_ops::template column_scan<FromTop>(team,num_levs,dz,z_int,z_surf);
 }
 //-----------------------------------------------------------------------------------------------//
 } // namespace scream
 
-#endif // COMMON_PHYSICS_IMPL_HPP
+#endif // SCREAM_COMMON_PHYSICS_IMPL_HPP
