@@ -45,9 +45,17 @@ namespace scream {
  *    auto prod = [&](const int k)->pack_type { return x(k)*y(k); }
  *    col_ops::compute_midpoint_values(team,nlevs,prod,output);
  *
- *  Note: all methods have a different impl, depending on whether PackSize>1.
- *        The if statement is evaluated at compile-time, so there is no run-time
- *        penalization. The only requirement is that both branches must compile.
+ *  Notes:
+ *   - all methods have a different impl, depending on whether PackSize>1.
+ *     The if statement is evaluated at compile-time, so there is no run-time
+ *     penalization. The only requirement is that both branches must compile.
+ *   - some methods accept a non-type template argument of type CombineMode.
+ *     This argument can be used to specify how the result of the calculation
+ *     should be written in the output view. E.g., if CM=ScaleUpdate, the output
+ *     view y will be updated as y = beta*y + alpha*f(x). The values alpha
+ *     and beta are used only if CM needs them, and an error is thrown if the
+ *     user specifies non-trivial alpha/beta when they are not needed.
+ *     See scream_combine_ops.hpp for more details.
  *
  *  RECALL: k=0 is the model top, while k=num_mid_levels+1 is the surface!
  */
@@ -139,7 +147,15 @@ public:
   }
 
   // Compute X at level interfaces, given X at level midpoints and top or bot bc.
-  // Note: with proper bc, then x_int(x_mid(x_int))==x_int.
+  // Notes:
+  //  - If FixTop=true, the bc value is imposed at the top, and a scan sum from the
+  //    top is used to retrieve the other interface values. If FixTop=false, the
+  //    bc is imposed at the bottom, and a scan sum from the bottom is used to
+  //    retrieve the other interface values.
+  //  - with proper bc, then x_int(x_mid(x_int))==x_int.
+  //  - CAVEAT: this implementation is not monotonic, in the sense that it can
+  //            create maxima/minima larger than the input x_m, even at the
+  //            "interior" interfaces. E.g., x_m==1, bc=0, yield x_i=[0,2,0,2,...].
   template<bool FixTop, typename InputProvider, typename ScalarT>
   KOKKOS_INLINE_FUNCTION
   static void
@@ -187,11 +203,12 @@ public:
   }
 
   // Scan sum of a quantity defined at midpoints, to retrieve its integral at interfaces.
-  // This function is the logical inverse of the one above
+  // This function is the logical inverse of the one above.
   // Notes:
-  //  - FromTop: true means we scan over [0,num_mid_levels), while false is the opposite.
+  //  - FromTop: true means we scan over [0,num_mid_levels), while false means the scan
+  //             is over (num_mid_levels,0]. Recall that ilev=0 is the top of the model.
   //  - InputProvider: must provide an input al all mid levels
-  //  - s0: used as bc value at k=0 (Forward) or k=num_mid_levels (Backward)
+  //  - s0: used as bc value at k=0 (FromTop=true) or k=num_mid_levels (FromTop=false)
   template<bool FromTop, typename InputProvider, typename ScalarT>
   KOKKOS_INLINE_FUNCTION
   static void
