@@ -125,7 +125,6 @@ void AtmosphereInput::pull_input()
             field.sync_to_dev();
             break;
           }
-          break;
         default:
           EKAT_ERROR_MSG (
               "Error! Rank-" + std::to_string(rank) + " field not yet supported in AtmosphereInput.\n");
