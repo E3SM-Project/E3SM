@@ -12,16 +12,11 @@ else
 AUTOCLEAN_DEPS=
 endif
 
-all: mpas
-
-mpas: $(AUTOCLEAN_DEPS) externals frame ops dycore drver
-	$(LINKER) $(LDFLAGS) -o $(EXE_NAME) driver/*.o -L. -ldycore -lops -lframework $(LIBS) -I./external/esmf_time_f90 -L./external/esmf_time_f90 -lesmf_time
+all: build_tools externals frame ops
 
 externals: $(AUTOCLEAN_DEPS)
 	( cd external; $(MAKE) FC="$(FC)" SFC="$(SFC)" CC="$(CC)" SCC="$(SCC)" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" CPP="$(CPP)" NETCDF="$(NETCDF)" CORE="$(CORE)" all )
 
-drver:  $(AUTOCLEAN_DEPS) externals frame ops dycore
-	( cd driver; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 endif
 
 build_tools: externals
@@ -35,19 +30,7 @@ ops: $(AUTOCLEAN_DEPS) externals frame
 	( cd operators; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 	ln -sf operators/libops.a libops.a
 
-dycore: $(AUTOCLEAN_DEPS) build_tools externals frame ops
-	( cd core_$(CORE); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" REG_PARSE="$(PWD)/tools/registry/parse" gen_includes )
-	( cd core_$(CORE); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" NL_GEN="$(PWD)/tools/input_gen/namelist_gen" ST_GEN="$(PWD)/tools/input_gen/streams_gen" core_input_gen )
-	( cd core_$(CORE); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
-	ln -sf core_$(CORE)/libdycore.a libdycore.a
-
-
-clean: clean_shared clean_core
-
-clean_core:
-	if [ -d core_$(CORE) ] ; then \
-	   ( cd core_$(CORE); $(MAKE) clean ) \
-	fi;
+clean: clean_shared
 
 clean_shared:
 ifeq "$(AUTOCLEAN)" "true"

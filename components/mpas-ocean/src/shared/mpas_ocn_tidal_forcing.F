@@ -271,7 +271,7 @@ contains
           end do
           ! else if
           ! using the 'direct' option to immediately force the free surface as a prescribe boundary
-          ! in src/core_ocean/mode_forward/mpas_ocn_time_integration_rk4.F
+          ! in mpas_ocn_time_integration_rk4.F
         end if
 
         ! store tidal boundary cell values (e.g., for config_tidal_forcing_type == 'direct')

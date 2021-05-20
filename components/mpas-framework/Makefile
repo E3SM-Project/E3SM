@@ -1,5 +1,19 @@
 MODEL_FORMULATION =
 
+#
+# Autodetect CORE from path
+#
+override CORE =
+ifneq ($(findstring components/mpas-ocean,$(PWD)),)
+	override CORE = ocean
+endif
+ifneq ($(findstring components/mpas-seaice,$(PWD)),)
+	override CORE = seaice
+endif
+ifneq ($(findstring components/mpas-albany-landice,$(PWD)),)
+	override CORE = landice
+endif
+
 ifneq "${MPAS_SHELL}" ""
         SHELL = ${MPAS_SHELL}
 endif
@@ -671,12 +685,15 @@ RM = rm -f
 CPP = cpp -P -traditional
 RANLIB = ranlib
 
+COREPATH=$(PWD)/src
+FWPATH=$(PWD)/../mpas-framework/src
+
 ifdef CORE
 
-ifneq ($(wildcard src/core_$(CORE)), ) # CHECK FOR EXISTENCE OF CORE DIRECTORY
+ifneq ($(wildcard src), ) # CHECK FOR EXISTENCE OF CORE DIRECTORY
 
-ifneq ($(wildcard src/core_$(CORE)/build_options.mk), ) # Check for build_options.mk
-include src/core_$(CORE)/build_options.mk
+ifneq ($(wildcard src/build_options.mk), ) # Check for build_options.mk
+include src/build_options.mk
 else # ELSE Use Default Options
 EXE_NAME=$(CORE)_model
 NAMELIST_SUFFIX=$(CORE)
@@ -913,25 +930,11 @@ ifdef MPAS_EXTERNAL_CPPFLAGS
 endif
 ####################################################
 
-ifeq ($(wildcard src/core_$(CORE)), ) # CHECK FOR EXISTENCE OF CORE DIRECTORY
-
-all: core_error
-
-else
-
-ifeq ($(wildcard src/core_$(CORE)/build_options.mk), ) # Check for build_options.mk
-report_builds:
-	@echo "CORE=$(CORE)"
-endif
-
 ifeq "$(CONTINUE)" "true"
 all: mpas_main
 else
 all: clean_core
 endif
-
-endif
-
 
 openmp_test:
 ifeq "$(OPENMP)" "true"
@@ -990,11 +993,13 @@ endif
 	@rm -rf pio[12].f90 pio[12].out
 
 
-mpas_main: openmp_test pio_test
-ifeq "$(AUTOCLEAN)" "true"
-	$(RM) .mpas_core_*
-endif
-	cd src; $(MAKE) FC="$(FC)" \
+dycore: $(AUTOCLEAN_DEPS) framework
+	@echo "Auto-detected core from path: " $(CORE)
+	@echo "START DYCORE: $(PWD)"
+	( cd src; $(MAKE) CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" REG_PARSE="$(FWPATH)/tools/registry/parse" gen_includes )
+	( cd src; $(MAKE) CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" NL_GEN="$(FWPATH)/tools/input_gen/namelist_gen" ST_GEN="$(FWPATH)/tools/input_gen/streams_gen" core_input_gen )
+	( cd src; $(MAKE) \
+	         FC="$(FC)" \
                  CC="$(CC)" \
                  CXX="$(CXX)" \
                  SFC="$(SFC)" \
@@ -1012,13 +1017,65 @@ endif
                  FCINCLUDES="$(FCINCLUDES)" \
                  CORE="$(CORE)"\
                  AUTOCLEAN="$(AUTOCLEAN)" \
-                 GEN_F90="$(GEN_F90)" \
-                 NAMELIST_SUFFIX="$(NAMELIST_SUFFIX)" \
-                 EXE_NAME="$(EXE_NAME)"
+                 GEN_F90="$(GEN_F90)" )
+
+
+drver:  $(AUTOCLEAN_DEPS) framework dycore
+	( cd $(FWPATH)/driver; $(MAKE) COREPATH="$(COREPATH)" \
+                 FC="$(FC)" \
+                 CC="$(CC)" \
+                 CXX="$(CXX)" \
+                 SFC="$(SFC)" \
+                 SCC="$(SCC)" \
+                 LINKER="$(LINKER)" \
+                 CFLAGS="$(CFLAGS)" \
+                 CXXFLAGS="$(CXXFLAGS)" \
+                 FFLAGS="$(FFLAGS)" \
+                 LDFLAGS="$(LDFLAGS)" \
+                 RM="$(RM)" \
+                 CPP="$(CPP)" \
+                 CPPFLAGS="$(CPPFLAGS)" \
+                 LIBS="$(LIBS)" \
+                 CPPINCLUDES="$(CPPINCLUDES)" \
+                 FCINCLUDES="$(FCINCLUDES)" \
+                 CORE="$(CORE)"\
+                 AUTOCLEAN="$(AUTOCLEAN)" \
+                 GEN_F90="$(GEN_F90)" )
+
+
+mpas: $(AUTOCLEAN_DEPS) framework dycore drver
+	$(LINKER) $(LDFLAGS) -o $(EXE_NAME) $(FWPATH)/driver/*.o -L$(FWPATH) -Lsrc -ldycore -lops -lframework $(LIBS) -I./external/esmf_time_f90 -L$(FWPATH)/external/esmf_time_f90 -lesmf_time
+
+framework:
+	cd $(FWPATH); $(MAKE) \
+                 FC="$(FC)" \
+                 CC="$(CC)" \
+                 CXX="$(CXX)" \
+                 SFC="$(SFC)" \
+                 SCC="$(SCC)" \
+                 LINKER="$(LINKER)" \
+                 CFLAGS="$(CFLAGS)" \
+                 CXXFLAGS="$(CXXFLAGS)" \
+                 FFLAGS="$(FFLAGS)" \
+                 LDFLAGS="$(LDFLAGS)" \
+                 RM="$(RM)" \
+                 CPP="$(CPP)" \
+                 CPPFLAGS="$(CPPFLAGS)" \
+                 LIBS="$(LIBS)" \
+                 CPPINCLUDES="$(CPPINCLUDES)" \
+                 FCINCLUDES="$(FCINCLUDES)" \
+                 CORE="$(CORE)"\
+                 AUTOCLEAN="$(AUTOCLEAN)" \
+                 GEN_F90="$(GEN_F90)"
+
+mpas_main: openmp_test pio_test mpas
+ifeq "$(AUTOCLEAN)" "true"
+	$(RM) .mpas_core_*
+endif
 
 	@echo "$(EXE_NAME)" > .mpas_core_$(CORE)
 	if [ -e src/$(EXE_NAME) ]; then mv src/$(EXE_NAME) .; fi
-	( cd src/core_$(CORE); $(MAKE) ROOT_DIR="$(PWD)" post_build )
+	( cd src; $(MAKE) ROOT_DIR="$(PWD)" post_build )
 	@echo "*******************************************************************************"
 	@echo $(PRECISION_MESSAGE)
 	@echo $(DEBUG_MESSAGE)
@@ -1037,19 +1094,13 @@ endif
 	@echo $(PIO_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
+	cd $(FWPATH); $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
 	$(RM) .mpas_core_*
 	$(RM) $(EXE_NAME)
 	$(RM) namelist.$(NAMELIST_SUFFIX).defaults
 	$(RM) streams.$(NAMELIST_SUFFIX).defaults
-core_error:
-	@echo ""
-	@echo "*******************************************************************************"
-	@echo "     The directory src/core_$(CORE) does not exist."
-	@echo "     $(CORE) is not a valid core choice."
-	@echo "*******************************************************************************"
-	@echo ""
-	exit 1
+
 error: errmsg
 
 clean_core:
@@ -1075,29 +1126,27 @@ clean_core:
 else # CORE IF
 
 all: error
-clean: errmsg
+clean: error
 	exit 1
-error: errmsg
-	@echo "************ ERROR ************"
-	@echo "No CORE specified. Quitting."
-	@echo "************ ERROR ************"
-	@echo ""
+error:
+	@echo "ERROR: You must execute make within one of the mpas-ocean, mpas-seaice, or mpas-albany-landice directories."
+	@echo "Quitting."
 	exit 1
 
 endif # CORE IF
 
 errmsg:
 	@echo ""
-	@echo "Usage: $(MAKE) target CORE=[core] [options]"
+	@echo "Usage: $(MAKE) target [options]"
+	@echo ""
+	@echo "You must execute make within one of the mpas-ocean, mpas-seaice, or mpas-albany-landice directories."
+	@echo "CORE is auto-detected from mpas-CORE directory in your path."
 	@echo ""
 	@echo "Example targets:"
 	@echo "    ifort"
 	@echo "    gfortran"
 	@echo "    xlf"
 	@echo "    pgi"
-	@echo ""
-	@echo "Availabe Cores:"
-	@cd src; ls -d core_* | grep ".*" | sed "s/core_/    /g"
 	@echo ""
 	@echo "Available Options:"
 	@echo "    DEBUG=true    - builds debug version. Default is optimized version."
