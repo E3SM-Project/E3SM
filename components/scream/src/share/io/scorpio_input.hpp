@@ -147,7 +147,7 @@ protected:
 
   std::vector<std::string> get_vec_of_dims (const FieldLayout& layout);
   std::string get_io_decomp (const std::vector<std::string>& vec_of_dims);
-  std::vector<Int> get_var_dof (const int dof_len, const bool has_cols);
+  std::vector<Int> get_var_dof_offsets (const int dof_len, const bool has_cols);
 
   // Internal variables
   ekat::ParameterList m_params;

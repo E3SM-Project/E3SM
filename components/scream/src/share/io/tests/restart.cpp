@@ -95,24 +95,31 @@ TEST_CASE("restart","io")
   // grab restart data
   input_type ins_input(io_comm,res_params,field_manager,grid_man);
   ins_input.pull_input();
-  // Note, that only field_1 and field_2 were marked for restart.  Check to make sure values
+  // Note, that only field_1, field_2, and field_4 were marked for restart.  Check to make sure values
   // in the field manager reflect those fields as restarted from 15 and field_3 as being
   // freshly restarted:
   auto field1 = field_manager->get_field("field_1");
   auto field2 = field_manager->get_field("field_2");
   auto field3 = field_manager->get_field("field_3");
+  auto field4 = field_manager->get_field("field_4");
   auto field1_hst = field1.get_view<Host>();
   auto field2_hst = field2.get_view<Host>();
   auto field3_hst = field3.get_reshaped_view<Real**,Host>();
+  auto field4_hst = field4.get_reshaped_view<Real***,Host>();
   field1.sync_to_host();
   field2.sync_to_host();
   field3.sync_to_host();
+  field4.sync_to_host();
   Real tol = pow(10,-6);
   for (Int ii=0;ii<num_lcols;++ii) {
     REQUIRE(std::abs(field1_hst(ii)-(15+ii))<tol);
     for (Int jj=0;jj<num_levs;++jj) {
       REQUIRE(std::abs(field2_hst(jj)   -((jj+1)/10.+15))<tol);
       REQUIRE(std::abs(field3_hst(ii,jj)-((jj+1)/10.+ii))<tol);  //Note, field 3 is not restarted, so doesn't have the +15
+      std::cout << "f  : " << field4_hst(ii,0,jj) << "\n";
+      std::cout << "tgt: " << ((jj+1)/10.+ii+15) << "\n";
+      REQUIRE(std::abs(field4_hst(ii,0,jj)-((jj+1)/10.+ii+15))<tol);
+      REQUIRE(std::abs(field4_hst(ii,1,jj)-(-((jj+1)/10.+ii)+15))<tol);
     }
   }
   // Finish the last 5 steps
@@ -177,30 +184,31 @@ std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGr
   std::vector<FieldTag> tag_h  = {COL};
   std::vector<FieldTag> tag_v  = {LEV};
   std::vector<FieldTag> tag_2d = {COL,LEV};
+  std::vector<FieldTag> tag_3d = {COL,CMP,LEV};
 
   std::vector<Int>     dims_h  = {num_lcols};
   std::vector<Int>     dims_v  = {num_levs};
   std::vector<Int>     dims_2d = {num_lcols,num_levs};
+  std::vector<Int>     dims_3d = {num_lcols,2,num_levs};
 
   const std::string& gn = grid->name();
 
   FieldIdentifier fid1("field_1",FL{tag_h,dims_h},m,gn);
   FieldIdentifier fid2("field_2",FL{tag_v,dims_v},kg,gn);
   FieldIdentifier fid3("field_3",FL{tag_2d,dims_2d},kg/m,gn);
+  FieldIdentifier fid4("field_4",FL{tag_3d,dims_3d},kg/m,gn);
 
   // Register fields with fm
   fm->registration_begins();
   fm->register_field(FR{fid1,SL{"output","restart"}});
   fm->register_field(FR{fid2,SL{"output","restart"}});
   fm->register_field(FR{fid3,"output"});
+  fm->register_field(FR{fid4,SL{"output","restart"}});
   fm->registration_ends();
 
   // Initialize these fields
   Initialize_field_manager(*fm,num_lcols,num_levs);
   // Update timestamp
-  auto f1 = fm->get_field(fid1);
-  auto f2 = fm->get_field(fid2);
-  auto f3 = fm->get_field(fid3);
   util::TimeStamp time (0,0,0,0);
   fm->init_fields_time_stamp(time);
 
@@ -214,19 +222,24 @@ void Initialize_field_manager(const FieldManager<Real>& fm, const Int num_lcols,
   const auto& f1 = fm.get_field("field_1");
   const auto& f2 = fm.get_field("field_2");
   const auto& f3 = fm.get_field("field_3");
-  auto f1_hst = f1.get_view<Host>();
-  auto f2_hst = f2.get_view<Host>();
+  const auto& f4 = fm.get_field("field_4");
+  auto f1_hst = f1.get_reshaped_view<Real*, Host>();
+  auto f2_hst = f2.get_reshaped_view<Real*, Host>();
   auto f3_hst = f3.get_reshaped_view<Real**,Host>();
+  auto f4_hst = f4.get_reshaped_view<Real***,Host>();
   for (int ii=0;ii<num_lcols;++ii) {
     f1_hst(ii) = ii;
     for (int jj=0;jj<num_levs;++jj) {
       f2_hst(jj) = (jj+1)/10.0;
       f3_hst(ii,jj) = (ii) + (jj+1)/10.0;
+      f4_hst(ii,0,jj) = ii + (jj+1)/10.0;
+      f4_hst(ii,1,jj) = -( ii + (jj+1)/10.0 );
     }
   }
   f1.sync_to_dev();
   f2.sync_to_dev();
   f3.sync_to_dev();
+  f4.sync_to_dev();
 }
 
 /*===================================================================================================================*/
@@ -293,20 +306,18 @@ ekat::ParameterList get_in_params(const std::string& type, const ekat::Comm& com
     EKAT_REQUIRE_MSG(found,"ERROR! rpointer.atm file does not contain a restart file."); 
   
     auto& f_list = in_params.sublist("FIELDS");
-    f_list.set<Int>("Number of Fields",2);
-    for (int ii=1;ii<=2+1;++ii)
-    {
-      f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
-    }
-  } else if (type=="Final")
-  {
+    f_list.set<Int>("Number of Fields",3);
+    f_list.set<std::string>("field 1","field_1");
+    f_list.set<std::string>("field 2","field_2");
+    f_list.set<std::string>("field 3","field_4");
+  } else if (type=="Final") {
     filename = "io_output_restart_np" + std::to_string(comm.size()) + ".Average.Steps_x10.0000-01-01.000020.nc";
     auto& f_list = in_params.sublist("FIELDS");
-    f_list.set<Int>("Number of Fields",3);
-    for (int ii=1;ii<=3+1;++ii)
-    {
-      f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
-    }
+    f_list.set<Int>("Number of Fields",4);
+    f_list.set<std::string>("field 1","field_1");
+    f_list.set<std::string>("field 2","field_2");
+    f_list.set<std::string>("field 3","field_3");
+    f_list.set<std::string>("field 4","field_4");
   }
   in_params.set<std::string>("FILENAME",filename);
   in_params.set<std::string>("GRID","Physics");

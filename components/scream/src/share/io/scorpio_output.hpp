@@ -130,6 +130,7 @@ protected:
   void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename);
   void set_degrees_of_freedom(const std::string& filename);
+  std::vector<Int> get_var_dof_offsets (const int dof_len, const bool has_cols);
   void register_views();
   void new_file(const std::string& filename);
   void run_impl(const Real time, const std::string& time_str);  // Actual run routine called by outward facing "run"
@@ -159,7 +160,7 @@ protected:
   std::vector<std::string>               m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
-  typename dofs_list_type::HostMirror    m_gids;
+  typename dofs_list_type::HostMirror    m_gids_host;
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_type_host>   m_view_local;
 
