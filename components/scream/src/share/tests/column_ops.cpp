@@ -71,7 +71,7 @@ TEST_CASE("column_ops_ps_1") {
   using uview_1d_type = KT::view_1d<pack_type>;
   using policy_type   = KT::TeamPolicy;
   using member_type   = KT::MemberType;
-  using column_ops    = ColumnOps<device_type,Real,1>;
+  using column_ops    = ColumnOps<device_type,Real>;
 
   constexpr int num_cols = 1;
   constexpr int num_levs = 16;
@@ -443,7 +443,7 @@ TEST_CASE("column_ops_ps_N") {
     using uview_1d_type = KT::view_1d<pack_type>;
     using policy_type   = KT::TeamPolicy;
     using member_type   = KT::MemberType;
-    using column_ops    = ColumnOps<device_type,Real,ps>;
+    using column_ops    = ColumnOps<device_type,Real>;
 
     constexpr int num_cols = 1;
     // Test both the case where num_mid_packs==num_int_packs, and
