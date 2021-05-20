@@ -789,7 +789,8 @@ contains
                ! if the gdd flag is set, and if the soil is above freezing
                ! then accumulate growing degree days for onset trigger
 
-               soilt = t_soisno(c,3)
+               !soilt = t_soisno(c,3)
+               soilt = (t_soisno(c,1)+t_soisno(c,2)+t_soisno(c,3))/3.0_r8
                if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
                   onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
                end if
@@ -1040,7 +1041,8 @@ contains
          g = veg_pp%gridcell(p)
 
          if (stress_decid(ivt(p)) == 1._r8) then
-            soilt = t_soisno(c,3)
+            !soilt = t_soisno(c,3)
+            soilt = (t_soisno(c,1)+t_soisno(c,2)+t_soisno(c,3))/3.0_r8
             psi = soilpsi(c,3)
 
             ! onset gdd sum from Biome-BGC, v4.1.2
