@@ -533,6 +533,8 @@ contains
          retransn                     => nitrogenstate_vars%retransn_patch                     , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant pool of retranslocated N  
          smin_nh4_vr                  => nitrogenstate_vars%smin_nh4_vr_col                    , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NH4              
          smin_no3_vr                  => nitrogenstate_vars%smin_no3_vr_col                    , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NO3              
+         cpool                        => carbonstate_vars%cpool_patch                          , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant N pool storage
+         npool                        => nitrogenstate_vars%npool_patch                          , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant N pool storage
 
          plant_ndemand                => nitrogenflux_vars%plant_ndemand_patch                 , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
          plant_nalloc                 => nitrogenflux_vars%plant_nalloc_patch                  , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)        
@@ -1015,6 +1017,12 @@ contains
          end if
          plant_pdemand(p) = plant_pdemand(p) - retransp_to_ppool(p)
 
+         ! positive cpools BUT negative npools for carbon-only (unknown reason, TODO checking, fmyuan)
+         if (cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only()) then
+            if (cpool(p)>0._r8 .and. npool(p)<0._r8) then
+               plant_ndemand(p) = plant_ndemand(p) - npool(p)/dt
+            end if
+         end if
 
       end do ! end pft loop
 
@@ -1348,15 +1356,7 @@ contains
                do fc=1,num_soilc
                   c = filter_soilc(fc)      
                   l = col_pp%landunit(c)
-                  if (sum_ndemand_vr(c,j)*dt < sminn_vr(c,j)) then
-
-                     ! N availability is not limiting immobilization or plant
-                     ! uptake, and both can proceed at their potential rates
-                     nlimit(c,j) = 0
-                     fpi_vr(c,j) = 1.0_r8
-                     actual_immob_vr(c,j) = potential_immob_vr(c,j)
-                     sminn_to_plant_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
-                  else if ( cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only() ) then !.or. &
+                  if ( cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only() ) then !.or. &
                      !                (crop_supln .and. (lun_pp%itype(l) == istcrop) .and. &
                      !                (ivt(col_pp%pfti(c)) >= npcropmin)) )then
                      ! this code block controls the addition of N to sminn pool
@@ -1370,7 +1370,17 @@ contains
                      fpi_vr(c,j) = 1.0_r8
                      actual_immob_vr(c,j) = potential_immob_vr(c,j)
                      sminn_to_plant_vr(c,j) =  col_plant_ndemand(c) * nuptake_prof(c,j)
-                     supplement_to_sminn_vr(c,j) = sum_ndemand_vr(c,j) - (sminn_vr(c,j)/dt)
+                     !supplement_to_sminn_vr(c,j) = sum_ndemand_vr(c,j) - (sminn_vr(c,j)/dt)
+                     supplement_to_sminn_vr(c,j) = sum_ndemand_vr(c,j) ! don't allow exhausting soil N
+
+                  elseif (sum_ndemand_vr(c,j)*dt < sminn_vr(c,j)) then
+
+                     ! N availability is not limiting immobilization or plant
+                     ! uptake, and both can proceed at their potential rates
+                     nlimit(c,j) = 0
+                     fpi_vr(c,j) = 1.0_r8
+                     actual_immob_vr(c,j) = potential_immob_vr(c,j)
+                     sminn_to_plant_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
                   else
                      ! N availability can not satisfy the sum of immobilization and
                      ! plant growth demands, so these two demands compete for available
@@ -2295,7 +2305,18 @@ contains
                ! eliminate any N limitation, when carbon only or carbon phosphorus only is set.
                if ( cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only() ) then
                   nlimit(c,j) = 0
-                  if ( fpi_no3_vr(c,j) + fpi_nh4_vr(c,j) < 1._r8 ) then
+
+                  if ( use_clm_interface ) then
+                     nlimit(c,j) = 1
+                     fpi_vr(c,j) = 1._r8
+                     fpi_nh4_vr(c,j) = 1._r8  ! assuming all in NH4-N form
+                     fpi_no3_vr(c,j) = 0._r8
+                     supplement_to_sminn_vr(c,j) = potential_immob_vr(c,j)
+                     actual_immob_nh4_vr(c,j) = potential_immob_vr(c,j)
+                     actual_immob_no3_vr(c,j) = 0._r8
+
+                  ! the following would likely consume soil mineral N, even though 'carbon only'
+                  elseif ( fpi_no3_vr(c,j) + fpi_nh4_vr(c,j) < 1._r8 ) then
                      nlimit(c,j) = 1
                      fpi_vr(c,j) = 1._r8
                      fpi_nh4_vr(c,j) = 1.0_r8 - fpi_no3_vr(c,j)
@@ -2305,7 +2326,16 @@ contains
                   end if
 
                   if (nu_com .eq. 'RD') then
-                     if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < col_plant_ndemand(c)*nuptake_prof(c,j) ) then
+
+                     if (use_clm_interface) then  ! for BFB purpose, have to set this condition. Can be general.
+                        nlimit(c,j) = 1
+                        supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
+                             col_plant_ndemand(c)*nuptake_prof(c,j)
+                        smin_no3_to_plant_vr(c,j) = 0._r8
+                        smin_nh4_to_plant_vr(c,j) = col_plant_ndemand(c)*nuptake_prof(c,j)
+
+                     ! the following would likely consume soil mineral N, even though 'carbon only'
+                     elseif ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < col_plant_ndemand(c)*nuptake_prof(c,j) ) then
                         nlimit(c,j) = 1
                         supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
                              (col_plant_ndemand(c)*nuptake_prof(c,j) - smin_no3_to_plant_vr(c,j)) - smin_nh4_to_plant_vr(c,j)  ! use old values
