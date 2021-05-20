@@ -127,6 +127,8 @@ contains
          del2relVort, &!
          del2u
 
+      integer :: kmin, kmax
+
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
@@ -153,17 +155,20 @@ contains
       !$acc    present(cellsOnEdge, verticesOnEdge, minLevelEdgeBot, maxLevelEdgeTop, &
       !$acc            dvEdge, dcEdge, del2u, div, relVort) &
       !$acc    private(k, cell1, cell2, vertex1, vertex2, &
-      !$acc            dcEdgeInv, dvEdgeInv)
+      !$acc            dcEdgeInv, dvEdgeInv, kmin, kmax)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp    private(k, cell1, cell2, vertex1, vertex2, &
-      !$omp            dcEdgeInv, dvEdgeInv)
+      !$omp            dcEdgeInv, dvEdgeInv, kmin, kmax)
 #endif
       do iEdge = 1, nEdges
          del2u(:, iEdge) = 0.0_RKIND
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
+
+         kmin = minLevelEdgeBot(iEdge)
+         kmax = maxLevelEdgeTop(iEdge)
 
          vertex1 = verticesOnEdge(1,iEdge)
          vertex2 = verticesOnEdge(2,iEdge)
@@ -171,7 +176,7 @@ contains
          dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
          dvEdgeInv = 1.0_RKIND / max(dvEdge(iEdge), 0.25_RKIND*dcEdge(iEdge))
 
-         do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
+         do k=kmin, kmax
             ! Compute \nabla^2 u = \nabla divergence + k \times \nabla relativeVorticity
             del2u(k,iEdge) = (div(k,cell2) - div(k,cell1))*dcEdgeInv &
                             -(relVort(k,vertex2) - relVort(k,vertex1))*&
@@ -191,17 +196,19 @@ contains
       !$acc    present(edgesOnVertex, minLevelVertexBot, maxLevelVertexTop, dcEdge, &
       !$acc            areaTriangle, edgeSignOnVertex, del2u, &
       !$acc            del2relVort) &
-      !$acc    private(i, k, iEdge, areaTriInv)
+      !$acc    private(i, k, iEdge, areaTriInv, kmin, kmax)
 #else
       !$omp parallel
-      !$omp do schedule(runtime) private(i, k, iEdge, areaTriInv)
+      !$omp do schedule(runtime) private(i, k, iEdge, areaTriInv, kmin, kmax)
 #endif
       do iVertex = 1, nVertices
+         kmin = minLevelVertexBot(iVertex)
+         kmax = maxLevelVertexTop(iVertex)
          del2relVort(:, iVertex) = 0.0_RKIND
          areaTriInv = 1.0_RKIND/areaTriangle(iVertex)
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
-            do k = minLevelVertexBot(iVertex), maxLevelVertexTop(iVertex)
+            do k = kmin, kmax
                del2relVort(k,iVertex) = del2relVort(k,iVertex) &
                                       + edgeSignOnVertex(i,iVertex) &
                                        *dcEdge(iEdge)*del2u(k,iEdge)*areaTriInv
@@ -220,17 +227,19 @@ contains
       !$acc parallel loop &
       !$acc    present(nEdgesOnCell, edgesOnCell, minLevelCell, maxLevelCell, dvEdge,&
       !$acc            edgeSignOnCell, areaCell, del2u, del2div) &
-      !$acc    private(i, k, iEdge, areaCellInv)
+      !$acc    private(i, k, iEdge, areaCellInv, kmin, kmax)
 #else
       !$omp parallel
-      !$omp do schedule(runtime) private(i, k, iEdge, areaCellInv)
+      !$omp do schedule(runtime) private(i, k, iEdge, areaCellInv, kmin, kmax)
 #endif
       do iCell = 1, nCells
+         kmin = minLevelCell(iCell)
+         kmax = maxLevelCell(iCell)
          del2div(:, iCell) = 0.0_RKIND
          areaCellInv = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            do k = minLevelCell(iCell), maxLevelCell(iCell)
+            do k = kmin, kmax
                del2div(k,iCell) = del2div(k,iCell) - &
                                   edgeSignOnCell(i,iCell)*dvEdge(iEdge) &
                                  *del2u(k,iEdge)*areaCellInv
@@ -252,14 +261,17 @@ contains
       !$acc            dcEdge, dvEdge, meshScalingDel4, edgeMask, &
       !$acc            del2div, del2relVort, tend) &
       !$acc private(k, cell1, cell2, vertex1, vertex2, &
-      !$acc         dcEdgeInv, dvEdgeInv, visc4, uDiff)
+      !$acc         dcEdgeInv, dvEdgeInv, visc4, uDiff, kmin, kmax)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(k, cell1, cell2, vertex1, vertex2, &
-      !$omp         dcEdgeInv, dvEdgeInv, visc4, uDiff)
+      !$omp         dcEdgeInv, dvEdgeInv, visc4, uDiff, kmin, kmax)
 #endif
       do iEdge = 1, nEdgesOwned
+         kmin = minLevelEdgeBot(iEdge)
+         kmax = maxLevelEdgeTop(iEdge)
+
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          vertex1 = verticesOnEdge(1,iEdge)
@@ -269,7 +281,7 @@ contains
          dvEdgeInv = 1.0_RKIND / dvEdge(iEdge)
          visc4 = viscDel4*meshScalingDel4(iEdge)
 
-         do k=minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+         do k = kmin, kmax
             uDiff = divFactor*(del2div(k,cell2) - del2div(k,cell1))* &
                                                           dcEdgeInv  &
                   - (del2relVort(k,vertex2) - del2relVort(k,vertex1))* &

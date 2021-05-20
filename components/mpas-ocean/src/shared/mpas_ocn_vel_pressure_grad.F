@@ -164,6 +164,10 @@ contains
          JacobianTz,       &! Jacobian associated with temperature
          JacobianSz         ! Jacobian associated with salinity
 
+      real (kind=RKIND) :: &
+         meridSshGrad,     &! config_meridional_ssh_grad
+         zonalSshGrad       ! config_zonal_ssh_grad
+
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
@@ -174,6 +178,9 @@ contains
       err = 0
       if (pgradOff) return
       call mpas_timer_start("pressure grad")
+
+      meridSshGrad = config_meridional_ssh_grad
+      zonalSshGrad = config_zonal_ssh_grad
 
       !*** Compute pGrad based on method selected
       select case (pGradType)
@@ -559,7 +566,7 @@ contains
 #endif
          do iEdge=1,nEdgesOwned
             ! compute the pressure gradient to be applied at the edge
-            pGrad = config_zonal_ssh_grad * cos(angleEdge(iEdge)) + config_meridional_ssh_grad * sin(angleEdge(iEdge))
+            pGrad = zonalSshGrad * cos(angleEdge(iEdge)) + meridSshGrad * sin(angleEdge(iEdge))
 
             do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
                tend(k,iEdge) = tend(k,iEdge) - gravity * edgeMask(k,iEdge) * pGrad
