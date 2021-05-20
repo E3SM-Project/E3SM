@@ -5,7 +5,7 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "physics/p3/p3_main_impl.hpp"
 #include "physics/p3/p3_functions.hpp"
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/util/scream_common_physics_functions.hpp"
 
 #include <string>
 
@@ -26,7 +26,7 @@ namespace scream
   using Spack        = typename P3F::Spack;
   using Smask        = typename P3F::Smask;
   using Pack         = ekat::Pack<Real,Spack::n>;
-  using physics_fun  = scream::physics::Functions<Real, DefaultDevice>;
+  using PF           = scream::PhysicsFunctions<DefaultDevice>;
 
   using view_1d  = typename P3F::view_1d<Real>;
   using view_2d  = typename P3F::view_2d<Spack>;
@@ -79,13 +79,21 @@ public:
         // Exner
         const Spack opmid(pmid(icol,ipack));
         const Smask opmid_mask(!isnan(opmid) and opmid>0.0);
-        auto oexner = physics_fun::get_exner(opmid,opmid_mask);
+        auto oexner = PF::exner_function(opmid);
         inv_exner(icol,ipack).set(opmid_mask,1.0/oexner);
         // Potential temperature
         const Spack oT_atm(T_atm(icol,ipack));
         const Smask oT_atm_mask(!isnan(oT_atm) and oT_atm>0.0);
-        auto oth = physics_fun::T_to_th(oT_atm,oexner,oT_atm_mask);
+        auto oth = PF::calculate_theta_from_T(oT_atm,opmid);
         th_atm(icol,ipack).set(oT_atm_mask,oth);
+        // DZ
+        const Spack opseudo_density(pseudo_density(icol,ipack));
+        const Spack oqv(qv(icol,ipack));
+        const Smask odz_mask(opmid_mask and oT_atm_mask and 
+                             !isnan(opseudo_density) and opseudo_density>0.0 and
+                             !isnan(oqv) and oqv>0.0);
+        auto odz = PF::calculate_dz(opseudo_density, opmid, oT_atm, oqv);
+        dz(icol,ipack).set(odz_mask,odz);
         // Cloud fraction
         // Set minimum cloud fraction - avoids division by zero
         cld_frac_l(icol,ipack) = mincld;
@@ -113,14 +121,6 @@ public:
                                               ast(icol,ipack_m1)[ivec_m1] :
                                               cld_frac_r(icol,ipack)[ivec];
           }
-          // dz is calculated as the difference between the two layer interfaces.  Note that the lower the index the higher the altitude.
-          // We also want to make sure we use the top level index for assignment since dz[0] = zi[0]-zi[1], for example.
-          if (ipack_p1 < m_npack) {
-            dz(icol,ipack)[ivec] = zi(icol,ipack)[ivec]-zi(icol,ipack_p1)[ivec_p1];
-          }
-          else {
-            dz(icol,ipack)[ivec] = zi(icol,ipack)[ivec];
-          }
         }
         //
       }
@@ -129,9 +129,10 @@ public:
     int m_ncol, m_npack;
     Real mincld = 0.0001;  // TODO: These should be stored somewhere as more universal constants.  Or maybe in the P3 class hpp
     view_2d_const pmid;
+    view_2d_const pseudo_density;
     view_2d       T_atm;
     view_2d_const ast;
-    view_2d_const zi;
+    view_2d       qv;
     view_2d       inv_exner;
     view_2d       th_atm;
     view_2d       cld_frac_l;
@@ -140,7 +141,7 @@ public:
     view_2d       dz;
     // Assigning local variables
     void set_variables(const int ncol, const int npack,
-           view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_,
+           view_2d_const pmid_, view_2d_const pseudo_density_, view_2d T_atm_, view_2d_const ast_, view_2d qv_,
            view_2d inv_exner_, view_2d th_atm_, view_2d cld_frac_l_, view_2d cld_frac_i_, view_2d cld_frac_r_, view_2d dz_
            )
     {
@@ -148,9 +149,10 @@ public:
       m_npack = npack;
       // IN
       pmid = pmid_;
+      pseudo_density = pseudo_density_;
       T_atm = T_atm_;
       ast = ast_;
-      zi = zi_;
+      qv = qv_;
       // OUT
       inv_exner = inv_exner_;
       th_atm = th_atm_;
@@ -174,10 +176,10 @@ public:
         // Update the atmospheric temperature and the previous temperature.
         const Spack opmid(pmid(icol,ipack));
         const Smask opmid_mask(!isnan(opmid) and opmid>0.0);
-        auto oexner = physics_fun::get_exner(opmid,opmid_mask);
+        auto oexner = PF::exner_function(opmid);
         const Spack oth_atm(th_atm(icol,ipack));
         const Smask oth_atm_mask(!isnan(oth_atm) and oth_atm>0.0);
-        auto oT = physics_fun::th_to_T(oth_atm,oexner,oth_atm_mask);
+        auto oT = PF::calculate_T_from_theta(oth_atm,opmid);
         T_atm(icol,ipack).set(oth_atm_mask,oT);
         T_prev(icol,ipack).set(oth_atm_mask,T_atm(icol,ipack));
         // Update qv_prev
@@ -223,7 +225,7 @@ public:
       // new processes come online to make sure their requirements from p3 are being met.
       // qme, vap_liq_exchange
       // ENERGY Conservation: prec_str, snow_str
-      // RAD Vars: icinc, icwnc, icimrst, icwmrst, rel, rei, dei
+      // RAD Vars: icinc, icwnc, icimrst, icwmrst
       // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffrain, reffsnow
     } // set_variables
   }; // p3_postamble
