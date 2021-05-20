@@ -115,6 +115,8 @@ contains
          eoe,          &! edge on edge index
          kmin, kmax     ! min and max indices for vertical
 
+      integer :: kmin, kmax, jmax
+
       real (kind=RKIND) :: &
          avgVorticity, &! vorticity averaged across edge
          invLength,    &! temp variable for 1/dcedge
@@ -204,7 +206,7 @@ contains
             qArr(k,iEdge) = 0.0_RKIND
          end do
 
-         do j = 1, nEdgesOnEdge(iEdge)
+         do j = 1, jmax
             eoe = edgesOnEdge(j, iEdge)
             edgeWeight = weightsOnEdge(j, iEdge)
 
@@ -227,17 +229,20 @@ contains
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
       !$acc            dcEdge, tend, qArr, kineticEnergyCell) &
-      !$acc    private(cell1, cell2, invLength, k)
+      !$acc    private(cell1, cell2, invLength, k, kmin, kmax)
 #else
       !$omp do schedule(runtime) &
-      !$omp    private(cell1, cell2, invLength, k)
+      !$omp    private(cell1, cell2, invLength, k, kmin, kmax)
 #endif
       do iEdge = 1, nEdgesOwned
+         kmin = minLevelEdgeBot(iEdge)
+         kmax = maxLevelEdgeTop(iEdge)
+
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          invLength = 1.0_RKIND / dcEdge(iEdge)
 
-         do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+         do k = kmin, kmax
             tend(k,iEdge) = tend(k,iEdge) + &
                         edgeMask(k,iEdge)* (qArr(k,iEdge) - &
                            (kineticEnergyCell(k,cell2) &
