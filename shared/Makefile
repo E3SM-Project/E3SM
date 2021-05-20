@@ -92,7 +92,7 @@ mpas_ocn_thick_vadv.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_thick_surface_flux.o: mpas_ocn_forcing.o mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_gm.o:  mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_gm.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o
 
 mpas_ocn_vel_pressure_grad.o: mpas_ocn_constants.o mpas_ocn_config.o
 
@@ -110,7 +110,7 @@ mpas_ocn_vel_forcing.o: mpas_ocn_vel_forcing_surface_stress.o mpas_ocn_vel_forci
 
 mpas_ocn_vel_forcing_surface_stress.o: mpas_ocn_forcing.o mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_vel_forcing_topographic_wave_drag.o: mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_vel_forcing_topographic_wave_drag.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_forcing.o
 
 mpas_ocn_vel_forcing_explicit_bottom_drag.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_forcing.o
 
@@ -164,7 +164,7 @@ mpas_ocn_test.o:  mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_constants.o mpas_ocn_config.o:
 
-mpas_ocn_forcing.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_forcing_restoring.o
+mpas_ocn_forcing.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_forcing_restoring.o mpas_ocn_diagnostics_variables.o
 
 mpas_ocn_surface_bulk_forcing.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_equation_of_state.o
 
@@ -194,7 +194,7 @@ mpas_ocn_tracer_DMS.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_tracer_MacroMolecules.o: mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_tracer_surface_flux_to_tend.o: mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_tracer_surface_flux_to_tend.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_forcing.o
 
 mpas_ocn_time_average_coupled.o: mpas_ocn_constants.o mpas_ocn_config.o
 
