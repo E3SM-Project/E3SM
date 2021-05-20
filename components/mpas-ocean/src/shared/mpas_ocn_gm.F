@@ -636,7 +636,7 @@ contains
            do iEdge=1,nEdges
               cell1 = cellsOnEdge(1, iEdge)
               cell2 = cellsOnEdge(2, iEdge)
-              Lr = min(cGMphaseSpeed(iEdge) / abs(fEdge(iEdge)),          &
+              Lr = min(cGMphaseSpeed(iEdge) / (1.0E-15_RKIND + abs(fEdge(iEdge))), &
                        sqrt(cGMphaseSpeed(iEdge) / (2.0_RKIND*betaEdge(iEdge))))
 
               do k=minLevelEdgeBot(iEdge)+1,maxLevelEdgeTop(iEdge)
