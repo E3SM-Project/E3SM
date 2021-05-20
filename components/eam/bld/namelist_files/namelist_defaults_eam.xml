@@ -1119,9 +1119,6 @@
 <!--for subcycling spectral-->
 <eul_nsplit dyn="eul"> 1 </eul_nsplit>
 
-<!-- iop dataset for SCAM mode -->
-<iopfile dyn="eul">atm/cam/scam/iop/ARM95_4scam.nc</iopfile>
-
 <!-- physics loadbalance -->
 <phys_loadbalance dyn="se"> 2 </phys_loadbalance>
 <phys_loadbalance dyn="eul"> 3 </phys_loadbalance>

@@ -13,7 +13,6 @@ module scanslt
    use pmgrid,           only: plon, plat, plev, beglat, endlat, plevp
    use constituents,     only: pcnst
    use cam_abortutils,   only: endrun
-   use scamMod,          only: single_column
    use perf_mod
 !-----------------------------------------------------------------------
    implicit none
@@ -180,17 +179,6 @@ subroutine scanslt_initial( adv_state, etamid, gravit_in, detam, cwava )
    end do
    etaint(plevp) = hyai(plevp) + hybi(plevp)
 !
-! For SCAM compute pressure levels to use for eta interface
-!
-   if (single_column) then
-      lat = beglat
-      call plevs0(nlon(lat), plon, plev, ps(1,lat,n3), pint, pmid, pdel)
-      etamid(:) = pmid(lat,:)
-      etaint(:) = pint(lat,:)
-      if ( any(etamid == 0.0_r8) ) call endrun('etamid == 0')
-      if ( any(etaint == 0.0_r8) ) call endrun('etaint == 0')
-   endif
-!
 ! Set slt module variables
 !
    gravit = gravit_in
@@ -215,13 +203,9 @@ subroutine scanslt_initial( adv_state, etamid, gravit_in, detam, cwava )
 
          do k=1,plev
             do i=1,nlon(lat)
-               if (single_column) then
-                  sigmp(i,k,lat) = pmid(i,k)
-               else
-                  lammp(i,k,lat) = real(i-1,r8)*dlam(j1-1+lat)
-                  phimp(i,k,lat) = clat(lat)
-                  sigmp(i,k,lat) = etamid(k)
-               endif
+               lammp(i,k,lat) = real(i-1,r8)*dlam(j1-1+lat)
+               phimp(i,k,lat) = clat(lat)
+               sigmp(i,k,lat) = etamid(k)
             end do
          end do
       end do
@@ -322,53 +306,26 @@ subroutine scanslt_run(adv_state, ztodt   ,etadot   ,detam, etamid, cwava )
    call da_coupling( cwava, adv_state )
    call t_stopf ('scanslt_da_coup')
 !
-! For SCAM reset vertical grid
-!
-   if (single_column) then
-!
-!     IF surface pressure changes with time we need to remap the vertical
-!     coordinate for the slt advection process.  It has been empirically
-!     determined that we can get away with 500 for pmap (instead of 20000)
-!     This is necessary to make the procedure computationally feasible
-!
-      call grdini(pmap    ,etamid  ,etaint  ,gravit  ,dlam    , &
-               lam     ,phi     ,dphi    ,gw      ,sinlam  , &
-               coslam  ,lbasdy  ,lbasdz  ,lbassd  ,lbasiy  , &
-               detam   ,detai   ,kdpmpf  ,kdpmph  ,cwava   )
-!     
-! Initial guess for trajectory midpoints in spherical coords.
-! nstep = 0:  use arrival points as initial guess for trajectory midpoints.
-! nstep > 0:  use calculated trajectory midpoints from previous time
-! step as first guess.
-! NOTE:  reduce number of iters necessary for convergence after nstep = 1.
-!
-      do k=1,plev
-         sigmp(1,k,beglat) = etamid(k)
-      end do
-
-   else
-!
 ! Mpi barrier
 !
 #if ( defined SPMD )
 !
 ! Communicate boundary information 
 !
-      call t_barrierf ('sync_bndexch', mpicom)
-      call t_startf ('bndexch')
-      call bndexch( adv_state )
-      call t_stopf ('bndexch')
+   call t_barrierf ('sync_bndexch', mpicom)
+   call t_startf ('bndexch')
+   call bndexch( adv_state )
+   call t_stopf ('bndexch')
 #endif
 
-      nstep = get_nstep()
+   nstep = get_nstep()
 !
 ! Initialize extended arrays
 !
-      call t_startf('sltini')
-      call sltini (dlam,    sinlam,  coslam,  uxl,     uxr, &
-           vxl,     vxr,     qxl,     qxr,     adv_state )
-      call t_stopf('sltini')
-   endif
+   call t_startf('sltini')
+   call sltini (dlam,    sinlam,  coslam,  uxl,     uxr, &
+        vxl,     vxr,     qxl,     qxr,     adv_state )
+   call t_stopf('sltini')
    nstep = get_nstep()
    if (nstep .le. 1) then
       iter = itermx
@@ -715,50 +672,33 @@ subroutine grdini(pmap    ,etamid  ,etaint  ,gravit  ,dlam    , &
    real(r8) detailn(plevp)       ! dlog(etaint)
 !
 !-----------------------------------------------------------------------
-   if (single_column) then
 
-      dlam(:)=0._r8
-      lam(:,:)=0._r8
-      phi(:)=0._r8
-      dphi(:)=0._r8
-      sinlam(:,:)=0._r8
-      coslam(:,:)=0._r8
-      detai(:)=0._r8
-      kdpmpf(:)=0._r8
-      kdpmph(:)=0._r8
-      gw(:)=1._r8
-      call basdz(plev    ,etamid  ,lbasdz  )
-      call basdz(plevp   ,etaint  ,lbassd  )
+   !
+   ! Initialize extended horizontal grid coordinates.
+   !
+   call grdxy(dlam    ,lam     ,phi     ,gw      ,sinlam  , &
+      coslam  )
+   !
+   ! Basis functions for computing Lagrangian cubic derivatives
+   ! on unequally spaced latitude and vertical grids.
+   !
+   call basdy(phi     ,lbasdy  )
 
-   else
-      !
-      ! Initialize extended horizontal grid coordinates.
-      !
-      call grdxy(dlam    ,lam     ,phi     ,gw      ,sinlam  , &
-         coslam  )
-      !
-      ! Basis functions for computing Lagrangian cubic derivatives
-      ! on unequally spaced latitude and vertical grids.
-      !
-      call basdy(phi     ,lbasdy  )
-
-      call basdz(plev    ,etamid  ,lbasdz  )
-      call basdz(plevp   ,etaint  ,lbassd  )
+   call basdz(plev    ,etamid  ,lbasdz  )
+   call basdz(plevp   ,etaint  ,lbassd  )
 
 
-      !
-      ! Basis functions for computing weights for Lagrangian cubic
-      ! interpolation on unequally spaced latitude grids.
-      !
-      call basiy(phi     ,lbasiy  )
-      !
-      ! Compute interval lengths in latitudinal grid
-      !
-      do j = 1,platd-1
-         dphi(j) = phi(j+1) - phi(j)
-      end do
-
-   endif
+   !
+   ! Basis functions for computing weights for Lagrangian cubic
+   ! interpolation on unequally spaced latitude grids.
+   !
+   call basiy(phi     ,lbasiy  )
+   !
+   ! Compute interval lengths in latitudinal grid
+   !
+   do j = 1,platd-1
+      dphi(j) = phi(j+1) - phi(j)
+   end do
 !
 ! Compute interval lengths in vertical grids.
 !
@@ -786,13 +726,9 @@ subroutine grdini(pmap    ,etamid  ,etaint  ,gravit  ,dlam    , &
 !
 ! Compute moisture integration constant
 !
-if (single_column) then
-   cwava = 1._r8
-else
    do j=1,plat
       cwava(j) = 1._r8/(nlon(j)*gravit)
    end do
-endif
 !
    return
 end subroutine grdini
@@ -1060,47 +996,35 @@ subroutine sltb1(pmap      ,jcen    ,jgc     ,dt      ,ra      , &
   logical locgeo                       ! flag indicating coordinate sys
   integer :: k,i                       ! indices (needed for SCAM)
 !-----------------------------------------------------------------------
-  if (.not. single_column) then
 
 !
 ! Horizontal interpolation
 !
-     locgeo = abs(phib(jcen))>=phigs
+  locgeo = abs(phib(jcen))>=phigs
 !
-     call sphdep(jcen    ,jgc     ,dt      ,ra      ,iterdp  ,           &
-              locgeo  ,adv_state%u3        ,uxl     ,uxr     ,lam     ,  &
-              phib    ,lbasiy  ,lammp   ,phimp   ,lamdp   ,              &
-              phidp   ,idp     ,jdp     ,adv_state%v3,                   &
-              vxl     ,vxr     ,nlon    ,nlonex  )
+  call sphdep(jcen    ,jgc     ,dt      ,ra      ,iterdp  ,           &
+           locgeo  ,adv_state%u3        ,uxl     ,uxr     ,lam     ,  &
+           phib    ,lbasiy  ,lammp   ,phimp   ,lamdp   ,              &
+           phidp   ,idp     ,jdp     ,adv_state%v3,                   &
+           vxl     ,vxr     ,nlon    ,nlonex  )
 !
 ! Interpolate scalar fields to the departure points.
 !
-     call hrintp(pcnst   ,pcnst   ,adv_state%qminus, fxl     ,fxr     , &
-              lam     ,phib    ,dphib   ,lbasdy  ,lamdp   ,                    &
-              phidp   ,idp     ,jdp     ,jcen    ,plimdr  ,                    &
-              fint    ,fyb     ,fyt     ,fhr     ,nlon    ,                    &   
-              nlonex  )
+  call hrintp(pcnst   ,pcnst   ,adv_state%qminus, fxl     ,fxr     , &
+           lam     ,phib    ,dphib   ,lbasdy  ,lamdp   ,                    &
+           phidp   ,idp     ,jdp     ,jcen    ,plimdr  ,                    &
+           fint    ,fyb     ,fyt     ,fhr     ,nlon    ,                    &   
+           nlonex  )
 
-     do m = 1,pcnst
+  do m = 1,pcnst
 !$OMP PARALLEL DO PRIVATE (K, I)
-        do k = 1,plev
-           do i = 1,nlon
-              hadv(i,k,m,jgc) = (fhr(i,k,m) - adv_state%qminus(i1-1+i,k,m,jcen))/dt
-           end do
+     do k = 1,plev
+        do i = 1,nlon
+           hadv(i,k,m,jgc) = (fhr(i,k,m) - adv_state%qminus(i1-1+i,k,m,jcen))/dt
         end do
      end do
-else
-!
-! fill in fhr in leiu of horizontal interpolation
-!
-   do m = 1,pcnst
-      do k = 1,plev
-         do i = 1,nlon
-            fhr(i,k,m) = adv_state%qminus(i1+i-1,k,m,jcen)
-         end do
-      end do
-   end do
-endif
+  end do
+
 !
 ! Vertical interpolation.
 ! Compute vertical derivatives of vertical wind
