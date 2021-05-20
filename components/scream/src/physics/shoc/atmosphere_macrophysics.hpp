@@ -5,7 +5,7 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "physics/shoc/shoc_main_impl.hpp"
 #include "physics/shoc/shoc_functions.hpp"
-#include "physics/share/physics_functions.hpp"
+#include "share/util/scream_common_physics_functions.hpp"
 
 #include <string>
 
@@ -24,7 +24,7 @@ namespace scream
 class SHOCMacrophysics : public scream::AtmosphereProcess
 {
   using SHF          = shoc::Functions<Real, DefaultDevice>;
-  using physics_fun  = scream::physics::Functions<Real, DefaultDevice>;
+  using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using C            = physics::Constants<Real>;
   using KT           = ekat::KokkosTypes<DefaultDevice>;
 
@@ -97,7 +97,7 @@ public:
         // Exner
         const Spack p_mid_ik(p_mid(i,k));
         const Smask p_mid_mask(!isnan(p_mid_ik) and p_mid_ik>0.0);
-        auto exner_ik = physics_fun::get_exner(p_mid_ik,p_mid_mask);
+        auto exner_ik = PF::exner_function(p_mid_ik);
         exner(i,k) = exner_ik;
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
@@ -124,7 +124,7 @@ public:
         const Smask range_mask(!isnan(T_mid_ik) && T_mid_ik>0.0 &&
                                !isnan(z_mid_ik) && z_mid_ik>0.0 &&
                                !isnan(phis_i)   && phis_i>0.0);
-        auto dse_ik = physics_fun::get_dse(T_mid_ik,z_mid_ik,phis_i,range_mask);
+        auto dse_ik = PF::calculate_dse(T_mid_ik,z_mid_ik,phis_i);
         shoc_s(i,k) = dse_ik;
 
         Spack zi_k, zi_kp1;
