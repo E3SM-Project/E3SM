@@ -1151,7 +1151,7 @@ contains
                filter(nc)%num_lakec, filter(nc)%lakec,                                             &
                filter(nc)%num_soilp, filter(nc)%soilp,                                             &
                atm2lnd_vars, lakestate_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
-               energyflux_vars, ch4_vars, lnd2atm_vars)
+               energyflux_vars, ch4_vars, lnd2atm_vars, alm_fates)
           call t_stopf('ch4')
        end if
 
