@@ -115,8 +115,6 @@ contains
          eoe,          &! edge on edge index
          kmin, kmax     ! min and max indices for vertical
 
-      integer :: kmin, kmax
-
       real (kind=RKIND) :: &
          avgVorticity, &! vorticity averaged across edge
          invLength,    &! temp variable for 1/dcedge
