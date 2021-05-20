@@ -1,5 +1,6 @@
 #include "catch2/catch.hpp"
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
+#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "YAKL/YAKL.h"
 #include "physics/share/physics_constants.hpp"
 TEST_CASE("rrtmgp_test_heating") {
@@ -57,4 +58,59 @@ TEST_CASE("rrtmgp_test_heating") {
     flux_dn.deallocate();
     heating.deallocate();
     yakl::finalize();
+}
+
+TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
+    // Initialize YAKL
+    if (!yakl::isInitialized()) { yakl::init(); }
+
+    using physconst = scream::physics::Constants<double>;
+
+    // Test mixing ratio to cloud mass function by passing simple inputs
+    auto dp = real2d("dp", 1, 1);
+    auto mixing_ratio = real2d("mixing_ratio", 1, 1);
+    auto cloud_fraction = real2d("cloud_fration", 1, 1);
+    auto cloud_mass = real2d("cloud_mass", 1, 1);
+
+    // Test with cell completely filled with cloud
+    parallel_for(1, YAKL_LAMBDA(int dummy) {
+        dp(1,1) = 10.0;
+        mixing_ratio(1,1) = 0.0001;
+        cloud_fraction(1,1) = 1.0;
+    });
+    auto cloud_mass_ref = mixing_ratio(1,1) * dp(1,1) / physconst::gravit;
+    scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+    REQUIRE(cloud_mass(1,1) == cloud_mass_ref);
+
+    // Test with no cloud
+    parallel_for(1, YAKL_LAMBDA(int dummy) {
+        dp(1,1) = 10.0;
+        mixing_ratio(1,1) = 0.0;
+        cloud_fraction(1,1) = 0.0;
+    });
+    cloud_mass_ref = 0.0;
+    scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+    REQUIRE(cloud_mass(1,1) == cloud_mass_ref);
+ 
+     // Test with empty clouds (cloud fraction but with no associated mixing ratio)
+     // This case could happen if we use a total cloud fraction, but compute layer
+     // cloud mass separately for liquid and ice.
+    parallel_for(1, YAKL_LAMBDA(int dummy) {
+        dp(1,1) = 10.0;
+        mixing_ratio(1,1) = 0.0;
+        cloud_fraction(1,1) = 0.1;
+    });
+    cloud_mass_ref = 0.0;
+    scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+    REQUIRE(cloud_mass(1,1) == cloud_mass_ref);
+ 
+    // Test with cell half filled with cloud
+    parallel_for(1, YAKL_LAMBDA(int dummy) {
+        dp(1,1) = 10.0;
+        mixing_ratio(1,1) = 0.0001;
+        cloud_fraction(1,1) = 0.5;
+    });
+    cloud_mass_ref = mixing_ratio(1,1) / cloud_fraction(1,1) * dp(1,1) / physconst::gravit;
+    scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+    REQUIRE(cloud_mass(1,1) == cloud_mass_ref);
 }
