@@ -88,9 +88,6 @@ public:
       "co" , "ch4", "o2", "n2"
   };
 
-private: 
-    void require_unpadded(const Field<const Real>& f);
-
 };  // class RRTMGPRadiation
 
 }  // namespace scream

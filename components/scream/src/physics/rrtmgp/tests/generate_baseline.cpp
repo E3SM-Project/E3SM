@@ -89,6 +89,7 @@ int main (int argc, char** argv) {
     // NOTE: these will get replaced with AD stuff that handles these
     std::cout << "rrtmgp_main..." << std::endl;
     rrtmgp::rrtmgp_main(
+        ncol, nlay,
         p_lay, t_lay, p_lev, t_lev, gas_concs,
         sfc_alb_dir, sfc_alb_dif, mu0,
         lwp, iwp, rel, rei,

@@ -11,6 +11,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "mo_gas_concentrations.h"
 #include "mo_garand_atmos_io.h"
 #include "Intrinsics.h"
@@ -21,6 +22,10 @@
  */
 
 namespace scream {
+
+  using KT = KokkosTypes<DefaultDevice>;
+  using ExeSpace = KT::ExeSpace;
+  using MemberType = KT::MemberType;
        
     /* 
      * Run standalone test through SCREAM driver this time
@@ -92,33 +97,20 @@ namespace scream {
         // Make sure we have the right dimension sizes
         REQUIRE(nlay == sw_flux_up_ref.dimension[1]-1);
 
-        // Grab reshaped views from the field manager and wrap pointers in yakl arrays
-        auto d_pmid = field_mgr.get_field("p_mid").get_reshaped_view<Real**>();
-        auto d_tmid = field_mgr.get_field("T_mid").get_reshaped_view<Real**>();
-        auto d_pint = field_mgr.get_field("p_int").get_reshaped_view<Real**>();
-        auto d_pdel = field_mgr.get_field("pseudo_density").get_reshaped_view<Real**>();
-        auto d_tint = field_mgr.get_field("t_int").get_reshaped_view<Real**>();
-        auto d_sfc_alb_dir = field_mgr.get_field("surf_alb_direct").get_reshaped_view<Real**>();
-        auto d_sfc_alb_dif = field_mgr.get_field("surf_alb_diffuse").get_reshaped_view<Real**>();
-        auto d_lwp = field_mgr.get_field("lwp").get_reshaped_view<Real**>();
-        auto d_iwp = field_mgr.get_field("iwp").get_reshaped_view<Real**>();
-        auto d_rel = field_mgr.get_field("eff_radius_qc").get_reshaped_view<Real**>();
-        auto d_rei = field_mgr.get_field("eff_radius_qi").get_reshaped_view<Real**>();
-        auto d_mu0 = field_mgr.get_field("cos_zenith").get_reshaped_view<Real*>();
-        auto d_gas_vmr = field_mgr.get_field("gas_vmr").get_reshaped_view<Real***>();
-        yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay("p_lay", d_pmid.data(), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay("t_lay", d_tmid.data(), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> p_del("p_del", d_pdel.data(), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev("p_lev", d_pint.data(), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> t_lev("t_lev", d_tint.data(), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dir("sfc_alb_dir", d_sfc_alb_dir.data(), ncol, nswbands);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sfc_alb_dif("sfc_alb_dif", d_sfc_alb_dif.data(), ncol, nswbands);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> lwp("lwp", d_lwp.data(), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> iwp("iwp", d_iwp.data(), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> rel("rel", d_rel.data(), ncol, nlay);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> rei("rei", d_rei.data(), ncol, nlay);
-        yakl::Array<double,1,memDevice,yakl::styleFortran> mu0("mu0", d_mu0.data(), ncol);
-        yakl::Array<double,3,memDevice,yakl::styleFortran> gas_vmr("gas_vmr", d_gas_vmr.data(), ncol, nlay, ngas);
+        // Create yakl arrays to store the input data
+        auto p_lay = real2d("p_lay", ncol, nlay);
+        auto t_lay = real2d("t_lay", ncol, nlay);
+        auto p_del = real2d("p_del", ncol, nlay);
+        auto p_lev = real2d("p_lev", ncol, nlay+1);
+        auto t_lev = real2d("t_lev", ncol, nlay+1);
+        auto sfc_alb_dir = real2d("sfc_alb_dir", ncol, nswbands);
+        auto sfc_alb_dif = real2d("sfc_alb_dif", ncol, nswbands);
+        auto lwp = real2d("lwp", ncol, nlay);
+        auto iwp = real2d("iwp", ncol, nlay);
+        auto rel = real2d("rel", ncol, nlay);
+        auto rei = real2d("rei", ncol, nlay);
+        auto mu0 = real1d("mu0", ncol);
+        auto gas_vmr = real3d("gas_vmr", ncol, nlay, ngas);
 
         // Need to calculate a dummy pseudo_density for our test problem
         parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
@@ -152,25 +144,92 @@ namespace scream {
         auto T_mid0 = real2d("T_mid0", ncol, nlay);
         t_lay.deep_copy_to(T_mid0);
 
+        // Grab views from field manager and copy in values from yakl arrays. Making
+        // copies is necessary since the yakl::Array take in data arranged with ncol
+        // as the fastest index, but the field manager expects the 2nd dimension as
+        // the fastest index.
+        auto d_pmid = field_mgr.get_field("p_mid").get_reshaped_view<Real**>();
+        auto d_tmid = field_mgr.get_field("T_mid").get_reshaped_view<Real**>();
+        auto d_pint = field_mgr.get_field("p_int").get_reshaped_view<Real**>();
+        auto d_pdel = field_mgr.get_field("pseudo_density").get_reshaped_view<Real**>();
+        auto d_tint = field_mgr.get_field("t_int").get_reshaped_view<Real**>();
+        auto d_sfc_alb_dir = field_mgr.get_field("surf_alb_direct").get_reshaped_view<Real**>();
+        auto d_sfc_alb_dif = field_mgr.get_field("surf_alb_diffuse").get_reshaped_view<Real**>();
+        auto d_lwp = field_mgr.get_field("lwp").get_reshaped_view<Real**>();
+        auto d_iwp = field_mgr.get_field("iwp").get_reshaped_view<Real**>();
+        auto d_rel = field_mgr.get_field("eff_radius_qc").get_reshaped_view<Real**>();
+        auto d_rei = field_mgr.get_field("eff_radius_qi").get_reshaped_view<Real**>();
+        auto d_mu0 = field_mgr.get_field("cos_zenith").get_reshaped_view<Real*>();
+        auto d_gas_vmr = field_mgr.get_field("gas_vmr").get_reshaped_view<Real***>();
+        {
+          const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, nlay);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+            const int i = team.league_rank();
+
+            d_mu0(i) = mu0(i+1);
+            Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+              d_pmid(i,k) = p_lay(i+1,k+1);
+              d_tmid(i,k) = t_lay(i+1,k+1);
+              d_pdel(i,k) = p_del(i+1,k+1);
+              d_lwp(i,k)  = lwp(i+1,k+1);
+              d_iwp(i,k)  = iwp(i+1,k+1);
+              d_rel(i,k)  = rel(i+1,k+1);
+              d_rei(i,k)  = rei(i+1,k+1);
+              d_pint(i,k) = p_lev(i+1,k+1);
+              d_tint(i,k) = t_lev(i+1,k+1);
+
+              Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, ngas), [&] (const int& g) {
+                d_gas_vmr(i,k,g) = gas_vmr(i+1,k+1,g+1);
+              });
+            });
+
+            d_pint(i,nlay) = p_lev(i+1,nlay+1);
+            d_tint(i,nlay) = t_lev(i+1,nlay+1);
+
+            Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nswbands), [&] (const int& k) {
+              d_sfc_alb_dir(i,k) = sfc_alb_dir(i+1,k+1);
+              d_sfc_alb_dif(i,k) = sfc_alb_dif(i+1,k+1);
+            });
+          });
+        }
+        Kokkos::fence();
+
         // Run driver
         ad.run(300.0);
 
-        // Dumb check to verify that we did indeed update temperature
-        REQUIRE(t_lay.createHostCopy()(1,1) != T_mid0.createHostCopy()(1,1));
-        T_mid0.deallocate();
-
-        // Check values; need to get fluxes from field manager first
-        // The AD should have called RRTMGP to calculate these values in the ad.run() call
+        // Check values; The correct values have been stored in the field manager, we need to
+        // copy back to YAKL::Array.
         auto d_sw_flux_up = field_mgr.get_field("sw_flux_up").get_reshaped_view<Real**>();
         auto d_sw_flux_dn = field_mgr.get_field("sw_flux_dn").get_reshaped_view<Real**>();
         auto d_sw_flux_dn_dir = field_mgr.get_field("sw_flux_dn_dir").get_reshaped_view<Real**>();
         auto d_lw_flux_up = field_mgr.get_field("lw_flux_up").get_reshaped_view<Real**>();
         auto d_lw_flux_dn = field_mgr.get_field("lw_flux_dn").get_reshaped_view<Real**>();
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_up_test("sw_flux_up_test", d_sw_flux_up.data(), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn_test("sw_flux_dn_test", d_sw_flux_dn.data(), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> sw_flux_dn_dir_test("sw_flux_dn_dir_test", d_sw_flux_dn_dir.data(), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_up_test("lw_flux_up_test", d_lw_flux_up.data(), ncol, nlay+1);
-        yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_dn_test("lw_flux_dn_test", d_lw_flux_dn.data(), ncol, nlay+1);
+        auto sw_flux_up_test = real2d("sw_flux_up_test", ncol, nlay+1);
+        auto sw_flux_dn_test = real2d("sw_flux_dn_test", ncol, nlay+1);
+        auto sw_flux_dn_dir_test = real2d("sw_flux_dn_dir_test",  ncol, nlay+1);
+        auto lw_flux_up_test = real2d("lw_flux_up_test", ncol, nlay+1);
+        auto lw_flux_dn_test = real2d("lw_flux_dn_test", ncol, nlay+1);
+        {
+          const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, nlay);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+            const int i = team.league_rank();
+
+            Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
+              if (k < nlay) t_lay(i+1,k+1) = d_tmid(i,k);
+
+              sw_flux_up_test(i+1,k+1)     = d_sw_flux_up(i,k);
+              sw_flux_dn_test(i+1,k+1)     = d_sw_flux_dn(i,k);
+              sw_flux_dn_dir_test(i+1,k+1) = d_sw_flux_dn_dir(i,k);
+              lw_flux_up_test(i+1,k+1)     = d_lw_flux_up(i,k);
+              lw_flux_dn_test(i+1,k+1)     = d_lw_flux_dn(i,k);
+            });
+          });
+        }
+        Kokkos::fence();
+
+        // Dumb check to verify that we did indeed update temperature
+        REQUIRE(t_lay.createHostCopy()(1,1) != T_mid0.createHostCopy()(1,1));
+        T_mid0.deallocate();
 
         // Make sure fluxes from field manager that were calculated in AD call of RRTMGP match reference fluxes from input file
         REQUIRE(rrtmgpTest::all_equals(sw_flux_up_ref    , sw_flux_up_test  ));
@@ -180,6 +239,24 @@ namespace scream {
         REQUIRE(rrtmgpTest::all_equals(lw_flux_dn_ref    , lw_flux_dn_test    ));
 
         // Deallocate YAKL arrays
+        p_lay.deallocate();
+        t_lay.deallocate();
+        p_del.deallocate();
+        p_lev.deallocate();
+        t_lev.deallocate();
+        sfc_alb_dir.deallocate();
+        sfc_alb_dif.deallocate();
+        lwp.deallocate();
+        iwp.deallocate();
+        rel.deallocate();
+        rei.deallocate();
+        mu0.deallocate();
+        gas_vmr.deallocate();
+        sw_flux_up_test.deallocate();
+        sw_flux_dn_test.deallocate();
+        sw_flux_dn_dir_test.deallocate();
+        lw_flux_up_test.deallocate();
+        lw_flux_dn_test.deallocate();
         sw_flux_up_ref.deallocate();
         sw_flux_dn_ref.deallocate();
         sw_flux_dn_dir_ref.deallocate();
