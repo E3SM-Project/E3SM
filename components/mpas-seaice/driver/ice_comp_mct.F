@@ -1684,8 +1684,8 @@ contains
 !    o  swndf    -- sw: nir diffuse downward
 !    o  swvdf    -- sw: vis diffuse downward
 !    o  swnet    -- sw: net
-!    o  q        -- ocn freeze/melt heat flux
-!    o  frazil   -- ocn frazil production
+!    o  q        -- ocn frazil heat flux(+) / melt potential(-)
+!    o  frazil   -- ocn frazil mass flux 
 !    o  bcphidry -- Black Carbon hydrophilic dry deposition flux
 !    o  bcphodry -- Black Carbon hydrophobic dry deposition flux
 !    o  bcphiwet -- Black Carbon hydrophilic wet deposition flux
@@ -1973,19 +1973,19 @@ contains
         if (trim(config_ocean_surface_type) == "free") then ! free surface (MPAS-O)
         
            ! freezingMeltingPotential(i) is the ocean energy associated with frazil formation 
-           ! when it is positive and frazilMassFlux is positive, and negative  when there is 
-           ! a melting potential in which case frazilMassFlux is zero
+           ! when it is positive and frazilMassFlux is positive. Conversely, freezingMeltingPotential(i)
+           ! is negative when there is the melting potential in which case frazilMassFlux is zero.
 
            freezingMeltingPotential(i) = x2i_i % rAttr(index_x2i_Fioo_q, n)
 
            frazilMassFlux              = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
 
-           ! We calculate a second energy associated with frazil production that is 
-           ! the sea ice model's version, which is passed to sea ice column physics as 
-           ! the frazilProduction, which is positive when frazil forms, otherwise zero.
-           ! frazilProduction is used to balance the mass budget according to what 
-           ! the sea ice model needs to complete the conversion of frazil to sea ice for
-           ! the given quantity of energy the ocean model has passed to the sea ice model.
+           ! Now determine the sea ice mass associated with the frazil heat flux given when
+           ! freezingMeltingPotential(i) is positive. This produces a revised mass flux, given 
+           ! in frazilMassFluxRev for the given sea surface salinity. The resulting difference
+           ! is assigned to frazilMassAdjust(i) which is exported to the ocean in the subsequent
+           ! coupling step as a freshwater and salt flux. This step is required to balance mass
+           ! and heat with the ocean.
 
            call frazil_mass(freezingMeltingPotential(i), frazilMassFluxRev, seaSurfaceSalinity(i), &
                                    config_thermodynamics_type)
@@ -2233,6 +2233,8 @@ contains
       endif
    endif
 
+! REVISION HISTORY:
+! Revised Andrew Roberts May 2021
 !-----------------------------------------------------------------------
 !EOC
 
@@ -2545,7 +2547,9 @@ contains
                i2x_i % rAttr(index_i2x_Faii_swnet,n) = absorbedShortwaveFlux(i)
             endif
 
-            !--- i/o fluxes computed by ice
+            ! i/o fluxes computed by ice, as well as additional freshwater and salt calculated at the last 
+            ! coupling import and needed to grow sea ice from frazil passed from the ocean model in the
+            ! field frazilMassAdjust.
             i2x_i % rAttr(index_i2x_Fioi_melth,n) = oceanHeatFlux(i)
             i2x_i % rAttr(index_i2x_Fioi_swpen,n) = oceanShortwaveFlux(i)
             i2x_i % rAttr(index_i2x_Fioi_meltw,n) = oceanFreshWaterFlux(i) + frazilMassAdjust(i)
@@ -2583,6 +2587,8 @@ contains
       block_ptr => block_ptr % next
    enddo
 
+! REVISION HISTORY:
+! Revised Andrew Roberts May 2021
 !-----------------------------------------------------------------------
 !EOC
 
@@ -2725,7 +2731,11 @@ contains
                                  config_thermodynamics_type)
 !
 ! !DESCRIPTION:
-! Calculate freezing potential for a cell
+! Calculate frazil mass based on on the sea surface salinity, and frazil heat flux 
+! from the ocean, otherwise referred to as to as the freeze-melt potential. When 
+! freezingPotential is positive, it gives the heat flux, according to the ocean model
+! associated with the frazil mass passed from the ocean.  This function calculates
+! the frazil mass based on the freezingPotential according to sea ice model thermodynamics,
 !
 ! !USES:
       use ice_mushy_physics, only:  &
@@ -2772,9 +2782,6 @@ contains
          qi0new = -seaiceDensityIce*seaiceLatentHeatMelting
       endif    ! ktherm
 
-      !vi0new = max (frazilMassFlux, 0.0_RKIND) / seaiceDensityIce
-      !freezingPotential = -vi0new*qi0new ! note sign convention, qi < 0
-
       frazilMassFlux = -freezingPotential*seaiceDensityIce/qi0new
 
    else
@@ -2783,6 +2790,8 @@ contains
 
    endif
 
+! REVISION HISTORY:
+! Revised Andrew Roberts May 2021
 !-----------------------------------------------------------------------
 !EOC
 
