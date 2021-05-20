@@ -115,7 +115,7 @@ contains
          eoe,          &! edge on edge index
          kmin, kmax     ! min and max indices for vertical
 
-      integer :: kmin, kmax, jmax
+      integer :: kmin, kmax
 
       real (kind=RKIND) :: &
          avgVorticity, &! vorticity averaged across edge
@@ -206,7 +206,7 @@ contains
             qArr(k,iEdge) = 0.0_RKIND
          end do
 
-         do j = 1, jmax
+         do j = 1, nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(j, iEdge)
             edgeWeight = weightsOnEdge(j, iEdge)
 
