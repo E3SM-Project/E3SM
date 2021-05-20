@@ -3851,10 +3851,12 @@ contains
       ! patch loop
       do fp = 1,num_methp
          p = filter_methp(fp)
-
-         if (newrun .or. tempavg_agnpp(p) == spval) then ! Extra check needed because for back-compatibility
-            tempavg_agnpp(p) = 0._r8
-            tempavg_bgnpp(p) = 0._r8
+         c = veg_pp%column(p)
+         if(.not.col_pp%is_fates(c)) then
+            if (newrun .or. tempavg_agnpp(p) == spval) then ! Extra check needed because for back-compatibility
+               tempavg_agnpp(p) = 0._r8
+               tempavg_bgnpp(p) = 0._r8
+            end if
          end if
       end do
 
