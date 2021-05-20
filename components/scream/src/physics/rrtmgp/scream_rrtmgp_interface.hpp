@@ -72,21 +72,25 @@ namespace scream {
          * with the standard practice of using "water path" to refer to the total column-integrated
          * quantities).
          */
-        template<class T, int myMem, int myStyle> void mixing_ratio_to_layer_mass(
+        template<class T, int myMem, int myStyle> void mixing_ratio_to_cloud_mass(
                 yakl::Array<T,2,myMem,myStyle> const &mixing_ratio, 
                 yakl::Array<T,2,myMem,myStyle> const &cloud_fraction, 
                 yakl::Array<T,2,myMem,myStyle> const &dp, 
-                yakl::Array<T,2,myMem,myStyle>       &layer_mass) {
-            real incloud_mixing_ratio;
+                yakl::Array<T,2,myMem,myStyle>       &cloud_mass) {
             int ncol = mixing_ratio.dimension[0];
             int nlay = mixing_ratio.dimension[1];
             using physconst = scream::physics::Constants<Real>;
             parallel_for(Bounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
                 // Compute in-cloud mixing ratio (mixing ratio of the cloudy part of the layer)
                 // NOTE: these thresholds (from E3SM) seem arbitrary, but included here for consistency
-                incloud_mixing_ratio = std::min(mixing_ratio(icol,ilay) / std::max(0.0001, cloud_fraction(icol,ilay)), 0.005);
+                // This limits in-cloud mixing ratio to 0.005 kg/kg. According to note in cloud_diagnostics
+                // in EAM, this is consistent with limits in MG2. Is this true for P3?
+                // Note also that this limits cloud fraction in the computation to 0.0001, to avoid
+                // dividing by zero. But if cloud fraction is zero, should we not just make incloud mixing
+                // ration zero as well? In that case, we would probably expect mixing_ratio to also be zero.
+                auto incloud_mixing_ratio = std::min(mixing_ratio(icol,ilay) / std::max(0.0001, cloud_fraction(icol,ilay)), 0.005);
                 // Compute layer-integrated cloud mass (per unit area)
-                layer_mass(icol,ilay) = incloud_mixing_ratio * dp(icol,ilay) / physconst::gravit;
+                cloud_mass(icol,ilay) = incloud_mixing_ratio * dp(icol,ilay) / physconst::gravit;
             });
         }
 
