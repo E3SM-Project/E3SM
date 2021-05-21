@@ -811,8 +811,6 @@ contains
    subroutine ocn_diagnostic_solve_richardson(displacedDensity, density, zMid, &
                 normalVelocity, edgeAreaFractionOfCell, BruntVaisalaFreqTop, RiTopOfCell)!{{{
 
-      use ocn_mesh   ! debug, mdt :: this should be module-level
-
       implicit none
 
       !-----------------------------------------------------------------
@@ -914,8 +912,6 @@ contains
                 layerThicknessEdge, normalVelocity, tracersSurfaceLayerValue,  &
                 indexSurfaceLayerDepth, normalVelocitySurfaceLayer, &
                 surfaceFluxAttenuationCoefficient, surfaceFluxAttenuationCoefficientRunoff)!{{{
-
-      use ocn_mesh   ! debug, mdt :: this should be module-level
 
       implicit none
 
@@ -1241,8 +1237,6 @@ contains
    subroutine ocn_diagnostic_solve_surface_pressure(forcingPool, atmosphericPressure, &
                 seaIcePressure, surfacePressure)!{{{
 
-      use ocn_mesh     ! debug, mdt :: this should be module-level
-
       implicit none
 
       !-----------------------------------------------------------------
@@ -1317,8 +1311,6 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_z_coordinates(forcingPool, layerThickness, zMid, zTop, ssh)!{{{
-
-      use ocn_mesh     ! debug, mdt :: this should be module-level
 
       implicit none
 
@@ -1399,8 +1391,6 @@ contains
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_pressure(forcingPool, layerThickness, density, &
                 surfacePressure, montgomeryPotential, pressure)!{{{
-
-      use ocn_mesh     ! debug, mdt :: this should be module-level
 
       implicit none
 
@@ -1516,8 +1506,6 @@ contains
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_ssh(forcingPool, ssh, seaIcePressure, pressureAdjustedSSH, &
                 gradSSH)!{{{
-
-      use ocn_mesh     ! debug, mdt :: this should be module-level
 
       implicit none
 

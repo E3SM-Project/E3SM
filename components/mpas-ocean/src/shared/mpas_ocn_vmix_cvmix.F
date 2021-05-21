@@ -21,6 +21,7 @@ module ocn_vmix_cvmix
 
    use ocn_constants
    use ocn_config
+   use ocn_mesh
    use ocn_diagnostics_variables
 
    use cvmix_kinds_and_types
