@@ -91,15 +91,9 @@ public:
         dz(icol,ipack) = PF::calculate_dz(pseudo_density_pack, pmid_pack, T_atm_pack, qv_pack);
         // Cloud fraction
         // Set minimum cloud fraction - avoids division by zero
-        cld_frac_l(icol,ipack) = mincld;
-        cld_frac_i(icol,ipack) = mincld;
-        cld_frac_r(icol,ipack) = mincld;
-        // Update cloud fractions based on the total cloud fraction, 
-        // only use total_cld_fraction when it is greater than mincld.
-        const Smask cld_frac_t_mask(cld_frac_t_pack>mincld);
-        cld_frac_l(icol,ipack).set(cld_frac_t_mask,cld_frac_t_pack);
-        cld_frac_i(icol,ipack).set(cld_frac_t_mask,cld_frac_t_pack);
-        cld_frac_r(icol,ipack).set(cld_frac_t_mask,cld_frac_t_pack);
+        cld_frac_l(icol,ipack) = ekat::max(cld_frac_t(icol,ipack),mincld);
+        cld_frac_i(icol,ipack) = ekat::max(cld_frac_t(icol,ipack),mincld);
+        cld_frac_r(icol,ipack) = ekat::max(cld_frac_t(icol,ipack),mincld);
         // update rain cloud fraction given neighboring levels using max-overlap approach.
         for (int ivec=0;ivec<Spack::n;ivec++)
         {
