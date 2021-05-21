@@ -1,6 +1,7 @@
 #ifndef SCREAM_COLUMN_OPS_HPP
 #define SCREAM_COLUMN_OPS_HPP
 
+#include <Kokkos_MemoryTraits.hpp>
 #include <type_traits>
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_math.hpp"
@@ -81,24 +82,23 @@ public:
     return sizeof(ScalarT) / sizeof(scalar_type);
   }
 
-
   // Kokkos types
   using exec_space = typename device_type::execution_space;
   using KT = ekat::KokkosTypes<device_type>;
 
   using TeamMember = typename KT::MemberType;
 
-  template<typename T>
-  using view_1d = typename KT::template view_1d<T>;
+  template<typename ScalarT,typename MT = Kokkos::MemoryManaged>
+  using view_1d = typename KT::template view_1d<ScalarT,MT>;
 
   KOKKOS_INLINE_FUNCTION
   static constexpr scalar_type one  () { return scalar_type(1); }
   KOKKOS_INLINE_FUNCTION
   static constexpr scalar_type zero () { return scalar_type(0); }
 
-  template<typename InputProvider, typename ScalarT>
+  template<typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
-  static void debug_checks (const int num_levels, const view_1d<ScalarT>& x) {
+  static void debug_checks (const int num_levels, const view_1d<ScalarT,MT>& x) {
 
     // Mini function to check that InputProvider supports op()(int)->pack_type,
     // and that the number of levels is compatible with pack_type and x's size.
@@ -110,40 +110,40 @@ public:
     using raw_ret_type = typename std::remove_const<typename std::remove_reference<ret_type>::type>::type;
 
     static_assert(std::is_same<raw_ret_type,ScalarT>::value,
-      "Error! InputProvider should expose op()(int), returning a pack type.\n");
+      "Error! InputProvider should expose op()(int), returning a ScalarT.\n");
 
     static_assert(!ekat::OnGpu<exec_space>::value || pack_size<ScalarT>()==1,
                   "Error! Do not use PackSize>1 on GPU.\n");
   }
 
   // Compute X at level midpoints, given X at level interfaces
-  template<typename InputProvider, typename ScalarT>
+  template<typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static void
   compute_midpoint_values (const TeamMember& team,
                            const int num_mid_levels,
                            const InputProvider& x_i,
-                           const view_1d<ScalarT>& x_m,
+                           const view_1d<ScalarT,MT>& x_m,
                            const scalar_type alpha = one(),
                            const scalar_type beta = zero())
   {
     compute_midpoint_values<CombineMode::Replace>(team,num_mid_levels,x_i,x_m,alpha,beta);
   }
   // Compute X at level midpoints, given X at level interfaces
-  template<CombineMode CM, typename InputProvider, typename ScalarT>
+  template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static void
   compute_midpoint_values (const TeamMember& team,
                            const int num_mid_levels,
                            const InputProvider& x_i,
-                           const view_1d<ScalarT>& x_m,
+                           const view_1d<ScalarT,MT>& x_m,
                            const scalar_type alpha = one(),
                            const scalar_type beta = zero())
   {
     // Sanity checks
     debug_checks<InputProvider>(num_mid_levels,x_m);
 
-    compute_midpoint_values_impl<CM,InputProvider,ScalarT>(team,num_mid_levels,x_i,x_m,alpha,beta);
+    compute_midpoint_values_impl<CM,InputProvider,ScalarT,MT>(team,num_mid_levels,x_i,x_m,alpha,beta);
   }
 
   // Compute X at level interfaces, given X at level midpoints and top or bot bc.
@@ -156,14 +156,14 @@ public:
   //  - CAVEAT: this implementation is not monotonic, in the sense that it can
   //            create maxima/minima larger than the input x_m, even at the
   //            "interior" interfaces. E.g., x_m==1, bc=0, yield x_i=[0,2,0,2,...].
-  template<bool FixTop, typename InputProvider, typename ScalarT>
+  template<bool FixTop, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static void
   compute_interface_values (const TeamMember& team,
                             const int num_mid_levels,
                             const InputProvider& x_m,
                             const scalar_type& bc,
-                            const view_1d<ScalarT>& x_i)
+                            const view_1d<ScalarT,MT>& x_i)
   {
     // Sanity checks
     debug_checks<InputProvider>(num_mid_levels+1,x_i);
@@ -172,13 +172,13 @@ public:
   }
 
   // Given X at level interfaces, compute dX at level midpoints.
-  template<typename InputProvider, typename ScalarT>
+  template<typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static void
   compute_midpoint_delta (const TeamMember& team,
                           const int num_mid_levels,
                           const InputProvider& x_i,
-                          const view_1d<ScalarT>& dx_m,
+                          const view_1d<ScalarT,MT>& dx_m,
                           const scalar_type alpha = one(),
                           const scalar_type beta = zero())
   {
@@ -186,13 +186,13 @@ public:
   }
 
   // Given X at level interfaces, compute dX at level midpoints.
-  template<CombineMode CM, typename InputProvider, typename ScalarT>
+  template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static void
   compute_midpoint_delta (const TeamMember& team,
                           const int num_mid_levels,
                           const InputProvider& x_i,
-                          const view_1d<ScalarT>& dx_m,
+                          const view_1d<ScalarT,MT>& dx_m,
                           const scalar_type alpha = one(),
                           const scalar_type beta = zero())
   {
@@ -209,13 +209,13 @@ public:
   //             is over (num_mid_levels,0]. Recall that ilev=0 is the top of the model.
   //  - InputProvider: must provide an input al all mid levels
   //  - s0: used as bc value at k=0 (FromTop=true) or k=num_mid_levels (FromTop=false)
-  template<bool FromTop, typename InputProvider, typename ScalarT>
+  template<bool FromTop, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static void
   column_scan (const TeamMember& team,
                const int num_mid_levels,
                const InputProvider& dx_m,
-               const view_1d<ScalarT>& x_i,
+               const view_1d<ScalarT,MT>& x_i,
                const scalar_type& s0 = zero())
   {
     // Sanity checks
@@ -229,13 +229,13 @@ protected:
 
   // ------------ Impls of midpoint_value ------------- //
 
-  template<CombineMode CM, typename InputProvider, typename ScalarT>
+  template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(pack_size<ScalarT>()==1)>::type
   compute_midpoint_values_impl (const TeamMember& team,
                                 const int num_mid_levels,
                                 const InputProvider& x_i,
-                                const view_1d<ScalarT>& x_m,
+                                const view_1d<ScalarT,MT>& x_m,
                                 const scalar_type alpha,
                                 const scalar_type beta)
   {
@@ -247,13 +247,13 @@ protected:
     });
   }
 
-  template<CombineMode CM, typename InputProvider, typename ScalarT>
+  template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(pack_size<ScalarT>()>1)>::type
   compute_midpoint_values_impl (const TeamMember& team,
                                 const int num_mid_levels,
                                 const InputProvider& x_i,
-                                const view_1d<ScalarT>& x_m,
+                                const view_1d<ScalarT,MT>& x_m,
                                 const scalar_type alpha,
                                 const scalar_type beta)
   {
@@ -299,13 +299,13 @@ protected:
 
   // ------------ Impls of midpoint_delta ------------- //
 
-  template<CombineMode CM, typename InputProvider, typename ScalarT>
+  template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(pack_size<ScalarT>()==1)>::type
   compute_midpoint_delta_impl (const TeamMember& team,
                                const int num_mid_levels,
                                const InputProvider& x_i,
-                               const view_1d<ScalarT>& dx_m,
+                               const view_1d<ScalarT,MT>& dx_m,
                                const scalar_type alpha,
                                const scalar_type beta)
   {
@@ -317,13 +317,13 @@ protected:
     });
   }
 
-  template<CombineMode CM, typename InputProvider, typename ScalarT>
+  template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(pack_size<ScalarT>()>1)>::type
   compute_midpoint_delta_impl (const TeamMember& team,
                                const int num_mid_levels,
                                const InputProvider& x_i,
-                               const view_1d<ScalarT>& dx_m,
+                               const view_1d<ScalarT,MT>& dx_m,
                                const scalar_type alpha,
                                const scalar_type beta)
   {
@@ -362,13 +362,13 @@ protected:
 
   // ------------ Impls of column_scan ------------- //
 
-  template<bool FromTop,typename InputProvider, typename ScalarT>
+  template<bool FromTop,typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(pack_size<ScalarT>()==1)>::type
   column_scan_impl (const TeamMember& team,
                     const int num_mid_levels,
                     const InputProvider& dx_m,
-                    const view_1d<ScalarT>& x_i,
+                    const view_1d<ScalarT,MT>& x_i,
                     const scalar_type& s0 = zero())
   {
     // If statement is evaluated at compile time, and compiled away.
@@ -402,13 +402,13 @@ protected:
     }
   }
 
-  template<bool FromTop, typename InputProvider, typename ScalarT>
+  template<bool FromTop, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(pack_size<ScalarT>()>1)>::type
   column_scan_impl (const TeamMember& team,
                     const int num_mid_levels,
                     const InputProvider& dx_m,
-                    const view_1d<ScalarT>& x_i,
+                    const view_1d<ScalarT,MT>& x_i,
                     const scalar_type& s0 = zero())
   {
     using pack_type = ScalarT;
@@ -552,14 +552,14 @@ protected:
 
   // ------------ Impls of compute_interface_values ------------- //
 
-  template<bool FixTop, typename InputProvider, typename ScalarT>
+  template<bool FixTop, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(pack_size<ScalarT>()==1)>::type
   compute_interface_values_impl (const TeamMember& team,
                                  const int num_mid_levels,
                                  const InputProvider& x_m,
                                  const scalar_type& bc,
-                                 const view_1d<ScalarT>& x_i)
+                                 const view_1d<ScalarT,MT>& x_i)
   {
     // Helper function that returns (-1)^k
     auto m1_pow_k = [](const int k) -> scalar_type {
@@ -598,14 +598,14 @@ protected:
     }
   }
 
-  template<bool FixTop, typename InputProvider, typename ScalarT>
+  template<bool FixTop, typename InputProvider, typename ScalarT, typename MT>
   KOKKOS_INLINE_FUNCTION
   static typename std::enable_if<(pack_size<ScalarT>()>1)>::type
   compute_interface_values_impl (const TeamMember& team,
                                  const int num_mid_levels,
                                  const InputProvider& x_m,
                                  const scalar_type& bc,
-                                 const view_1d<ScalarT>& x_i)
+                                 const view_1d<ScalarT,MT>& x_i)
   {
     using pack_type = ScalarT;
     constexpr int PackLength = pack_size<ScalarT>();
