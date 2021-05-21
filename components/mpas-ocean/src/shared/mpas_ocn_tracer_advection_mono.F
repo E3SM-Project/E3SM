@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  ocn_tracer_advection_mono
 !
@@ -16,7 +16,7 @@
 !>  This module contains routines for monotonic advection of tracers
 !>  using a Flux Corrected Transport (FCT) algorithm
 !
-!-------------------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
 module ocn_tracer_advection_mono
 
@@ -25,14 +25,10 @@ module ocn_tracer_advection_mono
    use mpas_timer
 #endif
    use mpas_kind_types
-   use mpas_derived_types
-   use mpas_dmpar
-   use mpas_pool_routines
-   use mpas_io_units
-   use mpas_threading
    use mpas_tracer_advection_helpers
 
    use ocn_constants
+   use ocn_mesh
    use ocn_diagnostics_variables
 
    implicit none
@@ -51,33 +47,15 @@ module ocn_tracer_advection_mono
       vertOrder3 = 3,    &!< 3rd order scheme
       vertOrder4 = 4      !< 4th order scheme
 
-   ! These temporary allocatable arrays will eventually be moved back into
-   ! the tendency routine, but must be declared here for now so that they
-   ! retain the shared attribute. Once the threading model has been changed,
-   ! these should become thread private again with reduced size
-
-   real (kind=RKIND), dimension(:,:), allocatable :: &
-      tracerCur,     &! reordered current tracer
-      tracerMax,     &! max tracer in neighbors for limiting
-      tracerMin,     &! min tracer in neighbors for limiting
-      hNewInv,       &! inverse of new layer thickness
-      hProv,         &! provisional layer thickness
-      hProvInv,      &! inverse of provisional layer thickness
-      flxIn,         &! flux coming into each cell
-      flxOut,        &! flux going out of each cell
-      workTend,      &! temp for holding some tendency values
-      lowOrderFlx,   &! low order flux for FCT
-      highOrderFlx    ! high order flux for FCT
-
    ! public method interfaces
    public :: ocn_tracer_advection_mono_tend, &
              ocn_tracer_advection_mono_init
 
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!**********************************************************************
 
    contains
 
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!**********************************************************************
 !
 !  routine ocn_tracer_advection_mono_tend
 !
@@ -85,64 +63,44 @@ module ocn_tracer_advection_mono
 !> \author Mark Petersen, David Lee, Doug Jacobsen, Phil Jones
 !> \date   October 2017, updated May 2019
 !> \details
-!>  This routine computes the monotonic tracer horizontal advection tendency
-!>  using a flux-corrected transport (FCT) algorithm.
+!>  This routine computes the monotonic tracer horizontal advection
+!>  tendency using a flux-corrected transport (FCT) algorithm.
 !
-!-------------------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_advection_mono_tend(tend, tracers, layerThickness,    &
-                                             normalThicknessFlux, w, dt,       &
-                                             advCoefs, advCoefs3rd,            &
-                                             nAdvCellsForEdge, advCellsForEdge,&
-                                             minLevelCell, maxLevelCell,       &
-                                             minLevelEdgeBot, maxLevelEdgeTop, &
-                                             highOrderAdvectionMask,           &
-                                             edgeSignOnCell, meshPool,         &
-                                             computeBudgets)!{{{
+   subroutine ocn_tracer_advection_mono_tend( &
+                                        tend, tracers, layerThickness, &
+                                        normalThicknessFlux, w, dt,    &
+                                        computeBudgets)!{{{
 
-      !*** Input/Output parameters
+      !-----------------------------------------------------------------
+      ! Input/Output parameters
+      !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         tend            !< [in,out] Tracer tendency to which advection added
+         tend    !< [inout] Tracer tendency to which advection added
 
-      !*** Input parameters
+      !-----------------------------------------------------------------
+      ! Input parameters
+      !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-         tracers             !< [in] Current tracer values
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickness      !< [in] Thickness
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalThicknessFlux !< [in] Thichness weighted velocitiy
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         w                   !< [in] Vertical velocity
-      real (kind=RKIND), intent(in) :: &
-         dt                  !< [in] Timestep
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         advCoefs            !< [in] Coefficients for 2nd order advection
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         advCoefs3rd         !< [in] Coeffs for missing 3rd/4th order advection
-      integer, dimension(:), intent(in) :: &
-         nAdvCellsForEdge    !< [in] Number of advection cells for each edge
-      integer, dimension(:,:), intent(in) :: &
-         advCellsForEdge     !< [in] List of advection cells for each edge
-      integer, dimension(:), intent(in) :: &
-         minLevelCell        !< [in] Index to min level at cell center
-      integer, dimension(:), intent(in) :: &
-         maxLevelCell        !< [in] Index to max level at cell center
-      integer, dimension(:), intent(in) :: &
-         minLevelEdgeBot     !< [in] Indx min edge lvl with both non-land cells
-      integer, dimension(:), intent(in) :: &
-         maxLevelEdgeTop     !< [in] Indx max edge lvl with both non-land cells
-      integer, dimension(:,:), intent(in) :: &
-         highOrderAdvectionMask !< [in] Mask for high order advection
-      integer, dimension(:,:), intent(in) :: &
-         edgeSignOnCell         !< [in] Sign for flux from edge on each cell
-      type (mpas_pool_type), intent(in) :: &
-         meshPool               !< [in] Mesh information
-      logical, intent(in) :: &
-         computeBudgets         !< [in] Flag to compute active tracer budgets
+         tracers               !< [in] Current tracer values
 
-      !*** Local variables
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThickness,      &!< [in] Thickness
+         normalThicknessFlux, &!< [in] Thichness weighted velocitiy
+         w                     !< [in] Vertical velocity
+
+      real (kind=RKIND), intent(in) :: &
+         dt                    !< [in] Timestep
+
+      logical, intent(in) :: &
+         computeBudgets        !< [in] Flag to compute active tracer budgets
+
+      !-----------------------------------------------------------------
+      ! Local variables
+      !-----------------------------------------------------------------
 
       integer ::          &
          i, iCell, iEdge, &! horz indices
@@ -152,19 +110,6 @@ module ocn_tracer_advection_mono
          nVertLevels,     &! total num vertical levels
          iTracer,         &! tracer index
          numTracers        ! total number of tracers
-
-      ! pointers for mesh variables retrieved from mesh pool
-      integer, dimension(:), pointer, contiguous :: &
-         nCellsArray,   &! number of cells for each halo depth
-         nEdgesArray,   &! number of edges for each halo depth
-         nEdgesOnCell    ! number of edges on each cell
-      integer, dimension(:,:), pointer, contiguous :: &
-         cellsOnEdge,   &! indices of cells on edges
-         cellsOnCell,   &! indices of cells on cells
-         edgesOnCell     ! indices of edges on cells
-      real (kind=RKIND), dimension(:),   pointer, contiguous :: &
-         dvEdge,            &! edge metric
-         areaCell            ! cell area
 
       real (kind=RKIND) ::  &
          signedFactor,      &! temp factor including flux sign
@@ -181,9 +126,22 @@ module ocn_tracer_advection_mono
          verticalWeightKm1, &! vertical weighting
          coef1, coef3        ! temporary coefficients
 
-      real (kind=RKIND), dimension(size(tracers, dim=2)) :: &
+      real (kind=RKIND), dimension(:), allocatable :: &
          wgtTmp,            &! vertical temporaries for
          flxTmp, sgnTmp      !   high-order flux computation
+
+      real (kind=RKIND), dimension(:,:), allocatable :: &
+         tracerCur,     &! reordered current tracer
+         tracerMax,     &! max tracer in neighbors for limiting
+         tracerMin,     &! min tracer in neighbors for limiting
+         hNewInv,       &! inverse of new layer thickness
+         hProv,         &! provisional layer thickness
+         hProvInv,      &! inverse of provisional layer thickness
+         flxIn,         &! flux coming into each cell
+         flxOut,        &! flux going out of each cell
+         workTend,      &! temp for holding some tendency values
+         lowOrderFlx,   &! low order flux for FCT
+         highOrderFlx    ! high order flux for FCT
 
       real (kind=RKIND), parameter :: &
          eps = 1.e-10_RKIND  ! small number to avoid numerical difficulties
@@ -195,24 +153,16 @@ module ocn_tracer_advection_mono
 #ifdef _ADV_TIMERS
       call mpas_timer_start('startup')
 #endif
-      ! Get mesh data
-      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
-      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
-      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-
       ! Get dimensions
-      nVertLevels = size(tracers,dim=2)
       numTracers  = size(tracers,dim=1)
-      nCells = nCellsArray(size(nCellsArray))
-      nEdges = nEdgesArray(size(nEdgesArray))
+      nCells = nCellsAll
+      nEdges = nEdgesAll
 
       ! allocate temporary arrays
-      allocate(tracerCur   (nVertLevels  ,nCells+1), &
+      allocate(wgtTmp      (nVertLevels), &
+               flxTmp      (nVertlevels), &
+               sgnTmp      (nVertLevels), &
+               tracerCur   (nVertLevels  ,nCells+1), &
                tracerMin   (nVertLevels  ,nCells), &
                tracerMax   (nVertLevels  ,nCells), &
                hNewInv     (nVertLevels  ,nCells), &
@@ -269,7 +219,7 @@ module ocn_tracer_advection_mono
         call mpas_timer_start('cell init')
 #endif
         ! reset nCells to include all cells
-        nCells = nCellsArray( size(nCellsArray) )
+        nCells = nCellsAll
 
         ! Extract current tracer and change index order to improve locality
         !$omp parallel
@@ -289,7 +239,7 @@ module ocn_tracer_advection_mono
 #endif
 
         ! set nCells to first halo level
-        nCells = nCellsArray( 2 )
+        nCells = nCellsHalo(1)
 
         ! Determine bounds on tracer (tracerMin and tracerMax) from
         ! surrounding cells for later limiting.
@@ -319,7 +269,7 @@ module ocn_tracer_advection_mono
         !$omp end parallel
 
         ! Need all the edges around the 1 halo cells and owned cells
-        nEdges = nEdgesArray( 3 )
+        nEdges = nEdgesHalo(2)
 
         ! Compute the high order horizontal flux
 
@@ -360,8 +310,8 @@ module ocn_tracer_advection_mono
           ! Remove low order flux from the high order flux
           ! Store left over high order flux in highOrderFlx array
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-            tracerWeight = iand(highOrderAdvectionMask(k, iEdge)+1, 1) &
-                         * (dvEdge(iEdge) * 0.5_RKIND)                 &
+            tracerWeight = (1.0_RKIND - highOrderAdvectionMask(k,iEdge)) &
+                         * (dvEdge(iEdge) * 0.5_RKIND)                   &
                          * normalThicknessFlux(k, iEdge)
 
             lowOrderFlx(k,iEdge) = dvEdge(iEdge) * &
@@ -384,7 +334,7 @@ module ocn_tracer_advection_mono
         call mpas_timer_start('scale factor build')
 #endif
         ! Initialize flux arrays for all cells
-        nCells = nCellsArray(size(nCellsArray))
+        nCells = nCellsAll
 
         !$omp parallel
         !$omp do schedule(runtime)
@@ -399,7 +349,7 @@ module ocn_tracer_advection_mono
         !$omp end parallel
 
         ! Need one halo of cells around owned cells
-        nCells = nCellsArray( 2 )
+        nCells = nCellsHalo(1)
 
         !$omp parallel
         !$omp do schedule(runtime) &
@@ -461,7 +411,7 @@ module ocn_tracer_advection_mono
         call mpas_timer_start('rescale horiz fluxes')
 #endif
         ! Need all of the edges around owned cells
-        nEdges = nEdgesArray( 2 )
+        nEdges = nEdgesHalo(1)
         !  rescale the high order horizontal fluxes
         !$omp parallel
         !$omp do schedule(runtime) private(cell1, cell2, k)
@@ -482,7 +432,7 @@ module ocn_tracer_advection_mono
         call mpas_timer_start('flux accumulate')
 #endif
 
-        nCells = nCellsArray( 1 )
+        nCells = nCellsOwned
         ! Accumulate the scaled high order vertical tendencies, and the upwind tendencies
         !$omp parallel
         !$omp do schedule(runtime) private(invAreaCell1, signedFactor, i, iEdge, k)
@@ -522,7 +472,7 @@ module ocn_tracer_advection_mono
 
            !$omp parallel
            !$omp do schedule(runtime) private(k)
-           do iEdge = 1,nEdgesArray( 2 )
+           do iEdge = 1,nEdgesHalo(2)
            do k = minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
               ! Save u*h*T flux on edge for analysis. This variable will be
               ! divided by h at the end of the time step.
@@ -533,7 +483,7 @@ module ocn_tracer_advection_mono
            !$omp end do
 
            !$omp do schedule(runtime) private(k)
-           do iCell = 1, nCellsArray( 1 )
+           do iCell = 1, nCellsOwned
            do k = minLevelCell(iCell), maxLevelCell(iCell)
               activeTracerHorizontalAdvectionTendency(iTracer,k,iCell) = &
                                                      workTend(k,iCell)
@@ -545,7 +495,7 @@ module ocn_tracer_advection_mono
         end if ! computeBudgets
 
         if (monotonicityCheck) then
-           nCells = nCellsArray( 1 )
+           nCells = nCellsOwned
            ! Check tracer values against local min,max to detect
            ! non-monotone values and write warning if found
            !$omp parallel
@@ -584,7 +534,7 @@ module ocn_tracer_advection_mono
 #ifdef _ADV_TIMERS
         call mpas_timer_start('cell init')
 #endif
-        nCells = nCellsArray( size(nCellsArray) )
+        nCells = nCellsAll
         ! Initialize variables for use in this iTracer iteration
         !$omp parallel
         !$omp do schedule(runtime) private(k)
@@ -607,7 +557,7 @@ module ocn_tracer_advection_mono
 #endif
 
         ! Need all owned and 1 halo cells
-        nCells = nCellsArray( 2 )
+        nCells = nCellsHalo(1)
 
         ! Determine bounds on tracerCur from neighbor values for limiting
         !$omp parallel
@@ -769,7 +719,7 @@ module ocn_tracer_advection_mono
         call mpas_timer_start('scale factor build')
 #endif
         ! Need one halo of cells around owned cells
-        nCells = nCellsArray( 2 )
+        nCells = nCellsHalo(1)
         !$omp parallel
         !$omp do schedule(runtime) &
         !$omp private(k, tracerMinNew, tracerMaxNew, tracerUpwindNew, scaleFactor)
@@ -807,7 +757,7 @@ module ocn_tracer_advection_mono
         call mpas_timer_start('flux accumulate')
 #endif
 
-        nCells = nCellsArray( 1 )
+        nCells = nCellsOwned
         ! Accumulate the scaled high order vertical tendencies
         ! and the upwind tendencies
         !$omp parallel
@@ -862,7 +812,7 @@ module ocn_tracer_advection_mono
         end if ! computeBudgets
 
         if (monotonicityCheck) then
-          nCells = nCellsArray( 1 )
+          nCells = nCellsOwned
           ! Check for monotonicity of new tracer value
           !$omp parallel
           !$omp do schedule(runtime) private(k, tracerNew)
@@ -898,7 +848,10 @@ module ocn_tracer_advection_mono
 #ifdef _ADV_TIMERS
       call mpas_timer_start('deallocates')
 #endif
-      deallocate(tracerCur,    &
+      deallocate(wgtTmp,       &
+                 flxTmp,       &
+                 sgnTmp,       &
+                 tracerCur,    &
                  tracerMin,    &
                  tracerMax,    &
                  hNewInv,      &
@@ -916,7 +869,7 @@ module ocn_tracer_advection_mono
 
    end subroutine ocn_tracer_advection_mono_tend!}}}
 
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!**********************************************************************
 !
 !  routine ocn_tracer_advection_mono_init
 !
@@ -927,7 +880,7 @@ module ocn_tracer_advection_mono
 !>  This routine initializes monotonic tracer advection quantities for
 !>  the flux-corrected transport (FCT) algorithm.
 !
-!-------------------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
    subroutine ocn_tracer_advection_mono_init(nHalos, horizAdvOrder,        &
                                              vertAdvOrder, inCoef3rdOrder, &
@@ -1000,7 +953,7 @@ module ocn_tracer_advection_mono
 
    end subroutine ocn_tracer_advection_mono_init!}}}
 
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!**********************************************************************
 
 end module ocn_tracer_advection_mono
 

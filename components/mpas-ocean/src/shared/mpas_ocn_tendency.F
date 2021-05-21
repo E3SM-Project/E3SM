@@ -1031,8 +1031,8 @@ contains
          ! routine
          call ocn_tracer_advection_tend(tracerGroup, &
                             normalThicknessFlux, vertAleTransportTop, &
-                            layerThickness, dt, meshPool, tracerGroupTend, &
-                            groupName)
+                            layerThickness, dt, tracerGroupTend, &
+                            computeBudgets)
 
          !
          ! Add horizontal tracer diffusion,
