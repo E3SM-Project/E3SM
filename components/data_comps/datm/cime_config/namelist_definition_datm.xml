@@ -212,6 +212,8 @@
       <value datm_mode="CORE_RYF0304_JRA" >CORE_RYF0304_JRA.GISS.LWDN,CORE_RYF0304_JRA.GISS.SWDN,CORE_RYF0304_JRA.GCGCS,CORE_RYF0304_JRA.NCEP</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
+      <value datm_mode="CFSv2">CFSv2.UV</value>
+      <value datm_mode="CFSR">CFSR.UV</value>
     </values>
   </entry>
 
@@ -273,6 +275,8 @@
       <value stream="presaero.SSP">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
       <value stream="topo.cplhist">null</value>
+      <value stream="CFSv2.UV">$DIN_LOC_ROOT/wav/cfsv2</value>
+      <value stream="CFSR.UV">$DIN_LOC_ROOT/wav/cfsr</value>
     </values>
   </entry>
 
@@ -380,6 +384,8 @@
       <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
       <value stream="topo.cplhist">null</value>
+      <value stream="CFSv2.UV">domain.ocn.CFSv2_CFSv2.200616.nc</value>
+      <value stream="CFSR.UV">domain.ocn.CFSR_CFSR.210415.nc</value>
     </values>
   </entry>
 
@@ -487,6 +493,8 @@
       <value stream="presaero">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_DIR</value>
+      <value stream="CFSv2.UV">$DIN_LOC_ROOT/wav/cfsv2</value>
+      <value stream="CFSR.UV">$DIN_LOC_ROOT/wav/cfsr</value>
     </values>
   </entry>
 
@@ -2273,6 +2281,8 @@
       <value stream="presaero.SSP5-3.4">null</value>
       <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
+      <value stream="CFSv2.UV">sandy_wnd10m_ww3.nc</value>
+      <value stream="CFSR.UV">wnd10mx0.5.gdas.200506.ww3.nc</value>
     </values>
   </entry>
 
@@ -2649,6 +2659,14 @@
       <value stream="topo.observed">
         TOPO topo
       </value>
+      <value  stream="CFSv2.UV">
+        U_GRD_L103  u
+        V_GRD_L103  v
+      </value>
+      <value  stream="CFSR.UV">
+        U_GRD_L103  u
+        V_GRD_L103  v
+      </value>
     </values>
   </entry>
 
@@ -2691,6 +2709,8 @@
       <value stream="presaero.SSP">2015</value>
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_ALIGN</value>
+      <value stream="CFSv2.UV">1</value>
+      <value stream="CFSR.UV">1</value>
     </values>
   </entry>
 
@@ -2759,6 +2779,8 @@
       <value stream="presaero.cesm2_omip" datm_mode="CORE_IAF_JRA.*2018">1652</value> <!-- 1958-(6-1)*(2018-1958+1)-1 -->
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_START</value>
+      <value stream="CFSv2.UV">1</value>
+      <value stream="CFSR.UV">1</value>
     </values									>
   </entry>
 
@@ -2831,6 +2853,8 @@
       <value stream="presaero.cesm2_omip" datm_mode="CORE_IAF_JRA.*2018">2019</value> <!-- 2018+1 -->
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_END</value>
+      <value stream="CFSv2.UV">1</value>
+      <value stream="CFSR.UV">1</value>
     </values>
   </entry>
 
@@ -2918,6 +2942,8 @@
       <value datm_mode="CORE_IAF_JRA.*">CORE_IAF_JRA</value>
       <value datm_mode="CORE_RYF*">CORE_RYF_JRA</value>
       <value datm_mode="CPLHIST">COPYALL</value>
+      <value datm_mode="CFSv2">COPYALL</value>
+      <value datm_mode="CFSR">COPYALL</value>
     </values>
   </entry>
 
@@ -3217,6 +3243,8 @@
       <value datm_mode="CORE2_IAF">u:v</value>
       <value datm_mode="CORE_IAF_JRA.*">u:v</value>
       <value datm_mode="CORE_RYF*">u:v</value>
+      <value datm_mode="CFSv2">u:v</value>
+      <value datm_mode="CFSR">u:v</value>
     </values>
   </entry>
 
