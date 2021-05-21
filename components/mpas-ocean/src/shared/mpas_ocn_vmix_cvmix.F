@@ -889,7 +889,7 @@ contains
 
          call mpas_log_write(&
             'Invalid choice for config_cvmix_background_scheme.  Choices are: none, &
-             constant, BryanLewis')
+             &constant, BryanLewis')
 
          err = 1
 
