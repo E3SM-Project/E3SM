@@ -76,36 +76,31 @@ public:
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
       for (int ipack=0;ipack<m_npack;ipack++) {
+        // The ipack slice of input variables
+        const Spack pmid_pack(pmid(icol,ipack));
+        const Spack T_atm_pack(T_atm(icol,ipack));
+        const Spack pseudo_density_pack(pseudo_density(icol,ipack));
+        const Spack qv_pack(qv(icol,ipack));
+        const Spack cld_frac_t_pack(cld_frac_t(icol,ipack));
         // Exner
-        const Spack opmid(pmid(icol,ipack));
-        const Smask opmid_mask(!isnan(opmid) and opmid>0.0);
-        auto oexner = PF::exner_function(opmid);
-        inv_exner(icol,ipack).set(opmid_mask,1.0/oexner);
+        const auto& exner = PF::exner_function(pmid_pack);
+        inv_exner(icol,ipack) = 1.0/exner;
         // Potential temperature
-        const Spack oT_atm(T_atm(icol,ipack));
-        const Smask oT_atm_mask(!isnan(oT_atm) and oT_atm>0.0);
-        auto oth = PF::calculate_theta_from_T(oT_atm,opmid);
-        th_atm(icol,ipack).set(oT_atm_mask,oth);
+        th_atm(icol,ipack) = PF::calculate_theta_from_T(T_atm_pack,pmid_pack);
         // DZ
-        const Spack opseudo_density(pseudo_density(icol,ipack));
-        const Spack oqv(qv(icol,ipack));
-        const Smask odz_mask(opmid_mask and oT_atm_mask and 
-                             !isnan(opseudo_density) and opseudo_density>0.0 and
-                             !isnan(oqv) and oqv>0.0);
-        auto odz = PF::calculate_dz(opseudo_density, opmid, oT_atm, oqv);
-        dz(icol,ipack).set(odz_mask,odz);
+        dz(icol,ipack) = PF::calculate_dz(pseudo_density_pack, pmid_pack, T_atm_pack, qv_pack);
         // Cloud fraction
         // Set minimum cloud fraction - avoids division by zero
         cld_frac_l(icol,ipack) = mincld;
         cld_frac_i(icol,ipack) = mincld;
         cld_frac_r(icol,ipack) = mincld;
-        // Update cloud fractions based on the total cloud fraction
-        const Spack oast(ast(icol,ipack));
-        const Smask oasti_mask(!isnan(oast) and oast>mincld);
-        cld_frac_l(icol,ipack).set(oasti_mask,oast);
-        cld_frac_i(icol,ipack).set(oasti_mask,oast);
-        cld_frac_r(icol,ipack).set(oasti_mask,oast);
-        // DZ and update rain cloud fraction given neighboring levels.
+        // Update cloud fractions based on the total cloud fraction, 
+        // only use total_cld_fraction when it is greater than mincld.
+        const Smask cld_frac_t_mask(cld_frac_t_pack>mincld);
+        cld_frac_l(icol,ipack).set(cld_frac_t_mask,cld_frac_t_pack);
+        cld_frac_i(icol,ipack).set(cld_frac_t_mask,cld_frac_t_pack);
+        cld_frac_r(icol,ipack).set(cld_frac_t_mask,cld_frac_t_pack);
+        // update rain cloud fraction given neighboring levels using max-overlap approach.
         for (int ivec=0;ivec<Spack::n;ivec++)
         {
           // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top to bottom and determine if the rain fraction needs to
@@ -114,11 +109,9 @@ public:
           Int lev = ipack*Spack::n + ivec;  // Determine the level at this pack/vec location.
           Int ipack_m1 = (lev - 1) / Spack::n;
           Int ivec_m1  = (lev - 1) % Spack::n;
-          Int ipack_p1 = (lev + 1) / Spack::n;
-          Int ivec_p1  = (lev + 1) % Spack::n;
           if (lev != 0) { /* Not applicable at the very top layer */
-            cld_frac_r(icol,ipack)[ivec] = ast(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ?
-                                              ast(icol,ipack_m1)[ivec_m1] :
+            cld_frac_r(icol,ipack)[ivec] = cld_frac_t(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ?
+                                              cld_frac_t(icol,ipack_m1)[ivec_m1] :
                                               cld_frac_r(icol,ipack)[ivec];
           }
         }
@@ -131,7 +124,7 @@ public:
     view_2d_const pmid;
     view_2d_const pseudo_density;
     view_2d       T_atm;
-    view_2d_const ast;
+    view_2d_const cld_frac_t;
     view_2d       qv;
     view_2d       inv_exner;
     view_2d       th_atm;
@@ -141,8 +134,8 @@ public:
     view_2d       dz;
     // Assigning local variables
     void set_variables(const int ncol, const int npack,
-           view_2d_const pmid_, view_2d_const pseudo_density_, view_2d T_atm_, view_2d_const ast_, view_2d qv_,
-           view_2d inv_exner_, view_2d th_atm_, view_2d cld_frac_l_, view_2d cld_frac_i_, view_2d cld_frac_r_, view_2d dz_
+           const view_2d_const& pmid_, const view_2d_const& pseudo_density_, const view_2d& T_atm_, const view_2d_const& cld_frac_t_, const view_2d& qv_,
+           const view_2d& inv_exner_, const view_2d& th_atm_, const view_2d& cld_frac_l_, const view_2d& cld_frac_i_, const view_2d& cld_frac_r_, const view_2d& dz_
            )
     {
       m_ncol = ncol;
@@ -151,7 +144,7 @@ public:
       pmid = pmid_;
       pseudo_density = pseudo_density_;
       T_atm = T_atm_;
-      ast = ast_;
+      cld_frac_t = cld_frac_t_;
       qv = qv_;
       // OUT
       inv_exner = inv_exner_;
@@ -173,24 +166,18 @@ public:
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
       for (int ipack=0;ipack<m_npack;ipack++) {
+        // The ipack slice of input variables
+        const Spack pmid_pack(pmid(icol,ipack));
+        const Spack th_atm_pack(th_atm(icol,ipack));
+        const Spack qv_pack(qv(icol,ipack));
         // Update the atmospheric temperature and the previous temperature.
-        const Spack opmid(pmid(icol,ipack));
-        const Smask opmid_mask(!isnan(opmid) and opmid>0.0);
-        auto oexner = PF::exner_function(opmid);
-        const Spack oth_atm(th_atm(icol,ipack));
-        const Smask oth_atm_mask(!isnan(oth_atm) and oth_atm>0.0);
-        auto oT = PF::calculate_T_from_theta(oth_atm,opmid);
-        T_atm(icol,ipack).set(oth_atm_mask,oT);
-        T_prev(icol,ipack).set(oth_atm_mask,T_atm(icol,ipack));
+        T_atm(icol,ipack) = PF::calculate_T_from_theta(th_atm_pack,pmid_pack);
+        T_prev(icol,ipack) = T_atm(icol,ipack);
         // Update qv_prev
-        const Spack oqv(qv(icol,ipack));
-        const Smask oqv_mask(!isnan(oqv) and oqv>0.0);
-        qv_prev(icol,ipack).set(oqv_mask,oqv);
+        qv_prev(icol,ipack) = qv_pack;
         // Rescale effective radius' into microns
-        for (int ivec=0;ivec<Spack::n;ivec++) {
-          diag_eff_radius_qc(icol,ipack)[ivec] *= 1e6;
-          diag_eff_radius_qi(icol,ipack)[ivec] *= 1e6;
-        }
+        diag_eff_radius_qc(icol,ipack) *= 1e6;
+        diag_eff_radius_qi(icol,ipack) *= 1e6;
       } // for ipack
     } // operator
     // Local variables
@@ -205,8 +192,8 @@ public:
     view_2d       diag_eff_radius_qi;
     // Assigning local values
     void set_variables(const int ncol, const int npack,
-                    view_2d th_atm_, view_2d_const pmid_, view_2d T_atm_, view_2d T_prev_,
-                    view_2d qv_, view_2d qv_prev_, view_2d diag_eff_radius_qc_, view_2d diag_eff_radius_qi_)
+                    const view_2d& th_atm_, const view_2d_const& pmid_, const view_2d& T_atm_, const view_2d& T_prev_,
+                    const view_2d& qv_, const view_2d& qv_prev_, const view_2d& diag_eff_radius_qc_, const view_2d& diag_eff_radius_qi_)
     {
       m_ncol  = ncol;
       m_npack = npack;
