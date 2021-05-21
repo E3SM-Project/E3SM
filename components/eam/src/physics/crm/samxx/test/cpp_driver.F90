@@ -60,6 +60,9 @@ program driver
   character(len=64) :: fprefix = 'cpp_output'
   integer(8) :: t1, t2, tr
 
+  logical(c_bool):: use_MMF_VT      ! flag for MMF variance transport
+  integer        :: MMF_VT_wn_max   ! wavenumber cutoff for filtered variance transport
+
 #if HAVE_MPI
   call mpi_init(ierr)
   call mpi_comm_size(mpi_comm_world,nranks,ierr)
@@ -226,6 +229,9 @@ program driver
     call system_clock(t1)
   endif
 
+  use_MMF_VT = .false.
+  MMF_VT_wn_max = 0
+
   ! NOTE - the crm_output%tkew variable is a diagnostic quantity that was 
   ! recently added for the 2020 INCITE simulations, so if you get a build error
   ! here you might need to remove this argument
@@ -237,6 +243,7 @@ program driver
 #ifdef MMF_ESMT
            crm_input%ul_esmt, crm_input%vl_esmt,                                        &
 #endif
+           crm_input%t_vt, crm_input%q_vt, &
            crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
            crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, &
            crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, crm_output%subcycle_factor, &
@@ -245,12 +252,15 @@ program driver
            crm_output%mcuup, crm_output%mcudn, crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, &
            crm_output%qg_mean, crm_output%qr_mean, crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, &
            crm_output%du_crm, crm_output%ed_crm, crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, &
-           ! crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, & 
            crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkew, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, &
            crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, crm_output%qp_fall, crm_output%qp_evp, &
            crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
            crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
            crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
+           crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%t_vt_ls, crm_output%q_vt_ls, &
+#if defined(MMF_MOMENTUM_FEEDBACK)
+           crm_output%ultend, crm_output%vltend, &
+#endif /* MMF_MOMENTUM_FEEDBACK */
            crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
            crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
            crm_output%precsl, crm_output%prec_crm,  &
@@ -258,7 +268,9 @@ program driver
            crm_output%u_tend_esmt, crm_output%v_tend_esmt,       &
 #endif
            crm_clear_rh, &
-           lat0, long0, gcolp, 2, logical(.true.,c_bool) , 2._c_double , logical(.true.,c_bool) )
+           lat0, long0, gcolp, 2, &
+           use_MMF_VT, MMF_VT_wn_max, &
+           logical(.true.,c_bool) , 2._c_double , logical(.true.,c_bool) )
 
 
 #if HAVE_MPI
