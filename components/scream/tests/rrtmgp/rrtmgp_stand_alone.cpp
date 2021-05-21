@@ -5,6 +5,7 @@
 #include "control/atmosphere_driver.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+#include "physics/share/physics_constants.hpp"
 #include "physics/share/physics_only_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat.hpp"
@@ -109,13 +110,9 @@ namespace scream {
         auto iwp = real2d("iwp", ncol, nlay);
         auto rel = real2d("rel", ncol, nlay);
         auto rei = real2d("rei", ncol, nlay);
+        auto cld = real2d("cld", ncol, nlay);
         auto mu0 = real1d("mu0", ncol);
         auto gas_vmr = real3d("gas_vmr", ncol, nlay, ngas);
-
-        // Need to calculate a dummy pseudo_density for our test problem
-        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
-            p_del(icol,ilay) = abs(p_lev(icol,ilay+1) - p_lev(icol,ilay));
-        });
 
         // Read in dummy Garand atmosphere; if this were an actual model simulation,
         // these would be passed as inputs to the driver
@@ -131,8 +128,23 @@ namespace scream {
         rrtmgpTest::dummy_atmos(
             inputfile, ncol, p_lay, t_lay,
             sfc_alb_dir, sfc_alb_dif, mu0,
-            lwp, iwp, rel, rei
+            lwp, iwp, rel, rei, cld
         );
+        //
+        // Need to calculate a dummy pseudo_density for our test problem
+        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            p_del(icol,ilay) = abs(p_lev(icol,ilay+1) - p_lev(icol,ilay));
+        });
+
+        // We do not want to pass lwp and iwp through the FM, so back out qc and qi for this test
+        // NOTE: test problem provides lwp/iwp in g/m2, not kg/m2! Factor of 1e3 here!
+        using physconst = scream::physics::Constants<double>;
+        auto qc = real2d("qc", ncol, nlay);
+        auto qi = real2d("qi", ncol, nlay);
+        parallel_for(Bounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
+            qc(icol,ilay) = 1e-3 * lwp(icol,ilay) * cld(icol,ilay) * physconst::gravit / p_del(icol,ilay);
+            qi(icol,ilay) = 1e-3 * iwp(icol,ilay) * cld(icol,ilay) * physconst::gravit / p_del(icol,ilay);
+        });
 
         // Copy gases from gas_concs to gas_vmr array
         parallel_for(Bounds<3>(ncol,nlay,ngas), YAKL_LAMBDA(int icol, int ilay, int igas) {
@@ -155,10 +167,11 @@ namespace scream {
         auto d_tint = field_mgr.get_field("t_int").get_reshaped_view<Real**>();
         auto d_sfc_alb_dir = field_mgr.get_field("surf_alb_direct").get_reshaped_view<Real**>();
         auto d_sfc_alb_dif = field_mgr.get_field("surf_alb_diffuse").get_reshaped_view<Real**>();
-        auto d_lwp = field_mgr.get_field("lwp").get_reshaped_view<Real**>();
-        auto d_iwp = field_mgr.get_field("iwp").get_reshaped_view<Real**>();
+        auto d_qc = field_mgr.get_field("qc").get_reshaped_view<Real**>();
+        auto d_qi = field_mgr.get_field("qi").get_reshaped_view<Real**>();
         auto d_rel = field_mgr.get_field("eff_radius_qc").get_reshaped_view<Real**>();
         auto d_rei = field_mgr.get_field("eff_radius_qi").get_reshaped_view<Real**>();
+        auto d_cld = field_mgr.get_field("cldfrac_tot").get_reshaped_view<Real**>();
         auto d_mu0 = field_mgr.get_field("cos_zenith").get_reshaped_view<Real*>();
         auto d_gas_vmr = field_mgr.get_field("gas_vmr").get_reshaped_view<Real***>();
         {
@@ -171,10 +184,11 @@ namespace scream {
               d_pmid(i,k) = p_lay(i+1,k+1);
               d_tmid(i,k) = t_lay(i+1,k+1);
               d_pdel(i,k) = p_del(i+1,k+1);
-              d_lwp(i,k)  = lwp(i+1,k+1);
-              d_iwp(i,k)  = iwp(i+1,k+1);
+              d_qc(i,k)  = qc(i+1,k+1);
+              d_qi(i,k)  = qi(i+1,k+1);
               d_rel(i,k)  = rel(i+1,k+1);
               d_rei(i,k)  = rei(i+1,k+1);
+              d_cld(i,k)  = cld(i+1,k+1);
               d_pint(i,k) = p_lev(i+1,k+1);
               d_tint(i,k) = t_lev(i+1,k+1);
 
@@ -250,6 +264,9 @@ namespace scream {
         iwp.deallocate();
         rel.deallocate();
         rei.deallocate();
+        cld.deallocate();
+        qc.deallocate();
+        qi.deallocate();
         mu0.deallocate();
         gas_vmr.deallocate();
         sw_flux_up_test.deallocate();

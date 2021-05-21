@@ -50,8 +50,9 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
   add_field<Required>("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name());
   add_field<Required>("cos_zenith", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("lwp", scalar3d_layout_mid, kg/m3, grid->name());
-  add_field<Required>("iwp", scalar3d_layout_mid, kg/m3, grid->name());
+  add_field<Required>("qc", scalar3d_layout_mid, kg/kg, grid->name());
+  add_field<Required>("qi", scalar3d_layout_mid, kg/kg, grid->name());
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name());
   add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name());
   add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name());
 
@@ -93,8 +94,9 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("surf_alb_direct").get_reshaped_view<const Real**>();
   auto d_sfc_alb_dif = m_rrtmgp_fields_in.at("surf_alb_diffuse").get_reshaped_view<const Real**>();
   auto d_mu0 = m_rrtmgp_fields_in.at("cos_zenith").get_reshaped_view<const Real*>();
-  auto d_lwp = m_rrtmgp_fields_in.at("lwp").get_reshaped_view<const Real**>();
-  auto d_iwp = m_rrtmgp_fields_in.at("iwp").get_reshaped_view<const Real**>();
+  auto d_qc = m_rrtmgp_fields_in.at("qc").get_reshaped_view<const Real**>();
+  auto d_qi = m_rrtmgp_fields_in.at("qi").get_reshaped_view<const Real**>();
+  auto d_cldfrac_tot = m_rrtmgp_fields_in.at("cldfrac_tot").get_reshaped_view<const Real**>();
   auto d_rel = m_rrtmgp_fields_in.at("eff_radius_qc").get_reshaped_view<const Real**>();
   auto d_rei = m_rrtmgp_fields_in.at("eff_radius_qi").get_reshaped_view<const Real**>();
   auto d_tmid = m_rrtmgp_fields_out.at("T_mid").get_reshaped_view<Real**>();
@@ -115,8 +117,9 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto sfc_alb_dir = real2d("surf_alb_direct", m_ncol, m_nswbands);
   auto sfc_alb_dif = real2d("surf_alb_diffuse", m_ncol, m_nswbands);
   auto mu0 = real1d("cos_zenith", m_ncol);
-  auto lwp = real2d("lwp", m_ncol, m_nlay);
-  auto iwp = real2d("iwp", m_ncol, m_nlay);
+  auto qc = real2d("qc", m_ncol, m_nlay);
+  auto qi = real2d("qi", m_ncol, m_nlay);
+  auto cldfrac_tot = real2d("cldfrac_tot", m_ncol, m_nlay);
   auto rel = real2d("eff_radius_qc", m_ncol, m_nlay);
   auto rei = real2d("eff_radius_qi", m_ncol, m_nlay);
   auto sw_flux_up = real2d("SW_flux_up", m_ncol, m_nlay+1);
@@ -136,8 +139,9 @@ void RRTMGPRadiation::run_impl (const Real dt) {
         p_lay(i+1,k+1) = d_pmid(i,k);
         t_lay(i+1,k+1) = d_tmid(i,k);
         p_del(i+1,k+1) = d_pdel(i,k);
-        lwp(i+1,k+1)   = d_lwp(i,k);
-        iwp(i+1,k+1)   = d_iwp(i,k);
+        qc(i+1,k+1)    = d_qc(i,k);
+        qi(i+1,k+1)    = d_qi(i,k);
+        cldfrac_tot(i+1,k+1) = d_cldfrac_tot(i,k);
         rel(i+1,k+1)   = d_rel(i,k);
         rei(i+1,k+1)   = d_rei(i,k);
         p_lev(i+1,k+1) = d_pint(i,k);
@@ -178,6 +182,19 @@ void RRTMGPRadiation::run_impl (const Real dt) {
       });
       gas_concs.set_vmr(gas_names_1d(igas), tmp2d);
   }
+
+  // Compute layer cloud mass (per unit area)
+  real2d lwp;
+  real2d iwp;
+  lwp = real2d("lwp", m_ncol, m_nlay);
+  iwp = real2d("iwp", m_ncol, m_nlay);
+  scream::rrtmgp::mixing_ratio_to_cloud_mass(qc, cldfrac_tot, p_del, lwp);
+  scream::rrtmgp::mixing_ratio_to_cloud_mass(qi, cldfrac_tot, p_del, iwp);
+  // Convert to g/m2 (needed by RRTMGP)
+  parallel_for(Bounds<2>(m_nlay,m_ncol), YAKL_LAMBDA(int ilay, int icol) {
+      lwp(icol,ilay) = 1e3 * lwp(icol,ilay);
+      iwp(icol,ilay) = 1e3 * iwp(icol,ilay);
+  });
 
   // Run RRTMGP driver
   rrtmgp::rrtmgp_main(

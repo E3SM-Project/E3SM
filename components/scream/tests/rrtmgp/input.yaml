@@ -28,8 +28,9 @@ Initial Conditions:
   surf_alb_direct: 0.0
   surf_alb_diffuse: 0.0
   cos_zenith: 0.0
-  lwp: 0.0
-  iwp: 0.0
+  qc: 0.0
+  qi: 0.0
+  cldfrac_tot: 0.0
   eff_radius_qc: 0.0
   eff_radius_qi: 0.0
 ...
