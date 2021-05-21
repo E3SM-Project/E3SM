@@ -19,7 +19,6 @@ namespace scream
  *  Note: for now, Scream is only going to accommodate HOMME as a dynamics
  *  dycore.
  */
-
 class HommeDynamics : public AtmosphereProcess
 {
 public:
@@ -52,7 +51,6 @@ public:
   // Dynamics updates 'TRACERS'.
   void set_updated_group (const FieldGroup<Real>& group);
 
-
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
@@ -71,7 +69,9 @@ protected:
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
 
-  std::map<std::string,FieldIdentifier> m_dyn_fids;
+  void create_dyn_field (const std::string& name,
+                         const std::vector<FieldTag>& tags,
+                         const std::vector<int>& dims);
 
   // Fields on reference and dynamics grid
   // NOTE: the dyn grid fields are *NOT* in the FieldManager. We still use
@@ -80,14 +80,19 @@ protected:
   std::map<std::string,field_type>  m_ref_grid_fields;
   std::map<std::string,field_type>  m_dyn_grid_fields;
 
-  // Remapper for inputs and outputs
+  // Remapper for inputs and outputs, plus a special one for initial conditions
   std::shared_ptr<AbstractRemapper<Real>>   m_p2d_remapper;
+  std::shared_ptr<AbstractRemapper<Real>>   m_d2p_remapper;
+  std::shared_ptr<AbstractRemapper<Real>>   m_ic_remapper;
 
-  // For standalong tests, we might need the grid info later
+  // The dynamics and reference grids
   std::shared_ptr<const AbstractGrid>  m_dyn_grid;
   std::shared_ptr<const AbstractGrid>  m_ref_grid;
 
+  // Homme dyn parameters
   ekat::ParameterList     m_params;
+
+  // The MPI communicator associated witht his atm process
   ekat::Comm              m_dynamics_comm;
 };
 
