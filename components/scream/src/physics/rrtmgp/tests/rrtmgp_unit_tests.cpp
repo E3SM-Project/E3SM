@@ -78,9 +78,9 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
         mixing_ratio(1,1) = 0.0001;
         cloud_fraction(1,1) = 1.0;
     });
-    auto cloud_mass_ref = mixing_ratio(1,1) * dp(1,1) / physconst::gravit;
+    auto cloud_mass_ref = mixing_ratio.createHostCopy()(1,1) / cloud_fraction.createHostCopy()(1,1) * dp.createHostCopy()(1,1) / physconst::gravit;
     scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
-    REQUIRE(cloud_mass(1,1) == cloud_mass_ref);
+    REQUIRE(cloud_mass.createHostCopy()(1,1) == cloud_mass_ref);
 
     // Test with no cloud
     parallel_for(1, YAKL_LAMBDA(int dummy) {
@@ -90,7 +90,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
     });
     cloud_mass_ref = 0.0;
     scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
-    REQUIRE(cloud_mass(1,1) == cloud_mass_ref);
+    REQUIRE(cloud_mass.createHostCopy()(1,1) == cloud_mass_ref);
  
      // Test with empty clouds (cloud fraction but with no associated mixing ratio)
      // This case could happen if we use a total cloud fraction, but compute layer
@@ -102,7 +102,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
     });
     cloud_mass_ref = 0.0;
     scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
-    REQUIRE(cloud_mass(1,1) == cloud_mass_ref);
+    REQUIRE(cloud_mass.createHostCopy()(1,1) == cloud_mass_ref);
  
     // Test with cell half filled with cloud
     parallel_for(1, YAKL_LAMBDA(int dummy) {
@@ -110,7 +110,14 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
         mixing_ratio(1,1) = 0.0001;
         cloud_fraction(1,1) = 0.5;
     });
-    cloud_mass_ref = mixing_ratio(1,1) / cloud_fraction(1,1) * dp(1,1) / physconst::gravit;
+    cloud_mass_ref = mixing_ratio.createHostCopy()(1,1) / cloud_fraction.createHostCopy()(1,1) * dp.createHostCopy()(1,1) / physconst::gravit;
     scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
-    REQUIRE(cloud_mass(1,1) == cloud_mass_ref);
+    REQUIRE(cloud_mass.createHostCopy()(1,1) == cloud_mass_ref);
+
+    // Clean up
+    dp.deallocate();
+    mixing_ratio.deallocate();
+    cloud_fraction.deallocate();
+    cloud_mass.deallocate();
+    yakl::finalize();
 }
