@@ -74,12 +74,7 @@ module moist_planar_tests
     type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
     integer,            intent(in)            :: nets,nete                ! start, end element index
 
-!    call abortmp('planar supercell not yet implemented')
-! copy from dcmip2016_test3  (elem,hybrid,hvcoord,nets,nete)
-
-    call dcmip2016_test3  (elem,hybrid,hvcoord,nets,nete)
-    !then set coriolis to zero
-
+    call abortmp('planar supercell not yet implemented')
 
   end subroutine planar_supercell_init
 
