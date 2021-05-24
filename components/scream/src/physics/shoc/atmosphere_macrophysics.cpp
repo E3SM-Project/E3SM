@@ -119,23 +119,23 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
-  auto T_mid            = m_shoc_fields_out["T_mid"].get_reshaped_view<Spack**>();
-  auto z_int            = m_shoc_fields_in["z_int"].get_reshaped_view<const Spack**>();
-  auto z_mid            = m_shoc_fields_in["z_mid"].get_reshaped_view<const Spack**>();
-  auto p_mid            = m_shoc_fields_in["p_mid"].get_reshaped_view<const Spack**>();
-  auto pseudo_density   = m_shoc_fields_in["pseudo_density"].get_reshaped_view<const Spack**>();
-  auto omega            = m_shoc_fields_in["omega"].get_reshaped_view<const Spack**>();
-  auto surf_sens_flux   = m_shoc_fields_in["surf_sens_flux"].get_reshaped_view<const Real*>();
-  auto surf_latent_flux = m_shoc_fields_in["surf_latent_flux"].get_reshaped_view<const Real*>();
-  auto surf_u_mom_flux  = m_shoc_fields_in["surf_u_mom_flux"].get_reshaped_view<const Real*>();
-  auto surf_v_mom_flux  = m_shoc_fields_in["surf_v_mom_flux"].get_reshaped_view<const Real*>();
-  auto qc               = m_shoc_fields_out["qc"].get_reshaped_view<Spack**>();
-  auto qv               = m_shoc_fields_out["qv"].get_reshaped_view<Spack**>();
-  auto tke              = m_shoc_fields_out["tke"].get_reshaped_view<Spack**>();
-  auto cldfrac_liq      = m_shoc_fields_out["cldfrac_liq"].get_reshaped_view<Spack**>();
-  auto sgs_buoy_flux    = m_shoc_fields_out["sgs_buoy_flux"].get_reshaped_view<Spack**>();
-  auto inv_qc_relvar    = m_shoc_fields_out["inv_qc_relvar"].get_reshaped_view<Spack**>();
-  auto phis             = m_shoc_fields_in["phis"].get_reshaped_view<const Real*>();
+  const auto& T_mid            = m_shoc_fields_out["T_mid"].get_reshaped_view<Spack**>();
+  const auto& z_int            = m_shoc_fields_in["z_int"].get_reshaped_view<const Spack**>();
+  const auto& z_mid            = m_shoc_fields_in["z_mid"].get_reshaped_view<const Spack**>();
+  const auto& p_mid            = m_shoc_fields_in["p_mid"].get_reshaped_view<const Spack**>();
+  const auto& pseudo_density   = m_shoc_fields_in["pseudo_density"].get_reshaped_view<const Spack**>();
+  const auto& omega            = m_shoc_fields_in["omega"].get_reshaped_view<const Spack**>();
+  const auto& surf_sens_flux   = m_shoc_fields_in["surf_sens_flux"].get_reshaped_view<const Real*>();
+  const auto& surf_latent_flux = m_shoc_fields_in["surf_latent_flux"].get_reshaped_view<const Real*>();
+  const auto& surf_u_mom_flux  = m_shoc_fields_in["surf_u_mom_flux"].get_reshaped_view<const Real*>();
+  const auto& surf_v_mom_flux  = m_shoc_fields_in["surf_v_mom_flux"].get_reshaped_view<const Real*>();
+  const auto& qc               = m_shoc_fields_out["qc"].get_reshaped_view<Spack**>();
+  const auto& qv               = m_shoc_fields_out["qv"].get_reshaped_view<Spack**>();
+  const auto& tke              = m_shoc_fields_out["tke"].get_reshaped_view<Spack**>();
+  const auto& cldfrac_liq      = m_shoc_fields_out["cldfrac_liq"].get_reshaped_view<Spack**>();
+  const auto& sgs_buoy_flux    = m_shoc_fields_out["sgs_buoy_flux"].get_reshaped_view<Spack**>();
+  const auto& inv_qc_relvar    = m_shoc_fields_out["inv_qc_relvar"].get_reshaped_view<Spack**>();
+  const auto& phis             = m_shoc_fields_in["phis"].get_reshaped_view<const Real*>();
 
   const int nlev_packs = ekat::npack<Spack>(m_num_levs);
   const int nlevi_packs = ekat::npack<Spack>(m_num_levs+1);

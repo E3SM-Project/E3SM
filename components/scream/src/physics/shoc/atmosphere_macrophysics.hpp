@@ -5,7 +5,7 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "physics/shoc/shoc_main_impl.hpp"
 #include "physics/shoc/shoc_functions.hpp"
-#include "physics/share/physics_functions.hpp"
+#include "share/util/scream_common_physics_functions.hpp"
 
 #include <string>
 
@@ -24,7 +24,7 @@ namespace scream
 class SHOCMacrophysics : public scream::AtmosphereProcess
 {
   using SHF          = shoc::Functions<Real, DefaultDevice>;
-  using physics_fun  = scream::physics::Functions<Real, DefaultDevice>;
+  using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using C            = physics::Constants<Real>;
   using KT           = ekat::KokkosTypes<DefaultDevice>;
 
@@ -96,9 +96,7 @@ public:
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
         // Exner
         const Spack p_mid_ik(p_mid(i,k));
-        const Smask p_mid_mask(!isnan(p_mid_ik) and p_mid_ik>0.0);
-        auto exner_ik = physics_fun::get_exner(p_mid_ik,p_mid_mask);
-        exner(i,k) = exner_ik;
+        exner(i,k)  = PF::exner_function(p_mid_ik);
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 
@@ -111,21 +109,17 @@ public:
         qv_copy(i,k) = qv(i,k);
 
         // Temperature
+        const Spack T_mid_ik(T_mid(i,k));
         qw(i,k) = qv(i,k) + qc(i,k);
 
-        const auto theta_zt = T_mid(i,k)/exner(i,k);
+        const auto& theta_zt = PF::calculate_theta_from_T(T_mid_ik,p_mid_ik);
         thlm(i,k) = theta_zt - (latvap/cpair)*qc(i,k);
         thv(i,k)  = theta_zt*(1 + zvir*qv(i,k) - qc(i,k));
 
         // Dry static energy
-        const Spack T_mid_ik(T_mid(i,k));
         const Spack z_mid_ik(z_mid(i,k));
         const Real  phis_i(phis(i));
-        const Smask range_mask(!isnan(T_mid_ik) && T_mid_ik>0.0 &&
-                               !isnan(z_mid_ik) && z_mid_ik>0.0 &&
-                               !isnan(phis_i)   && phis_i>0.0);
-        auto dse_ik = physics_fun::get_dse(T_mid_ik,z_mid_ik,phis_i,range_mask);
-        shoc_s(i,k) = dse_ik;
+        shoc_s(i,k) = PF::calculate_dse(T_mid_ik,z_mid_ik,phis_i);
 
         Spack zi_k, zi_kp1;
         auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
@@ -145,10 +139,10 @@ public:
 
       team.team_barrier();
 
-      const auto zt_grid_s = ekat::subview(zt_grid, i);
-      const auto zi_grid_s = ekat::subview(zi_grid, i);
-      const auto rrho_s    = ekat::subview(rrho, i);
-      const auto rrho_i_s  = ekat::subview(rrho_i, i);
+      const auto& zt_grid_s = ekat::subview(zt_grid, i);
+      const auto& zi_grid_s = ekat::subview(zi_grid, i);
+      const auto& rrho_s    = ekat::subview(rrho, i);
+      const auto& rrho_i_s  = ekat::subview(rrho_i, i);
       SHF::linear_interp(team,zt_grid_s,zi_grid_s,rrho_s,rrho_i_s,nlev,nlev+1,0);
       team.team_barrier();
 
@@ -204,16 +198,16 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
-                       view_2d_const T_mid_, view_2d_const z_int_,
-                       view_2d_const z_mid_, view_2d_const p_mid_, view_2d_const pseudo_density_,
-                       view_2d_const omega_,
-                       view_1d_const phis_, view_1d_const surf_sens_flux_, view_1d_const surf_latent_flux_,
-                       view_1d_const surf_u_mom_flux_, view_1d_const surf_v_mom_flux_,
-                       view_2d_const qv_, view_2d qv_copy_, view_2d qc_, view_2d qc_copy_,
-                       view_2d tke_, view_2d tke_copy_, view_2d s_, view_2d rrho_, view_2d rrho_i_,
-                       view_2d thv_, view_2d dz_,view_2d zt_grid_,view_2d zi_grid_, view_1d wpthlp_sfc_,
-                       view_1d wprtp_sfc_,view_1d upwp_sfc_,view_1d vpwp_sfc_, view_2d wtracer_sfc_,
-                       view_2d wm_zt_,view_2d exner_,view_2d thlm_,view_2d qw_)
+                       const view_2d_const& T_mid_, const view_2d_const& z_int_,
+                       const view_2d_const& z_mid_, const view_2d_const& p_mid_, const view_2d_const& pseudo_density_,
+                       const view_2d_const& omega_,
+                       const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
+                       const view_1d_const& surf_u_mom_flux_, const view_1d_const& surf_v_mom_flux_,
+                       const view_2d_const& qv_, const view_2d& qv_copy_, const view_2d& qc_, const view_2d& qc_copy_,
+                       const view_2d& tke_, const view_2d& tke_copy_, const view_2d& s_, const view_2d& rrho_, const view_2d& rrho_i_,
+                       const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
+                       const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
+                       const view_2d& wm_zt_,const view_2d& exner_,const view_2d& thlm_,const view_2d& qw_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -303,10 +297,10 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_,
-                       view_2d_const rrho_,
-                       view_2d qv_, view_2d_const qv_copy_, view_2d qc_, view_2d_const qc_copy_,
-                       view_2d tke_, view_2d_const tke_copy_, view_2d_const qc2_,
-                       view_2d cldfrac_liq_, view_2d sgs_buoy_flux_, view_2d inv_qc_relvar_)
+                       const view_2d_const& rrho_,
+                       const view_2d& qv_, const view_2d_const& qv_copy_, const view_2d& qc_, const view_2d_const& qc_copy_,
+                       const view_2d& tke_, const view_2d_const& tke_copy_, const view_2d_const& qc2_,
+                       const view_2d& cldfrac_liq_, const view_2d& sgs_buoy_flux_, const view_2d& inv_qc_relvar_)
     {
       ncol = ncol_;
       nlev = nlev_;

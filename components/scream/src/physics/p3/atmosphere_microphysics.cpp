@@ -106,10 +106,12 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
   const Int nk_pack = ekat::npack<Spack>(m_num_levs);
-  auto pmid  = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();
-  auto T_atm = m_p3_fields_out["T_mid"].get_reshaped_view<Pack**>();
-  auto ast   = m_p3_fields_in["cldfrac_tot"].get_reshaped_view<const Pack**>();
-  auto zi    = m_p3_fields_in["z_int"].get_reshaped_view<const Pack**>();
+  const  auto& pmid           = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();
+  const  auto& pseudo_density = m_p3_fields_in["pseudo_density"].get_reshaped_view<const Pack**>();
+  const  auto& T_atm          = m_p3_fields_out["T_mid"].get_reshaped_view<Pack**>();
+  const  auto& cld_frac_t     = m_p3_fields_in["cldfrac_tot"].get_reshaped_view<const Pack**>();
+  const  auto& zi             = m_p3_fields_in["z_int"].get_reshaped_view<const Pack**>();
+  const  auto& qv             = m_p3_fields_out["qv"].get_reshaped_view<Pack**>();
   view_2d inv_exner("inv_exner",m_num_cols,nk_pack);
   view_2d th_atm("th_atm",m_num_cols,nk_pack);
   view_2d cld_frac_l("cld_frac_l",m_num_cols,nk_pack);
@@ -117,7 +119,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   view_2d cld_frac_r("cld_frac_r",m_num_cols,nk_pack);
   view_2d dz("dz",m_num_cols,nk_pack);
   // -- Set values for the post-amble structure
-  p3_preproc.set_variables(m_num_cols,nk_pack,pmid,T_atm,ast,zi,
+  p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pseudo_density,T_atm,cld_frac_t,qv,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
   // --Prognostic State Variables:
   prog_state.qc     = m_p3_fields_out["qc"].get_reshaped_view<Pack**>();
@@ -128,15 +130,15 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   prog_state.qm     = m_p3_fields_out["qm"].get_reshaped_view<Pack**>();
   prog_state.ni     = m_p3_fields_out["ni"].get_reshaped_view<Pack**>();
   prog_state.bm     = m_p3_fields_out["bm"].get_reshaped_view<Pack**>();
-  prog_state.qv     = m_p3_fields_out["qv"].get_reshaped_view<Pack**>();
   prog_state.th     = p3_preproc.th_atm;
+  prog_state.qv     = p3_preproc.qv;
   // --Diagnostic Input Variables:
   diag_inputs.nc_nuceat_tend  = m_p3_fields_in["nc_nuceat_tend"].get_reshaped_view<const Pack**>();
   diag_inputs.nccn            = m_p3_fields_in["nc_activated"].get_reshaped_view<const Pack**>();
   diag_inputs.ni_activated    = m_p3_fields_in["ni_activated"].get_reshaped_view<const Pack**>();
   diag_inputs.inv_qc_relvar   = m_p3_fields_in["inv_qc_relvar"].get_reshaped_view<const Pack**>();
   diag_inputs.pres            = m_p3_fields_in["p_mid"].get_reshaped_view<const Pack**>();
-  diag_inputs.dpres           = m_p3_fields_in["pseudo_density"].get_reshaped_view<const Pack**>();
+  diag_inputs.dpres           = p3_preproc.pseudo_density;
   auto qv_prev                = m_p3_fields_out["qv_prev_micro_step"].get_reshaped_view<Pack**>();
   diag_inputs.qv_prev         = qv_prev;
   auto t_prev                 = m_p3_fields_out["T_prev_micro_step"].get_reshaped_view<Pack**>();
