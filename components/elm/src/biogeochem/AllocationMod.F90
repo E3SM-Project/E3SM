@@ -1201,13 +1201,19 @@ contains
               veg_rootc_ptr  => veg_rootc_bigleaf
 
               cn_scalar(col_pp%pfti(c):col_pp%pftf(c)) = 0._r8
-              do f = 1,n_pcomp
-                 p = filter_pcomp(f)
-                 cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/ &
-                      max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - &
-                      leafcn(ivt(p))*(1- cn_stoich_var)) / &
-                      (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
-              end do
+              plant_no3demand_vr_patch(col_pp%pfti(c):col_pp%pftf(c),:) = 0._r8
+              plant_nh4demand_vr_patch(col_pp%pfti(c):col_pp%pftf(c),:) = 0._r8
+
+              if ( .not.(carbonphosphorus_only  .or.  carbon_only) ) then
+                 do f = 1,n_pcomp
+                    p = filter_pcomp(f)
+                    cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/ &
+                         max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - &
+                         leafcn(ivt(p))*(1- cn_stoich_var)) / &
+                         (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
+                 end do
+              end if
+              
               km_nh4_ptr    => km_plant_nh4
               vmax_nh4_ptr  => vmax_plant_nh4
               cn_scalar_ptr => cn_scalar
@@ -1217,13 +1223,17 @@ contains
               plant_nh4demand_vr_ptr => plant_nh4demand_vr_patch
 
               cp_scalar(col_pp%pfti(c):col_pp%pftf(c)) = 0._r8
-              do f = 1,n_pcomp
-                 p = filter_pcomp(f)
-                 cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
-                      max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - &
-                      leafcp(ivt(p))*(1- cp_stoich_var)) / &
-                      (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
-              end do
+              plant_pdemand_vr_patch(col_pp%pfti(c):col_pp%pftf(c),:) = 0._r8
+
+              if ( .not.(carbonnitrogen_only  .or.  carbon_only) ) then
+                 do f = 1,n_pcomp
+                    p = filter_pcomp(f)
+                    cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
+                         max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - &
+                         leafcp(ivt(p))*(1- cp_stoich_var)) / &
+                         (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
+                 end do
+              end if
               plant_pdemand_vr_ptr => plant_pdemand_vr_patch
               cp_scalar_ptr => cp_scalar
               km_p_ptr      => km_plant_p
@@ -1546,11 +1556,11 @@ contains
               if(.not.use_fates) then
                  do p = col_pp%pfti(c), col_pp%pftf(c)
                     if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
-                       smin_nh4_to_plant_patch(p) = smin_nh4_to_plant_patch(p) + plant_nh4demand_vr_patch(p,j) * fpg_nh4_vr(c,j)&
+                       smin_nh4_to_plant_patch(p) = smin_nh4_to_plant_patch(p) + (plant_nh4demand_vr_patch(p,j)/veg_pp%wtcol(p)) * fpg_nh4_vr(c,j)&
                             *dzsoi_decomp(j)
-                       smin_no3_to_plant_patch(p) = smin_no3_to_plant_patch(p) + plant_no3demand_vr_patch(p,j) * fpg_no3_vr(c,j)&
+                       smin_no3_to_plant_patch(p) = smin_no3_to_plant_patch(p) + (plant_no3demand_vr_patch(p,j)/veg_pp%wtcol(p)) * fpg_no3_vr(c,j)&
                             *dzsoi_decomp(j)
-                       sminp_to_plant_patch(p) = sminp_to_plant_patch(p) + plant_pdemand_vr_patch(p,j) * fpg_p_vr(c,j) &
+                       sminp_to_plant_patch(p) = sminp_to_plant_patch(p) + (plant_pdemand_vr_patch(p,j)/veg_pp%wtcol(p)) * fpg_p_vr(c,j) &
                             *dzsoi_decomp(j)
                     end if
                  end do
@@ -1637,10 +1647,10 @@ contains
               pnup_pfrootc(p) =  0.0_r8
               if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                  do j = 1, nlevdecomp
-                    pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_nh4demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
+                    pnup_pfrootc(p) =  pnup_pfrootc(p) + (plant_nh4demand_vr_patch(p,j)/veg_pp%wtcol(p)) / max(frootc(p) * froot_prof(p,j)&
                          ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                          * dzsoi_decomp(j)
-                    pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_no3demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
+                    pnup_pfrootc(p) =  pnup_pfrootc(p) + (plant_no3demand_vr_patch(p,j)/veg_pp%wtcol(p)) / max(frootc(p) * froot_prof(p,j)&
                          ,1e-20_r8) * fpg_no3_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                          * dzsoi_decomp(j)
                  end do
@@ -2938,7 +2948,7 @@ contains
     real(r8) :: sum_no3_demand        ! "" no3
     real(r8) :: sum_no3_demand_scaled ! "" no3
     real(r8) :: e_km                  ! temp variable of sum(E/KM) (different species)
-    real(r8) :: solution_conc         ! mineralized nutrient concentration 
+    real(r8) :: solution_conc         ! mineralized N (nh4 or no3) concentration
                                       ! g nutrient per m3 water
     real(r8) :: compet_plant(n_pcomp) ! (unitless) relative compettiveness of plants for NO3 or NH4
     real(r8) :: compet_decomp         ! (unitless) relative competitiveness of immobilizers for NO3 or NH4
@@ -2971,6 +2981,7 @@ contains
        ! concentration of mineralized nutrient, per soil water
        solution_conc = smin_nh4_vr(j) / (bd(j)*adsorp_nh4_eff*m3_per_liter + h2osoi_vol(j))
 
+       
        e_km = 0._r8
        do i = 1, n_pcomp
           ft = ft_index(i)
