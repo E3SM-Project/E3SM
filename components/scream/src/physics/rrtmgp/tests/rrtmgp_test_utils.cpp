@@ -41,7 +41,7 @@ namespace rrtmgpTest {
             std::string inputfile, 
             int ncol, real2d &p_lay, real2d &t_lay,
             real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
-            real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
+            real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cld) {
 
         // Setup boundary conditions, solar zenith angle, etc
         // NOTE: this stuff would come from the model in a real run
@@ -57,12 +57,12 @@ namespace rrtmgpTest {
         // needs the CloudOptics object only because it uses the min and max
         // valid values from the lookup tables for liquid and ice water path to
         // create a dummy atmosphere.
-        dummy_clouds(scream::rrtmgp::cloud_optics_sw, p_lay, t_lay, lwp, iwp, rel, rei);
+        dummy_clouds(scream::rrtmgp::cloud_optics_sw, p_lay, t_lay, lwp, iwp, rel, rei, cld);
     }
 
     void dummy_clouds(
             CloudOptics &cloud_optics, real2d &p_lay, real2d &t_lay, 
-            real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
+            real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cloud_mask) {
 
         // Problem sizes
         int ncol = t_lay.dimension[0];
@@ -76,7 +76,7 @@ namespace rrtmgpTest {
         // Restrict clouds to troposphere (> 100 hPa = 100*100 Pa) and not very close to the ground (< 900 hPa), and
         // put them in 2/3 of the columns since that's roughly the total cloudiness of earth.
         // Set sane values for liquid and ice water path.
-        real2d cloud_mask("cloud_mask", ncol, nlay);
+        // NOTE: these "sane" values are in g/m2!
         parallel_for( Bounds<2>(nlay,ncol) , YAKL_LAMBDA (int ilay, int icol) {
             cloud_mask(icol,ilay) = p_lay(icol,ilay) > 100._wp * 100._wp && p_lay(icol,ilay) < 900._wp * 100._wp && mod(icol, 3) != 0;
             // Ice and liquid will overlap in a few layers

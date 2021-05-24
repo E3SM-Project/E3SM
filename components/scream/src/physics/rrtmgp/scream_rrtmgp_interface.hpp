@@ -4,6 +4,8 @@
 #include "cpp/rrtmgp/mo_gas_optics_rrtmgp.h"
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
 #include "cpp/rte/mo_fluxes.h"
+#include "cpp/const.h"
+#include "physics/share/physics_constants.hpp"
 
 namespace scream {
     namespace rrtmgp {
@@ -64,6 +66,31 @@ namespace scream {
                 GasConcs &gas_concs,
                 OpticalProps1scl &clouds,
                 FluxesBroadband &fluxes);
+        /* 
+         * Provide a function to convert cloud (water and ice) mixing ratios to layer mass per unit area
+         * (what E3SM refers to as "in-cloud water paths", a terminology we shun here to avoid confusion
+         * with the standard practice of using "water path" to refer to the total column-integrated
+         * quantities).
+         */
+        template<class T, int myMem, int myStyle> void mixing_ratio_to_cloud_mass(
+                yakl::Array<T,2,myMem,myStyle> const &mixing_ratio, 
+                yakl::Array<T,2,myMem,myStyle> const &cloud_fraction, 
+                yakl::Array<T,2,myMem,myStyle> const &dp, 
+                yakl::Array<T,2,myMem,myStyle>       &cloud_mass) {
+            int ncol = mixing_ratio.dimension[0];
+            int nlay = mixing_ratio.dimension[1];
+            using physconst = scream::physics::Constants<Real>;
+            parallel_for(Bounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
+                // Compute in-cloud mixing ratio (mixing ratio of the cloudy part of the layer)
+                // NOTE: these thresholds (from E3SM) seem arbitrary, but included here for consistency
+                // This limits in-cloud mixing ratio to 0.005 kg/kg. According to note in cloud_diagnostics
+                // in EAM, this is consistent with limits in MG2. Is this true for P3?
+                auto incloud_mixing_ratio = std::min(mixing_ratio(icol,ilay) / std::max(0.0001, cloud_fraction(icol,ilay)), 0.005);
+                // Compute layer-integrated cloud mass (per unit area)
+                cloud_mass(icol,ilay) = incloud_mixing_ratio * dp(icol,ilay) / physconst::gravit;
+            });
+        }
+
     } // namespace rrtmgp
 }  // namespace scream
 

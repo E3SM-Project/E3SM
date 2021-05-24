@@ -6,13 +6,13 @@ namespace rrtmgpTest {
     bool all_equals(real2d &arr1, real2d &arr2);
     void dummy_clouds(
             CloudOptics &cloud_optics, real2d &p_lay, real2d &t_lay, 
-            real2d &lwp, real2d &iwp, real2d &rel, real2d &rei
+            real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cld
         );
     void dummy_atmos(
             std::string inputfile,
             int ncol, real2d &p_lay, real2d &t_lay,
             real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
-            real2d &lwp, real2d &iwp, real2d &rel, real2d &rei
+            real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cld
         );
     void read_fluxes(
             std::string inputfile, 
