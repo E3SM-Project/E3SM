@@ -150,8 +150,10 @@ public:
       const int nlev_v = (nlev-1)/Spack::n;
       const int nlev_p = (nlev-1)%Spack::n;
 
-      host_dx(i) = sqrt(area(i));
-      host_dy(i) = host_dx(i);
+      // For now, we are considering dy=dx. Here, we
+      // will need to compute dx/dy instead of cell_length
+      // if we have dy!=dx.
+      cell_length(i) = sqrt(area(i));
 
       wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlev_v)[nlev_p]);
       wprtp_sfc(i)  = surf_latent_flux(i)/rrho_i(i,nlev_v)[nlev_p];
@@ -179,8 +181,7 @@ public:
     view_1d_const        surf_v_mom_flux;
     view_2d_const        qv;
     view_2d              qv_copy;
-    view_1d              host_dx;
-    view_1d              host_dy;
+    view_1d              cell_length;
     view_2d              qc;
     view_2d              qc_copy;
     view_2d              shoc_s;
@@ -212,7 +213,7 @@ public:
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
                        const view_1d_const& surf_u_mom_flux_, const view_1d_const& surf_v_mom_flux_,
                        const view_2d_const& qv_, const view_2d& qv_copy_, const view_2d& qc_, const view_2d& qc_copy_,
-                       const view_2d& tke_, const view_2d& tke_copy_, const view_1d& dx_, const view_1d& dy_,
+                       const view_2d& tke_, const view_2d& tke_copy_, const view_1d& cell_length_,
                        const view_2d& s_, const view_2d& rrho_, const view_2d& rrho_i_,
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
@@ -242,8 +243,7 @@ public:
       shoc_s = s_;
       tke = tke_;
       tke_copy = tke_copy_;
-      host_dx = dx_;
-      host_dy = dy_;
+      cell_length = cell_length_;
       rrho = rrho_;
       rrho_i = rrho_i_;
       thv = thv_;

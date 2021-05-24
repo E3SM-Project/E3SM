@@ -13,8 +13,8 @@ void Functions<S,D>
   const MemberType&            team,
   const Int&                   nlev,
   const Int&                   nlevi,
-  const Scalar&                host_dx,
-  const Scalar&                host_dy,
+  const Scalar&                dx,
+  const Scalar&                dy,
   const uview_1d<const Spack>& zt_grid,
   const uview_1d<const Spack>& zi_grid,
   const uview_1d<const Spack>& dz_zt,
@@ -39,7 +39,7 @@ void Functions<S,D>
   compute_shoc_mix_shoc_length(team,nlev,tke,brunt,zt_grid,l_inf,shoc_mix);
   team.team_barrier();
 
-  check_length_scale_shoc_length(team,nlev,host_dx,host_dy,shoc_mix);
+  check_length_scale_shoc_length(team,nlev,dx,dy,shoc_mix);
 
   // Release temporary variable from the workspace
   workspace.release(thv_zi);

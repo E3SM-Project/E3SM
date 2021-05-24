@@ -69,8 +69,8 @@ void Functions<S,D>::shoc_main_internal(
   const Int&                   num_qtracers, // Number of tracers
   const Scalar&                dtime,        // SHOC timestep [s]
   // Input Variables
-  const Scalar&                host_dx,
-  const Scalar&                host_dy,
+  const Scalar&                dx,
+  const Scalar&                dy,
   const uview_1d<const Spack>& zt_grid,
   const uview_1d<const Spack>& zi_grid,
   const uview_1d<const Spack>& pres,
@@ -178,11 +178,11 @@ void Functions<S,D>::shoc_main_internal(
             pblh);                    // Output
 
     // Update the turbulent length scale
-    shoc_length(team,nlev,nlevi,host_dx,host_dy, // Input
-                zt_grid,zi_grid,dz_zt,           // Input
-                tke,thv,                         // Input
-                workspace,                       // Workspace
-                brunt,shoc_mix);                 // Output
+    shoc_length(team,nlev,nlevi,dx,dy, // Input
+                zt_grid,zi_grid,dz_zt, // Input
+                tke,thv,               // Input
+                workspace,             // Workspace
+                brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
     shoc_tke(team,nlev,nlevi,dtime,wthv_sec,    // Input
@@ -318,8 +318,8 @@ Int Functions<S,D>::shoc_main(
 
     auto workspace = workspace_mgr.get_workspace(team);
 
-    const Scalar host_dx_s{shoc_input.host_dx(i)};
-    const Scalar host_dy_s{shoc_input.host_dy(i)};
+    const Scalar dx_s{shoc_input.dx(i)};
+    const Scalar dy_s{shoc_input.dy(i)};
     const Scalar wthl_sfc_s{shoc_input.wthl_sfc(i)};
     const Scalar wqw_sfc_s{shoc_input.wqw_sfc(i)};
     const Scalar uw_sfc_s{shoc_input.uw_sfc(i)};
@@ -365,7 +365,7 @@ Int Functions<S,D>::shoc_main(
     const auto qtracers_s = Kokkos::subview(shoc_input_output.qtracers, i, Kokkos::ALL(), Kokkos::ALL());
 
     shoc_main_internal(team, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
-                       host_dx_s, host_dy_s, zt_grid_s, zi_grid_s,            // Input
+                       dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
                        wtracer_sfc_s, exner_s, phis_s,                        // Input

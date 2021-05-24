@@ -146,8 +146,7 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   const int nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
   const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
 
-  view_1d host_dx("host_dx",m_num_cols),
-          host_dy("host_dy",m_num_cols),
+  view_1d cell_length("cell_length",m_num_cols),
           wpthlp_sfc("wpthlp_sfc",m_num_cols),
           wprtp_sfc("wprtp_sfc",m_num_cols),
           upwp_sfc("upwp_sfc",m_num_cols),
@@ -171,13 +170,13 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,m_cell_area,
                                 T_mid,z_int,z_mid,p_mid,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
-                                surf_u_mom_flux,surf_v_mom_flux,qv,qv_copy,qc,qc_copy,tke,tke_copy,host_dx,host_dy,
+                                surf_u_mom_flux,surf_v_mom_flux,qv,qv_copy,qc,qc_copy,tke,tke_copy,cell_length,
                                 s,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,exner,thlm,qw);
 
   // Input Variables:
-  input.host_dx     = shoc_preprocess.host_dx;
-  input.host_dy     = shoc_preprocess.host_dy;
+  input.dx          = shoc_preprocess.cell_length;
+  input.dy          = shoc_preprocess.cell_length;
   input.zt_grid     = shoc_preprocess.zt_grid;
   input.zi_grid     = shoc_preprocess.zi_grid;
   input.pres        = p_mid;
