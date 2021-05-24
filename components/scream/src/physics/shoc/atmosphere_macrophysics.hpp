@@ -206,7 +206,7 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
-                       const view_1d_const& area_,
+                       const view_1d_const_double& area_,
                        const view_2d_const& T_mid_, const view_2d_const& z_int_,
                        const view_2d_const& z_mid_, const view_2d_const& p_mid_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
