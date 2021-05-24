@@ -76,24 +76,22 @@ public:
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
       for (int ipack=0;ipack<m_npack;ipack++) {
-        // The ipack slice of input variables
-        const Spack pmid_pack(pmid(icol,ipack));
-        const Spack T_atm_pack(T_atm(icol,ipack));
-        const Spack pseudo_density_pack(pseudo_density(icol,ipack));
-        const Spack qv_pack(qv(icol,ipack));
-        const Spack cld_frac_t_pack(cld_frac_t(icol,ipack));
+        // The ipack slice of input variables used more than once
+        const Spack& pmid_pack(pmid(icol,ipack));
+        const Spack& T_atm_pack(T_atm(icol,ipack));
+        const Spack& cld_frac_t_pack(cld_frac_t(icol,ipack));
         // Exner
         const auto& exner = PF::exner_function(pmid_pack);
         inv_exner(icol,ipack) = 1.0/exner;
         // Potential temperature
         th_atm(icol,ipack) = PF::calculate_theta_from_T(T_atm_pack,pmid_pack);
         // DZ
-        dz(icol,ipack) = PF::calculate_dz(pseudo_density_pack, pmid_pack, T_atm_pack, qv_pack);
+        dz(icol,ipack) = PF::calculate_dz(pseudo_density(icol,ipack), pmid_pack, T_atm_pack, qv(icol,ipack));
         // Cloud fraction
         // Set minimum cloud fraction - avoids division by zero
-        cld_frac_l(icol,ipack) = ekat::max(cld_frac_t(icol,ipack),mincld);
-        cld_frac_i(icol,ipack) = ekat::max(cld_frac_t(icol,ipack),mincld);
-        cld_frac_r(icol,ipack) = ekat::max(cld_frac_t(icol,ipack),mincld);
+        cld_frac_l(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
+        cld_frac_i(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
+        cld_frac_r(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
         // update rain cloud fraction given neighboring levels using max-overlap approach.
         for (int ivec=0;ivec<Spack::n;ivec++)
         {
@@ -160,15 +158,11 @@ public:
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
       for (int ipack=0;ipack<m_npack;ipack++) {
-        // The ipack slice of input variables
-        const Spack pmid_pack(pmid(icol,ipack));
-        const Spack th_atm_pack(th_atm(icol,ipack));
-        const Spack qv_pack(qv(icol,ipack));
         // Update the atmospheric temperature and the previous temperature.
-        T_atm(icol,ipack) = PF::calculate_T_from_theta(th_atm_pack,pmid_pack);
+        T_atm(icol,ipack)  = PF::calculate_T_from_theta(th_atm(icol,ipack),pmid(icol,ipack));
         T_prev(icol,ipack) = T_atm(icol,ipack);
         // Update qv_prev
-        qv_prev(icol,ipack) = qv_pack;
+        qv_prev(icol,ipack) = qv(icol,ipack);
         // Rescale effective radius' into microns
         diag_eff_radius_qc(icol,ipack) *= 1e6;
         diag_eff_radius_qi(icol,ipack) *= 1e6;
