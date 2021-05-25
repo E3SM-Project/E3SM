@@ -1,0 +1,18 @@
+#!/bin/bash
+
+unset ARCH
+unset CUDA_ARCH
+unset NCRMS
+
+export NCHOME=${NETCDF_PATH}
+export NFHOME=/usr
+# export NCRMS=31
+export CC=mpicc
+export CXX=mpic++
+export FC=mpif90
+export FFLAGS="-O0 -g -ffree-line-length-none"
+export CXXFLAGS="-O0 -g"
+export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
+export YAKL_CUB_HOME="`pwd`/../../../../../../../../externals/cub"
+export ARCH="CUDA"
+export CUDA_ARCH="-arch sm_35 -O3 -DTHRUST_IGNORE_CUB_VERSION_CHECK -D__USE_CUDA__ --use_fast_math --expt-extended-lambda --expt-relaxed-constexpr"

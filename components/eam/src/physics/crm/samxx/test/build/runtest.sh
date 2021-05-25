@@ -7,6 +7,9 @@ fi
 
 printf "\nRebuilding\n\n"
 
+# unset GATOR_DISABLE
+export GATOR_DISABLE=1
+
 make -j8 || exit -1
 
 ################################################################################

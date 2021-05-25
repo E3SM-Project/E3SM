@@ -1,22 +1,18 @@
 #!/bin/bash
 
-source $MODULESHOME/init/bash
-module purge
-module load netcdf
-
 unset ARCH
 unset CUDA_ARCH
 unset NCRMS
 
 export NCHOME=${NETCDF_PATH}
-export NFHOME=${NETCDF_PATH}
-export NCRMS=31
+export NFHOME=/usr
+# export NCRMS=31
 export CC=mpicc
 export CXX=mpic++
 export FC=mpif90
-export FFLAGS="-O3"
+export FFLAGS="-O3 -ffree-line-length-none"
 export CXXFLAGS="-O3"
 export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
 export YAKL_CUB_HOME="`pwd`/../../../../../../../../externals/cub"
-# export ARCH="CUDA"
-# export CUDA_ARCH="-arch sm_35"
+export ARCH="CUDA"
+export CUDA_ARCH="-arch sm_35 -g -G -O0 -D__AUTO_FENCE__ -DTHRUST_IGNORE_CUB_VERSION_CHECK -D__USE_CUDA__ --expt-extended-lambda --expt-relaxed-constexpr"

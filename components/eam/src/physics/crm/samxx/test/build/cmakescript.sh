@@ -46,7 +46,7 @@ NX_RAD=`$NCHOME/bin/ncdump -h $1  | grep "crm_nx_rad =" | awk '{print $3}'`
 NY_RAD=`$NCHOME/bin/ncdump -h $1  | grep "crm_ny_rad =" | awk '{print $3}'`
 DX=1000
 DT=5
-NCRMS_FILE=`ncdump -h $1 | grep UNLIMITED | awk '{print $6}' | cut -d '(' -f 2`
+NCRMS_FILE=`$NCHOME/bin/ncdump -h $1 | grep UNLIMITED | awk '{print $6}' | cut -d '(' -f 2`
 if [[ $NY -eq 1 ]]; then
   YES3D=0
 else
@@ -78,7 +78,7 @@ NX_RAD=`$NCHOME/bin/ncdump -h $2  | grep "crm_nx_rad =" | awk '{print $3}'`
 NY_RAD=`$NCHOME/bin/ncdump -h $2  | grep "crm_ny_rad =" | awk '{print $3}'`
 DX=1000
 DT=5
-NCRMS_FILE=`ncdump -h $2 | grep UNLIMITED | awk '{print $6}' | cut -d '(' -f 2`
+NCRMS_FILE=`$NCHOME/bin/ncdump -h $2 | grep UNLIMITED | awk '{print $6}' | cut -d '(' -f 2`
 if [[ $NY -eq 1 ]]; then
   echo "Error: 2D file specified as the 3D file\n\n"
   usage
