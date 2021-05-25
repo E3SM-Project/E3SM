@@ -17,7 +17,7 @@
 !>  TEMPLATE initial condition
 !>
 !>  In order to add a new initial condition, do the following:
-!>  1. In src/core_ocean/mode_init, copy these to your new initial condition name:
+!>  1. In src/mode_init, copy these to your new initial condition name:
 !>     cp mpas_ocn_init_TEMPLATE.F mpas_ocn_init_your_new_name.F
 !>     cp Registry_TEMPLATE.xml Registry_ocn_your_new_name.xml
 !>
@@ -26,12 +26,12 @@
 !>     TEMPLATE uses underscores (subroutine names), like your_new_name.
 !>
 !>  3. Add a #include line for your registry to
-!>     src/core_ocean/mode_init/Registry.xml
+!>     src/mode_init/Registry.xml
 !>
-!>  4. Copy and change TEMPLATE lines in src/core_ocean/mode_init/mpas_ocn_init_mode.F
+!>  4. Copy and change TEMPLATE lines in src/mode_init/mpas_ocn_init_mode.F
 !>
 !>  5. Add these dependency lines by following TEMPLATE examples in:
-!>     in src/core_ocean/mode_init/Makefile
+!>     in src/mode_init/Makefile
 !
 !-----------------------------------------------------------------------
 

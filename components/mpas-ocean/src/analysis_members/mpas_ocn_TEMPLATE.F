@@ -37,7 +37,7 @@
 !>      - Adding a restart if test can subroutine call
 !>      - Adding a finalize if test can subroutine call
 !>
-!>  5. In src/core_ocean/analysis_members/Makefile, add your
+!>  5. In src/analysis_members/Makefile, add your
 !>     new analysis member to the list of members. See another analysis member
 !>     in that file for an example.
 !>     NOTE: If your analysis member depends on other files, add a dependency
