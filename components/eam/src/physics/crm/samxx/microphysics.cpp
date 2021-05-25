@@ -85,9 +85,12 @@ void precip_fall(int hydro_type, real4d &omega) {
     }
   });
 
-  yakl::ParallelMax<real,yakl::memDevice> pmax( nzm*ny*nx*ncrms );
-  real prec_cfl_loc  = pmax( prec_cfl_arr.data() );
+  real prec_cfl_loc  = yakl::intrinsics::maxval( prec_cfl_arr );
   prec_cfl = max(prec_cfl , prec_cfl_loc);
+
+#ifdef MMF_STANDALONE
+  prec_cfl = 1.5;
+#endif
 
   // If maximum CFL due to precipitation velocity is greater than 0.9,
   // take more than one advection step to maintain stability.

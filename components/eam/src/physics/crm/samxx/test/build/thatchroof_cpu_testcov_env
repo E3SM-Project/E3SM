@@ -6,13 +6,13 @@ unset NCRMS
 
 export NCHOME=${NETCDF_PATH}
 export NFHOME=/usr
-# export NCRMS=31
+export NCRMS=30
 export CC=mpicc
 export CXX=mpic++
 export FC=mpif90
-export FFLAGS="-O0 -g -ffree-line-length-none"
-export CXXFLAGS="-O0 -g"
+export FFLAGS="-O3 -ffree-line-length-none"
+export CXXFLAGS="-g -O0 -fprofile-arcs -ftest-coverage"
 export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
 export YAKL_CUB_HOME="`pwd`/../../../../../../../../externals/cub"
-export ARCH="CUDA"
-export CUDA_ARCH="-arch sm_35 -g -G -O0 -D__AUTO_FENCE__ -DTHRUST_IGNORE_CUB_VERSION_CHECK -D__USE_CUDA__ --expt-extended-lambda --expt-relaxed-constexpr"
+# export ARCH="CUDA"
+# export CUDA_ARCH="-arch sm_35"

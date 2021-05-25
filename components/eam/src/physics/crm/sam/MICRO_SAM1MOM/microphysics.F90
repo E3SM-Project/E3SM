@@ -486,6 +486,12 @@ CONTAINS
         enddo
       enddo
     enddo
+    
+    !$acc wait(asyncid)
+
+#ifdef MMF_STANDALONE
+  prec_cfl = 1.5
+#endif
 
     ! If maximum CFL due to precipitation velocity is greater than 0.9,
     ! take more than one advection step to maintain stability.

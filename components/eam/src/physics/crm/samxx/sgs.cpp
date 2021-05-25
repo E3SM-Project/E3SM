@@ -40,8 +40,7 @@ void kurant_sgs(real &cfl) {
   });
 
   // Perform a max reduction over tkhmax
-  yakl::ParallelMax<real,yakl::memDevice> pmax( nzm*ncrms );
-  real cfl_loc = pmax( tkhmax.data() );
+  real cfl_loc = yakl::intrinsics::maxval( tkhmax );
   cfl = max(cfl , cfl_loc);
 }
 

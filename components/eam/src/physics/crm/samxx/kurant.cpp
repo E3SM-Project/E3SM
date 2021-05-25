@@ -53,8 +53,7 @@ void kurant () {
     tmpMax(k,icrm) = max(max(tmp1,tmp2),tmp3);
   });
 
-  yakl::ParallelMax<real,yakl::memDevice> pmax( nzm*ncrms );
-  real cfl_loc = pmax(tmpMax.data());
+  real cfl_loc = yakl::intrinsics::maxval(tmpMax);
   cfl = max(cfl,cfl_loc);
 
 
