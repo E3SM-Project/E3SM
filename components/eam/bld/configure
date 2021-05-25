@@ -1385,7 +1385,12 @@ if (!$prog_species) {
   $cfg_ref->set('chem_src_dir', $chem_src_dir);
 }
 
-if (($chem_pkg ne 'none') || ($prog_species)) {
+if ($chem_pkg eq 'spa'){
+    $chem_src_dir = "$cam_root/components/eam/src/chemistry/pp_none";
+    $cfg_ref->set('chem_src_dir', $chem_src_dir);
+}
+
+if ((($chem_pkg ne 'none') && ($chem_pkg ne 'spa')) || ($prog_species)) {
 
     # customize chemistry
     my $edit_chem_mech = $cfg_ref->get('edit_chem_mech');
@@ -1407,8 +1412,8 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 	($chem_nadv) = chem_preprocess($cfg_ref,$print,$fc_type);
     } else {
        # copy over chem docs
-	copy("$chem_src_dir/chem_mech.doc",$cam_bld) or die "copy failed $! \n";
-	copy("$chem_src_dir/chem_mech.in" ,$cam_bld) or die "copy failed $! \n";
+	copy("$chem_src_dir/chem_mech.doc",$cam_bld) or die "copy failesssssd $! \n";
+	copy("$chem_src_dir/chem_mech.in" ,$cam_bld) or die "copy failesssssd $! \n";
         ($chem_nadv) = chem_number_adv($chem_src_dir);
     }
 

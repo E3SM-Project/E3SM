@@ -83,11 +83,6 @@
 <aerodep_flx_file nlev="72">mam4_0.9x1.2_L72_2000clim_c170323.nc</aerodep_flx_file>
 <aerodep_flx_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</aerodep_flx_file>
 <aerodep_flx_cycle_yr>01</aerodep_flx_cycle_yr>
-<prescribed_aero_type>'CYCLICAL'</prescribed_aero_type>
-<prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
-<prescribed_aero_file nlev="72">mam4_0.9x1.2_L72_2000clim_c170323.nc</prescribed_aero_file>
-<prescribed_aero_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</prescribed_aero_file>
-<prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
 
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>2000</sim_year>

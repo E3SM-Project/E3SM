@@ -112,6 +112,9 @@ module radiation
    ! zeroes out the aerosol optical properties if False
    logical :: do_aerosol_rad = .true.
 
+   ! Flag to indicate whether to read optics from spa netcdf file
+   logical :: do_spa_optics = .false.
+
    ! Value for prescribing an invariant solar constant (i.e. total solar
    ! irradiance at TOA). Used for idealized experiments such as RCE.
    ! Disabled when value is less than 0.
@@ -232,7 +235,7 @@ contains
                               rrtmgp_coefficients_file_sw,     &
                               iradsw, iradlw, irad_always,     &
                               use_rad_dt_cosz, spectralflux,   &
-                              do_aerosol_rad,                  &
+                              do_aerosol_rad, do_spa_optics,   &
                               fixed_total_solar_irradiance,    &
                               rrtmgp_enable_temperature_warnings
 
@@ -263,6 +266,7 @@ contains
       call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
+      call mpibcast(do_spa_optics, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(fixed_total_solar_irradiance, 1, mpi_real8, mstrid, mpicom, ierr)
       call mpibcast(rrtmgp_enable_temperature_warnings, 1, mpi_logical, mstrid, mpicom, ierr)
 #endif
@@ -283,7 +287,7 @@ contains
          write(iulog,10) trim(rrtmgp_coefficients_file_lw), trim(rrtmgp_coefficients_file_sw), &
                          iradsw, iradlw, irad_always, &
                          use_rad_dt_cosz, spectralflux, &
-                         do_aerosol_rad, fixed_total_solar_irradiance, &
+                         do_aerosol_rad, do_spa_optics, fixed_total_solar_irradiance, &
                          rrtmgp_enable_temperature_warnings
       end if
    10 format('  LW coefficents file: ',                                a/, &
@@ -294,6 +298,7 @@ contains
              '  Use average zenith angle:                           ',l5/, &
              '  Output spectrally resolved fluxes:                  ',l5/, &
              '  Do aerosol radiative calculations:                  ',l5/, &
+             '  Do spa optics calculations:                         ',l5/, &
              '  Fixed solar consant (disabled with -1):             ',f10.4/, &
              '  Enable temperature warnings:                        ',l5/ )
 
@@ -451,6 +456,7 @@ contains
       use cloud_rad_props, only: cloud_rad_props_init
       use ebert_curry, only: ec_rad_props_init
       use slingo, only: slingo_rad_props_init
+      use shr_log_mod, only: errMsg => shr_log_errMsg
 
       ! Physics state is going to be needed for perturbation growth tests, but we
       ! have yet to implement this in RRTMGP. It is a vector because at the point
@@ -489,6 +495,13 @@ contains
       integer :: band_index
 
       !-----------------------------------------------------------------------
+
+      !sanity check for spa
+      !spa must be active if do_spa_optics, is true
+      if(do_spa_optics .and. .not. is_spa_active) then
+         call endrun('SPA must be active if do_spa_optics is true, '//errmsg(__FILE__,__LINE__))
+      endif
+
 
       ! Initialize cloud optics
       call cloud_rad_props_init()
@@ -915,7 +928,7 @@ contains
       aer_asm_bnd_sw_idx(:) = -1
       aer_tau_bnd_lw_idx(:) = -1
 
-      if (is_spa_active) then !initialize SPA
+      if (is_spa_active .and. do_spa_optics) then !initialize SPA
          !Get PBUF indices for SPA fields
          do band_index = 1,nswbands !short wave
             aer_tau_bnd_sw_idx(band_index) = pbuf_get_index(aer_tau_sw_names(band_index))
@@ -1397,7 +1410,7 @@ contains
                   aer_ssa_bnd_sw = 0._r8
                   aer_asm_bnd_sw = 0._r8
                   !if SPA is active, grab fields read in from the input file and stored in PBUF
-                  if (is_spa_active) then
+                  if (is_spa_active .and. do_spa_optics) then
                      do band_index = 1, nswbands
                         call pbuf_get_field(pbuf, aer_tau_bnd_sw_idx(band_index), aerosol_optical_property)
                         aer_tau_bnd_sw(:,:,band_index) = aerosol_optical_property
@@ -1513,7 +1526,7 @@ contains
                   call t_startf('rad_aer_optics_lw')
                   aer_tau_bnd_lw = 0._r8
                  !if SPA is active, use SPA fields from PBUF
-                 if (is_spa_active) then
+                 if (is_spa_active .and. do_spa_optics) then
                      do band_index = 1, nlwbands
                         call pbuf_get_field(pbuf,aer_tau_bnd_lw_idx(band_index), aerosol_optical_property)
                         aer_tau_bnd_lw(:,:,band_index) = aerosol_optical_property

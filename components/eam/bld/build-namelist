@@ -706,6 +706,8 @@ my $chem = $cfg->get('chem');
 my $waccm_chem = ($chem =~ "waccm_");
 my $waccm_phys = $cfg->get('waccm_phys');
 
+my $spa_chem = ($chem eq "spa");
+
 my $prog_species = $cfg->get('prog_species');
 my $prog_ghg1    = ($chem =~ "trop_mozart" or $chem =~ "trop_strat" or $chem =~ "ghg" or $prog_species =~ "GHG");
 my $prog_ghg2    = ($chem =~ "ghg" or $prog_species =~ "GHG");
@@ -753,6 +755,15 @@ if ($cfg->get('pergro') or ($chem ne 'none')) {
 # Turn on debugging checks
 if ($cfg->get('debug')) {
     add_default($nl, 'state_debug_checks', 'val'=> '.true.')
+}
+
+if ( $spa_chem) {
+    add_default($nl, 'spa_datapath', 'val' =>$nl->get_value('spa_datapath'));
+    add_default($nl, 'spa_file', 'val' => $nl->get_value('spa_input_file'));
+    add_default($nl, 'spa_type', 'val' => 'CYCLICAL');
+    add_default($nl, 'spa_cycle_yr', 'val' => 1);
+    add_default($nl, 'do_prescribed_ccn', 'val' => '.true.');
+    add_default($nl, 'do_spa_optics', 'val' => '.true.');
 }
 
 # Chemistry deposition lists
@@ -1462,6 +1473,8 @@ if ($aer_model eq 'mam' ) {
 
   # water refractive index properties needed for modal optics calculations
   add_default($nl, 'water_refindex_file');
+
+} elsif ($aero_modes eq '9mode') {
 
 } else {
 
@@ -3652,6 +3665,12 @@ add_default($nl, 'p3_qc_autoCon_Expon');
 add_default($nl, 'p3_qc_accret_Expon');
 add_default($nl, 'do_prescribed_CCN');
 
+#spa sanity check
+#if($nl->get_value('do_prescribed_CCN' && not $spa_chem)){
+#    die "$ProgName - ERROR: do_prescribed_CCN = .true. therefore spa_chem should also be .true. $eol";
+#}
+
+
 # CLUBB_SGS
 add_default($nl, 'do_clubb_sgs');
 my $clubb_sgs = $nl->get_value('do_clubb_sgs');
@@ -3715,6 +3734,16 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_ipdf_call_placement');
 
 }
+
+
+#RRTMGP
+add_default($nl, 'do_spa_optics');
+
+#spa sanity check
+#if($nl->get_value('do_spa_optics' && not $spa_chem)){
+#    die "$ProgName - ERROR: do_spa_optics = .true. therefore spa_chem should also be .true. $eol";
+#}
+
 
 # MMF Microphysics scheme
 add_default($nl, 'MMF_microphysics_scheme');
