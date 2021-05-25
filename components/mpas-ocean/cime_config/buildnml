@@ -333,6 +333,9 @@ def buildnml(case, caseroot, compname):
     if run_type == 'hybrid' or run_type == 'branch':
         input_file = "{}/{}.mpaso.rst.{}_{}.nc".format(rundir, run_refcase, run_refdate, run_reftod)
         expect(os.path.exists(input_file), "ERROR mpaso buildnml: missing specified restart file for branch or hybrid run: " + input_file)
+        restart_file = "{}/{}.mpaso.rst.{}_{}.nc".format(rundir, casename, run_refdate, run_reftod)
+        if not os.path.exists(restart_file):
+            safe_copy(input_file, restart_file)
 
     #--------------------------------------------------------------------
     # Generate input data file with stream-specified files

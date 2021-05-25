@@ -409,8 +409,6 @@ my $LID = $ENV{'LID'};
 
 my $ntasks = $NTASKS_GLC / $NINST_GLC; 
 
-if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
-
 print "MALI build-namelist: glc_grid is $GLC_GRID \n";
 print "MALI build-namelist: MALI_DYNAMIC is $MALI_DYNAMIC \n";
 print "MALI build-namelist: MALI_USE_ALBANY is $MALI_USE_ALBANY \n";

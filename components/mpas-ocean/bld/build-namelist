@@ -444,8 +444,6 @@ my $LID = $ENV{'LID'};
 
 my $ntasks = $NTASKS_OCN / $NINST_OCN; 
 
-if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
-
 print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
 print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
 
