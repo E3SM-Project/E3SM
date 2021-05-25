@@ -391,10 +391,12 @@ CONTAINS
 
     if(adiabatic) return
 
-#define LF
-!#undef LF
+!#define LF
+#undef LF
 
 #ifdef LF
+    ! this can measure PW terms and apply LF,
+    ! right now, we call it for LF only, measurements can be done in physpkg
     call measure_pressure_work(phys_state,phys_tend)
 #endif
 
