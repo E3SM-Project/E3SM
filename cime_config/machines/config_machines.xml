@@ -1216,12 +1216,6 @@
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
-    <environment_variables MAX_MPITASKS_PER_NODE="!128">
-      <env name="SLURM_CPU_BIND">cores</env>
-    </environment_variables>
-    <environment_variables MAX_MPITASKS_PER_NODE="128">
-      <env name="SLURM_CPU_BIND">threads</env>
-    </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
