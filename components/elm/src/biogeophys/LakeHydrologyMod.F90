@@ -162,7 +162,8 @@ contains
          snowliq              =>  col_ws%snowliq           , & ! Output: [real(r8) (:)   ]  average snow liquid water               
          h2osoi_ice           =>  col_ws%h2osoi_ice        , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
          h2osoi_liq           =>  col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
-         h2osoi_vol           =>  col_ws%h2osoi_vol        , & ! Output: [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
+         h2osoi_vol           =>  col_ws%h2osoi_vol        , & ! Output: [real(r8) (:,:) ]  volumetric soil water [m3/m3]        
+         wslake               =>  waterstate_vars%wslake_col, & 
 
          qflx_floodc          =>  col_wf%qflx_floodc        , & ! Output: [real(r8) (:)   ]  column flux of flood water from RTM     
          qflx_prec_grnd       =>  veg_wf%qflx_prec_grnd   , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
@@ -231,6 +232,13 @@ contains
             h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
          end do
       end do
+
+      ! Add lake water storage to water balance.
+      do fc = 1, num_lakec
+         c = filter_lakec(fc)
+         begwb(c) = begwb(c) + wslake(c)
+      end do
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Do precipitation onto ground, etc., from CanopyHydrology
@@ -675,8 +683,16 @@ contains
          qflx_irrig_col(c)     = 0._r8
 
          ! Insure water balance using qflx_qrgwl
-         qflx_qrgwl(c)     = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(p) - &
-              (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
+         qflx_qrgwl(c)     = 0._r8
+         if (wslake(c) >= 5000._r8) then
+           qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(p) + &
+              qflx_floodg(g) - (endwb(c) + wslake(c) -begwb(c))/dtime
+         end if
+         wslake(c) = (forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - &
+            qflx_snwcp_ice(p) + qflx_floodg(g) - qflx_qrgwl(c)) * dtime - &
+            (endwb(c) - begwb(c))
+         endwb(c) = endwb(c) + wslake(c)
+
          qflx_floodc(c)    = qflx_floodg(g)
          qflx_runoff(c)    = qflx_drain(c) + qflx_qrgwl(c)
          qflx_top_soil(c)  = qflx_prec_grnd_rain(p) + qflx_snomelt(c)

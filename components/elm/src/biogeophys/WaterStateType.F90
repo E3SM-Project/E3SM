@@ -53,6 +53,7 @@ module WaterstateType
      real(r8), pointer :: h2ocan_col             (:)   ! col canopy water (mm H2O)
      real(r8), pointer :: h2osfc_col             (:)   ! col surface water (mm H2O)
      real(r8), pointer :: swe_old_col            (:,:) ! col initial snow water
+     real(r8), pointer :: wslake_col             (:)   ! col lake water storage(mm)
      real(r8), pointer :: liq1_grc               (:)   ! grc initial gridcell total h2o liq content
      real(r8), pointer :: liq2_grc               (:)   ! grc post land cover change total liq content
      real(r8), pointer :: ice1_grc               (:)   ! grc initial gridcell total h2o ice content
@@ -225,6 +226,8 @@ contains
     allocate(this%h2ocan_col             (begc:endc))                     ; this%h2ocan_col             (:)   = nan  
     allocate(this%h2osfc_col             (begc:endc))                     ; this%h2osfc_col             (:)   = nan   
     allocate(this%swe_old_col            (begc:endc,-nlevsno+1:0))        ; this%swe_old_col            (:,:) = nan   
+    allocate(this%wslake_col             (begc:endc))                     ;
+this%wslake_col         (:)   = nan
     allocate(this%liq1_grc               (begg:endg))                     ; this%liq1_grc               (:)   = nan
     allocate(this%liq2_grc               (begg:endg))                     ; this%liq2_grc               (:)   = nan
     allocate(this%ice1_grc               (begg:endg))                     ; this%ice1_grc               (:)   = nan
@@ -325,6 +328,11 @@ contains
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
+
+    this%wslake_col(begc:endc) = spval
+    call hist_addfld1d(fname='WSLAKE', units='mm', &
+         avgflag='A', long_name='lake water storage', &
+         ptr_col=this%wslake_col)
 
     ! h2osno also includes snow that is part of the soil column (an 
     ! initial snow layer is only created if h2osno > 10mm). 
@@ -433,6 +441,8 @@ contains
       this%fwet_patch(bounds%begp:bounds%endp) = 0._r8
       this%fdry_patch(bounds%begp:bounds%endp) = 0._r8
 
+      this%wslake_col(bounds%begc:bounds%endc) = 0._r8
+
       !--------------------------------------------
       ! Set snow water
       !--------------------------------------------
@@ -516,6 +526,10 @@ contains
 
     SHR_ASSERT_ALL((ubound(watsat_col) == (/bounds%endc,nlevgrnd/)) , errMsg(__FILE__, __LINE__))
 
+
+    call restartvar(ncid=ncid, flag=flag, varname='WSLAKE', xtype=ncd_double, &
+         dim1name='column', long_name='lake water storage', units='kg/m2', &
+         interpinic_flag='interp', readvar=readvar, data=this%wslake_col)
 
     call restartvar(ncid=ncid, flag=flag, varname='TWS_MONTH_BEGIN', xtype=ncd_double,  &
          dim1name='gridcell', &
