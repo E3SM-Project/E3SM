@@ -1,0 +1,32 @@
+%YAML 1.1
+---
+Debug:
+  Atmosphere DAG Verbosity Level: 5
+
+Atmosphere Processes:
+  Number of Entries: 4
+  Schedule Type: Sequential
+  Process 0:
+    Process Name: SHOC
+    Grid: Physics
+  Process 1:
+    Process Name: CldFraction 
+    Grid: Physics
+  Process 2:
+    Process Name: P3
+    Grid: Physics
+  Process 3:
+    Process Name: RRTMGP
+    Grid: Physics
+
+Grids Manager:
+  Type: Physics Only
+  Reference Grid: Physics
+  Physics Only:
+    Number of global columns:   866
+    Number of vertical levels:  72  # Will want to change to 128 when a valid unit test is available.
+
+# The name of the file containing the initial conditions for this test.
+Initial Conditions:
+  Initial Conditions File: shoc_cld_p3_rrtmgp_init_ne4np4.nc
+...
