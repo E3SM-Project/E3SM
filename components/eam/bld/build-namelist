@@ -748,7 +748,7 @@ if ($rad_volcaero){
 
 # Print conservation errors
 # Turn this off for PERGRO runs or for WACCM runs
-if ($cfg->get('pergro') or ($chem ne 'none')) {
+if ($cfg->get('pergro') or (($chem ne 'none') && ($chem ne 'spa'))) {
     add_default($nl, 'print_energy_errors', 'val'=>'.false.');
 }
 
@@ -767,7 +767,7 @@ if ( $spa_chem) {
 }
 
 # Chemistry deposition lists
-if ( ($chem ne 'none') or ( $prog_species ) ){
+if ( (($chem ne 'none') && ($chem ne 'spa')) or ( $prog_species ) ){
     my $chem_proc_src = $cfg->get('chem_proc_src');
     my $chem_src_dir = $cfg->get('chem_src_dir');
 
@@ -1473,8 +1473,6 @@ if ($aer_model eq 'mam' ) {
 
   # water refractive index properties needed for modal optics calculations
   add_default($nl, 'water_refindex_file');
-
-} elsif ($aero_modes eq '9mode') {
 
 } else {
 
