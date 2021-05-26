@@ -1395,7 +1395,8 @@ contains
 
            ! RGK: temporarily using ndep_prof
            ! Capacitance Aquisition (ECA/CA)
-           call PAllocationECAMIC(h2osoi_vol(c,:),        & ! IN (j)
+           call PAllocationECAMIC(pci,pcf,                &
+                h2osoi_vol(c,:),                          & ! IN (j)
                 t_scalar(c,:),                            & 
                 gross_pmin_vr(c,:),                       & 
                 potential_immob_p_vr(c,:),                & 
@@ -1409,10 +1410,10 @@ contains
                 nu_com,                                   & 
                 n_pcomp,                                  &
                 filter_pcomp(1:n_pcomp),                  & ! IN (i)
-                veg_rootc_ptr(filter_pcomp(1:n_pcomp),:), & 
-                ft_index_ptr(filter_pcomp(1:n_pcomp)),    &
+                veg_rootc_ptr(:,:), & 
+                ft_index_ptr(:),    &
                 decompmicc,                               & 
-                cp_scalar_ptr(filter_pcomp(1:n_pcomp)),   & 
+                cp_scalar_ptr(:),   & 
                 km_p_ptr(:),                              &
                 vmax_p_ptr(:),                            &
                 km_decomp_p,                              & 
@@ -2911,10 +2912,10 @@ contains
     real(r8), intent(in)  :: t_scalar(:)     ! fraction by which decomposition is limited by temperature  
     integer,  intent(in)  :: n_pcomp         ! number of plant competitors
     integer,  intent(in)  :: filter_pcomp(:) ! plant competition filter
-    real(r8), intent(in)  :: veg_rootc(pci:pcf,:)  ! total fine-root biomass of each competitor [gC/m3]
+    real(r8), intent(in)  :: veg_rootc(pci:,:)  ! total fine-root biomass of each competitor [gC/m3]
                                              ! (per area of column, not patch)
-    integer, intent(in)   :: ft_index(pci:pcf)     ! pft index of plant competitors
-    real(r8), intent(in)  :: cn_scalar(pci:pcf)    ! scaling factor implying plant demand
+    integer, intent(in)   :: ft_index(pci:)     ! pft index of plant competitors
+    real(r8), intent(in)  :: cn_scalar(pci:)    ! scaling factor implying plant demand
     real(r8), intent(in)  :: decompmicc(:)   ! microbial decomposer biomass [gC/m3]
     character(len=*), intent(in)   :: nu_com ! Is this ECA or MIC?
 
@@ -2924,7 +2925,7 @@ contains
     real(r8), intent(in)  :: vmax_nh4_plant(:)         ! vmax for plant uptake
     real(r8), intent(in)  :: km_decomp_nh4             ! km for microbial decomposer nh4 uptake
     real(r8), intent(in)  :: potential_immob_vr(:)     ! potential N immobilization [g/m3/s]
-    real(r8), intent(inout) :: plant_nh4demand_vr(pci:pcf,:) ! [g m-3 s-1] (m2 of col, not patch)
+    real(r8), intent(inout) :: plant_nh4demand_vr(pci:,:) ! [g m-3 s-1] (m2 of col, not patch)
     real(r8), intent(out) :: col_plant_nh4demand_vr(:) ! [g m-3 s-1] (m2 of col, not patch)
     real(r8), intent(out) :: fpi_nh4_vr(:)             ! fraction of potential immobilization supplied by nh4 (no units)
     real(r8), intent(out) :: actual_immob_nh4_vr(:)    ! actual nh4 immobilization [g/m3/s]
@@ -2940,7 +2941,7 @@ contains
     real(r8), intent(in)  :: km_den                    ! km for denitrifier no3 uptake
     real(r8), intent(in)  :: pot_f_nit_vr(:)           ! potential soil nitrification flux [g/m3/s]
     real(r8), intent(in)  :: pot_f_denit_vr(:)         ! potential soil denitrification flux [g/m3/s]
-    real(r8), intent(inout) :: plant_no3demand_vr(pci:pcf,:) ! [gN m-3 s-1] (m2 of col, not patch)
+    real(r8), intent(inout) :: plant_no3demand_vr(pci:,:) ! [gN m-3 s-1] (m2 of col, not patch)
     real(r8), intent(out) :: col_plant_no3demand_vr(:) ! [gN m-3 s-1] (m2 of col, not patch)
     real(r8), intent(out) :: fpi_no3_vr(:)             ! fraction of potential immobilization supplied by no3 (no units)
     real(r8), intent(out) :: actual_immob_no3_vr(:)    ! actual no3 immobilization [gN/m3/s]
@@ -3241,16 +3242,16 @@ contains
     character(len=*), intent(in) :: nu_com
     integer,  intent(in) :: n_pcomp
     integer,  intent(in) :: filter_pcomp(:)
-    real(r8), intent(in) :: veg_rootc(pci:pcf,:)
-    integer, intent(in)  :: ft_index(pci:pcf)
+    real(r8), intent(in) :: veg_rootc(pci:,:)
+    integer, intent(in)  :: ft_index(pci:)
     real(r8), intent(in) :: decompmicc(:)
-    real(r8), intent(in) :: cp_scalar(pci:pcf)
+    real(r8), intent(in) :: cp_scalar(pci:)
     real(r8), intent(in) :: km_plant_p(:)
     real(r8), intent(in) :: vmax_plant_p(:)
     real(r8), intent(in) :: km_decomp_p
     real(r8), intent(in) :: labilep_vr(:)
 
-    real(r8), intent(inout) :: plant_pdemand_vr_patch(pci:pcf,:)
+    real(r8), intent(inout) :: plant_pdemand_vr_patch(pci:,:)
     real(r8), intent(out) :: col_plant_pdemand_vr(:)
     real(r8), intent(out) :: adsorb_to_labilep_vr(:)
 
