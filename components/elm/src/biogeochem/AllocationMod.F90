@@ -104,8 +104,6 @@ module AllocationMod
   !$acc declare create(aroot(:)            )
 
   logical :: crop_supln  = .false.    !Prognostic crop receives supplemental Nitrogen
-
-  real(r8) :: dt                   !decomp timestep (seconds)
   
   real(r8), allocatable        :: decompmicc(:)                 ! column-level soil microbial decomposer biomass gC/m3
   integer,  allocatable        :: filter_pcomp(:)               ! this is a plant competitor map for FATES/ELM-BL w/ ECA
@@ -1395,7 +1393,7 @@ contains
 
            ! RGK: temporarily using ndep_prof
            ! Capacitance Aquisition (ECA/CA)
-           call PAllocationECAMIC(pci,                    &
+           call PAllocationECAMIC(pci,dt,                 &
                 h2osoi_vol(c,:),                          & ! IN (j)
                 t_scalar(c,:),                            & 
                 gross_pmin_vr(c,:),                       & 
@@ -3191,6 +3189,7 @@ contains
   ! ======================================================================================
 
   subroutine PAllocationECAMIC(pci, &
+       dt, &
        h2osoi_vol, & 
        t_scalar, & 
        gross_pmin_vr, & 
@@ -3227,6 +3226,7 @@ contains
     use elm_varctl , only : carbonnitrogen_only  !
 
     integer,  intent(in) :: pci     ! initial and final index of plant competitors
+    real(r8), intent(in) :: dt      ! integration timestep length (s)
     real(r8), intent(in) :: h2osoi_vol(:)
     real(r8), intent(in) :: t_scalar(:)
     real(r8), intent(in) :: gross_pmin_vr(:)
