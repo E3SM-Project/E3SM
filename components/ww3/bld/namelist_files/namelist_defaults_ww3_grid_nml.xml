@@ -139,6 +139,7 @@ attributes to express the dependency.
 <i2us3d>50</i2us3d>
 <ussp>0</ussp>
 <iussp>1</iussp>
+<stk_wn>0</stk_wn>
 <e3d>0</e3d>
 <i1e3d>1</i1e3d>
 <i2e3d>50</i2e3d>

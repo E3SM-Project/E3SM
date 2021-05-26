@@ -14,8 +14,8 @@ attributes to express the dependency.
 <stafile>"/lcrc/group/acme/data/inputdata/wav/ww3/stations.txt"</stafile>
 <pnt_out_freq>3600</pnt_out_freq>
 <grd_out_freq>21600</grd_out_freq>
-<fldout>"WND HS FP DP USS"</fldout>
-<fldcou>"USS"</fldcou>
+<fldout>"WND HS FP DP USS USP"</fldout>
+<fldcou>"USS USP"</fldcou>
 
 
 </namelist_defaults>

@@ -651,6 +651,12 @@
        group="outs"
        valid_values="">
 </entry>
+<entry id="stk_wn"
+       type="real(25)"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
 <entry id="e3d"
        type="integer"
        category="outs"
