@@ -35,15 +35,15 @@ core_reg:
 
 core_input_gen:
 	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean )
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.forward mode=forward )
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.analysis mode=analysis )
-	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean stream_list.ocean. mutable )
-	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.forward stream_list.ocean.forward. mutable mode=forward )
-	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.analysis stream_list.ocean.analysis. mutable mode=analysis )
+	(cd default_inputs; $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean )
+	(cd default_inputs; $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean.forward mode=forward )
+	(cd default_inputs; $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean.analysis mode=analysis )
+	(cd default_inputs; $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean stream_list.ocean. mutable )
+	(cd default_inputs; $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean.forward stream_list.ocean.forward. mutable mode=forward )
+	(cd default_inputs; $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean.analysis stream_list.ocean.analysis. mutable mode=analysis )
 ifneq "$(EXCLUDE_INIT_MODE)" "true"
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init mode=init )
-	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.init stream_list.ocean.init. mutable mode=init )
+	(cd default_inputs; $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean.init mode=init )
+	(cd default_inputs; $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean.init stream_list.ocean.init. mutable mode=init )
 endif
 
 gen_includes:
@@ -87,7 +87,7 @@ libgotm:
 			(sed -i.bk "s/\#define STDERR write(stderr,\*)/\#define STDERR if (.false.) write(stderr,\*)/" gotm/include/cppdefs.h; mkdir gotm/build; cd gotm/build; cmake ../src $(GOTM_CMAKE_FLAGS); make) \
 		fi \
 	else \
-		(pwd ; echo "Missing core_ocean/gotm/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
+		(pwd ; echo "Missing mpas-ocean/src/gotm/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
 	fi
 
 shared: libcvmix libBGC libgotm
