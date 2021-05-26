@@ -1096,7 +1096,7 @@ if (defined $prescribed_aero_model) {
 }
 else {
     $prescribed_aero_model = 'none';
-    if ($chem eq 'none' or $chem eq 'waccm_ghg' or $chem eq 'super_fast_llnl' or $chem eq 'waccm_mozart' or $chem eq 'waccm_mozart_sulfur') {
+    if ($chem eq 'none' or $chem eq 'spa' or $chem eq 'waccm_ghg' or $chem eq 'super_fast_llnl' or $chem eq 'waccm_mozart' or $chem eq 'waccm_mozart_sulfur') {
 	# If no chemistry then there must be prescribed aerosols unless physics
 	# package is adiabatic or ideal.
 	if ($phys eq 'default') {
@@ -3663,12 +3663,6 @@ add_default($nl, 'p3_qc_autoCon_Expon');
 add_default($nl, 'p3_qc_accret_Expon');
 add_default($nl, 'do_prescribed_CCN');
 
-#spa sanity check
-#if($nl->get_value('do_prescribed_CCN' && not $spa_chem)){
-#    die "$ProgName - ERROR: do_prescribed_CCN = .true. therefore spa_chem should also be .true. $eol";
-#}
-
-
 # CLUBB_SGS
 add_default($nl, 'do_clubb_sgs');
 my $clubb_sgs = $nl->get_value('do_clubb_sgs');
@@ -3733,15 +3727,8 @@ if ($clubb_sgs  =~ /$TRUE/io) {
 
 }
 
-
 #RRTMGP
 add_default($nl, 'do_spa_optics');
-
-#spa sanity check
-#if($nl->get_value('do_spa_optics' && not $spa_chem)){
-#    die "$ProgName - ERROR: do_spa_optics = .true. therefore spa_chem should also be .true. $eol";
-#}
-
 
 # MMF Microphysics scheme
 add_default($nl, 'MMF_microphysics_scheme');

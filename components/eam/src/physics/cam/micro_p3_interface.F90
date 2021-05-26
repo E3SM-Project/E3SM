@@ -347,7 +347,7 @@ end subroutine micro_p3_readnl
                                    ! temperature, water vapor, cloud ice and cloud
 
     !sanity check for spa
-    !spa must be active is do_prescribed_CCN is true
+    !spa must be active if do_prescribed_CCN is true
     if(do_prescribed_CCN .and. .not. is_spa_active) then
        call endrun('SPA must be active if do_prescribed_CCN is true, '//errmsg(__FILE__,__LINE__))
     endif
