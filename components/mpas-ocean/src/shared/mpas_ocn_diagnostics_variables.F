@@ -176,7 +176,6 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: barotropicCoriolisTerm
    real (kind=RKIND), dimension(:), pointer :: barotropicThicknessFlux
 
-   real (kind=RKIND), dimension(:, :), pointer :: edgeAreaFractionOfCell
    real (kind=RKIND), dimension(:, :), pointer :: SSHGradient
    integer, pointer :: indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
    integer, pointer :: indexSSHGradientZonal, indexSSHGradientMeridional
@@ -378,7 +377,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberBuoy',bulkRichardsonNumberBuoy)
       call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberShear',bulkRichardsonNumberShear)
       call mpas_pool_get_array(diagnosticsPool, 'indexBoundaryLayerDepth',indexBoundaryLayerDepth)
-      call mpas_pool_get_array(diagnosticsPool, 'edgeAreaFractionOfCell', edgeAreaFractionOfCell)
 
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
       call mpas_pool_get_dimension(diagnosticsPool, 'index_vertNonLocalFluxTemp', index_vertNonLocalFluxTemp)

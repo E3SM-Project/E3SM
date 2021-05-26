@@ -2237,6 +2237,15 @@ module ocn_time_integration_split
 
       end if ! not restart
 
+      ! Create reusable halo exchange for subcycling
+      call mpas_dmpar_exch_group_create(domain, subcycleGroupName)
+      call mpas_dmpar_exch_group_add_field(domain, subcycleGroupName, &
+                                           'sshSubcycle')
+      call mpas_dmpar_exch_group_add_field(domain, subcycleGroupName, &
+                                  'normalBarotropicVelocitySubcycle')
+      call mpas_dmpar_exch_group_build_reusable_buffers(domain, &
+                                                     subcycleGroupName)
+
       !-----------------------------------------------------------------
 
    end subroutine ocn_time_integration_split_init!}}}

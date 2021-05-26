@@ -9,13 +9,13 @@
 !
 !  ocn_analysis_mode
 !
-!> \brief Main driver for MPAS ocean analysis core in post-processing mode
+!> \brief Driver for MPAS ocean analysis core in post-processing mode
 !> \author Mark Petersen
 !> \date   November 2013
 !> \details
-!>  This module contains the drivers for the MPAS ocean analysis core in
-!>  post-processing mode.  None of these routines are used in run-time mode
-!>  by the ocean core.
+!>  This module contains the drivers for the MPAS ocean analysis core
+!>  in post-processing mode.  None of these routines are used in
+!>  run-time mode by the ocean core.
 !
 !-----------------------------------------------------------------------
 
@@ -30,7 +30,6 @@ module ocn_analysis_mode
    use mpas_timer
    use mpas_log
    use mpas_decomp
-   use mpas_log
 
    use ocn_analysis_driver
    use ocn_init_routines
@@ -39,11 +38,21 @@ module ocn_analysis_mode
    use ocn_equation_of_state
    use ocn_constants
    use ocn_config
+   use ocn_mesh
 
+   implicit none
    private
 
-   public :: ocn_analysis_mode_init, ocn_analysis_mode_run, ocn_analysis_mode_finalize
-   public :: ocn_analysis_mode_setup_clock
+   !--------------------------------------------------------------------
+   ! Public member functions
+   !--------------------------------------------------------------------
+
+   public :: ocn_analysis_mode_init, &
+             ocn_analysis_mode_run, &
+             ocn_analysis_mode_finalize, &
+             ocn_analysis_mode_setup_clock
+
+!***********************************************************************
 
    contains
 
@@ -62,46 +71,86 @@ module ocn_analysis_mode
 
    function ocn_analysis_mode_init(domain, startTimeStamp) result(ierr)!{{{
 
-      type (domain_type), intent(inout) :: domain
-      character(len=*), intent(out) :: startTimeStamp
-      integer :: ierr
+      !-----------------------------------------------------------------
+      ! Input/output variables
+      !-----------------------------------------------------------------
 
-      type (block_type), pointer :: block
+      type (domain_type), intent(inout) :: &
+         domain    !< [inout] All ocean model state and variables
 
-      integer :: err_tmp
+      !-----------------------------------------------------------------
+      ! Output variables
+      !-----------------------------------------------------------------
 
-      type (MPAS_timeInterval_type) :: timeStep
+      character(len=*), intent(out) :: &
+         startTimeStamp   !< [out] start time in char string
 
-      ! remove dt later
-      real (kind=RKIND) :: dt
-      type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
-      type (MPAS_Time_Type) :: startTime
+      integer :: ierr     !< [out] returned error code
 
-      ierr = 0
+      !-----------------------------------------------------------------
+      ! Local variables
+      !-----------------------------------------------------------------
 
-      !
-      ! Set startTimeStamp based on the start time of the simulation clock
-      !
-      startTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, err_tmp)
+      type (block_type), pointer :: &
+         block           ! structure containing data for subdomain block
+
+      integer :: err_tmp ! internal error flag for routine calls
+
+      real (kind=RKIND) :: &
+         dt              ! model time step in seconds
+
+      type (MPAS_timeInterval_type) :: &
+         timeStep        ! model time step in time interval form
+
+      type (MPAS_Time_type) :: &
+         xtime_timeType, &! temporary for computing time since start
+         startTime,      &! start time of simulation clock
+         simulationStartTime_timeType ! start time again
+
+      ! End preamble
+      !-------------
+      ! Begin code
+
+      ierr = 0 ! initialize return error to success
+
+      ! Set startTimeStamp based on start time of the simulation clock
+      startTime = mpas_get_clock_time(domain%clock, MPAS_START_TIME, &
+                                      err_tmp)
       call mpas_get_time(startTime, dateTimeString=startTimeStamp)
       ierr = ior(ierr, err_tmp)
+      if (err_tmp /= 0) call mpas_log_write( &
+                        'Error setting start time ', MPAS_LOG_ERR)
 
       ! Set up ocean constants
-      call ocn_constants_init(domain % configs, domain % packages)
+      call ocn_constants_init(domain%configs, domain%packages)
 
       ! Setup ocean config pool
-      call ocn_config_init(domain % configs)
+      call ocn_config_init(domain%configs)
 
-      !
       ! Read input data for model
-      !
       call mpas_timer_start('io_read')
-      call MPAS_stream_mgr_read(domain % streamManager, streamID='mesh', whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
-      call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
+      call MPAS_stream_mgr_read(domain%streamManager, streamID='mesh', &
+                             whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
       call mpas_timer_stop('io_read')
+      if (err_tmp /= 0) call mpas_log_write( &
+                        'Error reading mesh file ', MPAS_LOG_CRIT)
+
+      call mpas_timer_start('io_read')
+      call MPAS_stream_mgr_read(domain%streamManager, streamID='input',&
+                                ierr=err_tmp)
+      call mpas_timer_stop('io_read')
+      if (err_tmp /= 0) call mpas_log_write( &
+                        'Error reading input file ', MPAS_LOG_CRIT)
+
       call mpas_timer_start('io_reset_alarms')
-      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err_tmp)
+      call MPAS_stream_mgr_reset_alarms(domain%streamManager, &
+                                        streamID='input', ierr=err_tmp)
       call mpas_timer_stop('io_reset_alarms')
+      if (err_tmp /= 0) call mpas_log_write( &
+                        'Error resetting io alarms ', MPAS_LOG_ERR)
+
+      ! Initialize all mesh data before other inits
+      call ocn_meshCreate(domain)
 
       ! Initialize submodules before initializing blocks.
       call ocn_equation_of_state_init(domain, err_tmp)
@@ -110,43 +159,39 @@ module ocn_analysis_mode
       call ocn_analysis_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
 
-      call ocn_init_routines_vert_coord(domain)
-
-      call ocn_init_routines_compute_min_max_level(domain)
-
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)
       call mpas_get_timeInterval(timeStep, dt=dt)
 
       block => domain % blocklist
-      do while (associated(block))
-         call ocn_init_routines_block(block, dt, ierr)
-         if(ierr.eq.1) then
-             call mpas_log_write('An error was encountered in ocn_init_routines_block', MPAS_LOG_CRIT)
-         endif
+      call ocn_init_routines_block(block, dt, err_tmp)
+      ierr = ior(ierr, err_tmp)
+      if (err_tmp /= 0) then
+         call mpas_log_write( &
+            'An error was encountered in ocn_init_routines_block', &
+            MPAS_LOG_CRIT)
+      endif
 
-         xtime = startTimeStamp
-
-         ! Set simulationStartTime only if that variable is not read from the restart file.
-         if (trim(simulationStartTime)=="no_date_available") then
-            simulationStartTime = startTimeStamp
-         end if
-
-         block => block % next
-      end do
+      xtime = startTimeStamp
+      ! Set simulationStartTime only if that variable is not read from
+      ! the restart file.
+      if (trim(simulationStartTime)=="no_date_available") then
+         simulationStartTime = startTimeStamp
+      end if
 
       !$omp master
-      block => domain % blocklist
-      do while (associated(block))
-         ! compute time since start of simulation, in days
-         call mpas_set_time(xtime_timeType, dateTimeString=xtime)
-         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
-         call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
-         daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
+      ! compute time since start of simulation, in days
+      call mpas_set_time(xtime_timeType, dateTimeString=xtime)
+      call mpas_set_time(simulationStartTime_timeType, &
+                         dateTimeString=simulationStartTime)
+      call mpas_get_timeInterval( &
+           xtime_timeType - simulationStartTime_timeType, &
+           dt=daysSinceStartOfSim)
+      daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
 
-         block => block % next
-      end do
       !$omp end master
       !$omp barrier
+
+   !--------------------------------------------------------------------
 
    end function ocn_analysis_mode_init!}}}
 
