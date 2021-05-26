@@ -488,8 +488,8 @@ contains
     call outfld( 'MASS', mass(:ncol,:), ncol, lchnk )
     call outfld( 'DRYMASS', drymass(:ncol,:), ncol, lchnk )
 
-    ! convert ozone from mol/mol to DU
-    wrk(:ncol,:) = pdel(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/mwdry/DUfac*1.e3_r8
+    ! convert ozone from mol/mol (w.r.t. dry air mass) to DU
+    wrk(:ncol,:) = pdeldry(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/mwdry/DUfac*1.e3_r8
     ! total column ozone, vertical integration
     do k = 2,pver
        wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
