@@ -73,9 +73,9 @@ struct Functions
     SHOCInput() = default;
 
     // Grid spacing of host model in x direction [m]
-    view_1d<const Scalar> host_dx;
+    view_1d<const Scalar> dx;
     // grid spacing of host model in y direction [m]
-    view_1d<const Scalar> host_dy;
+    view_1d<const Scalar> dy;
     // heights, for thermo grid [m]
     view_2d<const Spack>  zt_grid;
     // heights, for interface grid [m]
@@ -347,8 +347,8 @@ struct Functions
   static void check_length_scale_shoc_length(
     const MemberType&      team,
     const Int&             nlev,
-    const Scalar&          host_dx,
-    const Scalar&          host_dy,
+    const Scalar&          dx,
+    const Scalar&          dy,
     const uview_1d<Spack>& shoc_mix);
 
   KOKKOS_FUNCTION
@@ -374,8 +374,8 @@ struct Functions
     const MemberType&            team,
     const Int&                   nlev,
     const Int&                   nlevi,
-    const Scalar&                host_dx,
-    const Scalar&                host_dy,
+    const Scalar&                dx,
+    const Scalar&                dy,
     const uview_1d<const Spack>& zt_grid,
     const uview_1d<const Spack>& zi_grid,
     const uview_1d<const Spack>& dz_zt,

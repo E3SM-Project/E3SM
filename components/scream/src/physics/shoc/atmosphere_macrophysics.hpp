@@ -28,16 +28,17 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using C            = physics::Constants<Real>;
   using KT           = ekat::KokkosTypes<DefaultDevice>;
 
-  using Spack = typename SHF::Spack;
-  using IntSmallPack = typename SHF::IntSmallPack;
-  using Smask = typename SHF::Smask;
-  using view_1d  = typename SHF::view_1d<Real>;
-  using view_1d_const  = typename SHF::view_1d<const Real>;
-  using view_2d  = typename SHF::view_2d<SHF::Spack>;
-  using view_2d_const  = typename SHF::view_2d<const Spack>;
-  using sview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
-  using view_3d = typename SHF::view_3d<Spack>;
-  using view_3d_const = typename SHF::view_3d<const Spack>;
+  using Spack                = typename SHF::Spack;
+  using IntSmallPack         = typename SHF::IntSmallPack;
+  using Smask                = typename SHF::Smask;
+  using view_1d              = typename SHF::view_1d<Real>;
+  using view_1d_const        = typename SHF::view_1d<const Real>;
+  using view_1d_const_double = typename SHF::view_1d<const double>;
+  using view_2d              = typename SHF::view_2d<SHF::Spack>;
+  using view_2d_const        = typename SHF::view_2d<const Spack>;
+  using sview_2d             = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
+  using view_3d              = typename SHF::view_3d<Spack>;
+  using view_3d_const        = typename SHF::view_3d<const Spack>;
 
 public:
   using field_type       = Field<      Real>;
@@ -149,6 +150,11 @@ public:
       const int nlev_v = (nlev-1)/Spack::n;
       const int nlev_p = (nlev-1)%Spack::n;
 
+      // For now, we are considering dy=dx. Here, we
+      // will need to compute dx/dy instead of cell_length
+      // if we have dy!=dx.
+      cell_length(i) = sqrt(area(i));
+
       wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlev_v)[nlev_p]);
       wprtp_sfc(i)  = surf_latent_flux(i)/rrho_i(i,nlev_v)[nlev_p];
       upwp_sfc(i)   = surf_u_mom_flux(i)/rrho_i(i,nlev_v)[nlev_p];
@@ -161,50 +167,54 @@ public:
 
     // Local variables
     int ncol, nlev, num_qtracers;
-    view_2d_const T_mid;
-    view_2d_const z_int;
-    view_2d_const z_mid;
-    view_2d_const p_mid;
-    view_2d_const pseudo_density;
-    view_2d_const omega;
-    view_1d_const phis;
-    view_1d_const surf_sens_flux;
-    view_1d_const surf_latent_flux;
-    view_1d_const surf_u_mom_flux;
-    view_1d_const surf_v_mom_flux;
-    view_2d_const qv;
-    view_2d       qv_copy;
-    view_2d       qc;
-    view_2d       qc_copy;
-    view_2d       shoc_s;
-    view_2d       tke;
-    view_2d       tke_copy;
-    view_2d       rrho;
-    view_2d       rrho_i;
-    view_2d       thv;
-    view_2d       dz;
-    view_2d       zt_grid;
-    view_2d       zi_grid;
-    view_1d       wpthlp_sfc;
-    view_1d       wprtp_sfc;
-    view_1d       upwp_sfc;
-    view_1d       vpwp_sfc;
-    view_2d       wtracer_sfc;
-    view_2d       wm_zt;
-    view_2d       exner;
-    view_2d       thlm;
-    view_2d       qw;
-    view_2d       cloud_frac;
+    view_1d_const_double area;
+    view_2d_const        T_mid;
+    view_2d_const        z_int;
+    view_2d_const        z_mid;
+    view_2d_const        p_mid;
+    view_2d_const        pseudo_density;
+    view_2d_const        omega;
+    view_1d_const        phis;
+    view_1d_const        surf_sens_flux;
+    view_1d_const        surf_latent_flux;
+    view_1d_const        surf_u_mom_flux;
+    view_1d_const        surf_v_mom_flux;
+    view_2d_const        qv;
+    view_2d              qv_copy;
+    view_1d              cell_length;
+    view_2d              qc;
+    view_2d              qc_copy;
+    view_2d              shoc_s;
+    view_2d              tke;
+    view_2d              tke_copy;
+    view_2d              rrho;
+    view_2d              rrho_i;
+    view_2d              thv;
+    view_2d              dz;
+    view_2d              zt_grid;
+    view_2d              zi_grid;
+    view_1d              wpthlp_sfc;
+    view_1d              wprtp_sfc;
+    view_1d              upwp_sfc;
+    view_1d              vpwp_sfc;
+    view_2d              wtracer_sfc;
+    view_2d              wm_zt;
+    view_2d              exner;
+    view_2d              thlm;
+    view_2d              qw;
+    view_2d              cloud_frac;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
+                       const view_1d_const_double& area_,
                        const view_2d_const& T_mid_, const view_2d_const& z_int_,
                        const view_2d_const& z_mid_, const view_2d_const& p_mid_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
                        const view_1d_const& surf_u_mom_flux_, const view_1d_const& surf_v_mom_flux_,
                        const view_2d_const& qv_, const view_2d& qv_copy_, const view_2d& qc_, const view_2d& qc_copy_,
-                       const view_2d& tke_, const view_2d& tke_copy_, const view_2d& s_, const view_2d& rrho_, const view_2d& rrho_i_,
+                       const view_2d& tke_, const view_2d& tke_copy_, const view_1d& cell_length_,
+                       const view_2d& s_, const view_2d& rrho_, const view_2d& rrho_i_,
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
                        const view_2d& wm_zt_,const view_2d& exner_,const view_2d& thlm_,const view_2d& qw_)
@@ -213,6 +223,7 @@ public:
       nlev = nlev_;
       num_qtracers = num_qtracers_;
       // IN
+      area = area_;
       T_mid = T_mid_;
       z_int = z_int_;
       z_mid = z_mid_;
@@ -232,6 +243,7 @@ public:
       shoc_s = s_;
       tke = tke_;
       tke_copy = tke_copy_;
+      cell_length = cell_length_;
       rrho = rrho_;
       rrho_i = rrho_i_;
       thv = thv_;
@@ -345,6 +357,8 @@ protected:
   Int m_nadv;
   Int m_num_tracers;
   Int hdtime;
+
+  KokkosTypes<DefaultDevice>::view_1d<double> m_cell_area;
 
   // Store the structures for each arguement to shoc_main;
   SHF::SHOCInput input;

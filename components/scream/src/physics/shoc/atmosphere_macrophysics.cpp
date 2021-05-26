@@ -27,8 +27,13 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   const auto& grid_name = m_shoc_params.get<std::string>("Grid");
   auto grid = grids_manager->get_grid(grid_name);
+
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
+
+  // TODO: In preprocessing, we assume area is in meters. This may not
+  //       always be the case.
+  m_cell_area = grid->get_geometry_data("area"); // area of each cell
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -141,7 +146,8 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
   const int nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
   const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
 
-  view_1d wpthlp_sfc("wpthlp_sfc",m_num_cols),
+  view_1d cell_length("cell_length",m_num_cols),
+          wpthlp_sfc("wpthlp_sfc",m_num_cols),
           wprtp_sfc("wprtp_sfc",m_num_cols),
           upwp_sfc("upwp_sfc",m_num_cols),
           vpwp_sfc("vpwp_sfc",m_num_cols);
@@ -162,15 +168,15 @@ void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
           qc_copy("qc_copy",m_num_cols,nlev_packs),
           tke_copy("tke_copy",m_num_cols,nlev_packs);
 
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,T_mid,
-                                z_int,z_mid,p_mid,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
-                                surf_u_mom_flux,surf_v_mom_flux,qv,qv_copy,qc,qc_copy,tke,tke_copy,
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,m_cell_area,
+                                T_mid,z_int,z_mid,p_mid,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
+                                surf_u_mom_flux,surf_v_mom_flux,qv,qv_copy,qc,qc_copy,tke,tke_copy,cell_length,
                                 s,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,exner,thlm,qw);
 
   // Input Variables:
-  input.host_dx     = m_shoc_fields_in["host_dx"].get_reshaped_view<const Real*>();
-  input.host_dy     = m_shoc_fields_in["host_dy"].get_reshaped_view<const Real*>();
+  input.dx          = shoc_preprocess.cell_length;
+  input.dy          = shoc_preprocess.cell_length;
   input.zt_grid     = shoc_preprocess.zt_grid;
   input.zi_grid     = shoc_preprocess.zi_grid;
   input.pres        = p_mid;
