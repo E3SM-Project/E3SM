@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<entry_id version="3.0">
+  <description>
+    <desc esp="SESP">Stub external system processing (ESP) component</desc>
+  </description>
+
+  <entry id="COMP_ESP">
+    <type>char</type>
+    <valid_values>sesp</valid_values>
+    <default_value>sesp</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of ESP component</desc>
+  </entry>
+
+
+  <help>
+    =========================================
+    SESP naming conventions in compset name
+    =========================================
+  </help>
+
+</entry_id>

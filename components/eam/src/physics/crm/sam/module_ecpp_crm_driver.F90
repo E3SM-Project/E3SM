@@ -457,17 +457,20 @@ contains
   !---------------------------------------------------------------------------------------
 
   !========================================================================================
-  subroutine ecpp_crm_stat(ncrms)
+  subroutine ecpp_crm_stat( ncrms, tke, tk )
     use module_ecpp_stats
     use module_data_ecpp1, only: afrac_cut
     use grid,  only: nx, ny, nzm, pres
+    use grid,  only: dimx1_s, dimx2_s, dimy1_s, dimy2_s
+    use sgs,   only: dimx1_d, dimx2_d, dimy1_d, dimy2_d
     use vars,  only: w, tabs, p, CF3D
-    use sgs, only: tke, tk
     use microphysics, only: micro_field, iqv, iqci, iqr, iqs, iqg, cloudliq
     use module_mp_GRAUPEL, only: POLYSVP
 
     implicit none
-    integer, intent(in) :: ncrms
+    integer,        intent(in) :: ncrms
+    real(crm_rknd), intent(in) :: tke(ncrms, dimx1_s:dimx2_s , dimy1_s:dimy2_s , nzm )
+    real(crm_rknd), intent(in) :: tk (ncrms, dimx1_d:dimx2_d , dimy1_d:dimy2_d , nzm )
     integer :: i, ierr, i_tidx, j, ncnt1, ncnt2, icrm
     integer :: nup, ndn
     integer :: kbase, ktop, m

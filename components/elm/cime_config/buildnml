@@ -142,9 +142,9 @@ def buildnml(case, caseroot, compname):
         elmicfile = ""
         elm_startfile = ""
         if run_type == "hybrid" or run_type == "branch":
-            elm_startfile = "{}.clm2{}.r.{}-{}.nc".format(run_refcase, inst_string, run_refdate, run_reftod)
+            elm_startfile = "{}.elm{}.r.{}-{}.nc".format(run_refcase, inst_string, run_refdate, run_reftod)
             if not os.path.exists(os.path.join(rundir, elm_startfile)):
-                elm_startfile = "{}.clm2.r.{}-{}.nc".format(run_refcase, run_refdate, run_reftod)
+                elm_startfile = "{}.elm.r.{}-{}.nc".format(run_refcase, run_refdate, run_reftod)
 
             elmicfile = " {} = '{}'".format(startfiletype, elm_startfile)
 

@@ -1,0 +1,102 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Build Type: Tpetra
+
+  Problem: 
+    LandIce Viscosity: 
+      Type: 'Glen''s Law'
+      Flow Rate Type: Uniform
+      'Glen''s Law Homotopy Parameter': 1.0
+      
+# Discretization Description
+  Discretization:
+    Element Shape: Tetrahedron
+    Exodus Output File Name: albany_output.exo
+
+  Piro: 
+#   Nonlinear Solver Information
+    NOX: 
+      Nonlinear Solver: Line Search Based
+      Line Search: 
+        Full Step: 
+          Full Step: 1.0e+00
+        Method: Backtrack
+      Solver Options: 
+        Status Test Check Type: Minimal
+      Status Tests: 
+        Test Type: Combo
+        Combo Type: OR
+        Number of Tests: 2
+        Test 0: 
+          Test Type: NormF
+          Norm Type: Two Norm
+          Scale Type: Scaled
+          Tolerance: 1.0e-05
+        Test 1: 
+          Test Type: MaxIters
+          Maximum Iterations: 50
+      Printing: 
+        Output Precision: 3
+        Output Processor: 0
+        Output Information: 
+          Error: true
+          Warning: true
+          Outer Iteration: true
+          Parameters: false
+          Details: false
+          Linear Solver Details: false
+          Stepper Iteration: true
+          Stepper Details: true
+          Stepper Parameters: true
+
+      Direction: 
+        Method: Newton
+        Newton: 
+          Forcing Term Method: Constant
+          Rescue Bad Newton Solve: true
+          Linear Solver:
+            Write Linear System: false
+            Tolerance: 1.0e-8
+            
+          Stratimikos Linear Solver: 
+            Stratimikos:
+             
+#             Linear Solver Information
+              Linear Solver Type: Belos
+              Linear Solver Types: 
+                AztecOO: 
+                  Forward Solve: 
+                    AztecOO Settings: 
+                      Aztec Solver: GMRES
+                      Convergence Test: r0
+                      Size of Krylov Subspace: 200
+                      Output Frequency: 20
+                    Max Iterations: 200
+                Belos:
+                  Solver Type: Block GMRES
+                  Solver Types:
+                    Block GMRES:
+                      Output Frequency: 20
+                      Output Style: 1
+                      Verbosity: 33
+                      Maximum Iterations: 200
+                      Block Size: 1
+                      Num Blocks: 200
+                      Flexible Gmres: false
+                  VerboseObject:
+                    Output File: none
+                    Verbosity Level: low
+                    
+#             Preconditioner Information
+              Preconditioner Type: Ifpack2                    
+              Preconditioner Types: 
+                Ifpack: 
+                  Overlap: 1
+                  Prec Type: ILU
+                  Ifpack Settings: 
+                    'fact: level-of-fill': 0
+                    
+                Ifpack2: 
+                  Overlap: 1
+                  Prec Type: ILUT                

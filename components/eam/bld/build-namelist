@@ -806,9 +806,11 @@ add_default($nl,'ieflx_opt');
 add_default($nl,'use_hetfrz_classnuc');
 add_default($nl,'hist_hetfrz_classnuc');
 add_default($nl,'gw_convect_hcf');
-add_default($nl,'linoz_psc_t');
-add_default($nl,'micro_mg_dcs_tdep');
-add_default($nl,'micro_mincdnc');
+add_default($nl,'linoz_psc_T');
+if ($cfg->get('microphys') =~ /^mg2/) {
+    add_default($nl,'micro_mg_dcs_tdep');
+    add_default($nl,'micro_mincdnc');
+}
 add_default($nl,'microp_aero_wsub_scheme');
 add_default($nl,'microp_aero_wsubmin');
 add_default($nl,'use_preexisting_ice');
@@ -3525,7 +3527,9 @@ my $eddy_scheme = $nl->get_value('eddy_scheme');
 # Need to strip the quotes to use as a value for attribute matching.
 $eddy_scheme =~ s/['"]//g;                                           #"'
 add_default($nl, 'shallow_scheme', 'eddy_scheme'=>$eddy_scheme);
-add_default($nl, 'srf_flux_avg', 'eddy_scheme'=>$eddy_scheme);
+
+# Surface flux smoothing to reduce instability
+add_default($nl, 'srf_flux_avg');
 
 #BSINGH - Flag splitting for code modifications by PNNL under polar project
 add_default($nl, 'resus_fix');
@@ -4635,7 +4639,7 @@ sub add_default {
                     print "key=$key  val=$opts{$key}\n";
                 }
             }
-            die;
+            die "$ProgName - ERROR: No default value found for $var\n";;
         } else {
             return;
         }

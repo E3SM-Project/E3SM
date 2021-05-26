@@ -56,13 +56,6 @@ def buildnml(case, caseroot, compname):
     if not os.path.isdir(mpasoconf_dir): os.mkdir(mpasoconf_dir)
 
     #--------------------------------------------------------------------
-    # MPAS-O with active BGC fails bfb restart with more than 1 thread
-    # DO NOT run with ocean bgc turned on with more than 1 thread
-    #--------------------------------------------------------------------
-    expect(nthrds_ocn == 1 or ocn_bgc == 'no_bgc',
-           " ERROR mpas-o buildnml: ocn bgc cannot be run with more than 1 thread\n")
-
-    #--------------------------------------------------------------------
     # Determine if initial conditions are spunup, from compset
     #--------------------------------------------------------------------
     ocn_ic_mode = 'default'
@@ -308,6 +301,18 @@ def buildnml(case, caseroot, compname):
             ic_date = '210203'
             ic_prefix = 'mpaso.SOwISC12to60E2r4.rstFromG-anvil'
 
+    elif ocn_grid == 'ECwISC30to60E2r1':
+        decomp_date = '200915'
+        decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E2r1_nomask.201221.nc'
+        analysis_mask_file = 'ECwISC30to60E2r1_mocBasinsAndTransects20210331.nc'
+        ic_date = '210413'
+        ic_prefix = 'ocean.ECwISC30to60E2r1'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '210414'
+            ic_prefix = 'mpaso.ECwISC30to60E2r1.rstFromG-anvil'
+
+
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
@@ -328,6 +333,9 @@ def buildnml(case, caseroot, compname):
     if run_type == 'hybrid' or run_type == 'branch':
         input_file = "{}/{}.mpaso.rst.{}_{}.nc".format(rundir, run_refcase, run_refdate, run_reftod)
         expect(os.path.exists(input_file), "ERROR mpaso buildnml: missing specified restart file for branch or hybrid run: " + input_file)
+        restart_file = "{}/{}.mpaso.rst.{}_{}.nc".format(rundir, casename, run_refdate, run_reftod)
+        if not os.path.exists(restart_file):
+            safe_copy(input_file, restart_file)
 
     #--------------------------------------------------------------------
     # Generate input data file with stream-specified files
@@ -1096,6 +1104,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="longWaveHeatFluxDown"/>')
         lines.append('    <var name="seaIceHeatFlux"/>')
         lines.append('    <var name="shortWaveHeatFlux"/>')
+        lines.append('    <var name="frazilTemperatureTendency"/>')
         lines.append('    <var name="evaporationFlux"/>')
         lines.append('    <var name="seaIceSalinityFlux"/>')
         lines.append('    <var name="seaIceFreshWaterFlux"/>')
@@ -1158,6 +1167,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="activeTracersTendML"/>')
         lines.append('    <var_array name="activeTracerVerticalAdvectionTopFlux"/>')
         lines.append('    <var_array name="activeTracerHorizontalAdvectionEdgeFlux"/>')
+        lines.append('    <var_array name="totalFreshWaterTemperatureFlux"/>')
         if ocn_iceberg == 'true':
             lines.append('    <var name="icebergHeatFlux"/>')
             lines.append('    <var name="icebergFreshWaterFlux"/>')

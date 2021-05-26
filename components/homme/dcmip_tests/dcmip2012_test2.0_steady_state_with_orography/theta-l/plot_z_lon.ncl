@@ -153,7 +153,7 @@ begin
   res1@lbAutoManage         = False
   res1@lbTitlePosition      = "Bottom"
   res1@lbOrientation        = "Vertical"
-  res1@lbTitleString        = sprintf("max=%7.3f", norm)
+  ;res1@lbTitleString        = sprintf("max=%7.3f", norm)
   res1@cnFillPalette        = "temp_diff_18lev"; "WhBlGrYeRe"; "BlWhRe";  "BlueWhiteOrangeRed"; "BlueRed"; "cmp_b2r";
   res1@cnSpanFillPalette    = True
   res1@tiXAxisFontHeightF   = 0.020
@@ -168,7 +168,7 @@ begin
   res1@cnMinLevelValF       =-amax; +0.5*step; -0.9; ; min contour color label
   res1@cnLevelSpacingF      = step;           0.1; ; contour color spacing
   res1@gsnCenterString      =""
-	res1@tiMainString         = "DCMIP 2012 Test 2-0  "+var_name+"   t = "+sprintf("%5.2f", time(t_index)) + " days"
+  res1@tiMainString         = "DCMIP 2012 Test 2-0  "+var_name+"   t = "+sprintf("%5.2f", time(t_index)) + " days"
 
   wks_type="pdf"
   wks_type@wkPaperWidthF    = 11
@@ -186,13 +186,18 @@ begin
   zs(0)=0
   zs(nlon-1)=0
 
+  maxu = max(var)
+  minu = min(var)
+  print("crosssection: max u    ="+maxu+" min u="+minu)
+  res1@tiMainString = "U Test2-0 t="+sprintf("%5.2f", time(t_index)) + "d "+\
+     "min/max="+sprintf("%5.3f", minu)+","+sprintf("%5.3f", maxu)
+
   plot1     = gsn_csm_contour (wks,var(:,:),res1)
   mountains = gsn_add_polygon (wks, plot1,lon, zs, gsres)
   mt        = gsn_add_polyline(wks, plot1, lon, zs, gsres)
 
   draw(plot1)
-
-	frame(wks)
+  frame(wks)
 
 end
 

@@ -2864,6 +2864,14 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_AM_conservationCheck_restart_stream" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Name of the restart stream the analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the conservation check.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- AM_geographicalVectors -->
 
