@@ -3237,11 +3237,59 @@
 
                 <!-- Waves coupling fields -->
 		<var name="waveStokesDriftZonal" type="real" dimensions="nCells Time" units="m s^{-1}"
-			 description="Zonal component of the wave-induced Stokes drift current"
+			 description="Zonal component of the wave-induced Stokes drift current."
                           packages="activeWavePKG"
 		/>
 		<var name="waveStokesDriftMeridional" type="real" dimensions="nCells Time" units="m s^{-1}"
-			 description="Meridional component of the wave-induced Stokes drift current"
+			 description="Meridional component of the wave-induced Stokes drift current."
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftZonalWavenumber1" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Zonal component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftMeridionalWavenumber1" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Meridional component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftZonalWavenumber2" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Zonal component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftMeridionalWavenumber2" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Meridional component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftZonalWavenumber3" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Zonal component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftMeridionalWavenumber3" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Meridional component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftZonalWavenumber4" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Zonal component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftMeridionalWavenumber4" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Meridional component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftZonalWavenumber5" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Zonal component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftMeridionalWavenumber5" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Meridional component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftZonalWavenumber6" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Zonal component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftMeridionalWavenumber6" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Meridional component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
                           packages="activeWavePKG"
 		/>
 		
