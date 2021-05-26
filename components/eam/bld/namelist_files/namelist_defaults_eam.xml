@@ -373,7 +373,7 @@
 
 <!-- SPA input files and defaults -->
 <spa_datapath>atm/cam/chem/spa </spa_datapath>
-<spa_file>unified_SPA_file_lat_lon_c20210525.nc</spa_file>
+<spa_file>spa_file_unified_and_clipped_c20210525.nc</spa_file>
 
 
 <!-- CAM-Chem aerosols (2000 climatology) -->
