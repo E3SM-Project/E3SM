@@ -1292,7 +1292,7 @@ contains
            ! Estimate actual allocation rates via Capacitance Aquisition
            ! approach (ECA/CA)
 
-           call NAllocationECAMIC(pci,pcf,dt,                  & ! IN
+            call NAllocationECAMIC(pci,dt,                      & ! IN
                                    bd(c,:),                     & ! IN (j)
                                    h2osoi_vol(c,:),             & ! IN (j)
                                    t_scalar(c,:),               & ! IN (j)
@@ -1395,7 +1395,7 @@ contains
 
            ! RGK: temporarily using ndep_prof
            ! Capacitance Aquisition (ECA/CA)
-           call PAllocationECAMIC(pci,pcf,                &
+           call PAllocationECAMIC(pci,                    &
                 h2osoi_vol(c,:),                          & ! IN (j)
                 t_scalar(c,:),                            & 
                 gross_pmin_vr(c,:),                       & 
@@ -2862,7 +2862,7 @@ contains
   
   ! ======================================================================================
 
-  subroutine NAllocationECAMIC(pci,pcf,dt,                     & ! IN
+  subroutine NAllocationECAMIC(pci,dt,                     & ! IN
        bd,                     & ! IN (j)
        h2osoi_vol,             & ! IN (j)
        t_scalar,               & ! IN (j)
@@ -2905,7 +2905,7 @@ contains
     ! ------------------------------------------------------------------------------------
     use elm_varpar      , only: nlevdecomp
 
-    integer,  intent(in)  :: pci,pcf         ! First and last index of plant comp arrays
+    integer,  intent(in)  :: pci             ! First index of plant comp arrays
     real(r8), intent(in)  :: dt              ! Time step duration [s]
     real(r8), intent(in)  :: bd(:)           ! Bulk density of dry soil material [kg m-3]
     real(r8), intent(in)  :: h2osoi_vol(:)   ! Vol. Soil Water in each layer [m3]
@@ -2988,7 +2988,6 @@ contains
 
        ! concentration of mineralized nutrient, per soil water
        solution_conc = smin_nh4_vr(j) / (bd(j)*adsorp_nh4_eff*m3_per_liter + h2osoi_vol(j))
-
        
        e_km = 0._r8
        do i = 1, n_pcomp
@@ -3122,7 +3121,7 @@ contains
        col_plant_no3demand_vr(j) = 0._r8
        do i = 1, n_pcomp
           ip = filter_pcomp(i)
-          ft = ft_index(i)
+          ft = ft_index(ip)
 
           ! This is the demand per m3 of the column (not patch) 
           ! (for native ELM divide through by the patch weight to get per m3 of patch)
@@ -3191,7 +3190,7 @@ contains
 
   ! ======================================================================================
 
-  subroutine PAllocationECAMIC(pci,pcf, &
+  subroutine PAllocationECAMIC(pci, &
        h2osoi_vol, & 
        t_scalar, & 
        gross_pmin_vr, & 
@@ -3227,7 +3226,7 @@ contains
     use elm_varctl , only : carbon_only          !
     use elm_varctl , only : carbonnitrogen_only  !
 
-    integer,  intent(in) :: pci,pcf  ! initial and final index of plant competitors
+    integer,  intent(in) :: pci     ! initial and final index of plant competitors
     real(r8), intent(in) :: h2osoi_vol(:)
     real(r8), intent(in) :: t_scalar(:)
     real(r8), intent(in) :: gross_pmin_vr(:)
