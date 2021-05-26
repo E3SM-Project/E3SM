@@ -370,7 +370,9 @@ contains
 
     call addfld( 'TOZ', horiz_only,    'A', 'DU', 'Total column ozone' )
     call addfld( 'TCO', horiz_only,    'A', 'DU', 'Tropospheric column ozone based on chemistry tropopause' )
+    call add_default( 'TCO', 1, ' ' )
     call addfld( 'SCO', horiz_only,    'A', 'DU', 'Stratospheric column ozone based on chemistry tropopause' )
+    call add_default( 'SCO', 1, ' ' )
 
   end subroutine chm_diags_inti
 
