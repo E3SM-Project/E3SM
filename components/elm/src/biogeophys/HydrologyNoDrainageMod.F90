@@ -7,7 +7,7 @@ Module HydrologyNoDrainageMod
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use elm_varctl        , only : iulog, use_vichydro, use_extrasnowlayers
+  use elm_varctl        , only : iulog, use_vichydro
   use elm_varcon        , only : e_ice, denh2o, denice, rpi, spval
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
@@ -22,7 +22,6 @@ Module HydrologyNoDrainageMod
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es, col_ws                
   use VegetationType    , only : veg_pp                
-  use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -61,7 +60,6 @@ contains
     !    -> SnowCompaction:        compaction of snow layers
     !    -> CombineSnowLayers:     combine snow layers that are thinner than minimum
     !    -> DivideSnowLayers:      subdivide snow layers that are thicker than maximum
-    !    -> DivideExtraSnowLayers: subdivide up to 16 snow layers that are thicker than maximum
     !
     ! !USES:
     use elm_varcon           , only : denh2o, denice, hfus, grav, tfrz
@@ -71,7 +69,7 @@ contains
     use elm_varctl           , only : use_cn, use_betr, use_fates, use_pflotran, pf_hmode
     use elm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
     use clm_time_manager     , only : get_step_size, get_nstep
-    use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers, DivideExtraSnowLayers, SnowCapping
+    use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers
     use SnowHydrologyMod     , only : SnowWater, BuildSnowFilter 
     use SoilHydrologyMod     , only : ELMVICMap, SurfaceRunoff, Infiltration, WaterTable
     use SoilWaterMovementMod , only : SoilWater 
@@ -132,8 +130,6 @@ contains
          snl                => col_pp%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                    
          nlev2bed           => col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          ctype              => col_pp%itype                              , & ! Input:  [integer  (:)   ]  column type                              
-
-         forc_wind          => top_as%windbot         , & ! Input:  [real(r8) (:) ]  atmospheric wind speed (m/s)
 
          t_h2osfc           => col_es%t_h2osfc          , & ! Input:  [real(r8) (:)   ]  surface water temperature               
          dTdz_top           => col_es%dTdz_top          , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1] !
@@ -298,29 +294,18 @@ contains
          !Jinyun Tang, Feb 4, 2015
          call ep_betr%CalcDewSubFlux(bounds, col_pp, num_hydrologyc, filter_hydrologyc)
       endif           
-      
-      if (use_extrasnowlayers) then
-         call SnowCapping(bounds, num_nolakec, filter_nolakec, num_snowc, filter_snowc, &
-                          aerosol_vars, waterflux_vars, waterstate_vars)
-      end if
-      
       ! Natural compaction and metamorphosis.
       call SnowCompaction(bounds, num_snowc, filter_snowc, &
-           temperature_vars, waterstate_vars, top_as)
+           temperature_vars, waterstate_vars)
 
       ! Combine thin snow elements
       call CombineSnowLayers(bounds, num_snowc, filter_snowc, &
            aerosol_vars, temperature_vars, waterflux_vars, waterstate_vars)
 
       ! Divide thick snow elements
-      if (.not. use_extrasnowlayers) then
-         call DivideSnowLayers(bounds, num_snowc, filter_snowc, &
-              aerosol_vars, temperature_vars, waterstate_vars, is_lake=.false.)
-      else
-         call DivideExtraSnowLayers(bounds, num_snowc, filter_snowc, &
-              aerosol_vars, temperature_vars, waterstate_vars, is_lake=.false.)
-      endif
-      
+      call DivideSnowLayers(bounds, num_snowc, filter_snowc, &
+           aerosol_vars, temperature_vars, waterstate_vars, is_lake=.false.)
+
       ! Set empty snow layers to zero
       do j = -nlevsno+1,0
          do fc = 1, num_snowc

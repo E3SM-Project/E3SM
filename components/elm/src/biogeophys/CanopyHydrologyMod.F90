@@ -16,7 +16,7 @@ module CanopyHydrologyMod
   use shr_sys_mod       , only : shr_sys_flush
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use elm_varctl        , only : iulog, tw_irr, extra_gw_irr, irrigate, use_extrasnowlayers
+  use elm_varctl        , only : iulog, tw_irr, extra_gw_irr, irrigate
   use LandunitType      , only : lun_pp
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
@@ -126,7 +126,6 @@ contains
      use clm_time_manager   , only : get_step_size
      use subgridAveMod      , only : p2c,p2g
      use clm_time_manager   , only : get_step_size, get_prev_date, get_nstep
-     use SnowHydrologyMod   , only : NewSnowBulkDensity
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds     
@@ -155,7 +154,7 @@ contains
      real(r8) :: fpi                                          ! coefficient of interception
      real(r8) :: xrun                                         ! excess water that exceeds the leaf capacity [mm/s]
      real(r8) :: dz_snowf                                     ! layer thickness rate change due to precipitation [mm/s]
-     real(r8) :: bifall(bounds%begc:bounds%endc)              ! bulk density of newly fallen dry snow [kg/m3]
+     real(r8) :: bifall                                       ! bulk density of newly fallen dry snow [kg/m3]
      real(r8) :: fracsnow(bounds%begp:bounds%endp)            ! frac of precipitation that is snow
      real(r8) :: fracrain(bounds%begp:bounds%endp)            ! frac of precipitation that is rain
      real(r8) :: qflx_candrip(bounds%begp:bounds%endp)        ! rate of canopy runoff and snow falling off canopy [mm/s]
@@ -203,7 +202,6 @@ contains
           forc_rain            => top_af%rain                              , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
           forc_snow            => top_af%snow                              , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
           forc_t               => top_as%tbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)        
-          forc_wind            => top_as%windbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed (m/s)
           qflx_floodg          => atm2lnd_vars%forc_flood_grc              , & ! Input:  [real(r8) (:)   ]  gridcell flux of flood water from RTM   
 
           dewmx                => canopystate_vars%dewmx_patch             , & ! Input:  [real(r8) (:)   ]  Maximum allowed dew [mm]                
@@ -429,23 +427,18 @@ contains
 
           qflx_prec_grnd(p) = qflx_prec_grnd_snow(p) + qflx_prec_grnd_rain(p)
 
-          if (.not. use_extrasnowlayers) then
-             if (do_capsnow(c)) then
-                qflx_snwcp_liq(p) = qflx_prec_grnd_rain(p)
-                qflx_snwcp_ice(p) = qflx_prec_grnd_snow(p)
+          if (do_capsnow(c)) then
+             qflx_snwcp_liq(p) = qflx_prec_grnd_rain(p)
+             qflx_snwcp_ice(p) = qflx_prec_grnd_snow(p)
 
-                qflx_snow_grnd_patch(p) = 0._r8
-                qflx_rain_grnd(p) = 0._r8
-             else
-                qflx_snwcp_liq(p) = 0._r8
-                qflx_snwcp_ice(p) = 0._r8
-                qflx_snow_grnd_patch(p) = qflx_prec_grnd_snow(p)           ! ice onto ground (mm/s)
-                qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)
-             end if
+             qflx_snow_grnd_patch(p) = 0._r8
+             qflx_rain_grnd(p) = 0._r8
           else
+             qflx_snwcp_liq(p) = 0._r8
+             qflx_snwcp_ice(p) = 0._r8
              qflx_snow_grnd_patch(p) = qflx_prec_grnd_snow(p)           ! ice onto ground (mm/s)
-             qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)       
-          endif
+             qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)
+          end if
 
        end do ! (end pft loop)
 
@@ -486,11 +479,6 @@ contains
        enddo
 
        ! Determine snow height and snow water
-       
-       if (use_extrasnowlayers) then
-          call NewSnowBulkDensity(bounds, num_nolakec, filter_nolakec, &
-                                  top_as, bifall(bounds%begc:bounds%endc))
-       end if
 
        do f = 1, num_nolakec
           c = filter_nolakec(f)
@@ -513,20 +501,18 @@ contains
              swe_old(c,j)=h2osoi_liq(c,j)+h2osoi_ice(c,j)
           enddo
 
-          if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
+          if (do_capsnow(c)) then
              dz_snowf = 0._r8
              newsnow(c) = qflx_snow_grnd_col(c) * dtime
              frac_sno(c)=1._r8
              int_snow(c) = 5.e2_r8
           else
-             if (.not. use_extrasnowlayers) then
-                if (forc_t(t) > tfrz + 2._r8) then
-                   bifall(c)=50._r8 + 1.7_r8*(17.0_r8)**1.5_r8
-                else if (forc_t(t) > tfrz - 15._r8) then
-                   bifall(c)=50._r8 + 1.7_r8*(forc_t(t) - tfrz + 15._r8)**1.5_r8
-                else
-                   bifall(c)=50._r8
-                end if
+             if (forc_t(t) > tfrz + 2._r8) then
+                bifall=50._r8 + 1.7_r8*(17.0_r8)**1.5_r8
+             else if (forc_t(t) > tfrz - 15._r8) then
+                bifall=50._r8 + 1.7_r8*(forc_t(t) - tfrz + 15._r8)**1.5_r8
+             else
+                bifall=50._r8
              end if
 
              ! all snow falls on ground, no snow on h2osfc
@@ -570,13 +556,13 @@ contains
                 ! for subgrid fluxes
                 if (subgridflag ==1 .and. .not. urbpoi(l)) then
                    if (frac_sno(c) > 0._r8)then
-                      snow_depth(c)=snow_depth(c) + newsnow(c)/(bifall(c) * frac_sno(c))
+                      snow_depth(c)=snow_depth(c) + newsnow(c)/(bifall * frac_sno(c))
                    else
                       snow_depth(c)=0._r8
                    end if
                 else
                    ! for uniform snow cover
-                   snow_depth(c)=snow_depth(c)+newsnow(c)/bifall(c)
+                   snow_depth(c)=snow_depth(c)+newsnow(c)/bifall
                 endif
 
                 ! use original fsca formulation (n&y 07)
@@ -594,7 +580,7 @@ contains
              else !h2osno == 0
                 ! initialize frac_sno and snow_depth when no snow present initially
                 if (newsnow(c) > 0._r8) then 
-                   z_avg = newsnow(c)/bifall(c)
+                   z_avg = newsnow(c)/bifall
                    fmelt=newsnow(c)
                    frac_sno(c) = tanh(accum_factor*newsnow(c))
 
@@ -608,7 +594,7 @@ contains
                    if (subgridflag ==1 .and. .not. urbpoi(l)) then
                       snow_depth(c)=z_avg/frac_sno(c)
                    else
-                      snow_depth(c)=newsnow(c)/bifall(c)
+                      snow_depth(c)=newsnow(c)/bifall
                    endif
                    ! use n&y07 formulation
                    if (oldfflag == 1) then 
@@ -658,40 +644,21 @@ contains
           ! as the surface air temperature
 
           newnode = 0    ! flag for when snow node will be initialized
-          if (.not. use_extrasnowlayers) then
-             if (snl(c) == 0 .and. qflx_snow_grnd_col(c) > 0.0_r8 .and. frac_sno(c)*snow_depth(c) >= 0.01_r8) then
-                newnode = 1
-                snl(c) = -1
-                dz(c,0) = snow_depth(c)                       ! meter
-                z(c,0) = -0.5_r8*dz(c,0)
-                zi(c,-1) = -dz(c,0)
-                t_soisno(c,0) = min(tfrz, forc_t(t))      ! K
-                h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
-                h2osoi_liq(c,0) = 0._r8                   ! kg/m2
-                frac_iceold(c,0) = 1._r8
+          if (snl(c) == 0 .and. qflx_snow_grnd_col(c) > 0.0_r8 .and. frac_sno(c)*snow_depth(c) >= 0.01_r8) then
+             newnode = 1
+             snl(c) = -1
+             dz(c,0) = snow_depth(c)                       ! meter
+             z(c,0) = -0.5_r8*dz(c,0)
+             zi(c,-1) = -dz(c,0)
+             t_soisno(c,0) = min(tfrz, forc_t(t))      ! K
+             h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
+             h2osoi_liq(c,0) = 0._r8                   ! kg/m2
+             frac_iceold(c,0) = 1._r8
 
-                ! intitialize SNICAR variables for fresh snow:
-                call aerosol_vars%Reset(column=c)
-                ! call waterstate_vars%Reset(column=c)
-                col_ws%snw_rds(c,0) = snw_rds_min
-             end if
-          else
-             if (snl(c) == 0 .and. frac_sno(c)*snow_depth(c) >= 0.01_r8) then
-                newnode = 1
-                snl(c) = -1
-                dz(c,0) = snow_depth(c)                       ! meter
-                z(c,0) = -0.5_r8*dz(c,0)
-                zi(c,-1) = -dz(c,0)
-                t_soisno(c,0) = min(tfrz, forc_t(t))      ! K
-                h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
-                h2osoi_liq(c,0) = 0._r8                   ! kg/m2
-                frac_iceold(c,0) = 1._r8
-
-                ! intitialize SNICAR variables for fresh snow:
-                call aerosol_vars%Reset(column=c)
-                ! call waterstate_vars%Reset(column=c)
-                col_ws%snw_rds(c,0) = snw_rds_min
-             end if             
+             ! intitialize SNICAR variables for fresh snow:
+             call aerosol_vars%Reset(column=c)
+             ! call waterstate_vars%Reset(column=c)
+             col_ws%snw_rds(c,0) = snw_rds_min
           end if
 
           ! The change of ice partial density of surface node due to precipitation.

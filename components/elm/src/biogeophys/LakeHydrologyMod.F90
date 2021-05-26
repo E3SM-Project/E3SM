@@ -63,7 +63,6 @@ contains
     !    -> SnowCompaction:        compaction of snow layers
     !    -> CombineSnowLayers:     combine snow layers that are thinner than minimum
     !    -> DivideSnowLayers:      subdivide snow layers that are thicker than maximum
-    !    -> DivideExtraSnowLayers: subdivide up to 16 snow layers that are thicker than maximum    
     !
     !    Add water to soil if melting has left it with open pore space.
     !    If snow layers are found above a lake with unfrozen top layer, whose top
@@ -74,10 +73,10 @@ contains
     ! !USES:
     use elm_varcon      , only : denh2o, denice, spval, hfus, tfrz, cpliq, cpice
     use elm_varpar      , only : nlevsno, nlevgrnd, nlevsoi
-    use elm_varctl      , only : iulog, use_extrasnowlayers
+    use elm_varctl      , only : iulog
     use clm_time_manager, only : get_step_size
     use SnowHydrologyMod, only : SnowCompaction, CombineSnowLayers, SnowWater, BuildSnowFilter
-    use SnowHydrologyMod, only : DivideSnowLayers, DivideExtraSnowLayers, SnowCapping
+    use SnowHydrologyMod, only : DivideSnowLayers
     use LakeCon         , only : lsadz
     !
     ! !ARGUMENTS:
@@ -136,7 +135,6 @@ contains
          forc_rain            =>  top_af%rain                           , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
          forc_snow            =>  top_af%snow                           , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
          forc_t               =>  top_as%tbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)        
-         forc_wind            =>  top_as%windbot                        , & ! Input:  [real(r8) (:) ]  atmospheric wind speed (m/s)
          qflx_floodg          =>  atm2lnd_vars%forc_flood_grc           , & ! Input:  [real(r8) (:)   ]  gridcell flux of flood water from RTM   
 
          watsat               =>  soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
@@ -248,19 +246,15 @@ contains
 
          qflx_dirct_rain(p) = 0._r8
          qflx_leafdrip(p) = 0._r8
-         if (.not. use_extrasnowlayers) then
-            if (do_capsnow(c)) then
-               qflx_snwcp_ice(p) = qflx_prec_grnd_snow(p)
-               qflx_snwcp_liq(p) = qflx_prec_grnd_rain(p)
-               qflx_snow_grnd_patch(p) = 0._r8
-               qflx_rain_grnd(p) = 0._r8
-            else
-               qflx_snwcp_ice(p) = 0._r8
-               qflx_snwcp_liq(p) = 0._r8
-               qflx_snow_grnd_patch(p) = qflx_prec_grnd_snow(p)           ! ice onto ground (mm/s)
-               qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)
-            end if
+
+         if (do_capsnow(c)) then
+            qflx_snwcp_ice(p) = qflx_prec_grnd_snow(p)
+            qflx_snwcp_liq(p) = qflx_prec_grnd_rain(p)
+            qflx_snow_grnd_patch(p) = 0._r8
+            qflx_rain_grnd(p) = 0._r8
          else
+            qflx_snwcp_ice(p) = 0._r8
+            qflx_snwcp_liq(p) = 0._r8
             qflx_snow_grnd_patch(p) = qflx_prec_grnd_snow(p)           ! ice onto ground (mm/s)
             qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)
          end if
@@ -280,7 +274,7 @@ contains
          ! U.S.Department of Agriculture Forest Service, Project F,
          ! Progress Rep. 1, Alta Avalanche Study Center:Snow Layer Densification.
 
-         if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
+         if (do_capsnow(c)) then
             dz_snowf = 0._r8
          else
             if (forc_t(t) > tfrz + 2._r8) then
@@ -373,7 +367,7 @@ contains
             ! Update the pft-level qflx_snowcap
             ! This was moved in from Hydrology2 to keep all pft-level
             ! calculations out of Hydrology2
-            if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
+            if (do_capsnow(c)) then
                qflx_snwcp_ice(p) = qflx_snwcp_ice(p) + qflx_dew_snow(p) 
                qflx_snwcp_liq(p) = qflx_snwcp_liq(p) + qflx_dew_grnd(p)
             end if
@@ -395,7 +389,7 @@ contains
             ! Update snow pack for dew & sub.
 
             h2osno_temp = h2osno(c)
-            if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
+            if (do_capsnow(c)) then
                h2osno(c) = h2osno(c) - qflx_sub_snow(p)*dtime
                qflx_snwcp_ice(p) = qflx_snwcp_ice(p) + qflx_dew_snow(p) 
                qflx_snwcp_liq(p) = qflx_snwcp_liq(p) + qflx_dew_grnd(p)
@@ -411,10 +405,9 @@ contains
             h2osno(c) = max(h2osno(c), 0._r8)
          end if
 
-         if (.not. use_extrasnowlayers) then
-            qflx_snwcp_ice_col(c) = qflx_snwcp_ice(p)
-            qflx_snwcp_liq_col(c) = qflx_snwcp_liq(p)
-         end if
+         qflx_snwcp_ice_col(c) = qflx_snwcp_ice(p)
+         qflx_snwcp_liq_col(c) = qflx_snwcp_liq(p)
+
 
       end do
 
@@ -458,11 +451,6 @@ contains
       call SnowWater(bounds, &
            num_shlakesnowc, filter_shlakesnowc, num_shlakenosnowc, filter_shlakenosnowc, &
            atm2lnd_vars, waterflux_vars, waterstate_vars, aerosol_vars)
-           
-      if (use_extrasnowlayers) then
-         call SnowCapping(bounds, num_lakec, filter_lakec, num_shlakesnowc, filter_shlakesnowc, &
-                          aerosol_vars, waterflux_vars, waterstate_vars)
-      end if
 
       ! Determine soil hydrology
       ! Here this consists only of making sure that soil is saturated even as it melts and
@@ -507,7 +495,7 @@ contains
       ! Natural compaction and metamorphosis.
 
       call SnowCompaction(bounds, num_shlakesnowc, filter_shlakesnowc, &
-           temperature_vars, waterstate_vars, top_as)
+           temperature_vars, waterstate_vars)
 
       ! Combine thin snow elements
 
@@ -515,14 +503,10 @@ contains
            aerosol_vars, temperature_vars, waterflux_vars, waterstate_vars)
 
       ! Divide thick snow elements
-      if (.not. use_extrasnowlayers) then
-         call DivideSnowLayers(bounds, num_shlakesnowc, filter_shlakesnowc, &
-              aerosol_vars, temperature_vars, waterstate_vars, is_lake=.true.)
-      else
-         call DivideExtraSnowLayers(bounds, num_shlakesnowc, filter_shlakesnowc, &
-              aerosol_vars, temperature_vars, waterstate_vars, is_lake=.true.)
-      endif
-      
+
+      call DivideSnowLayers(bounds, num_shlakesnowc, filter_shlakesnowc, &
+           aerosol_vars, temperature_vars, waterstate_vars, is_lake=.true.)
+
       ! Check for single completely unfrozen snow layer over lake.  Modeling this ponding is unnecessary and
       ! can cause instability after the timestep when melt is completed, as the temperature after melt can be
       ! excessive because the fluxes were calculated with a fixed ground temperature of freezing, but the 
@@ -691,13 +675,8 @@ contains
          qflx_irrig_col(c)     = 0._r8
 
          ! Insure water balance using qflx_qrgwl
-         if (.not. use_extrasnowlayers) then
-            qflx_qrgwl(c)     = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(p) - &
+         qflx_qrgwl(c)     = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(p) - &
               (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
-         else ! qlfx_snwcp_ice(c) has been computed in routine SnowCapping
-            qflx_qrgwl(c)     = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice_col(c) - &
-              (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
-         end if
          qflx_floodc(c)    = qflx_floodg(g)
          qflx_runoff(c)    = qflx_drain(c) + qflx_qrgwl(c)
          qflx_top_soil(c)  = qflx_prec_grnd_rain(p) + qflx_snomelt(c)
