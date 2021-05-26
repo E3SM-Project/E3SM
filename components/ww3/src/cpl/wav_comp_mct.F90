@@ -152,9 +152,10 @@
       use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, &
                           nx, ny, nsea, nseal, mapsf, mapfs, mapsta, mapst2, x0, y0, sx, sy, &
                           w3nmod, w3setg, AnglD, &
-                          sig, nk, zb, dmin
+                          sig, nk, zb, dmini, &
+                          usspf
       use w3wdatmd, only: time, w3ndat, w3setw, wlv, va
-      use w3adatmd, only: ussx, ussy, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn !SB, lamult
+      use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn !SB, lamult
       use w3idatmd, only: inflags1, w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
@@ -187,7 +188,12 @@
       use ww3_cpl_indices  , only : ww3_cpl_indices_set
       use ww3_cpl_indices  , only : index_x2w_Sa_u, index_x2w_Sa_v, index_x2w_Sa_tbot, index_x2w_Si_ifrac
       use ww3_cpl_indices  , only : index_x2w_So_t, index_x2w_So_u, index_x2w_So_v, index_x2w_So_bldepth, index_x2w_So_ssh
-      use ww3_cpl_indices  , only : index_w2x_Sw_ustokes, index_w2x_Sw_vstokes
+      use ww3_cpl_indices  , only : index_w2x_Sw_ustokes_wavenumber_1, index_w2x_Sw_vstokes_wavenumber_1, &
+                                    index_w2x_Sw_ustokes_wavenumber_2, index_w2x_Sw_vstokes_wavenumber_2, &
+                                    index_w2x_Sw_ustokes_wavenumber_3, index_w2x_Sw_vstokes_wavenumber_3, &
+                                    index_w2x_Sw_ustokes_wavenumber_4, index_w2x_Sw_vstokes_wavenumber_4, &
+                                    index_w2x_Sw_ustokes_wavenumber_5, index_w2x_Sw_vstokes_wavenumber_5, &
+                                    index_w2x_Sw_ustokes_wavenumber_6, index_w2x_Sw_vstokes_wavenumber_6
 
       use shr_sys_mod      , only : shr_sys_flush, shr_sys_abort
       use shr_kind_mod     , only : in=>shr_kind_in, r8=>shr_kind_r8, &
@@ -1175,18 +1181,50 @@ CONTAINS
       call w3wave ( 1, odat, timen )
 
       ! copy ww3 data to coupling datatype
+      do i = 1,usspf(2)
+        call w3xyrtn(nseal,USSP(1:nseal,i),USSP(1:nseal,nk+i),AnglDL)
+      enddo
 
-      call w3xyrtn(nseal,USSX(1:nseal),USSY(1:nseal),AnglDL)
       do jsea=1, nseal
          isea = iaproc + (jsea-1)*naproc
          IX  = MAPSF(ISEA,1)
          IY  = MAPSF(ISEA,2)
          if (MAPSTA(IY,IX) .eq. 1) then
-             w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = USSX(jsea)
-             w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = USSY(jsea)
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = USSP(jsea,1)
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = USSP(jsea,nk+1)
+
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_2,jsea) = USSP(jsea,2)
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_2,jsea) = USSP(jsea,nk+2)
+
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_3,jsea) = USSP(jsea,3)
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_3,jsea) = USSP(jsea,nk+3)
+
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_4,jsea) = USSP(jsea,4)
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_4,jsea) = USSP(jsea,nk+4)
+
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_5,jsea) = USSP(jsea,5)
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_5,jsea) = USSP(jsea,nk+5)
+
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = USSP(jsea,6)
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = USSP(jsea,nk+6)
           else
-             w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = 0.0
-             w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = 0.0
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = 0.0
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = 0.0
+
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_2,jsea) = 0.0
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_2,jsea) = 0.0
+
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_3,jsea) = 0.0
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_3,jsea) = 0.0
+
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_4,jsea) = 0.0
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_4,jsea) = 0.0
+
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_5,jsea) = 0.0
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_5,jsea) = 0.0
+
+             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = 0.0
+             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = 0.0
           endif
       enddo
 

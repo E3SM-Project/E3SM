@@ -2405,14 +2405,6 @@ contains
     ! wav->ocn and ocn->wav
     !-----------------------------
 
-    call seq_flds_add(w2x_states,'Sw_lamult')
-    call seq_flds_add(x2o_states,'Sw_lamult')
-    longname = 'Langmuir multiplier'
-    stdname  = 'wave_model_langmuir_multiplier'
-    units    = ''
-    attname  = 'Sw_lamult'
-    call metadata_set(attname, longname, stdname, units)
-
     call seq_flds_add(w2x_states,'Sw_ustokes')
     call seq_flds_add(x2o_states,'Sw_ustokes')
     longname = 'Stokes drift u component'
@@ -2429,12 +2421,100 @@ contains
     attname  = 'Sw_vstokes'
     call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_hstokes')
-    call seq_flds_add(x2o_states,'Sw_hstokes')
-    longname = 'Stokes drift depth'
-    stdname  = 'wave_model_stokes_drift_depth'
-    units    = 'm'
-    attname  = 'Sw_hstokes'
+    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_1')
+    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_1')
+    longname = 'Partitioned Stokes drift u component, wavenumber 1'
+    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_1'
+    units    = 'm/s'
+    attname  = 'Sw_ustokes_wavenumber_1'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_1')
+    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_1')
+    longname = 'Partitioned Stokes drift v component, wavenumber 1'
+    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_1'
+    units    = 'm/s'
+    attname  = 'Sw_vstokes_wavenumber_1'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_2')
+    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_2')
+    longname = 'Partitioned Stokes drift u component, wavenumber 2'
+    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_2'
+    units    = 'm/s'
+    attname  = 'Sw_ustokes_wavenumber_2'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_2')
+    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_2')
+    longname = 'Partitioned Stokes drift v component, wavenumber 2'
+    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_2'
+    units    = 'm/s'
+    attname  = 'Sw_vstokes_wavenumber_2'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_3')
+    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_3')
+    longname = 'Partitioned Stokes drift u component, wavenumber 3'
+    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_3'
+    units    = 'm/s'
+    attname  = 'Sw_ustokes_wavenumber_3'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_3')
+    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_3')
+    longname = 'Partitioned Stokes drift v component, wavenumber 3'
+    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_3'
+    units    = 'm/s'
+    attname  = 'Sw_vstokes_wavenumber_3'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_4')
+    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_4')
+    longname = 'Partitioned Stokes drift u component, wavenumber 4'
+    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_4'
+    units    = 'm/s'
+    attname  = 'Sw_ustokes_wavenumber_4'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_4')
+    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_4')
+    longname = 'Partitioned Stokes drift v component, wavenumber 4'
+    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_4'
+    units    = 'm/s'
+    attname  = 'Sw_vstokes_wavenumber_4'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_5')
+    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_5')
+    longname = 'Partitioned Stokes drift u component, wavenumber 5'
+    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_5'
+    units    = 'm/s'
+    attname  = 'Sw_ustokes_wavenumber_5'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_5')
+    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_5')
+    longname = 'Partitioned Stokes drift v component, wavenumber 5'
+    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_5'
+    units    = 'm/s'
+    attname  = 'Sw_vstokes_wavenumber_5'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_6')
+    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_6')
+    longname = 'Partitioned Stokes drift u component, wavenumber 6'
+    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_6'
+    units    = 'm/s'
+    attname  = 'Sw_ustokes_wavenumber_6'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_6')
+    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_6')
+    longname = 'Partitioned Stokes drift v component, wavenumber 6'
+    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_6'
+    units    = 'm/s'
+    attname  = 'Sw_vstokes_wavenumber_6'
     call metadata_set(attname, longname, stdname, units)
 
     call seq_flds_add(o2x_states,'So_ssh')

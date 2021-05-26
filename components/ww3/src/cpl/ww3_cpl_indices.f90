@@ -18,8 +18,19 @@ module ww3_cpl_indices
   integer :: index_x2w_So_bldepth     
   integer :: index_x2w_So_ssh
 
-  integer :: index_w2x_Sw_ustokes
-  integer :: index_w2x_Sw_vstokes
+  integer :: index_w2x_Sw_ustokes_wavenumber_1
+  integer :: index_w2x_Sw_vstokes_wavenumber_1
+  integer :: index_w2x_Sw_ustokes_wavenumber_2
+  integer :: index_w2x_Sw_ustokes_wavenumber_2
+  integer :: index_w2x_Sw_vstokes_wavenumber_3
+  integer :: index_w2x_Sw_vstokes_wavenumber_3
+  integer :: index_w2x_Sw_ustokes_wavenumber_4
+  integer :: index_w2x_Sw_ustokes_wavenumber_4
+  integer :: index_w2x_Sw_ustokes_wavenumber_5
+  integer :: index_w2x_Sw_vstokes_wavenumber_5
+  integer :: index_w2x_Sw_vstokes_wavenumber_6
+  integer :: index_w2x_Sw_vstokes_wavenumber_6
+
   integer :: index_w2x_Sw_hstokes
 
 contains
@@ -45,8 +56,18 @@ contains
     index_x2w_So_bldepth = mct_avect_indexra(x2w,'So_bldepth') ! Boundary layer depth
     index_x2w_So_ssh     = mct_avect_indexra(x2w,'So_ssh')     ! Sea surface height 
 
-    index_w2x_Sw_ustokes = mct_avect_indexra(w2x,'Sw_ustokes') ! Stokes drift u component
-    index_w2x_Sw_vstokes = mct_avect_indexra(w2x,'Sw_vstokes') ! Stokes drift v component
+    index_w2x_Sw_ustokes_wavenumber_1 = mct_avect_indexra(w2x,'Sw_ustokes_wavenumber_1') ! partitioned Stokes drift u 1
+    index_w2x_Sw_vstokes_wavenumber_1 = mct_avect_indexra(w2x,'Sw_vstokes_wavenumber_1') ! partitioned Stokes drift v 1
+    index_w2x_Sw_ustokes_wavenumber_2 = mct_avect_indexra(w2x,'Sw_ustokes_wavenumber_2') ! partitioned Stokes drift u 2
+    index_w2x_Sw_vstokes_wavenumber_2 = mct_avect_indexra(w2x,'Sw_vstokes_wavenumber_2') ! partitioned Stokes drift v 2
+    index_w2x_Sw_ustokes_wavenumber_3 = mct_avect_indexra(w2x,'Sw_ustokes_wavenumber_3') ! partitioned Stokes drift u 3
+    index_w2x_Sw_vstokes_wavenumber_3 = mct_avect_indexra(w2x,'Sw_vstokes_wavenumber_3') ! partitioned Stokes drift v 3
+    index_w2x_Sw_ustokes_wavenumber_4 = mct_avect_indexra(w2x,'Sw_ustokes_wavenumber_4') ! partitioned Stokes drift u 4
+    index_w2x_Sw_vstokes_wavenumber_4 = mct_avect_indexra(w2x,'Sw_vstokes_wavenumber_4') ! partitioned Stokes drift v 4
+    index_w2x_Sw_ustokes_wavenumber_5 = mct_avect_indexra(w2x,'Sw_ustokes_wavenumber_5') ! partitioned Stokes drift u 5
+    index_w2x_Sw_vstokes_wavenumber_5 = mct_avect_indexra(w2x,'Sw_vstokes_wavenumber_5') ! partitioned Stokes drift v 5
+    index_w2x_Sw_ustokes_wavenumber_6 = mct_avect_indexra(w2x,'Sw_ustokes_wavenumber_6') ! partitioned Stokes drift u 6
+    index_w2x_Sw_vstokes_wavenumber_6 = mct_avect_indexra(w2x,'Sw_vstokes_wavenumber_6') ! partitioned Stokes drift v 6
 
     call mct_aVect_clean(x2w)
     call mct_aVect_clean(w2x)
