@@ -51,7 +51,6 @@ module mo_chm_diags
   real(r8), parameter :: S_molwgt = 32.066_r8
 
   ! constants for converting O3 mixing ratio to DU
-  real(r8), parameter :: air_molwgt = 28.97_r8 ! molar mass of dry air, g/mol
   real(r8), parameter :: DUfac = 2.687e20_r8   ! 1 DU in molecules per m^2
 
   character(len=32) :: chempkg
@@ -382,6 +381,7 @@ contains
     use constituents, only : pcnst
     use constituents, only : cnst_get_ind
     use phys_grid,    only : get_area_all_p, pcols
+    use physconst,    only : mwdry                   ! molecular weight of dry air
     use physics_buffer, only : physics_buffer_desc
 
 ! here and below for the calculations of total aerosol mass mixing ratios for each aerosol class
@@ -489,7 +489,7 @@ contains
     call outfld( 'DRYMASS', drymass(:ncol,:), ncol, lchnk )
 
     ! convert ozone from mol/mol to DU
-    wrk(:ncol,:) = pdel(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/air_molwgt/DUfac*1.e3_r8
+    wrk(:ncol,:) = pdel(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/mwdry/DUfac*1.e3_r8
     ! total column ozone, vertical integration
     do k = 2,pver
        wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
