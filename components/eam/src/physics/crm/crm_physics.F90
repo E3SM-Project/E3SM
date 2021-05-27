@@ -43,6 +43,18 @@ module crm_physics
    ! Physics buffer indices  
    integer :: ttend_dp_idx    = -1
 
+   integer :: crm_t_rad_idx    = -1
+   integer :: crm_qv_rad_idx   = -1
+   integer :: crm_qc_rad_idx   = -1
+   integer :: crm_qi_rad_idx   = -1
+   integer :: crm_cld_rad_idx  = -1
+   integer :: crm_qrad_idx     = -1
+
+   integer :: crm_nc_rad_idx   = -1
+   integer :: crm_ni_rad_idx   = -1
+   integer :: crm_qs_rad_idx   = -1
+   integer :: crm_ns_rad_idx   = -1
+
 contains
 !===================================================================================================
 !===================================================================================================
@@ -164,12 +176,13 @@ subroutine crm_physics_register()
    call pbuf_add_field('CRM_T',        'global',dtype_r8,dims_crm_3D,idx)
 
    ! Radiation
-   call pbuf_add_field('CRM_T_RAD',    'physpkg',dtype_r8,dims_crm_rad,idx)
-   call pbuf_add_field('CRM_QV_RAD',   'physpkg',dtype_r8,dims_crm_rad,idx)
-   call pbuf_add_field('CRM_QC_RAD',   'physpkg',dtype_r8,dims_crm_rad,idx)
-   call pbuf_add_field('CRM_QI_RAD',   'physpkg',dtype_r8,dims_crm_rad,idx)
-   call pbuf_add_field('CRM_CLD_RAD',  'physpkg',dtype_r8,dims_crm_rad,idx)
-   call pbuf_add_field('CRM_QRAD',     'global', dtype_r8,dims_crm_rad,idx)
+   call pbuf_add_field('CRM_T_RAD',    'physpkg',dtype_r8,dims_crm_rad,crm_t_rad_idx)
+   call pbuf_add_field('CRM_QV_RAD',   'physpkg',dtype_r8,dims_crm_rad,crm_qv_rad_idx)
+   call pbuf_add_field('CRM_QC_RAD',   'physpkg',dtype_r8,dims_crm_rad,crm_qc_rad_idx)
+   call pbuf_add_field('CRM_QI_RAD',   'physpkg',dtype_r8,dims_crm_rad,crm_qi_rad_idx)
+   call pbuf_add_field('CRM_CLD_RAD',  'physpkg',dtype_r8,dims_crm_rad,crm_cld_rad_idx)
+   call pbuf_add_field('CRM_QRAD',     'global', dtype_r8,dims_crm_rad,crm_qrad_idx)
+
    call pbuf_add_field('REI',          'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Effective radius (ice)
    call pbuf_add_field('REL',          'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Effective radius (liquid)
    call pbuf_add_field('DEI',          'physpkg',dtype_r8,dims_gcm_2D,idx)  ! Mitchell ice effective diameter for radiation
@@ -185,10 +198,10 @@ subroutine crm_physics_register()
    call pbuf_add_field('CONCLD',       'global', dtype_r8,dims_gcm_3D,idx)  ! convective cloud fraction
 
    if (MMF_microphysics_scheme .eq. 'm2005') then
-      call pbuf_add_field('CRM_NC_RAD','physpkg',dtype_r8,dims_crm_rad,idx)
-      call pbuf_add_field('CRM_NI_RAD','physpkg',dtype_r8,dims_crm_rad,idx)
-      call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,idx)
-      call pbuf_add_field('CRM_NS_RAD','physpkg',dtype_r8,dims_crm_rad,idx)
+      call pbuf_add_field('CRM_NC_RAD','physpkg',dtype_r8,dims_crm_rad,crm_nc_rad_idx)
+      call pbuf_add_field('CRM_NI_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ni_rad_idx)
+      call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_qs_rad_idx)
+      call pbuf_add_field('CRM_NS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ns_rad_idx)
 
       call pbuf_add_field('CRM_QT',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_NC',    'global', dtype_r8,dims_crm_3D,idx)
@@ -360,6 +373,20 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 
    ! Initialize pbuf variables
    if (is_first_step()) then
+
+      call pbuf_set_field(pbuf2d, crm_t_rad_idx,  0._r8)
+      call pbuf_set_field(pbuf2d, crm_qv_rad_idx, 0._r8)
+      call pbuf_set_field(pbuf2d, crm_qc_rad_idx, 0._r8)
+      call pbuf_set_field(pbuf2d, crm_qi_rad_idx, 0._r8)
+      call pbuf_set_field(pbuf2d, crm_cld_rad_idx,0._r8)
+      call pbuf_set_field(pbuf2d, crm_qrad_idx,   0._r8)
+      if (MMF_microphysics_scheme .eq. 'm2005') then
+         call pbuf_set_field(pbuf2d, crm_nc_rad_idx,0._r8)
+         call pbuf_set_field(pbuf2d, crm_ni_rad_idx,0._r8)
+         call pbuf_set_field(pbuf2d, crm_qs_rad_idx,0._r8)
+         call pbuf_set_field(pbuf2d, crm_ns_rad_idx,0._r8)
+      end if
+
       call pbuf_set_field(pbuf2d, pbuf_get_index('CLDO')       , 0._r8)
       call pbuf_set_field(pbuf2d, pbuf_get_index('PRER_EVAP')  , 0._r8)
 
@@ -562,6 +589,19 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    logical(c_bool)             :: crm_accel_uv
    integer                     :: igstep
    integer                     :: idx_vt_t, idx_vt_q  ! variance transport constituent indices
+
+   ! pointers for crm_rad data on pbuf
+   real(crm_rknd), pointer :: crm_qrad   (:,:,:,:) ! rad heating
+   real(crm_rknd), pointer :: crm_t_rad  (:,:,:,:) ! rad temperature
+   real(crm_rknd), pointer :: crm_qv_rad (:,:,:,:) ! rad vapor
+   real(crm_rknd), pointer :: crm_qc_rad (:,:,:,:) ! rad cloud water
+   real(crm_rknd), pointer :: crm_qi_rad (:,:,:,:) ! rad cloud ice
+   real(crm_rknd), pointer :: crm_cld_rad(:,:,:,:) ! rad cloud fraction
+   real(crm_rknd), pointer :: crm_nc_rad (:,:,:,:) ! rad cloud droplet number (#/kg)
+   real(crm_rknd), pointer :: crm_ni_rad (:,:,:,:) ! rad cloud ice crystal number (#/kg)
+   real(crm_rknd), pointer :: crm_qs_rad (:,:,:,:) ! rad cloud snow (kg/kg)
+   real(crm_rknd), pointer :: crm_ns_rad (:,:,:,:) ! rad cloud snow crystal number (#/kg)
+
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
 #if defined( MMF_ORIENT_RAND )
@@ -593,7 +633,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    ! Initialize CRM state (nullify pointers, allocate memory, etc)
    !------------------------------------------------------------------------------------------------
    call crm_state%initialize()
-   call crm_rad_initialize(crm_rad)
+   call crm_rad_initialize(crm_rad, pcols, crm_nx_rad, crm_ny_rad, crm_nz)
    call crm_input%initialize(pcols,pver)
    call crm_output_initialize(crm_output,pcols,pver)
 
@@ -648,19 +688,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    !------------------------------------------------------------------------------------------------
    ! Retrieve pbuf fields and constituent indices
    !------------------------------------------------------------------------------------------------
-   if (MMF_microphysics_scheme .eq. 'm2005') then
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_NC_RAD'), crm_rad%nc, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_NI_RAD'), crm_rad%ni, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_QS_RAD'), crm_rad%qs, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
-      call pbuf_get_field(pbuf, pbuf_get_index('CRM_NS_RAD'), crm_rad%ns, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
-   end if
-
-   call pbuf_get_field(pbuf, pbuf_get_index('CRM_QRAD'),    crm_rad%qrad)
-   call pbuf_get_field(pbuf, pbuf_get_index('CRM_T_RAD'),   crm_rad%temperature)
-   call pbuf_get_field(pbuf, pbuf_get_index('CRM_QV_RAD'),  crm_rad%qv)
-   call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD'),  crm_rad%qc)
-   call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD'),  crm_rad%qi)
-   call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_rad%cld)
+   call pbuf_get_field(pbuf, crm_qrad_idx,    crm_qrad)
+   crm_rad%qrad(1:ncol,:,:,:) = crm_qrad(1:ncol,:,:,:)
 
    call pbuf_get_field(pbuf, pbuf_get_index('PREC_DP'),  prec_dp  )
    call pbuf_get_field(pbuf, pbuf_get_index('SNOW_DP'),  snow_dp  )
@@ -758,23 +787,34 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
          end do
       end do
 
+      ! Initialize CRM radiation variables
+      call pbuf_get_field(pbuf, crm_t_rad_idx,  crm_t_rad)
+      call pbuf_get_field(pbuf, crm_qv_rad_idx, crm_qv_rad)
+      call pbuf_get_field(pbuf, crm_qc_rad_idx, crm_qc_rad)
+      call pbuf_get_field(pbuf, crm_qi_rad_idx, crm_qi_rad)
+      call pbuf_get_field(pbuf, crm_cld_rad_idx,crm_cld_rad)
+      call pbuf_get_field(pbuf, crm_qrad_idx,   crm_qrad)
+      if (MMF_microphysics_scheme .eq. 'm2005') then
+         call pbuf_get_field(pbuf, crm_nc_rad_idx,crm_nc_rad)
+         call pbuf_get_field(pbuf, crm_ni_rad_idx,crm_ni_rad)
+         call pbuf_get_field(pbuf, crm_qs_rad_idx,crm_qs_rad)
+         call pbuf_get_field(pbuf, crm_ns_rad_idx,crm_ns_rad)
+      end if
       do k = 1,crm_nz
          m = pver-k+1
          do i = 1,ncol
-            crm_rad%qrad         (i,:,:,k) = 0.
-            crm_rad%temperature  (i,:,:,k) = state%t(i,m)
-            crm_rad%qv           (i,:,:,k) = state%q(i,m,1)
-            crm_rad%qc           (i,:,:,k) = 0.
-            crm_rad%qi           (i,:,:,k) = 0.
-            crm_rad%cld          (i,:,:,k) = 0.
-#ifdef m2005
+            crm_qrad   (i,:,:,k) = 0.
+            crm_t_rad  (i,:,:,k) = state%t(i,m)
+            crm_qv_rad (i,:,:,k) = state%q(i,m,1)
+            crm_qc_rad (i,:,:,k) = 0.
+            crm_qi_rad (i,:,:,k) = 0.
+            crm_cld_rad(i,:,:,k) = 0.
             if (MMF_microphysics_scheme .eq. 'm2005') then
-               crm_rad%nc(i,:,:,k) = 0.0
-               crm_rad%ni(i,:,:,k) = 0.0       
-               crm_rad%qs(i,:,:,k) = 0.0
-               crm_rad%ns(i,:,:,k) = 0.0
+               crm_nc_rad(i,:,:,k) = 0.0
+               crm_ni_rad(i,:,:,k) = 0.0
+               crm_qs_rad(i,:,:,k) = 0.0
+               crm_ns_rad(i,:,:,k) = 0.0
             end if
-#endif
          end do
       end do
 
@@ -1184,12 +1224,46 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 
       call crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecpp_output, qrs, qrl)
 
+      !---------------------------------------------------------------------------------------------
       ! Convert heating rate to Q*dp to conserve energy across timesteps
+      !---------------------------------------------------------------------------------------------
       do m = 1,crm_nz
          k = pver-m+1
          do i = 1,ncol
             crm_rad%qrad(i,:,:,m) = crm_rad%qrad(i,:,:,m) * state%pdel(i,k) ! for energy conservation
          end do
+      end do
+
+      !---------------------------------------------------------------------------------------------
+      ! put rad data back in pbuf
+      !---------------------------------------------------------------------------------------------
+      call pbuf_get_field(pbuf, crm_t_rad_idx,  crm_t_rad)
+      call pbuf_get_field(pbuf, crm_qv_rad_idx, crm_qv_rad)
+      call pbuf_get_field(pbuf, crm_qc_rad_idx, crm_qc_rad)
+      call pbuf_get_field(pbuf, crm_qi_rad_idx, crm_qi_rad)
+      call pbuf_get_field(pbuf, crm_cld_rad_idx,crm_cld_rad)
+      call pbuf_get_field(pbuf, crm_qrad_idx,   crm_qrad)
+
+      if (MMF_microphysics_scheme .eq. 'm2005') then
+         call pbuf_get_field(pbuf, crm_nc_rad_idx, crm_nc_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+         call pbuf_get_field(pbuf, crm_ni_rad_idx, crm_ni_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+         call pbuf_get_field(pbuf, crm_qs_rad_idx, crm_qs_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+         call pbuf_get_field(pbuf, crm_ns_rad_idx, crm_ns_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
+      end if
+
+      do i = 1,ncol
+         crm_qrad     (i,:,:,:) = crm_rad%qrad       (i,:,:,:)
+         crm_t_rad    (i,:,:,:) = crm_rad%temperature(i,:,:,:)
+         crm_qv_rad   (i,:,:,:) = crm_rad%qv         (i,:,:,:)
+         crm_qc_rad   (i,:,:,:) = crm_rad%qc         (i,:,:,:)
+         crm_qi_rad   (i,:,:,:) = crm_rad%qi         (i,:,:,:)
+         crm_cld_rad  (i,:,:,:) = crm_rad%cld        (i,:,:,:)
+         if (MMF_microphysics_scheme .eq. 'm2005') then
+            crm_nc_rad(i,:,:,:) = crm_rad%nc         (i,:,:,:)
+            crm_ni_rad(i,:,:,:) = crm_rad%ni         (i,:,:,:)
+            crm_qs_rad(i,:,:,:) = crm_rad%qs         (i,:,:,:)
+            crm_ns_rad(i,:,:,:) = crm_rad%ns         (i,:,:,:)
+         end if
       end do
 
 !---------------------------------------------------------------------------------------------------
