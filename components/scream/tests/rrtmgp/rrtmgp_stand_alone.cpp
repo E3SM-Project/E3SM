@@ -173,7 +173,15 @@ namespace scream {
         auto d_rei = field_mgr.get_field("eff_radius_qi").get_reshaped_view<Real**>();
         auto d_cld = field_mgr.get_field("cldfrac_tot").get_reshaped_view<Real**>();
         auto d_mu0 = field_mgr.get_field("cos_zenith").get_reshaped_view<Real*>();
-        auto d_gas_vmr = field_mgr.get_field("gas_vmr").get_reshaped_view<Real***>();
+
+        auto d_qv  = field_mgr.get_field("qv").get_reshaped_view<Real**>();
+        auto d_co2 = field_mgr.get_field("co2").get_reshaped_view<Real**>();
+        auto d_o3  = field_mgr.get_field("o3").get_reshaped_view<Real**>();
+        auto d_n2o = field_mgr.get_field("n2o").get_reshaped_view<Real**>();
+        auto d_co  = field_mgr.get_field("co").get_reshaped_view<Real**>();
+        auto d_ch4 = field_mgr.get_field("ch4").get_reshaped_view<Real**>();
+        auto d_o2  = field_mgr.get_field("o2").get_reshaped_view<Real**>();
+        auto d_n2  = field_mgr.get_field("n2").get_reshaped_view<Real**>();
         {
           const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, nlay);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -184,17 +192,22 @@ namespace scream {
               d_pmid(i,k) = p_lay(i+1,k+1);
               d_tmid(i,k) = t_lay(i+1,k+1);
               d_pdel(i,k) = p_del(i+1,k+1);
-              d_qc(i,k)  = qc(i+1,k+1);
-              d_qi(i,k)  = qi(i+1,k+1);
+              d_qc(i,k)   = qc(i+1,k+1);
+              d_qi(i,k)   = qi(i+1,k+1);
               d_rel(i,k)  = rel(i+1,k+1);
               d_rei(i,k)  = rei(i+1,k+1);
               d_cld(i,k)  = cld(i+1,k+1);
               d_pint(i,k) = p_lev(i+1,k+1);
               d_tint(i,k) = t_lev(i+1,k+1);
 
-              Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, ngas), [&] (const int& g) {
-                d_gas_vmr(i,k,g) = gas_vmr(i+1,k+1,g+1);
-              });
+              d_qv(i,k)  = gas_vmr(i+1,k+1,1);
+              d_co2(i,k) = gas_vmr(i+1,k+1,2);
+              d_o3(i,k)  = gas_vmr(i+1,k+1,3);
+              d_n2o(i,k) = gas_vmr(i+1,k+1,4);
+              d_co(i,k)  = gas_vmr(i+1,k+1,5);
+              d_ch4(i,k) = gas_vmr(i+1,k+1,6);
+              d_o2(i,k)  = gas_vmr(i+1,k+1,7);
+              d_n2(i,k)  = gas_vmr(i+1,k+1,8);
             });
 
             d_pint(i,nlay) = p_lev(i+1,nlay+1);

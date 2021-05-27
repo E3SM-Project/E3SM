@@ -1,4 +1,6 @@
 #include "ekat/ekat_assert.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
+#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
@@ -37,39 +39,39 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_ncol,m_nlay} };
   FieldLayout scalar3d_layout_int { {COL,LEV}, {m_ncol,m_nlay+1} };
   // Use VAR field tag for gases for now; consider adding a tag?
-  FieldLayout gas_layout          { {COL,LEV,NGAS}, {m_ncol,m_nlay,m_ngas} };
   FieldLayout scalar2d_swband_layout { {COL,SWBND}, {m_ncol,m_nswbands} };
 
+  constexpr int ps = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>::n;
   // Set required (input) fields here
-  add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name());
-  add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name());
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name());
-  add_field<Required>("t_int" , scalar3d_layout_int, K , grid->name());
-  add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
-  add_field<Required>("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name());
-  add_field<Required>("cos_zenith", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("qc", scalar3d_layout_mid, kg/kg, grid->name());
-  add_field<Required>("qi", scalar3d_layout_mid, kg/kg, grid->name());
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name());
-  add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name());
-  add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name());
+  add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name(), ps);
+  add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name(), ps);
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name(), ps);
+  add_field<Required>("t_int" , scalar3d_layout_int, K , grid->name(), ps);
+  add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name(), ps);
+  add_field<Required>("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name(), ps);
+  add_field<Required>("cos_zenith", scalar2d_layout, nondim, grid->name(), ps);
+  add_field<Required>("qc", scalar3d_layout_mid, kg/kg, grid->name(), ps);
+  add_field<Required>("qi", scalar3d_layout_mid, kg/kg, grid->name(), ps);
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name(), ps);
+  add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name(), ps);
+  add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name(), ps);
   // Set of required gas concentration fields
-  add_field<Required>("qv", scalar3d_layout_mid,kgkg,grid->name());  // Called "h2o" in radiation
-  add_field<Required>("co2",scalar3d_layout_mid,kgkg,grid->name());
-  add_field<Required>("o3", scalar3d_layout_mid,kgkg,grid->name());
-  add_field<Required>("n2o",scalar3d_layout_mid,kgkg,grid->name());
-  add_field<Required>("co", scalar3d_layout_mid,kgkg,grid->name());
-  add_field<Required>("ch4",scalar3d_layout_mid,kgkg,grid->name());
-  add_field<Required>("o2", scalar3d_layout_mid,kgkg,grid->name());
-  add_field<Required>("n2", scalar3d_layout_mid,kgkg,grid->name());
+  add_field<Required>("qv", scalar3d_layout_mid,kgkg,grid->name(), ps);  // Called "h2o" in radiation
+  add_field<Required>("co2",scalar3d_layout_mid,kgkg,grid->name(), ps);
+  add_field<Required>("o3", scalar3d_layout_mid,kgkg,grid->name(), ps);
+  add_field<Required>("n2o",scalar3d_layout_mid,kgkg,grid->name(), ps);
+  add_field<Required>("co", scalar3d_layout_mid,kgkg,grid->name(), ps);
+  add_field<Required>("ch4",scalar3d_layout_mid,kgkg,grid->name(), ps);
+  add_field<Required>("o2", scalar3d_layout_mid,kgkg,grid->name(), ps);
+  add_field<Required>("n2", scalar3d_layout_mid,kgkg,grid->name(), ps);
 
   // Set computed (output) fields
-  add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid->name());
-  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
-  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid->name());
-  add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name());
-  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid->name());
-  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
+  add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid->name(), ps);
+  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name(), ps);
+  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid->name(), ps);
+  add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name(), ps);
+  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid->name(), ps);
+  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name(), ps);
 
 }  // RRTMGPRadiation::set_grids
 
