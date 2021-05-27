@@ -578,6 +578,10 @@
 					description="Flag for Langmuir enchancement factor using prognostic waves"
 					possible_values=""
 		/>
+		<nml_option name="config_cvmix_kpp_n_wavenumber_partitions" type="integer" default_value="6" units="NA"
+					description="Number of wavenumber partitions to be used in reconstructing wave-induced Stokes drift profile"
+					possible_values="3,4,6"
+		/>
 	</nml_record>
 	<nml_record name="gotm" mode="forward">
 		<nml_option name="config_use_gotm" type="logical" default_value=".false." units="NA"
@@ -3236,12 +3240,20 @@
 		/>
 
                 <!-- Waves coupling fields -->
-		<var name="waveStokesDriftZonal" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="waveStokesDriftZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Zonal component of the wave-induced Stokes drift current."
                           packages="activeWavePKG"
 		/>
-		<var name="waveStokesDriftMeridional" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="waveStokesDriftMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Meridional component of the wave-induced Stokes drift current."
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftZonalMLAvg" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Zonal component of the wave-induced Stokes drift current, averaged over fraction of mixed layer."
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftMeridionalMLAvg" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Meridional component of the wave-induced Stokes drift current, averaged over fraction of mixed layer."
                           packages="activeWavePKG"
 		/>
 		<var name="waveStokesDriftZonalWavenumber1" type="real" dimensions="nCells Time" units="m s^{-1}"
