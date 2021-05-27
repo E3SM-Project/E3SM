@@ -16,12 +16,12 @@
 !> \author Hyun-Gyu Kang (Oak Ridge National Laboratory)
 !> \date   September 2019 (semi-implicit code)
 !> \details
-!>  This module contains the routine for the semi-implicit
+!>  This module contains the routines for the semi-implicit
 !>  time integration scheme based on the split-explicit code.
 !>  Only stage 2 (barotropic mode) is changed from the explicit
 !>  subcycling scheme to the semi-implicit scheme.
+!
 !-----------------------------------------------------------------------
-
 
 module ocn_time_integration_si
 
@@ -41,6 +41,7 @@ module ocn_time_integration_si
    use ocn_diagnostics_variables
    use ocn_gm
    use ocn_config
+   use ocn_mesh
 
    use ocn_equation_of_state
    use ocn_vmix
@@ -64,11 +65,19 @@ module ocn_time_integration_si
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_time_integrator_si, ocn_time_integration_si_init
-   public :: ocn_time_integrator_si_preconditioner
+   public :: ocn_time_integrator_si, &
+             ocn_time_integration_si_init, &
+             ocn_time_integrator_si_preconditioner
 
-   character (len=*), parameter :: iterGroupName = 'iterFields'
-   character (len=*), parameter :: finalBtrGroupName = 'finalBtrFields'
+   !--------------------------------------------------------------------
+   !
+   ! Private module variables
+   !
+   !--------------------------------------------------------------------
+
+   character (len=*), parameter :: &
+      iterGroupName     = 'iterFields',   &! group name for halos
+      finalBtrGroupName = 'finalBtrFields' ! group name for halos
 
    ! Global variables for the semi-implicit time stepper ---------------
    real (kind=RKIND), allocatable,dimension(:,:) :: tavg
@@ -80,13 +89,15 @@ module ocn_time_integration_si
    real (kind=RKIND) :: R1_alpha1_g,alpha1,alpha2,crit_main
    integer :: nPrecVec, si_opt, si_ismf, ncpus
 
+!***********************************************************************
+
    contains
 
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!***********************************************************************
 !
 !  ocn_time_integration_si
 !
-!> \brief MPAS ocean split explicit time integration scheme
+!> \brief MPAS ocean semi-implicit time integration scheme
 !> \author Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date   September 2011 (split explicit base code)
 !> \author Hyun-Gyu Kang (Oak Ridge National Laboratory)
@@ -3055,19 +3066,29 @@ module ocn_time_integration_si
 !
 !  routine ocn_time_integration_si_init
 !
-!> \brief   Initialize split-explicit time stepping within MPAS-Ocean core
+!> \brief   Initialize semi-implicit time stepping within MPAS-Ocean
 !> \author  Mark Petersen
 !> \date    September 2011
 !> \details
-!>  This routine initializes variables required for the split-explicit time
-!>  stepper.
+!>  This routine initializes variables required for semi-implicit time
+!>  integration. It also calls the routine to compute the preconditioner
+!>  for the implicit solver.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_time_integration_si_init(domain)!{{{
-   ! Initialize splitting variables
+
+   subroutine ocn_time_integration_si_init(domain, dt)!{{{
+
+      !-----------------------------------------------------------------
+      ! Input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), intent(in) :: dt !< [in] time step (sec)
 
       type (domain_type), intent(inout) :: domain
 
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
       integer :: i, iCell, iEdge, iVertex, k
       type (block_type), pointer :: block
 
@@ -3098,8 +3119,14 @@ module ocn_time_integration_si
       real (kind=RKIND), dimension(:), pointer :: areaCell
       integer :: ihh,imm,iss,isum1,isum2,mpi_ierr
 
+      ! End preamble
+      !-------------
+      ! Begin code
+
 #ifndef USE_LAPACK
-      call mpas_log_write('MPAS was not compiled with LAPACK / BLAS.  LAPACK required for SI', MPAS_LOG_CRIT)
+      call mpas_log_write( &
+         'MPAS was not compiled with LAPACK/BLAS: required for SI', &
+          MPAS_LOG_CRIT)
 #endif
 
       dminfo = domain % dminfo
@@ -3300,6 +3327,15 @@ module ocn_time_integration_si
 
          block => block % next
          end do
+
+      ! Compute preconditioner for the semi-implicit barotropic
+      !  mode solver
+      call mpas_log_write(' Building a preconditioning matrix: ')
+      call mpas_timer_start("preconditioning matrix build")
+      call ocn_time_integrator_si_preconditioner(domain, dt)
+      call mpas_timer_stop("preconditioning matrix build")
+
+   !--------------------------------------------------------------------
 
    end subroutine ocn_time_integration_si_init!}}}
 
