@@ -1141,14 +1141,15 @@
     <NTEST_PARALLEL_JOBS>8</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>E3SM</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks">--mpi=pmi2 -l -n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
-        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>	
+        <arg name="thread_count">-c $SHELL{echo 128/ {{ tasks_per_node }} |bc}</arg>
         <arg name="placement">-m plane={{ tasks_per_node }}</arg>
       </arguments>
     </mpirun>
@@ -1214,12 +1215,6 @@
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
-    </environment_variables>
-    <environment_variables MAX_MPITASKS_PER_NODE="!128">
-      <env name="SLURM_CPU_BIND">cores</env>
-    </environment_variables>
-    <environment_variables MAX_MPITASKS_PER_NODE="128">
-      <env name="SLURM_CPU_BIND">threads</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
