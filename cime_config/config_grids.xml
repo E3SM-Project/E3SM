@@ -1537,6 +1537,16 @@
       <mask>oRRS18to6v3</mask>
     </model_grid>
 
+    <model_grid alias="ne1024pg2_oRRS18to6v3">
+      <grid name="atm">ne1024np4.pg2</grid>
+      <grid name="lnd">ne1024np4.pg2</grid>
+      <grid name="ocnice">oRRS18to6v3</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
     <model_grid alias="ne1024np4_360x720cru_oRRS15to5" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne1024np4</grid>
       <grid name="lnd">360x720cru</grid>
@@ -3542,7 +3552,6 @@
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_mono.200212.nc</map>
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_bilin.200212.nc</map>
     </gridmap>
-
 
     <gridmap atm_grid="ne0np4_conus_x4v1_lowcon" ocn_grid="oEC60to30v3">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/conusx4v1/map_conusx4v1_to_oEC60to30v3_mono.200514.nc</map>
