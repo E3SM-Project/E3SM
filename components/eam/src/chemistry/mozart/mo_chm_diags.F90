@@ -429,6 +429,7 @@ contains
     real(r8), dimension(ncol)      :: df_noy, df_sox, df_nhx
 
     real(r8) :: area(ncol), mass(ncol,pver), drymass(ncol,pver)
+    real(r8) :: wrk1d(ncol)
     real(r8) :: wgt
     character(len=16) :: spc_name
     real(r8), pointer :: fldcw(:,:)  !working pointer to extract data from pbuf for sum of mass for aerosol classes
@@ -496,35 +497,35 @@ contains
     ! convert ozone from mol/mol (w.r.t. dry air mass) to DU
     wrk(:ncol,:) = pdeldry(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/mwdry/DUfac*1.e3_r8
     ! total column ozone
-    do k = 2,pver
-       wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
+    wrk1d(:) = 0._r8
+    do k = 1,pver ! loop from top of atmosphere to surface
+       wrk1d(:) = wrk1d(:) + wrk(:ncol,k)
     end do
-    call outfld( 'TOZ', wrk,   ncol, lchnk )
+    call outfld( 'TOZ', wrk1d,   ncol, lchnk )
 
     ! stratospheric column ozone
-    wrk(:ncol,:) = pdeldry(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/mwdry/DUfac*1.e3_r8
+    wrk1d(:) = 0._r8
     do i = 1,ncol
-       do k = 2,pver
+       do k = 1,pver
           if (k > ltrop(i)) then
             exit
           end if
-          wrk(i,1) = wrk(i,1) + wrk(i,k)
+          wrk1d(i) = wrk1d(i) + wrk(i,k)
        end do
     end do
-    call outfld( 'SCO', wrk,   ncol, lchnk )
+    call outfld( 'SCO', wrk1d,   ncol, lchnk )
 
     ! tropospheric column ozone
-    wrk(:ncol,:) = pdeldry(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/mwdry/DUfac*1.e3_r8
+    wrk1d(:) = 0._r8
     do i = 1,ncol
-       wrk(i,1) = 0._r8
-       do k = 2,pver
+       do k = 1,pver
           if (k <= ltrop(i)) then
             cycle
           end if
-          wrk(i,1) = wrk(i,1) + wrk(i,k)
+          wrk1d(i) = wrk1d(i) + wrk(i,k)
        end do
     end do
-    call outfld( 'TCO', wrk,   ncol, lchnk )
+    call outfld( 'TCO', wrk1d,   ncol, lchnk )
 
     do m = 1,gas_pcnst
 
