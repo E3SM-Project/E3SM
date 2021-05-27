@@ -72,6 +72,7 @@ module ocn_forward_mode
    use ocn_tracer_MacroMolecules
    use ocn_tracer_surface_restoring
    use ocn_gm
+   use ocn_stokes_drift 
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -245,6 +246,10 @@ module ocn_forward_mode
 
       call ocn_forcing_init(err_tmp)
       ierr = ior(ierr,err_tmp)
+
+      call ocn_stokes_drift_init(err_tmp)
+      ierr = ior(ierr,err_tmp)
+       
 
       if(ierr.eq.1) then
           call mpas_log_write('An error was encountered while initializing the MPAS-Ocean forward mode', MPAS_LOG_CRIT)
