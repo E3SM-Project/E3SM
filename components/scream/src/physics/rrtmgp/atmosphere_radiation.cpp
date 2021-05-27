@@ -45,7 +45,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name());
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name());
   add_field<Required>("t_int" , scalar3d_layout_int, K , grid->name());
-  add_field<Required>("gas_vmr", gas_layout, kgkg, grid->name());
   add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
   add_field<Required>("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name());
   add_field<Required>("cos_zenith", scalar2d_layout, nondim, grid->name());
@@ -54,6 +53,15 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name());
   add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name());
   add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name());
+  // Set of required gas concentration fields
+  add_field<Required>("qv", scalar3d_layout_mid,kgkg,grid->name());  // Called "h2o" in radiation
+  add_field<Required>("co2",scalar3d_layout_mid,kgkg,grid->name());
+  add_field<Required>("o3", scalar3d_layout_mid,kgkg,grid->name());
+  add_field<Required>("n2o",scalar3d_layout_mid,kgkg,grid->name());
+  add_field<Required>("co", scalar3d_layout_mid,kgkg,grid->name());
+  add_field<Required>("ch4",scalar3d_layout_mid,kgkg,grid->name());
+  add_field<Required>("o2", scalar3d_layout_mid,kgkg,grid->name());
+  add_field<Required>("n2", scalar3d_layout_mid,kgkg,grid->name());
 
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid->name());
@@ -168,7 +176,6 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_pint = m_rrtmgp_fields_in.at("p_int").get_reshaped_view<const Real**>();
   auto d_pdel = m_rrtmgp_fields_in.at("pseudo_density").get_reshaped_view<const Real**>();
   auto d_tint = m_rrtmgp_fields_in.at("t_int").get_reshaped_view<const Real**>();
-  auto d_gas_vmr = m_rrtmgp_fields_in.at("gas_vmr").get_reshaped_view<const Real***>();
   auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("surf_alb_direct").get_reshaped_view<const Real**>();
   auto d_sfc_alb_dif = m_rrtmgp_fields_in.at("surf_alb_diffuse").get_reshaped_view<const Real**>();
   auto d_mu0 = m_rrtmgp_fields_in.at("cos_zenith").get_reshaped_view<const Real*>();
@@ -183,6 +190,14 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_sw_flux_dn_dir = m_rrtmgp_fields_out.at("SW_flux_dn_dir").get_reshaped_view<Real**>();
   auto d_lw_flux_up = m_rrtmgp_fields_out.at("LW_flux_up").get_reshaped_view<Real**>();
   auto d_lw_flux_dn = m_rrtmgp_fields_out.at("LW_flux_dn").get_reshaped_view<Real**>();
+  auto d_qv  = m_rrtmgp_fields_in.at("qv").get_reshaped_view<const Real**>();
+  auto d_co2 = m_rrtmgp_fields_in.at("co2").get_reshaped_view<const Real**>();
+  auto d_o3  = m_rrtmgp_fields_in.at("o3").get_reshaped_view<const Real**>();
+  auto d_n2o = m_rrtmgp_fields_in.at("n2o").get_reshaped_view<const Real**>();
+  auto d_co  = m_rrtmgp_fields_in.at("co").get_reshaped_view<const Real**>();
+  auto d_ch4 = m_rrtmgp_fields_in.at("ch4").get_reshaped_view<const Real**>();
+  auto d_o2  = m_rrtmgp_fields_in.at("o2").get_reshaped_view<const Real**>();
+  auto d_n2  = m_rrtmgp_fields_in.at("n2").get_reshaped_view<const Real**>();
 
   // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
   // as the fastest index. For this reason we must copy the data.
@@ -220,14 +235,19 @@ void RRTMGPRadiation::run_impl (const Real dt) {
         qc(i+1,k+1)          = d_qc(i,k);
         qi(i+1,k+1)          = d_qi(i,k);
         cldfrac_tot(i+1,k+1) = d_cldfrac_tot(i,k);
-        rel(i+1,k+1)         = d_rel(i,k);
-        rei(i+1,k+1)         = d_rei(i,k);
-        p_lev(i+1,k+1)       = d_pint(i,k);
-        t_lev(i+1,k+1)       = d_tint(i,k);
-
-        Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, m_ngas), [&] (const int& g) {
-          gas_vmr(i+1,k+1,g+1) = d_gas_vmr(i,k,g);
-        });
+        rel(i+1,k+1)   = d_rel(i,k);
+        rei(i+1,k+1)   = d_rei(i,k);
+        p_lev(i+1,k+1) = d_pint(i,k);
+        t_lev(i+1,k+1) = d_tint(i,k);
+        // gas concentrations
+        gas_vmr(i+1,k+1,1) = d_qv(i,k);
+        gas_vmr(i+1,k+1,2) = d_co2(i,k);
+        gas_vmr(i+1,k+1,3) = d_o3(i,k);
+        gas_vmr(i+1,k+1,4) = d_n2o(i,k);
+        gas_vmr(i+1,k+1,5) = d_co(i,k);
+        gas_vmr(i+1,k+1,6) = d_ch4(i,k);
+        gas_vmr(i+1,k+1,7) = d_o2(i,k);
+        gas_vmr(i+1,k+1,8) = d_n2(i,k);
       });
 
       p_lev(i+1,m_nlay+1) = d_pint(i,m_nlay);
