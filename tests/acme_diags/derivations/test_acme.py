@@ -89,17 +89,53 @@ class TestDetermineTau(TestCase):
         self.mock_file_axis: "FileAxis" = Mock()
         self.mock_file_axis.getData.return_value = np.arange(0, 1002)
 
-    def test_low_none(self):
-        actual = determine_tau(self.mock_file_axis, None, 10)
-        expected = "tau <10"
-        self.assertEqual(actual, expected)
+        # Need to mock __getitem__ in order to provide list value
+        self.mock_file_axis.__getitem__ = Mock()
+        self.mock_file_axis.__getitem__.side_effect = [0, 10]
 
-    def test_high_none(self):
-        actual = determine_tau(self.mock_file_axis, 5, None)
-        expected = "5< tau"
-        self.assertEqual(actual, expected)
+    def test_low_arg_only(self):
+        expected_high = 10
+        expected_low = 5
+        expected_lim = "tau >5"
 
-    def test_low_high(self):
-        actual = determine_tau(self.mock_file_axis, 5, 10)
-        expected = "5< tau < 10"
-        self.assertEqual(actual, expected)
+        actual_high, actual_low, actual_lim = determine_tau(
+            self.mock_file_axis, 5, None
+        )
+        self.assertEqual(actual_high, expected_high)
+        self.assertEqual(actual_low, expected_low)
+        self.assertEqual(actual_lim, expected_lim)
+
+    def test_high_arg_only(self):
+        expected_high = 10
+        expected_low = 0
+        expected_lim = "tau <10"
+
+        actual_high, actual_low, actual_lim = determine_tau(
+            self.mock_file_axis, None, 10
+        )
+
+        self.assertEqual(actual_high, expected_high)
+        self.assertEqual(actual_low, expected_low)
+        self.assertEqual(actual_lim, expected_lim)
+
+    def test_low_and_high_args(self):
+        expected_high = 10
+        expected_low = 5
+        expected_lim = "5< tau < 10"
+
+        actual_high, actual_low, actual_lim = determine_tau(self.mock_file_axis, 5, 10)
+        self.assertEqual(actual_high, expected_high)
+        self.assertEqual(actual_low, expected_low)
+        self.assertEqual(actual_lim, expected_lim)
+
+    def test_no_args(self):
+        expected_high = 10
+        expected_low = 0
+        expected_lim = "0< tau < 10"
+
+        actual_high, actual_low, actual_lim = determine_tau(
+            self.mock_file_axis, None, None
+        )
+        self.assertEqual(actual_high, expected_high)
+        self.assertEqual(actual_low, expected_low)
+        self.assertEqual(actual_lim, expected_lim)

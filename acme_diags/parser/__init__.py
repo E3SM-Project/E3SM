@@ -23,4 +23,5 @@ SET_TO_PARSER = {
     "diurnal_cycle": DiurnalCycleParser,
     "arm_diags": ARMDiagsParser,
     "tc_analysis": TCAnalysisParser,
+    "annual_cycle_zonal_mean": CoreParser,
 }

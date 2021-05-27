@@ -30,8 +30,10 @@ def _get_plot_fcn(backend, set_name):
 
 
 def plot(set_name, ref, test, diff, metrics_dict, parameter):
-    """Based on set_name and parameter.backend,
-    call the correct plotting function."""
+    """Based on set_name and parameter.backend, call the correct plotting function.
+
+    #TODO: Make metrics_dict a kwarg and update the other plot() functions
+    """
     if hasattr(parameter, "plot"):
         parameter.plot(ref, test, diff, metrics_dict, parameter)
     else:
