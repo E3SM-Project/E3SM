@@ -353,6 +353,7 @@ def main(parameters=[]):
     else:
         # If you get `AttributeError: 'NoneType' object has no attribute 'no_viewer'` on this line
         # then `run_diag` likely returns `None`.
+
         if parameters[0].no_viewer:
             print("Viewer not created because the no_viewer parameter is True.")
         else:

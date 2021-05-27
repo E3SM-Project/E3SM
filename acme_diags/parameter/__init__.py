@@ -6,6 +6,7 @@ from .enso_diags_parameter import EnsoDiagsParameter
 from .meridional_mean_2d_parameter import MeridionalMean2dParameter
 from .qbo_parameter import QboParameter
 from .streamflow_parameter import StreamflowParameter
+from .tc_analysis_parameter import TCAnalysisParameter
 from .zonal_mean_2d_parameter import ZonalMean2dParameter
 
 SET_TO_PARAMETERS = {
@@ -21,4 +22,5 @@ SET_TO_PARAMETERS = {
     "streamflow": StreamflowParameter,
     "diurnal_cycle": DiurnalCycleParameter,
     "arm_diags": ARMDiagsParameter,
+    "tc_analysis": TCAnalysisParameter,
 }

@@ -13,6 +13,7 @@ from . import (
     mean_2d_viewer,
     qbo_viewer,
     streamflow_viewer,
+    tc_analysis_viewer,
     utils,
 )
 
@@ -31,6 +32,7 @@ SET_TO_VIEWER = {
     "streamflow": streamflow_viewer.create_viewer,
     "diurnal_cycle": default_viewer.create_viewer,
     "arm_diags": arm_diags_viewer.create_viewer,
+    "tc_analysis": tc_analysis_viewer.create_viewer,
 }
 
 

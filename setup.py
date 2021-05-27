@@ -57,6 +57,9 @@ diurnal_cycle_files = get_all_files_in_dir(
     "acme_diags/driver/default_diags", "diurnal_cycle_*"
 )
 arm_diags_files = get_all_files_in_dir("acme_diags/driver/default_diags", "arm_diags_*")
+tc_analysis_files = get_all_files_in_dir(
+    "acme_diags/driver/default_diags", "tc_analysis_*"
+)
 rgb_files = get_all_files_in_dir("acme_diags/plot/colormaps", "*.rgb")
 control_runs_files = get_all_files_in_dir("acme_diags/driver/control_runs", "*.csv")
 
@@ -82,6 +85,7 @@ data_files = [
     (os.path.join(INSTALL_PATH, "streamflow"), streamflow),
     (os.path.join(INSTALL_PATH, "diurnal_cycle"), diurnal_cycle_files),
     (os.path.join(INSTALL_PATH, "arm_diags"), arm_diags_files),
+    (os.path.join(INSTALL_PATH, "tc_analysis"), tc_analysis_files),
     (
         INSTALL_PATH,
         [

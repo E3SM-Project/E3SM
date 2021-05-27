@@ -6,6 +6,7 @@ from .enso_diags_parser import EnsoDiagsParser
 from .meridional_mean_2d_parser import MeridionalMean2dParser
 from .qbo_parser import QboParser
 from .streamflow_parser import StreamflowParser
+from .tc_analysis_parser import TCAnalysisParser
 from .zonal_mean_2d_parser import ZonalMean2dParser
 
 SET_TO_PARSER = {
@@ -21,4 +22,5 @@ SET_TO_PARSER = {
     "streamflow": StreamflowParser,
     "diurnal_cycle": DiurnalCycleParser,
     "arm_diags": ARMDiagsParser,
+    "tc_analysis": TCAnalysisParser,
 }

@@ -15,7 +15,7 @@
   "python.testing.unittestArgs": [
     "-v",
     "-s",
-    "./tests",
+    "./tests/acme_diags",
     "-p",
     "test_*.py"
   ],
