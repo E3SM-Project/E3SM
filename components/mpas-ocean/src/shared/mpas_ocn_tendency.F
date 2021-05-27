@@ -291,8 +291,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
          normalVelocity,     &! normal velocity
-         layerThickness, &
-         circulation
+         layerThickness
 
       real (kind=RKIND), dimension(:,:,:), pointer, contiguous :: &
          activeTracers
@@ -340,7 +339,7 @@ contains
       !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
       !$acc    sfcFlxAttCoeff, ssh, layerThickEdge, normalVelocity, &
       !$acc    tangentialVelocity, density, potentialDensity, zMid, &
-      !$acc    pressure, layerThickness, circulation, activeTracers, &
+      !$acc    pressure, layerThickness, activeTracers, &
       !$acc    relativeVorticity, kineticEnergyCell, normRelVortEdge, &
       !$acc    normPlanetVortEdge, montgomeryPotential, &
       !$acc    vertAleTransportTop, divergence, vertViscTopOfEdge, &
@@ -453,7 +452,7 @@ contains
       !$acc    delete( &
       !$acc    sfcFlxAttCoeff, ssh, layerThickEdge, normalVelocity, &
       !$acc    tangentialVelocity, density, potentialDensity, zMid, &
-      !$acc    pressure, layerThickness, circulation, activeTracers, &
+      !$acc    pressure, layerThickness, activeTracers, &
       !$acc    relativeVorticity, kineticEnergyCell, normRelVortEdge, &
       !$acc    normPlanetVortEdge, montgomeryPotential, &
       !$acc    vertAleTransportTop, divergence, vertViscTopOfEdge, &
