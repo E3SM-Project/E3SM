@@ -1029,7 +1029,7 @@ contains
         biochem_pmin_vr_col          => col_pf%biochem_pmin_vr               , &
         labilep_vr                   => col_ps%labilep_vr                   , &
         pdep_to_sminp                => col_pf%pdep_to_sminp                 , &
-        ndep_prof                    => cnstate_vars%ndep_prof_col                            , &
+        pdep_prof                    => cnstate_vars%pdep_prof_col                            , &
         gross_pmin_vr                => col_pf%gross_pmin_vr                 , &
                                 !! add phosphorus variables  - X. YANG
         solutionp_vr                 => col_ps%solutionp_vr               , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P
