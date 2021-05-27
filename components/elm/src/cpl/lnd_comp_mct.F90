@@ -44,6 +44,7 @@ contains
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use elm_initializeMod, only : initialize1, initialize2, initialize3
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
+    use elm_instance     , only : elm_instance_init
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland
     use elm_varctl       , only : inst_index, inst_suffix, inst_name
     use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
@@ -121,6 +122,10 @@ contains
 
     call seq_cdata_setptrs(cdata_l, ID=LNDID, mpicom=mpicom_lnd, &
          gsMap=GSMap_lnd, dom=dom_l, infodata=infodata)
+
+    ! Set and save LNDID for easy access by other modules
+
+    call elm_instance_init( LNDID )
 
     ! Determine attriute vector indices
 
