@@ -21,14 +21,14 @@ module ww3_cpl_indices
   integer :: index_w2x_Sw_ustokes_wavenumber_1
   integer :: index_w2x_Sw_vstokes_wavenumber_1
   integer :: index_w2x_Sw_ustokes_wavenumber_2
-  integer :: index_w2x_Sw_ustokes_wavenumber_2
-  integer :: index_w2x_Sw_vstokes_wavenumber_3
+  integer :: index_w2x_Sw_vstokes_wavenumber_2
+  integer :: index_w2x_Sw_ustokes_wavenumber_3
   integer :: index_w2x_Sw_vstokes_wavenumber_3
   integer :: index_w2x_Sw_ustokes_wavenumber_4
-  integer :: index_w2x_Sw_ustokes_wavenumber_4
+  integer :: index_w2x_Sw_vstokes_wavenumber_4
   integer :: index_w2x_Sw_ustokes_wavenumber_5
   integer :: index_w2x_Sw_vstokes_wavenumber_5
-  integer :: index_w2x_Sw_vstokes_wavenumber_6
+  integer :: index_w2x_Sw_ustokes_wavenumber_6
   integer :: index_w2x_Sw_vstokes_wavenumber_6
 
   integer :: index_w2x_Sw_hstokes

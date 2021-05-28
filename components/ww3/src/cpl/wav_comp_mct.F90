@@ -152,7 +152,7 @@
       use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, &
                           nx, ny, nsea, nseal, mapsf, mapfs, mapsta, mapst2, x0, y0, sx, sy, &
                           w3nmod, w3setg, AnglD, &
-                          sig, nk, zb, dmini, &
+                          sig, nk, zb, dmin, &
                           usspf
       use w3wdatmd, only: time, w3ndat, w3setw, wlv, va
       use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn !SB, lamult
@@ -863,8 +863,23 @@ CONTAINS
       ! QL, 150823, send initial state to driver
       ! QL, 160611, initial values for lamult, ustokes and vstokes
       do jsea=1, nseal
-          w2x_w%rattr(index_w2x_Sw_ustokes,jsea) = 0.
-          w2x_w%rattr(index_w2x_Sw_vstokes,jsea) = 0.
+         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = 0.0
+         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = 0.0
+
+         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_2,jsea) = 0.0
+         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_2,jsea) = 0.0
+
+         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_3,jsea) = 0.0
+         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_3,jsea) = 0.0
+
+         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_4,jsea) = 0.0
+         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_4,jsea) = 0.0
+
+         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_5,jsea) = 0.0
+         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_5,jsea) = 0.0
+
+         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = 0.0
+         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = 0.0
       enddo
 
       ! end redirection of share output to wav log
