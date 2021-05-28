@@ -47,7 +47,8 @@ module ocn_stokes_drift
    !--------------------------------------------------------------------
 
    public :: ocn_stokes_drift_reconstruct, &
-             ocn_stokes_drift_average, &
+             ocn_stokes_drift_kpp_enhancement_factor, &
+             ocn_stokes_drift_langmuir_number, &
              ocn_stokes_drift_init
 
    !--------------------------------------------------------------------
@@ -95,9 +96,11 @@ contains
       ! Local variables
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, i
-      real(kind=RKIND), dimension(:,:), pointer :: stokesDriftZonal
-      real(kind=RKIND), dimension(:,:), pointer :: stokesDriftMeridional
+      integer :: iCell, k
+      real(kind=RKIND), dimension(:,:), pointer  :: stokesDriftZonal, stokesDriftMeridional
+      real (kind=RKIND), dimension(6) :: zonalWavenumberCoeff 
+      real (kind=RKIND), dimension(6) :: meridionalWavenumberCoeff
+
       real(kind=RKIND), dimension(:), pointer :: stokesDriftZonalWavenumber1, &
                                                  stokesDriftZonalWavenumber2, &
                                                  stokesDriftZonalWavenumber3, &
@@ -110,12 +113,12 @@ contains
                                                  stokesDriftMeridionalWavenumber4, &
                                                  stokesDriftMeridionalWavenumber5, &
                                                  stokesDriftMeridionalWavenumber6
-      real(kind=RKIND) :: decayFactor
 
       !-----------------------------------------------------------------
 
       call mpas_pool_get_array(forcingPool, 'stokesDriftZonal', stokesDriftZonal)
       call mpas_pool_get_array(forcingPool, 'stokesDriftMeridional', stokesDriftMeridional)
+
       call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber1', stokesDriftZonalWavenumber1)
       call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber1', stokesDriftMeridionalWavenumber1)
       call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber2', stokesDriftZonalWavenumber2)
@@ -125,55 +128,28 @@ contains
       call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber4', stokesDriftZonalWavenumber4)
       call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber4', stokesDriftMeridionalWavenumber4)
       call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber5', stokesDriftZonalWavenumber5)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber5', stokesDriftZonalWavenumber5)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6)
       call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6)
 
       do iCell = 1,nCellsAll
 
          do k = minLevelCell(iCell), maxLevelCell(iCell)
-            stokesDriftZonal(k,iCell) = 0.0_RKIND
-            stokesDriftMeridional(k,iCell) = 0.0_RKIND
+ 
+            zonalWavenumberCoeff(1) = stokesDriftZonalWavenumber1(iCell)
+            zonalWavenumberCoeff(2) = stokesDriftZonalWavenumber2(iCell)
+            zonalWavenumberCoeff(3) = stokesDriftZonalWavenumber3(iCell)
+            zonalWavenumberCoeff(4) = stokesDriftZonalWavenumber4(iCell)
+            zonalWavenumberCoeff(5) = stokesDriftZonalWavenumber5(iCell)
+            zonalWavenumberCoeff(6) = stokesDriftZonalWavenumber6(iCell)
 
-            decayFactor = exp(2.0_RKIND*stokesDriftWavenumbers(1)*ZMid(k,iCell))
-            stokesDriftZonal(k,iCell) = stokesDriftZonal(k,iCell) &
-                                      + stokesDriftZonalWavenumber1(iCell)*decayFactor
-            stokesDriftMeridional(k,iCell) = stokesDriftMeridional(k,iCell) &
-                                           + stokesDriftMeridionalWavenumber1(iCell)*decayFactor
+            meridionalWavenumberCoeff(1) = stokesDriftMeridionalWavenumber1(iCell)
+            meridionalWavenumberCoeff(2) = stokesDriftMeridionalWavenumber2(iCell)
+            meridionalWavenumberCoeff(3) = stokesDriftMeridionalWavenumber3(iCell)
+            meridionalWavenumberCoeff(4) = stokesDriftMeridionalWavenumber4(iCell)
+            meridionalWavenumberCoeff(5) = stokesDriftMeridionalWavenumber5(iCell)
+            meridionalWavenumberCoeff(6) = stokesDriftMeridionalWavenumber6(iCell)
 
-            decayFactor = exp(2.0_RKIND*stokesDriftWavenumbers(2)*ZMid(k,iCell))
-            stokesDriftZonal(k,iCell) = stokesDriftZonal(k,iCell) &
-                                      + stokesDriftZonalWavenumber2(iCell)*decayFactor
-            stokesDriftMeridional(k,iCell) = stokesDriftMeridional(k,iCell) &
-                                           + stokesDriftMeridionalWavenumber2(iCell)*decayFactor
-
-            decayFactor = exp(2.0_RKIND*stokesDriftWavenumbers(3)*ZMid(k,iCell))
-            stokesDriftZonal(k,iCell) = stokesDriftZonal(k,iCell) &
-                                      + stokesDriftZonalWavenumber3(iCell)*decayFactor
-            stokesDriftMeridional(k,iCell) = stokesDriftMeridional(k,iCell) &
-                                           + stokesDriftMeridionalWavenumber3(iCell)*decayFactor
-
-            if (config_cvmix_kpp_n_wavenumber_partitions > 3) then
-               decayFactor = exp(2.0_RKIND*stokesDriftWavenumbers(4)*ZMid(k,iCell))
-               stokesDriftZonal(k,iCell) = stokesDriftZonal(k,iCell) &
-                                         + stokesDriftZonalWavenumber4(iCell)*decayFactor
-               stokesDriftMeridional(k,iCell) = stokesDriftMeridional(k,iCell) &
-                                              + stokesDriftMeridionalWavenumber4(iCell)*decayFactor
-            end if
-
-            if (config_cvmix_kpp_n_wavenumber_partitions > 4) then
-               decayFactor = exp(2.0_RKIND*stokesDriftWavenumbers(5)*ZMid(k,iCell))
-               stokesDriftZonal(k,iCell) = stokesDriftZonal(k,iCell) &
-                                         + stokesDriftZonalWavenumber5(iCell)*decayFactor
-               stokesDriftMeridional(k,iCell) = stokesDriftMeridional(k,iCell) &
-                                              + stokesDriftMeridionalWavenumber5(iCell)*decayFactor
-
-               decayFactor = exp(2.0_RKIND*stokesDriftWavenumbers(6)*ZMid(k,iCell))
-               stokesDriftZonal(k,iCell) = stokesDriftZonal(k,iCell) &
-                                         + stokesDriftZonalWavenumber6(iCell)*decayFactor
-               stokesDriftMeridional(k,iCell) = stokesDriftMeridional(k,iCell) &
-                                              + stokesDriftMeridionalWavenumber6(iCell)*decayFactor
-            end if
+            call ocn_stokes_drift_evaluate(zMid(k,iCell), zonalWavenumberCoeff, meridionalWavenumberCoeff, &
+                                           stokesDriftZonal(k,iCell), stokesDriftMeridional(k,iCell))
 
          end do
 
@@ -185,9 +161,87 @@ contains
 
 !***********************************************************************
 !
+!  routine ocn_stokes_drift_langmuir_number
+!
+!> \brief Computes the langmuir number based on Van Roekel et al. 2012 
+!> \author  Steven Brus
+!> \date    June 2021 
+!> \details
+!>   This routine computes projected Langmuir number for misaligned wind and
+!>   waves using the Stokes drift from an active wave model. 
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_stokes_drift_langmuir_number(windStressZonal, &
+                                               windStressMeridional, &
+                                               surfaceFrictionVelocity, &
+                                               significantWaveHeight, &
+                                               boundaryLayerDepth, &
+                                               zonalWavenumberCoeff, &
+                                               meridionalWavenumberCoeff, &
+                                               alpha, &
+                                               langmuirNumber)!{{{
+
+      !-----------------------------------------------------------------
+      ! Input variables
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND), intent(in) :: windStressZonal
+      real(kind=RKIND), intent(in) :: windStressMeridional
+      real(kind=RKIND), intent(in) :: surfaceFrictionVelocity
+      real(kind=RKIND), intent(in) :: significantWaveHeight 
+      real(kind=RKIND), intent(in) :: boundaryLayerDepth
+      real(kind=RKIND), dimension(6), intent(in) :: zonalWavenumberCoeff
+      real(kind=RKIND), dimension(6), intent(in) :: meridionalWavenumberCoeff
+
+      !-----------------------------------------------------------------
+      ! Output variables
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND), intent(out) :: alpha
+      real(kind=RKIND), intent(out) :: langmuirNumber
+
+      !-----------------------------------------------------------------
+      ! Local variables
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND) :: stokesDriftZonalSurface, stokesDriftMeridionalSurface
+      real(kind=RKIND) :: stokesDriftMagnitudeSurface
+      real(kind=RKIND) :: stokesDriftZonalMLAvg, stokesDriftMeridionalMLAvg
+      real(kind=RKIND) :: stokesDriftMagnitudeMLAvg
+      real(kind=RKIND) :: theta_ww
+      real(kind=RKIND) :: denominator
+
+      !-----------------------------------------------------------------
+
+      call ocn_stokes_drift_evaluate(0.0_RKIND, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
+                                     stokesDriftZonalSurface, stokesDriftMeridionalSurface)
+
+      ! Calculate angle between wind and Langmuir cells
+      theta_ww = atan2(stokesDriftMeridionalSurface, stokesDriftZonalSurface) - atan2(windStressMeridional, windStressZonal)
+      stokesDriftMagnitudeSurface = sqrt(stokesDriftZonalSurface**2 + stokesDriftMeridionalSurface**2)
+      denominator = surfaceFrictionVelocity/(0.4_RKIND*stokesDriftMagnitudeSurface) &
+                  * log(max(abs(boundaryLayerDepth/(4.0_RKIND*significantWaveHeight)),1.0_RKIND)) &
+                  + cos(theta_ww)
+      alpha = atan(sin(theta_ww)/denominator)
+
+      call ocn_stokes_drift_average(0.2_RKIND*boundaryLayerDepth, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
+                                    stokesDriftZonalMLAvg, stokesDriftMeridionalMLAvg)
+
+      ! Calculate surface layer averaged, projected Langmuir number
+      stokesDriftMagnitudeMLAvg = sqrt(stokesDriftZonalMLAvg**2 + stokesDriftMeridionalMLAvg**2)
+      langmuirNumber = sqrt(surfaceFrictionVelocity*abs(cos(alpha))/(stokesDriftMagnitudeMLAvg*abs(cos(theta_ww-alpha))))
+
+
+      !-----------------------------------------------------------------
+
+   end subroutine ocn_stokes_drift_langmuir_number!}}}
+
+!***********************************************************************
+!
 !  routine ocn_stokes_drift_kpp_enhancement_factor
 !
-!> \brief Computes the Langmuir number based on Van Roekel et al. 2012 
+!> \brief Computes the KPP enhancement factor based on Van Roekel et al. 2012 
 !> \author  Steven Brus
 !> \date    June 2021 
 !> \details
@@ -196,40 +250,93 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_stokes_drift_kpp_enhancement_factor(forcingPool)!{{{
+   subroutine ocn_stokes_drift_kpp_enhancement_factor(alpha, langmuirNumber, enhancementFactor)!{{{
 
       !-----------------------------------------------------------------
       ! Input variables
       !-----------------------------------------------------------------
 
-      type(mpas_pool_type), intent(inout) :: &
-         forcingPool
+      real(kind=RKIND), intent(in) :: alpha
+      real(kind=RKIND), intent(in) :: langmuirNumber
 
       !-----------------------------------------------------------------
       ! Output variables
       !-----------------------------------------------------------------
 
+      real(kind=RKIND), intent(out) :: enhancementFactor
 
       !-----------------------------------------------------------------
       ! Local variables
       !-----------------------------------------------------------------
 
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftZonalMLAvg
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftMeridionalMLAvg
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftKPPEnhancementFactor
-      real(kind=RKIND), dimension(:), pointer :: significantWaveHeight
 
       !-----------------------------------------------------------------
 
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalMLAvg', stokesDriftZonalMLAvg)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalMLAvg', stokesDriftMeridionalMLAvg)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftKPPEnhancementFactor', stokesDriftKPPEnhancementFactor)
-      call mpas_pool_get_array(forcingPool, 'significantWaveHeight', significantWaveHeight)
-
+      enhancementFactor = abs(cos(alpha))                          &
+                        * sqrt(1.0_RKIND                           &
+                        + 1.0_RKIND/(1.5_RKIND*langmuirNumber)**2  &
+                        + 1.0_RKIND/(5.4_RKIND*langmuirNumber)**4) 
 
       !-----------------------------------------------------------------
 
    end subroutine ocn_stokes_drift_kpp_enhancement_factor!}}}
+
+!***********************************************************************
+!
+!  routine ocn_stokes_drift_evaluate
+!
+!> \brief   Evaluate depth-dependent Stokes drift profile at a given depth
+!> \author  Steven Brus
+!> \date    June 2021 
+!> \details
+!>   This routine evaluates the depth-dependent Stokes drift profile at 
+!>   a given depth using partitioned surface Stokes drift in 6 wavenumber
+!>   bins from an active wave model. 
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_stokes_drift_evaluate(zDepth, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
+                                        stokesDriftZonal, stokesDriftMeridional)!{{{
+
+      !-----------------------------------------------------------------
+      ! Input variables
+      !-----------------------------------------------------------------
+      
+      real(kind=RKIND), intent(in) :: zDepth
+      real (kind=RKIND), dimension(6), intent(in) :: zonalWavenumberCoeff 
+      real (kind=RKIND), dimension(6), intent(in) :: meridionalWavenumberCoeff
+
+      !-----------------------------------------------------------------
+      ! Output variables
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND), intent(out) :: stokesDriftZonal
+      real(kind=RKIND), intent(out) :: stokesDriftMeridional
+
+      !-----------------------------------------------------------------
+      ! Local variables
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND) :: decayFactor
+      integer :: i
+
+      !-----------------------------------------------------------------
+
+      stokesDriftZonal = 0.0_RKIND
+      stokesDriftMeridional = 0.0_RKIND
+
+      do i = 1,config_cvmix_kpp_n_wavenumber_partitions
+
+         decayFactor = exp(2.0_RKIND*stokesDriftWavenumbers(i)*zDepth)
+         stokesDriftZonal = stokesDriftZonal + zonalWavenumberCoeff(i)*decayFactor
+         stokesDriftMeridional = stokesDriftMeridional + meridionalWavenumberCoeff(i)*decayFactor
+
+      end do
+
+      !-----------------------------------------------------------------
+
+   end subroutine ocn_stokes_drift_evaluate!}}}
+
 
 !***********************************************************************
 !
@@ -245,136 +352,45 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_stokes_drift_average(statePool,forcingPool,fractionOfMLD,timeLevelIn)!{{{
+   subroutine ocn_stokes_drift_average(zMLD, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
+                                       stokesDriftZonalMLAvg, stokesDriftMeridionalMLAvg)!{{{
 
       !-----------------------------------------------------------------
       ! Input variables
       !-----------------------------------------------------------------
 
-      type(mpas_pool_type), intent(in) :: &
-         statePool
-
-      type(mpas_pool_type), intent(inout) :: &
-         forcingPool
-
-      real, intent(in) :: fractionOfMLD
-
-      integer, intent(in), optional :: timeLevelIn
-
+      real (kind=RKIND), intent(in) :: zMLD
+      real (kind=RKIND), dimension(6), intent(in) :: zonalWavenumberCoeff 
+      real (kind=RKIND), dimension(6), intent(in) :: meridionalWavenumberCoeff
 
       !-----------------------------------------------------------------
       ! Output variables
       !-----------------------------------------------------------------
 
+      real(kind=RKIND), intent(out) :: stokesDriftZonalMLAvg
+      real(kind=RKIND), intent(out) :: stokesDriftMeridionalMLAvg
 
       !-----------------------------------------------------------------
       ! Local variables
       !-----------------------------------------------------------------
 
-      integer :: iCell, k
-      integer :: timeLevel
-
-      real(kind=RKIND), dimension(:), pointer :: ssh
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftZonalMLAvg
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftMeridionalMLAvg
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftZonalWavenumber1, &
-                                                 stokesDriftZonalWavenumber2, &
-                                                 stokesDriftZonalWavenumber3, &
-                                                 stokesDriftZonalWavenumber4, &
-                                                 stokesDriftZonalWavenumber5, &
-                                                 stokesDriftZonalWavenumber6
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftMeridionalWavenumber1, &
-                                                 stokesDriftMeridionalWavenumber2, &
-                                                 stokesDriftMeridionalWavenumber3, &
-                                                 stokesDriftMeridionalWavenumber4, &
-                                                 stokesDriftMeridionalWavenumber5, &
-                                                 stokesDriftMeridionalWavenumber6
       real(kind=RKIND) :: integralFactor
-      real(kind=RKIND) :: zMLD
+      integer :: i
 
       !-----------------------------------------------------------------
 
-      if (present(timeLevelIn)) then
-         timeLevel = timeLevelIn
-      else
-         timeLevel = 1
-      end if
+      stokesDriftZonalMLAvg = 0.0_RKIND        
+      stokesDriftMeridionalMLAvg = 0.0_RKIND
 
-      call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
-
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalMLAvg', stokesDriftZonalMLAvg)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalMLAvg', stokesDriftMeridionalMLAvg)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber1', stokesDriftZonalWavenumber1)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber1', stokesDriftMeridionalWavenumber1)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber2', stokesDriftZonalWavenumber2)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber2', stokesDriftMeridionalWavenumber2)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber3', stokesDriftZonalWavenumber3)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber3', stokesDriftMeridionalWavenumber3)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber4', stokesDriftZonalWavenumber4)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber4', stokesDriftMeridionalWavenumber4)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber5', stokesDriftZonalWavenumber5)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber5', stokesDriftZonalWavenumber5)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6)
-
-      do iCell = 1,nCellsAll
-
-        k =  max(minLevelCell(iCell), indMLD(iCell))
-        zMLD = fractionOfMLD*(ssh(iCell) - zMid(k, iCell))
-
-        stokesDriftZonalMLAvg(iCell) = 0.0_RKIND        
-        stokesDriftMeridionalMLAvg(iCell) = 0.0_RKIND
-        
-        integralFactor = (1.0_RKIND - exp(-2.0_RKIND*stokesDriftWavenumbers(1)*zMLD)) &
-                       / (2.0_RKIND*stokesDriftWavenumbers(1))
-        stokesDriftZonalMLAvg(iCell) = stokesDriftZonalMLAvg(iCell) &
-                                     + stokesDriftZonalWavenumber1(iCell)*integralFactor
-        stokesDriftMeridionalMLAvg(iCell) = stokesDriftMeridionalMLAvg(iCell) &
-                                          + stokesDriftMeridionalWavenumber1(iCell)*integralFactor
-        
-        integralFactor = (1.0_RKIND - exp(-2.0_RKIND*stokesDriftWavenumbers(2)*zMLD)) &
-                       / (2.0_RKIND*stokesDriftWavenumbers(2))
-        stokesDriftZonalMLAvg(iCell) = stokesDriftZonalMLAvg(iCell) &
-                                     + stokesDriftZonalWavenumber2(iCell)*integralFactor
-        stokesDriftMeridionalMLAvg(iCell) = stokesDriftMeridionalMLAvg(iCell) &
-                                          + stokesDriftMeridionalWavenumber2(iCell)*integralFactor
-        
-        integralFactor = (1.0_RKIND - exp(-2.0_RKIND*stokesDriftWavenumbers(3)*zMLD)) &
-                       / (2.0_RKIND*stokesDriftWavenumbers(3))
-        stokesDriftZonalMLAvg(iCell) = stokesDriftZonalMLAvg(iCell) &
-                                     + stokesDriftZonalWavenumber3(iCell)*integralFactor
-        stokesDriftMeridionalMLAvg(iCell) = stokesDriftMeridionalMLAvg(iCell) &
-                                          + stokesDriftMeridionalWavenumber3(iCell)*integralFactor
-        
-        if (config_cvmix_kpp_n_wavenumber_partitions > 3) then
-           integralFactor = (1.0_RKIND - exp(-2.0_RKIND*stokesDriftWavenumbers(4)*zMLD)) &
-                          / (2.0_RKIND*stokesDriftWavenumbers(4))
-           stokesDriftZonalMLAvg(iCell) = stokesDriftZonalMLAvg(iCell) &
-                                        + stokesDriftZonalWavenumber4(iCell)*integralFactor
-           stokesDriftMeridionalMLAvg(iCell) = stokesDriftMeridionalMLAvg(iCell) &
-                                             + stokesDriftMeridionalWavenumber4(iCell)*integralFactor
-        end if
-        
-        if (config_cvmix_kpp_n_wavenumber_partitions > 4) then
-           integralFactor = (1.0_RKIND - exp(-2.0_RKIND*stokesDriftWavenumbers(5)*zMLD)) &
-                          / (2.0_RKIND*stokesDriftWavenumbers(5))
-           stokesDriftZonalMLAvg(iCell) = stokesDriftZonalMLAvg(iCell) &
-                                        + stokesDriftZonalWavenumber5(iCell)*integralFactor
-           stokesDriftMeridionalMLAvg(iCell) = stokesDriftMeridionalMLAvg(iCell) &
-                                             + stokesDriftMeridionalWavenumber5(iCell)*integralFactor
-           
-           integralFactor = (1.0_RKIND - exp(-2.0_RKIND*stokesDriftWavenumbers(6)*zMLD)) &
-                          / (2.0_RKIND*stokesDriftWavenumbers(6))
-           stokesDriftZonalMLAvg(iCell) = stokesDriftZonalMLAvg(iCell) &
-                                        + stokesDriftZonalWavenumber6(iCell)*integralFactor
-           stokesDriftMeridionalMLAvg(iCell) = stokesDriftMeridionalMLAvg(iCell) &
-                                             + stokesDriftMeridionalWavenumber6(iCell)*integralFactor
-        end if
-
-        stokesDriftZonalMLAvg(iCell) = stokesDriftZonalMLAvg(iCell) / zMLD
-        stokesDriftMeridionalMLAvg(iCell) = stokesDriftMeridionalMLAvg(iCell) / zMLD
-
+      do i = 1,config_cvmix_kpp_n_wavenumber_partitions
+         integralFactor = (1.0_RKIND - exp(-2.0_RKIND*stokesDriftWavenumbers(i)*zMLD)) &
+                        / (2.0_RKIND*stokesDriftWavenumbers(i))
+         stokesDriftZonalMLAvg = stokesDriftZonalMLAvg + zonalWavenumberCoeff(i)*integralFactor
+         stokesDriftMeridionalMLAvg = stokesDriftMeridionalMLAvg + meridionalWavenumberCoeff(i)*integralFactor
       end do
+
+      stokesDriftZonalMLAvg = stokesDriftZonalMLAvg / zMLD
+      stokesDriftMeridionalMLAvg = stokesDriftMeridionalMLAvg / zMLD
 
       !-----------------------------------------------------------------
 

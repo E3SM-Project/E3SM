@@ -3252,18 +3252,6 @@
 			 description="Significant wave height is the average of the highest 1/3 of the waves"
                           packages="activeWavePKG"
 		/>
-		<var name="stokesDriftZonalMLAvg" type="real" dimensions="nCells Time" units="m s^{-1}"
-			 description="Zonal component of the wave-induced Stokes drift current, averaged over fraction of mixed layer."
-                          packages="activeWavePKG"
-		/>
-		<var name="stokesDriftMeridionalMLAvg" type="real" dimensions="nCells Time" units="m s^{-1}"
-			 description="Meridional component of the wave-induced Stokes drift current, averaged over fraction of mixed layer."
-                          packages="activeWavePKG"
-		/>
-		<var name="stokesDriftKPPEnhancementFactor" type="real" dimensions="nCells Time" units="unitless"
-			 description="KPP Langmuir turbulence enhancement factor"
-                          packages="activeWavePKG"
-		/>
 		<var name="stokesDriftZonalWavenumber1" type="real" dimensions="nCells Time" units="m s^{-1}"
 			 description="Zonal component of the partitioned wave-induced Stokes drift current. Wavenumbers 1-6 are used to recontruct the full depth-dependent Stokes drift profile"
                           packages="activeWavePKG"
