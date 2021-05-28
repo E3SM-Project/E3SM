@@ -155,7 +155,7 @@
                           sig, nk, zb, dmin, &
                           usspf
       use w3wdatmd, only: time, w3ndat, w3setw, wlv, va
-      use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn !SB, lamult
+      use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn, hs !SB, lamult
       use w3idatmd, only: inflags1, w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
@@ -193,7 +193,8 @@
                                     index_w2x_Sw_ustokes_wavenumber_3, index_w2x_Sw_vstokes_wavenumber_3, &
                                     index_w2x_Sw_ustokes_wavenumber_4, index_w2x_Sw_vstokes_wavenumber_4, &
                                     index_w2x_Sw_ustokes_wavenumber_5, index_w2x_Sw_vstokes_wavenumber_5, &
-                                    index_w2x_Sw_ustokes_wavenumber_6, index_w2x_Sw_vstokes_wavenumber_6
+                                    index_w2x_Sw_ustokes_wavenumber_6, index_w2x_Sw_vstokes_wavenumber_6, &
+                                    index_w2x_Sw_Hs
 
       use shr_sys_mod      , only : shr_sys_flush, shr_sys_abort
       use shr_kind_mod     , only : in=>shr_kind_in, r8=>shr_kind_r8, &
@@ -1205,6 +1206,9 @@ CONTAINS
          IX  = MAPSF(ISEA,1)
          IY  = MAPSF(ISEA,2)
          if (MAPSTA(IY,IX) .eq. 1) then
+
+             w2x_w%rattr(index_w2x_Sw_Hs,jsea) = HS(jsea)
+
              w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = USSP(jsea,1)
              w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = USSP(jsea,nk+1)
 

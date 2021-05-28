@@ -31,7 +31,7 @@ module ww3_cpl_indices
   integer :: index_w2x_Sw_ustokes_wavenumber_6
   integer :: index_w2x_Sw_vstokes_wavenumber_6
 
-  integer :: index_w2x_Sw_hstokes
+  integer :: index_w2x_Sw_Hs
 
 contains
 
@@ -55,6 +55,8 @@ contains
     index_x2w_So_v       = mct_avect_indexra(x2w,'So_v')       ! Meridional sea surface water velocity
     index_x2w_So_bldepth = mct_avect_indexra(x2w,'So_bldepth') ! Boundary layer depth
     index_x2w_So_ssh     = mct_avect_indexra(x2w,'So_ssh')     ! Sea surface height 
+
+    index_w2x_Sw_Hs = mct_avect_indexra(w2x,'Sw_Hs') ! Significant wave height
 
     index_w2x_Sw_ustokes_wavenumber_1 = mct_avect_indexra(w2x,'Sw_ustokes_wavenumber_1') ! partitioned Stokes drift u 1
     index_w2x_Sw_vstokes_wavenumber_1 = mct_avect_indexra(w2x,'Sw_vstokes_wavenumber_1') ! partitioned Stokes drift v 1
