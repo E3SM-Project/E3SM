@@ -44,6 +44,12 @@ module ocn_mesh
    !----------------------------------------------------------------------------
    !{{{
 
+   logical, public :: &
+      onSphere        ! this mesh is on the sphere
+
+   real (kind=RKIND), public :: &
+      sphereRadius    ! radius of sphere for spherical meshes
+
    integer, public :: &! mesh, array sizes
       nCellsAll, &! total number of local (owned+halo) cells in primary
       nEdgesAll, &! total number of local edge midpoints
@@ -213,6 +219,12 @@ contains
          maxDensityLocal, maxDensityGlobal ! temps for mesh density
 
       ! scalar pointers for retrieval, but convert to actual scalars in struct
+      logical, pointer :: &
+         on_a_sphere
+
+      real (kind=RKIND), pointer :: &
+         sphere_radius
+
       integer, pointer :: &! mesh dimensions
          nCellsTmp, &!
          nEdgesTmp, &!
@@ -271,6 +283,12 @@ contains
       ! many variables already initialized based on read of mesh file
       !-----------------------------------------------------------------
 
+      ! set all mesh properties
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', &
+                                           on_a_sphere)
+      call mpas_pool_get_config(meshPool, 'sphere_radius', &
+                                           sphere_radius)
+
       ! set all mesh dimensions
       call mpas_pool_get_dimension(meshPool, 'nCells', &
                                    nCellsTmp)
@@ -298,6 +316,8 @@ contains
                                    nVerticesArrayTmp)
 
       ! translate scalar pointers to scalars in new mesh structure
+      onSphere = on_a_sphere
+      sphereRadius = sphere_radius
       maxEdges = maxEdgesTmp
       maxEdges2 = maxEdges2Tmp
       vertexDegree = vertexDegreeTmp
@@ -576,6 +596,8 @@ contains
       !-----------------------------------------------------------------
 
          !$acc enter data copyin( &
+         !$acc                   onSphere,                 &
+         !$acc                   sphereRadius,             &
          !$acc                   nCellsAll,                &
          !$acc                   nEdgesAll,                &
          !$acc                   nVerticesAll,             &
@@ -711,7 +733,9 @@ contains
       ! First remove data from the device. Must remove components first,
       ! then remove the mesh type itself.
 
-      !$acc exit data delete(nCellsAll,         &
+      !$acc exit data delete(onSphere,          &
+      !$acc                  sphereRadius,      &
+      !$acc                  nCellsAll,         &
       !$acc                  nEdgesAll,         &
       !$acc                  nVerticesAll,      &
       !$acc                  nCellsOwned,       &
@@ -805,6 +829,8 @@ contains
       !$acc                  edgeAreaFractionOfCell)
 
       ! Reset all scalars to zero
+      onSphere  = .false.
+      sphereRadius = 0.0_RKIND
       nCellsAll = 0
       nEdgesAll = 0
       nVerticesAll = 0
@@ -1161,7 +1187,9 @@ contains
       ! NOTE: if we end up computing some fields on the device during
       !       init, the update must go the opposite direction (update host)
 
-      !$acc update device(nCellsAll,                &
+      !$acc update device(onSphere,                 &
+      !$acc               sphereRadius,             &
+      !$acc               nCellsAll,                &
       !$acc               nEdgesAll,                &
       !$acc               nVerticesAll,             &
       !$acc               nCellsOwned,              &

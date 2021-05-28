@@ -25,6 +25,7 @@ module ocn_tracer_advection_std
    use mpas_derived_types
    use mpas_log
    use ocn_mesh
+   use ocn_tracer_advection_shared
 
    implicit none
    private
@@ -407,6 +408,8 @@ module ocn_tracer_advection_std
          'Invalid value for vertical advection order, defaulting to 2nd order',&
          MPAS_LOG_WARN)
       end select ! vertAdvOrder
+
+   !--------------------------------------------------------------------
 
    end subroutine ocn_tracer_advection_std_init!}}}
 

@@ -25,11 +25,11 @@ module ocn_tracer_advection_mono
    use mpas_timer
 #endif
    use mpas_kind_types
-   use mpas_tracer_advection_helpers
 
    use ocn_constants
    use ocn_mesh
    use ocn_diagnostics_variables
+   use ocn_tracer_advection_shared
 
    implicit none
    private
