@@ -214,23 +214,25 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
+    // 1d view scalar, size (ncol)
     static constexpr int num_1d_scalar = 2;
-    static constexpr int num_2d_scalar = 1;
+    // 2d view packed, size (ncol, nlev_packs)
     static constexpr int num_2d_vector = 10;
 
-    uview_1d  precip_liq_surf;
-    uview_1d  precip_ice_surf;
+    uview_1d precip_liq_surf;
+    uview_1d precip_ice_surf;
+    uview_2d inv_exner;
+    uview_2d th_atm;
+    uview_2d cld_frac_l;
+    uview_2d cld_frac_i;
+    uview_2d cld_frac_r;
+    uview_2d dz;
+    uview_2d qv2qi_depos_tend;
+    uview_2d rho_qi;
+    uview_2d precip_liq_flux;
+    uview_2d precip_ice_flux;
+
     suview_2d col_location;
-    uview_2d  inv_exner;
-    uview_2d  th_atm;
-    uview_2d  cld_frac_l;
-    uview_2d  cld_frac_i;
-    uview_2d  cld_frac_r;
-    uview_2d  dz;
-    uview_2d  qv2qi_depos_tend;
-    uview_2d  rho_qi;
-    uview_2d  precip_liq_flux;
-    uview_2d  precip_ice_flux;
 
     Spack* wsm_data;
   };

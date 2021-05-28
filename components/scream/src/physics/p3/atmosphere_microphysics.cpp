@@ -100,9 +100,13 @@ int P3Microphysics::requested_buffer_size_in_bytes() const
   const Int nk_pack = ekat::npack<Spack>(m_num_levs);
 
   // Number of Reals needed by local views in the interface
-  const int interface_request = Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
-                                Buffer::num_2d_vector*m_num_cols*nk_pack*sizeof(Spack) +
-                                Buffer::num_2d_scalar*m_num_cols*3*sizeof(Real);
+  const int interface_request =
+      // 1d view scalar, size (ncol)
+      Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
+      // 2d view packed, size (ncol, nlev_packs)
+      Buffer::num_2d_vector*m_num_cols*nk_pack*sizeof(Spack) +
+      // 2d view scalar, size (ncol, 3)
+      m_num_cols*3*sizeof(Real);
 
   // Number of Reals needed by the WorkspaceManager passed to p3_main
   const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
