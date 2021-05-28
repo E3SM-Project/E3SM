@@ -1396,7 +1396,7 @@ contains
                 vmax_p_ptr(:),                      & ! IN 
                 km_decomp_p,                        & ! IN  
                 labilep_vr(c,:),                    & ! IN 
-                plant_pdemand_vr_ptr,               & ! INOUT
+                plant_pdemand_vr_ptr(pci:pcf,:),    & ! INOUT
                 col_plant_pdemand_vr(c,:),          & ! OUT 
                 adsorb_to_labilep_vr(c,:),          & ! OUT
                 fpi_p_vr(c,:),                      & ! OUT
