@@ -169,13 +169,15 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(minLevelEdgeBot, maxLevelEdgeTop, tend, edgeMask, w_dudzTopEdge)&
-      !$acc    private(k)
+      !$acc    private(k, kmin, kmax)
 #else
       !$omp do schedule(runtime) &
-      !$omp    private(k)
+      !$omp    private(k, kmin, kmax)
 #endif
       do iEdge = 1, nEdgesOwned
-      do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+      kmin = minLevelEdgeBot(iEdge)
+      kmax = maxLevelEdgeTop(iEdge)
+      do k = kmin, kmax
          tend(k,iEdge) = tend(k,iEdge) - edgeMask(k,iEdge)* &
                          0.5_RKIND*(w_dudzTopEdge(k  ,iEdge) + &
                                     w_dudzTopEdge(k+1,iEdge))
