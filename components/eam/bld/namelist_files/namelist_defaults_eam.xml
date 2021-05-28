@@ -371,6 +371,11 @@
 <prescribed_ozone_file chem="waccm_ghg">waccm_ozone_c121126.nc</prescribed_ozone_file>
 <prescribed_ozone_cycle_yr chem="waccm_ghg">0</prescribed_ozone_cycle_yr>
 
+<!-- SPA input files and defaults -->
+<spa_datapath>atm/cam/chem/spa </spa_datapath>
+<spa_file>spa_file_unified_and_clipped_c20210525.nc</spa_file>
+
+
 <!-- CAM-Chem aerosols (2000 climatology) -->
 <prescribed_aero_datapath  aer_model='bam'  >atm/cam/chem/trop_mozart_aero/aero</prescribed_aero_datapath>
 <prescribed_aero_file      aer_model='bam'  >aero_1.9x2.5_L26_2000clim_c091112.nc</prescribed_aero_file>
@@ -1232,6 +1237,7 @@
 <!-- Only for use with RRTMGP -->
 <do_aerosol_rad>              .true.   </do_aerosol_rad>
 <fixed_total_solar_irradiance>-1       </fixed_total_solar_irradiance>
+<do_spa_optics> .false.</do_spa_optics>
 
 <!-- ================================================================== -->
 <!-- Defaults for SE                                                    -->

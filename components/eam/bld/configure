@@ -1385,7 +1385,12 @@ if (!$prog_species) {
   $cfg_ref->set('chem_src_dir', $chem_src_dir);
 }
 
-if (($chem_pkg ne 'none') || ($prog_species)) {
+if ($chem_pkg eq 'spa'){
+    $chem_src_dir = "$cam_root/components/eam/src/chemistry/pp_none";
+    $cfg_ref->set('chem_src_dir', $chem_src_dir);
+}
+
+if ((($chem_pkg ne 'none') && ($chem_pkg ne 'spa')) || ($prog_species)) {
 
     # customize chemistry
     my $edit_chem_mech = $cfg_ref->get('edit_chem_mech');

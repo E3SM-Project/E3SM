@@ -334,6 +334,8 @@ end subroutine micro_p3_readnl
     use cam_history_support, only: add_hist_coord 
     use micro_p3_utils, only: micro_p3_utils_init
     use read_spa_data,  only: ccn_names
+    use read_spa_data,  only: is_spa_active
+    use shr_log_mod,    only: errMsg => shr_log_errMsg
 
     type(physics_buffer_desc),  pointer :: pbuf2d(:,:)
     integer        :: m, mm
@@ -343,6 +345,12 @@ end subroutine micro_p3_readnl
     logical :: history_budget       ! Output tendencies and state variables for CAM4
     integer :: budget_histfile      ! output history file number for budget fields
                                    ! temperature, water vapor, cloud ice and cloud
+
+    !sanity check for spa
+    !spa must be active if do_prescribed_CCN is true
+    if(do_prescribed_CCN .and. .not. is_spa_active) then
+       call endrun('SPA must be active if do_prescribed_CCN is true, '//errmsg(__FILE__,__LINE__))
+    endif
 
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
              cpliq,tmelt,pi,iulog,masterproc)

@@ -3850,6 +3850,12 @@ the value is less than 0
 Default: -1
 </entry>
 
+<entry id="do_spa_optics" type="logical" category="radiation"
+       group="radiation_nl" valid_values=".true., .false." >
+Specify if optics are read in from spa ncdf file.
+Default: FALSE
+</entry>
+
 <entry id="conv_water_in_rad" type="integer" category="radiation"
        group="phys_ctl_nl" valid_values="0,1,2" >
 Convective water used in radiation?

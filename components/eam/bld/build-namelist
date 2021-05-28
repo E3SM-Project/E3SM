@@ -706,6 +706,8 @@ my $chem = $cfg->get('chem');
 my $waccm_chem = ($chem =~ "waccm_");
 my $waccm_phys = $cfg->get('waccm_phys');
 
+my $spa_chem = ($chem eq "spa");
+
 my $prog_species = $cfg->get('prog_species');
 my $prog_ghg1    = ($chem =~ "trop_mozart" or $chem =~ "trop_strat" or $chem =~ "ghg" or $prog_species =~ "GHG");
 my $prog_ghg2    = ($chem =~ "ghg" or $prog_species =~ "GHG");
@@ -746,7 +748,7 @@ if ($rad_volcaero){
 
 # Print conservation errors
 # Turn this off for PERGRO runs or for WACCM runs
-if ($cfg->get('pergro') or ($chem ne 'none')) {
+if ($cfg->get('pergro') or (($chem ne 'none') && ($chem ne 'spa'))) {
     add_default($nl, 'print_energy_errors', 'val'=>'.false.');
 }
 
@@ -755,8 +757,17 @@ if ($cfg->get('debug')) {
     add_default($nl, 'state_debug_checks', 'val'=> '.true.')
 }
 
+if ( $spa_chem) {
+    add_default($nl, 'spa_datapath', 'val' =>$nl->get_value('spa_datapath'));
+    add_default($nl, 'spa_file', 'val' => $nl->get_value('spa_input_file'));
+    add_default($nl, 'spa_type', 'val' => 'CYCLICAL');
+    add_default($nl, 'spa_cycle_yr', 'val' => 1);
+    add_default($nl, 'do_prescribed_ccn', 'val' => '.true.');
+    add_default($nl, 'do_spa_optics', 'val' => '.true.');
+}
+
 # Chemistry deposition lists
-if ( ($chem ne 'none') or ( $prog_species ) ){
+if ( (($chem ne 'none') && ($chem ne 'spa')) or ( $prog_species ) ){
     my $chem_proc_src = $cfg->get('chem_proc_src');
     my $chem_src_dir = $cfg->get('chem_src_dir');
 
@@ -1085,7 +1096,7 @@ if (defined $prescribed_aero_model) {
 }
 else {
     $prescribed_aero_model = 'none';
-    if ($chem eq 'none' or $chem eq 'waccm_ghg' or $chem eq 'super_fast_llnl' or $chem eq 'waccm_mozart' or $chem eq 'waccm_mozart_sulfur') {
+    if ($chem eq 'none' or $chem eq 'spa' or $chem eq 'waccm_ghg' or $chem eq 'super_fast_llnl' or $chem eq 'waccm_mozart' or $chem eq 'waccm_mozart_sulfur') {
 	# If no chemistry then there must be prescribed aerosols unless physics
 	# package is adiabatic or ideal.
 	if ($phys eq 'default') {
@@ -3715,6 +3726,9 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_ipdf_call_placement');
 
 }
+
+#RRTMGP
+add_default($nl, 'do_spa_optics');
 
 # MMF Microphysics scheme
 add_default($nl, 'MMF_microphysics_scheme');
