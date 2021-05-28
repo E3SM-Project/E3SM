@@ -90,15 +90,22 @@ def run_diag(parameter):
                 utils.general.save_ncfiles(
                     parameter.current_set,
                     test_cmean,
-                    test_amplitude,
-                    test_maxtime,
+                    ref_cmean,
+                    None,
                     parameter,
                 )
                 utils.general.save_ncfiles(
                     parameter.current_set,
-                    ref_cmean,
+                    test_amplitude,
                     ref_amplitude,
+                    None,
+                    parameter,
+                )
+                utils.general.save_ncfiles(
+                    parameter.current_set,
+                    test_maxtime,
                     ref_maxtime,
+                    None,
                     parameter,
                 )
 

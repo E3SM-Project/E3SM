@@ -3,6 +3,7 @@ from __future__ import print_function
 import copy
 import errno
 import os
+from pathlib import Path
 
 import cdms2
 import cdutil
@@ -321,22 +322,32 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
         pth = get_output_dir(set_num, parameter)
 
         # Save test file
-        test.id = parameter.var_id
+        if test.id.startswith("variable_"):
+            test.id = parameter.var_id
         test_pth = os.path.join(pth, parameter.output_file + "_test.nc")
-        with cdms2.open(test_pth, "w+") as file_test:
+
+        cdms_arg = "w"
+
+        if Path(test_pth).is_file():
+            cdms_arg = "a"
+
+        with cdms2.open(test_pth, cdms_arg) as file_test:
             file_test.write(test)
 
         # Save reference file
-        ref.id = parameter.var_id
+        if ref.id.startswith("variable_"):
+            ref.id = parameter.var_id
         ref_pth = os.path.join(pth, parameter.output_file + "_ref.nc")
-        with cdms2.open(ref_pth, "w+") as file_ref:
+        with cdms2.open(ref_pth, cdms_arg) as file_ref:
             file_ref.write(ref)
 
         # Save difference file
-        diff.id = parameter.var_id + "(test - reference)"
-        diff_pth = os.path.join(pth, parameter.output_file + "_diff.nc")
-        with cdms2.open(diff_pth, "w+") as file_diff:
-            file_diff.write(diff)
+        if diff is not None:
+            if diff.id.startswith("variable_"):
+                diff.id = parameter.var_id + "_diff"
+            diff_pth = os.path.join(pth, parameter.output_file + "_diff.nc")
+            with cdms2.open(diff_pth, cdms_arg) as file_diff:
+                file_diff.write(diff)
 
 
 def get_output_dir(set_num, parameter, ignore_container=False):

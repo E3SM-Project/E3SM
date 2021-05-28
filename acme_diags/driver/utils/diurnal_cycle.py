@@ -130,24 +130,24 @@ def composite_diurnal_cycle(var, season, fft=True):
         # Save phase, amplitude, and mean for the first homonic,
         amplitude = MV2.zeros((nlat, nlon))
         amplitude[:, :] = maxvalue[0]
-        amplitude.id = var.id + "_diurnal_amplitude"
-        amplitude.longname = "Amplitude of diurnal cycle of " + var.id
+        amplitude.id = "PRECT_diurnal_amplitude"
+        amplitude.longname = "Amplitude of diurnal cycle of PRECT"
         amplitude.units = var.units
         amplitude.setAxis(0, lat)
         amplitude.setAxis(1, lon)
 
         maxtime = MV2.zeros((nlat, nlon))
         maxtime[:, :] = tmax[0]
-        maxtime.id = var.id + "_diurnal_phase"
-        maxtime.longname = "Phase of diurnal cycle of " + var.id
+        maxtime.id = "PRECT_diurnal_phase"
+        maxtime.longname = "Phase of diurnal cycle of PRECT"
         maxtime.units = "hour"
         maxtime.setAxis(0, lat)
         maxtime.setAxis(1, lon)
 
         cmean = MV2.zeros((nlat, nlon))
         cmean[:, :] = cycmean
-        cmean.id = var.id + "_diurnal_cycmean"
-        cmean.longname = "Mean of diurnal cycle of " + var.id
+        cmean.id = "PRECT_diurnal_cycmean"
+        cmean.longname = "Mean of diurnal cycle of PRECT"
         cmean.units = var.units
         cmean.setAxis(0, lat)
         cmean.setAxis(1, lon)
