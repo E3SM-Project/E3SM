@@ -110,8 +110,8 @@ data_files = [
 
 setup(
     name="e3sm_diags",
-    version="2.4.0",
-    author="Chengzhu (Jill) Zhang, Ryan Forsyth, Chris Golaz and Zeshawn Shaheen",
+    version="2.5.0rc1",
+    author="Chengzhu (Jill) Zhang, Tom Vo, Ryan Forsyth, Chris Golaz and Zeshawn Shaheen",
     author_email="zhang40@llnl.gov",
     description="E3SM Diagnostics",
     scripts=["acme_diags/acme_diags_driver.py"],

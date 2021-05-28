@@ -19,5 +19,5 @@ dependencies:
   - pip=21.0.1
   - python=3.7.10
   # Additional
-  - e3sm_diags=2.4.0
+  - e3sm_diags=2.5.0rc1
 prefix: /opt/miniconda3/envs/e3sm_diags_env
