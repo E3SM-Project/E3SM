@@ -3248,12 +3248,20 @@
 			 description="Meridional component of the wave-induced Stokes drift current."
                           packages="activeWavePKG"
 		/>
+		<var name="waveSignificantWaveHeight" type="real" dimensions="nCells Time" units="m"
+			 description="Significant wave height is the average of the highest 1/3 of the waves"
+                          packages="activeWavePKG"
+		/>
 		<var name="waveStokesDriftZonalMLAvg" type="real" dimensions="nCells Time" units="m s^{-1}"
 			 description="Zonal component of the wave-induced Stokes drift current, averaged over fraction of mixed layer."
                           packages="activeWavePKG"
 		/>
 		<var name="waveStokesDriftMeridionalMLAvg" type="real" dimensions="nCells Time" units="m s^{-1}"
 			 description="Meridional component of the wave-induced Stokes drift current, averaged over fraction of mixed layer."
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftKPPEnhancementFactor" type="real" dimensions="nCells Time" units="unitless"
+			 description="KPP Langmuir turbulence enhancement factor"
                           packages="activeWavePKG"
 		/>
 		<var name="waveStokesDriftZonalWavenumber1" type="real" dimensions="nCells Time" units="m s^{-1}"
