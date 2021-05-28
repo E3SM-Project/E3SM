@@ -285,34 +285,27 @@ void Functions<S,D>::shoc_main_internal(
 
 template<typename S, typename D>
 Int Functions<S,D>::shoc_main(
-  const Int&               shcol,        // Number of SHOC columns in the array
-  const Int&               nlev,         // Number of levels
-  const Int&               nlevi,        // Number of levels on interface grid
-  const Int&               npbl,         // Maximum number of levels in pbl from surface
-  const Int&               nadv,         // Number of times to loop SHOC
-  const Int&               num_qtracers, // Number of tracers
-  const Scalar&            dtime,        // SHOC timestep [s]
-  const SHOCInput&         shoc_input,
-  const SHOCInputOutput&   shoc_input_output,
-  const SHOCOutput&        shoc_output,
-  const SHOCHistoryOutput& shoc_history_output)
+  const Int&               shcol,               // Number of SHOC columns in the array
+  const Int&               nlev,                // Number of levels
+  const Int&               nlevi,               // Number of levels on interface grid
+  const Int&               npbl,                // Maximum number of levels in pbl from surface
+  const Int&               nadv,                // Number of times to loop SHOC
+  const Int&               num_qtracers,        // Number of tracers
+  const Scalar&            dtime,               // SHOC timestep [s]
+  const WorkspaceMgr&      workspace_mgr,       // WorkspaceManager for local variables
+  const SHOCInput&         shoc_input,          // Input
+  const SHOCInputOutput&   shoc_input_output,   // Input/Output
+  const SHOCOutput&        shoc_output,         // Output
+  const SHOCHistoryOutput& shoc_history_output) // Output (diagnostic)
 {
   using ExeSpace = typename KT::ExeSpace;
-
-  // Number of packs for nlev, nlevi
-  const auto nlev_packs = ekat::npack<Spack>(nlev);
-  const auto nlevi_packs = ekat::npack<Spack>(nlevi);
-
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
-
-  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
-  const int n_trac_slots = ekat::npack<Spack>(num_qtracers+3)*Spack::n;
-  ekat::WorkspaceManager<Spack, Device> workspace_mgr(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
 
   // Start timer
   auto start = std::chrono::steady_clock::now();
 
   // SHOC main loop
+  const auto nlev_packs = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 

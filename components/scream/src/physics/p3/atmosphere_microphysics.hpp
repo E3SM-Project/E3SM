@@ -27,11 +27,17 @@ namespace scream
   using Smask        = typename P3F::Smask;
   using Pack         = ekat::Pack<Real,Spack::n>;
   using PF           = scream::PhysicsFunctions<DefaultDevice>;
+  using KT           = ekat::KokkosTypes<DefaultDevice>;
+  using WSM          = ekat::WorkspaceManager<Spack, KT::Device>;
 
   using view_1d  = typename P3F::view_1d<Real>;
   using view_2d  = typename P3F::view_2d<Spack>;
   using view_2d_const  = typename P3F::view_2d<const Spack>;
   using sview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
+
+  using uview_1d  = Unmanaged<view_1d>;
+  using uview_2d  = Unmanaged<view_2d>;
+  using suview_2d = Unmanaged<sview_2d>;
 
 class P3Microphysics : public AtmosphereProcess
 {
@@ -206,6 +212,31 @@ public:
   }; // p3_postamble
   /* --------------------------------------------------------------------------------------------*/
 
+  // Structure for storing local variables initialized using the ATMBufferManager
+  struct Buffer {
+    // 1d view scalar, size (ncol)
+    static constexpr int num_1d_scalar = 2;
+    // 2d view packed, size (ncol, nlev_packs)
+    static constexpr int num_2d_vector = 10;
+
+    uview_1d precip_liq_surf;
+    uview_1d precip_ice_surf;
+    uview_2d inv_exner;
+    uview_2d th_atm;
+    uview_2d cld_frac_l;
+    uview_2d cld_frac_i;
+    uview_2d cld_frac_r;
+    uview_2d dz;
+    uview_2d qv2qi_depos_tend;
+    uview_2d rho_qi;
+    uview_2d precip_liq_flux;
+    uview_2d precip_ice_flux;
+
+    suview_2d col_location;
+
+    Spack* wsm_data;
+  };
+
 protected:
 
   // The three main overrides for the subcomponent
@@ -217,6 +248,12 @@ protected:
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
 
+  // Computes total number of Reals needed for local variables
+  int requested_buffer_size_in_bytes() const;
+
+  // Set local variables using memory provided by
+  // the ATMBufferManager
+  void init_buffers(const ATMBufferManager &buffer_manager);
 
   std::map<std::string,const_field_type>  m_p3_fields_in;
   std::map<std::string,field_type>        m_p3_fields_out;
@@ -244,6 +281,9 @@ protected:
   Int m_num_cols;
   Int m_num_levs;
   Int m_nk_pack;
+
+  // Struct which contains local variables
+  Buffer m_buffer;
 
   // Store the structures for each arguement to p3_main;
   P3F::P3PrognosticState   prog_state;

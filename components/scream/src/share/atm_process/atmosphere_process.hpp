@@ -2,6 +2,7 @@
 #define SCREAM_ATMOSPHERE_PROCESS_HPP
 
 #include "share/atm_process/atmosphere_process_utils.hpp"
+#include "share/atm_process/ATMBufferManager.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/field/field_request.hpp"
@@ -210,6 +211,13 @@ public:
     }
     return false;
   }
+
+  // Computes total number of Reals needed for local variables
+  virtual int requested_buffer_size_in_bytes () const { return 0; }
+
+  // Set local variables using memory provided by
+  // the ATMBufferManager
+  virtual void init_buffers(const ATMBufferManager& /*buffer_manager*/) {}
 
 protected:
 

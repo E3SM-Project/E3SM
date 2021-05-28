@@ -3240,6 +3240,7 @@ Int p3_main_f(
   using P3F  = Functions<Real, DefaultDevice>;
 
   using Spack      = typename P3F::Spack;
+  using KT         = typename P3F::KT;
   using view_2d    = typename P3F::view_2d<Spack>;
   using sview_1d   = typename P3F::view_1d<Real>;
   using sview_2d   = typename P3F::view_2d<Real>;
@@ -3351,8 +3352,14 @@ Int p3_main_f(
                                        do_predict_nc, do_prescribed_CCN, col_location_d};
   P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d,
                                   vap_ice_exchange_d};
+
+  // Create local workspace
+  const Int nk_pack = ekat::npack<Spack>(nk);
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(nj, nk_pack);
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nk_pack, 52, policy);
+
   auto elapsed_microsec = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-                                       history_only, nj, nk);
+                                       history_only, workspace_mgr, nj, nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
     precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_liq_surf_d(i);

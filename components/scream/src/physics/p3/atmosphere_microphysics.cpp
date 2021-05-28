@@ -95,6 +95,83 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 }
 
 // =========================================================================================
+int P3Microphysics::requested_buffer_size_in_bytes() const
+{
+  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
+
+  // Number of Reals needed by local views in the interface
+  const int interface_request =
+      // 1d view scalar, size (ncol)
+      Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
+      // 2d view packed, size (ncol, nlev_packs)
+      Buffer::num_2d_vector*m_num_cols*nk_pack*sizeof(Spack) +
+      // 2d view scalar, size (ncol, 3)
+      m_num_cols*3*sizeof(Real);
+
+  // Number of Reals needed by the WorkspaceManager passed to p3_main
+  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  const int wsm_request   = WSM::get_total_bytes_needed(nk_pack, 52, policy);
+
+  return interface_request + wsm_request;
+}
+
+// =========================================================================================
+void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
+{
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
+
+  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+
+  // 1d scalar views
+  m_buffer.precip_liq_surf = decltype(m_buffer.precip_liq_surf)(mem, m_num_cols);
+  mem += m_buffer.precip_liq_surf.size();
+  m_buffer.precip_ice_surf = decltype(m_buffer.precip_ice_surf)(mem, m_num_cols);
+  mem += m_buffer.precip_ice_surf.size();
+
+  // 2d scalar views
+  m_buffer.col_location = decltype(m_buffer.col_location)(mem, m_num_cols, 3);
+  mem += m_buffer.col_location.size();
+
+  Spack* s_mem = reinterpret_cast<Spack*>(mem);
+
+  // 2d packed views
+  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
+
+  m_buffer.inv_exner = decltype(m_buffer.inv_exner)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.inv_exner.size();
+  m_buffer.th_atm = decltype(m_buffer.th_atm)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.th_atm.size();
+  m_buffer.cld_frac_l = decltype(m_buffer.cld_frac_l)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.cld_frac_l.size();
+  m_buffer.cld_frac_i = decltype(m_buffer.cld_frac_i)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.cld_frac_i.size();
+  m_buffer.cld_frac_r = decltype(m_buffer.cld_frac_r)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.cld_frac_r.size();
+  m_buffer.dz = decltype(m_buffer.dz)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.dz.size();
+  m_buffer.qv2qi_depos_tend = decltype(m_buffer.qv2qi_depos_tend)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.qv2qi_depos_tend.size();
+  m_buffer.rho_qi = decltype(m_buffer.rho_qi)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.rho_qi.size();
+  m_buffer.precip_liq_flux = decltype(m_buffer.precip_liq_flux)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.precip_liq_flux.size();
+  m_buffer.precip_ice_flux = decltype(m_buffer.precip_ice_flux)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.precip_ice_flux.size();
+
+  // WSM data
+  m_buffer.wsm_data = s_mem;
+
+  // Compute workspace manager size to check used memory
+  // vs. requested memory
+  const auto policy  = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  const int wsm_size = WSM::get_total_bytes_needed(nk_pack, 52, policy)/sizeof(Spack);
+  s_mem += wsm_size;
+
+  int used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
+  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for P3Microphysics.");
+}
+
+// =========================================================================================
 void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
@@ -112,12 +189,15 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   const  auto& cld_frac_t     = m_p3_fields_in["cldfrac_tot"].get_reshaped_view<const Pack**>();
   const  auto& zi             = m_p3_fields_in["z_int"].get_reshaped_view<const Pack**>();
   const  auto& qv             = m_p3_fields_out["qv"].get_reshaped_view<Pack**>();
-  view_2d inv_exner("inv_exner",m_num_cols,nk_pack);
-  view_2d th_atm("th_atm",m_num_cols,nk_pack);
-  view_2d cld_frac_l("cld_frac_l",m_num_cols,nk_pack);
-  view_2d cld_frac_i("cld_frac_i",m_num_cols,nk_pack);
-  view_2d cld_frac_r("cld_frac_r",m_num_cols,nk_pack);
-  view_2d dz("dz",m_num_cols,nk_pack);
+
+  // Alias local variables from temporary buffer
+  auto inv_exner  = m_buffer.inv_exner;
+  auto th_atm     = m_buffer.th_atm;
+  auto cld_frac_l = m_buffer.cld_frac_l;
+  auto cld_frac_i = m_buffer.cld_frac_i;
+  auto cld_frac_r = m_buffer.cld_frac_r;
+  auto dz         = m_buffer.dz;
+
   // -- Set values for the post-amble structure
   p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pseudo_density,T_atm,cld_frac_t,qv,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
@@ -149,22 +229,15 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   diag_inputs.dz              = p3_preproc.dz;
   diag_inputs.inv_exner       = p3_preproc.inv_exner;
   // --Diagnostic Outputs
-  view_1d precip_liq_surf("precip_liq_surf",m_num_cols);
-  view_1d precip_ice_surf("precip_ice_surf",m_num_cols);
-  view_2d qv2qi_depos_tend("qv2qi_depos_tend",m_num_cols,m_num_levs);
-  view_2d rho_qi("rho_qi",m_num_cols,m_num_levs);
-  view_2d precip_liq_flux("precip_liq_flux",m_num_cols,m_num_levs);
-  view_2d precip_ice_flux("precip_ice_flux",m_num_cols,m_num_levs);
-
   diag_outputs.diag_eff_radius_qc = m_p3_fields_out["eff_radius_qc"].get_reshaped_view<Pack**>();
   diag_outputs.diag_eff_radius_qi = m_p3_fields_out["eff_radius_qi"].get_reshaped_view<Pack**>();
 
-  diag_outputs.precip_liq_surf  = precip_liq_surf; 
-  diag_outputs.precip_ice_surf  = precip_ice_surf; 
-  diag_outputs.qv2qi_depos_tend = qv2qi_depos_tend; 
-  diag_outputs.rho_qi           = rho_qi;
-  diag_outputs.precip_liq_flux  = precip_liq_flux;
-  diag_outputs.precip_ice_flux  = precip_ice_flux;
+  diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf;
+  diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf;
+  diag_outputs.qv2qi_depos_tend = m_buffer.qv2qi_depos_tend;
+  diag_outputs.rho_qi           = m_buffer.rho_qi;
+  diag_outputs.precip_liq_flux  = m_buffer.precip_liq_flux;
+  diag_outputs.precip_ice_flux  = m_buffer.precip_ice_flux;
   // --Infrastructure
   // dt is passed as an argument to run_impl
   infrastructure.it  = 0;
@@ -174,8 +247,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   infrastructure.kte = m_num_levs-1;
   infrastructure.predictNc = true;     // Hard-coded for now, TODO: make this a runtime option 
   infrastructure.prescribedCCN = true; // Hard-coded for now, TODO: make this a runtime option
-  sview_2d col_location("col_location", m_num_cols, 3);
-  infrastructure.col_location = col_location; // TODO: Initialize this here and now when P3 has access to lat/lon for each column.
+  infrastructure.col_location = m_buffer.col_location; // TODO: Initialize this here and now when P3 has access to lat/lon for each column.
   // --History Only
   history_only.liq_ice_exchange = m_p3_fields_out["micro_liq_ice_exchange"].get_reshaped_view<Pack**>();
   history_only.vap_liq_exchange = m_p3_fields_out["micro_vap_liq_exchange"].get_reshaped_view<Pack**>();
@@ -216,9 +288,14 @@ void P3Microphysics::run_impl (const Real dt)
   infrastructure.dt = dt;
   infrastructure.it++;
 
+  // WorkspaceManager for internal local variables
+  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(m_buffer.wsm_data, nk_pack, 52, policy);
+
   // Run p3 main
   P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-                                       history_only, m_num_cols, m_num_levs);
+               history_only, workspace_mgr, m_num_cols, m_num_levs);
 
   // Conduct the post-processing of the p3_main output.
   Kokkos::parallel_for(

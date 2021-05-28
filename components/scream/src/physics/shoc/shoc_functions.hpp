@@ -66,7 +66,8 @@ struct Functions
 
   using MemberType = typename KT::MemberType;
 
-  using Workspace       = typename ekat::WorkspaceManager<Spack,  Device>::Workspace;
+  using WorkspaceMgr = typename ekat::WorkspaceManager<Spack,  Device>;
+  using Workspace    = typename WorkspaceMgr::Workspace;
 
   // This struct stores input views for shoc_main.
   struct SHOCInput {
@@ -620,6 +621,7 @@ struct Functions
     const Int&               nadv,                 // Number of times to loop SHOC
     const Int&               num_q_tracers,        // Number of tracers
     const Scalar&            dtime,                // SHOC timestep [s]
+    const WorkspaceMgr&      workspace_mgr,        // WorkspaceManager for local variables
     const SHOCInput&         shoc_input,           // Input
     const SHOCInputOutput&   shoc_input_output,    // Input/Output
     const SHOCOutput&        shoc_output,          // Output

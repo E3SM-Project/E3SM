@@ -9,6 +9,7 @@
 #include "share/scream_types.hpp"
 #include "share/io/output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/atm_process/ATMBufferManager.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
@@ -119,6 +120,8 @@ protected:
   ekat::ParameterList                                 m_atm_params;
 
   OutputManager                                       m_output_manager;
+
+  ATMBufferManager                                    memory_buffer;
 
   // Surface coupling stuff
   std::shared_ptr<SurfaceCoupling>            m_surface_coupling;

@@ -235,4 +235,14 @@ process_required_field (const FieldRequest& req) {
   }
 }
 
+void AtmosphereProcessGroup::initialize_atm_memory_buffer(ATMBufferManager &memory_buffer) {
+  for (auto& atm_proc : m_atm_processes) {
+    memory_buffer.request_bytes(atm_proc->requested_buffer_size_in_bytes());
+  }
+  memory_buffer.allocate();
+  for (auto& atm_proc : m_atm_processes) {
+    atm_proc->init_buffers(memory_buffer);
+  }
+}
+
 } // namespace scream

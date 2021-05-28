@@ -63,6 +63,9 @@ public:
 
   ScheduleType get_schedule_type () const { return m_group_schedule_type; }
 
+  // Initialize memory buffer for each process
+  void initialize_atm_memory_buffer (ATMBufferManager& memory_buffer);
+
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).

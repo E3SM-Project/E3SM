@@ -6,6 +6,7 @@
 #include "physics/shoc/shoc_main_impl.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
+#include "share/atm_process/ATMBufferManager.hpp"
 
 #include <string>
 
@@ -39,6 +40,13 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using sview_2d             = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
   using view_3d              = typename SHF::view_3d<Spack>;
   using view_3d_const        = typename SHF::view_3d<const Spack>;
+
+  using WSM = ekat::WorkspaceManager<Spack, KT::Device>;
+
+  template<typename ScalarT>
+  using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
+  template<typename ScalarT>
+  using uview_2d = Unmanaged<typename KT::template view_2d<ScalarT>>;
 
 public:
   using field_type       = Field<      Real>;
@@ -331,6 +339,54 @@ public:
   }; // SHOCPostprocess
   /* --------------------------------------------------------------------------------------------*/
 
+  // Structure for storing local variables initialized using the ATMBufferManager
+  struct Buffer {
+    static constexpr int num_1d_scalar     = 5;
+    static constexpr int num_2d_vector_mid = 18;
+    static constexpr int num_2d_vector_int = 11;
+    static constexpr int num_2d_vector_tr  = 1;
+
+    uview_1d<Real> cell_length;
+    uview_1d<Real> wpthlp_sfc;
+    uview_1d<Real> wprtp_sfc;
+    uview_1d<Real> upwp_sfc;
+    uview_1d<Real> vpwp_sfc;
+
+    uview_2d<Spack> rrho;
+    uview_2d<Spack> rrho_i;
+    uview_2d<Spack> thv;
+    uview_2d<Spack> dz;
+    uview_2d<Spack> zt_grid;
+    uview_2d<Spack> zi_grid;
+    uview_2d<Spack> wtracer_sfc;
+    uview_2d<Spack> wm_zt;
+    uview_2d<Spack> exner;
+    uview_2d<Spack> thlm;
+    uview_2d<Spack> qw;
+    uview_2d<Spack> s;
+    uview_2d<Spack> qv_copy;
+    uview_2d<Spack> qc_copy;
+    uview_2d<Spack> tke_copy;
+    uview_2d<Spack> shoc_ql2;
+    uview_2d<Spack> shoc_mix;
+    uview_2d<Spack> isotropy;
+    uview_2d<Spack> w_sec;
+    uview_2d<Spack> thl_sec;
+    uview_2d<Spack> qw_sec;
+    uview_2d<Spack> qwthl_sec;
+    uview_2d<Spack> wthl_sec;
+    uview_2d<Spack> wqw_sec;
+    uview_2d<Spack> wtke_sec;
+    uview_2d<Spack> uw_sec;
+    uview_2d<Spack> vw_sec;
+    uview_2d<Spack> w3;
+    uview_2d<Spack> wqls_sec;
+    uview_2d<Spack> brunt;
+
+    Spack* wsm_data;
+  };
+
+
 protected:
 
   // The three main interfaces for the subcomponent
@@ -341,6 +397,13 @@ protected:
   // Setting the fields in the atmospheric process
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
+
+  // Computes total number of Reals needed for local variables
+  int requested_buffer_size_in_bytes() const;
+
+  // Set local variables using memory provided by
+  // the ATMBufferManager
+  void init_buffers(const ATMBufferManager &buffer_manager);
 
   std::map<std::string,const_field_type>  m_shoc_fields_in;
   std::map<std::string,field_type>        m_shoc_fields_out;
@@ -359,6 +422,9 @@ protected:
   Int hdtime;
 
   KokkosTypes<DefaultDevice>::view_1d<double> m_cell_area;
+
+  // Struct which contains local variables
+  Buffer m_buffer;
 
   // Store the structures for each arguement to shoc_main;
   SHF::SHOCInput input;
