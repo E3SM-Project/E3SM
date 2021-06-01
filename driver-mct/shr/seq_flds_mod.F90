@@ -2405,22 +2405,6 @@ contains
     ! wav->ocn and ocn->wav
     !-----------------------------
 
-    call seq_flds_add(w2x_states,'Sw_ustokes')
-    call seq_flds_add(x2o_states,'Sw_ustokes')
-    longname = 'Stokes drift u component'
-    stdname  = 'wave_model_stokes_drift_eastward_velocity'
-    units    = 'm/s'
-    attname  = 'Sw_ustokes'
-    call metadata_set(attname, longname, stdname, units)
-
-    call seq_flds_add(w2x_states,'Sw_vstokes')
-    call seq_flds_add(x2o_states,'Sw_vstokes')
-    longname = 'Stokes drift v component'
-    stdname  = 'wave_model_stokes_drift_northward_velocity'
-    units    = 'm/s'
-    attname  = 'Sw_vstokes'
-    call metadata_set(attname, longname, stdname, units)
-
     call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_1')
     call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_1')
     longname = 'Partitioned Stokes drift u component, wavenumber 1'
