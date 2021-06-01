@@ -117,14 +117,14 @@ struct Constants
 // used to determine the volume mixing ratio for each gas.
 template <typename Scalar>
 const std::map<std::string,Scalar> Constants<Scalar>::gas_mol_weights = {
-  {"H2O", Constants<Scalar>::MWH2O},
-  {"CO2", 44.0095},
-  {"O3" , 47.9982},
-  {"N2O", 44.0128},
-  {"CO" , 28.0101},
-  {"CH4", 16.04246},
-  {"O2" , 31.998},
-  {"N2" , 28.0134}
+  {"h2o", Constants<Scalar>::MWH2O},
+  {"co2", 44.0095},
+  {"o3" , 47.9982},
+  {"n2o", 44.0128},
+  {"co" , 28.0101},
+  {"ch4", 16.04246},
+  {"o2" , 31.998},
+  {"n2" , 28.0134}
 };
 
 template <typename Scalar>

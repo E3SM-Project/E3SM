@@ -129,6 +129,18 @@ struct PhysicsFunctions
   static ScalarT calculate_dz (const ScalarT& pseudo_density, const ScalarT& p_mid,
                                const ScalarT& T_mid, const ScalarT& qv);
 
+  //-----------------------------------------------------------------------------------------------//
+  // Calculate the volume mixing ratio given the wet mass mixing ratio:
+  //   X_vmr = X_mmr / (1 - X_mmr) * mol_weight_air/mol_weight_X
+  // where
+  //   X_vmr          is the volume mixing ratio X
+  //   X_mmr          is the mass mixing ratio of X
+  //   mol_weight_air is the molecular weight of dry air
+  //   mol_weight_X   is the molecular weight of X
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_vmr_from_mmr(const std::string& gas_name, const ScalarT& mmr);
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
   // ---------------------------------------------------------------- //
@@ -218,6 +230,13 @@ struct PhysicsFunctions
                             const InputProviderQ& qv,
                             const view_1d<ScalarT>& dz);
 
+  template<typename ScalarT, typename InputProviderX>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_vmr_from_mmr(const MemberType& team,
+                                     const std::string gas_name,
+                                     const InputProviderX& mmr,
+                                     const view_1d<ScalarT>& vmr);
+
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer interface height from the vertical layer thicknesses:
   //   z_int = int_0^z(dz)
@@ -234,7 +253,7 @@ struct PhysicsFunctions
                                const Real z_surf,
                                const view_1d<ScalarT>& z_int);
 
-
+  
 
 }; // struct PhysicsFunctions
 

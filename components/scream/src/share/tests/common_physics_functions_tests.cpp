@@ -81,6 +81,7 @@ void run(std::mt19937_64& engine)
   static constexpr auto Rd       = PC::RD;
   static constexpr auto inv_cp   = PC::INV_CP;
   static constexpr auto g        = PC::gravit;
+  static constexpr auto ep_2     = PC::ep_2;
   static constexpr auto test_tol = PC::macheps*1e3;
 
   constexpr int pack_size = sizeof(ScalarT) / sizeof(RealType);
@@ -98,7 +99,8 @@ void run(std::mt19937_64& engine)
           qv("qv",num_mid_packs),
           pressure("pressure",num_mid_packs),
           pseudo_density("pseudo_density",num_mid_packs),
-          dz_for_testing("dz_for_testing",num_mid_packs);
+          dz_for_testing("dz_for_testing",num_mid_packs),
+          mmr("mass_mixing_ratio",num_mid_packs);
   // Output views
   view_1d exner("exner",num_mid_packs),
           theta("theta",num_mid_packs),
@@ -107,7 +109,8 @@ void run(std::mt19937_64& engine)
           T_from_Tv("T_from_T_virtual",num_mid_packs),
           dse("dse",num_mid_packs),
           dz("dz",num_mid_packs),
-          z_int("z_int",num_int_packs);
+          z_int("z_int",num_int_packs),
+          vmr("volume_mixing_ratio",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
     return rview_1d(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
@@ -123,13 +126,15 @@ void run(std::mt19937_64& engine)
        pdf_pres(0.0,PC::P0),
        pdf_temp(200.0,400.0),
        pdf_height(0.0,1e5),
-       pdf_surface(100.0,400.0);
+       pdf_surface(100.0,400.0),
+       pdf_mmr(0,0.99);
 
   ekat::genRandArray(dview_as_real(temperature),   engine,pdf_temp);
   ekat::genRandArray(dview_as_real(height),        engine,pdf_height);
   ekat::genRandArray(dview_as_real(qv),            engine,pdf_qv);
   ekat::genRandArray(dview_as_real(pressure),      engine,pdf_pres);
   ekat::genRandArray(dview_as_real(pseudo_density),engine,pdf_dp);
+  ekat::genRandArray(dview_as_real(mmr),           engine,pdf_mmr);
 
   // Construct a simple set of `dz` values for testing the z_int function
   auto dz_for_testing_host = Kokkos::create_mirror_view(dz_for_testing);
@@ -219,6 +224,14 @@ void run(std::mt19937_64& engine)
   REQUIRE( Check::equal(PF::calculate_dz(ScalarT(p0),ScalarT(p0),one,zero),ScalarT(Rd/g)) );
   REQUIRE( Check::approx_equal(PF::calculate_dz(ScalarT(g),ScalarT(Rd),T0,zero),T0,test_tol) );
 
+  // MMR and VMR property tests:
+  //  - calculate_vmr_from_mmr(mmr=0) = 0
+  //  - calculate_vmr_from_mmr(gas_name="h2o",mmr=0.5) = 1/ep_2
+  //  - calculate_vmr_from_mmr(gas_name="dummy") should throw an error
+  REQUIRE( Check::equal(PF::calculate_vmr_from_mmr("h2o",zero),zero) );
+  REQUIRE( Check::approx_equal(PF::calculate_vmr_from_mmr("h2o",0.5),1.0/ep_2,test_tol) );
+  REQUIRE_THROWS( PF::calculate_vmr_from_mmr("dummy",zero) );
+
   // --------- Run tests on full columns of data ----------- //
   TeamPolicy policy(ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(1, 1));
   Kokkos::parallel_for("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -242,6 +255,9 @@ void run(std::mt19937_64& engine)
 
     // Compute z_int(dz,z_surf)
     PF::calculate_z_int(team,num_levs,dz_for_testing,surf_height,z_int);
+
+    // Compute vmr from mmr and vice versa
+    PF::calculate_vmr_from_mmr(team,"h2o",mmr,vmr);
   }); // Kokkos parallel_for "test_universal_physics"
   Kokkos::fence();
 
