@@ -34,6 +34,7 @@ void Functions<S,D>::shoc_grid(
 
   const auto s_zi_grid = ekat::scalarize(zi_grid);
   const auto s_zt_grid = ekat::scalarize(zt_grid);
+  const auto s_dz_zi   = ekat::scalarize(dz_zi);
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
@@ -63,7 +64,7 @@ void Functions<S,D>::shoc_grid(
   });
 
   // Set lower condition for dz_zi
-  dz_zi((nlevi-1)/Spack::n)[(nlevi-1)%Spack::n] = zt_grid((nlev-1)/Spack::n)[(nlev-1)%Spack::n];
+  s_dz_zi(nlevi-1) = s_zt_grid(nlev-1);
 }
 
 } // namespace shoc

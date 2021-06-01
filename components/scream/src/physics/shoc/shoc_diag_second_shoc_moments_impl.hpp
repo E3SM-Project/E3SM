@@ -37,14 +37,22 @@ void Functions<S,D>::diag_second_shoc_moments(const MemberType& team, const Int&
   shoc_diag_second_moments_srf(wthl_sfc, uw_sfc, vw_sfc, ustar2, wstar);
   team.team_barrier();
 
+  // Scalarize views for single entry access
+  const auto s_wthl_sec  = ekat::scalarize(wthl_sec);
+  const auto s_wqw_sec   = ekat::scalarize(wqw_sec);
+  const auto s_uw_sec    = ekat::scalarize(uw_sec);
+  const auto s_vw_sec    = ekat::scalarize(vw_sec);
+  const auto s_wtke_sec  = ekat::scalarize(wtke_sec);
+  const auto s_thl_sec   = ekat::scalarize(thl_sec);
+  const auto s_qw_sec    = ekat::scalarize(qw_sec);
+  const auto s_qwthl_sec = ekat::scalarize(qwthl_sec);
+
   // Diagnose the second order moments flux, for the lower boundary
-  const auto nlevi_npack = ekat::npack<Spack>(nlevi)-1;
-  const int nlevi_indx  = (nlevi-1)%Spack::n;
   shoc_diag_second_moments_lbycond(wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, ustar2, wstar,
-                                   wthl_sec(nlevi_npack)[nlevi_indx], wqw_sec(nlevi_npack)[nlevi_indx], 
-                                   uw_sec(nlevi_npack)[nlevi_indx], vw_sec(nlevi_npack)[nlevi_indx], 
-                                   wtke_sec(nlevi_npack)[nlevi_indx], thl_sec(nlevi_npack)[nlevi_indx], 
-                                   qw_sec(nlevi_npack)[nlevi_indx], qwthl_sec(nlevi_npack)[nlevi_indx]);
+                                   s_wthl_sec(nlevi-1), s_wqw_sec(nlevi-1),
+                                   s_uw_sec(nlevi-1), s_vw_sec(nlevi-1),
+                                   s_wtke_sec(nlevi-1), s_thl_sec(nlevi-1),
+                                   s_qw_sec(nlevi-1), s_qwthl_sec(nlevi-1));
   team.team_barrier();
 
   // Diagnose the second order moments, for points away from boundaries.  this is
@@ -56,9 +64,9 @@ void Functions<S,D>::diag_second_shoc_moments(const MemberType& team, const Int&
   team.team_barrier();
 
   // Diagnose the second order moments, calculate the upper boundary conditions
-  shoc_diag_second_moments_ubycond(thl_sec(0)[0], qw_sec(0)[0], wthl_sec(0)[0], 
-                                   wqw_sec(0)[0], qwthl_sec(0)[0], uw_sec(0)[0], 
-                                   vw_sec(0)[0], wtke_sec(0)[0]);
+  shoc_diag_second_moments_ubycond(s_thl_sec(0), s_qw_sec(0), s_wthl_sec(0),
+                                   s_wqw_sec(0), s_qwthl_sec(0), s_uw_sec(0),
+                                   s_vw_sec(0), s_wtke_sec(0));
 
   // Release temporary variables from the workspace
   workspace.template release_many_contiguous<3>(

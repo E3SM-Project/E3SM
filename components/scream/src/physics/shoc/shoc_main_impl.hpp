@@ -124,14 +124,15 @@ void Functions<S,D>::shoc_main_internal(
     {"rho_zt", "shoc_qv", "dz_zt", "dz_zi", "tkh"},
     {&rho_zt, &shoc_qv, &dz_zt, &dz_zi, &tkh});
 
-  // View/pack indices for nlev, nlevi
-  const Int nlev_v = (nlev-1)/Spack::n;
-  const Int nlev_p = (nlev-1)%Spack::n;
-
-  // Local variables
+  // Local scalars
   Scalar se_b{0},   ke_b{0}, wv_b{0},   wl_b{0},
          se_a{0},   ke_a{0}, wv_a{0},   wl_a{0},
          ustar{0},  kbfs{0}, obklen{0}, ustar2{0}, wstar{0};
+
+  // Scalarize some views for single entry access
+  const auto s_thetal  = ekat::scalarize(thetal);
+  const auto s_shoc_ql = ekat::scalarize(shoc_ql);
+  const auto s_shoc_qv = ekat::scalarize(shoc_qv);
 
   // Compute integrals of static energy, kinetic energy, water vapor, and liquid water
   // for the computation of total energy before SHOC is called.  This is for an
@@ -162,12 +163,12 @@ void Functions<S,D>::shoc_main_internal(
                        shoc_qv);             // Output
 
     team.team_barrier();
-    shoc_diag_obklen(uw_sfc,vw_sfc,          // Input
-                     wthl_sfc, wqw_sfc,      // Input
-                    thetal(nlev_v)[nlev_p],  // Input
-                    shoc_ql(nlev_v)[nlev_p], // Input
-                    shoc_qv(nlev_v)[nlev_p], // Input
-                    ustar,kbfs,obklen);      // Output
+    shoc_diag_obklen(uw_sfc,vw_sfc,     // Input
+                     wthl_sfc, wqw_sfc, // Input
+                     s_thetal(nlev-1),  // Input
+                     s_shoc_ql(nlev-1), // Input
+                     s_shoc_qv(nlev-1), // Input
+                     ustar,kbfs,obklen); // Output
 
     pblintd(team,nlev,nlevi,npbl,     // Input
             zt_grid,zi_grid,thetal,   // Input
@@ -263,12 +264,12 @@ void Functions<S,D>::shoc_main_internal(
                      shoc_qv);             // Output
 
   team.team_barrier();
-  shoc_diag_obklen(uw_sfc,vw_sfc,           // Input
-                   wthl_sfc,wqw_sfc,        // Input
-                   thetal(nlev_v)[nlev_p],  // Input
-                   shoc_ql(nlev_v)[nlev_p], // Input
-                   shoc_qv(nlev_v)[nlev_p], // Input
-                   ustar,kbfs,obklen);      // Output
+  shoc_diag_obklen(uw_sfc,vw_sfc,      // Input
+                   wthl_sfc,wqw_sfc,   // Input
+                   s_thetal(nlev-1),   // Input
+                   s_shoc_ql(nlev-1),  // Input
+                   s_shoc_qv(nlev-1),  // Input
+                   ustar,kbfs,obklen); // Output
 
   pblintd(team,nlev,nlevi,npbl,zt_grid,   // Input
           zi_grid,thetal,shoc_ql,shoc_qv, // Input

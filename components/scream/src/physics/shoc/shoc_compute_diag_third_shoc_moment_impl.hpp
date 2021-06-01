@@ -28,18 +28,17 @@ void Functions<S,D>
   const auto ggr = C::gravit;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
-  const Int nlevi_pack = ekat::npack<Spack>(nlevi);
 
-  // Scalarize views for shifts
+  // Scalarize views for shifts and single entry access
   const auto s_dz_zt = scalarize(dz_zt);
   const auto s_wthl_sec = scalarize(wthl_sec);
   const auto s_thl_sec = scalarize(thl_sec);
   const auto s_w_sec = scalarize(w_sec);
   const auto s_tke = scalarize(tke);
+  const auto s_w3 = scalarize(w3);
 
   // Set lower condition: w3(i,nlevi) = 0
-  const Int last_pack_entry = (nlevi%Spack::n == 0 ? Spack::n-1 : nlevi%Spack::n-1);
-  w3(nlevi_pack-1)[last_pack_entry] = 0;
+  s_w3(nlevi-1) = 0;
 
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
     // Constants
@@ -115,7 +114,7 @@ void Functions<S,D>
   });
 
   // Set upper condition: w3(i,0) = 0
-  w3(0)[0] = 0;
+  s_w3(0) = 0;
 }
 
 } // namespace shoc

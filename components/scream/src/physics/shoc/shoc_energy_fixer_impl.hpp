@@ -61,11 +61,13 @@ void Functions<S,D>::shoc_energy_fixer(
   // Compute the host timestep
   const Scalar hdtime = dtime*nadv;
 
+  // Scalarize views for single entry access
+  const auto s_rho_zi = ekat::scalarize(rho_zi);
+  const auto s_pint   = ekat::scalarize(pint);
+
   // Compute the total energy before and after SHOC call
-  const auto nlevi_pack = ekat::npack<Spack>(nlevi)-1;
-  const int nlevi_indx = (nlevi-1)%Spack::n;
-  const Scalar shf = wthl_sfc*cp*rho_zi(nlevi_pack)[nlevi_indx];
-  const Scalar lhf = wqw_sfc*rho_zi(nlevi_pack)[nlevi_indx];
+  const Scalar shf = wthl_sfc*cp*s_rho_zi(nlevi-1);
+  const Scalar lhf = wqw_sfc*s_rho_zi(nlevi-1);
   te_a = se_a + ke_a + (lcond+lice)*wv_a +lice*wl_a;
   te_b = se_b + ke_b + (lcond+lice)*wv_b + lice*wl_b;
   te_b += (shf+lhf*(lcond+lice))*hdtime;
@@ -88,14 +90,11 @@ void Functions<S,D>::shoc_energy_fixer(
     }
   }, Kokkos::Min<int>(shoctop));
 
-  // Get pack indices for shoctop
-  const int shoctop_pack = shoctop/Spack::n;
-  const int shoctop_indx = shoctop%Spack::n;
-
   // Compute the disbalance of total energy, over depth where SHOC is active.
-  se_dis = (te_a - te_b)/(pint(nlevi_pack)[nlevi_indx] - pint(shoctop_pack)[shoctop_indx]);
+  se_dis = (te_a - te_b)/(s_pint(nlevi-1) - s_pint(shoctop));
 
   // Update host_dse
+  const int shoctop_pack = shoctop/Spack::n;
   const auto nlev_packs = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, shoctop_pack, nlev_packs), [&] (const Int& k) {
     auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);

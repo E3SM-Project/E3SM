@@ -56,10 +56,9 @@ void Functions<S,D>
    * been taken into account for the TKE boundary condition,
    * thus zero out here
     */
-  sterm(0)[0]     = 0;
-  const Int nlevi_pack = ekat::npack<Spack>(nlevi);
-  const Int last_pack_entry = (nlevi%Spack::n == 0 ? Spack::n-1 : nlevi%Spack::n-1);
-  sterm(nlevi_pack-1)[last_pack_entry] = 0;
+  const auto s_sterm = ekat::scalarize(sterm);
+  s_sterm(0)       = 0;
+  s_sterm(nlevi-1) = 0;
 }
 
 } // namespace shoc
