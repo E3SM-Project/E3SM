@@ -17,6 +17,7 @@
 #include "mo_garand_atmos_io.h"
 #include "Intrinsics.h"
 #include "rrtmgp_test_utils.hpp"
+#include "share/util/scream_common_physics_functions.hpp"
 
 /*
  * Run standalone test problem for RRTMGP and compare with baseline
@@ -34,6 +35,7 @@ namespace scream {
     TEST_CASE("rrtmgp_scream_stand_alone", "") {
         using namespace scream;
         using namespace scream::control;
+        using PF = scream::PhysicsFunctions<DefaultDevice>;
 
         // Get baseline name (needs to be passed as an arg)
         std::string inputfile = ekat::TestSession::get().params.at("rrtmgp_inputfile");
@@ -200,14 +202,14 @@ namespace scream {
               d_pint(i,k) = p_lev(i+1,k+1);
               d_tint(i,k) = t_lev(i+1,k+1);
 
-              d_qv(i,k)  = gas_vmr(i+1,k+1,1);
-              d_co2(i,k) = gas_vmr(i+1,k+1,2);
-              d_o3(i,k)  = gas_vmr(i+1,k+1,3);
-              d_n2o(i,k) = gas_vmr(i+1,k+1,4);
-              d_co(i,k)  = gas_vmr(i+1,k+1,5);
-              d_ch4(i,k) = gas_vmr(i+1,k+1,6);
-              d_o2(i,k)  = gas_vmr(i+1,k+1,7);
-              d_n2(i,k)  = gas_vmr(i+1,k+1,8);
+              d_qv(i,k)  = PF::calculate_mmr_from_vmr("h2o",gas_vmr(i+1,k+1,1));
+              d_co2(i,k) = PF::calculate_mmr_from_vmr("co2",gas_vmr(i+1,k+1,2));
+              d_o3(i,k)  = PF::calculate_mmr_from_vmr("o3",gas_vmr(i+1,k+1,3));
+              d_n2o(i,k) = PF::calculate_mmr_from_vmr("n2o",gas_vmr(i+1,k+1,4));
+              d_co(i,k)  = PF::calculate_mmr_from_vmr("co",gas_vmr(i+1,k+1,5));
+              d_ch4(i,k) = PF::calculate_mmr_from_vmr("ch4",gas_vmr(i+1,k+1,6));
+              d_o2(i,k)  = PF::calculate_mmr_from_vmr("o2",gas_vmr(i+1,k+1,7));
+              d_n2(i,k)  = PF::calculate_mmr_from_vmr("n2",gas_vmr(i+1,k+1,8));
             });
 
             d_pint(i,nlay) = p_lev(i+1,nlay+1);

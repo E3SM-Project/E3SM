@@ -4,6 +4,7 @@
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
+#include "share/util/scream_common_physics_functions.hpp"
 #include "YAKL/YAKL.h"
 
 namespace scream {
@@ -181,6 +182,7 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
 }
 
 void RRTMGPRadiation::run_impl (const Real dt) {
+  using PF = scream::PhysicsFunctions<DefaultDevice>;
   // Get data from the FieldManager
   auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_reshaped_view<const Real**>();
   auto d_pint = m_rrtmgp_fields_in.at("p_int").get_reshaped_view<const Real**>();
@@ -244,10 +246,10 @@ void RRTMGPRadiation::run_impl (const Real dt) {
         qc(i+1,k+1)          = d_qc(i,k);
         qi(i+1,k+1)          = d_qi(i,k);
         cldfrac_tot(i+1,k+1) = d_cldfrac_tot(i,k);
-        rel(i+1,k+1)   = d_rel(i,k);
-        rei(i+1,k+1)   = d_rei(i,k);
-        p_lev(i+1,k+1) = d_pint(i,k);
-        t_lev(i+1,k+1) = d_tint(i,k);
+        rel(i+1,k+1)         = d_rel(i,k);
+        rei(i+1,k+1)         = d_rei(i,k);
+        p_lev(i+1,k+1)       = d_pint(i,k);
+        t_lev(i+1,k+1)       = d_tint(i,k);
       });
 
       p_lev(i+1,m_nlay+1) = d_pint(i,m_nlay);
@@ -279,12 +281,12 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     if (name=="h2o") {
       auto d_temp  = m_rrtmgp_fields_in.at("qv").get_reshaped_view<const Real**>();
       parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
-          tmp2d(icol,ilay) = d_temp(icol-1,ilay-1); // Note that for YAKL_LAMBDA icol and ilay start with index 1
+          tmp2d(icol,ilay) = PF::calculate_vmr_from_mmr(name,d_temp(icol-1,ilay-1)); // Note that for YAKL_LAMBDA icol and ilay start with index 1
       });
     } else {
       auto d_temp  = m_rrtmgp_fields_in.at(name).get_reshaped_view<const Real**>();
       parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
-          tmp2d(icol,ilay) = d_temp(icol-1,ilay-1);
+          tmp2d(icol,ilay) = PF::calculate_vmr_from_mmr(name,d_temp(icol-1,ilay-1));
       });
     }
     gas_concs.set_vmr(name, tmp2d);
