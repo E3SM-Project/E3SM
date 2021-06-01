@@ -79,8 +79,8 @@
       <value compset="_EAM%MMF2"              >-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero </value>
       <value compset="_EAM%MMF2-ECPP"         >-use_ECPP </value>
       <value compset="_EAM%MMF[12XO]"         >-crm_nx 64 -crm_nx_rad 16 -crm_ny 1 -crm_ny_rad 1 </value>
-      <value compset="_EAM%MMF*-AQUA"         >-aquaplanet </value>
-      <value compset="_EAM%MMF*-RCE"          >-aquaplanet -rce </value>
+      <value compset="_EAM%MMF.*-AQUA"        >-aquaplanet </value>
+      <value compset="_EAM%MMF.*-RCE"         >-aquaplanet -rce </value>
 
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
@@ -164,8 +164,9 @@
       <value compset="2000(?:SOI)?_EAM%SP2"     >2000_cam5_av1c-04p2-MMF-2mom</value>
       <value compset="2000(?:SOI)?_EAM%MMF[1XO]">2000_cam5_av1c-04p2-MMF-1mom</value>
       <value compset="2000(?:SOI)?_EAM%MMF2"    >2000_cam5_av1c-04p2-MMF-2mom</value>
-      <value compset="_EAM%MMF*-RCE"    >RCEMIP_EAMv1</value>
-      <value compset="_EAM%MMF*-AQUA"   >aquaplanet_MMF-1mom</value>
+      <value compset="_EAM%MMF.*-RCE"    >RCEMIP_EAMv1</value>
+      <value compset="_EAM%MMF.*-AQUA"   >aquaplanet_MMF-1mom</value>
+      <value compset="20TR_EAM%MMF.*CMIP6"  >20TR_MMF-1mom_CMIP6</value>
     </values>
 
     <group>run_component_cam</group>
