@@ -146,6 +146,7 @@
       <value compset="_EAM%MMF.*-AQUA"          >aquaplanet_MMF-1mom</value>
       <value compset="AR97_EAM%MMF.*-SCM"       >scam_arm97_MMF-1mom</value>
       <value compset="RICO_EAM%MMF.*-SCM"       >scam_rico_MMF-1mom</value>
+      <value compset="20TR_EAM%MMF.*CMIP6"      >20TR_MMF-1mom_CMIP6</value>
     </values>
 
     <group>run_component_cam</group>
