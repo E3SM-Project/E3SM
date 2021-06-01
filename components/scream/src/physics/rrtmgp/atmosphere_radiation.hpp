@@ -83,11 +83,8 @@ public:
   const int m_nlwbands = 16;
 
   // These are the gases that we keep track of
-  const int m_ngas = 8;
-  const std::string m_gas_names[8] = {
-      "h2o", "co2", "o3", "n2o",
-      "co" , "ch4", "o2", "n2"
-  };
+  int m_ngas;
+  std::vector<std::string> m_gas_names;
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {

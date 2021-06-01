@@ -20,6 +20,17 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   using namespace ekat::units;
 
+  // Gather the active gases from the rrtmgp parameter list and assign to the m_gas_names vector.
+  auto active_gases = m_rrtmgp_params.get<std::vector<std::string>>("active_gases");
+  for (auto& it : active_gases) {
+    // Make sure only unique names are added
+    if (std::find(m_gas_names.begin(), m_gas_names.end(), it) == m_gas_names.end()) {
+      m_gas_names.push_back(it);
+    }
+  }
+  m_ngas = m_gas_names.size();
+
+  // Declare the set of fields used by rrtmgp
   auto kgkg = kg/kg;
   kgkg.set_string("kg/kg");
   auto m3 = m * m * m;
@@ -56,15 +67,13 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name(), ps);
   add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name(), ps);
   // Set of required gas concentration fields
-  add_field<Required>("qv", scalar3d_layout_mid,kgkg,grid->name(), ps);  // Called "h2o" in radiation
-  add_field<Required>("co2",scalar3d_layout_mid,kgkg,grid->name(), ps);
-  add_field<Required>("o3", scalar3d_layout_mid,kgkg,grid->name(), ps);
-  add_field<Required>("n2o",scalar3d_layout_mid,kgkg,grid->name(), ps);
-  add_field<Required>("co", scalar3d_layout_mid,kgkg,grid->name(), ps);
-  add_field<Required>("ch4",scalar3d_layout_mid,kgkg,grid->name(), ps);
-  add_field<Required>("o2", scalar3d_layout_mid,kgkg,grid->name(), ps);
-  add_field<Required>("n2", scalar3d_layout_mid,kgkg,grid->name(), ps);
-
+  for (auto& it : m_gas_names) {
+    if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
+      add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid->name(), ps);
+    } else {
+      add_field<Required>(it,scalar3d_layout_mid,kgkg,grid->name(), ps);
+    }
+  }
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid->name(), ps);
   add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name(), ps);
@@ -146,30 +155,29 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.sfc_alb_dif = decltype(m_buffer.sfc_alb_dif)("surf_alb_diffuse", mem, m_ncol, m_nswbands);
   mem += m_buffer.sfc_alb_dif.totElems();
 
-  // 3d array
-  m_buffer.gas_vmr = decltype(m_buffer.gas_vmr)("gas_vmr", mem, m_ncol, m_nlay, m_ngas);
-  mem += m_buffer.gas_vmr.totElems();
-
   int used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
 
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   // Names of active gases
-  // TODO: this needs to be not hard-coded...I wanted to get these from
-  // input files, but need to get around the rrtmgp_initializer logic.
-  // Maybe can store the gas names somewhere else?
+  // TODO: Is there anyway to store the gas_names_1d information somewhere once,
+  // rather than populate this array every step?
+  // It appears that "gas_concs.init(...)" requires a YAKL string1d array as input,
+  // which would need to be defined with its size pre-initialization, but this breaks the
+  // flexibility to define the full set of gases at runtime.
+  // So for now we create the string1d gas_names_1d on the fly to pass to gas_concs.init. 
   string1d gas_names_1d("gas_names",m_ngas);
-  for (int igas = 1; igas <= m_ngas; igas++) {
+  for (int igas = 1; igas <= m_ngas; igas++) {  /* Note: YAKL starts the index from 1 */
     gas_names_1d(igas) = m_gas_names[igas-1];
   }
-
   // Initialize GasConcs object to pass to RRTMGP initializer;
   // This is just to provide gas names
-  // Make GasConcs from gas_vmr and gas_names_1d
+  // Make GasConcs from gas_names_1d
   GasConcs gas_concs;
   gas_concs.init(gas_names_1d,1,1);
   rrtmgp::rrtmgp_initialize(gas_concs);
+
 }
 
 void RRTMGPRadiation::run_impl (const Real dt) {
@@ -208,7 +216,6 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto p_lev          = m_buffer.p_lev;
   auto p_del          = m_buffer.p_del;
   auto t_lev          = m_buffer.t_lev;
-  auto gas_vmr        = m_buffer.gas_vmr;
   auto sfc_alb_dir    = m_buffer.sfc_alb_dir;
   auto sfc_alb_dif    = m_buffer.sfc_alb_dif;
   auto mu0            = m_buffer.mu0;
@@ -241,15 +248,6 @@ void RRTMGPRadiation::run_impl (const Real dt) {
         rei(i+1,k+1)   = d_rei(i,k);
         p_lev(i+1,k+1) = d_pint(i,k);
         t_lev(i+1,k+1) = d_tint(i,k);
-        // gas concentrations
-        gas_vmr(i+1,k+1,1) = d_qv(i,k);
-        gas_vmr(i+1,k+1,2) = d_co2(i,k);
-        gas_vmr(i+1,k+1,3) = d_o3(i,k);
-        gas_vmr(i+1,k+1,4) = d_n2o(i,k);
-        gas_vmr(i+1,k+1,5) = d_co(i,k);
-        gas_vmr(i+1,k+1,6) = d_ch4(i,k);
-        gas_vmr(i+1,k+1,7) = d_o2(i,k);
-        gas_vmr(i+1,k+1,8) = d_n2(i,k);
       });
 
       p_lev(i+1,m_nlay+1) = d_pint(i,m_nlay);
@@ -262,10 +260,11 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     });
   }
   Kokkos::fence();
-  
-  // Make GasConcs from gas_vmr and gas_names
-  // TODO: only allocate at initialization and
-  // just update values here
+
+  // Make GasConcs from gas_names
+  // TODO: only allocate at initialization and 
+  // just update values here.  See comment in
+  // init_impl routine for more details.
   string1d gas_names_1d("gas_names",m_ngas);
   for (int igas = 1; igas <= m_ngas; igas++) {
     gas_names_1d(igas) = m_gas_names[igas-1];
@@ -276,10 +275,19 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   gas_concs.init(gas_names_1d,m_ncol,m_nlay);
   auto tmp2d = m_buffer.tmp2d;
   for (int igas = 1; igas <= m_ngas; igas++) {
-    parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
-        tmp2d(icol,ilay) = gas_vmr(icol,ilay,igas);
-    });
-    gas_concs.set_vmr(gas_names_1d(igas), tmp2d);
+    auto name = gas_names_1d(igas);
+    if (name=="h2o") {
+      auto d_temp  = m_rrtmgp_fields_in.at("qv").get_reshaped_view<const Real**>();
+      parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
+          tmp2d(icol,ilay) = d_temp(icol-1,ilay-1); // Note that for YAKL_LAMBDA icol and ilay start with index 1
+      });
+    } else {
+      auto d_temp  = m_rrtmgp_fields_in.at(name).get_reshaped_view<const Real**>();
+      parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
+          tmp2d(icol,ilay) = d_temp(icol-1,ilay-1);
+      });
+    }
+    gas_concs.set_vmr(name, tmp2d);
   }
 
   // Compute layer cloud mass (per unit area)
