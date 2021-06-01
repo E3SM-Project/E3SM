@@ -236,6 +236,35 @@ void PhysicsFunctions<DeviceT>::calculate_vmr_from_mmr(const MemberType& team,
   });
 }
 
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::calculate_mmr_from_vmr(const std::string& gas_name, const ScalarT& vmr)
+{
+  using C = scream::physics::Constants<Real>;
+  constexpr Real air_mol_weight   = C::MWdry;
+  constexpr auto& gas_mol_weights = C::gas_mol_weights;
+  EKAT_REQUIRE(gas_mol_weights.find(gas_name)!=gas_mol_weights.end());
+  const Real mol_weight_ratio = gas_mol_weights.at(gas_name)/air_mol_weight;
+
+  return mol_weight_ratio*vmr / (1.0 + mol_weight_ratio*vmr); 
+
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderX>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_mmr_from_vmr(const MemberType& team,
+                                                       const std::string gas_name,
+                                                       const InputProviderX& vmr,
+                                                       const view_1d<ScalarT>& mmr)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,mmr.extent(0)),
+                       [&] (const int k) {
+    mmr(k) = calculate_mmr_from_vmr(gas_name,vmr(k));
+  });
+}
+
 } // namespace scream
 
 #endif // SCREAM_COMMON_PHYSICS_IMPL_HPP

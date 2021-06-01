@@ -141,6 +141,21 @@ struct PhysicsFunctions
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
   static ScalarT calculate_vmr_from_mmr(const std::string& gas_name, const ScalarT& mmr);
+
+  //-----------------------------------------------------------------------------------------------//
+  // Calculate the volume mixing ratio given the wet mass mixing ratio:
+  //   X_mmr = a*X_vmr / (1 + a*X_vmr)
+  // where
+  //   X_vmr          is the volume mixing ratio X
+  //   X_mmr          is the mass mixing ratio of X
+  //   mol_weight_air is the molecular weight of dry air
+  //   mol_weight_X   is the molecular weight of X
+  //   a = mol_weight_X/mol_weight_air is the ratio of the molecular weight of the gas to the molecular weight of dry air
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_mmr_from_vmr(const std::string& gas_name, const ScalarT& vmr);
+
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
   // ---------------------------------------------------------------- //
@@ -236,6 +251,13 @@ struct PhysicsFunctions
                                      const std::string gas_name,
                                      const InputProviderX& mmr,
                                      const view_1d<ScalarT>& vmr);
+
+  template<typename ScalarT, typename InputProviderX>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_mmr_from_vmr(const MemberType& team,
+                                     const std::string gas_name,
+                                     const InputProviderX& vmr,
+                                     const view_1d<ScalarT>& mmr);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer interface height from the vertical layer thicknesses:
