@@ -1376,12 +1376,12 @@ contains
     type(file_desc_t)     :: ncid         ! netcdf id
    
     real(r8),pointer :: maxTopoElv(:)            ! Maximum topounit elevation
-    real(r8),pointer :: numTopoPerGrid(:)        ! Number of topounits per grid
+    integer ,pointer :: numTopoPerGrid(:)        ! Number of topounits per grid
     real(r8),pointer :: TopounitFracArea(:,:)    ! Topounit fractional area
-    integer ,pointer :: TopounitElv(:,:)         ! Topounit elevation
+    real(r8) ,pointer :: TopounitElv(:,:)         ! Topounit elevation
     real(r8),pointer :: TopounitSlope(:,:)       ! Topounit slope 
-    real(r8),pointer :: TopounitAspect(:,:)      ! Topounit aspect
-    real(r8),pointer :: num_topo_per_grid(:)      ! Topounit aspect
+    integer ,pointer :: TopounitAspect(:,:)      ! Topounit aspect
+    integer ,pointer :: num_topo_per_grid(:)      ! Topounit aspect
     real(r8),pointer :: GridElevation(:)      ! Topounit aspect
 !    integer ,pointer :: TopounitIndices(:,:)     ! Topounit indices in each grid
 	

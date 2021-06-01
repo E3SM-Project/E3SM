@@ -117,6 +117,7 @@ contains
     real(r8) :: sum_of_hrise        ! Sum of height rise of air parcel of all subgrids of a grid
     real(r8) :: hrise               ! Temporary height rise
     real(r8) :: elvrnge             ! Elevation range between lowest and highest tpu
+    real(r8) :: ave_elv
     integer :: elv_flag             ! Elevation flag to trac grids with +ve grid elevation and -ve tpu elevation
 
     integer :: uaflag = 0
@@ -166,6 +167,7 @@ contains
     tmp_Snow_frc = 0._r8   ! Snow fraction
     elv_flag = 0
 	elvrnge = 0.
+    ave_elv = 0.
     max_tpuElv = 0.
     min_tpuElv = 0.
     if (numt_pg > 1) then          !downscaling is done only if a grid has more than 1 topounits 
@@ -190,6 +192,8 @@ contains
            end if
        end do
        elvrnge = max_tpuElv - min_tpuElv
+       !max_elv = mxElv
+       !mxElv = max_tpuElv  ! The maximum elevation coming from land surface data file was calculated from fine resolution DEM; it is greater than the highest TPU
        !write(iulog,*) ' elvrnge = ', elvrnge
        !write(iulog,*) ' max_tpuElv = ', max_tpuElv
        !write(iulog,*) ' min_tpuElv = ', min_tpuElv
