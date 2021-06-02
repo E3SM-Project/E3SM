@@ -771,7 +771,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       end if
 
       ! initialize all of crm_state%qt to zero (needed for ncol < i <= pcols)
-      crm_state%qt(:,:,:,:) = 0.0_r8
+      crm_qt(:,:,:,:) = 0.0_r8
 
       do i = 1,ncol
          do k = 1,crm_nz
@@ -1300,6 +1300,51 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
             crm_rad%qrad(i,:,:,m) = crm_rad%qrad(i,:,:,m) * state%pdel(i,k) ! for energy conservation
          end do
       end do
+
+      !---------------------------------------------------------------------------------------------
+      ! put CRM state data back in pbuf
+      !---------------------------------------------------------------------------------------------
+      call pbuf_get_field(pbuf, pbuf_get_index('CRM_U'),  crm_u)
+      call pbuf_get_field(pbuf, pbuf_get_index('CRM_V'),  crm_v)
+      call pbuf_get_field(pbuf, pbuf_get_index('CRM_W'),  crm_w)
+      call pbuf_get_field(pbuf, pbuf_get_index('CRM_T'),  crm_t)
+      call pbuf_get_field(pbuf, pbuf_get_index('CRM_QT'), crm_qt)
+      if (MMF_microphysics_scheme .eq. 'sam1mom') then
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QP'), crm_qp)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QN'), crm_qn)
+      else
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NC'), crm_nc)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QR'), crm_qr)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NR'), crm_nr)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI'), crm_qi)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NI'), crm_ni)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QS'), crm_qs)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NS'), crm_ns)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QG'), crm_qg)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_NG'), crm_ng)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC'), crm_qc)
+      end if
+
+      crm_u  = crm_state%u_wind
+      crm_v  = crm_state%v_wind
+      crm_w  = crm_state%w_wind
+      crm_t  = crm_state%temperature
+      crm_qt = crm_state%qt
+      if (MMF_microphysics_scheme .eq. 'sam1mom') then
+         crm_qp = crm_state%qp
+         crm_qn = crm_state%qn
+      else if (MMF_microphysics_scheme .eq. 'm2005') then
+         crm_qc = crm_state%qc
+         crm_qi = crm_state%qi
+         crm_nc = crm_state%nc
+         crm_qr = crm_state%qr
+         crm_nr = crm_state%nr
+         crm_ni = crm_state%ni
+         crm_qs = crm_state%qs
+         crm_ns = crm_state%ns
+         crm_qg = crm_state%qg
+         crm_ng = crm_state%ng
+      end if
 
       !---------------------------------------------------------------------------------------------
       ! put rad data back in pbuf
