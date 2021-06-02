@@ -108,20 +108,31 @@ function(build_model COMP_CLASS COMP_NAME)
     # Add rrtmgp++ source code if asked for
     if (USE_RRTMGPXX)
       message(STATUS "Building RRTMGPXX")
-      # Build rrtmgpxx as a library
-      set(RRTMGPXX_BIN ${CMAKE_CURRENT_BINARY_DIR}/rrtmgpxx)
-      add_subdirectory(
-          ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp
-          ${RRTMGPXX_BIN})
-      # Add files to the main E3SM build
-      set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/rrtmgp/cpp/rrtmgp_interface.F90
-                             cmake/atm/../../eam/src/physics/rrtmgp/cpp/rrtmgp_interface.cpp
-                             cmake/atm/../../eam/src/physics/rrtmgp/cpp/mo_load_coefficients.cpp
-                             cmake/atm/../../eam/src/physics/rrtmgp/cpp/mo_load_cloud_coefficients.cpp
-                             cmake/atm/../../eam/src/physics/rrtmgp/cpp/mo_garand_atmos_io.cpp
-                             cmake/atm/../../eam/src/physics/rrtmgp/external/cpp/extensions/fluxes_byband/mo_fluxes_byband_kernels.cpp
-
+      # Build the static rrtmgpxx library
+      set(RRTMGPXX_BIN ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp)
+      add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp ${RRTMGPXX_BIN})
+      # Build the interface code
+      set(RRTMGPXX_INTERFACE_BIN ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp_interface)
+      add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/cpp ${RRTMGPXX_INTERFACE_BIN})
+      # Interface code needs some additional headers
+      include_directories(
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp/extensions/fluxes_byband
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/cpp
       )
+      # Add the source files for the interface code to the main E3SM build
+      set(RRTMGPXX_F90 cmake/atm/../../eam/src/physics/rrtmgp/cpp/rrtmgp_interface.F90)
+      set(SOURCES ${SOURCES} ${RRTMGPXX_F90} ${RRTMGPXX_CXX})
+      # Set fortran compiler flags
+      set_source_files_properties(${RRTMGPXX_F90} PROPERTIES COMPILE_FLAGS "${CPPDEFS} ${FFLAGS}")
+      # Set YAKL and CPP flags for C++ source files
+      set_source_files_properties(${RRTMGPXX_CXX} PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+      if ("${ARCH}" STREQUAL "CUDA")
+          # Set C++ source files to be treated like CUDA files by CMake
+          set_source_files_properties(${RRTMGPXX_CXX} PROPERTIES LANGUAGE CUDA)
+          # Include Nvidia cub
+          include_directories(${YAKL_CUB_HOME})
+      endif()
     endif()
   endif()
 
