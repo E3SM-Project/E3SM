@@ -169,15 +169,28 @@ class TestAllSets(unittest.TestCase):
         path_to_actual_png = full_png_path
         path_to_expected_png = "../unit_test_images/{}".format(png_path)
 
-        mismatched_images = []  # type: ignore
-        compare_images(
-            self,
-            mismatched_images,
-            image_name,
-            path_to_actual_png,
-            path_to_expected_png,
-        )
-        self.assertEqual(mismatched_images, [])
+        if "CHECK_IMAGES" in os.environ:
+            # Set `export CHECK_IMAGES=True` to do a pixel-by-pixel image comparison check.
+            check_images = os.environ["CHECK_IMAGES"].lower() in [
+                "true",
+                "yes",
+                "t",
+                "y",
+                "1",
+            ]
+        else:
+            check_images = True
+
+        if check_images:
+            mismatched_images = []  # type: ignore
+            compare_images(
+                self,
+                mismatched_images,
+                image_name,
+                path_to_actual_png,
+                path_to_expected_png,
+            )
+            self.assertEqual(mismatched_images, [])
 
     def check_plots_generic(
         self, set_name, case_id, ref_name, variables, region, plev=None
