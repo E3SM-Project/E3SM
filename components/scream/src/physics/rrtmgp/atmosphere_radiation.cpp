@@ -90,8 +90,7 @@ int RRTMGPRadiation::requested_buffer_size_in_bytes() const
   const int interface_request = Buffer::num_1d_ncol*m_ncol*sizeof(Real) +
                                 Buffer::num_2d_nlay*m_ncol*m_nlay*sizeof(Real) +
                                 Buffer::num_2d_nlay_p1*m_ncol*(m_nlay+1)*sizeof(Real) +
-                                Buffer::num_2d_nswbands*m_ncol*m_nswbands*sizeof(Real) +
-                                Buffer::num_3d_ngas*m_ncol*m_nlay*m_ngas*sizeof(Real);
+                                Buffer::num_2d_nswbands*m_ncol*m_nswbands*sizeof(Real);
 
   return interface_request;
 } // RRTMGPRadiation::requested_buffer_size
