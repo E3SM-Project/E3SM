@@ -5,6 +5,7 @@ module AerosolMod
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use decompMod        , only : bounds_type
   use elm_varpar       , only : nlevsno 
+  use elm_varctl       , only : use_extrasnowlayers
   use clm_time_manager , only : get_step_size
   use atm2lndType      , only : atm2lnd_type
   use WaterfluxType    , only : waterflux_type
@@ -109,24 +110,26 @@ contains
             ! layer mass of snow:
             snowmass = h2osoi_ice(c,j) + h2osoi_liq(c,j)
 
-            ! Correct the top layer aerosol mass to account for snow capping. 
-            ! This approach conserves the aerosol mass concentration
-            ! (but not the aerosol amss) when snow-capping is invoked
+            if (.not. use_extrasnowlayers) then
+               ! Correct the top layer aerosol mass to account for snow capping. 
+               ! This approach conserves the aerosol mass concentration
+               ! (but not the aerosol amss) when snow-capping is invoked
 
-            if (j == snl(c)+1) then
-               if (do_capsnow(c)) then 
+               if (j == snl(c)+1) then
+                  if (do_capsnow(c)) then 
 
-                  snowcap_scl_fct = snowmass / (snowmass + (qflx_snwcp_ice(c)*dtime))
+                     snowcap_scl_fct = snowmass / (snowmass + (qflx_snwcp_ice(c)*dtime))
 
-                  mss_bcpho(c,j) = mss_bcpho(c,j)*snowcap_scl_fct
-                  mss_bcphi(c,j) = mss_bcphi(c,j)*snowcap_scl_fct
-                  mss_ocpho(c,j) = mss_ocpho(c,j)*snowcap_scl_fct
-                  mss_ocphi(c,j) = mss_ocphi(c,j)*snowcap_scl_fct
+                     mss_bcpho(c,j) = mss_bcpho(c,j)*snowcap_scl_fct
+                     mss_bcphi(c,j) = mss_bcphi(c,j)*snowcap_scl_fct
+                     mss_ocpho(c,j) = mss_ocpho(c,j)*snowcap_scl_fct
+                     mss_ocphi(c,j) = mss_ocphi(c,j)*snowcap_scl_fct
 
-                  mss_dst1(c,j)  = mss_dst1(c,j)*snowcap_scl_fct
-                  mss_dst2(c,j)  = mss_dst2(c,j)*snowcap_scl_fct
-                  mss_dst3(c,j)  = mss_dst3(c,j)*snowcap_scl_fct
-                  mss_dst4(c,j)  = mss_dst4(c,j)*snowcap_scl_fct
+                     mss_dst1(c,j)  = mss_dst1(c,j)*snowcap_scl_fct
+                     mss_dst2(c,j)  = mss_dst2(c,j)*snowcap_scl_fct
+                     mss_dst3(c,j)  = mss_dst3(c,j)*snowcap_scl_fct
+                     mss_dst4(c,j)  = mss_dst4(c,j)*snowcap_scl_fct
+                  endif
                endif
             endif
 
