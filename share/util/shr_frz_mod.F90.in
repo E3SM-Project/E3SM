@@ -104,7 +104,8 @@ contains
             &call shr_frz_freezetemp_init first with a valid tfreeze_option')
     endif
 
-    shr_frz_freezetemp = max(shr_frz_freezetemp,-2.0_R8)
+    if (shr_frz_freezetemp<-2.0_R8 .and. s_loglev > 0) &
+       write(s_logunit,F00) 'WARNING shr_frz_freezetemp is less than -2'
 
   end function shr_frz_freezetemp_{DIMS}d
 
