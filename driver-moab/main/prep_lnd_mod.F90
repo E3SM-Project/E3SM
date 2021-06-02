@@ -10,6 +10,9 @@ module prep_lnd_mod
   use seq_comm_mct    , only: CPLID, LNDID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
+  use seq_comm_mct,     only: mlnid  ! iMOAB pid for ocean mesh on component pes
+  use seq_comm_mct,     only: mblxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
   use seq_map_type_mod
   use seq_map_mod
   use seq_flds_mod
@@ -47,6 +50,7 @@ module prep_lnd_mod
   public :: prep_lnd_get_mapper_Sg2l
   public :: prep_lnd_get_mapper_Fg2l
 
+  public :: prep_lnd_migrate_moab
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------

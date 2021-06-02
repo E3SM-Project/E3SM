@@ -770,7 +770,7 @@ contains
     use seq_comm_mct,      only: sameg_al ! same grid as atm
     use spmdMod     , only: iam  ! rank on the land communicator
     use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
-    use clm_varcon  , only: re
+    use elm_varcon  , only: re
     use shr_const_mod, only: SHR_CONST_PI
 
     type(bounds_type) , intent(in)  :: bounds

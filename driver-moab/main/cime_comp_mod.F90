@@ -21,9 +21,10 @@ module cime_comp_mod
   ! share code & libs
   !----------------------------------------------------------------------------
   use shr_kind_mod,      only: r8 => SHR_KIND_R8
+  use shr_kind_mod,      only: i8 => SHR_KIND_I8
   use shr_kind_mod,      only: cs => SHR_KIND_CS
   use shr_kind_mod,      only: cl => SHR_KIND_CL
-  use shr_sys_mod,       only: shr_sys_abort, shr_sys_flush
+  use shr_sys_mod,       only: shr_sys_abort, shr_sys_flush, shr_sys_irtc
   use shr_const_mod,     only: shr_const_cday
   use shr_file_mod,      only: shr_file_setLogLevel, shr_file_setLogUnit
   use shr_file_mod,      only: shr_file_setIO, shr_file_getUnit, shr_file_freeUnit
@@ -61,7 +62,7 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
 
   ! mpi comm data & routines, plus logunit and loglevel
-  use seq_comm_mct, only: CPLID, GLOID, logunit, loglevel, info_taskmap_comp
+  use seq_comm_mct, only: CPLID, GLOID, logunit, loglevel, info_taskmap_comp, info_taskmap_model, info_mprof, info_mprof_dt
   use seq_comm_mct, only: ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
   use seq_comm_mct, only: ALLATMID,ALLLNDID,ALLOCNID,ALLICEID,ALLGLCID,ALLROFID,ALLWAVID,ALLESPID
   use seq_comm_mct, only: CPLALLATMID,CPLALLLNDID,CPLALLOCNID,CPLALLICEID
@@ -76,8 +77,9 @@ module cime_comp_mod
   use seq_comm_mct, only: num_inst_total, num_inst_max
   use seq_comm_mct, only: seq_comm_iamin, seq_comm_name, seq_comm_namelen
   use seq_comm_mct, only: seq_comm_init, seq_comm_setnthreads, seq_comm_getnthreads
-  use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs
+  use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_gloroot
   use seq_comm_mct, only: cpl_inst_tag
+  use seq_comm_mct, only: driver_nnodes, driver_task_node_map
 
   ! clock & alarm routines and variables
   use seq_timemgr_mod, only: seq_timemgr_type
@@ -197,7 +199,9 @@ module cime_comp_mod
   private
 
   ! public data
-  public  :: timing_dir, mpicom_GLOID
+  public  :: timing_dir
+  public  :: mpicom_GLOID
+  public  :: cime_pre_init2_lb
 
   ! public routines
   public  :: cime_pre_init1
@@ -380,6 +384,8 @@ module cime_comp_mod
   real(r8)      :: cktime_acc(10)    ! cktime accumulator array 1 = all, 2 = atm, etc
   integer       :: cktime_cnt(10)    ! cktime counter array
   real(r8)      :: max_cplstep_time
+  real(r8)      :: mpi_init_time     ! time elapsed in mpi_init call
+  real(r8)      :: cime_pre_init2_lb ! time elapsed in cime_pre_init2 call after call to t_initf
   character(CL) :: timing_file       ! Local path to tprof filename
   character(CL) :: timing_dir        ! timing directory
   character(CL) :: tchkpt_dir        ! timing checkpoint directory
@@ -449,6 +455,7 @@ module cime_comp_mod
 
   logical  :: areafact_samegrid      ! areafact samegrid flag
   logical  :: single_column          ! scm mode logical
+  logical  :: iop_mode               ! iop mode logical
   real(r8) :: scmlon                 ! single column lon
   real(r8) :: scmlat                 ! single column lat
   logical  :: aqua_planet            ! aqua planet mode
@@ -558,6 +565,9 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
   real(r8) :: msize,msize0,msize1     ! memory size (high water)
   real(r8) :: mrss ,mrss0 ,mrss1      ! resident size (current memory use)
+  real(r8),allocatable :: msizeOnTask(:),mrssOnTask(:) ! msize,mrss on each MPI task
+  real(r8),allocatable :: msizeOnNode(:),mrssOnNode(:) ! msize,mrss on each node
+  integer  :: mlog
 
   !----------------------------------------------------------------------------
   ! threading control
@@ -596,6 +606,7 @@ module cime_comp_mod
   integer  :: mpicom_CPLALLIACID    ! MPI comm for CPLALLIACID
 
   integer  :: iam_GLOID             ! pe number in global id
+  integer  :: npes_GLOID            ! global number of pes
   logical  :: iamin_CPLID           ! pe associated with CPLID
   logical  :: iamroot_GLOID         ! GLOID masterproc
   logical  :: iamroot_CPLID         ! CPLID masterproc
@@ -609,6 +620,8 @@ module cime_comp_mod
   logical  :: iamin_CPLALLWAVID     ! pe associated with CPLALLWAVID
   logical  :: iamin_CPLALLIACID     ! pe associated with CPLALLIACID
 
+  integer  :: atm_rootpe,lnd_rootpe,ice_rootpe,ocn_rootpe,&
+              glc_rootpe,rof_rootpe,wav_rootpe,iac_rootpe
 
   !----------------------------------------------------------------------------
   ! complist: list of comps on this pe
@@ -679,8 +692,18 @@ contains
     character(len=8) :: c_cpl_inst    ! coupler instance number
     character(len=8) :: c_cpl_npes    ! number of pes in coupler
 
+    integer(i8) :: beg_count          ! start time
+    integer(i8) :: end_count          ! end time
+    integer(i8) :: irtc_rate          ! factor to convert time to seconds
+    
+    beg_count = shr_sys_irtc(irtc_rate)
+    
     call mpi_init(ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_init')
+
+    end_count = shr_sys_irtc(irtc_rate)
+    mpi_init_time = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
+    
     call mpi_comm_dup(MPI_COMM_WORLD, global_comm, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
 
@@ -706,7 +729,7 @@ contains
     end if
 
     !--- set task based threading counts ---
-    call seq_comm_getinfo(GLOID,pethreads=pethreads_GLOID,iam=iam_GLOID)
+    call seq_comm_getinfo(GLOID,pethreads=pethreads_GLOID,iam=iam_GLOID,npes=npes_GLOID)
     call seq_comm_setnthreads(pethreads_GLOID)
 
     !--- get some general data ---
@@ -725,6 +748,15 @@ contains
     iamin_CPLID    = seq_comm_iamin(CPLID)
     comp_iamin(it) = seq_comm_iamin(comp_id(it))
     comp_name(it)  = seq_comm_name(comp_id(it))
+
+    atm_rootpe = seq_comm_gloroot(ALLATMID)
+    lnd_rootpe = seq_comm_gloroot(ALLLNDID)
+    ice_rootpe = seq_comm_gloroot(ALLICEID)
+    ocn_rootpe = seq_comm_gloroot(ALLOCNID)
+    glc_rootpe = seq_comm_gloroot(ALLGLCID)
+    rof_rootpe = seq_comm_gloroot(ALLROFID)
+    wav_rootpe = seq_comm_gloroot(ALLWAVID)
+    iac_rootpe = seq_comm_gloroot(ALLIACID)
 
     do eai = 1,num_inst_atm
        it=it+1
@@ -983,6 +1015,10 @@ contains
 
     real(r8), parameter :: epsilo = shr_const_mwwv/shr_const_mwdair
 
+    integer(i8) :: beg_count          ! start time
+    integer(i8) :: end_count          ! end time
+    integer(i8) :: irtc_rate          ! factor to convert time to seconds
+
     !----------------------------------------------------------
     !| Timer initialization (has to be after mpi init)
     !----------------------------------------------------------
@@ -993,6 +1029,24 @@ contains
          pethreads_GLOID )
     call t_initf(NLFileName, LogPrint=.true., mpicom=mpicom_GLOID, &
          MasterTask=iamroot_GLOID,MaxThreads=maxthreads)
+
+    !----------------------------------------------------------
+    !| Record timer parent/child relationships for what has
+    !  occurred previously. CPL:INIT timer is stopped in
+    !  cime_driver.
+    !----------------------------------------------------------
+    call t_startf('CPL:INIT')
+    call t_adj_detailf(+1)
+
+    call t_startf('CPL:cime_pre_init1')
+    call t_startstop_valsf('CPL:mpi_init', walltime=mpi_init_time)
+    call t_stopf('CPL:cime_pre_init1')
+
+    call t_startf('CPL:ESMF_Initialize')
+    call t_stopf('CPL:ESMF_Initialize')
+
+    call t_startf('CPL:cime_pre_init2')
+    beg_count = shr_sys_irtc(irtc_rate)
 
     if (iamin_CPLID) then
        call seq_io_cpl_init()
@@ -1064,6 +1118,7 @@ contains
          esp_present=esp_present                   , &
          iac_present=iac_present                   , &
          single_column=single_column               , &
+         iop_mode=iop_mode                         , &
          aqua_planet=aqua_planet                   , &
          cpl_seq_option=cpl_seq_option             , &
          drv_threading=drv_threading               , &
@@ -1279,6 +1334,7 @@ contains
        call seq_comm_getinfo(OCNID(ens1), mpicom=mpicom_OCNID)
 
        call shr_scam_checkSurface(scmlon, scmlat, &
+            iop_mode,                             &
             OCNID(ens1), mpicom_OCNID,            &
             lnd_present=lnd_present,              &
             ocn_present=ocn_present,              &
@@ -1298,6 +1354,21 @@ contains
     if(PIO_FILE_IS_OPEN(pioid)) then
        call pio_closefile(pioid)
     endif
+
+    call t_stopf('CPL:cime_pre_init2')
+
+    ! CPL:cime_pre_init2 timer elapsed time will be double counted
+    ! in cime_driver. Recording time spent in timer using shr_sys_irtc
+    ! so that this can be adjusted. Count is started inside the t_startf
+    ! call and stopped outside the t_stopf call to approximate the portion
+    ! of the cost of the two clocks in t_startf/t_stopf that is captured
+    ! by the cime_pre_init2 timer.
+    end_count = shr_sys_irtc(irtc_rate)
+    cime_pre_init2_lb = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
+
+    call t_adj_detailf(-1)
+    ! Remember: CPL:INIT timer is still running, and needs to be stopped
+    ! in cime_driver.F90.
 
   end subroutine cime_pre_init2
 
@@ -1453,6 +1524,13 @@ contains
           complist = trim(complist)//' '//trim(compname)
        endif
     enddo
+    do eri = 1,num_inst_rof
+       iamin_ID = component_get_iamin_compid(rof(eri))
+       if (iamin_ID) then
+          compname = component_get_name(rof(eri))
+          complist = trim(complist)//' '//trim(compname)
+       endif
+    enddo
     do ewi = 1,num_inst_wav
        iamin_ID = component_get_iamin_compid(wav(ewi))
        if (iamin_ID) then
@@ -1599,6 +1677,7 @@ contains
 
     if (atm_present) then
        if (lnd_prognostic) atm_c2_lnd = .true.
+       if (lnd_present   ) atm_c2_lnd = .true. ! needed for aream initialization
        if (rof_prognostic .and. rof_heat) atm_c2_rof = .true.
        if (ocn_prognostic) atm_c2_ocn = .true.
        if (ocn_present   ) atm_c2_ocn = .true. ! needed for aoflux calc if aoflux=ocn
@@ -2381,6 +2460,9 @@ contains
     real(r8)              :: tbnds1_offset        ! Time offset for call to seq_hist_writeaux
     logical               :: lnd2glc_averaged_now ! Whether lnd2glc averages were taken this timestep
     logical               :: prep_glc_accum_avg_called ! Whether prep_glc_accum_avg has been called this timestep
+    integer               :: i, nodeId
+    character(len=15)     :: c_ymdtod
+    character(len=18)     :: c_mprof_file
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, i10.8, i8, A, 8L3 )
@@ -2389,7 +2471,12 @@ contains
 105 format( A, i10.8, i8, A, f10.2, A, f10.2, A, A, i5, A, A)
 108 format( A, f10.2, A, i8.8)
 109 format( A, 2f10.3)
+110 format( A,   999999999(:, A8,  i0, A8,  i0) )
+111 format( A,   999999999(:, A12, i0, A12, i0) )
+112 format( A14, 999999999(:, ',', f13.3) )
+113 format( A14, 999999999(:, ',', f13.3) )
 
+    call t_startf ('CPL:cime_run_init')
     hashint = 0
 
     call seq_infodata_putData(infodata,atm_phase=1,lnd_phase=1,ocn_phase=1,ice_phase=1)
@@ -2414,8 +2501,154 @@ contains
 
     ! --- Write out performance data for initialization
     call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
+#ifndef CPL_BYPASS
+    ! Report on memory usage
+    call shr_mem_getusage(msize,mrss)
+
+    ! (For now, just look at the first instance of each component)
+    if ( iamroot_CPLID .or. &
+         ocn(ens1)%iamroot_compid .or. &
+         atm(ens1)%iamroot_compid .or. &
+         lnd(ens1)%iamroot_compid .or. &
+         ice(ens1)%iamroot_compid .or. &
+         glc(ens1)%iamroot_compid .or. &
+         rof(ens1)%iamroot_compid .or. &
+         wav(ens1)%iamroot_compid .or. &
+         iac(ens1)%iamroot_compid) then
+
+       write(logunit,105) ' memory_write: model date = ',ymd,tod, &
+            ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
+            '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
+    endif
+
+    if (info_mprof > 0) then ! memory profiling is enabled
+       allocate( msizeOnTask(0:npes_GLOID-1), mrssOnTask(0:npes_GLOID-1), stat=ierr)
+       if (ierr /= 0) call shr_sys_abort('cime_run: allocate msizeOnTask,mrssOnTask failed')
+
+       ! log from cpl_rootpe only: first, gather from all tasks
+       msizeOnTask(:) = 0
+       mrssOnTask(:)  = 0
+       call mpi_gather (msize, 1, mpi_real8, &
+                        msizeOnTask, 1, mpi_real8, &
+                        0, mpicom_GLOID, ierr)
+       call mpi_gather (mrss, 1, mpi_real8, &
+                        mrssOnTask, 1, mpi_real8, &
+                        0, mpicom_GLOID, ierr)
+
+       if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
+          allocate( msizeOnNode(0:driver_nnodes-1), mrssOnNode(0:driver_nnodes-1), stat=ierr)
+          if (ierr /= 0) call shr_sys_abort('cime_run: allocate msizeOnNode,mrssOnNode failed')
+          msizeOnNode(:) = 0
+          mrssOnNode(:) = 0
+          do i=0,npes_GLOID-1
+             nodeId = driver_task_node_map(i)
+             msizeOnNode(nodeId) =  msizeOnNode(nodeId) + msizeOnTask(i)
+             mrssOnNode(nodeId)  =  mrssOnNode(nodeId)  + mrssOnTask(i)
+          enddo
+       endif ! aggregate
+
+       ! write to standalone file
+       if ( iamroot_CPLID) then
+          mlog = shr_file_getUnit()
+          ! log-name: memory.{0,1,2,3,4}.$nsecs.log
+          write(c_mprof_file,'(a7,i1,a1,i0,a4)') 'memory.',info_mprof,'.',info_mprof_dt,'.log'
+          inquire(file=trim(c_mprof_file),exist=exists)
+          if (exists) then
+             open(mlog, file=trim(c_mprof_file), status='old', position='append')
+          else
+             open(mlog, file=trim(c_mprof_file), status='new', position='append')
+             ! write header row
+             if (info_mprof == 2) then       ! log each task
+                write(mlog,110) "#TOD", &
+                   (", VSZ_T_",i,", RSS_T_",i,i=0,npes_GLOID-1)
+             else if (info_mprof == 1) then  ! log ROOTPE tasks only
+                write(mlog,111) "#TOD",&
+                   & ", VSZ_CPL_T_",iam_GLOID, ", RSS_CPL_T_",iam_GLOID,  &
+                   & ", VSZ_ATM_T_",atm_rootpe,", RSS_ATM_T_",atm_rootpe, &
+                   & ", VSZ_LND_T_",lnd_rootpe,", RSS_LND_T_",lnd_rootpe, &
+                   & ", VSZ_ICE_T_",ice_rootpe,", RSS_ICE_T_",ice_rootpe, &
+                   & ", VSZ_OCN_T_",ocn_rootpe,", RSS_OCN_T_",ocn_rootpe, &
+                   & ", VSZ_GLC_T_",glc_rootpe,", RSS_GLC_T_",glc_rootpe, &
+                   & ", VSZ_ROF_T_",rof_rootpe,", RSS_ROF_T_",rof_rootpe, &
+                   & ", VSZ_WAV_T_",wav_rootpe,", RSS_WAV_T_",wav_rootpe, &
+                   & ", VSZ_IAC_T_",iac_rootpe,", RSS_IAC_T_",iac_rootpe
+             else if (info_mprof == 4) then  ! log each node
+                write(mlog,110) "#TOD", &
+                   (", VSZ_N_",i,", RSS_N_",i,i=0,driver_nnodes-1)
+             else if (info_mprof == 3) then  ! log ROOTPE nodes
+                write(mlog,111) "#TOD",&
+                   & ", VSZ_CPL_N_",driver_task_node_map(iam_GLOID), &
+                   & ", RSS_CPL_N_",driver_task_node_map(iam_GLOID), &
+                   & ", VSZ_ATM_N_",driver_task_node_map(atm_rootpe),&
+                   & ", RSS_ATM_N_",driver_task_node_map(atm_rootpe),&
+                   & ", VSZ_LND_N_",driver_task_node_map(lnd_rootpe),&
+                   & ", RSS_LND_N_",driver_task_node_map(lnd_rootpe),&
+                   & ", VSZ_ICE_N_",driver_task_node_map(ice_rootpe),&
+                   & ", RSS_ICE_N_",driver_task_node_map(ice_rootpe),&
+                   & ", VSZ_OCN_N_",driver_task_node_map(ocn_rootpe),&
+                   & ", RSS_OCN_N_",driver_task_node_map(ocn_rootpe),&
+                   & ", VSZ_GLC_N_",driver_task_node_map(glc_rootpe),&
+                   & ", RSS_GLC_N_",driver_task_node_map(glc_rootpe),&
+                   & ", VSZ_ROF_N_",driver_task_node_map(rof_rootpe),&
+                   & ", RSS_ROF_N_",driver_task_node_map(rof_rootpe),&
+                   & ", VSZ_WAV_N_",driver_task_node_map(wav_rootpe),&
+                   & ", RSS_WAV_N_",driver_task_node_map(wav_rootpe),&
+                   & ", VSZ_IAC_N_",driver_task_node_map(iac_rootpe),&
+                   & ", RSS_IAC_N_",driver_task_node_map(iac_rootpe)
+             endif
+          endif
+
+          ! log memory highwater and usage
+          write(c_ymdtod,'(f14.5)') ymd+tod/86400.
+          if (info_mprof == 2) then        ! log each task
+             !---YMMDD.HHMMSS,--1234.567,--1234.567, msize,mrss (in MB) for each task
+             write(mlog,112) c_ymdtod, &
+                (msizeOnTask(i),mrssOnTask(i),i=0,npes_GLOID-1)
+          else if (info_mprof == 1) then  ! log ROOTPE tasks only
+             write(mlog,113) c_ymdtod, &
+                (/msizeOnTask(iam_GLOID), mrssOnTask(iam_GLOID),  &
+                & msizeOnTask(atm_rootpe),mrssOnTask(atm_rootpe), &
+                & msizeOnTask(lnd_rootpe),mrssOnTask(lnd_rootpe), &
+                & msizeOnTask(ice_rootpe),mrssOnTask(ice_rootpe), &
+                & msizeOnTask(ocn_rootpe),mrssOnTask(ocn_rootpe), &
+                & msizeOnTask(glc_rootpe),mrssOnTask(glc_rootpe), &
+                & msizeOnTask(rof_rootpe),mrssOnTask(rof_rootpe), &
+                & msizeOnTask(wav_rootpe),mrssOnTask(wav_rootpe), &
+                & msizeOnTask(iac_rootpe),mrssOnTask(iac_rootpe)/)
+          else if (info_mprof == 4) then  ! log each node
+             write(mlog,112) c_ymdtod, &
+                (msizeOnNode(i),mrssOnNode(i),i=0,driver_nnodes-1)
+          else if (info_mprof == 3) then  ! log ROOTPE nodes
+             write(mlog,113) c_ymdtod, &
+                (/msizeOnNode(driver_task_node_map(iam_GLOID)),  &
+                &  mrssOnNode(driver_task_node_map(iam_GLOID)),  &
+                & msizeOnNode(driver_task_node_map(atm_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(atm_rootpe)), &
+                & msizeOnNode(driver_task_node_map(lnd_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(lnd_rootpe)), &
+                & msizeOnNode(driver_task_node_map(ice_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(ice_rootpe)), &
+                & msizeOnNode(driver_task_node_map(ocn_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(ocn_rootpe)), &
+                & msizeOnNode(driver_task_node_map(glc_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(glc_rootpe)), &
+                & msizeOnNode(driver_task_node_map(rof_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(rof_rootpe)), &
+                & msizeOnNode(driver_task_node_map(wav_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(wav_rootpe)), &
+                & msizeOnNode(driver_task_node_map(iac_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(iac_rootpe))/)
+          else
+             write(logunit,*) "cime_run: valid info_mprof values:0-4; given:",info_mprof
+          endif
+       endif ! iamroot_CPLID
+    endif ! info_mprof > 0
+#endif
+    ! Write out a timing file checkpoint
     write(timing_file,'(a,i8.8,a1,i5.5)') &
           trim(tchkpt_dir)//"/model_timing"//trim(cpl_inst_tag)//"_",ymd,"_",tod
+
+    call t_stopf ('CPL:cime_run_init')
 
     call t_set_prefixf("CPL:INIT_")
     call cime_write_performance_checkpoint(output_perf,timing_file,mpicom_GLOID)
@@ -3289,24 +3522,92 @@ contains
           endif
        endif
 #ifndef CPL_BYPASS
-       if (tod == 0 .or. info_debug > 1) then
+       if (tod == 0 .or. info_debug > 1 .or. (mod(tod, info_mprof_dt) == 0)) then
+
           !! Report on memory usage
+          call shr_mem_getusage(msize,mrss)
+
           !! For now, just look at the first instance of each component
-          if ( iamroot_CPLID .or. &
+          if ((tod == 0 .or. info_debug > 1) .and. &
+              (iamroot_CPLID .or. &
                ocn(ens1)%iamroot_compid .or. &
                atm(ens1)%iamroot_compid .or. &
                lnd(ens1)%iamroot_compid .or. &
                ice(ens1)%iamroot_compid .or. &
                glc(ens1)%iamroot_compid .or. &
                wav(ens1)%iamroot_compid .or. &
-               iac(ens1)%iamroot_compid) then
-             call shr_mem_getusage(msize,mrss,.true.)
+               rof(ens1)%iamroot_compid .or. &
+               iac(ens1)%iamroot_compid)) then
 
              write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                   ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
                   '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
           endif
-       endif
+          if (info_mprof > 0) then ! memory profiling is enabled
+             call mpi_gather (msize, 1, mpi_real8, &
+                              msizeOnTask, 1, mpi_real8, &
+                              0, mpicom_GLOID, ierr)
+             call mpi_gather (mrss, 1, mpi_real8, &
+                              mrssOnTask, 1, mpi_real8, &
+                              0, mpicom_GLOID, ierr)
+
+             if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
+                msizeOnNode(:) = 0
+                mrssOnNode(:) = 0
+                do i=0,npes_GLOID-1
+                   nodeId = driver_task_node_map(i)
+                   msizeOnNode(nodeId) =  msizeOnNode(nodeId) + msizeOnTask(i)
+                   mrssOnNode(nodeId)  =  mrssOnNode(nodeId)  + mrssOnTask(i)
+                enddo
+             endif
+
+             if (iamroot_CPLID) then
+                ! log memory highwater and usage
+                write(c_ymdtod,'(f14.5)') ymd+tod/86400.
+                if (info_mprof == 2) then      ! log each task
+                   !---YMMDD.HHMMSS,--1234.567,--1234.567, msize,mrss (in MB) for each task
+                   write(mlog,112) c_ymdtod, &
+                      (msizeOnTask(i),mrssOnTask(i),i=0,npes_GLOID-1)
+                else if (info_mprof == 1) then ! ROOTPEs only
+                   write(mlog,113) c_ymdtod, &
+                      (/msizeOnTask(iam_GLOID), mrssOnTask(iam_GLOID),  &
+                      & msizeOnTask(atm_rootpe),mrssOnTask(atm_rootpe), &
+                      & msizeOnTask(lnd_rootpe),mrssOnTask(lnd_rootpe), &
+                      & msizeOnTask(ice_rootpe),mrssOnTask(ice_rootpe), &
+                      & msizeOnTask(ocn_rootpe),mrssOnTask(ocn_rootpe), &
+                      & msizeOnTask(glc_rootpe),mrssOnTask(glc_rootpe), &
+                      & msizeOnTask(rof_rootpe),mrssOnTask(rof_rootpe), &
+                      & msizeOnTask(wav_rootpe),mrssOnTask(wav_rootpe), &
+                      & msizeOnTask(iac_rootpe),mrssOnTask(iac_rootpe)/)
+                else if (info_mprof == 4) then  ! log each node
+                   write(mlog,112) c_ymdtod, &
+                      (msizeOnNode(i),mrssOnNode(i),i=0,driver_nnodes-1)
+                else if (info_mprof == 3) then  ! log ROOTPE nodes
+                   write(mlog,113) c_ymdtod, &
+                      (/msizeOnNode(driver_task_node_map(iam_GLOID)),  &
+                      &  mrssOnNode(driver_task_node_map(iam_GLOID)),  &
+                      & msizeOnNode(driver_task_node_map(atm_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(atm_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(lnd_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(lnd_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(ice_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(ice_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(ocn_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(ocn_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(glc_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(glc_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(rof_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(rof_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(wav_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(wav_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(iac_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(iac_rootpe))/)
+                else
+                   write(logunit,*) "cime_run: valid info_mprof values:0-4; given:",info_mprof
+                endif
+             endif ! iamroot_CPLID
+          endif ! info_mprof > 0
+       endif ! tod == 0
 #endif
        if (info_debug > 1) then
           if (iamroot_CPLID) then
@@ -3420,6 +3721,16 @@ contains
        write(logunit,FormatR) subname,' pes max memory last usage (MB)  = ',mrss1
        write(logunit,'(//)')
        close(logunit)
+       if (info_mprof > 0) then
+          close(mlog)
+          call shr_file_freeUnit(mlog)
+       endif
+    endif
+    if (info_mprof > 0) then
+       deallocate(msizeOnTask, mrssOnTask)
+       if (info_mprof > 2) then
+          deallocate(msizeOnNode, mrssOnNode, driver_task_node_map)
+       endif
     endif
 
     call t_adj_detailf(-1)

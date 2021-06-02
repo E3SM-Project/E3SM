@@ -35,6 +35,7 @@ def _main_func():
         atm_model = case.get_value("COMP_ATM")
         gmake_opts = get_standard_makefile_args(case)
         blddir = os.path.join(case.get_value("EXEROOT"),"cpl","obj")
+        srcroot = case.get_value("SRCROOT")
         
     if ocn_model == 'mom' or atm_model == "ufsatm":
         gmake_opts += "USE_FMS=TRUE"
@@ -42,10 +43,10 @@ def _main_func():
 
     expect((num_esp is None) or (int(num_esp) == 1), "ESP component restricted to one instance")
 
-
+    
     with open(os.path.join(blddir,'Filepath'), 'w') as out:
         out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")
-        out.write(os.path.join(cimeroot, "src", "drivers", "moab", "main") + "\n")
+        out.write(os.path.join(srcroot, "driver-moab", "main") + "\n")
 
     # build model executable
 

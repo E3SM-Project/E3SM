@@ -161,7 +161,10 @@ module seq_comm_mct
 
   ! taskmap output level specifications for components
   ! (0:no output, 1:compact, 2:verbose)
-  integer, public :: info_taskmap_comp
+  integer, public :: info_taskmap_model, info_taskmap_comp
+  integer, public :: driver_nnodes
+  integer, public, allocatable :: driver_task_node_map(:)
+  integer, public :: info_mprof, info_mprof_dt
 
   ! suffix for log and timing files if multi coupler driver
   character(len=seq_comm_namelen), public  :: cpl_inst_tag
@@ -224,6 +227,8 @@ module seq_comm_mct
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
   integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
   integer, public :: mrofid   ! iMOAB id of moab rof app
+  integer, public :: mbrxid   ! iMOAB id of moab rof migrated to coupler pes
+
   integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
 
   !=======================================================================
@@ -257,6 +262,7 @@ contains
     integer :: drv_inst
     character(len=8) :: c_drv_inst      ! driver instance number
     character(len=8) :: c_driver_numpes ! number of pes in driver
+    character(len=16):: c_comm_name     ! comm. name
     character(len=seq_comm_namelen) :: valid_comps(ncomps)
 
     integer :: &
@@ -269,8 +275,7 @@ contains
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
          iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads, &
-         info_taskmap_model
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
 
     namelist /cime_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
@@ -283,7 +288,7 @@ contains
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
          iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, iac_layout, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads,             &
-         info_taskmap_model, info_taskmap_comp
+         info_taskmap_model, info_taskmap_comp, info_mprof, info_mprof_dt
     !----------------------------------------------------------
 
     ! make sure this is first pass and set comms unset
@@ -354,6 +359,8 @@ contains
        call comp_pelayout_init(numpes, cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads)
        info_taskmap_model = 0
        info_taskmap_comp  = 0
+       info_mprof         = 0
+       info_mprof_dt      = 86400
 
        ! Read namelist if it exists
 
@@ -393,6 +400,8 @@ contains
 
     call shr_mpi_bcast(info_taskmap_model,DRIVER_COMM,'info_taskmap_model')
     call shr_mpi_bcast(info_taskmap_comp, DRIVER_COMM,'info_taskmap_comp' )
+    call shr_mpi_bcast(info_mprof,   DRIVER_COMM,'info_mprof')
+    call shr_mpi_bcast(info_mprof_dt,DRIVER_COMM,'info_mprof_dt')
 
 #ifdef TIMING
     if (info_taskmap_model > 0) then
@@ -424,14 +433,26 @@ contains
           call shr_sys_flush(logunit)
        endif
 
+       if (info_mprof > 2) then
+          allocate( driver_task_node_map(0:global_numpes-1), stat=ierr)
+          if (ierr /= 0) call shr_sys_abort(trim(subname)//' allocate driver_task_node_map failed ')
+       endif
+
        call t_startf("shr_taskmap_write")
        if (drv_inst == 0) then
+          c_comm_name = 'GLOBAL'
+       else
+          c_comm_name = 'DRIVER #'//trim(adjustl(c_drv_inst))
+       endif
+       if (info_mprof > 2) then
           call shr_taskmap_write(logunit, DRIVER_COMM, &
-                                 'GLOBAL', &
-                                 verbose=verbose_taskmap_output)
+                                 c_comm_name, &
+                                 verbose=verbose_taskmap_output, &
+                                 save_nnodes=driver_nnodes, &
+                                 save_task_node_map=driver_task_node_map)
        else
           call shr_taskmap_write(logunit, DRIVER_COMM, &
-                                 'DRIVER #'//trim(adjustl(c_drv_inst)), &
+                                 c_comm_name, &
                                  verbose=verbose_taskmap_output)
        endif
        call t_stopf("shr_taskmap_write")
@@ -588,6 +609,13 @@ contains
     if (ierr /= 0) then
        write(logunit,*) trim(subname),' ERROR initialize MOAB '
     endif
+#ifdef MOABDDD
+!   write the global_mype , for easier debugging with ddd
+!   will never use ddd for more than 10 processes
+    if (global_mype .le. 10) then
+       write(logunit,*) trim(subname), ' global_mype=', global_mype
+    endif
+#endif
     mhid = -1     ! iMOAB id for atm comp, coarse mesh
     mhfid = -1    ! iMOAB id for atm, fine mesh
     mpoid = -1    ! iMOAB id for ocn comp
@@ -599,6 +627,9 @@ contains
     mblxid = -1   ! iMOAB id for land on coupler pes
     mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes
     mpsiid = -1   ! iMOAB for sea-ice
+    mbixid = -1   ! iMOAB for sea-ice migrated to coupler
+    mrofid = -1   ! iMOAB id of moab rof app
+    mbrxid = -1   ! iMOAB id of moab rof migrated to coupler
     num_moab_exports = 0 ! mostly used in debugging
 
     deallocate(comps,comms)
@@ -722,6 +753,8 @@ contains
     !
     ! Also calls mct_world_clean, to be symmetric with the mct_world_init call from
     ! seq_comm_init.
+
+    integer :: id
 
     character(*), parameter :: subName =   '(seq_comm_clean) '
     !----------------------------------------------------------

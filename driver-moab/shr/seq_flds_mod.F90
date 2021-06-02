@@ -702,6 +702,17 @@ contains
     units    = 'kg m-3'
     attname  = 'Sa_dens'
     call metadata_set(attname, longname, stdname, units)
+    
+    ! UoverN for use by topounits
+    if (trim(cime_model) == 'e3sm') then
+       call seq_flds_add(a2x_states,"Sa_uovern")
+       call seq_flds_add(x2l_states,"Sa_uovern")
+       longname = 'Froude Number'
+       stdname  = 'Froude Number'
+       units    = 'Unitless'
+       attname  = 'Sa_uovern'
+       call metadata_set(attname, longname, stdname, units)
+    end if
 
     ! convective precipitation rate
     ! large-scale (stable) snow rate (water equivalent)
@@ -1401,6 +1412,15 @@ contains
     attname  = 'So_ustar'
     call metadata_set(attname, longname, stdname, units)
 
+    ! Water temperature heat flux from ocean
+    call seq_flds_add(o2x_fluxes, "Faoo_h2otemp")
+    call seq_flds_add(x2a_fluxes, "Faoo_h2otemp")
+    longname = 'Water temperature heat flux from ocean'
+    stdname  = 'water_temperature_heat_flux'
+    units    = 'W m-2'
+    attname  = 'Faoo_h2otemp'
+    call metadata_set(attname, longname, stdname, units)
+
     !-----------------------------
     ! ice<->ocn only exchange
     !-----------------------------
@@ -1434,17 +1454,6 @@ contains
     units    = 'W m-2'
     attname  = 'Fioo_q'
     call metadata_set(attname, longname, stdname, units)
-
-    if (trim(cime_model) == 'e3sm') then
-       ! Ocean melt (q<0) potential
-       call seq_flds_add(o2x_fluxes,"Fioo_meltp")
-       call seq_flds_add(x2i_fluxes,"Fioo_meltp")
-       longname = 'Ocean melt (q<0) potential'
-       stdname  = 'surface_snow_and_ice_melt_heat_flux'
-       units    = 'W m-2'
-       attname  = 'Fioo_meltp'
-       call metadata_set(attname, longname, stdname, units)
-    end if
 
     if (trim(cime_model) == 'e3sm') then
        ! Ocean frazil production
@@ -2060,23 +2069,33 @@ contains
        units    = 'kg m-2 s-1'
        attname  = 'Flrl_demand'
        call metadata_set(attname, longname, stdname, units)
-    call seq_flds_add(l2x_fluxes,'Flrl_Tqsur')
-    call seq_flds_add(l2x_fluxes_to_rof,'Flrl_Tqsur')
-    call seq_flds_add(x2r_fluxes,'Flrl_Tqsur')
-    longname = 'Temperature of surface runoff'
-    stdname  = 'Temperature_of_surface_runoff'
-    units    = 'Kelvin'
-    attname  = 'Flrl_Tqsur'
-    call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(l2x_fluxes,'Flrl_Tqsub')
-    call seq_flds_add(l2x_fluxes_to_rof,'Flrl_Tqsub')
-    call seq_flds_add(x2r_fluxes,'Flrl_Tqsub')
-    longname = 'Temperature of subsurface runoff'
-    stdname  = 'Temperature_of_subsurface_runoff'
-    units    = 'Kelvin'
-    attname  = 'Flrl_Tqsub'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(l2x_fluxes,'Flrl_Tqsur')
+       call seq_flds_add(l2x_fluxes_to_rof,'Flrl_Tqsur')
+       call seq_flds_add(x2r_fluxes,'Flrl_Tqsur')
+       longname = 'Temperature of surface runoff'
+       stdname  = 'Temperature_of_surface_runoff'
+       units    = 'Kelvin'
+       attname  = 'Flrl_Tqsur'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(l2x_fluxes,'Flrl_Tqsub')
+       call seq_flds_add(l2x_fluxes_to_rof,'Flrl_Tqsub')
+       call seq_flds_add(x2r_fluxes,'Flrl_Tqsub')
+       longname = 'Temperature of subsurface runoff'
+       stdname  = 'Temperature_of_subsurface_runoff'
+       units    = 'Kelvin'
+       attname  = 'Flrl_Tqsub'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! Cosine of Zenith angle (-)
+       call seq_flds_add(l2x_fluxes,'coszen_str')
+       call seq_flds_add(x2r_fluxes,'coszen_str')
+       longname = 'Cosine of Zenith angle'
+       stdname  = 'coszen'
+       units    = ' '
+       attname  = 'coszen_str'
+       call metadata_set(attname, longname, stdname, units)
     endif
 
     ! Currently only the CESM land and runoff models treat irrigation as a separate

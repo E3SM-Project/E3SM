@@ -10,6 +10,11 @@ module prep_ocn_mod
   use seq_comm_mct,     only: num_inst_max
   use seq_comm_mct,     only: CPLID, OCNID, logunit
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
+
+  use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
+  use seq_comm_mct,     only: mboxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
+
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
   use seq_map_mod
@@ -67,6 +72,7 @@ module prep_ocn_mod
   public :: prep_ocn_get_mapper_Fg2o
   public :: prep_ocn_get_mapper_Sw2o
 
+  public :: prep_ocn_migrate_moab
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
@@ -1466,6 +1472,7 @@ contains
     prep_ocn_get_mapper_Sw2o => mapper_Sw2o
   end function prep_ocn_get_mapper_Sw2o
 
+
   ! exposed method to migrate projected tag from coupler pes to ocean pes
   subroutine prep_ocn_migrate_moab(infodata)
   !---------------------------------------------------------------
@@ -1539,4 +1546,5 @@ contains
 #endif
 
   end subroutine prep_ocn_migrate_moab
+
 end module prep_ocn_mod

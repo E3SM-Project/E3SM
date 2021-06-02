@@ -22,7 +22,7 @@
 !    character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
 !    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
 !    character(*),parameter :: fraclist_g = 'gfrac:lfrac'
-!    character(*),parameter :: fraclist_r = 'lfrac:rfrac'
+!    character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'
 !
 !  we assume ocean and ice are on the same grids, same masks
 !  we assume ocn2atm and ice2atm are masked maps
@@ -71,6 +71,7 @@
 !        to attempt to preserve non-land gridcells.
 !      fractions_l(lfrac) = mapa2l(fractions_a(lfrac))
 !      fractions_r(lfrac) = mapl2r(fractions_l(lfrac))
+!      fractions_r(lfrin) = mapl2r(fractions_l(lfrin))
 !      fractions_g(lfrac) = mapl2g(fractions_l(lfrac))
 !
 !  run-time (frac_set):
@@ -98,6 +99,20 @@
 !      has been defered since the ratio always close to 1.0
 !
 !  budgets use the standard afrac, ofrac, ifrac, and lfrac to compute
+!
+!  NOTE: In trigrid configurations, lfrin MUST be defined as the 
+!  conservative o2l mapping of the complement of the ocean mask.
+!  In non-trigrid configurations, lfrin is generally associated with
+!  the fraction of land grid defined by the surface dataset and might
+!  be 1 everywhere for instance.  In many cases, the non-trigrid
+!  lfrin is defined to be the conservative o2a mapping of the complement
+!  of the ocean mask.  In this case, it is defined the same as the
+!  trigrid.  But to support all cases, 
+!  for trigrid:
+!    mapping from the land grid should use the lfrin field (same in non-trigrid)
+!    budget diagnostics should use lfrin (lfrac in non-trigrid)
+!    merges in the atm should use lfrac (same in non-trigrid)
+!    the runoff should use the lfrin fraction in the runoff merge (lfrac in non-trigrid)
 !
 !  fraction and domain checks
 !    initialization:
@@ -273,7 +288,7 @@ contains
     character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
     character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
     character(*),parameter :: fraclist_g = 'gfrac:lfrac'
-    character(*),parameter :: fraclist_r = 'lfrac:rfrac'
+    character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'
     character(*),parameter :: fraclist_w = 'wfrac'
     character(*),parameter :: fraclist_z = 'afrac:lfrac'
 
@@ -461,7 +476,7 @@ contains
     endif
 
     ! --- finally, set fractions_l(lfrac) from fractions_a(lfrac)
-    ! --- and fractions_r(lfrac) from fractions_l(lfrac)
+    ! --- and fractions_r(lfrac:lfrin) from fractions_l(lfrac:lfrin)
     ! --- and fractions_g(lfrac) from fractions_l(lfrac)
 
     if (lnd_present) then
@@ -477,7 +492,7 @@ contains
     end if
     if (lnd_present .and. rof_present) then
        mapper_l2r => prep_rof_get_mapper_Fl2r()
-       call seq_map_map(mapper_l2r, fractions_l, fractions_r, fldlist='lfrac', norm=.false.)
+       call seq_map_map(mapper_l2r, fractions_l, fractions_r, fldlist='lfrac:lfrin', norm=.false.)
     endif
     if (lnd_present .and. glc_present) then
        mapper_l2g => prep_glc_get_mapper_Fl2g()

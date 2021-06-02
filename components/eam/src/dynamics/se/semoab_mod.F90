@@ -24,7 +24,7 @@ module semoab_mod
   use seq_comm_mct,  only: MHPGID      !  app id on moab side, for PGx style mesh, uniform from se
   use seq_comm_mct,  only: atm_pg_active ! turn it on when PG style mesh active
 
-  use dyn_grid,      only: fv_nphys, fv_physgrid ! phys grid mesh will be replicated too
+  use dyn_grid,      only: fv_nphys ! phys grid mesh will be replicated too
 
   use control_mod, only :  west, east, south, north  ! 1, 2, 3, 4
   implicit none
@@ -662,32 +662,28 @@ contains
                      edge_verts(j) = iv !  to form the local connectivity array
                      if ( vdone_c(edge(1, idx)) .gt.  vdone_c(edge(2, idx)) ) pos_edge = .false.
                      if (j .eq. 1) then
-                         current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(1,1,2)
-                         current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(1,1,2)
+                         call gfr_f_get_corner_latlon(ie, 1, 1, 2, current_2d_vertex%lat, current_2d_vertex%lon)
                          if (pos_edge) then
                              vdone_pg (iv) = gdofel(ix + 2) ! elem(ie)%gdofP(2,1) ! gdofel(ix+ (j-1)*np + i)
                          else
                              vdone_pg (iv) = gdofel(ix + np - 1) !elem(ie)%gdofP(np-1,1) !
                          endif
                      else if (j .eq. 2) then
-                         current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(2,1,3)
-                         current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(2,1,3)
+                         call gfr_f_get_corner_latlon(ie, 2, 1, 3, current_2d_vertex%lat, current_2d_vertex%lon)
                          if (pos_edge) then
                              vdone_pg (iv) = gdofel(ix + (2 - 1) * np + np)!elem(ie)%gdofP(np,2) ! ! gdofel(ix+ (j-1)*np + i)
                          else
                              vdone_pg (iv) = gdofel(ix + (np - 2) * np + np)!elem(ie)%gdofP(np,np - 1) !
                          endif
                      else if (j .eq. 3) then
-                         current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(2,2,4)
-                         current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(2,2,4)
+                         call gfr_f_get_corner_latlon(ie, 2, 2, 4, current_2d_vertex%lat, current_2d_vertex%lon)
                          if (pos_edge) then
                              vdone_pg (iv) = gdofel(ix+ (np - 1) * np + np - 1)!elem(ie)%gdofP(np-1,np) !
                          else
                              vdone_pg (iv) = gdofel(ix+ (np-1)*np + 2) !elem(ie)%gdofP(2,np) !
                          endif
                      else ! if (j .eq. 4)
-                         current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(1,2,1)
-                         current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(1,2,1)
+                         call gfr_f_get_corner_latlon(ie, 1, 2, 1, current_2d_vertex%lat, current_2d_vertex%lon)
                          if (pos_edge) then
                              vdone_pg (iv) = gdofel(ix+ (np - 2)*np + 1) !elem(ie)%gdofP(1,np-1) !
                          else
@@ -706,8 +702,7 @@ contains
 
               enddo ! do j=1,4
               ! create the middle vertex too, in the center
-              current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(1,1,3)
-              current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(1,1,3)
+              call gfr_f_get_corner_latlon(ie, 1, 1, 3, current_2d_vertex%lat, current_2d_vertex%lon)
               iv = nverts_c + edge_index + ie ! middle vertices are after corners, and edge vertices
               middle_vertex = iv
               vdone_pg (middle_vertex) = gdofel(ix+ np + 2)!elem(ie)%gdofP(2,2) ! first in the interior, not on edges!
