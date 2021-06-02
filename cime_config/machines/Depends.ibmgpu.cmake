@@ -41,7 +41,7 @@ set(FILES_NEED_OPENMP_FLAGS
   eam/src/physics/crm/samomp/boundaries.F90
   eam/src/physics/crm/samomp/coriolis.F90
   eam/src/physics/crm/samomp/crmtracers.F90
-  eam/src/physics/crm/samomp/crm_ecpp_output_module.F90
+  eam/src/physics/crm/crm_ecpp_output_module.F90
   eam/src/physics/crm/crm_input_module.F90
   eam/src/physics/crm/samomp/crm_surface.F90
   eam/src/physics/crm/crm_output_module.F90

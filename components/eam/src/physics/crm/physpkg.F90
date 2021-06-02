@@ -1245,7 +1245,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   use phys_control,           only: use_qqflx_fixer, use_mass_borrower
   use crmdims,                only: crm_nz, crm_nx, crm_ny, crm_dx, crm_dy, crm_dt
   use crm_physics,            only: crm_physics_tend, crm_surface_flux_bypass_tend
-  use crm_ecpp_output_module, only: crm_ecpp_output_type
+  use crm_ecpp_output_module, only: crm_ecpp_output_type, crm_ecpp_output_initialize, crm_ecpp_output_finalize
   use cloud_diagnostics,      only: cloud_diagnostics_calc
 
 #if defined( ECPP )
@@ -1566,7 +1566,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   ! Initialize variabale for ECPP data
   !-----------------------------------------------------------------------------
 #if defined( ECPP )
-  if (use_ECPP) call crm_ecpp_output%initialize(pcols,pver)
+  if (use_ECPP) call call crm_ecpp_output_initialize(crm_ecpp_output,ncol,pver)
 #endif
   !-----------------------------------------------------------------------------
   ! Run the CRM 
@@ -1648,7 +1648,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
 
     end if ! nstep.ne.0 .and. mod(nstep, necpp).eq.0
 
-    call crm_ecpp_output%finalize()
+    call crm_ecpp_output_finalize(crm_ecpp_output)
 
   end if ! use_ECPP
 #endif /* ECPP */

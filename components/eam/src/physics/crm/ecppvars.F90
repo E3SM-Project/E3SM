@@ -1,5 +1,4 @@
 module ecppvars
-#ifdef ECPP
 
   use params, only: crm_rknd
 
@@ -89,5 +88,5 @@ module ecppvars
   real(crm_rknd), dimension(:,:,:,:,:), allocatable :: qlsink_bf_cen_sum
   real(crm_rknd), dimension(:,:,:,:,:), allocatable :: prain_cen_sum
   real(crm_rknd), dimension(:,:,:,:,:), allocatable :: qlsink_avg_cen_sum
-#endif /*ECPP*/
+  
 end module ecppvars
