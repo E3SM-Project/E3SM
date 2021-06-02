@@ -161,7 +161,7 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   // Names of active gases
-  // TODO: Is there anyway to store the gas_names_1d information somewhere once,
+  // TODO: Is there any way to store the gas_names_1d information somewhere once,
   // rather than populate this array every step?
   // It appears that "gas_concs.init(...)" requires a YAKL string1d array as input,
   // which would need to be defined with its size pre-initialization, but this breaks the
@@ -201,14 +201,6 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_sw_flux_dn_dir = m_rrtmgp_fields_out.at("SW_flux_dn_dir").get_reshaped_view<Real**>();
   auto d_lw_flux_up = m_rrtmgp_fields_out.at("LW_flux_up").get_reshaped_view<Real**>();
   auto d_lw_flux_dn = m_rrtmgp_fields_out.at("LW_flux_dn").get_reshaped_view<Real**>();
-  auto d_qv  = m_rrtmgp_fields_in.at("qv").get_reshaped_view<const Real**>();
-  auto d_co2 = m_rrtmgp_fields_in.at("co2").get_reshaped_view<const Real**>();
-  auto d_o3  = m_rrtmgp_fields_in.at("o3").get_reshaped_view<const Real**>();
-  auto d_n2o = m_rrtmgp_fields_in.at("n2o").get_reshaped_view<const Real**>();
-  auto d_co  = m_rrtmgp_fields_in.at("co").get_reshaped_view<const Real**>();
-  auto d_ch4 = m_rrtmgp_fields_in.at("ch4").get_reshaped_view<const Real**>();
-  auto d_o2  = m_rrtmgp_fields_in.at("o2").get_reshaped_view<const Real**>();
-  auto d_n2  = m_rrtmgp_fields_in.at("n2").get_reshaped_view<const Real**>();
 
   // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
   // as the fastest index. For this reason we must copy the data.
