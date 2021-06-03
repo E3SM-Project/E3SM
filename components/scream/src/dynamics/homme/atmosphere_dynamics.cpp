@@ -328,6 +328,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   m_ic_remapper->register_field(m_ref_grid_fields.at("phi_int"),m_dyn_grid_fields.at("phinh_i"));
   m_ic_remapper->register_field(m_ref_grid_fields.at("horiz_winds"),m_dyn_grid_fields.at("v"));
   m_ic_remapper->register_field(m_ref_grid_fields.at("pseudo_density"),m_dyn_grid_fields.at("dp3d"));
+  m_ic_remapper->register_field(m_ref_grid_fields.at("ps"),m_dyn_grid_fields.at("ps"));
   m_ic_remapper->register_field(m_ref_grid_fields.at("T_mid"),m_dyn_grid_fields.at("vtheta_dp"));
   m_ic_remapper->register_field(m_ref_grid_fields.at("Q"),m_dyn_grid_fields.at("Q"));
   m_ic_remapper->registration_ends();
@@ -335,7 +336,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   m_ic_remapper->remap(true);
   m_ic_remapper = nullptr;
 
-  // Convert T->vtheta_dp (in place). Use FT (still unused) as temporary for p_mid 
+  // Convert T->vtheta_dp (in place).
   constexpr int N = sizeof(Homme::Scalar) / sizeof(Real);
   using KT = KokkosTypes<DefaultDevice>;
   using Pack = ekat::Pack<Real,N>;
@@ -344,6 +345,9 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 
   const auto ps   = m_dyn_grid_fields.at("ps").get_reshaped_view<Real****>();
   const auto dp3d = m_dyn_grid_fields.at("dp3d").get_reshaped_view<Pack*****>();
+  const auto v    = m_dyn_grid_fields.at("v").get_reshaped_view<Pack******>();
+  const auto w_i    = m_dyn_grid_fields.at("w_i").get_reshaped_view<Pack*****>();
+  const auto phinh_i    = m_dyn_grid_fields.at("phinh_i").get_reshaped_view<Pack*****>();
   const auto vtheta_dp = m_dyn_grid_fields.at("vtheta_dp").get_reshaped_view<Pack*****>();
   const auto Q = m_dyn_grid_fields.at("Q").get_reshaped_view<Pack*****>();
 
@@ -351,6 +355,11 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   const auto nlevs  = m_dyn_grid->get_num_vertical_levels();
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_elems*NP*NP,NVL);
   const int n0 = c.get<Homme::TimeLevel>().n0;
+  const int nm1 = c.get<Homme::TimeLevel>().nm1;
+  const int np1 = c.get<Homme::TimeLevel>().np1;
+
+  const auto& hvcoord = c.get<Homme::HybridVCoord>();
+  const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
 
   // Need two tepomraries, for pi_mid and pi_int
   ekat::WorkspaceManager<Pack,DefaultDevice> wsm(NVLI,2,policy);
@@ -363,28 +372,74 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 
     // Compute p_mid
     auto dp = ekat::subview(dp3d,ie,n0,igp,jgp);
-    const auto& psurf = ps(ie,n0,igp,jgp);
 
     auto p_int = ws.take("p_int");
     auto p_mid = ws.take("p_mid");
-    ColOps::column_scan<false>(team,nlevs,dp,p_int,psurf);
+    ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
     
-    // Convert T->Theta->VTheta->VTheta*dp
+    // Convert T->Theta->Theta*dp->VTheta*dp
     auto T      = ekat::subview(vtheta_dp,ie,n0,igp,jgp);
     auto vTh_dp = ekat::subview(vtheta_dp,ie,n0,igp,jgp);
     auto qv     = ekat::subview(Q,ie,0,igp,jgp);
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,NVL),
                          [&](const int ilev) {
-      const auto& theta  = PF::calculate_theta_from_T(T(ilev),p_mid(ilev));
-      const auto& vtheta = PF::calculate_virtual_temperature(theta,qv(ilev));
-      vTh_dp(ilev) = vtheta*dp(ilev);
+      auto& vthdp = vTh_dp(ilev);
+      vthdp = dp(ilev)*PF::calculate_theta_from_T(T(ilev),p_mid(ilev));
+      vthdp = PF::calculate_virtual_temperature(vthdp,qv(ilev));
+
+      // Copy states from the n0 timelevel to all the other ones
+      dp3d(ie,nm1,igp,jgp,ilev) = dp3d(ie,n0,igp,jgp,ilev);
+      dp3d(ie,np1,igp,jgp,ilev) = dp3d(ie,n0,igp,jgp,ilev);
+      
+      v(ie,nm1,0,igp,jgp,ilev) = v(ie,n0,0,igp,jgp,ilev);
+      v(ie,nm1,1,igp,jgp,ilev) = v(ie,n0,1,igp,jgp,ilev);
+      v(ie,np1,0,igp,jgp,ilev) = v(ie,n0,0,igp,jgp,ilev);
+      v(ie,np1,1,igp,jgp,ilev) = v(ie,n0,1,igp,jgp,ilev);
+
+      vtheta_dp(ie,nm1,igp,jgp,ilev) = vtheta_dp(ie,n0,igp,jgp,ilev);
+      vtheta_dp(ie,np1,igp,jgp,ilev) = vtheta_dp(ie,n0,igp,jgp,ilev);
+
+      w_i(ie,nm1,igp,jgp,ilev) = w_i(ie,n0,igp,jgp,ilev);
+      w_i(ie,np1,igp,jgp,ilev) = w_i(ie,n0,igp,jgp,ilev);
+
+      phinh_i(ie,nm1,igp,jgp,ilev) = phinh_i(ie,n0,igp,jgp,ilev);
+      phinh_i(ie,np1,igp,jgp,ilev) = phinh_i(ie,n0,igp,jgp,ilev);
+    });
+
+    // Copy ps (and last interface of w_i and phinh_i)  from the n0 timelevel to all the other ones
+    Kokkos::single(Kokkos::PerTeam(team),[&](){
+      ps(ie,nm1,igp,jgp) = ps(ie,n0,igp,jgp);
+      ps(ie,np1,igp,jgp) = ps(ie,n0,igp,jgp);
+      w_i(ie,nm1,igp,jgp,NVLI-1) = w_i(ie,n0,igp,jgp,NVLI-1);
+      w_i(ie,np1,igp,jgp,NVLI-1) = w_i(ie,n0,igp,jgp,NVLI-1);
+
+      phinh_i(ie,nm1,igp,jgp,NVLI-1) = phinh_i(ie,n0,igp,jgp,NVLI-1);
+      phinh_i(ie,np1,igp,jgp,NVLI-1) = phinh_i(ie,n0,igp,jgp,NVLI-1);
     });
 
     // Release the scratch mem
     ws.release(p_int);
     ws.release(p_mid);
+  });
+  Kokkos::fence();
+
+  // Init qdp = q*dp (q comes from initial conditions)
+  const auto qdp = c.get<Homme::Tracers>().qdp;
+  const auto q   = c.get<Homme::Tracers>().Q;
+  const auto dp  = c.get<Homme::ElementsState>().m_dp3d;
+  const int n0_qdp = c.get<Homme::TimeLevel>().n0_qdp;
+  const int num_tracers = qdp.extent_int(2);
+  Kokkos::parallel_for(Kokkos::RangePolicy<>(0,num_elems*num_tracers*NP*NP*NVL),
+                       KOKKOS_LAMBDA (const int idx) {
+    const int ie =  idx / (num_tracers*NP*NP*NVL);
+    const int iq = (idx / (NP*NP*NVL)) % num_tracers;
+    const int ip = (idx / (NP*NVL)) % NP;
+    const int jp = (idx / NVL) % NP;
+    const int k  = idx % NVL;
+
+    qdp(ie,n0_qdp,iq,ip,jp,k) = q(ie,iq,ip,jp,k) * dp(ie,n0,ip,jp,k);
   });
 
   prim_init_model_f90 ();
@@ -579,9 +634,7 @@ void HommeDynamics::homme_pre_process (const Real dt) {
       });
       Kokkos::fence();
 
-      // 
       ff.tracers_forcing(dt,n0,n0_qdp,true,params.moisture);
-
 
     default:
       EKAT_ERROR_MSG ("Error! Unexpected/unsupported forcing algorithm.\n"
@@ -665,7 +718,6 @@ void HommeDynamics::homme_post_process () {
       }
     });
   });
-
 }
 
 void HommeDynamics::
