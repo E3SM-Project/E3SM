@@ -87,6 +87,7 @@ jobs:
 
       - name: Run Tests
         run: |
+          export CHECK_IMAGES=True
           bash tests/test.sh
 
   publish-docs:
