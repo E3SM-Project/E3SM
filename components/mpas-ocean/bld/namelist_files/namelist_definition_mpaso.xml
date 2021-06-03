@@ -1113,6 +1113,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_n_wavenumber_partitions" type="integer"
+	category="cvmix" group="cvmix">
+Number of wavenumbers used to reconstruct Stokes drift profile
+
+Valid values: 3, 4, and 6
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_cvmix_kpp_langmuir_mixing_opt" type="char*1024"
 	category="cvmix" group="cvmix">
 Option of Langmuir enhanced mixing parameterization
