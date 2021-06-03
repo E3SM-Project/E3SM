@@ -224,12 +224,12 @@ contains
 
 
        if (use_c13) then
-          call c13_veg_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio)
+          call c13_veg_cs%Init(begp, endp, carbon_type='c13', ratio=c13ratio)
           call c13_veg_cf%Init(begp, endp, carbon_type='c13')
        end if
 
        if (use_c14) then
-          call c14_veg_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio)
+          call c14_veg_cs%Init(begp, endp, carbon_type='c14', ratio=c14ratio)
           call c14_veg_cf%Init(begp, endp, carbon_type='c14')
        end if
 
