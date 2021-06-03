@@ -150,6 +150,7 @@ module WaterfluxType
 
   end type waterflux_type
   !------------------------------------------------------------------------
+  type(waterflux_type)  ,public   :: waterflux_vars
 
 contains
 

@@ -14,9 +14,6 @@ module BareGroundFluxesMod
   use EnergyFluxType       , only : energyflux_type
   use FrictionVelocityType , only : frictionvel_type
   use SoilStateType        , only : soilstate_type
-  use TemperatureType      , only : temperature_type
-  use WaterfluxType        , only : waterflux_type
-  use WaterstateType       , only : waterstate_type
   use TopounitDataType     , only : top_as
   use LandunitType         , only : lun_pp
   use ColumnType           , only : col_pp
@@ -37,14 +34,14 @@ contains
   !------------------------------------------------------------------------------
   subroutine BareGroundFluxes(bounds, num_nolakeurbanp, filter_nolakeurbanp, &
        atm2lnd_vars, canopystate_vars, soilstate_vars, &
-       frictionvel_vars, ch4_vars, energyflux_vars, temperature_vars, &
-       waterflux_vars, waterstate_vars)
+       frictionvel_vars, ch4_vars)
     !
     ! !DESCRIPTION:
     ! Compute sensible and latent fluxes and their derivatives with respect
     ! to ground temperature using ground temperatures from previous time step.
     !
     ! !USES:
+      !$acc routine seq
     use shr_const_mod        , only : SHR_CONST_RGAS
     use elm_varpar           , only : nlevgrnd
     use elm_varcon           , only : cpair, vkc, grav, denice, denh2o
@@ -63,10 +60,6 @@ contains
     type(soilstate_type)   , intent(in)    :: soilstate_vars
     type(frictionvel_type) , intent(inout) :: frictionvel_vars
     type(ch4_type)         , intent(inout) :: ch4_vars
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
-    type(temperature_type) , intent(inout) :: temperature_vars
-    type(waterflux_type)   , intent(inout) :: waterflux_vars
-    type(waterstate_type)  , intent(inout) :: waterstate_vars
     !
     ! !LOCAL VARIABLES:
     integer, parameter  :: niters = 3            ! maximum number of iterations for surface temperature
@@ -185,6 +178,7 @@ contains
       !---------------------------------------------------
       ! Filter patches where frac_veg_nosno IS ZERO
       !---------------------------------------------------
+      iter = 0
 
       beta = 1._r8 ! previously set as a constant for all columns in CanopyTemperature()
 
@@ -233,12 +227,11 @@ contains
       ! Perform stability iteration
       ! Determine friction velocity, and potential temperature and humidity
       ! profiles of the surface boundary layer
-
-      do iter = 1, niters
+      ITERATION : do while( iter < niters)
 
          call FrictionVelocity(begp, endp, fn, filterp, &
               displa(begp:endp), z0mg_patch(begp:endp), z0hg_patch(begp:endp), z0qg_patch(begp:endp), &
-              obu(begp:endp), iter, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
+              obu(begp:endp), iter+1, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
               temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
               frictionvel_vars)
 
@@ -264,9 +257,10 @@ contains
                um(p) = sqrt(ur(p)*ur(p) + wc*wc)
             end if
             obu(p) = zldis(p)/zeta
-         end do
 
-      end do ! end stability iteration
+         end do
+         iter = iter + 1
+      end do ITERATION! end stability iteration
 
       do f = 1, fn
          p = filterp(f)

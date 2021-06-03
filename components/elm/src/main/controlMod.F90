@@ -28,15 +28,15 @@ module controlMod
   use AllocationMod         , only: suplnitro
   use AllocationMod         , only: suplphos
   use ColumnDataType          , only: nfix_timeconst
-  use CNNitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
+  use NitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
   use C14DecayMod           , only: use_c14_bombspike, atm_c14_filename
   use SoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
   use VerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp 
   use VerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile  
   use SharedParamsMod       , only: anoxia_wtsat
-  use CanopyfluxesMod         , only: perchroot, perchroot_alt
+  use CanopyStateType       , only: perchroot, perchroot_alt
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
-  use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
+  use SurfaceAlbedoType        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use elm_varcon              , only: h2osno_max
   use elm_varctl              , only: use_dynroot
@@ -393,11 +393,6 @@ contains
                    errMsg(__FILE__, __LINE__))
           end if
           
-          if( use_lch4 ) then
-             call endrun(msg=' ERROR: use_lch4 (methane) and use_fates cannot both be set to true.'//&
-                   errMsg(__FILE__, __LINE__))
-          end if
-
           if ( n_drydep > 0 .and. drydep_method /= DD_XLND ) then
              call endrun(msg=' ERROR: dry deposition via ML Welsey is not compatible with FATES.'//&
                    errMsg(__FILE__, __LINE__))
