@@ -174,6 +174,8 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplVerticalRemap.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplHypervis.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplTest2D.cpp
+    ${SRC_SHARE_DIR}/cxx/GllFvRemap.cpp
+    ${SRC_SHARE_DIR}/cxx/GllFvRemapImpl.cpp
     ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
     ${SRC_SHARE_DIR}/cxx/FunctorsBuffersManager.cpp
     ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp

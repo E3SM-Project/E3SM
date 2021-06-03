@@ -295,8 +295,8 @@ KOKKOS_FUNCTION static void calc_vertically_lagrangian_levels (
       }
       // Reconstruct eta_dot_dpdn over the time interval. Boundary points are
       // always 0.
-#define OLD
-#ifdef OLD
+#define SL_ADVECTION_TRAJ_OLD
+#ifdef SL_ADVECTION_TRAJ_OLD
       // Reconstruct departure level coordinate at final time.
       edd(i,j,kp) = (pref(i,j,kp) +
                      0.5*dt*(edd(i,j,kp) + (*eta_dot_dpdn[1])(i,j,kp) +

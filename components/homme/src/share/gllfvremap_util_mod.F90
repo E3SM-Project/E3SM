@@ -170,7 +170,7 @@ contains
     end do
   end subroutine set_gll_state
 
-  subroutine run(hybrid, hvcoord, elem, nets, nete, nphys, tendency)
+  function run(hybrid, hvcoord, elem, nets, nete, nphys, tendency) result(nerr)
     ! Run 3 convergence and property-preservation whole-mesh
     ! tests. See below for descriptions of the three tests.
 
@@ -195,16 +195,17 @@ contains
     type (element_t), intent(inout) :: elem(:)
     integer, intent(in) :: nets, nete, nphys
     logical, intent(in) :: tendency
-    character(32) :: msg
 
+    character(32) :: msg
     type (cartesian3D_t) :: p
     real(kind=real_kind) :: wg(np,np,nlev), tend(np,np,nlev), f, a, b, c, rd, &
          qmin1(qsize+3), qmax1(qsize+3), qmin2, qmax2, mass1, mass2, &
          wg1(np,np,nlev), wg2(np,np,nlev), dt, pressure(np,np,nlev), &
          p_fv(np*np,nlev), wf1(np*np,nlev), wf2(np*np,nlev), wf3(np*np)
-    integer :: nf, nf2, nt1, nt2, ie, i, j, k, d, q, qi, tl, col
+    integer :: nf, nf2, nt1, nt2, ie, i, j, k, d, q, qi, tl, col, nerr
     logical :: domass
 
+    nerr = 0
     nf = nphys
     nf2 = nf*nf
     nt1 = 1
@@ -362,7 +363,10 @@ contains
        if (hybrid%masterthread) then
           rd = sqrt(global_shared_sum(1)/global_shared_sum(2))
           msg = ''
-          if (.not. tendency .and. rd > 5*eps) msg = ' ERROR'
+          if (.not. tendency .and. rd > 5*eps) then
+             nerr = nerr + 1
+             msg = ' ERROR'
+          end if
           write(iulog, '(a,i3,a,i3,es12.4,a8)') 'gfrt> test1 q l2', q, ' of', qsize, rd, msg
        end if
     end do
@@ -514,6 +518,7 @@ contains
           b = max(abs(qmin1(q)), abs(qmax1(q)))
           if (q <= qsize .and. qmin2 < qmin1(q) - 5*eps*b .or. &
                qmax2 > qmax1(q) + 5*eps*b) then
+             nerr = nerr + 1
              write(iulog, '(a,i3,es12.4,es12.4,es12.4,es12.4,a)') 'gfrt> test3 q extrema', &
                   q, qmin1(q), qmin2-qmin1(q), qmax2-qmax1(q), qmax1(q), ' ERROR'
           end if
@@ -521,15 +526,16 @@ contains
              a = global_shared_sum(3)
              b = global_shared_sum(4)
              if (abs(b - a) > 5*eps*abs(a)) then
+                nerr = nerr + 1
                 write(iulog, '(a,i3,es12.4,es12.4,es12.4,a)') 'gfrt> test3 q mass', &
                      q, a, b, abs(b - a)/abs(a), ' ERROR'
              end if
           end if
        end if
     end do
-  end subroutine run
+  end function run
 
-  subroutine gfr_check_api(hybrid, nets, nete, hvcoord, elem)
+  function gfr_check_api(hybrid, nets, nete, hvcoord, elem) result(nerr)
     ! Drive run. Check nphys 1 through 4, ftypes 1 and 2, and pg1 with
     ! and without the OOA boost.
 
@@ -542,11 +548,12 @@ contains
     type (hvcoord_t) , intent(in) :: hvcoord
     integer, intent(in) :: nets, nete
 
-    integer :: nphys, ftype_in, ftype_idx, boost_idx
+    integer :: nphys, ftype_in, ftype_idx, boost_idx, nerr
     logical :: boost_pg1
 
     ftype_in = ftype
 
+    nerr = 0
     do nphys = 1, np
        do ftype_idx = 1,2
           do boost_idx = 1,2
@@ -566,8 +573,8 @@ contains
              end if
              !$omp barrier
 
-             call run(hybrid, hvcoord, elem, nets, nete, nphys, .false.)
-             call run(hybrid, hvcoord, elem, nets, nete, nphys, .true.)
+             nerr = nerr + run(hybrid, hvcoord, elem, nets, nete, nphys, .false.)
+             nerr = nerr + run(hybrid, hvcoord, elem, nets, nete, nphys, .true.)
 
              ! This is meant to be called after threading ends.
              !$omp barrier
@@ -582,7 +589,7 @@ contains
 
     !$omp barrier
     if (hybrid%ithr == 0) ftype = ftype_in
-  end subroutine gfr_check_api
+  end function gfr_check_api
 
   subroutine gfr_convert_topo(par, elem, nphys, intopofn, outtopoprefix)
     ! Read a pure-GLL topography file. Remap all fields to physgrid. Write a new

@@ -288,9 +288,15 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   do k=1,nlev  ! SCAN
      p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
   enddo
+#ifdef HOMMEXX_BFB_TESTING
+  do k=1,nlev
+     p(:,:,k) = (p_i(:,:,k+1)+p_i(:,:,k))/2
+  enddo
+#else
   do k=1,nlev
      p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
   enddo
+#endif
   
   
   end subroutine get_hydro_pressure

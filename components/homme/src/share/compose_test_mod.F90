@@ -206,12 +206,14 @@ contains
     real (kind=real_kind), parameter :: twelve_days = 3600.d0 * 24 * 12
 
     type (timelevel_t) :: tl
-    integer :: nsteps, n0_qdp, np1_qdp, ie, i, j, geometry_type
+    integer :: nsteps, n0_qdp, np1_qdp, ie, i, j, geometry_type, nerr
     real (kind=real_kind) :: dt, tprev, t, unused((nlev+1)*qsize)
 
+    nerr = 0
+    
     if (se_fv_phys_remap_alg == -1) then
-       call gfr_test(hybrid, dom_mt, hvcoord, deriv, elem)
-       call gfr_check_api(hybrid, nets, nete, hvcoord, elem)
+       nerr = nerr + gfr_test(hybrid, dom_mt, hvcoord, deriv, elem)
+       nerr = nerr + gfr_check_api(hybrid, nets, nete, hvcoord, elem)
        return
     end if
 

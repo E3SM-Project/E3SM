@@ -905,8 +905,8 @@ contains
        v1 = half*(elem%derived%vstar(:,:,1,k1) + elem%derived%vstar(:,:,1,k2))
        v2 = half*(elem%derived%vstar(:,:,2,k1) + elem%derived%vstar(:,:,2,k2))
 
-#define OLD
-#ifdef OLD
+#define SL_ADVECTION_TRAJ_OLD
+#ifdef SL_ADVECTION_TRAJ_OLD
        ! Reconstruct departure level coordinate at final time.
        p1r(:,:,k) = pref(:,:,k) + &
             half*dt*(eta_dot_dpdn(:,:,k,1) + eta_dot_dpdn(:,:,k,2) + &
@@ -920,7 +920,7 @@ contains
     end do
 
     ! Reconstruct eta_dot_dpdn over the time interval.
-#ifdef OLD
+#ifdef SL_ADVECTION_TRAJ_OLD
     eta_dot_dpdn(:,:,:,1) = (p1r - pref)/dt
 #endif
     ! Boundary points are always 0.

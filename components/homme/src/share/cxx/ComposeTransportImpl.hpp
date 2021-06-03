@@ -15,7 +15,6 @@
 #include "ElementsDerivedState.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "ErrorDefs.hpp"
-#include "EulerStepFunctor.hpp"
 #include "HommexxEnums.hpp"
 #include "HybridVCoord.hpp"
 #include "SimulationParams.hpp"
@@ -37,12 +36,12 @@ struct ComposeTransportImpl {
   enum : int { np2 = NP*NP };
   enum : int { num_lev_pack = NUM_LEV };
   enum : int { max_num_lev_pack = NUM_LEV_P };
-  enum : int { num_lev_aligned = max_num_lev_pack*packn };
+  enum : int { max_num_lev_aligned = max_num_lev_pack*packn };
   enum : int { num_phys_lev = NUM_PHYSICAL_LEV };
   enum : int { num_work = 12 };
 
-  static_assert(num_lev_aligned >= 3,
-                "We use wrk(0:2,:) and so need num_lev_aligned >= 3");
+  static_assert(max_num_lev_aligned >= 3,
+                "We use wrk(0:2,:) and so need max_num_lev_aligned >= 3");
 
   using TeamPolicy = Kokkos::TeamPolicy<ExecSpace>;
   using MT = typename TeamPolicy::member_type;

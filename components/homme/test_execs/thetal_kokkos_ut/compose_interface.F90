@@ -29,9 +29,9 @@ contains
     real (real_kind), intent(out) :: dvv(np,np), mp(np,np)
     logical (c_bool), value, intent(in) :: cdr_check, is_sphere
 
-    integer :: ie
+    integer :: ie, edgesz
 
-    if (is_sphere) print *, "NOT IMPL'ED YET"
+    if (.not. is_sphere) print *, "NOT IMPL'ED YET"
 
     transport_alg = 12
     semi_lagrange_cdr_alg = 30
@@ -52,7 +52,8 @@ contains
     call init_f90(ne, hyai, hybi, hyam, hybm, dvv, mp, ps0)
     call init_elements_c(nelemd)
 
-    call initEdgeBuffer(par, edge_g, elem, 6*nlev+1)
+    edgesz = max((qsize+3)*nlev+2,6*nlev+1)
+    call initEdgeBuffer(par, edge_g, elem, edgesz)
 
     call initReductionBuffer(red_sum,5)
     call initReductionBuffer(red_min,1)
