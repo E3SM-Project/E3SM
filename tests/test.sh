@@ -1,5 +1,7 @@
 # Run this script from the top level directory of the repository.
 
+set -e # Fail if any line fails
+
 # Uncomment if you want to remove the results directory from the previous test run.
 #rm -rf tests/system/all_sets_results_test/
 
