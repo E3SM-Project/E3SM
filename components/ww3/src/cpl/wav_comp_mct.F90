@@ -155,13 +155,12 @@
                           sig, nk, zb, dmin, &
                           usspf
       use w3wdatmd, only: time, w3ndat, w3setw, wlv, va
-      use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn, hs !SB, lamult
+      use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn, hs
       use w3idatmd, only: inflags1, w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
       USE W3IDATMD, ONLY: TIN, ICEI
       USE W3IDATMD, ONLY: TLN, WLEV
-      USE W3IDATMD, ONLY: !SB, HML   ! QL, 150525, mixing layer depth
       use w3odatmd, only: w3nout, w3seto, naproc, iaproc, napout, naperr,             &
                           nogrp, ngrpp, noge, idout, fnmpre, iostyp, notype, flout, &
                           fnmpre, ifile4
@@ -178,7 +177,7 @@
       use w3iorsmd, only: w3iors
       use w3iogomd, only: w3flgrdflag
       use w3timemd, only: stme21 
-      use w3cesmmd, only : casename, initfile, rstwr, runtype
+      use w3cesmmd, only : casename, initfile, runtype
       use w3cesmmd, only : inst_index, inst_name, inst_suffix
 
       use esmf
@@ -267,7 +266,6 @@ CONTAINS
       integer :: dtime_sync        ! integer timestep size
       integer :: start_ymd         ! start date (yyyymmdd)
       integer :: start_tod         ! start time of day (sec)
-      ! QL, 150629, calculating restart interval
       integer :: stop_ymd          ! stop date (yyyymmdd)
       integer :: stop_tod          ! stop time of day (sec)
       integer :: ix, iy
@@ -380,7 +378,6 @@ CONTAINS
 
       !--------------------------------------------------------------------
       ! Initialize run type
-      ! QL, 150525
       !--------------------------------------------------------------------
 
       call seq_infodata_GetData( infodata, start_type=starttype)
@@ -610,9 +607,7 @@ CONTAINS
          odat(5*(j-1)+3) = 0
       end do
 
-      ! QL, 160823, initialize flag for restart
-      rstwr = .false.
-      ! QL, 160601, get coupling interval
+      ! get coupling interval
       call seq_timemgr_eclockgetdata(eclock, dtime=dtime_sync )
 
       ! Gridded fields
@@ -861,8 +856,7 @@ CONTAINS
 
       ! add call to gptl timer
 
-      ! QL, 150823, send initial state to driver
-      ! QL, 160611, initial values for lamult, ustokes and vstokes
+      ! send initial state to driver
       do jsea=1, nseal
          w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = 0.0
          w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = 0.0
@@ -1182,11 +1176,6 @@ CONTAINS
             ICEI(IX,IY) = x2w0%rattr(index_x2w_si_ifrac,gindex)
          endif
 
-         ! QL, 150525, get mixing layer depth from coupler
-         ! SB, if (inflags1(5)) then
-         ! SB,    HML(IX,IY) = max(x2w0%rattr(index_x2w_so_bldepth,gindex), 5.)
-         ! SB, endif
-
       enddo
       enddo
 
@@ -1196,11 +1185,12 @@ CONTAINS
 
       call w3wave ( 1, odat, timen )
 
-      ! copy ww3 data to coupling datatype
+      ! rotate stokes drift
       do i = 1,usspf(2)
         call w3xyrtn(nseal,USSP(1:nseal,i),USSP(1:nseal,nk+i),AnglDL)
       enddo
 
+      ! copy ww3 data to coupling datatype
       do jsea=1, nseal
          isea = iaproc + (jsea-1)*naproc
          IX  = MAPSF(ISEA,1)
