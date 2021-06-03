@@ -671,7 +671,7 @@
         <command name="load">sems-env</command>
         <command name="load">acme-env</command>
         <command name="load">sems-git</command>
-        <command name="load">sems-python/2.7.9</command>
+        <command name="load">sems-python/3.5.2</command>
         <command name="load">sems-cmake/3.12.2</command>
       </modules>
       <modules compiler="gnu">
