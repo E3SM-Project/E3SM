@@ -939,8 +939,6 @@ contains
    real(r8), pointer :: plant_pdemand_vr_ptr(:,:)
    real(r8), pointer :: km_p_ptr(:), km_nh4_ptr(:), km_no3_ptr(:)
    real(r8), pointer :: vmax_p_ptr(:), vmax_nh4_ptr(:), vmax_no3_ptr(:)
-   logical :: supp_n   ! Are we supplementing N?
-   logical :: supp_p   ! Are we supplementing P?
    real(r8):: cn_stoich_var=0.2    ! variability of CN ratio
    real(r8):: cp_stoich_var=0.4    ! variability of CP ratio
    
@@ -1053,23 +1051,6 @@ contains
         )
 
 
-     ! Perform some logic to help clarify when we are supplementing the system
-     ! with P and/or N. Note, these supplemental fluxes are applied directly
-     ! to the competitors to meet demand, it is not added directly
-     ! to the mineralized pool
-     
-     if ( carbon_only .or.  carbonphosphorus_only ) then
-        supp_n = .true.
-     else
-        supp_n = .false.
-     end if
-
-     if ( carbon_only .or. carbonnitrogen_only ) then
-        supp_p = .true.
-     else
-        supp_p = .false.
-     end if
-     
      if (nu_com .eq. 'RD') then ! 'RD' : relative demand approach
 
         ! Starting resolving N/P limitation
@@ -1190,7 +1171,7 @@ contains
               plant_no3demand_vr_patch(col_pp%pfti(c):col_pp%pftf(c),:) = 0._r8
               plant_nh4demand_vr_patch(col_pp%pfti(c):col_pp%pftf(c),:) = 0._r8
 
-              if ( .not. supp_n ) then
+              if (.not.(carbonphosphorus_only .or. carbon_only))then
                  do f = 1,n_pcomp
                     p = filter_pcomp(f)
                     cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/ &
@@ -1211,7 +1192,7 @@ contains
               cp_scalar(col_pp%pfti(c):col_pp%pftf(c)) = 0._r8
               plant_pdemand_vr_patch(col_pp%pfti(c):col_pp%pftf(c),:) = 0._r8
 
-              if ( .not. supp_p ) then
+              if ( .not. (carbonnitrogen_only .or. carbon_only) ) then
                  do f = 1,n_pcomp
                     p = filter_pcomp(f)
                     cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
@@ -1327,7 +1308,7 @@ contains
            ! Thus, the NH4 fluxes are increased, for itself and as a surrogate to meet the
            ! NO3 flux demands.
            
-           if ( supp_n ) then
+           if (carbon_only .or. carbonphosphorus_only) then
               
               if ( fpi_no3_vr(j) + fpi_nh4_vr(j) < 1._r8 ) then
                  fpi_vr(c,j) = 1._r8
@@ -1411,12 +1392,13 @@ contains
          !  update (1) actual immobilization for N and P (2) sminn_to_plant and sminp_to_plant
          !  We only resolve co-limitations when are supplementing neither element
          
-         if( (.not.supp_n) .and. (.not.supp_p) ) then
+         np_bothactive: if ( .not.carbon_only .and.  &
+              .not.carbonphosphorus_only .and. &
+              .not.carbonnitrogen_only ) then
 
            if (nu_com .eq. 'RD') then
               do j = 1, nlevdecomp
-
-                 if( fpi_vr(c,j) <=fpi_p_vr(c,j) )then ! more N limited
+                 if( fpi_vr(c,j) <= fpi_p_vr(c,j) )then ! more N limited
                     do k = 1, ndecomp_cascade_transitions
                        if (pmnf_decomp_cascade(c,j,k) > 0.0_r8 .and. pmpf_decomp_cascade(c,j,k) > 0.0_r8) then
                           actual_immob_p_vr(c,j) = actual_immob_p_vr(c,j) - pmpf_decomp_cascade(c,j,k)&
@@ -1501,7 +1483,7 @@ contains
 
               end do
            end if
-        endif
+        endif np_bothactive
 
         if(carbonnitrogen_only)then
            do j = 1, nlevdecomp
@@ -1510,7 +1492,19 @@ contains
                      actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
               end do
            end do
-         end if
+        end if
+
+        ! sum up plant N/P uptake at column level and patch level
+        ! sum up N fluxes to plant after initial competition
+        sminn_to_plant(c) = 0._r8
+        sminp_to_plant(c) = 0._r8
+        do j = 1, nlevdecomp
+           sminn_to_plant(c) = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
+           sminp_to_plant(c) = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
+        end do
+
+        ! update column plant N/P demand, pft level plant NP uptake for ECA and MIC mode
+        eca_filter: if (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
 
          if(carbonphosphorus_only)then
            do j = 1, nlevdecomp
@@ -1558,7 +1552,7 @@ contains
                  
            end do
 
-        end if
+        end if eca_filter
 
      end do col_loop
 
@@ -1629,8 +1623,8 @@ contains
         end if
      end do
 
-     ! for np imbalance
-     if (nu_com .ne. 'RD') then
+     ! for np imbalance (impacts fixation, NA with FATES)
+     if (nu_com .ne. 'RD' .and. .not.use_fates) then
         do fc=1,num_soilc
            c = filter_soilc(fc)
            do p = col_pp%pfti(c), col_pp%pftf(c)
