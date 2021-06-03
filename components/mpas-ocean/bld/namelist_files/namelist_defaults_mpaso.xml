@@ -184,7 +184,7 @@
 <config_GM_closure ocn_grid="WCAtl12to45E2r4">'constant'</config_GM_closure>
 <config_GM_closure ocn_grid="SOwISC12to60E2r4">'constant'</config_GM_closure>
 <config_GM_closure ocn_grid="ECwISC30to60E2r1">'constant'</config_GM_closure>
-<config_GM_constant_kappa>1800.0</config_GM_constant_kappa>
+<config_GM_constant_kappa>900.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="oEC60to30v3wLI">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="ECwISC30to60E1r2">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="EC30to60E2r2">600.0</config_GM_constant_kappa>
@@ -270,7 +270,7 @@
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
 
 <!-- coupling -->
-<config_ssh_grad_relax_timescale>86400.0</config_ssh_grad_relax_timescale>
+<config_ssh_grad_relax_timescale>0.0</config_ssh_grad_relax_timescale>
 <config_remove_AIS_coupler_runoff>.false.</config_remove_AIS_coupler_runoff>
 
 <!-- shortwaveRadiation -->
@@ -352,10 +352,13 @@
 <!-- bottom_drag -->
 <config_use_implicit_bottom_drag>.true.</config_use_implicit_bottom_drag>
 <config_implicit_bottom_drag_coeff>1.0e-3</config_implicit_bottom_drag_coeff>
+<config_use_implicit_bottom_roughness>.false.</config_use_implicit_bottom_roughness>
 <config_use_implicit_bottom_drag_variable>.false.</config_use_implicit_bottom_drag_variable>
 <config_use_implicit_bottom_drag_variable_mannings>.false.</config_use_implicit_bottom_drag_variable_mannings>
 <config_use_explicit_bottom_drag>.false.</config_use_explicit_bottom_drag>
 <config_explicit_bottom_drag_coeff>1.0e-3</config_explicit_bottom_drag_coeff>
+<config_use_topographic_wave_drag>.false.</config_use_topographic_wave_drag>
+<config_topographic_wave_drag_coeff>5.0e-4</config_topographic_wave_drag_coeff>
 
 <!-- ocean_constants -->
 <config_density0>1026.0</config_density0>
@@ -474,6 +477,7 @@
 <config_disable_vel_pgrad>.false.</config_disable_vel_pgrad>
 <config_disable_vel_hmix>.false.</config_disable_vel_hmix>
 <config_disable_vel_surface_stress>.false.</config_disable_vel_surface_stress>
+<config_disable_vel_topographic_wave_drag>.false.</config_disable_vel_topographic_wave_drag>
 <config_disable_vel_explicit_bottom_drag>.false.</config_disable_vel_explicit_bottom_drag>
 <config_disable_vel_vmix>.false.</config_disable_vel_vmix>
 <config_disable_vel_vadv>.false.</config_disable_vel_vadv>
@@ -803,7 +807,7 @@
 <config_AM_timeSeriesStatsMonthly_enable>.true.</config_AM_timeSeriesStatsMonthly_enable>
 <config_AM_timeSeriesStatsMonthly_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthly_compute_on_startup>
 <config_AM_timeSeriesStatsMonthly_write_on_startup>.false.</config_AM_timeSeriesStatsMonthly_write_on_startup>
-<config_AM_timeSeriesStatsMonthly_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsMonthly_compute_interval>
+<config_AM_timeSeriesStatsMonthly_compute_interval>'dt'</config_AM_timeSeriesStatsMonthly_compute_interval>
 <config_AM_timeSeriesStatsMonthly_output_stream>'timeSeriesStatsMonthlyOutput'</config_AM_timeSeriesStatsMonthly_output_stream>
 <config_AM_timeSeriesStatsMonthly_restart_stream>'none'</config_AM_timeSeriesStatsMonthly_restart_stream>
 <config_AM_timeSeriesStatsMonthly_operation>'avg'</config_AM_timeSeriesStatsMonthly_operation>

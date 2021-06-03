@@ -1,0 +1,23 @@
+#!/bin/bash
+
+#Submit this script with: sbatch filename
+
+#SBATCH --time=16:00:00   # walltime
+#SBATCH --nodes=2   # number of nodes
+#SBATCH --ntasks=32   # number of processor cores (i.e. tasks)
+#SBATCH --ntasks-per-node=16   # number of tasks per node
+#SBATCH --qos=low   # qos name
+#SBATCH --job-name=thwaites4km  # job name
+#SBATCH --account=climateacme   # account name
+#SBATCH --mail-user=wyeast@gmail.com   # email address
+#SBATCH --mail-type=BEGIN
+#SBATCH --mail-type=END
+#SBATCH --mail-type=FAIL
+#SBATCH --gid=climate
+
+source /users/mhoffman/setup_gnu_env.juneAlbany.sh
+
+date
+mpirun -n 32 ./landice_model
+date
+

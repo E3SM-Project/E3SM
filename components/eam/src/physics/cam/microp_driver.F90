@@ -54,8 +54,10 @@ subroutine microp_driver_readnl(nlfile)
       call micro_mg_cam_readnl(nlfile)
    case ('P3')
       call micro_p3_readnl(nlfile)
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_readnl:: unrecognized microp_scheme')
@@ -74,8 +76,10 @@ subroutine microp_driver_register
       call micro_mg_cam_register()
    case ('P3')
       call micro_p3_register()
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_register:: unrecognized microp_scheme')
@@ -104,8 +108,10 @@ function microp_driver_implements_cnst(name)
       microp_driver_implements_cnst = micro_mg_cam_implements_cnst(name)
    case ('P3')
       microp_driver_implements_cnst = micro_p3_implements_cnst(name)
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_implements_cnst:: unrecognized microp_scheme')
@@ -130,8 +136,10 @@ subroutine microp_driver_init_cnst(name, q, gcid)
       call micro_mg_cam_init_cnst(name, q, gcid)
    case ('P3')
       call micro_p3_init_cnst(name, q)
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_init_cnst:: unrecognized microp_scheme')
@@ -153,8 +161,10 @@ subroutine microp_driver_init(pbuf2d)
       call micro_mg_cam_init(pbuf2d)
    case ('P3')
       call micro_p3_init(pbuf2d)
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_init:: unrecognized microp_scheme')
@@ -198,8 +208,10 @@ subroutine microp_driver_tend(state, ptend, dtime, pbuf)
       call t_startf('microp_p3_tend')
       call micro_p3_tend(state, ptend, dtime, pbuf)
       call t_stopf('microp_p3_tend')
+   ! microp_driver doesn't handle these other options
    case ('RK')
-      ! microp_driver doesn't handle this one
+      continue
+   case ('off')
       continue
    case default
       call endrun('microp_driver_tend:: unrecognized microp_scheme')

@@ -1,0 +1,86 @@
+<template>
+        <namelist>
+                <option name="config_velocity_solver">'FO'</option>
+                <option name="config_ice_density">918.0</option>
+                <option name="config_ocean_density">1028.0</option>
+                <option name="config_default_flowParamA">6.338e-25</option>
+                <option name="config_sea_level">0.0</option>
+                <option name="config_dynamic_thickness">10.0</option>
+                <option name="config_adaptive_timestep">.true.</option>
+                <option name="config_min_adaptive_timestep">0.0</option>
+                <option name="config_max_adaptive_timestep">3.15e9</option>
+                <option name="config_adaptive_timestep_CFL_fraction">0.25</option>
+                <option name="config_adaptive_timestep_include_DCFL">.false.</option>
+                <option name="config_adaptive_timestep_force_interval">'00100-00-00_00:00:00'</option>
+                <option name="config_dt">'0001-00-00_00:00:00'</option>
+                <option name="config_run_duration">'none'</option>
+                <option name="config_start_time">'0000-01-01_00:00:00'</option>
+                <option name="config_stop_time">'15000-01-01_00:00:00'</option>
+                <option name="config_year_digits">5</option>
+                <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
+        </namelist>
+
+        <streams>
+
+                <stream name="input">
+                        <attribute name="filename_template">landice_grid.nc</attribute>
+                </stream>
+
+                <stream name="output">
+                        <attribute name="type">output</attribute>
+                        <attribute name="filename_template">output_$Y.nc</attribute>
+                        <attribute name="filename_interval">20000-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">1000-00-00_00:00:00</attribute>
+                        <attribute name="reference_time">00000-01-01_00:00:00</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
+                        <add_contents>
+                                <member name="basicmesh" type="stream"/>
+                                <member name="xtime" type="var"/>
+                                <member name="deltat" type="var"/>
+                                <member name="allowableDtACFL" type="var"/>
+                                <member name="allowableDtDCFL" type="var"/>
+                                <member name="thickness" type="var"/>
+                                <member name="upperSurface" type="var"/>
+                                <member name="bedTopography" type="var"/>
+                                <member name="uReconstructZonal" type="var"/>
+                                <member name="uReconstructMeridional" type="var"/>
+                                <member name="basalMassBal" type="var"/>
+                                <member name="edgeMask" type="var"/>
+                                <member name="cellMask" type="var"/>
+                                <member name="surfaceSpeed" type="var"/>
+                                <member name="daysSinceStart" type="var"/>
+                        </add_contents>
+                </stream>
+
+                <stream name="outputmask">
+                        <attribute name="type">output</attribute>
+                        <attribute name="filename_template">output-mask_$Y.nc</attribute>
+                        <attribute name="filename_interval">20000-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">0000-00-01_00:00:00</attribute>
+                        <attribute name="reference_time">00000-01-01_00:00:00</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
+                        <add_contents>
+                                <member name="basicmesh" type="stream"/>
+                                <member name="xtime" type="var"/>
+                                <member name="deltat" type="var"/>
+                                <member name="allowableDtACFL" type="var"/>
+                                <member name="allowableDtDCFL" type="var"/>
+                                <member name="daysSinceStart" type="var"/>
+                                <member name="edgeMask" type="var"/>
+                        </add_contents>
+                </stream>
+
+                <stream name="restart">
+                        <attribute name="type">input;output</attribute>
+                        <attribute name="filename_template">restart_$Y.nc</attribute>
+                        <attribute name="filename_interval">output_interval</attribute>
+                        <attribute name="output_interval">1000-00-00_00:00:00</attribute>
+                        <attribute name="clobber_mode">truncate</attribute>
+                        <attribute name="precision">double</attribute>
+                        <attribute name="input_interal">initial_only</attribute>
+                </stream>
+
+        </streams>
+
+</template>
+

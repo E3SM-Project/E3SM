@@ -1,0 +1,57 @@
+	<nml_record name="AM_oceanHeatContent" mode="forward;analysis">
+		<nml_option name="config_AM_oceanHeatContent_enable" type="logical" default_value=".false." units="unitless"
+			description="If true, ocean analysis member ocean heat content is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_oceanHeatContent_compute_interval" type="character" default_value="output_interval" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_oceanHeatContent_output_stream" type="character" default_value="oceanHeatContentOutput" units="unitless"
+			description="Name of the stream that the oceanHeatContent analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_oceanHeatContent_compute_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_oceanHeatContent_write_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<packages>
+		<package name="oceanHeatContentAMPKG" description="This package includes variables required for the temPlate analysis member."/>
+	</packages>
+	<var_struct name="layeredOceanHeatContent" time_levs="1" packages="oceanHeatContentAMPKG">
+		<var name="oceanHeatContentSfcToBot" type="real" dimensions="nCells Time" units="J"
+			description="Integrated heat content from surface to bottom"
+		/>
+		<var name="oceanHeatContentSfcTo700m" type="real" dimensions="nCells Time" units="J"
+			description="Integrated heat content from the surface to 700m"
+		/>
+		<var name="oceanHeatContent700mTo2000m" type="real" dimensions="nCells Time" units="J"
+			description="Integrated heat content from the 700m to 2000m"
+		/>
+		<var name="oceanHeatContent2000mToBot" type="real" dimensions="nCells Time" units="J"
+			description="Integrated heat content from the 2000m to bottom"
+		/>
+</var_struct>
+	<streams>
+		<stream name="oceanHeatContentOutput" type="output"
+				mode="forward;analysis"
+				precision="single"
+				filename_template="analysis_members/oceanHeatContent.$Y-$M-$D.nc"
+				filename_interval="01-00-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				packages="oceanHeatContentAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="oceanHeatContentSfcToBot"/>
+			<var name="oceanHeatContentSfcTo700m"/>
+			<var name="oceanHeatContent700mTo2000m"/>
+			<var name="oceanHeatContent2000mToBot"/>
+		</stream>
+	</streams>

@@ -1530,6 +1530,14 @@ contains
                   end if ! radiation_do('lw')
                end if ! do_aerosol_rad
 
+               ! make sure water path variables are zeroed out
+               do ilay = 1, pver
+                  do ic = 1,ncol
+                     iclwp(ic,ilay) = 0_r8
+                     iciwp(ic,ilay) = 0_r8
+                  end do
+               end do
+
                ! Loop over CRM columns; call routines designed to work with
                ! pbuf/state over ncol columns for each CRM column index, and pack
                ! into arrays dimensioned ncol_tot = ncol * ncrms

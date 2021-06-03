@@ -1,0 +1,35 @@
+                  A description of share
+
+This directory collects code shared between various models in a CIME-coupled
+system.
+
+Motivation for this code sharing includes:
+
+- facilitating consistent physics between all models.  For example, uniform
+  solar-zenith-angle/orbital calculations and uniform physical constants.
+- avoiding the need for redundant implementations of commonly needed
+  functionality.  For example netCDF file reading, basic mapping (re-gridding)
+  functionality, and common character string manipulations.
+
+While a runtime library is made from this code, some of this shared code is accessed
+by including the appropriate source code directory path during compile time.
+
+Current subsets of shared code include:
+
+util - very generic, general-purpose Fortran code that is likely to be useful to all
+      CIME components.  CIME components may be explicitly required to use some
+      parts of this code, for example the physical constants module.
+
+RandNum - various software random number generators
+
+esmf_wrf_timemgr - Fortran implementation of ESMF Time Manager (5.2.0rp1)
+
+timing - custom version of the GPTL.
+
+streams - code for managing "streams" of data files.
+
+test - unit tests for some of the share code
+
+
+This code was originaly part of CIME in CIME/src/share. Brought in to E3SM
+from CIME hash b95a28b417b9b27 from May 4, 2021

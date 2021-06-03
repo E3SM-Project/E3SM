@@ -1704,7 +1704,7 @@ end subroutine clubb_init_cnst
 
    !  determine number of timesteps CLUBB core should be advanced,
    !  host time step divided by CLUBB time step
-   nadv = max(hdtime_core_rknd/dtime,1._r8)
+   nadv = max(hdtime_core_rknd/dtime,1._core_rknd)
 
    minqn = 0._r8
    newfice(:,:) = 0._r8

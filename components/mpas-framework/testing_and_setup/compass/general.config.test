@@ -1,0 +1,34 @@
+# This file is the test core's configuration file. It is specific to the test
+# core, and a specific machine. Each machine will configure this file
+# differently, but it can be used to point on version of the testing
+# infrastructure at a different version of the model.
+
+# The namelists section describes required namelist templates that are used to
+# generate specific namelist files. In the test core, there is only a 'forward'
+# mode template, which generally points to the namelist.test generated in
+# default_inputs after a successful build of the model.
+[namelists]
+forward = FULL_PATH_TO_FORWARD_TEMPLATE_NAMELIST
+
+# The streams section describes required streams file templates that are used to
+# generate specific streams files. In the test core, there is only a 'forward'
+# mode template, which generally points to the streams.test generated in
+# default_inputs after a successful build of the model.
+[streams]
+forward = FULL_PATH_TO_FORWARD_TEMPLATE_STREAMS
+
+# The executables section describes full paths to executables that might be
+# used by the test cores test cases. Again, full paths should be used so they
+# can be run from anywhere on this machine.
+[executables]
+model = FULL_PATH_TO_MODEL
+mesh_converter = FULL_PATH_TO_MESH_CONVERTER
+cell_culler = FULL_PATH_TO_CELL_CULLER
+metis = FULL_PATH_TO_METIS
+mpi_runtime = MPI_RUNTIME
+
+# The paths section describes a location on this machine where mesh files might
+# be found. Some test cases may download data into this location, which will
+# allow it to be used by multiple test cases.
+[paths]
+mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE

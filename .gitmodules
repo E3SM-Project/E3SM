@@ -2,23 +2,20 @@
 	path = components/elm/src/external_models/fates
 	url = git@github.com:NGEET/fates.git
 [submodule "alm-mpp"]
-        path = components/elm/src/external_models/mpp
-        url = git@github.com:MPP-LSM/MPP.git
-        branch = alm/develop
+	path = components/elm/src/external_models/mpp
+	url = git@github.com:MPP-LSM/MPP.git
+	branch = alm/develop
 [submodule "sbetr"]
-        path = components/elm/src/external_models/sbetr
-        url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
-[submodule "components/mpas-source"]
-	path = components/mpas-source
-	url = git@github.com:MPAS-Dev/MPAS-Model.git
+	path = components/elm/src/external_models/sbetr
+	url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
 [submodule "externals/kokkos"]
 	path = externals/kokkos
 	url = git@github.com:E3SM-Project/kokkos.git
 	branch = e3sm/kokkos
 [submodule "rrtmgp"]
 	path = components/eam/src/physics/rrtmgp/external
-	url = git@github.com:E3SM-Project/rte-rrtmgp.git
-	branch = master
+	url = git@github.com:RobertPincus/rte-rrtmgp.git
+	branch = develop
 [submodule "externals/scorpio"]
 	path = externals/scorpio
 	url = git@github.com:E3SM-Project/scorpio.git
@@ -36,8 +33,8 @@
 	url = git@github.com:ESMCI/cime.git
 	branch = master
 [submodule "externals/ekat"]
-	path = externals/ekat
-	url = git@github.com:E3SM-Project/EKAT.git
+        path = externals/ekat
+        url = git@github.com:E3SM-Project/EKAT.git
 [submodule "externals/YAKL"]
 	path = externals/YAKL
 	url = git@github.com:mrnorman/YAKL.git
@@ -46,3 +43,12 @@
 	url = git@github.com:NVlabs/cub.git
 [submodule "Submod"]
 	branch = rljacob/e3smconfig/elm-name
+[submodule "components/mpas-ocean/src/cvmix"]
+	path = components/mpas-ocean/src/cvmix
+	url = git@github.com:CVMix/CVMix-src.git
+[submodule "components/mpas-ocean/src/BGC"]
+	path = components/mpas-ocean/src/BGC
+	url = git@github.com:E3SM-Project/Ocean-BGC.git
+[submodule "components/mpas-ocean/src/gotm"]
+	path = components/mpas-ocean/src/gotm
+	url = git@github.com:E3SM-Project/GOTMcode.git
