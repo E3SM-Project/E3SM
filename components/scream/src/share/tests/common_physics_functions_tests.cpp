@@ -8,6 +8,8 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 
+#include <iomanip>
+
 namespace{
 
 template<typename ScalarT, int NumLevels>
@@ -81,7 +83,6 @@ void run(std::mt19937_64& engine)
   static constexpr auto Rd       = PC::RD;
   static constexpr auto inv_cp   = PC::INV_CP;
   static constexpr auto g        = PC::gravit;
-  static constexpr auto ep_2     = PC::ep_2;
   static constexpr auto test_tol = PC::macheps*1e3;
 
   constexpr int pack_size = sizeof(ScalarT) / sizeof(RealType);
@@ -237,8 +238,6 @@ void run(std::mt19937_64& engine)
   qv0 = pdf_qv(engine);
   const auto h2o_mol = PC::get_gas_mol_weight("h2o");
   const auto o2_mol  = PC::get_gas_mol_weight("o2");
-  ScalarT mmr_tmp = 0.5;
-  ScalarT vmr_tmp = 1.0;
   REQUIRE( Check::equal(PF::calculate_vmr_from_mmr(h2o_mol,qv0,zero),zero) );
   REQUIRE( Check::equal(PF::calculate_mmr_from_vmr(h2o_mol,qv0,zero),zero) );
   tmp = PF::calculate_vmr_from_mmr(h2o_mol,qv0,mmr0);
