@@ -128,25 +128,28 @@ contains
       call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber4', stokesDriftZonalWavenumber4)
       call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber4', stokesDriftMeridionalWavenumber4)
       call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber5', stokesDriftZonalWavenumber5)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber5', stokesDriftMeridionalWavenumber5)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber6', stokesDriftZonalWavenumber6)
       call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6)
 
       do iCell = 1,nCellsAll
 
+         zonalWavenumberCoeff(1) = stokesDriftZonalWavenumber1(iCell)
+         zonalWavenumberCoeff(2) = stokesDriftZonalWavenumber2(iCell)
+         zonalWavenumberCoeff(3) = stokesDriftZonalWavenumber3(iCell)
+         zonalWavenumberCoeff(4) = stokesDriftZonalWavenumber4(iCell)
+         zonalWavenumberCoeff(5) = stokesDriftZonalWavenumber5(iCell)
+         zonalWavenumberCoeff(6) = stokesDriftZonalWavenumber6(iCell)
+
+         meridionalWavenumberCoeff(1) = stokesDriftMeridionalWavenumber1(iCell)
+         meridionalWavenumberCoeff(2) = stokesDriftMeridionalWavenumber2(iCell)
+         meridionalWavenumberCoeff(3) = stokesDriftMeridionalWavenumber3(iCell)
+         meridionalWavenumberCoeff(4) = stokesDriftMeridionalWavenumber4(iCell)
+         meridionalWavenumberCoeff(5) = stokesDriftMeridionalWavenumber5(iCell)
+         meridionalWavenumberCoeff(6) = stokesDriftMeridionalWavenumber6(iCell)
+
          do k = minLevelCell(iCell), maxLevelCell(iCell)
  
-            zonalWavenumberCoeff(1) = stokesDriftZonalWavenumber1(iCell)
-            zonalWavenumberCoeff(2) = stokesDriftZonalWavenumber2(iCell)
-            zonalWavenumberCoeff(3) = stokesDriftZonalWavenumber3(iCell)
-            zonalWavenumberCoeff(4) = stokesDriftZonalWavenumber4(iCell)
-            zonalWavenumberCoeff(5) = stokesDriftZonalWavenumber5(iCell)
-            zonalWavenumberCoeff(6) = stokesDriftZonalWavenumber6(iCell)
-
-            meridionalWavenumberCoeff(1) = stokesDriftMeridionalWavenumber1(iCell)
-            meridionalWavenumberCoeff(2) = stokesDriftMeridionalWavenumber2(iCell)
-            meridionalWavenumberCoeff(3) = stokesDriftMeridionalWavenumber3(iCell)
-            meridionalWavenumberCoeff(4) = stokesDriftMeridionalWavenumber4(iCell)
-            meridionalWavenumberCoeff(5) = stokesDriftMeridionalWavenumber5(iCell)
-            meridionalWavenumberCoeff(6) = stokesDriftMeridionalWavenumber6(iCell)
 
             call ocn_stokes_drift_evaluate(zMid(k,iCell), zonalWavenumberCoeff, meridionalWavenumberCoeff, &
                                            stokesDriftZonal(k,iCell), stokesDriftMeridional(k,iCell))

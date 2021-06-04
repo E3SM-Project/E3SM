@@ -265,6 +265,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber4', stokesDriftZonalWavenumber4)
       call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber4', stokesDriftMeridionalWavenumber4)
       call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber5', stokesDriftZonalWavenumber5)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber5', stokesDriftMeridionalWavenumber5)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber6', stokesDriftZonalWavenumber6)
       call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6)
 
       nCells = nCellsArray( size(nCellsArray) )
