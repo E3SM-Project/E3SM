@@ -63,7 +63,7 @@ contains
       rad%qi          = 0
       rad%cld         = 0
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (.not. allocated(rad%nc)) allocate(rad%nc(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
          if (.not. allocated(rad%ni)) allocate(rad%ni(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
          if (.not. allocated(rad%qs)) allocate(rad%qs(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
@@ -93,7 +93,7 @@ contains
       if (allocated(rad%qi))          deallocate(rad%qi)
       if (allocated(rad%cld))         deallocate(rad%cld)
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (allocated(rad%nc))       deallocate(rad%nc)
          if (allocated(rad%ni))       deallocate(rad%ni)
          if (allocated(rad%qs))       deallocate(rad%qs)

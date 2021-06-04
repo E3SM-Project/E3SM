@@ -103,7 +103,7 @@ contains
       call prefetch(input%fluxt00)
       call prefetch(input%fluxq00)
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (.not. allocated(input%naermod))  allocate(input%naermod(ncrms,nlev,ntot_amode))
          if (.not. allocated(input%vaerosol)) allocate(input%vaerosol(ncrms,nlev,ntot_amode))
          if (.not. allocated(input%hygro))    allocate(input%hygro(ncrms,nlev,ntot_amode))
@@ -146,7 +146,7 @@ contains
       input%fluxt00 = 0
       input%fluxq00 = 0
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          input%naermod  = 0
          input%vaerosol = 0
          input%hygro    = 0
@@ -189,7 +189,7 @@ contains
       if (allocated(input%fluxt00)) deallocate(input%fluxt00)
       if (allocated(input%fluxq00)) deallocate(input%fluxq00)
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (allocated(input%naermod))    deallocate(input%naermod)
          if (allocated(input%vaerosol))   deallocate(input%vaerosol)
          if (allocated(input%hygro))      deallocate(input%hygro)
