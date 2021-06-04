@@ -386,6 +386,7 @@ contains
   ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
+    real(r8) :: vmr_old(ncol,pver,gas_pcnst)
 
     ! flags for MMF configuration
     logical :: use_MMF, use_ECPP
@@ -777,8 +778,9 @@ contains
     call t_stopf('chemdr_init')
 
     if ( history_gaschmbudget ) then
-       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), &
-                              pdeldry(:ncol,:), mbar, 'B')
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'MSB' )
     endif
 
     !=======================================================================
@@ -791,6 +793,12 @@ contains
     call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol )
     call t_stopf('exp_sol')
 
+    if ( history_gaschmbudget ) then
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'TDE' )
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
+
     !-----------------------------------------------------------------------
     !	... Solve for "Implicit" species
     !-----------------------------------------------------------------------
@@ -800,6 +808,12 @@ contains
     call imp_sol( vmr, reaction_rates, het_rates, extfrc, delt, &
                   invariants(1,1,indexm), ncol, lchnk, ltrop_sol(:ncol) )
     call t_stopf('imp_sol')
+
+    if ( history_gaschmbudget ) then
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'TDI' )
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
 
     if( h2o_ndx>0) call outfld( 'H2O_GAS',  vmr(1,1,h2o_ndx),  ncol ,lchnk )
     if(convproc_do_aer) then 
@@ -884,8 +898,11 @@ contains
     end if
 
     if ( history_gaschmbudget ) then
-       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), &
-                              pdeldry(:ncol,:), mbar, 'L')
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'TDL' )
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'MSL' )
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
 
     !-----------------------------------------------------------------------      
@@ -894,14 +911,21 @@ contains
     call negtrc( 'After chemistry ', vmr, ncol )
 
     if ( history_gaschmbudget ) then
-       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), &
-                              pdeldry(:ncol,:), mbar, 'N')
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'TDN' )
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
 
     !-----------------------------------------------------------------------      
     !         ... Set upper boundary mmr values
     !-----------------------------------------------------------------------      
     if(.not. linoz_v3) call set_fstrat_vals( vmr, pmid, pint, troplev, calday, ncol,lchnk )
+
+    if ( history_gaschmbudget ) then
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'TDU' )
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
 
     !-----------------------------------------------------------------------      
     !         ... Set fixed lower boundary mmr values
@@ -910,6 +934,12 @@ contains
 
     if ( ghg_chem ) then
        call ghg_chem_set_flbc( vmr, ncol )
+    endif
+
+    if ( history_gaschmbudget ) then
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'TDB' )
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
 
     !-----------------------------------------------------------------------      
@@ -973,6 +1003,13 @@ contains
          drydepflx(:ncol,m) = sflx(:ncol,n)
        endif
     end do
+
+    if ( history_gaschmbudget ) then
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'TDD' )
+       call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                              pdeldry(:ncol,:), mbar, delt_inverse, 'MSD' )
+    endif
 
     call t_startf('chemdr_diags')
     call chm_diags( lchnk, ncol, vmr(:ncol,:,:), mmr_new(:ncol,:,:), &
