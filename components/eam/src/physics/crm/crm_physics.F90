@@ -663,7 +663,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    !------------------------------------------------------------------------------------------------
    call crm_state_initialize(crm_state, pcols, crm_nx, crm_ny, crm_nz)
    call crm_rad_initialize(crm_rad, pcols, crm_nx_rad, crm_ny_rad, crm_nz)
-   call crm_input_initialize(crm_input, pcols, pver)
+   call crm_input_initialize(crm_input, pcols, pver, MMF_microphysics_scheme)
    call crm_output_initialize(crm_output, pcols, pver, crm_nx, crm_ny, crm_nz)
 
    !------------------------------------------------------------------------------------------------
@@ -1500,7 +1500,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 
    call crm_state_finalize(crm_state)
    call crm_rad_finalize(crm_rad)
-   call crm_input_finalize(crm_input)
+   call crm_input_finalize(crm_input, MMF_microphysics_scheme)
    call crm_output_finalize(crm_output)
 
 end subroutine crm_physics_tend

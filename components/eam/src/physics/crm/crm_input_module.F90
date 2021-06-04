@@ -54,14 +54,11 @@ module crm_input_module
 contains
    !------------------------------------------------------------------------------------------------
    ! Type-bound procedures for crm_input_type
-   subroutine crm_input_initialize(input, ncrms, nlev)
-      use phys_control, only: phys_getopts
+   subroutine crm_input_initialize(input, ncrms, nlev, MMF_microphysics_scheme)
       type(crm_input_type), intent(inout) :: input
       integer, intent(in) :: ncrms, nlev
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
+      character(len=*), intent(in) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
-      
       if (.not. allocated(input%zmid))     allocate(input%zmid(ncrms,nlev))
       if (.not. allocated(input%zint))     allocate(input%zint(ncrms,nlev+1))
       if (.not. allocated(input%tl))       allocate(input%tl(ncrms,nlev))
@@ -165,12 +162,9 @@ contains
 
    end subroutine crm_input_initialize
    !------------------------------------------------------------------------------------------------
-   subroutine crm_input_finalize(input)
-      use phys_control, only: phys_getopts
+   subroutine crm_input_finalize(input, MMF_microphysics_scheme)
       type(crm_input_type), intent(inout) :: input
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
-
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      character(len=*), intent(in) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
       if (allocated(input%zmid))    deallocate(input%zmid)
       if (allocated(input%zint))    deallocate(input%zint)
