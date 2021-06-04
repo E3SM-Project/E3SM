@@ -140,13 +140,10 @@ module crm_output_module
 contains
 
    !------------------------------------------------------------------------------------------------
-   subroutine crm_output_initialize(output, ncol, nlev, crm_nx, crm_ny, crm_nz)
-      use phys_control, only: phys_getopts
+   subroutine crm_output_initialize(output, ncol, nlev, crm_nx, crm_ny, crm_nz, MMF_microphysics_scheme)
       type(crm_output_type), intent(inout) :: output
       integer,               intent(in   ) :: ncol, nlev, crm_nx, crm_ny, crm_nz
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
-
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      character(len=*),      intent(in   ) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
       ! Allocate instantaneous outputs
       if (.not. allocated(output%qcl)) allocate(output%qcl(ncol,crm_nx,crm_ny,crm_nz))
@@ -467,12 +464,9 @@ contains
 
    end subroutine crm_output_initialize
    !------------------------------------------------------------------------------------------------
-   subroutine crm_output_finalize(output)
-      use phys_control, only: phys_getopts
+   subroutine crm_output_finalize(output, MMF_microphysics_scheme)
       type(crm_output_type), intent(inout) :: output
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
-
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      character(len=*), intent(in) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
       if (allocated(output%qcl)) deallocate(output%qcl)
       if (allocated(output%qci)) deallocate(output%qci)

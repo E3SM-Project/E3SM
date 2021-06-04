@@ -49,13 +49,10 @@ contains
 
    !------------------------------------------------------------------------------------------------
    ! Type-bound procedures for crm_state_type
-   subroutine crm_state_initialize(state,ncrms,crm_nx,crm_ny,crm_nz)
-      use phys_control, only: phys_getopts
+   subroutine crm_state_initialize(state,ncrms,crm_nx,crm_ny,crm_nz,MMF_microphysics_scheme)
       type(crm_state_type), intent(inout) :: state
       integer,              intent(in   ) :: ncrms, crm_nx, crm_ny, crm_nz
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
-
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      character(len=16),    intent(in   ) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
       ! Nullify pointers
       if (.not. allocated(state%u_wind))      allocate(state%u_wind(ncrms,crm_nx,crm_ny,crm_nz))
@@ -101,12 +98,9 @@ contains
 
    end subroutine crm_state_initialize
    !------------------------------------------------------------------------------------------------
-   subroutine crm_state_finalize(state)
-      use phys_control, only: phys_getopts
+   subroutine crm_state_finalize(state, MMF_microphysics_scheme)
       type(crm_state_type), intent(inout) :: state
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
-
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      character(len=*), intent(in) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
       ! Nullify pointers
       if (allocated(state%u_wind))      deallocate(state%u_wind)
