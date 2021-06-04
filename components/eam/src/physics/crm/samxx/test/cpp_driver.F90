@@ -89,22 +89,12 @@ program driver
   endif
 
   ! Allocate model data
-  call crm_input_initialize (crm_input, ncrms,plev,microphysics_scheme)
-  call crm_output_initialize(crm_output,ncrms,plev,crm_nx,crm_ny,crm_nz,trim(microphysics_scheme))
+  call crm_state_initialize(crm_state  , ncrms, crm_nx, crm_ny, crm_nz, trim(microphysics_scheme))
+  call crm_rad_initialize  (crm_rad    , ncrms, crm_nx_rad, crm_ny_rad, crm_nz, trim(microphysics_scheme))
+  call crm_input_initialize(crm_input  , ncrms, plev, trim(microphysics_scheme))
+  call crm_output_initialize(crm_output, ncrms, plev, crm_nx, crm_ny, crm_nz, trim(microphysics_scheme))
+
   ! These are normally allocated by pbuf, so we have to do it explicitly
-  allocate( crm_state%u_wind     (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%v_wind     (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%w_wind     (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%temperature(ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%qt         (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%qp         (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%qn         (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_rad%qrad         (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
-  allocate( crm_rad%temperature  (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
-  allocate( crm_rad%qv           (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
-  allocate( crm_rad%qc           (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
-  allocate( crm_rad%qi           (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
-  allocate( crm_rad%cld          (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
   allocate( lat0                 (ncrms) )
   allocate( long0                (ncrms) )
   allocate( dt_gl                (ncrms) )
