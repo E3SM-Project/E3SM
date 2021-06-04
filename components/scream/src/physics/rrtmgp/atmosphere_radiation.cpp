@@ -160,15 +160,15 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   // Names of active gases
-  m_gas_names_1d = string1d("gas_names",m_ngas);
+  m_gas_names_yakl_offset = string1d("gas_names",m_ngas);
   for (int igas = 1; igas <= m_ngas; igas++) {  /* Note: YAKL starts the index from 1 */
-    m_gas_names_1d(igas) = m_gas_names[igas-1];
+    m_gas_names_yakl_offset(igas) = m_gas_names[igas-1];
   }
   // Initialize GasConcs object to pass to RRTMGP initializer;
   // This is just to provide gas names
-  // Make GasConcs from m_gas_names_1d
+  // Make GasConcs from m_gas_names_yakl_offset
   GasConcs gas_concs;
-  gas_concs.init(m_gas_names_1d,1,1);
+  gas_concs.init(m_gas_names_yakl_offset,1,1);
   rrtmgp::rrtmgp_initialize(gas_concs);
 
 }
@@ -250,15 +250,21 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   // Create and populate a GasConcs object to pass to RRTMGP driver
   // TODO: Can gas_concs be a class variable that only needs to be init'd once?
   GasConcs gas_concs;
-  gas_concs.init(m_gas_names_1d,m_ncol,m_nlay);
+  gas_concs.init(m_gas_names_yakl_offset,m_ncol,m_nlay);
   auto tmp2d = m_buffer.tmp2d;
   for (int igas = 1; igas <= m_ngas; igas++) {
-    auto name = m_gas_names_1d(igas);
+    auto name = m_gas_names_yakl_offset(igas);
     auto fm_name = name=="h2o" ? "qv" : name;
     auto d_temp  = m_rrtmgp_fields_in.at(fm_name).get_reshaped_view<const Real**>();
-    parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
-        tmp2d(icol,ilay) = PF::calculate_vmr_from_mmr(name,d_temp(icol-1,ilay-1)); // Note that for YAKL_LAMBDA icol and ilay start with index 1
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int k = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& i) {
+        tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(name,d_temp(i,k)); // Note that for YAKL arrays i and k start with index 1
+      });
     });
+    Kokkos::fence();
+
     gas_concs.set_vmr(name, tmp2d);
   }
 
@@ -268,10 +274,18 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   scream::rrtmgp::mixing_ratio_to_cloud_mass(qc, cldfrac_tot, p_del, lwp);
   scream::rrtmgp::mixing_ratio_to_cloud_mass(qi, cldfrac_tot, p_del, iwp);
   // Convert to g/m2 (needed by RRTMGP)
-  parallel_for(Bounds<2>(m_nlay,m_ncol), YAKL_LAMBDA(int ilay, int icol) {
-      lwp(icol,ilay) = 1e3 * lwp(icol,ilay);
-      iwp(icol,ilay) = 1e3 * iwp(icol,ilay);
+  {
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& icol) {
+      int i = icol+1;
+      lwp(i,k) *= 1e3;
+      iwp(i,k) *= 1e3;
+    });
   });
+  }
+  Kokkos::fence();
 
   // Run RRTMGP driver
   rrtmgp::rrtmgp_main(
@@ -294,10 +308,18 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   rrtmgp::compute_heating_rate(
     lw_flux_up, lw_flux_dn, p_del, lw_heating
   );
-  parallel_for(Bounds<2>(m_nlay,m_ncol), YAKL_LAMBDA(int ilay, int icol) {
-    rad_heating(icol,ilay) = sw_heating(icol,ilay) + lw_heating(icol,ilay);
-    t_lay(icol,ilay) = t_lay(icol,ilay) + rad_heating(icol,ilay) * dt;
+  {
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& icol) {
+      int i = icol+1;
+      rad_heating(i,k) = sw_heating(i,k) + lw_heating(i,k);
+      t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
+    });
   });
+  }
+  Kokkos::fence();
 
   // Copy ouput data back to FieldManager
   {
