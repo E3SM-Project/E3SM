@@ -58,6 +58,7 @@ program driver
 
   logical :: use_MMF_VT                    ! flag for MMF variance transport
   integer :: MMF_VT_wn_max                 ! wavenumber cutoff for filtered variance transport
+  character(len=7) :: microphysics_scheme = 'sam1mom'
 
 #if HAVE_MPI
   call mpi_init(ierr)
@@ -88,8 +89,8 @@ program driver
   endif
 
   ! Allocate model data
-  call crm_input%initialize (           ncrms,plev)
-  call crm_output_initialize(crm_output,ncrms,plev)
+  call crm_input_initialize (crm_input, ncrms,plev,trim(microphysics_scheme))
+  call crm_output_initialize(crm_output,ncrms,plev,crm_nx,crm_ny,crm_nz,trim(microphysics_scheme))
   ! These are normally allocated by pbuf, so we have to do it explicitly
   allocate( crm_state%u_wind     (ncrms,crm_nx,crm_ny,crm_nz) )
   allocate( crm_state%v_wind     (ncrms,crm_nx,crm_ny,crm_nz) )
