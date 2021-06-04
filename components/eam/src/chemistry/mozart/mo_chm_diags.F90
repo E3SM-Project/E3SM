@@ -302,7 +302,14 @@ contains
           if (history_gaschmbudget) then
              call addfld( trim(spc_name)//'_MSB', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration before gas chem solver')
              call addfld( trim(spc_name)//'_MSL', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after Linoz')
-             call addfld( trim(spc_name)//'_MSN', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after setting negative numbers to zero')
+             call addfld( trim(spc_name)//'_MSD', (/ 'lev' /), 'A', 'kg/m2', trim(attr)//' concentration after dry deposition')
+             call addfld( trim(spc_name)//'_TDE', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to explicit solver')
+             call addfld( trim(spc_name)//'_TDI', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to implicit solver')
+             call addfld( trim(spc_name)//'_TDL', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to Linoz')
+             call addfld( trim(spc_name)//'_TDN', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to reset negative values to zero')
+             call addfld( trim(spc_name)//'_TDU', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to setting upper boundary values')
+             call addfld( trim(spc_name)//'_TDB', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to setting lower boundary values')
+             call addfld( trim(spc_name)//'_TDD', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to dry deposition')
           endif
        endif
 
@@ -319,7 +326,14 @@ contains
              if (history_gaschmbudget) then
                 call add_default( trim(spc_name)//'_MSB', 1, ' ' )
                 call add_default( trim(spc_name)//'_MSL', 1, ' ' )
-                call add_default( trim(spc_name)//'_MSN', 1, ' ' )
+                call add_default( trim(spc_name)//'_MSD', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDE', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDI', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDL', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDN', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDU', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDB', 1, ' ' )
+                call add_default( trim(spc_name)//'_TDD', 1, ' ' )
              endif
           endif
        endif
@@ -833,7 +847,7 @@ contains
 
   end subroutine het_diags
 
-  subroutine gaschmmass_diags( lchnk, ncol, vmr, pdeldry, mbar, flag )
+  subroutine gaschmmass_diags( lchnk, ncol, vmr, vmr_old, pdeldry, mbar, rdelt, flag )
     !--------------------------------------------------------------------
     !	... utility routine to output gas chemistry tracer concentrations
     !--------------------------------------------------------------------
@@ -850,20 +864,19 @@ contains
     integer,  intent(in)  :: lchnk
     integer,  intent(in)  :: ncol
     real(r8), intent(in)  :: vmr(ncol,pver,gas_pcnst)
+    real(r8), intent(in)  :: vmr_old(ncol,pver,gas_pcnst)
     real(r8), intent(in)  :: pdeldry(ncol,pver)
     real(r8), intent(in)  :: mbar(ncol,pver)
+    real(r8), intent(in)  :: rdelt        ! inverse of timestep (1/s)
     character(len=*), intent(in)  :: flag ! flag for diagnostic output locations
 
     !--------------------------------------------------------------------
     !	... local variables
     !--------------------------------------------------------------------
-    integer     :: i,j,k, m, n
-    real(r8)    :: wrk(ncol,pver)
-    real(r8)    :: qmass(ncol,pver,gas_pcnst)  ! tracer concentration in kg/m2
-    
+    integer  :: i,j,k, m, n
+    real(r8) :: wrk(ncol,pver,gas_pcnst)
     real(r8) :: area(ncol), drymass(ncol,pver)
-
-    logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+    logical  :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
 
     !-----------------------------------------------------------------------
 
@@ -880,16 +893,22 @@ contains
 
     do m = 1,gas_pcnst
        
-       if ( .not. any( aer_species == m ) ) then
-          !call outfld( solsym(m), vmr(:ncol,:,m), ncol ,lchnk )
-          !call outfld( trim(solsym(m))//'_SRF', vmr(:ncol,pver,m), ncol ,lchnk )
-          if( adv_mass(m) /= 0._r8 ) then
+       if ( .not. any( aer_species == m ) .and. adv_mass(m) /= 0._r8 ) then
+          if (flag == 'MSB' .or. flag=='MSL' .or. flag=='MSD') then
              do k = 1,pver
-                qmass(:ncol,k,m) = adv_mass(m)*vmr(:ncol,k,m)/mbar(:ncol,k) &
+                ! kg/m2
+                wrk(:ncol,k,m) = adv_mass(m)*vmr(:ncol,k,m)/mbar(:ncol,k) &
                                   *drymass(:ncol,k)/area(:ncol)
-             end do
-          end if
-          call outfld( trim(solsym(m))//'_MS'//flag, qmass(:ncol,:,m), ncol ,lchnk )
+             enddo
+             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:,m), ncol ,lchnk )
+          else
+             do k = 1,pver
+                ! kg/m2/s
+                wrk(:ncol,k,m) = adv_mass(m)*(vmr(:ncol,k,m)-vmr_old(:ncol,k,m))&
+                  /mbar(:ncol,k)*drymass(:ncol,k)/area(:ncol)*rdelt
+             enddo
+             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:,m), ncol ,lchnk )
+          endif
        endif
 
        !do k=1,pver
