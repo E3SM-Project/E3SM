@@ -3508,7 +3508,15 @@ is sent to the coupler every time step, using the fields 'wsresp' and 'tau_est'.
 
 <entry id="export_gustiness" type="logical" category="pbl"
        group="phys_ctl_nl" valid_values="" >
-If .true., a gustiness value will be exported to the coupler.
+If .true., a gustiness value will be exported to the coupler, which allows
+surface components to distinguish between the effect of mean wind and gustiness
+when calculating fluxes (and in particular surface drag).
+
+If .false., no extra value is exported, and gustiness is instead applied by the
+atmosphere by scaling up the exported wind fields (ubot and vbot). This is
+simpler and requires slightly less coupling overhead, but produces numerical
+artifacts (oscillations) in surface stresses, particularly when the gustiness is
+large compared with the mean wind.
 </entry>
 
 

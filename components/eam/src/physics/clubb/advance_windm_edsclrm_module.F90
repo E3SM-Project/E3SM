@@ -255,13 +255,6 @@ module advance_windm_edsclrm_module
                                l_imp_sfc_momentum_flux, vpwp(1),        & ! In
                                rhs(:,windm_edsclrm_vm)                  ) ! Out
 
-
-       ! Store momentum flux (explicit component)
-
-       ! The surface flux, x'w'(1) = x'w'|_sfc, is set elsewhere in the model.
-!      upwp(1) = upwp_sfc
-!      vpwp(1) = vpwp_sfc
-
        ! Solve for x'w' at all intermediate model levels.
        ! A Crank-Nicholson timestep is used.
 
@@ -487,13 +480,6 @@ module advance_windm_edsclrm_module
                                rho_ds_zm, invrs_rho_ds_zt,              & ! In
                                l_imp_sfc_momentum_flux, vpwp_pert(1),   & ! In
                                rhs(:,windm_edsclrm_vm)                  ) ! Out
-
-
-       ! Store momentum flux (explicit component)
-
-       ! The surface flux, x'w'(1) = x'w'|_sfc, is set elsewhere in the model.
-!      upwp(1) = upwp_sfc
-!      vpwp(1) = vpwp_sfc
 
        ! Solve for x'w' at all intermediate model levels.
        ! A Crank-Nicholson timestep is used.
