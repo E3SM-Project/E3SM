@@ -95,7 +95,7 @@ CONTAINS
        seq_flds_x2o_fields, seq_flds_o2x_fields, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, iop_mode, scmlat, scmlon)
+       scmMode, scm_multcols, scmlat, scmlon, scm_nx, scm_ny)
 
     ! !DESCRIPTION: initialize docn model
     use pio        , only : iosystem_desc_t
@@ -119,11 +119,13 @@ CONTAINS
     integer(IN)            , intent(in)    :: logunit             ! logging unit number
     logical                , intent(in)    :: read_restart        ! start from restart
     logical                , intent(in)    :: scmMode             ! single column mode
-    logical                , intent(in)    :: iop_mode            ! IOP mode
-                                                                  ! cover planet with
-                                                                  ! identical surface
+    logical                , intent(in)    :: scm_multcols        ! single column functionality but
+                                                                  ! extrapolated over multiple columns
     real(R8)               , intent(in)    :: scmLat              ! single column lat
     real(R8)               , intent(in)    :: scmLon              ! single column lon
+    integer(IN)            , intent(in)    :: scm_nx              ! number of points for SCM
+                                                                  ! functionality (x direction)
+    integer(IN)            , intent(in)    :: scm_ny              ! same but for y direction
 
     !--- local variables ---
     integer(IN)   :: n,k      ! generic counters
@@ -175,7 +177,8 @@ CONTAINS
        if (my_task == master_task) &
             write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
        call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
-            scmmode=scmmode,iop_mode=iop_mode,scmlon=scmlon,scmlat=scmlat, &
+            scmmode=scmmode,scm_multcols=scm_multcols,scmlon=scmlon,scmlat=scmlat, &
+            scm_nx=scm_nx,scm_ny=scm_ny, &
             calendar=calendar, reset_domain_mask=.true.)
     else
        if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. &

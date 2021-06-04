@@ -1,0 +1,11 @@
+<template>
+        <validation>
+                <compare_fields>
+                        <field name="waterThickness" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+                        <field name="waterPressure" l1_norm="0.0" l2_norm="0.0" linf_norm="0.0"/>
+                        <!-- daysSinceStart can vary by up to 1 second due to truncation of the clock time when saved to xtime -->
+                        <field name="daysSinceStart" linf_norm="1.0"/>
+                </compare_fields>
+        </validation>
+</template>
+

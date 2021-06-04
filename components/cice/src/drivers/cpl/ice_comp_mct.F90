@@ -203,7 +203,7 @@ contains
     scmlon = -999.
 
     call seq_infodata_GetData( infodata, case_name=runid   ,  &  
-       single_column=single_column,iop_mode=iop_mode, &
+       single_column=single_column, &
        scmlat=scmlat,scmlon=scmlon)
     call seq_infodata_GetData( infodata, start_type=starttype)
 

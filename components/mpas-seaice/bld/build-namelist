@@ -447,8 +447,6 @@ my $LID = $ENV{'LID'};
 
 my $ntasks = $NTASKS_ICE / $NINST_ICE; 
 
-if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
-
 print "MPASSI build-namelist: ice_grid is $ICE_GRID \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
@@ -517,11 +515,6 @@ if ($CONTINUE_RUN eq 'TRUE') {
         add_default($nl, 'config_do_restart_snow_grain_radius', 'val'=>".false.");
 }
 add_default($nl, 'config_restart_timestamp_name');
-add_default($nl, 'config_do_restart_hbrine');
-add_default($nl, 'config_do_restart_zsalinity');
-add_default($nl, 'config_do_restart_bgc');
-add_default($nl, 'config_do_restart_snow_density');
-add_default($nl, 'config_do_restart_snow_grain_radius');
 
 ##############################
 # Namelist group: dimensions #
@@ -1021,6 +1014,7 @@ add_default($nl, 'config_AM_conservationCheck_output_stream');
 add_default($nl, 'config_AM_conservationCheck_compute_on_startup');
 add_default($nl, 'config_AM_conservationCheck_write_on_startup');
 add_default($nl, 'config_AM_conservationCheck_write_to_logfile');
+add_default($nl, 'config_AM_conservationCheck_restart_stream');
 
 ##########################################
 # Namelist group: AM_geographicalVectors #

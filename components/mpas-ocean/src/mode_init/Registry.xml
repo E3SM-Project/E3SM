@@ -1,0 +1,127 @@
+#include "Registry_baroclinic_channel.xml"
+#include "Registry_lock_exchange.xml"
+#include "Registry_internal_waves.xml"
+#include "Registry_overflow.xml"
+#include "Registry_dam_break.xml"
+#include "Registry_global_ocean.xml"
+#include "Registry_cvmix_WSwSBF.xml"
+#include "Registry_iso.xml"
+#include "Registry_soma.xml"
+#include "Registry_ziso.xml"
+#include "Registry_sub_ice_shelf_2D.xml"
+#include "Registry_periodic_planar.xml"
+#include "Registry_ecosys_column.xml"
+#include "Registry_sea_mount.xml"
+#include "Registry_isomip.xml"
+#include "Registry_isomip_plus.xml"
+#include "Registry_hurricane.xml"
+#include "Registry_tidal_boundary.xml"
+#include "Registry_cosine_bell.xml"
+// #include "Registry_TEMPLATE.xml"
+
+
+	<!--**********************************-->
+	<!-- Namelists for init run mode only -->
+	<!--**********************************-->
+	<nml_record name="partial_cells" mode="init">
+		<nml_option name="config_alter_ICs_for_pcs" type="logical" default_value=".false." units="unitless"
+					description="If true, initial conditions are altered according to the config_pc_alteration_type flag."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_pc_alteration_type" type="character" default_value="full_cell" units="unitless"
+					description="Determines the method of initial condition alteration for partial bottom (and possibly top) cells. 'partial_cell' alters layerThickness, interpolates all tracers in the bottom (and top) cell based on the bottomDepth (or ssh) variable, and alters bottomDepth (or ssh) to enforce the minimum pc fraction. 'full_cell' alters bottomDepth (or ssh) to have full cells everywhere, based on the refBottomDepth variable."
+					possible_values="'full_cell' or 'partial_cell'"
+		/>
+		<nml_option name="config_min_pc_fraction" type="real" default_value="0.10" units="unitless"
+					description="Determines the minimum fraction of a cell altering the initial conditions can create."
+					possible_values="Any real between 0 and 1."
+		/>
+	</nml_record>
+	<nml_record name="init_setup" mode="init">
+		<nml_option name="config_init_configuration" type="character" default_value="none" units="unitless"
+					description="Name of configuration to create."
+					possible_values="Any configuration name"
+		/>
+		<nml_option name="config_expand_sphere" type="logical" default_value=".false." units="unitless"
+					description="Logical flag that controls if a spherical mesh is expanded to an earth sized sphere or not."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_realistic_coriolis_parameter" type="logical" default_value=".false." units="unitless"
+					description="Logical flag that controls if a spherical mesh will get realistic coriolis parameters or not."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_write_cull_cell_mask" type="logical" default_value=".true." units="unitless"
+					description="Logicial flag that controls if the cullCell field is written to output."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_vertical_grid" type="character" default_value="uniform" units="unitless"
+					description="Name of vertical grid to use in configuration generation"
+					possible_values="'uniform', '60layerPHC', '42layerWOCE', '100layerE3SMv1', '1dCVTgenerator', ..."
+		/>
+	</nml_record>
+	<nml_record name="CVTgenerator" mode="init">
+		<nml_option name="config_1dCVTgenerator_stretch1" type="real" default_value="1.0770" units="unitless"
+					description="Parameter for the 1D CVT vertical grid generator."
+					possible_values="Any positive non-zero integer."
+		/>
+		<nml_option name="config_1dCVTgenerator_stretch2" type="real" default_value="1.0275" units="unitless"
+					description="Parameter for the 1D CVT vertical grid generator."
+					possible_values="Any positive non-zero integer."
+		/>
+		<nml_option name="config_1dCVTgenerator_dzSeed" type="real" default_value="1.2" units="unitless"
+					description="Seed thickness of the first layer for the 1D CVT vertical grid generator."
+					possible_values="Any positive non-zero integer."
+		/>
+	</nml_record>
+	<nml_record name="init_vertical_grid" mode="init">
+		<nml_option name="config_init_vertical_grid_type" type="character" default_value="z-star" units="unitless"
+					description="Which vertical grid to initialize with.  Without ice-shelf cavities (i.e. ssh=0 everywhere), 'z-star' and 'z-level' are the same."
+					possible_values="'z-star', 'z-level', or 'haney-number'"
+		/>
+	</nml_record>
+	<nml_record name="constrain_Haney_number" mode="init">
+		<nml_option name="config_rx1_outer_iter_count" type="integer" default_value="20" units="unitless"
+					description="The number of outer iterations (first smoothing then rx1 constraint) during initialization of the vertical grid."
+					possible_values="any positive integer"
+		/>
+		<nml_option name="config_rx1_inner_iter_count" type="integer" default_value="10" units="unitless"
+					description="The number of iterations used to constrain rx1 in each layer."
+					possible_values="any positive integer"
+		/>
+		<nml_option name="config_rx1_init_inner_weight" type="real" default_value="0.1" units="unitless"
+					description="The weight by which layer thicknesses are altered at the beginning of inner iteration. This weight linearly increases to 1.0 by the final iteration."
+					possible_values="a positive value less than or equal to 1"
+		/>
+		<nml_option name="config_rx1_max" type="real" default_value="5.0" units="unitless"
+					description="The maximum value rx1Max of the Haney number (rx1) after modification of the vertical grid"
+					possible_values="any positive value, typically greater than or equal to 1"
+		/>
+		<nml_option name="config_rx1_horiz_smooth_weight" type="real" default_value="1.0" units="unitless"
+					description="Relative weight of horizontal neighbors compared to this cell when smoothing vertical stretching"
+					possible_values="A non-negative number"
+		/>
+		<nml_option name="config_rx1_vert_smooth_weight" type="real" default_value="1.0" units="unitless"
+					description="Relative weight of vertical neighbors compared to this cell when smoothing vertical stretching"
+					possible_values="A non-negative number"
+		/>
+		<nml_option name="config_rx1_slope_weight" type="real" default_value="1e-1" units="unitless"
+					description="Weight used to nudge level interfaces toward being flat (thus decreasing the Haney number)"
+					possible_values="A non-negative number"
+		/>
+		<nml_option name="config_rx1_zstar_weight" type="real" default_value="1.0" units="unitless"
+					description="Weight used to nudge vertical stretching toward z-star during each outer iteration"
+					possible_values="A non-negative number"
+		/>
+		<nml_option name="config_rx1_horiz_smooth_open_ocean_cells" type="integer" default_value="20" units="unitless"
+					description="The size (in cells) of a buffer region around land ice for smoothing.  Smoothing is performed under land ice and in the buffer region of open ocean."
+					possible_values="any non-negative integer, 0 indiates no buffer region."
+		/>
+		<nml_option name="config_rx1_min_levels" type="integer" default_value="3" units="unitless"
+					description="The minimum number of layers in the ocean column in the smoothed region."
+					possible_values="a positive integer"
+		/>
+		<nml_option name="config_rx1_min_layer_thickness" type="real" default_value="1.0" units="m"
+					description="The minimum layer thickness in the smoothed region."
+					possible_values="a positive value"
+		/>
+	</nml_record>

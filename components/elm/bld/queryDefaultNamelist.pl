@@ -180,9 +180,9 @@ EOF
   my %inputopts;
   my $model                  = $opts{'model'};
   my @nl_definition_files    = ( "$cfgdir/namelist_files/namelist_definition_drv.xml",
-                                 "$cfgdir/namelist_files/namelist_definition_$model.xml" 
+                                 "$cfgdir/namelist_files/namelist_definition.xml" 
                                );
-  $inputopts{empty_cfg_file} = "$cfgdir/config_files/config_definition_$model.xml";
+  $inputopts{empty_cfg_file} = "$cfgdir/config_files/config_definition.xml";
   $inputopts{nldef_files}    = \@nl_definition_files;
   $inputopts{namelist}       = $opts{namelist};
   $inputopts{printing}       = $printing;
@@ -246,7 +246,7 @@ EOF
      $settings{'notest'}       = ! $opts{'test'};
      $settings{'csmdata'}      = $inputopts{csmdata};
   } else {
-     my @files = ( "$cfgdir/namelist_files/namelist_defaults_${model}.xml", 
+     my @files = ( "$cfgdir/namelist_files/namelist_defaults.xml", 
                    "$cfgdir/namelist_files/namelist_defaults_${model}_tools.xml", 
                    "$cfgdir/namelist_files/namelist_defaults_drv.xml",
                    "$cfgdir/namelist_files/namelist_defaults_drydep.xml",

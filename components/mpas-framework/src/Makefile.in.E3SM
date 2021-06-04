@@ -1,0 +1,92 @@
+# Duplicate logic from Tools/Makefile to set compile_threaded
+compile_threaded = FALSE
+ifeq ($(strip $(SMP)),TRUE)
+   compile_threaded = TRUE
+   THREADDIR = threads
+else
+   ifeq ($(strip $(BUILD_THREADED)),TRUE)
+      compile_threaded = TRUE
+      THREADDIR = threads
+   else
+      THREADDIR = nothreads
+   endif
+endif
+# End duplicated logic
+
+include $(CASEROOT)/Macros.make
+# Load machine/compiler specific settings
+-include $(CASEROOT)/Depends.$(COMPILER)
+-include $(CASEROOT)/Depends.$(MACH)
+-include $(CASEROOT)/Depends.$(MACH).$(COMPILER)
+
+ifneq ($(wildcard core_$(CORE)/build_options.mk), ) # Check for build_options.mk
+    include core_$(CORE)/build_options.mk
+else # ELSE Use Default Options
+    EXE_NAME=$(CORE)_model
+    NAMELIST_SUFFIX=$(CORE)
+endif
+
+# Map the ESM component corresponding to each MPAS core
+ifeq "$(CORE)" "ocean"
+    COMPONENT=ocn
+else ifeq "$(CORE)" "landice"
+    COMPONENT=glc
+else ifeq "$(CORE)" "seaice"
+    COMPONENT=ice
+endif
+
+ifeq ($(strip $(USE_ESMF_LIB)), TRUE)
+   ESMFDIR = esmf
+else
+   ESMFDIR = noesmf
+endif
+
+RM = rm -f
+CPP = cpp -P -traditional
+FC=$(MPIFC)
+CC=$(MPICC)
+CXX=$(MPICXX)
+NETCDF=$(NETCDF_PATH)
+PNETCDF=$(PNETCDF_PATH)
+PIO=$(INSTALL_SHAREDPATH)/pio
+FILE_OFFSET = -DOFFSET64BIT
+override CFLAGS += -DMPAS_NO_LOG_REDIRECT -DUSE_PIO2 -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -DMPAS_PERF_MOD_TIMERS
+override FFLAGS += -DMPAS_NO_LOG_REDIRECT -DUSE_PIO2 -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -DMPAS_PERF_MOD_TIMERS
+override CPPFLAGS += $(CPPDEFS) $(MODEL_FORMULATION) $(FILE_OFFSET) $(ZOLTAN_DEFINE) -DMPAS_NO_LOG_REDIRECT -DUSE_PIO2 -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -D_MPI -DMPAS_NAMELIST_SUFFIX=$(NAMELIST_SUFFIX) -DMPAS_EXE_NAME=$(EXE_NAME) -DMPAS_PERF_MOD_TIMERS
+override CPPINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+override FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+LIBS += -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -L$(LIBROOT) -L$(INSTALL_SHAREDPATH)/lib -lpio -lpnetcdf -lnetcdf
+
+ifeq ($(DEBUG), TRUE)
+    override CPPFLAGS += -DMPAS_DEBUG
+endif
+
+ifeq ($(compile_threaded), TRUE)
+    override CPPFLAGS += -DMPAS_OPENMP
+endif
+
+ifeq "$(GEN_F90)" "true"
+    override CPPFLAGS += -Uvector
+endif
+
+all:
+	@echo $(CPPINCLUDES)
+	@echo $(FCINCLUDES)
+	( $(MAKE) mpas RM="$(RM)" CPP="$(CPP)" NETCDF="$(NETCDF)" PNETCDF="$(PNETCDF)" \
+	  PIO="$(PIO)" FC="$(FC)" CC="$(CC)" CXX="$(CXX)" SFC="$(SFC)" SCC="$(SCC)" \
+	  CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FCINCLUDES="$(FCINCLUDES)" \
+	  FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" )
+
+mpas: externals frame ops dycore drver
+	ar ru lib$(COMPONENT).a framework/*.o
+	ar ru lib$(COMPONENT).a operators/*.o
+	ar ru lib$(COMPONENT).a external/ezxml/*.o
+	ar ru lib$(COMPONENT).a `find core_$(CORE)/ -type f -name "*.o"`  # Find command finds objects in any subdirectories
+	ar ru lib$(COMPONENT).a $(DRIVER)/*.o
+
+externals:
+	( cd external; $(MAKE) FC="$(FC)" SFC="$(SFC)" CC="$(CC)" CXX="$(CXX)" SCC="$(SCC)" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" CPP="$(CPP)" NETCDF="$(NETCDF)" CORE="$(CORE)" ezxml-lib )
+
+drver: externals frame ops dycore
+	( cd $(DRIVER); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FREEFLAGS="$(FREEFLAGS)" all ) 
+
