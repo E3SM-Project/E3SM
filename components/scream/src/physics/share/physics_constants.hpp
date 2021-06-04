@@ -87,7 +87,7 @@ struct Constants
   static constexpr Scalar Avogad        = 6.02214e26;
   static constexpr Scalar Boltz         = 1.38065e-23;
   static constexpr Scalar Rgas          = Avogad * Boltz;
-  static constexpr Scalar MWWV          = 18.016;  //TODO: Aaron - Isn't this just MWH2O? Should we just have one of these?
+  static constexpr Scalar MWWV          = MWH2O;
   static constexpr Scalar RWV           = Rgas / MWWV;
   static constexpr Scalar ZVIR          = (RWV / Rair) - 1.0;
   static constexpr Scalar max_total_ni  = 500.e+3;  // maximum total ice concentration (sum of all categories) (m)
