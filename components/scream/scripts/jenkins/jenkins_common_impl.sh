@@ -61,7 +61,6 @@ if [ $skip_testing -eq 0 ]; then
 
   # Run SCREAM CIME suite
   if [[ $test_cime == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
-    module switch sems-python/2.7.9 # this should only be needed until the next CIME update
     ../../cime/scripts/create_test e3sm_scream -c -b master
   fi
 
