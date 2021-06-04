@@ -70,6 +70,27 @@ module physpkg
   integer ::  snow_sh_idx        = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
+  integer :: dlf_idx = 0
+  integer :: dlf2_idx = 0
+  integer :: cmfmc_idx = 0
+  integer :: cmfmc2_idx = 0
+  integer :: cmfcme_idx = 0
+  integer :: rliq_idx = 0
+  integer :: rliq2_idx = 0
+  integer :: pflx_idx = 0
+  integer :: zdu_idx = 0
+  integer :: mu_idx = 0
+  integer :: eu_idx = 0
+  integer :: du_idx = 0
+  integer :: md_idx = 0
+  integer :: ed_idx = 0
+  integer :: dp_idx = 0
+  integer :: dsubcld_idx = 0
+  integer :: jt_idx = 0
+  integer :: maxg_idx = 0
+  integer :: ideep_idx = 0
+  integer :: lengath_idx = 0
+
   save
 
   ! Public methods
@@ -110,7 +131,7 @@ subroutine phys_register
     ! 
     !-----------------------------------------------------------------------
     use physics_buffer,     only: pbuf_init_time
-    use physics_buffer,     only: pbuf_add_field, dtype_r8, pbuf_register_subcol
+    use physics_buffer,     only: pbuf_add_field, dtype_r8, dtype_i4, pbuf_register_subcol
     use shr_kind_mod,       only: r8 => shr_kind_r8
     use spmd_utils,         only: masterproc
     use constituents,       only: pcnst, cnst_add, cnst_chk_dim, cnst_name
@@ -198,6 +219,26 @@ subroutine phys_register
     call pbuf_add_field('static_ener_ac', 'global', dtype_r8, (/pcols/), static_ener_ac_idx)
     call pbuf_add_field('water_vap_ac',   'global', dtype_r8, (/pcols/), water_vap_ac_idx)
 
+    call pbuf_add_field('dlf', 'global', dtype_r8, (/pcols,pver/), dlf_idx)
+    call pbuf_add_field('dlf2', 'global', dtype_r8, (/pcols,pver/), dlf2_idx)
+    call pbuf_add_field('cmfmc', 'global', dtype_r8, (/pcols,pverp/), cmfmc_idx)
+    call pbuf_add_field('cmfmc2', 'global', dtype_r8, (/pcols,pverp/), cmfmc2_idx)
+    call pbuf_add_field('cmfcme', 'global', dtype_r8, (/pcols,pver/), cmfcme_idx)
+    call pbuf_add_field('rliq', 'global', dtype_r8, (/pcols/), rliq_idx)
+    call pbuf_add_field('rliq2', 'global', dtype_r8, (/pcols/), rliq2_idx)
+    call pbuf_add_field('pflx', 'global', dtype_r8, (/pcols,pverp/), pflx_idx)
+    call pbuf_add_field('zdu', 'global', dtype_r8, (/pcols,pver/), zdu_idx)
+    call pbuf_add_field('mu', 'global', dtype_r8, (/pcols,pver/), mu_idx)
+    call pbuf_add_field('eu', 'global', dtype_r8, (/pcols,pver/), eu_idx)
+    call pbuf_add_field('du', 'global', dtype_r8, (/pcols,pver/), du_idx)
+    call pbuf_add_field('md', 'global', dtype_r8, (/pcols,pver/), md_idx)
+    call pbuf_add_field('ed', 'global', dtype_r8, (/pcols,pver/), ed_idx)
+    call pbuf_add_field('dp', 'global', dtype_r8, (/pcols,pver/), dp_idx)
+    call pbuf_add_field('dsubcld', 'global', dtype_r8, (/pcols/), dsubcld_idx)
+    call pbuf_add_field('jt', 'global', dtype_i4, (/pcols/), jt_idx)
+    call pbuf_add_field('maxg', 'global', dtype_i4, (/pcols/), maxg_idx)
+    call pbuf_add_field('ideep', 'global', dtype_i4, (/pcols/), ideep_idx)
+    call pbuf_add_field('lengath', 'global', dtype_i4, (/pcols/), lengath_idx)
 
     ! check energy package
     call check_energy_register
@@ -224,12 +265,12 @@ subroutine phys_register
        if (do_clubb_sgs) call clubb_register_cam()
        
 
-       call pbuf_add_field('PREC_STR',  'physpkg',dtype_r8,(/pcols/),prec_str_idx)
-       call pbuf_add_field('SNOW_STR',  'physpkg',dtype_r8,(/pcols/),snow_str_idx)
-       call pbuf_add_field('PREC_PCW',  'physpkg',dtype_r8,(/pcols/),prec_pcw_idx)
-       call pbuf_add_field('SNOW_PCW',  'physpkg',dtype_r8,(/pcols/),snow_pcw_idx)
-       call pbuf_add_field('PREC_SED',  'physpkg',dtype_r8,(/pcols/),prec_sed_idx)
-       call pbuf_add_field('SNOW_SED',  'physpkg',dtype_r8,(/pcols/),snow_sed_idx)
+       call pbuf_add_field('PREC_STR',  'global',dtype_r8,(/pcols/),prec_str_idx)
+       call pbuf_add_field('SNOW_STR',  'global',dtype_r8,(/pcols/),snow_str_idx)
+       call pbuf_add_field('PREC_PCW',  'global',dtype_r8,(/pcols/),prec_pcw_idx)
+       call pbuf_add_field('SNOW_PCW',  'global',dtype_r8,(/pcols/),snow_pcw_idx)
+       call pbuf_add_field('PREC_SED',  'global',dtype_r8,(/pcols/),prec_sed_idx)
+       call pbuf_add_field('SNOW_SED',  'global',dtype_r8,(/pcols/),snow_sed_idx)
        if (is_subcol_on()) then
          call pbuf_register_subcol('PREC_STR', 'phys_register', prec_str_idx)
          call pbuf_register_subcol('SNOW_STR', 'phys_register', snow_str_idx)
@@ -1037,7 +1078,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call diag_physvar_ic ( c,  phys_buffer_chunk, cam_out(c), cam_in(c) )
           call t_stopf ('diag_physvar_ic')
 
-          call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
+          call tphysbc (.true., ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
                        sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
@@ -1185,7 +1226,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
 
     use cam_diagnostics,only: diag_deallocate, diag_surf
-    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds 
+    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds, fsns, fsnt, flns, flnt, landm
     use physconst,      only: stebol, latvap
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
@@ -1285,6 +1326,10 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call t_startf('diag_surf')
        call diag_surf(cam_in(c), cam_out(c), phys_state(c)%ps,trefmxav(1,c), trefmnav(1,c))
        call t_stopf('diag_surf')
+
+       call tphysbc(.false., ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
+            phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
+            sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
        call tphysac(ztodt, cam_in(c),  &
             sgh(1,c), sgh30(1,c), cam_out(c),                              &
@@ -1410,7 +1455,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     use iondrag,            only: iondrag_calc, do_waccm_ions
     use clubb_intr,         only: clubb_surface
     use perf_mod
-    use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
     use co2_cycle,          only: co2_cycle_set_ptend
@@ -1507,16 +1551,10 @@ subroutine tphysac (ztodt,   cam_in,  &
                       ,l_ac_energy_chk_out    = l_ac_energy_chk    &
                      )
 
-    ! Adjust the surface fluxes to reduce instabilities in near sfc layer
-    if (phys_do_flux_avg()) then 
-       call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
-    endif
-
     ! Validate the physics state.
     if (state_debug_checks) &
          call physics_state_check(state, name="before tphysac")
 
-    call t_startf('tphysac_init')
     ! Associate pointers with physics buffer fields
     itim_old = pbuf_old_tim_idx()
 
@@ -1535,48 +1573,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     ifld = pbuf_get_index('AST')
     call pbuf_get_field(pbuf, ifld, ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-    !
-    ! accumulate fluxes into net flux array for spectral dycores
-    ! jrm Include latent heat of fusion for snow
-    !
-    do i=1,ncol
-       tend%flx_net(i) = tend%flx_net(i) + cam_in%shf(i) + (cam_out%precc(i) &
-            + cam_out%precl(i))*latvap*rhoh2o &
-            + (cam_out%precsc(i) + cam_out%precsl(i))*latice*rhoh2o
-    end do
-
-if (l_tracer_aero) then
-
-    ! emissions of aerosols and gas-phase chemistry constituents at surface
-    call chem_emissions( state, cam_in )
-
-end if ! l_tracer_aero
-
     ! get nstep and zero array for energy checker
     zero = 0._r8
     nstep = get_nstep()
     call check_tracers_init(state, tracerint)
-
-!!== KZ_WCON
-
-    call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
-
-    if(.not.use_qqflx_fixer) then 
-
-       ! Check if latent heat flux exceeds the total moisture content of the
-       ! lowest model layer, thereby creating negative moisture.
-
-       call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
-            state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
-            cam_in%lhf , cam_in%cflx )
-
-    end if 
-
-    call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
-
-!!== KZ_WCON
-
-    call t_stopf('tphysac_init')
 
 if (l_tracer_aero) then
     !===================================================
@@ -1820,7 +1820,7 @@ end if ! l_ac_energy_chk
 
 end subroutine tphysac
 
-subroutine tphysbc (ztodt,               &
+subroutine tphysbc (actually_bc, ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
        tend,    pbuf,     fsds,    landm,            &
        sgh, sgh30, cam_out, cam_in )
@@ -1863,7 +1863,7 @@ subroutine tphysbc (ztodt,               &
          physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
     use cam_history,     only: outfld, fieldname_len
-    use physconst,       only: cpair, latvap, gravit, rga
+    use physconst,       only: cpair, latvap, gravit, rga, rhoh2o, latice
     use constituents,    only: pcnst, qmin, cnst_get_ind
     use convect_deep,    only: convect_deep_tend, convect_deep_tend_2, deep_scheme_does_scav_trans
     use time_manager,    only: is_first_step, get_nstep
@@ -1889,12 +1889,15 @@ subroutine tphysbc (ztodt,               &
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
+    use flux_avg,           only: flux_avg_run
+    use chemistry,          only: chem_emissions
 
     implicit none
 
     !
     ! Arguments
     !
+    logical, intent(in) :: actually_bc ! Is this real BC, or fake BC?
     real(r8), intent(in) :: ztodt                            ! 2 delta t (model time increment)
     real(r8), intent(inout) :: fsns(pcols)                   ! Surface solar absorbed flux
     real(r8), intent(inout) :: fsnt(pcols)                   ! Net column abs solar flux at model top
@@ -1910,7 +1913,7 @@ subroutine tphysbc (ztodt,               &
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     type(cam_out_t),     intent(inout) :: cam_out
-    type(cam_in_t),      intent(in)    :: cam_in
+    type(cam_in_t),      intent(inout)    :: cam_in
 
 
     !
@@ -1927,15 +1930,6 @@ subroutine tphysbc (ztodt,               &
     integer :: nstep                          ! current timestep number
 
     real(r8) :: net_flx(pcols)
-
-    real(r8) :: zdu(pcols,pver)               ! detraining mass flux from deep convection
-    real(r8) :: cmfmc(pcols,pverp)            ! Convective mass flux--m sub c
-
-    real(r8) cmfcme(pcols,pver)                ! cmf condensation - evaporation
-    real(r8) cmfmc2(pcols,pverp)               ! Moist convection cloud mass flux
-    real(r8) dlf(pcols,pver)                   ! Detraining cld H20 from shallow + deep convections
-    real(r8) dlf2(pcols,pver)                  ! Detraining cld H20 from shallow convections
-    real(r8) pflx(pcols,pverp)                 ! Conv rain flux thru out btm of lev
     real(r8) rtdt                              ! 1./ztodt
 
     integer lchnk                              ! chunk identifier
@@ -1961,6 +1955,40 @@ subroutine tphysbc (ztodt,               &
     real(r8), pointer, dimension(:,:) :: cldliqini
     real(r8), pointer, dimension(:,:) :: cldiceini
     real(r8), pointer, dimension(:,:) :: dtcore
+
+    real(r8), pointer :: zdu(:,:)               ! detraining mass flux from deep convection
+    real(r8), pointer :: cmfmc(:,:)            ! Convective mass flux--m sub c
+    real(r8), pointer :: cmfcme(:,:)                ! cmf condensation - evaporation
+    real(r8), pointer :: cmfmc2(:,:)               ! Moist convection cloud mass flux
+    real(r8), pointer :: dlf(:,:)                   ! Detraining cld H20 from shallow + deep convections
+    real(r8), pointer :: dlf2(:,:)                  ! Detraining cld H20 from shallow convections
+    real(r8), pointer :: pflx(:,:)                 ! Conv rain flux thru out btm of lev
+    real(r8), pointer :: rliq(:)                    ! vertical integral of liquid not yet in q(ixcldliq)
+    real(r8), pointer :: rliq2(:)                   ! vertical integral of liquid from shallow scheme
+
+    !BSINGH - Following variables are from zm_conv_intr, which are moved here as they are now used
+    ! by aero_model_wetdep subroutine. 
+    real(r8), pointer :: mu(:,:) 
+    real(r8), pointer :: eu(:,:)
+    real(r8), pointer :: du(:,:)
+    real(r8), pointer :: md(:,:)
+    real(r8), pointer :: ed(:,:)
+    real(r8), pointer :: dp(:,:)
+    
+    ! wg layer thickness in mbs (between upper/lower interface).
+    real(r8), pointer :: dsubcld(:)
+    
+    ! wg layer thickness in mbs between lcl and maxi.    
+    integer, pointer :: jt(:)
+    
+    ! wg top  level index of deep cumulus convection.
+    integer, pointer :: maxg(:)
+    
+    ! wg gathered values of maxi.
+    integer, pointer :: ideep(:)
+    
+    ! w holds position of gathered points vs longitude index
+    integer, pointer :: lengath(:)
 
     real(r8), pointer, dimension(:,:,:) :: fracis  ! fraction of transported species that are insoluble
 
@@ -1991,8 +2019,6 @@ subroutine tphysbc (ztodt,               &
     ! energy checking variables
     real(r8) :: zero(pcols)                    ! array of zeros
     real(r8) :: zero_sc(pcols*psubcols)        ! array of zeros
-    real(r8) :: rliq(pcols)                    ! vertical integral of liquid not yet in q(ixcldliq)
-    real(r8) :: rliq2(pcols)                   ! vertical integral of liquid from shallow scheme
     real(r8) :: det_s  (pcols)                 ! vertical integral of detrained static energy from ice
     real(r8) :: det_ice(pcols)                 ! vertical integral of detrained ice
     real(r8) :: flx_cnd(pcols)
@@ -2003,30 +2029,6 @@ subroutine tphysbc (ztodt,               &
     logical   :: lq(pcnst)
 
     character(len=fieldname_len)   :: varname, vsuffix
-    !BSINGH - Following variables are from zm_conv_intr, which are moved here as they are now used
-    ! by aero_model_wetdep subroutine. 
-
-    real(r8):: mu(pcols,pver) 
-    real(r8):: eu(pcols,pver)
-    real(r8):: du(pcols,pver)
-    real(r8):: md(pcols,pver)
-    real(r8):: ed(pcols,pver)
-    real(r8):: dp(pcols,pver)
-    
-    ! wg layer thickness in mbs (between upper/lower interface).
-    real(r8):: dsubcld(pcols)
-    
-    ! wg layer thickness in mbs between lcl and maxi.    
-    integer :: jt(pcols)
-    
-    ! wg top  level index of deep cumulus convection.
-    integer :: maxg(pcols)
-    
-    ! wg gathered values of maxi.
-    integer :: ideep(pcols)
-    
-    ! w holds position of gathered points vs longitude index
-    integer :: lengath
 
     real(r8)  :: lcldo(pcols,pver)              !Pass old liqclf from macro_driver to micro_driver
 
@@ -2059,7 +2061,11 @@ subroutine tphysbc (ztodt,               &
                       )
     
     !-----------------------------------------------------------------------
-    call t_startf('bc_init')
+    if (actually_bc) then
+       call t_startf('bc_init')
+    else
+       call t_startf('tphysac_init')
+    end if
 
     zero = 0._r8
     zero_tracers(:,:) = 0._r8
@@ -2072,7 +2078,7 @@ subroutine tphysbc (ztodt,               &
 
     nstep = get_nstep()
 
-    if (pergro_test_active) then 
+    if (actually_bc .and. pergro_test_active) then
        !call outfld calls
        do ihist = 1 , nvars_prtrb_hist
           vsuffix  = trim(adjustl(hist_vars(ihist)))
@@ -2086,6 +2092,7 @@ subroutine tphysbc (ztodt,               &
     water_vap_ac_idx   = pbuf_get_index('water_vap_ac')
     call pbuf_get_field(pbuf, water_vap_ac_idx, water_vap_ac_2d )
 
+    if (actually_bc) then
     ! Integrate and compute the difference
     ! CIDiff = difference of column integrated values
     if( nstep == 0 ) then
@@ -2109,6 +2116,7 @@ subroutine tphysbc (ztodt,               &
        CIDiff(:ncol) = (ftem(:ncol,1) - water_vap_ac_2d(:ncol))*rtdt
 
        call outfld('DTENDTQ', CIDiff, pcols, lchnk )
+    end if
     end if
 
     ! Associate pointers with physics buffer fields
@@ -2135,6 +2143,7 @@ subroutine tphysbc (ztodt,               &
     tend %dudt(:ncol,:pver)  = 0._r8
     tend %dvdt(:ncol,:pver)  = 0._r8
 
+    if (actually_bc) then
 !!== KZ_WCON
     call check_qflx (state, tend, "PHYBC01", nstep, ztodt, cam_in%cflx(:,1))
     call check_water(state, tend, "PHYBC01", nstep, ztodt)
@@ -2221,10 +2230,58 @@ subroutine tphysbc (ztodt,               &
 
     call t_stopf('bc_init')
 
+    else
+
+    ! Adjust the surface fluxes to reduce instabilities in near sfc layer
+    if (phys_do_flux_avg()) then 
+       call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
+    endif
+
+    !
+    ! accumulate fluxes into net flux array for spectral dycores
+    ! jrm Include latent heat of fusion for snow
+    !
+    do i=1,ncol
+       tend%flx_net(i) = tend%flx_net(i) + cam_in%shf(i) + (cam_out%precc(i) &
+            + cam_out%precl(i))*latvap*rhoh2o &
+            + (cam_out%precsc(i) + cam_out%precsl(i))*latice*rhoh2o
+    end do
+
+if (l_tracer_aero) then
+
+    ! emissions of aerosols and gas-phase chemistry constituents at surface
+    call chem_emissions( state, cam_in )
+
+end if ! l_tracer_aero
+    call check_tracers_init(state, tracerint)
+
+!!== KZ_WCON
+
+    call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
+
+    if(.not.use_qqflx_fixer) then 
+
+       ! Check if latent heat flux exceeds the total moisture content of the
+       ! lowest model layer, thereby creating negative moisture.
+
+       call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
+            state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
+            cam_in%lhf , cam_in%cflx )
+
+    end if 
+
+    call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
+
+!!== KZ_WCON
+
+    call t_stopf('tphysac_init')
+
+    end if
+
     !===================================================
     ! Global mean total energy fixer
     !===================================================
-if (l_bc_energy_fix) then
+if (actually_bc .and. l_bc_energy_fix) then
 
     call t_startf('energy_fixer')
 
@@ -2264,7 +2321,7 @@ end if
     ! Dry adjustment
     ! This code block is not a good example of interfacing a parameterization
     !===================================================
-if (l_dry_adj) then
+if (actually_bc .and. l_dry_adj) then
 
     call t_startf('dry_adjustment')
 
@@ -2286,6 +2343,48 @@ if (l_dry_adj) then
     call t_stopf('dry_adjustment')
 
 end if
+
+    call pbuf_get_field(pbuf, dlf_idx, dlf)
+    call pbuf_get_field(pbuf, dlf2_idx, dlf2)
+    call pbuf_get_field(pbuf, cmfmc_idx, cmfmc)
+    call pbuf_get_field(pbuf, cmfmc2_idx, cmfmc2)
+    call pbuf_get_field(pbuf, cmfcme_idx, cmfcme)
+    call pbuf_get_field(pbuf, rliq_idx, rliq)
+    call pbuf_get_field(pbuf, rliq2_idx, rliq2)
+    call pbuf_get_field(pbuf, pflx_idx, pflx)
+    call pbuf_get_field(pbuf, zdu_idx, zdu)
+    call pbuf_get_field(pbuf, mu_idx, mu)
+    call pbuf_get_field(pbuf, eu_idx, eu)
+    call pbuf_get_field(pbuf, du_idx, du)
+    call pbuf_get_field(pbuf, md_idx, md)
+    call pbuf_get_field(pbuf, ed_idx, ed)
+    call pbuf_get_field(pbuf, dp_idx, dp)
+    call pbuf_get_field(pbuf, dsubcld_idx, dsubcld)
+    call pbuf_get_field(pbuf, jt_idx, jt)
+    call pbuf_get_field(pbuf, maxg_idx, maxg)
+    call pbuf_get_field(pbuf, ideep_idx, ideep)
+    call pbuf_get_field(pbuf, lengath_idx, lengath)
+
+    call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
+    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp )
+    call pbuf_get_field(pbuf, prec_sh_idx, prec_sh )
+    call pbuf_get_field(pbuf, snow_sh_idx, snow_sh )
+    call pbuf_get_field(pbuf, prec_str_idx, prec_str)
+    call pbuf_get_field(pbuf, snow_str_idx, snow_str)
+    call pbuf_get_field(pbuf, prec_sed_idx, prec_sed)
+    call pbuf_get_field(pbuf, snow_sed_idx, snow_sed)
+    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw )
+    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw )
+    if (actually_bc .and. is_first_step()) then
+       prec_str = 0._r8
+       snow_str = 0._r8
+       prec_sed = 0._r8
+       snow_sed = 0._r8
+       prec_pcw = 0._r8
+       snow_pcw = 0._r8
+    end if
+
+    if (actually_bc) then
     !
     !===================================================
     ! Moist convection
@@ -2302,21 +2401,10 @@ end if
          rliq,    &
          ztodt,   &
          state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
-         dsubcld, jt, maxg, ideep, lengath) 
+         dsubcld, jt, maxg, ideep, lengath(1))
     call t_stopf('convect_deep_tend')
 
     call physics_update(state, ptend, ztodt, tend)
-
-    call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
-    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp )
-    call pbuf_get_field(pbuf, prec_sh_idx, prec_sh )
-    call pbuf_get_field(pbuf, snow_sh_idx, snow_sh )
-    call pbuf_get_field(pbuf, prec_str_idx, prec_str)
-    call pbuf_get_field(pbuf, snow_str_idx, snow_str)
-    call pbuf_get_field(pbuf, prec_sed_idx, prec_sed)
-    call pbuf_get_field(pbuf, snow_sed_idx, snow_sed)
-    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw )
-    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw )
 
     if (use_subcol_microp) then
       call pbuf_get_field(pbuf, prec_str_idx, prec_str_sc, col_type=col_type_subcol)
@@ -2356,8 +2444,9 @@ if (l_tracer_aero) then
     call sslt_rebin_adv(pbuf,  state)
     
 end if
+    end if
 
-
+    if (.not. actually_bc) then
     if( microp_scheme == 'RK' ) then
 
      if (l_st_mac.or.l_st_mic) then
@@ -2605,14 +2694,14 @@ end if
          ! Aerosol wet removal (including aerosol water uptake)
          call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
                 sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
-                jt, maxg, ideep, lengath, species_class,           &
+                jt, maxg, ideep, lengath(1), species_class,           &
                 cam_out, pbuf, ptend )                               ! outputs
          call physics_update(state, ptend, ztodt, tend)
 
          ! deep convective aerosol transport
          call convect_deep_tend_2( state, ptend, ztodt, pbuf, &
                 mu, eu, du, md, ed, dp, dsubcld, jt, maxg,    &
-                ideep, lengath, species_class )
+                ideep, lengath(1), species_class )
          call physics_update(state, ptend, ztodt, tend)
 
          ! check tracer integrals
@@ -2651,7 +2740,8 @@ end if
 
     call t_stopf('bc_cld_diag_history_write')
 
-if (l_rad) then
+     end if
+if ((.not. actually_bc .or. is_first_step()) .and. l_rad) then
     !===================================================
     ! Radiation computations
     !===================================================
@@ -2675,6 +2765,7 @@ if (l_rad) then
 
 end if ! l_rad
 
+    if (.not. actually_bc) then
     if(do_aerocom_ind3) then
        call cloud_top_aerocom(state, pbuf) 
     end if
@@ -2683,7 +2774,9 @@ end if ! l_rad
     call t_startf('tropopause')
     call tropopause_output(state)
     call t_stopf('tropopause')
+    end if
 
+    if (actually_bc) then
     ! Save atmospheric fields to force surface models
     call t_startf('cam_export')
     call cam_export (state,cam_out,pbuf)
@@ -2693,6 +2786,8 @@ end if ! l_rad
     call t_startf('diag_export')
     call diag_export(cam_out)
     call t_stopf('diag_export')
+
+    end if
 
     call check_tracers_fini(tracerint)
 
