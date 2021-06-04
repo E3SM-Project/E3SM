@@ -1,11 +1,10 @@
-#include "ekat/ekat_assert.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
-#include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "share/util/scream_common_physics_functions.hpp"
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL/YAKL.h"
+#include "ekat/ekat_assert.hpp"
 
 namespace scream {
 
@@ -53,7 +52,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Use VAR field tag for gases for now; consider adding a tag?
   FieldLayout scalar2d_swband_layout { {COL,SWBND}, {m_ncol,m_nswbands} };
 
-  constexpr int ps = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>::n;
+  constexpr int ps = SCREAM_SMALL_PACK_SIZE;
   // Set required (input) fields here
   add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name(), ps);
   add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name(), ps);
@@ -161,21 +160,15 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   // Names of active gases
-  // TODO: Is there any way to store the gas_names_1d information somewhere once,
-  // rather than populate this array every step?
-  // It appears that "gas_concs.init(...)" requires a YAKL string1d array as input,
-  // which would need to be defined with its size pre-initialization, but this breaks the
-  // flexibility to define the full set of gases at runtime.
-  // So for now we create the string1d gas_names_1d on the fly to pass to gas_concs.init. 
-  string1d gas_names_1d("gas_names",m_ngas);
+  m_gas_names_1d = string1d("gas_names",m_ngas);
   for (int igas = 1; igas <= m_ngas; igas++) {  /* Note: YAKL starts the index from 1 */
-    gas_names_1d(igas) = m_gas_names[igas-1];
+    m_gas_names_1d(igas) = m_gas_names[igas-1];
   }
   // Initialize GasConcs object to pass to RRTMGP initializer;
   // This is just to provide gas names
-  // Make GasConcs from gas_names_1d
+  // Make GasConcs from m_gas_names_1d
   GasConcs gas_concs;
-  gas_concs.init(gas_names_1d,1,1);
+  gas_concs.init(m_gas_names_1d,1,1);
   rrtmgp::rrtmgp_initialize(gas_concs);
 
 }
@@ -254,32 +247,18 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   }
   Kokkos::fence();
 
-  // Make GasConcs from gas_names
-  // TODO: only allocate at initialization and 
-  // just update values here.  See comment in
-  // init_impl routine for more details.
-  string1d gas_names_1d("gas_names",m_ngas);
-  for (int igas = 1; igas <= m_ngas; igas++) {
-    gas_names_1d(igas) = m_gas_names[igas-1];
-  }
-
   // Create and populate a GasConcs object to pass to RRTMGP driver
+  // TODO: Can gas_concs be a class variable that only needs to be init'd once?
   GasConcs gas_concs;
-  gas_concs.init(gas_names_1d,m_ncol,m_nlay);
+  gas_concs.init(m_gas_names_1d,m_ncol,m_nlay);
   auto tmp2d = m_buffer.tmp2d;
   for (int igas = 1; igas <= m_ngas; igas++) {
-    auto name = gas_names_1d(igas);
-    if (name=="h2o") {
-      auto d_temp  = m_rrtmgp_fields_in.at("qv").get_reshaped_view<const Real**>();
-      parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
-          tmp2d(icol,ilay) = PF::calculate_vmr_from_mmr(name,d_temp(icol-1,ilay-1)); // Note that for YAKL_LAMBDA icol and ilay start with index 1
-      });
-    } else {
-      auto d_temp  = m_rrtmgp_fields_in.at(name).get_reshaped_view<const Real**>();
-      parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
-          tmp2d(icol,ilay) = PF::calculate_vmr_from_mmr(name,d_temp(icol-1,ilay-1));
-      });
-    }
+    auto name = m_gas_names_1d(igas);
+    auto fm_name = name=="h2o" ? "qv" : name;
+    auto d_temp  = m_rrtmgp_fields_in.at(fm_name).get_reshaped_view<const Real**>();
+    parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
+        tmp2d(icol,ilay) = PF::calculate_vmr_from_mmr(name,d_temp(icol-1,ilay-1)); // Note that for YAKL_LAMBDA icol and ilay start with index 1
+    });
     gas_concs.set_vmr(name, tmp2d);
   }
 

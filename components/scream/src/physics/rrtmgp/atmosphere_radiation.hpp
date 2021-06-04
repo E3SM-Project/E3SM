@@ -85,6 +85,7 @@ public:
   // These are the gases that we keep track of
   int m_ngas;
   std::vector<std::string> m_gas_names;
+  string1d m_gas_names_1d;
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
