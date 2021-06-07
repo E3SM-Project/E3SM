@@ -88,7 +88,7 @@
       <value compset="_EAM.*_BGC%B"   >-co2_cycle</value>
       <value compset="EAM%SCAM"   >-scam</value>
 
-      <value compset="AR97_EAM%SCAM" >-phys cam5 -scam -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
+      <value compset="AR97_EAM%SCAM" >-phys default -scam -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
       
       <value compset="_EAM.%L60"      >-nlev 60</value>
       <value compset="_ELM%[^_]*BC"     >-bc_dep_to_snow_updates</value>
