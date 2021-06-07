@@ -14,15 +14,13 @@ module physpkg
   use mpishorthand
 #endif
   use perf_mod
+  use cam_abortutils,          only: endrun
   use shr_kind_mod,            only: i8 => shr_kind_i8, r8 => shr_kind_r8
-  use shr_sys_mod,             only: shr_sys_irtc
-  use shr_sys_mod,             only: shr_sys_flush
+  use shr_sys_mod,             only: shr_sys_irtc, shr_sys_flush
   use spmd_utils,              only: masterproc, iam
   use physconst,               only: latvap, latice, rh2o
   use physics_types,           only: physics_state, physics_tend, physics_state_set_grid, &
-                                     physics_ptend, physics_tend_init, physics_type_alloc, &
-                                     physics_ptend_dealloc, physics_state_alloc, &
-                                     physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
+                                     physics_ptend, physics_type_alloc
   use physics_update_mod,      only: physics_update, physics_update_init, hist_vars, nvars_prtrb_hist, get_var
   use phys_grid,               only: get_ncols_p, print_cost_p, update_cost_p
   use phys_gmean,              only: gmean_mass
@@ -31,13 +29,7 @@ module physpkg
   use camsrfexch,              only: cam_out_t, cam_in_t
   use phys_control,            only: phys_do_flux_avg, phys_getopts
   use scamMod,                 only: single_column, scm_crm_mode
-  use flux_avg,                only: flux_avg_init
   use cam_logfile,             only: iulog
-  use camsrfexch,              only: cam_export
-  use modal_aero_calcsize,    only: modal_aero_calcsize_init, modal_aero_calcsize_reg, &
-                                    modal_aero_calcsize_sub
-  use modal_aero_wateruptake, only: modal_aero_wateruptake_init, modal_aero_wateruptake_dr, &
-                                    modal_aero_wateruptake_reg
   implicit none
   private
 
@@ -109,6 +101,8 @@ subroutine phys_register
   use crm_physics,              only: crm_physics_register
   use vertical_diffusion,       only: vertical_diffusion_register
   use cloud_diagnostics,        only: cloud_diagnostics_register
+  use modal_aero_calcsize,      only: modal_aero_calcsize_reg
+  use modal_aero_wateruptake,   only: modal_aero_wateruptake_reg
   !---------------------------------------------------------------------------
   ! Local variables
   !---------------------------------------------------------------------------
@@ -214,7 +208,6 @@ end subroutine phys_register
 !===================================================================================================
 
 subroutine phys_inidat( cam_out, pbuf2d )
-  use cam_abortutils,      only: endrun
   use physics_buffer,      only: pbuf_get_index, pbuf_get_field, physics_buffer_desc, pbuf_set_field, dyn_time_lvls
   use cam_initfiles,       only: initial_file_get_id, topo_file_get_id
   use cam_grid_support,    only: cam_grid_check, cam_grid_id
@@ -555,6 +548,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use crm_physics,        only: crm_physics_init 
   use vertical_diffusion, only: vertical_diffusion_init
   use cloud_diagnostics,  only: cloud_diagnostics_init
+  use modal_aero_calcsize,   only: modal_aero_calcsize_init
+  use modal_aero_wateruptake,only: modal_aero_wateruptake_init
   !-----------------------------------------------------------------------------
   ! Input/output arguments
   !-----------------------------------------------------------------------------
@@ -698,7 +693,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   use check_energy,     only: check_energy_gmean
   use physics_buffer,   only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate, pbuf_old_tim_idx, pbuf_get_index
   use comsrf,           only: fsns, fsnt, flns, sgh, sgh30, flnt, landm, fsds
-  use cam_abortutils,   only: endrun
+  use flux_avg,               only: flux_avg_init
   use check_energy,           only: check_energy_chng
   use crm_physics,            only: crm_physics_tend
   use crm_ecpp_output_module, only: crm_ecpp_output_type, crm_ecpp_output_initialize
@@ -737,8 +732,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   real(r8), dimension(pcols) :: mmf_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
 
   type(crm_ecpp_output_type) :: crm_ecpp_output(begchunk:endchunk) ! CRM output data for ECPP calculations
-  ! type(crm_ecpp_output_type), target  :: crm_ecpp_output(begchunk:endchunk) ! CRM output data for ECPP calculations
-  ! type(crm_ecpp_output_type), pointer :: crm_ecpp_output_chunk ! temporary variable used for each chunk
 
   integer  :: itim_old, cldo_idx, cld_idx   ! pbuf indices  
   real(r8), pointer, dimension(:,:) :: cld  ! cloud fraction
@@ -1037,8 +1030,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   use vertical_diffusion, only: vertical_diffusion_tend
   use rayleigh_friction,  only: rayleigh_friction_tend
   use constituents,       only: cnst_get_ind
-  use physics_types,      only: physics_state, physics_tend, physics_ptend, &
-                                physics_dme_adjust, set_dry_to_wet, physics_state_check
+  use physics_types,      only: physics_dme_adjust, set_dry_to_wet, physics_state_check
   use tracers,            only: tracers_timestep_tend
   use aoa_tracers,        only: aoa_tracers_timestep_tend
   use physconst,          only: rhoh2o, latvap,latice, rga
@@ -1047,12 +1039,10 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
                                 check_tracers_data, check_tracers_init, &
                                 check_tracers_chng, check_tracers_fini
   use time_manager,       only: get_nstep
-  use cam_abortutils,     only: endrun
   use cam_control_mod,    only: aqua_planet 
   use mo_gas_phase_chemdr,only: map2chm
   use clybry_fam,         only: clybry_fam_set
   use charge_neutrality,  only: charge_fix
-  use perf_mod
   use flux_avg,           only: flux_avg_run
   use phys_control,       only: use_qqflx_fixer
   use co2_cycle,          only: co2_cycle_set_ptend
@@ -1090,7 +1080,6 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   real(r8) :: zero(pcols)                   ! array of zeros
   integer  :: lchnk, ncol                   ! chunk identifier
   integer  :: i,k,m                         ! loop iterators
-  integer  :: yr, mon, day, tod             ! components of a date
   integer  :: ixcldice, ixcldliq            ! constituent indices for cloud liq and ice
   integer  :: itim_old                      ! pbuf time index
   real(r8) :: obklen(pcols)                 ! Obukhov length for aerosol dry deposition
@@ -1100,8 +1089,6 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   real(r8) :: tmp_cldliq(pcols,pver)        ! tmp variable
   real(r8) :: tmp_cldice(pcols,pver)        ! tmp variable
   real(r8) :: tmp_t     (pcols,pver)        ! tmp variable
-  real(r8) :: ftem      (pcols,pver)        ! tmp variable
-  logical  :: labort                        ! abort flag
   logical  :: l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
@@ -1139,13 +1126,14 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   if (l_tracer_aero) call chem_emissions( state, cam_in )
 
   !-----------------------------------------------------------------------------
-  ! get nstep and zero array for energy checker
+  ! get zero array for energy checker
   !-----------------------------------------------------------------------------
   zero = 0._r8
-  nstep = get_nstep()
   call check_tracers_init(state, tracerint)
 
+  !-----------------------------------------------------------------------------
   ! Check if LHF exceeds the total moisture content of the lowest layer
+  !-----------------------------------------------------------------------------
   call qneg4('TPHYSAC ', lchnk, ncol, ztodt, &
               state%q(1,pver,1), state%rpdel(1,pver), &
               cam_in%shf, cam_in%lhf, cam_in%cflx )
@@ -1307,36 +1295,22 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   use physics_buffer,         only: physics_buffer_desc, pbuf_get_field
   use physics_buffer,         only: pbuf_get_index, pbuf_old_tim_idx
   use physics_buffer,         only: dyn_time_lvls, pbuf_set_field
-  use physics_types,          only: physics_state, physics_tend, physics_ptend, &
-                                    physics_ptend_init, physics_ptend_sum, &
+  use physics_types,          only: physics_ptend_init, physics_ptend_sum, &
                                     physics_state_check, physics_ptend_scale
-  use cam_diagnostics,        only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, &
-                                    diag_export, diag_state_b4_phys_write
+  use cam_diagnostics,        only: diag_conv_tend_ini, diag_state_b4_phys_write
   use cam_history,            only: outfld, fieldname_len
-  use physconst,              only: cpair, latvap, gravit, rga
+  use physconst,              only: cpair, latvap, rga
   use constituents,           only: pcnst, qmin, cnst_get_ind
-  use time_manager,           only: is_first_step, get_nstep
+  use time_manager,           only: get_nstep
   use check_energy,           only: check_energy_chng, check_energy_fix, & 
-                                    check_water, check_qflx, &
-                                    check_energy_timestep_init, &
-                                    check_tracers_data
-  use aero_model,             only: aero_model_wetdep
-  use radiation,              only: radiation_tend
-  use perf_mod
+                                    check_water, check_qflx
   use mo_gas_phase_chemdr,    only: map2chm
   use clybry_fam,             only: clybry_fam_adj
-  use output_aerocom_aie,     only: do_aerocom_ind3, cloud_top_aerocom
-  use cam_abortutils,         only: endrun
+  use output_aerocom_aie,     only: do_aerocom_ind3
   use phys_control,           only: use_qqflx_fixer, use_mass_borrower
   use crm_physics,            only: crm_physics_tend, crm_surface_flux_bypass_tend
   use crm_ecpp_output_module, only: crm_ecpp_output_type, crm_ecpp_output_initialize, crm_ecpp_output_finalize
   use cloud_diagnostics,      only: cloud_diagnostics_calc
-
-#if defined( ECPP )
-   use module_ecpp_ppdriver2,  only: parampollu_driver2
-   use module_data_ecpp1,      only: dtstep_pp_input
-   use crmclouds_camaerosols,  only: crmclouds_mixnuc_tend
-#endif
 
   implicit none
   !-----------------------------------------------------------------------------
@@ -1364,10 +1338,6 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   type(physics_state)   :: state_alt        ! alt state for CRM input
   integer  :: nstep                         ! current timestep number
   real(r8) :: net_flx(pcols)
-  real(r8) :: cmfmc(pcols,pverp)            ! Convective mass flux--m sub c
-  real(r8) :: cmfmc2(pcols,pverp)           ! Moist convection cloud mass flux
-  real(r8) :: dlf(pcols,pver)               ! Detraining cld H20 from shallow + deep convections
-  real(r8) :: dlf2(pcols,pver)              ! Detraining cld H20 from shallow convections
   real(r8) :: rtdt                          ! 1./ztodt
   integer  :: lchnk                         ! chunk identifier
   integer  :: ncol                          ! number of atmospheric columns
@@ -1389,14 +1359,7 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
 
   ! energy checking variables
   real(r8) :: zero(pcols)                    ! array of zeros
-  real(r8) :: rliq(pcols)                    ! vertical integral of liquid not yet in q(ixcldliq)
-  real(r8) :: rliq2(pcols)                   ! vertical integral of liquid from shallow scheme
-  real(r8) :: det_s  (pcols)                 ! vertical integral of detrained static energy from ice
-  real(r8) :: det_ice(pcols)                 ! vertical integral of detrained ice
-  real(r8) :: flx_cnd(pcols)
   real(r8) :: flx_heat(pcols)
-  type(check_tracers_data):: tracerint       ! energy integrals and cummulative boundary fluxes
-  real(r8) :: zero_tracers(pcols,pcnst)
 
   logical   :: lq(pcnst)
 
@@ -1430,7 +1393,6 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   call t_startf('bc_init')
 
   zero = 0._r8
-  zero_tracers(:,:) = 0._r8
   lchnk = state%lchnk
   ncol  = state%ncol
   rtdt = 1._r8/ztodt
@@ -1631,31 +1593,31 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
   use physics_buffer,         only: physics_buffer_desc, pbuf_get_field
   use physics_buffer,         only: pbuf_get_index, pbuf_old_tim_idx
   use physics_buffer,         only: dyn_time_lvls
-  use physics_types,          only: physics_state, physics_tend, physics_ptend, &
-                                    physics_ptend_init, physics_ptend_sum, &
+  use physics_types,          only: physics_ptend_init, physics_ptend_sum, &
                                     physics_state_check, physics_ptend_scale
   use cam_diagnostics,        only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, &
                                     diag_export, diag_state_b4_phys_write
   use cam_history,            only: outfld, fieldname_len
   use physconst,              only: cpair, latvap, gravit, rga
   use constituents,           only: pcnst, qmin, cnst_get_ind
-  use time_manager,           only: is_first_step, get_nstep
-  use check_energy,           only: check_energy_chng, check_energy_fix, & 
-                                    check_water, check_qflx, &
-                                    check_energy_timestep_init, &
+  use time_manager,           only: get_nstep
+  use check_energy,           only: check_energy_chng, & 
                                     check_tracers_data, check_tracers_init, &
                                     check_tracers_chng, check_tracers_fini
   use aero_model,             only: aero_model_wetdep
+  use modal_aero_calcsize,    only: modal_aero_calcsize_sub
+  use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
   use radiation,              only: radiation_tend
-  use perf_mod
-  use mo_gas_phase_chemdr,    only: map2chm
-  use clybry_fam,             only: clybry_fam_adj
   use tropopause,             only: tropopause_output
   use output_aerocom_aie,     only: do_aerocom_ind3, cloud_top_aerocom
-  use cam_abortutils,         only: endrun
   use cloud_diagnostics,      only: cloud_diagnostics_calc
   use crm_ecpp_output_module, only: crm_ecpp_output_type, crm_ecpp_output_finalize
-
+  use camsrfexch,             only: cam_export
+#if defined( ECPP )
+   use module_ecpp_ppdriver2, only: parampollu_driver2
+   use module_data_ecpp1,     only: dtstep_pp_input
+   use crmclouds_camaerosols, only: crmclouds_mixnuc_tend
+#endif
   implicit none
   !-----------------------------------------------------------------------------
   ! Interface Arguments
@@ -1700,12 +1662,6 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
 
   ! energy checking variables
   real(r8) :: zero(pcols)                    ! array of zeros
-  real(r8) :: rliq(pcols)                    ! vertical integral of liquid not yet in q(ixcldliq)
-  real(r8) :: rliq2(pcols)                   ! vertical integral of liquid from shallow scheme
-  real(r8) :: det_s  (pcols)                 ! vertical integral of detrained static energy from ice
-  real(r8) :: det_ice(pcols)                 ! vertical integral of detrained ice
-  real(r8) :: flx_cnd(pcols)
-  real(r8) :: flx_heat(pcols)
   type(check_tracers_data):: tracerint       ! energy integrals and cummulative boundary fluxes
   real(r8) :: zero_tracers(pcols,pcnst)
 
@@ -1714,12 +1670,7 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
   character(len=fieldname_len)   :: varname, vsuffix
 
   !BSINGH - these were moved from zm_conv_intr because they are  used by aero_model_wetdep 
-  real(r8):: mu(pcols,pver) 
-  real(r8):: eu(pcols,pver)
-  real(r8):: du(pcols,pver)
-  real(r8):: md(pcols,pver)
-  real(r8):: ed(pcols,pver)
-  real(r8):: dp(pcols,pver)
+  real(r8), dimension(pcols,pver) :: mu, eu, du, md, ed, dp
   real(r8):: dsubcld(pcols) ! wg layer thickness in mbs (between upper/lower interface).
   integer :: jt(pcols)      ! wg layer thickness in mbs between lcl and maxi.    
   integer :: maxg(pcols)    ! wg top  level index of deep cumulus convection.
@@ -1939,7 +1890,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   !-----------------------------------------------------------------------------
   use chemistry,           only: chem_timestep_init
   use chem_surfvals,       only: chem_surfvals_set
-  use physics_types,       only: physics_state
   use physics_buffer,      only: physics_buffer_desc
   use ghg_data,            only: ghg_data_timestep_init
   use radiation,           only: radiation_do
@@ -1949,7 +1899,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use radheat,             only: radheat_timestep_init
   use solar_data,          only: solar_data_advance
   use efield,              only: get_efield
-  use perf_mod
   use prescribed_ozone,    only: prescribed_ozone_adv
   use prescribed_ghg,      only: prescribed_ghg_adv
   use prescribed_aero,     only: prescribed_aero_adv
