@@ -1793,7 +1793,7 @@
     <DESC>PNL cluster, OS is Linux, batch system is SLURM</DESC>
     <NODENAME_REGEX>sooty</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,pgi</COMPILERS>
+    <COMPILERS>intel,pgi,gnu</COMPILERS>
     <MPILIBS>mvapich2</MPILIBS>
     <CIME_OUTPUT_ROOT>/lustre/$USER/cime_output_root</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/climate/csmdata/</DIN_LOC_ROOT>
@@ -1814,7 +1814,7 @@
       <executable>srun</executable>
       <arguments>
         <arg name="mpi">--mpi=none</arg>
-        <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
+        <arg name="num_tasks">--ntasks={{ total_tasks }} --nodes={{ num_nodes }}</arg>
         <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
         <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
@@ -1834,21 +1834,22 @@
       <modules>
         <command name="load">perl/5.20.0</command>
         <command name="load">cmake/3.17.1</command>
-        <command name="load">python/2.7.8</command>
+        <command name="load">python/3.7.2</command>
         <command name="load">svn/1.8.13</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/15.0.1</command>
-        <command name="load">mkl/15.0.1</command>
+        <command name="load">intel/19.0.5</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">pgi/14.10</command>
       </modules>
       <modules mpilib="mvapich2">
-        <command name="load">mvapich2/2.1</command>
+        <command name="load">mvapich2/2.3.1</command>
       </modules>
       <modules>
-        <command name="load">netcdf/4.3.2</command>
+        <command name="load">netcdf/4.6.3</command>
+        <command name="load">pnetcdf/1.9.0</command>
+        <command name="load">mkl/2019u5</command>
       </modules>
     </module_system>
     <RUNDIR>/lustre/$USER/csmruns/$CASE/run</RUNDIR>
@@ -1857,6 +1858,10 @@
       <env name="MKL_PATH">$ENV{MKLROOT} </env>
       <env name="NETCDF_PATH">$ENV{NETCDF_LIB}/../</env>
       <env name="OMP_STACKSIZE">64M</env>
+      <!-- PJR next lines force a modern python from python/3.7.2
+      module first and supply some gcc libraries last -->
+      <env name="LD_LIBRARY_PATH">/share/apps/python/3.7.2/lib/:/share/apps/openssl/1.0.2r/lib:$ENV{LD_LIBRARY_PATH}:/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:</env>
+      <env name="PATH">/share/apps/python/3.7.2/bin:$ENV{PATH}</env>
     </environment_variables>
   </machine>
 
