@@ -2270,25 +2270,87 @@ flags should be captured within MPAS CMake files.
     <base> -free </base>
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <!-- CRL begin modifications to use OneAPI classic compilers -->
   <MPIFC>mpiifort</MPIFC>
   <MPICC>mpiicc</MPICC>
   <MPICXX>mpiicpc</MPICXX>
   <SCC>icc</SCC>
   <SCXX>icpc</SCXX>
   <SFC>ifort</SFC>
-  <!-- CRL begin modifications to use OneAPI classic compilers -->
   <LDFLAGS>
     <append compile_threaded="TRUE"> -qopenmp </append>
   </LDFLAGS>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib -mkl</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib -qmkl</append>
     <append>$SHELL{$ENV{NETCDF_PATH}/bin/nc-config --libs}</append>
   </SLIBS>
   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 <!-- CRL  End of "oneapi-ifort" compiler -->
+
+<!-- CRL  Add new compiler "oneapi-ifx" for "jlse" machine configuration -->
+<compiler COMPILER="oneapi-ifx">
+  <FFLAGS>
+    <base> -traceback -convert big_endian -assume byterecl -assume realloc_lhs -fp-model precise</base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
+  </FFLAGS>
+  <CFLAGS>
+    <base> -traceback -fp-model precise -std=gnu99 </base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+  </CFLAGS>
+  <CXXFLAGS>
+<!-- CRL ORIG    <base> -std=c++14 -fp-model precise </base> -->
+    <base> -traceback -std=c++17 -fp-model precise </base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+  </CXXFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -fixed -132 </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -free </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <!-- CRL begin modifications to use OneAPI compilers -->
+  <MPIFC>mpiifwl.sh</MPIFC>
+  <MPICC>mpiicx</MPICC>
+  <MPICXX>mpiicpx</MPICXX>
+  <SCC>icx</SCC>
+  <SCXX>icpx</SCXX>
+  <SFC>ifwl.sh</SFC>
+  <!-- CRL end modifications to use OneAPI compilers -->
+  <LDFLAGS>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+  </LDFLAGS>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib -qmkl</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nc-config --libs}</append>
+    <append> -fiopenmp -fopenmp-targets=spir64 </append>
+  </SLIBS>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+</compiler>
+<!-- CRL  End of "oneapi-ifx" compiler -->
+
 
 <compiler MACH="jlse" COMPILER="intel">
   <CONFIG_ARGS>

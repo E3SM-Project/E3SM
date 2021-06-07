@@ -360,6 +360,7 @@
       <batch_submit>qsub</batch_submit>
       <queues>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="12" default="true">skylake_8180</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="16">iris</queue>
       </queues>
     </batch_system>
 
