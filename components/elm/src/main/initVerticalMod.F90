@@ -26,7 +26,7 @@ module initVerticalMod
   use ColumnType     , only : col_pp                
   use SnowHydrologyMod, only : InitSnowLayers
   use ncdio_pio
-  use topounit_varcon, only : max_topounits
+  use topounit_varcon  , only : max_topounits
   use GridcellType     , only : grc_pp
   !
   ! !PUBLIC TYPES:
