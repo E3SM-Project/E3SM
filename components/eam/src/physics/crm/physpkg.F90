@@ -1374,13 +1374,6 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   
   logical           :: use_ECPP
   character(len=16) :: MMF_microphysics_scheme
-#if defined( ECPP )
-  ! ECPP variables
-  real(r8),pointer,dimension(:)   :: pblh              ! PBL height (for ECPP)
-  real(r8),pointer,dimension(:,:) :: acldy_cen_tbeg    ! cloud fraction
-  real(r8)                        :: dtstep_pp         ! ECPP time step (seconds)
-  integer                         :: necpp             ! number of GCM time steps in which ECPP is called once
-#endif /* ECPP */
 
   call phys_getopts( l_bc_energy_fix_out    = l_bc_energy_fix    &
                     ,l_dry_adj_out          = l_dry_adj          &
@@ -1682,6 +1675,12 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
   logical           :: use_ECPP
   character(len=16) :: MMF_microphysics_scheme
   real(r8), pointer :: mmf_clear_rh(:,:) ! CRM clear air relative humidity used for aerosol water uptake
+
+  ! ECPP variables
+  real(r8),pointer,dimension(:)   :: pblh              ! PBL height (for ECPP)
+  real(r8),pointer,dimension(:,:) :: acldy_cen_tbeg    ! cloud fraction
+  real(r8)                        :: dtstep_pp         ! ECPP time step (seconds)
+  integer                         :: necpp             ! number of GCM time steps in which ECPP is called once
 
   call phys_getopts( l_tracer_aero_out      = l_tracer_aero      &
                     ,l_rad_out              = l_rad              &
