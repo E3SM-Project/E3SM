@@ -1478,10 +1478,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
       ! initialize to zero, so no aerosol water uptake occurs by default
       mmf_clear_rh(1:ncol,1:pver) = 0
-      do i = 1,ncol
+      do icol = 1,ncol
          do m = 1,crm_nz
             k = pver-m+1
-            mmf_clear_rh(i,k) = crm_clear_rh(i,m)
+            mmf_clear_rh(icol,k) = crm_clear_rh(icol,m)
          end do ! m = 1,crm_nz
       end do ! i = 1,ncol
       deallocate(crm_clear_rh)
