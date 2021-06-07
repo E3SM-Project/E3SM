@@ -16,7 +16,8 @@ module scamMod
   use time_manager, only: get_nstep,timemgr_time_inc,&
                           get_start_date,get_curr_date,&
                           timemgr_init,get_curr_calday,&
-                          is_first_step, is_first_restart_step
+                          is_first_step, is_first_restart_step,&
+                          is_last_step
   use shr_scam_mod, only: shr_scam_GetCloseLatLon
   use constituents, only: readtrace, cnst_get_ind, pcnst, cnst_name
   use string_utils, only: to_lower
@@ -684,11 +685,12 @@ subroutine setiopupdate(override_init)
    endif                     ! if (endstep .eq. 0 )
 !
 !     make sure we're
-!     not going past end of iop data
+!     not going past end of iop data.  If we are on the last time
+!     step then this is irrelevant, do not abort
 !
    if ( ncdate .gt. last_date .or. (ncdate .eq. last_date &
       .and. ncsec .gt. last_sec))  then
-      if ( .not. use_userdata ) then
+      if ( .not. use_userdata .and. .not. is_last_step() ) then
          write(iulog,*)'ERROR - setiopupdate.c:Reached the end of the time varient dataset'
          stop
       else
