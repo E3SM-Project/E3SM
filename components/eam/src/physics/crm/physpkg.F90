@@ -41,6 +41,10 @@ module physpkg
   integer :: static_ener_ac_idx   = 0
   integer :: water_vap_ac_idx     = 0
   integer :: mmf_clear_rh_idx     = 0
+  integer :: u_wind_ac_idx        = 0
+  integer :: v_wind_ac_idx        = 0
+  integer :: u_wind_tot_idx       = 0
+  integer :: v_wind_tot_idx       = 0
   integer :: species_class(pcnst) = -1 
 
   save
@@ -133,6 +137,10 @@ subroutine phys_register
   call pbuf_add_field('vmag_gust',      'global', dtype_r8,(/pcols/), dummy)
   call pbuf_add_field('FRACIS',         'physpkg',dtype_r8,(/pcols,pver,pcnst/),dummy)
   call pbuf_add_field('MMF_CLEAR_RH',   'physpkg',dtype_r8,(/pcols,pver/),mmf_clear_rh_idx)
+  call pbuf_add_field('u_wind_ac',      'global', dtype_r8,(/pcols,pver/),u_wind_ac_idx)
+  call pbuf_add_field('v_wind_ac',      'global', dtype_r8,(/pcols,pver/),v_wind_ac_idx)
+  call pbuf_add_field('u_wind_tot',     'global', dtype_r8,(/pcols,pver/),u_wind_tot_idx)
+  call pbuf_add_field('v_wind_tot',     'global', dtype_r8,(/pcols,pver/),v_wind_tot_idx)
 
   ! check energy package
   call check_energy_register()
@@ -1058,6 +1066,10 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   real(r8), pointer, dimension(:)   :: static_ener_ac_2d  ! Vertically integrated static energy
   real(r8), pointer, dimension(:)   :: water_vap_ac_2d    ! Vertically integrated water vapor
+  real(r8), pointer, dimension(:,:) :: u_wind_ac
+  real(r8), pointer, dimension(:,:) :: v_wind_ac
+  real(r8), pointer, dimension(:,:) :: u_wind_tot
+  real(r8), pointer, dimension(:,:) :: v_wind_tot
   real(r8), pointer, dimension(:,:) :: tini               !
   real(r8), pointer, dimension(:,:) :: cld                !
   real(r8), pointer, dimension(:,:) :: qini               !
@@ -1180,7 +1192,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   if (l_rayleigh) then
 
     call t_startf('rayleigh_friction')
-    call rayleigh_friction_tend( ztodt, state, ptend)
+    call rayleigh_friction_tend( ztodt, state, ptend, lchnk )
     call physics_update(state, ptend, ztodt, tend)
     call t_stopf('rayleigh_friction')
 
@@ -1254,6 +1266,8 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   call pbuf_get_field(pbuf, pbuf_get_index('static_ener_ac'), static_ener_ac_2d )
   call pbuf_get_field(pbuf, pbuf_get_index('water_vap_ac'), water_vap_ac_2d )
+  call pbuf_get_field(pbuf, u_wind_ac_idx, u_wind_ac )
+  call pbuf_get_field(pbuf, v_wind_ac_idx, v_wind_ac )
 
   static_ener_ac_2d(:) = 0
   water_vap_ac_2d(:)   = 0
@@ -1261,6 +1275,8 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
     do k = 1,pver
       static_ener_ac_2d(i) = static_ener_ac_2d(i) + state%pdel(i,k)*rga*( state%s(i,k) + state%q(i,k,1)*latvap )
       water_vap_ac_2d(i)   = water_vap_ac_2d(i)   + state%pdel(i,k)*rga*  state%q(i,k,1)
+      u_wind_ac(i,k) = state%u(i,k)
+      v_wind_ac(i,k) = state%v(i,k)
     end do
   end do
 
@@ -1359,7 +1375,13 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   real(r8) :: ftem(pcols,pver)         ! tmp space
   real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
   real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
+  real(r8), pointer, dimension(:,:) :: u_wind_ac       ! U wind for calculating dynamics tendency
+  real(r8), pointer, dimension(:,:) :: v_wind_ac       ! V wind for calculating dynamics tendency
+  real(r8), pointer, dimension(:,:) :: u_wind_tot      ! U wind for calculating total tendency
+  real(r8), pointer, dimension(:,:) :: v_wind_tot      ! V wind for calculating total tendency
   real(r8) :: CIDiff(pcols)            ! Difference in vertically integrated static energy
+  real(r8) :: u_wind_diff(pcols,pver)       ! vertically resolved zonal wind difference
+  real(r8) :: v_wind_diff(pcols,pver)       ! vertically resolved meridional wind difference
 
   logical :: l_bc_energy_fix, l_dry_adj
 
@@ -1388,13 +1410,25 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
 
   call pbuf_get_field(pbuf, pbuf_get_index('static_ener_ac'), static_ener_ac_2d )
   call pbuf_get_field(pbuf, pbuf_get_index('water_vap_ac'), water_vap_ac_2d )
+  call pbuf_get_field(pbuf, u_wind_ac_idx, u_wind_ac )
+  call pbuf_get_field(pbuf, v_wind_ac_idx, v_wind_ac )
+  call pbuf_get_field(pbuf, u_wind_tot_idx, u_wind_tot )
+  call pbuf_get_field(pbuf, v_wind_tot_idx, v_wind_tot )
 
   ! Integrate and compute the difference
   ! CIDiff = difference of column integrated values
   if( nstep == 0 ) then
     CIDiff(:ncol) = 0.0_r8
+    u_wind_diff(:,:) = 0.0_r8
+    v_wind_diff(:,:) = 0.0_r8
     call outfld('DTENDTH', CIDiff, pcols, lchnk )
     call outfld('DTENDTQ', CIDiff, pcols, lchnk )
+    call outfld('DYN_DU',  u_wind_diff, pcols, lchnk )
+    call outfld('DYN_DV',  v_wind_diff, pcols, lchnk )
+    call outfld('TOT_DU',  u_wind_diff, pcols, lchnk )
+    call outfld('TOT_DV',  v_wind_diff, pcols, lchnk )
+    u_wind_tot(:,:) = state%u(:,:)
+    v_wind_tot(:,:) = state%v(:,:)
   else
     ! MSE first
     ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
@@ -1412,6 +1446,21 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
     CIDiff(:ncol) = (ftem(:ncol,1) - water_vap_ac_2d(:ncol))*rtdt
 
     call outfld('DTENDTQ', CIDiff, pcols, lchnk )
+
+    ! dyanmics momentum tendency
+    u_wind_diff(:ncol,:) = ( state%u(:ncol,:) - u_wind_ac(:ncol,:) )!*rtdt
+    v_wind_diff(:ncol,:) = ( state%v(:ncol,:) - v_wind_ac(:ncol,:) )!*rtdt
+    call outfld('DYN_DU', u_wind_diff, pcols, lchnk )
+    call outfld('DYN_DV', v_wind_diff, pcols, lchnk )
+
+    ! total momentum tendency
+    u_wind_diff(:ncol,:) = ( state%u(:ncol,:) - u_wind_tot(:ncol,:) )!*rtdt
+    v_wind_diff(:ncol,:) = ( state%v(:ncol,:) - v_wind_tot(:ncol,:) )!*rtdt
+    call outfld('TOT_DU', u_wind_diff, pcols, lchnk )
+    call outfld('TOT_DV', v_wind_diff, pcols, lchnk )
+    u_wind_tot = state%u
+    v_wind_tot = state%v
+
   end if
 
   ! Associate pointers with physics buffer fields

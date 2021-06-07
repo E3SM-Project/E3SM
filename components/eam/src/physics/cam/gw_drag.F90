@@ -501,6 +501,11 @@ subroutine gw_init()
      call add_default ('TTGW', history_budget_histfile_num, ' ')
   end if
 
+  call addfld( 'GWD_DU', (/'lev'/), 'A','m/s2', 'U tendency from gravity wave drag' )
+  call addfld( 'GWD_DV', (/'lev'/), 'A','m/s2', 'V tendency from gravity wave drag' )
+  call add_default('GWD_DU', 1, ' ')
+  call add_default('GWD_DV', 1, ' ')
+
 end subroutine gw_init
 
 !==========================================================================
@@ -963,6 +968,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
   ! Write total temperature tendency to history file
   call outfld ('TTGW', ptend%s/cpairv(:,:,lchnk),  pcols, lchnk)
+
+  call outfld ('GWD_DU', ptend%u,  pcols, lchnk)
+  call outfld ('GWD_DV', ptend%v,  pcols, lchnk)
 
 end subroutine gw_tend
 

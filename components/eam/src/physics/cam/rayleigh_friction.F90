@@ -60,6 +60,7 @@ contains
 
   !===============================================================================
   subroutine rayleigh_friction_init()
+    use cam_history, only: addfld, add_default
     !------------------------------Arguments--------------------------------
 
     !---------------------------Local storage-------------------------------
@@ -94,24 +95,28 @@ contains
        enddo
     end if
 
+    call addfld( 'RAY_DU', (/'lev'/), 'A', 'm/s2', 'U Tend from Rayleigh Friction')
+    call addfld( 'RAY_DV', (/'lev'/), 'A', 'm/s2', 'V Tend from Rayleigh Friction')
+    call add_default('RAY_DU', 1, ' ')
+    call add_default('RAY_DV', 1, ' ')
+
     return
 
   end subroutine rayleigh_friction_init
   
 !=========================================================================================
-  subroutine rayleigh_friction_tend(                                     &
-       ztodt    ,state    ,ptend    )
+  subroutine rayleigh_friction_tend( ztodt, state, ptend, lchnk )
     !-----------------------------------------------------------------------
     ! interface routine for rayleigh friction
     !-----------------------------------------------------------------------
     use physics_types, only: physics_state, physics_ptend, physics_ptend_init
-
-
+    use ppgrid,        only: pcols
+    use cam_history,   only: outfld
     !------------------------------Arguments--------------------------------
     real(r8), intent(in) :: ztodt                  ! physics timestep
     type(physics_state), intent(in)  :: state      ! physics state variables
-    
     type(physics_ptend), intent(out) :: ptend      ! individual parameterization tendencies
+    integer, intent(in) :: lchnk                   ! chunk identifier
     !
     !---------------------------Local storage-------------------------------
     integer :: ncol                                ! number of atmospheric columns
@@ -137,6 +142,9 @@ contains
        ptend%v(:ncol,k) = c1 * state%v(:ncol,k)
        ptend%s(:ncol,k) = c3 * (state%u(:ncol,k)**2 + state%v(:ncol,k)**2)
     enddo
+
+    call outfld('RAY_DU', ptend%u, pcols, lchnk )
+    call outfld('RAY_DV', ptend%v, pcols, lchnk )
 
     return
   end subroutine rayleigh_friction_tend

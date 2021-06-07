@@ -185,6 +185,8 @@ subroutine diag_init()
 
    ! State before physics
    call addfld ('TBP',(/ 'lev' /), 'A','K','Temperature (before physics)'       )
+   call addfld ('UBP',(/ 'lev' /), 'A','m/s','Zonal wind (before physics)'        )
+   call addfld ('VBP',(/ 'lev' /), 'A','m/s','Meridional wind (before physics)'   )
    call addfld (bpcnst(1) ,(/ 'lev' /), 'A','kg/kg',cnst_longname(1)//' (before physics)')
    ! State after physics
    call addfld ('TAP',(/ 'lev' /), 'A','K','Temperature (after physics)'       )
@@ -312,6 +314,11 @@ subroutine diag_init()
    call addfld ('RHCFMIP',(/ 'lev' /), 'A','percent' ,'Relative humidity with respect to water above 273 K, ice below 273 K')
    call addfld ('PSL',horiz_only,    'A','Pa','Sea level pressure', &
       standard_name='air_pressure_at_mean_sea_level')
+
+   call addfld ('DYN_DU',(/'lev'/), 'A','m/s2','Dynamics zonal wind tendency',      standard_name='dyn_du')
+   call addfld ('DYN_DV',(/'lev'/), 'A','m/s2','Dynamics meridional wind tendency', standard_name='dyn_dv')
+   call addfld ('TOT_DU',(/'lev'/), 'A','m/s2','Total zonal wind tendency',      standard_name='tot_du')
+   call addfld ('TOT_DV',(/'lev'/), 'A','m/s2','Total meridional wind tendency', standard_name='tot_dv')
 
    call addfld ('T850',horiz_only,    'A','K','Temperature at 850 mbar pressure surface')
    call addfld ('T500',horiz_only,    'A','K','Temperature at 500 mbar pressure surface')
@@ -477,6 +484,12 @@ subroutine diag_init()
       endif
       call add_default ('TMQ     ', 1, ' ')
       call add_default ('PSL     ', 1, ' ')
+
+      call add_default ('DYN_DU  ', 1, ' ')
+      call add_default ('DYN_DV  ', 1, ' ')
+      call add_default ('TOT_DU  ', 1, ' ')
+      call add_default ('TOT_DV  ', 1, ' ')
+
       if (moist_physics) then
          call add_default ('RELHUM  ', 1, ' ')
       end if
@@ -2424,6 +2437,8 @@ end subroutine diag_phys_tend_writeout
    call cnst_get_ind('CLDLIQ', ixcldliq)
    call cnst_get_ind('CLDICE', ixcldice)
    call outfld('TBP', state%t, pcols, lchnk   )
+   call outfld('UBP', state%u, pcols, lchnk   )
+   call outfld('VBP', state%v, pcols, lchnk   )
    if ( cnst_cam_outfld(       1) ) call outfld (bpcnst(       1), state%q(1,1,       1), pcols, lchnk)
    if ( cnst_cam_outfld(ixcldliq) ) call outfld (bpcnst(ixcldliq), state%q(1,1,ixcldliq), pcols, lchnk)
    if ( cnst_cam_outfld(ixcldice) ) call outfld (bpcnst(ixcldice), state%q(1,1,ixcldice), pcols, lchnk)
