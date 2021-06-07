@@ -1419,7 +1419,7 @@ contains
                   ! calculate competition coefficients for N/P
                   ! first need to convert concentration to per soil water based
                   ! 2.76 consider soil adsorption effect on [NH4+] availability, based on Zhu et al., 2016 DOI: 10.1002/2016JG003554
-                  solution_nh4conc(c,j) = sminn_vr(c,j) / (bd(c,j)*2.76 + h2osoi_vol(c,j)) ! convert to per soil water based
+                  solution_nh4conc(c,j) = sminn_vr(c,j) / (bd(c,j)*2.76e-3 + h2osoi_vol(c,j)) ! convert to per soil water based
                   e_km_n = 0._r8
                   decompmicc(c,j) = 0.0_r8
                   do p = col_pp%pfti(c), col_pp%pftf(c)
