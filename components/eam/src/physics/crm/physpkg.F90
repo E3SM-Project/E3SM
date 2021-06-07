@@ -732,7 +732,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   type(physics_ptend), dimension(begchunk:endchunk) :: ptend ! indivdual parameterization tendencies
   logical           :: use_ECPP
   character(len=16) :: MMF_microphysics_scheme
-  real(r8), pointer, dimension(:,:) :: mmf_clear_rh ! CRM clear air relative humidity used for aerosol water uptake
   real(r8), dimension(pcols) :: mmf_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
   real(r8), dimension(pcols) :: mmf_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
   real(r8), dimension(pcols) :: mmf_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
@@ -1412,7 +1411,6 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   
   logical           :: use_ECPP
   character(len=16) :: MMF_microphysics_scheme
-  real(r8), pointer, dimension(:,:) :: mmf_clear_rh ! CRM clear air relative humidity used for aerosol water uptake
 #if defined( ECPP )
   ! ECPP variables
   real(r8),pointer,dimension(:)   :: pblh              ! PBL height (for ECPP)
@@ -1485,9 +1483,6 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   call pbuf_get_field(pbuf, pbuf_get_index('DTCORE'), dtcore, (/1,1,itim_old/), (/pcols,pver,1/) )
   call pbuf_get_field(pbuf, pbuf_get_index('FRACIS'), fracis, (/1,1,1/),        (/pcols, pver, pcnst/)  )
   fracis (:ncol,:,1:pcnst) = 1._r8
-
-  call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
-  mmf_clear_rh(1:ncol,1:pver) = 0._r8
 
   ! Set physics tendencies to 0
   tend%dTdt(:ncol,:pver)  = 0._r8
