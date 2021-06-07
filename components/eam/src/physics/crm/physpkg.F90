@@ -817,7 +817,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
 
     ! Initialize variabale for ECPP data
-    if (use_ECPP) call crm_ecpp_output(c)%initialize(phys_state(c)%ncol,pver)
+    if (use_ECPP) call crm_ecpp_output_initialize(crm_ecpp_output(c),phys_state(c)%ncol,pver)
 
     call t_startf('crm_physics_tend')
     call crm_physics_tend(ztodt, phys_state(c), phys_tend(c), ptend(c), &
@@ -1321,7 +1321,7 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   use check_energy,           only: check_energy_chng, check_energy_fix, & 
                                     check_water, check_qflx, &
                                     check_energy_timestep_init, &
-                                    check_tracers_data, check_tracers_init
+                                    check_tracers_data
   use aero_model,             only: aero_model_wetdep
   use radiation,              only: radiation_tend
   use perf_mod
@@ -1540,9 +1540,6 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   ! Dump out "before physics" state
   call diag_state_b4_phys_write (state)
 
-  ! compute mass integrals of input tracers state
-  call check_tracers_init(state, tracerint)
-
   call t_stopf('bc_init')
 
   !-----------------------------------------------------------------------------
@@ -1670,7 +1667,6 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
   use crm_ecpp_output_module, only: crm_ecpp_output_type, crm_ecpp_output_finalize
 
   implicit none
->>>>>>> ba71c46fd7... Initial refactor of tphysbc for threading split
   !-----------------------------------------------------------------------------
   ! Interface Arguments
   !-----------------------------------------------------------------------------
@@ -1857,11 +1853,6 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
   call pbuf_get_field(pbuf,pbuf_get_index('CLD') ,cld ,start=(/1,1,itim_old/),kount=(/pcols,pver,1/))
 
   cldo(1:ncol,1:pver) = cld(1:ncol,1:pver)
-
-  !-----------------------------------------------------------------------------
-  !-----------------------------------------------------------------------------
-
-  call check_tracers_fini(tracerint)  
 
   !-----------------------------------------------------------------------------
   ! Aerosol stuff
