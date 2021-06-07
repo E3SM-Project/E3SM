@@ -40,12 +40,11 @@ if ( ! defined($result) ) {
 ** Cannot find perl module \"Build/NamelistDefinition.pm\" from directories: @dirs **
 EOF
 }
-my $nldef_file     = "$scrdir/../../../bld/namelist_files/namelist_definition.xml";
+my $nldef_file     = "$scrdir/../../../bld/namelist_files/namelist_definition_clm4_5.xml";
 
 my $definition = Build::NamelistDefinition->new( $nldef_file );
 
-# This is the inputdta path on compy, but different machine has different path. It can be given when we run the script. 
-my $CSMDATA = "/compyfs/inputdata";
+my $CSMDATA = "/lustre/atlas1/cli900/world-shared/cesm/inputdata";
 
 my %opts = ( 
                hgrid=>"all", 

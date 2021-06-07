@@ -19,9 +19,8 @@ module CarbonStateUpdate1Mod
 
   use GridcellDataType        , only : grc_cs, c13_grc_cs, c14_grc_cs
   use GridcellDataType        , only : grc_cf, c13_grc_cf, c14_grc_cf
+                              
   use ColumnDataType          , only : column_carbon_state, column_carbon_flux
-  use ColumnDataType          , only : col_cs, c13_col_cs, c14_col_cs
-  use ColumnDataType          , only : col_cf, c13_col_cf, c14_col_cf
   use VegetationType          , only : veg_pp
   use VegetationDataType      , only : vegetation_carbon_state, vegetation_carbon_flux
   use VegetationPropertiesType, only : veg_vp
@@ -107,28 +106,6 @@ contains
                   col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt
              col_cs%decomp_cpools_vr(c,j,i_cwd) = col_cs%decomp_cpools_vr(c,j,i_cwd) + &
                   ( col_cf%dwt_livecrootc_to_cwdc(c,j) + col_cf%dwt_deadcrootc_to_cwdc(c,j) ) * dt
-
-             if (use_c13) then
-                c13_col_cs%decomp_cpools_vr(c,j,i_met_lit) = c13_col_cs%decomp_cpools_vr(c,j,i_met_lit) + &
-                     c13_col_cf%dwt_frootc_to_litr_met_c(c,j) * dt
-                c13_col_cs%decomp_cpools_vr(c,j,i_cel_lit) = c13_col_cs%decomp_cpools_vr(c,j,i_cel_lit) + &
-                     c13_col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt
-                c13_col_cs%decomp_cpools_vr(c,j,i_lig_lit) = c13_col_cs%decomp_cpools_vr(c,j,i_lig_lit) + &
-                     c13_col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt
-                c13_col_cs%decomp_cpools_vr(c,j,i_cwd) = c13_col_cs%decomp_cpools_vr(c,j,i_cwd) + &
-                     ( c13_col_cf%dwt_livecrootc_to_cwdc(c,j) + c13_col_cf%dwt_deadcrootc_to_cwdc(c,j) ) * dt
-             end if
-
-             if (use_c14) then
-                c14_col_cs%decomp_cpools_vr(c,j,i_met_lit) = c14_col_cs%decomp_cpools_vr(c,j,i_met_lit) + &
-                     c14_col_cf%dwt_frootc_to_litr_met_c(c,j) * dt
-                c14_col_cs%decomp_cpools_vr(c,j,i_cel_lit) = c14_col_cs%decomp_cpools_vr(c,j,i_cel_lit) + &
-                     c14_col_cf%dwt_frootc_to_litr_cel_c(c,j) * dt
-                c14_col_cs%decomp_cpools_vr(c,j,i_lig_lit) = c14_col_cs%decomp_cpools_vr(c,j,i_lig_lit) + &
-                     c14_col_cf%dwt_frootc_to_litr_lig_c(c,j) * dt
-                c14_col_cs%decomp_cpools_vr(c,j,i_cwd) = c14_col_cs%decomp_cpools_vr(c,j,i_cwd) + &
-                     ( c14_col_cf%dwt_livecrootc_to_cwdc(c,j) + c14_col_cf%dwt_deadcrootc_to_cwdc(c,j) ) * dt
-             end if
 
           end do
        end do
@@ -218,6 +195,7 @@ contains
 
       if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) ) then
 
+
          ! plant to litter fluxes
          if(.not.use_fates)then
             do j = 1,nlevdecomp
@@ -234,6 +212,7 @@ contains
                end do
             end do
          end if
+
 
          ! litter and SOM HR fluxes
          do k = 1, ndecomp_cascade_transitions
@@ -265,6 +244,7 @@ contains
 
       if (.not.use_fates) then
 
+    
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)

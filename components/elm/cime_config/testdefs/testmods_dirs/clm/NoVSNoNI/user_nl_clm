@@ -1,0 +1,4 @@
+ anoxia          = .true.
+ use_vertsoilc   = .false.
+ use_nitrif_denitrif = .false.
+ hist_wrtch4diag = .true.

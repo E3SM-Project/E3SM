@@ -171,7 +171,7 @@ contains
     use shr_kind_mod              , only : r8 => shr_kind_r8
     use abortutils                , only : endrun
     use shr_log_mod               , only : errMsg => shr_log_errMsg
-    use elm_varctl                , only : iulog
+    use clm_varctl                , only : iulog
     !
     implicit none
     !
@@ -207,9 +207,9 @@ contains
     use shr_kind_mod              , only : r8 => shr_kind_r8
     use abortutils                , only : endrun
     use shr_log_mod               , only : errMsg => shr_log_errMsg
-    use elm_varctl                , only : iulog
+    use clm_varctl                , only : iulog
 #ifdef FATES_VIA_EMI
-    use elm_instMod               , only : clm_fates
+    use clm_instMod               , only : clm_fates
     use EDSurfaceRadiationMod     , only : ED_SunShadeFracs
 #endif
     !

@@ -6,14 +6,14 @@ module LandunitDataType
   ! --------------------------------------------------------
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
-   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use elm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevurb
   use elm_varcon     , only : spval, ispval
   use elm_varctl     , only : use_vancouver, use_mexicocity
-   use histFileMod    , only : hist_addfld1d
-   use ncdio_pio      , only : file_desc_t, ncd_double
+  use histFileMod    , only : hist_addfld1d
+  use ncdio_pio      , only : file_desc_t, ncd_double
   use decompMod      , only : bounds_type
-   use restUtilMod
+  use restUtilMod
   use LandunitType   , only : lun_pp
   !
   ! !PUBLIC TYPES:

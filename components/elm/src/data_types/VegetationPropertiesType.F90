@@ -143,7 +143,6 @@ module VegetationPropertiesType
      real(r8), pointer :: br_xr(:)         => null()   !Base rate for excess respiration
      real(r8), pointer :: tc_stress        => null()   !Critial temperature for moisture stress
 
-
    contains
    procedure, public :: Init => veg_vp_init
 
@@ -174,7 +173,7 @@ contains
     use pftvarcon , only : vmax_nfix, km_nfix
     use pftvarcon , only : alpha_nfix, alpha_ptase,ccost_nfix,ccost_ptase
     use pftvarcon , only : vmax_ptase, km_ptase, lamda_ptase
-    use pftvarcon , only : i_vc, s_vc
+    use pftvarcon , only : i_vc, s_vc, nsc_rtime
     use pftvarcon , only : leafcn_obs, frootcn_obs, livewdcn_obs, deadwdcn_obs
     use pftvarcon , only : leafcp_obs, frootcp_obs, livewdcp_obs, deadwdcp_obs
     use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
@@ -232,8 +231,6 @@ contains
     allocate(this%stress_decid  (0:numpft))        ; this%stress_decid (:)   =nan
     allocate(this%season_decid  (0:numpft))        ; this%season_decid (:)   =nan
     allocate(this%dwood         (0:numpft))        ; this%dwood        (:)   =nan
-    allocate(this%root_radius   (0:numpft))        ; this%root_radius  (:)   =nan
-    allocate(this%root_density  (0:numpft))        ; this%root_density (:)   =nan
     allocate(this%rootprof_beta (0:numpft))        ; this%rootprof_beta(:)   =nan
     allocate(this%fertnitro     (0:numpft))        ; this%fertnitro    (:)   =nan
     allocate(this%fleafcn       (0:numpft))        ; this%fleafcn      (:)   =nan
@@ -267,6 +264,7 @@ contains
     allocate( this%vmax_ptase(0:numpft))                         ; this%vmax_ptase(:)            =nan
     allocate( this%i_vc(0:numpft))                               ; this%i_vc(:)                  =nan
     allocate( this%s_vc(0:numpft))                               ; this%s_vc(:)                  =nan
+    allocate( this%nsc_rtime(0:numpft))                          ; this%nsc_rtime(:)             =nan
     allocate( this%vmax_nfix(0:numpft))                          ; this%vmax_nfix(:)             =nan
     allocate( this%km_nfix(0:numpft))                            ; this%km_nfix(:)               =nan
     allocate( this%fnr(0:numpft))                                ; this%fnr(:)                   =nan
@@ -352,8 +350,6 @@ contains
        this%stress_decid(m) = stress_decid(m)
        this%season_decid(m) = season_decid(m)
        this%dwood(m)        = dwood
-       this%root_radius(m)  = 0.29e-03_r8 !(m)
-       this%root_density(m) = 0.31e06_r8 !(g biomass / m3 root)
        this%fertnitro(m)    = fertnitro(m)
        this%fleafcn(m)      = fleafcn(m)
        this%ffrootcn(m)     = ffrootcn(m)
@@ -404,6 +400,7 @@ contains
         this%km_plant_p(m)     = km_plant_p(m)
         this%i_vc(m)           = i_vc(m)
         this%s_vc(m)           = s_vc(m)
+        this%nsc_rtime(m)      = nsc_rtime(m)
         this%vmax_nfix(m)      = vmax_nfix(m)
         this%km_nfix(m)        = km_nfix(m)
         this%vmax_ptase(m)     = vmax_ptase(m)
@@ -438,8 +435,9 @@ contains
     this%km_den        = km_den
     this%km_ptase      = km_ptase
     this%lamda_ptase   = lamda_ptase
-    this%tc_stress     = tc_stress
 
+    this%tc_stress     = tc_stress
+     
   end subroutine veg_vp_init
 
 end module VegetationPropertiesType

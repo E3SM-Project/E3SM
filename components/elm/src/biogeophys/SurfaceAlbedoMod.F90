@@ -88,7 +88,7 @@ contains
     ! only computed over active points.
     !
     ! !USES:
-      !$acc routine seq
+    !$acc routine seq
     use elm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad
     use shr_orb_mod
 
@@ -978,7 +978,7 @@ contains
      ! Determine ground surface albedo, accounting for snow
      !
      ! !USES:
-      !$acc routine seq
+    !$acc routine seq
     use elm_varpar, only : numrad
     use elm_varcon      , only : tfrz
     use landunit_varcon, only : istice, istice_mec, istdlak

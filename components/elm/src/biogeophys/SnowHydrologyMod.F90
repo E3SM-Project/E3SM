@@ -17,9 +17,9 @@ module SnowHydrologyMod
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
-  use elm_varpar      , only : nlevsno
-  use elm_varctl      , only : iulog, use_extrasnowlayers
-  use elm_varcon      , only : namec, h2osno_max
+  use clm_varpar      , only : nlevsno
+  use clm_varctl      , only : iulog
+  use clm_varcon      , only : namec
   use atm2lndType     , only : atm2lnd_type
   use AerosolType     , only : aerosol_type
   use TopounitDataType, only : topounit_atmospheric_state
@@ -39,11 +39,7 @@ module SnowHydrologyMod
   public :: SnowCompaction             ! Change in snow layer thickness due to compaction
   public :: CombineSnowLayers          ! Combine snow layers less than a min thickness
   public :: DivideSnowLayers           ! Subdivide snow layers if they exceed maximum thickness
-  public :: DivideExtraSnowLayers      ! Subdivide up to 16 snow layers if they exceed maximum thickness
   public :: BuildSnowFilter            ! Construct snow/no-snow filters
-  public :: InitSnowLayers             ! Initialize cold-start snow layer thickness  
-  public :: NewSnowBulkDensity         ! Compute bulk density of any newly-fallen snow
-  public :: SnowCapping                ! Remove snow mass for capped columns
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: Combo            ! Returns the combined variables: dz, t, wliq, wice.
@@ -91,24 +87,6 @@ module SnowHydrologyMod
   !real(r8), public, parameter :: scvng_fct_mlt_dst3  = 0.03_r8   ! scavenging factor for dust species 3 inclusion in meltwater [frc]
   !real(r8), public, parameter :: scvng_fct_mlt_dst4  = 0.03_r8   ! scavenging factor for dust species 4 inclusion in meltwater [frc]
   ! ++
-  
-  ! Definition of snow pack vertical structure
-  ! (adapted from CLMv5)
-  ! Hardcoded maximum of 16 snowlayers
-  ! The bottom layer has no limit on thickness, hence the last element of the dzmax_*
-  ! arrays is 'huge'.
-  real(r8), parameter :: dzmin16(16) = &      ! minimum of top snow layer
-               (/ 0.010_r8, 0.015_r8, 0.025_r8, 0.055_r8, 0.115_r8, 0.235_r8, &
-                  0.475_r8, 0.955_r8, 1.915_r8, 1.915_r8, 1.915_r8, 1.915_r8, &
-                  1.915_r8, 1.915_r8, 1.915_r8, 1.915_r8 /)
-  real(r8), parameter :: dzmax_l(16) = &    ! maximum thickness of layer when no layers beneath
-               (/ 0.03_r8, 0.07_r8, 0.18_r8, 0.41_r8, 0.88_r8, 1.83_r8, &
-                  3.74_r8, 7.57_r8, 15.24_r8, 15.24_r8, 15.24_r8, 15.24_r8, &
-                  15.24_r8, 15.24_r8, 15.24_r8, huge(1._r8)  /)
-  real(r8), parameter :: dzmax_u(16) = &    ! maximum thickness of layer when layers beneath
-               (/ 0.02_r8, 0.05_r8, 0.11_r8, 0.23_r8, 0.47_r8, 0.95_r8, &
-                  1.91_r8, 3.83_r8, 7.67_r8, 7.67_r8, 7.67_r8, 7.67_r8, & 
-                  7.67_r8, 7.67_r8, 7.67_r8, huge(1._r8)  /)
 
 contains
 
@@ -134,7 +112,7 @@ contains
     use elm_varcon        , only : denh2o, denice, wimp, ssi
     use landunit_varcon   , only : istsoil
     use AerosolMod        , only : AerosolFluxes
-    use elm_varctl        , only : use_vsfm
+    use clm_varctl        , only : use_vsfm
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds
@@ -233,7 +211,7 @@ contains
          c = filter_snowc(fc)
          l=col_pp%landunit(c)
 
-         if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
+         if (do_capsnow(c)) then
             wgdif = h2osoi_ice(c,snl(c)+1) - frac_sno_eff(c)*qflx_sub_snow(c)*dtime
             h2osoi_ice(c,snl(c)+1) = wgdif
             if (wgdif < 0._r8) then
@@ -557,7 +535,7 @@ contains
       !$acc routine seq
      use elm_varcon      , only : denice, denh2o, tfrz, rpi, grav, rgas
      use landunit_varcon , only : istice_mec, istdlak, istsoil, istcrop
-     use elm_varctl      , only : subgridflag
+     use clm_varctl      , only : subgridflag
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in) :: bounds
@@ -571,28 +549,18 @@ contains
      ! parameters
      real(r8), parameter :: c2 = 23.e-3_r8       ! [m3/kg]
      real(r8), parameter :: c3 = 2.777e-6_r8     ! [1/s]
-     real(r8), parameter :: c3_ams = 5.8e-7_r8   ! Schneider et al., 2020 [1/s]
      real(r8), parameter :: c4 = 0.04_r8         ! [1/K]
      real(r8), parameter :: c5 = 2.0_r8          !
      real(r8), parameter :: dm = 100.0_r8        ! Upper Limit on Destructive Metamorphism Compaction [kg/m3]
-     real(r8), parameter :: rho_dm = 150.0_r8    ! Upper limit on destructive metamorphism compaction [kg/m3] (Anderson, 1976; Schneider et al., 2020)
      real(r8), parameter :: eta0 = 9.e+5_r8      ! The Viscosity Coefficient Eta0 [kg-s/m2]
-     real(r8), parameter :: k_creep_snow = 1.4e-9_r8 ! Creep coefficient for snow (bi < 550 kg / m3) [m3-s/kg]
-     real(r8), parameter :: k_creep_firn = 1.2e-9_r8 ! Creep coefficient for firn (bi > 550 kg / m3)
      !
-     real(r8) :: p_gls                           ! grain load stress [kg / m-s2]
      real(r8) :: burden(bounds%begc:bounds%endc) ! pressure of overlying snow [kg/m2]
-     real(r8) :: zpseudo(bounds%begc:bounds%endc)! wind drift compaction / pseudo depth
-     logical  :: mobile(bounds%begc:bounds%endc) ! current snow layer is mobile, i.e. susceptible to wind drift
-     real(r8) :: snw_ssa                         ! Equivalent snow specific surface area [m2/kg] 
-     real(r8) :: ddz1_fresh                      ! Rate of settling of dendritic snowpack (Lehning et al., 2002) [1/s]
      real(r8) :: ddz1                            ! Rate of settling of snowpack due to destructive metamorphism.
-     real(r8) :: ddz2                            ! Rate of compaction of snowpack due to overburden. [1/s]
+     real(r8) :: ddz2                            ! Rate of compaction of snowpack due to overburden.
      real(r8) :: ddz3                            ! Rate of compaction of snowpack due to melt [1/s]
-     real(r8) :: ddz4                            ! Rate of compaction of snowpack due to wind drift [1/s]
      real(r8) :: dexpf                           ! expf=exp(-c4*(273.15-t_soisno)).
      real(r8) :: fi                              ! Fraction of ice relative to the total water content at current time step
-     real(r8) :: td                              ! tfrz - t_soisno [K]
+     real(r8) :: td                              ! t_soisno - tfrz [K]
      real(r8) :: pdzdtc                          ! Nodal rate of change in fractional-thickness due to compaction [fraction/s]
      real(r8) :: void                            ! void (1 - vol_ice - vol_liq)
      real(r8) :: wx                              ! water mass (ice+liquid) [kg/m2]
@@ -617,43 +585,30 @@ contains
           frac_iceold  => col_ws%frac_iceold  , & ! Input:  [real(r8) (:,:) ] fraction of ice relative to the tot water
           h2osoi_ice   => col_ws%h2osoi_ice   , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2)                       
           h2osoi_liq   => col_ws%h2osoi_liq   , & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)                   
-          snw_rds      => col_ws%snw_rds      , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
+          
           dz           => col_pp%dz                             & ! Output: [real(r8) (: ,:) ] layer depth (m)                        
           )
 
        ! Begin calculation - note that the following column loops are only invoked if snl(c) < 0
 
-       if (use_extrasnowlayers) then
-          do fc = 1, num_snowc
-             c = filter_snowc(fc)
-             burden(c) = 0._r8
-             zpseudo(c) = 0._r8
-             mobile(c) = .true.
-          end do
-       else
-          burden(bounds%begc : bounds%endc) = 0._r8
-       end if
+       burden(bounds%begc : bounds%endc) = 0._r8
 
        do j = -nlevsno+1, 0
           do fc = 1, num_snowc
              c = filter_snowc(fc)
-             if (use_extrasnowlayers) then
-                t = col_pp%topounit(c)
-             end if
              if (j >= snl(c)+1) then
+
+                wx = h2osoi_ice(c,j) + h2osoi_liq(c,j)
+                void = 1._r8 - (h2osoi_ice(c,j)/denice + h2osoi_liq(c,j)/denh2o) / dz(c,j)
                 wx = (h2osoi_ice(c,j) + h2osoi_liq(c,j))
                 void = 1._r8 - (h2osoi_ice(c,j)/denice + h2osoi_liq(c,j)/denh2o)&
                      /(frac_sno(c) * dz(c,j))
                 ! If void is negative, then increase dz such that void = 0.
                 ! This should be done for any landunit, but for now is done only for glacier_mec 1andunits.
-                
-                if (.not. use_extrasnowlayers) then
-                   ! I don't think the next 5 lines are necessary (removed in CLMv5)
-                   l = col_pp%landunit(c)
-                   if (ltype(l)==istice_mec .and. void < 0._r8) then
-                      dz(c,j) = h2osoi_ice(c,j)/denice + h2osoi_liq(c,j)/denh2o
-                      void = 0._r8
-                   endif
+                l = col_pp%landunit(c)
+                if (ltype(l)==istice_mec .and. void < 0._r8) then
+                   dz(c,j) = h2osoi_ice(c,j)/denice + h2osoi_liq(c,j)/denh2o
+                   void = 0._r8
                 endif
 
                 ! Allow compaction only for non-saturated node and higher ice lens node.
@@ -665,42 +620,17 @@ contains
                    dexpf = exp(-c4*td)
 
                    ! Settling as a result of destructive metamorphism
-                   if (.not. use_extrasnowlayers) then
-                      ddz1 = -c3*dexpf 
-                      if (bi > dm) ddz1 = ddz1*exp(-46.0e-3_r8*(bi-dm))
-                   else
-                      ddz1_fresh = (-grav * (burden(c) + wx/2._r8)) / &
-                                   (0.007_r8 * bi**(4.75_r8 + td/40._r8))
-                      snw_ssa = 3.e6_r8 / (denice * snw_rds(c,j))
-                      if (snw_ssa < 50._r8) then
-                          ddz1_fresh = ddz1_fresh * exp(-46.e-2_r8 * (50._r8 - snw_ssa))
-                      endif
-                      ddz1 = -c3_ams*dexpf
-                      if (bi > rho_dm) ddz1 = ddz1*exp(-46.0e-3_r8*(bi-rho_dm))
-                      ddz1 = ddz1 + ddz1_fresh
-                   endif
+
+                   ddz1 = -c3*dexpf
+                   if (bi > dm) ddz1 = ddz1*exp(-46.0e-3_r8*(bi-dm))
 
                    ! Liquid water term
 
                    if (h2osoi_liq(c,j) > 0.01_r8*dz(c,j)*frac_sno(c)) ddz1=ddz1*c5
 
                    ! Compaction due to overburden
-                   if (.not. use_extrasnowlayers) then
-                      ddz2 = -(burden(c)+wx/2._r8)*exp(-0.08_r8*td - c2*bi)/eta0 
-                   else
-                      p_gls = max(denice / bi, 1._r8) * grav * (burden(c) + wx/2._r8)
-                      if (bi <= 550._r8) then ! Low density, i.e. snow
-                         ddz2 = (-k_creep_snow * (max(denice / bi, 1._r8) - 1._r8) * &
-                                 exp(-60.e6_r8 / (rgas * t_soisno(c,j))) * p_gls) / &
-                                 (snw_rds(c,j) * 1.e-6_r8 * snw_rds(c,j) * 1.e-6_r8) - &
-                                 2.02e-10_r8
-                      else ! High density, i.e. firn
-                         ddz2 = (-k_creep_firn * (max(denice / bi, 1._r8) - 1._r8) * &
-                                 exp(-60.e6_r8 / (rgas * t_soisno(c,j))) * p_gls) / &
-                                 (snw_rds(c,j) * 1.e-6_r8 * snw_rds(c,j) * 1.e-6_r8) - &
-                                 2.7e-11_r8
-                      endif
-                   endif
+
+                   ddz2 = -(burden(c)+wx/2._r8)*exp(-0.08_r8*td - c2*bi)/eta0 
 
                    ! Compaction occurring during melt
 
@@ -723,35 +653,15 @@ contains
                    else
                       ddz3 = 0._r8
                    end if
-                   
-                   if (use_extrasnowlayers) then
-                      ! Compaction occurring due to wind drift
-                      call WindDriftCompaction( &
-                           bi = bi, &
-                           forc_wind = forc_wind(t), &
-                           dz = dz(c,j), &
-                           zpseudo = zpseudo(c), &
-                           mobile = mobile(c), &
-                           compaction_rate = ddz4)
-                   else
-                      ddz4 = 0.0_r8
-                   end if
-                   
+
                    ! Time rate of fractional change in dz (units of s-1)
 
-                   pdzdtc = ddz1 + ddz2 + ddz3 + ddz4
+                   pdzdtc = ddz1 + ddz2 + ddz3
 
                    ! The change in dz due to compaction
                    ! Limit compaction to be no greater than fully saturated layer thickness
 
                    dz(c,j) = max(dz(c,j) * (1._r8+pdzdtc*dtime),(h2osoi_ice(c,j)/denice+ h2osoi_liq(c,j)/denh2o)/frac_sno(c))
-                
-                else ! from CLMv5
-                   ! saturated node is immobile
-                   !
-                   ! This is only needed if wind_dependent_snow_density is true, but it's
-                   ! simplest just to update mobile always
-                   mobile(c) = .false.
                 end if
 
                 ! Pressure of overlying snow
@@ -796,7 +706,6 @@ contains
      integer :: msn_old(bounds%begc:bounds%endc) ! number of top snow layer
      integer :: mssi(bounds%begc:bounds%endc)    ! node index
      integer :: neibor                           ! adjacent node selected for combination
-     real(r8):: dzminloc_mssi_c                  ! dzminloc evaluated at mssi(c)
      real(r8):: zwice(bounds%begc:bounds%endc)   ! total ice mass in snow
      real(r8):: zwliq (bounds%begc:bounds%endc)  ! total liquid water in snow
      real(r8):: dzmin(5)                         ! minimum of top snow layer
@@ -804,7 +713,6 @@ contains
      real(r8):: dzminloc16(16)             ! minimum of top snow layer (local)
 
      data dzmin /0.010_r8, 0.015_r8, 0.025_r8, 0.055_r8, 0.115_r8/
-
      !-----------------------------------------------------------------------
 
      associate(                                                     &
@@ -845,12 +753,7 @@ contains
        ! Check the mass of ice lens of snow, when the total is less than a small value,
        ! combine it with the underlying neighbor.
 
-       ! dzmin will stay constant between timesteps
-       if (.not. use_extrasnowlayers) then
-         dzminloc(:) = dzmin(:)
-       else
-         dzminloc16(:) = dzmin16(:)
-       endif
+       dzminloc(:) = dzmin(:) ! dzmin will stay constant between timesteps
 
        ! Add lsadz to dzmin for lakes
        ! Determine whether called from LakeHydrology
@@ -859,11 +762,7 @@ contains
           c = filter_snowc(1)
           l = col_pp%landunit(c)
           if (ltype(l) == istdlak) then ! Called from LakeHydrology
-            if (.not. use_extrasnowlayers) then
-               dzminloc(:) = dzmin(:) + lsadz
-            else
-               dzminloc16(:) = dzmin16(:) + lsadz
-            end if
+             dzminloc(:) = dzmin(:) + lsadz
           end if
        end if
 
@@ -1041,12 +940,7 @@ contains
              mssi(c) = 1
 
              do i = msn_old(c)+1,0
-                if (.not. use_extrasnowlayers) then
-                    dzminloc_mssi_c = dzminloc(mssi(c))
-                else
-                    dzminloc_mssi_c = dzminloc16(mssi(c))
-                end if
-                if ((frac_sno_eff(c)*dz(c,i) < dzminloc_mssi_c) .or. &
+                if ((frac_sno_eff(c)*dz(c,i) < dzminloc(mssi(c))) .or. &
                      ((h2osoi_ice(c,i) + h2osoi_liq(c,i))/(frac_sno_eff(c)*dz(c,i)) < 50._r8)) then
                    if (i == snl(c)+1) then
                       ! If top node is removed, combine with bottom neighbor.
@@ -2133,7 +2027,7 @@ contains
      end associate
 
    end subroutine DivideExtraSnowLayers   
-   
+      
    !-----------------------------------------------------------------------
    subroutine InitSnowLayers (bounds, snow_depth)
     ! (from CLMv5)
@@ -2483,8 +2377,8 @@ contains
         compaction_rate = 0._r8
      end if
 
-   end subroutine WindDriftCompaction 
-   
+   end subroutine WindDriftCompaction      
+
    !-----------------------------------------------------------------------
    subroutine Combo(dz,  wliq,  wice, t, dz2, wliq2, wice2, t2)
      !
@@ -2562,7 +2456,7 @@ contains
      end if
    end function MassWeightedSnowRadius
    !-----------------------------------------------------------------------
-   
+
    subroutine BuildSnowFilter(bounds, num_nolakec, filter_nolakec, &
         num_snowc, filter_snowc, num_nosnowc, filter_nosnowc)
      !

@@ -3,18 +3,18 @@ module CNNitrogenFluxType
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use elm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools
-  use elm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
-  use elm_varcon             , only : spval, ispval, dzsoi_decomp
+  use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools
+  use clm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
+  use clm_varcon             , only : spval, ispval, dzsoi_decomp
   use decompMod              , only : bounds_type
-  use elm_varctl             , only : use_vertsoilc
+  use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc
   use CNDecompCascadeConType , only : decomp_cascade_con
   use abortutils             , only : endrun
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
   ! bgc interface & pflotran:
-  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
+  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -412,9 +412,6 @@ module CNNitrogenFluxType
      real(r8), pointer :: fire_nloss_litter                         (:)     ! total nloss from veg to litter pool due to fire
      real(r8), pointer :: hrv_nloss_litter                          (:)     ! total nloss from veg to litter pool due to harvest mortality
      real(r8), pointer :: sen_nloss_litter                          (:)     ! total nloss from veg to litter pool due to senescence
-
-     ! C4MIP output variable
-     real(r8), pointer :: plant_n_to_cwdn                           (:) ! sum of gap, fire, dynamic land use, and harvest mortality, plant nitrogen flux to CWD
 
    contains
 
@@ -851,10 +848,7 @@ contains
     allocate(this%fire_nloss_litter           (begp:endp)) ; this%fire_nloss_litter                 (:) = nan
     allocate(this%hrv_nloss_litter            (begp:endp)) ; this%hrv_nloss_litter                  (:) = nan
     allocate(this%sen_nloss_litter            (begp:endp)) ; this%sen_nloss_litter                  (:) = nan
-
-    ! C4MIP output variable
-    allocate(this%plant_n_to_cwdn             (begc:endc)) ; this%plant_n_to_cwdn                   (:)  =nan
- 
+    
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -865,7 +859,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use elm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
+    use clm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
     !
     ! !ARGUMENTS:
@@ -910,7 +904,7 @@ contains
     ! Initializes time varying variables used only in coupled carbon-nitrogen mode (CN):
     !
     ! !USES:
-    use elm_varpar      , only : crop_prog
+    use clm_varpar      , only : crop_prog
     use landunit_varcon , only : istsoil, istcrop
     !
     ! !ARGUMENTS:
@@ -943,11 +937,11 @@ contains
     ! Read/write CN restart data for carbon state
     !
     ! !USES:
-    use elm_varpar, only : crop_prog
+    use clm_varpar, only : crop_prog
     use restUtilMod
     use ncdio_pio
     ! pflotran
-!    use elm_varctl, only : use_pflotran, pf_cmode, pf_hmode
+!    use clm_varctl, only : use_pflotran, pf_cmode, pf_hmode
     !
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this
@@ -1020,11 +1014,12 @@ contains
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
     ! !USES:
-    use elm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
+    use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
+    use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use pftvarcon     , only : npcropmin 
     use tracer_varcon , only: is_active_betr_bgc
-    use elm_varpar    , only: nlevdecomp_full
+    use clm_varpar    , only: nlevdecomp_full
     !
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this
@@ -1053,11 +1048,11 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 ! summary calculations, which mainly from PFLOTRAN bgc coupling
 !
 ! !USES:
-   use elm_varpar  , only: nlevdecomp_full, ndecomp_pools
-   use elm_varpar  , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+   use clm_varpar  , only: nlevdecomp_full, ndecomp_pools
+   use clm_varpar  , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
    use clm_time_manager    , only : get_step_size
 
-!   use elm_varctl    , only: pf_hmode
+!   use clm_varctl    , only: pf_hmode
 !
 ! !ARGUMENTS:
    implicit none

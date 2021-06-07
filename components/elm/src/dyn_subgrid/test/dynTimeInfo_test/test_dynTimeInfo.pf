@@ -1,0 +1,416 @@
+module test_dynTimeInfo
+
+  ! Tests of the dynTimeInfo class
+
+  use pfunit_mod
+  use dynTimeInfoMod
+
+  implicit none
+  save
+
+contains
+  
+  ! ----------------------------------------------------------------------
+  ! Tests of the constructor
+  ! ----------------------------------------------------------------------
+
+  @Test
+  subroutine test_constructor_normal_a()
+    ! test constructor in the normal case that cur_year is within the time bounds
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11, 12, 13, 14], 11)
+
+    @assertEqual(1, my_info%get_time_index_lower())
+    @assertEqual(2, my_info%get_time_index_upper())
+    @assertTrue(my_info%is_within_bounds())
+  end subroutine test_constructor_normal_a
+
+  @Test
+  subroutine test_constructor_normal_b()
+    ! another test of the constructor in the normal case that cur_year is within the time
+    ! bounds; this one tests the last interval
+    type(time_info_type) :: my_info
+    
+    my_info = time_info_type([11, 12, 13, 14], 13)
+
+    @assertEqual(3, my_info%get_time_index_lower())
+    @assertEqual(4, my_info%get_time_index_upper())
+    @assertTrue(my_info%is_within_bounds())
+  end subroutine test_constructor_normal_b
+
+  @Test
+  subroutine test_constructor_early()
+    ! test constructor in the case when cur_year is prior to the first interval
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11, 12, 13], 10)
+
+    @assertEqual(1, my_info%get_time_index_lower())
+    @assertEqual(1, my_info%get_time_index_upper())
+    @assertFalse(my_info%is_within_bounds())
+  end subroutine test_constructor_early
+
+  @Test
+  subroutine test_constructor_late_a()
+    ! test constructor in the case when cur_year is just barely past the last interval
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11, 12, 13], 13)
+
+    @assertEqual(3, my_info%get_time_index_lower())
+    @assertEqual(3, my_info%get_time_index_upper())
+    @assertFalse(my_info%is_within_bounds())
+  end subroutine test_constructor_late_a
+
+  @Test
+  subroutine test_constructor_late_b()
+    ! test constructor in the case when cur_year is more than a yearpast the last interval
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11, 12, 13], 14)
+
+    @assertEqual(3, my_info%get_time_index_lower())
+    @assertEqual(3, my_info%get_time_index_upper())
+    @assertFalse(my_info%is_within_bounds())
+  end subroutine test_constructor_late_b
+
+  @Test
+  subroutine test_constructor_single_interval()
+    ! test constructor with a single interval (2 years)
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11, 12], 11)
+
+    @assertEqual(1, my_info%get_time_index_lower())
+    @assertEqual(2, my_info%get_time_index_upper())
+    @assertTrue(my_info%is_within_bounds())
+  end subroutine test_constructor_single_interval
+
+  @Test
+  subroutine test_constructor_single_year()
+    ! test constructor with a single year
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11], 11)
+    
+    @assertEqual(1, my_info%get_time_index_lower())
+    @assertEqual(1, my_info%get_time_index_upper())
+    @assertFalse(my_info%is_within_bounds())
+  end subroutine test_constructor_single_year
+
+
+  ! ----------------------------------------------------------------------
+  ! Tests of get_year
+  ! ----------------------------------------------------------------------
+
+  @Test
+  subroutine test_get_year()
+    ! Test the get_year routine
+    type(time_info_type) :: my_info
+    
+    my_info = time_info_type([11,12,13,14], 11)
+
+    @assertEqual(11, my_info%get_year(1))
+    @assertEqual(12, my_info%get_year(2))
+    @assertEqual(14, my_info%get_year(4))
+  end subroutine test_get_year
+    
+  
+  ! ----------------------------------------------------------------------
+  ! Tests of is_before_time_series and is_after_time_series
+  ! ----------------------------------------------------------------------
+
+  @Test
+  subroutine test_is_before_after_early()
+    ! Test is_before_time_series and is_after_time_series, when year is before the time
+    ! series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 10)
+    
+    @assertTrue(my_info%is_before_time_series())
+    @assertFalse(my_info%is_after_time_series())
+  end subroutine test_is_before_after_early
+
+  @Test
+  subroutine test_is_before_after_first()
+    ! Test is_before_time_series and is_after_time_series, when year is the first year in
+    ! the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 11)
+    
+    @assertFalse(my_info%is_before_time_series())
+    @assertFalse(my_info%is_after_time_series())
+  end subroutine test_is_before_after_first
+
+  @Test
+  subroutine test_is_before_after_mid()
+    ! Test is_before_time_series and is_after_time_series, when year is in the middle of
+    ! the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 12)
+    
+    @assertFalse(my_info%is_before_time_series())
+    @assertFalse(my_info%is_after_time_series())
+  end subroutine test_is_before_after_mid
+
+  @Test
+  subroutine test_is_before_after_last()
+    ! Test is_before_time_series and is_after_time_series, when year is in the last
+    ! interval of the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 13)
+    
+    @assertFalse(my_info%is_before_time_series())
+    @assertFalse(my_info%is_after_time_series())
+  end subroutine test_is_before_after_last
+
+  @Test
+  subroutine test_is_before_after_late()
+    ! Test is_before_time_series and is_after_time_series, when year is just past the end
+    ! of the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 14)
+    
+    @assertFalse(my_info%is_before_time_series())
+    @assertTrue(my_info%is_after_time_series())
+  end subroutine test_is_before_after_late
+
+  @Test
+  subroutine test_is_before_after_very_late()
+    ! Test is_before_time_series and is_after_time_series, when year is far past the end
+    ! of the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 15)
+    
+    @assertFalse(my_info%is_before_time_series())
+    @assertTrue(my_info%is_after_time_series())
+  end subroutine test_is_before_after_very_late
+
+
+
+  ! ----------------------------------------------------------------------
+  ! Tests of set_current_year - typical scenarios
+  ! ----------------------------------------------------------------------
+
+
+  @Test
+  subroutine test_update_no_change_early()
+    ! Test an update with no change in years, prior to start of time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 10)
+    call my_info%set_current_year(10)
+    
+    @assertEqual(1, my_info%get_time_index_lower())
+    @assertEqual(1, my_info%get_time_index_upper())
+    @assertFalse(my_info%is_within_bounds())
+  end subroutine test_update_no_change_early
+
+  @Test
+  subroutine test_update_no_change_normal()
+    ! Test a normal update, no change in years
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 11)
+    call my_info%set_current_year(11)
+
+    @assertEqual(1, my_info%get_time_index_lower())
+    @assertEqual(2, my_info%get_time_index_upper())
+    @assertTrue(my_info%is_within_bounds())
+  end subroutine test_update_no_change_normal
+
+  @Test
+  subroutine test_update_no_change_late()
+    ! Test an update with no change in years, just past the end of the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 14)
+    call my_info%set_current_year(14)
+
+    @assertEqual(4, my_info%get_time_index_lower())
+    @assertEqual(4, my_info%get_time_index_upper())
+    @assertFalse(my_info%is_within_bounds())
+  end subroutine test_update_no_change_late
+
+  @Test
+  subroutine test_update_no_change_very_late()
+    ! Test an update with no change in years, significantly past the end of the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 15)
+    call my_info%set_current_year(15)
+
+    @assertEqual(4, my_info%get_time_index_lower())
+    @assertEqual(4, my_info%get_time_index_upper())
+    @assertFalse(my_info%is_within_bounds())
+  end subroutine test_update_no_change_very_late
+
+  @Test
+  subroutine test_update_early()
+    ! Test an update, with a change in years, both before the start of the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 9)
+    call my_info%set_current_year(10)
+    
+    @assertEqual(1, my_info%get_time_index_lower())
+    @assertEqual(1, my_info%get_time_index_upper())
+    @assertFalse(my_info%is_within_bounds())
+  end subroutine test_update_early
+
+  @Test
+  subroutine test_update_early_to_normal()
+    ! Test an update, with a change in years, from before the time series to inside it
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 10)
+    call my_info%set_current_year(11)
+    
+    @assertEqual(1, my_info%get_time_index_lower())
+    @assertEqual(2, my_info%get_time_index_upper())
+    @assertTrue(my_info%is_within_bounds())
+  end subroutine test_update_early_to_normal
+
+  @Test
+  subroutine test_update_normal()
+    ! Test an update, with a change in years, both within the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 11)
+    call my_info%set_current_year(12)
+    
+    @assertEqual(2, my_info%get_time_index_lower())
+    @assertEqual(3, my_info%get_time_index_upper())
+    @assertTrue(my_info%is_within_bounds())
+  end subroutine test_update_normal
+
+  @Test
+  subroutine test_update_normal_to_late()
+    ! Test an update, with a change in years, from within the time series to after it
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 13)
+    call my_info%set_current_year(14)
+    
+    @assertEqual(4, my_info%get_time_index_lower())
+    @assertEqual(4, my_info%get_time_index_upper())
+    @assertFalse(my_info%is_within_bounds())
+  end subroutine test_update_normal_to_late
+
+  @Test
+  subroutine test_update_late()
+    ! Test an update, with a change in years, starting just after the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 14)
+    call my_info%set_current_year(15)
+    
+    @assertEqual(4, my_info%get_time_index_lower())
+    @assertEqual(4, my_info%get_time_index_upper())
+    @assertFalse(my_info%is_within_bounds())
+  end subroutine test_update_late
+
+  @Test
+  subroutine test_update_very_late()
+    ! Test an update, with a change in years, both significantly after the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 15)
+    call my_info%set_current_year(16)
+    
+    @assertEqual(4, my_info%get_time_index_lower())
+    @assertEqual(4, my_info%get_time_index_upper())
+    @assertFalse(my_info%is_within_bounds())
+  end subroutine test_update_very_late
+
+  ! ----------------------------------------------------------------------
+  ! Tests of set_current_year - year decreasing
+  ! ----------------------------------------------------------------------
+
+  @Test
+  subroutine test_update_decreasing_early()
+    ! Test an update with decreasing years, starting before the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 10)
+    call my_info%set_current_year(9)
+    
+    @assertEqual(1, my_info%get_time_index_lower())
+    @assertEqual(1, my_info%get_time_index_upper())
+  end subroutine test_update_decreasing_early
+    
+  @Test
+  subroutine test_update_decreasing_normal()
+    ! Test an update with decreasing years, starting within the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 13)
+    call my_info%set_current_year(12)
+    
+    @assertEqual(2, my_info%get_time_index_lower())
+    @assertEqual(3, my_info%get_time_index_upper())
+  end subroutine test_update_decreasing_normal
+
+  @Test
+  subroutine test_update_decreasing_late()
+    ! Test an update with decreasing years, starting after the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 14)
+    call my_info%set_current_year(13)
+    
+    @assertEqual(3, my_info%get_time_index_lower())
+    @assertEqual(4, my_info%get_time_index_upper())
+  end subroutine test_update_decreasing_late
+
+  ! ----------------------------------------------------------------------
+  ! Tests of set_current_year - year increasing by more than 1
+  ! ----------------------------------------------------------------------
+
+  @Test
+  subroutine test_update_by2_early()
+    ! Test an update by 2 years, starting before the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 10)
+    call my_info%set_current_year(12)
+    
+    @assertEqual(2, my_info%get_time_index_lower())
+    @assertEqual(3, my_info%get_time_index_upper())
+  end subroutine test_update_by2_early
+    
+  @Test
+  subroutine test_update_by2_normal()
+    ! Test an update by 2 years, starting within the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 11)
+    call my_info%set_current_year(13)
+    
+    @assertEqual(3, my_info%get_time_index_lower())
+    @assertEqual(4, my_info%get_time_index_upper())
+  end subroutine test_update_by2_normal
+
+  @Test
+  subroutine test_update_by2_late()
+    ! Test an update by 2 years, starting after the time series
+    type(time_info_type) :: my_info
+
+    my_info = time_info_type([11,12,13,14], 14)
+    call my_info%set_current_year(16)
+    
+    @assertEqual(4, my_info%get_time_index_lower())
+    @assertEqual(4, my_info%get_time_index_upper())
+  end subroutine test_update_by2_late
+    
+
+    
+
+end module test_dynTimeInfo

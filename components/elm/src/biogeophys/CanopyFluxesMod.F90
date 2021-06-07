@@ -19,7 +19,7 @@ module CanopyFluxesMod
   use elm_varcon            , only : namep
   use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig
   use decompMod             , only : bounds_type
-  use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation, PhotoSynthesisHydraulicStress
+  use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation
   use SoilMoistStressMod    , only : calc_effective_soilporosity, calc_volumetric_h2oliq
   use SoilMoistStressMod    , only : calc_root_moist_stress, set_perchroot_opt
   use SurfaceResistanceMod  , only : do_soilevap_beta
@@ -124,8 +124,6 @@ contains
     integer  ::  time
     !
     ! !LOCAL VARIABLES:
-    real(r8), pointer   :: bsun(:)          ! sunlit canopy transpiration wetness factor (0 to 1)
-    real(r8), pointer   :: bsha(:)          ! shaded canopy transpiration wetness factor (0 to 1)
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
     real(r8), parameter :: zii = 1000.0_r8  ! convective boundary layer height [m]
     real(r8), parameter :: beta = 1.0_r8    ! coefficient of convective velocity [-]
@@ -441,16 +439,14 @@ contains
          begp                 => bounds%begp                               , &
          endp                 => bounds%endp                                 &
          )
-      if (use_hydrstress) then
-        bsun                    => energyflux_vars%bsun_patch ! Output:[real(r8) (:)   ]  sunlit canopy transpiration wetness factor (0 to 1)
-        bsha                    => energyflux_vars%bsha_patch ! Output:[real(r8) (:)   ]  sunlit canopy transpiration wetness factor (0 to 1)
-      end if
+
       ! Determine step size
       dtime = dtime_mod
       !yr = year_curr; mon = mon_curr; day = day_curr;
       time = secs_curr;
 
       irrig_nsteps_per_day = ((irrig_length + (dtime - 1))/dtime)  ! round up
+
       ! First - set the following values over points where frac vegetation covered by snow is zero
       ! (e.g. btran, t_veg, rootr, rresis)
       do fp = 1,num_nolakeurbanp
@@ -566,7 +562,6 @@ contains
       if(use_fates)then
 #ifndef _OPENACC
          call alm_fates%wrap_btran(bounds, fn, filterc_tmp(1:fn), soilstate_vars, &
-               temperature_vars, energyflux_vars, soil_water_retention_curve)
 #endif
       else
          !calculate root moisture stress
@@ -955,23 +950,8 @@ contains
             end if
 
             efpot = forc_rho(t)*wtl*(qsatl(p)-qaf(p))
-            ! When the hydraulic stress parameterization is active calculate rpp
-            ! but not transpiration
-            if ( use_hydrstress ) then
-              if (efpot > 0._r8) then
-                 if (btran(p) > btran0) then
-                   rpp = rppdry + fwet(p)
-                 else
-                   rpp = fwet(p)
-                 end if
-                 !Check total evapotranspiration from leaves
-                 rpp = min(rpp, (qflx_tran_veg(p)+h2ocan(p)/dtime)/efpot)
-              else
-                 rpp = 1._r8
-              end if
-            else
 
-              if (efpot > 0._r8) then
+            if (efpot > 0._r8) then
                if (btran(p) > btran0) then
                   qflx_tran_veg(p) = efpot*rppdry
                   rpp = rppdry + fwet(p)
@@ -982,12 +962,12 @@ contains
                end if
                !Check total evapotranspiration from leaves
                rpp = min(rpp, (qflx_tran_veg(p)+h2ocan(p)/dtime)/efpot)
-              else
+            else
                !No transpiration if potential evaporation less than zero
                rpp = 1._r8
                qflx_tran_veg(p) = 0._r8
-              end if
             end if
+
             ! Update conductances for changes in rpp
             ! Latent heat conductances for ground and leaf.
             ! Air has same conductance for both sensible and latent heat.
@@ -1069,20 +1049,15 @@ contains
             ! holds the excess energy if all intercepted water is evaporated
             ! during the timestep.  This energy is later added to the
             ! sensible heat flux.
-            if ( use_hydrstress ) then
-               ecidif = max(0._r8,qflx_evap_veg(p)-qflx_tran_veg(p)-h2ocan(p)/dtime)
-               qflx_evap_veg(p) = min(qflx_evap_veg(p),qflx_tran_veg(p)+h2ocan(p)/dtime)
-            else
 
-              ecidif = 0._r8
-              if (efpot > 0._r8 .and. btran(p) > btran0) then
+            ecidif = 0._r8
+            if (efpot > 0._r8 .and. btran(p) > btran0) then
                qflx_tran_veg(p) = efpot*rppdry
-              else
+            else
                qflx_tran_veg(p) = 0._r8
-              end if
-              ecidif = max(0._r8, qflx_evap_veg(p)-qflx_tran_veg(p)-h2ocan(p)/dtime)
-              qflx_evap_veg(p) = min(qflx_evap_veg(p),qflx_tran_veg(p)+h2ocan(p)/dtime)
             end if
+            ecidif = max(0._r8, qflx_evap_veg(p)-qflx_tran_veg(p)-h2ocan(p)/dtime)
+            qflx_evap_veg(p) = min(qflx_evap_veg(p),qflx_tran_veg(p)+h2ocan(p)/dtime)
 
             ! The energy loss due to above two limits is added to
             ! the sensible heat flux.

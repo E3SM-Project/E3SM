@@ -10,9 +10,8 @@ module WaterstateType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type
-  use elm_varctl     , only : use_vancouver, use_mexicocity, use_cn, iulog, use_fates_planthydro, &
-                              use_hydrstress
-  use elm_varpar     , only : nlevgrnd, nlevurb, nlevsno 
+  use elm_varctl     , only : use_vancouver, use_mexicocity, use_cn, iulog, use_fates_planthydro
+  use elm_varpar     , only : nlevgrnd, nlevurb, nlevsno   
   use elm_varcon     , only : spval
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
@@ -336,7 +335,7 @@ contains
     ! snow layer existed by running the snow averaging routine on a field whose value is 1
     ! everywhere
     data2dptr => this%snow_layer_unity_col(:,-nlevsno+1:0)
-    call hist_addfld2d (fname='SNO_EXISTENCE', units='1', type2d='levsno', &
+    call hist_addfld2d (fname='SNO_EXISTENCE', units='unitless', type2d='levsno', &
          avgflag='A', long_name='Fraction of averaging period for which each snow layer existed', &
          ptr_col=data2dptr, no_snow_behavior=no_snow_zero, default='inactive')
 
@@ -517,15 +516,6 @@ contains
 
     SHR_ASSERT_ALL((ubound(watsat_col) == (/bounds%endc,nlevgrnd/)) , errMsg(__FILE__, __LINE__))
 
-
-    call restartvar(ncid=ncid, flag=flag, varname='TWS_MONTH_BEGIN', xtype=ncd_double,  &
-         dim1name='gridcell', &
-         long_name='surface watertotal water storage at the beginning of a month', units='mm', &
-          interpinic_flag='interp', readvar=readvar, data=this%tws_month_beg_grc)
-
-    call restartvar(ncid=ncid, flag=flag, varname='ENDWB_COL', xtype=ncd_double, &
-         dim1name='column', long_name='col-level water mass end of the time step', &
-         units='mm', interpinic_flag='interp', readvar=readvar, data=this%endwb_col)
 
   end subroutine Restart
 

@@ -80,9 +80,9 @@ contains
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use elm_varctl     , only : create_glacier_mec_landunit
+    use clm_varctl     , only : create_glacier_mec_landunit
     use histFileMod    , only: hist_addfld1d
-    use elm_varcon     , only : spval
+    use clm_varcon     , only : spval
     !
     ! !ARGUMENTS:
     class(glc_diagnostics_type) :: this
@@ -100,7 +100,7 @@ contains
     if (create_glacier_mec_landunit) then
 
        this%gris_mask_grc(begg:endg) = spval
-       call hist_addfld1d (fname='gris_mask',  units='1',  &
+       call hist_addfld1d (fname='gris_mask',  units='unitless',  &
             avgflag='A', long_name='Greenland mask', &
             ptr_gcell= this%gris_mask_grc)
 
@@ -110,7 +110,7 @@ contains
             ptr_gcell= this%gris_area_grc)
 
        this%aais_mask_grc(begg:endg) = spval
-       call hist_addfld1d (fname='aais_mask',  units='1',  &
+       call hist_addfld1d (fname='aais_mask',  units='unitless',  &
             avgflag='A', long_name='Antarctic mask', &
             ptr_gcell= this%aais_mask_grc)
 

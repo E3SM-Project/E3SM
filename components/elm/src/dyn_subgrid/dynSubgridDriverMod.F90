@@ -295,7 +295,6 @@ contains
                veg_cs, c13_veg_cs, c14_veg_cs, &
                veg_ns, veg_ps, dt)
 
-          ! Transfer root/seed litter C/N/P to decomposer pools
           call CarbonStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
 
@@ -307,7 +306,6 @@ contains
 
        end if
 
-       if(use_cn .or. use_fates)then
           call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
                col_cs, c13_col_cs, c14_col_cs, &
                col_ns, col_ps )

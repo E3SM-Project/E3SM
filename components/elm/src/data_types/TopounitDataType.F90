@@ -219,7 +219,7 @@ module TopounitDataType
     !
     ! !USES
     use elm_varcon  , only : spval
-     use accumulMod  , only : init_accum_field
+    use accumulMod  , only : init_accum_field
     !
     ! !ARGUMENTS:
     class(topounit_atmospheric_state) :: this
@@ -421,7 +421,7 @@ module TopounitDataType
     !
     ! !USES
     use elm_varcon  , only : spval
-     use accumulMod  , only : init_accum_field
+    use accumulMod  , only : init_accum_field
     !
     ! !ARGUMENTS:
     class(topounit_atmospheric_flux) :: this

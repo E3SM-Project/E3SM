@@ -7,7 +7,7 @@ module surfrdUtilsMod
   ! !USES:
 #include "shr_assert.h"
   use shr_kind_mod , only : r8 => shr_kind_r8
-  use elm_varctl   , only : iulog
+  use clm_varctl   , only : iulog
   use abortutils   , only : endrun
   use shr_log_mod  , only : errMsg => shr_log_errMsg
   use spmdMod      , only : masterproc
@@ -21,7 +21,6 @@ module surfrdUtilsMod
   public :: check_sums_equal_1  ! Confirm that sum(arr(n,:)) == 1 for all n
   public :: convert_cft_to_pft  ! Conversion of crop CFT to natural veg PFT:w
   public :: collapse_crop_types ! Collapse unused crop types into types used in this run
-  public :: convert_pft_to_cft  ! Conversion of crops from natural veg to CFT
   
   !-----------------------------------------------------------------------
 
@@ -71,8 +70,8 @@ contains
     !        Convert generic crop types that were read in as seperate CFT's on
     !        a crop landunit, and put them on the vegetated landunit.
     ! !USES:
-    use elm_varsur      , only : wt_lunit, wt_nat_patch, fert_cft
-    use elm_varpar      , only : cft_size, natpft_size
+    use clm_varsur      , only : wt_lunit, wt_nat_patch, fert_cft
+    use clm_varpar      , only : cft_size, natpft_size
     use pftvarcon       , only : nc3crop
     use landunit_varcon , only : istsoil, istcrop
     ! !ARGUMENTS:
@@ -103,92 +102,7 @@ contains
 
   end subroutine convert_cft_to_pft
 
-!-----------------------------------------------------------------------
-  subroutine convert_pft_to_cft( begg, endg )
-   !
-   ! !DESCRIPTION:
-   !        Moves the crops from the PFT landunit to their own landunit.
-   !        The PCT of natural vegetation and crops are updated after creating
-   !        the new crop landunit 
-   ! !USES:
-   use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
-   use elm_varpar      , only : cft_size, natpft_size
-   use elm_varpar      , only : cft_size, cft_lb, cft_ub, natpft_lb, natpft_ub
-   use pftvarcon       , only : nc3crop
-   use landunit_varcon , only : istsoil, istcrop
-   ! !ARGUMENTS:
-   implicit none
-   integer          , intent(in)    :: begg, endg
-   !
-   ! !LOCAL VARIABLES:
-   integer  :: g, c    ! index
-   real(r8) :: wtpft_sum, wtcft_sum, tmp
-   real(r8), parameter :: eps = 1.e-14_r8
-   !-----------------------------------------------------------------------
-
-   do g = begg, endg
-
-      if ( wt_lunit(g,istsoil) > 0.0_r8 ) then
-
-         ! Determine the wt of CFTs
-         wtcft_sum = 0.0_r8
-         do c = cft_lb, cft_ub
-            wtcft_sum = wtcft_sum + wt_cft(g,c)
-         enddo
-
-         if (wtcft_sum > 0.0_r8) then ! Crops are present in the PFTs
-
-            ! Set the CFT landunit fraction and update the PFT landunit fraction
-            wt_lunit(g,istcrop) = wtcft_sum/100._r8 * wt_lunit(g,istsoil)
-            wt_lunit(g,istsoil) = wt_lunit(g,istsoil) - wt_lunit(g,istcrop)
-
-            ! Update the CFT fraction w.r.t. CFT landunit
-            tmp = 0._r8
-            do c = cft_lb, cft_ub
-               wt_cft(g,c) = wt_cft(g,c)/wtcft_sum * 100._r8
-               tmp = tmp + wt_cft(g,c);
-            enddo
-            if (abs(tmp - 100._r8) > eps) then
-               do c = cft_lb, cft_ub
-                  wt_cft(g,c) = wt_cft(g,c) + (100._r8 - tmp)/cft_size
-               enddo
-            endif
-
-            ! Determine the PFT fraction
-            wtpft_sum = 0.0_r8
-            do c = natpft_lb, natpft_ub
-               wtpft_sum = wtpft_sum + wt_nat_patch(g,c)
-            enddo
-
-            if (wtpft_sum > 0.0_r8) then ! PFTs are present
-               ! Update the PFT fraction w.r.t. new PFT landunit
-               do c = natpft_lb, natpft_ub
-                  wt_nat_patch(g,c) = wt_nat_patch(g,c)/wtpft_sum * 100._r8
-               enddo
-            else
-               do c = natpft_lb, natpft_ub
-                  wt_nat_patch(g,c) = 0._r8
-               enddo
-            endif
-         else
-            ! Crops are not present, so zero out the fraction of crops.
-            ! Assign first CFT 100% and This will not have an impact because the
-            ! fraction of crop landunit is zero.
-            wt_cft(g,:) = 0.0_r8
-            wt_cft(g,cft_lb) = 100.0_r8
-         endif
-
-      else
-         ! Natural vegetation landunit is not present, so crop landunit is also
-         ! not present
-         wt_cft(g,:) = 0.0_r8
-         wt_cft(g,cft_lb) = 100.0_r8
-      end if
-   end do
-
- end subroutine convert_pft_to_cft
-
- !-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
   subroutine collapse_crop_types(wt_cft, fert_cft, begg, endg, verbose)
     !
     ! !DESCRIPTION:
@@ -197,9 +111,9 @@ contains
     ! Should only be called if using prognostic crops - otherwise, wt_cft is meaningless
     !
     ! !USES:
-    use elm_varctl , only : irrigate
-    use elm_varpar , only : cft_lb, cft_ub, cft_size
-    use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoelmpft
+    use clm_varctl , only : irrigate
+    use clm_varpar , only : cft_lb, cft_ub, cft_size
+    use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoclmpft
     !
     ! !ARGUMENTS:
 
@@ -258,32 +172,32 @@ contains
     end if
 
     ! ------------------------------------------------------------------------
-    ! Merge CFTs into the list of crops that ELM knows how to model
+    ! Merge CFTs into the list of crops that CLM knows how to model
     ! ------------------------------------------------------------------------
 
     if (verbose .and. masterproc) then
        write(iulog, *) trim(subname) // ' merging wheat, barley, and rye into temperate cereals'
-       write(iulog, *) trim(subname) // ' elm knows how to model corn, temperate cereals, and soybean'
+       write(iulog, *) trim(subname) // ' clm knows how to model corn, temperate cereals, and soybean'
        write(iulog, *) trim(subname) // ' all other crops are lumped with the generic crop pft'
     end if
 
     do g = begg, endg
        do m = 1, npcropmax
-          if (m /= mergetoelmpft(m)) then
-             wt_cft_to                   = wt_cft(g, mergetoelmpft(m))
+          if (m /= mergetoclmpft(m)) then
+             wt_cft_to                   = wt_cft(g, mergetoclmpft(m))
              wt_cft_from                 = wt_cft(g, m)
              wt_cft_merge                = wt_cft_to + wt_cft_from
-             wt_cft(g, mergetoelmpft(m)) = wt_cft_merge
+             wt_cft(g, mergetoclmpft(m)) = wt_cft_merge
              wt_cft(g, m)                = 0._r8
              if (wt_cft_merge > 0._r8) then
-                fert_cft(g,mergetoelmpft(m)) = (wt_cft_to * fert_cft(g,mergetoelmpft(m)) + &
+                fert_cft(g,mergetoclmpft(m)) = (wt_cft_to * fert_cft(g,mergetoclmpft(m)) + &
                                                 wt_cft_from * fert_cft(g,m)) / wt_cft_merge
              end if
           end if
        end do
     end do
 
-    call check_sums_equal_1(wt_cft, begg, 'wt_cft', subname//': mergetoelmpft')
+    call check_sums_equal_1(wt_cft, begg, 'wt_cft', subname//': mergetoclmpft')
 
   end subroutine collapse_crop_types
 

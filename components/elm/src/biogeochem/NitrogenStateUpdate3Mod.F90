@@ -15,7 +15,7 @@ module NitrogenStateUpdate3Mod
   use ColumnDataType      , only : col_ns, col_nf
   use VegetationDataType  , only : veg_ns, veg_nf
   ! bgc interface & pflotran:
-  use elm_varctl          , only : use_pflotran, pf_cmode, use_fates
+  use elm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -57,13 +57,18 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
                
-               ! mineral N loss due to leaching and runoff
-               col_ns%smin_no3_vr(c,j) = max( col_ns%smin_no3_vr(c,j) - &
-                    ( col_nf%smin_no3_leached_vr(c,j) + col_nf%smin_no3_runoff_vr(c,j) ) * dt, 0._r8)
-               
-               col_ns%sminn_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_ns%smin_nh4_vr(c,j)
-               if (use_pflotran .and. pf_cmode) then 
-                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_ns%smin_nh4sorb_vr(c,j)
+               if (.not. use_nitrif_denitrif) then
+                  ! mineral N loss due to leaching
+                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) - col_nf%sminn_leached_vr(c,j) * dt
+               else
+                  ! mineral N loss due to leaching and runoff
+                  col_ns%smin_no3_vr(c,j) = max( col_ns%smin_no3_vr(c,j) - &
+                       ( col_nf%smin_no3_leached_vr(c,j) + col_nf%smin_no3_runoff_vr(c,j) ) * dt, 0._r8)
+                  
+                  col_ns%sminn_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_ns%smin_nh4_vr(c,j)
+                  if (use_pflotran .and. pf_cmode) then 
+                        col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_ns%smin_nh4sorb_vr(c,j)
+                  end if
                end if
 
                if (.not.(use_pflotran .and. pf_cmode)) then

@@ -6,7 +6,7 @@ module fileutils
   !
   ! !USES:
   use shr_sys_mod , only : shr_sys_abort
-  use elm_varctl  , only : iulog
+  use clm_varctl  , only : iulog
   use spmdMod     , only : masterproc
   !
   ! !PUBLIC TYPES:

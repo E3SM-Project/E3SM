@@ -3212,8 +3212,8 @@ contains
        c = filter(fc)
 
        ! Snow
-	   bmatrix(c,2:3,-nlevsno) = bmatrix_snow(c,2:3,-nlevsno)
-       bmatrix(c,2:4,-nlevsno+1:-2) = bmatrix_snow(c,2:4,-nlevsno+1:-2)
+       bmatrix(c,2:3,-5   ) = bmatrix_snow(c,2:3,-5   )
+       bmatrix(c,2:4,-4:-2) = bmatrix_snow(c,2:4,-4:-2)
        bmatrix(c,3:4,-1   ) = bmatrix_snow(c,3:4,-1   )
 
        ! Snow-Soil

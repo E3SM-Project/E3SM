@@ -11,7 +11,7 @@ module domainMod
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_sys_mod , only : shr_sys_abort
   use spmdMod     , only : masterproc
-  use elm_varctl  , only : iulog
+  use clm_varctl  , only : iulog
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -25,7 +25,7 @@ module domainMod
      integer          :: ni,nj      ! global axis if 2d (nj=1 if unstructured)
      logical          :: isgrid2d   ! true => global grid is lat/lon
      integer          :: nbeg,nend  ! local beg/end indices
-     character(len=8) :: elmlevel   ! grid type
+     character(len=8) :: clmlevel   ! grid type
      integer ,pointer :: mask(:)    ! land mask: 1 = land, 0 = ocean
      real(r8),pointer :: frac(:)    ! fractional land
      real(r8),pointer :: topo(:)    ! topography
@@ -41,7 +41,7 @@ module domainMod
      integer ,pointer :: glcmask(:) ! glc mask: 1=sfc mass balance required by GLC component
                                     ! 0=SMB not required (default)
                                     ! (glcmask is just a guess at the appropriate mask, known at initialization - in contrast to icemask, which is the true mask obtained from glc)
-     logical          :: set        ! flag to check if domain is set
+     character*16     :: set        ! flag to check if domain is set
      logical          :: decomped   ! decomposed locally or global copy
 
      ! pflotran:beg-----------------------------------------------------
@@ -63,9 +63,11 @@ module domainMod
   public domain_check         ! write out domain info
 !
 ! !REVISION HISTORY:
-! Originally elm_varsur by Mariana Vertenstein
-! Migrated from elm_varsur to domainMod by T Craig
+! Originally clm_varsur by Mariana Vertenstein
+! Migrated from clm_varsur to domainMod by T Craig
 !
+  character*16,parameter :: set   = 'domain_set      '
+  character*16,parameter :: unset = 'NOdomain_unsetNO'
 !
 !EOP
 !------------------------------------------------------------------------------
@@ -78,7 +80,7 @@ contains
 ! !IROUTINE: domain_init
 !
 ! !INTERFACE:
-  subroutine domain_init(domain,isgrid2d,ni,nj,nbeg,nend,elmlevel)
+  subroutine domain_init(domain,isgrid2d,ni,nj,nbeg,nend,clmlevel)
     use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
 !
 ! !DESCRIPTION:
@@ -92,7 +94,7 @@ contains
     logical, intent(in) :: isgrid2d      ! true => global grid is lat/lon
     integer, intent(in) :: ni,nj         ! grid size, 2d
     integer         , intent(in), optional  :: nbeg,nend  ! beg/end indices
-    character(len=*), intent(in), optional  :: elmlevel   ! grid type
+    character(len=*), intent(in), optional  :: clmlevel   ! grid type
 !
 ! !REVISION HISTORY:
 !   Created by T Craig
@@ -114,11 +116,8 @@ contains
        endif
     endif
 
-    if (domain%set) then
+    if (domain%set == set) then
        call domain_clean(domain)
-    endif
-    if (masterproc) then
-       write(iulog,*) 'domain_init: ',ni,nj
     endif
     allocate(domain%mask(nb:ne),domain%frac(nb:ne),domain%latc(nb:ne), &
              domain%pftm(nb:ne),domain%area(nb:ne),domain%firrig(nb:ne),domain%lonc(nb:ne), &
@@ -146,8 +145,8 @@ contains
     end if
     ! pflotran:end-----------------------------------------------------
 
-    if (present(elmlevel)) then
-       domain%elmlevel = elmlevel
+    if (present(clmlevel)) then
+       domain%clmlevel = clmlevel
     endif
 
     domain%isgrid2d = isgrid2d
@@ -168,7 +167,7 @@ contains
     domain%f_surf   = 1.0_r8
     domain%f_grd    = 0.0_r8
 
-    domain%set      = .true.
+    domain%set      = set
     if (domain%nbeg == 1 .and. domain%nend == domain%ns) then
        domain%decomped = .false.
     else
@@ -203,14 +202,13 @@ end subroutine domain_init
     integer ier
 !
 !------------------------------------------------------------------------------
-    if (domain%set) then
+    if (domain%set == set) then
        if (masterproc) then
           write(iulog,*) 'domain_clean: cleaning ',domain%ni,domain%nj
        endif
        deallocate(domain%mask,domain%frac,domain%latc, &
                   domain%lonc,domain%area,domain%firrig,domain%pftm, &
-                  domain%topo,domain%f_surf,domain%f_grd,domain%glcmask, &
-                  domain%xCell,domain%yCell,stat=ier)
+                  domain%topo,domain%f_surf,domain%f_grd,domain%glcmask,stat=ier)
        if (ier /= 0) then
           call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
        endif
@@ -240,13 +238,13 @@ end subroutine domain_init
        endif
     endif
 
-    domain%elmlevel   = 'NOdomain_unsetNO'
+    domain%clmlevel   = unset
     domain%ns         = huge(1)
     domain%ni         = huge(1)
     domain%nj         = huge(1)
     domain%nbeg       = huge(1)
     domain%nend       = huge(1)
-    domain%set        = .false.
+    domain%set        = unset
     domain%decomped   = .true.
 
 end subroutine domain_clean
@@ -277,11 +275,11 @@ end subroutine domain_clean
 !------------------------------------------------------------------------------
 
   if (masterproc) then
-    write(iulog,*) '  domain_check set       = ',domain%set
+    write(iulog,*) '  domain_check set       = ',trim(domain%set)
     write(iulog,*) '  domain_check decomped  = ',domain%decomped
     write(iulog,*) '  domain_check ns        = ',domain%ns
     write(iulog,*) '  domain_check ni,nj     = ',domain%ni,domain%nj
-    write(iulog,*) '  domain_check elmlevel  = ',trim(domain%elmlevel)
+    write(iulog,*) '  domain_check clmlevel  = ',trim(domain%clmlevel)
     write(iulog,*) '  domain_check nbeg,nend = ',domain%nbeg,domain%nend
     write(iulog,*) '  domain_check lonc      = ',minval(domain%lonc),maxval(domain%lonc)
     write(iulog,*) '  domain_check latc      = ',minval(domain%latc),maxval(domain%latc)

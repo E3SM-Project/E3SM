@@ -460,6 +460,7 @@ contains
 
          err = lwdown(l) - (lwdown_road(l) + (lwdown_shadewall(l) + lwdown_sunwall(l))*canyon_hwr(l))
          if (abs(err) > 0.10_r8 ) then
+<<<<<<< HEAD
 #ifndef _OPENACC
              write(iulog,*) 'urban incident atmospheric longwave radiation balance error',err
              write(iulog,*) 'l          = ',l
@@ -470,6 +471,16 @@ contains
              write(iulog,*) 'elm model is stopping'
              call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
 #endif
+=======
+            write(iulog,*) 'urban incident atmospheric longwave radiation balance error',err
+            write(iulog,*) 'l          = ',l
+            write(iulog,*) 'lwdown     = ',lwdown(l)
+            write(iulog,*) 'vf_sr      = ',vf_sr(l)
+            write(iulog,*) 'vf_sw      = ',vf_sw(l)
+            write(iulog,*) 'canyon_hwr = ',canyon_hwr(l)
+            write(iulog,*) 'clm model is stopping'
+            call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+>>>>>>> 6dd4238499... replace clm with elm
          endif
       end do
 
@@ -647,11 +658,17 @@ contains
             if (crit < .001_r8) exit
          end do
          if (iter >= n) then
+<<<<<<< HEAD
 #ifndef _OPENACC
              write (iulog,*) 'urban net longwave radiation error: no convergence'
              write (iulog,*) 'elm model is stopping'
              call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
 #endif
+=======
+            write (iulog,*) 'urban net longwave radiation error: no convergence'
+            write (iulog,*) 'clm model is stopping'
+            call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+>>>>>>> 6dd4238499... replace clm with elm
          endif
 
          ! total net longwave radiation for canyon. project wall fluxes to horizontal surface
@@ -676,9 +693,14 @@ contains
          if (abs(err) > .10_r8 ) then
 #ifndef _OPENACC
             write (iulog,*) 'urban net longwave radiation balance error',err
+<<<<<<< HEAD
             write (iulog,*) 'elm model is stopping'
             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
 #endif
+=======
+            write (iulog,*) 'clm model is stopping'
+            call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+>>>>>>> 6dd4238499... replace clm with elm
          end if
 
       end do

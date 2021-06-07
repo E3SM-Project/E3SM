@@ -7,7 +7,7 @@ module ActiveLayerMod
   ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_const_mod   , only : SHR_CONST_TKFRZ
-  use elm_varctl      , only : iulog
+  use clm_varctl      , only : iulog
   use TemperatureType , only : temperature_type
   use CanopyStateType , only : canopystate_type
   use GridcellType    , only : grc_pp       
@@ -44,10 +44,10 @@ contains
     !
     ! !USES:
     use shr_const_mod    , only : SHR_CONST_TKFRZ
-    use elm_varpar       , only : nlevgrnd
+    use clm_varpar       , only : nlevgrnd
     use clm_time_manager , only : get_curr_date, get_step_size
-    use elm_varctl       , only : iulog
-    use elm_varcon       , only : zsoi
+    use clm_varctl       , only : iulog
+    use clm_varcon       , only : zsoi
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -87,8 +87,7 @@ contains
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             g = col_pp%gridcell(c)
-            if ( grc_pp%lat(g) > 0. ) then
-               
+            if ( grc_pp%lat(g) > 0. ) then 
                altmax_lastyear(c) = altmax(c)
                altmax_lastyear_indx(c) = altmax_indx(c)
                altmax(c) = 0.
@@ -115,8 +114,7 @@ contains
          ! calculate alt for a given timestep
          ! start from base of soil and search upwards for first thawed layer.
          ! note that this will put talik in with active layer
-         ! a different way of doing this could be to keep track of how long a given layer has ben frozen for,
-         ! and define ALT as the first layer that has been frozen for less than 2 years.
+         ! a different way of doing this could be to keep track of how long a given layer has ben frozen for, and define ALT as the first layer that has been frozen for less than 2 years.
          if (t_soisno(c,nlevgrnd) > SHR_CONST_TKFRZ ) then
             alt(c) = zsoi(nlevgrnd)
             alt_indx(c) = nlevgrnd

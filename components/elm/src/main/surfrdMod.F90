@@ -9,11 +9,11 @@ module surfrdMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use abortutils      , only : endrun
-  use elm_varpar      , only : nlevsoifl, numpft, numcft
+  use clm_varpar      , only : nlevsoifl, numpft, numcft
   use landunit_varcon , only : numurbl
-  use elm_varcon      , only : grlnd
-  use elm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
-  use elm_varctl      , only : create_glacier_mec_landunit
+  use clm_varcon      , only : grlnd
+  use clm_varctl      , only : iulog, scmlat, scmlon, single_column, tw_irr
+  use clm_varctl      , only : create_glacier_mec_landunit
   use surfrdUtilsMod  , only : check_sums_equal_1
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
@@ -138,10 +138,10 @@ contains
     ! o real longitude of grid cell (degrees)
     !
     ! !USES:
-    use elm_varcon, only : spval, re
+    use clm_varcon, only : spval, re
     use domainMod , only : domain_type, domain_init, domain_clean, lon1d, lat1d
     use fileutils , only : getfil
-    use elm_varctl, only : use_pflotran
+    use clm_varctl, only : use_pflotran
     !
     ! !ARGUMENTS:
     integer          ,intent(in)    :: begg, endg 
@@ -199,7 +199,6 @@ contains
     ! pflotran:end-----------------------------------------------
 
     ! Determine isgrid2d flag for domain
-    ldomain%set = .false.
     call domain_init(ldomain, isgrid2d=isgrid2d, ni=ni, nj=nj, nbeg=begg, nend=endg)
 
     ! Determine type of file - old style grid file or new style domain file
@@ -549,10 +548,10 @@ contains
     !    o real % abundance PFTs (as a percent of vegetated area)
     !
     ! !USES:
-    use elm_varctl  , only : create_crop_landunit, firrig_data
+    use clm_varctl  , only : create_crop_landunit, tw_irr
     use fileutils   , only : getfil
     use domainMod   , only : domain_type, domain_init, domain_clean
-    use elm_varsur  , only : wt_lunit, topo_glc_mec
+    use clm_varsur  , only : wt_lunit, topo_glc_mec
 
     !
     ! !ARGUMENTS:
@@ -623,8 +622,7 @@ contains
 
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
     surfdata_domain%nv = 0   ! must be initialized to 0 here prior to call 'domain_init'
-    surfdata_domain%set = .false.
-    call domain_init(surfdata_domain, isgrid2d, ni, nj, begg, endg, elmlevel=grlnd)
+    call domain_init(surfdata_domain, isgrid2d, ni, nj, begg, endg, clmlevel=grlnd)
 
     call ncd_io(ncid=ncid, varname=lon_var, flag='read', data=surfdata_domain%lonc, &
          dim1name=grlnd, readvar=readvar)
@@ -657,7 +655,7 @@ contains
     call surfrd_special(begg, endg, ncid, ldomain%ns)
 	
 	! Obtain firrig and surface/grnd irrigation fraction
-    if (firrig_data) then
+    if (tw_irr) then
      call ncd_io(ncid=ncid, varname='FIRRIG', flag='read', data=ldomain%firrig, &
           dim1name=grlnd, readvar=readvar)
      if (.not. readvar) call endrun( trim(subname)//' ERROR: FIRRIG NOT on surfdata file' )!
@@ -693,9 +691,9 @@ contains
     ! as soil color and percent sand and clay
     !
     ! !USES:
-    use elm_varpar      , only : maxpatch_glcmec, nlevurb
+    use clm_varpar      , only : maxpatch_glcmec, nlevurb
     use landunit_varcon , only : isturb_MIN, isturb_MAX, istdlak, istwet, istice, istice_mec
-    use elm_varsur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec
+    use clm_varsur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec
     use UrbanParamsType , only : CheckUrban
     !
     ! !ARGUMENTS:
@@ -863,8 +861,8 @@ contains
     !     Handle generic crop types for file format where they are on their own
     !     crop landunit and read in as Crop Function Types.
     ! !USES:
-    use elm_varsur      , only : fert_cft, wt_nat_patch
-    use elm_varpar      , only : cft_size, cft_lb, natpft_lb
+    use clm_varsur      , only : fert_cft, wt_nat_patch
+    use clm_varpar      , only : cft_size, cft_lb, natpft_lb
     ! !ARGUMENTS:
     implicit none
     type(file_desc_t), intent(inout) :: ncid         ! netcdf id
@@ -918,10 +916,8 @@ contains
     !     Handle generic crop types for file format where they are part of the
     !     natural vegetation landunit.
     ! !USES:
-    use elm_varsur      , only : fert_cft, wt_nat_patch, wt_cft
-    use elm_varpar      , only : natpft_size, cft_size, natpft_lb, natpft_ub
-    use elm_varpar      , only : cft_lb, cft_ub
-    use elm_varctl      , only : create_crop_landunit
+    use clm_varsur      , only : fert_cft, wt_nat_patch
+    use clm_varpar      , only : natpft_size, cft_size, natpft_lb
     ! !ARGUMENTS:
     implicit none
     integer, intent(in) :: begg, endg
@@ -931,17 +927,11 @@ contains
     logical  :: cft_dim_exists                 ! does the dimension 'cft' exist on the dataset?
     integer  :: dimid                          ! netCDF id's
     logical  :: readvar                        ! is variable on dataset
-    real(r8),pointer :: array2D(:,:)                 ! local 2D array
     character(len=32) :: subname = 'surfrd_pftformat'! subroutine name
 !-----------------------------------------------------------------------
     SHR_ASSERT_ALL((ubound(wt_nat_patch) == (/endg, natpft_size-1+natpft_lb/)), errMsg(__FILE__, __LINE__))
 
-
-    if (.not. create_crop_landunit) then
-       call check_dim(ncid, 'natpft', natpft_size)
-    else
-       call check_dim(ncid, 'natpft', natpft_size + cft_size)
-    endif
+    call check_dim(ncid, 'natpft', natpft_size)
     ! If cft_size == 0, then we expect to be running with a surface dataset
     ! that does
     ! NOT have a PCT_CFT array (or CONST_FERTNITRO_CFT array), and thus does not have a 'cft' dimension.
@@ -964,20 +954,9 @@ contains
     end if
     fert_cft = 0.0_r8
 
-    if (.not. create_crop_landunit) then
-       call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=wt_nat_patch, &
-            dim1name=grlnd, readvar=readvar)
-       if (.not. readvar) call endrun( msg=' ERROR: PCT_NAT_PFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    else
-       allocate(array2D(begg:endg,1:cft_ub+1))
-       call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=array2D, &
-            dim1name=grlnd, readvar=readvar)
-       if (.not. readvar) call endrun( msg=' ERROR: PCT_NAT_PFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-
-       wt_nat_patch(begg:endg, natpft_lb:natpft_ub) = array2D(begg:endg, natpft_lb+1:natpft_ub+1)
-       wt_cft      (begg:endg, cft_lb   :cft_ub   ) = array2D(begg:endg, cft_lb+1   :cft_ub+1   )
-       deallocate(array2D)
-    endif
+    call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=wt_nat_patch, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( msg=' ERROR: PCT_NAT_PFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 
   end subroutine surfrd_pftformat
 
@@ -988,16 +967,16 @@ contains
     ! Determine weight arrays for non-dynamic landuse mode
     !
     ! !USES:
-    use elm_varctl      , only : create_crop_landunit, use_fates
-    use elm_varctl      , only : irrigate
-    use elm_varpar      , only : natpft_lb, natpft_ub, natpft_size, cft_lb, cft_ub, cft_size
-    use elm_varpar      , only : crop_prog
-    use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
+    use clm_varctl      , only : create_crop_landunit, use_fates
+    use clm_varctl      , only : irrigate
+    use clm_varpar      , only : natpft_lb, natpft_ub, natpft_size, cft_lb, cft_ub, cft_size
+    use clm_varpar      , only : crop_prog
+    use clm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
     use landunit_varcon , only : istsoil, istcrop
     use pftvarcon       , only : nc3crop, nc3irrig, npcropmin
     use pftvarcon       , only : ncorn, ncornirrig, nsoybean, nsoybeanirrig
     use pftvarcon       , only : nscereal, nscerealirrig, nwcereal, nwcerealirrig
-    use surfrdUtilsMod  , only : convert_cft_to_pft, convert_pft_to_cft
+    use surfrdUtilsMod  , only : convert_cft_to_pft
     !
     ! !ARGUMENTS:
     integer, intent(in) :: begg, endg
@@ -1060,14 +1039,6 @@ contains
        else
           call endrun( msg=' ERROR: New format surface datasets require create_crop_landunit TRUE'//errMsg(__FILE__, __LINE__))
        end if
-    else
-       ! PFTs contain the crops but create_crop_landunit = .true.
-
-       ! Read the data and put them in PFT and CFT
-       call surfrd_pftformat(begg, endg, ncid)
-
-       ! Update the PFT and CFT fractions
-       call convert_pft_to_cft( begg, endg )
     end if
 
     ! Do some checking

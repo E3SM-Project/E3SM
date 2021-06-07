@@ -32,10 +32,8 @@ module SoilLittDecompMod
   use ColumnDataType         , only : col_ns, col_nf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
-  use ELMFatesInterfaceMod   , only : hlm_fates_interface_type
   ! clm interface & pflotran:
-  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode
-  use elm_varctl             , only : use_cn, use_fates
+  use elm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -98,7 +96,7 @@ contains
     ! DESCRIPTION:
     ! Modified for clm_interface: 9/12/2015
     ! clm-bgc soil Module, can be called through clm_bgc_interface
-    ! ONLY includes SOM decomposition & nitrification/denitrification
+    ! ONLY includes SOM decomposition & nitrification/denitrification (if use_nitrif_denitrif)
     ! CNAllocaiton is divided into 3 subroutines:
     ! (1) Allocation1_PlantNPDemand  is called in EcosystemDynNoLeaching1
     ! (2) Allocation2_ResolveNPLimit is called in SoilLittDecompAlloc (this subroutine)
@@ -379,6 +377,7 @@ contains
       call nitrif_denitrif(bounds, &
            num_soilc, filter_soilc, &
            soilstate_vars,  ch4_vars )
+      
 
       ! now that potential N immobilization is known, call allocation
       ! to resolve the competition between plants and soil heterotrophs
@@ -393,6 +392,7 @@ contains
       call t_stop_lnd(event)
 
 
+      
       ! column loop to calculate actual immobilization and decomp rates, following
       ! resolution of plant/heterotroph  competition for mineral N
 
@@ -417,14 +417,29 @@ contains
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )   !!! immobilization step
+                     if (.not. use_nitrif_denitrif) then
+                        sminn_to_denit_decomp_cascade_vr(c,j,k) = 0._r8
+                     end if
                   elseif ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) <= 0._r8 ) then  ! N limitation 
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_vr(c,j)
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_vr(c,j)
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_vr(c,j) !!! immobilization step
+                     if (.not. use_nitrif_denitrif) then
+                        sminn_to_denit_decomp_cascade_vr(c,j,k) = 0._r8
+                     end if
                   elseif ( pmnf_decomp_cascade(c,j,k) <= 0._r8 .and. pmpf_decomp_cascade(c,j,k) >  0._r8 ) then  ! P limitation 
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_p_vr(c,j)
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_p_vr(c,j)
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_p_vr(c,j) !!! immobilization step
+
+                     if (.not. use_nitrif_denitrif) then
+                        sminn_to_denit_decomp_cascade_vr(c,j,k) = -CNDecompParamsInst%dnp * pmnf_decomp_cascade(c,j,k)
+                     end if
+                  elseif ( pmnf_decomp_cascade(c,j,k) <= 0._r8 .and. pmpf_decomp_cascade(c,j,k) <=  0._r8 ) then  ! No limitation 
+                     if (.not. use_nitrif_denitrif) then
+                        sminn_to_denit_decomp_cascade_vr(c,j,k) = -CNDecompParamsInst%dnp * pmnf_decomp_cascade(c,j,k)
+                     end if
+
                   end if
                   decomp_cascade_hr_vr(c,j,k) = rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
                   decomp_cascade_ctransfer_vr(c,j,k) = (1._r8 - rf_decomp_cascade(c,j,k)) * p_decomp_cpool_loss(c,j,k)
@@ -451,6 +466,9 @@ contains
                else
                   decomp_cascade_ntransfer_vr(c,j,k) = 0._r8
                   decomp_cascade_ptransfer_vr(c,j,k) = 0._r8
+                  if (.not. use_nitrif_denitrif) then
+                     sminn_to_denit_decomp_cascade_vr(c,j,k) = 0._r8
+                  end if
                   decomp_cascade_sminn_flux_vr(c,j,k) = 0._r8
                   decomp_cascade_sminp_flux_vr(c,j,k) = 0._r8
                end if
@@ -664,7 +682,7 @@ contains
 
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
-      if(use_elm_interface.and.use_pflotran.and.pf_cmode) then
+      if(use_clm_interface.and.use_pflotran.and.pf_cmode) then
          ! fpg calculation
          do fc=1,num_soilc
             c = filter_soilc(fc)
@@ -758,7 +776,7 @@ contains
             end do
          end do
 
-      end if !if(use_elm_interface.and.use_pflotran.and.pf_cmode)
+      end if !if(use_clm_interface.and.use_pflotran.and.pf_cmode)
 
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants
@@ -821,6 +839,7 @@ contains
     !$acc routine seq
     use elm_varctl   , only: carbon_only, carbonnitrogen_only
     use elm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
+
    !
    !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds

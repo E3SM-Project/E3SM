@@ -14,12 +14,12 @@ module restFileMod
   use subgridRestMod       , only : SubgridRest
   use accumulMod           , only : accumulRest
   use histFileMod          , only : hist_restart_ncd
-  use elm_varpar           , only : crop_prog
-  use elm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
-  use elm_varctl           , only : use_erosion
-  use elm_varctl           , only : create_glacier_mec_landunit, iulog 
-  use elm_varcon           , only : c13ratio, c14ratio
-  use elm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
+  use clm_varpar           , only : crop_prog
+  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
+  use clm_varctl           , only : use_erosion
+  use clm_varctl           , only : create_glacier_mec_landunit, iulog 
+  use clm_varcon           , only : c13ratio, c14ratio
+  use clm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
   use CH4Mod               , only : ch4_type
   use CNCarbonFluxType     , only : carbonflux_type
   use CNCarbonStateType    , only : carbonstate_type
@@ -30,7 +30,7 @@ module restFileMod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
 
-  use ELMFatesInterfaceMod , only : hlm_fates_interface_type
+  use CLMFatesInterfaceMod , only : hlm_fates_interface_type
 
   use AerosolType          , only : aerosol_type
   use CanopyStateType      , only : canopystate_type
@@ -257,21 +257,14 @@ contains
        call ch4_vars%restart(bounds, ncid, flag='define')
     end if
 
-
-    if (use_cn .or. use_fates) then
-        call cnstate_vars%Restart(bounds, ncid, flag='define')
-        call col_cs%Restart(bounds, ncid, flag='define', carbon_type='c12', &
-              cnstate_vars=cnstate_vars)
-        call col_cf%Restart(bounds, ncid, flag='define')
-        call col_ns%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
-        call col_nf%Restart(bounds, ncid, flag='define')
-        call col_ps%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
-        call col_pf%Restart(bounds, ncid, flag='define')
-    end if
-    
     if (use_cn) then
+
+       call cnstate_vars%Restart(bounds, ncid, flag='define')
+
+       call col_cs%Restart(bounds, ncid, flag='define', carbon_type='c12', &
+               cnstate_vars=cnstate_vars)
        call veg_cs%Restart(bounds, ncid, flag='define', carbon_type='c12', &
-            cnstate_vars=cnstate_vars)
+               cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_col_cs%Restart(bounds, ncid, flag='define', carbon_type='c13', &
                c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
@@ -284,20 +277,53 @@ contains
           call c14_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
                c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
        end if
+
+       call col_cf%Restart(bounds, ncid, flag='define')
        call veg_cf%Restart(bounds, ncid, flag='define')
+       
+       call col_ns%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
        call veg_ns%Restart(bounds, ncid, flag='define')
+
+       call col_nf%Restart(bounds, ncid, flag='define')
        call veg_nf%Restart(bounds, ncid, flag='define')
+
+       call col_ps%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
        call veg_ps%Restart(bounds, ncid, flag='define')
+
+       call col_pf%Restart(bounds, ncid, flag='define')
        call veg_pf%Restart(bounds, ncid, flag='define')
+
        call crop_vars%Restart(bounds, ncid, flag='define')
 
        call grc_cs%Restart(bounds, ncid, flag='define')
 
     end if
 
+    end if
 
     if (use_fates) then
+       call cnstate_vars%Restart(bounds, ncid, flag='define')
+       call col_cs%restart(bounds, ncid, flag='define', carbon_type='c12', &
+               cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='define', carbon_type='c12', &
+               cnstate_vars=cnstate_vars)
+       if (use_c13) then
+          call c13_col_cs%restart(bounds, ncid, flag='define', carbon_type='c13', &
+               c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c13', &
+               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
+       end if
+       if (use_c14) then
+          call c14_col_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
+               c12_carbonstate_vars=col_cs, cnstate_vars=cnstate_vars)
+          call c14_veg_cs%restart(bounds, ncid, flag='define', carbon_type='c14', &
+               c12_veg_cs=veg_cs, cnstate_vars=cnstate_vars)
+       end if
+       call col_cf%Restart(bounds, ncid, flag='define')
+       call veg_cf%Restart(bounds, ncid, flag='define')
+
        call alm_fates%restart(bounds, ncid, flag='define',  &
+             waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars, &
              soilstate_inst=soilstate_vars)
@@ -392,48 +418,74 @@ contains
        call ch4_vars%restart(  bounds, ncid, flag='write' )
     end if
 
-    if (use_cn .or. use_fates) then
-        call cnstate_vars%Restart(bounds, ncid, flag='write')
-        call col_cs%restart(bounds, ncid, flag='write', &
-              carbon_type='c12', cnstate_vars=cnstate_vars)
-        call col_cf%Restart(bounds, ncid, flag='write')
-        call col_ns%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
-        call col_nf%Restart(bounds, ncid, flag='write')
-        call col_ps%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
-        call col_pf%Restart(bounds, ncid, flag='write')
-    end if
-   
     if (use_cn) then
+       call cnstate_vars%Restart(bounds, ncid, flag='write')
+       call col_cs%restart(bounds, ncid, flag='write', &
+            carbon_type='c12', cnstate_vars=cnstate_vars)
        call veg_cs%restart(bounds, ncid, flag='write', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_col_cs%restart(bounds, ncid, flag='write', &
                c12_carbonstate_vars=col_cs, carbon_type='c13', &
-               cnstate_vars=cnstate_vars)
+	            cnstate_vars=cnstate_vars)
           call c13_veg_cs%restart(bounds, ncid, flag='write', &
                c12_veg_cs=veg_cs, carbon_type='c13', &
-               cnstate_vars=cnstate_vars)
+	            cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
           call c14_col_cs%restart(bounds, ncid, flag='write', &
                c12_carbonstate_vars=col_cs, carbon_type='c14', &
-               cnstate_vars=cnstate_vars )
+	            cnstate_vars=cnstate_vars )
           call c14_veg_cs%restart(bounds, ncid, flag='write', &
                c12_veg_cs=veg_cs, carbon_type='c14', &
-               cnstate_vars=cnstate_vars )
+	            cnstate_vars=cnstate_vars )
        end if
+
+       call col_cf%Restart(bounds, ncid, flag='write')
        call veg_cf%Restart(bounds, ncid, flag='write')
+
+       call col_ns%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
        call veg_ns%Restart(bounds, ncid, flag='write')
+
+       call col_nf%Restart(bounds, ncid, flag='write')
        call veg_nf%Restart(bounds, ncid, flag='write')
+
+       call col_ps%Restart(bounds, ncid, flag='write', cnstate_vars=cnstate_vars)
        call veg_ps%Restart(bounds, ncid, flag='write')
+
+       call col_pf%Restart(bounds, ncid, flag='write')
        call veg_pf%Restart(bounds, ncid, flag='write')
+
        call crop_vars%Restart(bounds, ncid, flag='write')
     end if
 
-
-
     if (use_fates) then
+       call cnstate_vars%Restart(bounds, ncid, flag='write')
+       call col_cs%restart(bounds, ncid, flag='write', &
+            carbon_type='c12', cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='write', &
+            carbon_type='c12', cnstate_vars=cnstate_vars)
+       if (use_c13) then
+          call c13_col_cs%restart(bounds, ncid, flag='write', &
+               c12_carbonstate_vars=col_cs, carbon_type='c13', &
+	            cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='write', &
+               c12_veg_cs=veg_cs, carbon_type='c13', &
+	            cnstate_vars=cnstate_vars)
+       end if
+       if (use_c14) then
+          call col_cs%restart(bounds, ncid, flag='write', &
+               c12_carbonstate_vars=col_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars )
+          call veg_cs%restart(bounds, ncid, flag='write', &
+               c12_veg_cs=veg_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars )
+       end if
+       call col_cf%Restart(bounds, ncid, flag='write')
+       call veg_cf%Restart(bounds, ncid, flag='write')
+
        call alm_fates%restart(bounds, ncid, flag='write',  &
+             waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars, &
              soilstate_inst=soilstate_vars)
@@ -630,46 +682,74 @@ contains
        call ch4_vars%restart(  bounds, ncid, flag='read' )
     end if
 
-    if (use_cn .or. use_fates) then
-        call cnstate_vars%Restart(bounds, ncid, flag='read')
-        call col_cs%restart(bounds, ncid, flag='read', &
-              carbon_type='c12', cnstate_vars=cnstate_vars)
-        call col_cf%Restart(bounds, ncid, flag='read')
-        call col_ns%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
-        call col_nf%Restart(bounds, ncid, flag='read')
-        call col_ps%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
-        call col_pf%Restart(bounds, ncid, flag='read')
-    end if
-   
     if (use_cn) then
+       call cnstate_vars%Restart(bounds, ncid, flag='read')
+       call col_cs%restart(bounds, ncid, flag='read', &
+            carbon_type='c12', cnstate_vars=cnstate_vars)
        call veg_cs%restart(bounds, ncid, flag='read', &
             carbon_type='c12', cnstate_vars=cnstate_vars)
        if (use_c13) then
           call c13_col_cs%restart(bounds, ncid, flag='read', &
                c12_carbonstate_vars=col_cs, carbon_type='c13', &
-               cnstate_vars=cnstate_vars)
+	            cnstate_vars=cnstate_vars)
           call c13_veg_cs%restart(bounds, ncid, flag='read', &
                c12_veg_cs=veg_cs, carbon_type='c13', &
-               cnstate_vars=cnstate_vars)
+	            cnstate_vars=cnstate_vars)
        end if
        if (use_c14) then
           call c14_col_cs%restart(bounds, ncid, flag='read', &
                c12_carbonstate_vars=col_cs, carbon_type='c14', &
-               cnstate_vars=cnstate_vars)
+	            cnstate_vars=cnstate_vars)
           call c14_veg_cs%restart(bounds, ncid, flag='read', &
                c12_veg_cs=veg_cs, carbon_type='c14', &
-               cnstate_vars=cnstate_vars)
+	            cnstate_vars=cnstate_vars)
        end if
+
+       call col_cf%Restart(bounds, ncid, flag='read')
        call veg_cf%Restart(bounds, ncid, flag='read')
+
+       call col_ns%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
        call veg_ns%Restart(bounds, ncid, flag='read')
+
+       call col_nf%Restart(bounds, ncid, flag='read')
        call veg_nf%Restart(bounds, ncid, flag='read')
+
+       call col_ps%Restart(bounds, ncid, flag='read', cnstate_vars=cnstate_vars)
        call veg_ps%Restart(bounds, ncid, flag='read')
+
+       call col_pf%Restart(bounds, ncid, flag='read')
        call veg_pf%Restart(bounds, ncid, flag='read')
+
        call crop_vars%Restart(bounds, ncid, flag='read')
     end if
 
     if (use_fates) then
+       call cnstate_vars%Restart(bounds, ncid, flag='read')
+       call col_cs%restart(bounds, ncid, flag='read', &
+             carbon_type='c12', cnstate_vars=cnstate_vars)
+       call veg_cs%restart(bounds, ncid, flag='read', &
+             carbon_type='c12', cnstate_vars=cnstate_vars)
+       if (use_c13) then
+          call c13_col_cs%restart(bounds, ncid, flag='read', &
+                c12_carbonstate_vars=col_cs, carbon_type='c13', &
+                cnstate_vars=cnstate_vars)
+          call c13_veg_cs%restart(bounds, ncid, flag='read', &
+                c12_veg_cs=veg_cs, carbon_type='c13', &
+                cnstate_vars=cnstate_vars)
+       end if
+       if (use_c14) then
+          call c14_col_cs%restart(bounds, ncid, flag='read', &
+               c12_carbonstate_vars=col_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars)
+          call c14_veg_cs%restart(bounds, ncid, flag='read', &
+               c12_veg_cs=veg_cs, carbon_type='c14', &
+	            cnstate_vars=cnstate_vars)
+       end if
+       call col_cf%Restart(bounds, ncid, flag='read')
+       call veg_cf%Restart(bounds, ncid, flag='read')
+
        call alm_fates%restart(bounds, ncid, flag='read',  &
+             waterstate_inst=waterstate_vars, &
              canopystate_inst=canopystate_vars, &
              frictionvel_inst=frictionvel_vars, &
              soilstate_inst=soilstate_vars)
@@ -715,8 +795,8 @@ contains
     ! Determine and obtain netcdf restart file
     !
     ! !USES:
-    use elm_varctl, only : caseid, nrevsn, nsrest, brnch_retain_casename
-    use elm_varctl, only : nsrContinue, nsrBranch
+    use clm_varctl, only : caseid, nrevsn, nsrest, brnch_retain_casename
+    use clm_varctl, only : nsrContinue, nsrBranch
     use fileutils , only : getfil
     !
     ! !ARGUMENTS:
@@ -751,8 +831,8 @@ contains
        end if
        call getfil( path, file, 0 )
 
-       ! tcraig, adding xx. and .elm makes this more robust
-       ctest = 'xx.'//trim(caseid)//'.elm'
+       ! tcraig, adding xx. and .clm2 makes this more robust
+       ctest = 'xx.'//trim(caseid)//'.clm2'
        ftest = 'xx.'//trim(file)
        status = index(trim(ftest),trim(ctest))
        if (status /= 0 .and. .not.(brnch_retain_casename)) then
@@ -778,7 +858,7 @@ contains
     !
     ! !USES:
     use fileutils , only : opnfil, getavu, relavu
-    use elm_varctl, only : rpntfil, rpntdir, inst_suffix
+    use clm_varctl, only : rpntfil, rpntdir, inst_suffix
     !
     ! !ARGUMENTS:
     character(len=*), intent(out) :: pnamer ! full path of restart file
@@ -854,7 +934,7 @@ contains
     ! Open restart pointer file. Write names of current netcdf restart file.
     !
     ! !USES:
-    use elm_varctl, only : rpntdir, rpntfil, inst_suffix
+    use clm_varctl, only : rpntdir, rpntfil, inst_suffix
     use fileutils , only : relavu
     use fileutils , only : getavu, opnfil
     !
@@ -923,13 +1003,13 @@ contains
     ! !DESCRIPTION:
     !
     ! !USES:
-    use elm_varctl, only : caseid, inst_suffix
+    use clm_varctl, only : caseid, inst_suffix
     !
     ! !ARGUMENTS:
     character(len=*), intent(in) :: rdate   ! input date for restart file name 
     !-----------------------------------------------------------------------
 
-    restFile_filename = "./"//trim(caseid)//".elm"//trim(inst_suffix)//&
+    restFile_filename = "./"//trim(caseid)//".clm2"//trim(inst_suffix)//&
          ".r."//trim(rdate)//".nc"
     if (masterproc) then
        write(iulog,*)'writing restart file ',trim(restFile_filename),' for model date = ',rdate
@@ -945,13 +1025,13 @@ contains
     !
     ! !USES:
     use clm_time_manager     , only : get_nstep
-    use elm_varctl           , only : caseid, ctitle, version, username, hostname, fsurdat
-    use elm_varctl           , only : conventions, source, use_hydrstress
-    use elm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full, nmonth, nvegwcs
-    use elm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
+    use clm_varctl           , only : caseid, ctitle, version, username, hostname, fsurdat
+    use clm_varctl           , only : conventions, source
+    use clm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full, nmonth
+    use clm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
     use dynSubgridControlMod , only : get_flanduse_timeseries
     use decompMod            , only : get_proc_global
-    use elm_varctl           , only : do_budgets
+    use clm_varctl           , only : do_budgets
     use WaterBudgetMod       , only : f_size, s_size, p_size
     use CNPBudgetMod         , only : c_f_size, c_s_size, n_f_size, n_s_size, p_f_size, p_s_size
     !
@@ -993,9 +1073,6 @@ contains
     call ncd_defdim(ncid , 'levtot'  , nlevsno+nlevgrnd, dimid)
     call ncd_defdim(ncid , 'numrad'  , numrad         ,  dimid)
     call ncd_defdim(ncid , 'levcan'  , nlevcan        ,  dimid)
-    if ( use_hydrstress ) then
-      call ncd_defdim(ncid , 'vegwcs'  , nvegwcs        ,  dimid)
-    end if
     call ncd_defdim(ncid , 'string_length', 64        ,  dimid)
     call ncd_defdim(ncid , 'levtrc'  , nlevtrc_full   ,  dimid)    
     call ncd_defdim(ncid , 'month'   , nmonth         ,  dimid)
@@ -1032,7 +1109,7 @@ contains
     call ncd_putatt(ncid, NCD_GLOBAL, 'case_id'        , trim(caseid))
     call ncd_putatt(ncid, NCD_GLOBAL, 'surface_dataset', trim(fsurdat))
     call ncd_putatt(ncid, NCD_GLOBAL, 'flanduse_timeseries', trim(get_flanduse_timeseries()))
-    call ncd_putatt(ncid, NCD_GLOBAL, 'title', 'ELM Restart information')
+    call ncd_putatt(ncid, NCD_GLOBAL, 'title', 'CLM Restart information')
     if (create_glacier_mec_landunit) then
        call ncd_putatt(ncid, ncd_global, 'created_glacier_mec_landunits', 'true')
     else
@@ -1116,7 +1193,7 @@ contains
     ! Add global metadata defining pft types
     !
     ! !USES:
-    use elm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub
+    use clm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub
     use pftvarcon , only : pftname_len, pftname
     !
     ! !ARGUMENTS:
@@ -1148,8 +1225,8 @@ contains
     !
     ! !USES:
     use decompMod,  only : get_proc_global
-    use elm_varpar, only : nlevsno, nlevlak, nlevgrnd, nlevurb
-    use elm_varctl, only : single_column, nsrest, nsrStartup
+    use clm_varpar, only : nlevsno, nlevlak, nlevgrnd, nlevurb
+    use clm_varctl, only : single_column, nsrest, nsrStartup
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid
@@ -1264,7 +1341,7 @@ contains
     !
     ! !USES:
     use fileutils      , only : getavu, relavu
-    use elm_nlUtilsMod , only : find_nlgroup_name
+    use clm_nlUtilsMod , only : find_nlgroup_name
     use controlMod     , only : NLFilename
     use shr_mpi_mod    , only : shr_mpi_bcast
     !
@@ -1326,7 +1403,7 @@ contains
     !
     ! !USES:
     use fileutils            , only : get_filename
-    use elm_varctl           , only : fname_len, fsurdat
+    use clm_varctl           , only : fname_len, fsurdat
     use dynSubgridControlMod , only : get_flanduse_timeseries
     !
     ! !ARGUMENTS:
@@ -1367,7 +1444,7 @@ contains
              write(iulog,*) '(3) If you are confident that you are using the correct surface dataset and initial conditions file,'
              write(iulog,*) '    yet are still experiencing this error, then you can bypass this check by setting:'
              write(iulog,*) '      check_finidat_fsurdat_consistency = .false.'
-             write(iulog,*) '    in user_nl_elm'
+             write(iulog,*) '    in user_nl_clm'
              write(iulog,*) ' '
           end if
           call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -1384,7 +1461,7 @@ contains
     !
     ! !USES:
     use clm_time_manager     , only : get_curr_date, get_rest_date
-    use elm_varctl           , only : fname_len
+    use clm_varctl           , only : fname_len
     use dynSubgridControlMod , only : get_flanduse_timeseries
     !
     ! !ARGUMENTS:
@@ -1443,7 +1520,7 @@ contains
                 write(iulog,*) '(3) If you are confident that you are using the correct start date and initial conditions file,'
                 write(iulog,*) '    yet are still experiencing this error, then you can bypass this check by setting:'
                 write(iulog,*) '      check_finidat_year_consistency = .false.'
-                write(iulog,*) '    in user_nl_elm'
+                write(iulog,*) '    in user_nl_clm'
                 write(iulog,*) ' '
              end if
              call endrun(msg=errMsg(__FILE__, __LINE__))

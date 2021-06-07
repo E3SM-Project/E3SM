@@ -1,0 +1,76 @@
+module test_daylength
+
+  ! Tests of the daylength function in DaylengthMod
+
+  use pfunit_mod
+
+  use shr_kind_mod , only : r8 => shr_kind_r8
+  use shr_const_mod, only : SHR_CONST_PI
+  use DaylengthMod , only : daylength
+
+  implicit none
+  save
+
+  real(r8), parameter :: tol = 1.e-3_r8
+
+contains
+
+  @Test
+  subroutine test_standard_points()
+    ! Tests multiple points, not edge cases
+
+    @assertEqual([26125.331269192659_r8, 33030.159082987258_r8], daylength([-1.4_r8, -1.3_r8], 0.1_r8), tolerance=tol)
+  end subroutine test_standard_points
+
+
+  @Test
+  subroutine test_near_poles()
+    ! Tests points near the north and south pole, which should result in full night and
+    ! full day
+
+    @assertEqual([0.0_r8, 86400.0_r8], daylength([-1.5_r8, 1.5_r8], 0.1_r8), tolerance=tol)
+  end subroutine test_near_poles
+
+
+  @Test
+  subroutine test_north_pole()
+    ! Tests north pole point, including rounding error
+    
+    @assertEqual(86400._r8, daylength(SHR_CONST_PI/2.0_r8, 0.1_r8), tolerance=tol)
+    @assertEqual(86400._r8, daylength(SHR_CONST_PI/1.999999999999999_r8, 0.1_r8), tolerance=tol)
+  end subroutine test_north_pole
+
+
+  @Test
+  subroutine test_south_pole()
+    ! Tests north pole point, including rounding error
+    
+    @assertEqual(0._r8, daylength(-1.0_r8 * SHR_CONST_PI/2.0_r8, 0.1_r8), tolerance=tol)
+    @assertEqual(0._r8, daylength(-1.0_r8 * SHR_CONST_PI/1.999999999999999_r8, 0.1_r8), tolerance=tol)
+  end subroutine test_south_pole
+
+
+  @Test
+  subroutine test_error_in_decl()
+    
+    @assertIsNaN(daylength(-1.0_r8, -3.0_r8))
+  end subroutine test_error_in_decl
+
+
+  @Test
+  subroutine test_error_in_lat_scalar()
+
+    @assertIsNaN(daylength(3.0_r8, 0.1_r8))
+  end subroutine test_error_in_lat_scalar
+
+  @Test
+  subroutine test_error_in_lat_array()
+    real(r8) :: my_result(2)
+    
+    my_result = daylength([1.0_r8, 3.0_r8], 0.1_r8)
+    @assertIsFinite(my_result(1))
+    @assertIsNaN(my_result(2))
+  end subroutine test_error_in_lat_array
+
+
+end module test_daylength

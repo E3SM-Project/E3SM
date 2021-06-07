@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 module VegetationDataType
 
   !-----------------------------------------------------------------------
@@ -645,9 +646,9 @@ module VegetationDataType
     real(r8), pointer :: annavg_bgnpp                        (:) => null()    ! (gC/m2/s) annual average belowground NPP
     real(r8), pointer :: tempavg_agnpp                       (:) => null()    ! (gC/m2/s) temp. average aboveground NPP
     real(r8), pointer :: tempavg_bgnpp                       (:) => null()    ! (gC/m2/s) temp. average belowground NPP
-    real(r8), pointer :: allocation_leaf 		                 (:) => null()    ! check allocation to leaf for dynamic allocation scheme
-    real(r8), pointer :: allocation_stem 		                 (:) => null()    ! check allocation to stem for dynamic allocation scheme
-    real(r8), pointer :: allocation_froot 		               (:) => null()    ! check allocation to fine root for dynamic allocation scheme
+    real(r8), pointer :: allocation_leaf                     (:) => null()    ! check allocation to leaf for dynamic allocation scheme
+    real(r8), pointer :: allocation_stem                     (:) => null()    ! check allocation to stem for dynamic allocation scheme
+    real(r8), pointer :: allocation_froot                    (:) => null()    ! check allocation to fine root for dynamic allocation scheme
 
     ! For comparison with RAINFOR wood productivity data
     real(r8), pointer :: agwdnpp                             (:) => null()    !(gC/m2/s) aboveground NPP

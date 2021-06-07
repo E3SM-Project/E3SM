@@ -686,12 +686,10 @@ contains
          qflx_dirct_rain(p) = 0._r8
          qflx_leafdrip(p) = 0._r8
 
-         if (.not. use_extrasnowlayers) then
-            ! Because they will be used in pft2col initialize here.
-            ! This will be overwritten in LakeHydrology
-            qflx_snwcp_ice(p) = 0._r8
-            qflx_snwcp_liq(p) = 0._r8
-         end if
+         ! Because they will be used in pft2col initialize here.
+         ! This will be overwritten in LakeHydrology
+         qflx_snwcp_ice(p) = 0._r8
+         qflx_snwcp_liq(p) = 0._r8
 
       end do
 

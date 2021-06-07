@@ -129,7 +129,6 @@ contains
 
     if (dimset) then
        write(6,*) trim(subname),' initialized domain'
-       domain%set = .false.
        call domain_init(domain,nlon*nlat,nlon,nlat)
     else
        write(6,*) trim(subname),' ERROR: ns not set for domain_init'

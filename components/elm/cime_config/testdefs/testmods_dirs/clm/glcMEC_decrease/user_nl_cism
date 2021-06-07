@@ -1,0 +1,6 @@
+! For this test, we do a decrease in glacier area, along with rearranging the columns;
+! note that the decrease is small, since its point is just to create some natural veg area where there used to be none
+enable_frac_overrides = .true.
+override_delay = 1
+decrease_frac = 0.01
+rearrange_freq = 3

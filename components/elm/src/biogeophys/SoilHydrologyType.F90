@@ -741,7 +741,7 @@ contains
   end subroutine initSoilParVIC
 
    !-----------------------------------------------------------------------
-   subroutine initELMVICMap(c, soilhydrology_vars)
+   subroutine initCLMVICMap(c, soilhydrology_vars)
      !
      ! !DESCRIPTION:
      ! This subroutine calculates mapping between elm and VIC layers
@@ -791,22 +791,22 @@ contains
           do j = 1, nlevsoi
              if( (zsum < lsum) .and. (zsum + dz(c,j) >= lsum ))  then
                 call linear_interp(lsum, temp, zsum, zsum + dz(c,j), 0._r8, 1._r8)
-                vic_elm_fract(c,i,j) = 1._r8 - temp
+                vic_clm_fract(c,i,j) = 1._r8 - temp
                 if(lsum + deltal(i) < zsum + dz(c,j)) then
                    call linear_interp(lsum + deltal(i), temp, zsum, zsum + dz(c,j), 1._r8, 0._r8)
-                   vic_elm_fract(c,i,j) = vic_elm_fract(c,i,j) - temp
+                   vic_clm_fract(c,i,j) = vic_clm_fract(c,i,j) - temp
                 end if
              else if( (zsum < lsum + deltal(i)) .and. (zsum + dz(c,j) >= lsum + deltal(i)) ) then
                 call linear_interp(lsum + deltal(i), temp, zsum, zsum + dz(c,j), 0._r8, 1._r8)
-                vic_elm_fract(c,i,j) = temp
+                vic_clm_fract(c,i,j) = temp
                 if(zsum<=lsum) then
                    call linear_interp(lsum, temp, zsum, zsum + dz(c,j), 0._r8, 1._r8)
-                   vic_elm_fract(c,i,j) = vic_elm_fract(c,i,j) - temp
+                   vic_clm_fract(c,i,j) = vic_clm_fract(c,i,j) - temp
                 end if
              else if( (zsum >= lsum .and. zsum + dz(c,j) <= lsum + deltal(i)) )  then
-                vic_elm_fract(c,i,j) = 1._r8
+                vic_clm_fract(c,i,j) = 1._r8
              else
-                vic_elm_fract(c,i,j) = 0._r8
+                vic_clm_fract(c,i,j) = 0._r8
              end if
              zsum = zsum + dz(c,j)
              sum_frac(i) = sum_frac(i) + vic_elm_fract(c,i,j)
@@ -843,7 +843,7 @@ contains
      ! !USES:
      use shr_mpi_mod          , only : shr_mpi_bcast
      use fileutils            , only : getavu, relavu, opnfil
-     use elm_nlUtilsMod       , only : find_nlgroup_name
+     use clm_nlUtilsMod       , only : find_nlgroup_name
      !
      ! !ARGUMENTS:
      class(soilhydrology_type) :: this
@@ -857,7 +857,7 @@ contains
      character(len=32) :: subname = 'SoilHydrology_readnl'  ! subroutine name
      !-----------------------------------------------------------------------
 
-     namelist / elm_soilhydrology_inparm / h2osfcflag, origflag
+     namelist / clm_soilhydrology_inparm / h2osfcflag, origflag
 
 
      ! preset values
@@ -867,13 +867,13 @@ contains
      if ( masterproc )then
 
         unitn = getavu()
-        write(iulog,*) 'Read in elm_soilhydrology_inparm  namelist'
+        write(iulog,*) 'Read in clm_soilhydrology_inparm  namelist'
         call opnfil (NLFilename, unitn, 'F')
-        call find_nlgroup_name(unitn, 'elm_soilhydrology_inparm', status=ierr)
+        call find_nlgroup_name(unitn, 'clm_soilhydrology_inparm', status=ierr)
         if (ierr == 0) then
-           read(unitn, elm_soilhydrology_inparm, iostat=ierr)
+           read(unitn, clm_soilhydrology_inparm, iostat=ierr)
            if (ierr /= 0) then
-              call endrun(msg="ERROR reading elm_soilhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
+              call endrun(msg="ERROR reading clm_soilhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
            end if
         end if
         call relavu( unitn )

@@ -6,7 +6,7 @@ module MEGANFactorsMod
   ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use abortutils,   only : endrun
-  use elm_varctl,   only : iulog
+  use clm_varctl,   only : iulog
   use shr_log_mod,  only : errMsg => shr_log_errMsg
   !
   implicit none
@@ -273,11 +273,11 @@ contains
 
     hash = gen_hash_key_offset
 
-    if ( len_trim(string) /= 19 ) then
+    if ( len(string) /= 19 ) then
        !
        ! Process arbitrary string length.
        !
-       do i = 1, len_trim(string)
+       do i = 1, len(string)
           hash = ieor(hash , (ichar(string(i:i)) * tbl_gen_hash_key(iand(i-1,tbl_max_idx))))
        end do
     else
@@ -287,7 +287,7 @@ contains
        do i = 1, tbl_max_idx+1
           hash = ieor(hash , ichar(string(i:i))   * tbl_gen_hash_key(i-1)) 
        end do
-       do i = tbl_max_idx+2, len_trim(string)
+       do i = tbl_max_idx+2, len(string)
           hash = ieor(hash , ichar(string(i:i))   * tbl_gen_hash_key(i-tbl_max_idx-2)) 
        end do
     end if

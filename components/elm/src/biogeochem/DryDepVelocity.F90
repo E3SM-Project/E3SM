@@ -287,8 +287,8 @@ CONTAINS
             if (elmveg >= npcropmin .and. elmveg <= npcropmax ) wesveg = 2
 #ifndef _OPENACC
             if (wesveg == wveg_unset )then
-               write(iulog,*) 'elmveg = ', elmveg, 'lun_pp%itype = ', lun_pp%itype(l)
-               call endrun(decomp_index=pi, elmlevel=namep, &
+               write(iulog,*) 'clmveg = ', clmveg, 'lun_pp%itype = ', lun_pp%itype(l)
+               call endrun(decomp_index=pi, clmlevel=namep, &
                     msg='ERROR: Not able to determine Wesley vegetation type'//&
                     errMsg(__FILE__, __LINE__))
             end if
@@ -478,6 +478,16 @@ CONTAINS
                   end if
 
                endif
+
+               !-------------------------------------------------------------------------------------
+               ! jfl : special case for PAN
+               !-------------------------------------------------------------------------------------
+               if( ispec == index_pan .or. ispec == index_xpan ) then
+                  dv_pan =  c0_pan(wesveg) * (1._r8 - exp( -k_pan(wesveg)*(dewm*rs*drat(ispec))*1.e-2_r8 ))
+                  if( dv_pan > 0._r8 .and. index_season /= 4 ) then
+                     rsmx(ispec) = ( 1._r8/dv_pan )
+                  end if
+               end if
 
             end do species_loop1
 

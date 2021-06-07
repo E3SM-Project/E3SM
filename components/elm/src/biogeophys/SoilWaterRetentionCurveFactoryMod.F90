@@ -8,7 +8,7 @@ module SoilWaterRetentionCurveFactoryMod
   ! !USES:
   use abortutils          , only : endrun
   use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use elm_varctl          , only : iulog
+  use clm_varctl          , only : iulog
   implicit none
   save
   private

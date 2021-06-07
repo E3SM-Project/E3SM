@@ -10,7 +10,7 @@ module EcosystemBalanceCheckMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
-  use elm_varctl          , only : iulog, use_fates
+  use clm_varctl          , only : iulog, use_nitrif_denitrif, use_fates
   use clm_time_manager    , only : get_step_size,get_nstep
   use elm_varpar          , only : crop_prog
   use elm_varpar          , only : nlevdecomp
@@ -22,15 +22,15 @@ module EcosystemBalanceCheckMod
   use elm_varpar          , only: ndecomp_cascade_transitions
   use subgridAveMod       , only : p2c, c2g, unity
   ! soil erosion
-  use elm_varctl          , only : use_erosion, ero_ccycle
+  use clm_varctl          , only : use_erosion, ero_ccycle
   ! bgc interface & pflotran:
-  use elm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
+  use clm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
   ! forest fertilization experiment
   use clm_time_manager    , only : get_curr_date
   use CNStateType         , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
-  use elm_varctl          , only : forest_fert_exp
+  use clm_varctl          , only : forest_fert_exp
   use pftvarcon           , only: noveg
-  use elm_varctl          , only : NFIX_PTASE_plant
+  use clm_varctl          , only : NFIX_PTASE_plant
   use GridcellType        , only : grc_pp
   use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
   use GridcellDataType    , only : gridcell_nitrogen_state, gridcell_nitrogen_flux
@@ -96,6 +96,8 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          col_begcb(c) = totcolc(c)
+         col_cs%totblgc_beg(c) = col_cs%totblgc(c)
+         col_cs%totabgc_beg(c) = col_cs%totabgc(c)
       end do
 
     end associate
@@ -117,7 +119,7 @@ contains
     type(column_nitrogen_state) , intent(inout) :: col_ns
     !
     ! !LOCAL VARIABLES:
-    integer :: c    ! indices
+    integer :: c     ! indices
     integer :: fc   ! lake filter indices
     !-----------------------------------------------------------------------
 
@@ -130,6 +132,8 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          col_begnb(c) = totcoln(c)
+         col_ns%totabgn_beg(c)=col_ns%totabgn(c)
+         col_ns%totblgn_beg(c)=col_ns%totblgn(c)
       end do
 
     end associate
@@ -214,10 +218,11 @@ contains
          col_coutputs              =>    col_cf%coutputs                  , & ! Output: [real(r8) (:)]  column-level C outputs (gC/m2/s)
          col_begcb                 =>    col_cs%begcb                    , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          col_endcb                 =>    col_cs%endcb                    , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
-         col_errcb                 =>    col_cs%errcb                    ,  & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
+         col_errcb                 =>    col_cs%errcb                    , & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
          hr                        =>    col_cf%hr                       , &  ! Input: heterotrophic respiration flux (gC/m2/s)
          litfall                   =>    col_cf%litfall )                     ! Input: carbon flux from litterfall (particularly fates) ( gc/m2/s)
 
+         
 
       ! set time steps
       dt = real( get_step_size(), r8 )
@@ -242,6 +247,7 @@ contains
 
             col_coutputs = er(c)
 
+
          else
 
             ! calculate total column-level inputs
@@ -257,17 +263,16 @@ contains
                  col_prod1c_loss(c) + col_prod10c_loss(c) + col_prod100c_loss(c)
 
          ! subtract leaching flux
-         col_coutputs(c) = col_coutputs(c) - som_c_leached(c)
-
+         col_coutputs = col_coutputs - som_c_leached(c)
 
          ! add erosion flux
          if (ero_ccycle) then
-            col_coutputs(c) = col_coutputs(c) + som_c_yield(c)
+            col_coutputs = col_coutputs + som_c_yield(c)
          end if
 
 
          ! calculate the total column-level carbon balance error for this time step
-         col_errcb(c) = (col_cinputs(c) - col_coutputs(c))*dt - (col_endcb(c) - col_begcb(c))
+         col_errcb(c) = (col_cinputs - col_coutputs)*dt - (col_endcb(c) - col_begcb(c))
 
          ! adjusting the time-lag of org. C increments to decomposing pools when coupled with PFLOTRAN bgc
          ! (because PF bgc uses the extern C as sink (in, + ) at previous time-step,
@@ -375,24 +380,21 @@ contains
          smin_no3_leached          =>    col_nf%smin_no3_leached          , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
          smin_no3_runoff           =>    col_nf%smin_no3_runoff           , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
          f_n2o_nit                 =>    col_nf%f_n2o_nit                 , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
-         plant_to_litter_nflux     =>    col_nf%plant_to_litter_nflux     , & ! Input                   flux of N from FATES litter into ELM
-                                                                              !                         litter (gP/m2/s)
-         col_prod1n_loss           =>    col_nf%prod1n_loss               , & ! Input:  [real(r8) (:)]  crop leafc harvested [gN/m2/s]
-         col_prod10n_loss          =>    col_nf%prod10n_loss              , & ! Input:  [real(r8) (:)]  10-year wood product harvested [gN/m2/s]
-         col_prod100n_loss         =>    col_nf%prod100n_loss             , & ! Input:  [real(r8) (:)]  100-year wood product harvestd [gN/m2/s]
+         col_prod1n_loss           =>    col_nf%prod1n_loss               , & ! Input:  [real(r8) (:) ]  (gN/m2/s) crop leafc harvested
          col_fire_nloss            =>    col_nf%fire_nloss                , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
+         hrv_deadstemn_to_prod10n  =>    col_nf%hrv_deadstemn_to_prod10n  , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 10-year product pool
+         hrv_deadstemn_to_prod100n =>    col_nf%hrv_deadstemn_to_prod100n , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 100-year product pool
          som_n_leached             =>    col_nf%som_n_leached             , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
          som_n_yield               =>    col_nf%somn_yield                , & ! Input:  [real(r8) (:)]  total SOM N loss by erosion
-         supplement_to_plantn      =>    veg_nf%supplement_to_plantn      , &
+         supplement_to_plantn      =>    col_nf%supplement_to_plantn      , &
          ! pflotran:
          col_decompn_delta         =>    col_nf%externaln_to_decomp_delta , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
          col_ninputs               =>    col_nf%ninputs                   , & ! Output: [real(r8) (:)]  column-level N inputs (gN/m2/s)
          col_noutputs              =>    col_nf%noutputs                  , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)
          col_begnb                 =>    col_ns%begnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          col_endnb                 =>    col_ns%endnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
-         col_errnb                 =>    col_ns%errnb                    ,  & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
-         sminn_to_plant            =>    col_nf%sminn_to_plant           )  ! nitrogen flux to plants [gN/m2/s]
-
+         col_errnb                 =>    col_ns%errnb                      & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
+         )
 
       ! set time steps
       dt = dtime_mod
@@ -447,16 +449,15 @@ contains
 
             ! calculate total column-level outputs
             col_noutputs(c) = denit(c) + col_fire_nloss(c)
-
          end if
 
          ! forest fertilization
          if (forest_fert_exp) then
             if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
-                 .and. fert_type(c) == 1 &
-                 .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
+               .and. fert_type(c) == 1 &
+               .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
                col_ninputs(c) = col_ninputs(c) + fert_dose(c,kmo)/dt
-            end if
+             end if
          end if
 
          if (is_active_betr_bgc)then
@@ -466,16 +467,18 @@ contains
          else
 
             col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
-            
+
             if(use_pflotran .and. pf_cmode) then
                ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
                col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
             else
+
                col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
+
             endif
-            
 
          endif
+
 
          col_noutputs(c) = col_noutputs(c) + &
                col_prod1n_loss(c) + col_prod10n_loss(c) + col_prod100n_loss(c)
@@ -521,10 +524,13 @@ contains
          write(iulog,*)'no3 leach             = ',smin_no3_leached(c)*dt
          write(iulog,*)'no3 runof             = ',smin_no3_runoff(c)*dt
          write(iulog,*)'ndep                  = ',ndep_to_sminn(c)*dt
-         write(iulog,*)'nfix                  = ',nfix_to_sminn(c)*dt
+         if (NFIX_PTASE_plant) then
+           write(iulog,*)'nfix                  = ',nfix_to_ecosysn(c)*dt,nfix_to_sminn(c)*dt
+         else
+           write(iulog,*)'nfix                  = ',nfix_to_sminn(c)*dt
+         endif
          write(iulog,*)'nsup                  = ',supplement_to_sminn(c)*dt
-         write(iulog,*)'n_to_plant            = ',sminn_to_plant(c)*dt
-         write(iulog,*)'plant_to_litter       = ',plant_to_litter_nflux(c)*dt
+         write(iulog,*)'nsup_plant            = ',supplement_to_plantn(c)*dt
          if(crop_prog) then
             write(iulog,*)'fertm                 = ',fert_to_sminn(c)*dt
             write(iulog,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
@@ -538,6 +544,9 @@ contains
          if (use_pflotran .and. pf_cmode) then
             write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
          end if
+
+         write(iulog,*)'abgn=',col_ns%totabgn_beg(c),col_ns%totabgn(c)
+         write(iulog,*)'blgn=',col_ns%totblgn_beg(c),col_ns%totblgn(c)
          call endrun(msg=errMsg(__FILE__, __LINE__))
 #endif
 
@@ -708,6 +717,7 @@ contains
              end if
          end if
 
+
          if ((nu_com .ne. 'RD') .and. ECA_Pconst_RGspin) then
             do j = 1, nlevdecomp
                col_poutputs(c) = col_poutputs(c) + &
@@ -717,9 +727,10 @@ contains
             end do
          end if
 
+
          col_poutputs(c) = col_poutputs(c) + &
             col_prod1p_loss(c) + col_prod10p_loss(c) + col_prod100p_loss(c)
-
+         
          ! soil erosion
          if (ero_ccycle) then
             col_poutputs(c) = col_poutputs(c) + som_p_yield(c) + labilep_yield(c) + &
@@ -748,16 +759,23 @@ contains
          write(iulog,*)'input mass  = ',col_pinputs(c)*dt
          write(iulog,*)'output mass = ',col_poutputs(c)*dt
          write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
-         write(iulog,*)'ptol_pflux: = ',plant_to_litter_pflux(c)*dt
-         write(iulog,*)'sminp_to_plant: = ',sminp_to_plant(c)*dt
-         write(iulog,*)'primp_to_labilep = ',primp_to_labilep(c)*dt
-         write(iulog,*)'supplement_to_sminp = ',supplement_to_sminp(c)*dt
-         write(iulog,*)'secondp_to_occlp = ',secondp_to_occlp(c)*dt
-         write(iulog,*)'sminp_leached = ',sminp_leached(c)*dt
-         if(use_fates)then
-            write(iulog,*) 'plant_to_litter_flux = ',plant_to_litter_pflux(c)*dt
-            write(iulog,*) 'biochem_pmin_to_plant = ',biochem_pmin_to_plant(c)*dt
+         write(iulog,*)'primp in    = ',primp_to_labilep(c)
+         write(iulog,*)'supp        = ',supplement_to_sminp(c)
+         if (ero_ccycle) then
+            write(iulog,*)'SOP erosion = ',som_p_yield(c)*dt
+            write(iulog,*)'SIP erosion = ',(labilep_yield(c)+secondp_yield(c)+occlp_yield(c)+primp_yield(c))*dt
          end if
+
+         write(*,*)'column pbalance error = ', col_errpb(c), c
+         write(*,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+         write(*,*)'begpb       = ',col_begpb(c)
+         write(*,*)'endpb       = ',col_endpb(c)
+         write(*,*)'delta store = ',col_endpb(c)-col_begpb(c)
+         write(*,*)'input mass  = ',col_pinputs(c)*dt
+         write(*,*)'output mass = ',col_poutputs(c)*dt
+         write(*,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
+         write(*,*)'primp in    = ',primp_to_labilep(c)
+         write(*,*)'supp        = ',supplement_to_sminp(c)
          if (ero_ccycle) then
             write(iulog,*)'SOP erosion = ',som_p_yield(c)*dt
             write(iulog,*)'SIP erosion = ',(labilep_yield(c)+secondp_yield(c)+occlp_yield(c)+primp_yield(c))*dt
@@ -982,6 +1000,7 @@ contains
 
   end subroutine GridCBalanceCheck
  
+
   !-----------------------------------------------------------------------
   subroutine BeginGridNBalance(bounds, col_ns, grc_ns)
     !
@@ -1054,15 +1073,17 @@ contains
     integer  :: g,err_index    ! indices
     logical  :: err_found      ! error flag
     real(r8) :: dt             ! radiation time step (seconds)
+    real(r8) :: grc_cinputs
+    real(r8) :: grc_coutputs
     !-----------------------------------------------------------------------
 
     associate(                                                                       &
          totcolc                   =>    col_cs%totcolc              , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
+         dwt_prod10c_gain_grc      =>    grc_cf%dwt_prod10c_gain      , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_prod100c_gain_grc     =>    grc_cf%dwt_prod100c_gain     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_conv_cflux_grc        =>    grc_cf%dwt_conv_cflux        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_seedc_to_leaf_grc     =>    grc_cf%dwt_seedc_to_leaf     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_seedc_to_deadstem_grc =>    grc_cf%dwt_seedc_to_deadstem , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         grc_cinputs               =>    grc_cf%cinputs               , & ! Output: [real(r8) (:)]  grid-level C inputs (gC/m2/s)
-         grc_coutputs              =>    grc_cf%coutputs              , & ! Output: [real(r8) (:)]  grid-level C outputs (gC/m2/s)
          begcb_grc                 =>    grc_cs%begcb                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          endcb_grc                 =>    grc_cs%endcb                , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
          errcb_grc                 =>    grc_cs%errcb                  & ! Output: [real(r8) (:) ]  carbon balance error for the time step (gC/m**2)
@@ -1082,7 +1103,7 @@ contains
       do g = bounds%begg, bounds%endg
          endcb_grc(g) = endcb_grc(g)
 
-         grc_cinputs(g) = &
+         grc_cinputs = &
               dwt_seedc_to_leaf_grc(g)     + &
               dwt_seedc_to_deadstem_grc(g)
 
@@ -1090,7 +1111,7 @@ contains
               dwt_conv_cflux_grc(g)
 
 
-         errcb_grc(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (endcb_grc(g) - begcb_grc(g))
+         errcb_grc(g) = (grc_cinputs - grc_coutputs)*dt - (endcb_grc(g) - begcb_grc(g))
 
          ! check for significant errors
          if (abs(errcb_grc(g)) > balance_check_tolerance) then
@@ -1105,8 +1126,8 @@ contains
          g = err_index
          write(iulog,*)'Grid cbalance error   = ',errcb_grc(g), g
          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
-         write(iulog,*)'input                 = ',grc_cinputs(g)*dt
-         write(iulog,*)'output                = ',grc_coutputs(g)*dt
+         write(iulog,*)'input                 = ',grc_cinputs*dt
+         write(iulog,*)'output                = ',grc_coutputs*dt
          write(iulog,*)'error                 = ',errcb_grc(g)*dt
          write(iulog,*)'begcb                 = ',begcb_grc(g)
          write(iulog,*)'endcb                 = ',endcb_grc(g)
@@ -1139,6 +1160,8 @@ contains
     integer  :: g,err_index    ! indices
     logical  :: err_found      ! error flag
     real(r8) :: dt             ! radiation time step (seconds)
+    real(r8) :: grc_ninputs
+    real(r8) :: grc_noutputs
     !-----------------------------------------------------------------------
 
     associate(                                                          &
@@ -1167,7 +1190,7 @@ contains
       do g = bounds%begg, bounds%endg
          endnb_grc(g) = endnb_grc(g)
 
-         grc_ninputs(g) = &
+         grc_ninputs = &
               dwt_seedn_to_leaf_grc(g)     + &
               dwt_seedn_to_deadstem_grc(g)
 
@@ -1175,7 +1198,8 @@ contains
               dwt_conv_nflux_grc(g)
 
 
-         errnb_grc(g) = (grc_ninputs(g) - grc_noutputs(g))*dt - (endnb_grc(g) - begnb_grc(g))
+
+         errnb_grc(g) = (grc_ninputs - grc_noutputs)*dt - (endnb_grc(g) - begnb_grc(g))
 
          ! check for significant errors
          if (abs(errnb_grc(g)) > balance_check_tolerance) then
@@ -1190,14 +1214,16 @@ contains
          g = err_index
          write(iulog,*)'Grid nbalance error   = ',errnb_grc(g), g
          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
-         write(iulog,*)'input                 = ',grc_ninputs(g)*dt
-         write(iulog,*)'output                = ',grc_noutputs(g)*dt
+         write(iulog,*)'input                 = ',grc_ninputs*dt
+         write(iulog,*)'output                = ',grc_noutputs*dt
          write(iulog,*)'error                 = ',errnb_grc(g)*dt
          write(iulog,*)'begnb                 = ',begnb_grc(g)
          write(iulog,*)'endnb                 = ',endnb_grc(g)
          write(iulog,*)'delta store           = ',endnb_grc(g)-begnb_grc(g)
          write(iulog,*)''
          write(iulog,*)'dwt_conv                ',dwt_conv_nflux_grc(g)
+         write(iulog,*)'dwt_prod10              ',dwt_prod10n_gain_grc(g)
+         write(iulog,*)'dwt_prod100             ',dwt_prod100n_gain_grc(g)
          write(iulog,*)''
          write(iulog,*)'dwt_seedn_leaf          ',dwt_seedn_to_leaf_grc(g)
          write(iulog,*)'dwt_seedn_deadstem      ',dwt_seedn_to_deadstem_grc(g)
@@ -1230,6 +1256,8 @@ contains
     integer  :: g,err_index    ! indices
     logical  :: err_found      ! error flag
     real(r8) :: dt             ! radiation time step (seconds)
+    real(r8) :: grc_pinputs
+    real(r8) :: grc_poutputs
     !-----------------------------------------------------------------------
 
     associate(                                                          &
@@ -1258,15 +1286,14 @@ contains
       do g = bounds%begg, bounds%endg
          endpb_grc(g) = endpb_grc(g)
 
-         grc_pinputs(g) = &
+         grc_pinputs = &
               dwt_seedp_to_leaf_grc(g)     + &
               dwt_seedp_to_deadstem_grc(g)
 
          grc_poutputs(g) = &
               dwt_conv_pflux_grc(g)
 
-
-         errpb_grc(g) = (grc_pinputs(g) - grc_poutputs(g))*dt - (endpb_grc(g) - begpb_grc(g))
+         errpb_grc(g) = (grc_pinputs - grc_poutputs)*dt - (endpb_grc(g) - begpb_grc(g))
 
          ! check for significant errors
          if (abs(errpb_grc(g)) > balance_check_tolerance) then
@@ -1281,8 +1308,8 @@ contains
          g = err_index
          write(iulog,*)'Grid pbalance error   = ',errpb_grc(g), g
          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
-         write(iulog,*)'input                 = ',grc_pinputs(g)*dt
-         write(iulog,*)'output                = ',grc_poutputs(g)*dt
+         write(iulog,*)'input                 = ',grc_pinputs*dt
+         write(iulog,*)'output                = ',grc_poutputs*dt
          write(iulog,*)'error                 = ',errpb_grc(g)*dt
          write(iulog,*)'begpb                 = ',begpb_grc(g)
          write(iulog,*)'endpb                 = ',endpb_grc(g)

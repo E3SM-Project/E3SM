@@ -126,7 +126,7 @@ contains
     !
     ! !USES:
     use histFileMod, only : hist_addfld1d
-    use elm_varcon , only : spval
+    use clm_varcon , only : spval
     !
     ! !ARGUMENTS:
     class(glc2lnd_type) :: this
@@ -143,7 +143,7 @@ contains
 
     if (maxpatch_glcmec > 0) then
        this%icemask_grc(begg:endg) = spval
-       call hist_addfld1d (fname='ICE_MASK',  units='1',  &
+       call hist_addfld1d (fname='ICE_MASK',  units='unitless',  &
             avgflag='I', long_name='Ice sheet mask coverage', &
             ptr_gcell=this%icemask_grc)
     end if
@@ -231,7 +231,7 @@ contains
     ! glc_do_dynglacier is true
     !
     ! !USES:
-    use elm_varctl , only : glc_do_dynglacier
+    use clm_varctl , only : glc_do_dynglacier
     !
     ! !ARGUMENTS:
     class(glc2lnd_type), intent(inout) :: this
@@ -382,7 +382,7 @@ contains
     !
     ! !USES:
     use domainMod , only : ldomain
-    use elm_varcon, only : nameg
+    use clm_varcon, only : nameg
     !
     ! !ARGUMENTS:
     class(glc2lnd_type), intent(in) :: this
@@ -405,7 +405,7 @@ contains
           write(iulog,*) 'You can fix this problem by adding more grid cells'
           write(iulog,*) 'to the mask defined by the fglcmask file.'
           write(iulog,*) '(Change grid cells to 1 everywhere that CISM can operate.)'
-          call endrun(decomp_index=g, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=g, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -418,7 +418,7 @@ contains
     ! Do a sanity check on the icemask_coupled_fluxes field received from CISM via coupler.
     !
     ! !USES:
-    use elm_varcon, only : nameg
+    use clm_varcon, only : nameg
     !
     ! !ARGUMENTS:
     class(glc2lnd_type), intent(in) :: this
@@ -439,7 +439,7 @@ contains
 
        if (this%icemask_coupled_fluxes_grc(g) > 0._r8 .and. this%icemask_grc(g) == 0._r8) then
           write(iulog,*) subname//' ERROR: icemask_coupled_fluxes must be a subset of icemask.'
-          call endrun(decomp_index=g, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=g, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -492,7 +492,7 @@ contains
     ! The weights updated here are some col_pp%wtlunit and lun_pp%wtgcell values
     !
     ! !USES:
-    use elm_varcon        , only : ispval
+    use clm_varcon        , only : ispval
     use landunit_varcon   , only : istice_mec
     use column_varcon     , only : col_itype_to_icemec_class
     use subgridWeightsMod , only : set_landunit_weight

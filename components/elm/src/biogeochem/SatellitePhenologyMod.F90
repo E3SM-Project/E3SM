@@ -11,13 +11,12 @@ module SatellitePhenologyMod
   use shr_strdata_mod , only : shr_strdata_print, shr_strdata_advance
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_kind_mod    , only : CL => shr_kind_CL
-  use shr_kind_mod    , only : CX => shr_kind_CXX
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
-  use elm_varctl      , only : scmlat,scmlon,single_column
-  use elm_varctl      , only : iulog, use_lai_streams
-  use elm_varcon      , only : grlnd
+  use clm_varctl      , only : scmlat,scmlon,single_column
+  use clm_varctl      , only : iulog, use_lai_streams
+  use clm_varcon      , only : grlnd
   use controlMod      , only : NLFilename
   use decompMod       , only : gsmap_lnd_gdc2glo
   use domainMod       , only : ldomain
@@ -72,12 +71,12 @@ contains
     !
     !
     ! !USES:
-    use elm_varctl       , only : inst_name
+    use clm_varctl       , only : inst_name
     use clm_time_manager , only : get_calendar
     use ncdio_pio        , only : pio_subsystem
     use shr_pio_mod      , only : shr_pio_getiotype
-    use elm_nlUtilsMod   , only : find_nlgroup_name
-    use ndepStreamMod    , only : elm_domain_mct
+    use clm_nlUtilsMod   , only : find_nlgroup_name
+    use ndepStreamMod    , only : clm_domain_mct
     use histFileMod      , only : hist_addfld1d
     use shr_stream_mod   , only : shr_stream_file_null
     use shr_string_mod   , only : shr_string_listCreateField
@@ -93,7 +92,7 @@ contains
     integer            :: model_year_align_lai       ! align stream_year_first_lai with 
     integer            :: nu_nml                     ! unit for namelist file
     integer            :: nml_error                  ! namelist i/o error flag
-    type(mct_ggrid)    :: dom_elm                    ! domain information 
+    type(mct_ggrid)    :: dom_clm                    ! domain information 
     character(len=CL)  :: stream_fldFileName_lai     ! lai stream filename to read
     character(len=CL)  :: lai_mapalgo = 'bilinear'   ! Mapping alogrithm
 
@@ -101,7 +100,7 @@ contains
     character(*), parameter    :: F00 = "('(laidyn_init) ',4a)"
     character(*), parameter    :: laiString = "LAI"  ! base string for field string
     integer     , parameter    :: numLaiFields = 16  ! number of fields to build field string
-    character(CX)    :: fldList            ! field string
+    character(SHR_KIND_CXX)    :: fldList            ! field string
     !-----------------------------------------------------------------------
     !
     ! deal with namelist variables here in init
@@ -150,7 +149,7 @@ contains
 
     endif
 
-    call elm_domain_mct (bounds, dom_elm)
+    call clm_domain_mct (bounds, dom_clm)
 
     !
     ! create the field list for these lai fields...use in shr_strdata_create
@@ -161,7 +160,7 @@ contains
          pio_subsystem=pio_subsystem,                  & 
          pio_iotype=shr_pio_getiotype(inst_name),      &
          mpicom=mpicom, compid=comp_id,                &
-         gsmap=gsmap_lnd_gdc2glo, ggrid=dom_elm,       &
+         gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,       &
          nxg=ldomain%ni, nyg=ldomain%nj,               &
          yearFirst=stream_year_first_lai,              &
          yearLast=stream_year_last_lai,                &
@@ -404,7 +403,7 @@ contains
     ! Determine if 2 new months of data are to be read.
     !
     ! !USES:
-    use elm_varctl      , only : fsurdat
+    use clm_varctl      , only : fsurdat
     use clm_time_manager, only : get_curr_date, get_step_size, get_nstep
     !
     ! !ARGUMENTS:
@@ -458,11 +457,11 @@ contains
     ! read 12 months of veg data for dry deposition
     !
     ! !USES:
-    use elm_varpar  , only : numpft
+    use clm_varpar  , only : numpft
     use pftvarcon   , only : noveg
     use domainMod   , only : ldomain
     use fileutils   , only : getfil
-    use elm_varctl  , only : fsurdat
+    use clm_varctl  , only : fsurdat
     use shr_scam_mod, only : shr_scam_getCloseLatLon
     !
     ! !ARGUMENTS:
@@ -558,7 +557,7 @@ contains
     ! Read monthly vegetation data for two consec. months.
     !
     ! !USES:
-    use elm_varpar       , only : numpft
+    use clm_varpar       , only : numpft
     use pftvarcon        , only : noveg
     use fileutils        , only : getfil
     use spmdMod          , only : masterproc, mpicom, MPI_REAL8, MPI_INTEGER

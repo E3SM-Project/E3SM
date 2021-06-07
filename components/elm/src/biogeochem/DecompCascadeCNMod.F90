@@ -1022,10 +1022,10 @@ contains
              end do
           end do
           do j = 1,nlevdecomp
-              do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  decomp_k(c,j,i_cwd) = k_frag * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
-              end do
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                decomp_k(c,j,i_cwd) = k_frag * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
+             end do
           end do
        else
           do j = 1,nlevdecomp
@@ -1041,10 +1041,10 @@ contains
              end do
           end do
           do j = 1,nlevdecomp
-              do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  decomp_k(c,j,i_cwd) = k_frag * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
-              end do
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                decomp_k(c,j,i_cwd) = k_frag * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) / dt
+             end do
           end do
        end if
 

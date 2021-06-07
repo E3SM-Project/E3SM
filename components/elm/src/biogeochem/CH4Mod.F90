@@ -17,7 +17,7 @@ module CH4Mod
   use elm_varcon         , only : catomw, s_con, d_con_w, d_con_g, c_h_inv, kh_theta, kh_tbase
   use landunit_varcon    , only : istdlak
   use clm_time_manager   , only : get_step_size, get_nstep
-  use elm_varctl         , only : iulog, use_cn, use_lch4
+  use elm_varctl         , only : iulog, use_cn, use_nitrif_denitrif, use_lch4
   use abortutils         , only : endrun
   use decompMod          , only : bounds_type
   use SharedParamsMod    , only : ParamsShareInst
@@ -309,6 +309,7 @@ contains
     allocate(this%conc_o2_unsat_col          (begc:endc,1:nlevgrnd)) ;  this%conc_o2_unsat_col          (:,:) = nan
     allocate(this%o2_decomp_depth_sat_col    (begc:endc,1:nlevgrnd)) ;  this%o2_decomp_depth_sat_col    (:,:) = nan
     allocate(this%o2_decomp_depth_unsat_col  (begc:endc,1:nlevgrnd)) ;  this%o2_decomp_depth_unsat_col  (:,:) = nan
+    allocate(this%ch4_surf_flux_tot_col      (begc:endc))            ;  this%ch4_surf_flux_tot_col      (:)   = nan
 
     allocate(this%grnd_ch4_cond_patch        (begp:endp)) ;  this%grnd_ch4_cond_patch(:) = nan
     allocate(this%grnd_ch4_cond_col          (begc:endc)) ;  this%grnd_ch4_cond_col  (:) = nan
@@ -351,12 +352,12 @@ contains
     end if
 
     this%finundated_col(begc:endc) = spval
-    call hist_addfld1d (fname='FINUNDATED', units='1', &
+    call hist_addfld1d (fname='FINUNDATED', units='unitless', &
          avgflag='A', long_name='fractional inundated area of vegetated columns', &
          ptr_col=this%finundated_col)
 
     this%finundated_lag_col(begc:endc) = spval
-    call hist_addfld1d (fname='FINUNDATED_LAG', units='1',  &
+    call hist_addfld1d (fname='FINUNDATED_LAG', units='unitless',  &
          avgflag='A', long_name='time-lagged inundated fraction of vegetated columns', &
          ptr_col=this%finundated_lag_col)
 
@@ -521,28 +522,28 @@ contains
 
     if (hist_wrtch4diag) then
        this%o2stress_sat_col(begc:endc,1:nlevgrnd) = spval
-       call hist_addfld2d (fname='O2STRESS_SAT', units='1', type2d='levgrnd',  &
+       call hist_addfld2d (fname='O2STRESS_SAT', units='unitless', type2d='levgrnd',  &
             avgflag='A', long_name='Ratio of oxygen available to demanded for non-inundated area', &
             ptr_col=this%o2stress_sat_col)
     end if
 
     if (hist_wrtch4diag) then
        this%o2stress_unsat_col(begc:endc,1:nlevgrnd) = spval
-       call hist_addfld2d (fname='O2STRESS_UNSAT', units='1', type2d='levgrnd',  &
+       call hist_addfld2d (fname='O2STRESS_UNSAT', units='unitless', type2d='levgrnd',  &
             avgflag='A', long_name='Ratio of oxygen available to demanded for inundated / lake area', &
             ptr_col=this%o2stress_unsat_col)
     end if
 
     if (hist_wrtch4diag) then
        this%ch4stress_unsat_col(begc:endc,1:nlevgrnd) = spval
-       call hist_addfld2d (fname='CH4STRESS_UNSAT', units='1', type2d='levgrnd',  &
+       call hist_addfld2d (fname='CH4STRESS_UNSAT', units='unitless', type2d='levgrnd',  &
             avgflag='A', long_name='Ratio of methane available to total potential sink for inundated / lake area', &
             ptr_col=this%ch4stress_unsat_col)
     end if
 
     if (hist_wrtch4diag) then
        this%ch4stress_sat_col(begc:endc,1:nlevgrnd) = spval
-       call hist_addfld2d (fname='CH4STRESS_SAT', units='1', type2d='levgrnd',  &
+       call hist_addfld2d (fname='CH4STRESS_SAT', units='unitless', type2d='levgrnd',  &
             avgflag='A', long_name='Ratio of methane available to total potential sink for non-inundated area', &
             ptr_col=this%ch4stress_sat_col)
     end if
@@ -591,21 +592,21 @@ contains
 
     if (hist_wrtch4diag) then
        this%layer_sat_lag_col(begc:endc,1:nlevgrnd) = spval
-       call hist_addfld2d (fname='LAYER_SAT_LAG', units='1', type2d='levgrnd',  &
+       call hist_addfld2d (fname='LAYER_SAT_LAG', units='unitless', type2d='levgrnd',  &
             avgflag='A', long_name='lagged saturation status of layer in unsat. zone', &
             ptr_col=this%layer_sat_lag_col)
     end if
 
     if (hist_wrtch4diag) then
        this%annavg_finrw_col(begc:endc) = spval
-       call hist_addfld1d (fname='ANNAVG_FINRW', units='1',  &
+       call hist_addfld1d (fname='ANNAVG_FINRW', units='unitless',  &
             avgflag='A', long_name='annual average respiration-weighted FINUNDATED', &
             ptr_col=this%annavg_finrw_col)
     end if
 
     if (hist_wrtch4diag) then
        this%sif_col(begc:endc) = spval
-       call hist_addfld1d (fname='SIF', units='1',  &
+       call hist_addfld1d (fname='SIF', units='unitless',  &
             avgflag='A', long_name='seasonal inundation factor calculated for sat. CH4 prod. (non-lake)', &
             ptr_col=this%sif_col)
     end if
@@ -2209,9 +2210,11 @@ contains
             end if
 
             ! Add oxygen demand for nitrification
-            if (.not. lake .and. j<= nlevdecomp_full ) then
-               o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + pot_f_nit_vr(c,j) * 2.0_r8/14.0_r8
-               ! g N/m^3/s           mol O2 / g N
+            if (use_nitrif_denitrif) then
+               if (.not. lake .and. j<= nlevdecomp_full ) then
+                  o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + pot_f_nit_vr(c,j) * 2.0_r8/14.0_r8
+                  ! g N/m^3/s           mol O2 / g N
+               end if
             end if
 
             if (j  >  jwt(c)) then ! Below the water table so anaerobic CH4 production can occur

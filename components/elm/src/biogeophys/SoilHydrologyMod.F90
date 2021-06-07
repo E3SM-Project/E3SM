@@ -31,7 +31,7 @@ module SoilHydrologyMod
   public :: WaterTable           ! Calculate water table before imposing drainage
   public :: Drainage             ! Calculate subsurface drainage
   public :: DrainageVSFM         ! Calculate subsurface drainage for VSFM
-  public :: ELMVICMap
+  public :: CLMVICMap
   !-----------------------------------------------------------------------
 
 contains
@@ -1977,8 +1977,8 @@ contains
              ice(c,i) = 0._r8
              moist(c,i) = 0._r8
              do j = 1, nlevsoi
-                ice(c,i) = ice(c,i) + h2osoi_ice(c,j) * vic_elm_fract(c,i,j)
-                moist(c,i) = moist(c,i) + h2osoi_liq(c,j) * vic_elm_fract(c,i,j)
+                ice(c,i) = ice(c,i) + h2osoi_ice(c,j) * vic_clm_fract(c,i,j)
+                moist(c,i) = moist(c,i) + h2osoi_liq(c,j) * vic_clm_fract(c,i,j)
              end do
              ice(c,i)       = min((moist0(i) + ice0(i)), ice(c,i))
              ice(c,i)       = max(0._r8, ice(c,i))
@@ -1997,6 +1997,6 @@ contains
 
      end associate
 
-   end subroutine ELMVICMap
+   end subroutine CLMVICMap
 
 end module SoilHydrologyMod

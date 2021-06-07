@@ -11,7 +11,7 @@ module NitrogenDynamicsMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use elm_varcon          , only : dzsoi_decomp, zisoi
-  use elm_varctl          , only : use_vertsoilc
+  use elm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNStateType         , only : cnstate_type
@@ -67,7 +67,11 @@ contains
        ! wasn't specified by the user namelist and we need to assign
        ! it the correct default value. If the user specified it in the
        ! name list, we leave it alone.
-       nfix_timeconst = 10._r8
+       if (use_nitrif_denitrif) then
+          nfix_timeconst = 10._r8
+       else
+          nfix_timeconst = 0._r8
+       end if
     end if
 
   end subroutine NitrogenDynamicsInit
@@ -182,7 +186,7 @@ contains
          )
 
 
-      if (do_et_bnf .or. use_fates) then
+      if (do_et_bnf) then
          secspyr = dayspyr * 86400._r8
          do fc = 1, num_soilc
             c =filter_soilc(fc)
@@ -252,16 +256,20 @@ contains
     associate(& 
     	 nlev2bed            => col_pp%nlevbed                            , & ! Input:  [integer (:)    ]  number of layers to bedrock
          h2osoi_liq          => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
-         qflx_drain          => col_wf%qflx_drain             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)                    
-         qflx_surf           => col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
-         smin_no3_vr         => col_ns%smin_no3_vr        , & ! Input:  [real(r8) (:,:) ]                                                  
-         smin_no3_leached_vr => col_nf%smin_no3_leached_vr , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)          
-         smin_no3_runoff_vr  => col_nf%smin_no3_runoff_vr    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)  
+
+         qflx_drain          => col_wf%qflx_drain             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
+         qflx_surf           => col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)
+
+         sminn_vr            => col_ns%sminn_vr           , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N
+         smin_no3_vr         => col_ns%smin_no3_vr        , & ! Input:  [real(r8) (:,:) ]
+         sminn_leached_vr    => col_nf%sminn_leached_vr    , & ! Output: [real(r8) (:,:) ]  rate of mineral N leaching (gN/m3/s)
+         smin_no3_leached_vr => col_nf%smin_no3_leached_vr , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)
+         smin_no3_runoff_vr  => col_nf%smin_no3_runoff_vr    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)
          )
 
 
       ! Assume that 100% of the soil NO3 is in a soluble form
-      sf_no3 =  CNNDynamicsParamsInst%sf_no3 
+      sf_no3 =  CNNDynamicsParamsInst%sf_no3
 
       ! calculate the total soil water
       tot_water(bounds%begc:bounds%endc) = 0._r8
@@ -292,6 +300,13 @@ contains
          c = filter_soilc(fc)
          drain_tot(c) = qflx_drain(c)
       end do
+
+
+
+
+      !----------------------------------------
+      ! --------- NITRIF_NITRIF ON-------------
+      !----------------------------------------
 
       do j = 1,nlevdecomp
          ! Loop through columns
@@ -438,6 +453,7 @@ contains
 
          sminn            =>  col_ns%sminn           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N
          plant_ndemand    =>  veg_nf%plant_ndemand  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)
+
 
          soyfixn          =>  veg_nf%soyfixn        , & ! Output: [real(r8) (:) ]  nitrogen fixed to each soybean crop
          soyfixn_to_sminn =>  col_nf%soyfixn_to_sminn   & ! Output: [real(r8) (:) ]

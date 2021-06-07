@@ -9,7 +9,7 @@ module BalanceCheckMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use abortutils         , only : endrun
-  use elm_varctl         , only : iulog, use_var_soil_thick, use_extrasnowlayers
+  use elm_varctl         , only : iulog, use_var_soil_thick, tw_irr
   use elm_varcon         , only : namep, namec
   use GetGlobalValuesMod , only : GetGlobalIndex
   use atm2lndType        , only : atm2lnd_type
@@ -362,7 +362,7 @@ contains
           write(iulog,*)'WARNING:  water balance error ',&
                ' nstep= ',nstep, &
                ' local indexc= ',indexc,&
-               !' global indexc= ',GetGlobalIndex(decomp_index=indexc, elmlevel=namec), &
+               !' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
                ' errh2o= ',errh2o(indexc)
 
           if ((col_pp%itype(indexc) == icol_roof .or. &
@@ -387,12 +387,12 @@ contains
              write(iulog,*)'qflx_snwcp_ice             = ',qflx_snwcp_ice(indexc)
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
-             write(iulog,*)'elm model is stopping'
-             call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+             write(iulog,*)'clm model is stopping'
+             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
 
           else if (abs(errh2o(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
 
-             write(iulog,*)'elm model is stopping - error is greater than 1e-4 (mm)'
+             write(iulog,*)'clm model is stopping - error is greater than 1e-4 (mm)'
              write(iulog,*)'colum number               = ',col_pp%gridcell(indexc)
              write(iulog,*)'nstep                      = ',nstep
              write(iulog,*)'errh2o                     = ',errh2o(indexc)
@@ -417,8 +417,8 @@ contains
              write(iulog,*)'qflx_glcice_frz            = ',qflx_glcice_frz(indexc)
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
-             write(iulog,*)'elm model is stopping'
-             call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+             write(iulog,*)'clm model is stopping'
+             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
 #endif
        end if
@@ -441,57 +441,37 @@ contains
                      + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) + qflx_sl_top_soil(c)
 
                 if (lun_pp%itype(l) == istdlak) then 
-                   if (.not. use_extrasnowlayers) then
-                      if ( do_capsnow(c)) then
-                         snow_sources(c) = qflx_snow_grnd_col(c) &
-                              + frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) 
+                   if ( do_capsnow(c) ) then
+                      snow_sources(c) = qflx_snow_grnd_col(c) &
+                           + frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) 
 
-                         snow_sinks(c)   = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c) ) &
-                              + (qflx_snwcp_ice(c) + qflx_snwcp_liq(c) - qflx_prec_grnd(c))  &
-                              + qflx_snow_melt(c)  + qflx_sl_top_soil(c)
-                      else
-                         snow_sources(c) = qflx_snow_grnd_col(c) &
-                              + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
-                              +  qflx_dew_snow(c) + qflx_dew_grnd(c) ) 
-
-                         snow_sinks(c)  = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c) ) &
-                              + qflx_snow_melt(c)  + qflx_sl_top_soil(c)
-                      endif
-                   else ! firn model
+                      snow_sinks(c)   = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c) ) &
+                           + (qflx_snwcp_ice(c) + qflx_snwcp_liq(c) - qflx_prec_grnd(c))  &
+                           + qflx_snow_melt(c)  + qflx_sl_top_soil(c)
+                   else
                       snow_sources(c) = qflx_snow_grnd_col(c) &
                            + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
                            +  qflx_dew_snow(c) + qflx_dew_grnd(c) )
 
                       snow_sinks(c)  = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c) ) &
-                           + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) &
-                           + qflx_snow_melt(c) + qflx_sl_top_soil(c)
+                           + qflx_snow_melt(c)  + qflx_sl_top_soil(c)
                    endif
                 endif
 
                 if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .or. lun_pp%itype(l) == istwet ) then
-                   if (.not. use_extrasnowlayers) then
-                      if (do_capsnow(c)) then
-                         snow_sources(c) = frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) &
-                              + qflx_h2osfc_to_ice(c) + qflx_prec_grnd(c)
+                   if ( do_capsnow(c) ) then
+                      snow_sources(c) = frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) &
+                           + qflx_h2osfc_to_ice(c) + qflx_prec_grnd(c)
 
-                         snow_sinks(c) = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c)) &
-                              + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) &
-                              + qflx_snow_melt(c) + qflx_sl_top_soil(c)
-                      else
-                         snow_sources(c) = (qflx_snow_grnd_col(c) - qflx_snow_h2osfc(c) ) &
-                              + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
-                              +  qflx_dew_snow(c) + qflx_dew_grnd(c) ) + qflx_h2osfc_to_ice(c)
-
-                         snow_sinks(c) = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c)) &
-                              + qflx_snow_melt(c) + qflx_sl_top_soil(c)
-                      endif
-                   else ! firn model
+                      snow_sinks(c) = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c)) &
+                           + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) &
+                           + qflx_snow_melt(c) + qflx_sl_top_soil(c)
+                   else
                       snow_sources(c) = (qflx_snow_grnd_col(c) - qflx_snow_h2osfc(c) ) &
                            + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
                            +  qflx_dew_snow(c) + qflx_dew_grnd(c) ) + qflx_h2osfc_to_ice(c)
 
                       snow_sinks(c) = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c)) &
-                           + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) &
                            + qflx_snow_melt(c) + qflx_sl_top_soil(c)
                    endif
                 endif
@@ -526,13 +506,13 @@ contains
           write(iulog,*)'WARNING:  snow balance error '
           write(iulog,*)'nstep= ',nstep, &
                ' local indexc= ',indexc, &
-               !' global indexc= ',GetGlobalIndex(decomp_index=indexc, elmlevel=namec), &
+               !' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
                ' col_pp%itype= ',col_pp%itype(indexc), &
                ' lun_pp%itype= ',lun_pp%itype(col_pp%landunit(indexc)), &
                ' errh2osno= ',errh2osno(indexc)
 
           if (abs(errh2osno(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
-             write(iulog,*)'elm model is stopping - error is greater than 1e-4 (mm)'
+             write(iulog,*)'clm model is stopping - error is greater than 1e-4 (mm)'
              write(iulog,*)'nstep            = ',nstep
              write(iulog,*)'errh2osno        = ',errh2osno(indexc)
              write(iulog,*)'snl              = ',col_pp%snl(indexc)
@@ -552,8 +532,8 @@ contains
              if (create_glacier_mec_landunit) then
                 write(iulog,*)'qflx_glcice_frz  = ',qflx_glcice_frz(indexc)*dtime
              end if
-             write(iulog,*)'elm model is stopping'
-             call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+             write(iulog,*)'clm model is stopping'
+             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
 #endif
        end if
@@ -627,7 +607,7 @@ contains
           write(iulog,*)'nstep         = ',nstep
           write(iulog,*)'errsol        = ',errsol(indexp)
           if (abs(errsol(indexp)) > 1.e-5_r8 ) then
-             write(iulog,*)'elm model is stopping - error is greater than 1e-5 (W/m2)'
+             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
              write(iulog,*)'fsa           = ',fsa(indexp)
              write(iulog,*)'fsr           = ',fsr(indexp)
              write(iulog,*)'forc_solad(1) = ',forc_solad(indext,1)
@@ -636,8 +616,8 @@ contains
              write(iulog,*)'forc_solai(2) = ',forc_solai(indext,2)
              write(iulog,*)'forc_tot      = ',forc_solad(indext,1)+forc_solad(indext,2) &
                +forc_solai(indext,1)+forc_solai(indext,2)
-             write(iulog,*)'elm model is stopping'
-             call endrun(decomp_index=indexp, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+             write(iulog,*)'clm model is stopping'
+             call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
 #endif
        end if
@@ -659,8 +639,8 @@ contains
           write(iulog,*)'nstep        = ',nstep
           write(iulog,*)'errlon       = ',errlon(indexp)
           if (abs(errlon(indexp)) > 1.e-5_r8 ) then
-             write(iulog,*)'elm model is stopping - error is greater than 1e-5 (W/m2)'
-             call endrun(decomp_index=indexp, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
+             call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
 #endif
        end if
@@ -684,7 +664,7 @@ contains
           write(iulog,*)'nstep          = ' ,nstep
           write(iulog,*)'errseb         = ' ,errseb(indexp)
           if (abs(errseb(indexp)) > 1.e-5_r8 ) then
-             write(iulog,*)'elm model is stopping - error is greater than 1e-5 (W/m2)'
+             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
              write(iulog,*)'sabv           = ' ,sabv(indexp)
 
              write(iulog,*)'sabg           = ' ,sabg(indexp), ((1._r8- frac_sno(indexc))*sabg_soil(indexp) + &
@@ -725,8 +705,8 @@ contains
           write(iulog,*)'errsoi_col    = ',errsoi_col(indexc)
           write(iulog,*)'colum number  = ',col_pp%gridcell(indexc)
           if (abs(errsoi_col(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
-             write(iulog,*)'elm model is stopping'
-             call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+             write(iulog,*)'clm model is stopping'
+             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
 

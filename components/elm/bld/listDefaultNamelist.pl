@@ -75,7 +75,7 @@ SYNOPSIS
 OPTIONS
      -help  [or -h]                       Display this help.
      -csmdata [or -d]                     Path to CSMDATA.
-     -phys "name"                         Model physics (default elm)
+     -phys "name"                         Model physics (either clm4_0 or clm4_5) (default clm4_0)
      -res  "resolution1,resolution2,..."  List of resolution to use for files.
                                           (At least one resolution is required)
                                           (If res is "all" will run over all resolutions)
@@ -163,7 +163,7 @@ sub GetListofNeededFiles {
                list       => $list,
                usrdat     => undef,
                help       => undef,
-               phys       => "elm",
+               phys       => "clm4_0",
              );
 
   my $cmdline = "@ARGV";
@@ -305,7 +305,11 @@ YEAR:   foreach my $sim_year ( $definition->get_valid_values( "sim_year", 'noquo
                     foreach my $crop ( @crop_vals ) {
                        $settings{'crop'} = $crop;
                        if ( $crop eq "on" ) {
-                          $settings{'maxpft'} = 25;
+			   if ($phys eq "clm4_0") { 
+			       $settings{'maxpft'} = 21;
+			   } else {
+			       $settings{'maxpft'} = 25;
+			   }
 		       } else {
                           $settings{'maxpft'} = 17;
                        }

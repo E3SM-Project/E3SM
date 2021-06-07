@@ -47,7 +47,7 @@ require Build::NamelistDefinition;
 require queryDefaultXML;
 
 # Defaults
-my $namelist = "elm_inparm";
+my $namelist = "clm_inparm";
 my $config = "config_cache.xml";
 
 
@@ -75,7 +75,7 @@ OPTIONS
      -onlyfiles                           Only output filenames.
      -options "item=value,item2=value2"   Set options to query for when matching.
                                           (comma delimited, with equality to set value).
-     -phys "ELM-version" [or -p]          ELM version to use 
+     -phys "CLM-version" [or -p]          CLM version to use (clm4_0 or clm4_5)
      -res  "resolution"                   Resolution to use for files. Use "-res list" to
                                           list all valid resolutions. Use "-res any" to
                                           use any valid resolution.
@@ -180,9 +180,9 @@ EOF
   my %inputopts;
   my $model                  = $opts{'model'};
   my @nl_definition_files    = ( "$cfgdir/namelist_files/namelist_definition_drv.xml",
-                                 "$cfgdir/namelist_files/namelist_definition.xml" 
+                                 "$cfgdir/namelist_files/namelist_definition_$model.xml" 
                                );
-  $inputopts{empty_cfg_file} = "$cfgdir/config_files/config_definition.xml";
+  $inputopts{empty_cfg_file} = "$cfgdir/config_files/config_definition_$model.xml";
   $inputopts{nldef_files}    = \@nl_definition_files;
   $inputopts{namelist}       = $opts{namelist};
   $inputopts{printing}       = $printing;
@@ -246,7 +246,7 @@ EOF
      $settings{'notest'}       = ! $opts{'test'};
      $settings{'csmdata'}      = $inputopts{csmdata};
   } else {
-     my @files = ( "$cfgdir/namelist_files/namelist_defaults.xml", 
+     my @files = ( "$cfgdir/namelist_files/namelist_defaults_${model}.xml", 
                    "$cfgdir/namelist_files/namelist_defaults_${model}_tools.xml", 
                    "$cfgdir/namelist_files/namelist_defaults_drv.xml",
                    "$cfgdir/namelist_files/namelist_defaults_drydep.xml",

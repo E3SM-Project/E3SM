@@ -199,6 +199,7 @@ contains
  end subroutine readParams
 
 
+contains
 
   !------------------------------------------------------------------------------
   subroutine Photosynthesis ( bounds, fn, filterp, &
@@ -540,7 +541,7 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-         if ( .not. nu_com_leaf_physiology) then
+         if ( .not. nu_com_leaf_physiology .or. CNAllocate_Carbon_only()) then
             ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
             lnc(p) = 1._r8 / (slatop(veg_pp%itype(p)) * leafcn(veg_pp%itype(p)))
 
@@ -603,6 +604,8 @@ contains
                vcmax25top = (i_vcmax(veg_pp%itype(p)) + s_vcmax(veg_pp%itype(p)) * lnc(p)) * dayl_factor(p)
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
 
+               vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
+               jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
             else
 
                ! nu_com_leaf_physiology is true, vcmax25, jmax25 is derived from leafn, leafp concentration

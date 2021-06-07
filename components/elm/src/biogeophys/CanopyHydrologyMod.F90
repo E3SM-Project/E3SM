@@ -16,8 +16,8 @@ module CanopyHydrologyMod
   use shr_sys_mod       , only : shr_sys_flush
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use elm_varctl        , only : iulog, tw_irr, extra_gw_irr, irrigate, use_extrasnowlayers
-  use LandunitType      , only : lun_pp
+  use elm_varctl        , only : iulog, tw_irr
+  use LandunitType      , only : lun_pp                
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
   use CanopyStateType   , only : canopystate_type
@@ -70,7 +70,7 @@ contains
     character(len=32) :: subname = 'CanopyHydrology_readnl'  ! subroutine name
     !-----------------------------------------------------------------------
 
-    namelist / elm_canopyhydrology_inparm / oldfflag
+    namelist / clm_canopyhydrology_inparm / oldfflag
 
     ! ----------------------------------------------------------------------
     ! Read namelist from standard input. 
@@ -79,13 +79,13 @@ contains
     if ( masterproc )then
 
        unitn = getavu()
-       write(iulog,*) 'Read in elm_canopyhydrology_inparm  namelist'
+       write(iulog,*) 'Read in clm_CanopyHydrology_inparm  namelist'
        call opnfil (NLFilename, unitn, 'F')
-       call shr_nl_find_group_name(unitn, 'elm_canopyhydrology_inparm', status=ierr)
+       call shr_nl_find_group_name(unitn, 'clm_CanopyHydrology_inparm', status=ierr)
        if (ierr == 0) then
-          read(unitn, elm_canopyhydrology_inparm, iostat=ierr)
+          read(unitn, clm_canopyhydrology_inparm, iostat=ierr)
           if (ierr /= 0) then
-             call endrun(msg="ERROR reading elm_canopyhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
+             call endrun(msg="ERROR reading clm_canopyhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
           end if
        end if
        call relavu( unitn )
@@ -115,16 +115,13 @@ contains
      ! !USES:
      use elm_varcon         , only : hfus, denice, zlnd, rpi, spval, tfrz
      use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
-     use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec, istdlak
+     use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec 
      use elm_varctl         , only : subgridflag
      use elm_varpar         , only : nlevsoi,nlevsno
-     use elm_varsur         , only : wt_lunit
      use atm2lndType        , only : atm2lnd_type
      use domainMod          , only : ldomain
      use clm_time_manager   , only : get_step_size
      use subgridAveMod      , only : p2c,p2g
-     use clm_time_manager   , only : get_step_size, get_prev_date, get_nstep
-     use SnowHydrologyMod   , only : NewSnowBulkDensity
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds     
@@ -150,7 +147,7 @@ contains
      real(r8) :: fpi                                          ! coefficient of interception
      real(r8) :: xrun                                         ! excess water that exceeds the leaf capacity [mm/s]
      real(r8) :: dz_snowf                                     ! layer thickness rate change due to precipitation [mm/s]
-     real(r8) :: bifall(bounds%begc:bounds%endc)              ! bulk density of newly fallen dry snow [kg/m3]
+     real(r8) :: bifall                                       ! bulk density of newly fallen dry snow [kg/m3]
      real(r8) :: fracsnow(bounds%begp:bounds%endp)            ! frac of precipitation that is snow
      real(r8) :: fracrain(bounds%begp:bounds%endp)            ! frac of precipitation that is rain
      real(r8) :: qflx_candrip(bounds%begp:bounds%endp)        ! rate of canopy runoff and snow falling off canopy [mm/s]
@@ -170,10 +167,18 @@ contains
      real(r8) :: snowmelt(bounds%begc:bounds%endc)
      integer  :: j
 	 
-     !--------------------------------------------------- ! initializing variables used to adjust irrigation on local processer
+	 !--------------------------------------------------- ! initializing variables used to adjust irrigation on local processer
      real(r8) :: qflx_irrig_grid(bounds%begg:bounds%endg)      ! irrigation at grid level [mm/s] 
-     real(r8) :: irrigated_ppg(bounds%begg:bounds%endg)        ! irrigated pft per grid
+     real(r8) :: irrig_rate_grid(bounds%begg:bounds%endg)
+     
+     real(r8) :: total_dem
+     real(r8) :: total_sup
+     real(r8) :: total_sup_irrigrid
      integer :: gg
+     integer :: pp
+     integer :: currentg
+     integer :: gridnum
+     real(r8) :: adjust_f
      !-----------------------------------------------------------------------
 
      associate(                                                     & 
@@ -198,7 +203,6 @@ contains
           forc_rain            => top_af%rain                              , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
           forc_snow            => top_af%snow                              , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
           forc_t               => top_as%tbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)        
-          forc_wind            => top_as%windbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed (m/s)
           qflx_floodg          => atm2lnd_vars%forc_flood_grc              , & ! Input:  [real(r8) (:)   ]  gridcell flux of flood water from RTM   
 
           dewmx                => canopystate_vars%dewmx_patch             , & ! Input:  [real(r8) (:)   ]  Maximum allowed dew [mm]                
@@ -251,18 +255,77 @@ contains
        ! Compute time step
        
        dtime = get_step_size()
-
-       do gg = bounds%begg,bounds%endg
-          irrigated_ppg(gg) = 0._r8
-       end do
-         
-       do f = 1, num_nolakep
+	   
+       if (tw_irr) then
+       !--------------- temp solution for the irrigation mapping issue, if ELM and MOSART share the same grid, no such problem
+       gridnum = bounds%endg - bounds%begg + 1 !number of grid on this processer
+        do pp = bounds%begp,bounds%endp          
+             if (isnan(irrig_rate (pp))) then  !change NAN (if any) to zero so that the grid level irrig_rate can be calculated 
+               irrig_rate(pp)=0._r8
+             endif
+        end do
+        
+       ! Find gridcell level irrigation rate based on pft level 
+       call p2g(bounds, &
+         irrig_rate (bounds%begp:bounds%endp), &  
+         irrig_rate_grid (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity') 
+		 
+		! initialize the qflx_irrig_grid 
+         do gg = bounds%begg,bounds%endg
+            qflx_irrig_grid(gg) = 0
+         end do
+        
+        ! loop the pft and assign irrig_rate to qflx_irrig based on n_irrig_steps_left(p), 
+        ! which will be zero if current pft doesn't need irrigation or the current time 
+        ! is out of irrigation schedule
+         do f = 1, num_nolakep
           p = filter_nolakep(f)
           g = pgridcell(p)
-          if (irrigated(veg_pp%itype(p)) == 1._r8) then
-             irrigated_ppg(g) = irrigated_ppg(g) + 1
-          endif
-       end do
+		  
+           if (n_irrig_steps_left(p) > 0) then
+             qflx_irrig(p)         = irrig_rate(p)
+             qflx_irrig_grid(g) = irrig_rate_grid(g) ! 
+           end if
+         end do
+		 		   
+        !initialize the total supply for all grids over the processer and total supply for grids that need irrigation 
+        total_sup_irrigrid = 0._r8
+        total_sup = 0._r8
+        
+        currentg = bounds%begg
+        do gg = 1, gridnum
+          g = currentg + gg - 1
+		  			 
+          if (isnan(atm2lnd_vars%supply_grc(g))) then  !change NAN (if any) to zero
+            atm2lnd_vars%supply_grc(g)=0._r8
+          end if
+		  
+         total_sup = total_sup+atm2lnd_vars%supply_grc(g)*ldomain%area(g) !total volumetric supply across all the grids
+           if (qflx_irrig_grid(g)*ldomain%f_surf(g) > 0._r8 ) then  ! total supply in grids that need water
+             total_sup_irrigrid = total_sup_irrigrid + atm2lnd_vars%supply_grc(g)*ldomain%area(g)  !total volumetric supply across grids that need water
+           end if
+        end do
+		  
+        if (total_sup .eq. 0._r8) then ! no surface water supply at all, no need to adjust
+          adjust_f = 1
+        end if
+        
+        if (total_sup .gt. 0._r8 .and. total_sup_irrigrid .eq. 0._r8 ) then !no grid needs water but supply > 0, supply don't know where to go
+          adjust_f = 1
+        end if
+        
+        if (total_sup_irrigrid .gt. 0._r8) then
+            !This is the ratio between supply over gridcells need water and supply over all gridcells
+            !This value should be ranging from 0 to 1 and will be used to concentrate the water supply into gridcells that need irrigation
+          adjust_f = total_sup_irrigrid/total_sup 
+        end if	
+
+        if (adjust_f < 1.0e-3_r8) then
+            adjust_f = 1 ! if irrigated area is too small, don't adjust because it would generate huge irrigation rate in a very small area
+        end if            
+       !----------------- temp solution ends here     
+       end if
        ! Start pft loop
 
        do f = 1, num_nolakep
@@ -271,6 +334,8 @@ contains
           t = ptopounit(p)
           l = plandunit(p)
           c = pcolumn(p)
+
+          !irrig_rate_grid(g) = irrig_rate(p)/pgwgt(p) ! grid level irrigation rate projected by patch irrigation rate
 
           ! Canopy interception and precipitation onto ground surface
           ! Add precipitation to leaf water
@@ -372,75 +437,86 @@ contains
              n_irrig_steps_left(p) = n_irrig_steps_left(p) - 1
           else
              qflx_irrig(p) = 0._r8
-             qflx_irrig_grid(g) = 0._r8
+			 qflx_irrig_grid(g) = 0._r8
           end if
 
           ! Add irrigation water directly onto ground (bypassing canopy interception)
           ! Note that it's still possible that (some of) this irrigation water will runoff (as runoff is computed later)
-          if(irrigate) then
-           if (tw_irr) then ! else one way  
-               qflx_supply(p) = atm2lnd_vars%supply_grc(g)*(1-wt_lunit(g,istdlak))/pgwgt(p) ! original supply at grid level (mm/s) concentrate to pft level. Take lake fraction into consideration
-               qflx_real_irrig(p) = 0._r8 
-               qflx_surf_irrig(p) = 0._r8
-               qflx_grnd_irrig(p) = 0._r8
-               qflx_over_supply(p) = 0._r8
-
-             if (qflx_irrig(p) > 0._r8 .or. qflx_supply(p) > 0._r8) then	!this pft needs water or have supply             
-               if  (irrigated(veg_pp%itype(p)) == 1._r8) then ! this pft is irrigated
-               qflx_surf_irrig(p) = qflx_supply(p)/irrigated_ppg(g)  ! surface water irrgation from MOSART, with time step shift                   
-               qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p) ! groundwater irrigation based on demand in ELM, same time step
+              if (tw_irr) then ! else one way  
+                qflx_supply(p) = atm2lnd_vars%supply_grc(g) !!! original supply from WM, need to be updated based on the demand after interpolation              
  
-               if (extra_gw_irr) then ! if always met by additional extra gw pumping
-                 if (qflx_supply(p) > 0._r8) then					 
-                   qflx_grnd_irrig(p) = atm2lnd_vars%deficit_grc(g)/pgwgt(p)/irrigated_ppg(g) + ldomain%f_grd(g)*qflx_irrig(p)
-                  !groundwater irrigation based on deficit from MOSART (with time step shift), not demand from ELM
-                 else if (qflx_irrig(p) > 0._r8) then
-                   qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p)
-                 else
-                 qflx_grnd_irrig(p) = 0._r8
-                endif	
-               endif			   
-               qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) ! actual irrigation, including groundwater irrigation
-               qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p)   
-               end if		
-             end if       
-           else  ! one way coupling
+               if (qflx_irrig(p) > 0._r8) then	!this pft needs water	   
+               qflx_surf_irrig(p) = atm2lnd_vars%supply_grc(g)/adjust_f/pgwgt(p)    ! original supply at grid level (mm/s) concentrate
+                                                                                    ! to grid cells that need water  and then project 
+																		            ! to pft level     
+               if (pgwgt(p) < 1.0e-16_r8) then ! avoid super small fraction of irrigated land 
+                   qflx_surf_irrig(p) = atm2lnd_vars%supply_grc(g)/adjust_f
+               end if      
+               
+               !-- use supply_frac to calculate surf_irrg
+               !qflx_surf_irrig(p) = qflx_irrig(p) * supply_frac(g)			
+               !qflx_over_supply(p) = 0
+               !--    
+                
+               if (qflx_surf_irrig(p) > qflx_irrig(p)) then  !projected surface water supply is more than total demand, spill the excessive water on the ground
+                  qflx_over_supply(p) = qflx_surf_irrig(p) - qflx_irrig(p)
+                  qflx_surf_irrig(p) = qflx_irrig(p)
+               else
+                  qflx_over_supply(p)=0._r8
+               end if
+               
+               qflx_real_irrig(p) = qflx_surf_irrig(p) + ldomain%f_grd(g)*qflx_irrig(p) ! actual irrigation
+                
+               if (qflx_real_irrig(p) > qflx_irrig(p)) then  !real irrigation is greater than total demand
+                   qflx_real_irrig(p) = qflx_irrig(p)
+               end if
+               
+                   qflx_grnd_irrig(p) = qflx_real_irrig(p) - qflx_surf_irrig(p)
+                   !groundwater irrigation may be less than 'ldomain%f_grd(g)*qflx_irrig(p)' if real irrigation is greater than demand
+                   qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p) + qflx_over_supply(p)
+                   !applying irrigation, the over supply is included to balance water             
+               
+             else !this pft doesn't need water             
+               qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p)
+               qflx_real_irrig(p) = 0 ! this should be zero, just leave it here for testing
+               qflx_surf_irrig(p) = 0
+               qflx_grnd_irrig(p) = 0
+               qflx_over_supply(p) = 0
+               
+               if (qflx_irrig(p) > 0) then
+                 write(iulog,*)'warning irrigp>0 but irrigg is not',qflx_irrig(p),qflx_irrig_grid(g)
+               end if 
+             end if		
+                
+          else  ! one way coupling
+             qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + ldomain%f_surf(g)*qflx_irrig(p) + ldomain%f_grd(g)*qflx_irrig(p) 
+             qflx_real_irrig(p) = ldomain%f_surf(g)*qflx_irrig(p) + ldomain%f_grd(g)*qflx_irrig(p)
+               
                qflx_surf_irrig(p) = ldomain%f_surf(g)*qflx_irrig(p)
                qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p)
-               qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p)
-               qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p) 
                qflx_over_supply(p) = 0._r8
-               qflx_supply(p) = 0._r8 !no water supplied by MOSART 
-           end if
-          else
-               qflx_surf_irrig(p) = 0._r8
-               qflx_grnd_irrig(p) = 0._r8
-               qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) 
-               qflx_over_supply(p) = 0._r8
-               qflx_supply(p) = 0._r8 !no water supplied by MOSART
+               qflx_supply(p) = 0._r8 !assuming the irrigation demand is always met 
           end if
+          
+          !no coupling
+          !qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_irrig(p)
 
           ! Done irrigation
 
           qflx_prec_grnd(p) = qflx_prec_grnd_snow(p) + qflx_prec_grnd_rain(p)
 
-          if (.not. use_extrasnowlayers) then
-             if (do_capsnow(c)) then
-                qflx_snwcp_liq(p) = qflx_prec_grnd_rain(p)
-                qflx_snwcp_ice(p) = qflx_prec_grnd_snow(p)
+          if (do_capsnow(c)) then
+             qflx_snwcp_liq(p) = qflx_prec_grnd_rain(p)
+             qflx_snwcp_ice(p) = qflx_prec_grnd_snow(p)
 
-                qflx_snow_grnd_patch(p) = 0._r8
-                qflx_rain_grnd(p) = 0._r8
-             else
-                qflx_snwcp_liq(p) = 0._r8
-                qflx_snwcp_ice(p) = 0._r8
-                qflx_snow_grnd_patch(p) = qflx_prec_grnd_snow(p)           ! ice onto ground (mm/s)
-                qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)
-             end if
+             qflx_snow_grnd_patch(p) = 0._r8
+             qflx_rain_grnd(p) = 0._r8
           else
+             qflx_snwcp_liq(p) = 0._r8
+             qflx_snwcp_ice(p) = 0._r8
              qflx_snow_grnd_patch(p) = qflx_prec_grnd_snow(p)           ! ice onto ground (mm/s)
-             qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)       
-          endif
+             qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)
+          end if
 
        end do ! (end pft loop)
 
@@ -481,11 +557,6 @@ contains
        enddo
 
        ! Determine snow height and snow water
-       
-       if (use_extrasnowlayers) then
-          call NewSnowBulkDensity(bounds, num_nolakec, filter_nolakec, &
-                                  top_as, bifall(bounds%begc:bounds%endc))
-       end if
 
        do f = 1, num_nolakec
           c = filter_nolakec(f)
@@ -508,20 +579,18 @@ contains
              swe_old(c,j)=h2osoi_liq(c,j)+h2osoi_ice(c,j)
           enddo
 
-          if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
+          if (do_capsnow(c)) then
              dz_snowf = 0._r8
              newsnow(c) = qflx_snow_grnd_col(c) * dtime
              frac_sno(c)=1._r8
              int_snow(c) = 5.e2_r8
           else
-             if (.not. use_extrasnowlayers) then
-                if (forc_t(t) > tfrz + 2._r8) then
-                   bifall(c)=50._r8 + 1.7_r8*(17.0_r8)**1.5_r8
-                else if (forc_t(t) > tfrz - 15._r8) then
-                   bifall(c)=50._r8 + 1.7_r8*(forc_t(t) - tfrz + 15._r8)**1.5_r8
-                else
-                   bifall(c)=50._r8
-                end if
+             if (forc_t(t) > tfrz + 2._r8) then
+                bifall=50._r8 + 1.7_r8*(17.0_r8)**1.5_r8
+             else if (forc_t(t) > tfrz - 15._r8) then
+                bifall=50._r8 + 1.7_r8*(forc_t(t) - tfrz + 15._r8)**1.5_r8
+             else
+                bifall=50._r8
              end if
 
              ! all snow falls on ground, no snow on h2osfc
@@ -565,13 +634,13 @@ contains
                 ! for subgrid fluxes
                 if (subgridflag ==1 .and. .not. urbpoi(l)) then
                    if (frac_sno(c) > 0._r8)then
-                      snow_depth(c)=snow_depth(c) + newsnow(c)/(bifall(c) * frac_sno(c))
+                      snow_depth(c)=snow_depth(c) + newsnow(c)/(bifall * frac_sno(c))
                    else
                       snow_depth(c)=0._r8
                    end if
                 else
                    ! for uniform snow cover
-                   snow_depth(c)=snow_depth(c)+newsnow(c)/bifall(c)
+                   snow_depth(c)=snow_depth(c)+newsnow(c)/bifall
                 endif
 
                 ! use original fsca formulation (n&y 07)
@@ -589,7 +658,7 @@ contains
              else !h2osno == 0
                 ! initialize frac_sno and snow_depth when no snow present initially
                 if (newsnow(c) > 0._r8) then 
-                   z_avg = newsnow(c)/bifall(c)
+                   z_avg = newsnow(c)/bifall
                    fmelt=newsnow(c)
                    frac_sno(c) = tanh(accum_factor*newsnow(c))
 
@@ -603,7 +672,7 @@ contains
                    if (subgridflag ==1 .and. .not. urbpoi(l)) then
                       snow_depth(c)=z_avg/frac_sno(c)
                    else
-                      snow_depth(c)=newsnow(c)/bifall(c)
+                      snow_depth(c)=newsnow(c)/bifall
                    endif
                    ! use n&y07 formulation
                    if (oldfflag == 1) then 
@@ -653,40 +722,21 @@ contains
           ! as the surface air temperature
 
           newnode = 0    ! flag for when snow node will be initialized
-          if (.not. use_extrasnowlayers) then
-             if (snl(c) == 0 .and. qflx_snow_grnd_col(c) > 0.0_r8 .and. frac_sno(c)*snow_depth(c) >= 0.01_r8) then
-                newnode = 1
-                snl(c) = -1
-                dz(c,0) = snow_depth(c)                       ! meter
-                z(c,0) = -0.5_r8*dz(c,0)
-                zi(c,-1) = -dz(c,0)
-                t_soisno(c,0) = min(tfrz, forc_t(t))      ! K
-                h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
-                h2osoi_liq(c,0) = 0._r8                   ! kg/m2
-                frac_iceold(c,0) = 1._r8
+          if (snl(c) == 0 .and. qflx_snow_grnd_col(c) > 0.0_r8 .and. frac_sno(c)*snow_depth(c) >= 0.01_r8) then
+             newnode = 1
+             snl(c) = -1
+             dz(c,0) = snow_depth(c)                       ! meter
+             z(c,0) = -0.5_r8*dz(c,0)
+             zi(c,-1) = -dz(c,0)
+             t_soisno(c,0) = min(tfrz, forc_t(t))      ! K
+             h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
+             h2osoi_liq(c,0) = 0._r8                   ! kg/m2
+             frac_iceold(c,0) = 1._r8
 
-                ! intitialize SNICAR variables for fresh snow:
-                call aerosol_vars%Reset(column=c)
-                ! call waterstate_vars%Reset(column=c)
-                col_ws%snw_rds(c,0) = snw_rds_min
-             end if
-          else
-             if (snl(c) == 0 .and. frac_sno(c)*snow_depth(c) >= 0.01_r8) then
-                newnode = 1
-                snl(c) = -1
-                dz(c,0) = snow_depth(c)                       ! meter
-                z(c,0) = -0.5_r8*dz(c,0)
-                zi(c,-1) = -dz(c,0)
-                t_soisno(c,0) = min(tfrz, forc_t(t))      ! K
-                h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
-                h2osoi_liq(c,0) = 0._r8                   ! kg/m2
-                frac_iceold(c,0) = 1._r8
-
-                ! intitialize SNICAR variables for fresh snow:
-                call aerosol_vars%Reset(column=c)
-                ! call waterstate_vars%Reset(column=c)
-                col_ws%snw_rds(c,0) = snw_rds_min
-             end if             
+             ! intitialize SNICAR variables for fresh snow:
+             call aerosol_vars%Reset(column=c)
+             ! call waterstate_vars%Reset(column=c)
+             col_ws%snw_rds(c,0) = snw_rds_min
           end if
 
           ! The change of ice partial density of surface node due to precipitation.

@@ -90,9 +90,9 @@ contains
     !
     ! !USES:
     use clm_time_manager , only: get_days_per_year
-    use elm_varcon       , only: secspday
+    use clm_varcon       , only: secspday
     use pftvarcon        , only: npcropmin
-    use elm_varctl       , only: spinup_state, spinup_mortality_factor
+    use clm_varctl       , only: spinup_state, spinup_mortality_factor
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -287,7 +287,7 @@ contains
     ! to the column level and assign them to the three litter pools
     !
     ! !USES:
-    use elm_varpar , only : maxpatch_pft, nlevdecomp
+    use clm_varpar , only : maxpatch_pft, nlevdecomp
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter

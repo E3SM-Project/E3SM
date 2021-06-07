@@ -7,8 +7,8 @@ Module HydrologyNoDrainageMod
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use elm_varctl        , only : iulog, use_vichydro, use_extrasnowlayers
-  use elm_varcon        , only : e_ice, denh2o, denice, rpi, spval
+  use clm_varctl        , only : iulog, use_vichydro
+  use clm_varcon        , only : e_ice, denh2o, denice, rpi, spval
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
   use EnergyFluxType    , only : energyflux_type
@@ -60,7 +60,6 @@ contains
     !    -> SnowCompaction:        compaction of snow layers
     !    -> CombineSnowLayers:     combine snow layers that are thinner than minimum
     !    -> DivideSnowLayers:      subdivide snow layers that are thicker than maximum
-    !    -> DivideExtraSnowLayers: subdivide up to 16 snow layers that are thicker than maximum
     !
     ! !USES:
       !$acc routine seq
@@ -75,7 +74,7 @@ contains
     use SoilHydrologyMod     , only : ELMVICMap, SurfaceRunoff, Infiltration, WaterTable
     use SoilWaterMovementMod , only : SoilWater
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
-    use elm_varctl           , only : use_vsfm
+    use clm_varctl           , only : use_vsfm
     use SoilHydrologyMod     , only : DrainageVSFM
     use SoilWaterMovementMod , only : Compute_EffecRootFrac_And_VertTranSink
     !
@@ -124,8 +123,6 @@ contains
          snl                => col_pp%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                    
          nlev2bed           => col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          ctype              => col_pp%itype                              , & ! Input:  [integer  (:)   ]  column type                              
-
-         forc_wind          => top_as%windbot         , & ! Input:  [real(r8) (:) ]  atmospheric wind speed (m/s)
 
          t_h2osfc           => col_es%t_h2osfc          , & ! Input:  [real(r8) (:)   ]  surface water temperature               
          dTdz_top           => col_es%dTdz_top          , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1] !
@@ -210,7 +207,7 @@ contains
       !!TODO:  need to fix the waterstate_vars dependence here.
 #ifndef _OPENACC
       if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws)
         call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
 #endif
@@ -229,6 +226,7 @@ contains
       if( use_fates ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &
                                                       soilstate_vars)
 #endif
+
       !------------------------------------------------------------------------------------
       if (use_pflotran .and. pf_hmode) then
 
@@ -247,13 +245,14 @@ contains
       !------------------------------------------------------------------------------------
 
 #ifndef _OPENACC
-       if (use_betr) then
-          call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars, &
-             waterflux_vars=waterflux_vars, soilhydrology_vars = soilhydrology_vars)
+            
+      if (use_betr) then
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws, &
+           waterflux_vars=col_wf, soilhydrology_vars = soilhydrology_vars)
 
           call ep_betr%DiagAdvWaterFlux(num_hydrologyc, filter_hydrologyc)
 
-          call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
+          call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=col_wf)
        endif
 #endif
 
@@ -261,6 +260,7 @@ contains
          ! mapping soilmoist from CLM to VIC layers for runoff calculations
          call ELMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
               soilhydrology_vars)
+             
       end if
 
       !------------------------------------------------------------------------------------

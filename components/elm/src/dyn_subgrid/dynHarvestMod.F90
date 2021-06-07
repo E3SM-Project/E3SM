@@ -19,7 +19,7 @@ module dynHarvestMod
   use dynFileMod            , only : dyn_file_type
   use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
   use CNStateType           , only : cnstate_type
-   use VegetationPropertiesType        , only : veg_vp
+  use VegetationPropertiesType        , only : veg_vp
   use elm_varcon            , only : grlnd
   use ColumnType            , only : col_pp
   use ColumnDataType        , only : col_cf, col_nf, col_pf  
@@ -47,8 +47,8 @@ module dynHarvestMod
   type(dyn_file_type), target :: dynHarvest_file ! information for the file containing harvest data
 
   ! Define the underlying harvest variables
-  integer, public, parameter :: num_harvest_vars = 5
-  character(len=64), public, parameter :: harvest_varnames(num_harvest_vars) = &
+  integer, parameter :: num_harvest_vars = 5
+  character(len=64), parameter :: harvest_varnames(num_harvest_vars) = &
        [character(len=64) :: 'HARVEST_VH1', 'HARVEST_VH2', 'HARVEST_SH1', 'HARVEST_SH2', 'HARVEST_SH3']
   
   type(dyn_var_time_uninterp_type) :: harvest_vars(num_harvest_vars)   ! value of each harvest variable

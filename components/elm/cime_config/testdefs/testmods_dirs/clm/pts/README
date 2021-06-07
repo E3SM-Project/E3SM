@@ -1,0 +1,5 @@
+This testmods directory should not be used directly. Instead, it should be
+extended (i.e., included) by a mods directory that defines the point to run
+over - something like:
+
+./xmlchange PTS_LAT=42,PTS_LON=260

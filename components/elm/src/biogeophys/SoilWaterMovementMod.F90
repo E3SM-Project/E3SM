@@ -25,8 +25,7 @@ module SoilWaterMovementMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: SoilWater            ! Calculate soil hydrology
   public :: init_soilwater_movement
-  public :: Compute_EffecRootFrac_And_VertTranSink
-!  public :: Compute_EffecRootFrac_And_VertTranSink_HydStress
+  public :: Compute_EffecRootFrac_And_VertTranSink_Default
   !
   ! !PUBLIC DATA MEMBERS:
   logical, public :: zengdecker_2009_with_var_soil_thick
@@ -51,7 +50,7 @@ contains
     !DESCRIPTION
     !specify method for doing soil&root water interactions
     !
-    use elm_varctl, only : use_vsfm, use_var_soil_thick, use_hydrstress
+    use elm_varctl, only : use_vsfm, use_var_soil_thick
     use spmdMod,    only : mpicom, MPI_LOGICAL
     use shr_sys_mod,only : shr_sys_abort
     ! !ARGUMENTS:

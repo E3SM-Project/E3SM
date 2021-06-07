@@ -9,7 +9,7 @@ module AllocationMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use elm_varcon          , only : dzsoi_decomp
-  use elm_varctl          , only : use_c13, use_c14, spinup_state
+  use elm_varctl          , only : use_c13, use_c14, use_nitrif_denitrif, spinup_state
   use elm_varctl          , only : nyears_ad_carbon_only
   use abortutils          , only : endrun
   use decompMod           , only : bounds_type
@@ -29,7 +29,7 @@ module AllocationMod
   use VegetationDataType  , only : veg_cs, veg_ns, veg_nf, veg_ps, veg_pf
   use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf
   ! bgc interface & pflotran module switches
-  use elm_varctl          , only: use_elm_interface,use_elm_bgc, use_pflotran, pf_cmode
+  use elm_varctl          , only: use_clm_interface,use_clm_bgc, use_pflotran, pf_cmode
   use elm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
   use elm_varctl          , only : NFIX_PTASE_plant
@@ -45,12 +45,14 @@ module AllocationMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: readCNAllocParams
   public :: AllocationInit         ! Initialization
+  public :: update_PlantMicKinetics_pars
 !  public :: Allocation             ! run method
   !-----------------------------------------------------------------------------------------------------
   ! Allocation is divided into 3 subroutines/phases:
   public :: Allocation1_PlantNPDemand     !Plant N/P Demand;       called in EcosystemDynNoLeaching1
   public :: Allocation2_ResolveNPLimit    !Resolve N/P Limitation; called in SoilLittDecompAlloc
   public :: Allocation3_PlantCNPAlloc     !Plant C/N/P Allocation; called in SoilLittDecompAlloc2
+  public :: calc_nfix_stress              !compute stress for nitrogen fixation
   !-----------------------------------------------------------------------------------------------------
   public :: dynamic_plant_alloc        ! dynamic plant carbon allocation based on different nutrient stress
 
@@ -104,6 +106,7 @@ module AllocationMod
   !$acc declare create(aroot(:)            )
   !$acc declare create(col_plant_ndemand(:))
   !$acc declare create(col_plant_pdemand(:))
+
 
   logical :: crop_supln  = .false.    !Prognostic crop receives supplemental Nitrogen
 
@@ -194,7 +197,7 @@ contains
   end subroutine readCNAllocParams
 
   !-----------------------------------------------------------------------
-  subroutine AllocationInit ( bounds, elm_fates)
+  subroutine AllocationInit ( bounds)
     !
     ! !DESCRIPTION:
     !
@@ -213,8 +216,6 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds
-    type(hlm_fates_interface_type), intent(in) :: elm_fates  ! This will be needed in soon
-                                                             ! to be released features
     !
     ! !LOCAL VARIABLES:
     character(len=32) :: subname = 'AllocationInit'
@@ -837,7 +838,7 @@ contains
       end do
 
       ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
-      if (use_elm_interface.and.use_pflotran .and. pf_cmode) then
+      if (use_clm_interface.and.use_pflotran .and. pf_cmode) then
             do j = 1, nlevdecomp
                do fc=1, num_soilc
                   c = filter_soilc(fc)
@@ -992,6 +993,8 @@ contains
          sminn_to_plant_patch         => veg_nf%sminn_to_plant                , &
          smin_nh4_to_plant_patch      => veg_nf%smin_nh4_to_plant             , &
          smin_no3_to_plant_patch      => veg_nf%smin_no3_to_plant             , &
+         smin_nh4_to_plant_vr_patch   => veg_nf%smin_nh4_to_plant_vr             , &
+         smin_no3_to_plant_vr_patch   => veg_nf%smin_no3_to_plant_vr             , &
          actual_immob_no3             => col_nf%actual_immob_no3                , &
          actual_immob_nh4             => col_nf%actual_immob_nh4                , &
          froot_prof                   => cnstate_vars%froot_prof_patch                         , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
@@ -1043,6 +1046,8 @@ contains
          leafp_storage                => veg_ps%leafp_storage            , &
          leafp_xfer                   => veg_ps%leafp_xfer                 &
          )
+
+
       if (nu_com .eq. 'RD') then ! 'RD' : relative demand approach
 
          !local var = flux_type%var
@@ -1054,8 +1059,8 @@ contains
 
          ! Starting resolving N/P limitation
          ! calculate nuptake & puptake profile
-         call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
-         call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, puptake_prof)
+         call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
+         call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
 
       end if
 
@@ -1065,7 +1070,8 @@ contains
       ! (1) add nitrogen and phosphorus competition
       ! (2) nitrogen and phosphorus uptake is based on root kinetics
       ! (3) no second pass nutrient uptake for plants
-      ! ============================================================= 
+      ! =============================================================
+
 
          if (nu_com .eq. 'RD') then
             ! calculate competition coefficients
@@ -1200,6 +1206,7 @@ contains
                      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         e_km_nh4 = e_km_nh4 + e_plant_scalar*frootc(p)*froot_prof(p,j)*veg_pp%wtcol(p)/km_plant_nh4(ivt(p))
                         e_km_no3 = e_km_no3 + e_plant_scalar*frootc(p)*froot_prof(p,j)*veg_pp%wtcol(p)/km_plant_no3(ivt(p))
+                        decompmicc(c,j) = decompmicc(c,j) + decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
                      end if
                   end do
                   e_km_nh4 = e_km_nh4 + e_decomp_scalar*decompmicc(c,j)*(1._r8/km_decomp_nh4 + 1._r8/km_nit)
@@ -1239,7 +1246,7 @@ contains
                         plant_nh4demand_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * froot_prof(p,j) * &
                              cn_scalar(p) * t_scalar(c,j) * compet_plant_nh4(p)
                         plant_no3demand_vr_patch(p,j) = vmax_plant_no3(ivt(p)) * frootc(p) * froot_prof(p,j) * &
-                             cn_scalar(p) * t_scalar(c,j) * compet_plant_no3(p)
+                             cn_scalar_runmean(p) * t_scalar(c,j) * compet_plant_no3(p)
                         plant_nh4demand_vr_patch(p,j) = max(plant_nh4demand_vr_patch(p,j),0.0_r8)
                         plant_no3demand_vr_patch(p,j) = max(plant_no3demand_vr_patch(p,j),0.0_r8)
                         col_plant_nh4demand_vr(c,j) = col_plant_nh4demand_vr(c,j) + plant_nh4demand_vr_patch(p,j)*veg_pp%wtcol(p)
@@ -1538,7 +1545,7 @@ contains
                         endif
 
                         plant_pdemand_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
-                             cp_scalar(p) * t_scalar(c,j) * compet_plant_p(p)
+                             cp_scalar_runmean(p) * t_scalar(c,j) * compet_plant_p(p)
                         plant_pdemand_vr_patch(p,j) = max(plant_pdemand_vr_patch(p,j),0.0_r8)
                         col_plant_pdemand_vr(c,j) = col_plant_pdemand_vr(c,j) + plant_pdemand_vr_patch(p,j)*veg_pp%wtcol(p)
                      else
@@ -1660,7 +1667,7 @@ contains
                   end do
                end do
 
-            else ! ECA mode or MIC outcompete plant mode, be consistent with the idea
+            else ! ECA mode or MIC outcompete plant mode, be consistent with the idea in (.not. NITRIF_DENITRIF)
                     ! apply generic flux limiter based on Tang 2016 doi:10.5194/bg-13-723-2016
                do j = 1, nlevdecomp
                   do fc=1,num_soilc
@@ -1794,8 +1801,11 @@ contains
                      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         smin_nh4_to_plant_patch(p) = smin_nh4_to_plant_patch(p) + plant_nh4demand_vr_patch(p,j) * fpg_nh4_vr(c,j)&
                              *dzsoi_decomp(j)
+                        smin_nh4_to_plant_vr_patch(p, j) = plant_nh4demand_vr_patch(p,j) * fpg_nh4_vr(c,j)
+
                         smin_no3_to_plant_patch(p) = smin_no3_to_plant_patch(p) + plant_no3demand_vr_patch(p,j) * fpg_no3_vr(c,j)&
                              *dzsoi_decomp(j)
+                        smin_no3_to_plant_vr_patch(p,j) = plant_no3demand_vr_patch(p,j) * fpg_no3_vr(c,j)
                         sminp_to_plant_patch(p) = sminp_to_plant_patch(p) + plant_pdemand_vr_patch(p,j) * fpg_p_vr(c,j) &
                              *dzsoi_decomp(j)
                      end if
@@ -1876,10 +1886,10 @@ contains
                   if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         do j = 1, nlevdecomp
                            pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_nh4demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
-                                ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+                                ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar_runmean(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                                 * dzsoi_decomp(j)
                            pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_no3demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
-                                ,1e-20_r8) * fpg_no3_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+                                ,1e-20_r8) * fpg_no3_vr(c,j) / max(cn_scalar_runmean(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                                 * dzsoi_decomp(j)
                         end do
                   end if
@@ -1887,7 +1897,6 @@ contains
                end do
             end do
          end if
-
 
 
     end associate
@@ -2083,6 +2092,7 @@ contains
          grain_flag                   => cnstate_vars%grain_flag_patch                         , &
          cn_scalar_runmean            => cnstate_vars%cn_scalar_runmean                        , &
          cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean                        , &
+         water_scalar_runmean         => cnstate_vars%water_scalar_runmean                     , &
          annmax_retransp              => cnstate_vars%annmax_retransp_patch                    , &
          cpool_to_xsmrpool            => veg_cf%cpool_to_xsmrpool               , &
          w_scalar                     => col_cf%w_scalar                          , &
@@ -2326,6 +2336,7 @@ contains
              ! set allocation coefficients
              N_lim_factor(p) = cn_scalar_runmean(p) ! N stress factor
              P_lim_factor(p) = cp_scalar_runmean(p) ! P stress factor
+             W_lim_factor(p) = water_scalar_runmean(p) ! W stress factor
 
              if (carbon_only) then
                  N_lim_factor(p) = 0.0_r8
@@ -2335,9 +2346,10 @@ contains
              else if ( carbonphosphorus_only ) then
                  N_lim_factor(p) = 0.0_r8
              end if
-             W_lim_factor(p) = 0.0_r8
+             ! integrate instant water scalar for plant dynamic allocation
+             water_scalar(p) = 0.0_r8
              do j = 1 , nlevdecomp
-                 W_lim_factor(p) = W_lim_factor(p) + w_scalar(c,j) * froot_prof(p,j)
+                 water_scalar(p) = water_scalar(p) + w_scalar(c,j) * froot_prof(p,j) * dzsoi_decomp(j)
              end do
              ! N_lim_factor/P_lim_factor ones: highly limited
              ! N_lim_factor/P_lim_factor zeros: not limited
@@ -2510,7 +2522,7 @@ contains
                 cpool_to_xsmrpool(p) = 0.0_r8
 
                 ! storage pool turnover
-                xsmrpool_turnover(p) = max(xsmrpool(p) - mr*xsmr_ratio*dt , 0.0_r8) / (10.0_r8*365.0_r8*secspday)
+                xsmrpool_turnover(p) = max(xsmrpool(p) - mr*xsmr_ratio*dt , 0.0_r8) / (nsc_rtime(ivt(p))*365.0_r8*secspday)
              end if
 
              plant_calloc(p) = availc(p)
@@ -2989,6 +3001,7 @@ contains
                 sminp_to_plant(bounds%begc:bounds%endc))
 
            do j = 1, nlevdecomp
+
                do fc=1,num_soilc
                   c = filter_soilc(fc)
 
@@ -3000,6 +3013,8 @@ contains
                end do
             end do
           end if  ! carbonnitrogen
+
+        end if   ! use_nitrif_denitrif
 
       end if ! nu_com .eq. RD
 
@@ -3046,9 +3061,11 @@ contains
          do j = 1, nlevdecomp
             do fc=1,num_soilc
                c = filter_soilc(fc)
-
-               sminn_vr_loc(c,j) = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
-               
+               if (.not. use_nitrif_denitrif) then
+                    sminn_vr_loc(c,j) = sminn_vr(c,j)
+               else
+                    sminn_vr_loc(c,j) = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
+               end if
                if(use_pflotran .and. pf_cmode) then
                     sminn_tot(c) = sminn_tot(c) + sminn_vr_loc(c,j) * dzsoi_decomp(j) &
                        *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
@@ -3066,7 +3083,7 @@ contains
                      nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c) &
                         *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
                   else
-                     nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c)   !original:  nuptake_prof(c,j) = sminn_vr(c,j) / sminn_tot(c)
+                     nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c)   !original: if (use_nitrif_denitrif): nuptake_prof(c,j) = sminn_vr(c,j) / sminn_tot(c)
                   end if
                else
                   nuptake_prof(c,j) = nfixation_prof(c,j)
@@ -3219,5 +3236,289 @@ contains
   end subroutine dynamic_plant_alloc
 
 !-----------------------------------------------------------------------
+  subroutine update_PlantMicKinetics_pars(bounds, num_soilc, filter_soilc  , &
+      cnstate_vars, carbonstate_vars, carbonflux_vars,  nitrogenstate_vars, &
+      nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars, &
+      PlantMicKinetics_vars)
 
+  use PlantMicKineticsMod, only : PlantMicKinetics_type
+  implicit none
+  type(bounds_type)        , intent(in)    :: bounds
+  integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
+  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
+  type(cnstate_type), intent(inout) :: cnstate_vars
+  type(carbonstate_type), intent(in) :: carbonstate_vars
+  type(carbonflux_type), intent(in) :: carbonflux_vars
+  type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+  type(phosphorusstate_type), intent(in)   :: phosphorusstate_vars
+  type(nitrogenflux_type), intent(in) :: nitrogenflux_vars
+  type(phosphorusflux_type), intent(in) :: phosphorusflux_vars
+  type(PlantMicKinetics_type), intent(inout) :: PlantMicKinetics_vars
+
+
+  call update_stoichiometry_scalar(bounds, num_soilc, filter_soilc  , &
+      cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
+      phosphorusstate_vars)
+
+  call update_competition_kinetic_pars(bounds, num_soilc, filter_soilc  , &
+    cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, &
+    phosphorusstate_vars, phosphorusflux_vars, PlantMicKinetics_vars)
+
+  end subroutine update_PlantMicKinetics_pars
+
+!-----------------------------------------------------------------------
+  subroutine update_stoichiometry_scalar(bounds, num_soilc, filter_soilc  , &
+      cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
+      phosphorusstate_vars)
+
+  !
+  !DESCRIPTION
+  ! compute plant stoichiometry
+  use elm_varctl       , only: cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+                                 cnallocate_carbonphosphorus_only
+  use pftvarcon        , only: noveg
+  implicit none
+  ! !ARGUMENTS:
+  type(bounds_type)        , intent(in)    :: bounds
+  integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
+  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
+  type(cnstate_type)       , intent(inout) :: cnstate_vars
+  type(carbonstate_type)   , intent(in)    :: carbonstate_vars
+  type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+  type(phosphorusstate_type), intent(in)   :: phosphorusstate_vars
+
+  integer :: p, fc, c
+  real(r8):: cn_stoich_var=0.2    ! variability of CN ratio
+  real(r8):: cp_stoich_var=0.4    ! variability of CP ratio
+
+
+  associate(                                                       &
+    ivt               => veg_pp%itype                            , &
+    leafcn            => veg_vp%leafcn                           , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)
+    leafcp            => veg_vp%leafcp                           , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)
+    leafc             => veg_cs%leafc                            , &
+    leafc_storage     => veg_cs%leafc_storage                    , &
+    leafc_xfer        => veg_cs%leafc_xfer                       , &
+    leafn             => veg_ns%leafn                            , &
+    leafn_storage     => veg_ns%leafn_storage                    , &
+    leafn_xfer        => veg_ns%leafn_xfer                       , &
+    leafp             => veg_ps%leafp                            , &
+    leafp_storage     => veg_ps%leafp_storage                    , &
+    leafp_xfer        => veg_ps%leafp_xfer                       , &
+    cn_scalar         => cnstate_vars%cn_scalar                  , &
+    cp_scalar         => cnstate_vars%cp_scalar                    &
+  )
+
+  do fc=1, num_soilc
+    c = filter_soilc(fc)
+    do p = col_pp%pfti(c), col_pp%pftf(c)
+      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
+        ! scaling factor based on  CP ratio flexibility
+        if (cnallocate_carbonnitrogen_only() .or. cnallocate_carbon_only()) then
+          cp_scalar(p) = 0.0_r8
+        else
+          cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
+                     max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1.e-20_r8) - &
+                     leafcp(ivt(p))*(1._r8- cp_stoich_var)) / &
+                      (leafcp(ivt(p)) - leafcp(ivt(p))*(1._r8- cp_stoich_var)),0.0_r8),1.0_r8)
+        endif
+        if (cnallocate_carbonphosphorus_only() .or. cnallocate_carbon_only()) then
+          cn_scalar(p) = 0.0_r8
+        else
+          cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/ &
+                       max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1.e-20_r8) - &
+                       leafcn(ivt(p))*(1._r8- cn_stoich_var)) / &
+                       (leafcn(ivt(p)) - leafcn(ivt(p))*(1._r8- cn_stoich_var)),0.0_r8),1.0_r8)
+        endif
+      else
+        cp_scalar(p) = 0.0_r8
+        cn_scalar(p) = 0.0_r8
+      end if
+    end do
+  end do
+  end associate
+  end subroutine update_stoichiometry_scalar
+
+
+!-----------------------------------------------------------------------
+  subroutine update_competition_kinetic_pars(bounds, num_soilc, filter_soilc  , &
+    cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, &
+    phosphorusstate_vars, phosphorusflux_vars, PlantMicKinetics_vars)
+
+  use pftvarcon        , only: noveg
+  use PlantMicKineticsMod, only : PlantMicKinetics_type
+  use elm_varpar      , only: nlevdecomp
+  use clm_time_manager, only: get_step_size
+  implicit none
+  type(bounds_type)        , intent(in)    :: bounds
+  integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
+  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
+  type(cnstate_type), intent(in) :: cnstate_vars
+  type(carbonstate_type), intent(in) :: carbonstate_vars
+  type(carbonflux_type) , intent(in) :: carbonflux_vars
+  type(nitrogenflux_type), intent(in) :: nitrogenflux_vars
+  type(phosphorusflux_type), intent(in):: phosphorusflux_vars
+  type(phosphorusstate_type), intent(in) :: phosphorusstate_vars
+  type(PlantMicKinetics_type), intent(inout) :: PlantMicKinetics_vars
+  integer :: j, fc, c, p
+  real(r8) :: dt
+  associate(                                                 &
+    ivt                  => veg_pp%itype                   , &
+    km_nit               => veg_vp%km_nit                  , &
+    km_den               => veg_vp%km_den                  , &
+    km_decomp_nh4        => veg_vp%km_decomp_nh4           , &
+    km_decomp_no3        => veg_vp%km_decomp_no3           , &
+    km_decomp_p          => veg_vp%km_decomp_p             , &
+    vmax_plant_nh4       => veg_vp%vmax_plant_nh4          , &
+    vmax_plant_no3       => veg_vp%vmax_plant_no3          , &
+    vmax_plant_p         => veg_vp%vmax_plant_p            , &
+    km_plant_nh4         => veg_vp%km_plant_nh4            , &
+    km_plant_no3         => veg_vp%km_plant_no3            , &
+    km_plant_p           => veg_vp%km_plant_p              , &
+    km_minsurf_p_vr      => veg_vp%km_minsurf_p_vr         , &
+    vmax_minsurf_p_vr    => veg_vp%vmax_minsurf_p_vr       , &
+    decompmicc_patch_vr  => veg_vp%decompmicc_patch_vr     , &
+    frootc               => veg_cs%frootc                  , &
+    t_scalar             => col_cf%t_scalar                , &
+    froot_prof           => cnstate_vars%froot_prof_patch  , &
+    cn_scalar_runmean    => cnstate_vars%cn_scalar_runmean , &
+    cp_scalar_runmean    => cnstate_vars%cp_scalar_runmean , &
+    ndep_prof           => cnstate_vars%ndep_prof_col      , &
+    isoilorder                   => cnstate_vars%isoilorder, &
+    minsurf_p_compet             => PlantMicKinetics_vars%minsurf_p_compet_vr_col    , &
+    minsurf_nh4_compet           => PlantMicKinetics_vars%minsurf_nh4_compet_vr_col  , &    
+    plant_eff_ncompet_b_vr_patch => PlantMicKinetics_vars%plant_eff_ncompet_b_vr_patch, &
+    plant_eff_pcompet_b_vr_patch => PlantMicKinetics_vars%plant_eff_pcompet_b_vr_patch, &
+    plant_nh4_vmax_vr_patch      => PlantMicKinetics_vars%plant_nh4_vmax_vr_patch, &
+    plant_no3_vmax_vr_patch      => PlantMicKinetics_vars%plant_no3_vmax_vr_patch, &
+    plant_p_vmax_vr_patch        => PlantMicKinetics_vars%plant_p_vmax_vr_patch, &
+    plant_nh4_km_vr_patch        => PlantMicKinetics_vars%plant_nh4_km_vr_patch, &
+    plant_no3_km_vr_patch        => PlantMicKinetics_vars%plant_no3_km_vr_patch, &
+    plant_p_km_vr_patch          => PlantMicKinetics_vars%plant_p_km_vr_patch, &
+    decomp_eff_ncompet_b_vr_col  => PlantMicKinetics_vars%decomp_eff_ncompet_b_vr_col, &
+    decomp_eff_pcompet_b_vr_col  => PlantMicKinetics_vars%decomp_eff_pcompet_b_vr_col, &
+    nit_eff_ncompet_b_vr_col     => PlantMicKinetics_vars%nit_eff_ncompet_b_vr_col, &
+    den_eff_ncompet_b_vr_col     => PlantMicKinetics_vars%den_eff_ncompet_b_vr_col, &
+    km_nit_nh4_vr_col            => PlantMicKinetics_vars%km_nit_nh4_vr_col, &
+    km_den_no3_vr_col            => PlantMicKinetics_vars%km_den_no3_vr_col, &
+    km_minsurf_p_vr_col          => PlantMicKinetics_vars%km_minsurf_p_vr_col,  &
+    km_minsurf_nh4_vr            => PlantMicKinetics_vars%km_minsurf_nh4_vr_col, &
+    vmax_minsurf_p_vr_col        => PlantMicKinetics_vars%vmax_minsurf_p_vr_col, &
+    km_decomp_no3_vr_col         => PlantMicKinetics_vars%km_decomp_no3_vr_col, &
+    km_decomp_nh4_vr_col         => PlantMicKinetics_vars%km_decomp_nh4_vr_col, &
+    km_decomp_p_vr_col           =>  PlantMicKinetics_vars%km_decomp_p_vr_col, &
+    dsolutionp_dt_vr_col         => PlantMicKinetics_vars%dsolutionp_dt_vr_col ,&
+    dlabp_dt_vr_col              => PlantMicKinetics_vars%dlabp_dt_vr_col, &
+    pdep_to_sminp                => col_pf%pdep_to_sminp    , &
+    biochem_pmin_vr              => col_pf%biochem_pmin_vr, &
+    col_plant_pdemand_vr         => col_pf%col_plant_pdemand_vr, &
+    labilep_vr                   => col_ps%labilep_vr, &
+    primp_to_labilep_vr          => col_pf%primp_to_labilep_vr &
+  )
+  dt = real( get_step_size(), r8 )
+   do j = 1, nlevdecomp
+      do fc=1,num_soilc
+         c = filter_soilc(fc)
+         decompmicc(c,j) = 0.0_r8
+
+         do p = col_pp%pfti(c), col_pp%pftf(c)
+           if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
+             plant_eff_ncompet_b_vr_patch(p,j)=e_plant_scalar * frootc(p) * froot_prof(p,j) * veg_pp%wtcol(p)
+
+             plant_eff_pcompet_b_vr_patch(p,j)=e_plant_scalar * frootc(p) * froot_prof(p,j) * veg_pp%wtcol(p)
+
+             decompmicc(c,j) = decompmicc(c,j) + decompmicc_patch_vr(ivt(p),j) * veg_pp%wtcol(p)
+
+             plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * &
+                             froot_prof(p,j) * cn_scalar_runmean(p) * t_scalar(c,j) * veg_pp%wtcol(p)
+
+             plant_no3_vmax_vr_patch(p,j) =  vmax_plant_no3(ivt(p)) * frootc(p) * froot_prof(p,j) * &
+                             cn_scalar_runmean(p) * t_scalar(c,j) * veg_pp%wtcol(p)
+             plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
+                             cp_scalar_runmean(p) * t_scalar(c,j) * veg_pp%wtcol(p)
+
+             plant_nh4_km_vr_patch(p,j) = km_plant_nh4(ivt(p))
+
+             plant_no3_km_vr_patch(p,j) = km_plant_no3(ivt(p))
+             plant_p_km_vr_patch(p,j) = km_plant_p(ivt(p))
+           else
+             plant_eff_ncompet_b_vr_patch(p,j)=0._r8
+             plant_eff_pcompet_b_vr_patch(p,j)=0._r8
+             plant_nh4_vmax_vr_patch(p,j) = 0._r8
+             plant_no3_vmax_vr_patch(p,j) = 0._r8
+             plant_p_vmax_vr_patch(p,j) = 0._r8
+           end if
+         enddo
+         !decomposers, nitrifiers and denitrifiers share the same microbial biomass
+         decomp_eff_ncompet_b_vr_col(c,j)=e_decomp_scalar * decompmicc(c,j)
+         decomp_eff_pcompet_b_vr_col(c,j)=decomp_eff_ncompet_b_vr_col(c,j)
+         nit_eff_ncompet_b_vr_col(c,j)=e_decomp_scalar * decompmicc(c,j)
+         den_eff_ncompet_b_vr_col(c,j)=e_decomp_scalar * decompmicc(c,j)
+         km_nit_nh4_vr_col(c,j)=km_nit
+         km_den_no3_vr_col(c,j)=km_den
+         km_decomp_nh4_vr_col(c,j)=km_decomp_nh4
+         km_decomp_no3_vr_col(c,j) = km_decomp_no3
+         km_decomp_p_vr_col(c,j) = km_decomp_p
+         !watch out how sorption-desorption is done
+         km_minsurf_p_vr_col(c,j)=km_minsurf_p_vr(isoilorder(c),j)
+         vmax_minsurf_p_vr_col(c,j) = vmax_minsurf_p_vr(isoilorder(c),j)
+
+         dsolutionp_dt_vr_col(c,j) = biochem_pmin_vr(c,j) + primp_to_labilep_vr(c,j) +&
+                        pdep_to_sminp(c)*ndep_prof(c,j) - col_plant_pdemand_vr(c,j)
+         dlabp_dt_vr_col(c,j) = labilep_vr(c,j)/dt
+         minsurf_p_compet(c,j) = 0._r8
+         minsurf_nh4_compet(c,j) = 0._r8
+         km_minsurf_nh4_vr(c,j)=0._r8
+    enddo
+  enddo
+  end associate
+  end subroutine update_competition_kinetic_pars
+
+!--------------------------------------------------------
+  subroutine calc_nfix_stress(num_soilc, filter_soilc, cnstate_vars, col_cf, veg_cs, veg_ns, veg_nf)
+  !
+  !DESCRIPTION:
+  ! compute the plant nitrogen stress for fixation
+  implicit none
+  integer, intent(in) :: num_soilc
+  integer, intent(in) :: filter_soilc(:)
+  type(cnstate_type)       , intent(in)    :: cnstate_vars
+  type(column_carbon_flux)   , intent(in)     :: col_cf
+  type(vegetation_carbon_state),intent(inout) :: veg_cs
+  type(vegetation_nitrogen_state),intent(inout) :: veg_ns
+  type(vegetation_nitrogen_flux) ,intent(inout) :: veg_nf    !
+
+  integer :: fc, c, p, j
+
+  associate(     &
+   cn_scalar_runmean            => cnstate_vars%cn_scalar_runmean       , &
+   cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean       , &
+   froot_prof                   => cnstate_vars%froot_prof_patch        , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
+   frootc                       => veg_cs%frootc                         , & ! Input:  [real(r8) (:)   ]
+    t_scalar                     => col_cf%t_scalar                     , &
+    smin_nh4_to_plant_vr_patch      => veg_nf%smin_nh4_to_plant_vr      , &
+    smin_no3_to_plant_vr_patch      => veg_nf%smin_no3_to_plant_vr      , &
+    pnup_pfrootc                 => veg_ns%pnup_pfrootc                   &
+
+  )
+
+  do fc=1,num_soilc
+    c = filter_soilc(fc)
+    do p = col_pp%pfti(c), col_pp%pftf(c)
+      pnup_pfrootc(p) =  0.0_r8
+      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
+        do j = 1, nlevdecomp
+           pnup_pfrootc(p) =  pnup_pfrootc(p) + smin_nh4_to_plant_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
+              ,1e-20_r8) / max(cn_scalar_runmean(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+              * dzsoi_decomp(j)
+           pnup_pfrootc(p) =  pnup_pfrootc(p) + smin_no3_to_plant_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
+              ,1e-20_r8)  / max(cn_scalar_runmean(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+              * dzsoi_decomp(j)
+        end do
+      end if
+      pnup_pfrootc(p) =  pnup_pfrootc(p) / zisoi(nlevdecomp-1)
+    end do
+  end do
+  end associate
+  end subroutine calc_nfix_stress
 end module AllocationMod

@@ -10,12 +10,12 @@ module initInterpMod
   use shr_sys_mod    , only: shr_sys_flush
   use shr_infnan_mod , only: shr_infnan_isnan
   use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use elm_varctl     , only: iulog
+  use clm_varctl     , only: iulog
   use abortutils     , only: endrun
   use spmdMod        , only: masterproc
   use restUtilMod    , only: iflag_interp, iflag_copy, iflag_skip
   use restUtilMod    , only: iflag_noswitchdim, iflag_switchdim
-  use elm_varcon     , only: spval, re
+  use clm_varcon     , only: spval, re
   use ncdio_pio
   use pio
 
@@ -124,13 +124,12 @@ contains
     logical , pointer  :: pft_activei(:), pft_activeo(:) 
     logical , pointer  :: col_activei(:), col_activeo(:) 
     logical , pointer  :: lun_activei(:), lun_activeo(:) 
-    logical , pointer  :: grc_activei(:), grc_activeo(:) 
     integer , pointer  :: sgridindex(:)
     logical , pointer  :: activei(:), activeo(:)
     !--------------------------------------------------------------------
 
     if (masterproc) then
-       write (iulog,*) '**** Mapping elm initial data from input ',trim(filei),&
+       write (iulog,*) '**** Mapping clm initial data from input ',trim(filei),&
             '  to output ',trim(fileo),' ****'
     end if
 
@@ -195,27 +194,22 @@ contains
     begp_i = 1 ;  endp_i = npftsi
     begc_i = 1 ;  endc_i = ncolsi
     begl_i = 1 ;  endl_i = nlunsi
-    begg_i = 1 ;  endg_i = ngrcsi
 
     begp_o = bounds%begp ;  endp_o = bounds%endp
     begc_o = bounds%begc ;  endc_o = bounds%endc
     begl_o = bounds%begl ;  endl_o = bounds%endl
-    begg_o = bounds%begg ;  endg_o = bounds%endg
 
     allocate(pft_activei(begp_i:endp_i))
     allocate(col_activei(begc_i:endc_i))
     allocate(lun_activei(begl_i:endl_i))
-    allocate(grc_activei(begg_i:endg_i))
 
     allocate(pft_activeo(begp_o:endp_o))
     allocate(col_activeo(begc_o:endc_o))
     allocate(lun_activeo(begl_o:endl_o))
-    allocate(grc_activeo(begg_o:endg_o))
 
     allocate(pftindx(begp_o:endp_o))
     allocate(colindx(begc_o:endc_o))
     allocate(lunindx(begl_o:endl_o))
-    allocate(grcindx(begg_o:endg_o))
 
     ! For each output pft, find the input pft, pftindx, that is closest
 
@@ -243,15 +237,6 @@ contains
     vec_dimname = 'landunit'
     call findMinDist(vec_dimname, begl_i, endl_i, begl_o, endl_o, ncidi, ncido, &
          lun_activei, lun_activeo, lunindx )
-
-    ! For each output gridcell, find the input gridcell, grcindx, that is closest
-
-    if (masterproc) then
-       write(iulog,*)'finding minimum distance for gridcells'
-    end if
-    vec_dimname = 'gridcell'
-    call findMinDist(vec_dimname, begg_i, endg_i, begg_o, endg_o, ncidi, ncido, &
-         grc_activei, grc_activeo, grcindx )
 
     !------------------------------------------------------------------------          
     ! Read input initial data and write output initial data
@@ -401,14 +386,6 @@ contains
              activei => lun_activei
              activeo => lun_activeo
              sgridindex => lunindx
-          else if ( vec_dimname == 'gridcell' )then
-             begi = begg_i
-             endi = endg_i
-             bego = begg_o
-             endo = endg_o
-             activei => grc_activei
-             activeo => grc_activeo
-             sgridindex => grcindx
           else
              call endrun(msg='ERROR interpinic: 1D variable '//trim(varname)//&
                   'with unknown subgrid dimension: '//trim(vec_dimname)//&
@@ -623,10 +600,6 @@ contains
        call ncd_io(ncid=ncid, varname='land1d_lat'    , flag='read', data=subgrid%lat  , dim1name='landunit') 
        call ncd_io(ncid=ncid, varname='land1d_ityplun', flag='read', data=subgrid%ltype, dim1name='landunit')
        call ncd_io(ncid=ncid, varname='land1d_active' , flag='read', data=itemp        , dim1name='landunit') 
-    else if (dimname == 'gridcell') then
-       call ncd_io(ncid=ncid, varname='grid1d_lon'    , flag='read', data=subgrid%lon  , dim1name='gridunit') 
-       call ncd_io(ncid=ncid, varname='grid1d_lat'    , flag='read', data=subgrid%lat  , dim1name='gridunit') 
-       itemp(:) = 1
     end if
 
     do n = beg,end
@@ -705,9 +678,6 @@ contains
        call ncd_io(ncid=ncid, varname='land1d_lat'    , flag='read', data=subgrid%lat  ) 
        call ncd_io(ncid=ncid, varname='land1d_ityplun', flag='read', data=subgrid%ltype)
        call ncd_io(ncid=ncid, varname='land1d_active' , flag='read', data=itemp) 
-    else if (dimname == 'gridcell') then
-       call ncd_io(ncid=ncid, varname='grid1d_lon'    , flag='read', data=subgrid%lon  )
-       call ncd_io(ncid=ncid, varname='grid1d_lat'    , flag='read', data=subgrid%lat  )
     end if
 
     do n = beg,end
@@ -861,8 +831,6 @@ contains
        if (subgridi%ltype(ni) == subgrido%ltype(no)) then
           is_sametype = .true.
        end if
-    else if (trim(subgridi%name) == 'gridcell' .and. trim(subgrido%name) == 'gridcell') then
-       is_sametype = .true.
     else 
        if (masterproc) then
           write(iulog,*)'ERROR interpinic: is_sametype check on input and output type not supported'
@@ -987,7 +955,7 @@ contains
              rbufslo(no) = spval
           end if
        else
-          if ( shr_infnan_isnan(rbufslo(no)) ) then
+          if ( shr_infnan_isnan(rbufsli(no)) ) then
              rbufslo(no) = spval
           end if
        end if

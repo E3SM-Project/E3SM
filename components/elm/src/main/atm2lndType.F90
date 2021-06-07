@@ -9,9 +9,9 @@ module atm2lndType
   use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod   , only : errMsg => shr_log_errMsg
   use shr_megan_mod , only : shr_megan_mechcomps_n
-  use elm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
-  use elm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
-  use elm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_fates
+  use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
+  use clm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
+  use clm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_fates
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   use abortutils    , only : endrun
@@ -112,7 +112,6 @@ module atm2lndType
      real(r8), pointer :: volr_grc                      (:)   => null() ! rof volr total volume (m3)
      real(r8), pointer :: volrmch_grc                   (:)   => null() ! rof volr main channel (m3)
      real(r8), pointer :: supply_grc                    (:)   => null() ! rof volr supply (mm/s)
-     real(r8), pointer :: deficit_grc                   (:)   => null() ! rof volr deficit (mm/s)
 	 
      ! anomaly forcing
      real(r8), pointer :: af_precip_grc                 (:)   => null() ! anomaly forcing 
@@ -267,7 +266,6 @@ contains
     allocate(this%volr_grc                      (begg:endg))        ; this%volr_grc                      (:)   = ival
     allocate(this%volrmch_grc                   (begg:endg))        ; this%volrmch_grc                   (:)   = ival
     allocate(this%supply_grc                    (begg:endg))        ; this%supply_grc                    (:)   = ival
-    allocate(this%deficit_grc                   (begg:endg))        ; this%deficit_grc                   (:)   = ival
 
     ! anomaly forcing
     allocate(this%bc_precip_grc                 (begg:endg))        ; this%bc_precip_grc                 (:)   = ival
@@ -334,11 +332,6 @@ contains
     call hist_addfld1d (fname='SUPPLY',  units='mm/s',  &
          avgflag='A', long_name='runoff supply for land use', &
          ptr_lnd=this%supply_grc)
-         
-    this%deficit_grc(begg:endg) = spval
-    call hist_addfld1d (fname='DEFICIT',  units='mm/s',  &
-         avgflag='A', long_name='runoff supply deficit', &
-         ptr_lnd=this%deficit_grc)
 
 !    this%forc_wind_grc(begg:endg) = spval
 !    call hist_addfld1d (fname='WIND', units='m/s',  &
@@ -483,7 +476,7 @@ contains
     ! restart file for restart or branch runs
     !
     ! !USES 
-    use elm_varcon  , only : spval
+    use clm_varcon  , only : spval
     use accumulMod  , only : init_accum_field
     !
     ! !ARGUMENTS:

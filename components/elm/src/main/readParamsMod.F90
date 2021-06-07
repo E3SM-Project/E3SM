@@ -5,8 +5,8 @@ module readParamsMod
   ! Read parameters
   ! module used to read parameters for individual modules
   !
-  use elm_varctl   , only: use_cn, use_century_decomp
-  use elm_varctl   , only: use_lch4, use_fates
+  use clm_varctl   , only: use_cn, use_century_decomp, use_nitrif_denitrif
+  use clm_varctl   , only: use_lch4, use_fates
   implicit none
   save
   private
@@ -37,7 +37,7 @@ contains
 
     use SharedParamsMod       , only : ParamsReadShared
 
-    use elm_varctl              , only : paramfile, iulog
+    use clm_varctl              , only : paramfile, iulog
     use spmdMod                 , only : masterproc
     use fileutils               , only : getfil
     use ncdio_pio               , only : ncd_pio_closefile, ncd_pio_openfile, &
@@ -89,14 +89,14 @@ contains
     use NitrifDenitrifMod      , only : readNitrifDenitrifParams
     use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
     use CH4Mod                   , only : readCH4Params
-    use elm_varctl               , only : paramfile, iulog, use_betr, use_hydrstress
+    use clm_varctl               , only : paramfile, iulog, use_betr
     use spmdMod                  , only : masterproc
     use fileutils                , only : getfil
     use ncdio_pio                , only : ncd_pio_closefile, ncd_pio_openfile, &
                                           file_desc_t, ncd_inqdid, ncd_inqdlen
-    use tracer_varcon            , only : is_active_betr_bgc                                         
-    use PhotosynthesisMod        , only : params_inst
-    
+    use decompMod                , only : bounds_type, get_proc_bounds 
+    use ALMBeTRNLMod             , only : do_betr_bgc_type 
+    use clm_instMod              , only : ep_betr
     !
     ! !ARGUMENTS:
     implicit none
@@ -107,6 +107,7 @@ contains
     type(file_desc_t)  :: ncid  ! pio netCDF file id
     integer            :: dimid ! netCDF dimension id
     integer            :: npft  ! number of pfts on pft-physiology file
+    type(bounds_type) :: bounds_proc
     !-----------------------------------------------------------------------
 
     if (masterproc) then
@@ -121,7 +122,8 @@ contains
     
     if(use_betr)then
     !  the following will be replaced with something more general. Jinyun Tang
-    !  call bgc_reaction%readParams(ncid, betrtracer_vars)   
+      call get_proc_bounds(bounds_proc)
+      call ep_betr%readParams(bounds_proc)    
     endif
 
     !
@@ -131,7 +133,7 @@ contains
     if ( (use_cn .or. use_fates) ) then
 
        call readCNAllocParams(ncid)
-       if(.not. is_active_betr_bgc) then
+       if(.not. do_betr_bgc_type('type2_bgc')) then
          call readSoilLittDecompParams(ncid)
          if (use_century_decomp) then
             call readDecompBGCParams(ncid)
@@ -139,7 +141,9 @@ contains
             call readDecompCNParams(ncid)
          end if
        
-         call readNitrifDenitrifParams(ncid)
+         if (use_nitrif_denitrif) then
+            call readNitrifDenitrifParams(ncid)
+         end if
 
          call readSoilLittVertTranspParams(ncid)
        
@@ -147,28 +151,14 @@ contains
             call readCH4Params (ncid)
          end if
       endif
-      call readNitrogenDynamicsParams (ncid)
     end if
 
     if (use_cn) then
-       if(is_active_betr_bgc)then
-         call readCNPhenolBeTRParams(ncid)
-       else
-         call readPhenolParams(ncid)
-       endif
+       call readPhenolParams(ncid)
        call readMaintenanceRespParams (ncid)
-       if(is_active_betr_bgc)then
-         call readCNGapMortBeTRParams (ncid)
-       else
-         call readGapMortParams (ncid)
-       endif
+       call readNitrogenDynamicsParams (ncid)
+       call readGapMortParams (ncid)
     end if
-    !
-    ! Biogeophysics
-    !
-    if(use_hydrstress)then
-      call params_inst%readParams( ncid )
-    endif
 
     !
     ! close CN params file

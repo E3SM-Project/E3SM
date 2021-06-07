@@ -9,10 +9,10 @@ module pftvarcon
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
-  use elm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
-  use elm_varctl  , only : iulog, use_vertsoilc
-  use elm_varpar  , only : nlevdecomp_full, nsoilorder
-  use elm_varctl  , only : nu_com
+  use clm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
+  use clm_varctl  , only : iulog, use_vertsoilc
+  use clm_varpar  , only : nlevdecomp_full, nsoilorder
+  use clm_varctl  , only : nu_com
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -52,7 +52,7 @@ module pftvarcon
   ! Number of crop functional types actually used in the model. This includes each CFT for
   ! which is_pft_known_to_model is true. Note that this includes irrigated crops even if
   ! irrigation is turned off in this run: it just excludes crop types that aren't handled
-  ! at all, as given by the mergetoelmpft list.
+  ! at all, as given by the mergetoclmpft list.
   integer :: num_cfts_known_to_model
 
   real(r8), allocatable :: dleaf(:)       !characteristic leaf dimension (m)
@@ -96,12 +96,12 @@ module pftvarcon
   ! for crop
 
   ! These arrays give information about the merge of unused crop types to the types CLM
-  ! knows about. mergetoelmpft(m) gives the crop type that CLM uses to simulate input
-  ! type m (and mergetoelmpft(m) == m implies that CLM simulates crop type m
+  ! knows about. mergetoclmpft(m) gives the crop type that CLM uses to simulate input
+  ! type m (and mergetoclmpft(m) == m implies that CLM simulates crop type m
   ! directly). is_pft_known_to_model(m) is true if CLM simulates crop type m, and false
   ! otherwise. Note that these do NOT relate to whether irrigation is on or off in a
   ! given simulation - that is handled separately.
-  integer , allocatable :: mergetoelmpft         (:)
+  integer , allocatable :: mergetoclmpft         (:)
   logical , allocatable :: is_pft_known_to_model (:)
 
   real(r8), allocatable :: graincn(:)      !grain C:N (gC/gN)
@@ -213,6 +213,9 @@ module pftvarcon
   real(r8)              :: lamda_ptase         ! critical value that incur biochemical production
   real(r8), allocatable :: i_vc(:)             ! intercept of photosynthesis vcmax ~ leaf N content regression model
   real(r8), allocatable :: s_vc(:)             ! slope of photosynthesis vcmax ~ leaf N content regression model
+  real(r8), allocatable :: nsc_rtime(:)        ! non-structural carbon residence time
+  real(r8), allocatable :: pinit_beta1(:)      ! shaping parameter for P initialization
+  real(r8), allocatable :: pinit_beta2(:)      ! shaping parameter for P initialization
   ! new stoichiometry
   real(r8), allocatable :: leafcn_obs(:)       !leaf C:N [gC/gN]
   real(r8), allocatable :: frootcn_obs(:)      !fine root C:N (gC/gN)
@@ -289,9 +292,9 @@ contains
     use fileutils ,  only : getfil
     use ncdio_pio ,  only : ncd_io, ncd_pio_closefile, ncd_pio_openfile, file_desc_t, &
                             ncd_inqdid, ncd_inqdlen
-    use elm_varctl,  only : paramfile, use_fates
-    use elm_varctl,  only : use_crop, use_dynroot
-    use elm_varcon,  only : tfrz
+    use clm_varctl,  only : paramfile, use_fates
+    use clm_varctl,  only : use_crop, use_dynroot
+    use clm_varcon,  only : tfrz
     use spmdMod   ,  only : masterproc
 
     !
@@ -384,7 +387,7 @@ contains
     allocate( grpnow        (0:mxpft) )       
     allocate( rootprof_beta (0:mxpft) )
 
-    allocate( mergetoelmpft (0:mxpft) )
+    allocate( mergetoclmpft (0:mxpft) )
     allocate( is_pft_known_to_model  (0:mxpft) )
 
     allocate( graincn       (0:mxpft) )      
@@ -467,6 +470,9 @@ contains
     allocate( VMAX_PTASE(0:mxpft))
     allocate( i_vc               (0:mxpft) ) 
     allocate( s_vc               (0:mxpft) ) 
+    allocate( nsc_rtime          (0:mxpft) )
+    allocate( pinit_beta1        (0:nsoilorder))
+    allocate( pinit_beta2        (0:nsoilorder))
     allocate( alpha_nfix         (0:mxpft) )
     allocate( alpha_ptase        (0:mxpft) )
     allocate( ccost_nfix         (0:mxpft) )
@@ -754,11 +760,21 @@ contains
     call ncd_io('max_SH_planting_date',mxSHplantdate, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
 
-    if (nu_com .ne. 'RD' ) then
-
-        ! These are soil parameters and used for both FATES and big leaf ELM
+    if (nu_com .ne. 'RD') then
+        call ncd_io('VMAX_PLANT_NH4',VMAX_PLANT_NH4, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft VMAX_PLANT_NH4'//errMsg(__FILE__, __LINE__))
+        call ncd_io('VMAX_PLANT_NO3',VMAX_PLANT_NO3, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft VMAX_PLANT_NO3'//errMsg(__FILE__, __LINE__))
+        call ncd_io('VMAX_PLANT_P',VMAX_PLANT_P, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft VMAX_PLANT_P'//errMsg(__FILE__, __LINE__))
         call ncd_io('VMAX_MINSURF_P_vr',VMAX_MINSURF_P_vr, 'read', ncid, readvar=readv)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in soil order VMAX_MINSURF_P_vr'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_PLANT_NH4',KM_PLANT_NH4, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft KM_PLANT_NH4'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_PLANT_NO3',KM_PLANT_NO3, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft KM_PLANT_NO3'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_PLANT_P',KM_PLANT_P, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft KM_PLANT_P'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_MINSURF_P_vr',KM_MINSURF_P_vr, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in soil order KM_MINSURF_P_vr'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_DECOMP_NH4',KM_DECOMP_NH4, 'read', ncid, readvar=readv)  
@@ -771,23 +787,6 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_NIT'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_DEN',KM_DEN, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_DEN'//errMsg(__FILE__, __LINE__))
-
-        if(.not.use_fates) then
-        
-        call ncd_io('VMAX_PLANT_NH4',VMAX_PLANT_NH4, 'read', ncid, readvar=readv)  
-        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft VMAX_PLANT_NH4'//errMsg(__FILE__, __LINE__))
-        call ncd_io('VMAX_PLANT_NO3',VMAX_PLANT_NO3, 'read', ncid, readvar=readv)  
-        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft VMAX_PLANT_NO3'//errMsg(__FILE__, __LINE__))
-        call ncd_io('VMAX_PLANT_P',VMAX_PLANT_P, 'read', ncid, readvar=readv)  
-        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft VMAX_PLANT_P'//errMsg(__FILE__, __LINE__))
-        
-        call ncd_io('KM_PLANT_NH4',KM_PLANT_NH4, 'read', ncid, readvar=readv)  
-        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft KM_PLANT_NH4'//errMsg(__FILE__, __LINE__))
-        call ncd_io('KM_PLANT_NO3',KM_PLANT_NO3, 'read', ncid, readvar=readv)  
-        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft KM_PLANT_NO3'//errMsg(__FILE__, __LINE__))
-        call ncd_io('KM_PLANT_P',KM_PLANT_P, 'read', ncid, readvar=readv)  
-        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft KM_PLANT_P'//errMsg(__FILE__, __LINE__))
-        
         call ncd_io('decompmicc_patch_vr',decompmicc_patch_vr, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft decompmicc_patch_vr'//errMsg(__FILE__, __LINE__))
         call ncd_io('alpha_nfix',alpha_nfix, 'read', ncid, readvar=readv)
@@ -816,6 +815,12 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in i_vc'//errMsg(__FILE__, __LINE__))
         call ncd_io('s_vc',s_vc, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in s_vc'//errMsg(__FILE__, __LINE__))
+        call ncd_io('nsc_rtime',nsc_rtime, 'read', ncid, readvar=readv)
+        if ( .not. readv ) nsc_rtime(:) = 0.5_r8
+        call ncd_io('pinit_beta1',pinit_beta1, 'read', ncid, readvar=readv)
+        if ( .not. readv ) pinit_beta1(:) = 0.5_r8
+        call ncd_io('pinit_beta2',pinit_beta2, 'read', ncid, readvar=readv)
+        if ( .not. readv ) pinit_beta2(:) = 0.0_r8
         ! new stoichiometry
         call ncd_io('leafcn_obs',leafcn_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
@@ -866,7 +871,6 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in vcmax_np data'//errMsg(__FILE__, __LINE__))
         call ncd_io('laimax',laimax, 'read', ncid, readvar=readv, posNOTonfile=.true.)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in laimax data'//errMsg(__FILE__, __LINE__))
-    end if
     end if
     call ncd_io('rsub_top_globalmax', rsub_top_globalmax, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv) rsub_top_globalmax = 10._r8
@@ -919,16 +923,15 @@ contains
     call ncd_io('pftcc',pftcc, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) pftcc(:) = 1._r8
        
-    call ncd_io('mergetoelmpft', mergetoelmpft, 'read', ncid, readvar=readv)  
+    call ncd_io('mergetoclmpft', mergetoclmpft, 'read', ncid, readvar=readv)  
     if ( .not. readv ) then
        do i = 0, mxpft
-          mergetoelmpft(i) = i
+          mergetoclmpft(i) = i
        end do
     end if
 
-
-
     call ncd_pio_closefile(ncid)
+
 
     do i = 0, mxpft
 
@@ -1021,7 +1024,7 @@ contains
   subroutine set_is_pft_known_to_model()
     !
     ! !DESCRIPTION:
-    ! Set is_pft_known_to_model based on mergetoelmpft
+    ! Set is_pft_known_to_model based on mergetoclmpft
     !
     ! !USES:
     !
@@ -1033,16 +1036,16 @@ contains
 
     is_pft_known_to_model(:) = .false.
 
-    ! NOTE(wjs, 2015-10-04) Currently, type 0 has mergetoelmpft = _FillValue in the file,
+    ! NOTE(wjs, 2015-10-04) Currently, type 0 has mergetoclmpft = _FillValue in the file,
     ! so we can't handle it in the general loop below. But CLM always uses type 0, so
     ! handle it specially here.
     is_pft_known_to_model(0) = .true.
 
-    ! NOTE(wjs, 2015-10-04) Currently, mergetoelmpft is only used for crop types.
+    ! NOTE(wjs, 2015-10-04) Currently, mergetoclmpft is only used for crop types.
     ! However, we handle it more generally here (treating ALL pft types), in case its use
     ! is ever extended to work with non-crop types as well.
     do m = 1, mxpft
-       merge_type                        = mergetoelmpft(m)
+       merge_type                        = mergetoclmpft(m)
        is_pft_known_to_model(merge_type) = .true.
     end do
 

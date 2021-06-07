@@ -11,7 +11,7 @@ module DecompCascadeBGCMod
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use elm_varpar             , only : nlevsoi, nlevgrnd, nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use elm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use elm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc
+  use elm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc, use_fates
   use elm_varcon             , only : zsoi
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
@@ -777,7 +777,6 @@ contains
        i_soil2 = 6
        i_soil3 = 7
 
-
        ! pflotran:beg---saving orignal k (not scaled) for passing to pflotran bgc decomposition sandboxes
        decomp_k_pools(i_litr1) = k_l1
        decomp_k_pools(i_litr2) = k_l2_l3
@@ -1058,12 +1057,12 @@ contains
             end do
          end do
          do j = 1,nlevdecomp
-             do fc = 1,num_soilc
-                 c = filter_soilc(fc)
-                 decomp_k(c,j,i_cwd)   = k_frag  * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j)
-             end do
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               decomp_k(c,j,i_cwd)   = k_frag  * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j)
+            end do
          end do
-     else
+      else
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
@@ -1076,10 +1075,10 @@ contains
             end do
          end do
          do j = 1,nlevdecomp
-             do fc = 1,num_soilc
-                 c = filter_soilc(fc)
-                 decomp_k(c,j,i_cwd)   = k_frag  * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j)
-             end do
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               decomp_k(c,j,i_cwd)   = k_frag  * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j)
+            end do
          end do
       end if
 
@@ -1093,9 +1092,9 @@ contains
              if ( decomp_cascade_con%spinup_factor(i_litr2) > 1._r8) decomp_k(c,j,i_litr2) = decomp_k(c,j,i_litr2)  &
                / cnstate_vars%scalaravg_col(c,j)
              if ( decomp_cascade_con%spinup_factor(i_litr3) > 1._r8) decomp_k(c,j,i_litr3) = decomp_k(c,j,i_litr3)  &
-                   / cnstate_vars%scalaravg_col(c,j)
+                  / cnstate_vars%scalaravg_col(c,j)
              if ( decomp_cascade_con%spinup_factor(i_cwd)   > 1._r8) decomp_k(c,j,i_cwd)   = decomp_k(c,j,i_cwd)    &
-                   / cnstate_vars%scalaravg_col(c,j)
+                  / cnstate_vars%scalaravg_col(c,j)
              if ( decomp_cascade_con%spinup_factor(i_soil1) > 1._r8) decomp_k(c,j,i_soil1) = decomp_k(c,j,i_soil1)  &
                / cnstate_vars%scalaravg_col(c,j)
              if ( decomp_cascade_con%spinup_factor(i_soil2) > 1._r8) decomp_k(c,j,i_soil2) = decomp_k(c,j,i_soil2)  &

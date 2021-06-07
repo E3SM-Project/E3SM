@@ -38,7 +38,7 @@ contains
   subroutine soilorderconInit()
     !
     ! !USES:
-    use elm_varpar, only : nsoilorder
+    use clm_varpar, only : nsoilorder
     use soilorder_varcon, only : smax
     use soilorder_varcon, only : ks_sorption
     use soilorder_varcon, only : r_weather,r_adsorp,r_desorp,r_occlude

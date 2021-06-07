@@ -349,7 +349,7 @@ contains
          ! This was moved in from Hydrology2 to keep all pft-level
          ! calculations out of Hydrology2
 
-         if (col_pp%snl(c) < 0 .and. do_capsnow(c) .and. .not. use_extrasnowlayers) then
+         if (col_pp%snl(c) < 0 .and. do_capsnow(c)) then
             qflx_snwcp_liq(p) = qflx_snwcp_liq(p)+frac_sno_eff(c)*qflx_dew_grnd(p)
             qflx_snwcp_ice(p) = qflx_snwcp_ice(p)+frac_sno_eff(c)*qflx_dew_snow(p)
          end if

@@ -1,0 +1,11 @@
+! This namelist tests turning all points to 'active'; the point of
+! this is to make sure that all points in memory could conceivably
+! become active in a dynamic landunit run without causing any
+! trouble. This should be tested with a _D test.
+
+! Note that we don't necessarily expect this to work with an initial
+! conditions file that wasn't itself generated with all_active =
+! .true., so we set finidat = ' ' for this test.
+
+all_active = .true.
+finidat = ' '

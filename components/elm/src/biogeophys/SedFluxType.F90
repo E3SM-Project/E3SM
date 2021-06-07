@@ -6,7 +6,7 @@ module SedFluxType
   !
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
-  use elm_varcon        , only : spval
+  use clm_varcon        , only : spval
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
   use ColumnType        , only : col_pp
@@ -27,7 +27,6 @@ module SedFluxType
      real(r8), pointer :: sed_p_ero_col(:)          ! col sed detach driven by rainfall (kg/m2/s)
      real(r8), pointer :: sed_q_ero_col(:)          ! col sed detach driven by runoff (kg/m2/s)
      real(r8), pointer :: sed_ero_col(:)            ! col total sed detach (kg/m2/s)
-     real(r8), pointer :: sed_crop_ero_col(:)       ! col sed detach on cropland (kg/m2/s) 
      real(r8), pointer :: sed_yld_col(:)            ! col total sed yield (kg/m2/s) 
 
   contains
@@ -77,7 +76,6 @@ contains
     allocate( this%sed_p_ero_col       (begc:endc))      ; this%sed_p_ero_col          (:) = nan
     allocate( this%sed_q_ero_col       (begc:endc))      ; this%sed_q_ero_col          (:) = nan
     allocate( this%sed_ero_col         (begc:endc))      ; this%sed_ero_col            (:) = nan
-    allocate( this%sed_crop_ero_col    (begc:endc))      ; this%sed_crop_ero_col       (:) = nan 
     allocate( this%sed_yld_col         (begc:endc))      ; this%sed_yld_col            (:) = nan
 
     allocate( this%pfactor_col         (begc:endc))      ; this%pfactor_col            (:) = nan
@@ -127,12 +125,6 @@ contains
          ptr_col=this%sed_ero_col, l2g_scale_type= 'veg', &
          default='inactive')
 
-    this%sed_crop_ero_col(begc:endc) = spval
-    call hist_addfld1d (fname='SED_CROP_ERO',  units='kg/m^2/s',  &
-         avgflag='A', long_name='hillslope cropland erosion', &
-         ptr_col=this%sed_crop_ero_col, l2g_scale_type= 'veg', &
-         default='inactive')
-
     this%sed_yld_col(begc:endc) = spval
     call hist_addfld1d (fname='SED_YLD',  units='kg/m^2/s',  &
          avgflag='A', long_name='hillslope total sediment yield', &
@@ -149,8 +141,8 @@ contains
     !
     ! !USES:
     use shr_kind_mod   , only : r8 => shr_kind_r8
-    use elm_varcon     , only : grlnd
-    use elm_varctl     , only : fsurdat
+    use clm_varcon     , only : grlnd
+    use clm_varctl     , only : fsurdat
     use fileutils      , only : getfil
     use ncdio_pio      , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
     !
@@ -186,7 +178,6 @@ contains
        this%sed_p_ero_col(c)                 = 0._r8
        this%sed_q_ero_col(c)                 = 0._r8
        this%sed_ero_col(c)                   = 0._r8
-       this%sed_crop_ero_col(c)              = 0._r8
        this%sed_yld_col(c)                   = 0._r8
 
        g = col_pp%gridcell(c)

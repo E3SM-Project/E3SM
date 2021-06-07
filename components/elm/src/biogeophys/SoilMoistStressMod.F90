@@ -319,7 +319,6 @@ contains
     use SoilStateType        , only : soilstate_type
     use EnergyFluxType       , only : energyflux_type
     use VegetationType            , only : veg_pp
-    use elm_varctl       , only : use_hydrstress
     !
     ! !ARGUMENTS:
     implicit none
@@ -387,9 +386,7 @@ contains
                end if
 
                !it is possible to further separate out a btran function, but I will leave it for the moment, jyt
-               if( .not. use_hydrstress ) then
-                 btran(p)    = btran(p) + max(rootr(p,j),0._r8)
-               endif
+               btran(p)    = btran(p) + max(rootr(p,j),0._r8)
 
                !smp_node_lf = max(smpsc(veg_pp%itype(p)), -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j)))
                s_node = h2osoi_vol(c,j)/watsat(c,j)

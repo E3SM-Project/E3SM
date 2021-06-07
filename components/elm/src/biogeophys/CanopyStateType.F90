@@ -67,7 +67,6 @@ module CanopyStateType
      real(r8) , pointer :: dleaf_patch              (:)   ! patch characteristic leaf width (diameter) [m]
                                                           ! for non-ED/FATES this is the same as pftcon%dleaf()
      real(r8),  pointer :: lbl_rsc_h2o_patch        (:)   ! laminar boundary layer resistance for water over dry leaf (s/m)
-     real(r8) , pointer :: vegwp_patch              (:,:) ! patch vegetation water matric potential (mm)
    contains
 
      procedure, public  :: Init
@@ -118,7 +117,7 @@ contains
     allocate(this%tlai_patch               (begp:endp))           ; this%tlai_patch               (:)   = nan
     allocate(this%tsai_patch               (begp:endp))           ; this%tsai_patch               (:)   = nan
     allocate(this%elai_patch               (begp:endp))           ; this%elai_patch               (:)   = nan
-    allocate(this%elai240_patch            (begp:endp))           ; this%elai240_patch            (:)   = nan
+    allocate(this%elai_p_patch             (begp:endp))           ; this%elai_p_patch             (:)   = nan
     allocate(this%esai_patch               (begp:endp))           ; this%esai_patch               (:)   = nan
     allocate(this%laisun_patch             (begp:endp))           ; this%laisun_patch             (:)   = nan
     allocate(this%laisha_patch             (begp:endp))           ; this%laisha_patch             (:)   = nan
@@ -181,12 +180,12 @@ contains
          ptr_patch=this%esai_patch)
 
     this%tlai_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TLAI', units='1', &
+    call hist_addfld1d (fname='TLAI', units='none', &
          avgflag='A', long_name='total projected leaf area index', &
          ptr_patch=this%tlai_patch)
 
     this%tsai_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TSAI', units='1', &
+    call hist_addfld1d (fname='TSAI', units='none', &
          avgflag='A', long_name='total projected stem area index', &
          ptr_patch=this%tsai_patch)
 
@@ -198,12 +197,12 @@ contains
     end if
 
     this%laisun_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LAISUN', units='1', &
+    call hist_addfld1d (fname='LAISUN', units='none', &
          avgflag='A', long_name='sunlit projected leaf area index', &
          ptr_patch=this%laisun_patch, set_urb=0._r8)
 
     this%laisha_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LAISHA', units='1', &
+    call hist_addfld1d (fname='LAISHA', units='none', &
          avgflag='A', long_name='shaded projected leaf area index', &
          ptr_patch=this%laisha_patch, set_urb=0._r8)
 
@@ -282,18 +281,6 @@ contains
          avgflag='A', long_name='fraction sunlit (last 240hrs)', &
          ptr_patch=this%fsun240_patch, default='inactive')
 
-    this%elai240_patch(begp:endp) = spval
-    call hist_addfld1d (fname='LAI240', units='m2/m2',  &
-         avgflag='A', long_name='240hr average of leaf area index', &
-         ptr_patch=this%elai240_patch, default='inactive')
-
-    if ( use_hydrstress ) then
-       this%vegwp_patch(begp:endp,:) = spval
-       call hist_addfld2d (fname='VEGWP',  units='mm', type2d='nvegwcs', &
-            avgflag='A', long_name='vegetation water matric potential for sun/sha canopy,xyl,root segments', &
-            ptr_patch=this%vegwp_patch)
-    end if
-
 
   end subroutine InitHistory
 
@@ -323,9 +310,9 @@ contains
          desc='240hr average of diffuse solar radiation',  accum_type='runmean', accum_period=-10, &
          subgrid_type='pft', numlev=1, init_value=0._r8)
 
-    this%elai240_patch(bounds%begp:bounds%endp) = spval
-    call init_accum_field (name='LAI240', units='m2/m2',                                             &
-         desc='240hr average of leaf area index',  accum_type='runmean', accum_period=-10,      &
+    this%elai_p_patch(bounds%begp:bounds%endp) = spval
+    call init_accum_field (name='LAIP', units='m2/m2',                                             &
+         desc='leaf area index average over timestep',  accum_type='runmean', accum_period=1,      &
          subgrid_type='pft', numlev=1, init_value=0._r8)
 
   end subroutine InitAccBuffer
@@ -373,8 +360,8 @@ contains
     call extract_accum_field ('FSUN240', rbufslp, nstep)
     this%fsun240_patch(begp:endp) = rbufslp(begp:endp)
 
-    call extract_accum_field ('LAI240', rbufslp, nstep)
-    this%elai240_patch(begp:endp) = rbufslp(begp:endp)
+    call extract_accum_field ('LAIP', rbufslp, nstep)
+    this%elai_p_patch(begp:endp) = rbufslp(begp:endp)
 
     call extract_accum_field ('FSUN24', rbufslp, nstep)
     this%fsun24_patch(begp:endp) = rbufslp(begp:endp)
@@ -424,8 +411,8 @@ contains
     do p = begp,endp
        rbufslp(p) = this%elai_patch(p)
     end do
-    call update_accum_field  ('LAI240', rbufslp                 , nstep)
-    call extract_accum_field ('LAI240', this%elai240_patch       , nstep)
+    call update_accum_field  ('LAIP', rbufslp                 , nstep)
+    call extract_accum_field ('LAIP', this%elai_p_patch       , nstep)
 
     deallocate(rbufslp)
   end subroutine UpdateAccVars
@@ -452,7 +439,6 @@ contains
        this%htop_patch(p)       = 0._r8
        this%hbot_patch(p)       = 0._r8
        this%dewmx_patch(p)      = 0.1_r8
-       this%vegwp_patch(p,:)    = -2.5e4_r8
 
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%laisun_patch(p) = 0._r8
