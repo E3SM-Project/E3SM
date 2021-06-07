@@ -1413,8 +1413,7 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   
   logical           :: use_ECPP
   character(len=16) :: MMF_microphysics_scheme
-  real(r8), pointer, dimension(:,:) :: mmf_clear_rh
-  ! real(r8), dimension(pcols,pver) :: mmf_clear_rh ! CRM clear air relative humidity used for aerosol water uptake
+  real(r8), pointer, dimension(:,:) :: mmf_clear_rh ! CRM clear air relative humidity used for aerosol water uptake
   real(r8), dimension(pcols) :: mmf_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
   real(r8), dimension(pcols) :: mmf_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
   real(r8), dimension(pcols) :: mmf_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
@@ -1740,8 +1739,7 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
   
   logical           :: use_ECPP
   character(len=16) :: MMF_microphysics_scheme
-  real(r8), pointer :: mmf_clear_rh_ptr(:,:)
-  real(r8), dimension(pcols,pver) :: mmf_clear_rh ! CRM clear air relative humidity used for aerosol water uptake
+  real(r8), pointer :: mmf_clear_rh(:,:) ! CRM clear air relative humidity used for aerosol water uptake
 
   call phys_getopts( l_tracer_aero_out      = l_tracer_aero      &
                     ,l_rad_out              = l_rad              &
@@ -1768,8 +1766,7 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
     enddo
   endif
 
-  call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh_ptr )
-  mmf_clear_rh(1:ncol,1:pver) = mmf_clear_rh_ptr(1:ncol,1:pver)
+  call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
 
   ! compute mass integrals of input tracers state
   call check_tracers_init(state, tracerint)
