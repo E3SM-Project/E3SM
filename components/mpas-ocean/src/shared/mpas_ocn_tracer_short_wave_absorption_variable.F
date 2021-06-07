@@ -203,19 +203,19 @@ contains
       !$omp end do
       !$omp end parallel
 
-      if(config_enable_shortwave_energy_fixer) then!
-#ifndef CPRPGI!
-         !$omp parallel!
+      if(config_enable_shortwave_energy_fixer) then
+#ifndef CPRPGI
+         !$omp parallel
          !$omp do schedule(runtime) private(k)
-#endif!
+#endif
          do iCell = 1, nCells
             k = maxLevelCell(iCell)
             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + &
                 bottomLayerShortwaveTemperatureFlux(iCell)
-         end do!
-#ifndef CPRPGI!
-         !$omp end do!
-         !$omp end parallel!
+         end do
+#ifndef CPRPGI
+         !$omp end do
+         !$omp end parallel
 #endif
       end if
 
