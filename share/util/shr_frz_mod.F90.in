@@ -105,11 +105,11 @@ contains
     endif
 
 #if ({DIMS}==0)
-    if (shr_frz_freezetemp < -2.5_R8) &
-       call shr_sys_abort(subname//' ERROR: shr_frz_freezetemp is less than -2.5')
+    if (shr_frz_freezetemp < -2.6_R8) &
+       call shr_sys_abort(subname//' ERROR: shr_frz_freezetemp is less than -2.6')
 #else
-    if (minval(shr_frz_freezetemp) < -2.5_R8) &
-       call shr_sys_abort(subname//' ERROR: shr_frz_freezetemp is less than -2.5')
+    if (minval(shr_frz_freezetemp) < -2.6_R8) &
+       call shr_sys_abort(subname//' ERROR: shr_frz_freezetemp is less than -2.6')
 #endif
 
   end function shr_frz_freezetemp_{DIMS}d
