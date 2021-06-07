@@ -2940,7 +2940,12 @@ end subroutine clubb_init_cnst
       do i = 1, ncol
          wsresp(i) = sfc_v_diff_tau(i) / pert_tau
          ! Estimated tau in balance with wind is the tau we just used.
-         tau_est(i) = hypot(cam_in%wsx(i), cam_in%wsy(i))
+         if (cam_in%wsx(i) == 0._r8 .or. cam_in%wsy(i) == 0._r8) then
+            ! Work around an odd FPE issue with intel compiler.
+            tau_est(i) = abs(cam_in%wsx(i)) + abs(cam_in%wsy(i))
+         else
+            tau_est(i) = hypot(cam_in%wsx(i), cam_in%wsy(i))
+         end if
       end do
    end if
 
