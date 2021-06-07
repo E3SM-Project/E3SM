@@ -30,6 +30,7 @@ module homme_params_mod
                       smooth ! Unused in SCREAM
   use thread_mod,   only: nthreads, vthreads      ! Unused in SCREAM
   use parallel_mod, only: mpireal_t, mpilogical_t, mpiinteger_t, mpichar_t
+  use physical_constants, only : scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor, DD_PI
 
   use control_mod, only:    &
     MAX_STRING_LEN,         &
@@ -41,6 +42,7 @@ module homme_params_mod
     theta_advect_form,      &
     theta_hydrostatic_mode, &   
     topology,               &    ! Mesh topology
+    geometry,               &         ! Mesh geometry
     tstep_type,             &
     ftype,                  & ! Unused in SCREAM
     dt_tracer_factor,       &
@@ -94,7 +96,7 @@ module homme_params_mod
 contains
 
   subroutine init_params_f90 (nl_fname_c) bind(c)
-    use iso_c_binding,     only: c_ptr, c_f_pointer
+    use iso_c_binding,     only: c_ptr, c_f_pointer, C_NULL_CHAR
     use shr_file_mod,      only: getunit=>shr_file_getUnit, freeunit=>shr_file_freeUnit
     use homme_context_mod, only: is_parallel_inited, is_params_inited, &
                                  par
@@ -104,8 +106,9 @@ contains
     type (c_ptr), intent(in) :: nl_fname_c
 
     ! Locals
-    character(len=256), pointer :: nl_fname
-    integer :: ierr, unitn, se_ftype
+    character(len=256), pointer :: nl_fname_ptr
+    character(len=256) :: nl_fname
+    integer :: ierr, unitn, se_ftype, str_len
     real(kind=real_kind) :: dt_max
     character(len=MAX_FILE_LEN) :: mesh_file ! Unused in SCREAM
 
@@ -125,6 +128,7 @@ contains
       nmax,                     &
       rotate_grid,              &
       topology,                 &         ! Mesh topology
+      geometry,                 &         ! Mesh geometry
       tstep_type,               &
       tstep,                    &
       qsplit,                   &
@@ -178,6 +182,7 @@ contains
     transport_alg = 0
     runtype = 0
     statefreq = 99999
+    geometry = "sphere"
 
     !-----------------------------!
     !     Parse namelist file     !
@@ -185,8 +190,10 @@ contains
 
     ! Open namelist file
     unitn = getunit()
-    call c_f_pointer(nl_fname_c,nl_fname)
-    open( unitn, file=trim(nl_fname), status='old' )
+    call c_f_pointer(nl_fname_c,nl_fname_ptr)
+    str_len = index(nl_fname_ptr, C_NULL_CHAR) - 1
+    nl_fname = trim(nl_fname_ptr(1:str_len))
+    open( unitn, file=nl_fname, status='old' )
 
     ! Parse all namelist sections
     read (unit=unitn,nml=ctl_nl,iostat=ierr)
@@ -212,7 +219,9 @@ contains
     call MPI_bcast(partmethod,      1, MPIinteger_t, par%root, par%comm, ierr)
     call MPI_bcast(ne,              1, MPIinteger_t, par%root, par%comm, ierr)
     call MPI_bcast(cubed_sphere_map,1, MPIinteger_t ,par%root, par%comm, ierr)
+
     call MPI_bcast(topology, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
+    call MPI_bcast(geometry, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
 
     ! Time-stepping params
     call MPI_bcast(nmax,       1, MPIinteger_t, par%root, par%comm, ierr)
@@ -271,14 +280,12 @@ contains
     !   Check/deduce parameters   !
     !-----------------------------!
 
-
     ierr = timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, dt_remap_factor, dt_tracer_factor)
 
     ftype = 0
     npart = par%nprocs
 
     use_moisture = ( moisture /= "dry") 
-    if (qsize<1) use_moisture = .false.  
 
     ! if user sets hypervis_subcycle=-1, then use automatic formula
     if (hypervis_subcycle==-1) then
@@ -304,6 +311,15 @@ contains
     ! set map
     if (cubed_sphere_map<0) then
        cubed_sphere_map=2  ! theta model default = element local
+    endif
+
+    if (geometry=="sphere") then
+      scale_factor           = rearth
+      scale_factor_inv       = rrearth
+      domain_size            = 4.0D0*DD_PI
+      laplacian_rigid_factor = rrearth
+    else
+      call abortmp("Error: scream only supports 'sphere' geometry, for now.")
     endif
 
     !logic around different hyperviscosity options
@@ -513,7 +529,7 @@ contains
 
   subroutine set_homme_int_param_f90 (param_name_c, param_value) bind(c)
     use dimensions_mod,    only: qsize, nlev, np
-    use control_mod,       only: ftype
+    use control_mod,       only: ftype, use_moisture
     use time_mod,          only: nmax
     !
     ! Input(s)
@@ -533,6 +549,7 @@ contains
         ftype = param_value
       case("qsize")
         qsize = param_value
+        if (qsize<1) use_moisture = .false.
       case("nmax")
         nmax = param_value
       case default

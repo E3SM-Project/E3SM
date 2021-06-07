@@ -47,7 +47,7 @@ protected:
     return m_remapper->get_src_field_id(ifield);
   }
   const field_type& do_get_src_field (const int ifield) const override {
-    return m_remapper->get_src_field(ifield);
+    return m_remapper->get_tgt_field(ifield);
   }
   const field_type& do_get_tgt_field (const int ifield) const override {
     return m_remapper->get_src_field(ifield);
@@ -70,10 +70,6 @@ protected:
                       const field_type& src,
                       const field_type& tgt) override {
     m_remapper->bind_field(tgt,src);
-  }
-  void do_unregister_field (const int ifield) override {
-    m_remapper->unregister_field(m_remapper->get_src_field(ifield).get_header().get_identifier(),
-                                 m_remapper->get_tgt_field(ifield).get_header().get_identifier());
   }
   void do_registration_ends () override {
     m_remapper->registration_ends();

@@ -1,0 +1,96 @@
+#!/bin/csh
+#
+# Script to run the dshr_bundle unit test.
+#
+#-----------------------------------------------------------------------
+# NCAR IBM SP: bluevista
+# Usage: env CSMBL_ROOT=<comparision dir> bsub < run_dshr_bundle
+#-----------------------------------------------------------------------
+## Setting LSF options for batch queue submission.
+#BSUB -a poe                    # use poe for multiprocessing
+## Number of tasks and tasks per node (CHANGE THIS IF YOU TURN smp on)
+#BSUB -n 1                      # total number of MPI-tasks (processors) needed
+#BSUB -R "span[ptile=2]"        # max number of tasks (MPI) per node
+#BSUB -o out.%J                 # output filename
+#BSUB -e out.%J                 # error filename
+#BSUB -q share                  # queue
+#BSUB -W 1:10                   # wall clock limit
+#BSUB -P 93300006               # Project number to charge to (MAKE SURE YOU CHANGE THIS!!!)
+
+#
+#-----------------------------------------------------------------------
+# CGD Linux cluster : bangkok
+# Usage: env CSMBL_ROOT=<comparision dir> qsub run_dshr_bundle
+#-----------------------------------------------------------------------
+# Name of the queue (CHANGE THIS if needed)
+#PBS -q long
+# Number of nodes (CHANGE THIS if needed)
+#PBS -l nodes=2:ppn=2:ecc
+# output file base name
+#PBS -N bundle.linux.log
+# Put standard error and standard out in same file
+#PBS -j oe
+# Export all Environment variables
+#PBS -V
+# End of options
+#
+
+# If batch go to work directory
+if ( $?PBS_JOBID )then
+    cd ${PBS_O_WORKDIR}
+endif
+
+if ( $?QSUB_REQID )then
+    cd ${QSUB_WORKDIR}
+endif
+
+set uname = `uname -s`
+
+#
+# Set make command to use
+#
+setenv GMAKE gmake
+if ( $uname == "Darwin" ) setenv GMAKE "make FC=g95"
+
+#
+# Set mpirun to use
+#
+if ( $uname == "Darwin" )then
+   set mpi = "mpirun -np 2"
+else if ( $uname == "AIX" )then
+   set mpi = "mpirun.lsf"
+else if ( $uname == "Linux" )then
+   set mpi = "/usr/local/mpich-1.2.7p1-pgi-pgcc-pghf-6.1-3/bin/mpirun -np 2"
+endif
+
+#
+# Standard tests
+#
+foreach opt ( "" "SPMD")
+  # Build
+  $GMAKE clean
+  set SPMD   = "FALSE"
+  set optbld = ""
+  if ( $opt  == "SPMD"     ) set SPMD = "TRUE"
+  set optbld="SPMD=$SPMD"
+  # Run save output to log file
+  echo "Build with options: $optbld"
+  $GMAKE $optbld test_dshr_bundle >&! compile.log || exit 1
+  echo "Run with options: $optbld"
+  if ( $SPMD == "TRUE" )then
+    $mpi test_dshr_bundle >! bundle.log
+    set retstatus=$status
+  else
+    test_dshr_bundle >! bundle.log
+    set retstatus=$status
+  endif
+  if ( $retstatus != 0 ) then
+     echo "Error -- run status returns error: $retstatus"
+     grep "All expected tests ran successfully" bundle.log
+     if ( $status != 0 ) exit 2
+  endif
+end
+
+$GMAKE clean
+\rm *.nc bundle.log* compile.log
+echo "Testing successful\! PASS\!"

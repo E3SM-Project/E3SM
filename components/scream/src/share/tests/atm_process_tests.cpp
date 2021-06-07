@@ -40,12 +40,8 @@ public:
   // The communicator associated with this atm process
   const ekat::Comm& get_comm () const { return m_comm; }
 
-  // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& /* field_repo */) const {}
-
-  // Providing a list of required and computed fields
-  const std::set<FieldIdentifier>&  get_required_fields () const { return m_fids_in; }
-  const std::set<FieldIdentifier>&  get_computed_fields () const { return m_fids_out; }
+  // Register all fields in the given field manager(s)
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& /* field_mgrs */) const {}
 
 protected:
 
@@ -64,12 +60,6 @@ protected:
   void set_required_field_impl (const Field<const Real>& /* f */) {}
   void set_computed_field_impl (const Field<      Real>& /* f */) {}
 
-  std::set<FieldIdentifier> m_fids_in;
-  std::set<FieldIdentifier> m_fids_out;
-
-  std::vector<FieldIdentifier> m_vec_fids_in;
-  std::vector<FieldIdentifier> m_vec_fids_out;
-
   std::string m_name;
   std::string m_grid_name;
 
@@ -84,30 +74,17 @@ public:
   MyDynamics (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
-    using namespace ShortFieldTagsNames;
-    using namespace ekat::units;
-
-    FieldIdentifier tend("Temperature tendency",{EL,GP,GP,VL},K/s);
-    m_vec_fids_in.push_back(tend);
-
-    FieldIdentifier temp("Temperature",{EL,GP,GP,VL},K);
-    m_vec_fids_out.push_back(temp);
+    // Nothing to do here
   }
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
-    auto grid = gm->get_grid(m_grid_name);
-    const auto nvl = grid->get_num_vertical_levels();
-    auto dyn_lt = grid->get_native_dof_layout();
+    using namespace ekat::units;
 
-    auto& tend = m_vec_fids_in.front();
-    tend.set_grid_name(grid->name());
-    tend.set_dimensions({dyn_lt.dim(0),dyn_lt.dim(1),dyn_lt.dim(2),nvl});
-    m_fids_in.insert(tend);
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto dyn_lt = grid->get_3d_scalar_layout(true);
 
-    auto& temp = m_vec_fids_out.front();
-    temp.set_grid_name(grid->name());
-    temp.set_dimensions({dyn_lt.dim(0),dyn_lt.dim(1),dyn_lt.dim(2),nvl});
-    m_fids_out.insert(temp);
+    add_field<Required>("Temperature tendency",dyn_lt,K/s,m_grid_name);
+    add_field<Computed>("Temperature",dyn_lt,K,m_grid_name);
   }
 };
 
@@ -119,30 +96,17 @@ public:
   MyPhysicsA (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
-    using namespace ShortFieldTagsNames;
-    using namespace ekat::units;
-
-    FieldIdentifier temp("Temperature",{COL,VL},K);
-    m_vec_fids_in.push_back(temp);
-
-    FieldIdentifier qA("Concentration A",{COL,VL},kg/pow(m,3));
-    m_vec_fids_out.push_back(qA);
+    // Nothing to do here
   }
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
-    auto grid = gm->get_grid(m_grid_name);
-    const auto nvl = grid->get_num_vertical_levels();
-    auto phys_lt = grid->get_native_dof_layout();
+    using namespace ekat::units;
 
-    auto& temp = m_vec_fids_in.front();
-    temp.set_grid_name(grid->name());
-    temp.set_dimensions({phys_lt.dim(0),nvl});
-    m_fids_in.insert(temp);
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto phys_lt = grid->get_3d_scalar_layout (true);
 
-    auto& qA = m_vec_fids_out.front();
-    qA.set_grid_name(grid->name());
-    qA.set_dimensions({phys_lt.dim(0),nvl});
-    m_fids_out.insert(qA);
+    add_field<Required>("Temperature",phys_lt,K,m_grid_name);
+    add_field<Computed>("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
   }
 };
 
@@ -154,37 +118,19 @@ public:
   MyPhysicsB (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
-    using namespace ShortFieldTagsNames;
-    using namespace ekat::units;
-
-    FieldIdentifier temp("Temperature",{COL,VL},K);
-    m_vec_fids_in.push_back(temp);
-    FieldIdentifier qA("Concentration A",{COL,VL},kg/pow(m,3));
-    m_vec_fids_in.push_back(qA);
-
-    FieldIdentifier tend("Temperature tendency",{COL,VL},K/s);
-    m_vec_fids_out.push_back(tend);
+    // Nothing to do here
   }
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
-    auto grid = gm->get_grid(m_grid_name);
-    const auto nvl = grid->get_num_vertical_levels();
-    auto phys_lt = grid->get_native_dof_layout();
+    using namespace ekat::units;
 
-    auto& temp = m_vec_fids_in.front();
-    temp.set_grid_name(grid->name());
-    temp.set_dimensions({phys_lt.dim(0),nvl});
-    m_fids_in.insert(temp);
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto phys_lt = grid->get_3d_scalar_layout (true);
 
-    auto& qA = m_vec_fids_in[1];
-    qA.set_grid_name(grid->name());
-    qA.set_dimensions({phys_lt.dim(0),nvl});
-    m_fids_in.insert(qA);
+    add_field<Required>("Temperature",phys_lt,K,m_grid_name);
+    add_field<Required>("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
 
-    auto& tend = m_vec_fids_out.front();
-    tend.set_grid_name(grid->name());
-    tend.set_dimensions({phys_lt.dim(0),nvl});
-    m_fids_out.insert(tend);
+    add_field<Computed>("Temperature tendency",phys_lt,K/s,m_grid_name);
   }
 };
 
@@ -321,7 +267,7 @@ TEST_CASE("atm_proc_dag", "") {
     // Create the dag
     AtmProcDAG dag;
     dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process),nullptr);
-    dag.write_dag("working_atm_proc_dag.dot",0);
+    dag.write_dag("working_atm_proc_dag.dot",4);
 
     // Clean up
     upgm->clean_up();
@@ -339,7 +285,7 @@ TEST_CASE("atm_proc_dag", "") {
     // Create the dag
     AtmProcDAG dag;
     dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(broken_atm_group),nullptr);
-    dag.write_dag("broken_atm_proc_dag.dot",1);
+    dag.write_dag("broken_atm_proc_dag.dot",4);
 
     upgm->clean_up();
   }

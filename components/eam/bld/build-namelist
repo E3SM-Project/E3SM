@@ -318,15 +318,15 @@ my $definition = Build::NamelistDefinition->new($nl_definition_file);
 my $nl_defaults_file;
 if (@usr_src_dirs) {
     foreach my $dir (@usr_src_dirs) {
-	if (-f "$dir/namelist_defaults_cam.xml") {
-	    $nl_defaults_file = "$dir/namelist_defaults_cam.xml";
+	if (-f "$dir/namelist_defaults_eam.xml") {
+	    $nl_defaults_file = "$dir/namelist_defaults_eam.xml";
 	    last;
 	}
     }
 }
 if (! defined $nl_defaults_file) {
     # default location of namelist defaults file
-    $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_cam.xml";
+    $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_eam.xml";
     (-f "$nl_defaults_file")  or  die <<"EOF";
     ** $ProgName - ERROR: Cannot find namelist defaults file \"$nl_defaults_file\" **
 EOF
@@ -707,6 +707,8 @@ my $chem = $cfg->get('chem');
 my $waccm_chem = ($chem =~ "waccm_");
 my $waccm_phys = $cfg->get('waccm_phys');
 
+my $spa_chem = ($chem eq "spa");
+
 my $prog_species = $cfg->get('prog_species');
 my $prog_ghg1    = ($chem =~ "trop_mozart" or $chem =~ "trop_strat" or $chem =~ "ghg" or $prog_species =~ "GHG");
 my $prog_ghg2    = ($chem =~ "ghg" or $prog_species =~ "GHG");
@@ -724,8 +726,7 @@ my $rad_prog_sslt  = (($prog_species =~ "SSLT" or $aero_chem) and !($chem_rad_pa
 my $rad_prog_ozone = (($chem =~ "mozart" or $chem =~ "trop_strat" or $chem =~ "super_fast_llnl" or $chem =~ "superfast" or $chem =~ "linoz") and !($chem_rad_passive));
 
 # Check for eruptive volcano emissions.  These will be radiatively active by default, but
-# only if using BAM and the camrt radiation package (cam4 physics)
-# or if using MAM and the rrtmg package  (cam5 physics)
+# only if using MAM and the rrtmg package  (cam5 physics)
 # They will only be added to mode_defs for radiation if the prescribed emission file has 
 # MMR (mass mixing ratio) for the volcanic aerosols. 
 # For CMIP6 style volcanic input file, where input file has extinction, ssa and asymmetry 
@@ -748,7 +749,7 @@ if ($rad_volcaero){
 
 # Print conservation errors
 # Turn this off for PERGRO runs or for WACCM runs
-if ($cfg->get('pergro') or ($chem ne 'none')) {
+if ($cfg->get('pergro') or (($chem ne 'none') && ($chem ne 'spa'))) {
     add_default($nl, 'print_energy_errors', 'val'=>'.false.');
 }
 
@@ -757,8 +758,17 @@ if ($cfg->get('debug')) {
     add_default($nl, 'state_debug_checks', 'val'=> '.true.')
 }
 
+if ( $spa_chem) {
+    add_default($nl, 'spa_datapath', 'val' =>$nl->get_value('spa_datapath'));
+    add_default($nl, 'spa_file', 'val' => $nl->get_value('spa_input_file'));
+    add_default($nl, 'spa_type', 'val' => 'CYCLICAL');
+    add_default($nl, 'spa_cycle_yr', 'val' => 1);
+    add_default($nl, 'do_prescribed_ccn', 'val' => '.true.');
+    add_default($nl, 'do_spa_optics', 'val' => '.true.');
+}
+
 # Chemistry deposition lists
-if ( ($chem ne 'none') or ( $prog_species ) ){
+if ( (($chem ne 'none') && ($chem ne 'spa')) or ( $prog_species ) ){
     my $chem_proc_src = $cfg->get('chem_proc_src');
     my $chem_src_dir = $cfg->get('chem_src_dir');
 
@@ -806,10 +816,29 @@ else {
 }
 add_default($nl, 'ncdata', %atts);
 
+# ieflx_opt, the setting is moved out of use_case file and run_script
+# 0: uncoupled, 2: coupled, distinguished by ocn comp name as seen by atm's configure command
+add_default($nl,'ieflx_opt');
+
+# Add other variables that are previously set in use_case but not previously set
+add_default($nl,'use_hetfrz_classnuc');
+add_default($nl,'hist_hetfrz_classnuc');
+add_default($nl,'gw_convect_hcf');
+add_default($nl,'linoz_psc_T');
+if ($cfg->get('microphys') =~ /^mg2/) {
+    add_default($nl,'micro_mg_dcs_tdep');
+    add_default($nl,'micro_mincdnc');
+}
+add_default($nl,'microp_aero_wsub_scheme');
+add_default($nl,'microp_aero_wsubmin');
+add_default($nl,'use_preexisting_ice');
+
+
 #BSINGH - (when .true.)calculate solar zenith angle averaged over a time step.
 #In default model, solar zenith angle is held constant over time.
 #This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
-add_default($nl,'use_rad_dt_cosz','val'=>'.false.');
+#Default value set by namelist_defaults_eam.xml, avoid setting a  default value false here.
+add_default($nl,'use_rad_dt_cosz');
 
 #Approximate value of decay time at model top (days);
 #if 0., no rayleigh friction is applied
@@ -820,8 +849,6 @@ my $rad_pkg = $cfg->get('rad');
 if ($rad_pkg eq 'rrtmgp') {
   add_default($nl,'do_aerosol_rad');
   add_default($nl,'fixed_total_solar_irradiance');
-  add_default($nl,'do_SPA_optics');
-  add_default($nl,'SPA_lookup_dir');
 }
 
 #
@@ -850,13 +877,6 @@ add_default($nl, 'bnd_topo', 'nofail'=>1);
 
 # Tropopause climatology
 add_default($nl, 'tropopause_climo_file');
-
-# Radiation
-if ($rad_pkg eq 'camrt') {
-    # Only needed for CAM3/4 RT code
-    # Absorptivity and emissivity data
-    add_default($nl, 'absems_data');
-}
 
 # Solar irradiance
 
@@ -929,7 +949,26 @@ if ($co2_cycle) {
 	# (user specification has higher precedence than the true value set above)
 	if ($nl->get_value('co2_readflux_fuel') =~ /$TRUE/io) {
 	    add_default($nl, 'co2flux_fuel_file', 'sim_year'=>$sim_year);
+	    add_default($nl, 'co2flux_fuel_vrt_emis_file', 'sim_year'=>$sim_year);
 	}
+
+        add_default($nl, 'co2_readflux_aircraft', 'val'=>'.true.');
+
+        # Check whether user has explicitly turned off reading the aircraft CO2 dataset.
+        # (user specification has higher precedence than the true value set above)
+        if ($nl->get_value('co2_readflux_aircraft') =~ /$TRUE/io) {
+
+            my $rel_filepath = get_default_value('ac_CO2_emis');
+            my $emisval = quote_string('ac_CO2 -> ' . $rel_filepath);
+            add_default($nl, 'aircraft_specifier', 'val'=>$emisval);
+
+            add_default($nl, 'aircraft_datapath');
+            add_default($nl, 'aircraft_type');
+            # This should be the same file as the one in the aircraft_specifier file.
+            # This is a workaround to get this filepath into the cam.input_data_list file
+            # to allow the CESM scripts to obtain all required data for a run.
+            add_default($nl, 'aircraft_co2_file');
+	}		   
     }
 }
 
@@ -1058,10 +1097,10 @@ if (defined $prescribed_aero_model) {
 }
 else {
     $prescribed_aero_model = 'none';
-    if ($chem eq 'none' or $chem eq 'waccm_ghg' or $chem eq 'super_fast_llnl' or $chem eq 'waccm_mozart' or $chem eq 'waccm_mozart_sulfur') {
+    if ($chem eq 'none' or $chem eq 'spa' or $chem eq 'waccm_ghg' or $chem eq 'super_fast_llnl' or $chem eq 'waccm_mozart' or $chem eq 'waccm_mozart_sulfur') {
 	# If no chemistry then there must be prescribed aerosols unless physics
 	# package is adiabatic or ideal.
-	if ($phys eq 'cam5') {
+	if ($phys eq 'default') {
 	    $prescribed_aero_model = 'modal';
 	}
 	elsif ($phys eq 'cam4' or $phys eq 'cam3') {
@@ -3488,7 +3527,8 @@ $nl->set_variable_value('phys_ctl_nl', 'cam_chempkg', $cam_chempkg);
 
 #BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag 
 #This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
-add_default($nl,'fix_g1_err_ndrop','val'=>'.false.');
+#The value set to be  determined by namelist_defaults_eam.xml, not preset a value to false here.
+add_default($nl,'fix_g1_err_ndrop');
 
 # Deep convection scheme
 add_default($nl, 'deep_scheme');
@@ -3505,7 +3545,9 @@ my $eddy_scheme = $nl->get_value('eddy_scheme');
 # Need to strip the quotes to use as a value for attribute matching.
 $eddy_scheme =~ s/['"]//g;                                           #"'
 add_default($nl, 'shallow_scheme', 'eddy_scheme'=>$eddy_scheme);
-add_default($nl, 'srf_flux_avg', 'eddy_scheme'=>$eddy_scheme);
+
+# Surface flux smoothing to reduce instability
+add_default($nl, 'srf_flux_avg');
 
 #BSINGH - Flag splitting for code modifications by PNNL under polar project
 add_default($nl, 'resus_fix');
@@ -3596,6 +3638,22 @@ add_default($nl, 'do_shoc_sgs');
 my $shoc_sgs = $nl->get_value('do_shoc_sgs');
 if ($shoc_sgs  =~ /$TRUE/io) {
    add_default($nl, 'shoc_timestep');
+   add_default($nl, 'shoc_thl2tune');
+   add_default($nl, 'shoc_qw2tune');
+   add_default($nl, 'shoc_qwthl2tune');
+   add_default($nl, 'shoc_w2tune');
+   add_default($nl, 'shoc_length_fac');
+   add_default($nl, 'shoc_c_diag_3rd_mom');
+   add_default($nl, 'shoc_lambda_low');
+   add_default($nl, 'shoc_lambda_high');
+   add_default($nl, 'shoc_lambda_slope');
+   add_default($nl, 'shoc_lambda_thresh');
+   add_default($nl, 'shoc_Ckh');
+   add_default($nl, 'shoc_Ckm');
+   add_default($nl, 'shoc_Ckh_s_min');
+   add_default($nl, 'shoc_Ckm_s_min');
+   add_default($nl, 'shoc_Ckh_s_max');
+   add_default($nl, 'shoc_Ckm_s_max');
 }
 
 # P3
@@ -3647,12 +3705,42 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_wpxp_L_thresh');
    add_default($nl, 'relvar_fix');
    add_default($nl, 'clubb_use_sgv');
+
+  # additional clubb parameters for EAMv2 as default
+   add_default($nl, 'clubb_C1');
+   add_default($nl, 'clubb_C11');
+   add_default($nl, 'clubb_C11b');
+   add_default($nl, 'clubb_C11c');
+   add_default($nl, 'clubb_C14');
+   add_default($nl, 'clubb_C1b');
+   add_default($nl, 'clubb_C1c');
+   add_default($nl, 'clubb_C2rt');
+   add_default($nl, 'clubb_C6rtb');
+   add_default($nl, 'clubb_C6rtc');
+   add_default($nl, 'clubb_C6thlb');
+   add_default($nl, 'clubb_C6thlc');
+   add_default($nl, 'clubb_C8');
+   add_default($nl, 'clubb_c_K10');
+   add_default($nl, 'clubb_c_K10h');
+   add_default($nl, 'clubb_gamma_coef');
+   add_default($nl, 'clubb_gamma_coefb');
+   add_default($nl, 'clubb_gamma_coefc');
+   add_default($nl, 'clubb_mu');
+   add_default($nl, 'clubb_ipdf_call_placement');
+
 }
+
+#RRTMGP
+add_default($nl, 'do_spa_optics');
 
 # MMF Microphysics scheme
 add_default($nl, 'MMF_microphysics_scheme');
 add_default($nl, 'use_MMF');
 add_default($nl, 'use_ECPP');
+
+# MMF Variance Transport
+add_default($nl, 'use_MMF_VT');
+add_default($nl, 'MMF_VT_wn_max');
 
 # MMF CRM mean-state acceleration
 add_default($nl, 'use_crm_accel');
@@ -3709,6 +3797,7 @@ add_default($nl, 'cldfrc_dp2');
 add_default($nl, 'cldfrc_premit');
 add_default($nl, 'cldfrc_premib');
 add_default($nl, 'cldfrc_iceopt');
+add_default($nl, 'cldfrc_minice');
 add_default($nl, 'cldfrc_icecrit');
 add_default($nl, 'cldfrc2m_rhmini');
 add_default($nl, 'cldfrc2m_rhmaxi');
@@ -3728,11 +3817,15 @@ add_default($nl, 'zmconv_cape_cin');
 add_default($nl, 'zmconv_mx_bot_lyr_adj');
 add_default($nl, 'zmconv_dmpdz');
 add_default($nl, 'zmconv_tp_fac');
+add_default($nl, 'zmconv_alfa');
+add_default($nl, 'zmconv_trigdcape_ull');
 
 # moist convection rainwater coefficients
-add_default($nl, 'hkconv_cmftau');
-add_default($nl, 'hkconv_c0');
-if ($phys eq 'cam5') {
+# These no more needed for EAM, including uwshcu_rpen. No need to reset for 'cam5'
+#add_default($nl, 'hkconv_cmftau');
+#add_default($nl, 'hkconv_c0');
+#MMF still uses UW scheme in the background and check for this parameter during runtime
+if ($phys eq 'cam5' || $phys eq 'default') {
   add_default($nl, 'uwshcu_rpen');
 }
 
@@ -3804,6 +3897,9 @@ if ($nl->get_value('use_gw_convect') =~ /$TRUE/io) {
     add_default($nl, 'effgw_beres');
     add_default($nl, 'gw_drag_file');
 }
+
+add_default($nl, 'use_gw_energy_fix'    , 'val'=>'.true.');
+
 
 # Some complexity to unpack.
 # 1. In WACCM, we want tau_0_ubc = .false., because it hasn't been tuned
@@ -4165,7 +4261,7 @@ if ($ice_comp eq 'cice' and $cam_build and $ice_active) {
     }
 
     # For CAM5 need to send the variable "cam5=.true." to get correct defaults for several
-    # cice parameters.
+    # cice parameters. only used for active cice. not used in e3sm, no need to change for new phys name
     if ($phys eq 'cam5') {
 	$cice_nl .= "cam5=.true. \n";
     }
@@ -4599,7 +4695,7 @@ sub add_default {
                     print "key=$key  val=$opts{$key}\n";
                 }
             }
-            die;
+            die "$ProgName - ERROR: No default value found for $var\n";;
         } else {
             return;
         }
@@ -4747,6 +4843,9 @@ sub check_input_files {
 		my $pathname = $nl->get_variable_value($group, $var);
 		# Need to strip the quotes
 		$pathname =~ s/['"]//g;
+                if ($pathname eq '') {
+                    $pathname = "/dev/null"
+                }
 
 		if ($input_pathname_type eq 'abs') {
                     if ($inputdata_rootdir) {

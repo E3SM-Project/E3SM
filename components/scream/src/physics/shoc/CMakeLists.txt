@@ -14,7 +14,6 @@ set(SHOC_SRCS
   shoc_iso_f.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/shoc.F90
   atmosphere_macrophysics.cpp
-  scream_shoc_interface.F90
   shoc_diag_second_moments_srf.cpp
   shoc_diag_second_moments_ubycond.cpp
   shoc_diag_second_moments_lbycond.cpp
@@ -26,7 +25,6 @@ set(SHOC_SRCS
 set(SHOC_HEADERS
   shoc.hpp
   atmosphere_macrophysics.hpp
-  scream_shoc_interface.hpp
   shoc_constants.hpp
 )
 
@@ -46,11 +44,9 @@ if (NOT CUDA_BUILD)
     shoc_diag_second_shoc_moments.cpp
     shoc_compute_brunt_shoc_length.cpp
     shoc_check_length_scale_shoc_length.cpp
-    shoc_compute_conv_vel_shoc_length.cpp
     shoc_compute_l_inf_shoc_length.cpp
     shoc_diag_obklen.cpp
     shoc_compute_shr_prod.cpp
-    shoc_compute_conv_time_shoc_length.cpp
     shoc_length.cpp
     shoc_energy_fixer.cpp
     shoc_compute_shoc_vapor.cpp

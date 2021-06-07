@@ -403,8 +403,6 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
       ShocAssumedPdfData(2, 7, 8),
     };
 
-  static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocAssumedPdfData);
-
     // Generate random input data
     for (auto& d : SDS_f90) {
       d.randomize({ {d.thetal, {500, 700}} });
@@ -457,6 +455,8 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocAssumedPdfData);
     for (Int i = 0; i < num_runs; ++i) {
       ShocAssumedPdfData& d_f90 = SDS_f90[i];
       ShocAssumedPdfData& d_cxx = SDS_cxx[i];
@@ -468,6 +468,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
         REQUIRE(d_f90.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
       }
     }
+#endif
   }
 };
 

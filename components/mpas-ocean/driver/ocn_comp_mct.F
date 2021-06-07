@@ -49,8 +49,10 @@ module ocn_comp_mct
    use ocn_time_integration
    use ocn_time_average_coupled
    use ocn_frazil_forcing
+   use ocn_equation_of_state
    use ocn_surface_land_ice_fluxes
    use ocn_diagnostics
+   use ocn_diagnostics_variables
    use ocn_tracer_short_wave_absorption
    use ocn_tracer_short_wave_absorption_variable
    use ocn_tracer_ecosys
@@ -161,7 +163,7 @@ contains
     type (block_type), pointer :: block_ptr
 
     type (mpas_pool_type), pointer :: meshPool, statePool, &
-                                      forcingPool, diagnosticsPool, &
+                                      forcingPool, &
                                       averagePool, scratchPool
 
     logical :: exists
@@ -666,17 +668,16 @@ contains
     do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
-        call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, ierr, 1)
+        call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
         call mpas_timer_start("land_ice_build_arrays", .false.)
-        call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
+        call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
                                                       forcingPool, scratchPool, statePool, dt, ierr)
         call mpas_timer_stop("land_ice_build_arrays")
 
-        call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
+        call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
 
         block_ptr => block_ptr % next
     end do
@@ -721,10 +722,9 @@ contains
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
           call ocn_time_average_coupled_init(forcingPool)
-          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 1)
+          call ocn_time_average_coupled_accumulate(statePool, forcingPool, 1)
           block_ptr => block_ptr % next
        end do
     end if
@@ -763,15 +763,14 @@ contains
     endif
 
     ! Setup clock for initial runs
-    if ( runtype == 'continue' ) then
+    if (runtype == "continue" .or. runtype == "branch" ) then
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
           call ocn_time_average_coupled_init(forcingPool)
-          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 1)
+          call ocn_time_average_coupled_accumulate(statePool, forcingPool, 1)
           block_ptr => block_ptr % next
        end do
     end if
@@ -866,7 +865,7 @@ contains
 
       type (block_type), pointer :: block_ptr
 
-      type (mpas_pool_type), pointer :: meshPool, statePool, diagnosticsPool, forcingPool, averagePool, scratchPool
+      type (mpas_pool_type), pointer :: meshPool, statePool, forcingPool, averagePool, scratchPool
 
       type (MPAS_Time_Type) :: currTime
       type (domain_type), pointer :: domain_ptr
@@ -949,23 +948,21 @@ contains
          do while(associated(block_ptr))
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-            call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
             call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-            call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
-            call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, ierr, 1)
+            call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
 
             call mpas_timer_start("land_ice_build_arrays", .false.)
-            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
+            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
                                                           forcingPool, scratchPool, statePool, dt, ierr)
             call mpas_timer_stop("land_ice_build_arrays")
 
-            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
+            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
 
             ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
             if (config_use_Redi.or.config_use_GM) then
-              call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, meshPool, scratchPool, timeLevelIn=1)
+              call ocn_gm_compute_Bolus_velocity(statePool, meshPool, scratchPool, timeLevelIn=1)
             endif
 
             block_ptr => block_ptr % next
@@ -1089,14 +1086,15 @@ contains
          call mpas_pool_get_config(domain % configs, 'config_ssh_grad_relax_timescale', &
                                                       config_ssh_grad_relax_timescale)
          if (config_ssh_grad_relax_timescale < real(ocn_cpl_dt,RKIND)) then
-            timeFilterFactor = 1.0_RKIND
+            filteredSSHGradientZonal = avgSSHGradient(index_avgZonalSSHGradient, :)
+            filteredSSHGradientMeridional = avgSSHGradient(index_avgMeridionalSSHGradient, :)
          else
             timeFilterFactor = real(ocn_cpl_dt,RKIND) / config_ssh_grad_relax_timescale
+            filteredSSHGradientZonal = filteredSSHGradientZonal * (1.0_RKIND - timeFilterFactor) + &
+                 avgSSHGradient(index_avgZonalSSHGradient, :) * timeFilterFactor
+            filteredSSHGradientMeridional = filteredSSHGradientMeridional * (1.0_RKIND - timeFilterFactor) + &
+                 avgSSHGradient(index_avgMeridionalSSHGradient, :) * timeFilterFactor
          endif
-         filteredSSHGradientZonal = filteredSSHGradientZonal * (1.0_RKIND - timeFilterFactor) + &
-              avgSSHGradient(index_avgZonalSSHGradient, :) * timeFilterFactor
-         filteredSSHGradientMeridional = filteredSSHGradientMeridional * (1.0_RKIND - timeFilterFactor) + &
-              avgSSHGradient(index_avgMeridionalSSHGradient, :) * timeFilterFactor
          block_ptr => block_ptr % next
       end do
 
@@ -2296,8 +2294,6 @@ contains
    integer, pointer :: nCellsSolve, index_temperatureSurfaceValue, index_salinitySurfaceValue, &
                        index_avgZonalSurfaceVelocity, index_avgMeridionalSurfaceVelocity
 
-   integer, pointer :: indexBLT, indexBLS, indexHeatTrans, indexSaltTrans
-
    type (block_type), pointer :: block_ptr
 
    type (mpas_pool_type), pointer :: meshPool,             &
@@ -2305,7 +2301,6 @@ contains
                                      statePool,            &
                                      tracersPool,          &
                                      ecosysAuxiliary,      &
-                                     diagnosticsPool,      &
                                      ecosysSeaIceCoupling, &
                                      DMSSeaIceCoupling,    &
                                      MacroMoleculesSeaIceCoupling
@@ -2314,6 +2309,7 @@ contains
 
    real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
                                                filteredSSHGradientZonal, filteredSSHGradientMeridional, &
+                                               avgTotalFreshWaterTemperatureFlux, &
                                                avgCO2_gas_flux, DMSFlux, surfaceUpwardCO2Flux, &
                                                avgOceanSurfaceDIC, &
                                                avgOceanSurfaceDON, &
@@ -2330,7 +2326,7 @@ contains
                                                  avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
 
-   real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers, landIceTracerTransferVelocities
+   real (kind=RKIND) :: surfaceFreezingTemp
 
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
@@ -2365,7 +2361,6 @@ contains
      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
      call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
      call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-     call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -2383,6 +2378,7 @@ contains
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
      call mpas_pool_get_array(forcingPool, 'filteredSSHGradientZonal', filteredSSHGradientZonal)
      call mpas_pool_get_array(forcingPool, 'filteredSSHGradientMeridional', filteredSSHGradientMeridional)
+     call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
      if ( frazilIceActive ) then
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
         call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
@@ -2425,20 +2421,6 @@ contains
 !    call mpas_pool_get_array(forcingPool, 'DMSFlux', DMSFlux)
 !    call mpas_pool_get_array(forcingPool, 'surfaceUpwardCO2Flux', surfaceUpwardCO2Flux)
 
-!JW     call mpas_pool_get_array(diagnosticsPool,'landIceBoundaryLayerTemperature',landIceBoundaryLayerTemperature)
-!JW     call mpas_pool_get_array(diagnosticsPool,'landIceBoundaryLayerSalinity',landIceBoundaryLayerSalinity)
-!JW     call mpas_pool_get_array(diagnosticsPool,'landIceHeatTransferVelocity',landIceHeatTransferVelocity)
-!JW     call mpas_pool_get_array(diagnosticsPool,'landIceSaltTransferVelocity',landIceSaltTransferVelocity)
-!     call mpas_pool_get_array(diagnosticsPool,'effectiveDensityInLandIce',effectiveDensityInLandIce)
-     if ( trim(config_land_ice_flux_mode) .ne. 'pressure_only' ) then
-        call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerTemperature', indexBLT)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerSalinity', indexBLS)
-        call mpas_pool_get_array(diagnosticsPool, 'landIceTracerTransferVelocities', landIceTracerTransferVelocities)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceHeatTransferVelocity', indexHeatTrans)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceSaltTransferVelocity', indexSaltTrans)
-     endif
-
      do i = 1, nCellsSolve
        n = n + 1
 
@@ -2449,6 +2431,9 @@ contains
 
        o2x_o % rAttr(index_o2x_So_dhdx, n) = filteredSSHGradientZonal(i)
        o2x_o % rAttr(index_o2x_So_dhdy, n) = filteredSSHGradientMeridional(i)
+
+       o2x_o % rAttr(index_o2x_Faoo_h2otemp, n) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
+
        if ( frazilIceActive ) then
           ! negative when frazil ice can be melted
           keepFrazil = .true.
@@ -2459,15 +2444,32 @@ contains
           end if
 
           if ( keepFrazil ) then
-             seaIceEnergy(i) = min( rho_sw * cp_sw * layerThickness(1, i) * ( -1.8_RKIND + T0_Kelvin &
-                             - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
-             if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) seaIceEnergy(i) = 0.0_RKIND
 
-             o2x_o % rAttr(index_o2x_Fioo_meltp, n)  = seaIceEnergy(i) / ocn_cpl_dt
+             ! Calculate energy associated with frazil mass transfer to sea ice if frazil has accumulated
+             if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) then
+
+              seaIceEnergy(i) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion 
+
+             ! Otherwise calculate the melt potential where avgTracersSurfaceValue represents only the
+             ! top layer of the ocean
+             else
+
+              surfaceFreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
+                 pressure=0.0_RKIND,  inLandIceCavity=.false.) 
+
+              seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( surfaceFreezingTemp + T0_Kelvin &
+                              - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
+
+             end if
+
+             o2x_o % rAttr(index_o2x_Fioo_q, n)  = seaIceEnergy(i) / ocn_cpl_dt
              o2x_o % rAttr(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+
           else
-             o2x_o % rAttr(index_o2x_Fioo_meltp, n)  = 0.0_RKIND
+
+             o2x_o % rAttr(index_o2x_Fioo_q, n)  = 0.0_RKIND
              o2x_o % rAttr(index_o2x_Fioo_frazil, n) = 0.0_RKIND
+
           end if
 
           ! Reset SeaIce Energy and Accumulated Frazil Ice
@@ -2612,6 +2614,9 @@ contains
       character (len=StrKIND), pointer :: charAtt
       real (kind=RKIND), pointer :: realAtt
       character (len=StrKIND) :: histAtt
+      character (len=StrKIND) :: caseid, model_version, hostname, username, &
+                                 timeString
+      character (len=8) :: curdate, curtime
 
       integer :: local_ierr
 
@@ -2629,6 +2634,40 @@ contains
           write(histAtt, '(A,I6,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       end if
      
+      call seq_infodata_GetData(infodata,case_name=caseid, &
+                                model_version=model_version, &
+                                username=username, &
+                                hostname=hostname)
+
+      !Add E3SM run specific variables to MPAS output files
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'title', 'MPAS-Ocean output file information')
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'source', 'MPAS Ocean')
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'source_id', trim(model_version))
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'product', 'model-output')
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'realm', 'ocean')
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'case', trim(caseid))
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'username', trim(username))
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'hostname', trim(hostname))
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'git_version', trim(model_version))
+      call datetime(curdate, curtime)
+      timeString = 'created on ' // curdate // ' ' // curtime
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'history', trim(timeString))
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'Conventions', 'CF-1.7')
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'institution_id', 'E3SM-Project')
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'institution', &
+          'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); &
+          &ANL (Argonne National Laboratory, Argonne, IL 60439, USA); &
+          &BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); &
+          &LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); &
+          &LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); &
+          &ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
+          &PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
+          &SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
+          &Mailing address: LLNL Climate Program, c/o David C. Bader, &
+          &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', &
+          'e3sm-data-support@listserv.llnl.gov')
+      
 
       call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius)
@@ -2636,13 +2675,8 @@ contains
       call MPAS_stream_mgr_add_att(domain % streamManager, 'core_name', domain % core % coreName)
       ! DWJ 10/01/2014: Eventually add the real history attribute, for now (due to length restrictions)
       ! add a shortened version.
-!     call MPAS_stream_mgr_add_att(domain % streamManager, 'history', domain % history)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'history', histAtt)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'source', domain % core % source)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'Conventions', domain % core % Conventions)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'parent_id', domain % parent_id)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'mesh_spec', domain % mesh_spec)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'git_version', domain % core % git_version)
 
       call mpas_pool_begin_iteration(domain % configs)
 
@@ -2673,6 +2707,28 @@ contains
 
    end subroutine add_stream_attributes!}}}
 
+   subroutine datetime(cdate, ctime)!{{{
+
+      implicit none
+
+      character, intent(out) :: cdate*8, ctime*8
+
+      integer, dimension(8) :: values
+      character :: date*8, time*10, zone*5
+
+      call date_and_time (date, time, zone, values)
+      cdate(1:2) = date(5:6)
+      cdate(3:3) = '/'
+      cdate(4:5) = date(7:8)
+      cdate(6:6) = '/'
+      cdate(7:8) = date(3:4)
+      ctime(1:2) = time(1:2)
+      ctime(3:3) = ':'
+      ctime(4:5) = time(3:4)
+      ctime(6:6) = ':'
+      ctime(7:8) = time(5:6)
+
+   end subroutine datetime!}}}
 
 end module ocn_comp_mct
 

@@ -96,13 +96,13 @@ OPTIONS
                                 sp    = Satellite Phenology (SP)
                                 cn    = Carbon Nitrogen model (CN)
                                         (ELMCN use_cn=true)
-                                bgc   = Carbon Nitrogen with methane, nitrification, vertical soil C,
+                                bgc   = Carbon Nitrogen with methane, vertical soil C,
                                         CENTURY decomposition
                                         (or ELMBGC use_cn=true, use_vertsoilc=true,
-                                         use_century_decomp=true, use_nitrif_denitrif=true, use_lch4=true,
+                                         use_century_decomp=true, use_lch4=true,
                                          and use_snicar_ad=true, use_dynroot)
                                         This toggles on the namelist variables:
-                                         use_cn, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_century_decomp, use_snicar_ad
+                                         use_cn, use_lch4, use_vertsoilc, use_century_decomp, use_snicar_ad
                                          use_dynroot
                                 fates    = functionaly assembled terrestrial ecosystem simulator
                                           with native below ground bgc
@@ -110,7 +110,7 @@ OPTIONS
                                           use_fates, use_vertsoilc, use_snicar_ad, use_century_decomp
 
      -bgc_spinup "on|off"     CLM 4.5 Only. For CLM 4.0, spinup is controlled from configure.
-                              Turn on given spinup mode for BGC setting of CN
+                              Turn on given spinup mode for BGC setting of CN or FATES
                                   on : Turn on Accelerated Decomposition   (spinup_state = 1)
                                   off : run in normal mode                 (spinup_state = 0)
 
@@ -207,9 +207,6 @@ OPTIONS
      -namelist "namelist"     Specify namelist settings directly on the commandline by supplying
                               a string containing FORTRAN namelist syntax, e.g.,
                                  -namelist "&elm_inparm dt=1800 /"
-     -nitrif_denitrif         Toggle for nitrification-denitrification process.
-                              This flag is only allowed for bgc=cn mode (default is off)
-			      This turns on namelist variable: use_nitrif_denitrif
      -no-megan                DO NOT PRODUCE a megan_emis_nl namelist that will go into the
                               "drv_flds_in" file for the driver to pass VOCs to the atm.
                               MEGAN (Model of Emissions of Gases and Aerosols from Nature)
@@ -303,7 +300,6 @@ sub process_commandline {
                maxpft                => "default",
                betr_mode             => "default",               
                methane               => 0,
-               nitrif_denitrif       => 0,
                nutrient              => "default",
                nutrient_comp_pathway => "default",
                soil_decomp           => "default",
@@ -354,7 +350,6 @@ sub process_commandline {
              "version"                   => \$opts{'version'},
              "betr_mode=s"               => \$opts{'betr_mode'},             
              "methane"                   => \$opts{'methane'},
-             "nitrif_denitrif"           => \$opts{'nitrif_denitrif'},
              "nutrient=s"                => \$opts{'nutrient'},
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
              "soil_decomp=s"             => \$opts{'soil_decomp'},
@@ -665,7 +660,6 @@ sub process_namelist_commandline_options {
   setup_cmdl_mask($opts, $nl_flags, $definition, $defaults, $nl);
   setup_cmdl_check_bgc($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_bgc($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
-  setup_cmdl_nitrif_denitrif($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_methane($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_soil_decomp($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_nutrient($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
@@ -675,11 +669,11 @@ sub process_namelist_commandline_options {
   setup_cmdl_glc_nec($opts, $nl_flags, $definition, $defaults, $nl);
   setup_cmdl_irrigation($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_rcp($opts, $nl_flags, $definition, $defaults, $nl);
-  setup_cmdl_bgc_spinup($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_simulation_year($opts, $nl_flags, $definition, $defaults, $nl);
   setup_cmdl_run_type($opts, $nl_flags, $definition, $defaults, $nl);
   setup_cmdl_dynamic_vegetation($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_fates_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_cmdl_bgc_spinup($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_vichydro($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_betr_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);  
 }
@@ -755,23 +749,22 @@ sub setup_cmdl_fates_mode {
   # call this at least after crop check is called
   #
   my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
-
   my $val;
   my $var = "bgc_mode";
 
   if ( $nl_flags->{'crop'} eq "on" ) {
-    if ( $nl_flags->{$var} eq "ed" ) {
-       # ED should not be used with crop
+    if ( $nl_flags->{$var} eq "fates" ) {
+       # FATES should not be used with crop
        fatal_error("** Cannot turn ed mode on with crop.\n" );
     }
-  } elsif ($nl_flags->{"bgc_mode"} eq "ed" && $nl_flags->{"use_fates"} ne ".true.") {
-    fatal_error("DEV_ERROR: internal logic error: bgc_mode = ed and use_fates = false.\n");
+  } elsif ($nl_flags->{"bgc_mode"} eq "fates" && $nl_flags->{"use_fates"} ne ".true.") {
+    fatal_error("DEV_ERROR: internal logic error: bgc_mode = fates and use_fates = false.\n");
 
   } else {
 
     $var = "use_fates";
     if ( $nl_flags->{$var} eq ".true." ) {
-      # This section is a place-holder to test for modules that are not allowed with ED
+      # This section is a place-holder to test for modules that are not allowed with FATES
       # the defaults which are set in the logic section of the namelist builder will
       # automatically set these correctly (well that is the assumption), but here we
       # want to set a catch to fail and warn users if they explicitly set incompatible user namelist
@@ -781,7 +774,7 @@ sub setup_cmdl_fates_mode {
 #      $val = $nl_flags->{$var};
 #      if ( defined($nl->get_value($var))  ) {
 #	  if ( $nl->get_value($var) == ".true." ) {
-#	      fatal_error("$var was set to .true., which is incompatible when -bgc ed option is used.\n");
+#	      fatal_error("$var was set to .true., which is incompatible when -bgc fates option is used.\n");
 #	  }
 #      }
 
@@ -791,8 +784,7 @@ sub setup_cmdl_fates_mode {
       my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp",
                      "use_fates_planthydro", "use_fates_ed_st3", "use_fates_ed_prescribed_phys", 
 		     "use_fates_inventory_init", "use_fates_fixed_biogeog", "fates_inventory_ctrl_filename","use_fates_logging",
-		     "use_fates_parteh_mode","use_fates_cohort_age_tracking",
-	             "use_snicar_ad");
+		     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -810,46 +802,47 @@ sub setup_cmdl_fates_mode {
 
 
     } else {
-	# we only dis-allow ed_spitfire with non-ed runs
+	   
+	   # we only dis-allow ed_spitfire with non-ed runs
        $var = "fates_spitfire_mode";
        if ( defined($nl->get_value($var)) ) {
-           fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+           fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_cohort_age_tracking";
        if ( defined($nl->get_value($var)) ) {
-           fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+           fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
 	   $var = "use_fates_fixed_biogeog";
        if ( defined($nl->get_value($var)) ) {
-           fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+           fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_logging";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "fates_parteh_mode";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_planthydro";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_ed_st3";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_ed_prescribed_phys";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_inventory_init";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "fates_inventory_ctrl_filename";
        if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
 
     }
@@ -907,16 +900,6 @@ sub setup_cmdl_check_bgc {
 
   my $var;
   my $val;
-
-  $var = "nitrif_denitrif";
-  $val = $opts->{$var};
-  if ( $val eq 1 ) {
-    $val = ".true.";
-    $var = "use_nitrif_denitrif";
-    if ( defined($nl->get_value($var)) && ($nl->get_value($var) ne $val)) {
-      fatal_error("$var has a value (".$nl_flags->{$var}.") that is NOT consistent with the commandline setting of -nitrif_denitrif\n");
-    }
-  }
 
   $var = "methane";
   $val = $opts->{$var};
@@ -982,7 +965,7 @@ sub setup_cmdl_bgc {
     $nl_flags->{'use_cn'} = ".true.";
     $nl_flags->{'use_fates'} = ".false.";
     $setting = ".true.";
-  } elsif ($nl_flags->{$var} eq "ed" ) {
+  } elsif ($nl_flags->{$var} eq "fates" ) {
     $nl_flags->{'use_cn'} = ".false.";
     $nl_flags->{'use_fates'} = ".true.";
   } else {
@@ -997,7 +980,7 @@ sub setup_cmdl_bgc {
   }
 
   # If the variable has already been set use it, if not set to the value defined by the bgc_mode
-  my @list  = (  "use_lch4", "use_nitrif_denitrif", "use_vertsoilc", "use_century_decomp", "use_snicar_ad" );
+  my @list  = (  "use_lch4", "use_vertsoilc", "use_century_decomp", "use_snicar_ad" );
   my $ndiff = 0;
   foreach my $var ( @list ) {
     if ( ! defined($nl->get_value($var))  ) {
@@ -1061,32 +1044,6 @@ sub setup_cmdl_bgc {
 
 #-------------------------------------------------------------------------------
 
-sub setup_cmdl_nitrif_denitrif {
-  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
-
-  my $var = "nitrif_denitrif";
-  my $val = $opts->{$var};
-
-  if ( $val eq 1 ) {
-    $var = "bgc_mode";
-    if ($nl_flags->{$var} eq "sp") {
-      fatal_error("-nitrif_denitrif option can ONLY be used for elm with -bgc cn|bgc");
-    } else {
-      $var = "use_nitrif_denitrif";
-      $val = $nl->get_value($var);
-      $val = ".true.";
-
-      my $group = $definition->get_group_name($var);
-      $nl_flags->{$var} = $val;
-      $nl->set_variable_value($group, $var, $val);
-
-      if (  ! $definition->is_valid_value( $var, $val ) ) {
-        my @valid_values   = $definition->get_valid_values( $var );
-        fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
-      }
-    }
-  }
-} # nitrif_denitrif
 
 #-------------------------------------------------------------------------------
 
@@ -1100,33 +1057,27 @@ sub setup_cmdl_methane {
 
     $var = "bgc_mode";
     if ($nl_flags->{$var} eq "sq") {
-      fatal_error("-methane option can ONLY be used for elm with -bgc cn|bgc");
+      fatal_error("-methane option can ONLY be used for elm with -bgc cn|bgc|fates");
     } else {
 
-      $val = $nl_flags->{'use_nitrif_denitrif'};
-      if ($val ne ".true.") {
-        $var = "use_nitrif_denitrif";
-        fatal_error("-methane used with $var = $val, thus it is NOT valid.\n");
-      } else {
         $var = "use_lch4";
         $val = ".true.";
-
+	
         if ( defined($nl->get_value($var)) && $nl->get_value($var) ne $val ) {
-          fatal_error("$var is inconsistent with the commandline setting of -methane");
+	    fatal_error("$var is inconsistent with the commandline setting of -methane");
         }
-
+	
         my $group = $definition->get_group_name($var);
         $nl_flags->{$var} = $val;
         $nl->set_variable_value($group, $var, $val);
-
+	
         if (  ! $definition->is_valid_value( $var, $val ) ) {
-          my @valid_values   = $definition->get_valid_values( $var );
-          fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+	    my @valid_values   = $definition->get_valid_values( $var );
+	    fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
         }
-      }
     }
   }
-} # methane
+}
 
 #-------------------------------------------------------------------------------
 
@@ -1139,7 +1090,7 @@ sub setup_cmdl_nutrient {
   if ($val ne "default"){
     
     if ($nl_flags->{"bgc_mode"} eq "sp"){
-      fatal_error("-nutrient nutrient_option can ONLY be used with elm with -bgc cn|bgc");
+      fatal_error("-nutrient nutrient_option can ONLY be used with elm with -bgc cn|bgc|fates");
     } else {
       
       if ($val eq "c"){
@@ -1254,7 +1205,7 @@ sub setup_cmdl_nutrient_comp {
   if ($val ne "default"){
     
     if ($nl_flags->{"bgc_mode"} eq "sp"){
-      fatal_error("-nutrient_comp_pathway option can ONLY be used with elm with -bgc cn|bgc");
+      fatal_error("-nutrient_comp_pathway option can ONLY be used with elm with -bgc cn|bgc|fates");
     } else {
       
       if ($val eq "rd"){
@@ -1282,6 +1233,7 @@ sub setup_cmdl_nutrient_comp {
         
         if ( defined($nl->get_value($var)) && $nl->get_value($var) ne $val ) {
           fatal_error("$var is inconsistent with the commandline setting of -nutrient_comp_pathway");
+
         }
         
         my $group = $definition->get_group_name($var);
@@ -1316,7 +1268,7 @@ sub setup_cmdl_soil_decomp {
   if ($val ne "default"){
     
     if ($nl_flags->{"bgc_mode"} eq "sp"){
-      fatal_error("-soil_decomp option can ONLY be used with elm with -bgc cn|bgc");
+      fatal_error("-soil_decomp option can ONLY be used with elm with -bgc cn|bgc|fates");
     } else {
       
       if ($val eq "ctc"){
@@ -1343,6 +1295,7 @@ sub setup_cmdl_soil_decomp {
         if (  ! $definition->is_valid_value( $var, $val ) ) {
           my @valid_values   = $definition->get_valid_values( $var );
           fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+
         }
         
       } else {
@@ -1528,6 +1481,7 @@ sub setup_cmdl_bgc_spinup {
   my $var;
   $nl_flags->{'spinup'} = undef;
   $nl_flags->{'bgc_spinup'} = undef;
+
   $var = "bgc_spinup";
   if ( $opts->{$var} ne "default" ) {
     $val = $opts->{$var};
@@ -1541,18 +1495,19 @@ sub setup_cmdl_bgc_spinup {
     my @valid_values   = $definition->get_valid_values( $var );
     fatal_error("$var has an invalid value ($val). Valid values are: @valid_values\n");
   }
-  if ( $nl_flags->{'bgc_spinup'} eq "on" && $nl_flags->{'use_cn'} ne ".true.") {
-    fatal_error("$var can not be '$nl_flags->{'bgc_spinup'}' if CN is turned off (use_cn=$nl_flags->{'use_cn'}).");
+  if ( $nl_flags->{'bgc_spinup'} eq "on" && ($nl_flags->{'use_cn'} ne ".true." && $nl_flags->{'use_fates'} ne ".true." )) {
+      fatal_error("$var can not be '$nl_flags->{'bgc_spinup'}' if CN is turned off (use_cn=$nl_flags->{'use_cn'} use_fates=$nl_flags->{'use_fates'})." );
   }
   if ( $nl->get_value("spinup_state") eq 0 && $nl_flags->{'bgc_spinup'} eq "on" ) {
-    fatal_error("Namelist spinup_state contradicts the command line option bgc_spinup" );
+      fatal_error("Namelist spinup_state contradicts the command line option bgc_spinup" );
   }
   if ( $nl->get_value("spinup_state") eq 1 && $nl_flags->{'bgc_spinup'} eq "off" ) {
-    fatal_error("Namelist spinup_state contradicts the command line option bgc_spinup" );
+      fatal_error("Namelist spinup_state contradicts the command line option bgc_spinup" );
   }
   $val = $nl_flags->{'bgc_spinup'};
 
-  verbose_message("CLM CN bgc_spinup mode is $val");
+  verbose_message("CLM bgc_spinup mode is $val");
+
 }
 
 #-------------------------------------------------------------------------------
@@ -1874,6 +1829,7 @@ sub process_namelist_inline_logic {
   setup_logic_irrigate($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_start_type($nl_flags, $nl);
   setup_logic_delta_time($opts, $nl_flags, $definition, $defaults, $nl);
+  setup_logic_do_budgets($opts, $nl_flags, $definition, $defaults, $nl);
   setup_logic_decomp_performance($opts->{'test'}, $nl_flags, $definition, $defaults, $nl);
   setup_logic_snow($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_glacier($opts, $nl_flags, $definition, $defaults, $nl,  $envxml_ref, $physv);
@@ -1885,11 +1841,12 @@ sub process_namelist_inline_logic {
   setup_logic_surface_dataset($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_initial_conditions($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_dynamic_subgrid($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
-  setup_logic_bgc_spinup($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
-  setup_logic_supplemental_nitrogen($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  
 #  setup_logic_snowpack($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_fates($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
-
+  setup_logic_bgc_spinup($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_supplemental_nitrogen($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  
   #########################################
   # namelist group: clm_humanindex_inparm #
   #########################################
@@ -2120,6 +2077,19 @@ sub setup_logic_delta_time {
 
 #-------------------------------------------------------------------------------
 
+sub setup_logic_do_budgets {
+  my ($opts, $nl_flags, $definition, $defaults, $nl) = @_;
+
+    my $do_budgets = $defaults->get_value('do_budgets');
+    if ( ! defined($do_budgets)  ) {
+      # default to .false. if not set in namelist_defaults.xml
+      add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'do_budgets', 'val'=>".false.");
+    } else {
+      add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'do_budgets', 'val'=>"$do_budgets");
+    }
+}
+#-------------------------------------------------------------------------------
+
 sub setup_logic_decomp_performance {
   my ($test_files, $nl_flags, $definition, $defaults, $nl) = @_;
 
@@ -2147,7 +2117,6 @@ sub setup_logic_snow {
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsnowoptics' );
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsnowaging' );
 }
-
 
 #-------------------------------------------------------------------------------
 
@@ -2347,7 +2316,6 @@ sub setup_logic_demand {
   $settings{'use_cn'}              = $nl_flags->{'use_cn'};
   $settings{'use_cndv'}            = $nl_flags->{'use_cndv'};
   $settings{'use_lch4'}            = $nl_flags->{'use_lch4'};
-  $settings{'use_nitrif_denitrif'} = $nl_flags->{'use_nitrif_denitrif'};
   $settings{'use_vertsoilc'}       = $nl_flags->{'use_vertsoilc'};
   $settings{'use_snicar_ad'}       = $nl_flags->{'use_snicar_ad'};
   $settings{'use_century_decomp'}  = $nl_flags->{'use_century_decomp'};
@@ -2447,7 +2415,6 @@ sub setup_logic_initial_conditions {
         'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
         'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
         'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
-        'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
         'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
         'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
         'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
@@ -2467,7 +2434,6 @@ sub setup_logic_initial_conditions {
         'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
         'ic_md'=>$ic_date, 'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
         'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
-        'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
         'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
         'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
         'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
@@ -2487,7 +2453,6 @@ sub setup_logic_initial_conditions {
         'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
         'ic_ymd'=>$ic_date, 'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
         'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
-        'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
         'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
         'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
         'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
@@ -2618,7 +2583,7 @@ sub setup_logic_do_transient_crops {
     # In principle, use_fates should be compatible with
     # do_transient_crops. However, this hasn't been tested, so to be safe,
     # we are not allowing this combination for now.
-    $cannot_be_true = "$var has not been tested with ED, so for now these two options cannot be combined";
+    $cannot_be_true = "$var has not been tested with FATES, so for now these two options cannot be combined";
   }
   
   if ($cannot_be_true) {
@@ -2675,7 +2640,7 @@ sub setup_logic_do_harvest {
     $cannot_be_true = "$var can only be set to true when running with CN (use_cn = true)";
   }
   elsif (value_is_true($nl->get_value('use_fates'))) {
-    $cannot_be_true = "$var currently doesn't work with ED";
+    $cannot_be_true = "$var currently doesn't work with FATES";
   }
   
   if ($cannot_be_true) {
@@ -2732,7 +2697,7 @@ sub setup_logic_supplemental_nitrogen {
   my $suplnitro = $nl->get_value('suplnitro');
   if ( defined($suplnitro) ) {
     if ( $nl_flags->{'bgc_mode'} eq "sp" ) {
-      fatal_error("supplemental Nitrogen (suplnitro) is set, but neither CN nor CNDV is active!\n");
+      fatal_error("supplemental Nitrogen (suplnitro) is set, but SP mode is active?!\n");
     }
     if ( $nl_flags->{'use_crop'} ne ".true." && $suplnitro =~ /PROG_CROP_ONLY/i ) {
       fatal_error("supplemental Nitrogen is set to run over prognostic crops, but prognostic crop is NOT active!\n");
@@ -2888,17 +2853,16 @@ sub setup_logic_nitrogen_deposition {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   #
-  # Nitrogen deposition for bgc=CN
+  # Nitrogen deposition for bgc=CN,FATES
   #
-
-  if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
+  if ( $nl_flags->{'bgc_mode'} =~/cn|bgc|fates/ ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'ndepmapalgo', 'phys'=>$nl_flags->{'phys'},
-                'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
+                'use_cn'=>$nl_flags->{'use_cn'}, 'use_fates'=>$nl_flags->{'use_fates'}, 'hgrid'=>$nl_flags->{'res'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_ndep', 'phys'=>$nl_flags->{'phys'},
-                'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
+                'use_cn'=>$nl_flags->{'use_cn'}, 'use_fates'=>$nl_flags->{'use_fates'}, 'sim_year'=>$nl_flags->{'sim_year'},
                 'sim_year_range'=>$nl_flags->{'sim_year_range'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_last_ndep', 'phys'=>$nl_flags->{'phys'},
-                'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
+                'use_cn'=>$nl_flags->{'use_cn'}, 'use_fates'=>$nl_flags->{'use_fates'}, 'sim_year'=>$nl_flags->{'sim_year'},
                 'sim_year_range'=>$nl_flags->{'sim_year_range'});
     # Set align year, if first and last years are different
     if ( $nl->get_value('stream_year_first_ndep') != $nl->get_value('stream_year_last_ndep') ) {
@@ -2906,7 +2870,7 @@ sub setup_logic_nitrogen_deposition {
                   'sim_year_range'=>$nl_flags->{'sim_year_range'});
     }
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_fldfilename_ndep', 'phys'=>$nl_flags->{'phys'},
-                'use_cn'=>$nl_flags->{'use_cn'}, 'rcp'=>$nl_flags->{'rcp'},
+                'use_cn'=>$nl_flags->{'use_cn'}, 'use_fates'=>$nl_flags->{'use_fates'}, 'rcp'=>$nl_flags->{'rcp'},
                 'hgrid'=>"1.9x2.5" );
   } else {
     # If bgc is NOT CN/CNDV then make sure none of the ndep settings are set!
@@ -2915,9 +2879,9 @@ sub setup_logic_nitrogen_deposition {
          defined($nl->get_value('model_year_align_ndep'))  ||
          defined($nl->get_value('stream_fldfilename_ndep'))
        ) {
-      fatal_error("When bgc is NOT CN or CNDV none of: stream_year_first_ndep," .
+      fatal_error("When bgc is NOT CN, FATES or CNDV none of: stream_year_first_ndep," .
                   "stream_year_last_ndep, model_year_align_ndep, nor stream_fldfilename_ndep" .
-                  " can be set!\n");
+                  " can be set! $nl_flags->{'bgc_mode'} \n");
     }
   }
 }
@@ -2931,14 +2895,14 @@ sub setup_logic_phosphorus_deposition {
   # Phosphorus deposition for bgc=CN
   #
 
-    if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
+    if ( $nl_flags->{'bgc_mode'} =~/cn|bgc|fates/ ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pdepmapalgo', 'phys'=>$nl_flags->{'phys'},
-                'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
+                'use_cn'=>$nl_flags->{'use_cn'}, 'use_fates'=>$nl_flags->{'use_fates'}, 'hgrid'=>$nl_flags->{'res'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_pdep', 'phys'=>$nl_flags->{'phys'},
-                'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
+                'use_cn'=>$nl_flags->{'use_cn'}, 'use_fates'=>$nl_flags->{'use_fates'}, 'sim_year'=>$nl_flags->{'sim_year'},
                 'sim_year_range'=>$nl_flags->{'sim_year_range'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_last_pdep', 'phys'=>$nl_flags->{'phys'},
-                'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
+                'use_cn'=>$nl_flags->{'use_cn'}, 'use_fates'=>$nl_flags->{'use_fates'}, 'sim_year'=>$nl_flags->{'sim_year'},
                 'sim_year_range'=>$nl_flags->{'sim_year_range'});
     # Set align year, if first and last years are different
     if ( $nl->get_value('stream_year_first_pdep') != $nl->get_value('stream_year_last_pdep') ) {
@@ -3060,8 +3024,8 @@ sub setup_logic_megan {
 
   if ($opts->{'megan'} ) {
     if ( value_is_true( $nl_flags->{'use_fates'} ) ) {
-       fatal_error("MEGAN can NOT be on when ED is also on.\n" . 
-                   "   Use the '-no-megan' option when '-bgc ed' is activated");
+       fatal_error("MEGAN can NOT be on when FATES is also on.\n" . 
+                   "   Use the '-no-megan' option when '-bgc fates' is activated");
     }
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'megan_specifier');
     check_megan_spec( $nl, $definition );

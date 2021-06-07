@@ -26,7 +26,7 @@ void Functions<S,D>::compute_brunt_shoc_length(
     Spack thv_zi_k, thv_zi_kp1;
     auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
     auto range_pack2 = range_pack1;
-    range_pack2.set(range_pack1 >= nlevi, 1);
+    range_pack2.set(range_pack1 >= (nlevi-1), nlevi-2);
     ekat::index_and_shift<1>(s_thv_zi, range_pack2, thv_zi_k, thv_zi_kp1);
 
     brunt(k) = (ggr/thv(k))*(thv_zi_k-thv_zi_kp1)/dz_zt(k);

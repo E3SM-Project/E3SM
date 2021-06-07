@@ -13,7 +13,7 @@ module RtmVar
 
   real(r8), public, parameter :: secspday = SHR_CONST_CDAY  ! Seconds per day
   integer,  public, parameter :: isecspday= secspday        ! Integer seconds per day
-  real(r8), public, parameter :: spval    = 1.e36_r8        ! special value for real data
+  real(r8), public, parameter :: spval    = 1.e20_r8        ! special value for real data
   integer , public, parameter :: ispval   = -9999           ! special value for int data
   real(r8) :: re = SHR_CONST_REARTH*0.001_r8                ! radius of earth (km)
   logical , public :: barrier_timers                        ! barrier timers
@@ -44,7 +44,7 @@ module RtmVar
   character(len=256), public :: hostname = ' '         ! Hostname of machine running on
   character(len=256), public :: username = ' '         ! username of user running program
   character(len=256), public :: version  = " "         ! version of program
-  character(len=256), public :: conventions = "CF-1.0" ! dataset conventions
+  character(len=256), public :: conventions = "CF-1.7" ! dataset conventions
   character(len=256), public :: source   = "MOSART in E3SM" ! description of this source
 
   ! Unit Numbers

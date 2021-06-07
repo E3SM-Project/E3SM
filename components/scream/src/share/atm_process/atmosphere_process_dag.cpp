@@ -7,12 +7,12 @@ namespace scream {
 
 void AtmProcDAG::
 create_dag(const group_type& atm_procs,
-           const std::shared_ptr<FieldRepository<Real>> field_repo) {
+           const std::shared_ptr<FieldManager<Real>> field_mgr) {
 
   cleanup ();
 
   // Create the nodes
-  add_nodes(atm_procs,field_repo);
+  add_nodes(atm_procs,field_mgr);
 
   // Add a 'begin' and 'end' placeholders. While they are not actual
   // nodes of the graph, they come handy when representing inputs
@@ -62,47 +62,11 @@ create_dag(const group_type& atm_procs,
   update_unmet_deps ();
 }
 
-void AtmProcDAG::add_field_initializer (const FieldInitializer& initializer)
-{
-  EKAT_REQUIRE_MSG (m_nodes.size()>0,
-    "Error! You need to create the dag before adding field initializers.\n");
-
-  const auto& inited_fields = initializer.get_inited_fields();
-
-  // Add a node
-  m_nodes.push_back(Node());
-  auto& n = m_nodes.back();
-  n.id = m_nodes.size()-1;
-  n.name = initializer.name() + " (init only)";
-  m_unmet_deps[n.id].clear();
-
-  for (const auto& f : inited_fields) {
-    auto fid = add_fid(f);
-
-    // Add the fid to the list of 'computed' fields
-    n.computed.insert(fid);
-
-    // Now, remove the unmet dependency (if any)
-    for (auto& it : m_unmet_deps) {
-      // Erase the unmet dependency (if any)
-      int erased = it.second.erase(fid);
-
-      if (erased==1) {
-        // Establish parent-child relationship
-        n.children.push_back(it.first);
-      }
-    }
-  }
-
-  // We need to re-check whether there are unmet deps
-  update_unmet_deps();
-}
-
 void AtmProcDAG::add_surface_coupling (const std::set<FieldIdentifier>& imports,
                                        const std::set<FieldIdentifier>& exports)
 {
   EKAT_REQUIRE_MSG (m_nodes.size()>0,
-    "Error! You need to create the dag before adding field initializers.\n");
+    "Error! You need to create the dag before adding surface coupling.\n");
 
   // Process all imports
   m_nodes.push_back(Node());
@@ -219,18 +183,25 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
       // DAG starts printing fids with verb 2, so fid verb is verb-2;
       int fid_verb = verbosity-2;
       ofile << "<hr/>\n";
+
+      // Computed fields
       if (n.name=="Begin of atm time step") {
-        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Inputs from previous time step:</font></td></tr>\n";
+        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Atm input fields from previous time step:</font></td></tr>\n";
       } else if (n.name!="End of atm time step"){
-        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Computed:</font></td></tr>\n";
+        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Computed Fields:</font></td></tr>\n";
       }
       for (const auto& fid : n.computed) {
-        ofile << "      <tr><td align=\"left\">  " << html_fix(print_fid(m_fids[fid],fid_verb)) << "</td></tr>\n";
+        std::string fc = "<font color=\"";
+        fc += "black";
+        fc += "\">  ";
+        ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[fid],fid_verb)) << "</font></td></tr>\n";
       }
+
+      // Required fields
       if (n.name=="End of atm time step") {
-        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Outputs for next time step:</font></td></tr>\n";
+        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Atm output fields for next time step:</font></td></tr>\n";
       } else if (n.name!="Begin of atm time step") {
-        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Required:</font></td></tr>\n";
+        ofile << "      <tr><td align=\"left\"><font color=\"blue\">Required Fields:</font></td></tr>\n";
       }
       for (const auto& fid : n.required) {
         std::string fc = "<font color=\"";
@@ -241,6 +212,104 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
           ofile << "<b>  *** MISSING ***</b>";
         }
         ofile << "</font></td></tr>\n";
+      }
+
+      // Update groups
+      if (n.gr_updated.size()>0) {
+        if (n.name=="Begin of atm time step") {
+          ofile << "      <tr><td align=\"left\"><font color=\"blue\">Atm Input groups:</font></td></tr>\n";
+        } else if (n.name!="End of atm time step"){
+          ofile << "      <tr><td align=\"left\"><font color=\"blue\">Updated Groups:</font></td></tr>\n";
+        }
+        for (const auto& gr_fid : n.gr_updated) {
+          std::string fc = "<font color=\"";
+          fc += (ekat::contains(unmet,gr_fid) ? "red" : "black");
+          fc += "\">  ";
+          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[gr_fid],fid_verb));
+          if (ekat::contains(m_unmet_deps.at(n.id),gr_fid)) {
+            ofile << "<b>  *** MISSING ***</b>";
+          }
+          ofile << "</font></td></tr>\n";
+          if (verbosity>2) {
+            ofile << "      <tr><td align=\"left\">  Members:";
+            const auto& members = m_gr_fid_to_group.at(m_fids[gr_fid]).m_fields;
+            const size_t max_len = 40;
+            size_t len = 0;
+            size_t i = 0;
+            for (auto it : members) {
+              const auto& mfid = it.second->get_header().get_identifier();
+              const auto mfid_id = get_fid_index(mfid);
+              std::string mfc = "<font color=\"";
+              mfc += (ekat::contains(unmet,mfid_id) ? "red" : "black");
+              mfc += "\">";
+              if (len>0) {
+                ofile << ",";
+                ++len;
+              }
+              ofile << " " << mfc << it.first << "</font>";
+              len += it.first.size()+1;
+              if (len>max_len) {
+                if (i<members.size()-1) {
+                  ofile << ",";
+                }
+                ofile << "</td></tr>";
+                ofile << "      <tr><td align=\"left\">                  ";
+                len = 0;
+              }
+              ++i;
+            }
+            ofile <<  "</td></tr>";
+          }
+        }
+      }
+
+      // Required groups
+      if (n.gr_required.size()>0) {
+        if (n.name=="End of atm time step") {
+          ofile << "      <tr><td align=\"left\"><font color=\"blue\">Atm Output Groups:</font></td></tr>\n";
+        } else if (n.name!="Begin of atm time step") {
+          ofile << "      <tr><td align=\"left\"><font color=\"blue\">Required Groups:</font></td></tr>\n";
+        }
+        for (const auto& gr_fid : n.gr_required) {
+          std::string fc = "<font color=\"";
+          fc += (ekat::contains(unmet,gr_fid) ? "red" : "black");
+          fc += "\">  ";
+          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[gr_fid],fid_verb));
+          if (ekat::contains(m_unmet_deps.at(n.id),gr_fid)) {
+            ofile << "<b>  *** MISSING ***</b>";
+          }
+          ofile << "</font></td></tr>\n";
+          if (verbosity>2) {
+            ofile << "      <tr><td align=\"left\">  Members:";
+            const auto& members = m_gr_fid_to_group.at(m_fids[gr_fid]).m_fields;
+            const size_t max_len = 40;
+            size_t len = 0;
+            size_t i = 0;
+            for (auto it : members) {
+              const auto& mfid = it.second->get_header().get_identifier();
+              const auto mfid_id = get_fid_index(mfid);
+              std::string mfc = "<font color=\"";
+              mfc += (ekat::contains(unmet,mfid_id) ? "red" : "black");
+              mfc += "\">";
+              if (len>0) {
+                ofile << ",";
+                ++len;
+              }
+              ofile << " " << mfc << it.first << "</font>";
+              len += it.first.size()+1;
+              if (len>max_len) {
+                if (i<members.size()-1) {
+                  ofile << ",";
+                }
+                ofile << "</td></tr>";
+                ofile << "      <tr><td align=\"left\">                  ";
+                len = 0;
+              }
+              ++i;
+            }
+            ofile <<  "</td></tr>";
+          }
+        }
       }
     } else {
       ofile << "\n";
@@ -268,11 +337,9 @@ void AtmProcDAG::cleanup () {
 
 void AtmProcDAG::
 add_nodes (const group_type& atm_procs,
-           const std::shared_ptr<FieldRepository<Real>> field_repo) {
+           const std::shared_ptr<FieldManager<Real>> field_mgr) {
   
   const int num_procs = atm_procs.get_num_processes();
-  const auto& remappers_in  = atm_procs.get_inputs_remappers ();
-  const auto& remappers_out = atm_procs.get_outputs_remappers ();
   const bool sequential = (atm_procs.get_schedule_type()==ScheduleType::Sequential);
 
   EKAT_REQUIRE_MSG (sequential, "Error! Parallel splitting dag not yet supported.\n");
@@ -288,74 +355,95 @@ add_nodes (const group_type& atm_procs,
       // Add all the stuff in the group.
       // Note: no need to add remappers for this process, because
       //       the sub-group will have its remappers taken care of
-      add_nodes(*group,field_repo);
+      add_nodes(*group,field_mgr);
     } else {
-      // Add a node for the remapper(s) in (if needed)
-      for (auto r : remappers_in[i]) {
-        const auto& rem = *r.second;
-        const int nfields = rem.get_num_registered_fields();
-        if (nfields>0) {
-          m_nodes.push_back(Node());
-          Node& node = m_nodes.back();;
-          node.id = id;
-          node.name = proc->name()+" (remap in [" + rem.get_src_grid()->name() + "->" + rem.get_tgt_grid()->name() + "])";
-          m_unmet_deps[id].clear();
-          for (int k=0; k<nfields; ++k) {
-            const auto& fid_in = rem.get_src_field_id(k);
-            const int fid_in_id = add_fid(fid_in);
-            node.required.insert(fid_in_id);
-            auto it = m_fid_to_last_provider.find(fid_in_id);
-            if (it==m_fid_to_last_provider.end()) {
-              m_unmet_deps[id].insert(fid_in_id);
-            } else {
-              // Establish parent-child relationship
-              Node& parent = m_nodes[it->second];
-              parent.children.push_back(node.id);
-            }
+      // Create a node for the process
+      // Node& node = m_nodes[proc->name()];
+      m_nodes.push_back(Node());
+      Node& node = m_nodes.back();;
+      node.id = id;
+      node.name = proc->name();
+      m_unmet_deps[id].clear();
 
-            const auto& fid_out = rem.get_tgt_field_id(k);
-            const int fid_out_id = add_fid(fid_out);
-            node.computed.insert(fid_out_id);
-            m_fid_to_last_provider[fid_out_id] = id;
-          }
-          ++id;
+      // Input fields
+      for (const auto& req : proc->get_required_fields()) {
+        const auto& fid = req.fid;
+        const int fid_id = add_fid(fid);
+        node.required.insert(fid_id);
+        auto it = m_fid_to_last_provider.find(fid_id);
+        if (it==m_fid_to_last_provider.end()) {
+          m_unmet_deps[id].insert(fid_id);
+        } else {
+          // Establish parent-child relationship
+          Node& parent = m_nodes[it->second];
+          parent.children.push_back(node.id);
         }
       }
 
-      // Note: the braces are just to have this chunk of code in a scope,
-      //       and avoid vars clashing
-      {
-        // Create a node for the process
-        // Node& node = m_nodes[proc->name()];
-        m_nodes.push_back(Node());
-        Node& node = m_nodes.back();;
-        node.id = id;
-        node.name = proc->name();
-        m_unmet_deps[id].clear();
-        for (auto fid : proc->get_required_fields()) {
-          const int fid_id = add_fid(fid);
-          node.required.insert(fid_id);
-          auto it = m_fid_to_last_provider.find(fid_id);
+      // Output fields
+      for (const auto& req : proc->get_computed_fields()) {
+        const auto& fid = req.fid;
+        const int fid_id = add_fid(fid);
+        node.computed.insert(fid_id);
+        m_fid_to_last_provider[fid_id] = id;
+      }
+
+      // Input groups
+      for (const auto& itg : proc->get_required_groups()) {
+        EKAT_REQUIRE_MSG (field_mgr, "Error! Field manager pointer is null.\n");
+        auto group = field_mgr->get_field_group(itg.name);
+        if (!group.m_info->m_bundled) {
+          // Group is not bundled: process fields individually
+          for (const auto& it_f : group.m_fields) {
+            const auto& fid = it_f.second->get_header().get_identifier();
+            const int fid_id = add_fid(fid);
+            node.computed.insert(fid_id);
+            m_fid_to_last_provider[fid_id] = id;
+          }
+        } else {
+          // Group is bundled: process the bundled field
+          const auto& gr_fid = group.m_bundle->get_header().get_identifier();
+          const int gr_fid_id = add_fid(gr_fid);
+          node.gr_required.insert(gr_fid_id);
+          auto it = m_fid_to_last_provider.find(gr_fid_id);
           if (it==m_fid_to_last_provider.end()) {
-            m_unmet_deps[id].insert(fid_id);
+            // It might still be ok, as long as there is a provider for all the fields in the group
+            bool all_members_have_providers = true;
+            for (auto it_f : group.m_fields) {
+              const auto& fid = it_f.second->get_header().get_identifier();
+              const int fid_id = add_fid(fid);
+              auto it_p = m_fid_to_last_provider.find(fid_id);
+              if (it_p==m_fid_to_last_provider.end()) {
+                m_unmet_deps[id].insert(fid_id);
+                all_members_have_providers = false;
+              } else {
+                Node& parent = m_nodes[it_p->second];
+                parent.children.push_back(node.id);
+              }
+            }
+            if (!all_members_have_providers) {
+              m_unmet_deps[id].insert(gr_fid_id);
+            }
           } else {
             // Establish parent-child relationship
             Node& parent = m_nodes[it->second];
             parent.children.push_back(node.id);
           }
+          m_gr_fid_to_group.emplace(gr_fid,group);
         }
-        for (auto fid : proc->get_computed_fields()) {
-          const int fid_id = add_fid(fid);
-          node.computed.insert(fid_id);
-          m_fid_to_last_provider[fid_id] = id;
-        }
-        for (auto itg : proc->get_updated_groups()) {
-          EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
-          auto group = field_repo->get_const_field_group(itg.first,itg.second);
-          for (const auto& f : group) {
-            const auto& fid = f.get_header().get_identifier();
+      }
+
+      // Input-output groups
+      for (const auto& itg : proc->get_updated_groups()) {
+        EKAT_REQUIRE_MSG (field_mgr, "Error! Field manager pointer is null.\n");
+        auto group = field_mgr->get_field_group(itg.name);
+        if (!group.m_info->m_bundled) {
+          // Group is not bundled: process fields in the group individually
+          for (const auto& it_f : group.m_fields) {
+            const auto& fid = it_f.second->get_header().get_identifier();
             const int fid_id = add_fid(fid);
             node.required.insert(fid_id);
+            node.computed.insert(fid_id);
             auto it = m_fid_to_last_provider.find(fid_id);
             if (it==m_fid_to_last_provider.end()) {
               m_unmet_deps[id].insert(fid_id);
@@ -364,53 +452,51 @@ add_nodes (const group_type& atm_procs,
               Node& parent = m_nodes[it->second];
               parent.children.push_back(node.id);
             }
-          }
-        }
-        for (auto itg : proc->get_required_groups()) {
-          EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
-          auto group = field_repo->get_const_field_group(itg.first,itg.second);
-          for (const auto& f : group) {
-            const auto& fid = f.get_header().get_identifier();
-            const int fid_id = add_fid(fid);
-            node.computed.insert(fid_id);
             m_fid_to_last_provider[fid_id] = id;
           }
-        }
-        ++id;
-      }
-
-      // Add a node for the remapper(s) out (if needed)
-      for (auto r : remappers_out[i]) {
-        const auto& rem = *r.second;
-        const int nfields = rem.get_num_registered_fields();
-        if (nfields>0) {
-          m_nodes.push_back(Node());
-          Node& node = m_nodes.back();
-          node.id = id;
-          node.name = proc->name()+" (remap out [" + rem.get_src_grid()->name() + "->" + rem.get_tgt_grid()->name() + "])";
-          m_unmet_deps[id].clear();
-          for (int k=0; k<nfields; ++k) {
-            const auto& fid_in = rem.get_src_field_id(k);
-            const int fid_in_id = add_fid(fid_in);
-            node.required.insert(fid_in_id);
-            // A remapper for outputs of proc should *not* have unmet dependencies.
-            auto it = m_fid_to_last_provider.find(fid_in_id);
-            EKAT_REQUIRE_MSG (it!=m_fid_to_last_provider.end(),
-                                "Internal error! Something is off with outputs remapper for atm proc '" + proc->name() + "'.\n"
-                                "   Please, contact developers.\n");
-
+        } else {
+          // Group is bundled: process the bundled field
+          const auto& gr_fid = group.m_bundle->get_header().get_identifier();
+          const int gr_fid_id = add_fid(gr_fid);
+          node.gr_required.insert(gr_fid_id);
+          node.gr_updated.insert(gr_fid_id);
+          auto it = m_fid_to_last_provider.find(gr_fid_id);
+          if (it==m_fid_to_last_provider.end()) {
+            // It might still be ok, as long as there is a provider for all the fields in the group
+            bool all_members_have_providers = true;
+            for (auto it_f : group.m_fields) {
+              const auto& fid = it_f.second->get_header().get_identifier();
+              const int fid_id = add_fid(fid);
+              auto it_p = m_fid_to_last_provider.find(fid_id);
+              if (it_p==m_fid_to_last_provider.end()) {
+                m_unmet_deps[id].insert(fid_id);
+                all_members_have_providers = false;
+              } else {
+                Node& parent = m_nodes[it_p->second];
+                parent.children.push_back(node.id);
+              }
+            }
+            if (!all_members_have_providers) {
+              m_unmet_deps[id].insert(gr_fid_id);
+            }
+          } else {
             // Establish parent-child relationship
             Node& parent = m_nodes[it->second];
             parent.children.push_back(node.id);
-
-            const auto& fid_out = rem.get_tgt_field_id(k);
-            const int fid_out_id = add_fid(fid_out);
-            node.computed.insert(fid_out_id);
-            m_fid_to_last_provider[fid_out_id] = id;
           }
-          ++id;
+          m_fid_to_last_provider[gr_fid_id] = id;
+          m_gr_fid_to_group.emplace(gr_fid,group);
+
+          // Additionally, each field in the group is implicitly 'computed'
+          // by this node, so update their last provider
+          for (auto it_f : group.m_fields) {
+            const auto& fid = it_f.second->get_header().get_identifier();
+            const int fid_id = add_fid(fid);
+            m_fid_to_last_provider[fid_id] = id;
+          }
         }
       }
+      ++id;
     }
   }
 }
@@ -420,6 +506,15 @@ int AtmProcDAG::add_fid (const FieldIdentifier& fid) {
   if (it==m_fids.end()) {
     m_fids.push_back(fid);
     return m_fids.size()-1;
+  } else {
+    return std::distance(m_fids.begin(), it);
+  }
+}
+
+int AtmProcDAG::get_fid_index (const FieldIdentifier& fid) const {
+  auto it = ekat::find(m_fids,fid);
+  if (it==m_fids.end()) {
+    return -1;
   } else {
     return std::distance(m_fids.cbegin(),it);
   }

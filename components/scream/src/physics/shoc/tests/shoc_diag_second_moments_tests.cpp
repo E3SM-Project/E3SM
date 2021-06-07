@@ -257,8 +257,6 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments {
       DiagSecondMomentsData(256, 72, 73),
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(DiagSecondMomentsData);
-
     // Generate random input data
     for (auto& d : f90_data) {
       d.randomize();
@@ -292,6 +290,8 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(DiagSecondMomentsData);
     for (Int i = 0; i < num_runs; ++i) {
       DiagSecondMomentsData& d_f90 = f90_data[i];
       DiagSecondMomentsData& d_cxx = cxx_data[i];
@@ -308,8 +308,8 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments {
         REQUIRE(d_f90.vw_sec[k] == d_cxx.vw_sec[k]);
         REQUIRE(d_f90.wtke_sec[k] == d_cxx.wtke_sec[k]);
       }
-
     }
+#endif
   } // run_bfb
 
 };

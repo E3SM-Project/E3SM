@@ -107,7 +107,11 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     //: C::macheps is machine epsilon for single or double precision as appropriate. This will be
     //multiplied by a condition # to get the actual expected numerical uncertainty.
 
-    static constexpr Scalar tol = C::macheps;
+    static constexpr Scalar tol = C::macheps
+#ifdef NDEBUG
+      * 10000
+#endif
+;
 
     //PMC note: original version looped over pack dimension, testing each entry. This isn't
     //necessary b/c packs were created by copying a scalar up to pack size. Thus just evaluating

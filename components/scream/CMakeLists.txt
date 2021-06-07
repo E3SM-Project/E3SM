@@ -48,7 +48,7 @@ if (Kokkos_ENABLE_CUDA)
   EkatSetNvccWrapper()
 endif()
 
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 14)
 
 if (NOT SCREAM_CIME_BUILD)
   project(SCREAM CXX Fortran)
@@ -68,6 +68,9 @@ if (NOT SCREAM_CIME_BUILD)
 endif()
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
+
+# Note: experimental code might cause compilation errors and/or tests failures.
+option (SCREAM_ENABLE_EXPERIMENTAL "Whether to enable experimental code in scream." OFF)
 
 # Set the scream base and src directory, to be used across subfolders
 set(SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -101,6 +104,11 @@ if (Kokkos_ENABLE_CUDA)
 else()
   set(CUDA_BUILD FALSE)
 endif ()
+
+# Add CUDA as a language for CUDA builds
+if (CUDA_BUILD)
+    enable_language(CUDA)
+endif()
 
 ### Scream default configuration options
 set(DEFAULT_MAX_RANKS 4)
@@ -254,12 +262,6 @@ print_var(SCREAM_TPL_LIBRARIES)
 # whether to include scream_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 
-# Generate scream_config.h and scream_config.f
-include (EkatUtils)
-EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
-
 # Hooks for testing test-all-scream within test-scripts
 if ($ENV{SCREAM_FORCE_BUILD_FAIL})
   add_definitions(-DSCREAM_FORCE_BUILD_FAIL)
@@ -304,7 +306,21 @@ add_custom_target(baseline_cxx)
 add_subdirectory(src)
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
+  include(BuildCprnc)
+  BuildCprnc()
 endif()
+
+# Generate scream_config.h and scream_config.f
+include (EkatUtils)
+EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
+               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
 
 # Build any tools in the scripts/ dir.
 add_subdirectory(scripts)
+
+# Generate scream_config.h and scream_config.f
+include (EkatUtils)
+EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
+               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)

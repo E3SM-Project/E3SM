@@ -10,7 +10,7 @@ module SoilLittDecompMod
   use shr_const_mod          , only : SHR_CONST_TKFRZ
   use decompMod              , only : bounds_type
   use perf_mod               , only : t_startf, t_stopf
-  use elm_varctl             , only : iulog, use_nitrif_denitrif, use_lch4, use_century_decomp
+  use elm_varctl             , only : iulog, use_lch4, use_century_decomp
   use elm_varcon             , only : dzsoi_decomp
   use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use DecompCascadeCNMod   , only : decomp_rate_constants_cn
@@ -39,8 +39,10 @@ module SoilLittDecompMod
   use ColumnDataType         , only : col_ns, col_nf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
+  use ELMFatesInterfaceMod   , only : hlm_fates_interface_type
   ! clm interface & pflotran:
   use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode
+  use elm_varctl             , only : use_cn, use_fates
   !
   implicit none
   save
@@ -100,13 +102,14 @@ contains
                 cnstate_vars, ch4_vars,                         &
                 carbonstate_vars, carbonflux_vars,              &
                 nitrogenstate_vars, nitrogenflux_vars,          &
-                phosphorusstate_vars,phosphorusflux_vars)
+                phosphorusstate_vars,phosphorusflux_vars,       &
+                elm_fates)
 
     !-----------------------------------------------------------------------------
     ! DESCRIPTION:
     ! Modified for clm_interface: 9/12/2015
     ! clm-bgc soil Module, can be called through clm_bgc_interface
-    ! ONLY includes SOM decomposition & nitrification/denitrification (if use_nitrif_denitrif)
+    ! ONLY includes SOM decomposition & nitrification/denitrification
     ! CNAllocaiton is divided into 3 subroutines:
     ! (1) Allocation1_PlantNPDemand  is called in EcosystemDynNoLeaching1
     ! (2) Allocation2_ResolveNPLimit is called in SoilLittDecompAlloc (this subroutine)
@@ -139,6 +142,8 @@ contains
     ! add phosphorus --
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    type(hlm_fates_interface_type), intent(inout), optional :: elm_fates
+    
 !    type(crop_type)          , intent(in)    :: crop_vars
     !
     ! !LOCAL VARIABLES:
@@ -395,12 +400,10 @@ contains
 ! 'nfixation_prof' is used in 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in Allocation1,2,3
 !-------------------------------------------------------------------------------------------------
       
-      if (use_nitrif_denitrif) then ! calculate nitrification and denitrification rates
-         call nitrif_denitrif(bounds, &
-              num_soilc, filter_soilc, &
-              soilstate_vars, waterstate_vars, temperature_vars, ch4_vars, &
-              carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars)
-      end if
+      call nitrif_denitrif(bounds, &
+           num_soilc, filter_soilc, &
+           soilstate_vars, waterstate_vars, temperature_vars, ch4_vars, &
+           carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars)
 
       ! now that potential N immobilization is known, call allocation
       ! to resolve the competition between plants and soil heterotrophs
@@ -413,7 +416,8 @@ contains
                carbonstate_vars, carbonflux_vars,                   &
                nitrogenstate_vars, nitrogenflux_vars,               &
                phosphorusstate_vars,phosphorusflux_vars,            &
-               soilstate_vars,waterstate_vars)
+               soilstate_vars,waterstate_vars,                      &
+               elm_fates)
       call t_stopf('CNAllocation - phase-2')
 
       
@@ -441,29 +445,14 @@ contains
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) ) 
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )   !!! immobilization step
-                     if (.not. use_nitrif_denitrif) then
-                        sminn_to_denit_decomp_cascade_vr(c,j,k) = 0._r8
-                     end if
                   elseif ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) <= 0._r8 ) then  ! N limitation 
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_vr(c,j)
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_vr(c,j)
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_vr(c,j) !!! immobilization step
-                     if (.not. use_nitrif_denitrif) then
-                        sminn_to_denit_decomp_cascade_vr(c,j,k) = 0._r8
-                     end if
                   elseif ( pmnf_decomp_cascade(c,j,k) <= 0._r8 .and. pmpf_decomp_cascade(c,j,k) >  0._r8 ) then  ! P limitation 
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_p_vr(c,j)
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_p_vr(c,j)
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_p_vr(c,j) !!! immobilization step
-
-                     if (.not. use_nitrif_denitrif) then
-                        sminn_to_denit_decomp_cascade_vr(c,j,k) = -CNDecompParamsInst%dnp * pmnf_decomp_cascade(c,j,k)
-                     end if
-                  elseif ( pmnf_decomp_cascade(c,j,k) <= 0._r8 .and. pmpf_decomp_cascade(c,j,k) <=  0._r8 ) then  ! No limitation 
-                     if (.not. use_nitrif_denitrif) then
-                        sminn_to_denit_decomp_cascade_vr(c,j,k) = -CNDecompParamsInst%dnp * pmnf_decomp_cascade(c,j,k)
-                     end if
-
                   end if
                   decomp_cascade_hr_vr(c,j,k) = rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
                   decomp_cascade_ctransfer_vr(c,j,k) = (1._r8 - rf_decomp_cascade(c,j,k)) * p_decomp_cpool_loss(c,j,k)
@@ -490,9 +479,6 @@ contains
                else
                   decomp_cascade_ntransfer_vr(c,j,k) = 0._r8
                   decomp_cascade_ptransfer_vr(c,j,k) = 0._r8
-                  if (.not. use_nitrif_denitrif) then
-                     sminn_to_denit_decomp_cascade_vr(c,j,k) = 0._r8
-                  end if
                   decomp_cascade_sminn_flux_vr(c,j,k) = 0._r8
                   decomp_cascade_sminp_flux_vr(c,j,k) = 0._r8
                end if
@@ -655,6 +641,8 @@ contains
     !! add phosphorus --
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+
+
     !
     ! !LOCAL VARIABLES:
     integer :: fc, c, j                                     ! indices
@@ -820,17 +808,19 @@ contains
 
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants
-      call t_startf('CNAllocation - phase-3')
-      call Allocation3_PlantCNPAlloc (bounds                      , &
+      if(.not.use_fates)then
+          call t_startf('CNAllocation - phase-3')
+          call Allocation3_PlantCNPAlloc (bounds                      , &
                 num_soilc, filter_soilc, num_soilp, filter_soilp    , &
                 canopystate_vars                                    , &
                 cnstate_vars, carbonstate_vars, carbonflux_vars     , &
                 c13_carbonflux_vars, c14_carbonflux_vars            , &
                 nitrogenstate_vars, nitrogenflux_vars               , &
                 phosphorusstate_vars, phosphorusflux_vars, crop_vars)
-      call t_stopf('CNAllocation - phase-3')
+          call t_stopf('CNAllocation - phase-3')
+      end if
       !------------------------------------------------------------------
-
+      
     if(use_pflotran.and.pf_cmode) then
     ! in Allocation3_PlantCNPAlloc():
     ! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted

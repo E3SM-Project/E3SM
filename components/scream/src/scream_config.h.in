@@ -46,4 +46,7 @@
 // Whether SCREAM has Homme enabled as dynamics dycore
 #cmakedefine SCREAM_HAS_HOMME
 
+// Whether experimental code should be enabled
+#cmakedefine SCREAM_ENABLE_EXPERIMENTAL
+
 #endif

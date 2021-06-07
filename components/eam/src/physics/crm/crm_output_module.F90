@@ -88,6 +88,11 @@ module crm_output_module
       real(crm_rknd), allocatable :: qcltend (:,:)          ! CRM output tendency of cloud liquid water
       real(crm_rknd), allocatable :: qiltend (:,:)          ! CRM output tendency of cloud ice
 
+      real(crm_rknd), allocatable :: t_vt_tend (:,:)       ! CRM output tendency for LSE variance transport
+      real(crm_rknd), allocatable :: q_vt_tend (:,:)       ! CRM output tendency for QT  variance transport
+      real(crm_rknd), allocatable :: t_vt_ls   (:,:)       ! large-scale LSE variance transport tendency from GCM
+      real(crm_rknd), allocatable :: q_vt_ls   (:,:)       ! large-scale QT  variance transport tendency from GCM
+
       ! These are all time and spatial averages, on the GCM grid
       real(crm_rknd), allocatable :: cld   (:,:)      ! cloud fraction
       real(crm_rknd), allocatable :: gicewp(:,:)      ! ice water path
@@ -131,12 +136,6 @@ module crm_output_module
       real(crm_rknd), allocatable :: tauy     (:)    ! merid CRM surface stress perturbation      [N/m2]
       real(crm_rknd), allocatable :: z0m          (:)    ! surface stress                             [N/m2]
       real(crm_rknd), allocatable :: subcycle_factor(:)    ! crm cpu efficiency
-
-#ifdef MAML
-      ! MAML variables
-      real(crm_rknd), allocatable :: crm_pcp(ncrms,crm_nx,crm_ny) ! CRM precip rate for MAML (m/s)
-      real(crm_rknd), allocatable :: crm_snw(ncrms,crm_nx,crm_ny) ! CRM snow rate for MAML (m/s)
-#endif
 
    end type crm_output_type
 
@@ -248,18 +247,16 @@ contains
          if (.not. allocated(output%u_tend_esmt )) allocate(output%u_tend_esmt (ncol,nlev))
          if (.not. allocated(output%v_tend_esmt )) allocate(output%v_tend_esmt (ncol,nlev))
 #endif
-
-#ifdef MAML
-         if (.not. allocated(output%crm_pcp)) allocate(output%crm_pcp(ncol,crm_nx,crm_ny))
-         if (.not. allocated(output%crm_snw)) allocate(output%crm_snw(ncol,crm_nx,crm_ny))
-         call prefetch(output%crm_pcp)
-         call prefetch(output%crm_snw)
-#endif
          
          if (.not. allocated(output%sltend ))  allocate(output%sltend (ncol,nlev))
          if (.not. allocated(output%qltend ))  allocate(output%qltend (ncol,nlev))
          if (.not. allocated(output%qcltend))  allocate(output%qcltend(ncol,nlev))
          if (.not. allocated(output%qiltend))  allocate(output%qiltend(ncol,nlev))
+
+         if (.not. allocated(output%t_vt_tend))  allocate(output%t_vt_tend(ncol,nlev))
+         if (.not. allocated(output%q_vt_tend))  allocate(output%q_vt_tend(ncol,nlev))
+         if (.not. allocated(output%t_vt_ls  ))  allocate(output%t_vt_ls  (ncol,nlev))
+         if (.not. allocated(output%q_vt_ls  ))  allocate(output%q_vt_ls  (ncol,nlev))
 
          if (.not. allocated(output%cld   )) allocate(output%cld   (ncol,nlev))  ! cloud fraction
          if (.not. allocated(output%gicewp)) allocate(output%gicewp(ncol,nlev))  ! ice water path
@@ -306,6 +303,12 @@ contains
          call prefetch(output%qltend  )
          call prefetch(output%qcltend )
          call prefetch(output%qiltend )
+
+         call prefetch(output%t_vt_tend )
+         call prefetch(output%q_vt_tend )
+         call prefetch(output%t_vt_ls   )
+         call prefetch(output%q_vt_ls   )
+
          call prefetch(output%cld    )
          call prefetch(output%gicewp )
          call prefetch(output%gliqwp )
@@ -411,15 +414,15 @@ contains
       output%v_tend_esmt = 0
 #endif
 
-#ifdef MAML
-      output%crm_pcp = 0
-      output%crm_snw = 0
-#endif
-
       output%sltend  = 0
       output%qltend  = 0
       output%qcltend = 0
       output%qiltend = 0
+
+      output%t_vt_tend = 0
+      output%q_vt_tend = 0
+      output%t_vt_ls   = 0
+      output%q_vt_ls   = 0
 
       output%cld    = 0
       output%gicewp = 0
@@ -529,15 +532,15 @@ contains
       if (allocated(output%v_tend_esmt)) deallocate(output%v_tend_esmt)
 #endif
 
-#ifdef MAML
-      if (allocated(output%crm_pcp)) deallocate(output%crm_pcp)
-      if (allocated(output%crm_snw)) deallocate(output%crm_snw)
-#endif
-
       if (allocated(output%sltend)) deallocate(output%sltend)
       if (allocated(output%qltend)) deallocate(output%qltend)
       if (allocated(output%qcltend)) deallocate(output%qcltend)
       if (allocated(output%qiltend)) deallocate(output%qiltend)
+
+      if (allocated(output%t_vt_tend)) deallocate(output%t_vt_tend)
+      if (allocated(output%q_vt_tend)) deallocate(output%q_vt_tend)
+      if (allocated(output%t_vt_ls))   deallocate(output%t_vt_ls)
+      if (allocated(output%q_vt_ls))   deallocate(output%q_vt_ls)
 
       if (allocated(output%cld)) deallocate(output%cld)
       if (allocated(output%gicewp)) deallocate(output%gicewp)

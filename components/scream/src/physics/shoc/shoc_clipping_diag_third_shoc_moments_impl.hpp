@@ -23,9 +23,10 @@ void Functions<S,D>
 
     const auto theterm = w_sec_zi(k);
     const auto cond    = w3clip*ekat::sqrt(2*ekat::cube(theterm));
+    const auto w3clipdef = 0.02;
 
     tsign.set(w3(k)<0, -1);
-    w3(k).set(tsign*w3(k) > cond, tsign*cond);
+    w3(k).set(tsign*w3(k) > cond, w3clipdef);
   });
 }
 

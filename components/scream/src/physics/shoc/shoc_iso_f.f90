@@ -131,7 +131,7 @@ interface
 
   end subroutine shoc_pblintd_init_pot_f
 
-  subroutine compute_shoc_mix_shoc_length_f(nlev,shcol,tke,brunt,tscale,&
+  subroutine compute_shoc_mix_shoc_length_f(nlev,shcol,tke,brunt,&
        zt_grid,l_inf,shoc_mix) bind (C)
     use iso_c_binding
 
@@ -139,7 +139,6 @@ interface
     integer(kind=c_int), intent(in), value :: shcol
     real(kind=c_real), intent(in) :: tke(shcol,nlev)
     real(kind=c_real), intent(in) :: brunt(shcol,nlev)
-    real(kind=c_real), intent(in) :: tscale(shcol)
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
     real(kind=c_real), intent(in) :: l_inf(shcol)
 
@@ -255,22 +254,6 @@ subroutine check_length_scale_shoc_length_f(nlev, shcol, host_dx, host_dy, shoc_
 
 end subroutine check_length_scale_shoc_length_f
 
-subroutine compute_conv_vel_shoc_length_f(nlev,shcol,pblh,zt_grid,dz_zt,&
-                                          thv,wthv_sec,conv_vel) bind (C)
-  use iso_c_binding
-
-  integer(kind=c_int), intent(in), value :: nlev
-  integer(kind=c_int), intent(in), value :: shcol
-  real(kind=c_real), intent(in) :: pblh(shcol)
-  real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
-  real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
-  real(kind=c_real), intent(in) :: thv(shcol,nlev)
-  real(kind=c_real), intent(in) :: wthv_sec(shcol,nlev)
-
-  real(kind=c_real), intent(out) :: conv_vel(shcol)
-
-end subroutine compute_conv_vel_shoc_length_f
-
 subroutine shoc_diag_obklen_f(shcol, uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, thl_sfc, cldliq_sfc, qv_sfc, ustar, kbfs, obklen) bind(C)
   use iso_c_binding
 
@@ -288,19 +271,9 @@ subroutine shoc_pblintd_cldcheck_f(shcol, nlev, nlevi, zi, cldn, pblh) bind(C)
   real(kind=c_real), intent(inout) :: pblh(shcol)
 end subroutine shoc_pblintd_cldcheck_f
 
-subroutine compute_conv_time_shoc_length_f(shcol,pblh,conv_vel,tscale) bind (C)
-  use iso_c_binding
-
-  integer(kind=c_int), intent(in), value :: shcol
-  real(kind=c_real), intent(in) :: pblh(shcol)
-  real(kind=c_real), intent(inout) :: conv_vel(shcol)
-  real(kind=c_real), intent(out) :: tscale(shcol)
-
-end subroutine compute_conv_time_shoc_length_f
-
-subroutine shoc_length_f(shcol, nlev, nlevi, host_dx, host_dy, pblh, &
-                         tke, zt_grid, zi_grid, dz_zt, dz_zi, wthv_sec, thetal, thv, &
-                         brunt, shoc_mix) bind (C)
+subroutine shoc_length_f(shcol, nlev, nlevi, host_dx, host_dy, &
+                         zt_grid, zi_grid, dz_zt, tke, &
+                         thv, brunt, shoc_mix) bind (C)
   use iso_c_binding
 
   integer(kind=c_int), intent(in), value :: shcol
@@ -309,15 +282,11 @@ subroutine shoc_length_f(shcol, nlev, nlevi, host_dx, host_dy, pblh, &
 
   real(kind=c_real), intent(in) :: host_dx(shcol)
   real(kind=c_real), intent(in) :: host_dy(shcol)
-  real(kind=c_real), intent(in) :: pblh(shcol)
 
-  real(kind=c_real), intent(in) :: tke(shcol,nlev)
   real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
   real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
   real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
-  real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
-  real(kind=c_real), intent(in) :: wthv_sec(shcol,nlev)
-  real(kind=c_real), intent(in) :: thetal(shcol,nlev)
+  real(kind=c_real), intent(in) :: tke(shcol,nlev)  
   real(kind=c_real), intent(in) :: thv(shcol,nlev)
 
   real(kind=c_real), intent(out) :: brunt(shcol,nlev)
@@ -434,10 +403,10 @@ subroutine dp_inverse_f(nlev, shcol, rho_zt, dz_zt, rdp_zt) bind(C)
   real(kind=c_real), intent(out) :: rdp_zt(shcol,nlev)
 end subroutine dp_inverse_f
 
-  subroutine shoc_main_f(shcol, nlev, nlevi, dtime, nadv, host_dx, host_dy, thv, zt_grid, zi_grid, pres, presi, pdel, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, wtracer_sfc, num_qtracers, w_field, exner, phis, host_dse, tke, thetal, qw, u_wind, v_wind, qtracers, wthv_sec, tkh, tk, shoc_ql, shoc_cldfrac, pblh, shoc_mix, isotropy, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec, brunt, shoc_ql2) bind(C)
+  subroutine shoc_main_f(shcol, nlev, nlevi, dtime, nadv, npbl, host_dx, host_dy, thv, zt_grid, zi_grid, pres, presi, pdel, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, wtracer_sfc, num_qtracers, w_field, exner, phis, host_dse, tke, thetal, qw, u_wind, v_wind, qtracers, wthv_sec, tkh, tk, shoc_ql, shoc_cldfrac, pblh, shoc_mix, isotropy, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec, brunt, shoc_ql2) bind(C)
     use iso_c_binding
 
-    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, nadv, num_qtracers
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, nadv, num_qtracers, npbl
     real(kind=c_real) , value, intent(in) :: dtime
     real(kind=c_real) , intent(in), dimension(shcol) :: host_dx, host_dy, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, phis
     real(kind=c_real) , intent(in), dimension(shcol, nlev) :: thv, zt_grid, pres, pdel, w_field, exner

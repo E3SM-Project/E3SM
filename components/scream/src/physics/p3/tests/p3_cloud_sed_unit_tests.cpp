@@ -66,6 +66,7 @@ static void run_bfb()
                           d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.precip_liq_surf, d.qc_tend, d.nc_tend);
   }
 
+#ifndef NDEBUG
   for (Int i = 0; i < num_runs; ++i) {
     // Due to pack issues, we must restrict checks to the active k space
     Int start = std::min(csds_fortran[i].kbot, csds_fortran[i].ktop) - 1; // 0-based indx
@@ -81,7 +82,7 @@ static void run_bfb()
     }
     REQUIRE(csds_fortran[i].precip_liq_surf == csds_cxx[i].precip_liq_surf);
   }
-
+#endif
 }
 
 };

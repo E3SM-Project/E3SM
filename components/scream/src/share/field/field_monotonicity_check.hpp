@@ -14,16 +14,18 @@ namespace scream
 template<typename RealType>
 class FieldMonotonicityCheck: public FieldPropertyCheck<RealType> {
 public:
+  using non_const_RT = typename FieldPropertyCheck<RealType>::non_const_RT;
+  using const_RT     = typename FieldPropertyCheck<RealType>::const_RT;
 
   // Default constructor.
   FieldMonotonicityCheck () {}
 
   // Overrides.
 
-  bool check(const Field<RealType>& field) const override {
+  bool check(const Field<const_RT>& field) const override {
     auto view = field.get_view();
-    RealType sign;
-    Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, RealType& s) {
+    non_const_RT sign;
+    Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, non_const_RT& s) {
       if ((i > 0) && (i < view.extent_int(0)-1)) {
         auto diff1 = view(i) - view(i-1);
         auto diff2 = view(i+1) - view(i);
@@ -31,7 +33,7 @@ public:
       } else {
         s *= 1;
       }
-    }, Kokkos::Prod<RealType>(sign));
+    }, Kokkos::Prod<non_const_RT>(sign));
     return (sign > 0);
   }
 

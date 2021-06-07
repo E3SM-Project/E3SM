@@ -27,14 +27,19 @@ namespace scream
 enum class FieldTag {
   Invalid,
   Element,
-  VerticalLevel,
+  LevelMidPoint,
+  LevelInterface,
   Column,
   GaussPoint,
   Component,
-  ComponentX,
-  ComponentY,
+  Component1,
+  Component2,
+  Component3,
   TimeLevel,
-  Variable
+  // Added for RRTMGP, TODO: Revisit this approach, is there a better way than adding more field tags?
+  Gases,
+  ShortWaveBand,
+  LongWaveBand
 };
 
 inline std::string e2str (const FieldTag ft) {
@@ -46,8 +51,11 @@ inline std::string e2str (const FieldTag ft) {
     case FieldTag::Element:
       name = "EL";
       break;
-    case FieldTag::VerticalLevel:
-      name = "VL";
+    case FieldTag::LevelMidPoint:
+      name = "LEV";
+      break;
+    case FieldTag::LevelInterface:
+      name = "ILEV";
       break;
     case FieldTag::TimeLevel:
       name = "TL";
@@ -61,14 +69,24 @@ inline std::string e2str (const FieldTag ft) {
     case FieldTag::Component:
       name = "CMP";
       break;
-    case FieldTag::ComponentX:
-      name = "CMPX";
+    case FieldTag::Component1:
+      name = "CMP1";
       break;
-    case FieldTag::ComponentY:
-      name = "CMPY";
+    case FieldTag::Component2:
+      name = "CMP2";
       break;
-    case FieldTag::Variable:
-      name = "VAR";
+    case FieldTag::Component3:
+      name = "CMP3";
+      break;
+    // Added for rrtmgp - see TODO item above
+    case FieldTag::Gases:
+      name = "NGAS";
+      break;
+    case FieldTag::ShortWaveBand:
+      name = "SWBND";
+      break;
+    case FieldTag::LongWaveBand:
+      name = "LWBND";
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized field tag.");
@@ -77,18 +95,26 @@ inline std::string e2str (const FieldTag ft) {
   return name;
 }
 
-// If using tags a lot, consider adding 'using namespace ShortFieldTagsNames' locally to your function or cpp file.
+// If using tags a lot, consider adding 'using namespace ShortFieldTagsNames'
+// locally to your function or cpp file.
+// TODO: if/when we require std=c++20, this can be removed, and user can do
+//   using enum FieldTag;
 namespace ShortFieldTagsNames {
 
   constexpr auto EL   = FieldTag::Element;
   constexpr auto COL  = FieldTag::Column;
   constexpr auto GP   = FieldTag::GaussPoint;
   constexpr auto TL   = FieldTag::TimeLevel;
-  constexpr auto VAR  = FieldTag::Variable;
-  constexpr auto VL   = FieldTag::VerticalLevel;
+  constexpr auto LEV  = FieldTag::LevelMidPoint;
+  constexpr auto ILEV = FieldTag::LevelInterface;
   constexpr auto CMP  = FieldTag::Component;
-  constexpr auto CMPX = FieldTag::ComponentX;
-  constexpr auto CMPY = FieldTag::ComponentY;
+  constexpr auto CMP1 = FieldTag::Component1;
+  constexpr auto CMP2 = FieldTag::Component2;
+  constexpr auto CMP3 = FieldTag::Component3;
+  // Added for rrtmgp - see TODO item above
+  constexpr auto NGAS = FieldTag::Gases;
+  constexpr auto SWBND = FieldTag::ShortWaveBand;
+  constexpr auto LWBND = FieldTag::LongWaveBand;
 }
 
 } // namespace scream

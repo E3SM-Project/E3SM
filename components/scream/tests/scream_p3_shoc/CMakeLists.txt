@@ -1,11 +1,9 @@
 INCLUDE (ScreamUtils)
 
-SET (p3Lib p3)
-SET (shocLib shoc)
-SET (NEED_LIBS ${p3Lib} ${shocLib} scream_control scream_share)
+SET (NEED_LIBS p3 shoc scream_control scream_share)
 
 # Test atmosphere processes
-CreateUnitTest(p3_shoc_coupled "p3_shoc_coupled.cpp" "${NEED_LIBS}" LABELS "p3;shoc;physics")
+#CreateUnitTest(p3_shoc_coupled "p3_shoc_coupled.cpp" "${NEED_LIBS}" LABELS "p3;shoc;physics")
 
 # Copy yaml input file to run directory
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
@@ -19,3 +17,4 @@ CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
 CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_universal_constants.inp
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+CONFIGURE_FILE(p3_init_vals.txt p3_init_vals.txt COPYONLY)

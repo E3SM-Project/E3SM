@@ -16,7 +16,7 @@
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_repository.hpp"
+#include "share/field/field_manager.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 namespace {
@@ -24,11 +24,11 @@ using namespace scream;
 using namespace ekat::units;
 using input_type = AtmosphereInput;
 
-std::shared_ptr<FieldRepository<Real>>    get_test_repo(const Int num_lcols, const Int num_levs);
+std::shared_ptr<FieldManager<Real>>    get_test_fm(std::shared_ptr<const AbstractGrid> grid);
 std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 ekat::ParameterList                       get_om_params(const Int casenum, const ekat::Comm& comm);
 ekat::ParameterList                       get_in_params(const std::string& type, const ekat::Comm& comm);
-void                                      Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_lcols, const Int num_levs);
+void                                      Initialize_field_manager(const FieldManager<Real>& fm, const Int num_lcols, const Int num_levs);
 
 TEST_CASE("restart","io")
 {
@@ -39,9 +39,10 @@ TEST_CASE("restart","io")
   Int num_levs = 2;
 
   // First set up a field manager and grids manager to interact with the output functions
-  std::shared_ptr<UserProvidedGridsManager> grid_man   = get_test_gm(io_comm,num_gcols,num_levs);
-  int num_lcols = grid_man->get_grid("Physics")->get_num_local_dofs();
-  std::shared_ptr<FieldRepository<Real>>    field_repo = get_test_repo(num_lcols,num_levs);
+  auto grid_man = get_test_gm(io_comm,num_gcols,num_levs);
+  auto grid = grid_man->get_grid("Physics");
+  int num_lcols = grid->get_num_local_dofs();
+  auto field_manager = get_test_fm(grid);
 
   // Initialize the pio_subsystem for this test:
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
@@ -53,28 +54,26 @@ TEST_CASE("restart","io")
   m_output_manager.set_params(output_params);
   m_output_manager.set_comm(io_comm);
   m_output_manager.set_grids(grid_man);
-  m_output_manager.set_repo(field_repo);
+  m_output_manager.set_field_mgr(field_manager);
   m_output_manager.init();
 
   // Construct a timestamp
   util::TimeStamp time (0,0,0,0);
 
   //  Cycle through data and write output
-  auto& out_fields = field_repo->get_field_groups_names().at("output");
+  const auto& out_fields = field_manager->get_groups_info().at("output");
   Int max_steps = 17;  // Go a few steps past the last restart write to make sure that the last written file is on the 15th step.
   Real dt = 1.0;
-  for (Int ii=0;ii<max_steps;++ii)
-  {
-    for (auto it : out_fields)
-    {
-      auto f_dev  = field_repo->get_field(it,"Physics").get_view();
-      auto f_host = Kokkos::create_mirror_view( f_dev );
-      Kokkos::deep_copy(f_host,f_dev);
+  for (Int ii=0;ii<max_steps;++ii) {
+    for (const auto& fname : out_fields->m_fields_names) {
+      auto f = field_manager->get_field(fname);
+      f.sync_to_host();
+      auto f_host = f.get_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
       {
         f_host(jj) += dt;
       }
-      Kokkos::deep_copy(f_dev,f_host);
+      f.sync_to_dev();
     }
     time += dt;
     m_output_manager.run(time);
@@ -87,50 +86,53 @@ TEST_CASE("restart","io")
   m_output_manager_res.set_params(output_params);
   m_output_manager_res.set_comm(io_comm);
   m_output_manager_res.set_grids(grid_man);
-  m_output_manager_res.set_repo(field_repo);
+  m_output_manager_res.set_field_mgr(field_manager);
   m_output_manager_res.set_runtype_restart(true);
   m_output_manager_res.init();
   auto res_params = get_in_params("Restart",io_comm);
   // reinit fields
-  Initialize_field_repo(*field_repo,num_lcols,num_levs);
+  Initialize_field_manager(*field_manager,num_lcols,num_levs);
   // grab restart data
-  input_type ins_input(io_comm,res_params,field_repo,grid_man);
+  input_type ins_input(io_comm,res_params,field_manager,grid_man);
   ins_input.pull_input();
-  // Note, that only field_1 and field_2 were marked for restart.  Check to make sure values
+  // Note, that only field_1, field_2, and field_4 were marked for restart.  Check to make sure values
   // in the field manager reflect those fields as restarted from 15 and field_3 as being
   // freshly restarted:
-  auto field1_dev = field_repo->get_field("field_1","Physics").get_view();
-  auto field2_dev = field_repo->get_field("field_2","Physics").get_view();
-  auto field3_dev = field_repo->get_field("field_3","Physics").get_reshaped_view<Real**>();
-  auto field1_hst = Kokkos::create_mirror_view( field1_dev );
-  auto field2_hst = Kokkos::create_mirror_view( field2_dev );
-  auto field3_hst = Kokkos::create_mirror_view( field3_dev );
-  Kokkos::deep_copy(field1_hst,field1_dev);
-  Kokkos::deep_copy(field2_hst,field2_dev);
-  Kokkos::deep_copy(field3_hst,field3_dev);
+  auto field1 = field_manager->get_field("field_1");
+  auto field2 = field_manager->get_field("field_2");
+  auto field3 = field_manager->get_field("field_3");
+  auto field4 = field_manager->get_field("field_4");
+  auto field1_hst = field1.get_view<Host>();
+  auto field2_hst = field2.get_view<Host>();
+  auto field3_hst = field3.get_reshaped_view<Real**,Host>();
+  auto field4_hst = field4.get_reshaped_view<Real***,Host>();
+  field1.sync_to_host();
+  field2.sync_to_host();
+  field3.sync_to_host();
+  field4.sync_to_host();
   Real tol = pow(10,-6);
-  for (Int ii=0;ii<num_lcols;++ii)
-  {
+  for (Int ii=0;ii<num_lcols;++ii) {
     REQUIRE(std::abs(field1_hst(ii)-(15+ii))<tol);
-    for (Int jj=0;jj<num_levs;++jj)
-    {
+    for (Int jj=0;jj<num_levs;++jj) {
       REQUIRE(std::abs(field2_hst(jj)   -((jj+1)/10.+15))<tol);
       REQUIRE(std::abs(field3_hst(ii,jj)-((jj+1)/10.+ii))<tol);  //Note, field 3 is not restarted, so doesn't have the +15
+      std::cout << "f  : " << field4_hst(ii,0,jj) << "\n";
+      std::cout << "tgt: " << ((jj+1)/10.+ii+15) << "\n";
+      REQUIRE(std::abs(field4_hst(ii,0,jj)-((jj+1)/10.+ii+15))<tol);
+      REQUIRE(std::abs(field4_hst(ii,1,jj)-(-((jj+1)/10.+ii)+15))<tol);
     }
   }
   // Finish the last 5 steps
-  for (Int ii=0;ii<5;++ii)
-  {
-    for (auto it : out_fields)
-    {
-      auto f_dev  = field_repo->get_field(it,"Physics").get_view();
-      auto f_host = Kokkos::create_mirror_view( f_dev );
-      Kokkos::deep_copy( f_host, f_dev );
+  for (Int ii=0;ii<5;++ii) {
+    for (const auto& fname : out_fields->m_fields_names) {
+      auto f = field_manager->get_field(fname);
+      f.sync_to_host();
+      auto f_host = f.get_view<Host>();
       for (size_t jj=0;jj<f_host.size();++jj)
       {
         f_host(jj) += dt;
       }
-      Kokkos::deep_copy(f_dev,f_host);
+      f.sync_to_dev();
     }
     time_res += dt;
     m_output_manager_res.run(time_res);
@@ -143,18 +145,16 @@ TEST_CASE("restart","io")
   // with the initial value.  Note that we only took 5 steps, so field 3 should reflect a a value that stored steps 11-15
   // the restart history file, but was re-initialized and run for the last 5 steps.
   auto avg_params = get_in_params("Final",io_comm);
-  input_type avg_input(io_comm,avg_params,field_repo,grid_man);
+  input_type avg_input(io_comm,avg_params,field_manager,grid_man);
   avg_input.pull_input();
-  Kokkos::deep_copy(field1_hst,field1_dev);
-  Kokkos::deep_copy(field2_hst,field2_dev);
-  Kokkos::deep_copy(field3_hst,field3_dev);
+  field1.sync_to_host();
+  field2.sync_to_host();
+  field3.sync_to_host();
   Real avg_val;
-  for (Int ii=0;ii<num_lcols;++ii)
-  {
+  for (Int ii=0;ii<num_lcols;++ii) {
     avg_val = (20+11)/2.+ii;
     REQUIRE(std::abs(field1_hst(ii)-avg_val)<tol);
-    for (Int jj=0;jj<num_levs;++jj)
-    {
+    for (Int jj=0;jj<num_levs;++jj) {
       avg_val = (20+11)/2.+(jj+1)/10.0;
       REQUIRE(std::abs(field2_hst(jj)-avg_val)<tol);
       avg_val = (15+11)/4. + (5+1)/4. + ii + (jj+1)/10.;
@@ -167,70 +167,81 @@ TEST_CASE("restart","io")
   grid_man->clean_up();
 } // TEST_CASE restart
 /*===================================================================================================================*/
-std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs)
+std::shared_ptr<FieldManager<Real>> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
 {
-  // Create a repo
-  std::shared_ptr<FieldRepository<Real>>  repo = std::make_shared<FieldRepository<Real>>();
-  // Create some fields for this repo
-  std::vector<FieldTag> tag_h  = {FieldTag::Column};
-  std::vector<FieldTag> tag_v  = {FieldTag::VerticalLevel};
-  std::vector<FieldTag> tag_2d = {FieldTag::Column,FieldTag::VerticalLevel};
+  using namespace ShortFieldTagsNames;
+  using FL = FieldLayout;
+  using FR = FieldRequest;
+  using SL = std::list<std::string>;
+
+  // Create a fm
+  auto fm = std::make_shared<FieldManager<Real>>(grid);
+
+  const int num_lcols = grid->get_num_local_dofs();
+  const int num_levs = grid->get_num_vertical_levels();
+
+  // Create some fields for this fm
+  std::vector<FieldTag> tag_h  = {COL};
+  std::vector<FieldTag> tag_v  = {LEV};
+  std::vector<FieldTag> tag_2d = {COL,LEV};
+  std::vector<FieldTag> tag_3d = {COL,CMP,LEV};
 
   std::vector<Int>     dims_h  = {num_lcols};
   std::vector<Int>     dims_v  = {num_levs};
   std::vector<Int>     dims_2d = {num_lcols,num_levs};
+  std::vector<Int>     dims_3d = {num_lcols,2,num_levs};
 
-  FieldIdentifier fid1("field_1",tag_h,m);
-  FieldIdentifier fid2("field_2",tag_v,kg);
-  FieldIdentifier fid3("field_3",tag_2d,kg/m);
+  const std::string& gn = grid->name();
 
-  fid1.set_dimensions(dims_h);
-  fid2.set_dimensions(dims_v);
-  fid3.set_dimensions(dims_2d);
+  FieldIdentifier fid1("field_1",FL{tag_h,dims_h},m,gn);
+  FieldIdentifier fid2("field_2",FL{tag_v,dims_v},kg,gn);
+  FieldIdentifier fid3("field_3",FL{tag_2d,dims_2d},kg/m,gn);
+  FieldIdentifier fid4("field_4",FL{tag_3d,dims_3d},kg/m,gn);
 
-  fid1.set_grid_name("Physics");
-  fid2.set_grid_name("Physics");
-  fid3.set_grid_name("Physics");
-  // Register fields with repo
-  repo->registration_begins();
-  repo->register_field(fid1,{"output","restart"});
-  repo->register_field(fid2,{"output","restart"});
-  repo->register_field(fid3,{"output"});
-  repo->registration_ends();
+  // Register fields with fm
+  fm->registration_begins();
+  fm->register_field(FR{fid1,SL{"output","restart"}});
+  fm->register_field(FR{fid2,SL{"output","restart"}});
+  fm->register_field(FR{fid3,"output"});
+  fm->register_field(FR{fid4,SL{"output","restart"}});
+  fm->registration_ends();
 
   // Initialize these fields
-  Initialize_field_repo(*repo,num_lcols,num_levs);
+  Initialize_field_manager(*fm,num_lcols,num_levs);
+  // Update timestamp
+  util::TimeStamp time (0,0,0,0);
+  fm->init_fields_time_stamp(time);
 
-  return repo;
+  return fm;
 }
 /*===================================================================================================================*/
-void Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_lcols, const Int num_levs)
+void Initialize_field_manager(const FieldManager<Real>& fm, const Int num_lcols, const Int num_levs)
 {
 
   // Initialize these fields
-  auto f1_dev = repo.get_field("field_1","Physics").get_view();
-  auto f2_dev = repo.get_field("field_2","Physics").get_view();
-  auto f3_dev = repo.get_field("field_3","Physics").get_reshaped_view<Real**>();
-  auto f1_hst = Kokkos::create_mirror_view( f1_dev );
-  auto f2_hst = Kokkos::create_mirror_view( f2_dev ); 
-  auto f3_hst = Kokkos::create_mirror_view( f3_dev );
-  Kokkos::deep_copy(f1_hst, f1_dev );
-  Kokkos::deep_copy(f2_hst, f2_dev );
-  Kokkos::deep_copy(f3_hst, f3_dev );
-  for (int ii=0;ii<num_lcols;++ii)
-  {
+  const auto& f1 = fm.get_field("field_1");
+  const auto& f2 = fm.get_field("field_2");
+  const auto& f3 = fm.get_field("field_3");
+  const auto& f4 = fm.get_field("field_4");
+  auto f1_hst = f1.get_reshaped_view<Real*, Host>();
+  auto f2_hst = f2.get_reshaped_view<Real*, Host>();
+  auto f3_hst = f3.get_reshaped_view<Real**,Host>();
+  auto f4_hst = f4.get_reshaped_view<Real***,Host>();
+  for (int ii=0;ii<num_lcols;++ii) {
     f1_hst(ii) = ii;
-    for (int jj=0;jj<num_levs;++jj)
-    {
+    for (int jj=0;jj<num_levs;++jj) {
       f2_hst(jj) = (jj+1)/10.0;
       f3_hst(ii,jj) = (ii) + (jj+1)/10.0;
+      f4_hst(ii,0,jj) = ii + (jj+1)/10.0;
+      f4_hst(ii,1,jj) = -( ii + (jj+1)/10.0 );
     }
   }
-  Kokkos::deep_copy(f1_dev,f1_hst);
-  Kokkos::deep_copy(f2_dev,f2_hst);
-  Kokkos::deep_copy(f3_dev,f3_hst);
-
+  f1.sync_to_dev();
+  f2.sync_to_dev();
+  f3.sync_to_dev();
+  f4.sync_to_dev();
 }
+
 /*===================================================================================================================*/
 std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
@@ -295,20 +306,18 @@ ekat::ParameterList get_in_params(const std::string& type, const ekat::Comm& com
     EKAT_REQUIRE_MSG(found,"ERROR! rpointer.atm file does not contain a restart file."); 
   
     auto& f_list = in_params.sublist("FIELDS");
-    f_list.set<Int>("Number of Fields",2);
-    for (int ii=1;ii<=2+1;++ii)
-    {
-      f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
-    }
-  } else if (type=="Final")
-  {
+    f_list.set<Int>("Number of Fields",3);
+    f_list.set<std::string>("field 1","field_1");
+    f_list.set<std::string>("field 2","field_2");
+    f_list.set<std::string>("field 3","field_4");
+  } else if (type=="Final") {
     filename = "io_output_restart_np" + std::to_string(comm.size()) + ".Average.Steps_x10.0000-01-01.000020.nc";
     auto& f_list = in_params.sublist("FIELDS");
-    f_list.set<Int>("Number of Fields",3);
-    for (int ii=1;ii<=3+1;++ii)
-    {
-      f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
-    }
+    f_list.set<Int>("Number of Fields",4);
+    f_list.set<std::string>("field 1","field_1");
+    f_list.set<std::string>("field 2","field_2");
+    f_list.set<std::string>("field 3","field_3");
+    f_list.set<std::string>("field 4","field_4");
   }
   in_params.set<std::string>("FILENAME",filename);
   in_params.set<std::string>("GRID","Physics");

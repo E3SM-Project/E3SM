@@ -1,0 +1,100 @@
+
+====Instructions for setting up PXXS experiment
+
+# make directory in which to set things up - here a subdirectory of the Stnd experiment
+mkdir P75S
+
+# Copy in a full_width domain for this resolution and rename it if desired.
+
+# run set up script from the directory where you plan to run P75R.
+./setup_mismip3d_perturb_domain.py -f P75S.nc -o ../output_09500.nc -r ../restart_09800.nc -p 75 
+
+# Note there is some unresolved strange behavior with this script, I think when 
+# the restart file as multiple  time levels in it, but a workaround is to use 
+# ncks to pull out the final time level and/or run the script once with the 
+# restart file included and once without it.
+
+
+# Finally, set up graph.info, namelist, and streams files as desired.
+# These are set up by the test case here: full_width/Stnd/P75
+
+
+====Instructions for setting up PXXR experiment
+
+cp -R P75S P75R
+cd P75R
+<clean up output, restart, log files>
+# copy initial condition file from P75S 
+cp ../P75S/P75S_1000m.nc P75R_1000m.nc 
+# stick in the final thickness from P75S
+ncks -d Time,-1 -v thickness ../P75S/output.nc P75R_1000m.nc
+# stick in the ~final x-component of velocity to help the first velocity solve
+ncks -v uReconstructX ../P75S/restart_00100.nc P75R_1000m.nc 
+# return beta to its original value
+ncap2 -s "beta(:,:)=31880.0" P75R_1000m.nc addbeta.nc
+mv addbeta.nc P75R_1000m.nc 
+
+# Finally, set up graph.info, namelist, and streams files as desired.
+
+
+====Relevant bits of namelist and streams files:
+
+&time_management
+    config_do_restart = .false.
+    config_start_time = '0000-01-01_00:00:00'
+    config_restart_timestamp_name = 'restart_timestamp'
+    config_stop_time = '0100-01-01_00:00:00'
+    config_run_duration = 'none'
+    config_calendar_type = 'gregorian_noleap'
+
+
+
+<streams>
+
+<immutable_stream name="basicmesh"
+                  filename_template="not-to-be-used.nc"
+                  type="none"/>
+
+<immutable_stream name="input"
+                  filename_template="P75S_500m.nc"
+                  input_interval="initial_only"
+                  type="input"/>
+
+<immutable_stream name="restart"
+                  filename_interval="output_interval"
+                  clobber_mode="truncate"
+                  reference_time="0000-01-01_00:00:00"
+                  precision="double"
+                  output_interval="0005-00-00_00:00:00"
+                  filename_template="restart_$Y.nc"
+                  input_interval="initial_only"
+                  type="input;output"
+                  input_interal="initial_only"/>
+
+<stream name="output"
+        filename_interval="0200-00-00_00:00:00"
+        clobber_mode="overwrite"
+        reference_time="00000-01-01_00:00:00"
+        output_interval="0001-00-00_00:00:00"
+        filename_template="output.nc"
+        type="output">
+
+        <stream name="basicmesh"/>
+        <var name="xtime"/>
+        <var name="deltat"/>
+        <var name="allowableDtACFL"/>
+        <var name="allowableDtDCFL"/>
+        <var name="thickness"/>
+        <var name="upperSurface"/>
+        <var name="edgeMask"/>
+        <var name="cellMask"/>
+        <var name="surfaceSpeed"/>
+        <var name="basalSpeed"/>
+        <var name="daysSinceStart"/>
+</stream>
+
+</streams>
+
+
+
+

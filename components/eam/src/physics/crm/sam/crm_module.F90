@@ -46,6 +46,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                 crm_input, crm_state, crm_rad,  &
                 crm_ecpp_output, crm_output, crm_clear_rh, &
                 latitude0, longitude0, gcolp, igstep, &
+                use_VT, VT_wn_max, &
                 use_crm_accel_in, crm_accel_factor_in, crm_accel_uv_in)
     !-----------------------------------------------------------------------------------------------
     !-----------------------------------------------------------------------------------------------
@@ -56,6 +57,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     use sgs
     use crmtracers
     use scalar_momentum_mod
+    use variance_transport_mod
 #ifdef MODAL_AERO
     use modal_aero_data       , only: ntot_amode
 #endif
@@ -94,6 +96,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(crm_rknd), intent(in) :: longitude0(:)
     integer       , intent(in) :: igstep
     integer       , intent(in) :: gcolp(:)
+    logical       , intent(in) :: use_VT
+    integer       , intent(in) :: VT_wn_max
     logical       , intent(in) :: use_crm_accel_in
     real(crm_rknd), intent(in) :: crm_accel_factor_in
     logical       , intent(in) :: crm_accel_uv_in
@@ -246,6 +250,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #if defined(MMF_ESMT)
   call allocate_scalar_momentum(ncrms)
 #endif
+  if (use_VT) call allocate_VT(ncrms)
 
   crm_rad_temperature => crm_rad%temperature(1:ncrms,:,:,:)
   crm_rad_qv          => crm_rad%qv         (1:ncrms,:,:,:)
@@ -259,8 +264,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   crm_state_w_wind      => crm_state%w_wind     (1:ncrms,:,:,:)
   crm_state_temperature => crm_state%temperature(1:ncrms,:,:,:)
   crm_state_qt          => crm_state%qt         (1:ncrms,:,:,:)
+#ifndef m2005
   crm_state_qp          => crm_state%qp         (1:ncrms,:,:,:)
   crm_state_qn          => crm_state%qn         (1:ncrms,:,:,:)
+#endif
   
   crm_accel_ceaseflag = .false.
 
@@ -365,13 +372,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     do j = 1 , ny
       do i = 1 , nx
         do icrm = 1 , ncrms
-          u   (icrm,i,j,k) = crm_state_u_wind     (icrm,i,j,k)
-#ifdef MAML
-          !open the crm v component
-          v   (icrm,i,j,k) = crm_state_v_wind     (icrm,i,j,k)
-#else       
+          u   (icrm,i,j,k) = crm_state_u_wind     (icrm,i,j,k)   
           v   (icrm,i,j,k) = crm_state_v_wind     (icrm,i,j,k)*YES3D
-#endif
           w   (icrm,i,j,k) = crm_state_w_wind     (icrm,i,j,k)
           tabs(icrm,i,j,k) = crm_state_temperature(icrm,i,j,k)
 #if defined(MMF_ESMT)
@@ -391,12 +393,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         do i=1,nx
           do icrm=1,ncrms
             u(icrm,i,j,k) = min( umax, max(-umax,u(icrm,i,j,k)) )
-#ifdef MAML
-            !open the crm v component
-            v(icrm,i,j,k) = min( umax, max(-umax,v(icrm,i,j,k)) ) 
-#else     
             v(icrm,i,j,k) = min( umax, max(-umax,v(icrm,i,j,k)) )*YES3D
-#endif
           enddo
         enddo
       enddo
@@ -528,6 +525,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
   enddo
 
+  if (use_VT) call VT_diagnose(ncrms,VT_wn_max)
+
   !$acc parallel loop collapse(2) async(asyncid)
   do k=1,nzm
     do icrm = 1 , ncrms
@@ -543,12 +542,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       tke0 (icrm,k) = tke0 (icrm,k) * factor_xy
       l = plev-k+1
       uln  (icrm,l) = min( umax, max(-umax,crm_input%ul(icrm,l)) )
-#ifdef MAML
-      !open the crm v component
-      vln  (icrm,l) = min( umax, max(-umax,crm_input%vl(icrm,l)) )
-#else
       vln  (icrm,l) = min( umax, max(-umax,crm_input%vl(icrm,l)) )*YES3D
-#endif
       ttend(icrm,k) = (crm_input%tl(icrm,l)+gamaz(icrm,k)- fac_cond*(crm_input%qccl(icrm,l)+crm_input%qiil(icrm,l))-fac_fus*crm_input%qiil(icrm,l)-t00(icrm,k))*idt_gl
       qtend(icrm,k) = (crm_input%ql(icrm,l)+crm_input%qccl(icrm,l)+crm_input%qiil(icrm,l)-q0(icrm,k))*idt_gl
       utend(icrm,k) = (uln(icrm,l)-u0(icrm,k))*idt_gl
@@ -557,6 +551,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       vg0  (icrm,k) = vln(icrm,l)
       tg0  (icrm,k) = crm_input%tl(icrm,l)+gamaz(icrm,k)-fac_cond*crm_input%qccl(icrm,l)-fac_sub*crm_input%qiil(icrm,l)
       qg0  (icrm,k) = crm_input%ql(icrm,l)+crm_input%qccl(icrm,l)+crm_input%qiil(icrm,l)
+      if (use_VT) then
+        ! variance transport input forcing
+        t_vt_tend(icrm,k) = ( crm_input%t_vt(icrm,l) - t_vt(icrm,k) )*idt_gl
+        q_vt_tend(icrm,k) = ( crm_input%q_vt(icrm,l) - q_vt(icrm,k) )*idt_gl
+      end if
     end do ! k
   end do ! icrm
 
@@ -677,13 +676,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     end if
   enddo
 
-#ifdef MAML
-  if(crm_nx_rad.NE.crm_nx .or. crm_ny_rad.NE.crm_ny) then 
-     write(0,*) "crm_nx_rad and crm_ny_rad have to be equal to crm_nx and crm_ny in the MAML configuration"
-     call endrun('crm main')
-  end if
-#endif
-
 #ifdef ECPP
   call ecpp_crm_init(ncrms,dt_gl)
 
@@ -742,6 +734,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       !-----------------------------------------------------------
       !       Buoyancy term:
       call buoyancy(ncrms)
+
+      !------------------------------------------------------------
+      ! variance transport forcing
+      if (use_VT) then
+        call VT_diagnose(ncrms,VT_wn_max)
+        call VT_forcing(ncrms)
+      end if
 
       !------------------------------------------------------------
       !       Large-scale and surface forcing:
@@ -866,7 +865,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     ! Here ecpp_crm_stat is called every CRM time step (dt), not every subcycle time step (dtn).
     ! This is what the original MMF model did (crm_rad_temperature, crm_rad_qv, ...). Do we want to call ecpp_crm_stat
     ! every subcycle time step??? +++mhwang
-    call ecpp_crm_stat(ncrms)
+    call ecpp_crm_stat( ncrms, sgs_field(:,:,:,:,1), sgs_field_diag(:,:,:,:,1) )
 #endif
     !$acc parallel loop collapse(3) async(asyncid)
     do j = 1 , ny
@@ -1211,6 +1210,9 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
   enddo
 
+  ! extra diagnostic step here for output tendencies
+  if (use_VT) call VT_diagnose(ncrms,VT_wn_max)
+
   !$acc parallel loop collapse(2) async(asyncid)
   do k = 1 , plev
     do icrm = 1 , ncrms
@@ -1245,6 +1247,22 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif /* MMF_MOMENTUM_FEEDBACK */
     enddo
   enddo
+
+  if (use_VT) then
+    ! zero out tendencies in top 2 CRM levels and above CRM top
+    do k = 1,plev
+      do icrm = 1,ncrms
+        if ( k>(ptop+1) ) then
+          l = plev-k+1
+          crm_output%t_vt_tend(icrm,k) = ( t_vt(icrm,l) - crm_input%t_vt(icrm,k) ) * icrm_run_time
+          crm_output%q_vt_tend(icrm,k) = ( q_vt(icrm,l) - crm_input%q_vt(icrm,k) ) * icrm_run_time
+        else
+          crm_output%t_vt_tend(icrm,k) = 0.
+          crm_output%q_vt_tend(icrm,k) = 0.
+        end if
+      end do
+    end do
+  end if
 
   !-------------------------------------------------------------
   !
@@ -1431,12 +1449,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         precssfc(icrm,i,j) = precssfc(icrm,i,j)*dz(icrm)/dt/dble(nstop)   !mm/s/dz --> mm/s
 #endif /* m2005 */
 
-#ifdef MAML
-        ! output CRM precip and snow to pass down individual CLM instances
-        crm_output%crm_pcp(icrm,i,j) = precsfc(icrm,i,j)/1000.D0      ! mm/s --> m/s
-        crm_output%crm_snw(icrm,i,j) = precssfc(icrm,i,j)/1000.D0     ! mm/s --> m/s
-#endif
-
         if(precsfc(icrm,i,j).gt.10.D0/86400.D0) then
            !$acc atomic update
            crm_output%precc (icrm) = crm_output%precc (icrm) + precsfc(icrm,i,j)
@@ -1588,6 +1600,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
       crm_output%qt_ls     (icrm,l) = qtend(icrm,k)
       crm_output%t_ls      (icrm,l) = ttend(icrm,k)
+      if (use_VT) then
+        crm_output%t_vt_ls (icrm,l) = t_vt_tend(icrm,k)
+        crm_output%q_vt_ls (icrm,l) = q_vt_tend(icrm,k)
+      end if
     enddo
   enddo
 
@@ -1704,6 +1720,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #if defined( MMF_ESMT )
   call deallocate_scalar_momentum()
 #endif
+  if (use_VT) call deallocate_VT()
 
 end subroutine crm
 

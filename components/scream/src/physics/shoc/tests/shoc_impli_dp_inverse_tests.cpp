@@ -105,8 +105,6 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse {
       DpInverseData(2,   7)
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(DpInverseData);
-
     // Generate random input data
     for (auto& d : f90_data) {
       d.randomize();
@@ -137,6 +135,8 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(DpInverseData);
     for (Int i = 0; i < num_runs; ++i) {
       DpInverseData& d_f90 = f90_data[i];
       DpInverseData& d_cxx = cxx_data[i];
@@ -144,6 +144,7 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse {
         REQUIRE(d_f90.rdp_zt[k] == d_cxx.rdp_zt[k]);
       }
     }
+#endif
   }
 };
 

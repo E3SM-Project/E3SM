@@ -28,12 +28,15 @@ void Functions<S,D>::diag_third_shoc_moments(
   const uview_1d<const Spack>& dz_zi,
   const uview_1d<const Spack>& zt_grid,
   const uview_1d<const Spack>& zi_grid,
-  const uview_1d<Spack>&       w_sec_zi,
-  const uview_1d<Spack>&       isotropy_zi,
-  const uview_1d<Spack>&       brunt_zi,
-  const uview_1d<Spack>&       thetal_zi,
+  const Workspace&             workspace,
   const uview_1d<Spack>&       w3)
 {
+  // Define temporary variables
+  uview_1d<Spack> isotropy_zi, w_sec_zi, brunt_zi, thetal_zi;
+  workspace.template take_many_contiguous_unsafe<4>(
+    {"isotropy_zi",  "w_sec_zi", "brunt_zi", "thetal_zi"},
+    {&isotropy_zi, &w_sec_zi, &brunt_zi, &thetal_zi});
+
   // Constants
   const auto largeneg = SC::largeneg;
   const auto mintke = SC::mintke;
@@ -53,6 +56,10 @@ void Functions<S,D>::diag_third_shoc_moments(
 
   // Perform clipping to prevent unrealistically large values from occuring
   clipping_diag_third_shoc_moments(team,nlevi,w_sec_zi,w3);
+
+  // Release temporary variables from the workspace
+  workspace.template release_many_contiguous<4>(
+    {&isotropy_zi, &w_sec_zi, &brunt_zi, &thetal_zi});
 }
 
 } // namespace shoc

@@ -36,14 +36,18 @@ void Functions<S,D>::shoc_tke(
   const uview_1d<const Spack>& zt_grid,
   const uview_1d<const Spack>& zi_grid,
   const Scalar&                pblh,
-  const uview_1d<Spack>&       sterm,
-  const uview_1d<Spack>&       sterm_zt,
-  const uview_1d<Spack>&       a_diss,
+  const Workspace&             workspace,
   const uview_1d<Spack>&       tke,
   const uview_1d<Spack>&       tk,
   const uview_1d<Spack>&       tkh,
   const uview_1d<Spack>&       isotropy)
 {
+  // Define temporary variables
+  uview_1d<Spack> sterm_zt, a_diss, sterm;
+  workspace.template take_many_contiguous_unsafe<3>(
+    {"sterm_zt", "a_diss", "sterm"},
+    {&sterm_zt, &a_diss, &sterm});
+
   // Compute integrated column stability in lower troposphere
   Scalar brunt_int(0);
   integ_column_stability(team,nlev,dz_zt,pres,brunt,brunt_int);
@@ -64,6 +68,10 @@ void Functions<S,D>::shoc_tke(
 
   // Compute eddy diffusivity for heat and momentum
   eddy_diffusivities(team,nlev,obklen,pblh,zt_grid,shoc_mix,sterm_zt,isotropy,tke,tkh,tk);
+
+  // Release temporary variables from the workspace
+  workspace.template release_many_contiguous<3>(
+    {&sterm_zt, &a_diss, &sterm});
 }
 
 } // namespace shoc

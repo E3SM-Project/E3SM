@@ -1,4 +1,6 @@
 #include "share/grid/point_grid.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "../../physics/share/physics_constants.hpp"
 
 #include <numeric>
 
@@ -32,10 +34,41 @@ PointGrid (const std::string& grid_name,
 }
 
 FieldLayout
-PointGrid::get_native_dof_layout () const
+PointGrid::get_2d_scalar_layout () const
 {
   using namespace ShortFieldTagsNames;
+
   return FieldLayout({COL},{m_num_local_dofs});
+}
+
+FieldLayout
+PointGrid::get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const
+{
+  using namespace ShortFieldTagsNames;
+
+  return FieldLayout({COL,vector_tag},{m_num_local_dofs,vector_dim});
+}
+
+FieldLayout
+PointGrid::get_3d_scalar_layout (const bool midpoints) const
+{
+  using namespace ShortFieldTagsNames;
+
+  int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
+  auto VL = midpoints ? LEV : ILEV;
+
+  return FieldLayout({COL,VL},{m_num_local_dofs,nvl});
+}
+
+FieldLayout
+PointGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const
+{
+  using namespace ShortFieldTagsNames;
+
+  int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
+  auto VL = midpoints ? LEV : ILEV;
+
+  return FieldLayout({COL,vector_tag,VL},{m_num_local_dofs,vector_dim,nvl});
 }
 
 void PointGrid::
@@ -50,7 +83,6 @@ set_dofs (const dofs_list_type& dofs)
 
   m_dofs_gids  = dofs;
 }
-
 
 void PointGrid::
 set_geometry_data (const std::string& name, const geo_view_type& data) {
@@ -90,6 +122,36 @@ create_point_grid (const std::string& grid_name,
   Kokkos::deep_copy(dofs_gids,h_dofs_gids);
 
   grid->set_dofs(dofs_gids);
+
+  using device_type       = DefaultDevice;
+  using kokkos_types      = KokkosTypes<device_type>;
+  using geo_view_type     = kokkos_types::view_1d<double>;
+  using KT                = KokkosTypes<DefaultDevice>;
+  using C                 = scream::physics::Constants<double>;
+
+  // Store cell area, longitude, and latitude in geometry data.
+  // For  longitude and latitude, set values to NaN since they
+  // are currently not required from any application using PointGrid
+  geo_view_type area("area", num_my_cols);
+  geo_view_type lon ("lon",  num_my_cols);
+  geo_view_type lat ("lat",  num_my_cols);
+
+  // Estimate cell area for a uniform grid by taking the surface area
+  // of the earth divided by the number of columns
+  const double rearth    = C::r_earth;
+  const double pi        = C::Pi;
+  const double cell_area = 4*pi*rearth*rearth/num_my_cols;
+
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_my_cols, num_vertical_lev);
+  Kokkos::parallel_for("area_loop", policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int i = team.league_rank();
+    area(i) = cell_area;
+    lon(i) = std::nan("");
+    lat(i) = std::nan("");
+  });
+  grid->set_geometry_data("area", area);
+  grid->set_geometry_data("lon",  lon);
+  grid->set_geometry_data("lat",  lat);
 
   return grid;
 }

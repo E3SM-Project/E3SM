@@ -5,11 +5,11 @@
 #  Generate NP4 scrip and subcell files
 # 
 set TOOLDIR = `pwd`
-set WDIR = ~/scratch1/regtest/homme
+set WDIR = ~/scratch1/hommetool
 set MACH = $TOOLDIR/../../cmake/machineFiles/darwin.cmake
 set exe = $WDIR/src/tool/homme_tool
 
-set NE=4
+set NE=1024
 set NPTS=4   # be sure to rerun CMAKE if this is changed
 set mesh = ne${NE}np${NPTS}
 

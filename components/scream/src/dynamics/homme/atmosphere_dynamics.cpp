@@ -1,4 +1,5 @@
 #include "atmosphere_dynamics.hpp"
+#include <memory>
 
 // HOMMEXX Includes
 #include "CaarFunctor.hpp"
@@ -6,8 +7,11 @@
 #include "Dimensions.hpp"
 #include "Elements.hpp"
 #include "EulerStepFunctor.hpp"
+#include "ExecSpaceDefs.hpp"
 #include "Hommexx_Session.hpp"
 #include "HyperviscosityFunctor.hpp"
+#include "utilities/MathUtils.hpp"
+#include "utilities/SubviewUtils.hpp"
 #include "TimeLevel.hpp"
 #include "Tracers.hpp"
 #include "Types.hpp"
@@ -15,10 +19,6 @@
 // Scream includes
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
-
-#ifndef SCREAM_CIME_BUILD
-#include "dynamics/homme/homme_inputs_initializer.hpp"
-#endif
 
 #include "ekat/ekat_assert.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
@@ -30,9 +30,7 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
  : m_params        (params)
  , m_dynamics_comm (comm)
 {
-#ifndef SCREAM_CIME_BUILD
-  m_initializer = create_field_initializer<HommeInputsInitializer>();
-#endif
+  // Nothing to do here
 }
 
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
@@ -44,223 +42,148 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     prim_init_data_structures_f90 ();
   }
 
+  // Note: time levels are just an expedient used by Homme to
+  //  store temporaries in the RK timestepping schemes.
+  //  It is best to have this extra array dimension (rather than,
+  //  say, having NTL separate arrays) because of memory locality.
+  //  At the end of Homme's timestep, only one of those slices
+  //  will be meaningful. The phys-dyn remapper will use Homme's
+  //  TimeLevel structure to know exactly where to copy data from/to
+  //  during the remap.
 
+  using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-
-  // The units of mixing ratio Q are technically non-dimensional.
-  // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Q = kg/kg;
-  auto Qdp = Q * Pa;
-  Q.set_string("kg/kg");
-  Qdp.set_string("kg/kg Pa");
+  using FID = FieldIdentifier;
 
   constexpr int NGP  = HOMMEXX_NP;
-  constexpr int QSZ  = HOMMEXX_QSIZE_D;
   constexpr int NVL  = HOMMEXX_NUM_PHYSICAL_LEV;
   constexpr int NTL  = HOMMEXX_NUM_TIME_LEVELS;
-  constexpr int QNTL = HOMMEXX_Q_NUM_TIME_LEVELS;
 
-  const auto dyn_grid_name = "Dynamics";
-  const auto dyn_grid = grids_manager->get_grid(dyn_grid_name);
-  const int ne = dyn_grid->get_num_local_dofs()/(NGP*NGP);
+  auto Q = kg/kg;
+  Q.set_string("kg/kg");
+
+  const auto dgn = "Dynamics";
+  m_dyn_grid = grids_manager->get_grid(dgn);
+  m_ref_grid = grids_manager->get_reference_grid();
+
+  const int ne = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
 
   // Sanity check for the grid. This should *always* pass, since Homme builds the grids
   EKAT_REQUIRE_MSG(get_num_local_elems_f90()==ne,
-                     "Error! The number of elements computed from the Dynamis grid num_dof()\n"
-                     "       does not match the number of elements internal in Homme.\n");
-  const int nmf = get_homme_param<int>("num momentum forcings");
+      "Error! The number of elements computed from the Dynamics grid num_dof()\n"
+      "       does not match the number of elements internal in Homme.\n");
 
-  // Create the identifiers of input and output fields
-  using namespace ShortFieldTagsNames;
-  using Tags = std::vector<FieldTag>;
-  Tags dyn_3d_scalar_tags        {EL,       GP,GP,VL};
-  Tags dyn_3d_vector_tags        {EL,   CMP,GP,GP,VL};
-  Tags dyn_3d_scalar_state_tags  {EL,TL,    GP,GP,VL};
-  Tags dyn_3d_vector_state_tags  {EL,TL,CMP,GP,GP,VL};
-  Tags dyn_3d_tracer_state_tags  {EL,TL,VAR,GP,GP,VL};
+  // Create the dyn grid identifiers of input and output fields
+  FieldLayout scalar_state_3d_mid { {EL,TL,GP,GP,LEV},      {ne, NTL,    NGP,NGP,NVL} };
+  FieldLayout scalar_state_3d_int { {EL,TL,GP,GP,ILEV},     {ne, NTL,    NGP,NGP,NVL+1} };
+  FieldLayout vector_state_3d_mid { {EL,TL,CMP,GP,GP,LEV},  {ne, NTL,  2,NGP,NGP,NVL} };
 
-  // Inputs
-  FieldLayout FQ_layout  { {EL,VAR,GP,GP,VL}, {ne,QSZ,NGP,NGP,NVL} };
-  FieldLayout FM_layout  { {EL,CMP,GP,GP,VL}, {ne,nmf,NGP,NGP,NVL} };
-  FieldLayout FT_layout  { {EL,    GP,GP,VL}, {ne,    NGP,NGP,NVL} };
+  m_dyn_fids.emplace("horiz_winds"   , FID("horiz_winds",    vector_state_3d_mid, m/s,            dgn));
+  m_dyn_fids.emplace("vtheta_dp"     , FID("vtheta_dp",      scalar_state_3d_mid, K,              dgn));
+  m_dyn_fids.emplace("phi_i"         , FID("phi_i",          scalar_state_3d_int, Pa*pow(m,3)/kg, dgn));
+  m_dyn_fids.emplace("w_int"         , FID("w_int",          scalar_state_3d_int, m/s,            dgn));
+  m_dyn_fids.emplace("pseudo_density", FID("pseudo_density", scalar_state_3d_mid, Pa,             dgn));
 
-  m_required_fields.emplace("FQ", FQ_layout, Q,          dyn_grid_name);
-  m_required_fields.emplace("FM", FM_layout, m/pow(s,2), dyn_grid_name);
-  m_required_fields.emplace("FT", FT_layout, K/s,        dyn_grid_name);
+  // Create the PD remapper, and register fields
+  m_p2d_remapper = grids_manager->create_remapper_from_ref_grid(m_dyn_grid);
+  m_p2d_remapper->registration_begins();
+  m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("horiz_winds"));
+  m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("vtheta_dp"));
+  m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("phi_i"));
+  m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("w_int"));
+  m_p2d_remapper->register_field_from_tgt(m_dyn_fids.at("pseudo_density"));
 
-  // Outputs
-  FieldLayout dyn_scalar_3d_mid_layout { dyn_3d_scalar_state_tags,  {ne, NTL,    NGP,NGP,NVL} };
-  FieldLayout dyn_scalar_3d_int_layout { dyn_3d_scalar_state_tags,  {ne, NTL,    NGP,NGP,NVL+1} };
-  FieldLayout dyn_vector_3d_mid_layout { dyn_3d_vector_state_tags,  {ne, NTL,  2,NGP,NGP,NVL} };
-  FieldLayout dyn_tracers_layout       { dyn_3d_tracer_state_tags,  {ne,QNTL,QSZ,NGP,NGP,NVL} };
-  m_computed_fields.emplace("u",       dyn_vector_3d_mid_layout, m/s, dyn_grid_name);
-  m_computed_fields.emplace("vtheta",  dyn_scalar_3d_mid_layout, K,   dyn_grid_name);
-  m_computed_fields.emplace("phi",     dyn_scalar_3d_int_layout, Pa*pow(m,3)/kg, dyn_grid_name);
-  m_computed_fields.emplace("w",       dyn_scalar_3d_int_layout, m/s, dyn_grid_name);
-  m_computed_fields.emplace("dp",      dyn_scalar_3d_mid_layout, Pa,  dyn_grid_name);
-  m_computed_fields.emplace("qdp",     dyn_tracers_layout,       Qdp, dyn_grid_name);
+  // Add inout fields to the list of required/computed fields
+  constexpr int ps = sizeof(Homme::Scalar) / sizeof(Real);
+  for (int i=0; i<m_p2d_remapper->get_num_registered_fields(); ++i) {
+    const auto& ref_fid = m_p2d_remapper->get_src_field_id(i);
+    add_field<Updated>(ref_fid,ps);
+  }
+
+  // qv is needed to make sure Q is not empty (dyn needs qv to transform T<->Theta),
+  // while ps is needed for initial conditions only.
+  FieldLayout scalar_3d_mid { {EL,    GP,GP,LEV}, {ne,    NGP,NGP,NVL} };
+  FieldIdentifier qv("qv", scalar_3d_mid, Q, dgn);
+  add_field<Required>(m_p2d_remapper->create_src_fid(qv),"tracers");
 
   const int ftype = get_homme_param<int>("ftype");
   EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,
                      "Error! The scream interface to homme *assumes* ftype to be 2 or 4.\n"
                      "       Found " + std::to_string(ftype) + " instead.\n");
+
+  // Input-output groups
+  add_group<Updated>("tracers",grids_manager->get_reference_grid()->name(),
+                     ps, Bundling::Required);
+}
+
+void HommeDynamics::
+set_updated_group (const FieldGroup<Real>& group)
+{
+  const auto& name = group.m_info->m_group_name;
+  EKAT_REQUIRE_MSG(name=="tracers",
+    "Error! We were not expecting a field group called '" << name << "\n");
+
+  EKAT_REQUIRE_MSG(not group.m_info->empty(),
+    "Error! There should be at least one tracer (qv) in the 'tracers' group.\n");
+
+  EKAT_REQUIRE_MSG(group.m_info->m_bundled,
+      "Error! Homme expects a bundled field for tracers.\n");
+
+  // Store the big Q array
+  auto& Q_phys = m_ref_grid_fields["Q"] = *group.m_bundle;
+  auto& Q_dyn = m_dyn_grid_fields["Q"];
+  Q_dyn = Field<Real>(m_p2d_remapper->create_tgt_fid(group.m_bundle->get_header().get_identifier()));
+  Q_dyn.get_header().get_alloc_properties().request_allocation<Homme::Scalar>();
+  Q_dyn.allocate_view();
+
+  // Set Q in the remapper
+  m_p2d_remapper->register_field(Q_phys,Q_dyn);
+
+  // Now that we have Q, we have the exact count for tracers,
+  // and we can use that info to setup tracers stuff in Homme
+  const int qsize = group.m_info->size();
+  auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
+  auto& tracers = Homme::Context::singleton().get<Homme::Tracers>();
+  params.qsize = qsize;
+  set_homme_param("qsize",qsize);
+  tracers.init(tracers.num_elems(),qsize);
+
+  // Set the dyn grid field's view in Hommexx data structures
+  constexpr int NVL  = HOMMEXX_NUM_LEV;
+  auto Q_view = Q_dyn.template get_reshaped_view<Homme::Scalar**[NP][NP][NVL]>();
+  tracers.Q = decltype(tracers.Q)(Q_view.data(),tracers.num_elems(),qsize);
 }
 
 void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 {
-  // We need to set the pointers in the C++ views to the ones contained in the scream
-  // Fields *before* they ever get copied/filled. In particular, we need to make sure
-  // that the Elements and Tracers structures contain scream Field's views before:
-  //  - the Caar, Esf, Hvf, and Remap functors are created (cause they create copies)
-  //  - any BoundaryExchange exchanging Elements/Tracers's views is created (cause they subview their views)
-  // If we don't do this, the Elements/Tracers structures *will* have views
-  // containing pointers allocated by scream, but all the functors *will not*,
-  // since they will contain a copy of the views *before* we had replaced the ptrs.
-
-  auto& state = Homme::Context::singleton().get<Homme::ElementsState>();
-  auto& tracers  = Homme::Context::singleton().get<Homme::Tracers>();
-
-  const int num_elems = state.num_elems();
-  using Scalar = Homme::Scalar;
-
-  constexpr int NTL  = HOMMEXX_NUM_TIME_LEVELS;
-  constexpr int NVL  = HOMMEXX_NUM_LEV;
-  constexpr int QNTL = HOMMEXX_Q_NUM_TIME_LEVELS;
-
-  // Computed fields
-  for (auto& it : m_dyn_fields_out) {
-    const auto& name = it.first;
-    const auto& f    = it.second;
-
-    if (name=="u") {
-      // Velocity
-      auto& v = state.m_v;
-      auto v_in = f.get_reshaped_view<Scalar*[NTL][2][NP][NP][NVL]>();
-      using v_type = std::remove_reference<decltype(v)>::type;
-      v = v_type (v_in.data(),num_elems);
-    } else if (name=="vtheta") {
-      // Virtual potential temperature
-      auto& vtheta = state.m_vtheta_dp;
-      auto vtheta_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
-      using vtheta_type = std::remove_reference<decltype(vtheta)>::type;
-      vtheta = vtheta_type(vtheta_in.data(),num_elems);
-    } else if (name=="phi") {
-      // Geopotential
-      auto& phi = state.m_phinh_i;
-      auto phi_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
-      using phi_type = std::remove_reference<decltype(phi)>::type;
-      phi = phi_type(phi_in.data(),num_elems);
-    } else if (name=="w") {
-      // Geopotential
-      auto& w = state.m_w_i;
-      auto w_in = f.get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
-      using w_type = std::remove_reference<decltype(w)>::type;
-      w = w_type(w_in.data(),num_elems);
-    } else if (name=="dp") {
-      // Levels thickness
-      auto& dp = state.m_dp3d;
-      auto dp_in = f.template get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
-      using dp_type = std::remove_reference<decltype(dp)>::type;
-      dp = dp_type(dp_in.data(),num_elems);
-    } else if (name=="qdp") {
-      // Tracers mass
-      auto& qdp = tracers.qdp;
-      auto qdp_in = f.template get_reshaped_view<Scalar*[QNTL][QSIZE_D][NP][NP][NVL]>();
-      using qdp_type = std::remove_reference<decltype(qdp)>::type;
-      qdp = qdp_type(qdp_in.data(),num_elems);
-    } else {
-      ekat::error::runtime_abort("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
-    }
-  }
-
-  // Required fields.
-  // NOTE: Homme's Elements store all field as views to non-const data. Why? I'm not
-  //       sure why we did that, but I assume it was to allow initialization.
-  //       Therefore, we need to cast away the const from the scream input fields.
-  // TODO: make Hommexx Elements structure store const views for stuff that is indeed (logically) const.
-  auto& forcing = Homme::Context::singleton().get<Homme::ElementsForcing>();
-  for (auto& it : m_dyn_fields_in) {
-    const auto& name = it.first;
-    const auto& f    = it.second;
-
-    if (name=="FQ") {
-      // Tracers forcing
-      auto& fq = tracers.fq;
-      auto fq_in = f.template get_reshaped_view<const Scalar*[QSIZE_D][NP][NP][NVL]>();
-      using fq_type = std::remove_reference<decltype(fq)>::type;
-      auto non_const_ptr = const_cast<Scalar*>(fq_in.data());
-      fq = fq_type(non_const_ptr,num_elems);
-    } else if (name=="FM") {
-      // Momemntum forcing
-      auto& fm = forcing.m_fm;
-      // Use dynamic extent for second dimension, since preqx and theta have different extents
-      auto fm_in = f.template get_reshaped_view<const Scalar**[NP][NP][NVL]>();
-      using fm_type = std::remove_reference<decltype(fm)>::type;
-      auto non_const_ptr = const_cast<Scalar*>(fm_in.data());
-      fm = fm_type(non_const_ptr,num_elems);
-    } else if (name=="FT") {
-      // Temperature forcing
-      auto& ft = forcing.m_ft;
-      auto ft_in = f.template get_reshaped_view<const Scalar*[NP][NP][NVL]>();
-      using ft_type = std::remove_reference<decltype(ft)>::type;
-      auto non_const_ptr = const_cast<Scalar*>(ft_in.data());
-      ft = ft_type(non_const_ptr,num_elems);
-    } else {
-      ekat::error::runtime_abort("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
-    }
-  }
-
-  // Now that we set the correct pointers inside the Kokkos views, we can finish homme's initialization
-
-  auto standalone = m_params.get<bool>("Initialize Inputs", false);
-  if (standalone) {
-#ifdef SCREAM_CIME_BUILD
-    ekat::error::runtime_abort("Error! Homme should not initialize inputs in CIME builds.\n");
-#else
-    m_initializer->initialize_fields();
-    for (auto& f : m_dyn_fields_in) {
-      m_initializer->add_me_as_initializer(f.second);
-      std::cout << "Added " << m_initializer->name() << " as initializer for " << f.second.get_header().get_identifier().name() << "\n";
-    }
-    for (auto f : m_dyn_fields_out) {
-      m_initializer->add_me_as_initializer(f.second);
-    }
-    m_initializer->initialize_fields();
-#endif
-  } else {
-    // Some I/O routine must have loaded initial states. Homme needs those values
-    // to complete the model initialization. So, leverage Homme functions that
-    // copy stuff from cxx views to f90 arrays, to fwd the data I/O loaded to
-    // Homme's f90 model initialization routines
-    // NOTE: this is not needed in the if branch above, since homme inits fields
-    //       in fortran, so the initial states values are already available to model_init
-    prim_copy_cxx_to_f90 ();
-  }
-
-  prim_init_model_f90 (standalone);
-
+  // Print homme's parameters, so user can see whether something wasn't set right.
   ::Homme::Context::singleton().get<::Homme::SimulationParams>().print();
-}
 
-void HommeDynamics::register_fields (FieldRepository<Real>& field_repo) const
-{
-  using Scalar = Homme::Scalar;
-  for (const auto& fid : m_computed_fields) {
-    field_repo.register_field<Scalar>(fid);
-  }
-  for (const auto& fid : m_required_fields) {
-    field_repo.register_field<Scalar>(fid);
-  }
+  // Now that we have all fields set in homme, let's remap the input fields,
+  // so that Homme gets the correct Initial Conditions
+  m_p2d_remapper->registration_ends();
+  m_p2d_remapper->remap(true);
+
+
+  prim_init_model_f90 ();
 }
 
 void HommeDynamics::run_impl (const Real dt)
 {
   try {
+    // Remap inputs
+    m_p2d_remapper->remap(true);
+    // Run hommexx
     prim_run_f90 (dt);
+    // Remap outputs
+    m_p2d_remapper->remap(false);
 
-    // Update all fields time stamp
-    for (auto& it : m_dyn_fields_out) {
-      it.second.get_header().get_tracking().update_time_stamp(this->timestamp());
+    // Get a copy of the current timestamp (at the beginning of the step) and
+    // advance it, updating the p3 fields.
+    auto ts = timestamp();
+    ts += dt;
+    for (auto& it : m_ref_grid_fields) {
+      it.second.get_header().get_tracking().update_time_stamp(ts);
     }
   } catch (std::exception& e) {
     ekat::error::runtime_abort(e.what());
@@ -276,36 +199,78 @@ void HommeDynamics::finalize_impl (/* what inputs? */)
 }
 
 void HommeDynamics::set_required_field_impl (const Field<const Real>& f) {
-  // Store a copy of the field. We need this in order to do some tracking checks
-  // at the beginning of the run call. Other than that, there would be really
-  // no need to store a scream field here; we could simply set the view ptr
-  // in the Homme's view, and be done with it.
-  m_dyn_fields_in.emplace(f.get_header().get_identifier().name(),f);
+  // Since all inputs are also outputs, we don't store a copy of f here.
+  // Instead, we'll store a copy of it when it's given to us during
+  // set_computed_field, since we'll have access to a non-const version
+  // then, which we need for remapping purposes.
 
-  // Add myself as customer to the field
+  // Add myself as customer to the field.
   this->add_me_as_customer(f);
 }
 
 void HommeDynamics::set_computed_field_impl (const Field<Real>& f) {
+  auto& state = Homme::Context::singleton().get<Homme::ElementsState>();
+
+  const int num_elems = state.num_elems();
+  using Scalar = Homme::Scalar;
+
+  constexpr int NTL  = HOMMEXX_NUM_TIME_LEVELS;
+  constexpr int NVL  = HOMMEXX_NUM_LEV;
+  constexpr int NVLI = HOMMEXX_NUM_LEV_P;
+
+  const auto& name = f.get_header().get_identifier().name();
+
+  // Create the dyn grid field
+  auto& f_dyn = m_dyn_grid_fields[name];
+  f_dyn = Field<Real>(m_dyn_fids.at(name));
+  f_dyn.get_header().get_alloc_properties().request_allocation<Homme::Scalar>();
+  f_dyn.allocate_view();
+
+  if (name=="horiz_winds") {
+    // Velocity
+    auto& v = state.m_v;
+    auto v_in = f_dyn.get_reshaped_view<Scalar*[NTL][2][NP][NP][NVL]>();
+    using v_type = std::remove_reference<decltype(v)>::type;
+    v = v_type (v_in.data(),num_elems);
+  } else if (name=="vtheta_dp") {
+    // Virtual potential temperature
+    auto& vtheta = state.m_vtheta_dp;
+    auto vtheta_in = f_dyn.get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
+    using vtheta_type = std::remove_reference<decltype(vtheta)>::type;
+    vtheta = vtheta_type(vtheta_in.data(),num_elems);
+  } else if (name=="phi_i") {
+    // Geopotential
+    auto& phi = state.m_phinh_i;
+    auto phi_in = f_dyn.get_reshaped_view<Scalar*[NTL][NP][NP][NVLI]>();
+    using phi_type = std::remove_reference<decltype(phi)>::type;
+    phi = phi_type(phi_in.data(),num_elems);
+  } else if (name=="w_int") {
+    // Geopotential
+    auto& w = state.m_w_i;
+    auto w_in = f_dyn.get_reshaped_view<Scalar*[NTL][NP][NP][NVLI]>();
+    using w_type = std::remove_reference<decltype(w)>::type;
+    w = w_type(w_in.data(),num_elems);
+  } else if (name=="pseudo_density") {
+    // Levels thickness
+    auto& dp = state.m_dp3d;
+    auto dp_in = f_dyn.template get_reshaped_view<Scalar*[NTL][NP][NP][NVL]>();
+    using dp_type = std::remove_reference<decltype(dp)>::type;
+    dp = dp_type(dp_in.data(),num_elems);
+  } else {
+    EKAT_ERROR_MSG("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
+  }
+
+  // Set the field in the remapper
+  m_p2d_remapper->bind_field(f,f_dyn);
+
   // Store a copy of the field. We need this in order to do some tracking updates
   // at the end of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr
   // in the Homme's view, and be done with it.
-  const auto& name = f.get_header().get_identifier().name();
-  m_dyn_fields_out.emplace(name,f);
+  m_ref_grid_fields.emplace(name,f);
 
   // Add myself as provider for the field
   this->add_me_as_provider(f);
-
-  // Set extra data specifying whether this state corresponds to tracers
-  // This is needed by the phys-dyn remapper to figure out which timeleve
-  // to use in the homme's TimeLevel structure
-  if (name=="qdp") {
-    ekat::any tracer;
-    tracer.reset<bool>(true);
-    // Throw if this data was already set (who dared?)
-    f.get_header_ptr()->set_extra_data("Is Tracer State",tracer,true);
-  }
 }
 
 } // namespace scream

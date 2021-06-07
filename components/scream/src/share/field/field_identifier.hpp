@@ -21,9 +21,10 @@ namespace scream
 
 class FieldIdentifier {
 public:
-  using layout_type = FieldLayout;
-  using ci_string   = ekat::CaseInsensitiveString;
-  using Units       = ekat::units::Units;
+  using layout_type     = FieldLayout;
+  using layout_ptr_type = std::shared_ptr<const layout_type>;
+  using ci_string       = ekat::CaseInsensitiveString;
+  using Units           = ekat::units::Units;
 
   // Constructor(s)
   FieldIdentifier () = delete;
@@ -31,15 +32,7 @@ public:
   FieldIdentifier (const std::string& name,
                    const layout_type& layout,
                    const Units& units,
-                   const std::string& grid_name = "");
-  FieldIdentifier (const std::string& name,
-                   const std::vector<FieldTag>& tags,
-                   const Units& units,
-                   const std::string& grid_name = "");
-  FieldIdentifier (const std::string& name,
-                   const std::initializer_list<FieldTag>& tags,
-                   const Units& units,
-                   const std::string& grid_name = "");
+                   const std::string& grid_name);
 
   // Delete assignment, to prevent overwriting identifiers sneakyly
   FieldIdentifier& operator= (const FieldIdentifier&) = delete;
@@ -47,20 +40,20 @@ public:
   // ----- Getters ----- //
 
   // Name and layout informations
-  const std::string&  name          () const { return m_name;      }
-  const layout_type&  get_layout    () const { return m_layout;    }
-  const Units&        get_units     () const { return m_units;     }
-  const std::string&  get_grid_name () const { return m_grid_name; }
+  const std::string&      name           () const { return m_name;      }
+  const layout_type&      get_layout     () const { return *m_layout;   }
+  const layout_ptr_type&  get_layout_ptr () const { return m_layout;    }
+  const Units&            get_units      () const { return m_units;     }
+  const std::string&      get_grid_name  () const { return m_grid_name; }
 
   // The identifier string
   const std::string& get_id_string () const { return m_identifier; }
 
   // ----- Setters ----- //
 
-  // Note: as soon as a dimension is set, it cannot be changed.
-  void set_dimension  (const int idim, const int dimension);
-  void set_dimensions (const std::vector<int>& dims);
-  void set_grid_name  (const std::string& grid_name);
+  // Note: as soon as the layout is set, it cannot be changed.
+  void set_layout (const layout_type& layout);
+  void set_layout (const layout_ptr_type& layout);
 
   // We reimplement the equality operator for identifiers comparison (needed for some std container)
   friend bool operator== (const FieldIdentifier&, const FieldIdentifier&);
@@ -72,7 +65,7 @@ protected:
 
   ci_string       m_name;
 
-  layout_type     m_layout;
+  layout_ptr_type m_layout;
 
   Units           m_units;
 

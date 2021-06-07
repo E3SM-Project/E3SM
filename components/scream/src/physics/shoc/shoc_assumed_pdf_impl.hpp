@@ -41,18 +41,22 @@ void Functions<S,D>::shoc_assumed_pdf(
   const uview_1d<const Spack>& pres,
   const uview_1d<const Spack>& zt_grid,
   const uview_1d<const Spack>& zi_grid,
-  const uview_1d<Spack>&       wthl_sec_zt,
-  const uview_1d<Spack>&       wqw_sec_zt,
-  const uview_1d<Spack>&       w3_zt,
-  const uview_1d<Spack>&       thl_sec_zt,
-  const uview_1d<Spack>&       qwthl_sec_zt,
-  const uview_1d<Spack>&       qw_sec_zt,
+  const Workspace&             workspace,
   const uview_1d<Spack>&       shoc_cldfrac,
   const uview_1d<Spack>&       shoc_ql,
   const uview_1d<Spack>&       wqls,
   const uview_1d<Spack>&       wthv_sec,
   const uview_1d<Spack>&       shoc_ql2)
 {
+  // Define temporary variables
+  uview_1d<Spack> wthl_sec_zt, wqw_sec_zt, w3_zt,
+                  thl_sec_zt, qwthl_sec_zt, qw_sec_zt;
+  workspace.template take_many_contiguous_unsafe<6>(
+    {"wthl_sec_zt", "wqw_sec_zt", "w3_zt",
+     "thl_sec_zt", "qwthl_sec_zt", "qw_sec_zt"},
+    {&wthl_sec_zt, &wqw_sec_zt, &w3_zt,
+     &thl_sec_zt, &qwthl_sec_zt, &qw_sec_zt});
+
   // Tolerances, thresholds, and constants
   const Scalar thl_tol = 1e-2;
   const Scalar rt_tol = 1e-4;
@@ -77,7 +81,9 @@ void Functions<S,D>::shoc_assumed_pdf(
   linear_interp(team,zi_grid,zt_grid,wqw_sec,wqw_sec_zt,nlevi,nlev,largeneg);
   linear_interp(team,zi_grid,zt_grid,qw_sec,qw_sec_zt,nlevi,nlev,0);
 
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  // The following is morally a const var, but there are issues with
+  // gnu and std=c++14. The macro ConstExceptGnu is defined in ekat_kokkos_types.hpp.
+  ConstExceptGnu Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
 
     // Store active pack entries
@@ -252,7 +258,7 @@ void Functions<S,D>::shoc_assumed_pdf(
       Spack s1(0), std_s1(0), qn1(0), C1(0), ql1(0),
             s2(0), std_s2(0), qn2(0), C2(0), ql2(0);
       {
-        const Scalar sqrt2(std::sqrt(2)), sqrt2pi(std::sqrt(2*pi));
+        const Scalar sqrt2(std::sqrt(Scalar(2.0))), sqrt2pi(std::sqrt(2*pi));
 
         // First plume
         const Spack cthl1=((1 + beta1*qw1_1)/ekat::square(1 + beta1*qs1))*(cp/lcond)*
@@ -314,6 +320,11 @@ void Functions<S,D>::shoc_assumed_pdf(
                    + ((lcond/cp)*ekat::pow(basepres/pval, (rair/cp))
                    - (1/epsterm)*basetemp)*wqls(k);
   });
+
+  // Release temporary variables from the workspace
+  workspace.template release_many_contiguous<6>(
+    {&wthl_sec_zt, &wqw_sec_zt, &w3_zt,
+     &thl_sec_zt, &qwthl_sec_zt, &qw_sec_zt});
 }
 
 } // namespace shoc

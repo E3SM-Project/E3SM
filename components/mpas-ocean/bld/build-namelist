@@ -444,8 +444,6 @@ my $LID = $ENV{'LID'};
 
 my $ntasks = $NTASKS_OCN / $NINST_OCN; 
 
-if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
-
 print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
 print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
 
@@ -641,6 +639,16 @@ add_default($nl, 'config_cvmix_kpp_use_theory_wave');
 add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
 add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
 
+########################
+# Namelist group: gotm #
+########################
+
+add_default($nl, 'config_use_gotm');
+add_default($nl, 'config_gotm_namelist_file');
+add_default($nl, 'config_gotm_constant_surface_roughness_length');
+add_default($nl, 'config_gotm_constant_bottom_roughness_length');
+add_default($nl, 'config_gotm_constant_bottom_drag_coeff');
+
 ###########################
 # Namelist group: forcing #
 ###########################
@@ -669,6 +677,7 @@ if (($OCN_ICEBERG eq 'true') && ($OCN_FORCING eq 'active_atm')) {
 add_default($nl, 'config_sw_absorption_type');
 add_default($nl, 'config_jerlov_water_type');
 add_default($nl, 'config_surface_buoyancy_depth');
+add_default($nl, 'config_enable_shortwave_energy_fixer');
 
 ###########################################
 # Namelist group: tidal_potential_forcing #
@@ -744,10 +753,13 @@ add_default($nl, 'config_monotonic');
 
 add_default($nl, 'config_use_implicit_bottom_drag');
 add_default($nl, 'config_implicit_bottom_drag_coeff');
+add_default($nl, 'config_use_implicit_bottom_roughness');
 add_default($nl, 'config_use_implicit_bottom_drag_variable');
 add_default($nl, 'config_use_implicit_bottom_drag_variable_mannings');
 add_default($nl, 'config_use_explicit_bottom_drag');
 add_default($nl, 'config_explicit_bottom_drag_coeff');
+add_default($nl, 'config_use_topographic_wave_drag');
+add_default($nl, 'config_topographic_wave_drag_coeff');
 
 ###################################
 # Namelist group: ocean_constants #
@@ -761,6 +773,8 @@ add_default($nl, 'config_density0');
 
 add_default($nl, 'config_pressure_gradient_type');
 add_default($nl, 'config_common_level_weight');
+add_default($nl, 'config_zonal_ssh_grad');
+add_default($nl, 'config_meridional_ssh_grad');
 
 #######################
 # Namelist group: eos #
@@ -786,6 +800,12 @@ add_default($nl, 'config_eos_linear_beta');
 add_default($nl, 'config_eos_linear_Tref');
 add_default($nl, 'config_eos_linear_Sref');
 add_default($nl, 'config_eos_linear_densityref');
+
+##############################
+# Namelist group: eos_wright #
+##############################
+
+add_default($nl, 'config_eos_wright_ref_pressure');
 
 ########################################
 # Namelist group: split_timestep_share #
@@ -863,6 +883,7 @@ add_default($nl, 'config_disable_vel_coriolis');
 add_default($nl, 'config_disable_vel_pgrad');
 add_default($nl, 'config_disable_vel_hmix');
 add_default($nl, 'config_disable_vel_surface_stress');
+add_default($nl, 'config_disable_vel_topographic_wave_drag');
 add_default($nl, 'config_disable_vel_explicit_bottom_drag');
 add_default($nl, 'config_disable_vel_vmix');
 add_default($nl, 'config_disable_vel_vadv');
@@ -882,6 +903,12 @@ add_default($nl, 'config_read_nearest_restart');
 add_default($nl, 'config_conduct_tests');
 add_default($nl, 'config_test_tensors');
 add_default($nl, 'config_tensor_test_function');
+
+#########################################
+# Namelist group: init_mode_vert_levels #
+#########################################
+
+add_default($nl, 'config_vert_levels');
 
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
@@ -1583,6 +1610,7 @@ my @groups = qw(run_modes
                 mesoscale_eddy_parameterizations
                 rayleigh_damping
                 cvmix
+                gotm
                 forcing
                 coupling
                 shortwaveradiation
@@ -1595,6 +1623,7 @@ my @groups = qw(run_modes
                 pressure_gradient
                 eos
                 eos_linear
+                eos_wright
                 split_timestep_share
                 split_explicit_ts
                 semi_implicit_ts
@@ -1602,6 +1631,7 @@ my @groups = qw(run_modes
                 ale_frequency_filtered_thickness
                 debug
                 testing
+                init_mode_vert_levels
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers

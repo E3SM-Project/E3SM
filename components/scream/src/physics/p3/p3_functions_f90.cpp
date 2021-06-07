@@ -115,7 +115,7 @@ void calc_bulk_rho_rime_c(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rim
 
 void homogeneous_freezing_c(
   Int kts, Int kte, Int ktop, Int kbot, Int kdir,
-  Real* T_atm, Real* exner, Real* latent_heat_fusion,
+  Real* T_atm, Real* inv_exner, Real* latent_heat_fusion,
   Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* th_atm);
 
 void get_time_space_phys_variables_c(Real T_atm, Real pres, Real rho, Real latent_heat_vapor, Real latent_heat_sublim, Real qv_sat_l, Real qv_sat_i,
@@ -125,7 +125,7 @@ void  update_prognostic_ice_c(
   Real qc2qi_hetero_freeze_tend, Real qc2qi_collect_tend, Real qc2qr_ice_shed_tend,  Real nc_collect_tend,  Real nc2ni_immers_freeze_tend, Real ncshdc,
   Real qr2qi_collect_tend,  Real nr_collect_tend, Real qr2qi_immers_freeze_tend, Real nr2ni_immers_freeze_tend, Real nr_ice_shed_tend,
   Real qi2qr_melt_tend, Real ni2nr_melt_tend, Real qi2qv_sublim_tend, Real qv2qi_vapdep_tend, Real qv2qi_nucleat_tend, Real ni_nucleat_tend,
-  Real ni_selfcollect_tend, Real ni_sublim_tend, Real qc2qi_berg_tend, Real exner, Real latent_heat_sublim, Real latent_heat_fusion,
+  Real ni_selfcollect_tend, Real ni_sublim_tend, Real qc2qi_berg_tend, Real inv_exner, Real latent_heat_sublim, Real latent_heat_fusion,
   bool do_predict_nc, bool log_wetgrowth, Real dt, Real nmltratio,
   Real rho_qm_cloud, Real* th_atm, Real* qv, Real* qi, Real* ni, Real* qm,
   Real* bm, Real* qc, Real* nc, Real* qr, Real* nr);
@@ -140,7 +140,7 @@ void evaporate_rain_c( Real qr_incld, Real qc_incld, Real nr_incld, Real qi_incl
 void update_prognostic_liquid_c(
   Real qc2qr_accret_tend, Real nc_accret_tend, Real qc2qr_autoconv_tend, Real nc2nr_autoconv_tend, Real ncautr,
   Real nc_selfcollect_tend, Real  qr2qv_evap_tend, Real nr_evap_tend, Real nr_selfcollect_tend , bool do_predict_nc, bool do_prescribed_CCN,
-  Real inv_rho, Real exner, Real latent_heat_vapor, Real dt, Real* th_atm, Real* qv,
+  Real inv_rho, Real inv_exner, Real latent_heat_vapor, Real dt, Real* th_atm, Real* qv,
   Real* qc, Real* nc, Real* qr, Real* nr);
 
 void ice_deposition_sublimation_c(
@@ -196,7 +196,7 @@ void p3_main_part1_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool do_predict_nc, bool do_prescribed_CCN,
   Real dt,
-  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* nccn_prescribed, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
+  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* nccn_prescribed, Real* inv_exner, Real* exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
   Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld,
@@ -205,7 +205,7 @@ void p3_main_part1_c(
 
 void p3_main_part2_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, bool do_prescribed_CCN, Real dt, Real inv_dt,
-  Real* pres, Real* exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
+  Real* pres, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
   Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r, Real* qv_prev, Real* t_prev,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofaci, Real* acn,
   Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
@@ -218,7 +218,7 @@ void p3_main_part2_c(
 
 void p3_main_part3_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
-  Real* exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i,
+  Real* inv_exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i,
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr,
   Real* qi, Real* ni, Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim,
   Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
@@ -229,16 +229,14 @@ void p3_main_c(
   Real* qi, Real* qm, Real* ni, Real* bm, Real* pres, Real* dz,
   Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
-  Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed, Real* dpres, Real* exner,
-  Real* qv2qi_depos_tend, Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend, Real* precip_liq_flux,
-  Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
+  Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed, Real* dpres, Real* inv_exner,
+  Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev, Real* elapsed_s);
 
-void ice_supersat_conservation_c(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt);
+void ice_supersat_conservation_c(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt, Real qi2qv_sublim_tend, Real qr2qv_evap_tend);
 void nc_conservation_c(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_collect_tend, Real* nc2ni_immers_freeze_tend, Real* nc_accret_tend, Real* nc2nr_autoconv_tend);
-void nr_conservation_c(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend);
+void nr_conservation_c(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real nmltratio, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend);
 void ni_conservation_c(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_tend, Real nc2ni_immers_freeze_tend, Real dt, Real* ni2nr_melt_tend, Real* ni_sublim_tend, Real* ni_selfcollect_tend);
-void water_vapor_conservation_c(Real qv, Real* qidep, Real* qinuc, Real qi2qv_sublim_tend, Real qr2qv_evap_tend, Real dt);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -559,7 +557,7 @@ void update_prognostic_ice(P3UpdatePrognosticIceData& d){
   update_prognostic_ice_c(d.qc2qi_hetero_freeze_tend, d.qc2qi_collect_tend, d.qc2qr_ice_shed_tend,  d.nc_collect_tend,  d.nc2ni_immers_freeze_tend, d.ncshdc,
                           d.qr2qi_collect_tend,  d.nr_collect_tend, d.qr2qi_immers_freeze_tend, d.nr2ni_immers_freeze_tend, d.nr_ice_shed_tend,
                           d.qi2qr_melt_tend,  d.ni2nr_melt_tend, d.qi2qv_sublim_tend,  d.qv2qi_vapdep_tend,  d.qv2qi_nucleat_tend,  d.ni_nucleat_tend,
-                          d.ni_selfcollect_tend,  d.ni_sublim_tend, d.qc2qi_berg_tend, d.exner,  d.latent_heat_sublim,   d.latent_heat_fusion,
+                          d.ni_selfcollect_tend,  d.ni_sublim_tend, d.qc2qi_berg_tend, d.inv_exner,  d.latent_heat_sublim,   d.latent_heat_fusion,
                           d.do_predict_nc,  d.log_wetgrowth,    d.dt,     d.nmltratio,
                           d.rho_qm_cloud,      &d.th_atm,    &d.qv,    &d.qi, &d.ni, &d.qm,
                           &d.bm,         &d.qc,    &d.nc,    &d.qr, &d.nr);
@@ -578,7 +576,7 @@ void  update_prognostic_liquid(P3UpdatePrognosticLiqData& d){
   p3_init();
   update_prognostic_liquid_c(d.qc2qr_accret_tend, d.nc_accret_tend, d.qc2qr_autoconv_tend, d.nc2nr_autoconv_tend, d.ncautr,
 			      d.nc_selfcollect_tend, d. qr2qv_evap_tend, d.nr_evap_tend, d.nr_selfcollect_tend , d.do_predict_nc, d.do_prescribed_CCN,
-			      d.inv_rho, d.exner, d.latent_heat_vapor, d.dt, &d.th_atm, &d.qv,
+			      d.inv_rho, d.inv_exner, d.latent_heat_vapor, d.dt, &d.th_atm, &d.qv,
 			      &d.qc, &d.nc, &d.qr, &d.nr);
 }
 
@@ -698,7 +696,7 @@ void calc_bulk_rho_rime(CalcBulkRhoRimeData& d)
 HomogeneousFreezingData::HomogeneousFreezingData(
   Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_) :
   PhysicsTestData( { {(kte_ - kts_) + 1} },
-                   { {&T_atm, &exner, &latent_heat_fusion, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &th_atm} }),
+                   { {&T_atm, &inv_exner, &latent_heat_fusion, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &th_atm} }),
   kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_)
 {}
 
@@ -706,7 +704,7 @@ void homogeneous_freezing(HomogeneousFreezingData& d)
 {
   p3_init();
   homogeneous_freezing_c(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
-                         d.T_atm, d.exner, d.latent_heat_fusion,
+                         d.T_atm, d.inv_exner, d.latent_heat_fusion,
                          d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.th_atm);
 }
 
@@ -733,7 +731,7 @@ P3MainPart1Data::P3MainPart1Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_) :
   PhysicsTestData( { {(kte_ - kts_) + 1} }, { {
-    &pres, &dpres, &dz, &nc_nuceat_tend, &exner, &inv_exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion, &nccn_prescribed,
+    &pres, &dpres, &dz, &nc_nuceat_tend, &inv_exner, &exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion, &nccn_prescribed,
     &T_atm, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci,
     &acn, &qv, &th_atm, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &qc_incld, &qr_incld, &qi_incld,
     &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld} }),
@@ -748,7 +746,7 @@ void p3_main_part1(P3MainPart1Data& d)
     d.kts, d.kte, d.kbot, d.ktop, d.kdir,
     d.do_predict_nc, d.do_prescribed_CCN,
     d.dt,
-    d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, d.inv_cld_frac_r, d.latent_heat_vapor,
+    d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.inv_exner, d.exner, d.inv_cld_frac_l, d.inv_cld_frac_i, d.inv_cld_frac_r, d.latent_heat_vapor,
     d.latent_heat_sublim, d.latent_heat_fusion,
     d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci,
     d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld,
@@ -762,7 +760,7 @@ P3MainPart2Data::P3MainPart2Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_) :
   PhysicsTestData( { {(kte_ - kts_) + 1} }, { {
-    &pres, &dpres, &dz, &nc_nuceat_tend, &exner, &inv_exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &ni_activated, &inv_qc_relvar, &cld_frac_i, &cld_frac_l, &cld_frac_r, &qv_prev, &t_prev,
+    &pres, &dpres, &dz, &nc_nuceat_tend, &inv_exner, &exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &ni_activated, &inv_qc_relvar, &cld_frac_i, &cld_frac_l, &cld_frac_r, &qv_prev, &t_prev,
     &T_atm, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci, &acn,
     &qv, &th_atm, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion, &qc_incld, &qr_incld,
     &qi_incld, &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld, &mu_c, &nu, &lamc, &cdist, &cdist1,
@@ -777,7 +775,7 @@ void p3_main_part2(P3MainPart2Data& d)
   p3_init();
   p3_main_part2_c(
     d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt, d.inv_dt,
-    d.pres, d.exner, d.inv_cld_frac_l, d.inv_cld_frac_i, d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar,
+    d.pres, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar,
     d.cld_frac_i, d.cld_frac_l, d.cld_frac_r, d.qv_prev, d.t_prev,
     d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofaci, d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
     d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
@@ -791,7 +789,7 @@ void p3_main_part2(P3MainPart2Data& d)
 P3MainPart3Data::P3MainPart3Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_) :
   PhysicsTestData( { {(kte_ - kts_) + 1} }, { {
-    &exner, &cld_frac_l, &cld_frac_r, &cld_frac_i,
+    &inv_exner, &cld_frac_l, &cld_frac_r, &cld_frac_i,
     &rho, &inv_rho, &rhofaci,
     &qv, &th_atm, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim,
     &mu_c, &nu, &lamc, &mu_r,
@@ -805,7 +803,7 @@ void p3_main_part3(P3MainPart3Data& d)
   p3_init();
   p3_main_part3_c(
     d.kts, d.kte, d.kbot, d.ktop, d.kdir,
-    d.exner, d.cld_frac_l, d.cld_frac_r, d.cld_frac_i,
+    d.inv_exner, d.cld_frac_l, d.cld_frac_r, d.cld_frac_i,
     d.rho, d.inv_rho, d.rhofaci, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim,
     d.mu_c, d.nu, d.lamc, d.mu_r, d.lamr, d.vap_liq_exchange,
     d. ze_rain, d.ze_ice, d.diag_vm_qi, d.diag_eff_radius_qi, d.diag_diam_qi, d.rho_qi, d.diag_equiv_reflectivity, d.diag_eff_radius_qc);
@@ -816,7 +814,7 @@ void p3_main_part3(P3MainPart3Data& d)
 P3MainData::P3MainData(
   Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_) :
   PhysicsTestData( { {(ite_ - its_) + 1, (kte_ - kts_) + 1}, {(ite_ - its_) + 1, (kte_ - kts_) + 2} }, { {
-    &pres, &dz, &nc_nuceat_tend, &nccn_prescribed, &ni_activated, &dpres, &exner, &cld_frac_i, &cld_frac_l, &cld_frac_r,
+    &pres, &dz, &nc_nuceat_tend, &nccn_prescribed, &ni_activated, &dpres, &inv_exner, &cld_frac_i, &cld_frac_l, &cld_frac_r,
     &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev,
     &diag_eff_radius_qc, &diag_eff_radius_qi, &rho_qi, &mu_c, &lamc, &qv2qi_depos_tend, &precip_total_tend, &nevapr,
     &qr_evap_tend, &liq_ice_exchange, &vap_liq_exchange, &vap_ice_exchange, &precip_liq_flux,
@@ -834,8 +832,8 @@ void p3_main(P3MainData& d)
     d.qc, d.nc, d.qr, d.nr, d.th_atm, d.qv, d.dt, d.qi, d.qm, d.ni,
     d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
     d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi,
-    d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.dpres, d.exner, d.qv2qi_depos_tend, d.precip_total_tend, d.nevapr,
-    d.qr_evap_tend, d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i, d.mu_c, d.lamc,
+    d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.dpres, d.inv_exner, d.qv2qi_depos_tend,
+    d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i,
     d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev, &d.elapsed_s);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
@@ -843,7 +841,7 @@ void p3_main(P3MainData& d)
 void ice_supersat_conservation(IceSupersatConservationData& d)
 {
   p3_init();
-  ice_supersat_conservation_c(&d.qidep, &d.qinuc, d.cld_frac_i, d.qv, d.qv_sat_i, d.latent_heat_sublim, d.t_atm, d.dt);
+  ice_supersat_conservation_c(&d.qidep, &d.qinuc, d.cld_frac_i, d.qv, d.qv_sat_i, d.latent_heat_sublim, d.t_atm, d.dt, d.qi2qv_sublim_tend, d.qr2qv_evap_tend);
 }
 
 void nc_conservation(NcConservationData& d)
@@ -855,7 +853,7 @@ void nc_conservation(NcConservationData& d)
 void nr_conservation(NrConservationData& d)
 {
   p3_init();
-  nr_conservation_c(d.nr, d.ni2nr_melt_tend, d.nr_ice_shed_tend, d.ncshdc, d.nc2nr_autoconv_tend, d.dt, &d.nr_collect_tend, &d.nr2ni_immers_freeze_tend, &d.nr_selfcollect_tend, &d.nr_evap_tend);
+  nr_conservation_c(d.nr, d.ni2nr_melt_tend, d.nr_ice_shed_tend, d.ncshdc, d.nc2nr_autoconv_tend, d.dt, d.nmltratio, &d.nr_collect_tend, &d.nr2ni_immers_freeze_tend, &d.nr_selfcollect_tend, &d.nr_evap_tend);
 }
 
 void ni_conservation(NiConservationData& d)
@@ -875,6 +873,8 @@ void IceSupersatConservationData::randomize()
   latent_heat_sublim = data_dist(generator);
   t_atm              = data_dist(generator);
   dt                 = data_dist(generator);
+  qi2qv_sublim_tend  = data_dist(generator);
+  qr2qv_evap_tend    = data_dist(generator);
   qidep              = data_dist(generator);
   qinuc              = data_dist(generator);
 }
@@ -904,6 +904,7 @@ void NrConservationData::randomize()
   ncshdc                   = data_dist(generator);
   nc2nr_autoconv_tend      = data_dist(generator);
   dt                       = data_dist(generator);
+  nmltratio                = data_dist(generator);
   nr_collect_tend          = data_dist(generator);
   nr2ni_immers_freeze_tend = data_dist(generator);
   nr_selfcollect_tend      = data_dist(generator);
@@ -923,25 +924,6 @@ void NiConservationData::randomize()
   ni2nr_melt_tend          = data_dist(generator);
   ni_sublim_tend           = data_dist(generator);
   ni_selfcollect_tend      = data_dist(generator);
-}
-
-void WaterVaporConservationData::randomize()
-{
-  std::default_random_engine generator;
-  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
-
-  qv                = data_dist(generator);
-  qi2qv_sublim_tend = data_dist(generator);
-  qr2qv_evap_tend   = data_dist(generator);
-  dt                = data_dist(generator);
-  qidep             = data_dist(generator);
-  qinuc             = data_dist(generator);
-}
-
-void water_vapor_conservation(WaterVaporConservationData& d)
-{
-  p3_init();
-  water_vapor_conservation_c(d.qv, &d.qidep, &d.qinuc, d.qi2qv_sublim_tend, d.qr2qv_evap_tend, d.dt);
 }
 // end _c impls
 
@@ -1176,7 +1158,7 @@ void get_time_space_phys_variables_f(Real T_atm_, Real pres_, Real rho_, Real la
 void update_prognostic_ice_f( Real qc2qi_hetero_freeze_tend_, Real qc2qi_collect_tend_, Real qc2qr_ice_shed_tend_,  Real nc_collect_tend_,  Real nc2ni_immers_freeze_tend_, Real ncshdc_,
                               Real qr2qi_collect_tend_,  Real nr_collect_tend_, Real qr2qi_immers_freeze_tend_, Real nr2ni_immers_freeze_tend_, Real nr_ice_shed_tend_,
                               Real qi2qr_melt_tend_, Real ni2nr_melt_tend_, Real qi2qv_sublim_tend_, Real qv2qi_vapdep_tend_, Real qv2qi_nucleat_tend_, Real ni_nucleat_tend_,
-                              Real ni_selfcollect_tend_, Real ni_sublim_tend_, Real qc2qi_berg_tend_, Real exner_, Real latent_heat_sublim_, Real latent_heat_fusion_,
+                              Real ni_selfcollect_tend_, Real ni_sublim_tend_, Real qc2qi_berg_tend_, Real inv_exner_, Real latent_heat_sublim_, Real latent_heat_fusion_,
                               bool do_predict_nc_, bool log_wetgrowth_, Real dt_, Real nmltratio_,
                               Real rho_qm_cloud_, Real* th_atm_, Real* qv_, Real* qi_, Real* ni_, Real* qm_,
                               Real* bm_, Real* qc_, Real* nc_, Real* qr_, Real* nr_)
@@ -1202,7 +1184,7 @@ void update_prognostic_ice_f( Real qc2qi_hetero_freeze_tend_, Real qc2qi_collect
 	nc2ni_immers_freeze_tend(nc2ni_immers_freeze_tend_),  ncshdc(ncshdc_),  qr2qi_collect_tend(qr2qi_collect_tend_),  nr_collect_tend(nr_collect_tend_),  qr2qi_immers_freeze_tend(qr2qi_immers_freeze_tend_),
 	nr2ni_immers_freeze_tend(nr2ni_immers_freeze_tend_),  nr_ice_shed_tend(nr_ice_shed_tend_),  qi2qr_melt_tend(qi2qr_melt_tend_),  ni2nr_melt_tend(ni2nr_melt_tend_),  qi2qv_sublim_tend(qi2qv_sublim_tend_),
 	qv2qi_vapdep_tend(qv2qi_vapdep_tend_),  qv2qi_nucleat_tend(qv2qi_nucleat_tend_),  ni_nucleat_tend(ni_nucleat_tend_),  ni_selfcollect_tend(ni_selfcollect_tend_),  ni_sublim_tend(ni_sublim_tend_),
-	qc2qi_berg_tend(qc2qi_berg_tend_),  exner(exner_),  latent_heat_fusion(latent_heat_fusion_),  latent_heat_sublim(latent_heat_sublim_),
+	qc2qi_berg_tend(qc2qi_berg_tend_),  inv_exner(inv_exner_),  latent_heat_fusion(latent_heat_fusion_),  latent_heat_sublim(latent_heat_sublim_),
 	rho_qm_cloud(rho_qm_cloud_);
       bool do_predict_nc(do_predict_nc_);
       typename P3F::Smask log_wetgrowth(log_wetgrowth_);
@@ -1214,7 +1196,7 @@ void update_prognostic_ice_f( Real qc2qi_hetero_freeze_tend_, Real qc2qi_collect
       P3F::update_prognostic_ice(qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend,ncshdc,
 				 qr2qi_collect_tend,   nr_collect_tend,  qr2qi_immers_freeze_tend,  nr2ni_immers_freeze_tend,  nr_ice_shed_tend,
 				 qi2qr_melt_tend,  ni2nr_melt_tend,  qi2qv_sublim_tend,  qv2qi_vapdep_tend,  qv2qi_nucleat_tend,  ni_nucleat_tend,
-				 ni_selfcollect_tend,  ni_sublim_tend,  qc2qi_berg_tend,  exner,  latent_heat_sublim,  latent_heat_fusion,
+				 ni_selfcollect_tend,  ni_sublim_tend,  qc2qi_berg_tend,  inv_exner,  latent_heat_sublim,  latent_heat_fusion,
 				 do_predict_nc, log_wetgrowth,  dt,  nmltratio_,
 				 rho_qm_cloud, th_atm, qv, qi, ni, qm,
 				 bm, qc, nc, qr, nr);
@@ -1287,7 +1269,7 @@ void evaporate_rain_f(Real qr_incld_, Real qc_incld_, Real nr_incld_, Real qi_in
 
 void update_prognostic_liquid_f(Real qc2qr_accret_tend_, Real nc_accret_tend_, Real qc2qr_autoconv_tend_, Real nc2nr_autoconv_tend_, Real ncautr_,
 				Real nc_selfcollect_tend_, Real  qr2qv_evap_tend_, Real nr_evap_tend_, Real nr_selfcollect_tend_, bool do_predict_nc_, bool do_prescribed_CCN_,
-				Real inv_rho_, Real exner_, Real latent_heat_vapor_, Real dt_, Real* th_atm_, Real* qv_,
+				Real inv_rho_, Real inv_exner_, Real latent_heat_vapor_, Real dt_, Real* th_atm_, Real* qv_,
 				Real* qc_, Real* nc_, Real* qr_, Real* nr_)
 
 {
@@ -1306,7 +1288,7 @@ void update_prognostic_liquid_f(Real qc2qr_accret_tend_, Real nc_accret_tend_, R
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
       typename P3F::Spack qc2qr_accret_tend(qc2qr_accret_tend_), nc_accret_tend(nc_accret_tend_), qc2qr_autoconv_tend(qc2qr_autoconv_tend_), nc2nr_autoconv_tend(nc2nr_autoconv_tend_),
 	ncautr(ncautr_), nc_selfcollect_tend(nc_selfcollect_tend_),  qr2qv_evap_tend( qr2qv_evap_tend_), nr_evap_tend(nr_evap_tend_), nr_selfcollect_tend(nr_selfcollect_tend_), inv_rho(inv_rho_),
-	exner(exner_), latent_heat_vapor(latent_heat_vapor_);
+	inv_exner(inv_exner_), latent_heat_vapor(latent_heat_vapor_);
 
       bool do_predict_nc(do_predict_nc_);
       bool do_prescribed_CCN(do_prescribed_CCN_);
@@ -1317,7 +1299,7 @@ void update_prognostic_liquid_f(Real qc2qr_accret_tend_, Real nc_accret_tend_, R
 
       P3F::update_prognostic_liquid(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr,
 				    nc_selfcollect_tend,  qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend , do_predict_nc, do_prescribed_CCN,
-				    inv_rho, exner, latent_heat_vapor, dt, th_atm, qv,
+				    inv_rho, inv_exner, latent_heat_vapor, dt, th_atm, qv,
 				    qc, nc, qr, nr);
 
       t_d(0) = th_atm[0];
@@ -2205,7 +2187,7 @@ void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_
 
 void homogeneous_freezing_f(
   Int kts, Int kte, Int ktop, Int kbot, Int kdir,
-  Real* T_atm, Real* exner, Real* latent_heat_fusion,
+  Real* T_atm, Real* inv_exner, Real* latent_heat_fusion,
   Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* th_atm)
 {
   using P3F  = Functions<Real, DefaultDevice>;
@@ -2230,12 +2212,12 @@ void homogeneous_freezing_f(
   // Set up views
   std::vector<view_1d> temp_d(HomogeneousFreezingData::NUM_ARRAYS);
 
-  ekat::host_to_device({T_atm, exner, latent_heat_fusion, qc, nc, qr, nr, qi, ni, qm, bm, th_atm},
+  ekat::host_to_device({T_atm, inv_exner, latent_heat_fusion, qc, nc, qr, nr, qi, ni, qm, bm, th_atm},
                        nk, temp_d);
 
   view_1d
     t_d                   (temp_d[0]),
-    exner_d               (temp_d[1]),
+    inv_exner_d               (temp_d[1]),
     latent_heat_fusion_d  (temp_d[2]),
     qc_d                  (temp_d[3]),
     nc_d                  (temp_d[4]),
@@ -2252,7 +2234,7 @@ void homogeneous_freezing_f(
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     P3F::homogeneous_freezing(
-      t_d, exner_d, latent_heat_fusion_d,
+      t_d, inv_exner_d, latent_heat_fusion_d,
       team,
       nk, ktop, kbot, kdir,
       qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d, th_atm_d);
@@ -2872,7 +2854,7 @@ void p3_main_part1_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool do_predict_nc, bool do_prescribed_CCN,
   Real dt,
-  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* nccn_prescribed, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
+  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* nccn_prescribed, Real* inv_exner, Real* exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
   Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld,
@@ -2902,7 +2884,7 @@ void p3_main_part1_f(
   // Set up views
   std::vector<view_1d> temp_d(P3MainPart1Data::NUM_ARRAYS);
 
-  ekat::host_to_device({pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r,
+  ekat::host_to_device({pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r,
         T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci,
         acn, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, qi_incld,
         qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, nccn_prescribed},
@@ -2913,8 +2895,8 @@ void p3_main_part1_f(
     dpres_d              (temp_d[1]),
     dz_d                 (temp_d[2]),
     nc_nuceat_tend_d     (temp_d[3]),
-    exner_d              (temp_d[4]),
-    inv_exner_d          (temp_d[5]),
+    inv_exner_d              (temp_d[4]),
+    exner_d          (temp_d[5]),
     inv_cld_frac_l_d     (temp_d[6]),
     inv_cld_frac_i_d     (temp_d[7]),
     inv_cld_frac_r_d     (temp_d[8]),
@@ -2957,7 +2939,7 @@ void p3_main_part1_f(
 
     P3F::p3_main_part1(
       team, nk, do_predict_nc, do_prescribed_CCN, dt,
-      pres_d, dpres_d, dz_d, nc_nuceat_tend_d, nccn_prescribed_d, exner_d, inv_exner_d, inv_cld_frac_l_d, inv_cld_frac_i_d,
+      pres_d, dpres_d, dz_d, nc_nuceat_tend_d, nccn_prescribed_d, inv_exner_d, exner_d, inv_cld_frac_l_d, inv_cld_frac_i_d,
       inv_cld_frac_r_d, latent_heat_vapor_d, latent_heat_sublim_d, latent_heat_fusion_d,
       t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d,
       acn_d, qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d, qc_incld_d, qr_incld_d, qi_incld_d,
@@ -2985,7 +2967,7 @@ void p3_main_part1_f(
 
 void p3_main_part2_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, bool do_prescribed_CCN, Real dt, Real inv_dt,
-  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
+  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* inv_exner, Real* exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
   Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r, Real* qv_prev, Real* t_prev,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
@@ -3017,7 +2999,7 @@ void p3_main_part2_f(
   // Set up views
   std::vector<view_1d> temp_d(P3MainPart2Data::NUM_ARRAYS);
 
-  ekat::host_to_device({pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,
+  ekat::host_to_device({pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,
         T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
         qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld,
         qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1,
@@ -3031,8 +3013,8 @@ void p3_main_part2_f(
     dpres_d             (temp_d[1]),
     dz_d                (temp_d[2]),
     nc_nuceat_tend_d    (temp_d[3]),
-    exner_d             (temp_d[4]),
-    inv_exner_d         (temp_d[5]),
+    inv_exner_d             (temp_d[4]),
+    exner_d         (temp_d[5]),
     inv_cld_frac_l_d    (temp_d[6]),
     inv_cld_frac_i_d    (temp_d[7]),
     inv_cld_frac_r_d    (temp_d[8]),
@@ -3103,7 +3085,7 @@ void p3_main_part2_f(
 
     P3F::p3_main_part2(
       team, nk_pack, do_predict_nc, do_prescribed_CCN, dt, inv_dt, dnu, ice_table_vals, collect_table_vals, revap_table_vals,
-      pres_d, dpres_d, dz_d, nc_nuceat_tend_d, exner_d, inv_exner_d, inv_cld_frac_l_d,
+      pres_d, dpres_d, dz_d, nc_nuceat_tend_d, inv_exner_d, exner_d, inv_cld_frac_l_d,
       inv_cld_frac_i_d, inv_cld_frac_r_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d, cld_frac_l_d, cld_frac_r_d,
       qv_prev_d, t_prev_d, t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d, acn_d,
       qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d,
@@ -3142,7 +3124,7 @@ void p3_main_part2_f(
 
 void p3_main_part3_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
-  Real* exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i,
+  Real* inv_exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i,
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th_atm, Real* qc,
   Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm,
   Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* mu_c, Real* nu, Real* lamc,
@@ -3173,14 +3155,14 @@ void p3_main_part3_f(
   std::vector<view_1d> temp_d(P3MainPart3Data::NUM_ARRAYS);
 
   ekat::host_to_device({
-      exner, cld_frac_l, cld_frac_r, cld_frac_i, rho, inv_rho, rhofaci, qv, th_atm, qc,
+      inv_exner, cld_frac_l, cld_frac_r, cld_frac_i, rho, inv_rho, rhofaci, qv, th_atm, qc,
       nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, mu_c, nu, lamc, mu_r,
       lamr, vap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi,
       rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc},
     nk, temp_d);
 
   view_1d
-    exner_d                    (temp_d[0]),
+    inv_exner_d                    (temp_d[0]),
     cld_frac_l_d               (temp_d[1]),
     cld_frac_r_d               (temp_d[2]),
     cld_frac_i_d               (temp_d[3]),
@@ -3221,7 +3203,7 @@ void p3_main_part3_f(
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     P3F::p3_main_part3(team, nk_pack, dnu, ice_table_vals,
-                       exner_d, cld_frac_l_d, cld_frac_r_d, cld_frac_i_d, rho_d, inv_rho_d,
+                       inv_exner_d, cld_frac_l_d, cld_frac_r_d, cld_frac_i_d, rho_d, inv_rho_d,
                        rhofaci_d, qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d,
                        qi_d, ni_d, qm_d, bm_d, latent_heat_vapor_d,
                        latent_heat_sublim_d, mu_c_d, nu_d, lamc_d, mu_r_d, lamr_d,
@@ -3251,14 +3233,14 @@ Int p3_main_f(
   Real* qi, Real* qm, Real* ni, Real* bm, Real* pres, Real* dz,
   Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
-  Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* exner,
-  Real* qv2qi_depos_tend, Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend, Real* precip_liq_flux,
-  Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
+  Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* inv_exner,
+  Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, 
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev)
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
   using Spack      = typename P3F::Spack;
+  using KT         = typename P3F::KT;
   using view_2d    = typename P3F::view_2d<Spack>;
   using sview_1d   = typename P3F::view_1d<Real>;
   using sview_2d   = typename P3F::view_2d<Real>;
@@ -3280,17 +3262,17 @@ Int p3_main_f(
   std::vector<size_t> dim1_sizes(P3MainData::NUM_ARRAYS, nj);
   std::vector<size_t> dim2_sizes(P3MainData::NUM_ARRAYS, nk);
   std::vector<const Real*> ptr_array = {
-    pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, dpres, exner, cld_frac_i, cld_frac_l, cld_frac_r, inv_qc_relvar,
+    pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, dpres, inv_exner, cld_frac_i, cld_frac_l, cld_frac_r, inv_qc_relvar,
     qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, qv_prev, t_prev, diag_eff_radius_qc, diag_eff_radius_qi,
-    rho_qi, mu_c, lamc, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, liq_ice_exchange,
-    vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
+    rho_qi, qv2qi_depos_tend,
+    liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
   };
 
-  //PMC - hardcoding the index for each variable is very brittle :-(.
-  dim2_sizes[35] = nk+1; // precip_liq_flux
-  dim2_sizes[36] = nk+1; // precip_ice_flux
-  dim1_sizes[37] = 1; dim2_sizes[37] = nj; // precip_liq_surf
-  dim1_sizes[38] = 1; dim2_sizes[38] = nj; // precip_ice_surf
+  int dim_sizes_len = dim1_sizes.size(); 
+  dim2_sizes[dim_sizes_len-4] = nk+1; // precip_liq_flux
+  dim2_sizes[dim_sizes_len-3] = nk+1; // precip_ice_flux
+  dim1_sizes[dim_sizes_len-2] = 1; dim2_sizes[dim_sizes_len-2] = nj; // precip_liq_surf
+  dim1_sizes[dim_sizes_len-1] = 1; dim2_sizes[dim_sizes_len-1] = nj; // precip_ice_surf
 
   // Initialize outputs to avoid uninitialized read warnings in memory checkers
   for (size_t i = P3MainData::NUM_INPUT_ARRAYS; i < P3MainData::NUM_ARRAYS; ++i) {
@@ -3309,7 +3291,7 @@ Int p3_main_f(
     nccn_prescribed_d      (temp_d[counter++]),
     ni_activated_d         (temp_d[counter++]),
     dpres_d                (temp_d[counter++]), //5
-    exner_d                (temp_d[counter++]),
+    inv_exner_d                (temp_d[counter++]),
     cld_frac_i_d           (temp_d[counter++]),
     cld_frac_l_d           (temp_d[counter++]),
     cld_frac_r_d           (temp_d[counter++]),
@@ -3329,23 +3311,24 @@ Int p3_main_f(
     diag_eff_radius_qc_d   (temp_d[counter++]),
     diag_eff_radius_qi_d   (temp_d[counter++]),
     rho_qi_d               (temp_d[counter++]), //25
-    mu_c_d                 (temp_d[counter++]),
-    lamc_d                 (temp_d[counter++]),
     qv2qi_depos_tend_d     (temp_d[counter++]),
-    precip_total_tend_d    (temp_d[counter++]),
-    nevapr_d               (temp_d[counter++]), //30
-    qr_evap_tend_d         (temp_d[counter++]),
     liq_ice_exchange_d     (temp_d[counter++]),
     vap_liq_exchange_d     (temp_d[counter++]),
     vap_ice_exchange_d     (temp_d[counter++]),
-    precip_liq_flux_d      (temp_d[counter++]), //35
+    precip_liq_flux_d      (temp_d[counter++]), //30 
     precip_ice_flux_d      (temp_d[counter++]),
     precip_liq_surf_temp_d (temp_d[counter++]),
-    precip_ice_surf_temp_d (temp_d[counter++]); //38
+    precip_ice_surf_temp_d (temp_d[counter++]); //33
 
   // Special cases: precip_liq_surf=1d<scalar>(ni), precip_ice_surf=1d<scalar>(ni), col_location=2d<scalar>(nj, 3)
   sview_1d precip_liq_surf_d("precip_liq_surf_d", nj), precip_ice_surf_d("precip_ice_surf_d", nj);
   sview_2d col_location_d("col_location_d", nj, 3);
+
+  view_2d mu_c_d("mu_c_d",nj,nk);
+  view_2d lamc_d("lamc_d",nj,nk);
+  view_2d precip_total_tend_d("precip_total_tend_d",nj,nk);
+  view_2d nevapr_d("nevapr_d",nj,nk);
+  view_2d qr_evap_tend_d("qr_evap_tend_d",nj,nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
     precip_liq_surf_d(i) = precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n];
@@ -3361,18 +3344,22 @@ Int p3_main_f(
                                     ni_d, bm_d, qv_d, th_atm_d};
   P3F::P3DiagnosticInputs diag_inputs{nc_nuceat_tend_d, nccn_prescribed_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d,
                                       cld_frac_l_d, cld_frac_r_d, pres_d, dz_d, dpres_d,
-                                      exner_d, qv_prev_d, t_prev_d};
-  P3F::P3DiagnosticOutputs diag_outputs{mu_c_d, lamc_d, qv2qi_depos_tend_d, precip_liq_surf_d,
+                                      inv_exner_d, qv_prev_d, t_prev_d};
+  P3F::P3DiagnosticOutputs diag_outputs{qv2qi_depos_tend_d, precip_liq_surf_d,
                                         precip_ice_surf_d, diag_eff_radius_qc_d, diag_eff_radius_qi_d,
-                                        rho_qi_d, precip_total_tend_d, nevapr_d,
-                                        qr_evap_tend_d, precip_liq_flux_d, precip_ice_flux_d};
+                                        rho_qi_d,precip_liq_flux_d, precip_ice_flux_d};
   P3F::P3Infrastructure infrastructure{dt, it, its, ite, kts, kte,
                                        do_predict_nc, do_prescribed_CCN, col_location_d};
   P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d,
                                   vap_ice_exchange_d};
 
+  // Create local workspace
+  const Int nk_pack = ekat::npack<Spack>(nk);
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(nj, nk_pack);
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nk_pack, 52, policy);
+
   auto elapsed_microsec = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-                                       history_only, nj, nk);
+                                       history_only, workspace_mgr, nj, nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
     precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_liq_surf_d(i);
@@ -3382,29 +3369,30 @@ Int p3_main_f(
   // Sync back to host
   std::vector<view_2d> inout_views = {
     qc_d, nc_d, qr_d, nr_d, qi_d, qm_d, ni_d, bm_d, qv_d, th_atm_d,
-    diag_eff_radius_qc_d, diag_eff_radius_qi_d, rho_qi_d, mu_c_d, lamc_d, qv2qi_depos_tend_d, precip_total_tend_d,
-    nevapr_d, qr_evap_tend_d, liq_ice_exchange_d, vap_liq_exchange_d,
-    vap_ice_exchange_d, precip_liq_flux_d, precip_ice_flux_d, precip_liq_surf_temp_d, precip_ice_surf_temp_d
+    diag_eff_radius_qc_d, diag_eff_radius_qi_d, rho_qi_d,
+    qv2qi_depos_tend_d,
+    liq_ice_exchange_d, vap_liq_exchange_d, vap_ice_exchange_d,
+    precip_liq_flux_d, precip_ice_flux_d, precip_liq_surf_temp_d, precip_ice_surf_temp_d
   };
   std::vector<size_t> dim1_sizes_out(P3MainData::NUM_ARRAYS - 13, nj);
   std::vector<size_t> dim2_sizes_out(P3MainData::NUM_ARRAYS - 13, nk);
-
-  dim2_sizes_out[22] = nk+1; // precip_liq_flux
-  dim2_sizes_out[23] = nk+1; // precip_ice_flux
-  dim1_sizes_out[24] = 1; dim2_sizes_out[24] = nj; // precip_liq_surf
-  dim1_sizes_out[25] = 1; dim2_sizes_out[25] = nj; // precip_ice_surf
+  int dim_sizes_out_len = dim1_sizes_out.size();
+  dim2_sizes_out[dim_sizes_out_len-4] = nk+1; // precip_liq_flux
+  dim2_sizes_out[dim_sizes_out_len-3] = nk+1; // precip_ice_flux
+  dim1_sizes_out[dim_sizes_out_len-2] = 1; dim2_sizes_out[dim_sizes_out_len-2] = nj; // precip_liq_surf
+  dim1_sizes_out[dim_sizes_out_len-1] = 1; dim2_sizes_out[dim_sizes_out_len-1] = nj; // precip_ice_surf
 
   ekat::device_to_host({
       qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, diag_eff_radius_qc, diag_eff_radius_qi,
-      rho_qi, mu_c, lamc, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, liq_ice_exchange,
-      vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
+      rho_qi, qv2qi_depos_tend,
+      liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
     },
     dim1_sizes_out, dim2_sizes_out, inout_views, true);
 
   return elapsed_microsec;
 }
 
-void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt)
+void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt, Real qi2qv_sublim_tend, Real qr2qv_evap_tend)
 {
   using PF = Functions<Real, DefaultDevice>;
 
@@ -3416,8 +3404,8 @@ void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real
 
   Real local_qidep(*qidep), local_qinuc(*qinuc);
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    Spack cld_frac_i_(cld_frac_i), latent_heat_sublim_(latent_heat_sublim), qidep_(local_qidep), qinuc_(local_qinuc), qv_(qv), qv_sat_i_(qv_sat_i), t_atm_(t_atm);
-    PF::ice_supersat_conservation(qidep_, qinuc_, cld_frac_i_, qv_, qv_sat_i_, latent_heat_sublim_, t_atm_, dt);
+    Spack cld_frac_i_(cld_frac_i), latent_heat_sublim_(latent_heat_sublim), qidep_(local_qidep), qinuc_(local_qinuc), qv_(qv), qv_sat_i_(qv_sat_i), t_atm_(t_atm), qi2qv_sublim_tend_(qi2qv_sublim_tend), qr2qv_evap_tend_(qr2qv_evap_tend);
+    PF::ice_supersat_conservation(qidep_, qinuc_, cld_frac_i_, qv_, qv_sat_i_, latent_heat_sublim_, t_atm_, dt, qi2qv_sublim_tend_, qr2qv_evap_tend_);
     t_d(0) = qidep_[0];
     t_d(1) = qinuc_[0];
   });
@@ -3452,7 +3440,7 @@ void nc_conservation_f(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_coll
   *nc_collect_tend = t_h(3);
 }
 
-void nr_conservation_f(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend)
+void nr_conservation_f(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real nmltratio, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend)
 {
   using PF = Functions<Real, DefaultDevice>;
 
@@ -3465,7 +3453,7 @@ void nr_conservation_f(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Rea
   Real local_nr2ni_immers_freeze_tend(*nr2ni_immers_freeze_tend), local_nr_collect_tend(*nr_collect_tend), local_nr_evap_tend(*nr_evap_tend), local_nr_selfcollect_tend(*nr_selfcollect_tend);
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     Spack nc2nr_autoconv_tend_(nc2nr_autoconv_tend), ncshdc_(ncshdc), ni2nr_melt_tend_(ni2nr_melt_tend), nr_(nr), nr2ni_immers_freeze_tend_(local_nr2ni_immers_freeze_tend), nr_collect_tend_(local_nr_collect_tend), nr_evap_tend_(local_nr_evap_tend), nr_ice_shed_tend_(nr_ice_shed_tend), nr_selfcollect_tend_(local_nr_selfcollect_tend);
-    PF::nr_conservation(nr_, ni2nr_melt_tend_, nr_ice_shed_tend_, ncshdc_, nc2nr_autoconv_tend_, dt, nr_collect_tend_, nr2ni_immers_freeze_tend_, nr_selfcollect_tend_, nr_evap_tend_);
+    PF::nr_conservation(nr_, ni2nr_melt_tend_, nr_ice_shed_tend_, ncshdc_, nc2nr_autoconv_tend_, dt, nmltratio, nr_collect_tend_, nr2ni_immers_freeze_tend_, nr_selfcollect_tend_, nr_evap_tend_);
     t_d(0) = nr2ni_immers_freeze_tend_[0];
     t_d(1) = nr_collect_tend_[0];
     t_d(2) = nr_evap_tend_[0];
@@ -3500,28 +3488,6 @@ void ni_conservation_f(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_t
   *ni2nr_melt_tend = t_h(0);
   *ni_selfcollect_tend = t_h(1);
   *ni_sublim_tend = t_h(2);
-}
-
-void water_vapor_conservation_f(Real qv, Real* qidep, Real* qinuc, Real qi2qv_sublim_tend, Real qr2qv_evap_tend, Real dt)
-{
-  using PF = Functions<Real, DefaultDevice>;
-
-  using Spack   = typename PF::Spack;
-  using view_1d = typename PF::view_1d<Real>;
-
-  view_1d t_d("t_d", 2);
-  const auto t_h = Kokkos::create_mirror_view(t_d);
-
-  Real local_qidep(*qidep), local_qinuc(*qinuc);
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    Spack qi2qv_sublim_tend_(qi2qv_sublim_tend), qidep_(local_qidep), qinuc_(local_qinuc), qr2qv_evap_tend_(qr2qv_evap_tend), qv_(qv);
-    PF::water_vapor_conservation(qv_, qidep_, qinuc_, qi2qv_sublim_tend_, qr2qv_evap_tend_, dt);
-    t_d(0) = qidep_[0];
-    t_d(1) = qinuc_[0];
-  });
-  Kokkos::deep_copy(t_h, t_d);
-  *qidep = t_h(0);
-  *qinuc = t_h(1);
 }
 
 } // namespace p3

@@ -1,22 +1,22 @@
 #include "control/surface_coupling.hpp"
 
+#include "share/field/field_utils.hpp"
+
 namespace scream {
 namespace control {
 
 SurfaceCoupling::
-SurfaceCoupling (const std::shared_ptr<const AbstractGrid>& grid,
-                 const FieldRepository<Real>& repo)
- : m_field_repo (repo)
+SurfaceCoupling (const field_mgr_ptr& field_mgr)
+ : m_field_mgr (field_mgr)
  , m_state (RepoState::Clean)
 {
-  EKAT_REQUIRE_MSG (grid!=nullptr, "Error! Invalid grid pointer.\n");
+  auto grid = m_field_mgr->get_grid();
 
   m_num_cols  = grid->get_num_local_dofs();
-  m_grid_name = grid->name();
 
   EKAT_REQUIRE_MSG(grid->type()==GridType::Point,
-                     "Error! Surface coupling only implemented for 'Point' grids.\n"
-                     "       Input grid type: " + e2str(grid->type()) + "\n");
+      "Error! Surface coupling only implemented for 'Point' grids.\n"
+      "       Input grid type: " + e2str(grid->type()) + "\n");
 }
 
 void SurfaceCoupling::
@@ -55,7 +55,7 @@ register_import(const std::string& fname,
                      "Error! Imports view is already full. Did you call 'set_num_fields' with the wrong arguments?\n");
 
   // Get the field, and check that is valid
-  import_field_type field = m_field_repo.get_field(fname,m_grid_name);
+  import_field_type field = m_field_mgr->get_field(fname);
   EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Import field view has not been allocated yet.\n");
   
   EKAT_REQUIRE_MSG(cpl_idx>=0, "Error! Input cpl_idx is negative.\n");
@@ -71,38 +71,11 @@ register_import(const std::string& fname,
   // Set view data ptr
   info.data = field.get_view().data();
 
-  const auto& layout = field.get_header().get_identifier().get_layout();
-  const auto& alloc_prop = field.get_header().get_alloc_properties();
-  const auto& tags = layout.tags();
+  // Set cpl index
+  info.cpl_idx = cpl_idx;
 
-  using namespace ShortFieldTagsNames;
-
-  switch (layout.rank()) {
-    case 1:
-      EKAT_REQUIRE_MSG(vecComp==-1, "Error! Vector component specified, but field '" + fname + "' is a 2d scalar.\n");
-      info.col_size = 1;
-      break;
-    case 2:
-      EKAT_REQUIRE_MSG(tags[1]==VL || tags[1]==VAR || tags[1]==CMP,
-                         "Error! Unexpected tag '" + e2str(tags[1]) + "' for second dimension of export field '" + fname + "'.\n");
-      EKAT_REQUIRE_MSG(tags.back()!=VL || vecComp==-1, "Error! Vector component specified, but field '" + fname + "' is a 3d scalar.\n");
-
-      info.col_size = alloc_prop.get_last_dim_extent<Real>();
-      info.col_offset = vecComp;
-      break;
-    case 3:
-      EKAT_REQUIRE_MSG(tags[1]==VAR || tags[1]==CMP,
-                         "Error! Unexpected tag '" + e2str(tags[1]) + "' for second dimension of export field '" + fname + "'.\n");
-      EKAT_REQUIRE_MSG(tags[2]==VL,
-                         "Error! Unexpected tag '" + e2str(tags[2]) + "' for third dimension of export field '" + fname + "'.\n");
-      EKAT_REQUIRE_MSG(vecComp>=0, "Error! Vector component not specified for 3d vector field '" + fname + "/.\n");
-
-      info.col_size = layout.dim(1)*alloc_prop.get_last_dim_extent<Real>();
-      info.col_offset = vecComp;
-      break;
-    default:
-      EKAT_ERROR_MSG("Error! Unsupported field rank for import field '" + fname + "'.\n");
-  }
+  // Get column offset and stride
+  get_col_info (field.get_header_ptr(), vecComp, info.col_offset, info.col_stride);
 
   // Store the identifier of this field, for debug purposes
   m_imports_fids.insert(field.get_header().get_identifier());
@@ -127,14 +100,8 @@ register_export (const std::string& fname,
                      "Error! Exports view is already full. Did you call 'set_num_fields' with the wrong arguments?\n");
 
   // Get the field, and check that is valid
-  export_field_type field = m_field_repo.get_field(fname,m_grid_name);
+  export_field_type field = m_field_mgr->get_field(fname);
   EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Export field view has not been allocated yet.\n");
-
-  const std::string& fgn = field.get_header().get_identifier().get_grid_name();
-  EKAT_REQUIRE_MSG (fgn==m_grid_name,
-                      "Error! Input field '" + fname + "' is defined on the wrong grid:\n"
-                      "       expected grid name: " + m_grid_name + "\n"
-                      "       field grid name: " + fgn + "\n");
 
   EKAT_REQUIRE_MSG(cpl_idx>=0, "Error! Input cpl_idx is negative.\n");
 
@@ -149,40 +116,11 @@ register_export (const std::string& fname,
   // Set view data ptr
   info.data = field.get_view().data();
 
-  // To figure out col_size and col_offset, we need to inspect the field layout,
-  // as well as its allocation properties (to handle the case od padding)
-  const auto& layout = field.get_header().get_identifier().get_layout();
-  const auto& alloc_prop = field.get_header().get_alloc_properties();
-  const auto& tags = layout.tags();
+  // Set cpl index
+  info.cpl_idx = cpl_idx;
 
-  using namespace ShortFieldTagsNames;
-
-  switch (layout.rank()) {
-    case 1:
-      EKAT_REQUIRE_MSG(vecComp==-1, "Error! Vector component specified, but field '" + fname + "' is a 2d scalar.\n");
-      info.col_size = 1;
-      break;
-    case 2:
-      EKAT_REQUIRE_MSG(tags[1]==VL || tags[1]==VAR || tags[1]==CMP,
-                         "Error! Unexpected tag '" + e2str(tags[1]) + "' for second dimension of import field '" + fname + "'.\n");
-      EKAT_REQUIRE_MSG(tags.back()!=VL || vecComp==-1, "Error! Vector component specified, but field '" + fname + "' is a 3d scalar.\n");
-
-      info.col_size = alloc_prop.get_last_dim_extent<Real>();
-      info.col_offset = vecComp;
-      break;
-    case 3:
-      EKAT_REQUIRE_MSG(tags[1]==VAR || tags[1]==CMP,
-                         "Error! Unexpected tag '" + e2str(tags[1]) + "' for second dimension of import field '" + fname + "'.\n");
-      EKAT_REQUIRE_MSG(tags[2]==VL,
-                         "Error! Unexpected tag '" + e2str(tags[2]) + "' for third dimension of import field '" + fname + "'.\n");
-      EKAT_REQUIRE_MSG(vecComp>=0, "Error! Vector component not specified for 3d vector field '" + fname + "/.\n");
-
-      info.col_size = layout.dim(1)*alloc_prop.get_last_dim_extent<Real>();
-      info.col_offset = vecComp;
-      break;
-    default:
-      EKAT_ERROR_MSG("Error! Unsupported field rank for import field '" + fname + "'.\n");
-  }
+  // Get column offset and stride
+  get_col_info (field.get_header_ptr(), vecComp, info.col_offset, info.col_stride);
 
   // Store the identifier of this field, for debug purposes
   m_exports_fids.insert(field.get_header().get_identifier());
@@ -226,15 +164,23 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
   Kokkos::deep_copy(m_scream_imports_dev, m_scream_imports_host);
   Kokkos::deep_copy(m_scream_exports_dev, m_scream_exports_host);
 
-  // Check input pointers
-  EKAT_REQUIRE_MSG(cpl_exports_ptr!=nullptr, "Error! Data pointer for exports is null.\n");
-  EKAT_REQUIRE_MSG(cpl_imports_ptr!=nullptr, "Error! Data pointer for imports is null.\n");
+  if (m_num_imports>0) {
+    // Check input pointer
+    EKAT_REQUIRE_MSG(cpl_imports_ptr!=nullptr, "Error! Data pointer for imports is null.\n");
 
-  // Setup the host and device 2d views
-  m_cpl_imports_view_h = decltype(m_cpl_imports_view_h)(cpl_imports_ptr,m_num_cols,m_num_imports);
-  m_cpl_exports_view_h = decltype(m_cpl_exports_view_h)(cpl_exports_ptr,m_num_cols,m_num_exports);
-  m_cpl_imports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_imports_view_h);
-  m_cpl_exports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_exports_view_h);
+    // Setup the host and device 2d views
+    m_cpl_imports_view_h = decltype(m_cpl_imports_view_h)(cpl_imports_ptr,m_num_cols,m_num_imports);
+    m_cpl_imports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_imports_view_h);
+  }
+
+  if (m_num_exports>0) {
+    // Check input pointer
+    EKAT_REQUIRE_MSG(cpl_exports_ptr!=nullptr, "Error! Data pointer for exports is null.\n");
+
+    // Setup the host and device 2d views
+    m_cpl_exports_view_h = decltype(m_cpl_exports_view_h)(cpl_exports_ptr,m_num_cols,m_num_exports);
+    m_cpl_exports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_exports_view_h);
+  }
 
   // Finally, mark registration as completed.
   m_state = RepoState::Closed;
@@ -242,6 +188,10 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
 
 void SurfaceCoupling::do_import ()
 {
+  if (m_num_imports==0) {
+    return;
+  }
+
   using policy_type = KokkosTypes<device_type>::RangePolicy;
 
   // Local copies, to deal with CUDA's handling of *this.
@@ -260,13 +210,17 @@ void SurfaceCoupling::do_import ()
 
     const auto& info = scream_imports(ifield);
 
-    auto offset = num_cols*info.col_size + info.col_offset;
+    auto offset = icol*info.col_stride + info.col_offset;
     info.data[offset] = cpl_imports_view_d(icol,info.cpl_idx);
   });
 }
 
 void SurfaceCoupling::do_export ()
 {
+  if (m_num_exports==0) {
+    return;
+  }
+
   using policy_type = KokkosTypes<device_type>::RangePolicy;
 
   // Local copies, to deal with CUDA's handling of *this.
@@ -281,12 +235,95 @@ void SurfaceCoupling::do_export ()
     const int icol   = i % num_cols;
     const auto& info = scream_exports(ifield);
 
-    auto offset = num_cols*info.col_size + info.col_offset;
+    auto offset = icol*info.col_stride + info.col_offset;
     cpl_exports_view_d(icol,info.cpl_idx) = info.data[offset];
   });
 
   // Deep copy fields from device to cpl host array
   Kokkos::deep_copy(m_cpl_exports_view_h,m_cpl_exports_view_d);
+}
+
+void SurfaceCoupling::
+get_col_info(const std::shared_ptr<const FieldHeader>& fh,
+             int vecComp, int& col_offset, int& col_stride) const
+{
+  // Each field is seen as a certain number of columns worth of data (CWD)
+  // at every column point. E.g., a field with layout (ncols,nlevs) is 1 CWD,
+  // while a field with layout (ncols,3,nlevs) is 3 CWD.
+  // The col_offset encodes the offset of this colum *within a single mesh
+  // point icol". So for a vector layout (ncols,3,nlevs), to import/export
+  // the icomp-th component of the field, we'd have col_offset=icomp. For scalar
+  // layouts, the offset is always 0 (only 1 CWD per mesh point).
+  // HOWEVER: if this field was a subview of another field, things are a bit
+  // more involved. Say the field F1 (ncols,3,nlevs) is a subview of a larger
+  // field F2 with layout (ncols,nvars,3,nlevs), corresponding to ivar=2.
+  // Then, F2 has 3*nvars CWD per mesh point. Since the underlying data ptr
+  // is the same, to get the correct col_offset, we need to figure out the
+  // offset inside F2. In this case, it would be col_offset = ivar*3+icomp.
+
+  using namespace ShortFieldTagsNames;
+
+  // Get this field layout info
+  const auto& layout = fh->get_identifier().get_layout();
+  const auto& dims = layout.dims();
+
+  auto lt = get_layout_type(layout.tags());
+  const bool scalar = lt==LayoutType::Scalar2D || lt==LayoutType::Scalar3D;
+  const bool vector = lt==LayoutType::Vector2D || lt==LayoutType::Vector3D;
+  EKAT_REQUIRE_MSG(scalar || vector,
+      "Error! Support for tensor fields not yet implemented in surface coupling.\n");
+  EKAT_REQUIRE_MSG( (vecComp<0) == scalar,
+      "Error! You can and must specify a vector component only for vector fields.\n");
+
+  vecComp = std::max(0,vecComp);
+
+  // Product of dimensions of field, without counting space dims, that is,
+  // the product of dimensions of the "analytical" field.
+  int dims_prod = 1;
+
+  // Compute initial offset based on this field rank and requested component
+  col_offset = vecComp;
+  if (vector) {
+    dims_prod = dims[1];
+  }
+
+  // If rank>1, there always is some stride
+  col_stride = 1;
+  if (layout.rank()>1) {
+    // Note: use alloc prop's last extent, cause it includes padding (if any);
+    col_stride = fh->get_alloc_properties().get_last_extent();
+    if (layout.rank()>2) {
+      col_stride *= dims[1];
+    }
+  }
+
+  // Recursively go through parent field, adding offset depending
+  // on the location of the slice.
+  // Note: as of now, I don't expect there to be "a grandparent" for this field,
+  //       so we could avoid the while loop. However, the logic is so simple, that
+  //       I may as well add it, and be safe down the road if it happens.
+  std::shared_ptr<const FieldHeader> me = fh;
+  std::shared_ptr<const FieldHeader> p  = me->get_parent().lock();
+  while (p!=nullptr) {
+    const auto& idx = me->get_alloc_properties().get_subview_idx();
+
+    // Recall: idx = (idim,k) = (dimension where slice happened, index along said dimension).
+    // Field class only allows idim=0,1. But we should never be in the case of idim=0, here.
+    // If we have idim=0, it means that the parent field did not have CL has tag[0]...
+    EKAT_REQUIRE_MSG(idx.first==1, "Error! Bizarre scenario discovered. Contact developers.\n");
+
+    // Update the offset
+    col_offset += idx.second*dims_prod;
+
+    // Update stride.
+    col_stride *= p->get_identifier().get_layout().dim(1);
+
+    // Update trail_dims, in case there's another parent.
+    dims_prod *= p->get_identifier().get_layout().dim(1);
+
+    me = p;
+    p = me->get_parent().lock();
+  }
 }
 
 } // namespace control

@@ -125,8 +125,6 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
       ComputeTmpiData(2,   8, 300)
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeTmpiData);
-
     // Generate random input data
     for (auto& d : f90_data) {
       d.randomize();
@@ -157,6 +155,8 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeTmpiData);
     for (Int i = 0; i < num_runs; ++i) {
       ComputeTmpiData& d_f90 = f90_data[i];
       ComputeTmpiData& d_cxx = cxx_data[i];
@@ -164,6 +164,7 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
         REQUIRE(d_f90.tmpi[k] == d_cxx.tmpi[k]);
       }
     }
+#endif
   }
 };
 

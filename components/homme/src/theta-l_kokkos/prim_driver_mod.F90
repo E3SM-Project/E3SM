@@ -28,6 +28,7 @@ contains
     use time_mod,         only : timelevel_t
     use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
     use prim_state_mod,   only : prim_printstate
+    use theta_f2c_mod,    only : initialize_dp3d_from_ps_c
     !
     ! Inputs
     !
@@ -49,6 +50,9 @@ contains
 
     ! Init the kokkos views
     call prim_init_elements_views (elem)
+
+    ! Initialize dp3d from ps_v
+    call initialize_dp3d_from_ps_c ()
   end subroutine prim_init2
 
   subroutine prim_create_c_data_structures (tl, hvcoord, mp)

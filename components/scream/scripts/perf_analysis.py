@@ -261,6 +261,8 @@ class PerfAnalysis(object):
             os.environ["OMP_NUM_THREADS"] = "96"
         elif self._machine in ["white", "weaver", "melvin"]:
             pass
+        elif self._machine == "mappy":
+            os.environ["OMP_NUM_THREADS"] = "46"
         else:
             print("WARNING: Unrecognized machine {}".format(self._machine))
 

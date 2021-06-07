@@ -131,8 +131,8 @@ struct CaarFunctorImpl {
       , m_deriv(ref_FE.get_deriv())
       , m_sphere_ops(sphere_ops)
       , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(elements.num_elems()))
-      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(elements.num_elems()))
       , m_policy_post (0,elements.num_elems()*NP*NP)
+      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(elements.num_elems()))
       , m_tu(m_policy_pre)
   {
     // Initialize equation of state
@@ -451,7 +451,7 @@ struct CaarFunctorImpl {
 
     // TODO: make this less hard-coded maybe?
     constexpr Real dp3d_thresh = 0.125;
-    constexpr Real vtheta_thresh = 10; // Kelvin
+    constexpr Real vtheta_thresh = 100; // Kelvin
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {

@@ -48,27 +48,31 @@ real(rtype) :: eps   ! rh2o/rair - 1 [-]
 real(rtype) :: vk    ! von karmann constant [-]
 
 !=========================================================
-! Private module parameters
+! Tunable parameters used in SHOC
 !=========================================================
 
-! These are adjustable tunable parameters for SHOC
-!  for certain variables and turbulent moments.
-!  All are unitless
+! Set default values, if not overwritten by namelist.
+!  All are unitless (unless units are stated)
+real(rtype) :: thl2tune = 0.15_rtype ! Temperature variance tuning factor
+real(rtype) :: qw2tune = 0.15_rtype ! Moisture variance tuning factor
+real(rtype) :: qwthl2tune = 0.15_rtype ! Temperature moisture covariance
+real(rtype) :: w2tune = 1.0_rtype ! Vertical velocity variance
+real(rtype) :: length_fac = 0.5_rtype ! Length scale factor
+real(rtype) :: c_diag_3rd_mom = 7.0_rtype ! w3 factor
+real(rtype) :: lambda_low = 0.001_rtype ! lowest value for stability correction
+real(rtype) :: lambda_high = 0.04_rtype ! highest value for stability correction
+real(rtype) :: lambda_slope = 2.65_rtype ! stability correction slope
+real(rtype) :: lambda_thresh = 0.02_rtype ! value to apply stability correction
+real(rtype) :: Ckh = 0.1_rtype ! Eddy diffusivity coefficient for heat
+real(rtype) :: Ckm = 0.1_rtype ! Eddy diffusivity coefficient for momentum
+real(rtype) :: Ckh_s_min = 0.1_rtype ! Stable PBL diffusivity minimum for heat
+real(rtype) :: Ckm_s_min = 0.1_rtype ! Stable PBL diffusivity minimum for momentum
+real(rtype) :: Ckh_s_max = 1.0_rtype ! Stable PBL diffusivity maximum for heat
+real(rtype) :: Ckm_s_max = 1.0_rtype ! Stable PBL diffusivity maximum for momentum
 
-! temperature variance
-real(rtype), parameter :: thl2tune=1.0_rtype
-! moisture variance
-real(rtype), parameter :: qw2tune=1.0_rtype
-! temp moisture covariance
-real(rtype), parameter :: qwthl2tune=1.0_rtype
-! vertical velocity variance
-real(rtype), parameter :: w2tune=1.0_rtype
-! third moment of vertical velocity
-real(rtype), parameter :: w3clip=1.2_rtype
-! mixing length scaling parameter
-real(rtype), parameter :: length_fac=0.5_rtype
-! coefficient for diag third moment parameters
-real(rtype), parameter :: c_diag_3rd_mom = 7.0_rtype
+!=========================================================
+! Private module parameters
+!=========================================================
 
 ! =========
 ! Below are options to activate certain features in SHOC
@@ -90,6 +94,8 @@ real(rtype), parameter :: troppres = 80000._rtype
 real(rtype), parameter :: ustar_min = 0.01_rtype
 ! PBL max depth in pressure units
 real(rtype), parameter :: pblmaxp = 4.e4_rtype
+! third moment of vertical velocity clipping factor
+real(rtype), parameter :: w3clip=1.2_rtype
 
 ! ========
 ! Set upper limits for certain SHOC quantities
@@ -122,7 +128,12 @@ contains
 subroutine shoc_init( &
          nlev, gravit, rair, rh2o, cpair, &
          zvir, latvap, latice, karman, &
-         pref_mid, nbot_shoc, ntop_shoc)
+         pref_mid, nbot_shoc, ntop_shoc, &
+         thl2tune_in, qw2tune_in, qwthl2tune_in, &
+         w2tune_in, length_fac_in, c_diag_3rd_mom_in, &
+         lambda_low_in, lambda_high_in, lambda_slope_in, &
+         lambda_thresh_in, Ckh_in, Ckm_in, Ckh_s_min_in, &
+         Ckm_s_min_in, Ckh_s_max_in, Ckm_s_max_in)
 
   implicit none
 
@@ -146,6 +157,24 @@ subroutine shoc_init( &
   integer, intent(in)   :: nbot_shoc ! Bottom level to which SHOC is applied
   integer, intent(in)   :: ntop_shoc ! Top level to which SHOC is applied
 
+  ! Tunable parameter factors, all unitless
+  real(rtype), intent(in), optional :: thl2tune_in ! temperature variance tuning factor
+  real(rtype), intent(in), optional :: qw2tune_in ! moisture variance
+  real(rtype), intent(in), optional :: qwthl2tune_in ! temperature moisture covariance
+  real(rtype), intent(in), optional :: w2tune_in ! vertical velocity variance
+  real(rtype), intent(in), optional :: length_fac_in ! length scale
+  real(rtype), intent(in), optional :: c_diag_3rd_mom_in ! third moment vertical velocity
+  real(rtype), intent(in), optional :: lambda_low_in ! stability correction, lowest value
+  real(rtype), intent(in), optional :: lambda_high_in ! stability correciton, highest value
+  real(rtype), intent(in), optional :: lambda_slope_in ! stability correction, slope term
+  real(rtype), intent(in), optional :: lambda_thresh_in ! value to apply stability correction
+  real(rtype), intent(in), optional :: Ckh_in ! eddy diffusivity coefficient for heat
+  real(rtype), intent(in), optional :: Ckm_in ! eddy diffusivity coefficient for momentum
+  real(rtype), intent(in), optional :: Ckh_s_min_in ! Stable PBL diffusivity minimum for heat
+  real(rtype), intent(in), optional :: Ckm_s_min_in ! Stable PBL diffusivity minimum for momentum
+  real(rtype), intent(in), optional :: Ckh_s_max_in ! Stable PBL diffusivity maximum for heat
+  real(rtype), intent(in), optional :: Ckm_s_max_in ! Stable PBL diffusivity maximum for momentum
+
   integer :: k
 
   ggr = gravit   ! [m/s2]
@@ -156,6 +185,25 @@ subroutine shoc_init( &
   lcond = latvap ! [J/kg]
   lice = latice  ! [J/kg]
   vk = karman    ! [-]
+
+  ! Tunable parameters, all unitless
+  !  override default values if value is present
+  if (present(thl2tune_in)) thl2tune = thl2tune_in
+  if (present(qw2tune_in)) qw2tune = qw2tune_in
+  if (present(qwthl2tune_in)) qwthl2tune = qwthl2tune_in
+  if (present(w2tune_in)) w2tune=w2tune_in
+  if (present(length_fac_in)) length_fac=length_fac_in
+  if (present(qwthl2tune_in)) c_diag_3rd_mom=c_diag_3rd_mom_in
+  if (present(lambda_low_in)) lambda_low=lambda_low_in
+  if (present(lambda_high_in)) lambda_high=lambda_high_in
+  if (present(lambda_slope_in)) lambda_slope=lambda_slope_in
+  if (present(lambda_thresh_in)) lambda_thresh=lambda_thresh_in
+  if (present(Ckh_in)) Ckh=Ckh_in
+  if (present(Ckm_in)) Ckm=Ckm_in
+  if (present(Ckh_s_min_in)) Ckh_s_min=Ckh_s_min_in
+  if (present(Ckm_s_min_in)) Ckm_s_min=Ckm_s_min_in
+  if (present(Ckh_s_max_in)) Ckh_s_max=Ckh_s_max_in
+  if (present(Ckm_s_max_in)) Ckm_s_max=Ckm_s_max_in
 
    ! Limit pbl height to regions below 400 mb
    ! npbl = max number of levels (from bottom) in pbl
@@ -182,7 +230,7 @@ subroutine shoc_main ( &
      zt_grid,zi_grid,pres,presi,pdel,&    ! Input
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
      wtracer_sfc,num_qtracers,w_field, &  ! Input
-     exner,phis, &                        ! Input
+     inv_exner,phis, &                        ! Input
      host_dse, tke, thetal, qw, &         ! Input/Output
      u_wind, v_wind,qtracers,&            ! Input/Output
      wthv_sec,tkh,tk,&                    ! Input/Output
@@ -192,7 +240,11 @@ subroutine shoc_main ( &
      w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
      wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
      uw_sec, vw_sec, w3,&                 ! Output (diagnostic)
-     wqls_sec, brunt, shoc_ql2)           ! Output (diagnostic)
+     wqls_sec, brunt, shoc_ql2 &          ! Output (diagnostic)
+#ifdef SCREAM_CONFIG_IS_CMAKE
+     , elapsed_s &
+#endif
+     )
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
     use shoc_iso_f, only: shoc_main_f
@@ -243,7 +295,7 @@ subroutine shoc_main ( &
   ! Surface flux for tracers [varies]
   real(rtype), intent(in) :: wtracer_sfc(shcol,num_qtracers)
   ! Exner function [-]
-  real(rtype), intent(in) :: exner(shcol,nlev)
+  real(rtype), intent(in) :: inv_exner(shcol,nlev)
   ! Host model surface geopotential height
   real(rtype), intent(in) :: phis(shcol)
 
@@ -314,6 +366,11 @@ subroutine shoc_main ( &
   ! return to isotropic timescale [s]
   real(rtype), intent(out) :: isotropy(shcol,nlev)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  real(rtype), optional, intent(out) :: elapsed_s ! duration of main loop in seconds
+#endif
+
+
   !============================================================================
 ! LOCAL VARIABLES
 
@@ -344,25 +401,33 @@ subroutine shoc_main ( &
               wv_a(shcol),wl_a(shcol)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
+  integer :: clock_count1, clock_count_rate, clock_count_max, clock_count2, clock_count_diff
+#endif
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
-    call shoc_main_f(shcol, nlev, nlevi, dtime, nadv, &   ! Input
-    host_dx, host_dy,thv, &              ! Input
-    zt_grid,zi_grid,pres,presi,pdel,&    ! Input
-    wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
-    wtracer_sfc,num_qtracers,w_field, &  ! Input
-    exner,phis, &                        ! Input
-    host_dse, tke, thetal, qw, &         ! Input/Output
-    u_wind, v_wind,qtracers,&            ! Input/Output
-    wthv_sec,tkh,tk,&                    ! Input/Output
-    shoc_ql,shoc_cldfrac,&               ! Input/Output
-    pblh,&                               ! Output
-    shoc_mix, isotropy,&                 ! Output (diagnostic)
-    w_sec, thl_sec, qw_sec, qwthl_sec,&  ! Output (diagnostic)
-    wthl_sec, wqw_sec, wtke_sec,&        ! Output (diagnostic)
-    uw_sec, vw_sec, w3,&                 ! Output (diagnostic)
-    wqls_sec, brunt, shoc_ql2)           ! Output (diagnostic)
+    call shoc_main_f(shcol, nlev, nlevi, dtime, nadv, npbl,& ! Input
+                     host_dx, host_dy,thv, &                 ! Input
+                     zt_grid,zi_grid,pres,presi,pdel,&       ! Input
+                     wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &    ! Input
+                     wtracer_sfc,num_qtracers,w_field, &     ! Input
+                     inv_exner,phis, &                           ! Input
+                     host_dse, tke, thetal, qw, &            ! Input/Output
+                     u_wind, v_wind,qtracers,&               ! Input/Output
+                     wthv_sec,tkh,tk,&                       ! Input/Output
+                     shoc_ql,shoc_cldfrac,&                  ! Input/Output
+                     pblh,&                                  ! Output
+                     shoc_mix, isotropy,&                    ! Output (diagnostic)
+                     w_sec, thl_sec, qw_sec, qwthl_sec,&     ! Output (diagnostic)
+                     wthl_sec, wqw_sec, wtke_sec,&           ! Output (diagnostic)
+                     uw_sec, vw_sec, w3,&                    ! Output (diagnostic)
+                     wqls_sec, brunt, shoc_ql2)              ! Output (diagnostic)
      return
   endif
+#endif
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    call system_clock(clock_count1, clock_count_rate, clock_count_max)
 #endif
 
   ! Compute integrals of static energy, kinetic energy, water vapor, and liquid water
@@ -413,9 +478,9 @@ subroutine shoc_main ( &
     ! Update the turbulent length scale
     call shoc_length(&
        shcol,nlev,nlevi,&                ! Input
-       host_dx,host_dy,pblh,&            ! Input
-       tke,zt_grid,zi_grid,dz_zt,dz_zi,& ! Input
-       thetal,wthv_sec,thv,&             ! Input
+       host_dx,host_dy,&                 ! Input
+       zt_grid,zi_grid,dz_zt,&           ! Input
+       tke,thv,&                         ! Input
        brunt,shoc_mix)                   ! Output
 
     ! Advance the SGS TKE equation
@@ -482,7 +547,7 @@ subroutine shoc_main ( &
   !  temperature
   call update_host_dse(&
      shcol,nlev,thetal,&                   ! Input
-     shoc_ql,exner,zt_grid,phis,&          ! Input
+     shoc_ql,inv_exner,zt_grid,phis,&          ! Input
      host_dse)                             ! Output
 
   call shoc_energy_integrals(&             ! Input
@@ -523,6 +588,15 @@ subroutine shoc_main ( &
      shoc_qv,u_wind,v_wind,&              ! Input
      ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
      pblh)                                ! Output
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  call system_clock(clock_count2, clock_count_rate, clock_count_max)
+  clock_count_diff = clock_count2 - clock_count1
+  if (present(elapsed_s)) then
+    elapsed_s = real(clock_count_diff) / real(clock_count_rate)
+  endif
+#endif
+
   return
 
 end subroutine shoc_main
@@ -1197,7 +1271,7 @@ subroutine diag_second_moments_srf(&
   real(rtype), intent(out) :: wstar(shcol)
 
 ! LOCAL VARIABLES
-  integer :: i, p
+  integer :: i
 
   ! Constants to parameterize surface variances
   real(rtype), parameter :: z_const = 1.0_rtype
@@ -1287,7 +1361,7 @@ subroutine diag_second_moments_lbycond(&
   real(rtype), intent(out) :: qwthl_sec(shcol)
 
 ! LOCAL VARIABLES
-  integer :: i, p
+  integer :: i
   real(rtype) :: uf
 
   ! Constants to parameterize surface variances
@@ -1410,7 +1484,6 @@ subroutine diag_second_moments(&
   real(rtype), intent(out) :: w_sec(shcol,nlev)
 
   ! LOCAL VARIABLES
-  integer :: p
   real(rtype) :: isotropy_zi(shcol,nlevi)
   real(rtype) :: tkh_zi(shcol,nlevi)
   real(rtype) :: tk_zi(shcol,nlevi)
@@ -1815,11 +1888,10 @@ subroutine compute_diag_third_shoc_moment(&
   ! third moment of vertical velocity
   real(rtype), intent(out) :: w3(shcol,nlevi)
 ! LOCAL VARIABLES
-  integer i, j, k, kb, kc
+  integer i, k, kb, kc
   real(rtype) :: omega0, omega1, omega2
   real(rtype) :: X0, Y0, X1, Y1, AA0, AA1
-  real(rtype) :: zvar, x5var, iso, thedz, thedz2
-  real(rtype) :: theterm, tsign
+  real(rtype) :: iso, thedz, thedz2
   real(rtype) :: isosqrd
   real(rtype) :: buoy_sgs2, bet2
   real(rtype) :: f0, f1, f2, f3, f4, f5
@@ -1846,34 +1918,34 @@ subroutine compute_diag_third_shoc_moment(&
 
         !Compute inputs for computing f0 to f5 terms
         call fterms_input_for_diag_third_shoc_moment(&
-	     dz_zi(i,k), dz_zt(i,k), dz_zt(i,kc), &               ! Input
+             dz_zi(i,k), dz_zt(i,k), dz_zt(i,kc), &               ! Input
              isotropy_zi(i,k), brunt_zi(i,k), thetal_zi(i,k), &   ! Input
              thedz, thedz2, iso, isosqrd, buoy_sgs2, bet2)        ! Output
 
         !Compute f0 to f5 terms
         call f0_to_f5_diag_third_shoc_moment(&
-	     thedz, thedz2, bet2, iso, isosqrd, &                 ! Input
-	     wthl_sec (i,k), wthl_sec(i,kc), wthl_sec(i,kb), &    ! Input
-	     thl_sec(i,k), thl_sec(i,kc), thl_sec(i,kb), &        ! Input
+             thedz, thedz2, bet2, iso, isosqrd, &                 ! Input
+             wthl_sec (i,k), wthl_sec(i,kc), wthl_sec(i,kb), &    ! Input
+             thl_sec(i,kc), thl_sec(i,kb), &                      ! Input
              w_sec(i,k), w_sec(i,kc), w_sec_zi(i,k), &            ! Input
              tke(i,k), tke(i,kc), &                               ! Input
              f0, f1, f2, f3, f4, f5)                              ! Output
 
         !Compute the omega terms
         call omega_terms_diag_third_shoc_moment(&
-	     buoy_sgs2, f3, f4, &       ! Input
-	     omega0, omega1, omega2)    ! Output
+             buoy_sgs2, f3, f4, &       ! Input
+             omega0, omega1, omega2)    ! Output
 
         !Compute the X0, Y0, X1, Y1 terms
         call x_y_terms_diag_third_shoc_moment(&
-	     buoy_sgs2, f0, f1, f2, &   ! Input
-	     x0, y0, x1, y1)            ! Output
+             buoy_sgs2, f0, f1, f2, &   ! Input
+             x0, y0, x1, y1)            ! Output
 
         !Compute the AA0, AA1 terms
         call aa_terms_diag_third_shoc_moment(&
-	     omega0, omega1, omega2, &  ! Input
-	     x0, x1, y0, y1, &          ! Input
-	     aa0, aa1)                  ! Output
+             omega0, omega1, omega2, &  ! Input
+             x0, x1, y0, y1, &          ! Input
+             aa0, aa1)                  ! Output
 
         !Finally, we have the third moment of w
         w3(i,k) = w3_diag_third_shoc_moment(aa0, aa1, x0, x1, f5)
@@ -1917,7 +1989,7 @@ end subroutine fterms_input_for_diag_third_shoc_moment
 subroutine f0_to_f5_diag_third_shoc_moment(&
      thedz, thedz2, bet2, iso, isosqrd, &    ! Input
      wthl_sec, wthl_sec_kc, wthl_sec_kb, &   ! Input
-     thl_sec, thl_sec_kc, thl_sec_kb, &      ! Input
+     thl_sec_kc, thl_sec_kb, &      ! Input
      w_sec, w_sec_kc,w_sec_zi, &             ! Input
      tke, tke_kc, &                          ! Input
      f0, f1, f2, f3, f4, f5)                 ! Output
@@ -1929,7 +2001,7 @@ subroutine f0_to_f5_diag_third_shoc_moment(&
   !intent-ins
   real(rtype), intent(in) :: thedz, thedz2, bet2, iso, isosqrd
   real(rtype), intent(in) :: wthl_sec, wthl_sec_kc, wthl_sec_kb
-  real(rtype), intent(in) :: thl_sec, thl_sec_kc, thl_sec_kb
+  real(rtype), intent(in) :: thl_sec_kc, thl_sec_kb
   real(rtype), intent(in) :: w_sec, w_sec_kc, w_sec_zi, tke, tke_kc
 
   !intent-out
@@ -1969,7 +2041,7 @@ end subroutine f0_to_f5_diag_third_shoc_moment
 
 subroutine omega_terms_diag_third_shoc_moment(&
            buoy_sgs2, f3, f4, &    ! Input
-	   omega0, omega1, omega2) ! Output
+           omega0, omega1, omega2) ! Output
 
   implicit none
 
@@ -1981,8 +2053,10 @@ subroutine omega_terms_diag_third_shoc_moment(&
   !intent-out
   real(rtype), intent(out) :: omega0, omega1, omega2
 
-  real(rtype), parameter :: a4=2.4_rtype/(3._rtype*c_diag_3rd_mom+5._rtype)
-  real(rtype), parameter :: a5=0.6_rtype/(c_diag_3rd_mom*(3._rtype+5._rtype*c_diag_3rd_mom))
+  real(rtype) :: a4, a5
+
+  a4=2.4_rtype/(3._rtype*c_diag_3rd_mom+5._rtype)
+  a5=0.6_rtype/(c_diag_3rd_mom*(3._rtype+5._rtype*c_diag_3rd_mom))
 
   omega0 = a4 / (1._rtype - a5 * buoy_sgs2)
   omega1 = omega0/(2._rtype * c_diag_3rd_mom)
@@ -1993,7 +2067,7 @@ end subroutine omega_terms_diag_third_shoc_moment
 
 subroutine x_y_terms_diag_third_shoc_moment(&
            buoy_sgs2, f0, f1, f2,&  ! Input
-	   x0, y0, x1, y1)          ! Output
+           x0, y0, x1, y1)          ! Output
 
   implicit none
 
@@ -2026,8 +2100,8 @@ end subroutine x_y_terms_diag_third_shoc_moment
 
 subroutine aa_terms_diag_third_shoc_moment(&
            omega0, omega1, omega2, & ! Input
-	   x0, x1, y0, y1, &         ! Input
-	   aa0, aa1)                 ! Output
+           x0, x1, y0, y1, &         ! Input
+           aa0, aa1)                 ! Output
 
   implicit none
 
@@ -2064,7 +2138,7 @@ end function w3_diag_third_shoc_moment
 
 subroutine clipping_diag_third_shoc_moments(&
            nlevi,shcol,w_sec_zi,& ! Input
-	   w3)                    ! Input/Output
+           w3)                    ! Input/Output
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
     use shoc_iso_f, only: clipping_diag_third_shoc_moments_f
@@ -2084,6 +2158,8 @@ subroutine clipping_diag_third_shoc_moments(&
   real(rtype) :: cond
   real(rtype) :: theterm
 
+  real(rtype), parameter :: w3clipdef = 0.02_rtype
+
   integer k, i
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -2101,7 +2177,7 @@ subroutine clipping_diag_third_shoc_moments(&
       theterm = w_sec_zi(i,k)
       cond = w3clip * bfb_sqrt(2._rtype * bfb_cube(theterm))
       if (w3(i,k) .lt. 0) tsign = -1._rtype
-      if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
+      if (tsign * w3(i,k) .gt. cond) w3(i,k) = w3clipdef
 
     enddo !end i loop (column loop)
   enddo ! end k loop (vertical loop)
@@ -3049,6 +3125,9 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
   integer :: i, k, km1
   real(rtype) :: grid_dz, u_grad, v_grad
 
+  ! Turbulent coefficient
+  real(rtype), parameter :: Ck_sh = 0.1_rtype
+
 #ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
      call compute_shr_prod_f(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
@@ -3065,7 +3144,7 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
         ! calculate vertical gradient of u&v wind
         u_grad = grid_dz*(u_wind(i,km1)-u_wind(i,k))
         v_grad = grid_dz*(v_wind(i,km1)-v_wind(i,k))
-        sterm(i,k) = bfb_square(u_grad)+bfb_square(v_grad)
+        sterm(i,k) = Ck_sh*(bfb_square(u_grad)+bfb_square(v_grad))
      enddo
   enddo
 
@@ -3153,7 +3232,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
         ! March equation forward one timestep
         tke(i,k)=max(mintke,tke(i,k)+dtime* &
-	  (max(0._rtype,a_prod_sh+a_prod_bu)-a_diss(i,k)))
+             (max(0._rtype,a_prod_sh+a_prod_bu)-a_diss(i,k)))
 
         tke(i,k)=min(tke(i,k),maxtke)
      enddo
@@ -3198,10 +3277,6 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
   real(rtype) :: tscale, lambda, buoy_sgs_save
 
   !Parameters
-  real(rtype), parameter :: lambda_low   = 0.001_rtype
-  real(rtype), parameter :: lambda_high  = 0.04_rtype
-  real(rtype), parameter :: lambda_slope = 0.65_rtype
-  real(rtype), parameter :: brunt_low    = 0.02_rtype
   real(rtype), parameter :: maxiso       = 20000.0_rtype ! Return to isotropic timescale [s]
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -3219,7 +3294,7 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
         tscale=(2.0_rtype*tke(i,k))/a_diss(i,k)
 
         ! define a damping term "lambda" based on column stability
-        lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
+        lambda=lambda_low+((brunt_int(i)/ggr)-lambda_thresh)*lambda_slope
         lambda=max(lambda_low,min(lambda_high,lambda))
 
         buoy_sgs_save=brunt(i,k)
@@ -3283,14 +3358,6 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   ! Transition depth [m] above PBL top to allow
   ! stability diffusivities
   real(rtype), parameter :: pbl_trans = 200.0_rtype
-  ! Turbulent coefficients
-  real(rtype), parameter :: Ckh = 0.1_rtype
-  real(rtype), parameter :: Ckm = 0.1_rtype
-  ! Default eddy coefficients for stable PBL diffusivities
-  real(rtype), parameter :: Ckh_s_def = 1.0_rtype
-  real(rtype), parameter :: Ckm_s_def = 1.0_rtype
-  ! Minimum allowable value for stability diffusivities
-  real(rtype), parameter :: Ck_s_min = 0.1_rtype
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
@@ -3319,8 +3386,8 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
 
 	   ! Compute diffusivity coefficient as function of dimensionless
            !  Obukhov, given a critical value
-           Ckh_s = max(Ck_s_min,min(Ckh_s_def,z_over_L/zL_crit_val))
-           Ckm_s = max(Ck_s_min,min(Ckm_s_def,z_over_L/zL_crit_val))
+           Ckh_s = max(Ckh_s_min,min(Ckh_s_max,z_over_L/zL_crit_val))
+           Ckm_s = max(Ckm_s_min,min(Ckm_s_max,z_over_L/zL_crit_val))
 
 	   ! Compute stable PBL diffusivities
            tkh(i,k) = Ckh_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
@@ -3383,10 +3450,10 @@ end subroutine check_tke
 ! Compute the turbulent length scale
 
 subroutine shoc_length(&
-         shcol,nlev,nlevi,&        ! Input
-         host_dx,host_dy,pblh,&        ! Input
-         tke,zt_grid,zi_grid,dz_zt,dz_zi,& ! Input
-         thetal,wthv_sec,thv,&         ! Input
+         shcol,nlev,nlevi,&            ! Input
+         host_dx,host_dy,&             ! Input
+         zt_grid,zi_grid,dz_zt,&       ! Input
+         tke,thv,&                     ! Input
          brunt,shoc_mix)               ! Output
 
   ! Purpose of this subroutine is to compute the SHOC
@@ -3411,8 +3478,6 @@ subroutine shoc_length(&
   real(rtype), intent(in) :: host_dx(shcol)
   ! host model grid size [m]
   real(rtype), intent(in) :: host_dy(shcol)
-  ! Planetary boundary layer (PBL) height [m]
-  real(rtype), intent(in) :: pblh(shcol)
   ! turbulent kinetic energy [m^2/s^2]
   real(rtype), intent(in) :: tke(shcol,nlev)
   ! heights on midpoint grid [m]
@@ -3421,12 +3486,6 @@ subroutine shoc_length(&
   real(rtype), intent(in) :: zi_grid(shcol,nlevi)
   ! dz on midpoint grid [m]
   real(rtype), intent(in) :: dz_zt(shcol,nlev)
-  ! dz on interface grid [m]
-  real(rtype), intent(in) :: dz_zi(shcol,nlevi)
-  ! SGS buoyancy flux [K m/s]
-  real(rtype), intent(in) :: wthv_sec(shcol,nlev)
-  ! liquid water potential temperature [K]
-  real(rtype), intent(in) :: thetal(shcol,nlev)
   ! virtual potential temperature [K]
   real(rtype), intent(in) :: thv(shcol,nlev)
 
@@ -3437,16 +3496,13 @@ subroutine shoc_length(&
   real(rtype), intent(out) :: shoc_mix(shcol,nlev)
 
   ! LOCAL VARIABLES
-  real(rtype) :: conv_vel(shcol), tscale(shcol)
   real(rtype) :: thv_zi(shcol,nlevi)
   real(rtype) :: l_inf(shcol)
 
-  integer :: i,k
-
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call shoc_length_f(shcol,nlev,nlevi,host_dx,host_dy,pblh,tke,&
-                         zt_grid,zi_grid,dz_zt,dz_zi,wthv_sec,thetal,&
+      call shoc_length_f(shcol,nlev,nlevi,host_dx,host_dy,&
+                         zt_grid,zi_grid,dz_zt,tke,&
                          thv,brunt,shoc_mix)
 
       return
@@ -3462,21 +3518,8 @@ subroutine shoc_length(&
   ! Find L_inf
   call compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
 
-  ! determine the convective velocity scale of
-  !   the planetary boundary layer
-  call compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
-
-  ! computed quantity above is wstar3
-  ! clip, to avoid negative values and take the cubed
-  !   root to get the convective velocity scale
-
-  ! Compute eddy turnover timescale.  If
-  !  convective velocity scale is zero then
-  !  set to a minimum threshold
-  call compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
-
   ! compute mixing-length
-  call compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_inf,shoc_mix)
+  call compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,zt_grid,l_inf,shoc_mix)
 
   ! Do checks on the length scale.  Make sure it is not
   !  larger than the grid mesh of the host model.
@@ -3706,7 +3749,7 @@ end subroutine shoc_energy_integrals
 
 subroutine update_host_dse(&
          shcol,nlev,thlm,&                 ! Input
-         shoc_ql,exner,zt_grid,phis,&      ! Input
+         shoc_ql,inv_exner,zt_grid,phis,&      ! Input
          host_dse)                         ! Output
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -3724,8 +3767,8 @@ subroutine update_host_dse(&
   real(rtype), intent(in) :: thlm(shcol,nlev)
   ! cloud liquid water mixing ratio [kg/kg]
   real(rtype), intent(in) :: shoc_ql(shcol,nlev)
-  ! exner function [-]
-  real(rtype), intent(in) :: exner(shcol,nlev)
+  ! inverse of exner function [-]
+  real(rtype), intent(in) :: inv_exner(shcol,nlev)
   ! heights at mid point [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! surface geopotential height of host model [m]
@@ -3743,7 +3786,7 @@ subroutine update_host_dse(&
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call update_host_dse_f(shcol,nlev,thlm,shoc_ql,exner,zt_grid,phis, &  ! Input
+      call update_host_dse_f(shcol,nlev,thlm,shoc_ql,inv_exner,zt_grid,phis, &  ! Input
            host_dse)                              ! Input/Output)
       return
    endif
@@ -3751,7 +3794,7 @@ subroutine update_host_dse(&
 
   do k=1,nlev
     do i=1,shcol
-      temp = (thlm(i,k)+(lcond/cp)*shoc_ql(i,k))/exner(i,k)
+      temp = (thlm(i,k)+(lcond/cp)*shoc_ql(i,k))/inv_exner(i,k)
       host_dse(i,k) = cp*temp+ggr*zt_grid(i,k)+phis(i)
     enddo
   enddo
@@ -3923,7 +3966,7 @@ subroutine shoc_energy_total_fixer(&
   real(rtype) :: rho_zi(shcol,nlevi)
   ! sensible and latent heat fluxes [W/m^2]
   real(rtype) :: shf, lhf, hdtime
-  integer :: i, k
+  integer :: i
 
   ! compute the host timestep
   hdtime = dtime * float(nadv)
@@ -3979,7 +4022,7 @@ subroutine shoc_energy_threshold_fixer(&
 
   ! LOCAL VARIABLES
   ! sensible and latent heat fluxes [W/m^2]
-  integer :: i, k
+  integer :: i
 
   ! Limit the energy fixer to find highest layer where SHOC is active
   ! Find first level where wp2 is higher than lowest threshold
@@ -4354,7 +4397,6 @@ subroutine pblintd_height(&
     integer  :: i                       ! longitude index
     integer  :: k                       ! level index
     real(rtype) :: vvk                     ! velocity magnitude squared
-    real(rtype) :: th
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
@@ -4726,87 +4768,7 @@ subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
 
 end subroutine compute_l_inf_shoc_length
 
-subroutine compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
-
-  !=========================================================
-  ! determine the convective velocity scale of
-  !   the planetary boundary layer
-
-#ifdef SCREAM_CONFIG_IS_CMAKE
-  use shoc_iso_f, only: compute_conv_vel_shoc_length_f
-#endif
-
-  implicit none
-  integer, intent(in) :: nlev, shcol
-! Planetary boundary layer (PBL) height [m]
-  real(rtype), intent(in) :: pblh(shcol)
-  real(rtype), intent(in) :: zt_grid(shcol,nlev)
-  real(rtype), intent(in) :: dz_zt(shcol,nlev)
-  real(rtype), intent(in) :: thv(shcol,nlev)
-  real(rtype), intent(in) :: wthv_sec(shcol,nlev)
-  real(rtype), intent(inout) :: conv_vel(shcol)
-  integer k, i
-
-#ifdef SCREAM_CONFIG_IS_CMAKE
-  if (use_cxx) then
-     call compute_conv_vel_shoc_length_f(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,&  ! Input
-                                         conv_vel)                                     ! Output)
-     return
-  endif
-#endif
-
-  conv_vel(:) = 0._rtype
-
-  do k=nlev,1,-1
-    do i=1,shcol
-      if (zt_grid(i,k) .lt. pblh(i)) then
-        conv_vel(i) = conv_vel(i)+2.5_rtype*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
-      endif
-    enddo ! end i loop (column loop)
-  enddo ! end k loop (vertical loop)
-
-end subroutine compute_conv_vel_shoc_length
-
-subroutine compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
-  ! Compute eddy turnover timescale.  If
-  !  convective velocity scale is zero then
-  !  set to a minimum threshold
-
-#ifdef SCREAM_CONFIG_IS_CMAKE
-  use shoc_iso_f, only: compute_conv_time_shoc_length_f
-#endif
-
-  implicit none
-  integer, intent(in) :: shcol
-! Planetary boundary layer (PBL) height [m]
-  real(rtype), intent(in) :: pblh(shcol)
-  ! Convective velocity scale
-  real(rtype), intent(inout) :: conv_vel(shcol)
-  ! Convective time scale
-  real(rtype), intent(inout) ::  tscale(shcol)
-
-  integer i
-
-#ifdef SCREAM_CONFIG_IS_CMAKE
-  if (use_cxx) then
-    call compute_conv_time_shoc_length_f(shcol,pblh,conv_vel,tscale)
-    return
-  endif
-#endif
-
-  do i=1,shcol
-    conv_vel(i) = bfb_pow(max(0._rtype,conv_vel(i)), (1._rtype/3._rtype))
-
-    if (conv_vel(i) .gt. 0._rtype) then
-      tscale(i)=pblh(i)/conv_vel(i)
-    else
-      tscale(i)=100._rtype
-    endif
-  enddo
-
-end subroutine compute_conv_time_shoc_length
-
-subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_inf,shoc_mix)
+subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,zt_grid,l_inf,shoc_mix)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
   use shoc_iso_f, only: compute_shoc_mix_shoc_length_f
@@ -4819,8 +4781,6 @@ subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_in
   real(rtype), intent(in) :: tke(shcol,nlev)
   ! brunt vaisala frequency [s-1]
   real(rtype), intent(in) :: brunt(shcol,nlev)
-  ! convective time scale
-  real(rtype), intent(in) :: tscale(shcol)
   ! heights, for thermo grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   real(rtype), intent(in) :: l_inf(shcol)
@@ -4833,9 +4793,12 @@ subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_in
   integer k, i
   real(rtype) :: tkes
 
+  ! Turnover timescale [s]
+  real(rtype), parameter :: tscale = 400._rtype
+
 #ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
-    call compute_shoc_mix_shoc_length_f(nlev,shcol,tke,brunt,tscale,zt_grid,l_inf,& !Input
+    call compute_shoc_mix_shoc_length_f(nlev,shcol,tke,brunt,zt_grid,l_inf,& !Input
                                         shoc_mix) ! Ouptut
     return
   endif
@@ -4850,8 +4813,8 @@ subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_in
 
       if(brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
 
-      shoc_mix(i,k)=min(maxlen,(2.8284_rtype*sqrt(1._rtype/((1._rtype/(tscale(i)*tkes*vk*zt_grid(i,k)))&
-        +(1._rtype/(tscale(i)*tkes*l_inf(i)))+0.01_rtype*(brunt2(i,k)/tke(i,k)))))/length_fac)
+      shoc_mix(i,k)=min(maxlen,(2.8284_rtype*sqrt(1._rtype/((1._rtype/(tscale*tkes*vk*zt_grid(i,k)))&
+        +(1._rtype/(tscale*tkes*l_inf(i)))+0.01_rtype*(brunt2(i,k)/tke(i,k)))))/length_fac)
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
 

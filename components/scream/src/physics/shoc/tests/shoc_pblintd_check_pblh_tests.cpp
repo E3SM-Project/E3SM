@@ -83,10 +83,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh {
       PblintdCheckPblhData(36,  72, 73),
       PblintdCheckPblhData(72,  72, 73),
       PblintdCheckPblhData(128, 72, 73),
-      PblintdCheckPblhData(256, 72, 73),     
+      PblintdCheckPblhData(256, 72, 73),
     };
-
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdCheckPblhData);
 
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
@@ -100,7 +98,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh {
       PblintdCheckPblhData(f90_data[0]),
       PblintdCheckPblhData(f90_data[1]),
       PblintdCheckPblhData(f90_data[2]),
-      PblintdCheckPblhData(f90_data[3]),      
+      PblintdCheckPblhData(f90_data[3]),
     };
 
     // Assume all data is in C layout
@@ -119,6 +117,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdCheckPblhData);
     for (Int i = 0; i < num_runs; ++i) {
       PblintdCheckPblhData& d_f90 = f90_data[i];
       PblintdCheckPblhData& d_cxx = cxx_data[i];
@@ -126,8 +126,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh {
         REQUIRE(d_f90.total(d_f90.pblh) == d_cxx.total(d_cxx.pblh));
         REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
       }
-
     }
+#endif
   } // run_bfb
 
 };

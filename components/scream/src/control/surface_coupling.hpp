@@ -2,7 +2,7 @@
 #define SCREAM_SURFACE_COUPLING_HPP
 
 #include "share/field/field.hpp"
-#include "share/field/field_repository.hpp"
+#include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/scream_types.hpp"
 
@@ -26,6 +26,10 @@ public:
   template<typename DevT, typename DataT>
   using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
 
+  using field_mgr_type = const FieldManager<Real>;
+  using field_mgr_ptr  = std::shared_ptr<field_mgr_type>;
+  using grid_type       = const AbstractGrid;
+  using grid_ptr        = std::shared_ptr<grid_type>;
 
   // Use const type for exports, to protect against bugs
   using import_field_type  = Field<      Real>;
@@ -35,8 +39,7 @@ public:
   using cpl_data_ptr_type = double*;
 
   // The input grid is the one where import/export happens
-  SurfaceCoupling (const std::shared_ptr<const AbstractGrid>& grid,
-                   const FieldRepository<Real>& repo);
+  explicit SurfaceCoupling (const field_mgr_ptr& field_mgr);
 
   // This allocates some service views
   void set_num_fields (const int num_imports, const int num_exports);
@@ -85,8 +88,11 @@ protected:
     // Index of the field inside the coupler 2d array
     int cpl_idx;
 
-    // Stride between two columns, i.e., number of scalars in a column (including padding)
-    int col_size;
+    // Stride between the 1st entry of two consecutive columns to be imported/exported.
+    // Note: this is >= that number of scalars in a column. E.g., for a vector field layout like
+    //       (ncols,2,nlevs), where we import/export only the 1st vector component, the stride
+    //       is 2*nlevs
+    int col_stride;
 
     // Offset to surface field from the column start. Should be 0 for scalar fields, but
     // may be non-zero for vector quantities for which we import/export the 2nd (or larger)
@@ -102,8 +108,11 @@ protected:
 protected:
 #endif
 
-  using import_value_type  = import_field_type::value_type;
-  using export_value_type  = export_field_type::value_type;
+  void get_col_info (const std::shared_ptr<const FieldHeader>& fh,
+                     int vecComp, int& col_offset, int& col_stride) const;
+
+  using import_value_type  = import_field_type::RT;
+  using export_value_type  = export_field_type::RT;
 
   // Packed, device-friendly verson of the helper structures above
   view_1d<device_type,Info<import_value_type>>  m_scream_imports_dev;
@@ -127,13 +136,12 @@ protected:
   std::set<FieldIdentifier>  m_imports_fids;
   std::set<FieldIdentifier>  m_exports_fids;
 
-  const FieldRepository<Real>& m_field_repo;
+  field_mgr_ptr m_field_mgr;
 
   int           m_num_imports;
   int           m_num_exports;
 
   int           m_num_cols;
-  std::string   m_grid_name;
 
   RepoState     m_state;
 };

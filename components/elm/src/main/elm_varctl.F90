@@ -69,7 +69,7 @@ module elm_varctl
   character(len=256), public :: version  = " "                           
 
   ! dataset conventions
-  character(len=256), public :: conventions = "CF-1.0"                   
+  character(len=256), public :: conventions = "CF-1.7"
 
   !----------------------------------------------------------
   ! Unit Numbers
@@ -331,7 +331,6 @@ module elm_varctl
 
   logical, public :: use_nofire          = .false.
   logical, public :: use_lch4            = .false.
-  logical, public :: use_nitrif_denitrif = .false.
   logical, public :: use_vertsoilc       = .false.
   logical, public :: use_extralakelayers = .false.
   logical, public :: use_vichydro        = .false.

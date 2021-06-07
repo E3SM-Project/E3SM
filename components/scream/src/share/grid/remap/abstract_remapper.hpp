@@ -2,7 +2,6 @@
 #define SCREAM_ABSTRACT_REMAPPER_HPP
 
 #include "share/field/field.hpp"
-#include "share/field/field_utils.hpp"
 #include "share/grid/abstract_grid.hpp"
 
 #include "ekat/util/ekat_factory.hpp"
@@ -49,9 +48,15 @@ public:
   // using fields associated with the given field identifiers.
   void register_field (const identifier_type& src, const identifier_type& tgt);
 
-  // This method unregisters source and target fields associated with the given
-  // identifiers, indicating that they are no longer to be remapped.
-  void unregister_field (const identifier_type& src, const identifier_type& tgt);
+  // Like the above, but figure out tgt using create_tgt_fid
+  void register_field_from_src (const identifier_type& src) {
+    register_field(src,create_tgt_fid(src));
+  }
+
+  // Like the above, but figure out src using create_src_fid
+  void register_field_from_tgt (const identifier_type& tgt) {
+    register_field(create_src_fid(tgt),tgt);
+  }
 
   // Call this to indicate that field registration is complete.
   void registration_ends ();
@@ -125,6 +130,32 @@ public:
   virtual FieldLayout create_src_layout (const FieldLayout& tgt_layout) const = 0;
   virtual FieldLayout create_tgt_layout (const FieldLayout& src_layout) const = 0;
 
+  FieldIdentifier create_src_fid (const FieldIdentifier& tgt_fid) const {
+    EKAT_REQUIRE_MSG (tgt_fid.get_grid_name()==m_tgt_grid->name(),
+        "Error! Input FieldIdentifier has the wrong grid name:\n"
+        "   - input tgt fid grid name: " + tgt_fid.get_grid_name() + "\n"
+        "   - remapper tgt grid name:  " + m_tgt_grid->name() + "\n");
+
+    const auto& name = tgt_fid.name();
+    const auto& layout = create_src_layout(tgt_fid.get_layout());
+    const auto& units = tgt_fid.get_units();
+
+    return FieldIdentifier(name,layout,units,m_src_grid->name());
+  }
+
+  FieldIdentifier create_tgt_fid (const FieldIdentifier& src_fid) const {
+    EKAT_REQUIRE_MSG (src_fid.get_grid_name()==m_src_grid->name(),
+        "Error! Input FieldIdentifier has the wrong grid name:\n"
+        "   - input src fid grid name: " + src_fid.get_grid_name() + "\n"
+        "   - remapper src grid name:  " + m_src_grid->name() + "\n");
+
+    const auto& name = src_fid.name();
+    const auto& layout = create_tgt_layout(src_fid.get_layout());
+    const auto& units = src_fid.get_units();
+
+    return FieldIdentifier(name,layout,units,m_tgt_grid->name());
+  }
+
   bool has_src_field (const identifier_type& fid) const {
     for (int i=0; i<m_num_registered_fields; ++i) {
       if (get_src_field_id(i) == fid) {
@@ -180,9 +211,6 @@ protected:
   // Override this method to insert logic executed when a pair of source/target
   // fields are bound to an index within the remapper.
   virtual void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) = 0;
-
-  // Override this method to insert logic executed when a field is unregistered.
-  virtual void do_unregister_field (const int ifield) = 0;
 
   // Override this method to insert logic executed when the field registration
   // process ends.
@@ -301,29 +329,6 @@ register_field (const field_type& src, const field_type& tgt) {
 
 template<typename RealType>
 void AbstractRemapper<RealType>::
-unregister_field (const identifier_type& src, const identifier_type& tgt) {
-  EKAT_REQUIRE_MSG(m_state==RepoState::Open,
-                     "Error! You can only un-register fields during the registration phase.\n");
-
-  const int ifield = find_field(src,tgt);
-  EKAT_REQUIRE_MSG(ifield>=0,
-                     "Error! The src/tgt pair of fields \n"
-                     "         " + src.get_id_string() + "\n"
-                     "         " + tgt.get_id_string() + "\n"
-                     "       was not registered.\n");
-
-  const bool was_bound = m_fields_are_bound[ifield];
-  do_unregister_field(ifield);
-
-  --m_num_registered_fields;
-  if (was_bound) {
-    --m_num_bound_fields;
-  }
-  m_fields_are_bound.erase(m_fields_are_bound.begin()+ifield);
-}
-
-template<typename RealType>
-void AbstractRemapper<RealType>::
 bind_field (const field_type& src, const field_type& tgt) {
   EKAT_REQUIRE_MSG(m_state!=RepoState::Clean,
                      "Error! Cannot bind fields in the remapper at this time.\n"
@@ -341,7 +346,7 @@ bind_field (const field_type& src, const field_type& tgt) {
                      "       was not registered. Please, register fields before binding them.\n");
 
   EKAT_REQUIRE_MSG(src.is_allocated(), "Error! Source field is not yet allocated.\n");
-  EKAT_REQUIRE_MSG(tgt.is_allocated(), "Error! Source field is not yet allocated.\n");
+  EKAT_REQUIRE_MSG(tgt.is_allocated(), "Error! Target field is not yet allocated.\n");
 
   EKAT_REQUIRE_MSG(!m_fields_are_bound[ifield],
                      "Error! Field already bound.\n");

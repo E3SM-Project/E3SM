@@ -50,12 +50,9 @@ public:
   void run_impl        (const Real dt);
   void finalize_impl   ();
 
-  // Register all fields in the given repo
-  void register_fields (FieldRepository<Real>& field_repo) const;
-
-  // Get the set of required/computed fields
-  const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
-  const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
+  // Register all fields in the proper field manager(s).
+  // Note: field_mgrs[grid_name] is the FM on grid $grid_name
+  void register_fields (const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs) const;
 
 protected:
 
@@ -63,24 +60,26 @@ protected:
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
 
-  std::set<FieldIdentifier> m_required_fields;
-  std::set<FieldIdentifier> m_computed_fields;
-
   std::map<std::string,const_field_type>  m_zm_fields_in;
   std::map<std::string,field_type>        m_zm_fields_out;
 
-  std::map<std::string,const_field_type::view_type::HostMirror>  m_zm_host_views_in;
-  std::map<std::string,field_type::view_type::HostMirror>        m_zm_host_views_out;
+  template<typename T>
+  using view_type = field_type::view_type<T*>;
 
+  template<typename T>
+  using host_view_type = field_type::get_view_type<view_type<T>,Host>;
+
+  using host_view_in_type   = host_view_type<const_field_type::RT>;
+  using host_view_out_type  = host_view_type<      field_type::RT>;
+
+  std::map<std::string,host_view_in_type>   m_zm_host_views_in;
+  std::map<std::string,host_view_out_type>  m_zm_host_views_out;
 
   util::TimeStamp   m_current_ts;
   ekat::Comm              m_zm_comm;
   
   std::map<std::string,const Real*>  m_raw_ptrs_in;
   std::map<std::string,Real*>        m_raw_ptrs_out;
-
-  // Used to init some fields. For now, only needed for stand-alone zm runs
-  std::shared_ptr<FieldInitializer>  m_initializer;
 
   ekat::ParameterList     m_zm_params;
 

@@ -5,6 +5,7 @@ include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
 # Enable Sandy Bridge arch in Kokkos
 option(Kokkos_ARCH_SNB "" ON)
 
-set(CMAKE_CXX_FLAGS "-w" CACHE STRING "")
+set(CMAKE_CXX_FLAGS "-w -cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh" CACHE STRING "")
+set(CMAKE_EXE_LINKER_FLAGS "-L/usr/tce/packages/gcc/gcc-8.3.1/rh/lib/gcc/x86_64-redhat-linux/8/" CACHE STRING "")
 set(SCREAM_MPIRUN_EXE "srun" CACHE STRING "")
 set(SCREAM_MPI_NP_FLAG "-n" CACHE STRING "")

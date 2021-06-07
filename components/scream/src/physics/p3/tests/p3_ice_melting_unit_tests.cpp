@@ -99,10 +99,12 @@ static void ice_melting_bfb(){
   Kokkos::deep_copy(IceMelt_host, IceMelt_device);
 
   // Validate results
+#ifndef NDEBUG
   for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(IceMelt[s].qi2qr_melt_tend == IceMelt_host(s).qi2qr_melt_tend);
     REQUIRE(IceMelt[s].ni2nr_melt_tend == IceMelt_host(s).ni2nr_melt_tend);
   }
+#endif
 }; // TestP3IceMelting
 
 }; // UnitWrap

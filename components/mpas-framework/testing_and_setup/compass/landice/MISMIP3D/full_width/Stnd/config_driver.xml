@@ -1,0 +1,19 @@
+<driver_script name="setup_MISMIP.py">
+        <case name="10000m">
+                <step executable="./setup_test.py" quiet="false" pre_message="\n\n===== Setting up 10000m" post_message="====== 10000m complete\n\n"/>
+        </case>
+
+        <case name="5000m">
+                <step executable="./setup_test.py" quiet="false" pre_message="\n\n===== Setting up 5000m" post_message="===== 5000m complete\n\n"/>
+        </case>
+
+        <case name="2000m">
+                <step executable="./setup_test.py" quiet="false" pre_message="\n\n===== Setting up 2000m" post_message="===== 2000m complete\n\n"/>
+        </case>
+
+        <!-- Don't automatically generate the high-res meshes cause they are slow to create -->
+
+        <case name="P75">
+        </case>
+</driver_script>
+

@@ -13,7 +13,7 @@ namespace p3 {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::ice_supersat_conservation(Spack& qv2qi_vapdep_tend, Spack& qv2qi_nucleat_tend, const Spack& cld_frac_i, const Spack& qv, const Spack& qv_sat_i, const Spack& latent_heat_sublim, const Spack& t_atm, const Real& dt, const Smask& context)
+void Functions<S,D>::ice_supersat_conservation(Spack& qv2qi_vapdep_tend, Spack& qv2qi_nucleat_tend, const Spack& cld_frac_i, const Spack& qv, const Spack& qv_sat_i, const Spack& latent_heat_sublim, const Spack& t_atm, const Real& dt, const Spack& qi2qv_sublim_tend, const Spack& qr2qv_evap_tend, const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar cp     = C::CP;
@@ -24,7 +24,7 @@ void Functions<S,D>::ice_supersat_conservation(Spack& qv2qi_vapdep_tend, Spack& 
   const auto mask = qv_sink > qsmall && cld_frac_i > 1e-20 && context;
   if (mask.any()) {
     // --- Available water vapor for deposition/nucleation
-    auto qv_avail = (qv - qv_sat_i) /
+    auto qv_avail = (qv + (qi2qv_sublim_tend+qr2qv_evap_tend)*dt - qv_sat_i) /
       (1 + square(latent_heat_sublim)*qv_sat_i / (cp*rv*square(t_atm)) ) / dt;
 
     // --- Only excess water vapor can be limited

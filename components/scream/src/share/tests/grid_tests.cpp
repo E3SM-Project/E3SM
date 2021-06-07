@@ -34,7 +34,7 @@ TEST_CASE("point_grid", "") {
     REQUIRE(i == host_lid_to_idx(i, 0));
   }
 
-  auto layout = grid->get_native_dof_layout();
+  auto layout = grid->get_2d_scalar_layout();
   REQUIRE(layout.tags().size() == 1);
   REQUIRE(layout.tag(0) == COL);
 }
@@ -52,7 +52,7 @@ TEST_CASE("se_grid", "") {
   REQUIRE(grid.get_num_vertical_levels() == num_levels);
   REQUIRE(grid.get_num_local_dofs() == num_elems*num_gp*num_gp);
 
-  auto layout = grid.get_native_dof_layout();
+  auto layout = grid.get_2d_scalar_layout();
   REQUIRE(layout.tags().size() == 3);
   REQUIRE(layout.tag(0) == EL);
   REQUIRE(layout.tag(1) == GP);

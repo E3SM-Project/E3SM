@@ -3,10 +3,8 @@
 #include "control/atmosphere_driver.hpp"
 
 #include "physics/p3/atmosphere_microphysics.hpp"
-#include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
-#include "physics/shoc/scream_shoc_interface.hpp"
 
 #include "physics/share/physics_only_grids_manager.hpp"
 

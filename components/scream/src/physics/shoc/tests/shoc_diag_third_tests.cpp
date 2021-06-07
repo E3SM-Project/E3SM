@@ -188,13 +188,13 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     // Call the fortran implementation
     diag_third_shoc_moments(SDS);
 
-    // Verify that new result is greater in magnitude
+    // Verify that new result is greater or equal in magnitude
     //  that the result from test one
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
         if (n != 0 && n != nlevi-1){
-          REQUIRE(std::abs(SDS.w3[offset]) > std::abs(w3_test1[offset]));
+          REQUIRE(std::abs(SDS.w3[offset]) >= std::abs(w3_test1[offset]));
         }
       }
     }
@@ -210,8 +210,6 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
       DiagThirdShocMomentsData(7,  16, 17),
       DiagThirdShocMomentsData(2, 7, 8),
     };
-
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(DiagThirdShocMomentsData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -247,6 +245,8 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(DiagThirdShocMomentsData);
     for (Int i = 0; i < num_runs; ++i) {
       DiagThirdShocMomentsData& d_f90 = SDS_f90[i];
       DiagThirdShocMomentsData& d_cxx = SDS_cxx[i];
@@ -254,6 +254,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
         REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
       }
     }
+#endif
   }
 };
 

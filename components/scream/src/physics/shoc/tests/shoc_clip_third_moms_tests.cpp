@@ -85,17 +85,13 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
     clipping_diag_third_shoc_moments(SDS);
 
     // Check the result
-    // For large values of w3, verify that the result has been
-    //  reduced and is of the same sign
+    // For large values of w3, verify that the result has been reduced
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
         if (abs(w3_in[n]) > 1000){
           REQUIRE(abs(SDS.w3[offset]) < abs(w3_in[n]));
-          if (w3_in[n] < 0){
-            REQUIRE(SDS.w3[offset] < 0);
-          }
         }
 
       }
@@ -112,8 +108,6 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
       ClippingDiagThirdShocMomentsData(7, 17),
       ClippingDiagThirdShocMomentsData(2, 8),
     };
-
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ClippingDiagThirdShocMomentsData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -146,6 +140,8 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ClippingDiagThirdShocMomentsData);
     for (Int i = 0; i < num_runs; ++i) {
       ClippingDiagThirdShocMomentsData& d_f90 = SDS_f90[i];
       ClippingDiagThirdShocMomentsData& d_cxx = SDS_cxx[i];
@@ -153,6 +149,7 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
         REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
       }
     }
+#endif
   }
 };
 

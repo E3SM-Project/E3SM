@@ -63,7 +63,6 @@ struct UnitWrap::UnitTest<D>::TestFtermdiagThirdMoms {
     SDS.wthl_sec = wthl_sec_zero;
     SDS.wthl_sec_kc = wthl_sec_zero;
     SDS.wthl_sec_kb = wthl_sec_zero;
-    SDS.thl_sec = thl_sec_zero;
     SDS.thl_sec_kc = thl_sec_zero;
     SDS.thl_sec_kb = thl_sec_zero;
     SDS.w_sec = w_sec_zero;
@@ -101,8 +100,6 @@ struct UnitWrap::UnitTest<D>::TestFtermdiagThirdMoms {
     constexpr static Real wthl_sec_kc = 0.02;
     // liquid water flux [K m/s] below
     constexpr static Real wthl_sec_kb = 0;
-    // thetal variance [K^2]
-    constexpr static Real thl_sec = 2;
     // thetal variance [K^2] above
     constexpr static Real thl_sec_kc = 2.5;
     // thetal variance [K^2]
@@ -120,7 +117,6 @@ struct UnitWrap::UnitTest<D>::TestFtermdiagThirdMoms {
     SDS.wthl_sec = wthl_sec;
     SDS.wthl_sec_kc = wthl_sec_kc;
     SDS.wthl_sec_kb = wthl_sec_kb;
-    SDS.thl_sec = thl_sec;
     SDS.thl_sec_kc = thl_sec_kc;
     SDS.thl_sec_kb = thl_sec_kb;
     SDS.w_sec = w_sec;

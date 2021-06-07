@@ -93,9 +93,8 @@ module micro_p3_interface
       qv_prev_idx,        &
       t_prev_idx,         &
       accre_enhan_idx,    &
-      mon_ccn_1_idx,      &
-      mon_ccn_2_idx,      &
-      current_month      !Needed for prescribed CCN option         
+      ccn3_idx
+
 
 ! Physics buffer indices for fields registered by other modules
    integer :: &
@@ -295,9 +294,6 @@ end subroutine micro_p3_readnl
 
    call pbuf_add_field('QV_PREV',     'global',dtype_r8,(/pcols,pver/), qv_prev_idx)
    call pbuf_add_field('T_PREV',      'global',dtype_r8,(/pcols,pver/), t_prev_idx)
- !! for prescribed CCN
-   call pbuf_add_field('MON_CCN_1',  'global', dtype_r8,(/pcols,pver/),mon_ccn_1_idx)
-   call pbuf_add_field('MON_CCN_2',  'global', dtype_r8,(/pcols,pver/),mon_ccn_2_idx)
 
    if (masterproc) write(iulog,'(A20)') '    P3 register finished'
   end subroutine micro_p3_register
@@ -332,54 +328,14 @@ end subroutine micro_p3_readnl
 
   !================================================================================================
 
-  subroutine get_prescribed_CCN_from_file(micro_p3_lookup_dir,month_int, ccn_values)
-
-      character*(*), intent(in)  :: micro_p3_lookup_dir !directory of the lookup tables
-      real(rtype), intent(inout) :: ccn_values(pcols,pver,begchunk:endchunk)    
-      integer, intent(in) :: month_int
-
-      !internal variables
-      character(len=100) :: base_file_name
-      character(len=500) :: filename
-      character(len=20) :: dim1name, dim2name
-      character(len=20) :: mon_str
-      type(file_desc_t) :: nccn_ncid
-      integer :: year, month, day, tod, next_month, grid_id
-      logical :: found = .false.
-
-      write(mon_str,*) month_int
-
-      !assign base_file_name the name of the CCN file being used 
-      base_file_name = "prescribed_CCN_file_"
-
-      mon_str = adjustl(mon_str)
- 
-     !assign base_file_name the name of the CCN file being used
-      base_file_name = "prescribed_CCN_file_"
- 
-     !retrieve the name of the relevant file by combining base file name !with !month and full file path:
-      filename = trim(micro_p3_lookup_dir)//'/'//trim(base_file_name)//trim(mon_str)//'.nc'
- 
-      grid_id = cam_grid_id('physgrid')
- 
-      call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
- 
-      call cam_pio_openfile(nccn_ncid,filename,PIO_NOWRITE) 
- 
-      call infld('CCN3',nccn_ncid,dim1name,'lev',dim2name,1,pcols,1,pver,begchunk,endchunk,&
-           ccn_values, found, gridname='physgrid')
- 
-      call cam_pio_closefile(nccn_ncid)
-   
-  end subroutine get_prescribed_CCN_from_file
-
-  !================================================================================================
-
   subroutine micro_p3_init(pbuf2d)
     use micro_p3,       only: p3_init
     use cam_history,    only: addfld, add_default, horiz_only
     use cam_history_support, only: add_hist_coord 
     use micro_p3_utils, only: micro_p3_utils_init
+    use read_spa_data,  only: ccn_names
+    use read_spa_data,  only: is_spa_active
+    use shr_log_mod,    only: errMsg => shr_log_errMsg
 
     type(physics_buffer_desc),  pointer :: pbuf2d(:,:)
     integer        :: m, mm
@@ -390,20 +346,14 @@ end subroutine micro_p3_readnl
     integer :: budget_histfile      ! output history file number for budget fields
                                    ! temperature, water vapor, cloud ice and cloud
 
-    !needed for prescribed CCN option:
-    character(len=20) :: base_file_name
-    character(len=500) :: filename, filename_next_month
-    character(len=20) :: dim1name, dim2name
-    type(file_desc_t) :: nccn_ncid
-    integer :: year, month, day, tod, next_month, grid_id
-    logical :: found = .false.
-    real(rtype), pointer :: ccn_values(:,:,:)
-
-    nullify(ccn_values)
+    !sanity check for spa
+    !spa must be active if do_prescribed_CCN is true
+    if(do_prescribed_CCN .and. .not. is_spa_active) then
+       call endrun('SPA must be active if do_prescribed_CCN is true, '//errmsg(__FILE__,__LINE__))
+    endif
 
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
              cpliq,tmelt,pi,iulog,masterproc)
-
 
     ! CALL P3 INIT:
     !==============
@@ -424,6 +374,9 @@ end subroutine micro_p3_readnl
     snow_sed_idx = pbuf_get_index('SNOW_SED') !! from physpkg 
     prec_pcw_idx = pbuf_get_index('PREC_PCW') !! from physpkg 
     snow_pcw_idx = pbuf_get_index('SNOW_PCW') !! from physpkg 
+
+    !Get indices for SPA treatment
+    if(do_prescribed_CCN)ccn3_idx = pbuf_get_index(ccn_names(1))
 
     call p3_init(micro_p3_lookup_dir,micro_p3_tableversion)
 
@@ -698,35 +651,6 @@ end subroutine micro_p3_readnl
       end if
    end if
 
-   if (do_prescribed_CCN) then !intialize mon_ccn_1 and mon_ccn_2
-
-      !find current_month
-      call get_curr_date(year,month,day,tod)
-      current_month = month
-      if (month==12) then
-         next_month = 1
-      else
-         next_month = month + 1
-      end if
-
-      allocate(ccn_values(pcols,pver,begchunk:endchunk))
-
-      call get_prescribed_CCN_from_file(micro_p3_lookup_dir,current_month,ccn_values)
-
-      call pbuf_set_field(pbuf2d, mon_ccn_1_idx, ccn_values)
-
-      deallocate(ccn_values)
-
-      allocate(ccn_values(pcols,pver,begchunk:endchunk))
-
-      call get_prescribed_CCN_from_file(micro_p3_lookup_dir,next_month,ccn_values)
-
-      call pbuf_set_field(pbuf2d, mon_ccn_2_idx, ccn_values)
-
-      deallocate(ccn_values)
-
-   endif
-
   end subroutine micro_p3_init
 
   !================================================================================================
@@ -804,73 +728,6 @@ end subroutine micro_p3_readnl
     end subroutine get_cloud_fraction
 
   !================================================================================================
-
-    subroutine get_prescribed_CCN(nccn_prescribed,micro_p3_lookup_dir,its,ite,kts,kte,pbuf,lchnk)
-
-      !INOUT/OUTPUT VARIABLES
-      integer,intent(in) :: its,ite,kts,kte,lchnk
-      real(rtype),dimension(its:ite,kts:kte),intent(inout)  :: nccn_prescribed
-      character*(*), intent(in)    :: micro_p3_lookup_dir !directory of the lookup tables
-      type(physics_buffer_desc),   pointer       :: pbuf(:)
-
-
-      !internal variables
-      integer :: year, month, day, tod, next_month
-      logical :: found = .false.
-      real(rtype) :: fraction_of_month
-      real(rtype), pointer :: mon_ccn_1(:,:)
-      real(rtype), pointer :: mon_ccn_2(:,:)
-      real(rtype), pointer :: ccn_values(:,:,:)
-      real(rtype), dimension(12):: days_per_month
-
-      nullify(ccn_values)
-
-      !fill days_per_month, SPA does not recognize leap year
-      days_per_month = (/31,28,31,30,31,30,31,31,30,31,30,31/)
-
-      !get current time step's date
-      call get_curr_date(year,month,day,tod)
-
-      !populate mon_ccn_1 and mon_ccn_2 with corresponding pbuf variables
-
-      call pbuf_get_field(pbuf,mon_ccn_1_idx, mon_ccn_1)
-
-      call pbuf_get_field(pbuf,mon_ccn_2_idx, mon_ccn_2)
-
-      if (current_month .ne. month) then
-
-         mon_ccn_1 = mon_ccn_2
-
-         if (month==12) then
-            next_month = 1
-         else
-            next_month = month + 1
-         end if
-
-         allocate(ccn_values(pcols,pver,begchunk:endchunk))
-
-         call get_prescribed_CCN_from_file(micro_p3_lookup_dir,next_month,ccn_values)
-
-         mon_ccn_2 = ccn_values(:,:,lchnk)
-
-         deallocate(ccn_values)
-         
-         current_month = month
-
-      end if
-                                    
-      !interpolate between mon_ccn_1 and mon_ccn_2 to calculate nccn_prescribed
-      !based on current date
-
-      fraction_of_month = (day*3600.0*24.0 + tod)/(3600*24*days_per_month(current_month)) !tod is in seconds
-
-      nccn_prescribed = mon_ccn_1*(1-fraction_of_month) + mon_ccn_2*(fraction_of_month)
-
-     !write(iulog,*) 'nccn_prescribed', nccn_prescribed(1,65)
-
-    end subroutine get_prescribed_CCN
-
-  !================================================================================================
   subroutine micro_p3_tend(state, ptend, dtime, pbuf)
 
     use phys_grid,      only: get_rlat_all_p, get_rlon_all_p, get_gcol_all_p
@@ -913,7 +770,7 @@ end subroutine micro_p3_readnl
     real(rtype) :: qv2qi_depos_tend(pcols,pver)
     real(rtype) :: precip_liq_flux(pcols,pver+1)     !grid-box average rain flux (kg m^-2s^-1) pverp
     real(rtype) :: precip_ice_flux(pcols,pver+1)     !grid-box average ice/snow flux (kg m^-2s^-1) pverp
-    real(rtype) :: exner(pcols,pver)      !exner formula for converting between potential and normal temp
+    real(rtype) :: inv_exner(pcols,pver)       !inverse exner formula for converting between potential and normal temp
     real(rtype) :: cld_frac_r(pcols,pver)      !rain cloud fraction
     real(rtype) :: cld_frac_l(pcols,pver)      !liquid cloud fraction
     real(rtype) :: cld_frac_i(pcols,pver)      !ice cloud fraction
@@ -1005,6 +862,7 @@ end subroutine micro_p3_readnl
     real(rtype), parameter :: dcon   = 25.e-6_rtype         ! Convective size distribution effective radius (um)
     real(rtype), parameter :: mucon  = 5.3_rtype            ! Convective size distribution shape parameter
     real(rtype), parameter :: deicon = 50._rtype            ! Convective ice effective diameter (um)
+    real(rtype), pointer :: ccn_trcdat(:,:) !BSINGH - receive ccn values in this variable
 
     call t_startf('micro_p3_tend_init')
  
@@ -1080,13 +938,17 @@ end subroutine micro_p3_readnl
 
     ! COMPUTE GEOMETRIC THICKNESS OF GRID & CONVERT T TO POTENTIAL TEMPERATURE
     !==============
-    exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
+    ! TODO: Create a general function to calculate Exner's formula that can be
+    ! used by all parameterizations, such as P3 and SHOC.
+    ! This would take a bit more work, so we have decided to delay this task
+    ! until a later stage of code cleanup.
+    inv_exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
     do icol = 1,ncol
        do k = 1,pver
 ! Note: dz is calculated in the opposite direction that pdel is calculated,
 ! thus when considering any dp/dz calculation we must also change the sign.
           dz(icol,k) = state%zi(icol,k) - state%zi(icol,k+1)
-          th(icol,k)  = state%t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp) 
+          th(icol,k)  = state%t(icol,k)*inv_exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp) 
        end do
     end do
 
@@ -1175,8 +1037,10 @@ end subroutine micro_p3_readnl
     end do
     p3_main_inputs(1,pver+1,5) = state%zi(1,pver+1)
 
-    !read in prescribed CCN if log_prescribeCCN is true
-    if (do_prescribed_CCN) call get_prescribed_CCN(nccn_prescribed,micro_p3_lookup_dir,its,ite,kts,kte,pbuf,lchnk)
+    if (do_prescribed_CCN) then
+       call pbuf_get_field(pbuf, ccn3_idx, ccn_trcdat) ! now you can use ccn_trcdat anywhere in this code
+       nccn_prescribed = ccn_trcdat
+    end if
 
     ! CALL P3
     !==============
@@ -1221,7 +1085,7 @@ end subroutine micro_p3_readnl
          do_prescribed_CCN,           & ! IN
          ! AaronDonahue new stuff
          state%pdel(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
-         exner(its:ite,kts:kte),      & ! IN exner values
+         inv_exner(its:ite,kts:kte),      & ! IN exner values
          qv2qi_depos_tend(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice 
          precip_total_tend(its:ite,kts:kte),      & ! OUT Total precipitation (rain + snow)
          nevapr(its:ite,kts:kte),     & ! OUT evaporation of total precipitation (rain + snow)
@@ -1288,7 +1152,7 @@ end subroutine micro_p3_readnl
 
     !BACK OUT TENDENCIES FROM STATE CHANGES
     !=============
-    temp(:ncol,:pver) = th(:ncol,:pver)/exner(:ncol,:pver) 
+    temp(:ncol,:pver) = th(:ncol,:pver)/inv_exner(:ncol,:pver) 
     ptend%s(:ncol,:pver)           = cpair*( temp(:ncol,:pver) - state%t(:ncol,:pver) )/dtime 
     ptend%q(:ncol,:pver,1)         = ( max(0._rtype,qv(:ncol,:pver)     ) - state%q(:ncol,:pver,1)         )/dtime
     ptend%q(:ncol,:pver,ixcldliq)  = ( max(0._rtype,cldliq(:ncol,:pver) ) - state%q(:ncol,:pver,ixcldliq)  )/dtime

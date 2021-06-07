@@ -195,8 +195,6 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
       ComputeDiagThirdShocMomentData(2, 7, 8)
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeDiagThirdShocMomentData);
-
     // Generate random input data
     for (auto& d : SDS_f90) {
       d.randomize();
@@ -232,6 +230,8 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeDiagThirdShocMomentData);
     for (Int i = 0; i < num_runs; ++i) {
       ComputeDiagThirdShocMomentData& d_f90 = SDS_f90[i];
       ComputeDiagThirdShocMomentData& d_cxx = SDS_cxx[i];
@@ -239,6 +239,7 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
         REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
       }
     }
+#endif
   }
 };
 

@@ -115,6 +115,7 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
 
     Kokkos::deep_copy(self_host, self_device);
 
+#ifndef NDEBUG
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(self[s].qc_incld == self_host(s).qc_incld);
       REQUIRE(self[s].qr_incld == self_host(s).qr_incld);
@@ -125,6 +126,7 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
       REQUIRE(self[s].ni_incld == self_host(s).ni_incld);
       REQUIRE(self[s].bm_incld == self_host(s).bm_incld);
     }
+#endif
   }
 
   static void run_incloud_mixing_phys()

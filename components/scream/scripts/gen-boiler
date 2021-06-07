@@ -11,7 +11,9 @@ To test this tool, run:
 % python3 -m doctest gen_boiler.py
 """
 
-from utils import expect, check_minimum_python_version, get_git_toplevel_dir
+from utils import expect, check_minimum_python_version
+from git_utils import get_git_toplevel_dir
+
 check_minimum_python_version(3, 5)
 
 import argparse, sys, pathlib

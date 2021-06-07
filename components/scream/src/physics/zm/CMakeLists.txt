@@ -12,7 +12,6 @@ set(ZM_SRCS
   zm_conv.F90
   atmosphere_deep_convection.cpp
   scream_zm_interface.F90
-  zm_inputs_initializer.cpp
 )
 
 set(ZM_HEADERS

@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="http://www.cgd.ucar.edu/~cam/namelist/namelist_definition.xsl"?>
+
+<entry_id version="2.0">
+
+  <!-- 
+       The following lists all of the namelist variables that can appear in the Buildconf/xxxconf/drv_flds_in
+       files, where xxx = [cam, clm, ...]. The driver buildnml treats all of these files as user_nl_cpl files
+       for generating the driver drv_flds_in file, which will appear in CaseDocs and in $RUNDIR.
+  -->
+
+  <!-- ========================================================================================  -->
+  <!-- MEGAN VOC emissions namelist options                                                      -->
+  <!-- ========================================================================================  -->
+
+  <entry id="megan_factors_file">
+    <type>char</type>
+    <input_pathname>abs</input_pathname>
+    <category>drv_flds_in</category>
+    <group>megan_emis_nl</group>
+    <desc>
+      File containing MEGAN emissions factors. Includes the list of MEGAN compounds that can be
+      used in the Comp_Name variable on the file.
+    </desc>
+  </entry>
+
+  <entry id="megan_specifier">
+    <type>char(100)</type>
+    <category>drv_flds_in</category>
+    <group>megan_emis_nl</group>
+    <desc>
+      MEGAN specifier. This is in the form of: Chem-compound = megan_compound(s)
+      where megan_compound(s) can be the sum of megan compounds with a "+" between them.
+      In each equation, the item to the left of the equal sign is a CAM chemistry compound, the
+      items to the right are compounds known to the MEGAN model (single or combinations).
+      For example: megan_specifier = 'ISOP = isoprene', 'C10H16 = pinene_a + carene_3 + thujene_a'
+    </desc>
+  </entry>
+
+  <entry id="megan_mapped_emisfctrs">
+    <type>logical</type>
+    <category>drv_flds_in</category>
+    <group>megan_emis_nl</group>
+    <desc>
+      MEGAN mapped isoprene emissions factors switch
+      If TRUE then use mapped MEGAN emissions factors for isoprene.
+    </desc>
+  </entry>
+
+  <entry id="megan_cmpds">
+    <type>char(150)</type>
+    <category>drv_flds_in</category>
+    <group>drv_physics</group>
+    <desc>
+      List of possible MEGAN compounds to use
+      (the list used by the simulation is on the megan_factors_file as the Comp_Name)
+    </desc>
+  </entry>
+
+  <!-- ========================================================================================  -->
+  <!-- drydep Namelists                                                                          -->
+  <!-- ========================================================================================  -->
+
+  <entry id="drydep_method">
+    <type>char</type>
+    <category>dry-deposition</category>
+    <group>drydep_inparm</group>
+    <valid_values>xactive_lnd,xactive_atm,table</valid_values>
+    <desc>
+      Where dry deposition is calculated (from land, atmosphere, or from a table)
+      This specifies the method used to calculate dry
+      deposition velocities of gas-phase chemical species.  The available methods are:
+      'table'       - prescribed method in CAM
+      'xactive_atm' - interactive method in CAM
+      'xactive_lnd' - interactive method in CLM
+    </desc>
+  </entry>
+
+  <entry id="drydep_list">
+    <type>char(300)</type>
+    <category>dry-deposition</category>
+    <group>drydep_inparm</group>
+    <desc>
+      List of species that undergo dry deposition.
+    </desc>
+  </entry>
+
+  <!-- ========================================================================================  -->
+  <!-- Nitrogen deposition -->
+  <!-- ========================================================================================  -->
+
+  <entry id="ndep_list">
+    <type>char(2)</type>
+    <category>nitrogen deposition</category>
+    <group>ndep_inparm</group>
+    <desc>
+      List of nitrogen deposition fluxes to be sent from CAM to surfae models.
+    </desc>
+  </entry>
+
+  <!-- ========================================================================================  -->
+  <!-- Fire emissions fluxes                                                                     -->
+  <!-- ========================================================================================  -->
+
+  <entry id="fire_emis_factors_file">
+    <type>char</type>
+    <input_pathname>abs</input_pathname>
+    <category>Fire_emissions</category>
+    <group>fire_emis_nl</group>
+    <desc>
+      File containing fire emissions factors.
+    </desc>
+  </entry>
+
+  <entry id="fire_emis_specifier">
+    <type>char(100)</type>
+    <category>Fire_emissions</category>
+    <group>fire_emis_nl</group>
+    <desc>
+      Fire emissions specifier.
+    </desc>
+  </entry>
+
+  <entry id="fire_emis_elevated">
+    <type>logical</type>
+    <category>Fire_emissions</category>
+    <group>fire_emis_nl</group>
+    <desc>
+      If ture fire emissions are input into atmosphere as elevated forcings.
+      Otherwise they are treated as surface emissions.
+    </desc>
+  </entry>
+
+  <!-- ========================================================================================  -->
+  <!-- CARMA fields                                                                              -->
+  <!-- ========================================================================================  -->
+
+  <entry id="carma_fields">
+    <type>char</type>
+    <category>carma</category>
+    <group>carma_inparm</group>
+    <desc>
+      List of fluxes needed by the CARMA model, from CLM to CAM.
+    </desc>
+  </entry>
+
+</entry_id>

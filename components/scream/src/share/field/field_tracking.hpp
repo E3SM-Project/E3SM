@@ -1,25 +1,27 @@
 #ifndef SCREAM_FIELD_TRACKING_HPP
 #define SCREAM_FIELD_TRACKING_HPP
 
-#include "share/field/field_utils.hpp"
+#include "share/field/field_group.hpp"
 #include "share/scream_types.hpp"
 
 #include "share/util/scream_time_stamp.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
+#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/ekat_assert.hpp"
 
 #include <memory>   // For std::weak_ptr
 #include <string>
+#include <list>
 #include <set>
 
 namespace scream {
 
 // Forward declarations
 class AtmosphereProcess;
-class FieldInitializer;
+class FieldHeader;
 
-class FieldTracking {
+class FieldTracking : public ekat::enable_shared_from_this<FieldTracking> {
 public:
 
   using TimeStamp         = util::TimeStamp;
@@ -28,8 +30,10 @@ public:
   using atm_proc_set_type = ekat::WeakPtrSet<AtmosphereProcess>;
 
   FieldTracking() = delete;
-  FieldTracking(const std::string&);
+  explicit FieldTracking(const std::string& name);
   FieldTracking(const FieldTracking&) = default;
+  FieldTracking(const std::string& name,
+                const std::shared_ptr<FieldTracking>& parent);
 
   // No assignment, to prevent tampering with tracking (e.g., rewinding time stamps)
   FieldTracking& operator=(const FieldTracking&) = delete;
@@ -43,29 +47,33 @@ public:
   // List of providers/customers for this field
   const atm_proc_set_type& get_providers () const { return m_providers; }
   const atm_proc_set_type& get_customers () const { return m_customers; }
-  const std::weak_ptr<FieldInitializer>& get_initializer () const { return m_initializer; }
-  InitType get_init_type () const { return m_init_type; }
+
+  // Get parent/children (if any)
+  // std::shared_ptr<const FieldHeader> get_parent () const { return m_parent.lock(); }
+  std::weak_ptr<FieldTracking> get_parent () const { return m_parent; }
 
   // List of field groups that this field belongs to
-  const std::set<ci_string>& get_groups_names () const { return m_groups; }
+  const ekat::WeakPtrSet<const FieldGroupInfo>& get_groups_info () const { return m_groups; }
 
   // ----- Setters ----- //
 
   // Add to the list of providers/customers
   void add_provider (const std::weak_ptr<AtmosphereProcess>& provider);
   void add_customer (const std::weak_ptr<AtmosphereProcess>& customer);
-  void set_initializer (const std::weak_ptr<FieldInitializer>& initializer);
-  void set_value_initializer (const Real value);
 
   // Add the field to a given group
-  void add_to_group (const std::string& group_name);
+  void add_to_group (const std::shared_ptr<const FieldGroupInfo>& group);
 
   // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
+  // NOTE: if the field has 'children' (see below), their ts will be updated too.
+  //       However, if the field has a 'parent' (see below), the parent's ts will not be updated.
   void update_time_stamp (const TimeStamp& ts);
 
-protected:
+  const std::string& name () const { return m_name; }
 
-  void set_init_type (const InitType init_type);
+  void register_as_children_in_parent ();
+
+protected:
 
   // We keep the field name just to make debugging messages more helpful
   std::string m_name;
@@ -85,20 +93,28 @@ protected:
   atm_proc_set_type       m_providers;
   atm_proc_set_type       m_customers;
 
-  // How this field will be initialized (if at all needed)
-  InitType                m_init_type;
-
-  // The initializer is a class that claims the responsibility of initializing the field
-  // at the beginning of the simulation. There can be ONLY one initializer.
-  std::weak_ptr<FieldInitializer>       m_initializer;
+  // If this field is a sub-view of another field, we keep a pointer to the parent
+  // On the other hand, if there are sub-views of this field, we keep a list of them
+  std::weak_ptr<FieldTracking>              m_parent;
+  std::list<std::weak_ptr<FieldTracking>>   m_children;
 
   // Groups are used to bundle together fields, so that a process can request all of them
   // without knowing/listing all their names. For instance, the dynamics process needs to
   // get all tracers, which need to be advected. However, dyamics has no idea of what are
   // the tracers names, and neither should it care. Groups can come to rescue here, allowing
   // dynamics to request all fields that have been marked as 'tracers'.
-  std::set<ci_string>    m_groups;
+  ekat::WeakPtrSet<const FieldGroupInfo>    m_groups;
 };
+
+// Use this free function to exploit features of enable_from_this
+template<typename... Args>
+inline std::shared_ptr<FieldTracking>
+create_tracking(const Args&... args) {
+  auto ptr = std::make_shared<FieldTracking>(args...);
+  ptr->setSelfPointer(ptr);
+  return ptr;
+}
+
 
 } // namespace scream
 

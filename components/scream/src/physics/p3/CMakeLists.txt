@@ -14,8 +14,6 @@ set(P3_SRCS
   p3_iso_f.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/micro_p3.F90
   atmosphere_microphysics.cpp
-  p3_inputs_initializer.cpp
-  scream_p3_interface.F90
 )
 
 # Add ETI source files if not on CUDA
@@ -60,7 +58,6 @@ if (NOT CUDA_BUILD)
     p3_nc_conservation.cpp
     p3_nr_conservation.cpp
     p3_ni_conservation.cpp
-    p3_water_vapor_conservation.cpp
   ) # P3 ETI SRCS
 endif()
 

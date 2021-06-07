@@ -15,20 +15,22 @@ namespace scream
 template<typename RealType>
 class FieldPositivityCheck: public FieldPropertyCheck<RealType> {
 public:
+  using non_const_RT = typename FieldPropertyCheck<RealType>::non_const_RT;
+  using const_RT     = typename FieldPropertyCheck<RealType>::const_RT;
 
   // Default constructor -- cannot repair fields that fail the check.
   FieldPositivityCheck () : m_lower_bound(0) {}
 
   // Constructor with lower bound -- can repair fields that fail the check
   // by overwriting nonpositive values with the given lower bound.
-  explicit FieldPositivityCheck (RealType lower_bound) :
+  explicit FieldPositivityCheck (const_RT lower_bound) :
     m_lower_bound(lower_bound) {
     EKAT_ASSERT_MSG(lower_bound > 0, "lower_bound must be positive.");
   }
 
   // Overrides.
 
-  bool check(const Field<RealType>& field) const override {
+  bool check(const Field<const_RT>& field) const override {
     auto view = field.get_view();
     RealType min_val = std::numeric_limits<RealType>::max();
     Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, RealType& m) {
@@ -41,7 +43,7 @@ public:
     return (m_lower_bound > 0);
   }
 
-  void repair(Field<RealType>& field) const override {
+  void repair(Field<non_const_RT>& field) const override {
     if (can_repair()) {
       auto view = field.get_view();
       RealType lower_bound = m_lower_bound;
@@ -56,7 +58,6 @@ protected:
 
   // The given lower bound (0 if not supplied).
   RealType m_lower_bound;
-
 };
 
 } // namespace scream

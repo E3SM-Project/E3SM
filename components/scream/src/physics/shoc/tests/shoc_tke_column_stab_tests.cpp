@@ -126,8 +126,6 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
       IntegColumnStabilityData(2,  7 ),
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(IntegColumnStabilityData);
-
     //Generate random data
     for (auto &d : f90_data) {
       d.randomize();
@@ -158,6 +156,8 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     }
 
     // Verify BFB results, all data should be in C layout
+#ifndef NDEBUG
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(IntegColumnStabilityData);
     for (Int i = 0; i < num_runs; ++i) {
       IntegColumnStabilityData& d_f90 = f90_data[i];
       IntegColumnStabilityData& d_cxx = cxx_data[i];
@@ -165,7 +165,7 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
         REQUIRE(d_f90.brunt_int[c] == d_cxx.brunt_int[c]);
       }
     }
-
+#endif
   } //run_bfb
 };
 

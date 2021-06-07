@@ -17,7 +17,7 @@ void Functions<S,D>::update_prognostics_implicit(
   const MemberType&            team,
   const Int&                   nlev,
   const Int&                   nlevi,
-  const Int&                   num_tracer,
+  const Int&                   num_qtracers,
   const Scalar&                dtime,
   const uview_1d<const Spack>& dz_zt,
   const uview_1d<const Spack>& dz_zi,
@@ -31,26 +31,53 @@ void Functions<S,D>::update_prognostics_implicit(
   const Scalar&                wthl_sfc,
   const Scalar&                wqw_sfc,
   const uview_1d<const Spack>& wtracer_sfc,
-  const uview_1d<Spack>&       rdp_zt,
-  const uview_1d<Spack>&       tmpi,
-  const uview_1d<Spack>&       tkh_zi,
-  const uview_1d<Spack>&       tk_zi,
-  const uview_1d<Spack>&       rho_zi,
-  const uview_1d<Scalar>&      du,
-  const uview_1d<Scalar>&      dl,
-  const uview_1d<Scalar>&      d,
-  const uview_2d<Spack>&       X1,
+  const Workspace&             workspace,
   const uview_1d<Spack>&       thetal,
   const uview_1d<Spack>&       qw,
-  const uview_2d<Spack>&       tracer,
+  const uview_2d<Spack>&       qtracers,
   const uview_1d<Spack>&       tke,
   const uview_1d<Spack>&       u_wind,
   const uview_1d<Spack>&       v_wind)
 {
-  const auto last_nlev_pack = (nlev-1)/Spack::n;
-  const auto last_nlev_indx = (nlev-1)%Spack::n;
-  const auto last_nlevi_pack = (nlevi-1)/Spack::n;
-  const auto last_nlevi_indx = (nlevi-1)%Spack::n;
+  const auto nlev_v  = (nlev-1)/Spack::n;
+  const auto nlev_p  = (nlev-1)%Spack::n;
+  const auto nlevi_v = (nlevi-1)/Spack::n;
+  const auto nlevi_p = (nlevi-1)%Spack::n;
+
+  // Define temporary variables via the WorkspaceManager
+
+  // 1d allocations
+  uview_1d<Spack> tmpi, tkh_zi,
+                  tk_zi, rho_zi,
+                  rdp_zt;
+  uview_1d<Scalar> du_workspace, dl_workspace, d_workspace;
+
+  workspace.template take_many_contiguous_unsafe<5>(
+    {"tmpi", "tkh_zi", "tk_zi", "rho_zi", "rdp_zt"},
+    {&tmpi, &tkh_zi, &tk_zi, &rho_zi, &rdp_zt});
+
+  workspace.template take_many_contiguous_unsafe<3, Scalar>(
+    {"du_workspace", "dl_workspace", "d_workspace"},
+    {&du_workspace, &dl_workspace, &d_workspace});
+  auto du = Kokkos::subview(du_workspace, Kokkos::make_pair(0,nlev));
+  auto dl = Kokkos::subview(dl_workspace, Kokkos::make_pair(0,nlev));
+  auto d  = Kokkos::subview(d_workspace,  Kokkos::make_pair(0,nlev));
+
+  // 2d allocations for solver RHS
+  const int num_wind_transpose_packs = ekat::npack<Spack>(2);
+  const int num_qtracers_transpose_packs = ekat::npack<Spack>(num_qtracers+3);
+
+  const int n_wind_slots = num_wind_transpose_packs*Spack::n;
+  const int n_trac_slots = num_qtracers_transpose_packs*Spack::n;
+
+  const auto wind_slot    = workspace.template take_macro_block<Scalar>("wind_slot",n_wind_slots);
+  const auto tracers_slot = workspace.template take_macro_block<Scalar>("tracers_slot",n_trac_slots);
+
+  // Reshape 2d views
+  const auto wind_rhs     = uview_2d<Spack>(reinterpret_cast<Spack*>(wind_slot.data()),
+                                            nlev, num_wind_transpose_packs);
+  const auto qtracers_rhs  = uview_2d<Spack>(reinterpret_cast<Spack*>(tracers_slot.data()),
+                                            nlev, num_qtracers_transpose_packs);
 
   // linearly interpolate tkh, tk, and air density onto the interface grids
   linear_interp(team,zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,0);
@@ -73,15 +100,15 @@ void Functions<S,D>::update_prognostics_implicit(
     const Scalar ksrfmin = 1e-4;
     const Scalar ustarmin = 0.01;
 
-    const Scalar rho = rho_zi(last_nlevi_pack)[last_nlevi_indx];
+    const Scalar rho = rho_zi(nlevi_v)[nlevi_p];
     const Scalar uw = uw_sfc;
     const Scalar vw = vw_sfc;
 
     const Scalar taux = rho*uw;
     const Scalar tauy = rho*vw;
 
-    const Scalar u_wind_sfc = u_wind(last_nlev_pack)[last_nlev_indx];
-    const Scalar v_wind_sfc = v_wind(last_nlev_pack)[last_nlev_indx];
+    const Scalar u_wind_sfc = u_wind(nlev_v)[nlev_p];
+    const Scalar v_wind_sfc = v_wind(nlev_v)[nlev_p];
 
     const Scalar ws = ekat::impl::max(std::sqrt((u_wind_sfc*u_wind_sfc) + v_wind_sfc*v_wind_sfc), wsmin);
     const Scalar tau = std::sqrt(taux*taux + tauy*tauy);
@@ -93,35 +120,34 @@ void Functions<S,D>::update_prognostics_implicit(
 
   // compute surface fluxes for liq. potential temp, water and tke
   {
-    const auto cmnfac = dtime*(C::gravit*rho_zi(last_nlevi_pack)[last_nlevi_indx]*rdp_zt(last_nlev_pack)[last_nlev_indx]);
+    const auto cmnfac = dtime*(C::gravit*rho_zi(nlevi_v)[nlevi_p]*rdp_zt(nlev_v)[nlev_p]);
     Kokkos::single(Kokkos::PerTeam(team), [&] () {
-      thetal(last_nlev_pack)[last_nlev_indx] += cmnfac*wthl_sfc;
-      qw(last_nlev_pack)[last_nlev_indx] += cmnfac*wqw_sfc;
-      tke(last_nlev_pack)[last_nlev_indx] += cmnfac*wtke_sfc;
+      thetal(nlev_v)[nlev_p] += cmnfac*wthl_sfc;
+      qw(nlev_v)[nlev_p] += cmnfac*wqw_sfc;
+      tke(nlev_v)[nlev_p] += cmnfac*wtke_sfc;
     });
 
-    const auto tracer_sfc = Kokkos::subview(tracer, nlev-1, Kokkos::ALL());
-    const Int num_tracer_pack = ekat::npack<Spack>(num_tracer);
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_tracer_pack), [&] (const Int& p) {
-      tracer_sfc(p) += cmnfac*wtracer_sfc(p);
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracers), [&] (const Int& q) {
+      qtracers(q,nlev_v)[nlev_p] += cmnfac*wtracer_sfc(q/Spack::n)[q%Spack::n];
     });
   }
 
-  // Store RHS values in X1 and tracer for 1st and 2nd solve respectively
+  // Store RHS values in wind_rhs and qtracers_rhs for 1st and 2nd solve respectively
   team.team_barrier();
-  const auto s_u_wind = ekat::scalarize(u_wind);
-  const auto s_v_wind = ekat::scalarize(v_wind);
-  const auto s_thetal = ekat::scalarize(thetal);
-  const auto s_qw = ekat::scalarize(qw);
-  const auto s_tke = ekat::scalarize(tke);
-
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
-    X1(k,0)[0] = s_u_wind(k);
-    X1(k,1/Spack::n)[1%Spack::n] = s_v_wind(k);
+    const int k_v = k/Spack::n;
+    const int k_p = k%Spack::n;
 
-    tracer(k,(num_tracer)/Spack::n)[(num_tracer)%Spack::n] = s_thetal(k);
-    tracer(k,(num_tracer+1)/Spack::n)[(num_tracer+1)%Spack::n] = s_qw(k);
-    tracer(k,(num_tracer+2)/Spack::n)[(num_tracer+2)%Spack::n] = s_tke(k);
+    wind_rhs(k,0/Spack::n)[0%Spack::n] = u_wind(k_v)[k_p];
+    wind_rhs(k,1/Spack::n)[1%Spack::n] = v_wind(k_v)[k_p];
+
+    // The rhs version of the tracers is the transpose of the input/output layout
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
+      qtracers_rhs(k, q/Spack::n)[q%Spack::n] = qtracers(q,k_v)[k_p];
+    });
+    qtracers_rhs(k, num_qtracers/Spack::n)[num_qtracers%Spack::n]         = thetal(k_v)[k_p];
+    qtracers_rhs(k, (num_qtracers+1)/Spack::n)[(num_qtracers+1)%Spack::n] = qw(k_v)[k_p];
+    qtracers_rhs(k, (num_qtracers+2)/Spack::n)[(num_qtracers+2)%Spack::n] = tke(k_v)[k_p];
   });
 
   // march u_wind and v_wind one step forward using implicit solver
@@ -131,7 +157,7 @@ void Functions<S,D>::update_prognostics_implicit(
 
     // Solve
     team.team_barrier();
-    vd_shoc_solve(team, du, dl, d, X1);
+    vd_shoc_solve(team, du, dl, d, wind_rhs);
   }
 
   // march temperature, total water, tke,and tracers one step forward using implicit solver
@@ -143,19 +169,36 @@ void Functions<S,D>::update_prognostics_implicit(
 
     // Solve
     team.team_barrier();
-    vd_shoc_solve(team, du, dl, d, tracer);
+    vd_shoc_solve(team, du, dl, d, qtracers_rhs);
   }
 
-  // Copy RHS values from X1 and X2
+  // Copy RHS values back into output variables
   team.team_barrier();
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
-    s_u_wind(k) = X1(k,0)[0];
-    s_v_wind(k) = X1(k,1/Spack::n)[1%Spack::n];
+    const int k_v = k/Spack::n;
+    const int k_p = k%Spack::n;
 
-    s_thetal(k) = tracer(k,(num_tracer)/Spack::n)[(num_tracer)%Spack::n];
-    s_qw(k) = tracer(k,(num_tracer+1)/Spack::n)[(num_tracer+1)%Spack::n];
-    s_tke(k) = tracer(k,(num_tracer+2)/Spack::n)[(num_tracer+2)%Spack::n];
+    u_wind(k_v)[k_p] = wind_rhs(k,0/Spack::n)[0%Spack::n];
+    v_wind(k_v)[k_p] = wind_rhs(k,1/Spack::n)[1%Spack::n];
+
+    // Transpose tracers back to  input/output layout
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
+      qtracers(q,k_v)[k_p] = qtracers_rhs(k, q/Spack::n)[q%Spack::n];
+    });
+    thetal(k_v)[k_p] = qtracers_rhs(k, num_qtracers/Spack::n)[num_qtracers%Spack::n];
+    qw(k_v)[k_p]     = qtracers_rhs(k, (num_qtracers+1)/Spack::n)[(num_qtracers+1)%Spack::n];
+    tke(k_v)[k_p]    = qtracers_rhs(k, (num_qtracers+2)/Spack::n)[(num_qtracers+2)%Spack::n];
   });
+
+
+  // Release temporary variables from the workspace
+  team.team_barrier();
+  workspace.template release_macro_block<Scalar>(tracers_slot,n_trac_slots);
+  workspace.template release_macro_block<Scalar>(wind_slot,n_wind_slots);
+  workspace.template release_many_contiguous<3,Scalar>(
+    {&du_workspace, &dl_workspace, &d_workspace});
+  workspace.template release_many_contiguous<5>(
+    {&tmpi, &tkh_zi, &tk_zi, &rho_zi, &rdp_zt});
 }
 
 } // namespace shoc

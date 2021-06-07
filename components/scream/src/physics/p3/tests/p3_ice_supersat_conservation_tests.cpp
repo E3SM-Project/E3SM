@@ -19,8 +19,6 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
   {
     IceSupersatConservationData f90_data[max_pack_size];
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(IceSupersatConservationData);
-
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
@@ -44,7 +42,7 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack cld_frac_i, latent_heat_sublim, qidep, qinuc, qv, qv_sat_i, t_atm;
+      Spack cld_frac_i, latent_heat_sublim, qidep, qinuc, qv, qv_sat_i, t_atm, qi2qv_sublim_tend, qr2qv_evap_tend;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         cld_frac_i[s] = cxx_device(vs).cld_frac_i;
         latent_heat_sublim[s] = cxx_device(vs).latent_heat_sublim;
@@ -53,9 +51,11 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
         qv[s] = cxx_device(vs).qv;
         qv_sat_i[s] = cxx_device(vs).qv_sat_i;
         t_atm[s] = cxx_device(vs).t_atm;
+        qi2qv_sublim_tend[s] = cxx_device(vs).qi2qv_sublim_tend;
+        qr2qv_evap_tend[s] = cxx_device(vs).qr2qv_evap_tend;
       }
 
-      Functions::ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, cxx_device(0).dt);
+      Functions::ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, cxx_device(0).dt, qi2qv_sublim_tend, qr2qv_evap_tend);
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -68,13 +68,14 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
     Kokkos::deep_copy(cxx_host, cxx_device);
 
     // Verify BFB results
-    for (Int i = 0; i < num_runs; ++i) {
+#ifndef NDEBUG
+    for (Int i = 0; i < max_pack_size; ++i) {
       IceSupersatConservationData& d_f90 = f90_data[i];
       IceSupersatConservationData& d_cxx = cxx_host[i];
       REQUIRE(d_f90.qidep == d_cxx.qidep);
       REQUIRE(d_f90.qinuc == d_cxx.qinuc);
-
     }
+#endif
   } // run_bfb
 
 };

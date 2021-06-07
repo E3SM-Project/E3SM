@@ -221,7 +221,7 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
   Tracers &tracers = Context::singleton().get<Tracers>();
   if (params.ftype == ForcingAlg::FORCING_DEBUG) {
     if (tracers.fq.data() == nullptr) {
-      tracers.fq = decltype(tracers.fq)("fq", num_elems);
+      tracers.fq = decltype(tracers.fq)("fq", num_elems, params.qsize);
     }
     HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
         elem_derived_FQ, num_elems);
@@ -453,26 +453,32 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
 
 void init_boundary_exchanges_c ()
 {
-  auto& params       = Context::singleton().get<SimulationParams>();
-  auto  connectivity = Context::singleton().get_ptr<Connectivity>();
+  auto& c = Context::singleton();
+
+  auto& params       = c.get<SimulationParams>();
+  auto  connectivity = c.get_ptr<Connectivity>();
   assert (connectivity->is_finalized());
 
   // Create buffers manager map
-  auto& bmm = Context::singleton().create<MpiBuffersManagerMap>();
-  bmm[MPI_EXCHANGE]->set_connectivity(connectivity);
-  bmm[MPI_EXCHANGE_MIN_MAX]->set_connectivity(connectivity);
+  auto& bmm = c.create_if_not_there<MpiBuffersManagerMap>();
+  if (!bmm[MPI_EXCHANGE]->is_connectivity_set()) {
+    bmm[MPI_EXCHANGE]->set_connectivity(connectivity);
+  }
+  if (!bmm[MPI_EXCHANGE_MIN_MAX]->is_connectivity_set()) {
+    bmm[MPI_EXCHANGE_MIN_MAX]->set_connectivity(connectivity);
+  }
 
   // Euler BEs
-  auto& esf = Context::singleton().get<EulerStepFunctor>();
+  auto& esf = c.get<EulerStepFunctor>();
   esf.reset(params);
   esf.init_boundary_exchanges();
 
   // RK stages BE's
-  auto& cf = Context::singleton().get<CaarFunctor>();
+  auto& cf = c.get<CaarFunctor>();
   cf.init_boundary_exchanges(bmm[MPI_EXCHANGE]);
 
   // HyperviscosityFunctor's BE's
-  auto& hvf = Context::singleton().get<HyperviscosityFunctor>();
+  auto& hvf = c.get<HyperviscosityFunctor>();
   hvf.init_boundary_exchanges();
 }
 

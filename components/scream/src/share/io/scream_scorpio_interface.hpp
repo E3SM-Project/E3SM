@@ -1,6 +1,7 @@
 #ifndef SCREAM_SCORPIO_INTERFACE_HPP
 #define SCREAM_SCORPIO_INTERFACE_HPP
 
+#include "share/field/field_tag.hpp"
 #include "share/scream_types.hpp"
 #include <vector>
 
@@ -52,21 +53,74 @@ namespace scorpio {
 
   /* Read data for a specific variable from a specific file. */
   void grid_read_data_array (const std::string &filename, const std::string &varname, const Int& dim_length, Real* hbuf);
-  void grid_read_data_array (const std::string &filename, const std::string &varname, const Int& dim_length, Int* hbuf);
+  void grid_read_data_array (const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& padding, Real* hbuf);
   /* Write data for a specific variable to a specific file. */
   void grid_write_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int& dim_length, const Int* hbuf);
-  /* Read and write data routines that allow for passage of multi dimensional arrays.  May no longer be needed, but keep for now just in case. */
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,1>& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,2>& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,3>& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,4>& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,1>& dim_length, const Int* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,2>& dim_length, const Int* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,3>& dim_length, const Int* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,4>& dim_length, const Int* hbuf);
+  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::vector<int>& dims, const Int& dim_length, const Int& padding, const Real* hbuf);
 
+  /* Helper functions */
+  void add_remove_padding(const int slow_dim_len, const int pad_dim_len, const int padding, const Real *hbuf_in, Real *hbuf_out, bool add_padding);
   void count_pio_atm_file();
+
+extern "C" {
+  /* Query whether the pio subsystem is inited or not */
+  bool is_eam_pio_subsystem_inited();
+  int  eam_pio_subsystem_comm ();
+} // extern "C"
+
+// The strings returned by e2str(const FieldTag&) are different from
+// what existing nc files are already using. Besides upper/lower case
+// differences, the column dimension (COL) is 'ncol' in nc files,
+// but we'd like to keep 'COL' when printing our layouts, so we
+// create this other mini helper function to get the name of a tag
+// that is compatible with nc files. Note that tags that make no
+// sense for an nc file are omitted. Namely, all those that have a
+// field-dependent extent, such as vector dimensions. Those have to
+// be "unpacked", storing a separate variable for each slice.
+
+inline std::string get_nc_tag_name (const FieldTag& t, const int extent) {
+  using namespace ShortFieldTagsNames;
+
+  std::string name = "";
+  switch(t) {
+    case EL:
+      name = "elem";
+      break;
+    case LEV:
+      name = "lev";
+      break;
+    case ILEV:
+      name = "ilev";
+      break;
+    case TL:
+      name = "tl";
+      break;
+    case COL:
+      name = "ncol";
+      break;
+    case GP:
+      name = "gp";
+      break;
+    case CMP:
+      name = "dim" + std::to_string(extent);
+      break;
+    // Added for rrtmgp - TODO revisit this paradigm, see comment in field_tag.hpp
+    case NGAS:
+      name = "ngas";
+      break;
+    case SWBND:
+      name = "swband";
+      break;
+    case LWBND:
+      name = "lwband";
+      break;
+    default:
+      EKAT_ERROR_MSG("Error! Field tag not supported in netcdf files.");
+  }
+
+  return name;
+}
+
 } // namespace scorpio
 } // namespace scream
 
