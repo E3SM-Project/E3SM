@@ -335,6 +335,12 @@ contains
                    globalVerticalStretchMin, 1)
       end if
 
+      if (config_use_topographic_wave_drag) then
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'topographic_wave_drag', &
+                   topographic_wave_drag)
+      end if
+
       if ( trim(config_ocean_run_mode) == 'init' .or. &
                 config_AM_debugDiagnostics_enable ) then
          call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', &
@@ -560,9 +566,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, &
                'boundaryLayerDepthSmooth', &
                 boundaryLayerDepthSmooth)
-      call mpas_pool_get_array(diagnosticsPool, &
-               'edgeAreaFractionOfCell', &
-                edgeAreaFractionOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'barotropicCoriolisTerm', &
                 barotropicCoriolisTerm)
       call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
@@ -625,6 +628,9 @@ contains
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
          !$acc                   landIceFrictionVelocity)
+      end if
+      if (config_use_topographic_wave_drag) then
+         !$acc enter data copyin(topographic_wave_drag)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc enter data copyin(                          &
@@ -812,7 +818,6 @@ contains
       !$acc                   tracersSurfaceValue,                     &
       !$acc                   daysSinceStartOfSim,                     &
       !$acc                   simulationStartTime,                     &
-      !$acc                   edgeAreaFractionOfCell,                  &
       !$acc                   boundaryLayerDepthSmooth,                &
       !$acc                   surfaceFluxAttenuationCoefficientRunoff  &
       !$acc                   )
@@ -860,6 +865,9 @@ contains
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
          !$acc                   landIceFrictionVelocity)
+      end if
+      if (config_use_topographic_wave_drag) then
+         !$acc exit data delete(topographic_wave_drag)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc exit data delete(                           &
@@ -1047,7 +1055,6 @@ contains
       !$acc                   tracersSurfaceValue,                     &
       !$acc                   daysSinceStartOfSim,                     &
       !$acc                   simulationStartTime,                     &
-      !$acc                   edgeAreaFractionOfCell,                  &
       !$acc                   boundaryLayerDepthSmooth,                &
       !$acc                   surfaceFluxAttenuationCoefficientRunoff  &
       !$acc                   )
@@ -1234,7 +1241,6 @@ contains
               tracersSurfaceValue,                     &
               daysSinceStartOfSim,                     &
               simulationStartTime,                     &
-              edgeAreaFractionOfCell,                  &
               boundaryLayerDepthSmooth,                &
               surfaceFluxAttenuationCoefficientRunoff)
 
