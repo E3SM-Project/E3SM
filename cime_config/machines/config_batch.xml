@@ -34,6 +34,14 @@
  jobmin:      The minimum task count required to use this queue. This should only rarely be used to select queues that only use a fraction of a node. This cannot be used in conjuction with nodemin.
  jobmax:      The maximum task count required to use this queue. This should only rarely be used to select queues that only use a fraction of a node. This cannot be used in conjuction with nodemax.
     -->
+
+   <batch_system MACH="spock" type="slurm">
+     <queues>
+       <queue walltimemax="03:00" default="true">ecp</queue>
+       <queue walltimemax="03:00">caar</queue>
+     </queues>
+   </batch_system>
+
   <batch_system type="template" >
     <batch_query args=""></batch_query>
     <batch_submit></batch_submit>
