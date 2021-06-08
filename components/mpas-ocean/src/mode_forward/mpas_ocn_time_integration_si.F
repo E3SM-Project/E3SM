@@ -2556,11 +2556,11 @@ module ocn_time_integration_si
             ! layerThickness has not yet been computed for time level 2.
             call mpas_timer_start('thick vert trans vel top')
             if (associated(highFreqThicknessNew)) then
-               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
+               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
                  layerThicknessCur, layerThickEdge, normalTransportVelocity, &
                  sshCur, dt, vertAleTransportTop, err, highFreqThicknessNew)
             else
-               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
+               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
                  layerThicknessCur, layerThickEdge, normalTransportVelocity, &
                  sshCur, dt, vertAleTransportTop, err)
             endif
