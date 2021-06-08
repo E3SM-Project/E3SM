@@ -4,11 +4,10 @@ module physpkg
   ! 
   ! Method: 
   !   Each parameterization should be implemented with this sequence of calls:
-  !    1)  Call physics interface
-  !    2)  Check energy
-  !    3)  Call physics_update
-  !   See Interface to Column Physics and Chemistry Packages 
-  !     http://www.ccsm.ucar.edu/models/atm-cam/docs/phys-interface/index.html
+  !    1)  call the physics routine to calculate tendencies
+  !    2)  call physics_update() to apply tendencies from ptend to the state
+  !    3)  call check_energy_chng() to ensure that the energy and water 
+  !        changes match the boundary fluxes
   !-----------------------------------------------------------------------------
 #ifdef SPMD
   use mpishorthand
