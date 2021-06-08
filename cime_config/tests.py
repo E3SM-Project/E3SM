@@ -383,8 +383,8 @@ _TESTS = {
 
     "e3sm_gpu" : {
         "tests"    : (
-                 "SMS_P36x1_Ld1.T62_oEC60to30v3.CMPASO-NYF",
-                 "SMS_P36x1_Ld1.T62_oEC60to30v3.DTESTM",
+                 "SMS_P16x1_Ld1.T62_oEC60to30v3.CMPASO-NYF",
+                 "SMS_P16x1_Ld1.T62_oEC60to30v3.DTESTM",
                  )
     },
 
