@@ -1645,8 +1645,8 @@
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="sh">/usr/share/Modules/init/sh;export ONEAPI_OVERRIDE_KOKKOS=1</init_path>
-      <init_path lang="csh">/usr/share/Modules/init/csh;setenv ONEAPI_OVERRIDE_KOKKOS 1</init_path>
+      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
       <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
@@ -1657,6 +1657,8 @@
         <command name="use">/soft/packaging/spack-builds/modules/linux-rhel7-x86_64</command>
         <command name="use">/soft/restricted/CNDA/modulefiles</command>
         <command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
+      </modules>
+      <modules compiler="!gnu">
 	<command name="load">oneapi/2021.04.30.002</command>
 	<command name="load">mpi/intel_mpi/2019.4.243</command>
       </modules>
@@ -1673,6 +1675,13 @@
     <environment_variables mpilib="impi">
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
       <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
+      <env name="I_MPI_DEBUG">10</env>
+      <env name="I_MPI_PIN_DOMAIN">omp</env>
+      <env name="I_MPI_PIN_ORDER">spread</env>
+      <env name="I_MPI_PIN_CELL">unit</env>
+    </environment_variables>
+    <environment_variables compiler="!gnu">
+      <env name="ONEAPI_OVERRIDE_KOKKOS">1</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="openmpi">
       <env name="OMPI_CC">icc</env>
@@ -1695,14 +1704,8 @@
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.2.0-openmpi2.1.6</env>
       <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/gcc8.2.0-openmpi2.1.6</env>
     </environment_variables>
-    <environment_variables mpilib="impi">
-      <env name="I_MPI_DEBUG">10</env>
-      <env name="I_MPI_PIN_DOMAIN">omp</env>
-      <env name="I_MPI_PIN_ORDER">spread</env>
-      <env name="I_MPI_PIN_CELL">unit</env>
-    </environment_variables>
     <environment_variables compiler="oneapi-ifx">
-      <env name="LIBOMPTARGET_DEBUG">5</env>
+      <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
