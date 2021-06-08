@@ -217,6 +217,10 @@
 <mam_dst  rad="rrtmg">atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc</mam_dst>
 <mam_ncl  rad="rrtmg">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_ncl>
 <mam_nh4  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_nh4>
+<mam_co3  rad="rrtmg">atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc</mam_co3>
+<mam_ca   rad="rrtmg">atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc</mam_ca>
+<mam_cl   rad="rrtmg">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_cl>
+<mam_no3  rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_no3>
 
 <!-- Optics for RRTMGP -->
 <mam_so4  rad="rrtmgp">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so4>
@@ -227,7 +231,10 @@
 <mam_dst  rad="rrtmgp">atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc</mam_dst>
 <mam_ncl  rad="rrtmgp">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_ncl>
 <mam_nh4  rad="rrtmgp">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_nh4>
-
+<mam_co3  rad="rrtmgp">atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc</mam_co3>
+<mam_ca   rad="rrtmgp">atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc</mam_ca>
+<mam_cl   rad="rrtmgp">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_cl>
+<mam_no3  rad="rrtmgp">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_no3>
 
 <!-- Marine organic matter optical properties -->
 <mam_mpoly  rad="rrtmg">atm/cam/physprops/poly_rrtmg_c130816.nc</mam_mpoly>
@@ -487,6 +494,10 @@
 <!-- Waccm-x runtime option -->
 <waccmx_opt           >off</waccmx_opt>
 <waccmx_opt waccmx="1">neutral</waccmx_opt>
+
+<!-- Modal mosaic option -->
+<modal_mosaic_nitrates>.false.</modal_mosaic_nitrates>
+<modal_mosaic_nitrates mosaic="1">.true.</modal_mosaic_nitrates>
 
 <!-- For MEGAN VOCs -->
 <megan_factors_file>atm/cam/chem/trop_mozart/emis/megan21_emis_factors_c20130304.nc</megan_factors_file>

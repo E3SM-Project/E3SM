@@ -434,7 +434,15 @@ contains
     do m = 1,pcnst
        n = map2chm(m)
        if( n > 0 ) then
-          mmr(:ncol,:,n) = q(:ncol,:,m)
+! ++MW
+! 2017-01-09 r.c.easter - the following fix should perhaps always be used so that
+! the processes done in this routine start with q values after the neu wet removal
+! with neu wetdep and mosaic aerosols and without this fix,
+! the wetdep and condensation sinks for hno3 and hcl can be large enough 
+! to produce negative values and QNEG3 corrections
+          mmr(:ncol,:,n) = max( 0.0_r8, q(:ncol,:,m)+delt*qtend(:ncol,:,m) )
+!          mmr(:ncol,:,n) = q(:ncol,:,m)
+! --MW
        end if
     end do
 

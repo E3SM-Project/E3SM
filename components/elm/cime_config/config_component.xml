@@ -85,6 +85,7 @@
       <!-- superfast chemistry compsets (use CMIP6 land configuration)-->
       <value compset="1850(?:SOI)?_EAM%AR5sf_ELM">1850_CMIP6_control</value>
       <value compset="20TR(?:SOI)?_EAM%AR5sf_ELM">20thC_CMIP6_transient</value>
+      <value compset="20TR(?:SOI)?_EAM%TS1-MAM4_ELM">20thC_CMIP6_transient</value>
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>

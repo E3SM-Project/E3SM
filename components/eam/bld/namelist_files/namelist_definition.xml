@@ -4166,6 +4166,12 @@ Wet depostion method used
 Default: MOZ
 </entry>
 
+<entry id="modal_mosaic_nitrates" type="logical" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+Turns on mosaic nitrates.
+Default: Set by build-namelist
+</entry>
+
 <entry id="gas_wetdep_list" type="char*16(1000)" category="cam_chem"
        group="wetdep_inparm" valid_values="" >
 List of gas-phase species that undergo wet deposition via the wet deposition scheme.

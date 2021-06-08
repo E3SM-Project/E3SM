@@ -29,7 +29,9 @@ module CanopyStateType
      real(r8) , pointer :: tsai_patch               (:)   ! patch canopy one-sided stem area index, no burying by snow
      real(r8) , pointer :: elai_patch               (:)   ! patch canopy one-sided leaf area index with burying by snow
      real(r8) , pointer :: esai_patch               (:)   ! patch canopy one-sided stem area index with burying by snow
-     real(r8) , pointer :: elai_p_patch             (:)   ! patch canopy one-sided leaf area index with burying by snow average over timestep 
+! ++MW
+     real(r8) , pointer :: elai240_patch            (:)   ! patch canopy one-sided leaf area index with burying by snow average over 10days 
+! --MW
      real(r8) , pointer :: laisun_patch             (:)   ! patch patch sunlit projected leaf area index  
      real(r8) , pointer :: laisha_patch             (:)   ! patch patch shaded projected leaf area index  
      real(r8) , pointer :: laisun_z_patch           (:,:) ! patch patch sunlit leaf area for canopy layer 
@@ -111,7 +113,9 @@ contains
     allocate(this%tlai_patch               (begp:endp))           ; this%tlai_patch               (:)   = nan
     allocate(this%tsai_patch               (begp:endp))           ; this%tsai_patch               (:)   = nan
     allocate(this%elai_patch               (begp:endp))           ; this%elai_patch               (:)   = nan
-    allocate(this%elai_p_patch             (begp:endp))           ; this%elai_p_patch             (:)   = nan
+! ++MW
+    allocate(this%elai240_patch            (begp:endp))           ; this%elai240_patch            (:)   = nan
+! --MW
     allocate(this%esai_patch               (begp:endp))           ; this%esai_patch               (:)   = nan
     allocate(this%laisun_patch             (begp:endp))           ; this%laisun_patch             (:)   = nan
     allocate(this%laisha_patch             (begp:endp))           ; this%laisha_patch             (:)   = nan
@@ -275,6 +279,13 @@ contains
          avgflag='A', long_name='fraction sunlit (last 240hrs)', &
          ptr_patch=this%fsun240_patch, default='inactive')
 
+! ++MW
+    this%elai240_patch(begp:endp) = spval
+    call hist_addfld1d (fname='LAI240', units='m^2/m^2',  &
+         avgflag='A', long_name='240hr average of leaf area index', &
+         ptr_patch=this%elai240_patch, default='inactive')
+! --MW
+
     if ( use_hydrstress ) then
        this%vegwp_patch(begp:endp,:) = spval
        call hist_addfld2d (fname='VEGWP',  units='mm', type2d='nvegwcs', &
@@ -311,10 +322,12 @@ contains
          desc='240hr average of diffuse solar radiation',  accum_type='runmean', accum_period=-10, &
          subgrid_type='pft', numlev=1, init_value=0._r8)
 
-    this%elai_p_patch(bounds%begp:bounds%endp) = spval
-    call init_accum_field (name='LAIP', units='m2/m2',                                             &
-         desc='leaf area index average over timestep',  accum_type='runmean', accum_period=1,      &
+! ++MW
+    this%elai240_patch(bounds%begp:bounds%endp) = spval
+    call init_accum_field (name='LAI240', units='m2/m2',                                             &
+         desc='240hr average of leaf area index',  accum_type='runmean', accum_period=-10,      &
          subgrid_type='pft', numlev=1, init_value=0._r8)
+! --MW
 
   end subroutine InitAccBuffer
 
@@ -361,8 +374,10 @@ contains
     call extract_accum_field ('FSUN240', rbufslp, nstep)
     this%fsun240_patch(begp:endp) = rbufslp(begp:endp)
 
-    call extract_accum_field ('LAIP', rbufslp, nstep)
-    this%elai_p_patch(begp:endp) = rbufslp(begp:endp)
+! ++MW
+    call extract_accum_field ('LAI240', rbufslp, nstep)
+    this%elai240_patch(begp:endp) = rbufslp(begp:endp)
+! --MW
 
     call extract_accum_field ('FSUN24', rbufslp, nstep)
     this%fsun24_patch(begp:endp) = rbufslp(begp:endp)
@@ -413,12 +428,14 @@ contains
     call update_accum_field  ('FSUN240', rbufslp              , nstep)
     call extract_accum_field ('FSUN240', this%fsun240_patch   , nstep)
 
-    ! Accumulate and extract elai_patch 
+! ++MW
+    ! Accumulate and extract elai240 
     do p = begp,endp
        rbufslp(p) = this%elai_patch(p)
     end do
-    call update_accum_field  ('LAIP', rbufslp                 , nstep)
-    call extract_accum_field ('LAIP', this%elai_p_patch       , nstep)
+    call update_accum_field  ('LAI240', rbufslp                 , nstep)
+    call extract_accum_field ('LAI240', this%elai240_patch      , nstep)
+! --MW
 
     deallocate(rbufslp)
 

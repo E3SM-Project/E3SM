@@ -35,6 +35,18 @@
     integer, parameter :: nsoa  = 1  ! number of differently tagged secondary-organic aerosol species
     integer, parameter :: nsoag = 1  ! number of differently tagged secondary-organic gas     species
 
+#if ( defined MOSAIC_SPECIES )
+    ! when mosaic_aqchem_optaa <= 0, aqueous chem calcs do not affect hclg, cl_ax, no3_ax, and co3_ax species
+    integer, public :: mosaic_gaex_prodloss3d = 1
+    integer, public :: mosaic_gaex_prodloss3d_ga(pcnst)
+    integer, public :: mosaic_aqch_prodloss3d = 1
+    integer, public :: mosaic_aqch_prodloss3d_ga(pcnst)
+    integer, public :: mosaic_aqch_prodloss3d_cw(pcnst)
+    integer, public, parameter :: mosaic_aqchem_optaa = 1
+#else
+    integer, public, parameter :: mosaic_aqchem_optaa = -1
+#endif
+
     !
     ! definitions for aerosol chemical components
     !
@@ -44,12 +56,17 @@
        'p-organic ', 's-organic ', 'black-c   ', &
        'seasalt   ', 'dust      ', &
        'm-poly    ', 'm-prot    ', 'm-lip     ' /)
+#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+  integer, parameter ::  ntot_aspectype = 12
+  character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
+       'p-organic ', 's-organic ', 'black-c   ', &
+       'seasalt   ', 'dust      ', 'm-organic ', &
+       'calcium   ', 'carbonate ', 'chloride  ' /)
 #elif ( defined MODAL_AERO_4MODE_MOM )
   integer, parameter ::  ntot_aspectype = 9
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
        'p-organic ', 's-organic ', 'black-c   ', &
-       'seasalt   ', 'dust      ', &
-       'm-organic ' /)
+       'seasalt   ', 'dust      ', 'm-organic ' /)
 #else
   integer, parameter ::  ntot_aspectype = 8
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
@@ -67,6 +84,10 @@
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8, 66528.0_r8,  284.0_r8 /)
+#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+    real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
+       12.0_r8,   12.0_r8,   12.0_r8,  23.0_r8, 135.0_r8, &
+       250092.0_r8,  40.0_r8, 60.0_r8, 35.5_r8 /)
 #elif ( defined MODAL_AERO_4MODE_MOM )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
@@ -118,24 +139,20 @@
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 4, 2, 3, 3, 3, 3 /)  ! SS
 #elif ( defined MODAL_AERO_9MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 9, 7, 5, 3, 3, 3, 3, 3, 3/)  ! SS
-#elif ( defined MODAL_AERO_4MODE_MOM )
-#if (defined RAIN_EVAP_TO_COARSE_AERO)
+#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
+    integer, parameter :: nspec_amode(ntot_amode)           = (/12,10,12, 3 /)
+#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3 /)
-#else
+#elif ( defined MODAL_AERO_4MODE_MOM )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 3, 3 /)
-#endif
-#elif ( defined MODAL_AERO_4MODE )
-#if (defined RAIN_EVAP_TO_COARSE_AERO)
+#elif ( ( defined MODAL_AERO_4MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 6, 2 /)
-#else
+#elif ( defined MODAL_AERO_4MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 3, 2 /)
-#endif
-#elif ( defined MODAL_AERO_3MODE )
-#if (defined RAIN_EVAP_TO_COARSE_AERO)
+#elif ( ( defined MODAL_AERO_3MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 6 /)
-#else
+#elif ( defined MODAL_AERO_3MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 3 /)
-#endif
 #endif
 
     !   input mprognum_amode, mdiagnum_amode, mprogsfc_amode, mcalcwater_amode
@@ -225,8 +242,13 @@
           lptr_soa_a_amode(ntot_amode),  lptr_soa_cw_amode(ntot_amode), &   !
           lptr_bc_a_amode(ntot_amode),   lptr_bc_cw_amode(ntot_amode),  &   !
           lptr_nacl_a_amode(ntot_amode), lptr_nacl_cw_amode(ntot_amode),&   !
-          lptr_mom_a_amode(ntot_amode),  lptr_mom_cw_amode(ntot_amode),&   !
+          lptr_mom_a_amode(ntot_amode),  lptr_mom_cw_amode(ntot_amode), &   !
           lptr_dust_a_amode(ntot_amode), lptr_dust_cw_amode(ntot_amode),&   !
+! ++MW
+          lptr_ca_a_amode(ntot_amode),   lptr_ca_cw_amode(ntot_amode),  &   !
+          lptr_co3_a_amode(ntot_amode),  lptr_co3_cw_amode(ntot_amode), &   !
+          lptr_cl_a_amode(ntot_amode),   lptr_cl_cw_amode(ntot_amode),  &   !
+! --MW
           lptr_mpoly_a_amode(ntot_amode),  lptr_mpoly_cw_amode(ntot_amode), &
           lptr_mprot_a_amode(ntot_amode),  lptr_mprot_cw_amode(ntot_amode), &
           lptr_mlip_a_amode(ntot_amode),   lptr_mlip_cw_amode(ntot_amode),  &
@@ -241,6 +263,12 @@
           lptr2_soa_a_amode(ntot_amode,nsoa), &
           lptr2_soa_g_amode(nsoag)
 
+! ++MW
+      integer &
+          lptr_h2so4_g_amode,   lptr_hno3_g_amode, &
+          lptr_hcl_g_amode,     lptr_nh3_g_amode
+! --MW
+
       real(r8) ::             &
           specmw_so4_amode,     specdens_so4_amode,       &
           specmw_nh4_amode,     specdens_nh4_amode,       &
@@ -250,6 +278,11 @@
           specmw_mpoly_amode,   specdens_mpoly_amode,     &
           specmw_mprot_amode,   specdens_mprot_amode,     &
           specmw_mlip_amode,    specdens_mlip_amode,      &
+! ++MW
+          specmw_ca_amode,      specdens_ca_amode,        &
+          specmw_co3_amode,     specdens_co3_amode,       &
+          specmw_cl_amode,      specdens_cl_amode,        &
+! --MW
           specmw_bc_amode,      specdens_bc_amode,        &
           specmw_dust_amode,    specdens_dust_amode,      &
           specmw_seasalt_amode, specdens_seasalt_amode,   &

@@ -273,11 +273,15 @@ contains
 
     hash = gen_hash_key_offset
 
-    if ( len(string) /= 19 ) then
+! ++MW
+    if ( len_trim(string) /= 19 ) then
+! --MW
        !
        ! Process arbitrary string length.
        !
-       do i = 1, len(string)
+! ++MW
+       do i = 1, len_trim(string)
+! --MW
           hash = ieor(hash , (ichar(string(i:i)) * tbl_gen_hash_key(iand(i-1,tbl_max_idx))))
        end do
     else
@@ -287,7 +291,9 @@ contains
        do i = 1, tbl_max_idx+1
           hash = ieor(hash , ichar(string(i:i))   * tbl_gen_hash_key(i-1)) 
        end do
-       do i = tbl_max_idx+2, len(string)
+! ++MW
+       do i = tbl_max_idx+2, len_trim(string)
+! --MW
           hash = ieor(hash , ichar(string(i:i))   * tbl_gen_hash_key(i-tbl_max_idx-2)) 
        end do
     end if

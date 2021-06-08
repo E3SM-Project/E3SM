@@ -89,6 +89,22 @@ contains
        xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', 'ammonium  ', &
             'p-organic ', 's-organic ', 'black-c   ', 'seasalt   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
+#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+       xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
+            'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
+            'dst_a1  ', 'ncl_a1  ', 'mom_a1  ', &
+            'nh4_a1  ', 'no3_a1  ', 'ca_a1   ', &
+            'co3_a1  ', 'cl_a1   ' /)
+       xname_massptrcw(:nspec_amode(1),1) = (/ 'so4_c1  ', &
+            'pom_c1  ', 'soa_c1  ', 'bc_c1   ', &
+            'dst_c1  ', 'ncl_c1  ', 'mom_c1  ', &
+            'nh4_c1  ', 'no3_c1  ', 'ca_c1   ', &
+            'co3_c1  ', 'cl_c1   ' /)
+       xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
+            'p-organic ', 's-organic ', 'black-c   ', &
+            'dust      ', 'seasalt   ', 'm-organic ', &
+            'ammonium  ', 'nitrate   ', 'calcium   ', &
+            'carbonate ', 'chloride  ' /)
 #elif ( defined MODAL_AERO_4MODE_MOM )
        xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
             'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
@@ -98,7 +114,7 @@ contains
             'dst_c1  ', 'ncl_c1  ', 'mom_c1  ' /)
        xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
             'p-organic ', 's-organic ', 'black-c   ', &
-            'dust      ', 'seasalt   ', 'm-organic ' /)
+            'dust      ', 'seasalt   ', 'm-organic ' /)                                                           
 #elif ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
        xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
             'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
@@ -129,6 +145,19 @@ contains
        xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', 'ammonium  ', &
             's-organic ', 'seasalt   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
+#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+       xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', &
+            'soa_a2  ', 'dst_a2  ', 'ncl_a2  ', &
+            'mom_a2  ', 'nh4_a2  ', 'no3_a2  ', &
+            'ca_a2   ', 'co3_a2  ', 'cl_a2   ' /)
+       xname_massptrcw(:nspec_amode(2),2) = (/ 'so4_c2  ', &
+            'soa_c2  ', 'dst_c2  ', 'ncl_c2  ', &
+            'mom_c2  ', 'nh4_c2  ', 'no3_c2  ', &
+            'ca_c2   ', 'co3_c2  ', 'cl_c2   ' /)
+       xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', &
+            's-organic ', 'dust      ', 'seasalt   ', &
+            'm-organic ', 'ammonium  ', 'nitrate   ', &
+            'calcium   ', 'carbonate ', 'chloride  ' /)
 #elif ( defined MODAL_AERO_4MODE_MOM )
        xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', &
             'soa_a2  ', 'ncl_a2  ', 'mom_a2  ' /)
@@ -158,33 +187,49 @@ contains
             'mpoly_c3', 'mprot_c3', 'mlip_c3 ' /)
        xname_spectype(:nspec_amode(3),3)  = (/ 'p-organic ', 'black-c   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
+#elif ( ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
+       ! mode 3 (coarse dust & seasalt) species
+       xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', &
+                                               'bc_a3   ', 'pom_a3  ', 'soa_a3  ' /)
+       xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', &
+                                               'bc_c3   ', 'pom_c3  ', 'soa_c3  ' /)
+       xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', &
+                                               'black-c   ','p-organic ', 's-organic ' /)
 #elif ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
        ! mode 3 (coarse dust & seasalt) species
-#if (defined RAIN_EVAP_TO_COARSE_AERO)
-          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', 'bc_a3   ','pom_a3  ','soa_a3  ' /)
-          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', 'bc_c3   ','pom_c3  ','soa_c3  ' /)
-          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', 'black-c   ','p-organic ', &
-               's-organic ' /)
-#else
-          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
-          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
-          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
-#endif
-#elif ( defined MODAL_AERO_4MODE_MOM )
+       xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
+       xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
+       xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
+#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
        ! mode 3 (coarse dust & seasalt) species
-#if (defined RAIN_EVAP_TO_COARSE_AERO)
-          xname_massptr(:nspec_amode(3),3)   = &
-          (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', 'bc_a3   ','pom_a3  ','soa_a3  ', 'mom_a3  ' /)
-          xname_massptrcw(:nspec_amode(3),3) = &
-          (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', 'bc_c3   ','pom_c3  ','soa_c3  ', 'mom_c3  ' /)
-          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', 'black-c   ','p-organic ', &
-               's-organic ', 'm-organic ' /)
-#else
-          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
-          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
-          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
+       xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', &
+                                               'bc_a3   ', 'pom_a3  ', 'soa_a3  ', &
+                                               'mom_a3  ', 'nh4_a3  ', 'no3_a3  ', &
+                                               'ca_a3   ', 'co3_a3  ', 'cl_a3   ' /)
+       xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', &
+                                               'bc_c3   ', 'pom_c3  ', 'soa_c3  ', &
+                                               'mom_c3  ', 'nh4_c3  ', 'no3_c3  ', &
+                                               'ca_c3   ', 'co3_c3  ', 'cl_c3   ' /)
+       xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', &
+                                               'black-c   ', 'p-organic ', 's-organic ', &
+                                               'm-organic ', 'ammonium  ', 'nitrate   ', &
+                                               'calcium   ', 'carbonate ', 'chloride  ' /)
+#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
+       xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', &
+                                               'bc_a3   ', 'pom_a3  ', 'soa_a3  ', &
+                                               'mom_a3  ' /)
+       xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', &
+                                               'bc_c3   ', 'pom_c3  ', 'soa_c3  ', &
+                                               'mom_c3  ' /)
+       xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', &
+                                               'black-c   ', 'p-organic ', 's-organic ', &
+                                               'm-organic ' /)
+#elif ( defined MODAL_AERO_4MODE_MOM )
+       xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
+       xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
+       xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
 #endif
-#endif
+
 
 #if ( defined MODAL_AERO_4MODE_MOM )
        ! mode 4 (primary carbon) species
@@ -371,8 +416,9 @@ contains
 
   !==============================================================
   subroutine modal_aero_initialize(pbuf2d, imozart, species_class) 
-
-       use constituents,          only: pcnst
+! ++MW
+       use constituents,          only: pcnst, cnst_name
+! --MW
        use physconst,             only: rhoh2o, mwh2o
        use modal_aero_amicphys,   only: modal_aero_amicphys_init
        use modal_aero_calcsize,   only: modal_aero_calcsize_init
@@ -381,7 +427,10 @@ contains
        use modal_aero_gasaerexch, only: modal_aero_gasaerexch_init
        use modal_aero_newnuc,     only: modal_aero_newnuc_init
        use modal_aero_rename,     only: modal_aero_rename_init
-       use modal_aero_convproc,   only: ma_convproc_init  
+       use modal_aero_convproc,   only: ma_convproc_init
+#if ( defined MOSAIC_SPECIES )
+       use module_mosaic_cam_init,only: mosaic_cam_init
+#endif  
        use chem_mods,             only: gas_pcnst  
        use phys_control,          only: phys_getopts
        use rad_constituents,      only: rad_cnst_get_info, rad_cnst_get_aer_props, &
@@ -413,6 +462,9 @@ contains
        logical :: use_MMF
        integer :: icldphy ! index for cloud physic species (water vapor and cloud hydrometers)
        character(len=16) :: microp_scheme  ! MMF microphysics scheme
+! ++MW
+       integer, parameter :: init_val=-999888777
+! --MW
        !-----------------------------------------------------------------------
 
        pi = 4._r8*atan(1._r8)    
@@ -445,6 +497,23 @@ contains
           alnv2nhi_amode(m) = log( voltonumbhi_amode(m) )
        end do
 
+! ++MW
+       lptr_h2so4_g_amode  = init_val
+       lptr_hno3_g_amode   = init_val
+       lptr_hcl_g_amode    = init_val
+       lptr_nh3_g_amode    = init_val
+       do i = 1, pcnst
+          if (cnst_name(i) == 'H2SO4') then
+             lptr_h2so4_g_amode = i
+          else if (cnst_name(i) == 'HNO3') then
+             lptr_hno3_g_amode = i
+          else if (cnst_name(i) == 'HCL') then
+             lptr_hcl_g_amode = i
+          else if (cnst_name(i) == 'NH3') then
+             lptr_nh3_g_amode = i
+          endif
+       enddo
+! --MW
 
        ! Properties of mode specie types.
 
@@ -520,7 +589,7 @@ contains
 
 
           ! At this point, species_class is either undefined or aerosol.
-          ! For the "chemistry species" (imozart <= i <= imozart+gas_pcnst-1),
+          ! For the "chemistry species" (imozart <= i <= imozart+pcnst),
           ! set the undefined ones to gas, and leave the aerosol ones as is
           if (imozart <= 0) then
              call endrun( '*** modal_aero_initialize_data -- bad imozart' )
@@ -612,6 +681,9 @@ loop:    do i = icldphy+1, pcnst
           call modal_aero_calcsize_init( pbuf2d, species_class )
           call modal_aero_newnuc_init( mam_amicphys_optaa )
           call modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in )
+#if ( defined MOSAIC_SPECIES ) 
+          call mosaic_cam_init()
+#endif
        else
           call modal_aero_rename_init
           !   calcsize call must follow rename call
@@ -757,10 +829,18 @@ loop:    do i = icldphy+1, pcnst
           lptr_bc_cw_amode(m)   = init_val
           lptr_nacl_a_amode(m)  = init_val
           lptr_nacl_cw_amode(m) = init_val
-          lptr_mom_a_amode(m)  = init_val
-          lptr_mom_cw_amode(m) = init_val
+          lptr_mom_a_amode(m)   = init_val
+          lptr_mom_cw_amode(m)  = init_val
           lptr_dust_a_amode(m)  = init_val
           lptr_dust_cw_amode(m) = init_val
+! ++MW
+          lptr_ca_a_amode(m)    = init_val
+          lptr_ca_cw_amode(m)   = init_val
+          lptr_co3_a_amode(m)   = init_val
+          lptr_co3_cw_amode(m)  = init_val
+          lptr_cl_a_amode(m)    = init_val
+          lptr_cl_cw_amode(m)   = init_val
+! --MW
           do l = 1, nspec_amode(m)
              l2 = lspectype_amode(l,m)
              if ( (specname_amode(l2) .eq. 'sulfate') .and.  &
@@ -828,6 +908,23 @@ loop:    do i = icldphy+1, pcnst
                 lptr_dust_a_amode(m)  = lmassptr_amode(l,m)
                 lptr_dust_cw_amode(m) = lmassptrcw_amode(l,m)
              end if
+! ++MW
+             if ( (specname_amode(l2) .eq. 'calcium') .and.     &
+                  (lptr_ca_a_amode(m) .le. 0) ) then
+                lptr_ca_a_amode(m)  = lmassptr_amode(l,m)
+                lptr_ca_cw_amode(m) = lmassptrcw_amode(l,m)
+             end if
+             if ( (specname_amode(l2) .eq. 'carbonate') .and.     &
+                  (lptr_co3_a_amode(m) .le. 0) ) then
+                lptr_co3_a_amode(m)  = lmassptr_amode(l,m)
+                lptr_co3_cw_amode(m) = lmassptrcw_amode(l,m)
+             end if
+             if ( (specname_amode(l2) .eq. 'chloride') .and.     &
+                  (lptr_cl_a_amode(m) .le. 0) ) then
+                lptr_cl_a_amode(m)  = lmassptr_amode(l,m)
+                lptr_cl_cw_amode(m) = lmassptrcw_amode(l,m)
+             end if
+! --MW
           end do
        end do
 
@@ -844,6 +941,11 @@ loop:    do i = icldphy+1, pcnst
        specdens_dust_amode = 2.0_r8
        specdens_seasalt_amode = 2.0_r8
        specdens_mom_amode = 2.0_r8
+! ++MW
+       specdens_ca_amode = 2.0_r8
+       specdens_co3_amode = 2.0_r8
+       specdens_cl_amode = 2.0_r8
+! --MW
        specmw_so4_amode = 1.0_r8
        specmw_nh4_amode = 1.0_r8
        specmw_no3_amode = 1.0_r8
@@ -856,6 +958,11 @@ loop:    do i = icldphy+1, pcnst
        specmw_dust_amode = 1.0_r8
        specmw_seasalt_amode = 1.0_r8
        specmw_mom_amode = 1.0_r8
+! ++MW
+       specmw_ca_amode = 1.0_r8
+       specmw_co3_amode = 1.0_r8
+       specmw_cl_amode = 1.0_r8
+! --MW
        do m = 1, ntot_aspectype
           if      (specname_amode(m).eq.'sulfate   ') then
              specdens_so4_amode = specdens_amode(m)
@@ -893,6 +1000,17 @@ loop:    do i = icldphy+1, pcnst
           else if (specname_amode(m).eq.'m-organic ') then
              specdens_mom_amode = specdens_amode(m)
              specmw_mom_amode = specmw_amode(m)
+! ++MW
+          else if (specname_amode(m).eq.'calcium   ') then
+             specdens_ca_amode = specdens_amode(m)
+             specmw_ca_amode = specmw_amode(m)
+          else if (specname_amode(m).eq.'carbonate ') then
+             specdens_co3_amode = specdens_amode(m)
+             specmw_co3_amode = specmw_amode(m)
+          else if (specname_amode(m).eq.'chloride  ') then
+             specdens_cl_amode = specdens_amode(m)
+             specmw_cl_amode = specmw_amode(m)
+! --MW 
           end if
        enddo
 
@@ -979,16 +1097,38 @@ loop:    do i = icldphy+1, pcnst
           call initaermodes_setspecptrs_write2( m,                    &
                lptr_mpoly_a_amode(m), lptr_mpoly_cw_amode(m),  'mpoly' )
        end do
+
        write(iulog,9000) 'm-prot     '
        do m = 1, ntot_amode
           call initaermodes_setspecptrs_write2( m,                    &
                lptr_mprot_a_amode(m), lptr_mprot_cw_amode(m),  'mprot' )
        end do
+
        write(iulog,9000) 'm-lip      '
        do m = 1, ntot_amode
           call initaermodes_setspecptrs_write2( m,                    &
                lptr_mlip_a_amode(m), lptr_mlip_cw_amode(m),  'mlip' )
        end do
+
+! ++MW
+       write(iulog,9000) 'calcium    '
+       do m = 1, ntot_amode
+          call initaermodes_setspecptrs_write2( m,                    &
+               lptr_ca_a_amode(m), lptr_ca_cw_amode(m),  'calcium' )
+       end do
+
+       write(iulog,9000) 'carbonate  '
+       do m = 1, ntot_amode
+          call initaermodes_setspecptrs_write2( m,                    &
+               lptr_mlip_a_amode(m), lptr_mlip_cw_amode(m),  'carbonate' )
+       end do
+
+       write(iulog,9000) 'chloride   '
+       do m = 1, ntot_amode
+          call initaermodes_setspecptrs_write2( m,                    &
+               lptr_mlip_a_amode(m), lptr_mlip_cw_amode(m),  'chloride' )
+       end do
+! --MW
 
 9000   format( a )
 9230   format(                                                         &

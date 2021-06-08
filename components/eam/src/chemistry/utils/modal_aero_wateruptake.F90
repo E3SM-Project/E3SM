@@ -16,6 +16,27 @@ use cam_logfile,      only: iulog
 use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 use phys_control,     only: phys_getopts
 use cam_abortutils,       only: endrun
+#if ( defined MOSAIC_SPECIES )
+use time_manager,              only: get_nstep, get_step_size
+use module_mosaic_box_aerchem, only: MOSAIC_aerosol_water_only
+use module_data_mosaic_aero,   only: naer_mosaic => naer, &
+                                     inh4_a, ilim2_a, iso4_a, ina_a, icl_a, ibc_a, ioin_a, ioc_a, imom_a, &
+                                     ino3_a, icl_a, ica_a, ico3_a, &
+                                     ilim2_g, ih2so4_g, inh3_g, ihno3_g, ihcl_g, &
+                                     jhyst_up, jtotal, &
+                                     nbin_a, nbin_a_max, ngas_volatile, nmax_astem, nmax_mesa, no_aerosol, nsalt, &
+                                     mosaic_vars_aa_type, mw_aer_mac, mw_gas
+use constituents,              only: pcnst
+use physconst,                 only: r_universal, rair
+use modal_aero_data,           only: dgnumlo_amode, numptr_amode, ntot_amode, nsoa, npoa, nbc, &
+                                     lptr_so4_a_amode, lptr_no3_a_amode, lptr_cl_a_amode, &
+                                     lptr_msa_a_amode, lptr_nh4_a_amode, lptr_nacl_a_amode, &
+                                     lptr_dust_a_amode, lptr_ca_a_amode, lptr_co3_a_amode, &
+                                     lptr_h2so4_g_amode, lptr_hno3_g_amode, lptr_hcl_g_amode, &
+                                     lptr_nh3_g_amode, lptr_soa_a_amode, lptr_bc_a_amode, &
+                                     lptr_pom_a_amode, lptr_mom_a_amode, lptr2_soa_g_amode
+use modal_aero_amicphys,       only: hygro_bc, hygro_pom, hygro_mom, hygro_soa, hygro_dst
+#endif
 
 implicit none
 private
@@ -236,6 +257,38 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
    logical :: history_verbose      ! produce verbose history output
    logical :: compute_wetdens
+#if ( defined MOSAIC_SPECIES )
+   integer, parameter :: bigint = huge(1)
+   integer :: ierr, lq, nstep
+   integer, dimension(nbin_a_max) :: jaerosolstate     !Aerosol state (solid, liquid, gas)
+   integer, dimension(nbin_a_max) :: jhyst_leg
+
+   real(r8), parameter ::  oneatminv = 1.0_r8/1.01325e5_r8
+   real(r8), pointer :: q(:,:,:)
+   real(r8), dimension(ngas_volatile) :: gas
+   real(r8), dimension(naer_mosaic) :: kappa_nonelectro
+   real(r8), dimension(naer_mosaic,3,nbin_a_max) :: aer
+   real(r8) :: mwuse_soa(nsoa), mwuse_poa(npoa)
+   real(r8) :: RH_pc             !relative humidity (%)
+   real(r8) :: P_atm             !Pressure in atm units
+   real(r8) :: airdens
+   real(r8) :: aircon            !air molar density (kmol/m3)
+   real(r8) :: cair_mol_m3       !Air molar density (mol/m3)
+   real(r8) :: dtime
+   real(r8) :: factaermass
+   real(r8) :: factaernumb
+   real(r8) :: factaerwatr
+   real(r8) :: factgasmass
+   real(r8) :: tmpa, tmp_rh, tmp_hy
+   real(r8), dimension(nbin_a_max) :: tmp_num_a
+   real(r8), dimension(nbin_a_max) :: dens_dry_a
+   real(r8), dimension(nbin_a_max) :: mass_dry_a
+   real(r8), dimension(nbin_a_max) :: num_a, Dp_dry_a
+   real(r8), dimension(nbin_a_max) :: Dp_wet_a
+   real(r8), dimension(nbin_a_max) :: water_a
+
+   type (mosaic_vars_aa_type)  :: mosaic_vars_aa
+#endif
 
    character(len=3) :: trnum       ! used to hold mode number (as characters)
    !----------------------------------------------------------------------------
@@ -435,13 +488,269 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    end if ! if present(clear_rh_in)
 
+
    !----------------------------------------------------------------------------
    ! compute aerosol wet radius and aerosol water
 
+#if ( defined MOSAIC_SPECIES )
+   ! call mam_amicphys to get aerosol water
+   q => state%q
+
+   ! allocate( gas(ngas_volatile) )
+   ! allocate the allocatable parts of mosaic_vars_aa
+   allocate( mosaic_vars_aa%iter_mesa(nbin_a_max), stat=ierr )
+   if (ierr /= 0) call endrun( &
+      '*** subr mosaic_gasaerexch_1subarea_intr - allocate error for mosaic_vars_aa%iter_mesa' )
+
+   ! set kappa values for non-electrolyte species
+   ! reason for doing this here is that if cam eventually has multiple varieties of dust and/or pom, 
+   ! then the dust hygroscopicity may vary spatially and temporally,
+   ! and the kappa values cannot be constants
+   kappa_nonelectro(:)       = 0.0_r8
+   kappa_nonelectro(ibc_a  ) = hygro_bc
+   kappa_nonelectro(ioc_a  ) = hygro_pom
+   kappa_nonelectro(imom_a ) = hygro_mom
+   kappa_nonelectro(ilim2_a) = hygro_soa
+   kappa_nonelectro(ioin_a ) = hygro_dst
+
+   dtime = get_step_size()
+   nstep = get_nstep()
+
+   do k = top_lev, pver
+      do i = 1, ncol
+         RH_pc = 100._r8*rh(i,k)
+         P_atm = pmid(i,k) * oneatminv      ! Pressure (atm)
+         airdens = pmid(i,k)/(rair*t(i,k))
+         factaermass = airdens * 1.0e12_r8  ! converts (kg-aer/kg-air) to (ng-aer/m3) 
+         factaernumb = airdens * 1.0e-6_r8  ! converts (#/kg-air) to (#/cm3)
+         factaerwatr = airdens              ! converts (kg-h2o/kg-air) to (kg-h2o/m3) 
+         factgasmass = airdens * 1.0e12_r8  ! converts (kg-gas/kg-air) to (ng-gas/m3) 
+
+         ! Populate aersols
+         aer(:,:,:) = 0.0_r8 ! initialized to zero at every grid point for safety
+         num_a(:)   = 0.0_r8 ! initialized to zero
+         water_a(:) = 0.0_r8 ! initialized to zero
+         
+         do m = 1, ntot_amode
+            ! Notes:
+            ! 1. NCL(sea salt) of CAM is mapped in NA and CL of MOSAIC
+            ! 2. SOA of CAM is lumped into LIM2 species of MOSAIC !BALLI *ASK RAHUL and Dick
+            ! 3. Species NO3, MSA, CO3, Ca do not exist in CAM therefore not mapped here
+            ! 4. Species ARO1, ARO2, ALK1, OLE1, API1, API2, LIM1 are SOA species in MOSAIC
+            !    which are not used in CAM-MOSAIC framework as of now
+            ! 5. CAM units are (kg/kg of air) which are converted to Mosaic units (nano mol/m3).
+
+            ! Units conversion:  aer [nmol/m3] = q [kg/kg-air] * factaermass /
+            ! specmw
+            lq = lptr_nh4_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(inh4_a,  jtotal, m) = q(i,k,lq)*factaermass/mw_aer_mac(inh4_a)
+
+            lq = lptr_soa_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(ilim2_a, jtotal, m) = q(i,k,lq)*factaermass/mw_aer_mac(ilim2_a)
+
+            lq = lptr_so4_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(iso4_a,  jtotal, m) = q(i,k,lq)*factaermass/mw_aer_mac(iso4_a)
+
+            lq = lptr_nacl_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(ina_a,   jtotal, m) = q(i,k,lq)*factaermass/mw_aer_mac(ina_a)
+
+            lq = lptr_cl_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(icl_a,   jtotal, m) = q(i,k,lq)*factaermass/mw_aer_mac(icl_a)
+
+            lq = lptr_no3_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(ino3_a,  jtotal, m) = q(i,k,lq)*factaermass/mw_aer_mac(ino3_a)
+
+            lq = lptr_ca_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(ica_a,   jtotal, m) = q(i,k,lq)*factaermass/mw_aer_mac(ica_a)
+
+            lq = lptr_co3_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(ico3_a,  jtotal, m) = q(i,k,lq)*factaermass/mw_aer_mac(ico3_a)
+
+            ! Units conversion:  aer [ng/m3] = q [kg/kg-air] * factaermass
+            lq = lptr_bc_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(ibc_a,   jtotal, m) = q(i,k,lq)*factaermass
+
+            lq = lptr_pom_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(ioc_a,   jtotal, m) = q(i,k,lq)*factaermass
+
+            lq = lptr_mom_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(imom_a,  jtotal, m) = q(i,k,lq)*factaermass
+
+            lq = lptr_dust_a_amode(m)
+            if (1 <= lq .and. lq <= pcnst) &
+               aer(ioin_a,  jtotal, m) = q(i,k,lq)*factaermass
+             
+            ! Populate aerosol number and water species
+            ! Units conversion:  num_a [#/cm3] = q [#/kg-air] * factaernumb
+            ! lq = numptr_amode(m)
+            ! if (1 <= lq .and. lq <= pcnst) &
+            !    num_a(m) = q(i,k,lq)*factaernumb
+
+            ! steve -- try using this bounded number concentration to get a reasonable size in MOSAIC
+            num_a(m) = naer(i,k,m)*factaernumb
+            tmp_num_a(m) = num_a(m)
+
+            ! (1/v2ncur_a) = volume of 1 particle whose size (dgn) is bounded
+            ! naer = dryvolmr/v2ncur_a = number mixing ratio of size-bounded particles
+            !
+            ! when q(i,k,numptr_amode(n)) is much too small for some reason, 
+            ! so that the unbounded particle size is much too big,
+            ! and num_a(m) is set from q(i,k,numptr_amode(n)), then
+            !   > the dp_dry_a and dp_wet_a from MOSAIC will be much too big
+            !   > qaerwat calculated from naer and [(dp_wet^3 - dp_dry^3)*pi/6] will be much too big
+            !   > the water_a from MOSAIC may be OK, and qaerwat calculated from water_a may be OK
+            !
+            ! if we want to calculate qaerwat from naer and [(dp_wet^3 - dp_dry^3)*pi/6],
+            !    similar to the kohler approach, then it follows that num_a should be set using naer
+            ! this is also need to get reasonable dgnumwet values
+         end do ! m
+
+         ! Populate gases
+         gas(:) = 0.0_r8 ! Initialized to zero
+
+         ! Units conversion:  gas [nmol/m3] = q [kg-gas/kg-air] * factgasmass / specmw
+         lq = lptr_h2so4_g_amode
+         if (1 <= lq .and. lq <= pcnst) &
+            gas(ih2so4_g) = q(i,k,lq) * factaermass / mw_gas(ih2so4_g)
+
+         lq = lptr_hno3_g_amode
+         if (1 <= lq .and. lq <= pcnst) &
+            gas(ihno3_g) = q(i,k,lq) * factaermass / mw_gas(ihno3_g)
+
+         lq = lptr_hcl_g_amode
+         if (1 <= lq .and. lq <= pcnst) &
+            gas(ihcl_g) = q(i,k,lq) * factaermass / mw_gas(ihcl_g)
+
+         lq = lptr_nh3_g_amode
+         if (1 <= lq .and. lq <= pcnst) &
+            gas(inh3_g) = q(i,k,lq) * factaermass / mw_gas(inh3_g)
+
+         lq = lptr2_soa_g_amode(1)
+         if (1 <= lq .and. lq <= pcnst) &
+            gas(ilim2_g) = q(i,k,lq) * factaermass / mw_gas(ilim2_g)
+
+         ! initialize mosaic_vars_aa
+         mosaic_vars_aa%jastem_fail = 0
+         mosaic_vars_aa%it_mosaic = nstep
+         mosaic_vars_aa%iter_mesa(1:nbin_a_max) = 0
+         mosaic_vars_aa%zero_water_flag = .false.
+         mosaic_vars_aa%flag_itr_kel = .false.
+         mosaic_vars_aa%hostgridinfo(1)   = i
+         mosaic_vars_aa%hostgridinfo(2)   = k
+         mosaic_vars_aa%hostgridinfo(3)   = lchnk
+         mosaic_vars_aa%hostgridinfo(4:6) = bigint
+         mosaic_vars_aa%it_host = 0
+         mosaic_vars_aa%f_mos_fail = -1
+         mosaic_vars_aa%isteps_astem = 0
+         mosaic_vars_aa%isteps_astem_max = 0
+         mosaic_vars_aa%jastem_call = 0
+         mosaic_vars_aa%jmesa_call = 0
+         mosaic_vars_aa%jmesa_fail = 0
+         mosaic_vars_aa%niter_mesa_max = 0
+         mosaic_vars_aa%nmax_astem = nmax_astem
+         mosaic_vars_aa%nmax_mesa = nmax_mesa
+         mosaic_vars_aa%cumul_steps_astem = 0.0_r8
+         mosaic_vars_aa%niter_mesa = 0.0_r8
+         mosaic_vars_aa%xnerr_astem_negative(:,:) = 0.0_r8
+         mosaic_vars_aa%fix_astem_negative = 0
+
+         ! these initializations may not be needed but are done for safety
+         jaerosolstate(:) = no_aerosol
+         jhyst_leg(:) = jhyst_up
+         Dp_dry_a(:) = 0.0_r8
+         Dp_wet_a(:) = 0.0_r8
+         mass_dry_a(:) = 0.0_r8
+         dens_dry_a(:) = 0.0_r8
+
+         call MOSAIC_aerosol_water_only(rh(i,k),  t(i,k), &  ! Intent-ins
+            P_atm,             RH_pc,      dtime,         &
+            kappa_nonelectro,                             &
+            jaerosolstate,     jhyst_leg,                 &  ! Intent-inouts
+            aer,               num_a,      water_a,  gas, &
+            Dp_dry_a,          Dp_wet_a,                  &
+            mosaic_vars_aa,                               &
+            mass_dry_a,        dens_dry_a)                   ! Intent-outs:489
+
+         do m = 1, ntot_amode
+            if (jaerosolstate(m) == no_aerosol) then
+               ! mosaic did not calculate water because aerosol mass mixing ratio is very small 
+               wetrad(i,k,m) = dryrad(i,k,m)
+            else
+               dryrad(i,k,m) = 0.5e-2_r8*Dp_dry_a(m)   ! convert from cm to m
+               wetrad(i,k,m) = max( 0.5e-2_r8*Dp_wet_a(m), dryrad(i,k,m) )
+            endif
+
+            if ( (wetrad(i,k,m) > dryrad(i,k,m)*10.0_r8   ) .or. &
+                 (dryrad(i,k,m) < dgnumlo_amode(m)*0.05_r8) ) then
+               ! wetrad unreasonably larger than dryrad, or dryrad unreasonably small
+               ! (may want to deactivate this error message in long runs)
+               write(iulog,'(2a,2i10,4i5,1p,e17.9,7e12.4)') 'm_a_wateruptake error - ', &
+                  'nstep,lchnk,i,k,m,state, RH_pc,hygro,dryrad,wetrad=', &
+                  nstep, lchnk, i, k, m, jaerosolstate(m), &
+                  RH_pc, hygro(i,k,m), dryrad(i,k,m), wetrad(i,k,m), &
+                  naer(i,k,m), maer(i,k,m), drymass(i,k,m), dryvol(i,k,m)
+
+               dryrad(i,k,m) = max( dryrad(i,k,m), dgnumlo_amode(m)*0.05_r8 )
+               if (rh(i,k) <= rhcrystal(m)) then
+                  wetrad(i,k,m) = dryrad(i,k,m)  ! no water
+               else
+                  ! use the following which ignores kelvin effect
+                  ! (1/rh) = 1 + hygro*dryvol/wtrvol
+                  ! wtrvol = dryvol*[hygro/((1/rh) - 1)]
+                  ! wetvol = dryvol + wtrvol = dryvol*[1 + hygro/((1/rh) - 1)]
+                  tmp_hy = max( 0.00_r8,    min( 2.00_r8, hygro(i,k,m) ) )
+                  tmp_rh = max( 1.0e-20_r8, min( 0.99_r8, rh(i,k)    ) )
+                  tmpa = ( 1.0_r8 + tmp_hy/((1.0_r8/tmp_rh) - 1.0_r8) )**third
+                  wetrad(i,k,m) = dryrad(i,k,m)*max( tmpa, 1.0_r8 )
+               endif
+            endif 
+            
+            dryvol(i,k,m) = pi43*dryrad(i,k,m)**3
+            wetvol(i,k,m) = pi43*wetrad(i,k,m)**3
+            wtrvol(i,k,m) = max( wetvol(i,k,m) - dryvol(i,k,m), 0.0_r8 )
+            ! if (dryrad(i,k,m).le.1.e-20) then
+            !    write(iulog,*)'mode,dryrad,wetrad=',m,dryrad(i,k,m),wetrad(i,k,m)
+            !    if(lptr_pom_a_amode(m)>=1) write(iulog,*) 'q for pom  =', q(i, k, lptr_pom_a_amode(m))
+            !    if(lptr_bc_a_amode(m)>=1)  write(iulog,*) 'q for bc   =', q(i, k, lptr_bc_a_amode(m))
+            !    if(lptr_so4_a_amode(m)>=1) write(iulog,*) 'q for so4  =', q(i, k, lptr_so4_a_amode(m))
+            !    if(lptr_soa_a_amode(m)>=1) write(iulog,*) 'q for soa  =', q(i, k, lptr_soa_a_amode(m))
+            !    if(lptr_nacl_a_amode(m)>=1)write(iulog,*) 'q for nacl =', q(i, k, lptr_nacl_a_amode(m))
+            !    write(iulog,*) ’num=‘, num_a(m))
+            !    call endrun('dryrad too small')
+            ! endif
+            ! if ( (m.eq.6) .and. (k.eq.pver) .and. (RH_pc>95.) .and. (dryvol(i,k,m).gt.1.e-30)) then
+            !    if (wtrvol(i,k,m)/dryvol(i,k,m).lt.1.)then
+            !       write(iulog,*) 'wtrvol/dryvol = ', wtrvol(i,k,m)/dryvol(i,k,m)
+            !    endif 
+            !    if (wtrvol(i,k,m)/dryvol(i,k,m).gt.1.e10)then
+            !       write(iulog,*) 'RH_pc,wtrvol/dryvol = ', RH_pc, wtrvol(i,k,m)/dryvol(i,k,m)
+            !       write(iulog,*) 'lchnk,i,k,m = ',lchnk,i,k,m
+            !       call endrun('excessive aerosol water')
+            !    endif
+            ! endif
+            
+            naer(i,k,m) = num_a(m)/factaernumb  ! do this in case MOSAIC adjusted num_a
+                                                ! this will not affect state%q(:,:,numptr_amode(:))
+         end do ! m
+      end do ! i
+   end do ! k
+#else
    call modal_aero_wateruptake_sub( &
       ncol, nmodes, rhcrystal, rhdeliques, dryrad, &
       hygro, rh, dryvol, wetrad, wetvol,           &
       wtrvol)
+#endif
 
    do m = 1, nmodes
 
@@ -484,6 +793,12 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          call outfld( 'aero_water',  aerosol_water(:ncol,:),    ncol, lchnk)
 
    end if
+#if ( defined MOSAIC_SPECIES )
+   ! deallocate the allocatable parts of mosaic_vars_aa
+   deallocate( mosaic_vars_aa%iter_mesa, stat=ierr )
+   if (ierr /= 0) call endrun( &
+      '*** subr modal_aero_wateruptake_dr - deallocate error for mosaic_vars_aa%iter_mesa' )
+#endif
 
 end subroutine modal_aero_wateruptake_dr
 

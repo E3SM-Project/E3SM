@@ -47,6 +47,7 @@
       <value compset="_EAM%AV1C-H01A">-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_EAM%CMIP6"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_EAM%AR5sf"    >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_EAM%TS1-MAM4" >-clubb_sgs -microphys mg2 -chem trop_strat_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_EAM%MOZM"     >-chem trop_mozart_mam3 -age_of_air_trcs</value>
       <value compset="_EAM%PM"       >-chem none</value>
       <value compset="_EAM%SMA3"     >-chem trop_strat_mam3 -age_of_air_trcs</value>
@@ -151,6 +152,7 @@
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
       <value compset="20TR(?:SOI)?_EAM.*AR5sf" >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM.*AR5sf">20TRS_E3SMv1_superfast_ar5-emis</value>
+      <value compset="20TR(?:SOI)?_EAM.*TS1-MAM4">20TR_eam_ts1-mam4_CMIP6</value>
       <value compset="1850(?:SOI)?_EAM%WCCM"   >waccm_1850_cam5</value>
       <value compset="2000(?:SOI)?_EAM%WCCM"   >waccm_2000_cam5</value>
       <value compset="_EAM%SMA3"       >2000_cam5_trop_strat_mam3</value>
@@ -221,6 +223,7 @@
     <desc compset="_EAM.*CMIP6-HR" >high-res (ne120 w/ 18to6 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
     <desc compset="_EAM.*CMIP6-LR" >low-res (ne30 w/ oECv3 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
     <desc compset="_EAM.*AR5sf"    >E3SM plus super-fast chemistry with AR5 emissions:</desc>
+    <desc compset="_EAM.*TS1-MAM4" >EAM with TS1 MOZART chemistry and CMIP6 emissions:</desc>
     <desc compset="_EAM%PM"     >EAM prescribed modal aerosols:</desc>
     <desc compset="_EAM%WCCM">EAM WACCM with daily solar data and SPEs:</desc>
     <desc compset="_EAM%WCMX">EAM WACCM-X:</desc>
