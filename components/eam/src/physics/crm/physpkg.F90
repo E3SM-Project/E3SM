@@ -1566,7 +1566,7 @@ subroutine tphysbc(ztodt, fsns, fsnt, flns, flnt, &
   ! Initialize variabale for ECPP data
   !-----------------------------------------------------------------------------
 #if defined( ECPP )
-  if (use_ECPP) call call crm_ecpp_output_initialize(crm_ecpp_output,ncol,pver)
+  if (use_ECPP) call crm_ecpp_output_initialize(crm_ecpp_output,ncol,pver)
 #endif
   !-----------------------------------------------------------------------------
   ! Run the CRM 

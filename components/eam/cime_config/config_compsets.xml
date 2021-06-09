@@ -267,6 +267,11 @@
     <alias>F-MMFOMP</alias>
     <lname>2000_EAM%MMFOMP_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
+
+  <compset>
+    <alias>F-MMF2-PAER</alias>
+    <lname>2000_EAM%MMF2-PAER_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
   <compset>
     <alias>F-MMF2-ECPP</alias>
     <lname>2000_EAM%MMF2-ECPP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
