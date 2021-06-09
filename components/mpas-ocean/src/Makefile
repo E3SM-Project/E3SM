@@ -1,5 +1,6 @@
 .SUFFIXES: .F .c .o
 
+
 ifeq "$(EXCLUDE_INIT_MODE)" "true"
 CPPLOCALFLAGS = -DEXCLUDE_INIT_MODE
 $(info "EXCLUDE_INIT_MODE found")
@@ -81,10 +82,10 @@ libBGC:
 
 libgotm:
 	if [ -e gotm/.git ]; then \
-		if [ -e gotm/build ]; then \
+		if [ -e gotm/build/Makefile ]; then \
 			(cd gotm/build; make) \
 		else \
-			(sed -i.bk "s/\#define STDERR write(stderr,\*)/\#define STDERR if (.false.) write(stderr,\*)/" gotm/include/cppdefs.h; mkdir gotm/build; cd gotm/build; cmake ../src $(GOTM_CMAKE_FLAGS); make) \
+			(cd gotm/build; cmake ../src $(GOTM_CMAKE_FLAGS); make) \
 		fi \
 	else \
 		(pwd ; echo "Missing mpas-ocean/src/gotm/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
@@ -107,7 +108,7 @@ clean:
 		(cd BGC; make clean) \
 	fi
 	if [ -e gotm/.git ]; then \
-		($(RM) -r gotm/build) \
+		(cd gotm; git clean -dfx) \
 	fi
 	(cd mode_forward; $(MAKE) clean)
 	(cd mode_analysis; $(MAKE) clean)
