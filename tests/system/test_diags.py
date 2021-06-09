@@ -56,11 +56,14 @@ def move_to_web(machine_path_re_str, html_prefix_format_str, results_dir):
 
 def count_images(directory):
     images = []
-    for _, _, filenames in os.walk(directory):
-        for file in filenames:
-            if file.endswith(".png"):
-                images.append(file)
-    return len(images)
+    for root, _, filenames in os.walk(directory):
+        # download_data.py won't download files in the viewer directory
+        # because the webpage is more than a simple page of links.
+        if "viewer" not in root:
+            for file in filenames:
+                if file.endswith(".png"):
+                    images.append(file)
+    return len(images), images
 
 
 def compare_images(
@@ -331,8 +334,9 @@ class TestAllSets(unittest.TestCase):
 
     # Test the image count
     def test_image_count(self):
-        actual_num_images = count_images("all_sets_results_test")
-        expected_num_images = count_images("../unit_test_images")
+        actual_num_images, actual_images = count_images("all_sets_results_test")
+        expected_num_images, expected_images = count_images("../unit_test_images")
+        self.assertEqual(actual_images, expected_images)
         self.assertEqual(actual_num_images, expected_num_images)
 
     # Test sets

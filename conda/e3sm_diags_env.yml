@@ -5,7 +5,7 @@ channels:
 dependencies:
   # Base
   # ==============
-  - python>=3.9
+  - python=3.9.4
   - pip=21.1.2
   - numpy=1.20.3
   - matplotlib=3.4.2
