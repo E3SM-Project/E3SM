@@ -159,11 +159,18 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 } // RRTMGPRadiation::init_buffers
 
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
+  using PC = scream::physics::Constants<Real>;
   // Names of active gases
   m_gas_names_yakl_offset = string1d("gas_names",m_ngas);
-  for (int igas = 1; igas <= m_ngas; igas++) {  /* Note: YAKL starts the index from 1 */
-    m_gas_names_yakl_offset(igas) = m_gas_names[igas-1];
+  m_gas_mol_weights       = view_1d_real("gas_mol_weights",m_ngas);
+  /* the lookup function for getting the gas mol weights doesn't work on device. */
+  auto gas_mol_w_host = Kokkos::create_mirror_view(m_gas_mol_weights);
+  for (int igas = 0; igas < m_ngas; igas++) {  
+    /* Note: YAKL starts the index from 1 */
+    m_gas_names_yakl_offset(igas+1) = m_gas_names[igas];
+    gas_mol_w_host[igas]            = PC::get_gas_mol_weight(m_gas_names[igas]);
   }
+  Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
   // Initialize GasConcs object to pass to RRTMGP initializer;
   // This is just to provide gas names
   // Make GasConcs from m_gas_names_yakl_offset
@@ -252,15 +259,15 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   GasConcs gas_concs;
   gas_concs.init(m_gas_names_yakl_offset,m_ncol,m_nlay);
   auto tmp2d = m_buffer.tmp2d;
-  for (int igas = 1; igas <= m_ngas; igas++) {
-    auto name = m_gas_names_yakl_offset(igas);
+  for (int igas = 0; igas < m_ngas; igas++) {
+    auto name = m_gas_names_yakl_offset(igas+1);
     auto fm_name = name=="h2o" ? "qv" : name;
     auto d_temp  = m_rrtmgp_fields_in.at(fm_name).get_reshaped_view<const Real**>();
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int k = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& i) {
-        tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(name,d_temp(i,k)); // Note that for YAKL arrays i and k start with index 1
+        tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(m_gas_mol_weights[igas],d_temp(i,k)); // Note that for YAKL arrays i and k start with index 1
       });
     });
     Kokkos::fence();

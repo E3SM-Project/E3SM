@@ -228,28 +228,27 @@ void run(std::mt19937_64& engine)
   // MMR and VMR property tests:
   //  - calculate_vmr_from_mmr(mmr=0) = 0
   //  - calculate_vmr_from_mmr(gas_name="h2o",mmr=0.5) = 1/ep_2
-  //  - calculate_vmr_from_mmr(gas_name="dummy") should throw an error
   //  - calculate_mmr_from_vmr(vmr=0) = 0
   //  - calculate_mmr_from_vmr(gas_name="h2o",1.0) = ep_2/(1+ep_2)
-  //  - calculate_mmr_from_vmr(gas_name="dummy") should throw an error
   //  - calculate_vmr_from_mmr(calculate_mmr_from_vmr(gas_name="h2o",vmr0)) = vmr
   //  - calculate_vmr_from_mmr(calculate_mmr_from_vmr(gas_name="o2",vmr0)) = vmr, test that changing gas name changes the result.
   //  - calculate_mmr_from_vmr(calculate_vmr_from_mmr(gas_name="h2o",mmr0)) = vmr
   //  - calculate_mmr_from_vmr(calculate_vmr_from_mmr(gas_name="o2",mmr0)) != vmr, test that changing gas name changes the result.
   mmr0 = pdf_mmr(engine);
   vmr0 = pdf_mmr(engine);
-  REQUIRE( Check::equal(PF::calculate_vmr_from_mmr("h2o",zero),zero) );
-  REQUIRE( Check::approx_equal(PF::calculate_vmr_from_mmr("h2o",0.5),1.0/ep_2,test_tol) );
-  REQUIRE_THROWS( PF::calculate_vmr_from_mmr("dummy",zero) );
-  REQUIRE( Check::equal(PF::calculate_mmr_from_vmr("h2o",zero),zero) );
-  REQUIRE( Check::approx_equal(PF::calculate_mmr_from_vmr("h2o",1.0),ep_2/(1.0+ep_2),test_tol) );
-  REQUIRE_THROWS( PF::calculate_mmr_from_vmr("dummy",zero) );
-  tmp = PF::calculate_vmr_from_mmr("h2o",mmr0);
-  REQUIRE( Check::approx_equal(PF::calculate_mmr_from_vmr("h2o",tmp),mmr0,test_tol) );
-  REQUIRE( !Check::approx_equal(PF::calculate_mmr_from_vmr("o2",tmp),mmr0,test_tol) );
-  tmp = PF::calculate_mmr_from_vmr("h2o",vmr0);
-  REQUIRE( Check::approx_equal(PF::calculate_vmr_from_mmr("h2o",tmp),vmr0,test_tol) );
-  REQUIRE( !Check::approx_equal(PF::calculate_vmr_from_mmr("o2",tmp),vmr0,test_tol) );
+  const auto h2o_mol = PC::get_gas_mol_weight("h2o");
+  const auto o2_mol  = PC::get_gas_mol_weight("o2");
+
+  REQUIRE( Check::equal(PF::calculate_vmr_from_mmr(h2o_mol,zero),zero) );
+  REQUIRE( Check::approx_equal(PF::calculate_vmr_from_mmr(h2o_mol,0.5),1.0/ep_2,test_tol) );
+  REQUIRE( Check::equal(PF::calculate_mmr_from_vmr(h2o_mol,zero),zero) );
+  REQUIRE( Check::approx_equal(PF::calculate_mmr_from_vmr(h2o_mol,1.0),ep_2/(1.0+ep_2),test_tol) );
+  tmp = PF::calculate_vmr_from_mmr(h2o_mol,mmr0);
+  REQUIRE( Check::approx_equal(PF::calculate_mmr_from_vmr(h2o_mol,tmp),mmr0,test_tol) );
+  REQUIRE( !Check::approx_equal(PF::calculate_mmr_from_vmr(o2_mol,tmp),mmr0,test_tol) );
+  tmp = PF::calculate_mmr_from_vmr(h2o_mol,vmr0);
+  REQUIRE( Check::approx_equal(PF::calculate_vmr_from_mmr(h2o_mol,tmp),vmr0,test_tol) );
+  REQUIRE( !Check::approx_equal(PF::calculate_vmr_from_mmr(o2_mol,tmp),vmr0,test_tol) );
 
   // --------- Run tests on full columns of data ----------- //
   TeamPolicy policy(ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(1, 1));
@@ -276,8 +275,8 @@ void run(std::mt19937_64& engine)
     PF::calculate_z_int(team,num_levs,dz_for_testing,surf_height,z_int);
 
     // Compute vmr from mmr and vice versa
-    PF::calculate_vmr_from_mmr(team,"h2o",mmr_for_testing,vmr);
-    PF::calculate_mmr_from_vmr(team,"h2o",vmr,mmr);
+    PF::calculate_vmr_from_mmr(team,h2o_mol,mmr_for_testing,vmr);
+    PF::calculate_mmr_from_vmr(team,h2o_mol,vmr,mmr);
   }); // Kokkos parallel_for "test_universal_physics"
   Kokkos::fence();
 
@@ -296,6 +295,7 @@ void run(std::mt19937_64& engine)
   auto dz_host              = cmvdc(dz);
   auto vmr_host             = cmvdc(vmr);
   auto mmr_host             = cmvdc(mmr);
+  auto mmr_for_testing_host = cmvdc(mmr_for_testing);
 
   for (int k=0; k<num_mid_packs; ++k) {
 
@@ -319,7 +319,7 @@ void run(std::mt19937_64& engine)
     REQUIRE ( Check::approx_equal(T_from_Tv_host(k),temperature_host(k),k,test_tol) );
 
     // Check vmr(mmr(vmr))==mmr (up to roundoff tolerance)
-    REQUIRE ( Check::approx_equal(mmr(k),mmr_for_testing(k),test_tol) );
+    REQUIRE ( Check::approx_equal(mmr_host(k),mmr_for_testing_host(k),test_tol) );
   }
 } // run()
 

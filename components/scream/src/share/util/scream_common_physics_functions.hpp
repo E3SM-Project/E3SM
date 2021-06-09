@@ -140,7 +140,7 @@ struct PhysicsFunctions
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_vmr_from_mmr(const std::string& gas_name, const ScalarT& mmr);
+  static ScalarT calculate_vmr_from_mmr(const Real& gas_mol_weight, const ScalarT& mmr);
 
   //-----------------------------------------------------------------------------------------------//
   // Calculate the volume mixing ratio given the wet mass mixing ratio:
@@ -154,7 +154,7 @@ struct PhysicsFunctions
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_mmr_from_vmr(const std::string& gas_name, const ScalarT& vmr);
+  static ScalarT calculate_mmr_from_vmr(const Real& gas_mol_weight, const ScalarT& vmr);
 
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
@@ -248,14 +248,14 @@ struct PhysicsFunctions
   template<typename ScalarT, typename InputProviderX>
   KOKKOS_INLINE_FUNCTION
   static void calculate_vmr_from_mmr(const MemberType& team,
-                                     const std::string gas_name,
+                                     const Real gas_mol_weight,
                                      const InputProviderX& mmr,
                                      const view_1d<ScalarT>& vmr);
 
   template<typename ScalarT, typename InputProviderX>
   KOKKOS_INLINE_FUNCTION
   static void calculate_mmr_from_vmr(const MemberType& team,
-                                     const std::string gas_name,
+                                     const Real gas_mol_weight,
                                      const InputProviderX& vmr,
                                      const view_1d<ScalarT>& mmr);
 

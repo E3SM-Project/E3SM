@@ -36,6 +36,7 @@ namespace scream {
         using namespace scream;
         using namespace scream::control;
         using PF = scream::PhysicsFunctions<DefaultDevice>;
+        using PC = scream::physics::Constants<Real>;
 
         // Get baseline name (needs to be passed as an arg)
         std::string inputfile = ekat::TestSession::get().params.at("rrtmgp_inputfile");
@@ -184,6 +185,17 @@ namespace scream {
         auto d_ch4 = field_mgr.get_field("ch4").get_reshaped_view<Real**>();
         auto d_o2  = field_mgr.get_field("o2").get_reshaped_view<Real**>();
         auto d_n2  = field_mgr.get_field("n2").get_reshaped_view<Real**>();
+
+        // Gather molecular weights of all the active gases in the test for conversion
+        // to mass-mixing-ratio.
+        auto h2o_mol = PC::get_gas_mol_weight("h2o");
+        auto co2_mol = PC::get_gas_mol_weight("co2");
+        auto o3_mol  = PC::get_gas_mol_weight("o3");
+        auto n2o_mol = PC::get_gas_mol_weight("n2o");
+        auto co_mol  = PC::get_gas_mol_weight("co");
+        auto ch4_mol = PC::get_gas_mol_weight("ch4");
+        auto o2_mol  = PC::get_gas_mol_weight("o2");
+        auto n2_mol  = PC::get_gas_mol_weight("n2");
         {
           const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, nlay);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -202,14 +214,14 @@ namespace scream {
               d_pint(i,k) = p_lev(i+1,k+1);
               d_tint(i,k) = t_lev(i+1,k+1);
 
-              d_qv(i,k)  = PF::calculate_mmr_from_vmr("h2o",gas_vmr(i+1,k+1,1));
-              d_co2(i,k) = PF::calculate_mmr_from_vmr("co2",gas_vmr(i+1,k+1,2));
-              d_o3(i,k)  = PF::calculate_mmr_from_vmr("o3",gas_vmr(i+1,k+1,3));
-              d_n2o(i,k) = PF::calculate_mmr_from_vmr("n2o",gas_vmr(i+1,k+1,4));
-              d_co(i,k)  = PF::calculate_mmr_from_vmr("co",gas_vmr(i+1,k+1,5));
-              d_ch4(i,k) = PF::calculate_mmr_from_vmr("ch4",gas_vmr(i+1,k+1,6));
-              d_o2(i,k)  = PF::calculate_mmr_from_vmr("o2",gas_vmr(i+1,k+1,7));
-              d_n2(i,k)  = PF::calculate_mmr_from_vmr("n2",gas_vmr(i+1,k+1,8));
+              d_qv(i,k)  = PF::calculate_mmr_from_vmr(h2o_mol,gas_vmr(i+1,k+1,1));
+              d_co2(i,k) = PF::calculate_mmr_from_vmr(co2_mol,gas_vmr(i+1,k+1,2));
+              d_o3(i,k)  = PF::calculate_mmr_from_vmr(o3_mol,gas_vmr(i+1,k+1,3));
+              d_n2o(i,k) = PF::calculate_mmr_from_vmr(n2o_mol,gas_vmr(i+1,k+1,4));
+              d_co(i,k)  = PF::calculate_mmr_from_vmr(co_mol,gas_vmr(i+1,k+1,5));
+              d_ch4(i,k) = PF::calculate_mmr_from_vmr(ch4_mol,gas_vmr(i+1,k+1,6));
+              d_o2(i,k)  = PF::calculate_mmr_from_vmr(o2_mol,gas_vmr(i+1,k+1,7));
+              d_n2(i,k)  = PF::calculate_mmr_from_vmr(n2_mol,gas_vmr(i+1,k+1,8));
             });
 
             d_pint(i,nlay) = p_lev(i+1,nlay+1);

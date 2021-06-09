@@ -16,6 +16,7 @@ class RRTMGPRadiation : public AtmosphereProcess {
 public:
   using field_type       = Field<      Real>;
   using const_field_type = Field<const Real>;
+  using view_1d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Real>;
 
   // Constructors
   RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -86,6 +87,7 @@ public:
   int m_ngas;
   std::vector<std::string> m_gas_names;
   string1d                 m_gas_names_yakl_offset; // Set of gas names with index offset by 1 to interface with YAKL.
+  view_1d_real             m_gas_mol_weights;
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
