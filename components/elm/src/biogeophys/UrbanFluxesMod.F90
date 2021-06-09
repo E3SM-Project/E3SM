@@ -342,7 +342,7 @@ contains
          else
             ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
          end if
-         tau_diff(l) = 1.100_r8
+         tau_diff(l) = 1.e100_r8
 
       end do
 
@@ -936,17 +936,19 @@ contains
       end if
 
       ! Check for convergence of stress.
-      do fl = 1, num_urbanl
-         l = filter_urbanl(fl)
-         if (implicit_stress .and. abs(tau_diff(l)) > dtaumin) then
-            if (nstep > 0) then ! Suppress common warnings on the first time step.
-               write(iulog,*)'WARNING: Stress did not converge for urban columns ',&
-                    ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(l),&
-                    ' tau_diff= ',tau_diff(l),' tau= ',tau(l),&
-                    ' wind_speed_adj= ',wind_speed_adj(l),' iter_final= ',iter_final
+      if (implicit_stress) then
+         do fl = 1, num_urbanl
+            l = filter_urbanl(fl)
+            if (abs(tau_diff(l)) > dtaumin) then
+               if (nstep > 0) then ! Suppress common warnings on the first time step.
+                  write(iulog,*)'WARNING: Stress did not converge for urban columns ',&
+                       ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(l),&
+                       ' tau_diff= ',tau_diff(l),' tau= ',tau(l),&
+                       ' wind_speed_adj= ',wind_speed_adj(l),' iter_final= ',iter_final
+               end if
             end if
-         end if
-      end do
+         end do
+      end if
 
       ! Gather terms required to determine internal building temperature
 
