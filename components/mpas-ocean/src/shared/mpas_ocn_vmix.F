@@ -782,19 +782,19 @@ contains
           endif
           if (vegetationMask(iCell) .eq. 1) then
             total_h = bottomDepth(iCell) + ssh(iCell)
-            old_bottom_Cd = gravity * bottomDrag(iCell)**2.0_RKIND * total_h**(1.0_RKIND/3.0_RKIND)
+            old_bottom_Cd = gravity * bottomDrag(iCell)**2 * total_h**(-1.0_RKIND/3.0_RKIND)
             inundation_depth = MIN(vegetationHeight(iCell), total_h)
             inundation_depth = MAX(inundation_depth, 1e-6)
             lambda = vegetationDiameter(iCell) * vegetationDensity(iCell)
             alpha = (config_vegetation_drag_coefficient*lambda/ &
-                   (4.0_RKIND*von_karman**2.0_RKIND*inundation_depth**2.0_RKIND))**(1.0_RKIND/3.0_RKIND)
+                   (4.0_RKIND*von_karman**2 * inundation_depth**2))**(1.0_RKIND/3.0_RKIND)
             beta = 0.5_RKIND*alpha*inundation_depth*(1.0_RKIND - EXP(-2.0_RKIND*alpha*inundation_depth)) &
-                  / (1.0_RKIND - EXP(-alpha*inundation_depth))**2.0_RKIND
+                  / (1.0_RKIND - EXP(-alpha*inundation_depth))**2
             cff1 = total_h**(2.0_RKIND/3.0_RKIND) &
                   * SQRT((0.5_RKIND*beta*lambda*config_vegetation_drag_coefficient*inundation_depth &
                   + old_bottom_Cd)/(gravity*total_h))
-            cff2 = (alpha*inundation_depth)**2.0_RKIND/(1.0_RKIND - EXP(-alpha*inundation_depth))
-            cff3 = (1.0_RKIND - EXP(-alpha*inundation_depth))/(alpha**2.0_RKIND*inundation_depth*total_h)
+            cff2 = (alpha*inundation_depth)**2/(1.0_RKIND - EXP(-alpha*inundation_depth))
+            cff3 = (1.0_RKIND - EXP(-alpha*inundation_depth))/(alpha**2 * inundation_depth*total_h)
             cff4 = LOG(total_h/inundation_depth) - (1.0_RKIND-inundation_depth/total_h) &
                   * (1.0_RKIND - 1.0_RKIND/(alpha*inundation_depth))
             vegetationManning(iCell) = cff1/(cff2*(cff3+cff4))
@@ -831,10 +831,10 @@ contains
                         min(0.1_RKIND, &
                           0.16_RKIND/log(250.0_RKIND*(bottomDepth(cell1)+bottomDepth(cell2)))**2 ))
          elseif (config_use_vegetation_drag .AND. config_use_vegetation_manning_equation) then
-           implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2.0 * &
+           implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2 * &
             (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
          else
-           implicitCd = gravity*(0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2)))**2.0 * &
+           implicitCd = gravity*(0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2)))**2 * &
             (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
          endif
 
