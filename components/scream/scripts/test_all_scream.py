@@ -577,16 +577,17 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                 print ("WARNING: Failed to configure baselines:\n{}".format(err))
                 success = False
 
-            cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test], self._testing_res_count[test])
-            if self._parallel:
-                start, end = self.get_taskset_id(test)
-                cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
+            else:
+                cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test], self._testing_res_count[test])
+                if self._parallel:
+                    start, end = self.get_taskset_id(test)
+                    cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
 
-            stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+                stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
 
-            if stat != 0:
-                print("WARNING: Failed to create baselines:\n{}".format(err))
-                success = False
+                if stat != 0:
+                    print("WARNING: Failed to create baselines:\n{}".format(err))
+                    success = False
 
         finally:
             # Clean up the directory, by removing everything but the 'data' subfolder. This must
