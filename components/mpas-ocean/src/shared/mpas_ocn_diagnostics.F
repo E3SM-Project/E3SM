@@ -1850,7 +1850,8 @@ contains
       !
       ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
 #ifdef MPAS_OPENACC
-      !$acc enter data create(div_hu, projectedSSH, ALE_Thickness)
+      !$acc enter data create(div_hu, projectedSSH, ALE_Thickness) &
+      !$acc            copyin(edgeSignOnCell)
 
       !$acc parallel loop &
       !$acc          present(div_hu, invAreaCell, nEdgesOnCell, edgesOnCell, maxLevelEdgeTop, &
@@ -1881,6 +1882,7 @@ contains
       end do
 #ifdef MPAS_OPENACC
       !$acc update host(projectedSSH)
+      !$acc exit data delete(edgeSignOnCell)
 #else
       !$omp end do
       !$omp end parallel
