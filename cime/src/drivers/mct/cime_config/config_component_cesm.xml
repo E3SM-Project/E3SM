@@ -145,6 +145,7 @@
       <value compset="RCP.*_DATM.*_CLM">CO2A</value>
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="_BGC%BDRD">CO2C</value>
+      <value compset="_BGC%LNDATM">CO2B</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
