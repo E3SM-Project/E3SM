@@ -61,7 +61,7 @@ def buildnml(case, caseroot, compname):
     # update env_build.xml settings to reflect changes in the configuration
     # this will trigger whether an automatic build is set upon the job resubmission
     if cice_auto_decomp:
-        ntasks = ntasks_ice / ninst_ice
+        ntasks = int(ntasks_ice / ninst_ice)
         hgrid  = ice_grid
         if ice_grid == 'ar9v2': hgrid = 'ar9v1'
         if ice_grid == 'ar9v4': hgrid = 'ar9v3'
