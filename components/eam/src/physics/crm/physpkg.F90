@@ -1448,14 +1448,14 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
     call outfld('DTENDTQ', CIDiff, pcols, lchnk )
 
     ! dyanmics momentum tendency
-    u_wind_diff(:ncol,:) = ( state%u(:ncol,:) - u_wind_ac(:ncol,:) )!*rtdt
-    v_wind_diff(:ncol,:) = ( state%v(:ncol,:) - v_wind_ac(:ncol,:) )!*rtdt
+    u_wind_diff(:ncol,:) = ( state%u(:ncol,:) - u_wind_ac(:ncol,:) )*rtdt
+    v_wind_diff(:ncol,:) = ( state%v(:ncol,:) - v_wind_ac(:ncol,:) )*rtdt
     call outfld('DYN_DU', u_wind_diff, pcols, lchnk )
     call outfld('DYN_DV', v_wind_diff, pcols, lchnk )
 
     ! total momentum tendency
-    u_wind_diff(:ncol,:) = ( state%u(:ncol,:) - u_wind_tot(:ncol,:) )!*rtdt
-    v_wind_diff(:ncol,:) = ( state%v(:ncol,:) - v_wind_tot(:ncol,:) )!*rtdt
+    u_wind_diff(:ncol,:) = ( state%u(:ncol,:) - u_wind_tot(:ncol,:) )*rtdt
+    v_wind_diff(:ncol,:) = ( state%v(:ncol,:) - v_wind_tot(:ncol,:) )*rtdt
     call outfld('TOT_DU', u_wind_diff, pcols, lchnk )
     call outfld('TOT_DV', v_wind_diff, pcols, lchnk )
     u_wind_tot = state%u
