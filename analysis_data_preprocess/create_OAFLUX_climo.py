@@ -295,25 +295,19 @@ for fi in fisc:
             if ji == "shtfl":
                 outputdattable.id = "SHFLX"
                 outputdattable.units = "W m-2"
-                outputdattable.standard_name = (
-                    "surface_upward_sensible_heat_flux"
-                )
+                outputdattable.standard_name = "surface_upward_sensible_heat_flux"
                 # print ji,' modified'
             if ji == "lhtfl":
                 outputdattable.id = "LHFLX"
                 outputdattable.units = "W m-2"
-                outputdattable.standard_name = (
-                    "surface_upward_latent_heat_flux"
-                )
+                outputdattable.standard_name = "surface_upward_latent_heat_flux"
                 # print ji,' modified'
             f_out.write(outputdattable)
 
     time_axis = f_out.getAxis("time")
     bnds_axis = f_out.getAxis("bound")
     climatology = None
-    climo_start = "".join(
-        [startyear, clim_edges[clim_edge_values[f_index, 0]]]
-    )
+    climo_start = "".join([startyear, clim_edges[clim_edge_values[f_index, 0]]])
     climo_end = "".join([endyear, clim_edges[clim_edge_values[f_index, 1]]])
     # climatology_bnds_value={climo_start, climo_end}
 
@@ -402,9 +396,7 @@ for fi in fisc:
         shell=True,
     )
     call(
-        "".join(
-            ["ncatted -a _FillValue,'^bounds',d,, ", output_hostANDfilename]
-        ),
+        "".join(["ncatted -a _FillValue,'^bounds',d,, ", output_hostANDfilename]),
         shell=True,
     )
     call(

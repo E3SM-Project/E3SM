@@ -1,24 +1,13 @@
 #!/usr/bin/env python
 from __future__ import print_function
-from typing import Dict, Tuple
-import os
-
-# Must be done before any CDAT library is called.
-os.environ["UVCDAT_ANONYMOUS_LOG"] = "no"
-os.environ["CDAT_ANONYMOUS_LOG"] = "no"
-# Needed for when using hdf5 >= 1.10.0,
-# without this, errors are thrown on Edison compute nodes.
-os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
-# Used by numpy, causes too many threads to spawn otherwise.
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-os.environ["OMP_NUM_THREADS"] = "1"
 
 import importlib
+import os
 import subprocess
 import sys
 import traceback
+from typing import Dict, Tuple
 
-import cdms2.tvariable
 import cdp.cdp_run
 
 import acme_diags
@@ -27,9 +16,6 @@ from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.parser import SET_TO_PARSER
 from acme_diags.parser.core_parser import CoreParser
 from acme_diags.viewer.main import create_viewer
-
-# turn off MPI in cdms2 -- not currently supported by e3sm_diags
-cdms2.tvariable.HAVE_MPI = False
 
 
 def get_default_diags_path(set_name, run_type, print_path=True):

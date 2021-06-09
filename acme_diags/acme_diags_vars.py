@@ -10,15 +10,11 @@ import os
 from typing import Any, Dict, List
 
 import cdms2
-import cdms2.tvariable
 
 import acme_diags
 from acme_diags.acme_diags_driver import get_parameters
 from acme_diags.derivations.acme import derived_variables
 from acme_diags.parser.core_parser import CoreParser
-
-# turn off MPI in cdms2 -- not currently supported by e3sm_diags
-cdms2.tvariable.HAVE_MPI = False
 
 
 def main():
