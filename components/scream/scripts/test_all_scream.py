@@ -565,33 +565,40 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         print("Generating baseline for test {} with config '{}'".format(self._test_full_names[test], cmake_config))
         print("===============================================================================")
 
-        # We cannot just crash if we fail to generate baselines, since we would
-        # not get a dashboard report if we did that. Instead, just ensure there is
-        # no baseline file to compare against if there's a problem.
-        stat, _, err = run_cmd("{} {}".format(cmake_config, self._root_dir), from_dir=test_dir, verbose=True, dry_run=self._dry_run)
-        if stat!= 0:
-            print ("WARNING: Failed to configure baselines:\n{}".format(err))
-            return False
+        success = True
 
-        cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test],self._testing_res_count[test])
-        if self._parallel:
-            start, end = self.get_taskset_id(test)
-            cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
+        try:
+            # We cannot just crash if we fail to generate baselines, since we would
+            # not get a dashboard report if we did that. Instead, just ensure there is
+            # no baseline file to compare against if there's a problem.
+            stat, _, err = run_cmd("{} {}".format(cmake_config, self._root_dir),
+                                   from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+            if stat != 0:
+                print ("WARNING: Failed to configure baselines:\n{}".format(err))
+                success = False
 
-        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+            cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test], self._testing_res_count[test])
+            if self._parallel:
+                start, end = self.get_taskset_id(test)
+                cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
 
-        if stat != 0:
-            print("WARNING: Failed to create baselines:\n{}".format(err))
-            return False
-        else:
-            # Clean up the directory, by removing everything but the 'data' subfolder
+            stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+
+            if stat != 0:
+                print("WARNING: Failed to create baselines:\n{}".format(err))
+                success = False
+
+        finally:
+            # Clean up the directory, by removing everything but the 'data' subfolder. This must
+            # happen unconditionally or else subsequent runs could be corrupted
             run_cmd_no_fail(r"find -maxdepth 1 -not -name data ! -path . -exec rm -rf {} \;",
                             from_dir=test_dir, verbose=True, dry_run=self._dry_run)
 
+        if success:
             # Store the sha used for baselines generation
             self.set_baseline_file_sha(test, commit)
 
-        return True
+        return success
 
     ###############################################################################
     def generate_all_baselines(self):
