@@ -38,7 +38,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install sphinx==3.5.1 sphinx_rtd_theme==0.5.1 sphinx-multiversion==0.2.4 docutils==0.16
+          pip install sphinx==4.0.2 sphinx_rtd_theme==0.5.2 sphinx-multiversion==0.2.4 docutils==0.16
 
       - name: Build Sphinx Docs
         run: |

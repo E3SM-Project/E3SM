@@ -191,7 +191,7 @@ def rstcs(rsdt, rsutcs):
 
 
 def swcfsrf(fsns, fsnsc):
-    """Surface shortwave cloud forcing """
+    """Surface shortwave cloud forcing"""
     var = fsns - fsnsc
     var.long_name = "Surface shortwave cloud forcing"
     return var
@@ -205,42 +205,42 @@ def lwcfsrf(flns, flnsc):
 
 
 def swcf(fsntoa, fsntoac):
-    """TOA shortwave cloud forcing """
+    """TOA shortwave cloud forcing"""
     var = fsntoa - fsntoac
     var.long_name = "TOA shortwave cloud forcing"
     return var
 
 
 def lwcf(flntoa, flntoac):
-    """TOA longwave cloud forcing """
+    """TOA longwave cloud forcing"""
     var = flntoa - flntoac
     var.long_name = "TOA longwave cloud forcing"
     return var
 
 
 def netcf2(swcf, lwcf):
-    """TOA net cloud forcing """
+    """TOA net cloud forcing"""
     var = swcf + lwcf
     var.long_name = "TOA net cloud forcing"
     return var
 
 
 def netcf4(fsntoa, fsntoac, flntoa, flntoac):
-    """TOA net cloud forcing """
+    """TOA net cloud forcing"""
     var = fsntoa - fsntoac + flntoa - flntoac
     var.long_name = "TOA net cloud forcing"
     return var
 
 
 def netcf2srf(swcf, lwcf):
-    """Surface net cloud forcing """
+    """Surface net cloud forcing"""
     var = swcf + lwcf
     var.long_name = "Surface net cloud forcing"
     return var
 
 
 def netcf4srf(fsntoa, fsntoac, flntoa, flntoac):
-    """Surface net cloud forcing """
+    """Surface net cloud forcing"""
     var = fsntoa - fsntoac + flntoa - flntoac
     var.long_name = "Surface net cloud forcing"
     return var

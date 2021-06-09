@@ -118,7 +118,14 @@ an SSL error unless you disable the SSL verification:
         conda config --set ssl_verify false
         binstar config --set ssl_verify False
 
-4. Once conda is properly working, you can install the **(a) Latest Stable Release** or create a **(b) Development Environment**.
+4. Configure Conda channels
+
+    ::
+
+        conda config --add channels conda-forge
+        conda config --set channel_priority strict
+
+5. Once conda is properly working, you can install the **(a) Latest Stable Release** or create a **(b) Development Environment**.
 
 .. _install_latest:
 

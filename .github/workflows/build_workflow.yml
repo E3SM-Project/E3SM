@@ -9,9 +9,6 @@ on:
 
   workflow_dispatch:
 
-env:
-  UVCDAT_ANONYMOUS_LOG: False
-
 jobs:
   check-jobs-to-skip:
     runs-on: ubuntu-latest
@@ -86,9 +83,9 @@ jobs:
         run: pip install .
 
       - name: Run Tests
-        run: |
-          export CHECK_IMAGES=True
-          bash tests/test.sh
+        env:
+          CHECK_IMAGES: True
+        run: bash tests/test.sh
 
   publish-docs:
     if: ${{ github.event_name == 'push' }}
@@ -124,7 +121,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install sphinx==3.5.1 sphinx_rtd_theme==0.5.1 sphinx-multiversion==0.2.4 docutils==0.16
+          pip install sphinx==4.0.2 sphinx_rtd_theme==0.5.2 sphinx-multiversion==0.2.4 docutils==0.16
 
       - name: Build Sphinx Docs
         run: |
