@@ -87,7 +87,6 @@ public:
   // These are the gases that we keep track of
   int m_ngas;
   std::vector<std::string> m_gas_names;
-  string1d                 m_gas_names_yakl_offset; // Set of gas names with index offset by 1 to interface with YAKL.
   view_1d_real             m_gas_mol_weights;
   GasConcs gas_concs;
 

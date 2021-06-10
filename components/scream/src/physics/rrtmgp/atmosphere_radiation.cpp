@@ -161,18 +161,18 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   using PC = scream::physics::Constants<Real>;
   // Names of active gases
-  m_gas_names_yakl_offset = string1d("gas_names",m_ngas);
-  m_gas_mol_weights       = view_1d_real("gas_mol_weights",m_ngas);
+  auto gas_names_yakl_offset = string1d("gas_names",m_ngas);
+  m_gas_mol_weights          = view_1d_real("gas_mol_weights",m_ngas);
   /* the lookup function for getting the gas mol weights doesn't work on device. */
   auto gas_mol_w_host = Kokkos::create_mirror_view(m_gas_mol_weights);
   for (int igas = 0; igas < m_ngas; igas++) {  
     /* Note: YAKL starts the index from 1 */
-    m_gas_names_yakl_offset(igas+1) = m_gas_names[igas];
+    gas_names_yakl_offset(igas+1)   = m_gas_names[igas];
     gas_mol_w_host[igas]            = PC::get_gas_mol_weight(m_gas_names[igas]);
   }
   Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
   // Initialize GasConcs object to pass to RRTMGP initializer;
-  gas_concs.init(m_gas_names_yakl_offset,m_ncol,m_nlay);
+  gas_concs.init(gas_names_yakl_offset,m_ncol,m_nlay);
   rrtmgp::rrtmgp_initialize(gas_concs);
 
 }
@@ -254,7 +254,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   // Populate GasConcs object to pass to RRTMGP driver
   auto tmp2d = m_buffer.tmp2d;
   for (int igas = 0; igas < m_ngas; igas++) {
-    auto name = m_gas_names_yakl_offset(igas+1);
+    auto name = m_gas_names[igas];
     auto fm_name = name=="h2o" ? "qv" : name;
     auto d_temp  = m_rrtmgp_fields_in.at(fm_name).get_reshaped_view<const Real**>();
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
@@ -266,7 +266,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     });
     Kokkos::fence();
 
-    gas_concs.set_vmr(name, tmp2d);
+    gas_concs.set_vmr(m_gas_names[igas], tmp2d);
   }
 
   // Compute layer cloud mass (per unit area)
