@@ -139,9 +139,15 @@ namespace scream {
 
             // Needed for consistency with all-sky example problem?
             cloud_optics.set_ice_roughness(2);
+ 
+            // Limit effective radii to be within bounds of lookup table
+            auto rel_limited = real2d("rel_limited", ncol, nlay);
+            auto rei_limited = real2d("rei_limited", ncol, nlay);
+            limit_to_bounds(rel, cloud_optics.radliq_lwr, cloud_optics.radliq_upr, rel_limited);
+            limit_to_bounds(rei, cloud_optics.radice_lwr, cloud_optics.radice_upr, rei_limited);
 
             // Calculate cloud optics
-            cloud_optics.cloud_optics(ncol, nlay, lwp, iwp, rel, rei, clouds);
+            cloud_optics.cloud_optics(ncol, nlay, lwp, iwp, rel_limited, rei_limited, clouds);
 
             // Return optics
             return clouds;
@@ -161,8 +167,14 @@ namespace scream {
             // Needed for consistency with all-sky example problem?
             cloud_optics.set_ice_roughness(2);
 
+            // Limit effective radii to be within bounds of lookup table
+            auto rel_limited = real2d("rel_limited", ncol, nlay);
+            auto rei_limited = real2d("rei_limited", ncol, nlay);
+            limit_to_bounds(rel, cloud_optics.radliq_lwr, cloud_optics.radliq_upr, rel_limited);
+            limit_to_bounds(rei, cloud_optics.radice_lwr, cloud_optics.radice_upr, rei_limited);
+
             // Calculate cloud optics
-            cloud_optics.cloud_optics(ncol, nlay, lwp, iwp, rel, rei, clouds);
+            cloud_optics.cloud_optics(ncol, nlay, lwp, iwp, rel_limited, rei_limited, clouds);
 
             // Return optics
             return clouds;

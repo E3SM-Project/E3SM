@@ -48,7 +48,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Set up dimension layouts
   FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_ncol,m_nlay} };
-  FieldLayout scalar3d_layout_int { {COL,LEV}, {m_ncol,m_nlay+1} };
+  FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_ncol,m_nlay+1} };
   // Use VAR field tag for gases for now; consider adding a tag?
   FieldLayout scalar2d_swband_layout { {COL,SWBND}, {m_ncol,m_nswbands} };
 
@@ -61,8 +61,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name(), ps);
   add_field<Required>("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name(), ps);
   add_field<Required>("cos_zenith", scalar2d_layout, nondim, grid->name(), ps);
-  add_field<Required>("qc", scalar3d_layout_mid, kg/kg, grid->name(), ps);
-  add_field<Required>("qi", scalar3d_layout_mid, kg/kg, grid->name(), ps);
+  add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid->name(), ps);
+  add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid->name(), ps);
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name(), ps);
   add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name(), ps);
   add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name(), ps);

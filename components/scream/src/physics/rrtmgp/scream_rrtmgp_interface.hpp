@@ -91,6 +91,18 @@ namespace scream {
             });
         }
 
+        /*
+         * Routine to limit a quantity to set bounds. Used to make sure
+         * effective radii are within the bounds of the cloud optical
+         * property look-up tables, but could be used to limit other
+         * fields as well.
+         */
+        template<class S, class T> void limit_to_bounds(S const &arr_in, T const lower, T const upper, S &arr_out) {
+            yakl::c::parallel_for(arr_in.totElems(), YAKL_LAMBDA(int i) {
+                arr_out.data()[i] = min(max(arr_in.data()[i], lower), upper);
+            });
+        }
+
     } // namespace rrtmgp
 }  // namespace scream
 
