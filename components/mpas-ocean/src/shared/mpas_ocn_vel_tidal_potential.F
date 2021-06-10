@@ -65,7 +65,8 @@ module ocn_vel_tidal_potential
    !*** physical constants
    real (kind=RKIND) ::  &
       betaSelfAttrLoad,  &! self-attraction and loading beta
-      tidalPotRamp        ! scale for ramping tidal potential
+      tidalPotRamp, &     ! scale for ramping tidal potential
+      rho0gInv            ! 1 / rho0 / gravity
 
    !*** eventually these will be private module arrays and 
    !*** not in the forcing pool so retain pointers here as placeholders
@@ -110,14 +111,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_tidal_potential_tend(ssh, tend, err)!{{{
+   subroutine ocn_vel_tidal_potential_tend(ssh, surfacePressure, tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         ssh             !< [in] Sea surface height
+         ssh, surfacePressure             !< [in] Sea surface height
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -156,7 +157,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, edgeMask, &
-      !$acc            tidalPotEta, ssh, tend) &
+      !$acc            tidalPotEta, ssh, surfacePressure, tend) &
       !$acc    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
 #else
       !$omp parallel do schedule(runtime) &
@@ -169,9 +170,10 @@ contains
          kMax = maxLevelEdgeTop(iEdge)
 
          potentialGrad = - gravity*invdcEdge* &
-                         (tidalPotEta(cell2) - tidalPotEta(cell1) + &
-                          betaSelfAttrLoad* &
-                          (ssh(cell2) - ssh(cell1)))
+            (  tidalPotEta(cell2) - tidalPotEta(cell1) &
+             + betaSelfAttrLoad &
+              *((ssh(cell2) - ssh(cell1)) &
+                + rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))))
 
          do k=1,kMax
             tend(k,iEdge) = tend(k,iEdge) - &
@@ -320,7 +322,7 @@ contains
       tidalPotentialOff = .true.
       betaSelfAttrLoad  = 0.0_RKIND
       tidalPotRamp      = 1.0e20_RKIND
- 
+      rho0gInv = 1.0_RKIND / rho_sw / gravity
       !*** If tidal potential turned on, set all relevant variables
 
       if (config_use_tidal_potential_forcing) then
