@@ -20,9 +20,6 @@
 		<dim name="maxEdges2" units="unitless"
 			 description="Two times the largest number of edges any polygon within the grid has."
 		/>
-		<dim name="nAdvectionCells" definition="maxEdges2+0" units="unitless"
-			 description="The largest number of advection cells for any edge."
-		/>
 		<dim name="nVertices" units="unitless"
 			 description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
 		/>
@@ -2232,30 +2229,6 @@
 		<var name="oceanFracObserved" type="real" dimensions="nCells" units="unitless"
 			 description="fraction of each cell containing ocean, used to determine which cells are culled as land."
 			 packages="initMode"
-		/>
-		<var name="derivTwo" type="real" dimensions="maxEdges2 TWO nEdges" units="m^{-2}"
-			 description="Value of the second derivative of the polynomial used for reconstruction of cell center quantities at edges."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="advCoefs" type="real" dimensions="nAdvectionCells nEdges" units="m"
-			 description="Weighting coefficients used for reconstruction of cell center quantities at edges. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="advCoefs3rd" type="real" dimensions="nAdvectionCells nEdges" units="m"
-			 description="Wegihting coefficients used for reconstruction of cell center quantities at edges. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="advCellsForEdge" type="integer" dimensions="nAdvectionCells nEdges" units="unitless"
-			 description="List of cells used to reconstruct a cell quantity at an edge. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="nAdvCellsForEdge" type="integer" dimensions="nEdges" units="unitless"
-			 description="Number of cells used in reconstruction of cell center quantities at an edge. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="highOrderAdvectionMask" type="integer" dimensions="nVertLevels nEdges" units="unitless"
-			 description="Mask for high order advection. Values are 1 if high order is used, and 0 if not."
-			 packages="forwardMode;analysisMode"
 		/>
 		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
 			 description="Coefficients to reconstruct velocity vectors at cells centers."

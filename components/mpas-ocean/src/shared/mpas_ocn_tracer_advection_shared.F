@@ -41,14 +41,14 @@ module ocn_tracer_advection_shared
       nAdvCellsMax     ! largest number of advection cells for any edge
 
    integer, public, dimension(:), allocatable :: &
-      nAdvCellsForEdgeNew ! number of cells contrib to advection at edge
+      nAdvCellsForEdge ! number of cells contrib to advection at edge
 
    integer, public, dimension(:,:), allocatable :: &
-      advCellsForEdgeNew ! index of cells contributing to advection at edge
+      advCellsForEdge ! index of cells contributing to advection at edge
 
    real (kind=RKIND), public, dimension(:,:), allocatable :: &
-      advCoefsNew,    &! common advection coefficients
-      advCoefs3rdNew, &! common advection coeffs for high order
+      advCoefs,       &! common advection coefficients
+      advCoefs3rd,    &! common advection coeffs for high order
       advMaskHighOrder ! mask for high order advection terms
 
    !--------------------------------------------------------------------
@@ -119,10 +119,10 @@ module ocn_tracer_advection_shared
       nAdvCellsMax = maxEdges2
 
       ! Allocate common variables
-      allocate(nAdvCellsForEdgeNew (             nEdgesAll),   &
-                advCellsForEdgeNew (nAdvCellsMax,nEdgesAll), &
-                advCoefsNew        (nAdvCellsMax,nEdgesAll), &
-                advCoefs3rdNew     (nAdvCellsMax,nEdgesAll), &
+      allocate(nAdvCellsForEdge (             nEdgesAll),   &
+                advCellsForEdge (nAdvCellsMax,nEdgesAll), &
+                advCoefs        (nAdvCellsMax,nEdgesAll), &
+                advCoefs3rd     (nAdvCellsMax,nEdgesAll), &
                 advMaskHighOrder(nVertLevels ,nEdgesAll), &
                 derivTwo      (nAdvCellsMax,2,nEdgesAll))
 
@@ -141,7 +141,7 @@ module ocn_tracer_advection_shared
 
       ! Compute masks and coefficients
       do iEdge = 1, nEdgesAll
-         nAdvCellsForEdgeNew(iEdge) = 0
+         nAdvCellsForEdge(iEdge) = 0
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
@@ -199,9 +199,9 @@ module ocn_tracer_advection_shared
             call mpas_quicksort(n, cellIndxSorted)
 
             ! store local cell indices for high-order calculations
-            nAdvCellsForEdgeNew(iEdge) = n
-            do iCell = 1, nAdvCellsForEdgeNew(iEdge)
-               advCellsForEdgeNew(iCell,iEdge) = cellIndxSorted(2,iCell)
+            nAdvCellsForEdge(iEdge) = n
+            do iCell = 1, nAdvCellsForEdge(iEdge)
+               advCellsForEdge(iCell,iEdge) = cellIndxSorted(2,iCell)
             end do
 
             ! equation 7 in Skamarock, W. C., & Gassmann, A. (2011):
@@ -223,86 +223,86 @@ module ocn_tracer_advection_shared
             ! the + sign is for the i part.
 
             do i=1,nAdvCellsMax
-               advCoefsNew    (i,iEdge) = 0.0_RKIND
-               advCoefs3rdNew(i,iEdge) = 0.0_RKIND
+               advCoefs   (i,iEdge) = 0.0_RKIND
+               advCoefs3rd(i,iEdge) = 0.0_RKIND
             end do
 
             ! pull together third and fourth order contributions to the
             ! flux first from cell1
             i = mpas_binary_search(cellIndxSorted, 2, 1, &
-                    nAdvCellsForEdgeNew(iEdge), indexToCellID(cell1))
-            if (i <= nAdvCellsForEdgeNew(iEdge)) then
-               advCoefsNew    (i,iEdge) = advCoefsNew(i,iEdge) + &
-                                        derivTwo(1,1,iEdge)
-               advCoefs3rdNew(i,iEdge) = advCoefs3rdNew(i,iEdge) + &
-                                        derivTwo(1,1,iEdge)
+                    nAdvCellsForEdge(iEdge), indexToCellID(cell1))
+            if (i <= nAdvCellsForEdge(iEdge)) then
+               advCoefs   (i,iEdge) = advCoefs   (i,iEdge) &
+                                    +  derivTwo(1,1,iEdge)
+               advCoefs3rd(i,iEdge) = advCoefs3rd(i,iEdge) &
+                                    +  derivTwo(1,1,iEdge)
             end if
 
             do iCell = 1, nEdgesOnCell(cell1)
                i = mpas_binary_search(cellIndxSorted, 2, 1, &
-                              nAdvCellsForEdgeNew(iEdge), &
+                              nAdvCellsForEdge(iEdge), &
                               indexToCellID(cellsOnCell(iCell,cell1)))
-               if (i <= nAdvCellsForEdgeNew(iEdge)) then
-                  advCoefsNew(i,iEdge)     = advCoefsNew(i,iEdge) + &
-                                           derivTwo(iCell+1,1,iEdge)
-                  advCoefs3rdNew(i,iEdge) = advCoefs3rdNew(i,iEdge) + &
-                                           derivTwo(iCell+1,1,iEdge)
+               if (i <= nAdvCellsForEdge(iEdge)) then
+                  advCoefs   (i,iEdge) = advCoefs   (i,iEdge) &
+                                       + derivTwo(iCell+1,1,iEdge)
+                  advCoefs3rd(i,iEdge) = advCoefs3rd(i,iEdge) &
+                                       + derivTwo(iCell+1,1,iEdge)
                end if
             end do
 
             ! pull together third and fourth order contributions to the
             ! flux now from cell2
             i = mpas_binary_search(cellIndxSorted, 2, 1, &
-                       nAdvCellsForEdgeNew(iEdge), indexToCellID(cell2))
-            if (i <= nAdvCellsForEdgeNew(iEdge)) then
-               advCoefsNew    (i,iEdge) = advCoefsNew(i,iEdge) + &
-                                        derivTwo(1,2,iEdge)
-               advCoefs3rdNew(i,iEdge) = advCoefs3rdNew(i,iEdge) - &
-                                        derivTwo(1,2,iEdge)
+                       nAdvCellsForEdge(iEdge), indexToCellID(cell2))
+            if (i <= nAdvCellsForEdge(iEdge)) then
+               advCoefs   (i,iEdge) = advCoefs   (i,iEdge) &
+                                    +  derivTwo(1,2,iEdge)
+               advCoefs3rd(i,iEdge) = advCoefs3rd(i,iEdge) &
+                                    -  derivTwo(1,2,iEdge)
             end if
 
             do iCell = 1, nEdgesOnCell(cell2)
                i = mpas_binary_search(cellIndxSorted, 2, 1, &
-                           nAdvCellsForEdgeNew(iEdge), &
+                           nAdvCellsForEdge(iEdge), &
                            indexToCellID(cellsOnCell(iCell,cell2)))
-               if (i <= nAdvCellsForEdgeNew(iEdge)) then
-                  advCoefsNew(i,iEdge)     = advCoefsNew(i,iEdge) + &
-                                           derivTwo(iCell+1,2,iEdge)
-                  advCoefs3rdNew(i,iEdge) = advCoefs3rdNew(i,iEdge) - &
-                                           derivTwo(iCell+1,2,iEdge)
+               if (i <= nAdvCellsForEdge(iEdge)) then
+                  advCoefs   (i,iEdge) = advCoefs   (i,iEdge) &
+                                       + derivTwo(iCell+1,2,iEdge)
+                  advCoefs3rd(i,iEdge) = advCoefs3rd(i,iEdge) &
+                                       - derivTwo(iCell+1,2,iEdge)
                end if
             end do
 
-            do iCell = 1,nAdvCellsForEdgeNew(iEdge)
-               advCoefsNew    (iCell,iEdge) = - (dcEdge(iEdge)**2)* &
-                                      advCoefsNew(iCell,iEdge) / 12.
-               advCoefs3rdNew(iCell,iEdge) = - (dcEdge(iEdge)**2)* &
-                                  advCoefs3rdNew(iCell,iEdge) / 12.
+            do iCell = 1,nAdvCellsForEdge(iEdge)
+               advCoefs   (iCell,iEdge) = - (dcEdge(iEdge)**2)* &
+                                     advCoefs(iCell,iEdge) / 12.
+               advCoefs3rd(iCell,iEdge) = - (dcEdge(iEdge)**2)* &
+                                  advCoefs3rd(iCell,iEdge) / 12.
             end do
 
             ! 2nd order centered contribution
             ! place this in the main flux weights
             i = mpas_binary_search(cellIndxSorted, 2, 1, &
-                                   nAdvCellsForEdgeNew(iEdge), &
+                                   nAdvCellsForEdge(iEdge), &
                                    indexToCellID(cell1))
-            if (i <= nAdvCellsForEdgeNew(iEdge)) then
-               advCoefsNew(i,iEdge) = advCoefsNew(i, iEdge) + 0.5
+            if (i <= nAdvCellsForEdge(iEdge)) then
+               advCoefs(i,iEdge) = advCoefs(i, iEdge) + 0.5
             end if
 
             i = mpas_binary_search(cellIndxSorted, 2, 1, &
-                                   nAdvCellsForEdgeNew(iEdge), &
+                                   nAdvCellsForEdge(iEdge), &
                                    indexToCellID(cell2))
-            if (i <= nAdvCellsForEdgeNew(iEdge)) then
-               advCoefsNew(i,iEdge) = advCoefsNew(i, iEdge) + 0.5
+            if (i <= nAdvCellsForEdge(iEdge)) then
+               advCoefs(i,iEdge) = advCoefs(i, iEdge) + 0.5
             end if
 
             ! multiply by edge length - thus the flux is just dt*ru
             ! times the results of the vector-vector multiply
-            do iCell=1,nAdvCellsForEdgeNew(iEdge)
-               advCoefsNew    (iCell,iEdge) = dvEdge(iEdge)* &
-                                            advCoefsNew    (iCell,iEdge)
-               advCoefs3rdNew(iCell,iEdge) = dvEdge(iEdge)* &
-                                            advCoefs3rdNew(iCell,iEdge)
+            do iCell=1,nAdvCellsForEdge(iEdge)
+               advCoefs   (iCell,iEdge) = dvEdge(iEdge)* &
+                                          advCoefs   (iCell,iEdge)
+               advCoefs3rd(iCell,iEdge) = dvEdge(iEdge)* &
+                                          advCoefs3rd(iCell,iEdge)
             end do
          end if  ! only do for edges of owned-cells
       end do ! end loop over edges
@@ -315,15 +315,6 @@ module ocn_tracer_advection_shared
       ! setting mask to zero.
       if (advOrder == 2) advMaskHighOrder(:,:) = 0.0_RKIND
 
-      print *,nEdgesAll, nAdvCellsMax
-      do iEdge = 1,nEdgesAll
-      do i=1,nAdvCellsMax
-         if (advCoefsNew(i,iEdge) /= advCoefs(i,iEdge)) &
-            print *, i,iEdge,advCoefsNew(i,iEdge), advCoefs(i,iEdge)
-         if (advCoefs3rdNew(i,iEdge) /= advCoefs3rd(i,iEdge)) &
-            print *, i,iEdge,advCoefs3rdNew(i,iEdge), advCoefs3rd(i,iEdge)
-      end do
-      end do
    !--------------------------------------------------------------------
 
    end subroutine ocn_tracerAdvectSharedInit !}}}
@@ -464,7 +455,7 @@ module ocn_tracer_advection_shared
          if ( onSphere ) then
 
             do i=1,n
-               j = cell_list(i) + 1
+               j = cell_list(i)
                xc(i) = xCell(j) / sphereRadius
                yc(i) = yCell(j) / sphereRadius
                zc(i) = zCell(j) / sphereRadius
@@ -527,7 +518,6 @@ module ocn_tracer_advection_shared
             end do
 
          end if
-
 
          ma = n-1
          mw = nEdgesOnCell(iCell)
@@ -639,12 +629,13 @@ module ocn_tracer_advection_shared
   
             if ( onSphere ) then
                call mpas_arc_bisect( xv1, yv1, zv1,  &
-                                xv2, yv2, zv2,  &
-                                xec, yec, zec   )
+                                     xv2, yv2, zv2,  &
+                                     xec, yec, zec   )
   
-               thetae_tmp = mpas_sphere_angle( xc(1),   yc(1),   zc(1),    &
-                                          xc(i+1), yc(i+1), zc(i+1),  &
-                                          xec,     yec,     zec       )
+               thetae_tmp = mpas_sphere_angle( &
+                                          xc(  1), yc(  1), zc(  1), &
+                                          xc(i+1), yc(i+1), zc(i+1), &
+                                          xec,     yec,     zec      )
                thetae_tmp = thetae_tmp + thetat(i)
                if (iCell == cellsOnEdge(1,iEdge)) then
                   thetae(1, edgesOnCell(i,iCell)) = thetae_tmp
@@ -660,7 +651,6 @@ module ocn_tracer_advection_shared
          do i=1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
   
-  
             if ( onSphere ) then
                if (iCell == cellsOnEdge(1,iEdge)) then
   
@@ -671,10 +661,11 @@ module ocn_tracer_advection_shared
                   sin2t = sin2t**2
    
                   do j=1,n
-                     derivTwo(j,1,iEdge) =   2.*cos2t*bmatrix(4,j)  &
-                                            + 2.*costsint*bmatrix(5,j)  &
-                                            + 2.*sin2t*bmatrix(6,j)
+                     derivTwo(j,1,iEdge) = 2.*cos2t   *bmatrix(4,j) &
+                                         + 2.*costsint*bmatrix(5,j) &
+                                         + 2.*sin2t   *bmatrix(6,j)
                   end do
+
                else
      
                   cos2t = cos(thetae(2, edgesOnCell(i,iCell)))
@@ -684,9 +675,9 @@ module ocn_tracer_advection_shared
                   sin2t = sin2t**2
       
                   do j=1,n
-                     derivTwo(j,2,iEdge) =   2.*cos2t*bmatrix(4,j)  &
-                                            + 2.*costsint*bmatrix(5,j)  &
-                                            + 2.*sin2t*bmatrix(6,j)
+                     derivTwo(j,2,iEdge) = 2.*cos2t   *bmatrix(4,j) &
+                                         + 2.*costsint*bmatrix(5,j) &
+                                         + 2.*sin2t   *bmatrix(6,j)
                   end do
                end if
 
@@ -707,15 +698,15 @@ module ocn_tracer_advection_shared
 
                if (iCell == cellsOnEdge(1,iEdge)) then
                   do j=1,n
-                     derivTwo(j,1,iEdge) =   2.*cos2t*bmatrix(4,j)  &
-                                            + 2.*costsint*bmatrix(5,j)  &
-                                            + 2.*sin2t*bmatrix(6,j)
+                     derivTwo(j,1,iEdge) = 2.*cos2t   *bmatrix(4,j) &
+                                         + 2.*costsint*bmatrix(5,j) &
+                                         + 2.*sin2t   *bmatrix(6,j)
                   end do
                else
                   do j=1,n
-                     derivTwo(j,2,iEdge) =   2.*cos2t*bmatrix(4,j)  &
-                                            + 2.*costsint*bmatrix(5,j)  &
-                                            + 2.*sin2t*bmatrix(6,j)
+                     derivTwo(j,2,iEdge) = 2.*cos2t   *bmatrix(4,j) &
+                                         + 2.*costsint*bmatrix(5,j) &
+                                         + 2.*sin2t   *bmatrix(6,j)
                   end do
                end if
 

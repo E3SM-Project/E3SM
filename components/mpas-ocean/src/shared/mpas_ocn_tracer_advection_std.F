@@ -269,7 +269,7 @@ module ocn_tracer_advection_std
 
           ! Compute 2nd order fluxes where needed.
           do k = kmin, kmax
-            tracerWgt = (1.0_RKIND - highOrderAdvectionMask(k,iEdge)) &
+            tracerWgt = (1.0_RKIND - advMaskHighOrder(k,iEdge)) &
                       * (dvEdge(iEdge) * 0.5_RKIND) &
                       * normalThicknessFlux(k, iEdge)
 
@@ -285,7 +285,7 @@ module ocn_tracer_advection_std
             kmax = maxLevelCell(iCell)
 
             do k = kmin,kmax
-              tracerWgt = highOrderAdvectionMask(k,iEdge) &
+              tracerWgt = advMaskHighOrder(k,iEdge) &
                         * (advCoefs(i,iEdge) + coef3rdOrder &
                         * sign(1.0_RKIND,normalThicknessFlux(k,iEdge)) &
                         * advCoefs3rd(i,iEdge))

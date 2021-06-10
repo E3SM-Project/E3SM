@@ -25,6 +25,7 @@ module ocn_tracer_advection
    use mpas_kind_types
    use mpas_timer
 
+   use ocn_tracer_advection_shared
    use ocn_tracer_advection_std
    use ocn_tracer_advection_mono
 
@@ -145,6 +146,8 @@ module ocn_tracer_advection
       monotonicOn  = config_monotonic
 
       ! set all other options from submodule initialization routines
+      call ocn_tracerAdvectSharedInit(config_horiz_tracer_adv_order, err)
+
       call ocn_tracer_advection_std_init(config_horiz_tracer_adv_order,    &
                                          config_vert_tracer_adv_order,     &
                                          config_coef_3rd_order,            &

@@ -107,7 +107,6 @@ module ocn_tracer_advection_mono
          cell1, cell2,    &! neighbor cell indices
          nCells, nEdges,  &! numbers of cells or edges
          k,k2,kmin, kmax, &! vert index variants
-         nVertLevels,     &! total num vertical levels
          iTracer,         &! tracer index
          numTracers        ! total number of tracers
 
@@ -160,7 +159,7 @@ module ocn_tracer_advection_mono
 
       ! allocate temporary arrays
       allocate(wgtTmp      (nVertLevels), &
-               flxTmp      (nVertlevels), &
+               flxTmp      (nVertLevels), &
                sgnTmp      (nVertLevels), &
                tracerCur   (nVertLevels  ,nCells+1), &
                tracerMin   (nVertLevels  ,nCells), &
@@ -283,8 +282,8 @@ module ocn_tracer_advection_mono
 
           ! compute some common intermediate factors
           do k = 1, nVertLevels
-             wgtTmp(k) = normalThicknessFlux   (k,iEdge)* &
-                         highOrderAdvectionMask(k,iEdge)
+             wgtTmp(k) = normalThicknessFlux(k,iEdge)* &
+                         advMaskHighOrder(k,iEdge)
              sgnTmp(k) = sign(1.0_RKIND, &
                               normalThicknessFlux(k,iEdge))
              flxTmp(k) = 0.0_RKIND
@@ -310,7 +309,7 @@ module ocn_tracer_advection_mono
           ! Remove low order flux from the high order flux
           ! Store left over high order flux in highOrderFlx array
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-            tracerWeight = (1.0_RKIND - highOrderAdvectionMask(k,iEdge)) &
+            tracerWeight = (1.0_RKIND - advMaskHighOrder(k,iEdge)) &
                          * (dvEdge(iEdge) * 0.5_RKIND)                   &
                          * normalThicknessFlux(k, iEdge)
 
