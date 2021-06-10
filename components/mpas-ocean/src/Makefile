@@ -1,6 +1,5 @@
 .SUFFIXES: .F .c .o
 
-
 ifeq "$(EXCLUDE_INIT_MODE)" "true"
 CPPLOCALFLAGS = -DEXCLUDE_INIT_MODE
 $(info "EXCLUDE_INIT_MODE found")
