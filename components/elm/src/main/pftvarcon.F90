@@ -324,6 +324,7 @@ module pftvarcon
   real(r8),allocatable  :: tide_coeff_amp(:)            ! Amplitude of tide component (mm)
   real(r8),allocatable  :: tide_coeff_period(:)        ! Period of tide component (s)
   real(r8),allocatable  :: tide_coeff_phase(:)         ! Phase shift of tide component (s)
+  real(r8)              :: sfcflow_ratescale         ! Rate scale for surface water flow across columns (s-1)
 !endif
   !phenology
   real(r8)              :: phen_a
@@ -1087,6 +1088,8 @@ contains
       tide_coeff_phase(1) = 513.4328
       tide_coeff_phase(2) = 0.0
    endif
+   call ncd_io('sfcflow_ratescale',sfcflow_ratescale, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+   if (.not. readv) sfcflow_ratescale = 7.0e-5_r8 ! Probably better to have default be zero for safety
 #endif
 
     call ncd_io('phen_a', phen_a, 'read', ncid, readvar=readv, posNOTonfile=.true.)

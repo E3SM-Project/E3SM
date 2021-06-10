@@ -703,7 +703,7 @@ contains
             qout(c,j)   =  0._r8
             dqodw1(c,j) =  0._r8
             rmx(c,j)    =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j)
-#if (defined HUM_HOL)
+#if (defined HUM_HOL || defined MARSH)
             if (j > jwt(c)+1) then                     !Water table above this layer
               rmx(c,j)    =  qin(c,j) - qout(c,j)
             else if (j == jwt(c)+1) then               !water table in this layer
@@ -761,7 +761,7 @@ contains
             end if
 
             rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j)
-#if (defined HUM_HOL)
+#if (defined HUM_HOL || defined MARSH)
             if (j > jwt(c)+1) then                     !Water table above this layer
               rmx(c,j)    =  qin(c,j) - qout(c,j)
             else if (j == jwt(c)+1) then               !water table in this layer
