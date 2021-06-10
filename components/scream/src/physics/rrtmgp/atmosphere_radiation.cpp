@@ -172,10 +172,7 @@ void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
   }
   Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
   // Initialize GasConcs object to pass to RRTMGP initializer;
-  // This is just to provide gas names
-  // Make GasConcs from m_gas_names_yakl_offset
-  GasConcs gas_concs;
-  gas_concs.init(m_gas_names_yakl_offset,1,1);
+  gas_concs.init(m_gas_names_yakl_offset,m_ncol,m_nlay);
   rrtmgp::rrtmgp_initialize(gas_concs);
 
 }
@@ -254,10 +251,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   }
   Kokkos::fence();
 
-  // Create and populate a GasConcs object to pass to RRTMGP driver
-  // TODO: Can gas_concs be a class variable that only needs to be init'd once?
-  GasConcs gas_concs;
-  gas_concs.init(m_gas_names_yakl_offset,m_ncol,m_nlay);
+  // Populate GasConcs object to pass to RRTMGP driver
   auto tmp2d = m_buffer.tmp2d;
   for (int igas = 0; igas < m_ngas; igas++) {
     auto name = m_gas_names_yakl_offset(igas+1);
@@ -348,6 +342,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
 }
 
 void RRTMGPRadiation::finalize_impl  () {
+  gas_concs.reset();
   rrtmgp::rrtmgp_finalize();
 }
 

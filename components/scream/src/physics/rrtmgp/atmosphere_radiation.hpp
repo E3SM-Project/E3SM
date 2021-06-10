@@ -1,6 +1,7 @@
 #ifndef SCREAM_RRTMGP_RADIATION_HPP
 #define SCREAM_RRTMGP_RADIATION_HPP
 
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
@@ -88,6 +89,7 @@ public:
   std::vector<std::string> m_gas_names;
   string1d                 m_gas_names_yakl_offset; // Set of gas names with index offset by 1 to interface with YAKL.
   view_1d_real             m_gas_mol_weights;
+  GasConcs gas_concs;
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
