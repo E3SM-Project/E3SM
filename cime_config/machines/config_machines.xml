@@ -1656,9 +1656,11 @@
         <command name="use">/soft/modulefiles</command>
         <command name="use">/soft/packaging/spack-builds/modules/linux-rhel7-x86_64</command>
         <command name="use">/soft/restricted/CNDA/modulefiles</command>
+        <command name="use">/home/azamat/soft/modulefiles</command>
         <command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
       </modules>
       <modules compiler="!gnu">
+	<command name="load">e3sm-env-vars/2021.06.10</command>
 	<command name="load">oneapi/2021.04.30.002</command>
 	<command name="load">mpi/intel_mpi/2019.4.243</command>
       </modules>
