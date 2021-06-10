@@ -73,7 +73,7 @@ contains
     ! !USES:
     use elm_varcon      , only : denh2o, denice, spval, hfus, tfrz, cpliq, cpice
     use elm_varpar      , only : nlevsno, nlevgrnd, nlevsoi
-    use elm_varctl      , only : iulog
+    use elm_varctl      , only : iulog, use_lake_wat_storage
     use clm_time_manager, only : get_step_size
     use SnowHydrologyMod, only : SnowCompaction, CombineSnowLayers, SnowWater, BuildSnowFilter
     use SnowHydrologyMod, only : DivideSnowLayers
@@ -234,10 +234,12 @@ contains
       end do
 
       ! Add lake water storage to water balance.
-      do fc = 1, num_lakec
-         c = filter_lakec(fc)
-         begwb(c) = begwb(c) + wslake(c)
-      end do
+      if (use_lake_wat_storage) then
+         do fc = 1, num_lakec
+            c = filter_lakec(fc)
+            begwb(c) = begwb(c) + wslake(c)
+         end do
+      end if
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -683,15 +685,20 @@ contains
          qflx_irrig_col(c)     = 0._r8
 
          ! Insure water balance using qflx_qrgwl
-         qflx_qrgwl(c)     = 0._r8
-         if (wslake(c) >= 5000._r8) then
-           qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(p) + &
-              qflx_floodg(g) - (endwb(c) + wslake(c) -begwb(c))/dtime
+         if (use_lake_wat_storage) then
+            qflx_qrgwl(c)     = 0._r8
+            if (wslake(c) >= 5000._r8) then
+               qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(p) + &
+               qflx_floodg(g) - (endwb(c) + wslake(c) -begwb(c))/dtime
+            end if
+            wslake(c) = (forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - &
+                qflx_snwcp_ice(p) + qflx_floodg(g) - qflx_qrgwl(c)) * dtime - &
+                (endwb(c) - begwb(c))
+            endwb(c) = endwb(c) + wslake(c)
+         else
+            qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(p) - &
+                (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
          end if
-         wslake(c) = (forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - &
-            qflx_snwcp_ice(p) + qflx_floodg(g) - qflx_qrgwl(c)) * dtime - &
-            (endwb(c) - begwb(c))
-         endwb(c) = endwb(c) + wslake(c)
 
          qflx_floodc(c)    = qflx_floodg(g)
          qflx_runoff(c)    = qflx_drain(c) + qflx_qrgwl(c)

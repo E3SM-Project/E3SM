@@ -309,7 +309,7 @@ this%wslake_col         (:)   = nan
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use elm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
-    use elm_varctl     , only : hist_wrtch4diag
+    use elm_varctl     , only : hist_wrtch4diag, use_lake_wat_storage
     use elm_varpar     , only : nlevsno, crop_prog 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal, no_snow_zero
     !
@@ -330,9 +330,11 @@ this%wslake_col         (:)   = nan
     begg = bounds%begg; endg= bounds%endg
 
     this%wslake_col(begc:endc) = spval
-    call hist_addfld1d(fname='WSLAKE', units='mm', &
+    if (use_lake_wat_storage) then
+       call hist_addfld1d(fname='WSLAKE', units='mm', &
          avgflag='A', long_name='lake water storage', &
          ptr_col=this%wslake_col)
+    end if
 
     ! h2osno also includes snow that is part of the soil column (an 
     ! initial snow layer is only created if h2osno > 10mm). 
@@ -504,7 +506,7 @@ this%wslake_col         (:)   = nan
     use landunit_varcon  , only : istcrop, istdlak, istsoil  
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use clm_time_manager , only : is_first_step
-    use elm_varctl       , only : bound_h2osoi
+    use elm_varctl       , only : bound_h2osoi, use_lake_wat_storage
     use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double
     use restUtilMod
     use subgridAveMod    , only : c2g
@@ -526,10 +528,11 @@ this%wslake_col         (:)   = nan
 
     SHR_ASSERT_ALL((ubound(watsat_col) == (/bounds%endc,nlevgrnd/)) , errMsg(__FILE__, __LINE__))
 
-
-    call restartvar(ncid=ncid, flag=flag, varname='WSLAKE', xtype=ncd_double, &
+    if (use_lake_wat_storage) then
+       call restartvar(ncid=ncid, flag=flag, varname='WSLAKE', xtype=ncd_double, &
          dim1name='column', long_name='lake water storage', units='kg/m2', &
          interpinic_flag='interp', readvar=readvar, data=this%wslake_col)
+    end if
 
     call restartvar(ncid=ncid, flag=flag, varname='TWS_MONTH_BEGIN', xtype=ncd_double,  &
          dim1name='gridcell', &

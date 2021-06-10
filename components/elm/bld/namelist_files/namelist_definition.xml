@@ -1815,6 +1815,15 @@ Runtime flag to turn on/off PETSc based thermal model.
 <entry id="use_var_soil_thick" type="logical" category="default_settings"
         group="elm_inparm" valid_values="">
 Runtime flag to turn on/off variable soil thickness.
+</entry
+
+<!-- ======================================================================================== -->
+<!-- Namelist options for lake water storage                                                  -->
+<!-- ======================================================================================== -->
+
+<entry id="use_lake_wat_storage" type="logical" category="default_settings" 
+        group="elm_inparm" valid_values="">
+Runtime flag to turn on/off lake water storage.
 </entry>
 
 <!-- ========================================================================================  -->
