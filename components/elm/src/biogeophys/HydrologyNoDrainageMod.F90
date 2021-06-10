@@ -291,7 +291,7 @@ contains
       
       if (use_extrasnowlayers) then
          call SnowCapping(bounds, num_nolakec, filter_nolakec, num_snowc, filter_snowc, &
-                          aerosol_vars, waterflux_vars, waterstate_vars)
+                          aerosol_vars)
       end if
       
       ! Natural compaction and metamorphosis.

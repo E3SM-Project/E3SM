@@ -2,7 +2,7 @@ module CanopyStateType
 
   ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
-  use shr_infnan_mod  , only : shr_infnan_isnan
+  use shr_infnan_mod  , only : shr_infnan_isnan,nan => shr_infnan_nan, assignment(=)
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use abortutils      , only : endrun
   use decompMod       , only : bounds_type

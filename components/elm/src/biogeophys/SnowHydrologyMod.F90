@@ -568,7 +568,6 @@ contains
      !
      ! !LOCAL VARIABLES:
      integer :: j, l, c, fc, t                   ! indices
-     real(r8):: dtime                            ! land model time step (sec)
      ! parameters
      real(r8), parameter :: c2 = 23.e-3_r8       ! [m3/kg]
      real(r8), parameter :: c3 = 2.777e-6_r8     ! [1/s]
@@ -2239,7 +2238,7 @@ contains
    
    !-----------------------------------------------------------------------
    subroutine SnowCapping(bounds, num_nolakec, filter_initc, num_snowc, filter_snowc, &
-        aerosol_vars, waterflux_vars, waterstate_vars )
+        aerosol_vars  )
      ! from CLM (clm4_5_12_r190)
      ! !DESCRIPTION:
      ! Removes mass from bottom snow layer for columns that exceed the maximum snow depth.
@@ -2249,8 +2248,6 @@ contains
      ! Density and temperature of the layer are conserved (density needs some work, temperature is a state
      ! variable)
      !
-     ! !USES:
-     use clm_time_manager   , only : get_step_size
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds          
@@ -2259,8 +2256,6 @@ contains
      integer                , intent(in)    :: num_snowc       ! number of column snow points in column filter
      integer                , intent(in)    :: filter_snowc(:) ! column filter for snow points
      type(aerosol_type)     , intent(inout) :: aerosol_vars
-     type(waterflux_type)   , intent(inout) :: waterflux_vars 
-     type(waterstate_type)  , intent(inout) :: waterstate_vars
      !
      ! !LOCAL VARIABLES:
      real(r8)   :: dtime                            ! land model time step (sec)
@@ -2293,8 +2288,7 @@ contains
      )
 
      ! Determine model time step
-     dtime = get_step_size()
-
+     dtime = dtime_mod 
      ! Initialize capping fluxes for all columns in domain (lake or non-lake)
      do fc = 1, num_nolakec
         c = filter_initc(fc)

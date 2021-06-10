@@ -476,7 +476,7 @@ contains
            
       if (use_extrasnowlayers) then
          call SnowCapping(bounds, num_lakec, filter_lakec, num_shlakesnowc, filter_shlakesnowc, &
-                          aerosol_vars, waterflux_vars, waterstate_vars)
+                          aerosol_vars)
       end if
 
       ! Determine soil hydrology
