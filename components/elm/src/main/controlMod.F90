@@ -43,6 +43,7 @@ module controlMod
   use elm_varctl              , only: use_dynroot
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
   use elm_varctl              , only: nu_com, use_var_soil_thick
+  use elm_varctl              , only: use_lake_wat_storage
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use elm_varctl              , only: forest_fert_exp
   use elm_varctl              , only: ECA_Pconst_RGspin
@@ -281,7 +282,7 @@ contains
 
     namelist /elm_inparm/ use_dynroot
 
-    namelist /elm_inparm/ use_var_soil_thick
+    namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage
 
     namelist /elm_inparm / &
          use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
@@ -898,6 +899,7 @@ contains
     write(iulog,*) '    use_lch4 = ', use_lch4
     write(iulog,*) '    use_vertsoilc = ', use_vertsoilc
     write(iulog,*) '    use_var_soil_thick = ', use_var_soil_thick
+    write(iulog,*) '    use_lake_wat_storage = ', use_lake_wat_storage
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
     write(iulog,*) '    use_extrasnowlayers = ', use_extrasnowlayers
     write(iulog,*) '    use_vichydro = ', use_vichydro
