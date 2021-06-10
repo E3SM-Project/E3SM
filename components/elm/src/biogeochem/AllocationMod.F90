@@ -1318,12 +1318,19 @@ contains
                  actual_immob_nh4_vr(c,j) = potential_immob_vr(c,j) -  actual_immob_no3_vr(c,j)
               end if
 
-              if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < col_plant_ndemand_vr(c,j)) then
-                 supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
-                      col_plant_ndemand_vr(c,j) - (smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j))
-                 ! update to new values that satisfy demand
+              if (nu_com .eq. 'RD') then
+                 if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < col_plant_ndemand_vr(c,j)) then
+                    supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
+                         col_plant_ndemand_vr(c,j) - (smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j))
+                    ! update to new values that satisfy demand
+                    smin_nh4_to_plant_vr(c,j) = col_plant_ndemand_vr(c,j) - smin_no3_to_plant_vr(c,j)
+                 end if
+              else
+                 supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + col_plant_ndemand_vr(c,j)
                  smin_nh4_to_plant_vr(c,j) = col_plant_ndemand_vr(c,j) - smin_no3_to_plant_vr(c,j)
               end if
+              
+
               
            end if
 
@@ -1386,7 +1393,17 @@ contains
                 desorb_to_solutionp_vr(c,:),        & ! OUT
                 supplement_to_sminp_vr(c,:))          ! OUT
 
-         end if ! end of P competition
+           ! This is effectively only relevant with FATES
+           ! big-leaf ECA would have 0 demand at this point
+           ! and calculates supplement and need later on in allocation3
+           if ( carbon_only .or. carbonnitrogen_only) then
+              do j = 1, nlevdecomp
+                 sminp_to_plant_vr(c,j)      = col_plant_pdemand_vr(c,j)
+                 supplement_to_sminp_vr(c,j) = col_plant_pdemand_vr(c,j)
+              end do
+           end if
+           
+        end if ! end of P competition
 
          !  resolving N limitation vs. P limitation for decomposition
          !  update (1) actual immobilization for N and P (2) sminn_to_plant and sminp_to_plant
@@ -2852,7 +2869,7 @@ contains
        cn_scalar,              & ! IN (icomp)
        decompmicc,             & ! IN (j)
        smin_nh4_vr,            & ! IN (j)
-       nu_com,                & ! IN 
+       nu_com,                 & ! IN
        km_nh4_plant,           & ! IN (pft)
        vmax_nh4_plant,         & ! IN (pft)
        km_decomp_nh4,          & ! IN 
@@ -2883,7 +2900,10 @@ contains
     ! kinetics following  Zhu et al., 2016 DOI: 10.1002/2016JG003554
     ! ------------------------------------------------------------------------------------
     use elm_varpar      , only: nlevdecomp
-
+    use elm_varctl      , only : carbon_only          !
+    use elm_varctl      , only : carbonnitrogen_only  !
+    use elm_varctl      , only : carbonphosphorus_only!
+    
     integer,  intent(in) :: pci               ! First index of plant comp arrays
     real(r8), intent(in) :: dt                ! Time step duration [s]
     real(r8), intent(in) :: bd(:)             ! Bulk density of dry soil material [kg m-3]
@@ -2897,7 +2917,6 @@ contains
     real(r8), intent(in) :: cn_scalar(pci:)   ! scaling factor implying plant demand
     real(r8), intent(in) :: decompmicc(:)     ! microbial decomposer biomass [gC/m3]
     character(len=*), intent(in) :: nu_com    ! Is this ECA or MIC?
-
     ! NH4 specific arguments
     real(r8), intent(in)  :: smin_nh4_vr(:)            ! minearlized nh4 in soil [g m-3]
     real(r8), intent(in)  :: km_nh4_plant(:)           ! km for plant type uptake
@@ -2982,7 +3001,7 @@ contains
           compet_plant(i) = solution_conc / & 
                ( km_nh4_plant(ft) * (1._r8 + solution_conc/km_nh4_plant(ft) + e_km))
        end do
-
+          
        compet_decomp = solution_conc / (km_decomp_nh4 * (1._r8 + solution_conc/km_decomp_nh4 + e_km))
 
        compet_nit    = solution_conc / (km_nit * (1._r8 + solution_conc/km_nit + e_km))
@@ -3088,7 +3107,7 @@ contains
           compet_plant(i) = solution_conc / & 
                ( km_no3_plant(ft) * (1._r8 + solution_conc/km_no3_plant(ft) + e_km))
        end do
-
+       
        compet_decomp = solution_conc / (km_decomp_no3 * (1._r8 + solution_conc/km_decomp_no3 + e_km))
        compet_denit = solution_conc / (km_den * (1._r8 + solution_conc/km_den + e_km))
 
@@ -3181,7 +3200,7 @@ contains
        vmax_minsurf_p_vr, &
        km_minsurf_p_vr, &
        solutionp_vr, &
-       nu_com,  & 
+       nu_com,  &
        n_pcomp, &
        filter_pcomp, & 
        veg_rootc, & 
@@ -3275,13 +3294,19 @@ contains
        e_km_p = e_km_p + e_decomp_scalar*decompmicc(j)/km_decomp_p + &
             max(0._r8,vmax_minsurf_p_vr(j)-labilep_vr(j))/km_minsurf_p_vr(j)
 
-       do i = 1,n_pcomp
-          ip = filter_pcomp(i)
-          ft = ft_index(ip)
-          compet_plant(i) = solution_pconc / & 
-               (km_plant_p(ft)*(1._r8 + solution_pconc/km_plant_p(ft) + e_km_p))
-       end do
-
+!       if(carbon_only .or. carbonnitrogen_only) then
+!          do i = 1, n_pcomp
+!             compet_plant(i) = 1._r8
+!          end do
+!       else
+          do i = 1,n_pcomp
+             ip = filter_pcomp(i)
+             ft = ft_index(ip)
+             compet_plant(i) = solution_pconc / & 
+                  (km_plant_p(ft)*(1._r8 + solution_pconc/km_plant_p(ft) + e_km_p))
+          end do
+!       end if
+       
        compet_decomp_p = solution_pconc / &
             (km_decomp_p * (1._r8 + solution_pconc/km_decomp_p + e_km_p))
 
