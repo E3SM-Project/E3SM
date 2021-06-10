@@ -1287,6 +1287,15 @@ end subroutine clubb_init_cnst
 
    real(core_rknd) :: dum_core_rknd                    ! dummy variable  [units vary]
    real(core_rknd) :: hdtime_core_rknd                  ! host model time step in core_rknd
+
+   real(core_rknd), pointer :: upwp_sfc_pert    ! u'w' at surface                               [m^2/s^2]
+   real(core_rknd), pointer :: vpwp_sfc_pert    ! v'w' at surface                               [m^2/s^2]
+   ! Pointers to temporary copies of particular columns of um_pert/upwp_pert fields
+   real(core_rknd), pointer, dimension(:) :: um_pert_col ! Pointer to a particular column of um
+   real(core_rknd), pointer, dimension(:) :: vm_pert_col
+   real(core_rknd), pointer, dimension(:) :: upwp_pert_col
+   real(core_rknd), pointer, dimension(:) :: vpwp_pert_col
+
    !===========================================================================================================================
    ! End of defining the variables for the change of precision in the CLUBB calculation
    !===========================================================================================================================
@@ -1310,9 +1319,6 @@ end subroutine clubb_init_cnst
    real(r8) :: varmu(pcols)
    real(r8) :: zt_out(pcols,pverp)              ! output for the thermo CLUBB grid              [m]
    real(r8) :: zi_out(pcols,pverp)              ! output for momentum CLUBB grid                [m]
-
-   real(r8), pointer :: upwp_sfc_pert           ! u'w' at surface                               [m^2/s^2]
-   real(r8), pointer :: vpwp_sfc_pert           ! v'w' at surface                               [m^2/s^2]
 
    real(r8) :: pdf_zm_w_1_inout(pverp)          ! work array for pdf_params_zm%w_1
    real(r8) :: pdf_zm_w_2_inout(pverp)          ! work array for pdf_params_zm%w_2
@@ -1434,13 +1440,6 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: accre_enhan ! accretion enhancement factor              [-]
    real(r8), pointer, dimension(:,:) :: cmeliq
    real(r8), pointer, dimension(:,:) :: cmfmc_sh ! Shallow convective mass flux--m subc (pcols,pverp) [kg/m2/s/]
-
-   ! These pointers point to specific columns of the corresponding field, if
-   ! these fields are actually needed.
-   real(r8), pointer, dimension(:) :: um_pert_col
-   real(r8), pointer, dimension(:) :: vm_pert_col
-   real(r8), pointer, dimension(:) :: upwp_pert_col
-   real(r8), pointer, dimension(:) :: vpwp_pert_col
 
    type(pdf_parameter), pointer :: pdf_params    ! PDF parameters (thermo. levs.) [units vary]
    type(pdf_parameter), pointer :: pdf_params_zm ! PDF parameters on momentum levs. [units vary]
@@ -2110,10 +2109,14 @@ end subroutine clubb_init_cnst
             upwp_pert(i,:) = upwp_in
             vpwp_pert(i,:) = vpwp_in
          end if
-         um_pert_col => um_pert(i,:)
-         vm_pert_col => vm_pert(i,:)
-         upwp_pert_col => upwp_pert(i,:)
-         vpwp_pert_col => vpwp_pert(i,:)
+         allocate(um_pert_col(pverp))
+         allocate(vm_pert_col(pverp))
+         allocate(upwp_pert_col(pverp))
+         allocate(vpwp_pert_col(pverp))
+         um_pert_col = um_pert(i,:)
+         vm_pert_col = vm_pert(i,:)
+         upwp_pert_col = upwp_pert(i,:)
+         vpwp_pert_col = vpwp_pert(i,:)
 
          allocate(upwp_sfc_pert)
          allocate(vpwp_sfc_pert)
@@ -2364,6 +2367,17 @@ end subroutine clubb_init_cnst
       endif
 
       if (linearize_pbl_winds) then
+         ! Copy column variables back to pbuf arrays.
+         um_pert(i,:) = um_pert_col
+         vm_pert(i,:) = vm_pert_col
+         upwp_pert(i,:) = upwp_pert_col
+         vpwp_pert(i,:) = vpwp_pert_col
+         deallocate(um_pert_col)
+         deallocate(vm_pert_col)
+         deallocate(upwp_pert_col)
+         deallocate(vpwp_pert_col)
+         deallocate(upwp_sfc_pert)
+         deallocate(vpwp_sfc_pert)
          if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
             sfc_v_diff_tau(i) = um_pert(i,2) - um_in(2)
          else
@@ -2371,8 +2385,6 @@ end subroutine clubb_init_cnst
                  + (vm_pert(i,2) - vm_in(2))*cam_in%wsy(i)) &
                  / hypot(cam_in%wsx(i), cam_in%wsy(i))
          end if
-         deallocate(upwp_sfc_pert)
-         deallocate(vpwp_sfc_pert)
       end if
 
       !  Arrays need to be "flipped" to CAM grid
