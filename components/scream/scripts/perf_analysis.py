@@ -173,7 +173,7 @@ class PerfAnalysis(object):
 
         cmd = self.formulate_cmd(test_exe)
         results = []
-        with open("{}.perf.log".format(test_exe), "w") as fd:
+        with open("{}.perf.log".format(os.path.split(test_exe)[1].split(" ")[0]), "w") as fd:
             fd.write(cmd + "\n\n")
             fd.write("ENV: \n{}\n\n".format(run_cmd_no_fail("env")))
             for _ in range(self._num_runs):
@@ -199,7 +199,7 @@ class PerfAnalysis(object):
     def perf_analysis(self):
     ###############################################################################
         if self._use_existing:
-            expect(os.path.isdir("p3") and os.path.exists("CMakeCache.txt"),
+            expect(os.path.exists("CMakeCache.txt"),
                    "{} doesn't look like a build directory".format(os.getcwd()))
 
         else:
