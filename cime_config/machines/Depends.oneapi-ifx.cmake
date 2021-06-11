@@ -10,3 +10,5 @@ foreach(ITEM IN LISTS MPAS_ADD_ACC_FLAGS)
   e3sm_add_flags("${ITEM}" "-fiopenmp -fopenmp-targets=spir64")
 endforeach()
 
+# compile mpas_seaice_core_interface.f90 with ifort, not ifx
+e3sm_add_flags("${CMAKE_BINARY_DIR}/core_seaice/model_forward/mpas_seaice_core_interface.f90" "-fc=ifort")

@@ -2331,12 +2331,12 @@ flags should be captured within MPAS CMake files.
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <!-- CRL begin modifications to use OneAPI compilers -->
-  <MPIFC>mpiifwl.sh</MPIFC>
+  <MPIFC>mpiifx</MPIFC>
   <MPICC>mpiicx</MPICC>
   <MPICXX>mpiicpx</MPICXX>
   <SCC>icx</SCC>
   <SCXX>icpx</SCXX>
-  <SFC>ifwl.sh</SFC>
+  <SFC>ifx</SFC>
   <!-- CRL end modifications to use OneAPI compilers -->
   <LDFLAGS>
     <append compile_threaded="TRUE"> -qopenmp </append>

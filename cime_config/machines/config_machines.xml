@@ -1661,8 +1661,7 @@
       </modules>
       <modules compiler="!gnu">
 	<command name="load">e3sm-env-vars/2021.06.10</command>
-	<command name="load">oneapi/2021.04.30.002</command>
-	<command name="load">mpi/intel_mpi/2019.4.243</command>
+	<command name="load">oneapi/2021.04.30.003</command>
       </modules>
       <modules compiler="gnu">
         <command name="unload">cmake</command>
@@ -1672,7 +1671,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="PATH">/home/crlishka/bin:/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
+      <env name="PATH">/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
     </environment_variables>
     <environment_variables mpilib="impi">
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
@@ -1681,9 +1680,6 @@
       <env name="I_MPI_PIN_DOMAIN">omp</env>
       <env name="I_MPI_PIN_ORDER">spread</env>
       <env name="I_MPI_PIN_CELL">unit</env>
-    </environment_variables>
-    <environment_variables compiler="!gnu">
-      <env name="ONEAPI_OVERRIDE_KOKKOS">1</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="openmpi">
       <env name="OMPI_CC">icc</env>
