@@ -130,6 +130,8 @@ const std::map<std::string,Scalar> Constants<Scalar>::gas_mol_weights = {
 
 template <typename Scalar>
 Scalar Constants<Scalar>::get_gas_mol_weight(std::string gas_name) {
+  //TODO: Possible improvement would be to design a device friendly function
+  //      here instead of just a std::map lookup, which only works on host.
   return Constants<Scalar>::gas_mol_weights.at(gas_name);
 }
 

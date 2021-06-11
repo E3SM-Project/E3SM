@@ -143,7 +143,7 @@ struct PhysicsFunctions
   static ScalarT calculate_vmr_from_mmr(const Real& gas_mol_weight, const ScalarT& mmr);
 
   //-----------------------------------------------------------------------------------------------//
-  // Calculate the volume mixing ratio given the wet mass mixing ratio:
+  // Calculate wet mass mixing ratio the given the volume mixing ratio:
   //   X_mmr = a*X_vmr / (1 + a*X_vmr)
   // where
   //   X_vmr          is the volume mixing ratio X
