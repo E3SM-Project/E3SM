@@ -1410,25 +1410,13 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
 
   call pbuf_get_field(pbuf, pbuf_get_index('static_ener_ac'), static_ener_ac_2d )
   call pbuf_get_field(pbuf, pbuf_get_index('water_vap_ac'), water_vap_ac_2d )
-  call pbuf_get_field(pbuf, u_wind_ac_idx, u_wind_ac )
-  call pbuf_get_field(pbuf, v_wind_ac_idx, v_wind_ac )
-  call pbuf_get_field(pbuf, u_wind_tot_idx, u_wind_tot )
-  call pbuf_get_field(pbuf, v_wind_tot_idx, v_wind_tot )
 
   ! Integrate and compute the difference
   ! CIDiff = difference of column integrated values
   if( nstep == 0 ) then
     CIDiff(:ncol) = 0.0_r8
-    u_wind_diff(:,:) = 0.0_r8
-    v_wind_diff(:,:) = 0.0_r8
     call outfld('DTENDTH', CIDiff, pcols, lchnk )
     call outfld('DTENDTQ', CIDiff, pcols, lchnk )
-    call outfld('DYN_DU',  u_wind_diff, pcols, lchnk )
-    call outfld('DYN_DV',  v_wind_diff, pcols, lchnk )
-    call outfld('TOT_DU',  u_wind_diff, pcols, lchnk )
-    call outfld('TOT_DV',  v_wind_diff, pcols, lchnk )
-    u_wind_tot(:,:) = state%u(:,:)
-    v_wind_tot(:,:) = state%v(:,:)
   else
     ! MSE first
     ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
@@ -1446,20 +1434,6 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
     CIDiff(:ncol) = (ftem(:ncol,1) - water_vap_ac_2d(:ncol))*rtdt
 
     call outfld('DTENDTQ', CIDiff, pcols, lchnk )
-
-    ! dyanmics momentum tendency
-    u_wind_diff(:ncol,:) = ( state%u(:ncol,:) - u_wind_ac(:ncol,:) )*rtdt
-    v_wind_diff(:ncol,:) = ( state%v(:ncol,:) - v_wind_ac(:ncol,:) )*rtdt
-    call outfld('DYN_DU', u_wind_diff, pcols, lchnk )
-    call outfld('DYN_DV', v_wind_diff, pcols, lchnk )
-
-    ! total momentum tendency
-    u_wind_diff(:ncol,:) = ( state%u(:ncol,:) - u_wind_tot(:ncol,:) )*rtdt
-    v_wind_diff(:ncol,:) = ( state%v(:ncol,:) - v_wind_tot(:ncol,:) )*rtdt
-    call outfld('TOT_DU', u_wind_diff, pcols, lchnk )
-    call outfld('TOT_DV', v_wind_diff, pcols, lchnk )
-    u_wind_tot = state%u
-    v_wind_tot = state%v
 
   end if
 
@@ -2026,3 +2000,4 @@ end subroutine add_fld_default_calls
 !===================================================================================================
 
 end module physpkg
+  

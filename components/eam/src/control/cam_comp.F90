@@ -353,6 +353,10 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
    use cam_history,      only: wshist, wrapup
    use cam_restart,      only: cam_write_restart
    use dycore,           only: dycore_is
+   use physics_buffer,   only: pbuf_get_index, pbuf_get_field, pbuf_get_chunk
+   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp
+   use time_manager,     only: get_nstep
+   use cam_history,      only: outfld
 #if ( defined SPMD )
    use mpishorthand,     only: mpicom
 #endif
@@ -366,11 +370,60 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
    integer            , intent(in), optional :: day_spec        ! Simulation day
    integer            , intent(in), optional :: sec_spec        ! Seconds into current simulation day
 
+   integer :: ncol, lchnk, nstep, c
+   integer :: u_wind_ac_idx, v_wind_ac_idx
+   integer :: u_wind_tot_idx, v_wind_tot_idx
+   real(r8), dimension(pcols,pver) :: u_wind_diff, v_wind_diff
+   real(r8), pointer, dimension(:,:) :: u_wind_ac, v_wind_ac
+   real(r8), pointer, dimension(:,:) :: u_wind_tot, v_wind_tot
+
 #if ( defined SPMD )
    real(r8) :: mpi_wtime
 #endif
 !-----------------------------------------------------------------------
 ! print_step_cost
+
+   !----------------------------------------------------------
+   ! Tendencies for momentum budget
+   !----------------------------------------------------------
+   u_wind_ac_idx  = pbuf_get_index('u_wind_ac')
+   v_wind_ac_idx  = pbuf_get_index('v_wind_ac')
+   u_wind_tot_idx = pbuf_get_index('u_wind_tot')
+   v_wind_tot_idx = pbuf_get_index('v_wind_tot')
+   nstep = get_nstep()
+
+   do c=begchunk, endchunk
+
+      ncol  = phys_state(c)%ncol
+      lchnk = phys_state(c)%lchnk
+
+      call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), u_wind_ac_idx,  u_wind_ac )
+      call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), v_wind_ac_idx,  v_wind_ac )
+      call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), u_wind_tot_idx, u_wind_tot )
+      call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), v_wind_tot_idx, v_wind_tot )
+
+      if( nstep == 0 ) then
+         u_wind_diff(:,:) = 0.0_r8
+         v_wind_diff(:,:) = 0.0_r8
+         call outfld('DYN_DU',  u_wind_diff, pcols, lchnk )
+         call outfld('DYN_DV',  v_wind_diff, pcols, lchnk )
+         call outfld('TOT_DU',  u_wind_diff, pcols, lchnk )
+         call outfld('TOT_DV',  v_wind_diff, pcols, lchnk )
+      else
+         ! dyanmics momentum tendency
+         u_wind_diff(:ncol,:) = ( phys_state(c)%u(:ncol,:) - u_wind_ac(:ncol,:) )/dtime
+         v_wind_diff(:ncol,:) = ( phys_state(c)%v(:ncol,:) - v_wind_ac(:ncol,:) )/dtime
+         call outfld('DYN_DU', u_wind_diff, pcols, lchnk )
+         call outfld('DYN_DV', v_wind_diff, pcols, lchnk )
+         ! total momentum tendency
+         u_wind_diff(:ncol,:) = ( phys_state(c)%u(:ncol,:) - u_wind_tot(:ncol,:) )/dtime
+         v_wind_diff(:ncol,:) = ( phys_state(c)%v(:ncol,:) - v_wind_tot(:ncol,:) )/dtime
+         call outfld('TOT_DU', u_wind_diff, pcols, lchnk )
+         call outfld('TOT_DV', v_wind_diff, pcols, lchnk )
+      end if
+      u_wind_tot = phys_state(c)%u
+      v_wind_tot = phys_state(c)%v
+   end do
 
    !
    !----------------------------------------------------------
