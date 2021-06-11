@@ -93,10 +93,8 @@ static Int compare (const std::string& label, const Scalar* a,
 }
 
 struct Baseline {
-  Baseline (const Int nsteps=6, const Int dt=300, const Int ncol=3, const Int nlev=72, const Int repeat=0, const std::string predict_nc="both", const std::string prescribed_CCN="both") :
-    m_nsteps(nsteps), m_dt(dt), m_ncol(ncol), m_nlev(nlev), m_repeat(repeat)
+  Baseline (const Int nsteps, const Real dt, const Int ncol, const Int nlev, const Int repeat, const std::string predict_nc, const std::string prescribed_CCN)
   {
-
     //If predict_nc="both", start looping at i_start=0 (false) and end after i_start=1 (true)
     //otherwise, modify start and end to only loop over case of interest. Test that predict_nc
     //is only yes, no, or both is done below so not bothering here.
@@ -114,8 +112,8 @@ struct Baseline {
 
     for (int i = i_start; i < i_end; ++i) { // predict_nc is false or true
       for (int j = j_start; j< j_end; ++j) { //prescribed_CCN is false or true
-	//                 initial condit,     prescribe or predict nc, prescribe CCN or not
-	params_.push_back({ic::Factory::mixed, i>0,                     j>0 });
+	//                 initial condit,     repeat, nsteps, ncol, nlev, dt, prescribe or predict nc, prescribe CCN or not
+	params_.push_back({ic::Factory::mixed, repeat, nsteps, ncol, nlev, dt, i>0,                     j>0 });
       }
     }
   }
@@ -129,12 +127,12 @@ struct Baseline {
 
     for (auto ps : params_) {
       // Run reference p3 on this set of parameters.
-      for (Int r = -1; r < m_repeat; ++r) {
-        const auto d = ic::Factory::create(ps.ic, m_ncol, m_nlev);
+      for (Int r = -1; r < ps.repeat; ++r) {
+        const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev);
         set_params(ps, *d);
         p3_init();
 
-        if (m_repeat > 0 && r == -1) {
+        if (ps.repeat > 0 && r == -1) {
           std::cout << "Running P3 with ni=" << d->ncol << ", nk=" << d->nlev
                     << ", dt=" << d->dt << ", ts=" << d->it << ", predict_nc=" << d->do_predict_nc;
 
@@ -144,21 +142,21 @@ struct Baseline {
           std::cout << std::endl;
         }
 
-        for (int it=0; it<m_nsteps; it++) {
+        for (int it=0; it<ps.nsteps; it++) {
           Int current_microsec = p3_main(*d, use_fortran);
 
-          if (r != -1 && m_repeat > 0) { // do not count the "cold" run
+          if (r != -1 && ps.repeat > 0) { // do not count the "cold" run
             total_duration_microsec += current_microsec;
           }
 
-          if (m_repeat == 0) {
+          if (ps.repeat == 0) {
             write(fid, d); // Save the fields to the baseline file.
           }
         }
       }
 
-      if (m_repeat > 0) {
-        const double report_time = (1e-6*total_duration_microsec) / m_repeat;
+      if (ps.repeat > 0) {
+        const double report_time = (1e-6*total_duration_microsec) / ps.repeat;
 
         printf("Time = %1.3e seconds\n", report_time);
       }
@@ -174,16 +172,16 @@ struct Baseline {
     for (auto ps : params_) {
       case_num++;
       // Read the reference impl's data from the baseline file.
-      const auto d_ref = ic::Factory::create(ps.ic, m_ncol);
+      const auto d_ref = ic::Factory::create(ps.ic, ps.ncol, ps.nlev);
       set_params(ps, *d_ref);
       // Now run a sequence of other impls. This includes the reference
       // implementation b/c it's likely we'll want to change it as we go.
       {
-        const auto d = ic::Factory::create(ps.ic, m_ncol, m_nlev);
+        const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev);
         set_params(ps, *d);
         p3_init();
-        for (int it=0; it<m_nsteps; it++) {
-          std::cout << "--- checking case # " << case_num << ", timestep # " << it+1 << " of " << m_nsteps << " ---\n" << std::flush;
+        for (int it=0; it<ps.nsteps; it++) {
+          std::cout << "--- checking case # " << case_num << ", timestep # " << it+1 << " of " << ps.nsteps << " ---\n" << std::flush;
           read(fid, d_ref);
           p3_main(*d, use_fortran);
           ne = compare(tol, d_ref, d);
@@ -196,17 +194,19 @@ struct Baseline {
   }
 
 private:
-  // Things that do not vary between runs
-  Int m_nsteps, m_dt, m_ncol, m_nlev, m_repeat;
 
-  // Things that vary between runs
+  // Full specification for a run
   struct ParamSet {
     ic::Factory::IC ic;
-    bool do_predict_nc;
-    bool do_prescribed_CCN;
+    Int repeat, nsteps, ncol, nlev;
+    Real dt;
+    bool do_predict_nc, do_prescribed_CCN;
   };
 
   static void set_params (const ParamSet& ps, FortranData& d) {
+    // Items not set by factory
+    d.dt                = ps.dt;
+    d.it                = ps.nsteps;
     d.do_predict_nc     = ps.do_predict_nc;
     d.do_prescribed_CCN = ps.do_prescribed_CCN;
   }
@@ -338,7 +338,7 @@ int main (int argc, char** argv) {
   baseline_fn += std::to_string(sizeof(scream::Real));
 
   scream::initialize_scream_session(argc, argv); {
-    Baseline bln(timesteps, dt, ncol, nlev, repeat, predict_nc, prescribed_ccn);
+    Baseline bln(timesteps, static_cast<Real>(dt), ncol, nlev, repeat, predict_nc, prescribed_ccn);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
       nerr += bln.generate_baseline(baseline_fn, use_fortran);

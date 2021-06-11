@@ -35,7 +35,7 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   do_predict_nc = true;
   do_prescribed_CCN = true;
   dt = -1; // model time step, s; set to invalid -1
-  it = 1;  // seems essentially unused
+  it = 1;
   // In/out
   qc              = Array2("cloud liquid water mixing ratio, kg/kg", ncol, nlev);
   nc              = Array2("cloud liquid drop number, #/kg", ncol, nlev);
