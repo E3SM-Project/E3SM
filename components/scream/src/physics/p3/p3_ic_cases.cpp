@@ -8,10 +8,10 @@ namespace p3 {
 namespace ic {
 
 // From mixed_case_data.py in scream-docs at commit 4bbea4.
-FortranData::Ptr make_mixed (const Int ncol) {
+FortranData::Ptr make_mixed (const Int ncol, const Int nlev) {
   using consts = scream::physics::Constants<Real>;
 
-  const Int nk = 72;
+  const Int nk = nlev;
   Int k;
   const auto dp = std::make_shared<FortranData>(ncol, nk);
   auto& d = *dp;
@@ -119,9 +119,9 @@ FortranData::Ptr make_mixed (const Int ncol) {
   return dp;
 }
 
-FortranData::Ptr Factory::create (IC ic, Int ncol) {
+FortranData::Ptr Factory::create (IC ic, Int ncol, Int nlev) {
  switch (ic) {
-   case mixed: return make_mixed(ncol);
+   case mixed: return make_mixed(ncol, nlev);
  default:
    EKAT_REQUIRE_MSG(false, "Not an IC: " << ic);
  }

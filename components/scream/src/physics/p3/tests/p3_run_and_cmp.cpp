@@ -93,8 +93,8 @@ static Int compare (const std::string& label, const Scalar* a,
 }
 
 struct Baseline {
-  Baseline (const Int nsteps=6, const Int ncol=3, const Int repeat=0, const std::string predict_nc="both", const std::string prescribed_CCN="both") :
-    m_ic_ncol(ncol), m_repeat(repeat)
+  Baseline (const Int nsteps=6, const Int dt=300, const Int ncol=3, const Int nlev=72, const Int repeat=0, const std::string predict_nc="both", const std::string prescribed_CCN="both") :
+    m_nsteps(nsteps), m_dt(dt), m_ncol(ncol), m_nlev(nlev), m_repeat(repeat)
   {
 
     //If predict_nc="both", start looping at i_start=0 (false) and end after i_start=1 (true)
@@ -114,8 +114,8 @@ struct Baseline {
 
     for (int i = i_start; i < i_end; ++i) { // predict_nc is false or true
       for (int j = j_start; j< j_end; ++j) { //prescribed_CCN is false or true
-	//                 initial condit,     dt,  nsteps, prescribe or predict nc, prescribe CCN or not
-	params_.push_back({ic::Factory::mixed, 300, nsteps, i>0,                     j>0 });
+	//                 initial condit,     prescribe or predict nc, prescribe CCN or not
+	params_.push_back({ic::Factory::mixed, i>0,                     j>0 });
       }
     }
   }
@@ -130,7 +130,7 @@ struct Baseline {
     for (auto ps : params_) {
       // Run reference p3 on this set of parameters.
       for (Int r = -1; r < m_repeat; ++r) {
-        const auto d = ic::Factory::create(ps.ic, m_ic_ncol);
+        const auto d = ic::Factory::create(ps.ic, m_ncol, m_nlev);
         set_params(ps, *d);
         p3_init();
 
@@ -144,7 +144,7 @@ struct Baseline {
           std::cout << std::endl;
         }
 
-        for (int it=0; it<ps.it; it++) {
+        for (int it=0; it<m_nsteps; it++) {
           Int current_microsec = p3_main(*d, use_fortran);
 
           if (r != -1 && m_repeat > 0) { // do not count the "cold" run
@@ -174,16 +174,16 @@ struct Baseline {
     for (auto ps : params_) {
       case_num++;
       // Read the reference impl's data from the baseline file.
-      const auto d_ref = ic::Factory::create(ps.ic, m_ic_ncol);
+      const auto d_ref = ic::Factory::create(ps.ic, m_ncol);
       set_params(ps, *d_ref);
       // Now run a sequence of other impls. This includes the reference
       // implementation b/c it's likely we'll want to change it as we go.
       {
-        const auto d = ic::Factory::create(ps.ic, m_ic_ncol);
+        const auto d = ic::Factory::create(ps.ic, m_ncol, m_nlev);
         set_params(ps, *d);
         p3_init();
-        for (int it=0; it<ps.it; it++) {
-          std::cout << "--- checking case # " << case_num << ", timestep # " << it+1 << " of " << ps.it << " ---\n" << std::flush;
+        for (int it=0; it<m_nsteps; it++) {
+          std::cout << "--- checking case # " << case_num << ", timestep # " << it+1 << " of " << m_nsteps << " ---\n" << std::flush;
           read(fid, d_ref);
           p3_main(*d, use_fortran);
           ne = compare(tol, d_ref, d);
@@ -196,20 +196,18 @@ struct Baseline {
   }
 
 private:
-  Int m_ic_ncol, m_repeat;
+  // Things that do not vary between runs
+  Int m_nsteps, m_dt, m_ncol, m_nlev, m_repeat;
 
+  // Things that vary between runs
   struct ParamSet {
     ic::Factory::IC ic;
-    Real dt;
-    Int it;
     bool do_predict_nc;
     bool do_prescribed_CCN;
   };
 
   static void set_params (const ParamSet& ps, FortranData& d) {
-    d.dt = ps.dt;
-    d.it = ps.it;
-    d.do_predict_nc = ps.do_predict_nc;
+    d.do_predict_nc     = ps.do_predict_nc;
     d.do_prescribed_CCN = ps.do_prescribed_CCN;
   }
 
@@ -261,13 +259,15 @@ int main (int argc, char** argv) {
     std::cout <<
       argv[0] << " [options] baseline-filename\n"
       "Options:\n"
-      "  -g              Generate baseline file. Default False.\n"
-      "  -f              Use fortran impls instead of c++. Default False.\n"
-      "  -t <tol>        Tolerance for relative error. Default 0.\n"
-      "  -s <steps>      Number of timesteps. Default=6.\n"
-      "  -i <cols>       Number of columns. Default=6.\n"
-      "  -r <repeat>     Number of repetitions, implies timing run (generate + no I/O). Default=0.\n"
-      "  -p <predict_nc>  yes|no|both. Default=both.\n"
+      "  -g                  Generate baseline file. Default False.\n"
+      "  -f                  Use fortran impls instead of c++. Default False.\n"
+      "  -t <tol>            Tolerance for relative error. Default 0.\n"
+      "  -s <steps>          Number of timesteps. Default=6.\n"
+      "  -d <seconds>        Length of timestep. Default=300.\n"
+      "  -i <cols>           Number of columns. Default=3.\n"
+      "  -k <nlev>           Number of vertical levels. Default=72.\n"
+      "  -r <repeat>         Number of repetitions, implies timing run (generate + no I/O). Default=0.\n"
+      "  -p <predict_nc>     yes|no|both. Default=both.\n"
       "  -c <prescribed_ccn> yes|no|both. Default=both.\n";
     return 1;
   }
@@ -275,7 +275,9 @@ int main (int argc, char** argv) {
   bool generate = false, use_fortran = false;
   scream::Real tol = 0;
   Int timesteps = 6;
+  Int dt = 300;
   Int ncol = 3;
+  Int nlev = 72;
   Int repeat = 0;
   std::string predict_nc = "both";
   std::string prescribed_ccn = "both";
@@ -292,10 +294,20 @@ int main (int argc, char** argv) {
       ++i;
       timesteps = std::atoi(argv[i]);
     }
+    if (ekat::argv_matches(argv[i], "-d", "--dt")) {
+      expect_another_arg(i, argc);
+      ++i;
+      dt = std::atoi(argv[i]);
+    }
     if (ekat::argv_matches(argv[i], "-i", "--ncol")) {
       expect_another_arg(i, argc);
       ++i;
       ncol = std::atoi(argv[i]);
+    }
+    if (ekat::argv_matches(argv[i], "-k", "--nlev")) {
+      expect_another_arg(i, argc);
+      ++i;
+      nlev = std::atoi(argv[i]);
     }
     if (ekat::argv_matches(argv[i], "-r", "--repeat")) {
       expect_another_arg(i, argc);
@@ -326,7 +338,7 @@ int main (int argc, char** argv) {
   baseline_fn += std::to_string(sizeof(scream::Real));
 
   scream::initialize_scream_session(argc, argv); {
-    Baseline bln(timesteps, ncol, repeat, predict_nc, prescribed_ccn);
+    Baseline bln(timesteps, dt, ncol, nlev, repeat, predict_nc, prescribed_ccn);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
       nerr += bln.generate_baseline(baseline_fn, use_fortran);

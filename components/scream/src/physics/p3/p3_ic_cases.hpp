@@ -12,7 +12,7 @@ FortranData::Ptr make_mixed(Int ncol);
 struct Factory {
   enum IC { mixed };
 
-  static FortranData::Ptr create(IC ic, Int ncol = 1);
+  static FortranData::Ptr create(IC ic, Int ncol = 1, Int nlev = 72);
 };
 
 } // namespace ic
