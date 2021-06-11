@@ -213,15 +213,17 @@ namespace scream {
               d_cld(i,k)  = cld(i+1,k+1);
               d_pint(i,k) = p_lev(i+1,k+1);
               d_tint(i,k) = t_lev(i+1,k+1);
-
-              d_qv(i,k)  = PF::calculate_mmr_from_vmr(h2o_mol,gas_vmr(i+1,k+1,1));
-              d_co2(i,k) = PF::calculate_mmr_from_vmr(co2_mol,gas_vmr(i+1,k+1,2));
-              d_o3(i,k)  = PF::calculate_mmr_from_vmr(o3_mol,gas_vmr(i+1,k+1,3));
-              d_n2o(i,k) = PF::calculate_mmr_from_vmr(n2o_mol,gas_vmr(i+1,k+1,4));
-              d_co(i,k)  = PF::calculate_mmr_from_vmr(co_mol,gas_vmr(i+1,k+1,5));
-              d_ch4(i,k) = PF::calculate_mmr_from_vmr(ch4_mol,gas_vmr(i+1,k+1,6));
-              d_o2(i,k)  = PF::calculate_mmr_from_vmr(o2_mol,gas_vmr(i+1,k+1,7));
-              d_n2(i,k)  = PF::calculate_mmr_from_vmr(n2_mol,gas_vmr(i+1,k+1,8));
+              // Note that gas_vmr(i+1,k+1,1) should be the vmr for qv and since we need qv to calculate the mmr we derive qv separately.
+              Real qv_dry = gas_vmr(i+1,k+1,1)*PC::ep_2;
+              Real qv_wet = qv_dry/(1.0+qv_dry);
+              d_qv(i,k)  = qv_wet;//PF::calculate_mmr_from_vmr(h2o_mol, qv_wet, gas_vmr(i+1,k+1,1));
+              d_co2(i,k) = PF::calculate_mmr_from_vmr(co2_mol, qv_wet, gas_vmr(i+1,k+1,2));
+              d_o3(i,k)  = PF::calculate_mmr_from_vmr(o3_mol,  qv_wet, gas_vmr(i+1,k+1,3));
+              d_n2o(i,k) = PF::calculate_mmr_from_vmr(n2o_mol, qv_wet, gas_vmr(i+1,k+1,4));
+              d_co(i,k)  = PF::calculate_mmr_from_vmr(co_mol,  qv_wet, gas_vmr(i+1,k+1,5));
+              d_ch4(i,k) = PF::calculate_mmr_from_vmr(ch4_mol, qv_wet, gas_vmr(i+1,k+1,6));
+              d_o2(i,k)  = PF::calculate_mmr_from_vmr(o2_mol,  qv_wet, gas_vmr(i+1,k+1,7));
+              d_n2(i,k)  = PF::calculate_mmr_from_vmr(n2_mol,  qv_wet, gas_vmr(i+1,k+1,8));
             });
 
             d_pint(i,nlay) = p_lev(i+1,nlay+1);

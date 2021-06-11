@@ -187,6 +187,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("surf_alb_direct").get_reshaped_view<const Real**>();
   auto d_sfc_alb_dif = m_rrtmgp_fields_in.at("surf_alb_diffuse").get_reshaped_view<const Real**>();
   auto d_mu0 = m_rrtmgp_fields_in.at("cos_zenith").get_reshaped_view<const Real*>();
+  auto d_qv = m_rrtmgp_fields_in.at("qv").get_reshaped_view<const Real**>();
   auto d_qc = m_rrtmgp_fields_in.at("qc").get_reshaped_view<const Real**>();
   auto d_qi = m_rrtmgp_fields_in.at("qi").get_reshaped_view<const Real**>();
   auto d_cldfrac_tot = m_rrtmgp_fields_in.at("cldfrac_tot").get_reshaped_view<const Real**>();
@@ -261,7 +262,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int k = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& i) {
-        tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(m_gas_mol_weights[igas],d_temp(i,k)); // Note that for YAKL arrays i and k start with index 1
+        tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(m_gas_mol_weights[igas],d_qv(i,k),d_temp(i,k)); // Note that for YAKL arrays i and k start with index 1
       });
     });
     Kokkos::fence();
