@@ -1617,12 +1617,12 @@
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu,oneapi-ifort,oneapi-ifx</COMPILERS>
     <MPILIBS>impi,openmpi</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/home/azamat/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/azamat/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <CIME_OUTPUT_ROOT>/gpfs/jlse-fs0/projects/climate/$USER/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/gpfs/jlse-fs0/projects/climate/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/gpfs/jlse-fs0/projects/climate/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{HOME}/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/azamat/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/gpfs/jlse-fs0/projects/climate/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/gpfs/jlse-fs0/projects/climate/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>16</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -1704,6 +1704,7 @@
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
       <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
+      <!--env name="OMP_TARGET_OFFLOAD">DISABLED</env--><!--set this for CPU-only runs-->
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
