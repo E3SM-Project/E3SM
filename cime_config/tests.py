@@ -81,6 +81,9 @@ _TESTS = {
             "ERP_Ln7.ne30_ne30.FC5AV1C-L",
             "SMS_Ly1.ne4_ne4.FC5AV1C-L",
 	    "SMS_D_Ln5.ne45pg2_ne45pg2.F-EAM-AQP1",
+            "SMS_Ln5.ne4_ne4.FC5AV1C-L.eam-gust_export",
+            "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.eam-implicit_stress",
+            "ERS_Ld5.ne30_ne30.FC5AV1C-L.eam-implicit_stress",
             )
         },
 

@@ -53,6 +53,8 @@
                                       indxi,    indxj,    & 
                                       Tsf,      potT,     &
                                       uatm,     vatm,     &  
+                                      wsresp,   tau_est,  &
+                                      ugust,              &
                                       uvel,     vvel,     &  
                                       wind,     zlvl,     &  
                                       Qa,       rhoa,     &
@@ -80,6 +82,9 @@
 !
 ! !USES:
 !
+#ifdef CCSMCOUPLED
+        use shr_flux_mod, only: shr_flux_update_stress
+#endif
 ! !INPUT/OUTPUT PARAMETERS:
 !
       integer (kind=int_kind), intent(in) :: &
@@ -98,6 +103,9 @@
          potT     , & ! air potential temperature  (K)
          uatm     , & ! x-direction wind speed (m/s)
          vatm     , & ! y-direction wind speed (m/s)
+         wsresp   , & ! response of atmospheric boundary layer to stress (m/s/Pa)
+         tau_est  , & ! estimated boundary layer equilibrium stress (Pa)
+         ugust    , & ! gustiness from atmosphere (m/s)
          uvel     , & ! x-direction ice speed (m/s)
          vvel     , & ! y-direction ice speed (m/s)
          wind     , & ! wind speed (m/s)
@@ -130,7 +138,7 @@
          TsfK  , & ! surface temperature in Kelvin (K)
          xqq   , & ! temporary variable
          psimh , & ! stability function at zlvl   (momentum)
-         tau   , & ! stress at zlvl
+         taufac, & ! factor limiting changes in tau during iteration
          fac   , & ! interpolation factor
          al2   , & ! ln(z10   /zTrf)
          psix2 , & ! stability function at zTrf   (heat and water)
@@ -152,6 +160,13 @@
          re    , & ! sqrt of exchange coefficient (water)
          rh    , & ! sqrt of exchange coefficient (heat)
          vmag  , & ! surface wind magnitude   (m/s)
+         vmagit, & ! iteration loop surface wind magnitude   (m/s)
+         wind0 , & ! original wind without limiter   (m/s)
+         windit, & ! iteration loop wind without limiter   (m/s)
+         tau   , & ! stress at zlvl (Pa)
+         taupr , & ! stress from previous iteration (Pa)
+         dtau  , & ! difference in stress vs previous iteration (Pa)
+         dtaupr, & ! difference in stress over previous iteration (Pa)
          alz   , & ! ln(zlvl  /z10)
          thva  , & ! virtual temperature      (K)
          cp    , & ! specific heat of moist air
@@ -215,9 +230,10 @@
          do ij = 1, icells
             i = indxi(ij)
             j = indxj(ij)
-            vmag(ij) = max(umin, wind(i,j))
+            wind0(ij) = max(wind(i,j), 0.01_dbl_kind)
+            vmag(ij) = max(umin, wind0(ij) + ugust(i,j))
 !---------- (3b) option by Andrew Roberts
-!            vmag(ij)   = max(umin, sqrt( (uatm(i,j)-uvel(i,j))**2 + (vatm(i,j)-vvel(i,j))**2) )
+!            wind0(ij)   = sqrt( (uatm(i,j)-uvel(i,j))**2 + (vatm(i,j)-vvel(i,j))**2)
 !---------- (3b) option end
             rdn(ij)  = vonkar/log(zref/iceruf) ! neutral coefficient
          enddo   ! ij
@@ -230,9 +246,10 @@
          do ij = 1, icells
             i = indxi(ij)
             j = indxj(ij)
-            vmag(ij) = max(umin, wind(i,j))
+            wind0(ij) = max(wind(i,j), 0.01_dbl_kind)
+            vmag(ij) = max(umin, wind0(ij) + ugust(i,j))
 !---------- (3b) option by Andrew Roberts
-!            vmag(ij)   = max(umin, sqrt( (uatm(i,j)-uvel(i,j))**2 + (vatm(i,j)-vvel(i,j))**2) )
+!            wind0(ij)   = sqrt( (uatm(i,j)-uvel(i,j))**2 + (vatm(i,j)-vvel(i,j))**2)
 !---------- (3b) option end
             rdn(ij)  = sqrt(0.0027_dbl_kind/vmag(ij) &
                     + .000142_dbl_kind + .0000764_dbl_kind*vmag(ij))
@@ -271,6 +288,12 @@
          tstar(ij) = rhn(ij) * delt(i,j)
          qstar(ij) = ren(ij) * delq(i,j)
 
+         ! Set up variables for velocity iteration.
+         vmagit(ij) = vmag(ij)
+         windit(ij) = wind0(ij)
+         taupr(ij) = tau_est(i,j)
+         dtau(ij) = 1.e100_dbl_kind
+
       enddo                     ! ij
 
       !------------------------------------------------------------
@@ -308,9 +331,16 @@
             re(ij) = ren(ij) / (c1+ren(ij)/vonkar*(alz(ij)-psixh(ij)))
 
         ! update ustar, tstar, qstar using updated, shifted coeffs
-            ustar(ij) = rd(ij) * vmag(ij)
+            ustar(ij) = rd(ij) * vmagit(ij)
             tstar(ij) = rh(ij) * delt(i,j)
             qstar(ij) = re(ij) * delq(i,j)
+
+#ifdef CCSMCOUPLED
+            tau(ij) = rhoa(i,j) * ustar(ij) * rd(ij) * windit(ij)
+            call shr_flux_update_stress(wind0(ij), wsresp(i,j), tau_est(i,j), &
+                 tau(ij), taupr(ij), dtau(ij), dtaupr(ij), windit(ij))
+            vmagit(ij) = max(umin, windit(ij) + ugust(i,j))
+#endif
 
          enddo                  ! ij
       enddo                     ! end iteration
@@ -342,9 +372,9 @@
       ! stry = tau * vatm(i,j) / vmag
       !------------------------------------------------------------
 
-         tau = rhoa(i,j) * ustar(ij) * rd(ij) ! not the stress at zlvl(i,j)
-         strx(i,j) = tau * (uatm(i,j)-uvel(i,j))
-         stry(i,j) = tau * (vatm(i,j)-vvel(i,j))
+         tau(ij) = rhoa(i,j) * ustar(ij) * rd(ij) ! not the stress at zlvl(i,j)
+         strx(i,j) = tau(ij) * (uatm(i,j)-uvel(i,j)) * (windit(ij) / wind0(ij))
+         stry(i,j) = tau(ij) * (vatm(i,j)-vvel(i,j)) * (windit(ij) / wind0(ij))
 
       enddo                     ! ij
 
