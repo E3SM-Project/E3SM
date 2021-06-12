@@ -87,7 +87,7 @@ struct Constants
   static constexpr Scalar Avogad        = 6.02214e26;
   static constexpr Scalar Boltz         = 1.38065e-23;
   static constexpr Scalar Rgas          = Avogad * Boltz;
-  static constexpr Scalar MWWV          = 18.016;
+  static constexpr Scalar MWWV          = MWH2O;
   static constexpr Scalar RWV           = Rgas / MWWV;
   static constexpr Scalar ZVIR          = (RWV / Rair) - 1.0;
   static constexpr Scalar max_total_ni  = 500.e+3;  // maximum total ice concentration (sum of all categories) (m)
@@ -108,7 +108,32 @@ struct Constants
   // = 3 Khairoutdinov and Kogan 2000
   static constexpr int IPARAM         = 3;
 
+  // Gases
+  static const std::map<std::string,Scalar> gas_mol_weights;
+  static Scalar get_gas_mol_weight(std::string gas_name);
 };
+
+// Gases
+// Define the molecular weight for each gas, which can then be
+// used to determine the volume mixing ratio for each gas.
+template <typename Scalar>
+const std::map<std::string,Scalar> Constants<Scalar>::gas_mol_weights = {
+  {"h2o", Scalar(Constants<Scalar>::MWH2O)},
+  {"co2", 44.0095},
+  {"o3" , 47.9982},
+  {"n2o", 44.0128},
+  {"co" , 28.0101},
+  {"ch4", 16.04246},
+  {"o2" , 31.998},
+  {"n2" , 28.0134}
+};
+
+template <typename Scalar>
+Scalar Constants<Scalar>::get_gas_mol_weight(std::string gas_name) {
+  //TODO: Possible improvement would be to design a device friendly function
+  //      here instead of just a std::map lookup, which only works on host.
+  return Constants<Scalar>::gas_mol_weights.at(gas_name);
+}
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::NSMALL;

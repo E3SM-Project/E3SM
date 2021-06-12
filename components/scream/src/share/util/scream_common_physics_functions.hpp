@@ -129,6 +129,35 @@ struct PhysicsFunctions
   static ScalarT calculate_dz (const ScalarT& pseudo_density, const ScalarT& p_mid,
                                const ScalarT& T_mid, const ScalarT& qv);
 
+  //-----------------------------------------------------------------------------------------------//
+  // Calculate the volume mixing ratio given the wet mass mixing ratio:
+  //   X_vmr = X_mmr / (1 - qv) * mol_weight_air/mol_weight_X
+  // where
+  //   X_vmr          is the volume mixing ratio X
+  //   X_mmr          is the mass mixing ratio of X
+  //   qv             is the water vapor mass mixing ratio
+  //   mol_weight_air is the molecular weight of dry air
+  //   mol_weight_X   is the molecular weight of X
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_vmr_from_mmr(const Real& gas_mol_weight, const ScalarT& qv, const ScalarT& mmr);
+
+  //-----------------------------------------------------------------------------------------------//
+  // Calculate wet mass mixing ratio the given the volume mixing ratio:
+  //   X_mmr = a*X_vmr * (1 -qv)
+  // where
+  //   X_vmr          is the volume mixing ratio X
+  //   X_mmr          is the mass mixing ratio of X
+  //   qv             is the water vapor mass mixing ratio
+  //   mol_weight_air is the molecular weight of dry air
+  //   mol_weight_X   is the molecular weight of X
+  //   a = mol_weight_X/mol_weight_air is the ratio of the molecular weight of the gas to the molecular weight of dry air
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_mmr_from_vmr(const Real& gas_mol_weight, const ScalarT& qv, const ScalarT& vmr);
+
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
   // ---------------------------------------------------------------- //
@@ -218,6 +247,22 @@ struct PhysicsFunctions
                             const InputProviderQ& qv,
                             const view_1d<ScalarT>& dz);
 
+  template<typename ScalarT, typename InputProviderQ, typename InputProviderX>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_vmr_from_mmr(const MemberType& team,
+                                     const Real gas_mol_weight,
+                                     const InputProviderQ& qv,
+                                     const InputProviderX& mmr,
+                                     const view_1d<ScalarT>& vmr);
+
+  template<typename ScalarT, typename InputProviderQ, typename InputProviderX>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_mmr_from_vmr(const MemberType& team,
+                                     const Real gas_mol_weight,
+                                     const InputProviderQ& qv,
+                                     const InputProviderX& vmr,
+                                     const view_1d<ScalarT>& mmr);
+
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer interface height from the vertical layer thicknesses:
   //   z_int = int_0^z(dz)
@@ -234,7 +279,7 @@ struct PhysicsFunctions
                                const Real z_surf,
                                const view_1d<ScalarT>& z_int);
 
-
+  
 
 }; // struct PhysicsFunctions
 

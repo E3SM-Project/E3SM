@@ -9,6 +9,7 @@ Atmosphere Processes:
   Process 0:
     Process Name: RRTMGP
     Grid: Physics
+    active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
 
 Grids Manager:
   Type: Physics Only
@@ -24,7 +25,6 @@ Initial Conditions:
   pseudo_density: 0.0
   T_mid: 0.0
   t_int: 0.0
-  gas_vmr: 0.0
   surf_alb_direct: 0.0
   surf_alb_diffuse: 0.0
   cos_zenith: 0.0
@@ -33,4 +33,12 @@ Initial Conditions:
   cldfrac_tot: 0.0
   eff_radius_qc: 0.0
   eff_radius_qi: 0.0
+  qv: 0.0
+  co2: 0.0
+  o3: 0.0
+  n2o: 0.0
+  co: 0.0
+  ch4: 0.0
+  o2: 0.0
+  n2: 0.0
 ...

@@ -1,6 +1,7 @@
 #ifndef SCREAM_RRTMGP_RADIATION_HPP
 #define SCREAM_RRTMGP_RADIATION_HPP
 
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
@@ -16,6 +17,7 @@ class RRTMGPRadiation : public AtmosphereProcess {
 public:
   using field_type       = Field<      Real>;
   using const_field_type = Field<const Real>;
+  using view_1d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Real>;
 
   // Constructors
   RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -83,11 +85,10 @@ public:
   const int m_nlwbands = 16;
 
   // These are the gases that we keep track of
-  const int m_ngas = 8;
-  const std::string m_gas_names[8] = {
-      "h2o", "co2", "o3", "n2o",
-      "co" , "ch4", "o2", "n2"
-  };
+  int m_ngas;
+  std::vector<std::string> m_gas_names;
+  view_1d_real             m_gas_mol_weights;
+  GasConcs gas_concs;
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {

@@ -81,6 +81,7 @@ void run(std::mt19937_64& engine)
   static constexpr auto Rd       = PC::RD;
   static constexpr auto inv_cp   = PC::INV_CP;
   static constexpr auto g        = PC::gravit;
+  static constexpr auto ep_2     = PC::ep_2;
   static constexpr auto test_tol = PC::macheps*1e3;
 
   constexpr int pack_size = sizeof(ScalarT) / sizeof(RealType);
@@ -98,7 +99,8 @@ void run(std::mt19937_64& engine)
           qv("qv",num_mid_packs),
           pressure("pressure",num_mid_packs),
           pseudo_density("pseudo_density",num_mid_packs),
-          dz_for_testing("dz_for_testing",num_mid_packs);
+          dz_for_testing("dz_for_testing",num_mid_packs),
+          mmr_for_testing("mass_mixing_ratio_for_testing",num_mid_packs);
   // Output views
   view_1d exner("exner",num_mid_packs),
           theta("theta",num_mid_packs),
@@ -107,7 +109,9 @@ void run(std::mt19937_64& engine)
           T_from_Tv("T_from_T_virtual",num_mid_packs),
           dse("dse",num_mid_packs),
           dz("dz",num_mid_packs),
-          z_int("z_int",num_int_packs);
+          z_int("z_int",num_int_packs),
+          vmr("volume_mixing_ratio",num_mid_packs),
+          mmr("volume_mixing_ratio",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
     return rview_1d(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
@@ -118,18 +122,20 @@ void run(std::mt19937_64& engine)
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<RealType>;
-  RPDF pdf_qv(1e-3,1e3),
+  RPDF pdf_qv(1e-6,1e-3),
        pdf_dp(1.0,100.0),
        pdf_pres(0.0,PC::P0),
        pdf_temp(200.0,400.0),
        pdf_height(0.0,1e5),
-       pdf_surface(100.0,400.0);
+       pdf_surface(100.0,400.0),
+       pdf_mmr(0,0.99);
 
-  ekat::genRandArray(dview_as_real(temperature),   engine,pdf_temp);
-  ekat::genRandArray(dview_as_real(height),        engine,pdf_height);
-  ekat::genRandArray(dview_as_real(qv),            engine,pdf_qv);
-  ekat::genRandArray(dview_as_real(pressure),      engine,pdf_pres);
-  ekat::genRandArray(dview_as_real(pseudo_density),engine,pdf_dp);
+  ekat::genRandArray(dview_as_real(temperature),     engine,pdf_temp);
+  ekat::genRandArray(dview_as_real(height),          engine,pdf_height);
+  ekat::genRandArray(dview_as_real(qv),              engine,pdf_qv);
+  ekat::genRandArray(dview_as_real(pressure),        engine,pdf_pres);
+  ekat::genRandArray(dview_as_real(pseudo_density),  engine,pdf_dp);
+  ekat::genRandArray(dview_as_real(mmr_for_testing), engine,pdf_mmr);
 
   // Construct a simple set of `dz` values for testing the z_int function
   auto dz_for_testing_host = Kokkos::create_mirror_view(dz_for_testing);
@@ -145,7 +151,7 @@ void run(std::mt19937_64& engine)
   const ScalarT zero = 0.0;
   const ScalarT one  = 1.0;
 
-  ScalarT p, T0, theta0, tmp, qv0, dp0;
+  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0;
   RealType surf_height;
 
   // Exner property tests:
@@ -219,6 +225,29 @@ void run(std::mt19937_64& engine)
   REQUIRE( Check::equal(PF::calculate_dz(ScalarT(p0),ScalarT(p0),one,zero),ScalarT(Rd/g)) );
   REQUIRE( Check::approx_equal(PF::calculate_dz(ScalarT(g),ScalarT(Rd),T0,zero),T0,test_tol) );
 
+  // MMR and VMR property tests:
+  //  - calculate_vmr_from_mmr(mmr=0) = 0
+  //  - calculate_mmr_from_vmr(vmr=0) = 0
+  //  - calculate_vmr_from_mmr(calculate_mmr_from_vmr(gas_name="h2o",vmr0)) = vmr
+  //  - calculate_vmr_from_mmr(calculate_mmr_from_vmr(gas_name="o2",vmr0)) = vmr, test that changing gas name changes the result.
+  //  - calculate_mmr_from_vmr(calculate_vmr_from_mmr(gas_name="h2o",mmr0)) = vmr
+  //  - calculate_mmr_from_vmr(calculate_vmr_from_mmr(gas_name="o2",mmr0)) != vmr, test that changing gas name changes the result.
+  mmr0 = pdf_mmr(engine);
+  vmr0 = pdf_mmr(engine);
+  qv0 = pdf_qv(engine);
+  const auto h2o_mol = PC::get_gas_mol_weight("h2o");
+  const auto o2_mol  = PC::get_gas_mol_weight("o2");
+  ScalarT mmr_tmp = 0.5;
+  ScalarT vmr_tmp = 1.0;
+  REQUIRE( Check::equal(PF::calculate_vmr_from_mmr(h2o_mol,qv0,zero),zero) );
+  REQUIRE( Check::equal(PF::calculate_mmr_from_vmr(h2o_mol,qv0,zero),zero) );
+  tmp = PF::calculate_vmr_from_mmr(h2o_mol,qv0,mmr0);
+  REQUIRE( Check::approx_equal(PF::calculate_mmr_from_vmr(h2o_mol,qv0,tmp),mmr0,test_tol) );
+  REQUIRE( !Check::approx_equal(PF::calculate_mmr_from_vmr(o2_mol,qv0,tmp),mmr0,test_tol) );
+  tmp = PF::calculate_mmr_from_vmr(h2o_mol,qv0,vmr0);
+  REQUIRE( Check::approx_equal(PF::calculate_vmr_from_mmr(h2o_mol,qv0,tmp),vmr0,test_tol) );
+  REQUIRE( !Check::approx_equal(PF::calculate_vmr_from_mmr(o2_mol,qv0,tmp),vmr0,test_tol) );
+
   // --------- Run tests on full columns of data ----------- //
   TeamPolicy policy(ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(1, 1));
   Kokkos::parallel_for("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -242,10 +271,14 @@ void run(std::mt19937_64& engine)
 
     // Compute z_int(dz,z_surf)
     PF::calculate_z_int(team,num_levs,dz_for_testing,surf_height,z_int);
+
+    // Compute vmr from mmr and vice versa
+    PF::calculate_vmr_from_mmr(team,h2o_mol,qv,mmr_for_testing,vmr);
+    PF::calculate_mmr_from_vmr(team,h2o_mol,qv,vmr,mmr);
   }); // Kokkos parallel_for "test_universal_physics"
   Kokkos::fence();
 
-  // Deep copy to host, and check the properties of the full view outputi
+  // Deep copy to host, and check the properties of the full view output
   auto temperature_host     = cmvdc(temperature);
   auto theta_host           = cmvdc(theta);
   auto pressure_host        = cmvdc(pressure);
@@ -258,6 +291,9 @@ void run(std::mt19937_64& engine)
   auto dse_host             = cmvdc(dse);
   auto z_int_host           = cmvdc(z_int);
   auto dz_host              = cmvdc(dz);
+  auto vmr_host             = cmvdc(vmr);
+  auto mmr_host             = cmvdc(mmr);
+  auto mmr_for_testing_host = cmvdc(mmr_for_testing);
 
   for (int k=0; k<num_mid_packs; ++k) {
 
@@ -270,12 +306,18 @@ void run(std::mt19937_64& engine)
     REQUIRE( Check::is_non_negative(dz_host(k),k) );
     REQUIRE( Check::is_non_negative(z_int_host(k),k) );
     REQUIRE( Check::is_non_negative(dse_host(k),k) );
+    REQUIRE( Check::is_non_negative(dse_host(k),k) );
+    REQUIRE( Check::is_non_negative(vmr_host(k),k) );
+    REQUIRE( Check::is_non_negative(mmr_host(k),k) );
 
     // Check T(Theta(T))==T (up to roundoff tolerance)
     REQUIRE ( Check::approx_equal(T_from_Theta_host(k),temperature_host(k),k,test_tol) );
 
     // Check T(T_virtual(T))==T (up to roundoff tolerance)
     REQUIRE ( Check::approx_equal(T_from_Tv_host(k),temperature_host(k),k,test_tol) );
+
+    // Check vmr(mmr(vmr))==mmr (up to roundoff tolerance)
+    REQUIRE ( Check::approx_equal(mmr_host(k),mmr_for_testing_host(k),test_tol) );
   }
 } // run()
 

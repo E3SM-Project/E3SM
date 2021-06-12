@@ -1,8 +1,10 @@
-#include "ekat/ekat_assert.hpp"
+#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
+#include "share/util/scream_common_physics_functions.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "YAKL/YAKL.h"
+#include "ekat/ekat_assert.hpp"
 
 namespace scream {
 
@@ -18,6 +20,17 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   using namespace ekat::units;
 
+  // Gather the active gases from the rrtmgp parameter list and assign to the m_gas_names vector.
+  auto active_gases = m_rrtmgp_params.get<std::vector<std::string>>("active_gases");
+  for (auto& it : active_gases) {
+    // Make sure only unique names are added
+    if (std::find(m_gas_names.begin(), m_gas_names.end(), it) == m_gas_names.end()) {
+      m_gas_names.push_back(it);
+    }
+  }
+  m_ngas = m_gas_names.size();
+
+  // Declare the set of fields used by rrtmgp
   auto kgkg = kg/kg;
   kgkg.set_string("kg/kg");
   auto m3 = m * m * m;
@@ -35,33 +48,39 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Set up dimension layouts
   FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_ncol,m_nlay} };
-  FieldLayout scalar3d_layout_int { {COL,LEV}, {m_ncol,m_nlay+1} };
+  FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_ncol,m_nlay+1} };
   // Use VAR field tag for gases for now; consider adding a tag?
-  FieldLayout gas_layout          { {COL,LEV,NGAS}, {m_ncol,m_nlay,m_ngas} };
   FieldLayout scalar2d_swband_layout { {COL,SWBND}, {m_ncol,m_nswbands} };
 
+  constexpr int ps = SCREAM_SMALL_PACK_SIZE;
   // Set required (input) fields here
-  add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name());
-  add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name());
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name());
-  add_field<Required>("t_int" , scalar3d_layout_int, K , grid->name());
-  add_field<Required>("gas_vmr", gas_layout, kgkg, grid->name());
-  add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name());
-  add_field<Required>("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name());
-  add_field<Required>("cos_zenith", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("qc", scalar3d_layout_mid, kg/kg, grid->name());
-  add_field<Required>("qi", scalar3d_layout_mid, kg/kg, grid->name());
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name());
-  add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name());
-  add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name());
-
+  add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name(), ps);
+  add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name(), ps);
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name(), ps);
+  add_field<Required>("t_int" , scalar3d_layout_int, K , grid->name(), ps);
+  add_field<Required>("surf_alb_direct", scalar2d_swband_layout, nondim, grid->name(), ps);
+  add_field<Required>("surf_alb_diffuse", scalar2d_swband_layout, nondim, grid->name(), ps);
+  add_field<Required>("cos_zenith", scalar2d_layout, nondim, grid->name(), ps);
+  add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid->name(), ps);
+  add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid->name(), ps);
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name(), ps);
+  add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name(), ps);
+  add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name(), ps);
+  // Set of required gas concentration fields
+  for (auto& it : m_gas_names) {
+    if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
+      add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid->name(), ps);
+    } else {
+      add_field<Required>(it,scalar3d_layout_mid,kgkg,grid->name(), ps);
+    }
+  }
   // Set computed (output) fields
-  add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid->name());
-  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
-  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid->name());
-  add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name());
-  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid->name());
-  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name());
+  add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid->name(), ps);
+  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name(), ps);
+  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid->name(), ps);
+  add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name(), ps);
+  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid->name(), ps);
+  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name(), ps);
 
 }  // RRTMGPRadiation::set_grids
 
@@ -70,8 +89,7 @@ int RRTMGPRadiation::requested_buffer_size_in_bytes() const
   const int interface_request = Buffer::num_1d_ncol*m_ncol*sizeof(Real) +
                                 Buffer::num_2d_nlay*m_ncol*m_nlay*sizeof(Real) +
                                 Buffer::num_2d_nlay_p1*m_ncol*(m_nlay+1)*sizeof(Real) +
-                                Buffer::num_2d_nswbands*m_ncol*m_nswbands*sizeof(Real) +
-                                Buffer::num_3d_ngas*m_ncol*m_nlay*m_ngas*sizeof(Real);
+                                Buffer::num_2d_nswbands*m_ncol*m_nswbands*sizeof(Real);
 
   return interface_request;
 } // RRTMGPRadiation::requested_buffer_size
@@ -136,42 +154,40 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.sfc_alb_dif = decltype(m_buffer.sfc_alb_dif)("surf_alb_diffuse", mem, m_ncol, m_nswbands);
   mem += m_buffer.sfc_alb_dif.totElems();
 
-  // 3d array
-  m_buffer.gas_vmr = decltype(m_buffer.gas_vmr)("gas_vmr", mem, m_ncol, m_nlay, m_ngas);
-  mem += m_buffer.gas_vmr.totElems();
-
   int used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
 
 void RRTMGPRadiation::initialize_impl(const util::TimeStamp& /* t0 */) {
+  using PC = scream::physics::Constants<Real>;
   // Names of active gases
-  // TODO: this needs to be not hard-coded...I wanted to get these from
-  // input files, but need to get around the rrtmgp_initializer logic.
-  // Maybe can store the gas names somewhere else?
-  string1d gas_names_1d("gas_names",m_ngas);
-  for (int igas = 1; igas <= m_ngas; igas++) {
-    gas_names_1d(igas) = m_gas_names[igas-1];
+  auto gas_names_yakl_offset = string1d("gas_names",m_ngas);
+  m_gas_mol_weights          = view_1d_real("gas_mol_weights",m_ngas);
+  /* the lookup function for getting the gas mol weights doesn't work on device. */
+  auto gas_mol_w_host = Kokkos::create_mirror_view(m_gas_mol_weights);
+  for (int igas = 0; igas < m_ngas; igas++) {  
+    /* Note: YAKL starts the index from 1 */
+    gas_names_yakl_offset(igas+1)   = m_gas_names[igas];
+    gas_mol_w_host[igas]            = PC::get_gas_mol_weight(m_gas_names[igas]);
   }
-
+  Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
   // Initialize GasConcs object to pass to RRTMGP initializer;
-  // This is just to provide gas names
-  // Make GasConcs from gas_vmr and gas_names_1d
-  GasConcs gas_concs;
-  gas_concs.init(gas_names_1d,1,1);
+  gas_concs.init(gas_names_yakl_offset,m_ncol,m_nlay);
   rrtmgp::rrtmgp_initialize(gas_concs);
+
 }
 
 void RRTMGPRadiation::run_impl (const Real dt) {
+  using PF = scream::PhysicsFunctions<DefaultDevice>;
   // Get data from the FieldManager
   auto d_pmid = m_rrtmgp_fields_in.at("p_mid").get_reshaped_view<const Real**>();
   auto d_pint = m_rrtmgp_fields_in.at("p_int").get_reshaped_view<const Real**>();
   auto d_pdel = m_rrtmgp_fields_in.at("pseudo_density").get_reshaped_view<const Real**>();
   auto d_tint = m_rrtmgp_fields_in.at("t_int").get_reshaped_view<const Real**>();
-  auto d_gas_vmr = m_rrtmgp_fields_in.at("gas_vmr").get_reshaped_view<const Real***>();
   auto d_sfc_alb_dir = m_rrtmgp_fields_in.at("surf_alb_direct").get_reshaped_view<const Real**>();
   auto d_sfc_alb_dif = m_rrtmgp_fields_in.at("surf_alb_diffuse").get_reshaped_view<const Real**>();
   auto d_mu0 = m_rrtmgp_fields_in.at("cos_zenith").get_reshaped_view<const Real*>();
+  auto d_qv = m_rrtmgp_fields_in.at("qv").get_reshaped_view<const Real**>();
   auto d_qc = m_rrtmgp_fields_in.at("qc").get_reshaped_view<const Real**>();
   auto d_qi = m_rrtmgp_fields_in.at("qi").get_reshaped_view<const Real**>();
   auto d_cldfrac_tot = m_rrtmgp_fields_in.at("cldfrac_tot").get_reshaped_view<const Real**>();
@@ -191,7 +207,6 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto p_lev          = m_buffer.p_lev;
   auto p_del          = m_buffer.p_del;
   auto t_lev          = m_buffer.t_lev;
-  auto gas_vmr        = m_buffer.gas_vmr;
   auto sfc_alb_dir    = m_buffer.sfc_alb_dir;
   auto sfc_alb_dif    = m_buffer.sfc_alb_dif;
   auto mu0            = m_buffer.mu0;
@@ -224,10 +239,6 @@ void RRTMGPRadiation::run_impl (const Real dt) {
         rei(i+1,k+1)         = d_rei(i,k);
         p_lev(i+1,k+1)       = d_pint(i,k);
         t_lev(i+1,k+1)       = d_tint(i,k);
-
-        Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, m_ngas), [&] (const int& g) {
-          gas_vmr(i+1,k+1,g+1) = d_gas_vmr(i,k,g);
-        });
       });
 
       p_lev(i+1,m_nlay+1) = d_pint(i,m_nlay);
@@ -240,24 +251,23 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     });
   }
   Kokkos::fence();
-  
-  // Make GasConcs from gas_vmr and gas_names
-  // TODO: only allocate at initialization and
-  // just update values here
-  string1d gas_names_1d("gas_names",m_ngas);
-  for (int igas = 1; igas <= m_ngas; igas++) {
-    gas_names_1d(igas) = m_gas_names[igas-1];
-  }
 
-  // Create and populate a GasConcs object to pass to RRTMGP driver
-  GasConcs gas_concs;
-  gas_concs.init(gas_names_1d,m_ncol,m_nlay);
+  // Populate GasConcs object to pass to RRTMGP driver
   auto tmp2d = m_buffer.tmp2d;
-  for (int igas = 1; igas <= m_ngas; igas++) {
-    parallel_for(Bounds<2>(m_ncol,m_nlay), YAKL_LAMBDA(int icol, int ilay) {
-        tmp2d(icol,ilay) = gas_vmr(icol,ilay,igas);
+  for (int igas = 0; igas < m_ngas; igas++) {
+    auto name = m_gas_names[igas];
+    auto fm_name = name=="h2o" ? "qv" : name;
+    auto d_temp  = m_rrtmgp_fields_in.at(fm_name).get_reshaped_view<const Real**>();
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int k = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& i) {
+        tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(m_gas_mol_weights[igas],d_qv(i,k),d_temp(i,k)); // Note that for YAKL arrays i and k start with index 1
+      });
     });
-    gas_concs.set_vmr(gas_names_1d(igas), tmp2d);
+    Kokkos::fence();
+
+    gas_concs.set_vmr(m_gas_names[igas], tmp2d);
   }
 
   // Compute layer cloud mass (per unit area)
@@ -266,10 +276,18 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   scream::rrtmgp::mixing_ratio_to_cloud_mass(qc, cldfrac_tot, p_del, lwp);
   scream::rrtmgp::mixing_ratio_to_cloud_mass(qi, cldfrac_tot, p_del, iwp);
   // Convert to g/m2 (needed by RRTMGP)
-  parallel_for(Bounds<2>(m_nlay,m_ncol), YAKL_LAMBDA(int ilay, int icol) {
-      lwp(icol,ilay) = 1e3 * lwp(icol,ilay);
-      iwp(icol,ilay) = 1e3 * iwp(icol,ilay);
+  {
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& icol) {
+      int i = icol+1;
+      lwp(i,k) *= 1e3;
+      iwp(i,k) *= 1e3;
+    });
   });
+  }
+  Kokkos::fence();
 
   // Run RRTMGP driver
   rrtmgp::rrtmgp_main(
@@ -292,10 +310,18 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   rrtmgp::compute_heating_rate(
     lw_flux_up, lw_flux_dn, p_del, lw_heating
   );
-  parallel_for(Bounds<2>(m_nlay,m_ncol), YAKL_LAMBDA(int ilay, int icol) {
-    rad_heating(icol,ilay) = sw_heating(icol,ilay) + lw_heating(icol,ilay);
-    t_lay(icol,ilay) = t_lay(icol,ilay) + rad_heating(icol,ilay) * dt;
+  {
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_ncol), [&] (const int& icol) {
+      int i = icol+1;
+      rad_heating(i,k) = sw_heating(i,k) + lw_heating(i,k);
+      t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
+    });
   });
+  }
+  Kokkos::fence();
 
   // Copy ouput data back to FieldManager
   {
@@ -317,6 +343,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
 }
 
 void RRTMGPRadiation::finalize_impl  () {
+  gas_concs.reset();
   rrtmgp::rrtmgp_finalize();
 }
 

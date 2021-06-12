@@ -208,6 +208,61 @@ void PhysicsFunctions<DeviceT>::calculate_z_int(const MemberType& team,
   column_ops::template column_scan<FromTop>(team,num_levs,dz,z_int,z_surf);
 }
 
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::calculate_vmr_from_mmr(const Real& gas_mol_weight, const ScalarT& qv, const ScalarT& mmr)
+{
+  using C = scream::physics::Constants<Real>;
+  constexpr Real air_mol_weight   = C::MWdry;
+
+  return mmr / (1.0 - qv) * air_mol_weight/gas_mol_weight;
+
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderQ, typename InputProviderX>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_vmr_from_mmr(const MemberType& team,
+                                                       const Real gas_mol_weight,
+                                                       const InputProviderQ& qv,
+                                                       const InputProviderX& mmr,
+                                                       const view_1d<ScalarT>& vmr)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,vmr.extent(0)),
+                       [&] (const int k) {
+    vmr(k) = calculate_vmr_from_mmr(gas_mol_weight,qv(k),mmr(k));
+  });
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::calculate_mmr_from_vmr(const Real& gas_mol_weight, const ScalarT& qv, const ScalarT& vmr)
+{
+  using C = scream::physics::Constants<Real>;
+  constexpr Real air_mol_weight   = C::MWdry;
+  const Real mol_weight_ratio = gas_mol_weight/air_mol_weight;
+
+  return mol_weight_ratio * vmr * (1.0 - qv); 
+
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderQ, typename InputProviderX>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_mmr_from_vmr(const MemberType& team,
+                                                       const Real gas_mol_weight,
+                                                       const InputProviderQ& qv,
+                                                       const InputProviderX& vmr,
+                                                       const view_1d<ScalarT>& mmr)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,mmr.extent(0)),
+                       [&] (const int k) {
+    mmr(k) = calculate_mmr_from_vmr(gas_mol_weight,qv(k),vmr(k));
+  });
+}
+
 } // namespace scream
 
 #endif // SCREAM_COMMON_PHYSICS_IMPL_HPP

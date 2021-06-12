@@ -121,3 +121,37 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
     cloud_mass.deallocate();
     yakl::finalize();
 }
+
+TEST_CASE("rrtmgp_test_limit_to_bounds") {
+    // Initialize YAKL
+    if (!yakl::isInitialized()) { yakl::init(); }
+
+    // Test limiter function
+    auto arr = real2d("arr", 2, 2);
+    auto arr_limited = real2d("arr_limited", 2, 2);
+
+    // Setup dummy array
+    parallel_for(1, YAKL_LAMBDA(int dummy) {
+        arr(1,1) = 1.0;
+        arr(1,2) = 2.0;
+        arr(2,1) = 3.0;
+        arr(2,2) = 4.0;
+    });
+
+    // Limit to bounds that contain the data; should be no change in values
+    scream::rrtmgp::limit_to_bounds(arr, 0.0, 5.0, arr_limited);
+    REQUIRE(arr.createHostCopy()(1,1) == arr_limited.createHostCopy()(1,1));
+    REQUIRE(arr.createHostCopy()(1,2) == arr_limited.createHostCopy()(1,2));
+    REQUIRE(arr.createHostCopy()(2,1) == arr_limited.createHostCopy()(2,1));
+    REQUIRE(arr.createHostCopy()(2,2) == arr_limited.createHostCopy()(2,2));
+
+    // Limit to bounds that do not completely contain the data; should be a change in values!
+    scream::rrtmgp::limit_to_bounds(arr, 1.5, 3.5, arr_limited);
+    REQUIRE(arr_limited.createHostCopy()(1,1) == 1.5);
+    REQUIRE(arr_limited.createHostCopy()(1,2) == 2.0);
+    REQUIRE(arr_limited.createHostCopy()(2,1) == 3.0);
+    REQUIRE(arr_limited.createHostCopy()(2,2) == 3.5);
+    arr.deallocate();
+    arr_limited.deallocate();
+    yakl::finalize();
+}
