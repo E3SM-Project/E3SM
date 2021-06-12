@@ -559,7 +559,7 @@
     <DESC>Linux workstation for Jenkins testing</DESC>
     <NODENAME_REGEX>(melvin|watson|s999964|climate|penn|sems)</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <PROXY>sonproxy.sandia.gov:80</PROXY>
+    <PROXY>proxy.sandia.gov:80</PROXY>
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
@@ -633,7 +633,7 @@
     <DESC>Huge Linux workstation for Sandia climate scientists</DESC>
     <NODENAME_REGEX>mappy</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <PROXY>wwwproxy.sandia.gov:80</PROXY>
+    <PROXY>proxy.sandia.gov:80</PROXY>
     <COMPILERS>gnu,intel</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <SAVE_TIMING_DIR>/sems-data-store/ACME/mappy/timings</SAVE_TIMING_DIR>
@@ -866,7 +866,7 @@
     <DESC>SNL clust</DESC>
     <NODENAME_REGEX>(skybridge|chama)</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <PROXY>wwwproxy.sandia.gov:80</PROXY>
+    <PROXY>proxy.sandia.gov:80</PROXY>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <PROJECT>fy190158</PROJECT>
@@ -943,7 +943,7 @@
     <DESC>SNL clust</DESC>
     <NODENAME_REGEX>ghost-login</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <PROXY>wwwproxy.sandia.gov:80</PROXY>
+    <PROXY>proxy.sandia.gov:80</PROXY>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <PROJECT>fy190158</PROJECT>

@@ -46,13 +46,15 @@ contains
     !
     ! !USES:
     use shr_const_mod        , only : SHR_CONST_RGAS
+    use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varpar           , only : nlevgrnd
     use elm_varcon           , only : cpair, vkc, grav, denice, denh2o
-    use elm_varctl           , only : use_lch4
+    use elm_varctl           , only : iulog, use_lch4
     use landunit_varcon      , only : istsoil, istcrop
-    use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni
+    use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni, implicit_stress
     use QSatMod              , only : QSat
     use SurfaceResistanceMod , only : do_soilevap_beta
+    use clm_time_manager     , only : get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -69,12 +71,19 @@ contains
     type(waterstate_type)  , intent(inout) :: waterstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer, parameter  :: niters = 3            ! maximum number of iterations for surface temperature
+    real(r8), parameter :: dtaumin = 0.01_r8     ! max limit for stress convergence [Pa]
+    integer, parameter  :: itmin = 3             ! minimum number of iterations
+    integer, parameter  :: itmax = 30            ! maximum number of iterations
     integer  :: p,c,t,g,f,j,l                    ! indices
     integer  :: filterp(bounds%endp-bounds%begp+1) ! patch filter for vegetated patches
     integer  :: fn                               ! number of values in local pft filter
+    integer  :: filterp0(bounds%endp-bounds%begp+1) ! pre-iteration filterp
+    integer  :: fn0                              ! pre-iteration fn
+    integer  :: fnold                            ! previous iteration fn
     integer  :: fp                               ! lake filter pft index
     integer  :: iter                             ! iteration index
+    integer  :: iter_final                       ! number of iterations used
+    integer  :: loopmax                          ! maximum number of iterations for this configuration
     real(r8) :: zldis(bounds%begp:bounds%endp)   ! reference height "minus" zero displacement height [m]
     real(r8) :: displa(bounds%begp:bounds%endp)  ! displacement height [m]
     real(r8) :: zeta                             ! dimensionless height used in Monin-Obukhov theory
@@ -109,6 +118,12 @@ contains
     real(r8) :: qsat_ref2m             ! 2 m height surface saturated specific humidity [kg/kg]
     real(r8) :: dqsat2mdT              ! derivative of 2 m height surface saturated specific humidity on t_ref2m
     real(r8) :: www                    ! surface soil wetness [-]
+    real(r8) :: wind_speed0(bounds%begp:bounds%endp) ! Wind speed from atmosphere at start of iteration
+    real(r8) :: wind_speed_adj(bounds%begp:bounds%endp) ! Adjusted wind speed for iteration
+    real(r8) :: tau(bounds%begp:bounds%endp)      ! Stress used in iteration
+    real(r8) :: tau_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tau
+    real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
+    real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     !------------------------------------------------------------------------------
 
     associate(                                                          &
@@ -117,6 +132,9 @@ contains
          zii              =>    col_pp%zii                            , & ! Input:  [real(r8) (:)   ]  convective boundary height [m]
          forc_u           =>    top_as%ubot                           , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)
          forc_v           =>    top_as%vbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)
+         wsresp           =>    top_as%wsresp                         , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
+         tau_est          =>    top_as%tau_est                        , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
+         ugust            =>    top_as%ugust                          , & ! Input:  [real(r8) (:)   ]  gustiness from atmosphere (m/s)
          forc_th          =>    top_as%thbot                          , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (Kelvin)
          forc_pbot        =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
          forc_rho         =>    top_as%rhobot                         , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)
@@ -212,7 +230,18 @@ contains
          dlrad(p)  = 0._r8
          ulrad(p)  = 0._r8
 
-         ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         ! Initialize winds for iteration.
+         if (implicit_stress) then
+            wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+            wind_speed_adj(p) = wind_speed0(p)
+            ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
+
+            prev_tau(p) = tau_est(t)
+         else
+            ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
+         end if
+         tau_diff(p) = 1.e100_r8
+
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t) - qg(c)
          dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
@@ -234,7 +263,16 @@ contains
       ! Determine friction velocity, and potential temperature and humidity
       ! profiles of the surface boundary layer
 
-      do iter = 1, niters
+      fn0 = fn
+      filterp0(1:fn) = filterp(1:fn)
+
+      if (implicit_stress) then
+         loopmax = itmax
+      else
+         loopmax = itmin
+      end if
+
+      ITERATION: do iter = 1, loopmax
 
          call FrictionVelocity(begp, endp, fn, filterp, &
               displa(begp:endp), z0mg_patch(begp:endp), z0hg_patch(begp:endp), z0qg_patch(begp:endp), &
@@ -247,6 +285,16 @@ contains
             c = veg_pp%column(p)
             t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
+
+            ! Calculate magnitude of stress and update wind speed.
+            if (implicit_stress) then
+               ram = 1._r8/(ustar(p)*ustar(p)/um(p))
+               tau(p) = forc_rho(t)*wind_speed_adj(p)/ram
+               call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
+                    tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
+                    wind_speed_adj(p))
+               ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
+            end if
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
@@ -266,7 +314,27 @@ contains
             obu(p) = zldis(p)/zeta
          end do
 
-      end do ! end stability iteration
+         ! Test for convergence
+         iter_final = iter
+         if (iter >= itmin) then
+            fnold = fn
+            fn = 0
+            do f = 1, fnold
+               p = filterp(f)
+               if (.not. (abs(tau_diff(p)) < dtaumin)) then
+                  fn = fn + 1
+                  filterp(fn) = p
+               end if
+            end do
+            if (fn == 0) then
+               exit ITERATION
+            end if
+         end if
+
+      end do ITERATION ! end stability iteration
+
+      fn = fn0
+      filterp(1:fn) = filterp0(1:fn)
 
       do f = 1, fn
          p = filterp(f)
@@ -311,6 +379,10 @@ contains
          ! using ground temperatures from previous time step
          taux(p)          = -forc_rho(t)*forc_u(t)/ram
          tauy(p)          = -forc_rho(t)*forc_v(t)/ram
+         if (implicit_stress) then
+            taux(p)          = taux(p) * (wind_speed_adj(p) / wind_speed0(p))
+            tauy(p)          = tauy(p) * (wind_speed_adj(p) / wind_speed0(p))
+         end if
          eflx_sh_grnd(p)  = -raih*dth(p)
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
 
@@ -342,6 +414,16 @@ contains
          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             rh_ref2m_r(p) = rh_ref2m(p)
             t_ref2m_r(p) = t_ref2m(p)
+         end if
+
+         ! Check for convergence of stress.
+         if (implicit_stress .and. abs(tau_diff(p)) > dtaumin) then
+            if (get_nstep() > 0) then ! Suppress common warnings on the first time step.
+               write(iulog,*)'WARNING: Stress did not converge for bare ground ',&
+                    ' nstep = ',get_nstep(),' p= ',p,' prev_tau_diff= ',prev_tau_diff(p),&
+                    ' tau_diff= ',tau_diff(p),' tau= ',tau(p),&
+                    ' wind_speed_adj= ',wind_speed_adj(p),' iter_final= ',iter_final
+            end if
          end if
 
       end do

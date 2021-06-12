@@ -81,6 +81,9 @@ _TESTS = {
             "ERP_Ln7.ne30_ne30.FC5AV1C-L",
             "SMS_Ly1.ne4_ne4.FC5AV1C-L",
 	    "SMS_D_Ln5.ne45pg2_ne45pg2.F-EAM-AQP1",
+            "SMS_Ln5.ne4_ne4.FC5AV1C-L.eam-gust_export",
+            "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.eam-implicit_stress",
+            "ERS_Ld5.ne30_ne30.FC5AV1C-L.eam-implicit_stress",
             )
         },
 
@@ -103,7 +106,7 @@ _TESTS = {
         "tests" : (
             "PGN_P1x1.ne4_ne4.FC5AV1C-L",
             "TSC.ne4_ne4.FC5AV1C-L",
-            "MVK_PL.ne4_ne4.FC5AV1C-L",
+            "MVK_PS.ne4_ne4.FC5AV1C-L",
             )
         },
 
@@ -130,7 +133,7 @@ _TESTS = {
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
             "SMS_B.ne4_ne4.F-EAM-AQP1.eam-hommexx",
             )
         },
@@ -163,6 +166,8 @@ _TESTS = {
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFOMP",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
             )
@@ -203,8 +208,8 @@ _TESTS = {
             "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF1",
             "SMS_Ln3_P96x1.ne4pg2_ne4pg2.F-MMFXX-AQP1",
             "SMS_Ln3_P96x1.ne4pg2_ne4pg2.F-MMFXX-RCEMIP",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-crmout",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_crmout",
             "SMS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2-ECPP",
             # non-MMF tests with RRTMGP
             "ERP_Ln9.ne4pg2_ne4pg2.FC5AV1C-L.eam-rrtmgp",
