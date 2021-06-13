@@ -262,11 +262,14 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !  Eulerian forecast for u,v,t, and q
 !
 !  If three-dimensional forcing is not provided in the IOP-forcing file
+!    and we are running with multiple columns (i.e. doubly periodic CRM)
 !    then we need to add the effects of large-scale vertical advection for
 !    t, u, v, and q.  Use the prescribed large-scale vertical velocity and 
-!    an Eulerian calculation for this.
+!    an Eulerian calculation for this.  If we are in pure SCM mode then the
+!    dynamical core calculates the LS vertical advection thus this section
+!    can be skipped if single_column = .true. AND dp_crm = .false.
 
-   if (iop_mode) then 
+   if (dp_crm .and. iop_dosubsidence) then
 
      do k=2,plev-1
        fac = ztodt/(2.0_r8*pdelm1(k))
@@ -554,7 +557,7 @@ end if
    
    if(.not.l_uvadvect) then
 
-      if (use_iop .and. have_v .and. have_u .and. .not. iop_mode) then
+      if (use_iop .and. have_v .and. have_u .and. .not. dp_crm) then
          do k=1,plev
             ufcst(k) = uobs(k)
             vfcst(k) = vobs(k)
@@ -566,21 +569,6 @@ end if
             ufcst(k) = u3m2(k)
             vfcst(k) = v3m2(k)
          enddo
- 
-         ! Relax winds for IOP mode
-         if (iop_mode) then
- 
-           do k=1,plev
-             rtau(k) = 10800._r8
-             rtau(k) = max(ztodt,rtau(k))
-             relaxu(k) = -(ufcst(k) - uobs(k))/rtau(k)
-             relaxv(k) = -(vfcst(k) - vobs(k))/rtau(k)
-   
-             ufcst(k) = ufcst(k) + relaxu(k)*ztodt
-             vfcst(k) = vfcst(k) + relaxv(k)*ztodt
-           enddo
-   
-         endif
 
       endif      ! from  if (use_iop .and. have_v .and. have_u) 
       
@@ -600,7 +588,7 @@ end if
    u3(:)=ufcst(:)
    v3(:)=vfcst(:)
 
-   if (scm_relaxation) then
+   if (iop_nudge_tq .and. .not. dp_crm) then
 !
 !    THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED
 !    The relaxation can be thought of as a part of the "adjustment" physics
@@ -613,6 +601,9 @@ end if
 !    to the code we move the outfld calls for the relaxed variables
 !    (in this case T and q) from linemsbc into this routine after the
 !    relaxation terms have been applied.
+
+!    Note that doubly periodic CRM mode has it's own nudging routine, thus
+!      is not used here.
 !
       do k=1,plev
          relaxt(k) = 0.0_r8
@@ -620,11 +611,13 @@ end if
       end do
 !
       do k=1,plev
-           
-        if (pmidm1(k) .le. scm_relaxation_low*100._r8 .and. &
-          pmidm1(k) .ge. scm_relaxation_high*100._r8) then
 
-          rtau(k)   = 10800._r8          ! 3-hr adj. time scale
+        ! pmidm1 variable is in unitis of [Pa], while iop_nudge_tq_low/high
+        !   is in units of [hPa], thus convert iop_nudge_tq_low/high
+        if (pmidm1(k) .le. iop_nudge_tq_low*100._r8 .and. &
+          pmidm1(k) .ge. iop_nudge_tq_high*100._r8) then
+
+          rtau(k)   = iop_nudge_tscale          ! 3-hr adj. time scale
           rtau(k)   = max(ztodt,rtau(k))
           relaxt(k) = -(t3(k)   - tobs(k))/rtau(k)
           relaxq(k) = -(q3(k,1) - qobs(k))/rtau(k)

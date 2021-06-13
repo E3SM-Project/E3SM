@@ -7,7 +7,8 @@ use element_mod, only: element_t
 use scamMod
 use constituents, only: cnst_get_ind
 use dimensions_mod, only: nelemd, np
-use time_manager, only: get_nstep, dtime, is_first_step
+use time_manager, only: get_nstep, dtime, is_first_step, &
+  is_first_restart_step, is_last_step
 use ppgrid, only: begchunk
 use pmgrid, only: plev, plon
 use parallel_mod,            only: par
@@ -16,6 +17,7 @@ use element_ops, only: get_R_star
 use eos, only: pnh_and_exner_from_eos
 #endif
 use element_ops, only: get_temperature
+use spmd_utils, only: masterproc
 
 implicit none
 
@@ -29,6 +31,8 @@ contains
 !=========================================================================
 
 subroutine scm_setinitial(elem)
+
+  use kinds, only : real_kind
 
   implicit none
 
@@ -94,16 +98,29 @@ subroutine scm_setinitial(elem)
               if (have_cldliq) elem(ie)%state%Q(i,j,k,icldliq) = cldliqobs(k)
               if (have_numice) elem(ie)%state%Q(i,j,k,inumice) = numiceobs(k)
               if (have_cldice) elem(ie)%state%Q(i,j,k,icldice) = cldiceobs(k)
-              !  If IOP mode we do NOT want to write over the dy-core vertical 
+              !  If DP-CRM mode we do NOT want to write over the dy-core vertical
               !    velocity with the large-scale one.  wfld is used in forecast.F90
               !    for the compuation of the large-scale subsidence.
-              if (have_omega .and. .not. iop_mode) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
+              if (have_omega .and. .not. dp_crm) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
+              if (dp_crm) elem(ie)%derived%omega_p(i,j,k) = 0.0_real_kind
             enddo
 
           endif
 
         enddo
       enddo
+    enddo
+  endif
+
+  ! If DP-CRM mode then SHOC/CLUBB needs to know about grid
+  !   length size.  The calculations of this based on a sphere in the
+  !   SHOC and CLUBB interefaces are not valid for a planar grid, thus
+  !   save the grid length from the dycore. Note that planar dycore
+  !   only supports uniform grids, thus we only save one value.
+  ! Set this if it is the first time step or the first restart step
+  if ((get_nstep() .eq. 0 .or. is_first_restart_step()) .and. dp_crm .and. par%dynproc) then
+    do ie=1,nelemd
+        dyn_dx_size = elem(ie)%dx_short * 1000.0_real_kind
     enddo
   endif
 
@@ -163,23 +180,24 @@ subroutine scm_setfield(elem,iop_update_phase1)
     if (have_ps .and. use_replay .and. .not. iop_update_phase1) elem(ie)%state%ps_v(:,:,:) = psobs
     if (have_ps .and. .not. use_replay) elem(ie)%state%ps_v(:,:,:) = psobs
     do i=1, PLEV
-      ! If IOP mode do NOT write over dycore vertical velocity
-      if ((have_omega .and. iop_update_phase1) .and. .not. iop_mode) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
+      ! If DP CRM mode do NOT write over dycore vertical velocity
+      if ((have_omega .and. iop_update_phase1) .and. .not. dp_crm) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
     end do
   end do
 
 end subroutine scm_setfield
 
-subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
+subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
 ! 
-    use scamMod, only: single_column, use_3dfrc
+    use scamMod
     use kinds, only : real_kind
-    use dimensions_mod, only : np, np, nlev, npsq
-    use control_mod, only : use_cpstar, qsplit
+    use dimensions_mod, only : np, np, nlev, npsq, nelem
+    use control_mod, only : use_cpstar, qsplit, qsplit
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
     use physical_constants, only : Cp, Rgas, cpwater_vapor
     use time_mod
+    use hybrid_mod, only : hybrid_t
     use constituents, only: pcnst
     use time_manager, only: get_nstep
     use cam_history, only: outfld
@@ -189,16 +207,18 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(in)       :: tl
+    type(hybrid_t),             intent(in) :: hybrid    
     logical :: t_before_advance, do_column_scm
     real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
 
-    integer :: ie,k,i,j,t,nm_f
+    integer :: ie,k,i,j,t,m,nm_f,tlQdp
     integer :: nelemd_todo, np_todo
     real (kind=real_kind), dimension(np,np,nlev)  :: dpt1,dpt2   ! delta pressure
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
     real (kind=real_kind), dimension(np,np,nlev)  :: p,T_v,phi, pnh
+    real (kind=real_kind), dimension(np,np,nlev)  :: dp3d
     real (kind=real_kind), dimension(np,np,nlev+1) :: dpnh_dp_i
     real (kind=real_kind), dimension(np,np,nlev)  :: dp, exner, vtheta_dp, Rstar
     real (kind=real_kind), dimension(np,np,nlev) :: dpscm
@@ -224,11 +244,13 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        t2=tl%np1
     endif
     
+    call TimeLevel_Qdp(tl,qsplit,tlQdp)
+
     ! Settings for traditional SCM run
     nelemd_todo = 1
     np_todo = 1
     
-    if (iop_mode) then
+    if (scm_multcols) then
       nelemd_todo = nelemd
       np_todo = np
     endif
@@ -241,6 +263,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
       do k=1,nlev
         p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t1)
+        dpscm(:,:,k) = elem(ie)%state%dp3d(:,:,k,t1)
       end do
 
       dt=dtime
@@ -260,11 +283,12 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
       do j=1,np_todo
         do i=1,np_todo
 
-          stateQin_qfcst(:,:) = elem(ie)%state%Q(i,j,:,:)
-          stateQin1(:,:) = stateQin_qfcst(:,:)
-          stateQin2(:,:) = stateQin_qfcst(:,:)        
+          stateQin_qfcst(:nlev,:pcnst) = elem(ie)%state%Q(i,j,:nlev,:pcnst)
+          stateQin1(:nlev,:pcnst) = stateQin_qfcst(:nlev,:pcnst)
+          stateQin2(:nlev,:pcnst) = stateQin_qfcst(:nlev,:pcnst)
+          forecast_q(:nlev,:pcnst) = stateQin_qfcst(:nlev,:pcnst)
 
-          if (.not. use_3dfrc) then
+          if (.not. use_3dfrc .or. dp_crm) then
             temp_tend(:) = 0.0_real_kind
           else
             temp_tend(:) = elem(ie)%derived%fT(i,j,:)
@@ -277,7 +301,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           !  initial condition temperature profile.  Do NOT use
           !  as it will cause temperature profile to blow up.
           if ( is_first_step() ) then
-            temp_tend(:) = 0.0
+            temp_tend(:) = 0.0_real_kind
           endif
 #endif          
 
@@ -291,7 +315,16 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
             stateQin_qfcst,p(i,j,:),stateQin1,1,&
             tdiff_dyn,qdiff_dyn)         
 
-          elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
+            ! Update the q related arrays.  NOTE that Qdp array must
+            !  be updated first to ensure exact restarts
+            do m=1,pcnst
+              ! Update the Qdp array
+              elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp) = &
+                forecast_q(:nlev,m) * dpscm(i,j,:nlev)
+              ! Update the Q array
+              elem(ie)%state%Q(i,j,:nlev,m) = &
+                elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp)/dpscm(i,j,:nlev)
+            enddo
 
 #ifdef MODEL_THETA_L
           ! If running theta-l model then the forecast temperature needs
@@ -305,14 +338,14 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 #endif
           elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
           elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
-  
+
           tdiff_out(i+(j-1)*np,:)=tdiff_dyn(:)
           qdiff_out(i+(j-1)*np,:)=qdiff_dyn(:)
   
         enddo
       enddo
       
-      if (iop_mode) then
+      if (scm_multcols) then
         call outfld('TDIFF',tdiff_out,npsq,ie)
         call outfld('QDIFF',qdiff_out,npsq,ie)
       else
@@ -322,6 +355,149 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     
     enddo
 
-    end subroutine apply_SC_forcing
+    if ((iop_nudge_tq .or. iop_nudge_uv) .and. dp_crm) then
+      ! If running in a doubly periodic CRM mode, then nudge the domain
+      !   based on the domain mean and observed quantities of T, Q, u, and v
+      call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
+                                 nelemd_todo,np_todo,dt)
+    endif
+
+end subroutine apply_SC_forcing
+
+
+subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,exner,Rstar,&
+                                 nelemd_todo,np_todo,dt)
+
+  ! Subroutine intended to nudge a uniformly forced grid with heterogenous
+  !   surface (i.e. doubly-periodic SCREAM).
+
+  use scamMod
+  use dimensions_mod, only : np, np, nlev, npsq, nelem
+  use parallel_mod, only: global_shared_buf, global_shared_sum
+  use global_norms_mod, only: wrap_repro_sum
+  use hybvcoord_mod, only : hvcoord_t
+  use hybrid_mod, only : hybrid_t
+  use element_mod, only : element_t
+  use time_mod
+  use physical_constants, only : Cp, Rgas
+
+  ! Input/Output variables
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (hvcoord_t)                  :: hvcoord
+  type(hybrid_t),             intent(in) :: hybrid
+  integer, intent(in) :: nelemd_todo, np_todo, t1
+  real (kind=real_kind), intent(in):: dt
+  real (kind=real_kind), intent(in):: dp(np,np,nlev), exner(np,np,nlev)
+
+  ! Local variables
+  real (kind=real_kind), dimension(nlev) :: domain_q, domain_t, domain_u, domain_v, rtau
+  real (kind=real_kind), dimension(nlev) :: relax_t, relax_q, relax_u, relax_v, iop_pres
+  real (kind=real_kind) :: temperature(np,np,nlev), Rstar(np,np,nlev)
+  integer :: ie, i, j, k
+
+  ! Compute pressure for IOP observations
+  do k=1,nlev
+    iop_pres(k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*psobs
+  end do
+
+  ! Compute the domain means for temperature, moisture, u, and v
+  do k=1,nlev
+    do ie=1,nelemd_todo
+      ! Get absolute temperature
+      call get_temperature(elem(ie),temperature,hvcoord,t1)
+
+      ! Initialize the global buffer
+      global_shared_buf(ie,1) = 0.0_real_kind
+      global_shared_buf(ie,2) = 0.0_real_kind
+      global_shared_buf(ie,3) = 0.0_real_kind
+      global_shared_buf(ie,4) = 0.0_real_kind
+
+      ! Sum each variable for each level
+      global_shared_buf(ie,1) = global_shared_buf(ie,1) + SUM(elem(ie)%state%Q(:,:,k,1))
+      global_shared_buf(ie,2) = global_shared_buf(ie,2) + SUM(temperature(:,:,k))
+      global_shared_buf(ie,3) = global_shared_buf(ie,3) + SUM(elem(ie)%state%v(:,:,1,k,t1))
+      global_shared_buf(ie,4) = global_shared_buf(ie,4) + SUM(elem(ie)%state%v(:,:,2,k,t1))
+    enddo
+
+    ! Compute the domain mean
+    call wrap_repro_sum(nvars=4, comm=hybrid%par%comm)
+    domain_q(k) = global_shared_sum(1)/(dble(nelem)*dble(np)*dble(np))
+    domain_t(k) = global_shared_sum(2)/(dble(nelem)*dble(np)*dble(np))
+    domain_u(k) = global_shared_sum(3)/(dble(nelem)*dble(np)*dble(np))
+    domain_v(k) = global_shared_sum(4)/(dble(nelem)*dble(np)*dble(np))
+  enddo
+
+  ! Initialize relaxation arrays
+  do k=1,nlev
+    relax_q(k) = 0._real_kind
+    relax_t(k) = 0._real_kind
+    relax_u(k) = 0._real_kind
+    relax_v(k) = 0._real_kind
+  enddo
+
+  ! Compute the relaxation for each level.  This is the relaxation based
+  !   on the domain mean and observed quantity from IOP file.
+  do k=1,nlev
+
+    ! Define nudging timescale
+    rtau(k) = iop_nudge_tscale
+    rtau(k) = max(dt,rtau(k))
+
+    ! Compute relaxation for winds
+    relax_u(k) = -(domain_u(k) - uobs(k))/rtau(k)
+    relax_v(k) = -(domain_v(k) - vobs(k))/rtau(k)
+
+    ! Restrict nudging of T and Q to certain levels if requested by user
+    ! pmidm1 variable is in unitis of [Pa], while iop_nudge_tq_low/high
+    !   is in units of [hPa], thus convert iop_nudge_tq_low/high
+    if (iop_pres(k) .le. iop_nudge_tq_low*100._real_kind .and. &
+      iop_pres(k) .ge. iop_nudge_tq_high*100._real_kind) then
+
+      ! compute relaxation for each variable
+      !  units are [unit/s] (i.e. K/s for temperature)
+      relax_q(k) = -(domain_q(k) - qobs(k))/rtau(k)
+      relax_t(k) = -(domain_t(k) - tobs(k))/rtau(k)
+    endif
+
+  enddo
+
+  ! Now apply the nudging tendency for each variable
+  do ie=1,nelemd_todo
+#ifdef MODEL_THETA_L
+    ! Get updated Rstar to convert to density weighted potential temperature
+    call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
+#endif
+    do j=1,np_todo
+      do i=1,np_todo
+        do k=1,nlev
+
+          if (iop_nudge_tq) then
+            ! Apply vapor relaxation
+            elem(ie)%state%Q(i,j,k,1) = elem(ie)%state%Q(i,j,k,1) + relax_q(k) * dt
+
+            ! Apply temperature relaxation
+            temperature(i,j,k) = temperature(i,j,k) + relax_t(k) * dt
+
+            ! Update temperature appropriately based on dycore used
+#ifdef MODEL_THETA_L
+            elem(ie)%state%vtheta_dp(i,j,k,t1) = (temperature(i,j,k)*Rstar(i,j,k)*dp(i,j,k))/&
+              (Rgas*exner(i,j,k))
+#else
+            elem(ie)%state%T(i,j,k,t1) = temperature(i,j,k)
+#endif
+          endif
+
+          if (iop_nudge_uv) then
+            ! Apply u and v relaxation
+            elem(ie)%state%v(i,j,1,k,t1) = elem(ie)%state%v(i,j,1,k,t1) + relax_u(k) * dt
+            elem(ie)%state%v(i,j,2,k,t1) = elem(ie)%state%v(i,j,2,k,t1) + relax_v(k) * dt
+          endif
+
+        enddo
+      enddo
+    enddo
+  enddo
+
+end subroutine iop_domain_relaxation
 
 end module se_single_column_mod

@@ -943,7 +943,7 @@
 !
 !     use ice_boundary
       use ice_domain_size
-      use ice_scam, only : scmlat, scmlon, single_column, iop_mode
+      use ice_scam, only : scmlat, scmlon, single_column, scm_multcols
       use netcdf
 !
 ! !INPUT/OUTPUT PARAMETERS:
@@ -1038,7 +1038,7 @@
         if (my_task == master_task) then
          ! Check for consistency
          if (my_task == master_task) then
-            if (((nx_global /= 1).or. (ny_global /= 1)) .and. (.not. iop_mode)) then
+            if (((nx_global /= 1).or. (ny_global /= 1)) .and. (.not. scm_multcols)) then
                write(nu_diag,*) 'Because you have selected the column model flag'
                write(nu_diag,*) 'Please set nx_global=ny_global=1 in file'
                write(nu_diag,*) 'ice_domain_size.F and recompile'
@@ -1154,15 +1154,15 @@
       
       if (single_column) then
         call scatter_global(TLON,scm_var1,master_task,distrb_info, &
-          field_loc_noupdate,field_type_noupdate)
+          field_loc_center, field_type_scalar)
         call scatter_global(TLAT,scm_var2,master_task,distrb_info, &
-          field_loc_noupdate,field_type_noupdate)
+          field_loc_center, field_type_scalar)
         call scatter_global(tarea,scm_var3,master_task,distrb_info, &
           field_loc_center,field_type_scalar)  
         call scatter_global(hm,scm_var4,master_task,distrb_info, &
-          field_loc_noupdate,field_type_noupdate)
+          field_loc_center, field_type_scalar)
         call scatter_global(ocn_gridcell_frac,scm_var5,master_task,distrb_info, &
-          field_loc_noupdate,field_type_noupdate)
+          field_loc_center, field_type_scalar)
   
         deallocate(scm_var1)
         deallocate(scm_var2)

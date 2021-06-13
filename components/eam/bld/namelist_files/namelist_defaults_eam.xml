@@ -1193,8 +1193,8 @@
 <!-- iop dataset for SCAM mode -->
 <iopfile dyn="eul">atm/cam/scam/iop/ARM95_4scam.nc</iopfile>
 
-<!-- IOP mode -->
-<omega iop_mode="1">0.D0</omega> 
+<!-- Doubly periodic CRM mode -->
+<omega dpcrm_mode="1">0.D0</omega>
 
 <!-- physics loadbalance -->
 <phys_loadbalance dyn="se"> 2 </phys_loadbalance>
@@ -1247,6 +1247,13 @@
 
 <se_partmethod> 4 </se_partmethod>
 <se_topology> "cube" </se_topology>
+<se_topology dpcrm_mode="1"> "plane" </se_topology>
+<se_geometry> "sphere" </se_geometry>
+<se_geometry dpcrm_mode="1"> "plane" </se_geometry>
+<se_ne_x> -1 </se_ne_x>
+<se_ne_y> -1 </se_ne_y>
+<se_lx> 0.0 </se_lx>
+<se_ly> 0.0 </se_ly>
 <statefreq> 480 </statefreq>
 <integration> "explicit" </integration>
 

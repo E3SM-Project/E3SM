@@ -87,7 +87,9 @@
       <value compset="GEOS_EAM"      >-nlev 56</value>
       <value compset="_EAM.*_BGC%B"   >-co2_cycle</value>
       <value compset="EAM%SCAM"   >-scam</value>
-      <value compset="AR97_EAM"   >-phys default -scam -nlev 72 -clubb_sgs -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
+
+      <value compset="AR97_EAM%SCAM" >-phys default -scam -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
+      
       <value compset="_EAM.%L60"      >-nlev 60</value>
       <value compset="_ELM%[^_]*BC"     >-bc_dep_to_snow_updates</value>
 
@@ -98,6 +100,9 @@
       <!-- SCREAM configurations -->
       <value compset="_EAM%SCREAM-LR">-phys default -shoc_sgs -microphys p3 -chem none -nlev 72 -rad rrtmgp -bc_dep_to_snow_updates</value>
       <value compset="_EAM%SCREAM-HR">-phys default -shoc_sgs -microphys p3 -chem none -nlev 128 -rad rrtmgp -bc_dep_to_snow_updates</value>
+
+      <!-- Doubly Periodic SCREAM -->
+      <value compset="AR97_EAM%DPSCREAM">-phys default -scam -dpcrm_mode -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem none</value>
 
       <!-- Aquaplanet -->
       <value compset="_EAM%AQUA"   >-nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
@@ -163,6 +168,7 @@
       <value compset="2010_EAM.*SCREAM-HR" >2010_scream_hr</value>
       <value compset="2000_EAM.*SCREAM-LR" >2000_scream_lr</value>
       <value compset="2000_EAM.*SCREAM-HR" >2000_scream_hr</value>
+      <value compset="AR97_EAM.*DPSCREAM"  >dpscream_arm97</value>
       <value compset="2010_EAM.*SCREAM-LR-DYAMOND2" >2010_scream_lr_dyamond2</value>
       <value compset="2010_EAM.*SCREAM-HR-DYAMOND2" >2010_scream_hr_dyamond2</value>  
       <!-- Aqua planet -->

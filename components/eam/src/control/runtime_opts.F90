@@ -163,26 +163,32 @@ logical            :: print_energy_errors ! switch for diagnostic output from ch
 ! SCM Options
 logical  :: single_column
 real(r8) :: scmlat,scmlon
-real(r8) :: scm_relaxation_low
-real(r8) :: scm_relaxation_high
+real(r8) :: iop_nudge_tq_low
+real(r8) :: iop_nudge_tq_high
+real(r8) :: iop_nudge_tscale
+real(r8) :: iop_perturb_high
 integer, parameter :: max_chars = 128
 character(len=max_chars) iopfile
 character(len=200) :: scm_clubb_iop_name
 logical  :: scm_iop_srf_prop
-logical  :: scm_relaxation
+logical  :: iop_dosubsidence
+logical  :: iop_nudge_tq
+logical  :: iop_nudge_uv
 logical  :: scm_diurnal_avg
 logical  :: scm_crm_mode
 logical  :: scm_observed_aero
 logical  :: swrad_off
 logical  :: lwrad_off
 logical  :: precip_off
-logical  :: iop_mode
+logical  :: scm_multcols
+logical  :: dp_crm
 
 contains
 
 !=======================================================================
 
-  subroutine read_namelist(single_column_in, scmlon_in, scmlat_in, iop_mode_in, nlfilename_in )
+  subroutine read_namelist(single_column_in, scmlon_in, scmlat_in, scm_multcols_in,&
+                           nlfilename_in )
 
    !----------------------------------------------------------------------- 
    ! 
@@ -278,7 +284,7 @@ contains
 !---------------------------Arguments-----------------------------------
 
    logical , intent(in), optional :: single_column_in 
-   logical , intent(in), optional :: iop_mode_in
+   logical , intent(in), optional :: scm_multcols_in
    real(r8), intent(in), optional :: scmlon_in
    real(r8), intent(in), optional :: scmlat_in
    character(len=*)    , optional :: nlfilename_in
@@ -327,10 +333,12 @@ contains
    namelist /cam_inparm/ print_energy_errors
 
    ! scam
-   namelist /cam_inparm/ iopfile,scm_iop_srf_prop,scm_relaxation, &
-                         scm_relaxation_low, scm_relaxation_high, &
+   namelist /cam_inparm/ iopfile,scm_iop_srf_prop,iop_dosubsidence, &
+                         iop_nudge_tq, iop_nudge_uv, iop_nudge_tq_low, &
+                         iop_nudge_tq_high, iop_nudge_tscale, &
                          scm_diurnal_avg,scm_crm_mode,scm_clubb_iop_name, &
-                         scm_observed_aero,swrad_off,lwrad_off, precip_off
+                         scm_observed_aero,swrad_off,lwrad_off, precip_off, &
+                         iop_perturb_high, dp_crm
 
 !-----------------------------------------------------------------------
 
@@ -368,16 +376,21 @@ contains
       call scam_default_opts(scmlat_out=scmlat,scmlon_out=scmlon, &
         single_column_out=single_column, &
         scm_iop_srf_prop_out=scm_iop_srf_prop,&
-        scm_relaxation_out=scm_relaxation, &
-        scm_relaxation_low_out=scm_relaxation_low, &
-        scm_relaxation_high_out=scm_relaxation_high, &
+        iop_dosubsidence_out=iop_dosubsidence, &
+        iop_nudge_tq_out=iop_nudge_tq, &
+        iop_nudge_uv_out=iop_nudge_uv, &
+        iop_nudge_tq_low_out=iop_nudge_tq_low, &
+        iop_nudge_tq_high_out=iop_nudge_tq_high, &
+        iop_nudge_tscale_out=iop_nudge_tscale, &
+        iop_perturb_high_out=iop_perturb_high, &
         scm_diurnal_avg_out=scm_diurnal_avg, &
         scm_crm_mode_out=scm_crm_mode, &
         scm_observed_aero_out=scm_observed_aero, &
         swrad_off_out=swrad_off, &
         lwrad_off_out=lwrad_off, &
         precip_off_out=precip_off, &
-        iop_mode_out=iop_mode, &
+        scm_multcols_out=scm_multcols, &
+        dp_crm_out=dp_crm, &
         scm_clubb_iop_name_out=scm_clubb_iop_name)
    end if
 
@@ -445,20 +458,25 @@ contains
          single_column = single_column_in
          scmlon = scmlon_in
          scmlat = scmlat_in
-         iop_mode = iop_mode_in
+         scm_multcols = scm_multcols_in
          call scam_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
                             iopfile_in=iopfile,single_column_in=single_column,&
                             scm_iop_srf_prop_in=scm_iop_srf_prop,&
-                            scm_relaxation_in=scm_relaxation, &
-                            scm_relaxation_low_in=scm_relaxation_low, &
-                            scm_relaxation_high_in=scm_relaxation_high, &
+                            iop_dosubsidence_in=iop_dosubsidence,&
+                            iop_nudge_tq_in=iop_nudge_tq, &
+                            iop_nudge_uv_in=iop_nudge_uv, &
+                            iop_nudge_tq_low_in=iop_nudge_tq_low, &
+                            iop_nudge_tq_high_in=iop_nudge_tq_high, &
+                            iop_nudge_tscale_in=iop_nudge_tscale, &
+                            iop_perturb_high_in=iop_perturb_high, &
                             scm_diurnal_avg_in=scm_diurnal_avg, &
                             scm_crm_mode_in=scm_crm_mode, &
                             scm_observed_aero_in=scm_observed_aero, &
                             swrad_off_in=swrad_off, &
                             lwrad_off_in=lwrad_off, &
                             precip_off_in=precip_off, &
-                            iop_mode_in=iop_mode,&
+                            scm_multcols_in=scm_multcols,&
+                            dp_crm_in=dp_crm,&
                             scm_clubb_iop_name_in=scm_clubb_iop_name)
       end if
    endif

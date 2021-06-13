@@ -199,6 +199,11 @@
     <lname>2000_EAM%SCREAM-HR-DYAMOND1_ELM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>FDPSCREAMA97</alias>
+      <lname>AR97_EAM%DPSCREAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <!-- MMF aquaplanet compsets -->
   <compset>
     <alias>F-MMF1-AQP1</alias>
@@ -414,6 +419,36 @@
     <entry id="PTS_LON">
       <values>
         <value compset="AR9[57]_EAM">262.5</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_NX">
+      <values>
+        <value compset="EAM%DPSCREAM">225</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_NY">
+      <values>
+        <value compset="EAM%DPSCREAM">1</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_MULTCOLS_MODE">
+      <values>
+        <value compset="EAM%DPSCREAM">TRUE</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_MODE">
+      <values>
+        <value compset="EAM%DPSCREAM">TRUE</value>
+      </values>
+    </entry>
+
+    <entry id="ATM_NCPL">
+      <values>
+        <value compset="EAM%DPSCREAM">720</value>
       </values>
     </entry>
 

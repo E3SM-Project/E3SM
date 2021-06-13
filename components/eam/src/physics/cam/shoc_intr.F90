@@ -492,7 +492,7 @@ end function shoc_implements_cnst
     use trb_mtn_stress,            only: compute_tms
     use shoc,           only: shoc_main
     use cam_history,    only: outfld
-    use scamMod,        only: single_column, iop_mode  
+    use scamMod,        only: single_column, dp_crm
  
     implicit none
     
@@ -721,11 +721,11 @@ end function shoc_implements_cnst
 
    ! Set grid space, in meters. If SCM, set to a grid size representative
    !  of a typical GCM.  Otherwise, compute locally.    
-   if (single_column .and. .not. iop_mode) then
+   if (single_column .and. .not. dp_crm) then
      host_dx_in(:) = 100000._r8
      host_dy_in(:) = 100000._r8
-   else if (iop_mode) then
-     call grid_size_uniform(host_dx, host_dy)
+   else if (dp_crm) then
+     call grid_size_planar_uniform(host_dx, host_dy)
      host_dx_in(:) = host_dx
      host_dy_in(:) = host_dy
    else
@@ -1155,22 +1155,18 @@ end function shoc_implements_cnst
 
   end subroutine grid_size  
   
-  subroutine grid_size_uniform(grid_dx, grid_dy)
+  subroutine grid_size_planar_uniform(grid_dx, grid_dy)
   
-    ! Estimate grid box size at equator using
-    !  the earth radius set for this case.  This assumes
-    !  that all grid points are uniform, which is 
-    !  reasonable for IOP mode (not currently compatible with RRM) 
+    ! Get size of grid box if in doubly period planar mode
+    ! At time of implementation planar dycore only supports uniform grids.
   
-    use physical_constants, only: rearth, dd_pi
-    use dimensions_mod, only: np, ne
+    use scamMod,  only: dyn_dx_size
     
     real(r8), intent(out) :: grid_dx, grid_dy
-    
-    grid_dx = dd_pi*rearth/(2000.d0*dble(ne*(np-1)))
-    grid_dx = grid_dx*1000._r8
+
+    grid_dx = dyn_dx_size
     grid_dy = grid_dx
   
-  end subroutine grid_size_uniform    
+  end subroutine grid_size_planar_uniform
 
 end module shoc_intr

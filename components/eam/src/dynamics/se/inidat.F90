@@ -20,7 +20,7 @@ module inidat
   use spmd_utils,   only: iam, masterproc
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
-  use scamMod, only: single_column, precip_off, scmlat, scmlon, iop_mode
+  use scamMod, only: single_column, precip_off, scmlat, scmlon, scm_multcols, dp_crm, iop_perturb_high
   implicit none
   private
   public read_inidat
@@ -67,7 +67,7 @@ contains
     real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
     type(element_t), pointer :: elem(:)
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
-    real(r8), allocatable :: tmp_iop(:,:)  ! (npsp,nlev)
+    real(r8), allocatable :: tmp_point(:,:)! (npsp,nlev)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     real(r8) :: ps(np,np)     
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
@@ -79,6 +79,7 @@ contains
     logical :: found
     integer :: kptr, m_cnst
     integer :: lsize
+    real(r8) :: p_ref(nlev)
 
     integer,parameter :: pcnst = PCNST
     integer(iMap), pointer :: ldof(:) => NULL() ! Basic (2D) grid dof
@@ -116,9 +117,9 @@ contains
       call endrun(trim(subname)//': mismatch in local input array size')
     end if
     allocate(tmp(npsq,nlev,nelemd))
-    allocate(tmp_iop(npsq,nlev))
+    allocate(tmp_point(1,nlev)) ! To find input at a single location
     tmp = 0.0_r8
-    tmp_iop = 0.0_r8
+    tmp_point = 0.0_r8
     allocate(qtmp(npsq*nelemd,nlev))
 
     if (fv_nphys>0) then
@@ -134,7 +135,7 @@ contains
     end if
 
 !   Determine column closest to SCM point
-    if (single_column .and. par%dynproc) then
+    if (single_column .and. .not. scm_multcols .and. par%dynproc) then
       if (scmlon .lt. 0._r8) then
         scmposlon=scmlon+360._r8
       else
@@ -164,12 +165,16 @@ contains
           enddo
         enddo
       enddo
-      
+
       if (ie_scm == 0 .or. i_scm == 0 .or. j_scm == 0 .or. indx_scm == 0) then
         call endrun('Could not find closest SCM point on input datafile')
       endif
 
     endif ! single_column
+
+    if (scm_multcols) then
+      indx_scm = 1
+    endif
 
     grid_name = 'GLL'
     if (fv_nphys > 0) then
@@ -181,14 +186,17 @@ contains
     fieldname = 'U'
     tmp = 0.0_r8
     
-    if (.not. iop_mode) then    
+    if (.not. scm_multcols) then
+      ! Standard Call
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
-      tmp_iop = 0.0_r8 
-      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-           1, nlev, tmp_iop, found, gridname='GLL')
-    endif  
+      ! Else find input just for the location of interest
+      ! This logic follows for the rest of the input fields
+      tmp_point = 0.0_r8
+      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, 1,          &
+           1, nlev, tmp_point, found, gridname='GLL')
+    endif
       
     if(.not. found) then
        call endrun('Could not find U field on input datafile')
@@ -200,8 +208,10 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
-             if (iop_mode) elem(ie)%state%v(i,j,1,:,tl)=tmp_iop(indx_scm,:)
+             ! If in SCM mode, put data of our column of interest
+             ! in all dynamics columncs
+             if (single_column .and. .not. scm_multcols) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
+             if (scm_multcols) elem(ie)%state%v(i,j,1,:,tl)=tmp_point(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -210,14 +220,14 @@ contains
     fieldname = 'V'
     tmp = 0.0_r8
 
-    if (.not. iop_mode) then
+    if (.not. scm_multcols) then
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
-      tmp_iop = 0.0_r8 
-      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-           1, nlev, tmp_iop, found, gridname='GLL')
-    endif     
+      tmp_point = 0.0_r8
+      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, 1,          &
+           1, nlev, tmp_point, found, gridname='GLL')
+    endif
 
     if(.not. found) then
        call endrun('Could not find V field on input datafile')
@@ -228,23 +238,23 @@ contains
        do j = 1, np
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
-             if (iop_mode) elem(ie)%state%v(i,j,2,:,tl)=tmp_iop(indx_scm,:)
+             if (single_column .and. .not. scm_multcols) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
+             if (scm_multcols) elem(ie)%state%v(i,j,2,:,tl)=tmp_point(indx_scm,:)
              indx = indx + 1
           end do
        end do
     end do
 
     fieldname = 'T'
-    tmp = 0.0_r8
+    tmp_point = 0.0_r8
 
-    if (.not. iop_mode) then 
+    if (.not. scm_multcols) then
       call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
-      tmp_iop = 0.0_r8 
-      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-           1, nlev, tmp_iop, found, gridname='GLL')
+      tmp_point = 0.0_r8
+      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, 1,          &
+           1, nlev, tmp_point, found, gridname='GLL')
     endif
 
     if(.not. found) then
@@ -263,67 +273,18 @@ contains
 #ifdef MODEL_THETA_L
              elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
 
-             if (iop_mode) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
-             if (single_column) elem(ie)%derived%FT(i,j,:) = tmp(indx_scm,:,ie_scm)
+             if (scm_multcols) elem(ie)%derived%FT(i,j,:) = tmp_point(indx_scm,:)
+             if (single_column .and. .not. scm_multcols) elem(ie)%derived%FT(i,j,:) = tmp(indx_scm,:,ie_scm)
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
 
-             if (single_column) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
-             if (iop_mode) elem(ie)%state%T(i,j,:,tl) = tmp_iop(indx_scm,:)
+             if (single_column .and. .not. scm_multcols) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
+             if (scm_multcols) elem(ie)%state%T(i,j,:,tl) = tmp_point(indx_scm,:)
 #endif
              indx = indx + 1
           end do
        end do
     end do
-
-    if (pertlim .ne. D0_0) then
-      if(masterproc) then
-        write(iulog,*) trim(subname), ': Adding random perturbation bounded', &
-                       'by +/- ', pertlim, ' to initial temperature field'
-      end if
-
-      if (new_random) then
-        rndm_seed_sz = 1
-      else
-        call random_seed(size=rndm_seed_sz)
-      endif
-      allocate(rndm_seed(rndm_seed_sz))
-
-      do ie=1,nelemd
-        ! seed random number generator based on element ID
-        ! (possibly include a flag to allow clock-based random seeding)
-        rndm_seed(:) = elem(ie)%GlobalId
-        if (seed_custom > 0) rndm_seed(:) = ieor( rndm_seed(1) , int(seed_custom,kind(rndm_seed(1))) )
-        if (seed_clock) then
-          call system_clock(sysclk)
-          rndm_seed(:) = ieor( sysclk , int(rndm_seed(1),kind(sysclk)) )
-        endif
-        if (new_random) then
-          call init_ranx(rndm_seed(1))
-        else
-          call random_seed(put=rndm_seed)
-        endif
-        do i=1,np
-          do j=1,np
-            do k=1,nlev
-              if (new_random) then
-                pertval = ranx()
-              else
-                call random_number(pertval)
-              endif
-              pertval = D2_0*pertlim*(D0_5 - pertval)
-#ifdef MODEL_THETA_L
-              elem(ie)%derived%FT(i,j,k) = elem(ie)%derived%FT(i,j,k)*(D1_0 + pertval)
-#else
-              elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
-#endif
-            end do
-          end do
-        end do
-      end do
-
-      deallocate(rndm_seed)
-    end if
 
     if (associated(ldof)) then
        call endrun(trim(subname)//': ldof should not be associated')
@@ -352,14 +313,14 @@ contains
     
           else
     
-            if (.not. iop_mode) then
+            if (.not. scm_multcols) then
               tmp = 0.0_r8
               call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
                    1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
             else
-              tmp_iop = 0.0_r8 
-              call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev', 1, npsq,          &
-                1, nlev, tmp_iop, found, gridname='GLL')
+              tmp_point = 0.0_r8
+              call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev', 1, 1,          &
+                1, nlev, tmp_point, found, gridname='GLL')
             endif
     
           endif
@@ -432,8 +393,8 @@ contains
           do j = 1, np
              do i = 1, np
                 elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx,:,ie)
-                if (single_column) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
-                if (iop_mode) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_iop(indx_scm,:) 
+                if (single_column .and. .not. scm_multcols) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
+                if (scm_multcols) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_point(indx_scm,:)
                 indx = indx + 1
              end do
           end do
@@ -447,8 +408,13 @@ contains
 
     fieldname = 'PS'
     tmp(:,1,:) = 0.0_r8
-    call infld(fieldname, ncid_ini, ncol_name,      &
-         1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+    if (.not. scm_multcols) then
+      call infld(fieldname, ncid_ini, ncol_name,      &
+           1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+    else
+      call infld(fieldname, ncid_ini, ncol_name,      &
+           1, 1, 1, 1, tmp(:,1,:), found, gridname=grid_name)
+    endif
     if(.not. found) then
        call endrun('Could not find PS field on input datafile')
     end if
@@ -457,9 +423,14 @@ contains
     allocate(tmpmask(npsq,nelemd))
     tmpmask = (reshape(ldof, (/npsq,nelemd/)) /= 0)
 
-    if(minval(tmp(:,1,:), mask=tmpmask) < 10000._r8) then
+    if(minval(tmp(:,1,:), mask=tmpmask) < 10000._r8 .and. .not. scm_multcols) then
        call endrun('Problem reading ps field')
     end if
+
+    if (scm_multcols .and. tmp(1,1,1) < 10000._r8) then
+      call endrun('Problem reading ps field')
+    endif
+
     deallocate(tmpmask)
 
     do ie=1,nelemd
@@ -468,7 +439,8 @@ contains
           do j = 1, np
              do i = 1, np
                 elem(ie)%state%ps_v(i,j,tl) = tmp(indx,1,ie)
-                if (single_column) elem(ie)%state%ps_v(i,j,tl) = tmp(indx_scm,1,ie_scm)
+                if (single_column .and. .not. scm_multcols) elem(ie)%state%ps_v(i,j,tl) = tmp(indx_scm,1,ie_scm)
+                if (scm_multcols) elem(ie)%state%ps_v(i,j,tl) = tmp(1,1,1)
                 indx = indx + 1
              end do
           end do
@@ -482,8 +454,13 @@ contains
       fieldname = 'PHIS'
       tmp(:,1,:) = 0.0_r8
       if (fv_nphys == 0) then
-         call infld(fieldname, ncid_topo, ncol_name,      &
+         if (.not. scm_multcols) then
+           call infld(fieldname, ncid_topo, ncol_name,      &
               1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+         else
+           call infld(fieldname, ncid_topo, ncol_name,      &
+              1, 1, 1, 1, tmp(:,1,:), found, gridname=grid_name)
+         endif
       else
          ! Attempt to read a mixed GLL-FV topo file, which contains PHIS_d in
          ! addition to PHIS.
@@ -518,7 +495,8 @@ contains
          do j = 1, np
             do i = 1, np
                elem(ie)%state%phis(i,j) = tmp(indx,1,ie)
-               if (single_column) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
+               if (single_column .and. .not. scm_multcols) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
+               if (scm_multcols) elem(ie)%state%phis(i,j) = tmp(1,1,1)
                indx = indx + 1
             end do
          end do
@@ -529,11 +507,75 @@ contains
       iop_update_surface = .false.
       if (masterproc) call setiopupdate()
       if (masterproc) call readiopdata(iop_update_surface,hyam,hybm)
-      if (iop_mode) call scm_broadcast()
+      if (scm_multcols) call scm_broadcast()
       call scm_setinitial(elem)
     endif
 
-    if (.not. single_column) then    
+    if (pertlim .ne. D0_0) then
+      if(masterproc) then
+        write(iulog,*) trim(subname), ': Adding random perturbation bounded', &
+                       'by +/- ', pertlim, ' to initial temperature field'
+      end if
+
+      if (dp_crm) then
+        ! Define reference pressure, to potentially restrict initial perturbations
+        !  to a certain height if requested
+        do k=1,nlev
+          p_ref(k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*hvcoord%ps0
+        enddo
+      endif
+
+      if (new_random) then
+        rndm_seed_sz = 1
+      else
+        call random_seed(size=rndm_seed_sz)
+      endif
+      allocate(rndm_seed(rndm_seed_sz))
+
+      do ie=1,nelemd
+        ! seed random number generator based on element ID
+        ! (possibly include a flag to allow clock-based random seeding)
+        rndm_seed(:) = elem(ie)%GlobalId
+        if (seed_custom > 0) rndm_seed(:) = ieor( rndm_seed(1) , int(seed_custom,kind(rndm_seed(1))) )
+        if (seed_clock) then
+          call system_clock(sysclk)
+          rndm_seed(:) = ieor( sysclk , int(rndm_seed(1),kind(sysclk)) )
+        endif
+        if (new_random) then
+          call init_ranx(rndm_seed(1))
+        else
+          call random_seed(put=rndm_seed)
+        endif
+        do i=1,np
+          do j=1,np
+            do k=1,nlev
+
+              if (new_random) then
+                pertval = ranx()
+              else
+                call random_number(pertval)
+              endif
+              pertval = D2_0*pertlim*(D0_5 - pertval)
+
+              ! If DP-CRM mode potentially only perturb a portion of the profile
+              if (.not. dp_crm .or. p_ref(k) .gt. iop_perturb_high*100._r8) then
+
+#ifdef MODEL_THETA_L
+                elem(ie)%derived%FT(i,j,k) = elem(ie)%derived%FT(i,j,k)*(D1_0 + pertval)
+#else
+                elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
+#endif
+              endif
+
+            end do
+          end do
+        end do
+      end do
+
+      deallocate(rndm_seed)
+    end if
+
+    if (.not. single_column) then
 
       ! once we've read all the fields we do a boundary exchange to 
       ! update the redundent columns in the dynamics

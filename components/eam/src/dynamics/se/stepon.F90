@@ -18,7 +18,7 @@ module stepon
    use physics_types,  only: physics_state, physics_tend
    use dyn_comp,       only: dyn_import_t, dyn_export_t
    use perf_mod,       only: t_startf, t_stopf, t_barrierf
-   use time_manager,   only: get_step_size
+   use time_manager,   only: get_step_size, is_first_restart_step
 ! from SE
    use derivative_mod, only: derivinit, derivative_t
    use viscosity_mod, only : compute_zeta_C0, compute_div_C0
@@ -26,7 +26,7 @@ module stepon
    use edge_mod,       only: edge_g, edgeVpack_nlyr, edgeVunpack_nlyr
    use parallel_mod,   only : par
    use scamMod,        only: use_iop, doiopupdate, single_column, &
-                             setiopupdate, readiopdata, iop_mode
+                             setiopupdate, readiopdata, dp_crm
    use element_mod,    only: element_t
    use shr_const_mod,       only: SHR_CONST_PI
    use se_single_column_mod, only: scm_broadcast
@@ -143,6 +143,13 @@ subroutine stepon_init(dyn_in, dyn_out )
     call add_default(trim(cnst_name(m))//'&IC',0, 'I')
   end do
 
+  if (dp_crm) then
+    call addfld('crm_grid_x'   ,horiz_only,  'A', 'm',   'Grid in x-direction',   gridname='GLL')
+    call addfld('crm_grid_y'   ,horiz_only,  'A', 'm',   'Grid in y-direction',   gridname='GLL')
+    call add_default('crm_grid_x', 1, ' ')
+    call add_default('crm_grid_y', 1, ' ')
+  endif
+
   call addfld('DYN_T'    ,(/ 'lev' /), 'A', 'K',    'Temperature (dyn grid)', gridname='GLL')
   call addfld('DYN_Q'    ,(/ 'lev' /), 'A', 'kg/kg','Water Vapor (dyn grid',  gridname='GLL' )
   call addfld('DYN_U'    ,(/ 'lev' /), 'A', 'm/s',  'Zonal Velocity',         gridname='GLL')
@@ -199,17 +206,30 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    
   ! Determine whether it is time for an IOP update;
   ! doiopupdate set to true if model time step > next available IOP 
-  
-  if (use_iop .and. .not. is_last_step()) then
+
+  if (use_iop) then
     if (masterproc) call setiopupdate
-  end if
+    if (masterproc .and. is_first_restart_step() ) call setiopupdate(override_init=.true.)
+  end if 
   
   if (single_column) then
+
+    ! If first restart step then ensure that IOP data is read
+    if (is_first_restart_step()) then
+      iop_update_phase1 = .false.
+      call scm_setinitial(elem)
+      if (masterproc) call readiopdata( iop_update_phase1,hyam,hybm )
+      call scm_broadcast()
+    endif
+
     iop_update_phase1 = .true. 
-    if (doiopupdate .and. masterproc) call readiopdata( iop_update_phase1,hyam,hybm )
+    if ((is_first_restart_step() .or. doiopupdate) .and. masterproc) then
+      call readiopdata( iop_update_phase1,hyam,hybm )
+    endif
     call scm_broadcast()
-    call scm_setfield(elem,iop_update_phase1)       
-  endif 
+
+    if (.not. dp_crm) call scm_setfield(elem,iop_update_phase1)
+  endif
   
    call t_barrierf('sync_d_p_coupling', mpicom)
    call t_startf('d_p_coupling')
@@ -264,7 +284,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
-   if (.not. single_column .or. iop_mode) then
+   if (.not. single_column .or. dp_crm) then
       do ie=1,nelemd
 
          if (fv_nphys>0) then
@@ -305,7 +325,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    do ie=1,nelemd
   
-      if (.not. single_column .or. iop_mode) then 
+      if (.not. single_column .or. dp_crm) then
 
          kptr=0
 
@@ -477,7 +497,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
    real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
-               out_v(npsq,nlev), out_psv(npsq)  
+               out_v(npsq,nlev), out_psv(npsq)  , out_gridx(np,np), out_gridy(np,np)
    real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
    real(r8), parameter :: fac = 1000._r8     
    type(cam_out_t),     intent(inout) :: cam_out(:) ! Output from CAM to surface
@@ -516,15 +536,26 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
        call scm_setinitial(elem)
        if (masterproc) call readiopdata(iop_update_phase1,hyam,hybm)
        call scm_broadcast()
-       call scm_setfield(elem,iop_update_phase1)
-     endif   
+       if (.not. dp_crm) call scm_setfield(elem,iop_update_phase1)
+     endif  
 
-   endif   
+   endif
 
    call t_barrierf('sync_dyn_run', mpicom)
    call t_startf ('dyn_run')
    call dyn_run(dyn_out,rc)
-   call t_stopf  ('dyn_run')  
+   call t_stopf  ('dyn_run')
+
+   if (dp_crm) then
+
+     do ie=1,nelemd
+       out_gridx(:,:) = dyn_in%elem(ie)%spherep(:,:)%lat
+       out_gridy(:,:) = dyn_in%elem(ie)%spherep(:,:)%lon
+       call outfld('crm_grid_x', out_gridx, npsq, ie)
+       call outfld('crm_grid_y', out_gridy, npsq, ie)
+     enddo
+
+   endif
    
    ! Update to get tendency 
 #if (defined E3SM_SCM_REPLAY) 

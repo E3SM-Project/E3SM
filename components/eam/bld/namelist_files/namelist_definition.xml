@@ -4146,23 +4146,53 @@ IOP name for CLUBB running in single column mode
 Default: ""
 </entry>
 
-<entry id="scm_relaxation" type="logical" category="scam"
+<entry id="dp_crm" type="logical" category="scam"
        group="cam_inparm" valid_values="">
-Use relaxation.
+Set to TRUE to turn on doubly periodic cloud resolving model mode.
 Default: FALSE
 </entry>
 
-<entry id="scm_relaxation_low" type="real" category="scam"
+<entry id="iop_dosubsidence" type="logical" category="scam"
        group="cam_inparm" valid_values="">
-Lowest layer to apply relaxation.  Keep to default value to apply relaxation
+Compute LS vertical transport using omega prescribed from IOP file.
+Default: FALSE
+</entry>
+
+<entry id="iop_nudge_tq" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Use relaxation for temperature and moisture.
+Default: FALSE
+</entry>
+
+<entry id="iop_nudge_uv" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Use relaxation for u and v winds.
+Default: FALSE
+</entry>
+
+<entry id="iop_nudge_tq_low" type="real" category="scam"
+       group="cam_inparm" valid_values="">
+Lowest layer to apply relaxation for t and q.  Keep to default value to apply relaxation
 at the surface.
 Default: 1050.0 (hPa)
 </entry>
 
-<entry id="scm_relaxation_high" type="real" category="scam"
+<entry id="iop_nudge_tq_high" type="real" category="scam"
        group="cam_inparm" valid_values="">
-Highest layer to apply relaxation.  Keep to default value to apply relaxation
-at the model top.
+Highest layer to apply relaxation for t and q.  Keep to default value to apply relaxation
+at the model top.   
+Default: 0.e3 (hPa)
+</entry>
+
+<entry id="iop_nudge_tscale" type="real" category="scam"
+       group="cam_inparm" valid_values="">
+Time scale to nudge to IOP forcing file.
+Default: 10800 (s)
+</entry>
+
+<entry id="iop_perturb_high" type="real" category="scam"
+       group="cam_inparm" valid_values="">
+Highest layer to apply perturbations for doubly periodic CRM mode.
 Default: 0.e3 (hPa)
 </entry>
 
@@ -5760,6 +5790,30 @@ If se_ne=0 (RRM grids), read mesh from Exodus file.
 Default: Set by build-namelist.
 </entry>
 
+<entry id="se_ne_x" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of elements in the x direction, for doubly periodic mode
+Default: Set by build-namelist.
+</entry>
+
+<entry id="se_ne_y" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of elements in the y direction, for doubly periodic mode
+Default: Set by build-namelist.
+</entry>
+
+<entry id="se_lx" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Length of domain in meters in x direction, for doubly periodic mode
+Default: Set by build-namelist.
+</entry>
+
+<entry id="se_ly" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Length of domain in meters in y direction, for doubly periodic mode
+Default: Set by build-namelist.
+</entry>
+
 <entry id="mesh_file" type="char*256" input_pathname="abs" category="se"
        group="ctl_nl" valid_values="" >
 Exodus format grid file used when se_ne=0
@@ -5780,9 +5834,18 @@ Default: Set by build-namelist.
 </entry>
 
 <entry id="se_topology" type="char*80" category="se"
-       group="ctl_nl" valid_values="cube" >
+       group="ctl_nl" valid_values="cube,plane" >
 SE's topology.
-Only "cube" is supported in CAM.
+Only "cube" is supported in CAM. "plane" allowed for SCREAM in doubly
+periodic mode.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="se_geometry" type="char*80" category="se"
+       group="ctl_nl" valid_values="sphere,plane" >
+SE's geometry.
+Only "sphere" is supported in CAM. "plane" allowed for SCREAM in doubly
+periodic mode.
 Default: Set by build-namelist.
 </entry>
 
