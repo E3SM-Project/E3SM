@@ -547,6 +547,10 @@ CONTAINS
       nprec = 1
     endif
 
+#ifdef MMF_EXACT_RESTART
+    nprec = 4
+#endif
+
     !  loop over iterations
     do iprec = 1,nprec
       !$omp target teams distribute parallel do collapse(4)
