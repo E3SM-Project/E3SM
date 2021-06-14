@@ -375,6 +375,7 @@ CONTAINS
       call mpi_comm_rank(mpi_comm, iaproc, ierr)
       iaproc = iaproc + 1
 
+      call shr_mpi_bcast(usspf,mpi_comm)
 
       !--------------------------------------------------------------------
       ! Initialize run type
@@ -545,7 +546,7 @@ CONTAINS
       call shr_sys_flush(ndso)
 
       !--------------------------------------------------------------------
-      ! Read namelist (set initfile in w3cesmmd)
+      ! Read namelist
       !--------------------------------------------------------------------
       if ( iaproc .eq. napout ) then
          unitn = shr_file_getunit()
