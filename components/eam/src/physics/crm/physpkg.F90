@@ -1068,8 +1068,6 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   real(r8), pointer, dimension(:)   :: water_vap_ac_2d    ! Vertically integrated water vapor
   real(r8), pointer, dimension(:,:) :: u_wind_ac
   real(r8), pointer, dimension(:,:) :: v_wind_ac
-  real(r8), pointer, dimension(:,:) :: u_wind_tot
-  real(r8), pointer, dimension(:,:) :: v_wind_tot
   real(r8), pointer, dimension(:,:) :: tini               !
   real(r8), pointer, dimension(:,:) :: cld                !
   real(r8), pointer, dimension(:,:) :: qini               !
@@ -1377,8 +1375,6 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
   real(r8), pointer, dimension(:,:) :: u_wind_ac       ! U wind for calculating dynamics tendency
   real(r8), pointer, dimension(:,:) :: v_wind_ac       ! V wind for calculating dynamics tendency
-  real(r8), pointer, dimension(:,:) :: u_wind_tot      ! U wind for calculating total tendency
-  real(r8), pointer, dimension(:,:) :: v_wind_tot      ! V wind for calculating total tendency
   real(r8) :: CIDiff(pcols)            ! Difference in vertically integrated static energy
   real(r8) :: u_wind_diff(pcols,pver)       ! vertically resolved zonal wind difference
   real(r8) :: v_wind_diff(pcols,pver)       ! vertically resolved meridional wind difference
@@ -2000,4 +1996,3 @@ end subroutine add_fld_default_calls
 !===================================================================================================
 
 end module physpkg
-  

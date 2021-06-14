@@ -195,7 +195,7 @@ end subroutine cam_init
 !
 !-----------------------------------------------------------------------
 !
-subroutine cam_run1(cam_in, cam_out)
+subroutine cam_run1(cam_in, cam_out, do_dp_coupling)
 !-----------------------------------------------------------------------
 !
 ! Purpose:   First phase of atmosphere model run method.
@@ -211,9 +211,14 @@ subroutine cam_run1(cam_in, cam_out)
 #endif
    use time_manager,     only: get_nstep
    use scamMod,          only: single_column
+   use physics_buffer,   only: pbuf_get_index, pbuf_get_field, pbuf_get_chunk
 
    type(cam_in_t)  :: cam_in(begchunk:endchunk)
    type(cam_out_t) :: cam_out(begchunk:endchunk)
+   logical, optional :: do_dp_coupling
+
+   integer :: c
+   real(r8), pointer, dimension(:,:) :: u_wind_tot, v_wind_tot
 
 #if ( defined SPMD )
    real(r8) :: mpi_wtime
@@ -231,10 +236,22 @@ subroutine cam_run1(cam_in, cam_out)
    ! First phase of dynamics (at least couple from dynamics to physics)
    ! Return time-step for physics from dynamics.
    !----------------------------------------------------------
+   if (.not.present(do_dp_coupling)) do_dp_coupling=.false.
+
    call t_barrierf ('sync_stepon_run1', mpicom)
-   call t_startf ('stepon_run1')
-   call stepon_run1( dtime, phys_state, phys_tend, pbuf2d, dyn_in, dyn_out )
-   call t_stopf  ('stepon_run1')
+   if (do_dp_coupling) then
+      call t_startf ('stepon_run1')
+      call stepon_run1( dtime, phys_state, phys_tend, pbuf2d, dyn_in, dyn_out )
+      call t_stopf  ('stepon_run1')
+      
+      do c=begchunk, endchunk
+         call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), pbuf_get_index('u_wind_tot'), u_wind_tot )
+         call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), pbuf_get_index('v_wind_tot'), v_wind_tot )
+         u_wind_tot = phys_state(c)%u
+         v_wind_tot = phys_state(c)%v
+      end do
+
+   end if
 
    if (single_column) then
      call scam_use_iop_srf( cam_in)
@@ -357,6 +374,7 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
    use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp
    use time_manager,     only: get_nstep
    use cam_history,      only: outfld
+   use dp_coupling,      only: d_p_coupling
 #if ( defined SPMD )
    use mpishorthand,     only: mpicom
 #endif
@@ -386,6 +404,11 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
    !----------------------------------------------------------
    ! Tendencies for momentum budget
    !----------------------------------------------------------
+
+   ! Need to map dynamics to physics here - will be done again in cam_run1
+   call t_barrierf('sync_d_p_coupling', mpicom)
+   call d_p_coupling(phys_state, phys_tend,  pbuf2d, dyn_out )
+
    u_wind_ac_idx  = pbuf_get_index('u_wind_ac')
    v_wind_ac_idx  = pbuf_get_index('v_wind_ac')
    u_wind_tot_idx = pbuf_get_index('u_wind_tot')
@@ -401,28 +424,21 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
       call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), v_wind_ac_idx,  v_wind_ac )
       call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), u_wind_tot_idx, u_wind_tot )
       call pbuf_get_field( pbuf_get_chunk(pbuf2d,c), v_wind_tot_idx, v_wind_tot )
-
-      if( nstep == 0 ) then
-         u_wind_diff(:,:) = 0.0_r8
-         v_wind_diff(:,:) = 0.0_r8
-         call outfld('DYN_DU',  u_wind_diff, pcols, lchnk )
-         call outfld('DYN_DV',  v_wind_diff, pcols, lchnk )
-         call outfld('TOT_DU',  u_wind_diff, pcols, lchnk )
-         call outfld('TOT_DV',  v_wind_diff, pcols, lchnk )
-      else
-         ! dyanmics momentum tendency
-         u_wind_diff(:ncol,:) = ( phys_state(c)%u(:ncol,:) - u_wind_ac(:ncol,:) )/dtime
-         v_wind_diff(:ncol,:) = ( phys_state(c)%v(:ncol,:) - v_wind_ac(:ncol,:) )/dtime
-         call outfld('DYN_DU', u_wind_diff, pcols, lchnk )
-         call outfld('DYN_DV', v_wind_diff, pcols, lchnk )
-         ! total momentum tendency
-         u_wind_diff(:ncol,:) = ( phys_state(c)%u(:ncol,:) - u_wind_tot(:ncol,:) )/dtime
-         v_wind_diff(:ncol,:) = ( phys_state(c)%v(:ncol,:) - v_wind_tot(:ncol,:) )/dtime
-         call outfld('TOT_DU', u_wind_diff, pcols, lchnk )
-         call outfld('TOT_DV', v_wind_diff, pcols, lchnk )
-      end if
+      
+      ! dyanmics momentum tendency
+      u_wind_diff(:ncol,:) = ( phys_state(c)%u(:ncol,:) - u_wind_ac(:ncol,:) )/dtime
+      v_wind_diff(:ncol,:) = ( phys_state(c)%v(:ncol,:) - v_wind_ac(:ncol,:) )/dtime
+      call outfld('DYN_DU', u_wind_diff, pcols, lchnk )
+      call outfld('DYN_DV', v_wind_diff, pcols, lchnk )
+      
+      ! total momentum tendency
+      u_wind_diff(:ncol,:) = ( phys_state(c)%u(:ncol,:) - u_wind_tot(:ncol,:) )/dtime
+      v_wind_diff(:ncol,:) = ( phys_state(c)%v(:ncol,:) - v_wind_tot(:ncol,:) )/dtime
+      call outfld('TOT_DU', u_wind_diff, pcols, lchnk )
+      call outfld('TOT_DV', v_wind_diff, pcols, lchnk )
       u_wind_tot = phys_state(c)%u
       v_wind_tot = phys_state(c)%v
+
    end do
 
    !
