@@ -63,6 +63,10 @@ module kurant_mod
       !$acc wait(asyncid)
       ncycle = max(ncycle,max(1,ceiling(cfl/0.7D0)))
 
+#ifdef MMF_EXACT_RESTART
+      ncycle = max_ncycle
+#endif
+
       if(ncycle.gt.max_ncycle) then
         if(masterproc) print *,'kurant() - the number of cycles exceeded max_ncycle = ',max_ncycle
         do icrm = 1 , ncrms
