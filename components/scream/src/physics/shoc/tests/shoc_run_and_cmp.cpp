@@ -243,7 +243,7 @@ int main (int argc, char** argv) {
       "  -f                Use fortran impls instead of c++.\n"
       "  -t <tol>          Tolerance for relative error.\n"
       "  -s <steps>        Number of timesteps. Default=10.\n"
-      "  -d <seconds>      Length of timestep. Default=150.\n"
+      "  -dt <seconds>     Length of timestep. Default=150.\n"
       "  -i <cols>         Number of columns(ncol). Default=8.\n"
       "  -k <nlev>         Number of vertical levels. Default=72.\n"
       "  -q <num_qtracers> Number of q tracers. Default=3.\n"
@@ -275,7 +275,7 @@ int main (int argc, char** argv) {
       ++i;
       nsteps = std::atoi(argv[i]);
     }
-    if (ekat::argv_matches(argv[i], "-d", "--dt")) {
+    if (ekat::argv_matches(argv[i], "-dt", "--dt")) {
       expect_another_arg(i, argc);
       ++i;
       dt = std::atoi(argv[i]);
