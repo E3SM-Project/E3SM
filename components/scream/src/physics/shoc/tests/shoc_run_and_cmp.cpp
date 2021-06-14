@@ -100,12 +100,9 @@ static Int compare (const std::string& label, const Scalar* a,
 
 struct Baseline {
 
-  Baseline (const Int num_iters, const Int shcol, const Int repeat) :
-    m_num_iters(num_iters), // Number of iterations (nadv steps of size dtime per iteration).
-    m_repeat(repeat)
+  Baseline (const Int nsteps, const Real dt, const Int ncol, const Int nlev, const Int num_qtracers, const Int nadv, const Int repeat)
   {
-    //                 ic,                    shcol, nlev, num_qtracers, nadv, dtime
-    params_.push_back({ic::Factory::standard, shcol, 72,   3,            15,   150});
+    params_.push_back({ic::Factory::standard, repeat, nsteps, ncol, nlev, num_qtracers, nadv, dt});
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
@@ -117,15 +114,15 @@ struct Baseline {
     Int duration = 0;
 
     for (auto ps : params_) {
-      for (Int r = -1; r < m_repeat; ++r) {
+      for (Int r = -1; r < ps.repeat; ++r) {
         // Run reference shoc on this set of parameters.
-        const auto d = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
+        const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
         shoc_init(ps.nlev, use_fortran);
 
-        if (m_repeat > 0 && r == -1) {
+        if (ps.repeat > 0 && r == -1) {
           std::cout << "Running SHOC with ni=" << d->shcol << ", nk=" << d->nlev
-                    << ", dt=" << d->dtime << ", ts=" << m_num_iters;
+                    << ", dt=" << d->dtime << ", ts=" << ps.nsteps;
 
           if (!use_fortran) {
             std::cout << ", small_packn=" << SCREAM_SMALL_PACK_SIZE;
@@ -133,20 +130,20 @@ struct Baseline {
           std::cout << std::endl;
         }
 
-        for (int it = 0; it < m_num_iters; ++it) {
+        for (int it = 0; it < ps.nsteps; ++it) {
           Int current_microsec = shoc_main(*d, use_fortran);
 
-          if (r != -1 && m_repeat > 0) { // do not count the "cold" run
+          if (r != -1 && ps.repeat > 0) { // do not count the "cold" run
             duration += current_microsec;
           }
 
-          if (m_repeat == 0) {
+          if (ps.repeat == 0) {
             write(fid, d);
           }
         }
       }
-      if (m_repeat > 0) {
-        const double report_time = (1e-6*duration) / m_repeat;
+      if (ps.repeat > 0) {
+        const double report_time = (1e-6*duration) / ps.repeat;
 
         printf("Time = %1.3e seconds\n", report_time);
       }
@@ -162,15 +159,15 @@ struct Baseline {
     for (auto ps : params_) {
       case_num++;
       // Read the reference impl's data from the baseline file.
-      const auto d_ref = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
+      const auto d_ref = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
       set_params(ps, *d_ref);
       // Now run a sequence of other impls. This includes the reference
       // implementation b/c it's likely we'll want to change it as we go.
       {
-        const auto d = ic::Factory::create(ps.ic, ps.shcol, ps.nlev, ps.num_qtracers);
+        const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
         shoc_init(ps.nlev, use_fortran);
-        for (int it = 0; it < m_num_iters; it++) {
+        for (int it = 0; it < ps.nsteps; it++) {
           std::cout << "--- checking case # " << case_num << ", timestep # = " << (it+1)*ps.nadv
                      << " ---\n" << std::flush;
           read(fid, d_ref);
@@ -185,18 +182,16 @@ struct Baseline {
   }
 
 private:
-  Int m_num_iters, m_repeat;
-
   struct ParamSet {
     ic::Factory::IC ic;
-    Int shcol, nlev, num_qtracers, nadv;
-    Real dtime;
+    Int repeat, nsteps, ncol, nlev, num_qtracers, nadv;
+    Real dt;
   };
 
   static void set_params (const ParamSet& ps, FortranData& d) {
-    // shcol, nlev, num_qtracers are already set by the Factory.
-    d.nadv = ps.nadv;
-    d.dtime = ps.dtime;
+    // ncol, nlev, num_qtracers are already set by the Factory.
+    d.nadv  = ps.nadv;
+    d.dtime = ps.dt;
   }
 
   std::vector<ParamSet> params_;
@@ -244,20 +239,28 @@ int main (int argc, char** argv) {
     std::cout <<
       argv[0] << " [options] baseline-filename\n"
       "Options:\n"
-      "  -g          Generate baseline file.\n"
-      "  -f          Use fortran impls instead of c++.\n"
-      "  -t <tol>    Tolerance for relative error.\n"
-      "  -s <steps>  Number of timesteps. Default=10.\n"
-      "  -i <cols>   Number of columns(shcol). Default=8.\n"
-      "  -r <repeat> Number of repetitions, implies timing run (generate + no I/O). Default=0.\n";
+      "  -g                Generate baseline file.\n"
+      "  -f                Use fortran impls instead of c++.\n"
+      "  -t <tol>          Tolerance for relative error.\n"
+      "  -s <steps>        Number of timesteps. Default=10.\n"
+      "  -dt <seconds>     Length of timestep. Default=150.\n"
+      "  -i <cols>         Number of columns(ncol). Default=8.\n"
+      "  -k <nlev>         Number of vertical levels. Default=72.\n"
+      "  -q <num_qtracers> Number of q tracers. Default=3.\n"
+      "  -n <nadv>         Number of SHOC loops per timestep. Default=15.\n"
+      "  -r <repeat>       Number of repetitions, implies timing run (generate + no I/O). Default=0.\n";
 
     return 1;
   }
 
   bool generate = false, use_fortran = false;
   scream::Real tol = 0;
-  Int num_iters = 10;
-  Int shcol = 8;
+  Int nsteps = 10;
+  Int dt = 150;
+  Int ncol = 8;
+  Int nlev = 72;
+  Int num_qtracers = 3;
+  Int nadv = 15;
   Int repeat = 0;
   for (int i = 1; i < argc-1; ++i) {
     if (ekat::argv_matches(argv[i], "-g", "--generate")) generate = true;
@@ -270,12 +273,32 @@ int main (int argc, char** argv) {
     if (ekat::argv_matches(argv[i], "-s", "--steps")) {
       expect_another_arg(i, argc);
       ++i;
-      num_iters = std::atoi(argv[i]);
+      nsteps = std::atoi(argv[i]);
     }
-    if (ekat::argv_matches(argv[i], "-i", "--shcol")) {
+    if (ekat::argv_matches(argv[i], "-dt", "--dt")) {
       expect_another_arg(i, argc);
       ++i;
-      shcol = std::atoi(argv[i]);
+      dt = std::atoi(argv[i]);
+    }
+    if (ekat::argv_matches(argv[i], "-i", "--ncol")) {
+      expect_another_arg(i, argc);
+      ++i;
+      ncol = std::atoi(argv[i]);
+    }
+    if (ekat::argv_matches(argv[i], "-k", "--nlev")) {
+      expect_another_arg(i, argc);
+      ++i;
+      nlev = std::atoi(argv[i]);
+    }
+    if (ekat::argv_matches(argv[i], "-q", "--num-qtracers")) {
+      expect_another_arg(i, argc);
+      ++i;
+      num_qtracers = std::atoi(argv[i]);
+    }
+    if (ekat::argv_matches(argv[i], "-n", "--nadv")) {
+      expect_another_arg(i, argc);
+      ++i;
+      nadv = std::atoi(argv[i]);
     }
     if (ekat::argv_matches(argv[i], "-r", "--repeat")) {
       expect_another_arg(i, argc);
@@ -292,7 +315,7 @@ int main (int argc, char** argv) {
   baseline_fn += std::to_string(sizeof(scream::Real));
 
   scream::initialize_scream_session(argc, argv); {
-    Baseline bln(num_iters, shcol, repeat);
+    Baseline bln(nsteps, static_cast<Real>(dt), ncol, nlev, num_qtracers, nadv, repeat);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
       nerr += bln.generate_baseline(baseline_fn, use_fortran);
