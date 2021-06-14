@@ -64,8 +64,12 @@ void Functions<S,D>::pblintd(
     {"rino", "thv"},
     {&rino, &thv});
 
-  const auto nlev_v = (nlev-1)/Spack::n;
-  const auto nlev_p = (nlev-1)%Spack::n;
+  // Scalarize views for single entry access
+  const auto s_z    = ekat::scalarize(z);
+  const auto s_thv  = ekat::scalarize(thv);
+  const auto s_rino = ekat::scalarize(rino);
+  const auto s_zi   = ekat::scalarize(zi);
+  const auto s_cldn = ekat::scalarize(cldn);
 
   // Compute Obukhov length virtual temperature flux and various arrays for use later:
 
@@ -74,13 +78,13 @@ void Functions<S,D>::pblintd(
 
   // Initialize
   bool check = true;
-  rino(nlev_v)[nlev_p] = 0;
-  pblh = z(nlev_v)[nlev_p];
+  s_rino(nlev-1) = 0;
+  pblh = s_z(nlev-1);
 
   // PBL height calculation
   team.team_barrier();
   pblintd_height(team,nlev,npbl,z,u,v,ustar,
-                 thv,thv(nlev_v)[nlev_p],
+                 thv,s_thv(nlev-1),
                  pblh,rino,check);
 
   // Estimate an effective surface temperature to account for surface fluctuations
@@ -98,7 +102,7 @@ void Functions<S,D>::pblintd(
   pblintd_check_pblh(nlevi,npbl,z,ustar,check,pblh);
 
   // PBL check over ocean
-  shoc_pblintd_cldcheck(zi(nlev_v)[nlev_p],cldn(nlev_v)[nlev_p],pblh);
+  shoc_pblintd_cldcheck(s_zi(nlev-1),s_cldn(nlev-1),pblh);
 
   // Release temporary variables from the workspace
   workspace.template release_many_contiguous<2>(

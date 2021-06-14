@@ -25,20 +25,21 @@ void Functions<S,D>::pblintd_surf_temp(const Int& nlev, const Int& nlevi, const 
   const Scalar sffrac=  0.1;
   const Scalar binm  = betam*sffrac;
 
+  // Scalarize views for single entry access
+  const auto s_z    = ekat::scalarize(z);
+  const auto s_thv  = ekat::scalarize(thv);
+  const auto s_rino = ekat::scalarize(rino);
+
   // Estimate an effective surface temperature to account for surface
   // fluctuations
   if (check) {
-    const auto view_indx = (nlevi-npbl-1)/Spack::n;
-    const auto pack_indx = (nlevi-npbl-1)%Spack::n;
-    pblh = z(view_indx)[pack_indx];
+    pblh = s_z(nlevi-npbl-1);
   }
   check = (kbfs > 0);
 
-  const auto view_indx = (nlev-1)/Spack::n;
-  const auto pack_indx = (nlev-1)%Spack::n;
-  tlv = thv(view_indx)[pack_indx];
+  tlv = s_thv(nlev-1);
   if (check) {
-    rino(view_indx)[pack_indx] = 0;
+    s_rino(nlev-1) = 0;
     const Scalar phiminv = std::cbrt(1-binm*pblh/obklen);
     tlv += kbfs*fak/(ustar*phiminv);
   }

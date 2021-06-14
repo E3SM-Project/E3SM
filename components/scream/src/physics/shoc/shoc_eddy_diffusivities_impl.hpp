@@ -44,14 +44,13 @@ void Functions<S,D>::eddy_diffusivities(
   const Scalar Ckh_s_min = 0.1;
   const Scalar Ckm_s_min = 0.1;
 
-  // zt_grid at nlev
-  const Scalar zt_grid_1d = zt_grid((nlev-1)/Spack::n)[(nlev-1)%Spack::n];
+  const auto s_zt_grid = ekat::scalarize(zt_grid);
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
     // Dimensionless Okukhov length considering only
     // the lowest model grid layer height to scale
-    const auto z_over_L = zt_grid_1d/obklen;
+    const auto z_over_L = s_zt_grid(nlev-1)/obklen;
 
     // Compute diffusivity coefficient as function of dimensionless Obukhov,
     // given a critical value

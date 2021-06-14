@@ -38,8 +38,12 @@ void Functions<S,D>::pblintd_height(
   const Scalar fac = 100;
   const Scalar ricr = 0.3;
 
-  const auto nlev_v = (nlev-1)/Spack::n;
-  const auto nlev_p = (nlev-1)%Spack::n;
+  // Scalarize views for single entry access
+  const auto s_u    = ekat::scalarize(u);
+  const auto s_v    = ekat::scalarize(v);
+  const auto s_z    = ekat::scalarize(z);
+  const auto s_thv  = ekat::scalarize(thv);
+  const auto s_rino = ekat::scalarize(rino);
 
   // Compute rino values and find max index s.t. rino(k) >= ricr
   Int max_indx = -1;
@@ -54,11 +58,11 @@ void Functions<S,D>::pblintd_height(
     Spack vvk(0);
     vvk.set(in_range,
             ekat::max(tiny,
-                      ekat::square(u(k) - u(nlev_v)[nlev_p]) +
-                      ekat::square(v(k) - v(nlev_v)[nlev_p]) +
+                      ekat::square(u(k) - s_u(nlev-1)) +
+                      ekat::square(v(k) - s_v(nlev-1)) +
                       fac*(ustar*ustar)));
     rino(k).set(in_range,
-                ggr*(thv(k) - thv_ref)*(z(k) - z(nlev_v)[nlev_p])/(thv(nlev_v)[nlev_p]*vvk));
+                ggr*(thv(k) - thv_ref)*(z(k) - s_z(nlev-1))/(s_thv(nlev-1)*vvk));
 
     // Set indices_pack entry to -1 if rino(k)<ricr or
     // if global index is not in [nlev-npbl, nlev-1)
@@ -74,15 +78,10 @@ void Functions<S,D>::pblintd_height(
   // there was an index s.t. rino(k)>=ricr.
   // If no index was found, set max_index=nlev-npbl.
   if (max_indx != -1) {
-    const auto max_indx_v = max_indx/Spack::n;
-    const auto max_indx_p = max_indx%Spack::n;
-    const auto max_indx_p1_v = (max_indx+1)/Spack::n;
-    const auto max_indx_p1_p = (max_indx+1)%Spack::n;
-
-    pblh = z(max_indx_p1_v)[max_indx_p1_p] +
-           (ricr - rino(max_indx_p1_v)[max_indx_p1_p])/
-           (rino(max_indx_v)[max_indx_p] - rino(max_indx_p1_v)[max_indx_p1_p])*
-           (z(max_indx_v)[max_indx_p] - z(max_indx_p1_v)[max_indx_p1_p]);
+    pblh = s_z(max_indx+1) +
+          (ricr - s_rino(max_indx+1))/
+          (s_rino(max_indx) - s_rino(max_indx+1))*
+          (s_z(max_indx) - s_z(max_indx+1));
 
     check = false;
   } else {

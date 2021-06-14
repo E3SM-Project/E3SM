@@ -85,14 +85,6 @@ void Functions<S,D>::shoc_assumed_pdf(
   // gnu and std=c++14. The macro ConstExceptGnu is defined in ekat_kokkos_types.hpp.
   ConstExceptGnu Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
-
-    // Store active pack entries
-    const Smask is_last_pack(k == nlev_pack-1);
-    const int last_pack_indx = (nlev-1)%Spack::n;
-    const auto range = ekat::range<IntSmallPack>(k*Spack::n);
-    const Smask active_entries = (!is_last_pack ||
-                                  (is_last_pack && range < last_pack_indx));
-
     // Initialize cloud variables to zero
     shoc_cldfrac(k) = 0;
     if (k==0) { shoc_ql(k)[0] = 0; }
@@ -224,6 +216,9 @@ void Functions<S,D>::shoc_assumed_pdf(
       // Begin to compute cloud property statistics
       const Spack Tl1_1 = thl1_1/(ekat::pow(basepres/pval,(rair/cp)));
       const Spack Tl1_2 = thl1_2/(ekat::pow(basepres/pval,(rair/cp)));
+
+      const auto index_range = ekat::range<IntSmallPack>(k*Spack::n);
+      const Smask active_entries = (index_range < nlev);
 
       // Check to ensure Tl1_1 and Tl1_2 are not negative, endrun otherwise
       const auto is_neg_Tl1_1 = (Tl1_1 <= 0) && active_entries;
