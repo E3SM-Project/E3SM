@@ -155,7 +155,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
       endif
     case('geo_i');
       if(theta_hydrostatic_mode) then
-          call abortmp('ERROR: get_field_i is not supported for phi_i in theta HY')
+         call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,nt),elem%state%dp3d(:,:,:,nt),field)
       else
           field = elem%state%phinh_i(:,:,1:nlevp,nt)
       endif
