@@ -134,7 +134,7 @@ _TESTS = {
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
             "SMS_B.ne4_ne4.F-EAM-AQP1.eam-hommexx",
             )
         },
@@ -166,10 +166,10 @@ _TESTS = {
             "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.A_WCYCL1850S_CMIP6",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
+            "ERP_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_max_subcycle",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFOMP",
+            "ERP_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFOMP.eam-mmf_max_subcycle",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
             )
         },
