@@ -110,7 +110,7 @@ void precip_fall(int hydro_type, real4d &omega) {
   //if(nprec > 1){std::cout << nprec << std::endl;}
 
 #ifdef MMF_EXACT_RESTART
-    nprec = 4
+    nprec = 4;
 #endif
   
 
