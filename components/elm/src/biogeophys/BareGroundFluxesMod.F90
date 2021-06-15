@@ -196,8 +196,7 @@ contains
       !---------------------------------------------------
       ! Filter patches where frac_veg_nosno IS ZERO
       !---------------------------------------------------
-      iter = 0
-
+      
       beta = 1._r8 ! previously set as a constant for all columns in CanopyTemperature()
 
       fn = 0
@@ -270,7 +269,7 @@ contains
 
          call FrictionVelocity(begp, endp, fn, filterp, &
               displa(begp:endp), z0mg_patch(begp:endp), z0hg_patch(begp:endp), z0qg_patch(begp:endp), &
-              obu(begp:endp), iter+1, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
+              obu(begp:endp), iter, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
               temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
               frictionvel_vars)
 
@@ -306,6 +305,7 @@ contains
                um(p) = sqrt(ur(p)*ur(p) + wc*wc)
             end if
             obu(p) = zldis(p)/zeta
+         end do
 
          ! Test for convergence
          iter_final = iter

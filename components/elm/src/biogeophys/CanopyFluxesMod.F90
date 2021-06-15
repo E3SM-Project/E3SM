@@ -1249,9 +1249,9 @@ contains
 
          ! Check for convergence of stress.
          if (implicit_stress .and. abs(tau_diff(p)) > dtaumin) then
-            if (get_nstep() > 0) then ! Suppress common warnings on the first time step.
+            if (nstep_mod > 0) then ! Suppress common warnings on the first time step.
                write(iulog,*)'WARNING: Stress did not converge for canopy ',&
-                    ' nstep = ',get_nstep(),' p= ',p,' prev_tau_diff= ',prev_tau_diff(p),&
+                    ' nstep = ',nstep_mod,' p= ',p,' prev_tau_diff= ',prev_tau_diff(p),&
                     ' tau_diff= ',tau_diff(p),' tau= ',tau(p),&
                     ' wind_speed_adj= ',wind_speed_adj(p),' iter_final= ',iter_final
             end if
