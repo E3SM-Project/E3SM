@@ -320,7 +320,7 @@ void init_functors_c ()
   auto& hvf  = Context::singleton().create<HyperviscosityFunctor>();
   auto& fbm  = Context::singleton().create<FunctorsBuffersManager>();
   auto& ff   = Context::singleton().create<ForcingFunctor>();
-  auto& diag = Context::singleton().create<Diagnostics> (elems.num_elems());
+  auto& diag = Context::singleton().create<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
   auto& vrm  = Context::singleton().create<VerticalRemapManager>();
 
   const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||   
@@ -410,11 +410,30 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
                              CF90Ptr& elem_state_phinh_i_ptr, CF90Ptr& elem_state_dp3d_ptr,
                              CF90Ptr& elem_state_ps_v_ptr,    CF90Ptr& elem_state_Qdp_ptr)
 {
-  ElementsState& state = Context::singleton().get<ElementsState> ();
+  const auto& c = Context::singleton();
+  ElementsState& state = c.get<ElementsState> ();
   state.pull_from_f90_pointers(elem_state_v_ptr,elem_state_w_i_ptr,elem_state_vtheta_dp_ptr,
                                elem_state_phinh_i_ptr,elem_state_dp3d_ptr,elem_state_ps_v_ptr);
-  Tracers &tracers = Context::singleton().get<Tracers>();
+  Tracers &tracers = c.get<Tracers>();
   tracers.pull_qdp(elem_state_Qdp_ptr);
+  const auto  qdp = tracers.qdp;
+  const auto  q = tracers.Q;
+  const auto  dp = state.m_dp3d;
+  const auto& tl = c.get<TimeLevel>();
+  const auto n0 = tl.n0;
+  const auto n0_qdp = tl.n0_qdp;
+  const auto qsize = tracers.num_tracers();
+  const auto size = tracers.num_elems()*tracers.num_tracers()*NP*NP*NUM_LEV;
+  Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,size),
+                       KOKKOS_LAMBDA(const int idx) {
+    const int ie  =  idx / (qsize*NP*NP*NUM_LEV);
+    const int iq  = (idx / (NP*NP*NUM_LEV)) % qsize;
+    const int igp = (idx / (NP*NUM_LEV)) % NP;
+    const int jgp = (idx / NUM_LEV) % NP;
+    const int k   =  idx % NUM_LEV;
+
+    q (ie,iq,igp,jgp,k) = qdp (ie,n0_qdp,iq,igp,jgp,k) / dp(ie,n0,igp,jgp,k);
+  });
 }
 
 void init_reference_states_c (CF90Ptr& elem_theta_ref_ptr, 
@@ -444,10 +463,9 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
   ElementsState&    state    = Context::singleton().get<ElementsState> ();
   Diagnostics&      diags    = Context::singleton().get<Diagnostics> ();
 
-  auto& params  = Context::singleton().get<SimulationParams>();
   auto& hvcoord = Context::singleton().get<HybridVCoord>();
   
-  diags.init(state, geometry, hvcoord, params.theta_hydrostatic_mode,
+  diags.init(state, geometry, hvcoord,
              elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
              elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
 }
