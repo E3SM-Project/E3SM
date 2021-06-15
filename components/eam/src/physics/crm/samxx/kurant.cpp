@@ -69,7 +69,7 @@ void kurant () {
   ncycle = max(ncycle,max(1,static_cast<int>(ceil(cfl/0.7))));
 
 #ifdef MMF_EXACT_RESTART
-  ncycle = max_ncycle
+  ncycle = max_ncycle;
 #endif
 
   if(ncycle > max_ncycle) {
