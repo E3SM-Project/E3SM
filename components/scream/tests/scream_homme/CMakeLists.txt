@@ -20,7 +20,7 @@ set (HOMME_TEST_NE 4)
 set (HOMME_TEST_LIM 9)
 set (HOMME_TEST_QSIZE 1)
 set (HOMME_TEST_RSPLIT 3)
-set (HOMME_TEST_NDAYS 1)
+set (HOMME_TEST_NMAX 24)
 set (HOMME_TEST_TIME_STEP 600)
 SET (HOMME_THETA_FORM 1)
 SET (HOMME_TTYPE 5)
@@ -35,7 +35,7 @@ set (HOMME_TEST_NUDIV 1e15)
 set (HOMME_TEST_NUTOP 2.5e5)
 
 # Testcase settings
-set (HOMME_TEST_MOISTURE dry)
+set (HOMME_TEST_MOISTURE notdry)
 SET (HOMME_THETA_HY_MODE true)
 
 # Vert coord settings
@@ -43,7 +43,7 @@ set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 
 # Configure the namelist into the test directory
-configure_file(${HOMME_SOURCE_DIR}/test/reg_test/namelists/theta.nl
+configure_file(${SCREAM_SOURCE_DIR}/src/dynamics/homme/tests/theta-nmax.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Copy initial conditions files
