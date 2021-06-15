@@ -54,14 +54,11 @@ module crm_input_module
 contains
    !------------------------------------------------------------------------------------------------
    ! Type-bound procedures for crm_input_type
-   subroutine crm_input_initialize(input, ncrms, nlev)
-      use phys_control, only: phys_getopts
+   subroutine crm_input_initialize(input, ncrms, nlev, MMF_microphysics_scheme)
       type(crm_input_type), intent(inout) :: input
       integer, intent(in) :: ncrms, nlev
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
+      character(len=*), intent(in) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
-      
       if (.not. allocated(input%zmid))     allocate(input%zmid(ncrms,nlev))
       if (.not. allocated(input%zint))     allocate(input%zint(ncrms,nlev+1))
       if (.not. allocated(input%tl))       allocate(input%tl(ncrms,nlev))
@@ -106,7 +103,7 @@ contains
       call prefetch(input%fluxt00)
       call prefetch(input%fluxq00)
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (.not. allocated(input%naermod))  allocate(input%naermod(ncrms,nlev,ntot_amode))
          if (.not. allocated(input%vaerosol)) allocate(input%vaerosol(ncrms,nlev,ntot_amode))
          if (.not. allocated(input%hygro))    allocate(input%hygro(ncrms,nlev,ntot_amode))
@@ -149,7 +146,7 @@ contains
       input%fluxt00 = 0
       input%fluxq00 = 0
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          input%naermod  = 0
          input%vaerosol = 0
          input%hygro    = 0
@@ -165,12 +162,9 @@ contains
 
    end subroutine crm_input_initialize
    !------------------------------------------------------------------------------------------------
-   subroutine crm_input_finalize(input)
-      use phys_control, only: phys_getopts
+   subroutine crm_input_finalize(input, MMF_microphysics_scheme)
       type(crm_input_type), intent(inout) :: input
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
-
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      character(len=*), intent(in) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
       if (allocated(input%zmid))    deallocate(input%zmid)
       if (allocated(input%zint))    deallocate(input%zint)
@@ -195,7 +189,7 @@ contains
       if (allocated(input%fluxt00)) deallocate(input%fluxt00)
       if (allocated(input%fluxq00)) deallocate(input%fluxq00)
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (allocated(input%naermod))    deallocate(input%naermod)
          if (allocated(input%vaerosol))   deallocate(input%vaerosol)
          if (allocated(input%hygro))      deallocate(input%hygro)

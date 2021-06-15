@@ -23,6 +23,7 @@ module crm_physics
 
    public :: crm_physics_register
    public :: crm_physics_init
+   public :: crm_physics_final
    public :: crm_physics_tend
    public :: crm_surface_flux_bypass_tend
    public :: m2005_effradius
@@ -426,6 +427,13 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 
 end subroutine crm_physics_init
 
+subroutine crm_physics_final()
+#if defined(MMF_SAMXX)
+   use gator_mod, only: gator_finalize
+   call gator_finalize()
+#endif
+end subroutine crm_physics_final
+
 !===================================================================================================
 !===================================================================================================
 
@@ -653,10 +661,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    !------------------------------------------------------------------------------------------------
    ! Initialize CRM state (nullify pointers, allocate memory, etc)
    !------------------------------------------------------------------------------------------------
-   call crm_state_initialize(crm_state, pcols, crm_nx, crm_ny, crm_nz)
-   call crm_rad_initialize(crm_rad, pcols, crm_nx_rad, crm_ny_rad, crm_nz)
-   call crm_input_initialize(crm_input, pcols, pver)
-   call crm_output_initialize(crm_output, pcols, pver, crm_nx, crm_ny, crm_nz)
+   call crm_state_initialize(crm_state, pcols, crm_nx, crm_ny, crm_nz, MMF_microphysics_scheme)
+   call crm_rad_initialize(crm_rad, pcols, crm_nx_rad, crm_ny_rad, crm_nz, MMF_microphysics_scheme)
+   call crm_input_initialize(crm_input, pcols, pver, MMF_microphysics_scheme)
+   call crm_output_initialize(crm_output, pcols, pver, crm_nx, crm_ny, crm_nz, MMF_microphysics_scheme)
 
    !------------------------------------------------------------------------------------------------
    ! Set CRM orientation angle
@@ -1490,10 +1498,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    ! Free memory in derived types
    !------------------------------------------------------------------------------------------------
 
-   call crm_state_finalize(crm_state)
-   call crm_rad_finalize(crm_rad)
-   call crm_input_finalize(crm_input)
-   call crm_output_finalize(crm_output)
+   call crm_state_finalize(crm_state, MMF_microphysics_scheme)
+   call crm_rad_finalize(crm_rad, MMF_microphysics_scheme)
+   call crm_input_finalize(crm_input, MMF_microphysics_scheme)
+   call crm_output_finalize(crm_output, MMF_microphysics_scheme)
 
 end subroutine crm_physics_tend
 
