@@ -1,20 +1,13 @@
 #include "atmosphere_dynamics.hpp"
-#include <Kokkos_ExecPolicy.hpp>
 
 // HOMMEXX Includes
-#include "CaarFunctor.hpp"
 #include "Context.hpp"
-#include "Dimensions.hpp"
 #include "Elements.hpp"
 #include "ElementsForcing.hpp"
 #include "ForcingFunctor.hpp"
 #include "ExecSpaceDefs.hpp"
-#include "Hommexx_Session.hpp"
-#include "HyperviscosityFunctor.hpp"
 #include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_workspace.hpp"
-#include "utilities/MathUtils.hpp"
-#include "utilities/SubviewUtils.hpp"
 #include "TimeLevel.hpp"
 #include "Tracers.hpp"
 #include "Types.hpp"
@@ -307,8 +300,8 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   m_p2d_remapper->registration_begins();
   m_d2p_remapper->registration_begins();
 
-  m_p2d_remapper->register_field(m_ref_grid_fields.at("FT"),m_dyn_grid_fields.at("FT"));
-  m_p2d_remapper->register_field(m_ref_grid_fields.at("FM"),m_dyn_grid_fields.at("FM"));
+  m_p2d_remapper->register_field(m_ref_grid_fields.at("T_mid_prev"),m_dyn_grid_fields.at("FT"));
+  m_p2d_remapper->register_field(m_ref_grid_fields.at("horiz_winds_prev"),m_dyn_grid_fields.at("FM"));
   m_p2d_remapper->register_field(m_ref_grid_fields.at("Q"), m_dyn_grid_fields.at("FQ"));
 
   m_d2p_remapper->register_field(m_dyn_grid_fields.at("vtheta_dp"),m_ref_grid_fields.at("T_mid"));
@@ -385,9 +378,8 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,NVL),
                          [&](const int ilev) {
-      auto& vthdp = vTh_dp(ilev);
-      vthdp = dp(ilev)*PF::calculate_theta_from_T(T(ilev),p_mid(ilev));
-      vthdp = PF::calculate_virtual_temperature(vthdp,qv(ilev));
+      const auto vthdp = dp(ilev)*PF::calculate_theta_from_T(T(ilev),p_mid(ilev));
+      vTh_dp(ilev) = PF::calculate_virtual_temperature(vthdp,qv(ilev));
 
       // Copy states from the n0 timelevel to all the other ones
       dp3d(ie,nm1,igp,jgp,ilev) = dp3d(ie,n0,igp,jgp,ilev);
@@ -524,7 +516,7 @@ void HommeDynamics::homme_pre_process (const Real dt) {
   auto FT = m_ref_grid_fields.at("T_mid_prev").get_reshaped_view<Pack**>();
   auto v  = m_ref_grid_fields.at("horiz_winds").get_reshaped_view<Pack***>();
   auto w  = m_ref_grid_fields.at("w_int").get_reshaped_view<Pack**>();
-  auto FM = m_ref_grid_fields.at("FM").get_reshaped_view<Pack***>();
+  auto FM = m_ref_grid_fields.at("horiz_winds_prev").get_reshaped_view<Pack***>();
 
   // If there are other atm procs updating the vertical velocity,
   // then we need to compute forcing for w as well
@@ -547,6 +539,7 @@ void HommeDynamics::homme_pre_process (const Real dt) {
     const auto& u_old = FM(icol,0,ilev);
           auto& fu    = FM(icol,0,ilev);
     fu = (u_new - u_old) / dt;
+
 
     const auto& v_new =  v(icol,1,ilev);
     const auto& v_old = FM(icol,1,ilev);
