@@ -62,7 +62,7 @@ module kurant_mod
       !$omp taskwait
       ncycle = max(ncycle,max(1,ceiling(cfl/0.7D0)))
 
-#ifdef MMF_EXACT_RESTART
+#ifdef MMF_MAX_SUBCYCLE
       ncycle = max_ncycle
 #endif
 
