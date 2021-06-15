@@ -1615,9 +1615,9 @@
     <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>impi,openmpi</MPILIBS>
-    <CIME_OUTPUT_ROOT>/gpfs/jlse-fs0/projects/climate/$USER/scratch/jlse</CIME_OUTPUT_ROOT>
+    <COMPILERS>oneapi-ifx,oneapi-ifort,gnu</COMPILERS>
+    <MPILIBS>mpich,impi,openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>/gpfs/jlse-fs0/projects/climate/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/gpfs/jlse-fs0/projects/climate/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/gpfs/jlse-fs0/projects/climate/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
@@ -1631,7 +1631,7 @@
     <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="impi">
+    <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks">-l -n {{ total_tasks }}</arg>
@@ -1647,61 +1647,33 @@
     <module_system type="module" allow_error="true">
       <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
       <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
       <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
       <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
       <modules>
 	<command name="purge"/>
         <command name="use">/soft/modulefiles</command>
         <command name="use">/soft/packaging/spack-builds/modules/linux-rhel7-x86_64</command>
+        <command name="use">/soft/restricted/CNDA/modulefiles</command>
+        <command name="use">/home/azamat/soft/modulefiles</command>
         <command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
       </modules>
-      <modules compiler="intel">
-	<command name="load">intel/2019</command>
-      </modules>
-      <modules compiler="intel" mpilib="impi">
-	<command name="load">intelmpi/2019-intel</command>
+      <modules compiler="!gnu">
+	<command name="load">e3sm-env-vars/2021.06.10</command>
+	<command name="load">oneapi/2021.04.30.003</command>
       </modules>
       <modules compiler="gnu">
-	<command name="load">gcc/9.2.0</command>
+        <command name="unload">cmake</command>
+	<command name="load">gcc/8.2.0</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="PATH">/home/azamat/perl5/bin:$ENV{PATH}</env>
-      <env name="PERL5LIB">/home/azamat/perl5/lib/perl5</env>
-      <env name="PERL_LOCAL_LIB_ROOT">/home/azamat/perl5</env>
-      <env name="PERL_MB_OPT">"--install_base \"/home/azamat/perl5\""</env>
-      <env name="PERL_MM_OPT">"INSTALL_BASE=/home/azamat/perl5"</env>
-    </environment_variables>
-    <environment_variables compiler="intel">
-      <env name="NETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/intel19</env>
-    </environment_variables>
-    <environment_variables compiler="gnu">
-      <env name="NETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc9.2.0</env>
-    </environment_variables>
-    <environment_variables compiler="intel" mpilib="impi">
-      <env name="PNETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/pnetcdf/1.12.1/intel19</env>
-    </environment_variables>
-    <environment_variables compiler="intel" mpilib="openmpi">
-      <env name="OMPI_CC">icc</env>
-      <env name="OMPI_CXX">icpc</env>
-      <env name="OMPI_FC">ifort</env>
-      <env name="PATH">/gpfs/jlse-fs0/projects/climate/soft/openmpi/2.1.6/intel19/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">/gpfs/jlse-fs0/projects/climate/soft/openmpi/2.1.6/intel19/lib:$ENV{LD_LIBRARY_PATH}</env>
-      <env name="PNETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/pnetcdf/1.12.1/openmpi2.1.6</env>
-    </environment_variables>
-    <environment_variables compiler="gnu" mpilib="openmpi">
-      <env name="OMPI_CC">gcc</env>
-      <env name="OMPI_CXX">g++</env>
-      <env name="OMPI_FC">gfortran</env>
-      <env name="PATH">/gpfs/jlse-fs0/projects/climate/soft/openmpi/2.1.6/gcc9.2.0/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">/gpfs/jlse-fs0/projects/climate/soft/openmpi/2.1.6/gcc9.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
-      <env name="PNETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/pnetcdf/1.12.1/openmpi2.1.6-gcc9.2.0</env>
+      <env name="PATH">/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
     </environment_variables>
     <environment_variables mpilib="impi">
       <env name="I_MPI_DEBUG">10</env>
@@ -1709,85 +1681,43 @@
       <env name="I_MPI_PIN_ORDER">spread</env>
       <env name="I_MPI_PIN_CELL">unit</env>
     </environment_variables>
+    <environment_variables compiler="intel" mpilib="openmpi">
+      <env name="OMPI_CC">icc</env>
+      <env name="OMPI_CXX">icpc</env>
+      <env name="OMPI_FC">ifort</env>
+      <env name="PATH">/home/azamat/soft/openmpi/2.1.6/intel19/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/home/azamat/soft/openmpi/2.1.6/intel19/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/intel19-openmpi2.1.6</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/intel19-openmpi2.1.6</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="openmpi">
+      <env name="OMPI_CC">gcc</env>
+      <env name="OMPI_CXX">g++</env>
+      <env name="OMPI_FC">gfortran</env>
+      <env name="LD_LIBRARY_PATH">/home/azamat/soft/openmpi/2.1.6/gcc8.2.0/lib:/home/azamat/soft/libs:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PATH">/home/azamat/soft/openmpi/2.1.6/gcc8.2.0/bin:/home/azamat/soft/cmake/3.18.5/bin:$ENV{PATH}</env>
+      <env name="CMAKE_ROOT">/home/azamat/soft/cmake/3.18.5</env>
+      <env name="ACLOCAL_PATH">/home/azamat/soft/cmake/3.18.5/share/aclocal</env>
+      <env name="CMAKE_PREFIX_PATH">/home/azamat/soft/cmake/3.18.5</env>
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.2.0-openmpi2.1.6</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/gcc8.2.0-openmpi2.1.6</env>
+    </environment_variables>
+    <environment_variables compiler="oneapi-ifx">
+      <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
+      <!--env name="OMP_TARGET_OFFLOAD">DISABLED</env--><!--set this for CPU-only runs-->
+    </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
-      <env name="KMP_AFFINITY">verbose,granularity=thread,scatter</env>
+      <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
       <env name="OMP_PLACES">threads</env>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
-
-<machine MACH="jlse-iris">
-    <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
-    <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
-    <OS>LINUX</OS>
-    <COMPILERS>intelgpu</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/home/azamat/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/azamat/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{HOME}/acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/azamat/acme/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>8</GMAKE_J>
-    <TESTS>acme_developer</TESTS>
-    <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
-    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks">-l -n $TOTALPES</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module" allow_error="true">
-      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-      <modules>
-	<command name="purge"/>
-	<command name="use">/soft/modulefiles</command>
-	<command name="use">/soft/packaging/spack-builds/modules/linux-rhel7-x86_64</command>
-	<command name="use">/soft/restricted/intel_dga/modulefiles</command>
-	<command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
-      </modules>
-      <modules compiler="intelgpu">
-        <command name="load">omp</command>
-        <command name="load">mkl</command>
-	<command name="load">mpi</command>
-      </modules>
-    </module_system>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <environment_variables>
-      <env name="MPICH_ENV_DISPLAY">1</env>
-      <env name="MPICH_VERSION_DISPLAY">1</env>
-      <env name="MPICH_CPUMASK_DISPLAY">1</env>
-      <env name="MPICH_MEMORY_REPORT">1</env>
-      <env name="PATH">/home/azamat/perl5/bin:$ENV{PATH}</env>
-      <env name="PERL5LIB">/home/azamat/perl5/lib/perl5</env>
-     <env name="PERL_LOCAL_LIB_ROOT">/home/azamat/perl5</env>
-      <env name="PERL_MB_OPT">"--install_base \"/home/azamat/perl5\""</env>
-      <env name="PERL_MM_OPT">"INSTALL_BASE=/home/azamat/perl5"</env>
-    </environment_variables>
-    <environment_variables compiler="intelgpu">
-      <env name="LD_LIBRARY_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18/lib:/home/wuda/soft/szip/2.1.1/intel18/lib:/home/wuda/soft/zlib/1.2.11/intel18/lib:$ENV{LD_LIBRARY_PATH}</env>
-      <env name="HDF5_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18</env>
-      <env name="NETCDF_PATH">/home/wuda/soft/netcdf/4.4.1c-4.2cxx-4.4.4f-parallel/intel18</env>
-      <env name="PNETCDF_PATH">/home/wuda/soft/pnetcdf/1.12.0/intel18</env>
-      <env name="I_MPI_DEBUG">10</env>
-      <env name="I_MPI_PIN_CELL">core</env>
-    </environment_variables>
-</machine>
 
   <machine MACH="sooty">
     <DESC>PNL cluster, OS is Linux, batch system is SLURM</DESC>
