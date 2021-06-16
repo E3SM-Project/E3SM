@@ -107,7 +107,6 @@ subroutine phys_register
   !---------------------------------------------------------------------------
   integer :: dummy    ! for unused pbuf and constituent indices
   integer :: nmodes
-  character(len=16) :: MMF_microphysics_scheme
   !---------------------------------------------------------------------------
   !---------------------------------------------------------------------------
 
@@ -115,8 +114,7 @@ subroutine phys_register
                     state_debug_checks_out      = state_debug_checks, &
                     micro_do_icesupersat_out    = micro_do_icesupersat, &
                     pergro_test_active_out      = pergro_test_active, &
-                    pergro_mods_out             = pergro_mods, &
-                    MMF_microphysics_scheme_out = MMF_microphysics_scheme )
+                    pergro_mods_out             = pergro_mods )
 
   ! Initialize dyn_time_lvls
   call pbuf_init_time()
@@ -725,7 +723,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   ! stuff for calling crm_physics_tend
   type(physics_ptend), dimension(begchunk:endchunk) :: ptend ! indivdual parameterization tendencies
   logical           :: use_ECPP
-  character(len=16) :: MMF_microphysics_scheme
   real(r8), dimension(pcols) :: mmf_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
   real(r8), dimension(pcols) :: mmf_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
   real(r8), dimension(pcols) :: mmf_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
@@ -1657,7 +1654,6 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
   logical :: l_tracer_aero, l_rad
   
   logical           :: use_ECPP
-  character(len=16) :: MMF_microphysics_scheme
   real(r8), pointer :: mmf_clear_rh(:,:) ! CRM clear air relative humidity used for aerosol water uptake
 
   ! ECPP variables
@@ -1668,8 +1664,7 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
 
   call phys_getopts( l_tracer_aero_out      = l_tracer_aero      &
                     ,l_rad_out              = l_rad              &
-                    ,use_ECPP_out           = use_ECPP           &
-                    ,MMF_microphysics_scheme_out   = MMF_microphysics_scheme )
+                    ,use_ECPP_out           = use_ECPP           )
   
   !-----------------------------------------------------------------------------
   ! Initialize stuff
