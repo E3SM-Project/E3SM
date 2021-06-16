@@ -109,7 +109,7 @@ void precip_fall(int hydro_type, real4d &omega) {
 
   //if(nprec > 1){std::cout << nprec << std::endl;}
 
-#ifdef MMF_MAX_SUBCYCLE
+#ifdef MMF_FIXED_SUBCYCLE
     nprec = 4;
 #endif
   

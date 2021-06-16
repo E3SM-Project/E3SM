@@ -68,7 +68,7 @@ void kurant () {
 
   ncycle = max(ncycle,max(1,static_cast<int>(ceil(cfl/0.7))));
 
-#ifdef MMF_MAX_SUBCYCLE
+#ifdef MMF_FIXED_SUBCYCLE
   ncycle = max_ncycle;
 #endif
 

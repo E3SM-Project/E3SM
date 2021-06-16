@@ -547,7 +547,7 @@ CONTAINS
       nprec = 1
     endif
 
-#ifdef MMF_MAX_SUBCYCLE
+#ifdef MMF_FIXED_SUBCYCLE
     nprec = 4
 #endif
 
