@@ -822,17 +822,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
   end do
 
-  ! ! save old CRM cloud fraction - w/o CRM, this is done in cldwat2m.F90
-  ! itim_old = pbuf_old_tim_idx()
-  ! cldo_idx = pbuf_get_index('CLDO')
-  ! cld_idx  = pbuf_get_index('CLD')
-  ! do c=begchunk, endchunk
-  !   phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
-  !   call pbuf_get_field( phys_buffer_chunk, cldo_idx, cldo, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
-  !   call pbuf_get_field( phys_buffer_chunk, cld_idx , cld , start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
-  !   cldo(1:state(c)%ncol,1:pver) = cld(1:state(c)%ncol,1:pver)
-  ! end do
-
   !-----------------------------------------------------------------------------
   ! Physics tendency before coupler - Phase 2
   !-----------------------------------------------------------------------------
