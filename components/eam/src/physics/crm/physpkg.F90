@@ -782,6 +782,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
     phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
 
+    ! Output physics terms to IC file
     call t_startf ('diag_physvar_ic')
     call diag_physvar_ic ( c,  phys_buffer_chunk, cam_out(c), cam_in(c) )
     call t_stopf ('diag_physvar_ic')
