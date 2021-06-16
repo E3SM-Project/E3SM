@@ -1360,14 +1360,9 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   real(r8) :: CIDiff(pcols)            ! Difference in vertically integrated static energy
 
   logical :: l_bc_energy_fix, l_dry_adj
-  
-  logical           :: use_ECPP
-  character(len=16) :: MMF_microphysics_scheme
 
   call phys_getopts( l_bc_energy_fix_out    = l_bc_energy_fix    &
-                    ,l_dry_adj_out          = l_dry_adj          &
-                    ,use_ECPP_out           = use_ECPP           &
-                    ,MMF_microphysics_scheme_out   = MMF_microphysics_scheme )
+                    ,l_dry_adj_out          = l_dry_adj          )
   
   !-----------------------------------------------------------------------------
   ! Initialize stuff
