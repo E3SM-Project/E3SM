@@ -140,13 +140,10 @@ module crm_output_module
 contains
 
    !------------------------------------------------------------------------------------------------
-   subroutine crm_output_initialize(output, ncol, nlev, crm_nx, crm_ny, crm_nz)
-      use phys_control, only: phys_getopts
+   subroutine crm_output_initialize(output, ncol, nlev, crm_nx, crm_ny, crm_nz, MMF_microphysics_scheme)
       type(crm_output_type), intent(inout) :: output
       integer,               intent(in   ) :: ncol, nlev, crm_nx, crm_ny, crm_nz
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
-
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      character(len=*),      intent(in   ) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
       ! Allocate instantaneous outputs
       if (.not. allocated(output%qcl)) allocate(output%qcl(ncol,crm_nx,crm_ny,crm_nz))
@@ -220,7 +217,7 @@ contains
       call prefetch(output%qg_mean)
       call prefetch(output%qr_mean)
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (.not. allocated(output%nc_mean)) allocate(output%nc_mean(ncol,nlev))
          if (.not. allocated(output%ni_mean)) allocate(output%ni_mean(ncol,nlev))
          if (.not. allocated(output%ns_mean)) allocate(output%ns_mean(ncol,nlev))
@@ -385,7 +382,7 @@ contains
       output%qg_mean = 0
       output%qr_mean = 0
 
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          output%nc_mean = 0
          output%ni_mean = 0
          output%ns_mean = 0
@@ -467,12 +464,9 @@ contains
 
    end subroutine crm_output_initialize
    !------------------------------------------------------------------------------------------------
-   subroutine crm_output_finalize(output)
-      use phys_control, only: phys_getopts
+   subroutine crm_output_finalize(output, MMF_microphysics_scheme)
       type(crm_output_type), intent(inout) :: output
-      character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
-
-      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      character(len=*), intent(in) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
       if (allocated(output%qcl)) deallocate(output%qcl)
       if (allocated(output%qci)) deallocate(output%qci)
@@ -508,7 +502,7 @@ contains
       if (allocated(output%qg_mean)) deallocate(output%qg_mean)
       if (allocated(output%qr_mean)) deallocate(output%qr_mean)
       
-      if (MMF_microphysics_scheme .eq. 'm2005') then
+      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (allocated(output%nc_mean)) deallocate(output%nc_mean)
          if (allocated(output%ni_mean)) deallocate(output%ni_mean)
          if (allocated(output%ns_mean)) deallocate(output%ns_mean)
