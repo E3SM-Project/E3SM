@@ -354,7 +354,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   const auto& hvcoord = c.get<Homme::HybridVCoord>();
   const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
 
-  // Need two tepomraries, for pi_mid and pi_int
+  // Need two temporaries, for pi_mid and pi_int
   ekat::WorkspaceManager<Pack,DefaultDevice> wsm(NVLI,2,policy);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int ie  =  team.league_rank() / (NP*NP);

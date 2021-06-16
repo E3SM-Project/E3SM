@@ -54,14 +54,17 @@ public:
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
+#endif
   void homme_pre_process (const Real dt);
   void homme_post_process ();
-#endif
-
-protected:
-
   // These are the three main interfaces:
+
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
+protected:
+#endif
   void initialize_impl (const util::TimeStamp& t0);
+protected:
   void run_impl        (const Real dt);
   void finalize_impl   ();
 
