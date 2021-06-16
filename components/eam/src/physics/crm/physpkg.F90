@@ -806,7 +806,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
     phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
 
-    ! Initialize variabale for ECPP data
+    ! Initialize variable for ECPP data
     if (use_ECPP) call crm_ecpp_output_initialize(crm_ecpp_output(c),phys_state(c)%ncol,pver)
 
     call t_startf('crm_physics_tend')
