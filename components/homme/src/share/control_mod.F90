@@ -268,6 +268,8 @@ module control_mod
   logical,               public :: bubble_cosine  = .TRUE. !bubble uniform or cosine
   logical,               public :: bubble_moist  = .FALSE. ! 
   real (kind=real_kind), public :: bubble_moist_dq = 0.0   !bubble dQ parameter
+  integer,               public :: bubble_prec_type = 0
+  logical,               protected :: case_planar_bubble = .FALSE.
 
   public :: set_planar_defaults
 
@@ -679,7 +681,8 @@ subroutine set_planar_defaults()
        Ly = 51.2D0 * 1000.0D0
        Sx = -25.6D0 * 1000.0D0
        Sy = -25.6D0 * 1000.0D0
-    else if (test_case == "planar_rising_bubble" .OR. test_case == "planar_moist_rising_bubble") then
+    else if (test_case == "planar_rising_bubble" ) then
+       case_planar_bubble = .TRUE.
        Lx = 1.0D0 * 10000.0D0
        Ly = 1.0D0 * 10000.0D0
        Sx = -5000.0D0

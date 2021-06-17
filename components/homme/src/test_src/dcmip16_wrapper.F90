@@ -11,7 +11,7 @@ module dcmip16_wrapper
 
 use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
 use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode,&
-     sub_case
+     sub_case, case_planar_bubble, bubble_prec_type
 use baroclinic_wave,      only: baroclinic_wave_test
 use supercell,            only: supercell_init, supercell_test, supercell_z
 use tropical_cyclone,     only: tropical_cyclone_test
@@ -447,7 +447,12 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   integer :: pbl_type, prec_type, qi
   integer, parameter :: test = 1
 
-  prec_type = dcmip16_prec_type
+  if (case_planar_bubble) then
+    prec_type = bubble_prec_type
+  else
+    prec_type = dcmip16_prec_type
+  endif
+
   pbl_type  = dcmip16_pbl_type
 
   max_w     = -huge(rl)
@@ -516,14 +521,14 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       qr(i,j,:) = qr_c(nlev:1:-1)
       theta_kess(i,j,:) = th_c(nlev:1:-1)
 
-#if 0
-      lon = elem(ie)%spherep(i,j)%lon
-      lat = elem(ie)%spherep(i,j)%lat
+      if (.not. case_planar_bubble ) then 
+        lon = elem(ie)%spherep(i,j)%lon
+        lat = elem(ie)%spherep(i,j)%lat
 
-      do k=1,nlev
-        call tendency_terminator( lat*rad2dg, lon*rad2dg, cl(i,j,k), cl2(i,j,k), dt, ddt_cl(i,j,k), ddt_cl2(i,j,k))
-      enddo
-#endif
+        do k=1,nlev
+          call tendency_terminator( lat*rad2dg, lon*rad2dg, cl(i,j,k), cl2(i,j,k), dt, ddt_cl(i,j,k), ddt_cl2(i,j,k))
+        enddo
+      endif
 
 
     enddo; enddo;
@@ -550,10 +555,10 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     elem(ie)%derived%FQ(:,:,:,3) = (rho_dry/rho)*dp*(qr-qr0)/dt
 
 
-#if 0 
+    if (.not. case_planar_bubble ) then 
     qi=4; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl
     qi=5; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl2
-#endif
+    endif
 
 
     ! perform measurements of max w, and max prect

@@ -182,11 +182,11 @@ subroutine planar_rising_bubble_init(elem,hybrid,hvcoord,nets,nete)
 end subroutine planar_rising_bubble_init
 
 
-subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
+subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
   use control_mod, only: bubble_T0, bubble_dT, bubble_xycenter, bubble_zcenter, bubble_ztop, &
                          bubble_xyradius,bubble_zradius, bubble_cosine, &
-                         bubble_moist, bubble_moist_dq, &
+                         bubble_moist, bubble_moist_dq, bubble_prec_type, &
                          Lx, Ly, Sx, Sy
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
@@ -220,11 +220,12 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
      print *, 'bubble_cosine', bubble_cosine
      print *, 'bubble_moist', bubble_moist
      print *, 'bubble_moist_dq', bubble_moist_dq
+     print *, 'bubble_prec_type (0 is Kessler (default), 1 is RJ)', bubble_prec_type
   endif
 
   !for the background state
   !evenly spaced with reversed indexing, just like in homme eta coord
-  call get_evenly_spaced_z(zi,zm,0.0,bubble_ztop)
+  call get_evenly_spaced_z(zi,zm,0.0_rl,bubble_ztop)
 
   !for the background state
   !get pressure on interfaces
