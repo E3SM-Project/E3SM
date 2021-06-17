@@ -24,7 +24,8 @@ panel = [
 border = (-0.06, -0.03, 0.13, 0.03)
 
 plot_info = {}
-# Each key gives a list with ax extent, x ticks , y ticks, title, clevs, reference
+# Each key gives a list with ax extent, x ticks , y ticks, title, clevs, reference and time resolution ratio (convert 3hrly to 6hrly data, density needs to be devided by 2)
+# TODO flexible to apply to 3hrly model output when compare track density.
 plot_info["aew"] = [
     [182, 359, 0, 35],
     [240, 300],
@@ -32,14 +33,16 @@ plot_info["aew"] = [
     "African Easterly Wave Density",
     np.arange(0, 15.1, 1),
     "EAR5 (2000-2014)",
+    1,
 ]
 plot_info["cyclone"] = [
     [0, 359, -60, 60],
     [0, 60, 120, 180, 240, 300, 359.99],
     [-60, -30, 0, 30, 60],
     "TC Tracks Density",
-    np.arange(0, 1, 0.2),
+    np.arange(0, 0.3, 0.05),
     "IBTrACS (1979-2018)",
+    2,
 ]
 
 
@@ -61,12 +64,11 @@ def plot_panel(n, fig, proj, var, var_num_years, region, title):
     ax = fig.add_axes(panel[n], projection=proj)
     ax.set_extent(plot_info[region][0], ccrs.PlateCarree())
 
-    clevs = np.arange(0, 15.1, 1)
     clevs = plot_info[region][4]
     p1 = ax.contourf(
         var.getLongitude(),
         var.getLatitude(),
-        var / var_num_years,
+        var / var_num_years / plot_info[region][6],
         transform=ccrs.PlateCarree(),
         levels=clevs,
         extend="both",

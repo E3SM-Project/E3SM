@@ -64,7 +64,7 @@ Algorithm and visualization codes for **latitude-longitude contour maps**,
 **polar contour maps**, the accompanying **summarizing table** and **Taylor diagram plots**,  **pressure-latitude zonal mean contour plots**,
 **zonal mean line plots**, **pressure-longitude meridional mean contour plots**, **area mean time series plots**, and **Cloud Top Height-Tau** joint histograms
 from COSP cloud simulator output. Plots can be created for annual
-and seasonal climatologies, and monthly mean time series.
+and seasonal climatologies, and monthly mean time series. In additional to the core sets being released in v1, **ENSO diags**, **QBO diags**, **Diurnal cycle phase plot**, **Streamflow evaluation**, **ARM diags**, and **TC analysis** are implemented in v2 release.
 
 The package also supports custom user diagnostics, by specifying
 plot type, desired region (global, ocean, land, etc.),
@@ -139,10 +139,21 @@ Additional back-ends could be implemented if the need arose.
 |                                                        |                                                      |
 |    ARM diagnostics monthly diurnal cycle of cloud plot |    ARM diagnostics convection onset statistics plot  |
 +--------------------------------------------------------+------------------------------------------------------+
+| .. figure:: _static/index/fig21.png                    | .. figure:: _static/index/fig22.png                  |
+|    :align: center                                      |    :align: center                                    |
+|    :target: _static/index/fig21.png                    |    :target: _static/index/fig22.png                  |
+|                                                        |                                                      |
+|    Tropical Cyclone Track Density                      |    Annual Cycle Zonel Mean plot                      |
++--------------------------------------------------------+------------------------------------------------------+
+| .. figure:: _static/index/fig23.png                    | .. figure:: _static/index/fig24.png                  |
+|    :align: center                                      |    :align: center                                    |
+|    :target: _static/index/fig23.png                    |    :target: _static/index/fig24.png                  |
+|                                                        |                                                      |
+|    Tropical Cyclone frequency per basin                |    Per-basin Tropical Cyclone frac seasonal cycle    |
++--------------------------------------------------------+------------------------------------------------------+
 
 The above plots and more can be found
 `here <https://portal.nersc.gov/cfs/e3sm/zhang40/tutorials/run_v230_allsets/viewer/>`_.
-ARM diagnostics plots can be found `here <https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/unit_test_complete_run/expected/all_sets/viewer/arm_diags/>`_.
 
 Feature availability for each backend
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

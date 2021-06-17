@@ -73,3 +73,15 @@ In addition to default model versus observation comparison, the package also pro
 
 <img src="misc/example_fig7.png" alt="Figure7" style="width: 280px;"/>
 <h5 align="center">Figure 7: An example of Taylor diagram summarizing metrics calculated based on lat-lon contour plots diagnostics of several key variables</h5>
+
+## License
+
+Copyright (c) 2018-2021, Energy Exascale Earth System Model Project
+All rights reserved
+
+SPDX-License-Identifier: (BSD-3-Clause)
+
+See [LICENSE](./LICENSE) for details
+
+Unlimited Open Source - BSD 3-clause Distribution
+`LLNL-CODE-819717`
