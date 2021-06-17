@@ -346,13 +346,15 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 
   const auto num_elems = dp3d.extent_int(0);
   const auto nlevs  = m_dyn_grid->get_num_vertical_levels();
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_elems*NP*NP,NVL);
   const int n0 = c.get<Homme::TimeLevel>().n0;
   const int nm1 = c.get<Homme::TimeLevel>().nm1;
   const int np1 = c.get<Homme::TimeLevel>().np1;
 
   const auto& hvcoord = c.get<Homme::HybridVCoord>();
   const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
+
+  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(num_elems*NP*NP,NVL);
 
   // Need two temporaries, for pi_mid and pi_int
   ekat::WorkspaceManager<Pack,DefaultDevice> wsm(NVLI,2,policy);
@@ -664,7 +666,9 @@ void HommeDynamics::homme_post_process () {
   const auto ncols = m_ref_grid->get_num_local_dofs();
   const auto nlevs = m_ref_grid->get_num_vertical_levels();
   const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncols,npacks);
+
+  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,npacks);
 
   // If there are other atm procs updating the vertical velocity,
   // then we need to store w_int_old (to compute forcing for w next iteration)
