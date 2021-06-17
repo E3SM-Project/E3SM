@@ -190,7 +190,7 @@ contains
     index_l2x_Sl_ram1       = mct_avect_indexra(l2x,'Sl_ram1')
     index_l2x_Sl_fv         = mct_avect_indexra(l2x,'Sl_fv')
     index_l2x_Sl_soilw      = mct_avect_indexra(l2x,'Sl_soilw',perrwith='quiet')
-    index_l2x_Sl_wslake     = mct_avect_indexra(l2x,'Sl_wslake')
+!    index_l2x_Sl_wslake     = mct_avect_indexra(l2x,'Sl_wslake')
     if ( lnd_drydep )then
        index_l2x_Sl_ddvel = mct_avect_indexra(l2x, trim(drydep_fields_token))
     else

@@ -332,10 +332,10 @@ contains
        lnd2atm_vars%qflx_rofice_grc(g) = lnd2atm_vars%qflx_rofice_grc(g) - grc_wf%qflx_ice_dynbal(g) 
     enddo
 
-    call c2g( bounds, &
-         waterstate_vars%wslake_col(bounds%begc:bounds%endc), &
-         lnd2atm_vars%wslake_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+!    call c2g( bounds, &
+!         waterstate_vars%wslake_col(bounds%begc:bounds%endc), &
+!         lnd2atm_vars%wslake_grc(bounds%begg:bounds%endg), &
+!         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
 
     ! calculate total water storage for history files
     ! first set tws to gridcell total endwb
