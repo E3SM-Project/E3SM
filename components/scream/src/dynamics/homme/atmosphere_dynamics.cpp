@@ -511,6 +511,7 @@ void HommeDynamics::homme_pre_process (const Real dt) {
 
   const int ncols = m_ref_grid->get_num_local_dofs();
   const int nlevs = m_ref_grid->get_num_vertical_levels();
+  const int npacks = ekat::PackInfo<N>::num_packs(nlevs);
 
   auto T  = m_ref_grid_fields.at("T_mid").get_reshaped_view<Pack**>();
   auto FT = m_ref_grid_fields.at("T_mid_prev").get_reshaped_view<Pack**>();
@@ -521,10 +522,10 @@ void HommeDynamics::homme_pre_process (const Real dt) {
   // If there are other atm procs updating the vertical velocity,
   // then we need to compute forcing for w as well
   const bool has_w_forcing = m_ref_grid_fields.at("w_int").get_header().get_tracking().get_providers().size()>1;
-  Kokkos::parallel_for(KT::RangePolicy(0,ncols*nlevs),
+  Kokkos::parallel_for(KT::RangePolicy(0,ncols*npacks),
                        KOKKOS_LAMBDA(const int& idx) {
-    const int icol = idx / nlevs;
-    const int ilev = idx % nlevs;
+    const int icol = idx / npacks;
+    const int ilev = idx % npacks;
 
     // Temperature forcing
     // Note: Homme takes care of converting ft into a forcing for vtheta
@@ -691,12 +692,9 @@ void HommeDynamics::homme_post_process () {
     auto v_prev = ekat::subview(v_prev_view,icol);
     auto w_prev = ekat::subview(w_prev_view,icol);
 
-    // Once #1018 is done, replace this pfor loop with col-wide fcns calls.
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks),
                          [&](const int ilev) {
       // VTheta_dp->VTheta->Theta->T
-      // Note: we currently don't have a routine for T_virt->T in PF.
-      //       If/when we add it, replace conversion line with a call to that routine.
       auto& T_val = T(ilev);
       T_val /= dp(ilev);
       T_val = PF::calculate_temperature_from_virtual_temperature(T_val,qv(ilev));
