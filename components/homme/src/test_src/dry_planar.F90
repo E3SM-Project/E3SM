@@ -176,12 +176,13 @@ subroutine planar_rising_bubble_init(elem,hybrid,hvcoord,nets,nete)
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   integer,            intent(in)            :: nets,nete                ! start, end element index
 
-  call dry_bubble_init(elem,hybrid,hvcoord,nets,nete,.25d0,0.d0)
+  !last input is coriolis parameter
+  call bubble_init(elem,hybrid,hvcoord,nets,nete,0.d0)
 
 end subroutine planar_rising_bubble_init
 
 
-subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
+subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   use control_mod, only: bubble_T0, bubble_dT, bubble_xycenter, bubble_zcenter, bubble_ztop, &
                          bubble_xyradius,bubble_zradius, bubble_cosine, &
@@ -192,7 +193,6 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   integer,            intent(in)            :: nets,nete                ! start, end element index
-  real(rl),           intent(in)            :: d                        ! radius of perturbation
   real(rl),           intent(in)            :: f                        ! (const) Coriolis force
 
   integer :: i,j,k,ie,ii
@@ -222,19 +222,18 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
      print *, 'bubble_moist_dq', bubble_moist_dq
   endif
 
-  one = 1.0
-  two = 2.0
-
+  !for the background state
   !evenly spaced with reversed indexing, just like in homme eta coord
-  call get_evenly_spaced_z(zi,zm, 0.0_rl,bubble_ztop)
+  call get_evenly_spaced_z(zi,zm,0.0,bubble_ztop)
 
+  !for the background state
   !get pressure on interfaces
   do k=1,nlevp
-    !set interface pressure from const lapse rate, does not depend on x,y, or _dT
+    !set interface pressure from const lapse rate, does not depend on x,y, or bubble_dT
     !this formula assumes ideal hy balance and ideal thermodynamics, not exactly consistent with
     !the dycore, that is why we reset zi from EOS below
     Ti(k) = bubble_T0 - zi(k)*g/cp
-    pi(k) = p0*( Ti(k)/bubble_T0  )**(one/kappa)
+    pi(k) = p0*( Ti(k)/bubble_T0  )**(1.0/kappa)
   enddo
   do k=1,nlev
     dpm(k)=(pi(k+1)-pi(k))
@@ -255,7 +254,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 #else
   !old version, hybrid
   ai(:) = 0.0; bi(:) = 0.0
-  ai(1) = pi(1)/p0;  bi(nlevp) = one
+  ai(1) = pi(1)/p0;  bi(nlevp) = 1.0
 
   do k=2,nlev
     bi(k) = 1.0 - zi(k)/zi(1)
@@ -267,12 +266,13 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   hvcoord%hyai = ai; hvcoord%hybi = bi
 
   !set : hyam hybm 
-  hvcoord%hyam = 0.5_rl *(ai(2:nlev+1) + ai(1:nlev))
-  hvcoord%hybm = 0.5_rl *(bi(2:nlev+1) + bi(1:nlev))
+  hvcoord%hyam = 0.5 *(ai(2:nlev+1) + ai(1:nlev))
+  hvcoord%hybm = 0.5 *(bi(2:nlev+1) + bi(1:nlev))
 
-  !  call set_layer_locations: sets  etam, etai, dp0, checks that Am=ai/2+ai/2
+  !call set_layer_locations: sets  etam, etai, dp0, checks that Am=ai/2+ai/2
   call set_layer_locations(hvcoord, .true., hybrid%masterthread)
 
+  !for the background state
   if (bubble_moist) then
     !build specific humidity at saturation qs as in dcmip2016-kessler
     do k=1,nlevp
@@ -287,15 +287,16 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   endif
 
   do k=1,nlev
-    qm_s(k)=(qi_s(k+1)+qi_s(k)) / two
+    qm_s(k)=(qi_s(k+1)+qi_s(k)) / 2.0
     rm_s(k) = Rgas + (Rwater_vapor - Rgas)*qm_s(k)
   enddo
 
+  !for the background state
   !reset z to the discrete hydro balance
   !if one wants to keep z levels exactly evenly spaced instead
   !they would have to compute p (hydro) and dp3d from the discrete EOS
   !via iteration (?) 
-  !whole init-ed element is needed to call phi from EOS
+  !whole init-ed element is needed to call phi_from_EOS()
   do j=1,np; do i=1,np
     elem(1)%state%phis(i,j) = 0.0
     elem(1)%state%dp3d(i,j,1:nlev,1) = dpm(1:nlev)
@@ -314,7 +315,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   !but zm is not used below, so, not done
 
 
-  ! set initial conditions
+  ! set initial conditions for each element
   do ie = nets,nete
     do j=1,np; do i=1,np
 
@@ -323,29 +324,32 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
       do k=1,nlevp
 
+        !intermediate value
+        rr=(x-bubble_xycenter)   *(x-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
+           (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) / bubble_zradius / bubble_zradius 
+
         if (planar_slice .eqv. .true.) then
-        !no y dependence
-          rr =sqrt( (x-bubble_xycenter)   *(x-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
-                    (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) / bubble_zradius / bubble_zradius    )
+          !no y dependence
+          rr=sqrt(rr)
         else
-          rr =sqrt( (x-bubble_xycenter)   *(x-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
-                    (y-bubble_xycenter)   *(y-bubble_xycenter) / bubble_xyradius / bubble_xyradius + &
-                    (zi(k)-bubble_zcenter)*(zi(k)-bubble_zcenter) / bubble_zradius / bubble_zradius    )
+          rr =sqrt( rr + &
+                   (y-bubble_xycenter) * (y-bubble_xycenter) / bubble_xyradius / bubble_xyradius )
         endif
       
         !set pot. temperature on interfaces
-        if ( rr < one ) then 
+        if ( rr < 1.0 ) then 
 
-          qi(k) = bubble_moist_dq ! qi_s in many forms did not work
+          qi(k) = bubble_moist_dq 
 
           if (bubble_cosine) then
-            offset = cos(rr*dd_pi / two)
+            offset = cos(rr*dd_pi / 2.0 )
             th0(k) = bubble_T0 + bubble_dT * offset
 
             ! q = Rel Humidity * qs
             ! relative humidity = offset, or offset*, say, 0.9?
             qi(k) = offset * qi(k)
           else
+            !0/1 nonsmooth function
             ! qi is set above to const
             th0(k) = bubble_T0 + bubble_dT
           endif
@@ -379,7 +383,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
         elem(ie)%state%vtheta_dp(i,j,k,:) = dpm(k)*th0m(k)
 
         if (bubble_moist) then
-        elem(ie)%state%Q(i,j,k,1) =   ( qi(k) + qi(k+1) ) / two        
+        elem(ie)%state%Q(i,j,k,1) =   ( qi(k) + qi(k+1) ) / 2.0
         elem(ie)%state%Qdp(i,j,k,1,:) = dpm(k) * elem(ie)%state%Q(i,j,k,1)
         end if
       enddo !k loop
@@ -387,8 +391,9 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
     enddo; enddo !i,j loop
   enddo !ie loop
 
-!    real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)                 ! Tracer concentration               6
-!    real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2) 
+!indexing of Q, Qdp
+!Q   (np,np,nlev,qsize_d)   
+!Qdp (np,np,nlev,qsize_d,2) 
   if (bubble_moist) then
      ii=2
   else 
@@ -412,7 +417,7 @@ subroutine dry_bubble_init(elem,hybrid,hvcoord,nets,nete,d,f)
   call abortmp('planar rising bubble does not work with preqx')
 #endif
 
-end subroutine dry_bubble_init
+end subroutine bubble_init
 
 
 
