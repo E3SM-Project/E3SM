@@ -1000,6 +1000,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: diffusivity
       real (kind=RKIND), dimension(:), pointer :: channelDiffusivity
       real (kind=RKIND), dimension(:), pointer :: dcEdge
+      integer, dimension(:), pointer :: indexToEdgeID
       real (kind=RKIND), pointer :: deltatSGH
       real (kind=RKIND), pointer :: deltatSGHadvec
       real (kind=RKIND), pointer :: deltatSGHdiffu
@@ -1025,6 +1026,7 @@ module li_subglacial_hydro
       real(kind=RKIND) :: proposedDt
       real(kind=RKIND) :: masterDt
       real(kind=RKIND), dimension(5) :: localMinValues, reducedMinValues
+      integer, dimension(5) :: localLocValues, reducedLocValues
       integer :: iEdge
       real(kind=RKIND), save :: minDtSoFar
       integer, save :: numDtLess1
@@ -1072,6 +1074,7 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
          call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+         call mpas_pool_get_array(meshPool, 'indexToEdgeID', indexToEdgeID)
 
          ! Calculate advective CFL-limited time step
          dtSGHadvecBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(waterVelocity(1:nEdgesSolve)) &
@@ -1177,13 +1180,66 @@ module li_subglacial_hydro
       endif
 
       if (printDtInfo) then
+         ! Determine location of limiting Dt
+         ! NOTE: ignoring multiple blocks here.
+         if (localMinValues(1) == reducedMinValues(1)) then ! limiting edge is on this proc
+            localLocValues(1) = indexToEdgeID(minloc(dcEdge(1:nEdgesSolve) / (abs(waterVelocity(1:nEdgesSolve)) &
+               + 1.0e-12_RKIND), dim=1))
+         else
+            localLocValues(1) = -1
+         endif
+
+         if (localMinValues(2) == reducedMinValues(2)) then ! limiting edge is on this proc
+            localLocValues(2) = indexToEdgeID(minloc(dcEdge(1:nEdgesSolve)**2 / (diffusivity(1:nEdgesSolve) + 1.0e-12_RKIND), &
+                    dim=1))
+         else
+            localLocValues(2) = -1
+         endif
+
+         if (localMinValues(3) == reducedMinValues(3)) then ! limiting edge is on this proc
+            localLocValues(3) = indexToEdgeID(minloc(porosity * dcEdge(1:nEdgesSolve)**2 &
+                      / (2.0_RKIND * diffusivity(1:nEdgesSolve) + 1.0e-12_RKIND), dim=1))
+         else
+            localLocValues(3) = -1
+         endif
+
+         if (config_SGH_chnl_active) then
+            if (localMinValues(4) == reducedMinValues(4)) then ! limiting edge is on this proc
+               localLocValues(4) = indexToEdgeID(minloc(dcEdge(1:nEdgesSolve) / (abs(channelVelocity(1:nEdgesSolve)) &
+                  + 1.0e-12_RKIND), dim=1))
+            else
+               localLocValues(4) = -1
+            endif
+
+            if (localMinValues(5) == reducedMinValues(5)) then ! limiting edge is on this proc
+               localLocValues(5) = indexToEdgeID(minloc(dcEdge(1:nEdgesSolve)**2 / (channelDiffusivity(1:nEdgesSolve) + &
+                  1.0e-12_RKIND), dim=1))
+            else
+               localLocValues(5) = -1
+            endif
+
+            ! global reduce of locations
+            call mpas_timer_start("global reduce")
+            call mpas_dmpar_max_int_array(domain % dminfo, 5, localLocValues, reducedLocValues)
+            call mpas_timer_stop("global reduce")
+         else
+            call mpas_timer_start("global reduce")
+            call mpas_dmpar_max_int_array(domain % dminfo, 3, localLocValues, reducedLocValues)
+            call mpas_timer_stop("global reduce")
+         endif
+
+
          if (config_SGH_chnl_active) then
             call mpas_log_write("deltatSGH: used=$r, prev=$r, advec=$r, diffu=$r, pressure=$r, advecChannel=$r, diffuChannel=$r",&
               realArgs=(/proposedDt, deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure, deltatSGHadvecChannel, &
                          deltatSGHdiffuChannel/))
+            call mpas_log_write("Limiting edge IDs: advec=$i, diffu=$i, pressure=$i, advecChannel=$i, diffuChannel=$i", &
+               intArgs=reducedLocValues(1:5))
          else
             call mpas_log_write("deltatSGH: used=$r, previous=$r, advec=$r, diffu=$r, pressure=$r", &
               realArgs=(/proposedDt, deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure/))
+            call mpas_log_write("Limiting edge IDs: advec=$i, diffu=$i, pressure=$i", &
+               intArgs=reducedLocValues(1:3))
          endif
          call mpas_log_write("  min hydro dt used=$r; There were $i subcyles with dt<1s.", &
                  realArgs=(/minDtSoFar/), intArgs=(/numDtLess1/))
