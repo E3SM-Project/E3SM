@@ -146,6 +146,8 @@ contains
     call prim_init_ref_states_views (elem)
     call prim_init_diags_views (elem)
 
+    ! In order to print up to date stuff in F90
+    call prim_copy_cxx_to_f90 (.true.)
     call prim_printstate(elem, tl, hybrid,hvcoord,1, nelemd)
 
     is_model_inited = .true.

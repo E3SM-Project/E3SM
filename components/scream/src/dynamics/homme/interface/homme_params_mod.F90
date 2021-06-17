@@ -44,7 +44,7 @@ module homme_params_mod
     topology,               &    ! Mesh topology
     geometry,               &         ! Mesh geometry
     tstep_type,             &
-    ftype,                  & ! Unused in SCREAM
+    ftype,                  &
     dt_tracer_factor,       &
     dt_remap_factor,        &
     qsplit,                 &
@@ -157,7 +157,7 @@ contains
       mesh_file,                & ! Unused in SCREAM
       integration,              & ! Unused in SCREAM
       smooth,                   & ! Unused in SCREAM
-      se_ftype                    ! Unused in SCREAM
+      se_ftype
 
     namelist /vert_nl/    &
       vform,              &
@@ -183,6 +183,7 @@ contains
     runtype = 0
     statefreq = 99999
     geometry = "sphere"
+    se_ftype = ftype
 
     !-----------------------------!
     !     Parse namelist file     !
@@ -229,6 +230,7 @@ contains
     call MPI_bcast(tstep_type, 1, MPIinteger_t, par%root, par%comm, ierr)
     call MPI_bcast(qsplit,     1, MPIinteger_t, par%root, par%comm, ierr)
     call MPI_bcast(rsplit,     1, MPIinteger_t, par%root, par%comm, ierr)
+    call MPI_bcast(se_ftype,   1, MPIinteger_t, par%root, par%comm, ierr)
     call MPI_bcast(tstep,      1, MPIreal_t,    par%root, par%comm, ierr)
 
     ! Algorithmic params
@@ -282,7 +284,7 @@ contains
 
     ierr = timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, dt_remap_factor, dt_tracer_factor)
 
-    ftype = 0
+    ftype = se_ftype
     npart = par%nprocs
 
     use_moisture = ( moisture /= "dry") 

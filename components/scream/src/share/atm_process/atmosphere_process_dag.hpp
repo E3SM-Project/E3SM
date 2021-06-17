@@ -1,6 +1,8 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_DAG_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_DAG_HPP
 
+#include <memory>
+#include <string>
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/field/field_group.hpp"
 
@@ -13,7 +15,7 @@ public:
   static constexpr int VERB_MAX = 4;
 
   void create_dag (const group_type& atm_procs,
-                   const std::shared_ptr<FieldManager<Real>> field_mgr);
+                   const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs);
 
   void add_surface_coupling (const std::set<FieldIdentifier>& imports,
                              const std::set<FieldIdentifier>& exports);
@@ -30,7 +32,7 @@ protected:
   void cleanup ();
 
   void add_nodes (const group_type& atm_procs,
-                  const std::shared_ptr<FieldManager<Real>> field_mgr);
+                  const std::map<std::string,std::shared_ptr<FieldManager<Real>>>& field_mgrs);
 
   // Add fid to list of fields in the dag, and return its position.
   // If already stored, simply return its position

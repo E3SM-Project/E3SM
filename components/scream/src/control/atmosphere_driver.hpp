@@ -73,8 +73,6 @@ public:
   // Load initial conditions for atm inputs
   void initialize_fields (const util::TimeStamp& t0);
 
-  void initialize_constant_field(const std::string& name, const ekat::ParameterList& ic_pl);
-
   // Initialie I/O structures for output
   void initialize_output_manager ();
 
@@ -109,6 +107,7 @@ public:
 
 protected:
 
+  void initialize_constant_field(const FieldRequest& freq, const ekat::ParameterList& ic_pl);
   void register_groups ();
 
   std::map<std::string,field_mgr_ptr>    m_field_mgrs;
