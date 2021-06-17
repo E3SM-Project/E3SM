@@ -42,7 +42,8 @@ module crm_physics
    integer :: ixnumsnow = -1   ! snow number index
 
    ! Physics buffer indices  
-   integer :: ttend_dp_idx    = -1
+   integer :: ttend_dp_idx     = -1
+   integer :: mmf_clear_rh_idx = -1
 
    integer :: crm_t_rad_idx    = -1
    integer :: crm_qv_rad_idx   = -1
@@ -425,6 +426,9 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       
    end if
 
+   ! set pbuf indices
+   mmf_clear_rh_idx = pbuf_get_index('MMF_CLEAR_RH')
+
 end subroutine crm_physics_init
 
 subroutine crm_physics_final()
@@ -438,7 +442,7 @@ end subroutine crm_physics_final
 !===================================================================================================
 
 subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
-                            species_class, crm_ecpp_output, mmf_clear_rh, &
+                            species_class, crm_ecpp_output, &
                             mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
    !------------------------------------------------------------------------------------------------
    ! Purpose: CRM interface for the MMF configuration to update GCM state
@@ -492,7 +496,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    type(cam_out_t),                 intent(inout) :: cam_out          ! atm output to coupler
    integer,                         intent(in   ) :: species_class(:) ! aerosol species type
    type(crm_ecpp_output_type),      intent(inout) :: crm_ecpp_output  ! output data for ECPP calculations
-   real(r8), dimension(pcols,pver), intent(  out) :: mmf_clear_rh     ! clear air relative humidity used for aerosol water uptake
    real(r8), dimension(pcols),      intent(  out) :: mmf_qchk_prec_dp ! precipitation diagostic (liq+ice)  used for check_energy_chng
    real(r8), dimension(pcols),      intent(  out) :: mmf_qchk_snow_dp ! precipitation diagostic (ice only) used for check_energy_chng
    real(r8), dimension(pcols),      intent(  out) :: mmf_rad_flux     ! radiative flux diagnostic used for check_energy_chng
@@ -506,6 +509,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(r8), pointer :: snow_dp(:)          ! snow from deep convection (ZM)            [m/s]
 
    real(r8), pointer :: ttend_dp(:,:)       ! Convective heating for gravity wave drag
+   real(r8), pointer :: mmf_clear_rh(:,:)   ! clear air RH for aerosol water uptake
 
    integer lchnk                                   ! chunk identifier
    integer ncol                                    ! number of atmospheric columns
@@ -866,7 +870,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ! only need to do this once when crm_angle is static
       call pbuf_set_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
 
-      ! Set this output to zero on first step
+      ! Set clear air RH to zero on first step
+      call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
       mmf_clear_rh(1:ncol,1:pver) = 0
 
    else  ! not is_first_step
@@ -1478,6 +1483,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       !---------------------------------------------------------------------------------------------
       ! copy clear air relative humdity for aerosol water uptake
       !---------------------------------------------------------------------------------------------
+      call pbuf_get_field(pbuf, mmf_clear_rh_idx, mmf_clear_rh )
       ! initialize to zero, so no aerosol water uptake occurs by default
       mmf_clear_rh(1:ncol,1:pver) = 0
       do icol = 1,ncol
