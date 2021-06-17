@@ -810,14 +810,7 @@ contains
       enddo
 
       ! ---------------------------------------------------------------------------------
-      ! Part III: Process FATES output into the dimensions and structures that are part
-      ! of the HLMs API.  (column, depth, and litter fractions)
-      
-      ! ---------------------------------------------------------------------------------
-!      call this%UpdateLitterFluxes(bounds_clump)
-
-      ! ---------------------------------------------------------------------------------
-      ! Part III.2 (continued).
+      ! Part III
       ! Update diagnostics of the FATES ecosystem structure that are used in the HLM.
       ! ---------------------------------------------------------------------------------
       call this%wrap_update_hlmfates_dyn(nc,               &
@@ -1348,9 +1341,6 @@ contains
                        this%fates(nc)%bc_out(s))
                end do
 
-               ! this call transfers fates output bcs to the HLM
-!               call this%UpdateLitterFluxes(bounds_clump)
-
                ! ------------------------------------------------------------------------
                ! Re-populate all the hydraulics variables that are dependent
                ! on the key hydro state variables and plant carbon/geometry
@@ -1525,8 +1515,6 @@ contains
                    this%fates(nc)%bc_in(s), & 
                    this%fates(nc)%bc_out(s))
            end do
-
-!           call this%UpdateLitterFluxes(bounds_clump)
 
            ! ------------------------------------------------------------------------
            ! Update diagnostics of FATES ecosystem structure used in HLM.
