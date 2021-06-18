@@ -522,19 +522,19 @@ contains
                                                  surfaceFrictionVelocity(iCell), &
                                                  boundaryLayerDepth(iCell), &
                                                  cvmix_global_params)
-              else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
-                 call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
-                                                       windStressMeridional(iCell), &
-                                                       surfaceFrictionVelocity(iCell), &
-                                                       significantWaveHeight(iCell), &
-                                                       boundaryLayerDepth(iCell), &
-                                                       zonalWavenumberCoeff, &
-                                                       meridionalWavenumberCoeff, &
-                                                       alphaAngle, &
-                                                       langmuirNumber)
-                 call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
-                                                              langmuirNumber, &
-                                                              langmuirEnhancementFactor)
+              !else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+              !   call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
+              !                                         windStressMeridional(iCell), &
+              !                                         surfaceFrictionVelocity(iCell), &
+              !                                         significantWaveHeight(iCell), &
+              !                                         boundaryLayerDepth(iCell), &
+              !                                         zonalWavenumberCoeff, &
+              !                                         meridionalWavenumberCoeff, &
+              !                                         alphaAngle, &
+              !                                         langmuirNumber)
+              !   call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
+              !                                                langmuirNumber, &
+              !                                                langmuirEnhancementFactor)
               else
                  ! arbitrarily large Langmuir number
                  langmuirNumber = 1.e10_RKIND
@@ -710,19 +710,19 @@ contains
                                                surfaceFrictionVelocity(iCell), &
                                                boundaryLayerDepth(iCell), &
                                                cvmix_global_params)
-            else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
-                 call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
-                                                       windStressMeridional(iCell), &
-                                                       surfaceFrictionVelocity(iCell), &
-                                                       significantWaveHeight(iCell), &
-                                                       boundaryLayerDepth(iCell), &
-                                                       zonalWavenumberCoeff, &
-                                                       meridionalWavenumberCoeff, &
-                                                       alphaAngle, &
-                                                       langmuirNumber)
-                 call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
-                                                              langmuirNumber, &
-                                                              langmuirEnhancementFactor)
+            !else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+            !     call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
+            !                                           windStressMeridional(iCell), &
+            !                                           surfaceFrictionVelocity(iCell), &
+            !                                           significantWaveHeight(iCell), &
+            !                                           boundaryLayerDepth(iCell), &
+            !                                           zonalWavenumberCoeff, &
+            !                                           meridionalWavenumberCoeff, &
+            !                                           alphaAngle, &
+            !                                           langmuirNumber)
+            !     call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
+            !                                                  langmuirNumber, &
+            !                                                  langmuirEnhancementFactor)
             else
                langmuirEnhancementFactor = 1.0_RKIND
             end if

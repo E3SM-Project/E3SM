@@ -217,23 +217,31 @@ contains
 
       !-----------------------------------------------------------------
 
+      ! Calculate angle between wind and Langmuir cells
+
       call ocn_stokes_drift_evaluate(0.0_RKIND, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
                                      stokesDriftZonalSurface, stokesDriftMeridionalSurface)
 
-      ! Calculate angle between wind and Langmuir cells
       theta_ww = atan2(stokesDriftMeridionalSurface, stokesDriftZonalSurface) - atan2(windStressMeridional, windStressZonal)
+
       stokesDriftMagnitudeSurface = sqrt(stokesDriftZonalSurface**2 + stokesDriftMeridionalSurface**2)
-      denominator = surfaceFrictionVelocity/(0.4_RKIND*stokesDriftMagnitudeSurface) &
-                  * log(max(abs(boundaryLayerDepth/(4.0_RKIND*significantWaveHeight)),1.0_RKIND)) &
+
+      denominator = surfaceFrictionVelocity/(0.4_RKIND*max(stokesDriftMagnitudeSurface,1e-10_RKIND)) &
+                  * log(max(abs(boundaryLayerDepth/(4.0_RKIND*max(significantWaveHeight,1e-10_RKIND))),1.0_RKIND)) &
                   + cos(theta_ww)
       alpha = atan(sin(theta_ww)/denominator)
+
+      ! Calculate surface layer averaged, projected Langmuir number
 
       call ocn_stokes_drift_average(0.2_RKIND*boundaryLayerDepth, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
                                     stokesDriftZonalMLAvg, stokesDriftMeridionalMLAvg)
 
-      ! Calculate surface layer averaged, projected Langmuir number
+      theta_ww = atan2(stokesDriftMeridionalMLAvg, stokesDriftZonalMLAvg) - atan2(windStressMeridional, windStressZonal)
+
       stokesDriftMagnitudeMLAvg = sqrt(stokesDriftZonalMLAvg**2 + stokesDriftMeridionalMLAvg**2)
-      langmuirNumber = sqrt(surfaceFrictionVelocity*abs(cos(alpha))/(stokesDriftMagnitudeMLAvg*abs(cos(theta_ww-alpha))))
+
+      langmuirNumber = sqrt(surfaceFrictionVelocity*abs(cos(alpha)) &
+                            / max(stokesDriftMagnitudeMLAvg*abs(cos(theta_ww-alpha)),1e-10_RKIND))
 
 
       !-----------------------------------------------------------------
@@ -275,10 +283,10 @@ contains
 
       !-----------------------------------------------------------------
 
-      enhancementFactor = abs(cos(alpha))                          &
-                        * sqrt(1.0_RKIND                           &
-                        + 1.0_RKIND/(1.5_RKIND*langmuirNumber)**2  &
-                        + 1.0_RKIND/(5.4_RKIND*langmuirNumber)**4) 
+      enhancementFactor = min(5.0_RKIND,abs(cos(alpha)))    &
+                        * sqrt(1.0_RKIND                    &
+                        + (1.5_RKIND*langmuirNumber)**(-2)  &
+                        + (5.4_RKIND*langmuirNumber)**(-4)) 
 
       !-----------------------------------------------------------------
 
