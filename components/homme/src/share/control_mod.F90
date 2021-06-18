@@ -645,7 +645,6 @@ subroutine set_planar_defaults()
 !if true, most likely lx,ly,sx,sy weren't set in ctl_nl
     if (      abs(lx).le.tol_zero .and. abs(ly).le.tol_zero &
         .and. abs(sx).le.tol_zero .and. abs(sy).le.tol_zero )then
-
     if (test_case == "planar_dbl_vrtx") then
       Lx = 5000.0D0 * 1000.0D0
       Ly = 5000.0D0 * 1000.0D0
@@ -682,7 +681,6 @@ subroutine set_planar_defaults()
        Sx = -25.6D0 * 1000.0D0
        Sy = -25.6D0 * 1000.0D0
     else if (test_case == "planar_rising_bubble" ) then
-       case_planar_bubble = .TRUE.
        Lx = 1.0D0 * 10000.0D0
        Ly = 1.0D0 * 10000.0D0
        Sx = -5000.0D0
@@ -706,6 +704,10 @@ subroutine set_planar_defaults()
 
     endif
     endif !if lx,ly,sx,sy are not set in nl
+
+    if (test_case == "planar_rising_bubble" ) then
+       case_planar_bubble = .TRUE.
+    end if
 
 end subroutine set_planar_defaults
 

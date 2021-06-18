@@ -118,7 +118,8 @@ use physical_constants, only : dx, dy, dx_ref, dy_ref
     bubble_cosine, &
     bubble_moist, &
     bubble_moist_dq, &
-    bubble_prec_type
+    bubble_prec_type, &
+    case_planar_bubble
 #endif
 
 
@@ -832,6 +833,8 @@ endif
     call MPI_bcast(bubble_moist ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(bubble_moist_dq ,1,MPIreal_t,par%root,par%comm,ierr)
     call MPI_bcast(bubble_prec_type, 1, MPIinteger_t, par%root,par%comm,ierr)
+
+    call MPI_bcast(case_planar_bubble,1,MPIlogical_t,par%root,par%comm,ierr)
 #endif
 
     call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
