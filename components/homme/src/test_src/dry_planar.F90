@@ -196,7 +196,7 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   real(rl),           intent(in)            :: f                        ! (const) Coriolis force
 
   integer :: i,j,k,ie,ii
-  real(rl):: x,y,one,two,offset
+  real(rl):: x,y,offset
   real(rl):: pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr, &
              qi_s(nlevp), qm_s(nlev), Ti(nlevp), qi(nlevp), ri(nlevp), rm_s(nlev)
 
@@ -373,8 +373,8 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
       do k=1,nlev
         !set pottemp, dp, other state vars on midlevels
-        !th0m(k)=(th0(k)+th0(k+1))/ two
-        th0m(k)=(th0(k)*ri(k)+th0(k+1)*ri(k+1))/ two /rgas
+        !th0m(k)=(th0(k)+th0(k+1))/ 2.0
+        th0m(k)=(th0(k)*ri(k)+th0(k+1)*ri(k+1))/ 2.0 /rgas
 
         elem(ie)%state%dp3d(i,j,k,:)   = dpm(k)
       
