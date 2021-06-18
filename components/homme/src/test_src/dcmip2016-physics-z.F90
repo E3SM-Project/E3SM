@@ -256,12 +256,10 @@ SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, theta, qv, qc, qr, rho, &
     t(k) = theta(k)*exner(k)
   enddo
 
-
   !------------------------------------------------
   ! Large-scale precipitation (Reed-Jablonowski)
   !------------------------------------------------
-!  if (prec_type .eq. 1) then
-  if (.true.) then
+  if (prec_type .eq. 1) then
     precl = 0.d0
 
     do k=1, nz
@@ -283,8 +281,7 @@ SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, theta, qv, qc, qr, rho, &
   !------------------------------------------------
   ! Large-scale precipitation (Kessler)
   !------------------------------------------------
-!  elseif (prec_type .eq. 0) then
-  else
+  elseif (prec_type .eq. 0) then
     !do k=1,nz
     !  exner(k) = (p(k) / p0)**(rair/cpair)
     !  theta(k) = t(k) / exner(k)
@@ -311,9 +308,9 @@ SUBROUTINE DCMIP2016_PHYSICS(test, u, v, p, theta, qv, qc, qr, rho, &
       t(k) = p(k) / (rhom(k) * rair * (one + zvir * qv(k)))
     enddo
 
-!  else
-!    write(*,*) 'Invalid prec_type specified in DCMIP2016_PHYSICS', prec_type
-!    stop
+  else
+    write(*,*) 'Invalid prec_type specified in DCMIP2016_PHYSICS', prec_type
+    stop
   endif
 
   !----------------------------------------------------
