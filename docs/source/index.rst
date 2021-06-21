@@ -11,12 +11,7 @@ E3SM Diagnostics Package v2
 Welcome to the E3SM Diagnostics Package documentation hub.
 
 To change the documentation version, use the version selector in the bottom left-hand corner.
-For documentation < ``v2.5.0``:
-
-* `v2.4.0 <https://e3sm-project.github.io/e3sm_diags/_build_old/html-v2-4-0/index.html>`_
-* `v2.3.0 <https://e3sm-project.github.io/e3sm_diags/_build_old/html-v2-3-0/index.html>`_
-
-`Older v2 releases are still compatible with all available v2 docs since there are no breaking changes.`
+Please note, documentation for versions ``<v2.5.0`` are not available in the version selector.
 
 .. toctree::
    :maxdepth: 2
