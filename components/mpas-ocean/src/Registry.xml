@@ -2391,9 +2391,6 @@
 		<var name="daysSinceStartOfSim" type="real" dimensions="Time" units="days"
 			 description="Time since simulationStartTime, for plotting"
 	 	/>
-		<var name="edgeAreaFractionOfCell" type="real" dimensions="maxEdges nCells" units="unitless"
-			 description="edgeAreaFractionOfCell(iEdge, iCell) is the fractional area of cell iCell encompassed by the triangle with edge iEdge connected to the cell center of cell iCell. On a perfect planar hex mesh this is always 1/6. This weighting is used to interpolate scalars from edges to cell centers. Use 2*edgeAreaFractionOfCell to interpolate normal vectors at edges to vector norms at cell centers."
-		/>
 		<var name="salinitySurfaceRestoringTendency" type="real" dimensions="nCells Time" units="m PSU/s" packages="activeTracersSurfaceRestoringPKG"
 			 description="salinity tendency due to surface restoring"
 		/>
@@ -2705,9 +2702,6 @@
 		/>
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
 			description="meridional gradient of the coriolis parameter"
-		/>
-		<var name="c_Visbeck" type="real" dimensions="nEdges Time" units="m s^{-1}"
-			description="baroclinic wave speed from Visbeck parameterization"
 		/>
 		<var name="eddyLength" type="real" dimensions="nEdges Time" units="m"
 			description="eddy length scale in Visbeck 1997 closure"

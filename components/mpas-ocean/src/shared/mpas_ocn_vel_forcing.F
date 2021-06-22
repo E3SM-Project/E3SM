@@ -117,7 +117,7 @@ contains
 
       !*** initialize error flag, then call individual forcing routines
 
-      !*** initialize error flag, then call individual forcing routines
+      err = 0
 
       call ocn_vel_forcing_surface_stress_tend(sfcFlxAttCoeff, &
                    surfaceStress, layerThicknessEdge, tend, err1)
