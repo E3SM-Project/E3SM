@@ -170,7 +170,7 @@ class TestAllSets(unittest.TestCase):
 
         image_name = os.path.split(png_path)[-1]
         path_to_actual_png = full_png_path
-        path_to_expected_png = "../unit_test_images/{}".format(png_path)
+        path_to_expected_png = "integration_test_images/{}".format(png_path)
 
         if "CHECK_IMAGES" in os.environ:
             # Set `export CHECK_IMAGES=True` to do a pixel-by-pixel image comparison check.
@@ -335,7 +335,7 @@ class TestAllSets(unittest.TestCase):
     # Test the image count
     def test_image_count(self):
         actual_num_images, actual_images = count_images("all_sets_results_test")
-        expected_num_images, expected_images = count_images("../unit_test_images")
+        expected_num_images, expected_images = count_images("integration_test_images")
         self.assertEqual(actual_images, expected_images)
         self.assertEqual(actual_num_images, expected_num_images)
 

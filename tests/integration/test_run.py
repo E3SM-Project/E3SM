@@ -54,8 +54,8 @@ class TestRun(unittest.TestCase):
         enso_param.end_yr = "2004"
 
         streamflow_param = StreamflowParameter()
-        streamflow_param.test_data_path = "unit_test_data/3yr_nc"
-        streamflow_param.reference_data_path = "unit_test_data"
+        streamflow_param.test_data_path = "integration_test_data/3yr_nc"
+        streamflow_param.reference_data_path = "integration_test_data"
 
         self.runner.sets_to_run = [
             "lat_lon",

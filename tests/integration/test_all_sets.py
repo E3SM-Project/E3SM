@@ -27,9 +27,8 @@ class TestAllSets(unittest.TestCase):
 
     def run_test(self, backend):
         pth = os.path.dirname(__file__)
-        test_pth = os.path.join(pth, "unit_test_data")
-        cfg_pth = os.path.join(pth, "system")
-        cfg_pth = os.path.join(cfg_pth, "all_sets_modified.cfg")
+        test_pth = os.path.join(pth, "integration_test_data")
+        cfg_pth = os.path.join(pth, "all_sets_modified.cfg")
         cfg_pth = os.path.abspath(cfg_pth)
 
         if backend == "mpl":

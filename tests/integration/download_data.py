@@ -67,17 +67,17 @@ def download_files(url_prefix, url_suffix, directory_prefix=None):
 
 
 def download():
-    print("Downloading unit_test_data")
+    print("Downloading integration_test_data")
     download_files(
-        "https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data",
-        "unit_test_data",
+        "https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/integration",
+        "integration_test_data",
     )
-    print("Downloading unit_test_images")
+    print("Downloading integration_test_images")
     download_files(
-        "https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/system_test/expected",
-        "unit_test_images",
+        "https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/integration/expected",
+        "integration_test_images",
     )
-    print("Downloaded unit_test_data and unit_test_images")
+    print("Downloaded integration_test_data and integration_test_images")
 
 
 if __name__ == "__main__":

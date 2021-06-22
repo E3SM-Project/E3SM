@@ -1,22 +1,57 @@
 Testing E3SM Diagnostics
 ==============================================
 
-Unit tests
-----------
+Unit and integration tests
+--------------------------
 
-Run all unit tests by doing the following:
+Run all automated tests by doing the following:
 
     .. code::
 
         pip install . # Install your changes
-        ./tests/test.sh # Run all unit tests
+        ./tests/test.sh # Run all unit and integration tests
+
+
+If these tests pass, you're done. If they fail unexpectedly however,
+your code might have changed what the output looks like.
+
+``ls tests/integration/image_check_failures``
+will show you all the images that differ from expected.
+
+If you see unexpected images listed, you'll have to investigate why your
+code changed what the images look like.
+
+If the only images listed are ones you expected to see changed,
+then you need to update the expected images.
+
+
+    .. code::
+
+        cd /lcrc/group/e3sm/public_html/e3sm_diags_test_data/integration/expected
+        cat README.md
+        # This will show you the version, date, and hash of the current expected images.
+        # Using that information do the following:
+        mv integration_test_images previous_output/integration_test_images_<version>_<date>_<hash>
+        # `cd` back into your E3SM Diags directory.
+        # Your output will now become the new expectation.
+        mv all_sets_results /lcrc/group/e3sm/public_html/e3sm_diags_test_data/integration/expected/integration_test_images
+        cd /lcrc/group/e3sm/public_html/e3sm_diags_test_data/integration/expected
+
+Run ``./tests/test.sh`` again. Now, the test should pass.
+
+After merging your pull request, edit ``README.md``.
+The version should be the version of E3SM Diags you ran ``./tests/test.sh`` with,
+the date should be the date you ran ``./tests/test.sh`` on,
+and the hash should be for the top commit shown by ``git log`` or on
+https://github.com/E3SM-Project/e3sm_diags/commits/master.
+
 
 Automated tests
 ---------------
 
 We have a :ref:`GitHub Actions <ci-cd>` Continuous Integration / Continuous Delivery (CI/CD) workflow.
 
-The unit tests are run automatically as part of this.
+The unit and integration tests are run automatically as part of this.
 
 Complete run test
 -----------------
@@ -73,15 +108,11 @@ then you need to update the expected images.
         find . -type f -name '*.png' > ../image_list_all_sets.txt
         cd ..
 
-Now, edit ``README.md``. The version should be the version of E3SM Diags you ran
+Run ``python -m unittest tests/complete_run.py`` again. Now, the test should pass.
+
+After merging your pull request, edit ``README.md``.
+The version should be the version of E3SM Diags you ran
 ``python -m unittest tests/complete_run.py`` with,
 the date should be the date you ran ``python -m unittest tests/complete_run.py`` on,
-and the hash should be for the top commit shown by ``git log``.
-
-    .. warning::
-
-        If you later update your commit history before merging into ``master``, then
-        change the hash to be the latest commit in your pull request right before
-        merging.
-
-Run ``python -m unittest tests/complete_run.py`` again. Now, the test should pass.
+and the hash should be for the top commit shown by ``git log`` or on
+https://github.com/E3SM-Project/e3sm_diags/commits/master.

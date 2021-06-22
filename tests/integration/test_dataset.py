@@ -17,7 +17,9 @@ class TestDataset(unittest.TestCase):
         self.parameter = CoreParameter()
 
     def test_convert_units(self):
-        with cdms2.open(get_abs_file_path("unit_test_data/precc.nc")) as precc_file:
+        with cdms2.open(
+            get_abs_file_path("integration_test_data/precc.nc")
+        ) as precc_file:
             var = precc_file("PRECC")
 
         new_var = acme_derivations.convert_units(var, "mm/day")
@@ -79,7 +81,7 @@ class TestDataset(unittest.TestCase):
         # We pass in the path to a file, so the input directory
         # to the tests doesn't need to be like how it is for when e3sm_diags
         # is ran wit a bunch of diags.
-        self.parameter.reference_data_path = "./unit_test_data"
+        self.parameter.reference_data_path = "./integration_test_data"
         self.parameter.ref_file = "ta_ERA-Interim_ANN_198001_201401_climo.nc"
         data = Dataset(self.parameter, ref=True)
         self.assertEqual(data.get_attr_from_climo("Conventions", "ANN"), "CF-1.0")
@@ -93,7 +95,7 @@ class TestDataset(unittest.TestCase):
             }
         }
 
-        precc_file = cdms2.open(get_abs_file_path('unit_test_data/precc.nc'))
+        precc_file = cdms2.open(get_abs_file_path('integration_test_data/precc.nc'))
         acme_derivations.process_derived_var('PRECT', derived_var,
                                  precc_file, self.parameter)
         precc_file.close()
@@ -107,7 +109,7 @@ class TestDataset(unittest.TestCase):
             }
         }
 
-        precc_file = cdms2.open(get_abs_file_path('unit_test_data/precc.nc'))
+        precc_file = cdms2.open(get_abs_file_path('integration_test_data/precc.nc'))
         with self.assertRaises(RuntimeError):
             acme_derivations.process_derived_var(
                 'PRECT', wrong_derived_var, precc_file, self.parameter)
@@ -127,7 +129,7 @@ class TestDataset(unittest.TestCase):
         }
 
         # add derived_var_dict to default_derived_vars
-        precc_file = cdms2.open(get_abs_file_path('unit_test_data/precc.nc'))
+        precc_file = cdms2.open(get_abs_file_path('integration_test_data/precc.nc'))
         self.parameter.derived_variables = derived_var_dict
         acme_derivations.process_derived_var(
             'PRECT', default_derived_vars, precc_file, self.parameter)
@@ -157,7 +159,7 @@ class TestDataset(unittest.TestCase):
         }
 
         # add derived_var_dict to default_derived_vars
-        precc_file = cdms2.open(get_abs_file_path('unit_test_data/precc.nc'))
+        precc_file = cdms2.open(get_abs_file_path('integration_test_data/precc.nc'))
         self.parameter.derived_variables = derived_var_dict
         msg = acme_derivations.process_derived_var(
             'PRECT', default_derived_vars, precc_file, self.parameter)
@@ -179,7 +181,7 @@ class TestDataset(unittest.TestCase):
             ])
         }
 
-        precc_file = cdms2.open(get_abs_file_path('unit_test_data/precc.nc'))
+        precc_file = cdms2.open(get_abs_file_path('integration_test_data/precc.nc'))
         self.parameter.derived_variables = derived_var_dict
         acme_derivations.process_derived_var(
             'PRECT', default_derived_vars, precc_file, self.parameter)
@@ -189,9 +191,9 @@ class TestDataset(unittest.TestCase):
                          default_derived_vars['PRECT'].keys())
 
     def test_mask_by(self):
-        with cdms2.open(get_abs_file_path('unit_test_data/precc.nc')) as precc_file:
+        with cdms2.open(get_abs_file_path('integration_test_data/precc.nc')) as precc_file:
             prcc = precc_file('PRECC')
-        with cdms2.open(get_abs_file_path('unit_test_data/precl.nc')) as precl_file:
+        with cdms2.open(get_abs_file_path('integration_test_data/precl.nc')) as precl_file:
             prcl = precl_file('PRECL')
 
         acme_derivations.mask_by(prcc, prcl, low_limit=2.0)
