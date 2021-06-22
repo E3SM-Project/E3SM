@@ -12,6 +12,7 @@
 #include "Context.hpp"
 #include "SimulationParams.hpp"
 #include "Types.hpp"
+#include "FunctorsBuffersManager.hpp"
 
 #include "ekat/util/ekat_feutils.hpp"
 #include "ekat/ekat_assert.hpp"
@@ -56,6 +57,15 @@ TEST_CASE("scream_homme_stand_alone", "scream_homme_stand_alone") {
   // Init, run, and finalize
   util::TimeStamp time (0,0,0,0);
   ad.initialize(atm_comm,ad_params,time);
+
+  // Add checks to verify AD memory buffer and Homme FunctorsBuffersManager
+  // are the same size and reference the same memory.
+  auto& fbm  = Homme::Context::singleton().get<Homme::FunctorsBuffersManager>();
+  auto& memory_buffer = ad.get_memory_buffer();
+  EKAT_ASSERT_MSG(fbm.allocated_size()*sizeof(Real) == (long unsigned int)memory_buffer.allocated_bytes(),
+                  "Error! AD memory buffer and Homme FunctorsBuffersManager have mismatched sizes.");
+  EKAT_ASSERT_MSG(fbm.get_memory() == memory_buffer.get_memory(),
+                  "Error! AD memory buffer and Homme FunctorsBuffersManager reference different memory.");
 
   // Have to wait till now to get homme's parameters, cause it only gets init-ed during the driver initialization
   const auto& sp = Homme::Context::singleton().get<Homme::SimulationParams>();
