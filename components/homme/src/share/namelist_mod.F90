@@ -16,9 +16,8 @@ module namelist_mod
 #endif
 use physical_constants, only : rearth, rrearth, DD_PI
 
-!OG is phys_const mod the best place for these?
 use physical_constants, only : scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor
-use physical_constants, only : dx, dy, dx_ref, dy_ref
+use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
   use control_mod, only : &
     MAX_STRING_LEN,&
@@ -105,8 +104,6 @@ use physical_constants, only : dx, dy, dx_ref, dy_ref
 !PLANAR setup
 #ifndef CAM
   use control_mod, only:              &
-    Lx, Ly, &
-    Sx, Sy, &
     set_planar_defaults,&
     bubble_T0, &
     bubble_dT, &
@@ -536,11 +533,6 @@ if (test_case(1:7)=="planar_") then
 !check on Lx, Ly
 if(lx .le. 0.d0 .or. ly .le. 0.d0) then
 call abortmp('for planar tests, planar_lx and planar_ly should be >0')
-endif
-
-!forcing q1=0 if bubble is dry
-if (.not. bubble_moist) then
-   bubble_moist_dq = 0.0
 endif
 
 endif

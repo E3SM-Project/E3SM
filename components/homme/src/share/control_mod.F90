@@ -254,8 +254,6 @@ module control_mod
   real (kind=real_kind), public :: interp_lon0     = 0.0d0
 
 !PLANAR
-  real (kind=real_kind), public :: Lx, Ly !domain size
-  real (kind=real_kind), public :: Sx, Sy !shift
   real (kind=real_kind), private, parameter :: tol_zero=1e-10 !tolerance to determine if lx,ly,sx,sy are set
 
   real (kind=real_kind), public :: bubble_T0 = 270.0       !bubble ref state
@@ -639,9 +637,10 @@ contains
 
 
 subroutine set_planar_defaults()
+
+use physical_constants, only: Lx, Ly, Sx, Sy
  
 !since defaults here depend on test, they cannot be set before ctl_nl is read, unlike some other parameters, bubble_*, etc.        
-
 !if true, most likely lx,ly,sx,sy weren't set in ctl_nl
     if (      abs(lx).le.tol_zero .and. abs(ly).le.tol_zero &
         .and. abs(sx).le.tol_zero .and. abs(sy).le.tol_zero )then

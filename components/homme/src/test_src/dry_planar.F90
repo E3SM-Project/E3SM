@@ -192,8 +192,8 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
   use control_mod, only: bubble_T0, bubble_dT, bubble_xycenter, bubble_zcenter, bubble_ztop, &
                          bubble_xyradius,bubble_zradius, bubble_cosine, &
-                         bubble_moist, bubble_moist_dq, bubble_prec_type, &
-                         Lx, Ly, Sx, Sy
+                         bubble_moist, bubble_moist_dq, bubble_prec_type
+  use physical_constants, only: Lx, Ly, Sx, Sy
   use element_ops, only: set_elem_state
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
@@ -212,7 +212,6 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
              phis_init(np,np,nlevp),t_init(np,np,nlev),p_init(np,np,nlev), &
              zi_init(np,np,nlevp), zm_init(np,np,nlev)
              
-
   if (qsize < 3 .and. bubble_moist) then
     call abortmp('planar moist bubble requires at least 3 tracers')
   endif

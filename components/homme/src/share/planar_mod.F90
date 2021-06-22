@@ -17,10 +17,10 @@ module planar_mod
   use parallel_mod, only : abortmp
   use dimensions_mod, only : np,ne_x,ne_y
   use coordinate_systems_mod, only : cartesian3D_t, cartesian2d_t
-  use control_mod, only : hypervis_scaling, cubed_sphere_map, Lx, Ly, Sx, Sy
+  use control_mod, only : hypervis_scaling, cubed_sphere_map
   use spacecurve_mod, only : GilbertCurve
 
-  use physical_constants, only: dx, dy, dx_ref, dy_ref
+  use physical_constants, only: Lx, Ly, Sx, Sy, dx, dy, dx_ref, dy_ref
 
   implicit none
   private
