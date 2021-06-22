@@ -205,7 +205,7 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   integer :: i,j,k,ie,ii
   real(rl):: x,y,offset
   real(rl):: pi(nlevp), pm(nlev), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr, &
-             qi_s(nlevp), qm_s(nlev), Ti(nlevp), Tm(nlev), qi(nlevp), ri(nlevp), rm_s(nlev)
+             qi_s(nlevp), qm_s(nlev), Ti(nlevp), Tm(nlev), qi(nlevp)
 
   real(rl):: zero_mid_init(np,np,nlev),zero_int_init(np,np,nlevp), &
              dp_init(np,np,nlev),ps_init(np,np), &
@@ -252,7 +252,6 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   !create hybrid coords now from pi
   !note that this code should not depend on partitioning
   !it depends on ref pressure profile, whcih is init-ed in the same way for all elements/gll
-
 #if 0
   !almost sigma
   ai(:) = 0.0; bi(:) = 0.0
@@ -294,47 +293,9 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
   do k=1,nlev
     qm_s(k)=(qi_s(k+1)+qi_s(k)) / 2.0
-!    rm_s(k) = Rgas + (Rwater_vapor - Rgas)*qm_s(k)
   enddo
 
-
-
-
-#if 0
-
-  !for the background state
-  !reset z to the discrete hydro balance
-  !if one wants to keep z levels exactly evenly spaced instead
-  !they would have to compute p (hydro) and dp3d from the discrete EOS
-  !via iteration (?) 
-  !whole init-ed element is needed to call phi_from_EOS()
-  do j=1,np; do i=1,np
-    elem(1)%state%phis(i,j) = 0.0
-    elem(1)%state%dp3d(i,j,1:nlev,1) = dpm(1:nlev)
-
-    !theta_v = Rstar / R  * theta
-    elem(1)%state%vtheta_dp(i,j,1:nlev,1) =  bubble_T0 * rm_s(1:nlev) / Rgas * dpm(1:nlev)
-  enddo; enddo
-
-!replace with get field? no. this is not general enough.
-!we also need hydro phi on midlevels
-  call phi_from_eos(hvcoord,elem(1)%state%phis,elem(1)%state%vtheta_dp(:,:,:,1),&
-       elem(1)%state%dp3d(:,:,:,1),elem(1)%state%phinh_i(:,:,:,1))
-
-  !reset zi array
-  zi(1:nlevp) = elem(1)%state%phinh_i(1,1,1:nlevp,1)/g !<- i,j,k,tl
-  !if needed,
-  !reset zm to be an average as it is consistent with Taylor2020 eqn (30)
-  !but zm is not used below, so, not done
-
-#endif
-
-
-
-
-
-
-
+  !set some of element-size arrays
   zero_mid_init(:,:,:) = 0.0
   zero_int_init(:,:,:) = 0.0
   do j=1,np; do i=1,np;
@@ -345,7 +306,7 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
     dp_init(i,j,1:nlev) = dpm(1:nlev)
   enddo; enddo
 
-  ! set initial conditions for each element
+  ! set the rest of conditions for each element
   do ie = nets,nete
     do j=1,np; do i=1,np
 
@@ -370,16 +331,12 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
         if ( rr < 1.0 ) then 
 
 !ugh below is not q_s+dq*cosine
-
           qi(k) = bubble_moist_dq 
 
           if (bubble_cosine) then
             offset = cos(rr*dd_pi / 2.0 )
             th0(k) = bubble_T0 + bubble_dT * offset
-
-            ! q = Rel Humidity * qs
-            ! relative humidity = offset, or offset*, say, 0.9?
-            qi(k) = offset * qi(k)
+            qi(k)  = offset * qi(k)
           else
             !0/1 nonsmooth function
             ! qi is set above to const
@@ -394,41 +351,22 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
         endif
 
-        !theta, qi  was set above
-!        ri(k) = Rgas + (Rwater_vapor - Rgas)*qi(k)
-        
       enddo ! k loop
 
-!      elem(ie)%state%ps_v(i,j,:) = pi(nlevp)
-
-      do k=1,nlev
-!        th0m(k)=(th0(k)*ri(k)+th0(k+1)*ri(k+1))/ 2.0 /rgas
-!        elem(ie)%state%dp3d(i,j,k,:)   = dpm(k)    
-!        elem(ie)%state%phis(i,j) = 0.0
-!        elem(ie)%state%phinh_i(i,j,k,:) = zi(k)*g
-!        elem(ie)%state%vtheta_dp(i,j,k,:) = dpm(k)*th0m(k)
-      enddo
-
+      !set theta on midlevels and then T from theta, exner
       th0m(1:nlev) = (th0(1:nlev) + th0(2:nlevp) ) / 2.0
       t_init(i,j,1:nlev) = th0m(1:nlev) * ( pm(1:nlev)/p0 )**kappa
-      
-
+   
+      !set Q before set_elem_state   
       if (bubble_moist) then
         do k=1,nlev
-
-!        th0m(k)=(th0(k)*ri(k)+th0(k+1)*ri(k+1))/ 2.0 /rgas
-!        elem(ie)%state%dp3d(i,j,k,:)   = dpm(k)    
-!        elem(ie)%state%phis(i,j) = 0.0
-!        elem(ie)%state%phinh_i(i,j,k,:) = zi(k)*g
-!        elem(ie)%state%vtheta_dp(i,j,k,:) = dpm(k)*th0m(k)
-
-           elem(ie)%state%Q(i,j,k,1) =   ( qi(k) + qi(k+1) ) / 2.0
+          elem(ie)%state%Q(i,j,k,1) =   ( qi(k) + qi(k+1) ) / 2.0
         enddo        
       else
-         elem(ie)%state%Q(i,j,:,1) =   0.0
+        elem(ie)%state%Q(i,j,:,1) =   0.0
       end if
 
-!set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,zm,zi,g,elem,n0,n1,ntQ)
+      !call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,zm,zi,g,elem,n0,n1,ntQ)
       call set_elem_state(zero_mid_init,zero_mid_init,zero_mid_init, &
                           zero_int_init,t_init,ps_init,zero_mid_init(:,:,1), &
                           p_init,dp_init,zm_init,zi_init,g,elem(ie),1,3,-1)
@@ -436,9 +374,9 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
     enddo; enddo !i,j loop
   enddo !ie loop
 
-!indexing of Q, Qdp
-!Q   (np,np,nlev,qsize_d)   
-!Qdp (np,np,nlev,qsize_d,2) 
+  !indexing of Q, Qdp
+  !Q   (np,np,nlev,qsize_d)   
+  !Qdp (np,np,nlev,qsize_d,2) 
   if (bubble_moist) then
      ii=2
   else 
