@@ -72,6 +72,7 @@ module ocn_forward_mode
    use ocn_tracer_MacroMolecules
    use ocn_tracer_surface_restoring
    use ocn_gm
+   use ocn_stokes_drift 
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -318,6 +319,9 @@ module ocn_forward_mode
       ! Update any mesh fields that may have been modified during init
       call ocn_meshUpdateFields(domain)
 
+      ! Update any mesh fields that may have been modified during init
+      call ocn_meshUpdateFields(domain)
+
       if (config_conduct_tests) then
          call mpas_timer_start("test suite")
          call ocn_test_suite(domain,ierr)
@@ -450,6 +454,8 @@ module ocn_forward_mode
       call ocn_vmix_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_tendency_init(err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call ocn_stokes_drift_init(err_tmp)
       ierr = ior(ierr,err_tmp)
 
       if (ierr /= 0) then

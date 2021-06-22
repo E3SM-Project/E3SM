@@ -23,6 +23,7 @@ module ocn_vmix_cvmix
    use ocn_config
    use ocn_mesh
    use ocn_diagnostics_variables
+   use ocn_stokes_drift
 
    use cvmix_kinds_and_types
    use cvmix_put_get
@@ -167,7 +168,26 @@ contains
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed, OBLDepths, interfaceForcings
       logical :: bulkRichardsonFlag
 
-      real (kind=RKIND) :: langmuirEnhancementFactor, langmuirNumber
+      real (kind=RKIND) :: langmuirEnhancementFactor, langmuirNumber, alphaAngle
+      real (kind=RKIND), dimension(6) :: zonalWavenumberCoeff 
+      real (kind=RKIND), dimension(6) :: meridionalWavenumberCoeff
+
+      real(kind=RKIND), dimension(:), pointer :: stokesDriftZonalWavenumber1, &
+                                                 stokesDriftZonalWavenumber2, &
+                                                 stokesDriftZonalWavenumber3, &
+                                                 stokesDriftZonalWavenumber4, &
+                                                 stokesDriftZonalWavenumber5, &
+                                                 stokesDriftZonalWavenumber6
+      real(kind=RKIND), dimension(:), pointer :: stokesDriftMeridionalWavenumber1, &
+                                                 stokesDriftMeridionalWavenumber2, &
+                                                 stokesDriftMeridionalWavenumber3, &
+                                                 stokesDriftMeridionalWavenumber4, &
+                                                 stokesDriftMeridionalWavenumber5, &
+                                                 stokesDriftMeridionalWavenumber6
+      real(kind=RKIND), dimension(:), pointer :: significantWaveHeight
+      real(kind=RKIND), dimension(:), pointer :: windStressZonal, windStressMeridional
+
+
 
       !-----------------------------------------------------------------
       !
@@ -233,6 +253,22 @@ contains
       !
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
       call mpas_pool_get_array(forcingPool, 'windSpeed10m', windSpeed10m)
+      call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
+      call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
+
+      call mpas_pool_get_array(forcingPool, 'significantWaveHeight', significantWaveHeight)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber1', stokesDriftZonalWavenumber1)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber1', stokesDriftMeridionalWavenumber1)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber2', stokesDriftZonalWavenumber2)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber2', stokesDriftMeridionalWavenumber2)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber3', stokesDriftZonalWavenumber3)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber3', stokesDriftMeridionalWavenumber3)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber4', stokesDriftZonalWavenumber4)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber4', stokesDriftMeridionalWavenumber4)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber5', stokesDriftZonalWavenumber5)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber5', stokesDriftMeridionalWavenumber5)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber6', stokesDriftZonalWavenumber6)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6)
 
       nCells = nCellsArray( size(nCellsArray) )
 
@@ -305,6 +341,10 @@ contains
       end do
       Nsqr_iface(nVertLevelsP1) = 0.0_RKIND
 
+      if (config_cvmix_kpp_use_active_wave) then
+        call ocn_stokes_drift_reconstruct(forcingPool)
+      end if
+
       call mpas_timer_start('cvmix cell loop', .false.)
       do kpp_stage = 1,2
       ! TODO, mdt: determine where the openmp data race is coming from in this loop
@@ -357,6 +397,23 @@ contains
          cvmix_variables % OceanDepth = bottomDepth(iCell)
          cvmix_variables % WaterDensity_cntr => density(1:maxLevelCell(iCell), iCell)
          cvmix_variables % AdiabWaterDensity_cntr => displacedDensity(1:maxLevelCell(iCell), iCell)
+
+         ! Get wavenumber-partitioned Stokes drift coefficents used to reconstruct depth-dependent profile 
+         if (config_cvmix_kpp_use_active_wave) then
+            zonalWavenumberCoeff(1) = stokesDriftZonalWavenumber1(iCell)
+            zonalWavenumberCoeff(2) = stokesDriftZonalWavenumber2(iCell)
+            zonalWavenumberCoeff(3) = stokesDriftZonalWavenumber3(iCell)
+            zonalWavenumberCoeff(4) = stokesDriftZonalWavenumber4(iCell)
+            zonalWavenumberCoeff(5) = stokesDriftZonalWavenumber5(iCell)
+            zonalWavenumberCoeff(6) = stokesDriftZonalWavenumber6(iCell)
+
+            meridionalWavenumberCoeff(1) = stokesDriftMeridionalWavenumber1(iCell)
+            meridionalWavenumberCoeff(2) = stokesDriftMeridionalWavenumber2(iCell)
+            meridionalWavenumberCoeff(3) = stokesDriftMeridionalWavenumber3(iCell)
+            meridionalWavenumberCoeff(4) = stokesDriftMeridionalWavenumber4(iCell)
+            meridionalWavenumberCoeff(5) = stokesDriftMeridionalWavenumber5(iCell)
+            meridionalWavenumberCoeff(6) = stokesDriftMeridionalWavenumber6(iCell)
+         end if
 
          if (kpp_stage == 2) then
          if (cvmixBackgroundChoice == cvmixBackgroundTypeBryanLewis) then
@@ -456,7 +513,6 @@ contains
               Nsqr_iface(k:maxLevelCell(iCell)+1) = Nsqr_iface(k-1)
 
               ! compute Langmuir number and Langmuir enhancement factor
-              ! TODO: theory-wave is the only option to get Langmuir number and enhancement factor for now <06-09-18, Qing Li> !
               if (config_cvmix_kpp_use_theory_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
                  langmuirNumber =  sqrt(surfaceFrictionVelocity(iCell) / ( &
                          cvmix_kpp_ustokes_SL_model(windSpeed10m(iCell), &
@@ -467,6 +523,19 @@ contains
                                                  surfaceFrictionVelocity(iCell), &
                                                  boundaryLayerDepth(iCell), &
                                                  cvmix_global_params)
+              !else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+              !   call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
+              !                                         windStressMeridional(iCell), &
+              !                                         surfaceFrictionVelocity(iCell), &
+              !                                         significantWaveHeight(iCell), &
+              !                                         boundaryLayerDepth(iCell), &
+              !                                         zonalWavenumberCoeff, &
+              !                                         meridionalWavenumberCoeff, &
+              !                                         alphaAngle, &
+              !                                         langmuirNumber)
+              !   call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
+              !                                                langmuirNumber, &
+              !                                                langmuirEnhancementFactor)
               else
                  ! arbitrarily large Langmuir number
                  langmuirNumber = 1.e10_RKIND
@@ -636,13 +705,25 @@ contains
                           OBL_depth = boundaryLayerDepth(iCell) )
 
             ! update Langmuir enhancement factor
-            ! TODO: theory-wave is the only option to get Langmuir number and enhancement factor for now <06-09-18, Qing Li> !
             if (config_cvmix_kpp_use_theory_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
                langmuirEnhancementFactor =  &
                        cvmix_kpp_EFactor_model(windSpeed10m(iCell), &
                                                surfaceFrictionVelocity(iCell), &
                                                boundaryLayerDepth(iCell), &
                                                cvmix_global_params)
+            !else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+            !     call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
+            !                                           windStressMeridional(iCell), &
+            !                                           surfaceFrictionVelocity(iCell), &
+            !                                           significantWaveHeight(iCell), &
+            !                                           boundaryLayerDepth(iCell), &
+            !                                           zonalWavenumberCoeff, &
+            !                                           meridionalWavenumberCoeff, &
+            !                                           alphaAngle, &
+            !                                           langmuirNumber)
+            !     call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
+            !                                                  langmuirNumber, &
+            !                                                  langmuirEnhancementFactor)
             else
                langmuirEnhancementFactor = 1.0_RKIND
             end if

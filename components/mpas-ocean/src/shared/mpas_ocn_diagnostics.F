@@ -2196,7 +2196,6 @@ contains
                                          err, thermalExpansionCoeff, salineContractionCoeff, &
                                          timeLevel)
 
-#ifdef MPAS_OPENACC
       !$acc exit data copyout(densitySurfaceDisplaced, &
       !$acc                   thermalExpansionCoeff,   &
       !$acc                   salineContractionCoeff)
