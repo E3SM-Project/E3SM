@@ -9,7 +9,6 @@ module dry_planar_tests
   use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
   use parallel_mod,         only: abortmp
   use element_ops,          only: set_state, set_state_i, tests_finalize
-  use eos,                  only: phi_from_eos
   use kinds,                only: rl=>real_kind, iulog
   use physical_constants,   only : dd_pi, rgas, rwater_vapor
   use dcmip12_wrapper, only : set_tracers, get_evenly_spaced_z, get_evenly_spaced_p, set_hybrid_coefficients, pressure_thickness
