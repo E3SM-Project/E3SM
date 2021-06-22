@@ -303,11 +303,18 @@ contains
     call prim_init_diags_views (elem)
   end subroutine prim_init_elements_views
 
-  subroutine prim_init_kokkos_functors ()
+  subroutine prim_init_kokkos_functors (allocate_buffer)
+    use iso_c_binding, only : c_bool
     use theta_f2c_mod, only : init_functors_c, init_boundary_exchanges_c
 
+    !
+    ! Optional Input
+    !
+     logical(kind=c_bool), optional :: allocate_buffer  ! Whether functor memory buffer should be allocated internally
+    if (.not. present(allocate_buffer)) allocate_buffer = logical(.true.,c_bool)
+
     ! Initialize the C++ functors in the C++ context
-    call init_functors_c ()
+    call init_functors_c (logical(allocate_buffer,c_bool))
 
     ! Initialize boundary exchange structure in C++
     call init_boundary_exchanges_c ()

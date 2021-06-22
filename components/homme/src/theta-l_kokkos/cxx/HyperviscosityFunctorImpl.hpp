@@ -89,6 +89,14 @@ public:
                              const ElementsState&        state,
                              const ElementsDerivedState& derived);
 
+  HyperviscosityFunctorImpl (const int num_elems, const SimulationParams& params);
+
+  void init_params(const SimulationParams& params);
+
+  void setup(const ElementsGeometry&     geometry,
+             const ElementsState&        state,
+             const ElementsDerivedState& derived);
+
   int requested_buffer_size () const;
   void init_buffers (const FunctorsBuffersManager& fbm);
   void init_boundary_exchanges();
@@ -427,6 +435,7 @@ public:
 
 protected:
 
+  const int             m_num_elems;
   HyperviscosityData    m_data;
   ElementsState         m_state;
   ElementsDerivedState  m_derived;
