@@ -182,12 +182,19 @@ subroutine planar_rising_bubble_init(elem,hybrid,hvcoord,nets,nete)
 end subroutine planar_rising_bubble_init
 
 
+! was not tested with preqx
+
+! A note on relation T = \Pi * theta where \Pi = (p/p0)^dry_kappa that is used below:
+! depending on assumptions for Gibbs potential, definition of \Pi with dry kapa
+! may not hold. It is correct for theta-l and is used (though may be
+! inconsistent) in preqx in other places.
 subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
   use control_mod, only: bubble_T0, bubble_dT, bubble_xycenter, bubble_zcenter, bubble_ztop, &
                          bubble_xyradius,bubble_zradius, bubble_cosine, &
                          bubble_moist, bubble_moist_dq, bubble_prec_type, &
                          Lx, Ly, Sx, Sy
+  use element_ops, only: set_elem_state
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
@@ -197,10 +204,14 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
   integer :: i,j,k,ie,ii
   real(rl):: x,y,offset
-  real(rl):: pi(nlevp), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr, &
-             qi_s(nlevp), qm_s(nlev), Ti(nlevp), qi(nlevp), ri(nlevp), rm_s(nlev)
+  real(rl):: pi(nlevp), pm(nlev), dpm(nlev), th0(nlevp), th0m(nlev), ai(nlevp), bi(nlevp), rr, &
+             qi_s(nlevp), qm_s(nlev), Ti(nlevp), Tm(nlev), qi(nlevp), ri(nlevp), rm_s(nlev)
 
-#ifdef MODEL_THETA_L
+  real(rl):: zero_mid_init(np,np,nlev),zero_int_init(np,np,nlevp), &
+             dp_init(np,np,nlev),ps_init(np,np), &
+             phis_init(np,np,nlevp),t_init(np,np,nlev),p_init(np,np,nlev), &
+             zi_init(np,np,nlevp), zm_init(np,np,nlev)
+             
 
   if (qsize < 3 .and. bubble_moist) then
     call abortmp('planar moist bubble requires at least 3 tracers')
@@ -228,15 +239,13 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   call get_evenly_spaced_z(zi,zm,0.0_rl,bubble_ztop)
 
   !for the background state
-  !get pressure on interfaces
   do k=1,nlevp
-    !set interface pressure from const lapse rate, does not depend on x,y, or bubble_dT
-    !this formula assumes ideal hy balance and ideal thermodynamics, not exactly consistent with
-    !the dycore, that is why we reset zi from EOS below
     Ti(k) = bubble_T0 - zi(k)*g/cp
     pi(k) = p0*( Ti(k)/bubble_T0  )**(1.0/kappa)
   enddo
   do k=1,nlev
+    Tm(k) = bubble_T0 - zm(k)*g/cp
+    pm(k) = p0*( Tm(k)/bubble_T0  )**(1.0/kappa)
     dpm(k)=(pi(k+1)-pi(k))
   enddo
 
@@ -245,7 +254,7 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   !it depends on ref pressure profile, whcih is init-ed in the same way for all elements/gll
 
 #if 0
-  !almost pure pressure
+  !almost sigma
   ai(:) = 0.0; bi(:) = 0.0
   ai(1) = pi(1)/p0; bi(nlevp) = one
 
@@ -278,10 +287,6 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
     !build specific humidity at saturation qs as in dcmip2016-kessler
     do k=1,nlevp
        qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
-!CE function     
-!      real tc = temp - 273.15;
-!      return 610.94 * exp( 17.625*tc / (243.04+tc) );
-!      qi_s(k)  = 610.94 * exp( 17.625*(Ti(k) - 273.15) / (Ti(k)-273.15 + 243.04  ) )
     enddo
   else
      qi_s(1:nlevp) = 0.0
@@ -289,8 +294,13 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
   do k=1,nlev
     qm_s(k)=(qi_s(k+1)+qi_s(k)) / 2.0
-    rm_s(k) = Rgas + (Rwater_vapor - Rgas)*qm_s(k)
+!    rm_s(k) = Rgas + (Rwater_vapor - Rgas)*qm_s(k)
   enddo
+
+
+
+
+#if 0
 
   !for the background state
   !reset z to the discrete hydro balance
@@ -306,6 +316,8 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
     elem(1)%state%vtheta_dp(i,j,1:nlev,1) =  bubble_T0 * rm_s(1:nlev) / Rgas * dpm(1:nlev)
   enddo; enddo
 
+!replace with get field? no. this is not general enough.
+!we also need hydro phi on midlevels
   call phi_from_eos(hvcoord,elem(1)%state%phis,elem(1)%state%vtheta_dp(:,:,:,1),&
        elem(1)%state%dp3d(:,:,:,1),elem(1)%state%phinh_i(:,:,:,1))
 
@@ -315,6 +327,23 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   !reset zm to be an average as it is consistent with Taylor2020 eqn (30)
   !but zm is not used below, so, not done
 
+#endif
+
+
+
+
+
+
+
+  zero_mid_init(:,:,:) = 0.0
+  zero_int_init(:,:,:) = 0.0
+  do j=1,np; do i=1,np;
+    zi_init(i,j,1:nlevp) = zi(1:nlevp)
+    zm_init(i,j,1:nlev)  = zm(1:nlev)
+    ps_init(i,j) = pi(nlevp)
+    p_init(i,j,1:nlev) = pm(1:nlev)
+    dp_init(i,j,1:nlev) = dpm(1:nlev)
+  enddo; enddo
 
   ! set initial conditions for each element
   do ie = nets,nete
@@ -340,6 +369,8 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
         !set pot. temperature on interfaces
         if ( rr < 1.0 ) then 
 
+!ugh below is not q_s+dq*cosine
+
           qi(k) = bubble_moist_dq 
 
           if (bubble_cosine) then
@@ -363,31 +394,44 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
         endif
 
-        !R_star(:,:,k) =(Rgas + (Rwater_vapor - Rgas)*Q(:,:,k))
-        ri(k) = Rgas + (Rwater_vapor - Rgas)*qi(k)
-
+        !theta, qi  was set above
+!        ri(k) = Rgas + (Rwater_vapor - Rgas)*qi(k)
+        
       enddo ! k loop
 
-      elem(ie)%state%ps_v(i,j,:) = pi(nlevp)
-      elem(ie)%state%v = 0.0; elem(ie)%state%w_i= 0.0
+!      elem(ie)%state%ps_v(i,j,:) = pi(nlevp)
 
       do k=1,nlev
-        !set pottemp, dp, other state vars on midlevels
-        !th0m(k)=(th0(k)+th0(k+1))/ 2.0
-        th0m(k)=(th0(k)*ri(k)+th0(k+1)*ri(k+1))/ 2.0 /rgas
+!        th0m(k)=(th0(k)*ri(k)+th0(k+1)*ri(k+1))/ 2.0 /rgas
+!        elem(ie)%state%dp3d(i,j,k,:)   = dpm(k)    
+!        elem(ie)%state%phis(i,j) = 0.0
+!        elem(ie)%state%phinh_i(i,j,k,:) = zi(k)*g
+!        elem(ie)%state%vtheta_dp(i,j,k,:) = dpm(k)*th0m(k)
+      enddo
 
-        elem(ie)%state%dp3d(i,j,k,:)   = dpm(k)
+      th0m(1:nlev) = (th0(1:nlev) + th0(2:nlevp) ) / 2.0
+      t_init(i,j,1:nlev) = th0m(1:nlev) * ( pm(1:nlev)/p0 )**kappa
       
-        elem(ie)%state%phis(i,j) = 0.0
-        elem(ie)%state%phinh_i(i,j,k,:) = zi(k)*g
 
-        elem(ie)%state%vtheta_dp(i,j,k,:) = dpm(k)*th0m(k)
+      if (bubble_moist) then
+        do k=1,nlev
 
-        if (bubble_moist) then
-        elem(ie)%state%Q(i,j,k,1) =   ( qi(k) + qi(k+1) ) / 2.0
-        elem(ie)%state%Qdp(i,j,k,1,:) = dpm(k) * elem(ie)%state%Q(i,j,k,1)
-        end if
-      enddo !k loop
+!        th0m(k)=(th0(k)*ri(k)+th0(k+1)*ri(k+1))/ 2.0 /rgas
+!        elem(ie)%state%dp3d(i,j,k,:)   = dpm(k)    
+!        elem(ie)%state%phis(i,j) = 0.0
+!        elem(ie)%state%phinh_i(i,j,k,:) = zi(k)*g
+!        elem(ie)%state%vtheta_dp(i,j,k,:) = dpm(k)*th0m(k)
+
+           elem(ie)%state%Q(i,j,k,1) =   ( qi(k) + qi(k+1) ) / 2.0
+        enddo        
+      else
+         elem(ie)%state%Q(i,j,:,1) =   0.0
+      end if
+
+!set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,zm,zi,g,elem,n0,n1,ntQ)
+      call set_elem_state(zero_mid_init,zero_mid_init,zero_mid_init, &
+                          zero_int_init,t_init,ps_init,zero_mid_init(:,:,1), &
+                          p_init,dp_init,zm_init,zi_init,g,elem(ie),1,3,-1)
 
     enddo; enddo !i,j loop
   enddo !ie loop
@@ -406,17 +450,10 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
      !all but vapor
      elem(ie)%state%Q(:,:,:,ii:qsize) = 0.0
-     elem(ie)%state%Qdp(:,:,:,ii:qsize,:) = 0.0
 
      !sets hydro phi from theta and pressure, checks for hydrostatic balance after that, saves a state
-     !call tests_finalize(elem(ie),hvcoord)
+     call tests_finalize(elem(ie),hvcoord)
   enddo
-
-#else
-  !not THETA_L
-  !abort, no bubble for preqx
-  call abortmp('planar rising bubble does not work with preqx')
-#endif
 
 end subroutine bubble_init
 

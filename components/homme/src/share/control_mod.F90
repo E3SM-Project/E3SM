@@ -261,14 +261,14 @@ module control_mod
   real (kind=real_kind), public :: bubble_T0 = 270.0       !bubble ref state
   real (kind=real_kind), public :: bubble_dT = 0.5         !bubble dTheta
   real (kind=real_kind), public :: bubble_xycenter = 0.0   !bubble xy position
-  real (kind=real_kind), public :: bubble_zcenter = 2000.0 !bubble z position
+  real (kind=real_kind), public :: bubble_zcenter = 3000.0 !bubble z position
   real (kind=real_kind), public :: bubble_ztop = 10000.0   !bubble z top
-  real (kind=real_kind), public :: bubble_xyradius = 1500.0!bubble radius along x or y axis
+  real (kind=real_kind), public :: bubble_xyradius = 2000.0!bubble radius along x or y axis
   real (kind=real_kind), public :: bubble_zradius = 1500.0 !bubble radius along z axis
   logical,               public :: bubble_cosine  = .TRUE. !bubble uniform or cosine
   logical,               public :: bubble_moist  = .FALSE. ! 
   real (kind=real_kind), public :: bubble_moist_dq = 0.0   !bubble dQ parameter
-  integer,               public :: bubble_prec_type = 0
+  integer,               public :: bubble_prec_type = 0    !0 kessler, 1 rj
   logical,               protected :: case_planar_bubble = .FALSE.
 
   public :: set_planar_defaults
@@ -681,10 +681,10 @@ subroutine set_planar_defaults()
        Sx = -25.6D0 * 1000.0D0
        Sy = -25.6D0 * 1000.0D0
     else if (test_case == "planar_rising_bubble" ) then
-       Lx = 1.0D0 * 10000.0D0
-       Ly = 1.0D0 * 10000.0D0
-       Sx = -5000.0D0
-       Sy = -5000.0D0
+       Lx = 2.0D0 * 10000.0D0
+       Ly = 2.0D0 * 10000.0D0
+       Sx = -10000.0D0
+       Sy = -10000.0D0
 ! THESE ARE WRONG AND NEED TO BE FIXED WHEN THESE CASES ARE ACTUALLY IMPLEMENTED....
 !else if (test_case == "planar_baroclinic_instab" .OR. test_case == "planar_moist_baroclinic_instab") then
 !       Lx = 5000.0D0 * 1000.0D0
