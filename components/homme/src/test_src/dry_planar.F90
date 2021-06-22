@@ -247,6 +247,11 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
     pm(k) = p0*( Tm(k)/bubble_T0  )**(1.0/kappa)
     dpm(k)=(pi(k+1)-pi(k))
   enddo
+  ! this T, z, pressure, and q1 (set below) together do not obey 
+  ! homme's EOS, meaning if one to compute phi from EOS, it won't match z
+  ! one could have zi replaced with output from phi_from_eos(),
+  ! but it won't satisfy model-independent setup.
+  ! instead, we use uniform zi as above.
 
   !create hybrid coords now from pi
   !note that this code should not depend on partitioning
@@ -385,8 +390,8 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
      !all but vapor
      elem(ie)%state%Q(:,:,:,ii:qsize) = 0.0
 
-     !sets hydro phi from theta and pressure, checks for hydrostatic balance after that, saves a state
-     call tests_finalize(elem(ie),hvcoord)
+     !sets hydro phi from (perturbed) theta and pressure, checks for hydrostatic balance after that, saves a state
+     !call tests_finalize(elem(ie),hvcoord)
   enddo
 
 end subroutine bubble_init
