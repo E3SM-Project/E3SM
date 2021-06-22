@@ -2,10 +2,14 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 
 
+;run like this
+; ncl plot-in-height.ncl fili=\"nh-dry-new.nc\" tt=45 ztop=1500 shortc=\"dry-new\" fff=\"Th\"
+
 begin
 
-;;; SET fili, tt, shortc
+;;; SET fili, tt, shortc, ztop, fff
 ;;; as file to read, time frame, shortc name for the plot suffix
+;;; ztop is that same as in the run, fff as field
 
 print("file is "+fili)
 print("short cut  is "+shortc)
@@ -13,9 +17,9 @@ print("frame is "+tt)
 
 gg=9.80616
 P0=100000.0
-ztop=1500.0
-numz=400
-
+;ztop=20000.0
+numz=200
+;fff="Th"
 
 
 ;-- define file name
@@ -47,7 +51,7 @@ nlon = dimsizes(lon_t)
 print(lev_t)
 
 ;tt=19
-field=f->Th(tt,:,:)
+field=f->$fff$(tt,:,:)
 phi=f->geo(tt,:,:)
 
 ;  vp = vinth2p (field(:,:), hyam,hybm, lev_p ,ps(tt,:), 2, P0mb, 1, False )
@@ -111,7 +115,7 @@ end do
 
 
 ;-- define workstation
-  wks = gsn_open_wks("png",shortc+"-plot-in-height-t"+tostring(tt))
+  wks = gsn_open_wks("png",shortc+"-height-field-"+fff+"-tt-"+tostring(tt))
 
 ;-- set resources
   res                          =  True
