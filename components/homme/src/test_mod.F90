@@ -96,7 +96,6 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('planar_moist_baroclinic_instab');
     case('planar_tropical_cyclone');
     case('planar_supercell');
-           call dcmip2016_init();
     case default;               call abortmp('unrecognized test case')
   endselect
 
@@ -241,9 +240,6 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
     ! how dcmip2016_test1_forcing is done
     case('planar_rising_bubble');  
             if (bubble_moist) call dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
-
-    case('planar_supercell');   
-            call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     case('held_suarez0');
        do ie=nets,nete
