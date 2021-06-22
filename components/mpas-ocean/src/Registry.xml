@@ -1011,36 +1011,6 @@
 					possible_values="Real value greater or equal to 0."
 		/>
 	</nml_record>
-	<nml_record name="wetting_drying" mode="init;forward">
-		<nml_option name="config_use_wetting_drying" type="logical" default_value=".false." units="unitless"
-					description="If true, use wetting and drying algorithm to allow for dry cells to config_min_cell_height."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_prevent_drying" type="logical" default_value=".false." units="unitless"
-					description="If true, prevent cells from drying past config_min_cell_height."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_drying_min_cell_height" type="real" default_value="1.0e-3" units="m"
-					description="Minimum allowable cell height under drying.  Cell to be kept wet to at least this thickness."
-					possible_values="any positive real, typically 1.0e-3"
-		/>
-		<nml_option name="config_zero_drying_velocity" type="logical" default_value=".false." units="unitless"
-					description="If true, just zero out velocity that is contributing to drying for cell that is drying.  This option can be used to estimate acceptable minimum thicknesses for a run."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_verify_not_dry" type="logical" default_value=".false." units="unitless"
-					description="If true, verify that cells are at least config_min_cell_height thick."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_thickness_flux_type" type="character" default_value="centered" units="unitless"
-					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThicknessEdge.  The standard MPAS-O approach is 'centered'."
-					possible_values="'upwind', 'centered'"
-		/>
-		<nml_option name="config_drying_safety_height" type="real" default_value="1.0e-10" units="m"
-					description="Safety factor on minimum cell height to ensure the minimum height is not violated due to round-off."
-					possible_values="Real value greater or equal to 0."
-		/>
-	</nml_record>
 	<nml_record name="ocean_constants">
 		<nml_option name="config_density0" type="real" default_value="1026.0" units="kg m^{-3}"
 					description="Density used as a coefficient of the pressure gradient terms, $\rho_0$. This is a constant due to the Boussinesq approximation."
