@@ -420,11 +420,12 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
   Kokkos::fence();
 
   // Init qdp = q*dp (q comes from initial conditions)
-  const auto qdp = c.get<Homme::Tracers>().qdp;
-  const auto q   = c.get<Homme::Tracers>().Q;
+  const auto& tracers = c.get<Homme::Tracers>();
+  const auto qdp = tracers.qdp;
+  const auto q   = tracers.Q;
   const auto dp  = c.get<Homme::ElementsState>().m_dp3d;
   const int n0_qdp = c.get<Homme::TimeLevel>().n0_qdp;
-  const int num_tracers = qdp.extent_int(2);
+  const int num_tracers = tracers.num_tracers();
   Kokkos::parallel_for(Kokkos::RangePolicy<>(0,num_elems*num_tracers*NP*NP*NVL),
                        KOKKOS_LAMBDA (const int idx) {
     const int ie =  idx / (num_tracers*NP*NP*NVL);
