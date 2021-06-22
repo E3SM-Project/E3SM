@@ -330,17 +330,14 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
         !set pot. temperature on interfaces
         if ( rr < 1.0 ) then 
 
-!ugh below is not q_s+dq*cosine
-          qi(k) = bubble_moist_dq 
-
           if (bubble_cosine) then
             offset = cos(rr*dd_pi / 2.0 )
             th0(k) = bubble_T0 + bubble_dT * offset
-            qi(k)  = offset * qi(k)
+            qi(k)  = qi_s(k)   + bubble_moist_dq * offset
           else
             !0/1 nonsmooth function
-            ! qi is set above to const
             th0(k) = bubble_T0 + bubble_dT
+            qi(k)  = qi_s(k)   + bubble_moist_dq
           endif
 
         else
