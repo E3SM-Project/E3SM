@@ -127,7 +127,12 @@ interface
   end subroutine init_reference_element_c
 
   ! Create C++ functors
-  subroutine init_functors_c () bind(c)
+  subroutine init_functors_c (allocate_buffer) bind(c)
+  use iso_c_binding, only: c_bool
+  !
+  ! Inputs
+  !
+  logical(kind=c_bool), intent(in) :: allocate_buffer
   end subroutine init_functors_c
 
   ! Initialize C++ boundary exchange structures

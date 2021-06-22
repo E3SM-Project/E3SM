@@ -277,8 +277,10 @@ void init_elements_c (const int& num_elems)
   c.create_ref<ElementsForcing>(e.m_forcing);
 }
 
-void init_functors_c ()
+void init_functors_c (const bool& allocate_buffer)
 {
+  auto& c = Context::singleton();
+
   // We init all the functors in the Context, so that every call to
   // Context::singleton().get<[FunctorName]>()
   // will return a functor already initialized.
@@ -300,11 +302,14 @@ void init_functors_c ()
   // It is way easier to create all functors here once and for all,
   // so that the user does not have to initialize them when calling them.
 
-  auto& elems   = Context::singleton().get<Elements>();
-  auto& tracers = Context::singleton().get<Tracers>();
-  auto& ref_FE  = Context::singleton().get<ReferenceElement>();
-  auto& hvcoord = Context::singleton().get<HybridVCoord>();
-  auto& params  = Context::singleton().get<SimulationParams>();
+  auto& elems    = c.get<Elements>();
+  auto& tracers  = c.get<Tracers>();
+  auto& ref_FE   = c.get<ReferenceElement>();
+  auto& hvcoord  = c.get<HybridVCoord>();
+  auto& params   = c.get<SimulationParams>();
+  auto& geometry = c.get<ElementsGeometry>();
+  auto& state    = c.get<ElementsState>();
+  auto& derived  = c.get<ElementsDerivedState>();
 
   // Check that the above structures have been inited
   Errors::runtime_check(elems.inited(),    "Error! You must initialize the Elements structure before initializing the functors.\n", -1);
@@ -314,14 +319,37 @@ void init_functors_c ()
   Errors::runtime_check(params.params_set, "Error! You must initialize the SimulationParams structure before initializing the functors.\n", -1);
 
   // First, sphere operators, then the others
-  auto& sph_op = Context::singleton().create<SphereOperators>(elems.m_geometry,ref_FE);
-  auto& caar = Context::singleton().create<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params);
-  auto& esf  = Context::singleton().create<EulerStepFunctor>();
-  auto& hvf  = Context::singleton().create<HyperviscosityFunctor>();
-  auto& fbm  = Context::singleton().create<FunctorsBuffersManager>();
-  auto& ff   = Context::singleton().create<ForcingFunctor>();
-  auto& diag = Context::singleton().create<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
-  auto& vrm  = Context::singleton().create<VerticalRemapManager>();
+  auto& sph_op = c.create<SphereOperators>(elems.m_geometry,ref_FE);
+
+  // Some functors might have been previously created, so
+  // use the create_if_not_there() function.
+  auto& caar = c.create_if_not_there<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params);
+  auto& esf  = c.create_if_not_there<EulerStepFunctor>();
+  auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>();
+  auto& ff   = c.create_if_not_there<ForcingFunctor>();
+  auto& diag = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
+  auto& vrm  = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
+
+  auto& fbm  = c.create_if_not_there<FunctorsBuffersManager>();
+
+  // If any Functor was constructed only partially, setup() must be called.
+  // This does not apply to Diagnostics or DirkFunctor since they only
+  // contain one constructor.
+  if (caar.setup_needed()) {
+    caar.setup(elems, tracers, ref_FE, hvcoord, sph_op);
+  }
+  if (esf.setup_needed()) {
+    esf.setup();
+  }
+  if (hvf.setup_needed()) {
+    hvf.setup(geometry, state, derived);
+  }
+  if (ff.setup_needed()) {
+    ff.setup();
+  }
+  if (vrm.setup_needed()) {
+    vrm.setup();
+  }
 
   const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||   
                           params.time_step_type==TimeStepType::IMEX_KG254 ||
@@ -330,24 +358,27 @@ void init_functors_c ()
 
   if (need_dirk) {
     // Create dirk functor only if needed
-    Context::singleton().create<DirkFunctor>(elems.num_elems());
+    c.create_if_not_there<DirkFunctor>(elems.num_elems());
   }
 
-  // Make the functor request their buffer to the buffers manager
-  // Note: diagnostics also needs buffers
-  fbm.request_size(caar.requested_buffer_size());
-  fbm.request_size(esf.requested_buffer_size());
-  fbm.request_size(hvf.requested_buffer_size());
-  fbm.request_size(diag.requested_buffer_size());
-  fbm.request_size(ff.requested_buffer_size());
-  fbm.request_size(vrm.requested_buffer_size());
-  if (need_dirk) {
-    const auto& dirk = Context::singleton().get<DirkFunctor>();
-    fbm.request_size(dirk.requested_buffer_size());
-  }
+  // If memory in the buffer manager was previously allocated, skip allocation here
+  if (allocate_buffer) {
+    // Make the functor request their buffer to the buffers manager
+    // Note: diagnostics also needs buffers
+    fbm.request_size(caar.requested_buffer_size());
+    fbm.request_size(esf.requested_buffer_size());
+    fbm.request_size(hvf.requested_buffer_size());
+    fbm.request_size(diag.requested_buffer_size());
+    fbm.request_size(ff.requested_buffer_size());
+    fbm.request_size(vrm.requested_buffer_size());
+    if (need_dirk) {
+      const auto& dirk = Context::singleton().get<DirkFunctor>();
+      fbm.request_size(dirk.requested_buffer_size());
+    }
 
-  // Allocate the buffers in the FunctorsBuffersManager, then tell the functors to grab their buffers
-  fbm.allocate();
+    // Allocate the buffers in the FunctorsBuffersManager, then tell the functors to grab their buffers
+    fbm.allocate();
+  }
 
   caar.init_buffers(fbm);
   esf.init_buffers(fbm);
