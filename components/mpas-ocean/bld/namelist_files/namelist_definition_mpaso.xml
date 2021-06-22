@@ -955,6 +955,22 @@ Valid values: NONE, LWF16, LF17, RWHGK16
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_use_active_wave" type="logical"
+	category="cvmix" group="cvmix">
+Flag for Langmuir enchancement factor using prognostic waves
+
+Valid values: 
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_kpp_n_wavenumber_partitions" type="integer"
+	category="cvmix" group="cvmix">
+Number of wavenumber partitions to be used in reconstructing wave-induced Stokes drift profile
+
+Valid values: 3,4,6
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- gotm -->
 
