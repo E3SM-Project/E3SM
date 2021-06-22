@@ -100,22 +100,64 @@ module li_iceshelf_melt
 
       type (block_type), pointer :: block
 
-      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: geometryPool, velocityPool, meshPool
       character(len=StrKIND), pointer :: &
-           config_front_mass_bal_grounded ! option for submarine mass balance
-                                          ! at grounded glacier front
-      real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed, faceMeltingThickness
+           config_front_mass_bal_grounded, & ! option for submarine mass balance at glacier front
+           config_basal_mass_bal_float      ! option for mass balance under ice shelf
+      real (kind=RKIND), dimension(:), pointer :: &
+              faceMeltSpeed, &
+              faceMeltingThickness, &
+              thickness
+      integer, dimension(:), pointer :: cellMask
       integer :: err_tmp
 
       err = 0
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
+      call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
 
       if ( trim(config_front_mass_bal_grounded) == 'ismip6' &
           .or. trim(config_front_mass_bal_grounded) == 'uniform' ) then
          call grounded_face_melt_ismip6(domain, err_tmp)
          err = ior(err, err_tmp)
+         
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
+            call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
+            call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+            call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+
+            ! If ice shelf melting is active, only apply front melting to 
+            ! the grounded ice margin and adjacent non-dynamic cells
+            if (trim(config_basal_mass_bal_float) .ne. 'none') then
+               where ( li_mask_is_dynamic_ice(cellMask(:)) .and. li_mask_is_floating_ice(cellMask(:)) )
+                    faceMeltSpeed(:) = 0.0_RKIND
+                    faceMeltingThickness(:) = 0.0_RKIND
+               end where
+            endif
+            ! Update halos on calvingThickness or faceMeltingThickness before applying it.
+            ! Testing seemed to indicate this is not necessary, but I don't understand
+            ! why not, so leaving it.
+            ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
+            call mpas_timer_start("halo updates")
+            call mpas_dmpar_field_halo_exch(domain, 'faceMeltingThickness')
+            call mpas_timer_stop("halo updates")
+
+            ! Apply facemelt: open the Ark
+            thickness(:) = thickness(:) - faceMeltingThickness(:)
+
+            ! update mask
+            call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+            err = ior(err, err_tmp)
+
+            block => block % next
+         enddo   ! associated(block) 
+   
       elseif ( trim(config_front_mass_bal_grounded) == 'none' ) then
          ! Zero entire field
 
@@ -206,7 +248,11 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: config_ice_density !< ice density
 
       integer, dimension(:), pointer :: &
-           cellMask                    ! bit mask describing whether ice is floating, dynamically active, etc.
+           cellMask, &                    ! bit mask describing whether ice is floating, dynamically active, etc.
+           nEdgesOnCell, &
+           edgeMask
+
+      integer, dimension(:,:), pointer :: edgesOnCell
 
       type (field1dInteger), pointer :: thermalCellMaskField
 
@@ -225,7 +271,7 @@ module li_iceshelf_melt
 
       real(kind=RKIND), pointer :: daysSinceStart
 
-      integer :: iCell, err_tmp
+      integer :: iCell, iEdge, err_tmp
 
       ! Local variables for some melt methods
 
@@ -306,153 +352,179 @@ module li_iceshelf_melt
       if (trim(config_basal_mass_bal_float) == 'ismip6') then
          call iceshelf_melt_ismip6(domain, err_tmp)
          err = ior(err, err_tmp)
+      else
+         ! block loop
+         block => domain % blocklist
+         do while (associated(block))
 
-         return ! do not enter block loop below - we are done here
+            ! get pools
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+            call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+
+            ! get dimensions
+            call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+            ! get fields from the mesh pool
+            call mpas_pool_get_array(meshPool, 'xCell', xCell)
+            call mpas_pool_get_array(meshPool, 'daysSinceStart',daysSinceStart)
+
+            ! get fields from the geometry pool
+            call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+            call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
+            call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+            call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+            call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+
+            ! get fields from the scratch pool
+            call mpas_pool_get_field(scratchPool, 'iceCellMask', thermalCellMaskField)
+            call mpas_allocate_scratch_field(thermalCellMaskField, .true.)
+            thermalCellMask => thermalCellMaskField % array
+
+            ! calculate masks - so we know where the ice is floating
+            call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+            err = ior(err, err_tmp)
+
+            ! calculate a mask to identify ice that is thick enough to be thermally active
+            do iCell = 1, nCellsSolve
+               if (thickness(iCell) > config_thermal_thickness) then
+                  thermalCellMask(iCell) = 1
+               else
+                  thermalCellMask(iCell) = 0
+               endif
+            enddo
+
+            ! -----------------
+            ! Compute basal melting for floating ice.
+            ! -----------------
+
+            ! initialize to zero melt
+            floatingBasalMassBal(:) = 0.0_RKIND
+            if (trim(config_basal_mass_bal_float) == 'none') then
+               ! Do nothing, handled above
+
+            elseif (trim(config_basal_mass_bal_float) == 'file') then
+               ! Do nothing, handled above
+
+            elseif (trim(config_basal_mass_bal_float) == 'constant') then
+
+               ! set melt rate to a constant value for floating ice
+               ! allow basal melt in ice-free ocean cells, in case ice is advected to those cells by the transport scheme
+
+               bmlt_float_rate = config_bmlt_float_flux / (config_ice_density*latent_heat_ice)  ! convert W/m^2 to m/s
+
+               floatingBasalMassBal(:) = 0.0_RKIND
+
+               do iCell = 1, nCellsSolve
+                  if ( (li_mask_is_floating_ice(cellMask(iCell))) .or.  &
+                       (bedTopography(iCell) < config_sea_level .and. thermalCellMask(iCell) == 0) ) then
+                     ! ice is present and floating, or ice-free ocean
+
+                     ! Provided xCell > bmlt_float_xlimit, prescribe a uniform basal melt rate.
+                     ! The default is 0.0, but for MISMIP+ the prescribed value of xlimit is 480 km.
+                     if (abs(xCell(iCell)) >= config_bmlt_float_xlimit) then  ! basal melting is allowed
+                        floatingBasalMassBal(iCell) = -bmlt_float_rate
+                     endif
+
+                  endif   ! ice is present and floating
+
+               enddo   ! iCell
+
+               ! change units from m/s to kg/m2/s
+               floatingBasalMassBal(:) = floatingBasalMassBal(:) * config_ice_density
+
+            elseif (trim(config_basal_mass_bal_float) == 'mismip') then
+
+               ! compute melt rate (m/s) based on bed depth and cavity thickness
+               ! The MISMIP+ formula is as follows:
+               !
+               ! bmlt_float = omega * tanh(H_c/H_0) * max(z_0 - z_d, 0)
+               !
+               ! where H_c = lsrf - topg is the cavity thickness
+               !       z_d = lsrf - eus is the ice draft
+               !       omega = a time scale = 0.2 yr^{-1} by default
+               !       H_0 = 75 m by default
+               !       z_0 = -100 m by default
+
+               ! allow basal melt in ice-free ocean cells, in case ice is advected to those cells by the transport scheme
+
+               floatingBasalMassBal(:) = 0.0_RKIND
+
+               do iCell = 1, nCellsSolve
+
+                  if ( (li_mask_is_floating_ice(cellMask(iCell))) .or.  &
+                       (bedTopography(iCell) < config_sea_level .and. thermalCellMask(iCell) == 0) ) then
+                       ! ice is present and floating, or ice-free ocean
+
+                     hCavity = lowerSurface(iCell) - bedTopography(iCell)
+                     zDraft = lowerSurface(iCell) - config_sea_level
+                     floatingBasalMassBal(iCell) = -bmlt_float_omega * tanh(hCavity/bmlt_float_h0) * max(bmlt_float_z0 - &
+                        zDraft, 0.0_RKIND)
+
+                  endif   ! ice is present and floating
+               enddo   ! iCell
+
+               ! change units from m/s to kg/m2/s
+               floatingBasalMassBal(:) = floatingBasalMassBal(:) * config_ice_density
+
+            elseif (trim(config_basal_mass_bal_float) == 'seroussi') then
+
+               call basal_melt_thwaites_seroussi(floatingBasalMassBal, daysSinceStart, lowerSurface, cellMask, &
+                       config_sea_level, config_ice_density, nCellsSolve, err_tmp)
+               err = ior(err, err_tmp)
+
+            elseif (trim(config_basal_mass_bal_float) == 'temperature_profile') then
+
+               call iceshelf_melt_param_from_temp_profile(nCellsSolve, lowerSurface, cellMask, &
+                       config_sea_level, config_ice_density, config_print_thermal_info, &
+                       GLdepth, CFdepth, daysSinceStart, floatingBasalMassBal, err_tmp)
+               err = ior(err, err_tmp)
+
+            else
+
+               call mpas_log_write('Unknown option selected for config_basal_mass_bal_float:' // &
+                  trim(config_basal_mass_bal_float), MPAS_LOG_ERR)
+               err = ior(err, 1)
+
+            endif   ! config_basal_mass_bal_float
+
+
+            ! clean up
+            call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)
+
+            block => block % next
+         enddo   ! associated(block)
       endif
 
-      ! block loop
-      block => domain % blocklist
-      do while (associated(block))
+      if (trim(config_front_mass_bal_grounded) .ne. 'none') then
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+            call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+            call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+            call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+            call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+            call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 
-         ! get pools
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-
-         ! get dimensions
-         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-
-         ! get fields from the mesh pool
-         call mpas_pool_get_array(meshPool, 'xCell', xCell)
-         call mpas_pool_get_array(meshPool, 'daysSinceStart',daysSinceStart)
-
-         ! get fields from the geometry pool
-         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
-         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
-
-         ! get fields from the scratch pool
-         call mpas_pool_get_field(scratchPool, 'iceCellMask', thermalCellMaskField)
-         call mpas_allocate_scratch_field(thermalCellMaskField, .true.)
-         thermalCellMask => thermalCellMaskField % array
-
-         ! calculate masks - so we know where the ice is floating
-         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-         err = ior(err, err_tmp)
-
-         ! calculate a mask to identify ice that is thick enough to be thermally active
-         do iCell = 1, nCellsSolve
-            if (thickness(iCell) > config_thermal_thickness) then
-               thermalCellMask(iCell) = 1
-            else
-               thermalCellMask(iCell) = 0
-            endif
-         enddo
-
-         ! -----------------
-         ! Compute basal melting for floating ice.
-         ! -----------------
-
-         ! initialize to zero melt
-         floatingBasalMassBal(:) = 0.0_RKIND
-         if (trim(config_basal_mass_bal_float) == 'none') then
-            ! Do nothing, handled above
-
-         elseif (trim(config_basal_mass_bal_float) == 'file') then
-            ! Do nothing, handled above
-
-         elseif (trim(config_basal_mass_bal_float) == 'constant') then
-
-            ! set melt rate to a constant value for floating ice
-            ! allow basal melt in ice-free ocean cells, in case ice is advected to those cells by the transport scheme
-
-            bmlt_float_rate = config_bmlt_float_flux / (config_ice_density*latent_heat_ice)  ! convert W/m^2 to m/s
-
-            floatingBasalMassBal(:) = 0.0_RKIND
-
+            ! If config_front_mass_bal_grounded is not none, only apply ice shelf melt to active cells
+            ! and stranded non-dynamic cells.
             do iCell = 1, nCellsSolve
-               if ( (li_mask_is_floating_ice(cellMask(iCell))) .or.  &
-                    (bedTopography(iCell) < config_sea_level .and. thermalCellMask(iCell) == 0) ) then
-                  ! ice is present and floating, or ice-free ocean
+               if ( li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) ) then
+                  do iEdge = 1, nEdgesOnCell(iCell)
+                     if ( li_mask_is_grounding_line(edgeMask(edgesOnCell(iEdge,iCell))) ) then
 
-                  ! Provided xCell > bmlt_float_xlimit, prescribe a uniform basal melt rate.
-                  ! The default is 0.0, but for MISMIP+ the prescribed value of xlimit is 480 km.
-                  if (abs(xCell(iCell)) >= config_bmlt_float_xlimit) then  ! basal melting is allowed
-                     floatingBasalMassBal(iCell) = -bmlt_float_rate
-                  endif
+                         floatingBasalMassBal(iCell) = 0.0_RKIND
 
-               endif   ! ice is present and floating
-
-            enddo   ! iCell
-
-            ! change units from m/s to kg/m2/s
-            floatingBasalMassBal(:) = floatingBasalMassBal(:) * config_ice_density
-
-         elseif (trim(config_basal_mass_bal_float) == 'mismip') then
-
-            ! compute melt rate (m/s) based on bed depth and cavity thickness
-            ! The MISMIP+ formula is as follows:
-            !
-            ! bmlt_float = omega * tanh(H_c/H_0) * max(z_0 - z_d, 0)
-            !
-            ! where H_c = lsrf - topg is the cavity thickness
-            !       z_d = lsrf - eus is the ice draft
-            !       omega = a time scale = 0.2 yr^{-1} by default
-            !       H_0 = 75 m by default
-            !       z_0 = -100 m by default
-
-            ! allow basal melt in ice-free ocean cells, in case ice is advected to those cells by the transport scheme
-
-            floatingBasalMassBal(:) = 0.0_RKIND
-
-            do iCell = 1, nCellsSolve
-
-               if ( (li_mask_is_floating_ice(cellMask(iCell))) .or.  &
-                    (bedTopography(iCell) < config_sea_level .and. thermalCellMask(iCell) == 0) ) then
-                    ! ice is present and floating, or ice-free ocean
-
-                  hCavity = lowerSurface(iCell) - bedTopography(iCell)
-                  zDraft = lowerSurface(iCell) - config_sea_level
-                  floatingBasalMassBal(iCell) = -bmlt_float_omega * tanh(hCavity/bmlt_float_h0) * max(bmlt_float_z0 - &
-                     zDraft, 0.0_RKIND)
-
-               endif   ! ice is present and floating
-            enddo   ! iCell
-
-            ! change units from m/s to kg/m2/s
-            floatingBasalMassBal(:) = floatingBasalMassBal(:) * config_ice_density
-
-         elseif (trim(config_basal_mass_bal_float) == 'seroussi') then
-
-            call basal_melt_thwaites_seroussi(floatingBasalMassBal, daysSinceStart, lowerSurface, cellMask, &
-                    config_sea_level, config_ice_density, nCellsSolve, err_tmp)
-            err = ior(err, err_tmp)
-
-         elseif (trim(config_basal_mass_bal_float) == 'temperature_profile') then
-
-            call iceshelf_melt_param_from_temp_profile(nCellsSolve, lowerSurface, cellMask, &
-                    config_sea_level, config_ice_density, config_print_thermal_info, &
-                    GLdepth, CFdepth, daysSinceStart, floatingBasalMassBal, err_tmp)
-            err = ior(err, err_tmp)
-
-         else
-
-            call mpas_log_write('Unknown option selected for config_basal_mass_bal_float:' // &
-               trim(config_basal_mass_bal_float), MPAS_LOG_ERR)
-            err = ior(err, 1)
-
-         endif   ! config_basal_mass_bal_float
-
-
-         ! clean up
-         call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)
-
-         block => block % next
-      enddo   ! associated(block)
-
+                      endif
+                  enddo
+                endif
+            enddo
+            block => block % next
+         enddo   ! associated(block)
+      endif
 
     end subroutine li_basal_melt_floating_ice
 !-----------------------------------------------------------------------
@@ -1363,21 +1435,6 @@ module li_iceshelf_melt
                                             faceMeltingThickness, faceMeltSpeedVertAvg, applyToGrounded, &
                                             applyToFloating, applyToGroundingLine, domain, err)
 
-
-         ! Update halos on calvingThickness or faceMeltingThickness before applying it.
-         ! Testing seemed to indicate this is not necessary, but I don't understand
-         ! why not, so leaving it.
-         ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
-         call mpas_timer_start("halo updates")
-         call mpas_dmpar_field_halo_exch(domain, 'faceMeltingThickness')
-         call mpas_timer_stop("halo updates")
-
-         ! Apply facemelt: open the Ark
-         thickness(:) = thickness(:) - faceMeltingThickness(:)
-
-         ! update mask
-         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-         err = ior(err, err_tmp)
 
          block => block % next
       enddo    ! associated(block)
