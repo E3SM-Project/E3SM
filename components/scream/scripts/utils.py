@@ -315,7 +315,7 @@ def ensure_pip():
     _ = import_module("pip")
 
 ###############################################################################
-def pip_install_lib(libname, min_version=None, pipname=None):
+def pip_install_lib(min_version=None, pipname=None):
 ###############################################################################
     """
     Ask pip to install a version of a package which is >= min_version
@@ -348,7 +348,7 @@ def _ensure_pylib_impl(libname, min_version=None, pipname=None):
         pkg = import_module(libname)
 
         if min_version is not None and parse_version(pkg.__version__) < parse_version(min_version):
-            print("Detected an old version ({}) for {} (required >= {}), will attempt to install version {} locally".format(pkg.__version__,libname,min_version,min_version))
+            print("Detected version for package {} is too old: detected {}, required >= {}. Script will attempt to install required version locally".format(libname, pkg.__version__,min_version))
             install = True
 
     except ImportError:
@@ -358,7 +358,7 @@ def _ensure_pylib_impl(libname, min_version=None, pipname=None):
         install = True
 
     if install:
-        pip_install_lib(libname,min_version,pipname)
+        pip_install_lib(min_version,pipname)
         _ = import_module(libname)
 
 # We've accepted these outside dependencies
