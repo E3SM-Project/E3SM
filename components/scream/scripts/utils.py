@@ -332,6 +332,17 @@ def pip_install_lib(pip_libname):
     site.main() # pylint: disable=no-member
 
 ###############################################################################
+def package_version_ok(pkg, min_version=None):
+###############################################################################
+    """
+    Checks that the loaded package's version is >= that the minimum required one.
+    If no minimum version is passed, then return True
+    """
+    from pkg_resources import parse_version
+
+    return True if min_version is None else parse_version(pkg.__version__) >= parse_version(min_version)
+
+###############################################################################
 def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
 ###############################################################################
     """
@@ -339,13 +350,12 @@ def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
     public ensure_XXX methods. If one does not exist, we will need to evaluate
     if we want to add a new outside dependency.
     """
-    from pkg_resources import parse_version
 
     install = False
     try:
         pkg = import_module(libname)
 
-        if min_version is not None and parse_version(pkg.__version__) < parse_version(min_version):
+        if not package_version_ok(pkg,min_version):
             print("Detected version for package {} is too old: detected {}, required >= {}. Will attempt to upgrade the package locally".format(libname, pkg.__version__,min_version))
             install = True
 
@@ -357,7 +367,10 @@ def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
 
     if install:
         pip_install_lib(pip_libname)
-        _ = import_module(libname)
+        pkg = import_module(libname)
+
+    
+    expect (package_version_ok(pkg,min_version), "Error! Could not find version {} for package {}.".format(min_version,libname))
 
 # We've accepted these outside dependencies
 def ensure_yaml():   _ensure_pylib_impl("yaml", pip_libname="pyyaml",min_version='5.1')
