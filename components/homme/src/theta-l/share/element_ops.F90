@@ -62,6 +62,10 @@ module element_ops
   use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi, TREF
   use control_mod,    only: use_moisture, theta_hydrostatic_mode
   use eos,            only: pnh_and_exner_from_eos, phi_from_eos
+#ifdef HOMMEXX_BFB_TESTING
+  use bfb_mod,        only: bfb_pow
+#endif
+
   implicit none
   private
 
@@ -456,15 +460,25 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   do k=1,nlev
      pi_i(:,:,k+1)=pi_i(:,:,k) + dp(:,:,k)
   enddo
+#ifdef HOMMEXX_BFB_TESTING
+  do k=1,nlev
+     p(:,:,k) = (pi_i(:,:,k+1)+pi_i(:,:,k))/2
+  enddo
+#else
   do k=1,nlev
      p(:,:,k)=pi_i(:,:,k) + dp(:,:,k)/2
   enddo
-
+#endif
 
 !set vtheta
   do k=1,nlev
+#ifdef HOMMEXX_BFB_TESTING
+     elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)/ &
+          bfb_pow(p(:,:,k)/p0,kappa)
+#else
      elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)* &
           (p(:,:,k)/p0)**(-kappa)
+#endif
      elem%state%dp3d(:,:,k,nt)=dp(:,:,k)
   enddo
   elem%state%ps_v(:,:,nt)=ps
