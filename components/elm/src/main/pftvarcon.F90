@@ -10,6 +10,7 @@ module pftvarcon
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
   use elm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
+  use elm_varpar  , only:  mxpft_nc
   use elm_varctl  , only : iulog, use_vertsoilc
   use elm_varpar  , only : nlevdecomp_full, nsoilorder
   use elm_varctl  , only : nu_com
@@ -713,7 +714,13 @@ contains
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
        call ncd_io('fyield',fyield, 'read', ncid, readvar=readv, posNOTonfile=.true.)
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    endif
+       call ncd_io('percrop', percrop, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+       call ncd_io('senescence_temp', senestemp, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+       call ncd_io('min_days_senescence', min_days_senes, 'read', ncid, readvar=readv)
+       if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    end if
     if(use_dynroot)then
        call ncd_io('root_dmx',root_dmx, 'read', ncid, readvar=readv, posNOTonfile=.true.)
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
@@ -758,8 +765,6 @@ contains
     call ncd_io('allconss',allconss, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('crop',crop, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('percrop', percrop, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('irrigated',irrigated, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
@@ -814,10 +819,6 @@ contains
     call ncd_io('max_NH_planting_date',mxNHplantdate, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('max_SH_planting_date',mxSHplantdate, 'read', ncid, readvar=readv)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('senescence_temp', senestemp, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('min_days_senescence', min_days_senes, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
 
     if (nu_com .ne. 'RD' ) then
@@ -1002,6 +1003,7 @@ contains
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
        ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
        if(.not. use_fates)then
+          if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
                   trim(pftname(i)), ', expected name = ', trim(expected_pftnames(i))
@@ -1064,41 +1066,73 @@ contains
 
     ntree                = nbrdlf_dcd_brl_tree  ! value for last type of tree
     npcropmin            = ncorn                ! first prognostic crop
-    npcropmax            = nsugarcaneirrig      ! last prognostic crop in list
-    nppercropmin         = nmiscanthus          ! first prognostic perennial crop
-    nppercropmax         = nwillowirrig         ! last prognostic perennial crop in list
+    if( .not. use_crop) then
+       npcropmax            = nsoybeanirrig        ! last prognostic crop in list
+    else
+       npcropmax            = nsugarcaneirrig      ! last prognostic crop in list
+       nppercropmin         = nmiscanthus          ! first prognostic perennial crop
+       nppercropmax         = nwillowirrig         ! last prognostic perennial crop in list
+    end if
 
     call set_is_pft_known_to_model()
     call set_num_cfts_known_to_model()
 
     if( .not. use_fates ) then
-       if ( nppercropmax /= mxpft )then
-          call endrun(msg=' ERROR: nppercropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
+       if( .not. use_crop) then
+          if ( npcropmax /= mxpft_nc )then
+             call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
+          end if
+       else
+          if ( nppercropmax /= mxpft )then
+             call endrun(msg=' ERROR: nppercropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
+          end if
        end if
        do i = 0, mxpft
-          if ( irrigated(i) == 1.0_r8  .and. (i == nc3irrig .or. &
-                                              i == ncornirrig .or. &
-                                              i == nscerealirrig .or. &
-                                              i == nwcerealirrig .or. &
-                                              i == nsoybeanirrig .or. &
-                                              i == ncassavairrig .or. &
-                                              i == ncottonirrig .or. &
-                                              i == nfoddergrassirrig .or. &
-                                              i == noilpalmirrig .or. &
-                                              i == nograinsirrig .or. &
-                                              i == nrapeseedirrig .or. &
-                                              i == nriceirrig .or. &
-                                              i == nrtubersirrig .or. &
-                                              i == nsugarcaneirrig .or. &
-                                              i == nmiscanthusirrig .or. &
-                                              i == nswitchgrassirrig .or. &
-                                              i == npoplarirrig .or. &
-                                              i == nwillowirrig ) )then
-             ! correct
-          else if ( irrigated(i) == 0.0_r8 )then
-             ! correct
+          if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
+          if( .not. use_crop) then
+             if ( irrigated(i) == 1.0_r8  .and. (i == nc3irrig .or. &
+                                                 i == ncornirrig .or. &
+                                                 i == nscerealirrig .or. &
+                                                 i == nwcerealirrig .or. &
+                                                 i == nsoybeanirrig ) ) then
+                ! correct
+             else if ( irrigated(i) == 0.0_r8 )then
+                ! correct
+             else
+                call endrun(msg=' ERROR: irrigated has wrong values'//errMsg(__FILE__, __LINE__))
+             end if
           else
-             call endrun(msg=' ERROR: irrigated has wrong values'//errMsg(__FILE__, __LINE__))
+             if ( irrigated(i) == 1.0_r8  .and. (i == nc3irrig .or. &
+                                                 i == ncornirrig .or. &
+                                                 i == nscerealirrig .or. &
+                                                 i == nwcerealirrig .or. &
+                                                 i == nsoybeanirrig .or. &
+                                                 i == ncassavairrig .or. &
+                                                 i == ncottonirrig .or. &
+                                                 i == nfoddergrassirrig .or. &
+                                                 i == noilpalmirrig .or. &
+                                                 i == nograinsirrig .or. &
+                                                 i == nrapeseedirrig .or. &
+                                                 i == nriceirrig .or. &
+                                                 i == nrtubersirrig .or. &
+                                                 i == nsugarcaneirrig .or. &
+                                                 i == nmiscanthusirrig .or. &
+                                                 i == nswitchgrassirrig .or. &
+                                                 i == npoplarirrig .or. &
+                                                 i == nwillowirrig ) )then
+                ! correct
+             else if ( irrigated(i) == 0.0_r8 )then
+                ! correct
+             else
+                call endrun(msg=' ERROR: irrigated has wrong values'//errMsg(__FILE__, __LINE__))
+             end if
+             if (      percrop(i) == 1.0_r8 .and. (i >= nmiscanthus .and. i <= nppercropmax))then
+                ! correct
+             else if ( percrop(i) == 0.0_r8 )then
+                ! correct
+             else
+                call endrun(msg=' ERROR: perennial crop has wrong values'//errMsg(__FILE__, __LINE__))
+             end if
           end if
           if (      crop(i) == 1.0_r8 .and. (i >= nc3crop .and. i <= npcropmax) )then
              ! correct
@@ -1106,13 +1140,6 @@ contains
              ! correct
           else
              call endrun(msg=' ERROR: crop has wrong values'//errMsg(__FILE__, __LINE__))
-          end if
-          if (      percrop(i) == 1.0_r8 .and. (i >= nmiscanthus .and. i <= nppercropmax))then
-             ! correct
-          else if ( percrop(i) == 0.0_r8 )then
-             ! correct
-          else
-             call endrun(msg=' ERROR: perennial crop has wrong values'//errMsg(__FILE__, __LINE__))
           end if
           if ( (i /= noveg) .and. (i < npcropmin) .and. &
                abs(pconv(i)+pprod10(i)+pprod100(i) - 1.0_r8) > 1.e-7_r8 )then
