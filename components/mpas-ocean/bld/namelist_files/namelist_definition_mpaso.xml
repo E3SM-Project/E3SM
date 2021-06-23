@@ -955,6 +955,14 @@ Valid values: NONE, LWF16, LF17, RWHGK16
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_use_active_wave" type="logical"
+	category="cvmix" group="cvmix">
+Flag for Langmuir enchancement factor using prognostic waves
+
+Valid values: 
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- gotm -->
 

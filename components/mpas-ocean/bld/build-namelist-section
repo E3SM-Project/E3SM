@@ -181,6 +181,7 @@ add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
 add_default($nl, 'config_cvmix_kpp_use_theory_wave');
 add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
 add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
+add_default($nl, 'config_cvmix_kpp_use_active_wave');
 
 ########################
 # Namelist group: gotm #

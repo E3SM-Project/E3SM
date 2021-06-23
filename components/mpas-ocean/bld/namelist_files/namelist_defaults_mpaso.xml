@@ -254,6 +254,7 @@
 <config_cvmix_kpp_use_theory_wave>.false.</config_cvmix_kpp_use_theory_wave>
 <config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
+<config_cvmix_kpp_use_active_wave>.false.</config_cvmix_kpp_use_active_wave>
 
 <!-- gotm -->
 <config_use_gotm>.false.</config_use_gotm>
