@@ -1822,11 +1822,11 @@ Valid values: any positive real, but typically less than 1.0e-9
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_n_btr_si_outer_iter" type="integer"
+<entry id="config_n_btr_si_large_iter" type="integer"
 	category="semi_implicit_ts" group="semi_implicit_ts">
-number of outer iterations
+number of large barotropic system iterations
 
-Valid values: any positive integer, but typically 2
+any positive integer, but typically 1 and less than 2
 Default: Defined in namelist_defaults.xml
 </entry>
 
