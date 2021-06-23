@@ -315,7 +315,7 @@ def ensure_pip():
     _ = import_module("pip")
 
 ###############################################################################
-def pip_install_lib(min_version=None, pipname=None):
+def pip_install_lib(pip_libname):
 ###############################################################################
     """
     Ask pip to install a version of a package which is >= min_version
@@ -324,17 +324,15 @@ def pip_install_lib(min_version=None, pipname=None):
     ensure_pip()
 
     # Note: --trusted-host may not work for ancient versions of python
-    if min_version is None:
-        stat, _, err = run_cmd("{} -m pip install {} --trusted-host files.pythonhosted.org --user".format(sys.executable, pipname))
-    else:
-        stat, _, err = run_cmd("{} -m pip install {}=={} --trusted-host files.pythonhosted.org --user".format(sys.executable, pipname, min_version))
-    expect(stat == 0, "Failed to install {}, cannot continue:\n{}".format(pipname, err))
+    #       --upgrade makes sure we get the latest version, even if one is already installed
+    stat, _, err = run_cmd("{} -m pip install --upgrade {} --trusted-host files.pythonhosted.org --user".format(sys.executable, pip_libname))
+    expect(stat == 0, "Failed to install {}, cannot continue:\n{}".format(pip_libname, err))
 
     # needed to "rehash" available libs
     site.main() # pylint: disable=no-member
 
 ###############################################################################
-def _ensure_pylib_impl(libname, min_version=None, pipname=None):
+def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
 ###############################################################################
     """
     Internal method, clients should not call this directly; please use of the
@@ -348,21 +346,21 @@ def _ensure_pylib_impl(libname, min_version=None, pipname=None):
         pkg = import_module(libname)
 
         if min_version is not None and parse_version(pkg.__version__) < parse_version(min_version):
-            print("Detected version for package {} is too old: detected {}, required >= {}. Script will attempt to install required version locally".format(libname, pkg.__version__,min_version))
+            print("Detected version for package {} is too old: detected {}, required >= {}. Will attempt to upgrade the package locally".format(libname, pkg.__version__,min_version))
             install = True
 
     except ImportError:
-        print("Detected missing {}, will attempt to install locally".format(libname))
-        pipname = pipname if pipname else libname
+        print("Detected missing package {}. Will attempt to install locally".format(libname))
+        pip_libname = pip_libname if pip_libname else libname
 
         install = True
 
     if install:
-        pip_install_lib(min_version,pipname)
+        pip_install_lib(pip_libname)
         _ = import_module(libname)
 
 # We've accepted these outside dependencies
-def ensure_yaml():   _ensure_pylib_impl("yaml", pipname="pyyaml",min_version='5.1')
+def ensure_yaml():   _ensure_pylib_impl("yaml", pip_libname="pyyaml",min_version='5.1')
 def ensure_pylint(): _ensure_pylib_impl("pylint")
 
 ###############################################################################
