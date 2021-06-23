@@ -110,6 +110,7 @@ module li_iceshelf_melt
               thickness
       integer, dimension(:), pointer :: cellMask
       integer :: err_tmp
+      logical :: applyToFloating, applyToGrounded, applyToGroundingLine
 
       err = 0
       err_tmp = 0
@@ -117,9 +118,22 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
 
+      ! Determine where to apply melt. This avoids redundant melting at the grounding line
+      ! if both face-melting and ice shelf melting are active.
+      applyToFloating = .false. ! As of 06/2021 there are no face-melt routines for floating ice
+      if (trim(config_basal_mass_bal_float) .eq. 'none') then
+         applyToGrounded = .false.
+         applyToGroundingLine = .true.
+      else
+         applyToGrounded = .true.
+         applyToGroundingLine = .false.
+      endif
+
+
       if ( trim(config_front_mass_bal_grounded) == 'ismip6' &
           .or. trim(config_front_mass_bal_grounded) == 'uniform' ) then
-         call grounded_face_melt_ismip6(domain, err_tmp)
+         call grounded_face_melt_ismip6(domain, applyToGrounded, &
+                    applyToFloating, applyToGroundingLine, err_tmp)
          err = ior(err, err_tmp)
          
          block => domain % blocklist
@@ -127,19 +141,9 @@ module li_iceshelf_melt
             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
             call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-            call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
             call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
             call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-            call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
-            ! If ice shelf melting is active, only apply front melting to 
-            ! the grounded ice margin and adjacent non-dynamic cells
-            if (trim(config_basal_mass_bal_float) .ne. 'none') then
-               where ( li_mask_is_dynamic_ice(cellMask(:)) .and. li_mask_is_floating_ice(cellMask(:)) )
-                    faceMeltSpeed(:) = 0.0_RKIND
-                    faceMeltingThickness(:) = 0.0_RKIND
-               end where
-            endif
             ! Update halos on calvingThickness or faceMeltingThickness before applying it.
             ! Testing seemed to indicate this is not necessary, but I don't understand
             ! why not, so leaving it.
@@ -1308,7 +1312,8 @@ module li_iceshelf_melt
 !-----------------------------------------------------------------------
 
 
-    subroutine grounded_face_melt_ismip6(domain, err)
+    subroutine grounded_face_melt_ismip6(domain, applyToGrounded, &
+                    applyToFloating, applyToGroundingLine, err)
 
       use li_calving
       !-----------------------------------------------------------------
@@ -1316,7 +1321,7 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: &
          domain          !< Input/Output: domain object
-
+      logical, intent(in) :: applyToFloating, applyToGrounded, applyToGroundingLine
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
@@ -1353,15 +1358,9 @@ module li_iceshelf_melt
                                                                 !to pass to  li_apply_front_ablation_velocity,
                                                                 !because faceMeltSpeed is only below water-line
       integer :: err_tmp
-      logical :: applyToFloating, applyToGrounded, applyToGroundingLine
 
       err = 0
       call mpas_log_write('Starting face melt routine')
-
-      ! Define logicals for call to li_apply_front_ablation_velocity
-      applyToFloating = .false. ! if true, only apply to floating ice
-      applyToGrounded = .false.  ! if true, only apply to grounded
-      applyToGroundingLine = .true. ! if true, apply at grounding line
 
       ! Get sea level, bedTopography, ice density
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
