@@ -614,12 +614,12 @@ module ocn_time_integration_si
 
          if (associated(highFreqThicknessNew)) then
             call ocn_vert_transport_velocity_top(meshPool, &
-                 verticalMeshPool, scratchPool, layerThicknessCur, &
+                 verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err, highFreqThicknessNew)
          else
             call ocn_vert_transport_velocity_top(meshPool, &
-                 verticalMeshPool, scratchPool, layerThicknessCur, &
+                 verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err)
          endif
@@ -2475,12 +2475,12 @@ module ocn_time_integration_si
          call mpas_timer_start('thick vert trans vel top')
          if (associated(highFreqThicknessNew)) then
             call ocn_vert_transport_velocity_top(meshPool, &
-                 verticalMeshPool, scratchPool, layerThicknessCur, &
+                 verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err, highFreqThicknessNew)
          else
             call ocn_vert_transport_velocity_top(meshPool, &
-                 verticalMeshPool, scratchPool, layerThicknessCur, &
+                 verticalMeshPool, layerThicknessCur, &
                  layerThickEdge, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err)
          endif
@@ -3012,14 +3012,15 @@ module ocn_time_integration_si
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_time_integration_si_init(domain)!{{{
+   subroutine ocn_time_integration_si_init(domain, dt)!{{{
 
       !-----------------------------------------------------------------
       ! Input/output variables
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(inout) :: &
-         domain  !< [inout] model state to advance forward
+      real (kind=RKIND), intent(in) :: dt !< [in] time step (sec)
+
+      type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       ! Local variables
