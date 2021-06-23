@@ -318,6 +318,9 @@ module ocn_forward_mode
       ! Update any mesh fields that may have been modified during init
       call ocn_meshUpdateFields(domain)
 
+      ! Update any mesh fields that may have been modified during init
+      call ocn_meshUpdateFields(domain)
+
       if (config_conduct_tests) then
          call mpas_timer_start("test suite")
          call ocn_test_suite(domain,ierr)

@@ -574,6 +574,10 @@
 					description="Option of Langmuir enhanced entrainment parameterization"
 					possible_values="NONE, LWF16, LF17, RWHGK16"
 		/>
+		<nml_option name="config_cvmix_kpp_use_active_wave" type="logical" default_value=".false." units="NA"
+					description="Flag for Langmuir enchancement factor using prognostic waves"
+					possible_values=""
+		/>
 	</nml_record>
 	<nml_record name="gotm" mode="forward">
 		<nml_option name="config_use_gotm" type="logical" default_value=".false." units="NA"
@@ -1391,6 +1395,7 @@
 		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
 		<package name="topographicWaveDragPKG" description="This package controls variables required for topographic wave drag"/>
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
+		<package name="activeWavePKG" description="This package controls variables required for wave coupling"/>
 	</packages>
 
 	<streams>
@@ -2382,6 +2387,9 @@
 		<var name="daysSinceStartOfSim" type="real" dimensions="Time" units="days"
 			 description="Time since simulationStartTime, for plotting"
 	 	/>
+		<var name="edgeAreaFractionOfCell" type="real" dimensions="maxEdges nCells" units="unitless"
+			 description="edgeAreaFractionOfCell(iEdge, iCell) is the fractional area of cell iCell encompassed by the triangle with edge iEdge connected to the cell center of cell iCell. On a perfect planar hex mesh this is always 1/6. This weighting is used to interpolate scalars from edges to cell centers. Use 2*edgeAreaFractionOfCell to interpolate normal vectors at edges to vector norms at cell centers."
+		/>
 		<var name="salinitySurfaceRestoringTendency" type="real" dimensions="nCells Time" units="m PSU/s" packages="activeTracersSurfaceRestoringPKG"
 			 description="salinity tendency due to surface restoring"
 		/>
@@ -2693,6 +2701,9 @@
 		/>
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
 			description="meridional gradient of the coriolis parameter"
+		/>
+		<var name="c_Visbeck" type="real" dimensions="nEdges Time" units="m s^{-1}"
+			description="baroclinic wave speed from Visbeck parameterization"
 		/>
 		<var name="eddyLength" type="real" dimensions="nEdges Time" units="m"
 			description="eddy length scale in Visbeck 1997 closure"
@@ -3254,6 +3265,17 @@
 		<var name="windSpeed10m" type="real" dimensions="nCells Time" units="m s^{-1}"
 			 description="Wind speed at 10 meter."
 		/>
+
+                <!-- Waves coupling fields -->
+		<var name="waveStokesDriftZonal" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Zonal component of the wave-induced Stokes drift current"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftMeridional" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Meridional component of the wave-induced Stokes drift current"
+                          packages="activeWavePKG"
+		/>
+		
 
 		<!-- Output fields for coupling -->
 		<var name="nAccumulatedCoupled" type="integer" dimensions="Time" units="unitless"
