@@ -18,8 +18,7 @@ Atmosphere Processes:
   Process 3:
     Process Name: RRTMGP
     Grid: Physics
-    #active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
-    active_gases: ["H2O", "CO2", "O3", "N2O", "CO" , "CH4", "O2", "N2"]
+    active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
 
 Grids Manager:
   Type: Physics Only
@@ -31,11 +30,5 @@ Grids Manager:
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
   Initial Conditions File: shoc_cld_p3_rrtmgp_init_ne4np4.nc
-#  co2: 0.0
-#  o3: 0.0
-#  n2o: 0.0
-#  co: 0.0
-#  ch4: 0.0
-#  o2: 0.0
-#  n2: 0.0
+  pref_mid: 0.0 # Will want to remove this when pref_mid becomes a part of the grid info: TODO
 ...

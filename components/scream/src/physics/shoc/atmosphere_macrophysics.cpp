@@ -58,6 +58,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   constexpr int ps = Spack::n;
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
+  // TODO: Replace pref_mid in the FM with pref_mid read in from the grid data.
   add_field<Required>("pref_mid",         pref_mid_layout,     Pa,      grid_name, ps);
   add_field<Required>("z_int",            scalar3d_layout_int, m,       grid_name, ps);
   add_field<Required>("z_mid",            scalar3d_layout_mid, m,       grid_name, ps);

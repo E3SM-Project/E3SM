@@ -66,10 +66,11 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name(), ps);
   add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name(), ps);
   add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name(), ps);
+  add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid->name(), ps);
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
     if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
-      add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid->name(), ps);
+      // do nothing, qv has already been added.
     } else {
       add_field<Required>(it,scalar3d_layout_mid,kgkg,grid->name(), ps);
     }
@@ -256,7 +257,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto tmp2d = m_buffer.tmp2d;
   for (int igas = 0; igas < m_ngas; igas++) {
     auto name = m_gas_names[igas];
-    auto fm_name = name=="h2o" ? "qv" : name;
+    auto fm_name = (name=="h2o") ? "qv" : name;
     auto d_temp  = m_rrtmgp_fields_in.at(fm_name).get_reshaped_view<const Real**>();
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
