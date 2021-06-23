@@ -398,7 +398,7 @@ protected:
   void set_required_field_impl (const Field<const Real>& f);
   void set_computed_field_impl (const Field<      Real>& f);
 
-  // Computes total number of Reals needed for local variables
+  // Computes total number of bytes needed for local variables
   int requested_buffer_size_in_bytes() const;
 
   // Set local variables using memory provided by

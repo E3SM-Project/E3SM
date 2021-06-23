@@ -105,6 +105,8 @@ public:
 
   const std::shared_ptr<GridsManager>& get_grids_manager () const { return m_grids_manager; }
 
+  const ATMBufferManager& get_memory_buffer() const { return m_memory_buffer; }
+
 protected:
 
   void initialize_constant_field(const FieldRequest& freq, const ekat::ParameterList& ic_pl);
@@ -120,7 +122,7 @@ protected:
 
   OutputManager                                       m_output_manager;
 
-  ATMBufferManager                                    memory_buffer;
+  ATMBufferManager                                    m_memory_buffer;
 
   // Surface coupling stuff
   std::shared_ptr<SurfaceCoupling>            m_surface_coupling;

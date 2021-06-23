@@ -3,8 +3,15 @@
 // HOMMEXX Includes
 #include "Context.hpp"
 #include "Elements.hpp"
+#include "SimulationParams.hpp"
 #include "ElementsForcing.hpp"
+#include "EulerStepFunctor.hpp"
+#include "Diagnostics.hpp"
+#include "DirkFunctor.hpp"
 #include "ForcingFunctor.hpp"
+#include "CaarFunctor.hpp"
+#include "VerticalRemapManager.hpp"
+#include "HyperviscosityFunctor.hpp"
 #include "ExecSpaceDefs.hpp"
 #include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_workspace.hpp"
@@ -215,6 +222,64 @@ set_updated_group (const FieldGroup<Real>& group)
     m_dyn_grid_fields["Q"] = *group.m_bundle;
   }
 }
+
+int HommeDynamics::requested_buffer_size_in_bytes() const
+{
+  using namespace Homme;
+  auto& c = Context::singleton();
+
+  auto& elems   = c.get<Elements>();
+  auto& tracers = c.get<Tracers>();
+  auto& params  = c.get<SimulationParams>();
+
+  auto& caar = c.create_if_not_there<CaarFunctor>(elems.num_elems(),params);
+  auto& esf  = c.create_if_not_there<EulerStepFunctor>(elems.num_elems());
+  auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>(elems.num_elems(), params);
+  auto& ff   = c.create_if_not_there<ForcingFunctor>(elems.num_elems(), tracers.num_elems(), tracers.num_tracers());
+  auto& diag = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
+  auto& vrm  = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
+
+  const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||
+                          params.time_step_type==TimeStepType::IMEX_KG254 ||
+                          params.time_step_type==TimeStepType::IMEX_KG255 ||
+                          params.time_step_type==TimeStepType::IMEX_KG355);
+  if (need_dirk) {
+    // Create dirk functor only if needed
+    c.create_if_not_there<DirkFunctor>(elems.num_elems());
+  }
+
+  // Request buffer sizes in FunctorsBuffersManager and then
+  // return the total bytes using the calculated buffer size.
+  auto& fbm  = c.create_if_not_there<FunctorsBuffersManager>();
+  fbm.request_size(caar.requested_buffer_size());
+  fbm.request_size(esf.requested_buffer_size());
+  fbm.request_size(hvf.requested_buffer_size());
+  fbm.request_size(diag.requested_buffer_size());
+  fbm.request_size(ff.requested_buffer_size());
+  fbm.request_size(vrm.requested_buffer_size());
+  if (need_dirk) {
+    const auto& dirk = c.get<DirkFunctor>();
+    fbm.request_size(dirk.requested_buffer_size());
+  }
+
+  return fbm.allocated_size()*sizeof(Real);
+}
+
+void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
+{
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+                   "Error! Buffers size not sufficient.\n");
+
+  using namespace Homme;
+  auto& c = Context::singleton();
+  auto& fbm  = c.get<FunctorsBuffersManager>();
+
+  // Reset Homme buffer to use AD buffer memory.
+  // Internally, homme will actually initialize its own buffers.
+  EKAT_REQUIRE(buffer_manager.allocated_bytes()%sizeof(Real)==0); // Sanity check
+  fbm.allocate(buffer_manager.get_memory(), buffer_manager.allocated_bytes()/sizeof(Real));
+}
+
 
 void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 {

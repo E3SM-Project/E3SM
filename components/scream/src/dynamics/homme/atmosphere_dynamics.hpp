@@ -76,6 +76,13 @@ protected:
                          const std::vector<FieldTag>& tags,
                          const std::vector<int>& dims);
 
+  // Computes total number of bytes needed for local variables
+  int requested_buffer_size_in_bytes() const;
+
+  // Set local variables using memory provided by
+  // the ATMBufferManager
+  void init_buffers(const ATMBufferManager &buffer_manager);
+
   // Fields on reference and dynamics grid
   // NOTE: the dyn grid fields are *NOT* in the FieldManager. We still use
   //       scream Field's (rather than, e.g., raw views) cause we want to use
