@@ -1158,10 +1158,10 @@
 					description="Tolerance for the barotropic mode solver"
 					possible_values="any positive real, but typically less than 1.0e-9"
 		/>
-		<nml_option name="config_n_btr_si_outer_iter" type="integer" default_value="2" units="unitless"
-					description="number of outer iterations"
-					possible_values="any positive integer, but typically 2"
-		/>
+                <nml_option name="config_n_btr_si_large_iter" type="integer" default_value="1" units="unitless"
+                                        description="number of large barotropic system iterations"
+                                        possible_values="any positive integer, but typically 1 and less than 2"
+                />
 		<nml_option name="config_btr_si_partition_match_mode" type="logical" default_value=".false." units="unitless"
 					description="If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing."
 					possible_values=".true. or .false."
@@ -2949,115 +2949,111 @@
 			description="f * uPerp for the semi-implicit time stepping"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_r0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_r0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_r1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_r1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_rh0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_rh0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_rh1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_rh1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_r00" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_r00" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_ph0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_ph0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_ph1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_ph1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_v0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_v0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_v1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_s0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_s0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_s1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_s1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_sh0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_sh0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_sh1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_sh1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_w0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_w0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_w1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_w1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_wh0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_wh0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_wh1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_wh1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_q0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_q0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_q1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_q1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_qh0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_qh0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_qh1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_qh1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_z0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_z0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_z1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_z1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_zh0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_zh0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_zh1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_zh1" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_t0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_t0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_t1" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_t1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
-			packages="semiImplicitTimePKG"
-		/>
-		<var name="CGvec_y0" type="real" dimensions="nCells Time" units="unitless"
+		<var name="SIvec_y0" type="real" dimensions="nCells Time" units="unitless"
 			description="A vector used in the semi-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
