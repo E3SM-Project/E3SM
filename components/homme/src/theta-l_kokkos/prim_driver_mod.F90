@@ -309,10 +309,15 @@ contains
     ! Optional Input
     !
      logical(kind=c_bool), optional :: allocate_buffer  ! Whether functor memory buffer should be allocated internally
-    if (.not. present(allocate_buffer)) allocate_buffer = logical(.true.,c_bool)
 
     ! Initialize the C++ functors in the C++ context
-    call init_functors_c (logical(allocate_buffer,c_bool))
+    ! If no argument allocate_buffer is present,
+    ! let Homme internally allocate buffers
+    if (present(allocate_buffer)) then
+      call init_functors_c (logical(allocate_buffer,c_bool))
+    else
+      call init_functors_c (logical(.true.,c_bool))
+    endif
 
     ! Initialize boundary exchange structure in C++
     call init_boundary_exchanges_c ()
