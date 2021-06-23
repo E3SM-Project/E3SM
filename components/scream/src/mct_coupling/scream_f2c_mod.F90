@@ -8,18 +8,19 @@ module scream_f2c_mod
 
 interface
 
-  ! This subroutine performs most of the scream *internal* initialization,
-  ! including AD, atm procs, and grids. This subroutine does NOT initialize
+  ! This subroutine performs the first part of scream *internal* initialization,
+  ! namely creating the grids, the atm processes, and the fields.
+  ! It does *NOT* initialize the fields and the atm processes, nor it initializes
   ! any structure related to the component coupler. Other subroutines
   ! will have to be called *after* this one, to achieve that.
-  subroutine scream_init (f_comm,start_ymd,start_tod,yaml_fname) bind(c)
+  subroutine scream_create_atm_instance (f_comm,yaml_fname) bind(c)
     use iso_c_binding, only: c_int, c_char
     !
     ! Input(s)
     !
-    integer (kind=c_int),   intent(in) :: start_tod, start_ymd, f_comm
+    integer (kind=c_int),   intent(in) :: f_comm
     character(kind=c_char), target, intent(in) :: yaml_fname(*)
-  end subroutine scream_init
+  end subroutine scream_create_atm_instance
 
   subroutine scream_get_cols_latlon (lat, lon) bind(c)
     use iso_c_binding, only: c_ptr
@@ -50,6 +51,20 @@ interface
     type(c_ptr),         intent(in) :: a2x_indices, a2x_names, a2x_ptr
     integer(kind=c_int), intent(in) :: num_imports, num_exports
   end subroutine scream_setup_surface_coupling
+
+  ! This subroutine performs completes the initialization of the atm instance.
+  ! In particular, this routine must be called *after* scream_create_atm_instance,
+  ! and *after* scream_setup_surface_coupling.
+  ! During this call, all fields are initialized (i.e., initial conditions are
+  ! loaded), as well as the atm procs (which might use some initial conditions
+  ! to further initialize internal structures), and the output manager.
+  subroutine scream_init_atm (start_ymd,start_tod) bind(c)
+    use iso_c_binding, only: c_int
+    !
+    ! Input(s)
+    !
+    integer (kind=c_int),   intent(in) :: start_tod, start_ymd
+  end subroutine scream_init_atm
 
   ! This subroutine will run the whole atm model for one atm timestep
   subroutine scream_run (dt) bind(c)

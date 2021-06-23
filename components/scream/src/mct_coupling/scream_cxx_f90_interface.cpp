@@ -5,8 +5,6 @@
 
 #include "dynamics/register_dynamics.hpp"
 #include "physics/register_physics.hpp"
-#include "physics/p3/p3_functions_f90.hpp"
-#include "physics/shoc/scream_shoc_interface.hpp"
 
 #include "mct_coupling/ScreamContext.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
@@ -72,10 +70,8 @@ extern "C"
 
 /*===============================================================================================*/
 // WARNING: make sure input_yaml_file is a null-terminated string!
-void scream_init (const MPI_Fint& f_comm,
-                  const int& start_ymd,
-                  const int& start_tod,
-                  const char* input_yaml_file) {
+void scream_create_atm_instance (const MPI_Fint& f_comm,
+                                 const char* input_yaml_file) {
                   // const int& compid) {
   using namespace scream;
   using namespace scream::control;
@@ -111,19 +107,14 @@ void scream_init (const MPI_Fint& f_comm,
     register_dynamics();
     register_physics();
 
-    // Create the bare ad, then init it
+    // Create the bare ad, then start the initialization sequence
     auto& ad = c.create<AtmosphereDriver>();
 
-    // Recall that e3sm uses the int YYYYMMDD to store a date
-    std::cout << "start_ymd: " << start_ymd << "\n";
-    const int dd = start_ymd % 100;
-    const int mm = (start_ymd / 100) % 100;
-    const int yy = start_ymd / 10000;
-    util::TimeStamp time (yy,mm,dd,start_tod);
-
-    // Init and run (to finalize, wait till checks are completed,
-    // or you'll clear the field managers!)
-    ad.initialize(atm_comm,ad_params,time);
+    ad.set_comm(atm_comm);
+    ad.set_params(ad_params);
+    ad.create_atm_processes ();
+    ad.create_grids ();
+    ad.create_fields ();
   });
 }
 
@@ -151,15 +142,41 @@ void scream_setup_surface_coupling (
       sc->register_import(names_in[i],x2a_indices[i]);
     }
     for (int i=0; i<num_exports; ++i) {
-      sc->register_import(names_out[i],a2x_indices[i]);
+      sc->register_export(names_out[i],a2x_indices[i]);
     }
 
     sc->registration_ends(cpl_x2a_ptr, cpl_a2x_ptr);
+  });
+}
 
-    // At this point, the atm dag *should* be completed, so we can ask
-    // the ad to proceed to do its inspection. Any unmet dependency in
-    // the dag at this point has to be treated as an error.
-    ad.inspect_atm_dag();
+void scream_init_atm (const int& start_ymd,
+                      const int& start_tod)
+{
+  using namespace scream;
+  using namespace scream::control;
+
+  fpe_guard_wrapper([&](){
+    // First of all, initialize the scream session
+    scream::initialize_scream_session();
+
+    // Create the context
+    auto& c = ScreamContext::singleton();
+
+    // Get the ad, then complete initialization
+    auto& ad = c.create<AtmosphereDriver>();
+
+    // Recall that e3sm uses the int YYYYMMDD to store a date
+    std::cout << "start_ymd: " << start_ymd << "\n";
+    const int dd = start_ymd % 100;
+    const int mm = (start_ymd / 100) % 100;
+    const int yy = start_ymd / 10000;
+    util::TimeStamp t0 (yy,mm,dd,start_tod);
+
+    // Init and run (to finalize, wait till checks are completed,
+    // or you'll clear the field managers!)
+    ad.initialize_fields (t0);
+    ad.initialize_output_manager ();
+    ad.initialize_atm_procs ();
   });
 }
 
@@ -178,9 +195,6 @@ void scream_finalize (/* args ? */) {
     // Get the AD, and finalize it
     auto& ad = get_ad_nonconst();
     ad.finalize();
-
-    // Clean up also P3 stuff
-    scream::p3::P3GlobalForFortran::deinit();
 
     // Clean up the context
     scream::ScreamContext::singleton().clean_up();
