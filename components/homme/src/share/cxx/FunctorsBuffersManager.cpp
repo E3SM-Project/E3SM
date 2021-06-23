@@ -28,9 +28,7 @@ void FunctorsBuffersManager:: allocate () {
 
   m_buffer = ExecViewManaged<Real*>("",m_size);
 
-#ifdef HOMMEXX_BFB_TESTING
   generate_random_data();
-#endif
 
   m_allocated = true;
 }
@@ -41,14 +39,12 @@ void FunctorsBuffersManager:: allocate (Real* data, const int new_size) {
   m_size   = new_size;
   m_buffer = ExecViewManaged<Real*>(data, m_size);
 
-#ifdef HOMMEXX_BFB_TESTING
   generate_random_data();
-#endif
 
   m_allocated = true;
 }
 
-void generate_random_data ()
+void FunctorsBuffersManager::generate_random_data ()
 {
 #ifdef HOMMEXX_BFB_TESTING
   // Here's the catch: when malloc allocates memory, it *may* get a fresh
@@ -59,7 +55,6 @@ void generate_random_data ()
   // them, a unit test would pass with zero-ed memory.
   // Therefore, we randomly initialize the buffer, to protect against false
   // positives.
-  generate_random_data();
   using rngalg = std::mt19937_64;
   using rpdf = std::uniform_real_distribution<Real>;
   std::random_device rd;
