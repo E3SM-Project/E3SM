@@ -655,6 +655,10 @@
 					description="Option of Langmuir enhanced entrainment parameterization"
 					possible_values="NONE, LWF16, LF17, RWHGK16"
 		/>
+		<nml_option name="config_cvmix_kpp_use_active_wave" type="logical" default_value=".false." units="NA"
+					description="Flag for Langmuir enchancement factor using prognostic waves"
+					possible_values=""
+		/>
 	</nml_record>
 	<nml_record name="gotm" mode="forward">
 		<nml_option name="config_use_gotm" type="logical" default_value=".false."
@@ -1532,6 +1536,7 @@
 		<package name="topographicWaveDragPKG" description="This package controls variables required for topographic wave drag"/>
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
 		<package name="verticalRemapPKG" description="This package is for variables required for vertical Lagrangian remapping."/>
+		<package name="activeWavePKG" description="This package controls variables required for wave coupling"/>
 	</packages>
 
 	<streams>
@@ -3434,6 +3439,17 @@
 		<var name="windSpeed10m" type="real" dimensions="nCells Time" units="m s^-1"
 			 description="Wind speed at 10 meter."
 		/>
+
+                <!-- Waves coupling fields -->
+		<var name="waveStokesDriftZonal" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Zonal component of the wave-induced Stokes drift current"
+                          packages="activeWavePKG"
+		/>
+		<var name="waveStokesDriftMeridional" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Meridional component of the wave-induced Stokes drift current"
+                          packages="activeWavePKG"
+		/>
+		
 
 		<!-- Output fields for coupling -->
 		<var name="nAccumulatedCoupled" type="integer" dimensions="Time"
