@@ -146,17 +146,19 @@ void Functions<S,D>::shoc_assumed_pdf(
         Skew_thl.set(tsign>sp(0.2) && tsign<=sp(0.4), (((sp(1.2)*Skew_w)/sp(0.2))*(tsign-sp(0.2))));
       }
 
-      thl2_1.set(condition,
-                 ekat::min(100,
-                           ekat::max(0, (3*tmp_val_1*(1 - a*ekat::square(tmp_val_2) - (1-a)*ekat::square(tmp_val_1))
-                                         - (Skew_thl - a*ekat::cube(tmp_val_2) - (1 - a)*ekat::cube(tmp_val_1)))
-                                         /(3*a*(tmp_val_1 - tmp_val_2))))*thlsec);
-      thl2_2.set(condition,
-                 ekat::min(100,
+      if (condition.any()) {
+        thl2_1.set(condition,
+                   ekat::min(100,
+                             ekat::max(0, (3*tmp_val_1*(1 - a*ekat::square(tmp_val_2) - (1-a)*ekat::square(tmp_val_1))
+                                           - (Skew_thl - a*ekat::cube(tmp_val_2) - (1 - a)*ekat::cube(tmp_val_1)))
+                                       /(3*a*(tmp_val_1 - tmp_val_2))))*thlsec);
+        thl2_2.set(condition,
+                   ekat::min(100,
                            ekat::max(0, (-3*tmp_val_2*(1 - a*ekat::square(tmp_val_2)
                                          - (1 - a)*ekat::square(tmp_val_1))
                                          + (Skew_thl - a*ekat::cube(tmp_val_2) - (1 - a)*ekat::cube(tmp_val_1)))
                                          /(3*(1 - a)*(tmp_val_1 - tmp_val_2))))*thlsec);
+      }
 
       thl1_1.set(condition, tmp_val_2*sqrtthl+thl_first);
       thl1_2.set(condition, tmp_val_1*sqrtthl+thl_first);
@@ -179,16 +181,18 @@ void Functions<S,D>::shoc_assumed_pdf(
       Skew_qw.set(tsign>sp(0.4), sp(1.2)*Skew_w);
       Skew_qw.set(tsign>sp(0.2) && tsign<=sp(0.4), (((sp(1.2)*Skew_w)/sp(0.2))*(tsign-sp(0.2))));
 
-      qw2_1.set(condition,
+      if (condition.any()) {
+        qw2_1.set(condition,
                 ekat::min(100,
                           ekat::max(0, (3*tmp_val_1*(1 - a*ekat::square(tmp_val_2) - (1 - a)*ekat::square(tmp_val_1))
                                         - (Skew_qw - a*ekat::cube(tmp_val_2) - (1 - a)*ekat::cube(tmp_val_1)))
                                         /(3*a*(tmp_val_1 - tmp_val_2))))*qwsec);
-      qw2_2.set(condition,
+        qw2_2.set(condition,
                 ekat::min(100,
                           ekat::max(0, (-3*tmp_val_2*(1 - a*ekat::square(tmp_val_2) - (1 - a)*ekat::square(tmp_val_1))
                                         + (Skew_qw - a*ekat::cube(tmp_val_2) - (1 - a)*ekat::cube(tmp_val_1)))
                                         /(3*(1 - a)*(tmp_val_1 - tmp_val_2))))*qwsec);
+      }
 
       qw1_1.set(condition, tmp_val_2*sqrtqt+qw_first);
       qw1_2.set(condition, tmp_val_1*sqrtqt+qw_first);
@@ -207,10 +211,13 @@ void Functions<S,D>::shoc_assumed_pdf(
       Spack r_qwthl_1(0);
       {
         const Spack testvar = a*sqrtqw2_1*sqrtthl2_1 + (1 - a)*sqrtqw2_2*sqrtthl2_2;
-        r_qwthl_1.set(testvar != 0,
-                      ekat::max(-1,
-                                ekat::min(1, (qwthlsec - a*(qw1_1 - qw_first)*(thl1_1 - thl_first)
-                                              - (1 - a)*(qw1_2 - qw_first)*(thl1_2 - thl_first))/testvar)));
+        const auto testvar_ne_zero = testvar != 0;
+        if (testvar_ne_zero.any()) {
+          r_qwthl_1.set(testvar_ne_zero,
+                        ekat::max(-1,
+                                  ekat::min(1, (qwthlsec - a*(qw1_1 - qw_first)*(thl1_1 - thl_first)
+                                                - (1 - a)*(qw1_2 - qw_first)*(thl1_2 - thl_first))/testvar)));
+        }
       }
 
       // Begin to compute cloud property statistics
