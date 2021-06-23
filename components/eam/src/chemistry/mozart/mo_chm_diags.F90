@@ -20,6 +20,7 @@ module mo_chm_diags
   public :: chm_diags
   public :: het_diags
   public :: gaschmmass_diags
+  public :: aer_species
 
   integer :: id_n,id_no,id_no2,id_no3,id_n2o5,id_hno3,id_ho2no2,id_clono2,id_brono2
   integer :: id_cl,id_clo,id_hocl,id_cl2,id_cl2o2,id_oclo,id_hcl,id_brcl
