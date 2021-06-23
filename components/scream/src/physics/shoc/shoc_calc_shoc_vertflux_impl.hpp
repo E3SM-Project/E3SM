@@ -26,9 +26,12 @@ void Functions<S,D>
 
     Spack up_grid, grid;
     ekat::index_and_shift<-1>(sinvar, range_pack2, grid, up_grid);
-    const Spack grid_dz = 1 / dz_zi(k); // vertical grid diff squared
-    // Compute the vertical flux via downgradient diffusion
-    vertflux(k).set(range_pack1 > 0 && range_pack1 < nlev, -(tkh_zi(k) * grid_dz * (up_grid - grid)));
+    const auto dz_zi_ne_zero = dz_zi(k) != 0;
+    if (dz_zi_ne_zero.any()) {
+      const Spack grid_dz = 1 / dz_zi(k); // vertical grid diff squared
+      // Compute the vertical flux via downgradient diffusion
+      vertflux(k).set(range_pack1 > 0 && range_pack1 < nlev && dz_zi_ne_zero, -(tkh_zi(k) * grid_dz * (up_grid - grid)));
+    }
   });
 }
 
