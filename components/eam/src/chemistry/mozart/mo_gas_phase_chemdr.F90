@@ -24,6 +24,7 @@ module mo_gas_phase_chemdr
 
   integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx
 !  integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
+  integer :: uci1_ndx
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
   integer :: ndx_h2so4
@@ -34,6 +35,9 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len),dimension(rxt_tag_cnt)   :: tag_names
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
   logical :: convproc_do_aer 
+
+  ! low limit factor for dry deposition
+  real(r8) :: low_limit
 
 contains
 
@@ -63,8 +67,10 @@ contains
     call phys_getopts( history_aerosol_out = history_aerosol, &
          convproc_do_aer_out = convproc_do_aer ) 
    
+    low_limit = 0.1_r8
     ndx_h2so4 = get_spc_ndx('H2SO4')
 
+    uci1_ndx= get_rxt_ndx('uci1')
     het1_ndx= get_rxt_ndx('het1')
     o3_ndx  = get_spc_ndx('O3')
     o_ndx   = get_spc_ndx('O')
@@ -229,7 +235,7 @@ contains
     use cam_control_mod,   only : lambm0, eccen, mvelpp, obliqr
     use mo_strato_rates,   only : has_strato_chem
     use short_lived_species,only: set_short_lived_species,get_short_lived_species
-    use mo_chm_diags,      only : chm_diags, het_diags, gaschmmass_diags
+    use mo_chm_diags,      only : chm_diags, het_diags, gaschmmass_diags, aer_species
     use perf_mod,          only : t_startf, t_stopf
     use mo_tracname,       only : solsym
     use physconst,         only : gravit
@@ -360,6 +366,7 @@ contains
     real(r8) :: soilw(pcols)
     real(r8) :: prect(pcols)
     real(r8) :: sflx(pcols,gas_pcnst)
+    real(r8) :: sflx2(pcols,gas_pcnst)
     real(r8) :: dust_vmr(ncol,pver,ndust)
     real(r8) :: noy(ncol,pver)
     real(r8) :: sox(ncol,pver)
@@ -387,7 +394,8 @@ contains
     real(r8) :: del_h2so4_gasprod(ncol,pver)
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
     real(r8) :: vmr_old(ncol,pver,gas_pcnst)
-
+    real(r8) :: tmp
+ 
     ! flags for MMF configuration
     logical :: use_MMF, use_ECPP
 
@@ -943,27 +951,15 @@ contains
     endif
 
     !-----------------------------------------------------------------------      
-    !         ... Xform from vmr to mmr
+    !         ... Xform from vmr to mmr (for dry deposition)
     !-----------------------------------------------------------------------      
     call vmr2mmr( vmr, mmr_tend, mbar, ncol )
 
     call set_short_lived_species( mmr_tend, lchnk, ncol, pbuf )
 
     !-----------------------------------------------------------------------      
-    !         ... Form the tendencies
+    !         ... Dry deposition
     !----------------------------------------------------------------------- 
-    do m = 1,gas_pcnst 
-       mmr_new(:ncol,:,m) = mmr_tend(:ncol,:,m)
-       mmr_tend(:ncol,:,m) = (mmr_tend(:ncol,:,m) - mmr(:ncol,:,m))*delt_inverse
-    enddo
-
-    do m = 1,pcnst
-       n = map2chm(m)
-       if( n > 0 ) then
-          qtend(:ncol,:,m) = qtend(:ncol,:,m) + mmr_tend(:ncol,:,n) 
-       end if
-    end do
-
     tvs(:ncol) = tfld(:ncol,pver) * (1._r8 + qh2o(:ncol,pver))
 
     sflx(:,:) = 0._r8
@@ -993,16 +989,53 @@ contains
             depvel, sflx, mmr, pmid(:,pver), &
             tvs, ncol, icefrac, ocnfrac, lchnk )
     endif
-    call t_stopf('drydep')
 
     drydepflx(:,:) = 0._r8
-    do m = 1,pcnst
-       n = map2chm( m )
-       if ( n > 0 ) then
-         cflx(:ncol,m)      = cflx(:ncol,m) - sflx(:ncol,n)
-         drydepflx(:ncol,m) = sflx(:ncol,n)
-       endif
-    end do
+    ! if chemUCI is used, apply dry dep flux here
+    if (uci1_ndx <= 0) then 
+       do m = 1,pcnst
+          n = map2chm( m )
+          if ( n > 0 ) then
+            cflx(:ncol,m)      = cflx(:ncol,m) - sflx(:ncol,n)
+            drydepflx(:ncol,m) = sflx(:ncol,n)
+          endif
+       end do
+    else
+       sflx2 = sflx
+       do m = 1,pcnst
+          n = map2chm( m )
+          if ( n > 0 ) then
+            drydepflx(:ncol,m) = sflx(:ncol,n)
+            if ( any( sflx2(:ncol,n) /= 0._r8 ) ) then
+              if ( .not. any( aer_species == n ) .and. adv_mass(n) /= 0._r8 ) then
+                do k = pver, 1, -1 ! loop from bottom to top
+                  ! kg/m2, tracer mass
+                  wrk(:ncol,k) = adv_mass(n)*vmr(:ncol,k,n)/mbar(:ncol,k) &
+                                    *drymass(:ncol,k)/area(:ncol)
+                  j = 0 ! number of columns w/o enough mass to remove at the current layer
+                  do i = 1,ncol
+                    if ( wrk(i,k)*(1._r8-low_limit) >= sflx2(i,n)*delt ) then
+                      tmp = wrk(i,k) - sflx2(i,n)*delt
+                      sflx2(i,n) = 0._r8
+                    else
+                      tmp = wrk(i,k)*low_limit
+                      sflx2(i,n) = sflx2(i,n) - wrk(i,k)*(1._r8-low_limit)*delt_inverse
+                      j = j + 1
+                    endif
+                    vmr(i,k,n) = tmp*mbar(i,k)*area(i)/adv_mass(n)/drymass(i,k)
+                  end do
+
+                  if ( j == 0 ) then
+                    exit
+                  endif
+
+                end do
+              endif
+            endif
+          endif
+       end do
+    endif
+    call t_stopf('drydep')
 
     if ( history_gaschmbudget ) then
        call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
@@ -1010,6 +1043,28 @@ contains
        call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                               pdeldry(:ncol,:), mbar, delt_inverse, 'MSD' )
     endif
+
+    !-----------------------------------------------------------------------      
+    !         ... Xform from vmr to mmr
+    !-----------------------------------------------------------------------      
+    call vmr2mmr( vmr, mmr_tend, mbar, ncol )
+
+    call set_short_lived_species( mmr_tend, lchnk, ncol, pbuf )
+
+    !-----------------------------------------------------------------------      
+    !         ... Form the tendencies
+    !----------------------------------------------------------------------- 
+    do m = 1,gas_pcnst 
+       mmr_new(:ncol,:,m) = mmr_tend(:ncol,:,m)
+       mmr_tend(:ncol,:,m) = (mmr_tend(:ncol,:,m) - mmr(:ncol,:,m))*delt_inverse
+    enddo
+
+    do m = 1,pcnst
+       n = map2chm(m)
+       if( n > 0 ) then
+          qtend(:ncol,:,m) = qtend(:ncol,:,m) + mmr_tend(:ncol,:,n) 
+       end if
+    end do
 
     call t_startf('chemdr_diags')
     call chm_diags( lchnk, ncol, vmr(:ncol,:,:), mmr_new(:ncol,:,:), &
