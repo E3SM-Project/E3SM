@@ -169,6 +169,15 @@ template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::
+calculate_wetmmr_from_dryvmr(const ScalarT& dryvmr, const ScalarT& qv)
+{
+  return dryvmr*(1-qv);
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::
 calculate_dz(const ScalarT& pseudo_density, const ScalarT& p_mid, const ScalarT& T_mid, const ScalarT& qv)
 {
   using C = scream::physics::Constants<Real>;

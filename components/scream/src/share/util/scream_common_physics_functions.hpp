@@ -109,6 +109,30 @@ struct PhysicsFunctions
   static ScalarT calculate_dse(const ScalarT& temperature, const ScalarT& z, const Real surf_geopotential);
 
   //-----------------------------------------------------------------------------------------------//
+  // Calculate the dry mass mixing ratio given the wet mass mixing ratio:
+  //   drymmr = wetmmr / (1 - qv)
+  // where
+  //   drymmr         is the dry mass mixing ratio of a specie
+  //   wetmmr         is the wet mass mixing ratio of a specie
+  //   qv             is Specific humidity
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_drymmr_from_wetmmr(const ScalarT& wetmmr, const ScalarT& qv);
+
+  //-----------------------------------------------------------------------------------------------//
+  // Calculate the wet mass mixing ratio given the dry mass mixing ratio:
+  //   wetmmr = drymmr * (1 - qv)
+  // where
+  //   wetmmr         is the wet mass mixing ratio of a specie
+  //   drymmr         is the dry mass mixing ratio of a specie
+  //   qv             is Specific humidity
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_wetmmr_from_dryvmr(const ScalarT& drymmr, const ScalarT& qv);
+
+  //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer thickness using the equation of state:
   //   dz = - (-pseudo_density)*Rd*T_virtual / (p_mid*g)
   // where
@@ -235,6 +259,25 @@ struct PhysicsFunctions
                              const InputProviderZ& z,
                              const Real surf_geopotential,
                              const view_1d<ScalarT>& dse);
+  /*
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_dse(const ScalarT& temperature, const ScalarT& z, const Real surf_geopotential);
+  */
+
+  template<typename ScalarT, typename InputProviderM, typename InputProviderQ>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_wetmmr_from_dryvmr (const MemberType& team,
+                             const InputProviderM& drymmr,
+                             const InputProviderQ& qv,
+                             const view_1d<ScalarT>& wetmmr);
+  /*
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_wetmmr_from_dryvmr(const ScalarT& drymmr, const ScalarT& qv);
+
+  */
+
 
   template<typename ScalarT,
            typename InputProviderPD, typename InputProviderP,
@@ -289,6 +332,6 @@ struct PhysicsFunctions
 
 // We don't do ETI, since we don't know some of the concrete types.
 // E.g., we don't know InputProvider, or ScalarT (although we could
-// ETI the "common" cases, where the provider is a view_1d, and 
+// ETI the "common" cases, where the provider is a view_1d, and
 // Scalar=Real or Scalar=Pack<Real,SCREAM_PACK_SIZE>).
 # include "scream_common_physics_functions_impl.hpp"
