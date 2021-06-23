@@ -40,23 +40,23 @@ struct SHOCGridData : public PhysicsTestData {
 
 // Convenience macros for up to 11 arguments, beyond that, you're on your own :)
 
-#define PTD_ZEROES0
-#define PTD_ZEROES1 0
-#define PTD_ZEROES2 PTD_ZEROES1, 0
-#define PTD_ZEROES3 PTD_ZEROES2, 0
-#define PTD_ZEROES4 PTD_ZEROES3, 0
-#define PTD_ZEROES5 PTD_ZEROES4, 0
-#define PTD_ZEROES6 PTD_ZEROES5, 0
-#define PTD_ZEROES7 PTD_ZEROES6, 0
-#define PTD_ZEROES8 PTD_ZEROES7, 0
-#define PTD_ZEROES9 PTD_ZEROES8, 0
-#define PTD_ZEROES10 PTD_ZEROES9, 0
-#define PTD_ZEROES11 PTD_ZEROES10, 0
+#define PTD_ONES0
+#define PTD_ONES1 1
+#define PTD_ONES2 PTD_ONES1, 1
+#define PTD_ONES3 PTD_ONES2, 1
+#define PTD_ONES4 PTD_ONES3, 1
+#define PTD_ONES5 PTD_ONES4, 1
+#define PTD_ONES6 PTD_ONES5, 1
+#define PTD_ONES7 PTD_ONES6, 1
+#define PTD_ONES8 PTD_ONES7, 1
+#define PTD_ONES9 PTD_ONES8, 1
+#define PTD_ONES10 PTD_ONES9, 1
+#define PTD_ONES11 PTD_ONES10, 1
 
-#define PTD_ZEROES(a) PTD_ZEROES##a
+#define PTD_ONES(a) PTD_ONES##a
 
 #define PTD_DATA_COPY_CTOR(name, num_args) \
-  name(const name& rhs) : name(PTD_ZEROES(num_args)) { *this = rhs; }
+  name(const name& rhs) : name(PTD_ONES(num_args)) { *this = rhs; }
 
 #define  PTD_ASS0(                                ) ((void) (0))
 #define  PTD_ASS1(a                               )                                           a = rhs.a
