@@ -5,7 +5,7 @@ module dynpftFileMod
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Handle reading of the pftdyn dataset, which specifies transient areas of natural Patches
-  !
+  
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
@@ -21,18 +21,18 @@ module dynpftFileMod
   use VegetationType           , only : veg_pp        
   use topounit_varcon      , only : max_topounits
   use GridcellType         , only : grc_pp 
-  !
+  
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
   private
   save
   public :: dynpft_init     ! initialize information read from pftdyn dataset
   public :: dynpft_interp   ! interpolate pftdyn information to current time step
-  !
+  
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: dynpft_check_consistency   ! check consistency with surface dataset
   private :: dynpft_read_consistency_nl ! read namelist associated with consistency checks
-  !
+  
   ! ! PRIVATE TYPES
   type(dyn_file_type), target    :: dynpft_file   ! information for the pftdyn file
   type(dyn_var_time_interp_type) :: wtpatch       ! weight of each patch relative to the natural veg landunit
@@ -45,25 +45,25 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine dynpft_init(bounds, dynpft_filename)
-    !
+    
     ! !DESCRIPTION:
     ! Initialize dynamic pft dataset (position it to the right time samples
     ! that bound the initial model date)
-    !
+    
     ! This also calls dynpft_interp for the initial time
-    !
+    
     ! !USES:
     use elm_varpar     , only : numpft, maxpatch_pft, natpft_size
     use dynTimeInfoMod , only : YEAR_POSITION_START_OF_TIMESTEP
     use dynTimeInfoMod , only : YEAR_POSITION_END_OF_TIMESTEP
     use ncdio_pio
-    !
+    
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds          ! proc-level bounds
     character(len=*) , intent(in) :: dynpft_filename ! name of file containing transient pft information
-    !
+    
     ! !LOCAL VARIABLES:
-    integer  :: wtpatch_shape(3)                  ! shape of the wtpatch data TKT
+    integer  :: wtpatch_shape(3)                  ! shape of the wtpatch data 
 
     character(len= 32)     :: subname='dynpft_init'! subroutine name
     !-----------------------------------------------------------------------
@@ -89,14 +89,14 @@ contains
     call dynpft_check_consistency(bounds)
 
     ! read data PCT_NAT_PFT corresponding to correct year
-    !
+    
     ! Note: if you want to change PCT_NAT_PFT so that it is NOT interpolated, but instead
     ! jumps to each year's value on Jan 1 of that year, simply change wtpatch to be of type
     ! dyn_var_time_uninterp_type (rather than dyn_var_time_interp_type), and change the
     ! following constructor to construct a variable of dyn_var_time_uninterp_type. That's
     ! all you need to do.
 
-    wtpatch_shape = [(bounds%endg-bounds%begg+1),max_topounits, natpft_size] ! TKT
+    wtpatch_shape = [(bounds%endg-bounds%begg+1),max_topounits, natpft_size] 
     wtpatch = dyn_var_time_interp_type( &
          dyn_file=dynpft_file, varname=varname, &
          dim1name=grlnd, conversion_factor=100._r8, &
@@ -108,21 +108,21 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine dynpft_check_consistency(bounds)
-    !
+    
     ! !DESCRIPTION:
     ! Check consistency between dynpft file and surface dataset.
-    !
+    
     ! This is done by assuming that PCT_NAT_PFT at time 1 in the pftdyn file agrees with
     ! PCT_NAT_PFT on the surface dataset.
-    !
+    
     ! !USES:
     use elm_varsur, only : wt_nat_patch
     use elm_varpar, only : natpft_size
     use ncdio_pio
-    !
+    
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  ! proc-level bounds
-    !
+    
     ! !LOCAL VARIABLES:
     logical             :: check_dynpft_consistency ! whether to do the consistency check in this routine
     integer             :: g                        ! index
@@ -137,12 +137,12 @@ contains
     call dynpft_read_consistency_nl(check_dynpft_consistency)
 
     if (check_dynpft_consistency) then
-       !allocate(wt_nat_patch_2d(bounds%begg:bounds%endg, natpft_size)) !TKT
+       !allocate(wt_nat_patch_2d(bounds%begg:bounds%endg, natpft_size)) 
        !wt_nat_patch_2d = wt_nat_patch(bounds%begg:bounds%endg,1,natpft_size)
 
        ! Read first time slice of PCT_NAT_PATCH
        
-       allocate(wtpatch_time1(bounds%begg:bounds%endg,max_topounits, natpft_size))  !TKT
+       allocate(wtpatch_time1(bounds%begg:bounds%endg,max_topounits, natpft_size)) 
        call ncd_io(ncid=dynpft_file, varname=varname, flag='read', data=wtpatch_time1, &
             dim1name=grlnd, nt=1, readvar=readvar)
        if (.not. readvar) then
@@ -151,7 +151,7 @@ contains
        end if
 
        ! Convert from PCT to weight on grid cell
-       wtpatch_time1(bounds%begg:bounds%endg,:,:) = wtpatch_time1(bounds%begg:bounds%endg,:,:) / 100._r8   ! TKT
+       wtpatch_time1(bounds%begg:bounds%endg,:,:) = wtpatch_time1(bounds%begg:bounds%endg,:,:) / 100._r8   
     
        ! Compare with values read from surface dataset
        do g = bounds%begg, bounds%endg
@@ -183,19 +183,19 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine dynpft_read_consistency_nl(check_dynpft_consistency)
-    !
+    
     ! !DESCRIPTION:
     ! Read namelist settings related to pftdyn consistency checks
-    !
+    
     ! !USES:
     use fileutils      , only : getavu, relavu
     use elm_nlUtilsMod , only : find_nlgroup_name
     use controlMod     , only : NLFilename
     use shr_mpi_mod    , only : shr_mpi_bcast
-    !
+    
     ! !ARGUMENTS:
     logical, intent(out) :: check_dynpft_consistency ! whether to do the consistency check
-    !
+    
     ! !LOCAL VARIABLES:
     integer :: nu_nml    ! unit for namelist file
     integer :: nml_error ! namelist i/o error flag
@@ -239,20 +239,20 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine dynpft_interp(bounds)
-    !
+    
     ! !DESCRIPTION:
     ! Time interpolate dynamic pft data to get pft weights for model time
-    !
+    
     ! !USES:
     use landunit_varcon , only : istsoil
     use elm_varpar      , only : natpft_lb, natpft_ub
-    !
+    
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  ! proc-level bounds
-    !
+    
     ! !LOCAL VARIABLES:
-    integer               :: m,p,l,g,t,ti,topi         ! indices   TKT
-    real(r8), allocatable :: wtpatch_cur(:,:,:)   ! current pft weights TKT
+    integer               :: m,p,l,g,t,ti,topi         ! indices   
+    real(r8), allocatable :: wtpatch_cur(:,:,:)   ! current pft weights 
     character(len=32) :: subname='dynpft_interp' ! subroutine name
     !-----------------------------------------------------------------------
 
@@ -269,12 +269,12 @@ contains
     ! the specific name of this procedure rather than using its generic name
     call dynpft_file%time_info%set_current_year_get_year()
 
-    allocate(wtpatch_cur(bounds%begg:bounds%endg,max_topounits, natpft_lb:natpft_ub))  !TKT
+    allocate(wtpatch_cur(bounds%begg:bounds%endg,max_topounits, natpft_lb:natpft_ub))  
     call wtpatch%get_current_data(wtpatch_cur)
 
     do p = bounds%begp,bounds%endp
        g = veg_pp%gridcell(p)
-       l = veg_pp%landunit(p)             !TKT
+       l = veg_pp%landunit(p)             
        t = veg_pp%topounit(p)
        topi = grc_pp%topi(g)
        ti = t - topi + 1
@@ -287,7 +287,7 @@ contains
           m = veg_pp%itype(p)
 
           ! Note that the following assignment assumes that all Patches share a single column
-          veg_pp%wtcol(p) = wtpatch_cur(g,ti,m)    !TKT
+          veg_pp%wtcol(p) = wtpatch_cur(g,ti,m)    
        end if
 
     end do

@@ -192,10 +192,6 @@ contains
      integer  :: indexp,indexc,indexl,indext,indexg     ! index of first found in search loop
      real(r8) :: forc_rain_col(bounds%begc:bounds%endc) ! column level rain rate [mm/s]
      real(r8) :: forc_snow_col(bounds%begc:bounds%endc) ! column level snow rate [mm/s]
-     real(r8) :: mxElv  ! tmp TKT
-     real(r8) :: grdElv ! tmp TKT
-     real(r8) :: topoElv ! tmp TKT
-     integer :: numt_pg  ! tmp TKT
      !-----------------------------------------------------------------------
 
      associate(                                                                         &
@@ -357,71 +353,10 @@ contains
        
        found = .false.
        do c = bounds%begc, bounds%endc
-          !! === TKT
-          !g = col_pp%gridcell(c)    !TKT
-          !t = col_pp%topounit(c)    !TKT
-          !l = col_pp%landunit(c)   !TKT
-          !mxElv = grc_pp%MaxElevation(g)
-          !grdElv = grc_pp%elevation(g)
-          !topoElv = top_pp%elevation(t)
-          !numt_pg = grc_pp%ntopounits(g)
-          !!=== end TKT
           
           if (abs(errh2o(c)) > 1.e-7_r8) then
              found = .true.
-             indexc = c
-             !!===TKT
-             !write(iulog,*)'TKT '
-             !write(iulog,*)'mxElv                      = ',mxElv
-             !write(iulog,*)'grdElv                     = ',grdElv
-             !write(iulog,*)'topoElv                  = ',topoElv
-             !write(iulog,*)'numt_pg                  = ',numt_pg
-             !write(iulog,*)'top_af%rain                  = ',top_af%rain(t)
-             !write(iulog,*)'top_af%snow                  = ',top_af%snow(t)
-             !write(iulog,*)'top_af%solad                  = ',top_af%solad(t,:)
-             !write(iulog,*)'top_af%solai                  = ',top_af%solai(t,:)
-             !write(iulog,*)'top_af%lwrad                  = ',top_af%lwrad(t)
-             !write(iulog,*)'nstep                      = ',nstep
-             !write(iulog,*)'errh2o                     = ',errh2o(indexc)
-             !write(iulog,*)'forc_rain                  = ',forc_rain_col(indexc)
-             !write(iulog,*)'forc_snow                  = ',forc_snow_col(indexc)
-             !write(iulog,*)'endwb                      = ',endwb(indexc)
-             !write(iulog,*)'begwb                      = ',begwb(indexc)
-             !write(iulog,*)'qflx_evap_tot              = ',qflx_evap_tot(indexc)
-             !write(iulog,*)'qflx_irrig                 = ',qflx_irrig(indexc)
-             !write(iulog,*)'qflx_supply                = ',atm2lnd_vars%supply_grc(g)
-             !write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
-             !write(iulog,*)'qflx_surf                  = ',qflx_surf(indexc)
-             !write(iulog,*)'qflx_qrgwl                 = ',qflx_qrgwl(indexc)
-             !write(iulog,*)'qflx_drain                 = ',qflx_drain(indexc)
-             !write(iulog,*)'qflx_snwcp_ice             = ',qflx_snwcp_ice(indexc)
-             !write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
-             !write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)             
-             !write(iulog,*)'colum number               = ',col_pp%gridcell(indexc)
-             !write(iulog,*)'nstep                      = ',nstep
-             !write(iulog,*)'errh2o                     = ',errh2o(indexc)
-             !write(iulog,*)'forc_rain                  = ',forc_rain_col(indexc)
-             !write(iulog,*)'forc_snow                  = ',forc_snow_col(indexc)
-             !write(iulog,*)'endwb                      = ',endwb(indexc)
-             !write(iulog,*)'begwb                      = ',begwb(indexc)
-             !write(iulog,*)'qflx_evap_tot              = ',qflx_evap_tot(indexc)
-             !write(iulog,*)'qflx_irrig                 = ',qflx_irrig(indexc)
-             !write(iulog,*)'qflx_surf_irrig_col        = ',qflx_surf_irrig_col(indexc)
-             !write(iulog,*)'qflx_over_supply_col       = ',qflx_over_supply_col(indexc)
-             !write(iulog,*)'qflx_supply                = ',atm2lnd_vars%supply_grc(g)
-             !write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
-             !write(iulog,*)'qflx_surf                  = ',qflx_surf(indexc)
-             !write(iulog,*)'qflx_h2osfc_surf           = ',qflx_h2osfc_surf(indexc)
-             !write(iulog,*)'qflx_qrgwl                 = ',qflx_qrgwl(indexc)
-             !write(iulog,*)'qflx_drain                 = ',qflx_drain(indexc)
-             !write(iulog,*)'qflx_drain_perched         = ',qflx_drain_perched(indexc)
-             !write(iulog,*)'qflx_flood                 = ',qflx_floodc(indexc)
-             !write(iulog,*)'qflx_snwcp_ice             = ',qflx_snwcp_ice(indexc)
-             !write(iulog,*)'qflx_glcice_melt           = ',qflx_glcice_melt(indexc)
-             !write(iulog,*)'qflx_glcice_frz            = ',qflx_glcice_frz(indexc) 
-             !write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
-             !write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
-             !!===end TKT             
+             indexc = c             
           end if
        end do
 

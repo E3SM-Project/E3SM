@@ -1842,9 +1842,9 @@ Runtime flag to turn on/off downscaling of atmosphric forcing from grid to topou
        type="char*32" 
        category="physics"
        group="elm_inparm"       
-       valid_values="ERMM,FNM"
+       valid_values="ERMM,FNM" 
        value="ERMM" >
-Flag to switch between precipitation downscaling methods. 
+Flag to switch between ERMM (Elevation Range with Maximum Elevation Method) and FNM (Froude Number Method) precipitation downscaling methods. 
 </entry>
 
 <!-- ========================================================================================  -->

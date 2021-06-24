@@ -602,14 +602,7 @@ contains
     call ncd_io(ncid=ncid, varname= 'PFTDATA_MASK', flag='read', data=ldomain%pftm, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: pftm NOT on surface dataset'//errMsg(__FILE__, __LINE__))
-	
-    ! Read the new grid elevation parameter that is based on topounit elevation
-	call check_var(ncid=ncid, varname='TOPO2', vardesc=vardesc, readvar=readvar)
-    if (readvar) then
-       call ncd_io(ncid=ncid, varname= 'TOPO2', flag='read', data=ldomain%topo2, &
-         dim1name=grlnd, readvar=readvar)
-    endif       
-        
+	        
     !! Read the actual number of topounits per grid    
 	!call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
     !if (readvar) then

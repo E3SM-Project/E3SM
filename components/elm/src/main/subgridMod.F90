@@ -9,7 +9,7 @@ module subgridMod
   use spmdMod     , only : masterproc
   use abortutils  , only : endrun
   use elm_varctl  , only : iulog
-  use GridcellType     , only : grc_pp
+
   implicit none
   private   
   save

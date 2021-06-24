@@ -633,7 +633,7 @@ contains
 
      ncells_ghost   = procinfo%ncells_ghost
      ntunits_ghost  = procinfo%ntunits_ghost
-	 nlunits_ghost  = procinfo%nlunits_ghost
+     nlunits_ghost  = procinfo%nlunits_ghost
      ncols_ghost    = procinfo%ncols_ghost
      npfts_ghost    = procinfo%npfts_ghost
      nCohorts_ghost = procinfo%nCohorts_ghost

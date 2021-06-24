@@ -141,9 +141,9 @@ contains
     !
     ! function declarations
     !
-    tdc(temp) = min( 50._r8, max(-50._r8,(temp-SHR_CONST_TKFRZ)) )
-    esatw(temp) = 100._r8*(a0+temp*(a1+temp*(a2+temp*(a3+temp*(a4+temp*(a5+temp*a6))))))
-    esati(temp) = 100._r8*(b0+temp*(b1+temp*(b2+temp*(b3+temp*(b4+temp*(b5+temp*b6))))))
+    tdc(temp) = min( 50._r8, max(-50._r8,(temp-SHR_CONST_TKFRZ)) )                       ! Taken from lnd_import_export.F90
+    esatw(temp) = 100._r8*(a0+temp*(a1+temp*(a2+temp*(a3+temp*(a4+temp*(a5+temp*a6)))))) ! Taken from lnd_import_export.F90
+    esati(temp) = 100._r8*(b0+temp*(b1+temp*(b2+temp*(b3+temp*(b4+temp*(b5+temp*b6)))))) ! Taken from lnd_import_export.F90
     !-----------------------------------------------------------------------
     ! Get required inputs
     numt_pg     = grc_pp%ntopounits(g)	         ! Number of topounits per grid
@@ -192,13 +192,6 @@ contains
            end if
        end do
        elvrnge = max_tpuElv - min_tpuElv
-       !max_elv = mxElv
-       !mxElv = max_tpuElv  ! The maximum elevation coming from land surface data file was calculated from fine resolution DEM; it is greater than the highest TPU
-       !write(iulog,*) ' elvrnge = ', elvrnge
-       !write(iulog,*) ' max_tpuElv = ', max_tpuElv
-       !write(iulog,*) ' min_tpuElv = ', min_tpuElv
-       !write(iulog,*) ' top_pp%elevation(t) = ', top_pp%elevation(t)
-       !write(iulog,*) ' grdElv = ', grdElv
        
        do t = grc_pp%topi(g), grc_pp%topf(g)       
           t2 = t - grc_pp%topi(g) + 1
@@ -218,12 +211,6 @@ contains
                 call downscale_precip_to_topounit_ERMM(t,mxElv,grdElv,topoElv,rain_g, snow_g,elv_flag,elvrnge) ! Use ERMM method                
              end if
           end if 
-          !!if (masterproc) then  ! TKT debugging
-          !      write(iulog,*) ' top_af%rain(t) = ', top_af%rain(t)
-          !      write(iulog,*) ' top_af%snow(t) = ', top_af%snow(t)
-          !      write(iulog,*) ' mxElv =  ', mxElv
-          !      write(iulog,*) ' numt_pg =  ', numt_pg
-          ! !end if
 
           ! Downscale other fluxes
           if (other_forcing_dwn == 1) then  ! flag to turn on or off downscaling of other forcing
@@ -311,11 +298,7 @@ contains
                 top_af%rain(t) = rain_g + (deltaRain(t2) - (rain_g/mxElv)*(sum_of_hrise/numt_pg))
                 top_af%snow(t) = snow_g + (deltaSnow(t2) - (snow_g/mxElv)*(sum_of_hrise/numt_pg))
              end if
-             !if (masterproc) then  ! TKT debugging
-             !   write(iulog,*) ' top_af%rain(t) = ', top_af%rain(t)
-             !   write(iulog,*) ' top_af%snow(t) = ', top_af%snow(t)
-             !   write(iulog,*) ' mxElv =  ', mxElv
-             !end if
+
           end do
           deallocate(deltaRain)
           deallocate(deltaSnow)
@@ -342,20 +325,6 @@ contains
             
             top_af%rain(t) = temp_r
             top_af%snow(t) = temp_s
-            !if (top_af%rain(t) > 1000.0 .or. top_af%snow(t) > 1000.0) then 
-            !    write(iulog,*) 'WARNING too large tpu precipitation: top_af%rain(t) + top_af%snow(t) = ', (top_af%rain(t) + top_af%snow(t)) 
-            !    write(iulog,*) ' top_af%rain(t)2 = ', top_af%rain(t)
-            !    write(iulog,*) ' top_af%snow(t)2 = ', top_af%snow(t)
-            !    write(iulog,*) ' temp_r = ', temp_r
-            !    write(iulog,*) ' temp_s = ', temp_s
-            !    write(iulog,*) ' top_as%tbot(t) = ', top_as%tbot(t)
-            !    write(iulog,*) ' mxElv =  ', mxElv
-            !    write(iulog,*) ' topElv =  ',top_pp%elevation(t)
-            !    write(iulog,*) ' grdElv =  ',grdElv
-            !    write(iulog,*) ' numt_pg =  ', numt_pg
-            !    write(iulog,*) ' rain_g =  ', rain_g
-            !    write(iulog,*) ' snow_g =  ', snow_g
-            !end if
             
        end do
 
@@ -494,7 +463,7 @@ contains
          ! This is a simple downscaling procedure 
          ! Note that forc_hgt, forc_u, and forc_v are not downscaled.
 
-    hsurf_g = grc_pp%elevation(g)  !ldomain%topo2(g)                       ! gridcell sfc elevation
+    hsurf_g = grc_pp%elevation(g)  ! gridcell sfc elevation
     hsurf_t = top_pp%elevation(t)                  ! topounit sfc elevation
     tbot_g  = x2l(index_x2l_Sa_tbot,i)              ! atm sfc temp
     thbot_g = x2l(index_x2l_Sa_ptem,i)              ! atm sfc pot temp
@@ -552,19 +521,18 @@ contains
   !-------------------------------------------------------
   ! Downscale longwave radiation  place holder
   subroutine downscale_longwave_to_topounit(g, i, t, x2l, lnd2atm_vars, method)
-  
-    !
+      
     ! !DESCRIPTION:
     ! Downscale longwave radiation from gridcell to column
     ! Must be done AFTER temperature downscaling
-    !
+    
     ! !USES:
     use clm_time_manager, only : get_nstep
     use domainMod       , only : ldomain
     use landunit_varcon , only : istice_mec
     use elm_varcon      , only : lapse_glcmec
     use elm_varctl      , only : glcmec_downscale_longwave
-    !
+    
     ! !ARGUMENTS:
     integer                    , intent(in)    :: g
     integer                    , intent(in)    :: i
@@ -572,7 +540,7 @@ contains
     real(r8)                         , intent(in)    :: x2l(:,:)
     type(lnd2atm_type)               , intent(in)    :: lnd2atm_vars
     integer                    , intent(in)    :: method
-    !
+    
     ! !LOCAL VARIABLES:
     integer  :: c,l,fc     ! indices
     integer  :: nstep
@@ -593,7 +561,7 @@ contains
     nstep = get_nstep()
     
     ! Do the downscaling
-    hsurf_g = grc_pp%elevation(g) !ldomain%topo2(g)
+    hsurf_g = grc_pp%elevation(g) 
     hsurf_t = top_pp%elevation(t)
 
     ! Here we assume that deltaLW = (dLW/dT)*(dT/dz)*deltaz
@@ -620,7 +588,11 @@ contains
   end subroutine downscale_longwave_to_topounit
   
   !-------------------------------------------------------
-  ! Downscale precipitation from grid to topounit using FNM method
+  ! The Froude Number Method (FNM) utilizes information on height rise 
+  ! (equivalent to Froude Number), which is calculated based on wind speed and static stability, over 
+  ! topographically heterogenous grids whenever a stable orographic regime is identified within the target grid 
+  ! and uses elevation range when the orographic regime is not stable.
+  ! It is can be turned on for coupled E3SM model configurations only.
   subroutine downscale_precip_to_topounit_FNM(mxElv,uovern_t,grdElv,topoElv,rain_g,snow_g,deltaR,deltaS,hrise) 
    
     ! !ARGUMENTS:
@@ -673,7 +645,9 @@ contains
   end subroutine downscale_precip_to_topounit_FNM  
   
   !-------------------------------------------------------
-  ! Downscale precipitation from grid to topounit using ERMM method
+  ! Elevation Range with Maximum elevation Method (ERMM) utilizes only topographic characteristics 
+  ! of the grid and topounits to disaggregate grid-level precipitation into the topounits of the grid. 
+  ! It is can be turned on in both offline and coupled E3SM model configurations.
   subroutine downscale_precip_to_topounit_ERMM(t,mxElv,grdElv,topoElv,rain_g, snow_g,elv_flag,elvrnge) 
    
     ! !ARGUMENTS:

@@ -500,13 +500,7 @@ contains
        ier = pio_inq_dimlen(ncid, dimid, ni)
        if (ier == PIO_NOERR) nj = 1
     end if
-    
-    !ier = pio_inq_dimid (ncid, 'topounit', dimid)
-    !if (ier == PIO_NOERR) then
-     !  ier = pio_inq_dimlen(ncid, dimid, ni)
-    !   if (ier == PIO_NOERR) nj = 1
-    !end if       
-
+   
     call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
 
     if (ni == 0 .or. nj == 0) then

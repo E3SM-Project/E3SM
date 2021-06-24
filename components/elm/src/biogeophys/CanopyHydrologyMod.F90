@@ -382,7 +382,7 @@ contains
           ! Note that it's still possible that (some of) this irrigation water will runoff (as runoff is computed later)
           if(irrigate) then
            if (tw_irr) then ! else one way  
-               qflx_supply(p) = atm2lnd_vars%supply_grc(g)*(1-wt_lunit(g,tpu_ind,istdlak))/pgwgt(p) ! TKT changed (1-wt_lunit(g,istdlak))/pgwgt(p) ! original supply at grid level (mm/s) concentrate to pft level. Take lake fraction into consideration
+               qflx_supply(p) = atm2lnd_vars%supply_grc(g)*(1-wt_lunit(g,tpu_ind,istdlak))/pgwgt(p) ! original supply at grid level (mm/s) concentrate to pft level. Take lake fraction into consideration
                qflx_real_irrig(p) = 0._r8 
                qflx_surf_irrig(p) = 0._r8
                qflx_grnd_irrig(p) = 0._r8

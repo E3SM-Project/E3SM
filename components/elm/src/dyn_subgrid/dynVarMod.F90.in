@@ -37,7 +37,7 @@ module dynVarMod
   save
   private
 
-  !
+  
   ! !PUBLIC TYPES:
 
   ! maximum number of real dimensions allowed for the underlying variables stored in
@@ -53,12 +53,12 @@ module dynVarMod
   ! - get_current_data_2d
   ! - get_current_att
   ! - read_data_if_needed
-  !
+  
   ! In addition, a type extension needs to define the data field(s); these are not defined
   ! in the base class because different type extensions have different needs for what data
   ! are stored - and particularly whether they need data at just time_index_lower, or data at both time_index_lower
   ! and time_index_upper.
-  !
+  
   ! Although this base class doesn't define the data themselves, note that the
   ! implementation here assumes that the data will be stored as a 1-d vector, even if the
   ! data are truly 2-d. i.e., the type extension should define its data as:
@@ -111,10 +111,10 @@ module dynVarMod
      subroutine read_data_if_needed_interface(this)
        ! !DESCRIPTION:
        ! Determine if new data need to be read from the file; if so, read them.
-       !
+       
        ! !USES:
        import :: dyn_var_type
-       !
+       
        ! !ARGUMENTS:
        class(dyn_var_type), intent(inout) :: this  ! this object
      end subroutine read_data_if_needed_interface
@@ -125,16 +125,16 @@ module dynVarMod
        ! Get the current (possibly interpolated) value of the data, in cur_data. cur_data
        ! should have the same dimensionality as the underlying data, as given by the
        ! data_shape argument that was passed to the constructor.
-       ! 
+        
        ! If necessary, new data are read from the file.
-       !
+       
        ! Should be called once per time step, AFTER calling set_current_year on the
        ! underlying dyn_file variable
-       !
+       
        ! !USES:
        use shr_kind_mod   , only : r8 => shr_kind_r8
        import :: dyn_var_type
-       !
+       
        ! !ARGUMENTS:
        class(dyn_var_type) , intent(inout) :: this             ! this object
        real(r8)            , intent(out)   :: cur_data{DIMSTR} ! current value of data
@@ -147,7 +147,7 @@ contains
 
   ! ======================================================================
   ! Public methods
-  !
+  
   ! The following are public only for the sake of type extensions of this base class.
   ! They should not be used outside these type extensions.
   ! ======================================================================
@@ -155,12 +155,12 @@ contains
   !-----------------------------------------------------------------------
   subroutine set_metadata(this, dyn_file, varname, dim1name, conversion_factor, &
        do_check_sums_equal_1, data_shape, allow_nodata)
-    !
+    
     ! !DESCRIPTION:
     ! Set metadata that are common to all type extensions of this base class
-    !
+    
     ! !USES:
-    !
+    
     ! !ARGUMENTS:
     class(dyn_var_type) , intent(inout)      :: this              ! this object
     type(dyn_file_type) , target, intent(in) :: dyn_file          ! file containing this variable
@@ -176,7 +176,7 @@ contains
     ! First dimension is the spatial dimension.
     integer, intent(in) :: data_shape(:)
 
-    !
+    
     ! !LOCAL VARIABLES:
     integer :: ndims   ! number of dimensions in data
     
@@ -212,10 +212,10 @@ contains
 
   !-----------------------------------------------------------------------
   function get_dyn_file(this)
-    !
+    
     ! !DESCRIPTION:
     ! Get the dyn_file component of this object
-    !
+    
     ! !ARGUMENTS:
     type(dyn_file_type) , pointer    :: get_dyn_file
     class(dyn_var_type) , intent(in) :: this ! this object
@@ -225,10 +225,10 @@ contains
 
   !-----------------------------------------------------------------------
   function get_data_shape(this)
-    !
+    
     ! !DESCRIPTION:
     ! Get the data_shape component of this object
-    !
+    
     ! !ARGUMENTS:
     integer             , allocatable :: get_data_shape(:)
     class(dyn_var_type) , intent(in)  :: this ! this object
@@ -239,10 +239,10 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine get_att(this,attname,attvalue)
-    !
+    
     ! !DESCRIPTION:
     ! Get the the value of an attribute on the file
-    !
+    
     ! !USES:
     use ncdio_pio      , only : ncd_inqvid, ncd_getatt, var_desc_t
     ! !ARGUMENTS:
@@ -260,18 +260,18 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine read_variable(this, nt, data)
-    !
+    
     ! !DESCRIPTION:
     ! Wrapper to read a time slice of the variable; result goes in the data argument.
-    !
+    
     ! !USES:
     use spmdMod   , only : masterproc
-    !
+    
     ! !ARGUMENTS:
     class(dyn_var_type) , intent(inout) :: this    ! this object
     integer             , intent(in)    :: nt      ! time index to read
     real(r8)            , intent(out)   :: data(:) ! variable holding data read from file
-    !
+    
     ! !LOCAL VARIABLES:
     integer :: ndims  ! number of dimensions of the underlying variable
     
@@ -305,23 +305,23 @@ contains
   ! DIMS 1,2,3
   !-----------------------------------------------------------------------
   subroutine read_variable_{DIMS}d(this, nt, data)
-    !
+    
     ! !DESCRIPTION:
     ! Read a time slice of a {DIMS}-d variable
     ! This routine applies the conversion given by conversion_factor.
-    !
+    
     ! !USES:
     use spmdMod        , only : masterproc
     use ncdio_pio      , only : ncd_io
     use surfrdUtilsMod , only : check_sums_equal_1_2d, check_sums_equal_1_3d
-    !
+    
     ! !ARGUMENTS:
     class(dyn_var_type) , intent(inout) :: this ! this object (needs to be intent(inout) because this%dynfile is intent(inout) in the ncd_io call)
     integer             , intent(in)    :: nt   ! time index to read
     ! variable holding data read from file (note that this is 1-d regardless of the
     ! dimensionality of the underlying data)
     real(r8)            , intent(out) :: data(:) 
-    !
+    
     ! !LOCAL VARIABLES:
     real(r8), pointer :: arrayl{DIMSTR}  ! temporary array to hold data (needs to be a pointer)
     logical           :: readvar         ! whether variable was read

@@ -287,15 +287,7 @@ contains
     ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale topounits, landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
-    !if(has_topounit .and. max_topounits > 1) then    
-    !   if (create_glacier_mec_landunit) then
-    !      call decompInit_clumps(ldomain%num_tunits_per_grd,ldomain%glcmask)
-    !      call decompInit_ghosts(ldomain%num_tunits_per_grd,ldomain%glcmask)
-    !   else
-    !      call decompInit_clumps(ldomain%num_tunits_per_grd)
-    !      call decompInit_ghosts(ldomain%num_tunits_per_grd)
-    !   endif
-    !else
+
     if (create_glacier_mec_landunit) then
        call decompInit_clumps(ldomain%glcmask)
        call decompInit_ghosts(ldomain%glcmask)
