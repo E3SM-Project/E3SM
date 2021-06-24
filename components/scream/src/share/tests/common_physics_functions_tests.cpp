@@ -292,10 +292,10 @@ void run(std::mt19937_64& engine)
     PF::calculate_mmr_from_vmr(team,h2o_mol,qv,vmr,mmr);
 
     // Compute wetmmr assuming mmr is dry
-    PF::calculate_wetmmr_from_drymmr(team,mmr,qv,wetmmr);//get wetmmr from mmr0, assuming mmr0 is drymmr
+    PF::calculate_wetmmr_from_drymmr(team,mmr,qv,wetmmr);//get wetmmr from mmr, assuming mmr is drymmr
 
     // Convert wetmmr computed above to drymmr (i.e. mmr)
-    PF::calculate_drymmr_from_wetmmr(team,wetmmr,qv,mmr);//convert it back to drymmr, i.e. mmr0
+    PF::calculate_drymmr_from_wetmmr(team,wetmmr,qv,mmr);//convert it back to drymmr, i.e. mmr
 
   }); // Kokkos parallel_for "test_universal_physics"
   Kokkos::fence();
