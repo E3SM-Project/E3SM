@@ -62,7 +62,6 @@ module EcosystemBalanceCheckMod
   public :: ColPBalanceCheck
   public :: BeginGridCBalance
   public :: GridCBalanceCheck
-  public :: BeginGridCBalanceBeforeDynSubgridDriver
   public :: BeginGridNBalanceBeforeDynSubgridDriver
   public :: BeginGridPBalanceBeforeDynSubgridDriver
   public :: EndGridCBalanceAfterDynSubgridDriver
@@ -795,30 +794,41 @@ contains
          totprodc              =>  col_cs%totprodc              , & ! Input:  [real(r8) (:)] (gC/m2) total column wood product carbon
          ctrunc                =>  col_cs%ctrunc                , & ! Input:  [real(r8) (:)] (gC/m2) total column truncation carbon sink
          cropseedc_deficit     =>  col_cs%cropseedc_deficit     , & ! Input:  [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
+         begcb_grc             =>  grc_cs%begcb                 , & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
          beg_totc              =>  grc_cs%beg_totc              , & ! Output: [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
          beg_totpftc           =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
-         beg_cwdc              =>  grc_cs%beg_cwdc           , & ! Output: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
+         beg_cwdc              =>  grc_cs%beg_cwdc              , & ! Output: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
          beg_totsomc           =>  grc_cs%beg_totsomc           , & ! Output: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
          beg_totlitc           =>  grc_cs%beg_totlitc           , & ! Output: [real(r8) (:)] (gC/m2) total column litter carbon
-         beg_totprodc          =>  grc_cs%beg_totprodc           , & ! Output: [real(r8) (:)] (gC/m2) total column wood product carbon
-         beg_ctrunc            =>  grc_cs%beg_ctrunc           , & ! Output: [real(r8) (:)] (gC/m2) total column truncation carbon sink
+         beg_totprodc          =>  grc_cs%beg_totprodc          , & ! Output: [real(r8) (:)] (gC/m2) total column wood product carbon
+         beg_ctrunc            =>  grc_cs%beg_ctrunc            , & ! Output: [real(r8) (:)] (gC/m2) total column truncation carbon sink
          beg_cropseedc_deficit =>  grc_cs%beg_cropseedc_deficit   & ! Output: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
          )
 
+      call c2g(bounds, totcolc(bounds%begc:bounds%endc), begcb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
       call c2g(bounds, totcolc(bounds%begc:bounds%endc), beg_totc(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
       call c2g(bounds, totpftc(bounds%begc:bounds%endc), beg_totpftc(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
       call c2g(bounds, cwdc(bounds%begc:bounds%endc), beg_cwdc(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
       call c2g(bounds, totlitc(bounds%begc:bounds%endc), beg_totlitc(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
       call c2g(bounds, totsomc(bounds%begc:bounds%endc), beg_totsomc(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
       call c2g(bounds, totprodc(bounds%begc:bounds%endc), beg_totprodc(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
       call c2g(bounds, ctrunc(bounds%begc:bounds%endc), beg_ctrunc(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
       call c2g(bounds, cropseedc_deficit(bounds%begc:bounds%endc), beg_cropseedc_deficit(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
@@ -973,35 +983,6 @@ contains
     end associate
 
   end subroutine GridCBalanceCheck
-
-  !-----------------------------------------------------------------------
-  subroutine BeginGridCBalanceBeforeDynSubgridDriver(bounds, col_cs, grc_cs)
-    !
-    ! !DESCRIPTION:
-    ! Calculate the beginning carbon balance for mass conservation checks
-    ! at grid cell level
-    !
-    ! !ARGUMENTS:
-    type(bounds_type)          , intent(in)    :: bounds
-    type(column_carbon_state)  , intent(inout) :: col_cs
-    type(gridcell_carbon_state), intent(inout) :: grc_cs
-    !
-    !-----------------------------------------------------------------------
-
-    associate(                                                              &
-         totcolc           =>  col_cs%totcolc           , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
-         begcb_grc         =>  grc_cs%begcb               & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
-         )
-
-      call c2g( bounds = bounds, &
-           carr = totcolc(bounds%begc:bounds%endc), &
-           garr = begcb_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type = 'unity', &
-           l2g_scale_type = 'unity')
-
-    end associate
-
-  end subroutine BeginGridCBalanceBeforeDynSubgridDriver
  
   !-----------------------------------------------------------------------
   subroutine BeginGridNBalanceBeforeDynSubgridDriver(bounds, nitrogenstate_vars)

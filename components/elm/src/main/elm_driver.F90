@@ -62,7 +62,6 @@ module elm_driver
   use EcosystemBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
   use EcosystemBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
   use EcosystemBalanceCheckMod      , only : BeginGridCBalance, GridCBalanceCheck
-  use EcosystemBalanceCheckMod      , only : BeginGridCBalanceBeforeDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : BeginGridNBalanceBeforeDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : BeginGridPBalanceBeforeDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
@@ -401,7 +400,6 @@ contains
           
           call BeginGridCBalance(bounds_clump, col_cs, grc_cs)
 
-          call BeginGridCBalanceBeforeDynSubgridDriver(bounds_clump, col_cs, grc_cs)
           call BeginGridNBalanceBeforeDynSubgridDriver(bounds_clump, nitrogenstate_vars)
           call BeginGridPBalanceBeforeDynSubgridDriver(bounds_clump, phosphorusstate_vars)
           
