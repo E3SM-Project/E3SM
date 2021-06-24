@@ -2313,6 +2313,7 @@ contains
        this%prod10c(c)    = 0._r8
        this%prod100c(c)   = 0._r8
        this%totprodc(c)   = 0._r8
+       this%totpftc(c)    = 0._r8
        this%cwdc(c)       = 0._r8
        this%ctrunc(c)     = 0._r8
        this%totlitc(c)    = 0._r8
@@ -2327,6 +2328,8 @@ contains
        this%fuelc_crop(c) = 0._r8
        this%totlitc_1m(c) = 0._r8
        this%totsomc_1m(c) = 0._r8
+       this%errcb(c)      = 0._r8
+       this%cropseedc_deficit(c) = 0._r8
     end do
 
     do j = 1,nlevdecomp_full

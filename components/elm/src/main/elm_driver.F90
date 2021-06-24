@@ -61,9 +61,9 @@ module elm_driver
   use AnnualUpdateMod      , only : AnnualUpdate
   use EcosystemBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
   use EcosystemBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
-  use EcosystemBalanceCheckMod      , only : BeginGridCBalanceBeforeDynSubgridDriver
-  use EcosystemBalanceCheckMod      , only : BeginGridNBalanceBeforeDynSubgridDriver
-  use EcosystemBalanceCheckMod      , only : BeginGridPBalanceBeforeDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : BeginGridCBalance, GridCBalanceCheck
+  use EcosystemBalanceCheckMod      , only : BeginGridNBalance
+  use EcosystemBalanceCheckMod      , only : BeginGridPBalance
   use EcosystemBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
@@ -134,7 +134,8 @@ module elm_driver
   use GridcellType           , only : grc_pp
   use GridcellDataType       , only : grc_cs, c13_grc_cs, c14_grc_cs
   use GridcellDataType       , only : grc_cf, c13_grc_cf, c14_grc_cf
-  use GridcellDataType       , only : grc_nf, grc_pf
+  use GridcellDataType       , only : grc_ns, grc_nf
+  use GridcellDataType       , only : grc_ps, grc_pf
   use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
@@ -167,9 +168,10 @@ module elm_driver
   use WaterBudgetMod              , only : WaterBudget_Reset, WaterBudget_Run, WaterBudget_Accum, WaterBudget_Print
   use WaterBudgetMod              , only : WaterBudget_SetBeginningMonthlyStates
   use WaterBudgetMod              , only : WaterBudget_SetEndingMonthlyStates
+  use CNPBudgetMod                , only : CNPBudget_Run, CNPBudget_Accum, CNPBudget_Print, CNPBudget_Reset
+  use CNPBudgetMod                , only : CNPBudget_SetBeginningMonthlyStates, CNPBudget_SetEndingMonthlyStates
   use elm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
   use elm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
-
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -238,7 +240,13 @@ contains
     call get_proc_bounds(bounds_proc)
     nclumps = get_proc_clumps()
     
-    if (do_budgets) call WaterBudget_Reset()
+    if (do_budgets) then
+       call WaterBudget_Reset()
+
+       if (use_cn) then
+          call CNPBudget_Reset()
+       end if
+    end if
 
 
     ! ============================================================================
@@ -332,6 +340,7 @@ contains
        
        if (use_cn) then
           call t_startf('cnpvegzero')
+
           call veg_cs%ZeroDwt(bounds_clump)
           if (use_c13) then
              call c13_grc_cf%ZeroDWT(bounds_clump)
@@ -389,10 +398,10 @@ contains
 
           call col_ps%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc)
-
-          call BeginGridCBalanceBeforeDynSubgridDriver(bounds_clump, col_cs, grc_cs)
-          call BeginGridNBalanceBeforeDynSubgridDriver(bounds_clump, nitrogenstate_vars)
-          call BeginGridPBalanceBeforeDynSubgridDriver(bounds_clump, phosphorusstate_vars)
+          
+          call BeginGridCBalance(bounds_clump, col_cs, grc_cs)
+          call BeginGridNBalance(bounds_clump, col_ns, grc_ns)
+          call BeginGridPBalance(bounds_clump, col_ps, grc_ps)
           
        end if
        
@@ -468,15 +477,15 @@ contains
              
              call EndGridCBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
-                  col_cs, grc_cs, carbonflux_vars)
+                  col_cs, grc_cs, grc_cf)
              
              call EndGridNBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
-                  nitrogenstate_vars, nitrogenflux_vars)
+                  col_ns, grc_ns, grc_nf)
              
              call EndGridPBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
-                  phosphorusstate_vars, phosphorusflux_vars)
+                  col_ps, grc_ps, grc_pf)
              
           end do
           !$OMP END PARALLEL DO
@@ -550,10 +559,10 @@ contains
                col_cs)
           call BeginColNBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               nitrogenstate_vars)
+               col_ns)
           call BeginColPBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               phosphorusstate_vars)
+               col_ps)
           
           call t_stopf('begcnpbalwf')
        end if
@@ -561,6 +570,9 @@ contains
 
        if (do_budgets) then
           call WaterBudget_SetBeginningMonthlyStates(bounds_clump, waterstate_vars)
+          if (use_cn) then
+             call CNPBudget_SetBeginningMonthlyStates(bounds_clump, col_cs, grc_cs)
+          endif
        endif
 
     end do
@@ -1287,33 +1299,32 @@ contains
             soilhydrology_vars)
        call t_stopf('gridbalchk')
 
-       call WaterBudget_SetEndingMonthlyStates(bounds_clump, waterstate_vars)
-
+       if (do_budgets) then
+          call WaterBudget_SetEndingMonthlyStates(bounds_clump, waterstate_vars)
+          if (use_cn) then
+             call CNPBudget_SetEndingMonthlyStates(bounds_clump, col_cs, grc_cs)
+          endif
+       endif
 
        if (use_cn .or. use_fates) then
-          nstep = get_nstep()
           
-          if (nstep < 2 )then
-             if (masterproc) then
-                write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
-             end if
-          else
-             call t_startf('cnbalchk')
+          call t_startf('cnbalchk')
              
-             call ColCBalanceCheck(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc, &
-                  col_cs, carbonflux_vars)
+          call ColCBalanceCheck(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               col_cs, col_cf)
              
-             call ColNBalanceCheck(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc, &
-                  nitrogenstate_vars, nitrogenflux_vars)
+          call ColNBalanceCheck(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               col_ns, col_nf)
              
-             call ColPBalanceCheck(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc, &
-                  phosphorusstate_vars, phosphorusflux_vars)
+          call ColPBalanceCheck(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               col_ps, col_pf)
              
-             call t_stopf('cnbalchk')
-          end if
+          call GridCBalanceCheck(bounds_clump, col_cs, col_cf, grc_cs, grc_cf)
+
+          call t_stopf('cnbalchk')
        end if
 
 
@@ -1450,6 +1461,13 @@ contains
        call WaterBudget_Accum()
        call WaterBudget_Print(budget_inst,  budget_daily,  budget_month,  &
             budget_ann,  budget_ltann,  budget_ltend)
+
+       if (use_cn .and. do_budgets) then
+          call CNPBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars, grc_cs, grc_cf)
+          call CNPBudget_Accum()
+          call CNPBudget_Print(budget_inst,  budget_daily,  budget_month,  &
+               budget_ann,  budget_ltann,  budget_ltend)
+      end if
     endif
 
     ! ============================================================================

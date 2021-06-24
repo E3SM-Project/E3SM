@@ -100,9 +100,9 @@ module WaterBudgetMod
   character(len=8),parameter :: pname(p_size) = &
        (/'    inst','   daily',' monthly','  annual','all_time' /)
 
-  real(r8) :: budg_fluxL(f_size, p_size)
-  real(r8) :: budg_fluxG(f_size, p_size)
-  real(r8) :: budg_fluxN(f_size, p_size)
+  real(r8) :: budg_fluxL(f_size, p_size) ! local sum, valid on all pes
+  real(r8) :: budg_fluxG(f_size, p_size) ! global sum, valid only on root pe
+  real(r8) :: budg_fluxN(f_size, p_size) ! counter, valid only oon root pe
 
   real(r8) :: budg_stateL(s_size, p_size)
   real(r8), public :: budg_stateG(s_size, p_size)
