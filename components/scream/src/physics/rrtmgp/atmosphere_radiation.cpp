@@ -268,7 +268,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
     });
     Kokkos::fence();
 
-    gas_concs.set_vmr(m_gas_names[igas], tmp2d);
+    gas_concs.set_vmr(name, tmp2d);
   }
 
   // Compute layer cloud mass (per unit area)

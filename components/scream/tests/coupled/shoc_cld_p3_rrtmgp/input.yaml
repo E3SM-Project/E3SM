@@ -18,7 +18,7 @@ Atmosphere Processes:
   Process 3:
     Process Name: RRTMGP
     Grid: Physics
-    active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+    active_gases: ["H2O", "CO2", "O3", "N2O", "CO" , "CH4", "O2", "N2"]
 
 Grids Manager:
   Type: Physics Only
