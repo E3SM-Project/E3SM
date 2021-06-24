@@ -298,10 +298,12 @@ public:
 
         inv_qc_relvar(i,k) = 1;
         const auto condition = (qc(i,k) != 0 && qc2(i,k) != 0);
-        inv_qc_relvar(i,k).set(condition,
-                               ekat::min(inv_qc_relvar_max,
-                                         ekat::max(inv_qc_relvar_min,
-                                                   ekat::square(qc(i,k))/qc2(i,k))));
+        if (condition.any()) {
+          inv_qc_relvar(i,k).set(condition,
+                                 ekat::min(inv_qc_relvar_max,
+                                           ekat::max(inv_qc_relvar_min,
+                                                     ekat::square(qc(i,k))/qc2(i,k))));
+        }
       });
     } // operator
 
