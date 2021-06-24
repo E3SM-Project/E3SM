@@ -21,7 +21,7 @@ struct ChecksHelpers {
   static bool equal (const ScalarT& lhs, const ScalarT& rhs) {
     return lhs==rhs;
   }
-  static bool approx_equal (const ScalarT lhs, const ScalarT rhs, 
+  static bool approx_equal (const ScalarT lhs, const ScalarT rhs,
                             const int k, const ScalarT tol) {
     using std::abs;
     return not ( k<NumLevels && abs(lhs-rhs)>=tol );
@@ -109,7 +109,6 @@ void run(std::mt19937_64& engine)
           Tv("T_virtual",num_mid_packs),
           T_from_Tv("T_from_T_virtual",num_mid_packs),
           dse("dse",num_mid_packs),
-          drymmr("dry mass mixing ratio",num_mid_packs),
           wetmmr("wet mass mixing ratio",num_mid_packs),
           dz("dz",num_mid_packs),
           z_int("z_int",num_int_packs),
@@ -214,7 +213,7 @@ void run(std::mt19937_64& engine)
   REQUIRE( Check::equal(PF::calculate_dse(zero,zero,surf_height),ScalarT(surf_height)) );
   REQUIRE( Check::equal(PF::calculate_dse(ScalarT(inv_cp),ScalarT(1/g),surf_height),ScalarT(surf_height+2.0)) );
 
-  // drymmr to wetmmr and vice versa property tests
+  // DRYMMR to WETMMR (and vice versa) property tests
   // mmr_test1: For zero drymmr, wetmmr should be zero
   // mmr_test2: For zero wetmmr, drymmr should be zero
   // mmr_test3: Compute wetmmr from mmr0 and then use the result to compute drymmr, which should be equal to mmr0
@@ -227,7 +226,7 @@ void run(std::mt19937_64& engine)
   //mmr_test3
   tmp = PF::calculate_wetmmr_from_drymmr(mmr0,qv0);//get wetmmr from mmr0, assuming mmr0 is drymmr
   tmp = PF::calculate_drymmr_from_wetmmr(tmp, qv0);//convert it back to drymmr, i.e. mmr0
-  REQUIRE( Check::equal(tmp,mmr0) );
+  REQUIRE( Check::equal(tmp,mmr0) );// drymmr stored in tmp and mmr0 should be equal
 
   // DZ property tests:
   //  - calculate_dz(pseudo_density=0) = 0
@@ -291,6 +290,13 @@ void run(std::mt19937_64& engine)
     // Compute vmr from mmr and vice versa
     PF::calculate_vmr_from_mmr(team,h2o_mol,qv,mmr_for_testing,vmr);
     PF::calculate_mmr_from_vmr(team,h2o_mol,qv,vmr,mmr);
+
+    // Compute wetmmr assuming mmr is dry
+    PF::calculate_wetmmr_from_drymmr(team,mmr,qv,wetmmr);//get wetmmr from mmr0, assuming mmr0 is drymmr
+
+    // Convert wetmmr computed above to drymmr (i.e. mmr)
+    PF::calculate_drymmr_from_wetmmr(team,wetmmr,qv,mmr);//convert it back to drymmr, i.e. mmr0
+
   }); // Kokkos parallel_for "test_universal_physics"
   Kokkos::fence();
 

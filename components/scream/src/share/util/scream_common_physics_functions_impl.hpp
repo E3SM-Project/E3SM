@@ -184,7 +184,7 @@ void PhysicsFunctions<DeviceT>::calculate_wetmmr_from_drymmr(const MemberType& t
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,wetmmr.extent(0)),
                        [&] (const int k) {
-                         wetmmr(k) = calculate_wetmmr_from_dryvmr(drymmr(k),qv(k));
+                         wetmmr(k) = calculate_wetmmr_from_drymmr(drymmr(k),qv(k));
                        });
 }
 
@@ -207,7 +207,7 @@ void PhysicsFunctions<DeviceT>::calculate_drymmr_from_wetmmr(const MemberType& t
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,drymmr.extent(0)),
                        [&] (const int k) {
-                         drymmr(k) = calculate_drymmr_from_wetvmr(wetmmr(k),qv(k));
+                         drymmr(k) = calculate_drymmr_from_wetmmr(wetmmr(k),qv(k));
                        });
 }
 
