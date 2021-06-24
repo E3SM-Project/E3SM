@@ -25,6 +25,18 @@ struct PhysicsFunctions
   // ---------------------------------------------------------------- //
 
   //-----------------------------------------------------------------------------------------------//
+  // Determines the density given the definition of pseudo_density passed by the dycore
+  //   rho = pseudo_density/dz/g
+  // where,
+  //   pseudo_density is the pressure level thickness given a shallow atmosphere, [Pa]
+  //   dz             is the geopotential thickness of the layer, [m]
+  //   g              is the gravitational constant, [m/s2] - defined in physics_constants.hpp
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_density(const ScalarT& pseudo_density, const ScalarT& dz);
+
+  //-----------------------------------------------------------------------------------------------//
   // Applies Exners Function which follows:
   //   Exner = (P/P0)^(Rd/Cp),
   // where,
@@ -216,12 +228,18 @@ struct PhysicsFunctions
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
 
+  template<typename ScalarT, typename InputProviderP, typename InputProviderZ>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_density (const MemberType& team,
+                                 const InputProviderP& pseudo_density,
+                                 const InputProviderZ& dz,
+                                 const view_1d<ScalarT>& density);
+
   template<typename ScalarT, typename InputProviderP>
   KOKKOS_INLINE_FUNCTION
   static void exner_function (const MemberType& team,
                               const InputProviderP& pressure,
                               const view_1d<ScalarT>& exner);
-
 
   template<typename ScalarT, typename InputProviderT, typename InputProviderP>
   KOKKOS_INLINE_FUNCTION

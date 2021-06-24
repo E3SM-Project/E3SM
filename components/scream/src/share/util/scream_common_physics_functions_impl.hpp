@@ -9,6 +9,32 @@ namespace scream {
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::calculate_density(const ScalarT& pseudo_density, const ScalarT& dz)
+{
+  using C = scream::physics::Constants<Real>;
+
+  static constexpr auto g = C::gravit;
+
+  return pseudo_density/dz/g;
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderP, typename InputProviderZ>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_density(const MemberType& team,
+                                                  const InputProviderP& pseudo_density,
+                                                  const InputProviderZ& dz,
+                                                  const view_1d<ScalarT>& density)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,density.extent(0)),
+                       [&] (const int k) {
+    density(k) = calculate_density(pseudo_density(k),dz(k));
+  });
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::exner_function(const ScalarT& pressure)
 {
   using C = scream::physics::Constants<Real>;
