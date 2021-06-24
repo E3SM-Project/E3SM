@@ -61,6 +61,7 @@ integer           :: conv_water_in_rad    = unset_int  ! 0==> No; 1==> Yes-Arith
                                                        ! 2==> Yes-Average in emissivity.
 
 character(len=16) :: MMF_microphysics_scheme  = unset_str  ! MMF microphysics package
+real(r8)          :: MMF_orientation_angle= 0.D0       ! CRM acceleration factor
 logical           :: use_MMF              = .false.    ! true => use MMF / super-parameterization
 logical           :: use_ECPP             = .false.    ! true => use explicit-cloud parameterized-pollutants
 logical           :: use_MMF_VT           = .false.    ! true => use MMF variance transport
@@ -179,6 +180,7 @@ subroutine phys_ctl_readnl(nlfile)
    use units,           only: getunit, freeunit
    use mpishorthand
    use cam_control_mod, only: cam_ctrl_set_physics_type
+   use physconst,       only: pi
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
@@ -188,7 +190,7 @@ subroutine phys_ctl_readnl(nlfile)
 
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
-      MMF_microphysics_scheme, use_MMF, use_ECPP, &
+      MMF_microphysics_scheme, MMF_orientation_angle, use_MMF, use_ECPP, &
       use_MMF_VT, MMF_VT_wn_max, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
@@ -238,6 +240,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(macrop_scheme,    len(macrop_scheme)    , mpichar, 0, mpicom)
    call mpibcast(srf_flux_avg,                    1 , mpiint,  0, mpicom)
    call mpibcast(MMF_microphysics_scheme, len(MMF_microphysics_scheme) , mpichar, 0, mpicom)
+   call mpibcast(MMF_orientation_angle,           1 , mpir8,   0, mpicom)
    call mpibcast(use_MMF,                         1 , mpilog,  0, mpicom)
    call mpibcast(use_ECPP,                        1 , mpilog,  0, mpicom)
    call mpibcast(use_MMF_VT,                      1 , mpilog,  0, mpicom)
@@ -373,12 +376,20 @@ subroutine phys_ctl_readnl(nlfile)
       end if
    end if
 
-   ! Check settings for MMF_microphysics_scheme
+   ! check MMF parameters
    if (use_MMF) then
+      ! Check settings for MMF_microphysics_scheme
       if ( .not.(MMF_microphysics_scheme .eq. 'm2005' .or. &
                  MMF_microphysics_scheme .eq. 'sam1mom' )) then
          write(iulog,*)'phys_setopts: illegal value of MMF_microphysics_scheme:', MMF_microphysics_scheme
          call endrun('phys_setopts: illegal value of MMF_microphysics_scheme')
+      end if
+      ! check value of MMF_orientation_angle
+      if ( MMF_orientation_angle<0 .or. MMF_orientation_angle>(pi*2) ) then
+         if ( MMF_orientation_angle/=-1) then
+            write(iulog,*)'phys_setopts: illegal value of MMF_orientation_angle:', MMF_orientation_angle
+            call endrun('phys_setopts: illegal value of MMF_orientation_angle')
+         end if
       end if
    end if
 
