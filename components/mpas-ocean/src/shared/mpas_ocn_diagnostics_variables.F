@@ -185,7 +185,6 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: betaEdge
    real (kind=RKIND), dimension(:), pointer :: eddyLength
    real (kind=RKIND), dimension(:), pointer :: eddyTime
-   real (kind=RKIND), dimension(:), pointer :: c_visbeck
    real (kind=RKIND), dimension(:), pointer :: gmResolutionTaper
 
    ! Semi-implicit Array Pointers
