@@ -112,9 +112,9 @@ struct PhysicsFunctions
   // Calculate the dry mass mixing ratio given the wet mass mixing ratio:
   //   drymmr = wetmmr / (1 - qv)
   // where
-  //   drymmr         is the dry mass mixing ratio of a specie
-  //   wetmmr         is the wet mass mixing ratio of a specie
-  //   qv             is specific humidity
+  //   drymmr         is the dry mass mixing ratio of a species
+  //   wetmmr         is the wet mass mixing ratio of a species
+  //   qv             is specific humidity of water vapor
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
@@ -124,9 +124,9 @@ struct PhysicsFunctions
   // Calculate the wet mass mixing ratio given the dry mass mixing ratio:
   //   wetmmr = drymmr * (1 - qv)
   // where
-  //   wetmmr         is the wet mass mixing ratio of a specie
-  //   drymmr         is the dry mass mixing ratio of a specie
-  //   qv             is specific humidity
+  //   wetmmr         is the wet mass mixing ratio of a species
+  //   drymmr         is the dry mass mixing ratio of a species
+  //   qv             is specific humidity of water vapor
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
