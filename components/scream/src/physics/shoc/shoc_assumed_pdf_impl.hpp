@@ -297,15 +297,25 @@ void Functions<S,D>::shoc_assumed_pdf(
         const Spack cqt2(!equal,
                          1/(1 + beta2*qs2));
 
-        std_s2.set(!equal,
-                   ekat::sqrt(ekat::max(0,
-                                        ekat::square(cthl2)*thl2_2
-                                        + ekat::square(cqt2)*qw2_2 - 2*cthl2*sqrtthl2_2*cqt2*sqrtqw2_2*r_qwthl_1)));
-        s2.set(!equal, qw1_2-qs2*((1 + beta2*qw1_2)/(1 + beta2*qs2)));
-        C2.set(!equal && std_s2 != 0, sp(0.5)*(1 + ekat::erf(s2/(sqrt2*std_s2))));
-        C2.set(!equal && std_s2 == 0 && s2 > 0, 1);
-        qn2.set(!equal && std_s2 != 0 && C2 != 0, s2*C2+(std_s2/sqrt2pi)*ekat::exp(-sp(0.5)*ekat::square(s2/std_s2)));
-        qn2.set(!equal && std_s2 == 0 && s2 > 0, s2);
+        const auto nequal = !equal;
+        if (nequal.any()) {
+          std_s2.set(nequal,
+                     ekat::sqrt(ekat::max(0,
+                                          ekat::square(cthl2)*thl2_2
+                                          + ekat::square(cqt2)*qw2_2 - 2*cthl2*sqrtthl2_2*cqt2*sqrtqw2_2*r_qwthl_1)));
+          s2.set(nequal, qw1_2-qs2*((1 + beta2*qw1_2)/(1 + beta2*qs2)));
+          const auto nequal_std_s2_ne_zero = nequal && std_s2 != 0;
+          if (nequal_std_s2_ne_zero.any()) {
+            C2.set(nequal_std_s2_ne_zero, sp(0.5)*(1 + ekat::erf(s2/(sqrt2*std_s2))));
+          }
+          C2.set(nequal && std_s2 == 0 && s2 > 0, 1);
+          const auto nequal_std_s2_C2_ne_zero = nequal_std_s2_ne_zero && C2 != 0;
+          if (nequal_std_s2_C2_ne_zero.any()) {
+            qn2.set(nequal_std_s2_C2_ne_zero, s2*C2+(std_s2/sqrt2pi)*ekat::exp(-sp(0.5)*ekat::square(s2/std_s2)));
+          }
+          qn2.set(nequal && std_s2 == 0 && s2 > 0, s2);
+        }
+
         ql2 = ekat::min(qn2, qw1_2);
       }
 
