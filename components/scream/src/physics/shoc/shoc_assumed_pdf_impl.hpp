@@ -270,10 +270,16 @@ void Functions<S,D>::shoc_assumed_pdf(
         std_s1 = ekat::sqrt(ekat::max(0,
                                       ekat::square(cthl1)*thl2_1
                                       + ekat::square(cqt1)*qw2_1 - 2*cthl1*sqrtthl2_1*cqt1*sqrtqw2_1*r_qwthl_1));
+        const auto std_s1_ne_zero = std_s1 != 0;
         s1 = qw1_1-qs1*((1 + beta1*qw1_1)/(1 + beta1*qs1));
-        C1.set(std_s1 != 0, sp(0.5)*(1 + ekat::erf(s1/(sqrt2*std_s1))));
+        if (std_s1_ne_zero.any()) {
+          C1.set(std_s1_ne_zero, sp(0.5)*(1 + ekat::erf(s1/(sqrt2*std_s1))));
+        }
         C1.set(std_s1 == 0 && s1 > 0, 1);
-        qn1.set(std_s1 != 0 && C1 != 0, s1*C1+(std_s1/sqrt2pi)*ekat::exp(-sp(0.5)*ekat::square(s1/std_s1)));
+        const auto std_s1_C1_ne_zero = std_s1_ne_zero && C1 != 0;
+        if (std_s1_C1_ne_zero.any()) {
+          qn1.set(std_s1_C1_ne_zero, s1*C1+(std_s1/sqrt2pi)*ekat::exp(-sp(0.5)*ekat::square(s1/std_s1)));
+        }
         qn1.set(std_s1 == 0 && s1 > 0, s1);
         ql1 = ekat::min(qn1, qw1_1);
 
