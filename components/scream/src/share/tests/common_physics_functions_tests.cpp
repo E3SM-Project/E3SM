@@ -216,13 +216,12 @@ void run(std::mt19937_64& engine)
   REQUIRE( Check::equal(PF::calculate_dse(zero,zero,surf_height),ScalarT(surf_height)) );
   REQUIRE( Check::equal(PF::calculate_dse(ScalarT(inv_cp),ScalarT(1/g),surf_height),ScalarT(surf_height+2.0)) );
 
-  // DRYMMR to WETMMR (and vice versa) property tests
+  // WETMMR to DRYMMR (and vice versa) property tests
   wetmmr0 = pdf_mmr(engine);// get initial inputs for wetmmr_from_drymmr and drymmr_from_wetmmr functions
   qv0  = pdf_qv(engine);  // This is an input for mmr_tests, so it won't be modified by mmr tests
   // mmr_test1: For zero drymmr, wetmmr should be zero
   // mmr_test2: For zero wetmmr, drymmr should be zero
   // mmr_test3: Compute drymmr from wetmmr0 and then use the result to compute wetmmr, which should be equal to wetmmr0
-
 
   REQUIRE( Check::equal(PF::calculate_wetmmr_from_drymmr(zero,qv0),zero) ); //mmr_test1
   REQUIRE( Check::equal(PF::calculate_drymmr_from_wetmmr(zero,qv0),zero) ); //mmr_test2
