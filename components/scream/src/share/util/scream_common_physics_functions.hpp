@@ -114,7 +114,7 @@ struct PhysicsFunctions
   // where
   //   drymmr         is the dry mass mixing ratio of a specie
   //   wetmmr         is the wet mass mixing ratio of a specie
-  //   qv             is Specific humidity
+  //   qv             is specific humidity
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
@@ -126,11 +126,11 @@ struct PhysicsFunctions
   // where
   //   wetmmr         is the wet mass mixing ratio of a specie
   //   drymmr         is the dry mass mixing ratio of a specie
-  //   qv             is Specific humidity
+  //   qv             is specific humidity
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_wetmmr_from_dryvmr(const ScalarT& drymmr, const ScalarT& qv);
+  static ScalarT calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer thickness using the equation of state:
@@ -259,25 +259,20 @@ struct PhysicsFunctions
                              const InputProviderZ& z,
                              const Real surf_geopotential,
                              const view_1d<ScalarT>& dse);
-  /*
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_dse(const ScalarT& temperature, const ScalarT& z, const Real surf_geopotential);
-  */
 
-  template<typename ScalarT, typename InputProviderM, typename InputProviderQ>
+  template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
   KOKKOS_INLINE_FUNCTION
-  static void calculate_wetmmr_from_dryvmr (const MemberType& team,
-                             const InputProviderM& drymmr,
+  static void calculate_wetmmr_from_drymmr (const MemberType& team,
+                             const InputProviderX& drymmr,
                              const InputProviderQ& qv,
                              const view_1d<ScalarT>& wetmmr);
-  /*
-  template<typename ScalarT>
+
+  template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_wetmmr_from_dryvmr(const ScalarT& drymmr, const ScalarT& qv);
-
-  */
-
+  static void calculate_drymmr_from_wetmmr (const MemberType& team,
+                             const InputProviderX& wetmmr,
+                             const InputProviderQ& qv,
+                             const view_1d<ScalarT>& drymmr);
 
   template<typename ScalarT,
            typename InputProviderPD, typename InputProviderP,

@@ -109,10 +109,12 @@ void run(std::mt19937_64& engine)
           Tv("T_virtual",num_mid_packs),
           T_from_Tv("T_from_T_virtual",num_mid_packs),
           dse("dse",num_mid_packs),
+          drymmr("dry mass mixing ratio",num_mid_packs),
+          wetmmr("wet mass mixing ratio",num_mid_packs),
           dz("dz",num_mid_packs),
           z_int("z_int",num_int_packs),
           vmr("volume_mixing_ratio",num_mid_packs),
-          mmr("volume_mixing_ratio",num_mid_packs);
+          mmr("mass_mixing_ratio",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
     return rview_1d(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
@@ -211,6 +213,21 @@ void run(std::mt19937_64& engine)
   surf_height = pdf_surface(engine);
   REQUIRE( Check::equal(PF::calculate_dse(zero,zero,surf_height),ScalarT(surf_height)) );
   REQUIRE( Check::equal(PF::calculate_dse(ScalarT(inv_cp),ScalarT(1/g),surf_height),ScalarT(surf_height+2.0)) );
+
+  // drymmr to wetmmr and vice versa property tests
+  // mmr_test1: For zero drymmr, wetmmr should be zero
+  // mmr_test2: For zero wetmmr, drymmr should be zero
+  // mmr_test3: Compute wetmmr from mmr0 and then use the result to compute drymmr, which should be equal to mmr0
+  mmr0 = pdf_mmr(engine);// get initial inputs for wetmmr_from_drymmr and drymmr_from_wetmmr functions
+  qv0  = pdf_qv(engine);
+
+  REQUIRE( Check::equal(PF::calculate_wetmmr_from_drymmr(zero,qv0),zero) ); //mmr_test1
+  REQUIRE( Check::equal(PF::calculate_drymmr_from_wetmmr(zero,qv0),zero) ); //mmr_test2
+
+  //mmr_test3
+  tmp = PF::calculate_wetmmr_from_drymmr(mmr0,qv0);//get wetmmr from mmr0, assuming mmr0 is drymmr
+  tmp = PF::calculate_drymmr_from_wetmmr(tmp, qv0);//convert it back to drymmr, i.e. mmr0
+  REQUIRE( Check::equal(tmp,mmr0) );
 
   // DZ property tests:
   //  - calculate_dz(pseudo_density=0) = 0
