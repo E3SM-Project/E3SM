@@ -102,7 +102,7 @@
 
 <ncdata dyn="se" hgrid="ne0np4_antarcticax4v1" nlev="72"    >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-antarcticax4v1_L72_topoadj_c20200507.nc</ncdata>
 
-<ncdata dyn="se" hgrid="ne0np4_arcticx4v1" nlev="72"    >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-arcticx4v1np4_L72_c20210527.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_arcticx4v1" nlev="72"    >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-arcticx4v1np4_L72_c20210623.nc</ncdata>
 <!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c100618.nc</ncdata-->
 <!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
 <ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c141107.nc</ncdata>
