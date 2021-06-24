@@ -115,7 +115,8 @@ void run(std::mt19937_64& engine)
           vmr("volume_mixing_ratio",num_mid_packs),
           mmr("mass_mixing_ratio",num_mid_packs),
           wetmmr("wet_mass_mixing_ratio",num_mid_packs),
-          drymmr("dry_mass_mixing_ratio",num_mid_packs);
+          drymmr("dry_mass_mixing_ratio",num_mid_packs),
+          density("density",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
     return rview_1d(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
@@ -131,6 +132,7 @@ void run(std::mt19937_64& engine)
        pdf_pres(0.0,PC::P0),
        pdf_temp(200.0,400.0),
        pdf_height(0.0,1e5),
+       pdf_dz(1.0,1e5),
        pdf_surface(100.0,400.0),
        pdf_mmr(0,0.99);
 
@@ -156,8 +158,23 @@ void run(std::mt19937_64& engine)
   const ScalarT zero = 0.0;
   const ScalarT one  = 1.0;
 
-  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, wetmmr0;
+  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, wetmmr0, dz0, Tv0, rho0;
   RealType surf_height;
+
+  // calculate density property tests:
+  //  - calculate_density(pseudo_density=zero) should return 0.0
+  //  - density using ideal gas law should match the calculated density.
+  dz0 = pdf_dz(engine);
+  p   = pdf_pres(engine);
+  dp0 = pdf_dp(engine);
+  T0  = pdf_temp(engine);
+  qv0 = pdf_qv(engine);
+  Tv0 = PF::calculate_virtual_temperature(T0,qv0);
+  dz0 = PF::calculate_dz(dp0,p,T0,qv0);
+  rho0 = p / Tv0 / Rd;  // Ideal gas law
+
+  REQUIRE( Check::equal(PF::calculate_density(zero,dz0),zero) );
+  REQUIRE( Check::approx_equal(PF::calculate_density(dp0,dz0),rho0,test_tol) );
 
   // Exner property tests:
   //  - exner_function(p0) should return 1.0
@@ -270,6 +287,9 @@ void run(std::mt19937_64& engine)
   TeamPolicy policy(ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(1, 1));
   Kokkos::parallel_for("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team) {
 
+    // Compute density(dp,dz)
+    PF::calculate_density(team,pseudo_density,dz_for_testing,density);
+
     // Compute exner(p)
     PF::exner_function(team,pressure,exner);
 
@@ -309,6 +329,7 @@ void run(std::mt19937_64& engine)
   auto pressure_host        = cmvdc(pressure);
   auto qv_host              = cmvdc(qv);
 
+  auto density_host         = cmvdc(density);
   auto exner_host           = cmvdc(exner);
   auto T_from_Theta_host    = cmvdc(T_from_Theta);
   auto Tv_host              = cmvdc(Tv);
@@ -326,6 +347,7 @@ void run(std::mt19937_64& engine)
   for (int k=0; k<num_mid_packs; ++k) {
 
     // Make sure all results don't contain invalid numbers
+    REQUIRE( Check::is_non_negative(density_host(k),k) );
     REQUIRE( Check::is_non_negative(exner_host(k),k) );
     REQUIRE( Check::is_non_negative(theta_host(k),k) );
     REQUIRE( Check::is_non_negative(T_from_Theta_host(k),k) );
