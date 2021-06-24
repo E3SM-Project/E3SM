@@ -169,6 +169,52 @@ template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::
+calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv)
+{
+  return drymmr*(1-qv);
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_wetmmr_from_drymmr(const MemberType& team,
+                                                             const InputProviderX& drymmr,
+                                                             const InputProviderQ& qv,
+                                                             const view_1d<ScalarT>& wetmmr)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,wetmmr.extent(0)),
+                       [&] (const int k) {
+                         wetmmr(k) = calculate_wetmmr_from_drymmr(drymmr(k),qv(k));
+                       });
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::
+calculate_drymmr_from_wetmmr(const ScalarT& wetmmr, const ScalarT& qv)
+{
+  return wetmmr/(1-qv);
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_drymmr_from_wetmmr(const MemberType& team,
+                                                             const InputProviderX& wetmmr,
+                                                             const InputProviderQ& qv,
+                                                             const view_1d<ScalarT>& drymmr)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,drymmr.extent(0)),
+                       [&] (const int k) {
+                         drymmr(k) = calculate_drymmr_from_wetmmr(wetmmr(k),qv(k));
+                       });
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::
 calculate_dz(const ScalarT& pseudo_density, const ScalarT& p_mid, const ScalarT& T_mid, const ScalarT& qv)
 {
   using C = scream::physics::Constants<Real>;
