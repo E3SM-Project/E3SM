@@ -38,15 +38,13 @@ module EcosystemBalanceCheckMod
   use pftvarcon           , only: noveg
   use elm_varctl          , only : NFIX_PTASE_plant
   use GridcellType        , only : grc_pp
-  use GridcellDataType    , only : gridcell_carbon_state, grc_cf
-  use GridcellDataType    , only : gridcell_nitrogen_state
-  use GridcellDataType    , only : gridcell_phosphorus_state
-  use GridcellDataType    , only : grc_ns, grc_nf, grc_ps, grc_pf
+  use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
+  use GridcellDataType    , only : gridcell_nitrogen_state, gridcell_nitrogen_flux
+  use GridcellDataType    , only : gridcell_phosphorus_state, gridcell_phosphorus_flux
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : column_carbon_state, col_cf
-  use ColumnDataType      , only : column_nitrogen_state
-  use ColumnDataType      , only : column_phosphorus_state
-  use ColumnDataType      , only : col_ns, col_nf, col_ps, col_pf 
+  use ColumnDataType      , only : column_carbon_state, column_carbon_flux
+  use ColumnDataType      , only : column_nitrogen_state, column_nitrogen_flux
+  use ColumnDataType      , only : column_phosphorus_state, column_phosphorus_flux
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cf, veg_nf, veg_pf
   
@@ -111,17 +109,17 @@ contains
  
   !-----------------------------------------------------------------------
   subroutine BeginColNBalance(bounds, num_soilc, filter_soilc, &
-       nitrogenstate_vars)
+       col_ns)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the beginning nitrogen balance for mass
     ! conservation checks.
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds          
-    integer                  , intent(in)    :: num_soilc       ! number of soil columns filter
-    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    type(bounds_type) , intent(in)    :: bounds          
+    integer           , intent(in)    :: num_soilc       ! number of soil columns filter
+    integer           , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(column_nitrogen_state) , intent(inout) :: col_ns
     !
     ! !LOCAL VARIABLES:
     integer :: c    ! indices
@@ -145,7 +143,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine BeginColPBalance(bounds, num_soilc, filter_soilc, &
-       phosphorusstate_vars)
+       col_ps)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the beginning phosphorus balance for mass
@@ -155,7 +153,7 @@ contains
     type(bounds_type)        , intent(in)    :: bounds          
     integer                  , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(column_phosphorus_state) , intent(inout) :: col_ps
     !
     ! !LOCAL VARIABLES:
     integer :: c     ! indices
@@ -164,13 +162,11 @@ contains
 
     associate(                                           &
          totcolp   => col_ps%totcolp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         !X.YANG - checking P balance problem, starting from VEGP 
          totpftp   => col_ps%totpftp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
          totsomp   => col_ps%totsomp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         cwdp   => col_ps%cwdp       , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         cwdp      => col_ps%cwdp    , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          totlitp   => col_ps%totlitp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         sminp   => col_ps%sminp     , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
- 
+         sminp     => col_ps%sminp   , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          col_begpb => col_ps%begpb     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          )
 
@@ -187,7 +183,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine ColCBalanceCheck(bounds, &
        num_soilc, filter_soilc, &
-       col_cs, carbonflux_vars)
+       col_cs, col_cf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform carbon mass conservation check for column and pft
@@ -197,7 +193,7 @@ contains
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                   , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(column_carbon_state) , intent(inout) :: col_cs
-    type(carbonflux_type)     , intent(in)    :: carbonflux_vars
+    type(column_carbon_flux)  , intent(in)    :: col_cf
     !
     ! !LOCAL VARIABLES:
     integer  :: c,err_index    ! indices 
@@ -341,7 +337,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine ColNBalanceCheck(bounds, &
        num_soilc, filter_soilc, &
-       nitrogenstate_vars, nitrogenflux_vars)
+       col_ns, col_nf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform nitrogen mass conservation check
@@ -352,8 +348,8 @@ contains
     type(bounds_type)         , intent(in)    :: bounds          
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                   , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    type(column_nitrogen_state) , intent(inout) :: col_ns
+    type(column_nitrogen_flux)  , intent(inout) :: col_nf
     !
     ! !LOCAL VARIABLES:
     integer :: c,err_index,j,p  ! indices
@@ -556,7 +552,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine ColPBalanceCheck(bounds, &
        num_soilc, filter_soilc, &
-       phosphorusstate_vars, phosphorusflux_vars)
+       col_ps, col_pf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform phosphorus mass conservation check
@@ -566,8 +562,8 @@ contains
     type(bounds_type)         , intent(in)    :: bounds          
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                   , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    type(column_phosphorus_state) , intent(inout) :: col_ps
+    type(column_phosphorus_flux)  , intent(inout) :: col_pf
     !
     ! !LOCAL VARIABLES:
     integer :: c,err_index,j,k,p  ! indices
@@ -621,9 +617,7 @@ contains
          leafp_to_litter           => veg_pf%leafp_to_litter         , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          frootp_to_litter          => veg_pf%frootp_to_litter        , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          sminp_to_plant            => col_pf%sminp_to_plant            , &
-         cascade_receiver_pool     => decomp_cascade_con%cascade_receiver_pool          , &
-         pf                        =>  phosphorusflux_vars                              , &
-         ps                        =>  phosphorusstate_vars                               &
+         cascade_receiver_pool     => decomp_cascade_con%cascade_receiver_pool &
          )
 
       ! set time steps
@@ -1042,8 +1036,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine EndGridCBalanceAfterDynSubgridDriver(bounds, &
-       num_soilc, filter_soilc, &
-       col_cs, grc_cs, carbonflux_vars)
+       num_soilc, filter_soilc, col_cs, grc_cs, grc_cf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform carbon mass conservation check
@@ -1055,7 +1048,7 @@ contains
     integer                    , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(column_carbon_state)  , intent(inout) :: col_cs
     type(gridcell_carbon_state), intent(inout) :: grc_cs
-    type(carbonflux_type)      , intent(in)    :: carbonflux_vars
+    type(gridcell_carbon_flux) , intent(inout) :: grc_cf
     !
     ! !LOCAL VARIABLES:
     integer  :: g,err_index    ! indices
@@ -1126,19 +1119,19 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine EndGridNBalanceAfterDynSubgridDriver(bounds, &
-       num_soilc, filter_soilc, &
-       nitrogenstate_vars, nitrogenflux_vars)
+       num_soilc, filter_soilc, col_ns, grc_ns, grc_nf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform nitrogen mass conservation check
     ! at grid level after dynamic subgrid driver has been called
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds          
-    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(in)    :: nitrogenflux_vars
+    type(bounds_type)             , intent(in)    :: bounds          
+    integer                       , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                       , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(column_nitrogen_state)   , intent(inout) :: col_ns
+    type(gridcell_nitrogen_state) , intent(inout) :: grc_ns
+    type(gridcell_nitrogen_flux)  , intent(inout) :: grc_nf
     !
     ! !LOCAL VARIABLES:
     integer  :: g,err_index    ! indices
@@ -1146,16 +1139,16 @@ contains
     real(r8) :: dt             ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                                                                       &
-         totcoln                   =>    col_ns%totcoln              , & ! Input:  [real(r8) (:) ]  (gN/m22)   total column nitrogen, incl veg and cpool
+    associate(                                                          &
+         totcoln                   =>    col_ns%totcoln               , & ! Input:  [real(r8) (:) ]  (gN/m22)   total column nitrogen, incl veg and cpool
          dwt_conv_nflux_grc        =>    grc_nf%dwt_conv_nflux        , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_seedn_to_leaf_grc     =>    grc_nf%dwt_seedn_to_leaf     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_seedn_to_deadstem_grc =>    grc_nf%dwt_seedn_to_deadstem , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          grc_ninputs               =>    grc_nf%ninputs               , & ! Output: [real(r8) (:)]  grid-level N inputs (gN/m2/s)
          grc_noutputs              =>    grc_nf%noutputs              , & ! Output: [real(r8) (:)]  grid-level N outputs (gN/m2/s)
-         begnb_grc                 =>    grc_ns%begnb                , & ! Output: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
-         endnb_grc                 =>    grc_ns%endnb                , & ! Output: [real(r8) (:) ]  nitrogen mass, end of time step (gN/m2**2)
-         errnb_grc                 =>    grc_ns%errnb                  & ! Output: [real(r8) (:) ]  nitrogen balance error for the time step (gN/m2**2)
+         begnb_grc                 =>    grc_ns%begnb                 , & ! Output: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         endnb_grc                 =>    grc_ns%endnb                 , & ! Output: [real(r8) (:) ]  nitrogen mass, end of time step (gN/m2**2)
+         errnb_grc                 =>    grc_ns%errnb                   & ! Output: [real(r8) (:) ]  nitrogen balance error for the time step (gN/m2**2)
          )
 
       ! set time steps
@@ -1197,8 +1190,8 @@ contains
          write(iulog,*)'input                 = ',grc_ninputs(g)*dt
          write(iulog,*)'output                = ',grc_noutputs(g)*dt
          write(iulog,*)'error                 = ',errnb_grc(g)*dt
-         write(iulog,*)'begcb                 = ',begnb_grc(g)
-         write(iulog,*)'endcb                 = ',endnb_grc(g)
+         write(iulog,*)'begnb                 = ',begnb_grc(g)
+         write(iulog,*)'endnb                 = ',endnb_grc(g)
          write(iulog,*)'delta store           = ',endnb_grc(g)-begnb_grc(g)
          write(iulog,*)''
          write(iulog,*)'dwt_conv                ',dwt_conv_nflux_grc(g)
@@ -1215,19 +1208,19 @@ contains
   !-----------------------------------------------------------------------
 
   subroutine EndGridPBalanceAfterDynSubgridDriver(bounds, &
-       num_soilc, filter_soilc, &
-       phosphorusstate_vars, phosphorusflux_vars)
+       num_soilc, filter_soilc, col_ps, grc_ps, grc_pf)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform phosphorus mass conservation check
     ! at grid level after dynamic subgrid driver has been called
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds          
-    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(in)    :: phosphorusflux_vars
+    type(bounds_type)               , intent(in)    :: bounds          
+    integer                         , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                         , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(column_phosphorus_state)   , intent(inout) :: col_ps
+    type(gridcell_phosphorus_state) , intent(inout) :: grc_ps
+    type(gridcell_phosphorus_flux)  , intent(inout) :: grc_pf
     !
     ! !LOCAL VARIABLES:
     integer  :: g,err_index    ! indices
@@ -1235,16 +1228,16 @@ contains
     real(r8) :: dt             ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                                                                       &
-         totcolp                   =>    col_ps%totcolp              , & ! Input:  [real(r8) (:) ]  (gP/m2)   total column phosphorus, incl veg and cpool
+    associate(                                                          &
+         totcolp                   =>    col_ps%totcolp               , & ! Input:  [real(r8) (:) ]  (gP/m2)   total column phosphorus, incl veg and cpool
          dwt_conv_pflux_grc        =>    grc_pf%dwt_conv_pflux        , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_seedp_to_leaf_grc     =>    grc_pf%dwt_seedp_to_leaf     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_seedp_to_deadstem_grc =>    grc_pf%dwt_seedp_to_deadstem , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          grc_pinputs               =>    grc_pf%pinputs               , & ! Output: [real(r8) (:)]  grid-level P inputs (gP/m2/s)
          grc_poutputs              =>    grc_pf%poutputs              , & ! Output: [real(r8) (:)]  grid-level P outputs (gP/m2/s)
-         begpb_grc                 =>    grc_ps%begpb                , & ! Output: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         endpb_grc                 =>    grc_ps%endpb                , & ! Output: [real(r8) (:) ]  phosphorus mass, end of time step (gP/m2**2)
-         errpb_grc                 =>    grc_ps%errpb                  & ! Output: [real(r8) (:) ]  phosphorus balance error for the time step (gP/m2**2)
+         begpb_grc                 =>    grc_ps%begpb                 , & ! Output: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         endpb_grc                 =>    grc_ps%endpb                 , & ! Output: [real(r8) (:) ]  phosphorus mass, end of time step (gP/m2**2)
+         errpb_grc                 =>    grc_ps%errpb                   & ! Output: [real(r8) (:) ]  phosphorus balance error for the time step (gP/m2**2)
          )
 
       ! set time steps
@@ -1286,8 +1279,8 @@ contains
          write(iulog,*)'input                 = ',grc_pinputs(g)*dt
          write(iulog,*)'output                = ',grc_poutputs(g)*dt
          write(iulog,*)'error                 = ',errpb_grc(g)*dt
-         write(iulog,*)'begcb                 = ',begpb_grc(g)
-         write(iulog,*)'endcb                 = ',endpb_grc(g)
+         write(iulog,*)'begpb                 = ',begpb_grc(g)
+         write(iulog,*)'endpb                 = ',endpb_grc(g)
          write(iulog,*)'delta store           = ',endpb_grc(g)-begpb_grc(g)
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if

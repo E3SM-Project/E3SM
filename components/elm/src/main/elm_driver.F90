@@ -477,15 +477,15 @@ contains
              
              call EndGridCBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
-                  col_cs, grc_cs, carbonflux_vars)
+                  col_cs, grc_cs, grc_cf)
              
              call EndGridNBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
-                  nitrogenstate_vars, nitrogenflux_vars)
+                  col_ns, grc_ns, grc_nf)
              
              call EndGridPBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
-                  phosphorusstate_vars, phosphorusflux_vars)
+                  col_ps, grc_ps, grc_pf)
              
           end do
           !$OMP END PARALLEL DO
@@ -559,10 +559,10 @@ contains
                col_cs)
           call BeginColNBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               nitrogenstate_vars)
+               col_ns)
           call BeginColPBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               phosphorusstate_vars)
+               col_ps)
           
           call t_stopf('begcnpbalwf')
        end if
@@ -1312,15 +1312,15 @@ contains
              
           call ColCBalanceCheck(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               col_cs, carbonflux_vars)
+               col_cs, col_cf)
              
           call ColNBalanceCheck(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               nitrogenstate_vars, nitrogenflux_vars)
+               col_ns, col_nf)
              
           call ColPBalanceCheck(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
-               phosphorusstate_vars, phosphorusflux_vars)
+               col_ps, col_pf)
              
           call GridCBalanceCheck(bounds_clump, col_cs, col_cf, grc_cs, grc_cf)
 
