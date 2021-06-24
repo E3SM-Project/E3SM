@@ -270,17 +270,17 @@ void Functions<S,D>::shoc_assumed_pdf(
         std_s1 = ekat::sqrt(ekat::max(0,
                                       ekat::square(cthl1)*thl2_1
                                       + ekat::square(cqt1)*qw2_1 - 2*cthl1*sqrtthl2_1*cqt1*sqrtqw2_1*r_qwthl_1));
-        const auto std_s1_ne_zero = std_s1 != 0;
+        const auto std_s1_not_small = std_s1 > 2.0E-155;
         s1 = qw1_1-qs1*((1 + beta1*qw1_1)/(1 + beta1*qs1));
-        if (std_s1_ne_zero.any()) {
-          C1.set(std_s1_ne_zero, sp(0.5)*(1 + ekat::erf(s1/(sqrt2*std_s1))));
+        if (std_s1_not_small.any()) {
+          C1.set(std_s1_not_small, sp(0.5)*(1 + ekat::erf(s1/(sqrt2*std_s1))));
         }
-        C1.set(std_s1 == 0 && s1 > 0, 1);
-        const auto std_s1_C1_ne_zero = std_s1_ne_zero && C1 != 0;
-        if (std_s1_C1_ne_zero.any()) {
-          qn1.set(std_s1_C1_ne_zero, s1*C1+(std_s1/sqrt2pi)*ekat::exp(-sp(0.5)*ekat::square(s1/std_s1)));
+        C1.set(!std_s1_not_small && s1 > 0, 1);
+        const auto std_s1_C1_not_small = std_s1_not_small && C1 != 0;
+        if (std_s1_C1_not_small.any()) {
+          qn1.set(std_s1_C1_not_small, s1*C1+(std_s1/sqrt2pi)*ekat::exp(-sp(0.5)*ekat::square(s1/std_s1)));
         }
-        qn1.set(std_s1 == 0 && s1 > 0, s1);
+        qn1.set(!std_s1_not_small && s1 > 0, s1);
         ql1 = ekat::min(qn1, qw1_1);
 
         // Second plume
@@ -304,16 +304,17 @@ void Functions<S,D>::shoc_assumed_pdf(
                                           ekat::square(cthl2)*thl2_2
                                           + ekat::square(cqt2)*qw2_2 - 2*cthl2*sqrtthl2_2*cqt2*sqrtqw2_2*r_qwthl_1)));
           s2.set(nequal, qw1_2-qs2*((1 + beta2*qw1_2)/(1 + beta2*qs2)));
-          const auto nequal_std_s2_ne_zero = nequal && std_s2 != 0;
-          if (nequal_std_s2_ne_zero.any()) {
-            C2.set(nequal_std_s2_ne_zero, sp(0.5)*(1 + ekat::erf(s2/(sqrt2*std_s2))));
+          const auto std_s2_not_small = std_s2 > 2.0E-155;
+          const auto nequal_std_s2_not_small = nequal && std_s2_not_small;
+          if (nequal_std_s2_not_small.any()) {
+            C2.set(nequal_std_s2_not_small, sp(0.5)*(1 + ekat::erf(s2/(sqrt2*std_s2))));
           }
-          C2.set(nequal && std_s2 == 0 && s2 > 0, 1);
-          const auto nequal_std_s2_C2_ne_zero = nequal_std_s2_ne_zero && C2 != 0;
-          if (nequal_std_s2_C2_ne_zero.any()) {
-            qn2.set(nequal_std_s2_C2_ne_zero, s2*C2+(std_s2/sqrt2pi)*ekat::exp(-sp(0.5)*ekat::square(s2/std_s2)));
+          C2.set(nequal && !std_s2_not_small && s2 > 0, 1);
+          const auto nequal_std_s2_C2_not_small = nequal_std_s2_not_small && C2 != 0;
+          if (nequal_std_s2_C2_not_small.any()) {
+            qn2.set(nequal_std_s2_C2_not_small, s2*C2+(std_s2/sqrt2pi)*ekat::exp(-sp(0.5)*ekat::square(s2/std_s2)));
           }
-          qn2.set(nequal && std_s2 == 0 && s2 > 0, s2);
+          qn2.set(nequal && !std_s2_not_small && s2 > 0, s2);
         }
 
         ql2 = ekat::min(qn2, qw1_2);
