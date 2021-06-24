@@ -62,8 +62,8 @@ module elm_driver
   use EcosystemBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
   use EcosystemBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
   use EcosystemBalanceCheckMod      , only : BeginGridCBalance, GridCBalanceCheck
-  use EcosystemBalanceCheckMod      , only : BeginGridNBalanceBeforeDynSubgridDriver
-  use EcosystemBalanceCheckMod      , only : BeginGridPBalanceBeforeDynSubgridDriver
+  use EcosystemBalanceCheckMod      , only : BeginGridNBalance
+  use EcosystemBalanceCheckMod      , only : BeginGridPBalance
   use EcosystemBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
@@ -134,7 +134,8 @@ module elm_driver
   use GridcellType           , only : grc_pp
   use GridcellDataType       , only : grc_cs, c13_grc_cs, c14_grc_cs
   use GridcellDataType       , only : grc_cf, c13_grc_cf, c14_grc_cf
-  use GridcellDataType       , only : grc_nf, grc_pf
+  use GridcellDataType       , only : grc_ns, grc_nf
+  use GridcellDataType       , only : grc_ps, grc_pf
   use TopounitDataType       , only : top_as, top_af  
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp 
@@ -399,9 +400,8 @@ contains
                filter(nc)%num_soilc, filter(nc)%soilc)
           
           call BeginGridCBalance(bounds_clump, col_cs, grc_cs)
-
-          call BeginGridNBalanceBeforeDynSubgridDriver(bounds_clump, nitrogenstate_vars)
-          call BeginGridPBalanceBeforeDynSubgridDriver(bounds_clump, phosphorusstate_vars)
+          call BeginGridNBalance(bounds_clump, col_ns, grc_ns)
+          call BeginGridPBalance(bounds_clump, col_ps, grc_ps)
           
        end if
        

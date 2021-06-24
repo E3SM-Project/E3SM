@@ -39,9 +39,13 @@ module EcosystemBalanceCheckMod
   use elm_varctl          , only : NFIX_PTASE_plant
   use GridcellType        , only : grc_pp
   use GridcellDataType    , only : gridcell_carbon_state, grc_cf
+  use GridcellDataType    , only : gridcell_nitrogen_state
+  use GridcellDataType    , only : gridcell_phosphorus_state
   use GridcellDataType    , only : grc_ns, grc_nf, grc_ps, grc_pf
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : column_carbon_state, col_cf 
+  use ColumnDataType      , only : column_carbon_state, col_cf
+  use ColumnDataType      , only : column_nitrogen_state
+  use ColumnDataType      , only : column_phosphorus_state
   use ColumnDataType      , only : col_ns, col_nf, col_ps, col_pf 
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cf, veg_nf, veg_pf
@@ -62,8 +66,8 @@ module EcosystemBalanceCheckMod
   public :: ColPBalanceCheck
   public :: BeginGridCBalance
   public :: GridCBalanceCheck
-  public :: BeginGridNBalanceBeforeDynSubgridDriver
-  public :: BeginGridPBalanceBeforeDynSubgridDriver
+  public :: BeginGridNBalance
+  public :: BeginGridPBalance
   public :: EndGridCBalanceAfterDynSubgridDriver
   public :: EndGridNBalanceAfterDynSubgridDriver
   public :: EndGridPBalanceAfterDynSubgridDriver
@@ -985,15 +989,16 @@ contains
   end subroutine GridCBalanceCheck
  
   !-----------------------------------------------------------------------
-  subroutine BeginGridNBalanceBeforeDynSubgridDriver(bounds, nitrogenstate_vars)
+  subroutine BeginGridNBalance(bounds, col_ns, grc_ns)
     !
     ! !DESCRIPTION:
     ! Calculate the beginning nitrogen balance for mass conservation checks
     ! at grid cell level
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    type(bounds_type)             , intent(in)    :: bounds
+    type(column_nitrogen_state)   , intent(in)    :: col_ns
+    type(gridcell_nitrogen_state) , intent(inout) :: grc_ns
     !-----------------------------------------------------------------------
 
     associate(                                         &
@@ -1001,26 +1006,24 @@ contains
          begnb_grc => grc_ns%begnb     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          )
 
-      call c2g( bounds = bounds, &
-           carr = totcoln(bounds%begc:bounds%endc), &
-           garr = begnb_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type = 'unity', &
-           l2g_scale_type = 'unity')
+      call c2g(bounds, totcoln(bounds%begc:bounds%endc), begnb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
     end associate
 
-  end subroutine BeginGridNBalanceBeforeDynSubgridDriver
+  end subroutine BeginGridNBalance
 
   !-----------------------------------------------------------------------
-  subroutine BeginGridPBalanceBeforeDynSubgridDriver(bounds, phosphorusstate_vars)
+  subroutine BeginGridPBalance(bounds, col_ps, grc_ps)
     !
     ! !DESCRIPTION:
     ! Calculate the beginning phosphorus balance for mass conservation checks
     ! at grid cell level
     !
     ! !ARGUMENTS:
-    type(bounds_type)          , intent(in)    :: bounds
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(bounds_type)               , intent(in)    :: bounds
+    type(column_phosphorus_state)   , intent(in)    :: col_ps
+    type(gridcell_phosphorus_state) , intent(inout) :: grc_ps
     !
     !-----------------------------------------------------------------------
 
@@ -1029,16 +1032,13 @@ contains
          begpb_grc => grc_ps%begpb     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          )
 
-      call c2g( bounds = bounds, &
-           carr = totcolp(bounds%begc:bounds%endc), &
-           garr = begpb_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type = 'unity', &
-           l2g_scale_type = 'unity')
+      call c2g(bounds, totcolp(bounds%begc:bounds%endc), begpb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
 
     end associate
 
-  end subroutine BeginGridPBalanceBeforeDynSubgridDriver
+  end subroutine BeginGridPBalance
 
   !-----------------------------------------------------------------------
   subroutine EndGridCBalanceAfterDynSubgridDriver(bounds, &
