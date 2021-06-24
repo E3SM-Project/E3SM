@@ -100,7 +100,8 @@ contains
          iac_gnam=iac_gnam)
 
     allocate(mapper_Sl2z)
-
+    ! KVC: iac_present needs to be set before this point. Temporarily setting here
+    iac_present = .true.
     if (iac_present .and. lnd_present) then
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
@@ -219,7 +220,8 @@ contains
     call t_drvstartf (trim(timer_mrg), barrier=mpicom_CPLID)
     do ezi = 1,num_inst_iac
        x2z_zx => component_get_x2c_cx(iac(ezi))  ! This is actually modifying x2z_zx
-       call prep_iac_merge(l2x_zx(ezi), x2z_zx)
+       ! KVC: Temporarily disabling because of errors
+       ! call prep_iac_merge(l2x_zx(ezi), x2z_zx)
     end do
     call t_drvstopf (trim(timer_mrg))
 
