@@ -212,7 +212,7 @@ public:
     return false;
   }
 
-  // Computes total number of Reals needed for local variables
+  // Computes total number of bytes needed for local variables
   virtual int requested_buffer_size_in_bytes () const { return 0; }
 
   // Set local variables using memory provided by
