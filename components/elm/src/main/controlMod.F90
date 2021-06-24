@@ -298,7 +298,7 @@ contains
          budget_ann, budget_ltann, budget_ltend
  
     namelist /elm_inparm/ & 
-         use_downscaling_to_tpu, precip_downscaling
+         use_atm_downscaling_to_topunit, precip_downscaling_method
 
     namelist /elm_inparm/ &
          use_erosion, ero_ccycle
@@ -854,8 +854,8 @@ contains
     call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
     
     ! Downscaling of atmospheric forcing to topounits
-    call mpi_bcast (use_downscaling_to_tpu, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (precip_downscaling, len(precip_downscaling), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (use_atm_downscaling_to_topunit, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (precip_downscaling_method, len(precip_downscaling_method), MPI_CHARACTER, 0, mpicom, ier)
     
     ! soil erosion
     call mpi_bcast (use_erosion, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -917,8 +917,8 @@ contains
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
     write(iulog,*) '    use_betr = ', use_betr
-    write(iulog,*) '    use_downscaling_to_tpu = ', use_downscaling_to_tpu
-    write(iulog,*) '    precip_downscaling = ', precip_downscaling
+    write(iulog,*) '    use_atm_downscaling_to_topunit = ', use_atm_downscaling_to_topunit
+    write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
     write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)    

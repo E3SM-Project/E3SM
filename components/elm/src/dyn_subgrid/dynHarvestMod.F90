@@ -106,7 +106,6 @@ contains
                dyn_file=dynHarvest_file, varname=harvest_varnames(varnum), &
                dim1name=grlnd, conversion_factor=1.0_r8, &
                do_check_sums_equal_1=.false., data_shape=harvest_shape)
-               !do_check_sums_equal_1=.false., data_shape=[num_points])  !TKT
        end do
        call dynHarvest_interp(bounds)
     end if

@@ -13,7 +13,7 @@ module lnd_disagg_forc
   use shr_megan_mod  , only : shr_megan_mechcomps_n
   use elm_varpar     , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use elm_varcon     , only : rair, grav, cpair, hfus, tfrz, spval
-  use elm_varctl     , only : iulog, use_c13, use_cn, use_lch4, iulog, precip_downscaling
+  use elm_varctl     , only : iulog, use_c13, use_cn, use_lch4, iulog, precip_downscaling_method
   use elm_cpl_indices
   use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
   use abortutils     , only : endrun
@@ -171,7 +171,7 @@ contains
     max_tpuElv = 0.
     min_tpuElv = 0.
     if (numt_pg > 1) then          !downscaling is done only if a grid has more than 1 topounits 
-       if (precip_downscaling == 'FNM') then
+       if (precip_downscaling_method == 'FNM') then
           allocate(deltaRain(numt_pg))
           deltaRain(:) = 0._r8
           allocate(deltaSnow(numt_pg))
@@ -202,7 +202,7 @@ contains
              top_af%rain(t) = rain_g
              top_af%snow(t) = snow_g
           else
-             if (precip_downscaling == 'FNM') then
+             if (precip_downscaling_method == 'FNM') then
                 call downscale_precip_to_topounit_FNM(mxElv,uovern_t,grdElv,topoElv,rain_g,snow_g,deltaR,deltaS,hrise) !Use FNM method
                 deltaRain(t2) = deltaR 
                 deltaSnow(t2) = deltaS             
@@ -288,7 +288,7 @@ contains
              sum_wtslw_g = sum_wtslw_g + top_pp%wtgcell(t)
           end if 
        end do
-       if (precip_downscaling == 'FNM') then
+       if (precip_downscaling_method == 'FNM') then
           do t = grc_pp%topi(g), grc_pp%topf(g)
              t2 = t - grc_pp%topi(g) + 1
              if (mxElv == 0.) then  ! avoid dividing by 0

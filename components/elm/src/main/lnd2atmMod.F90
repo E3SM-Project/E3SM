@@ -11,7 +11,7 @@ module lnd2atmMod
   use shr_megan_mod        , only : shr_megan_mechcomps_n
   use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
-  use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_downscaling_to_tpu
+  use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit
   use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod_elm   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
@@ -120,7 +120,7 @@ contains
     end do
     
     ! Calculate topounit level eflx_lwrad_out_topo for downscaling purpose
-    if (use_downscaling_to_tpu) then
+    if (use_atm_downscaling_to_topunit) then
        call p2t(bounds, &
             eflx_lwrad_out (bounds%begp:bounds%endp), &
             top_es%eflx_lwrad_out_topo      (bounds%begt:bounds%endt), &
