@@ -257,7 +257,7 @@ void RRTMGPRadiation::run_impl (const Real dt) {
   auto tmp2d = m_buffer.tmp2d;
   for (int igas = 0; igas < m_ngas; igas++) {
     auto name = m_gas_names[igas];
-    auto fm_name = (name=="h2o") ? "qv" : name;
+    auto fm_name = name=="h2o" ? "qv" : name;
     auto d_temp  = m_rrtmgp_fields_in.at(fm_name).get_reshaped_view<const Real**>();
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
